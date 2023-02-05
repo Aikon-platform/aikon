@@ -1,0 +1,44 @@
+{% load static %}
+<html>
+    <head>
+        <title>Annotations manuscrit #{{manuscript.id}}</title>
+        <script src="{% static 'js/jquery-3.6.1.js' %}"></script>
+        <script src="{% static 'js/script.js' %}"></script>
+        <script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
+        <link rel="stylesheet" href="{% static 'css/admin_style.css' %}">
+    </head>
+    <body>
+        <i class="fa-solid fa-arrows-rotate"></i> <a href="javascript:location.reload();" title="Actualiser la page courante">Actualiser</a>
+        <h3>Manuscrit #{{ manuscript.id }} : {{ manuscript.work.title }}</h3>
+        <div class="row">
+            {% for column in 2|range_filter %}
+                <div class="column">
+                    <table class="anno-table">
+                        {% for annos, url in canvas_annos %}
+                            {% if column == 0 and not forloop.counter|divisibleby:2 or column == 1 and forloop.counter|divisibleby:2 %}
+                                <tr>
+                                    <td class="anno-td" style="background-color:#F8F8F8;">
+                                        <b>Vue {{ forloop.counter }}</b>
+                                        <a href="http://localhost:8888/index.html?iiif-content={{ url_manifest }}&canvas={{ forloop.counter }}" target="_blank">
+                                            <small>(Modifier l'extraction)</small>
+                                        </a><br>
+                                        <a href="{{ url }}" target="_blank">
+                                            <img src="{{ url }}" height="120">
+                                        </a>
+                                    </td>
+                                    {% for anno, bbox in annos %}
+                                        <td id="ill_{{ bbox }}" class="anno-td">
+                                            <img src="{{ url|split:'full'|first}}{{ anno }}/full/0/default.jpg" height="50"></a><br>
+                                            <input id="bbox_{{ bbox }}" name="{{ bbox }}" type="checkbox"> Supprimer
+                                            <span id="message_bbox_{{ bbox }}" style="color:#FF0000;"></span>
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </table>
+                </div>
+            {% endfor %}
+        </div>
+    </body>
+</html>

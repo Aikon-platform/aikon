@@ -1,0 +1,3 @@
+-r requirements-base.txt
+django-debug-toolbar==3.8.1
+django-livereload-server==0.4
