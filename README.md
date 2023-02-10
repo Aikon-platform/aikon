@@ -128,6 +128,8 @@ sudo lsof -i :80
 sudo kill <pid1> <pid2> ...
 ```
 
+[//]: # (TODO: change cantaloupe.properties)
+
 #### Simple Annotation Server
 Run [Simple Annotation Server](https://github.com/glenrobson/SimpleAnnotationServer)
 ```shell
