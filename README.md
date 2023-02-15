@@ -79,6 +79,7 @@ Change variables in the generated file `vhs-platform/vhs/.env` to corresponds to
 ALLOWED_HOSTS=['localhost','127.0.0.1']
 SECRET_KEY="<secret-key>"
 DEBUG=True
+DB_NAME="<database-name>"
 DB_USERNAME="<database-username>"
 DB_PASSWORD="<database-password>"
 ```
@@ -232,7 +233,7 @@ Create sockets [following this procedure](https://www.digitalocean.com/community
 The nginx default file should look like this:
 ```yaml
 server {
-    server_name <project-domain-name>;              # CHANGE HERE
+    server_name <project-domain-name>;                           # CHANGE HERE
 
     location /iiif/ {
         proxy_pass http://0.0.0.0:8182/iiif/;
@@ -258,12 +259,12 @@ server {
 
     location /static/ {
         autoindex off;
-        alias </path/to>/vhs/staticfiles;           # CHANGE HERE
+        alias </path/to>/vhs/vhs-platform/staticfiles;           # CHANGE HERE
     }
 
     location /media/ {
         autoindex off;
-        alias </path/to>/vhs/mediafiles/;           # CHANGE HERE
+        alias </path/to>/vhs/vhs-platform/mediafiles/;           # CHANGE HERE
     }
 
     location / {

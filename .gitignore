@@ -9,10 +9,10 @@ dist/
 build/
 
 # Django media and static files
-mediafiles/img/*
-!mediafiles/img/.gitkeep
-staticfiles/*
-!staticfiles/.gitkeep
+vhs-platform/mediafiles/img/*
+!vhs-platform/mediafiles/img/.gitkeep
+vhs-platform/staticfiles/*
+!vhs-platform/staticfiles/.gitkeep
 
 # SQLite database file
 db.sqlite3
