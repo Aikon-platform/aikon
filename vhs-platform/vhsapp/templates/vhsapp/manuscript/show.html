@@ -9,7 +9,16 @@
     </head>
     <body>
         <i class="fa-solid fa-arrows-rotate"></i> <a href="javascript:location.reload();" title="Actualiser la page courante">Actualiser</a>
-        <h3>Manuscrit #{{ manuscript.id }} : {{ manuscript.work.title }}</h3>
+        <div style="color:white;background-color:#79AEC8;padding:10px;margin:10px 0;">
+            <h3 style="margin:0;">Manuscrit #{{ manuscript.id }} : {{ manuscript.work.title }}</h3>
+        </div>
+        <div>
+            <label for="startIndex">Vue de début :</label>
+            <input type="number" id="startIndex" value="1" min="1" max="{{ canvas_annos|length }}">
+            <label for="endIndex">Vue de fin :</label>
+            <input type="number" id="endIndex" value="2" min="1" max="{{ canvas_annos|length }}">
+            <button id="delete_illustrations">Supprimer illustrations</button>
+        </div>
         <div class="row">
             {% for column in 2|range_filter %}
                 <div class="column">
@@ -23,14 +32,19 @@
                                             <small>(Modifier l'extraction)</small>
                                         </a><br>
                                         <a href="{{ url }}" target="_blank">
-                                            <img src="{{ url }}" height="120">
+                                            <img src="{{ url|replace_nth_part_of_url:',120;7' }}">
                                         </a>
                                     </td>
                                     {% for anno, bbox in annos %}
                                         <td id="ill_{{ bbox }}" class="anno-td">
-                                            <img src="{{ url|split:'full'|first}}{{ anno }}/full/0/default.jpg" height="50"></a><br>
+                                            {% with region=anno|add:';6' size=',50;7' %}
+                                                <a href="{{ url|replace_nth_part_of_url:region }}" target="_blank">
+                                                    <img src="{{ url|replace_nth_part_of_url:region|replace_nth_part_of_url:size }}">
+                                                </a>
+                                            {% endwith %}
+                                            <br>
                                             <input id="bbox_{{ bbox }}" name="{{ bbox }}" type="checkbox"> Supprimer
-                                            <span id="message_bbox_{{ bbox }}" style="color:#FF0000;"></span>
+                                            <span id="message_{{ bbox }}" style="color:#FF0000;"></span>
                                         </td>
                                     {% endfor %}
                                 </tr>
