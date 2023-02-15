@@ -9,8 +9,8 @@ dist/
 build/
 
 # Django media and static files
-mediafiles/*
-!mediafiles/.gitkeep
+mediafiles/img/*
+!mediafiles/img/.gitkeep
 staticfiles/*
 !staticfiles/.gitkeep
 

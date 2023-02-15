@@ -91,7 +91,7 @@ WSGI_APPLICATION = "vhs.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "vhs",
+        "NAME": env("SECRET_KEY"),
         "USER": env("DB_USERNAME"),
         "PASSWORD": env("DB_PASSWORD"),
         "HOST": "localhost",
