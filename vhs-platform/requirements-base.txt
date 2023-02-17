@@ -58,4 +58,3 @@ Unidecode==1.1.2
 urllib3==1.26.9
 wcwidth==0.2.5
 webencodings==0.5.1
-�
