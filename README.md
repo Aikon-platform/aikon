@@ -213,7 +213,7 @@ sudo ufw allow 8000
 
 Run Cantaloupe
 ```bash
-sudo java -Dcantaloupe.config=cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe*.war
+sudo java -Dcantaloupe.config=cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe-4.1.11.war
 ```
 
 Launch SAS
@@ -223,14 +223,30 @@ cd sas && mvn jetty:run
 
 ### Gunicorn
 
-Make sure you can serve app with Gunicorn then quit with Ctrl+C
-```bash
-gunicorn --bind 0.0.0.0:8000 vhs.wsgi
-```
-
 Create sockets [following this procedure](https://www.digitalocean.com/community/tutorials/how-to-set-up-django-with-postgres-nginx-and-gunicorn-on-ubuntu-22-04#creating-systemd-socket-and-service-files-for-gunicorn).
 
-The nginx default file should look like this:
+The `/etc/systemd/system/gunicorn.service` should look like this:
+```yaml
+[Unit]
+Description=gunicorn daemon
+Requires=gunicorn.socket
+After=network.target
+
+[Service]
+User=eida
+Group=eida
+WorkingDirectory=</path/to>/vhs                           # CHANGE HERE
+ExecStart=</path/to>/vhs/venv/bin/gunicorn \              # CHANGE HERE
+          --access-logfile - \
+          --workers 3 \
+          --bind unix:/run/gunicorn.sock \
+          vhs.wsgi:application                            # HERE CHANGE MODULE
+
+[Install]
+WantedBy=multi-user.target
+```
+
+The nginx configuration file should look like this:
 ```yaml
 server {
     server_name <project-domain-name>;                           # CHANGE HERE
