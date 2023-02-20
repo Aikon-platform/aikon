@@ -1,5 +1,5 @@
 # Application titles
-APP_NAME = "vhs"
+APP_NAME = "eida"
 APP_NAME_UPPER = APP_NAME.upper()
 SITE_HEADER = f"Administration de {APP_NAME_UPPER}"
 SITE_TITLE = f"Portail de {APP_NAME_UPPER}"
