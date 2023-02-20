@@ -4105,3 +4105,9 @@ span.ellipse.clickable {
 	font-weight: bold;
 	cursor: default;
 }
+
+/* Override the left property to align the element to the right */
+.ui-draggable {
+	left: auto !important;
+	right: 0;
+}
