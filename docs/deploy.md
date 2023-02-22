@@ -96,7 +96,7 @@ base_uri = http://<project-domaine-name>
 
 Run Cantaloupe
 ```bash
-sudo java -Dcantaloupe.config=cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe*.war
+sudo java -Dcantaloupe.config=cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe-4.1.11.war
 ```
 
 Launch SAS
@@ -197,10 +197,17 @@ server {
 
 On update of the code, you will need to restart gunicorn
 ```shell
-sudo systemctl restart gunicorn
+sudo systemctl restart gunicorn.socket
 ```
 
 On modification of the static files, you will need to restart nginx
+then copy static files into `vhs-platform/staticfiles` in order to be served but nginx
 ```shell
 sudo systemctl restart nginx
+./venv/bin/python vhs-platform/manage.py collectstatic
+```
+
+To make a command alias, copy that at the end of `~/.bashrc`:
+```bash
+alias dj_update="sudo systemctl restart gunicorn.socket && sudo systemctl restart nginx && ./venv/bin/python vhs-platform/manage.py collectstatic"
 ```
