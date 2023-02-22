@@ -192,3 +192,15 @@ server {
 - [Install VHS on Observatoire servers](https://syrte-int.obspm.fr/dokuwiki/wiki/informatique/prive/eida/installspe#cantaloupe_sas_et_vhs)
 
 > (coming) Docker image
+
+# Once the app is deployed...
+
+On update of the code, you will need to restart gunicorn
+```shell
+sudo systemctl restart gunicorn
+```
+
+On modification of the static files, you will need to restart nginx
+```shell
+sudo systemctl restart nginx
+```
