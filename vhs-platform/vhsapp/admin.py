@@ -634,18 +634,21 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
 
     list_display = (
         "short_author",
-        "short_work",
+        # "short_work",
         "conservation_place",
         "reference_number",
-        "date_century",
+        # "date_century",
         "sheets",
         "published",
     )
     ordering = ("id",)
-    list_editable = ("date_century",)
-    search_fields = ("author__name", "work__title")
-    list_filter = (AuthorFilter, WorkFilter)
-    autocomplete_fields = ("author", "work", "digitized_version")
+    # list_editable = ("date_century",)
+    # search_fields = ("author__name", "work__title")
+    search_fields = ("author__name",)
+    # list_filter = (AuthorFilter, WorkFilter)
+    # autocomplete_fields = ("author", "work", "digitized_version")
+    list_filter = (AuthorFilter,)
+    autocomplete_fields = ("author", "digitized_version")
     list_per_page = 100
     exclude = ("slug", "created_at", "updated_at")
     fieldsets = (

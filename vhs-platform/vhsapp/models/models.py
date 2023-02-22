@@ -245,7 +245,13 @@ class Manuscript(models.Model):
         ordering = ["-conservation_place"]
 
     def __str__(self):
-        return self.work.title
+        cons_place = (
+            self.conservation_place
+            if self.conservation_place
+            else "Unknown place of conservation"
+        )
+        ref = self.reference_number if self.reference_number else "No reference number"
+        return f"{self.conservation_place} | {self.reference_number}"
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.reference_number)
