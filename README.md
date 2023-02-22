@@ -3,7 +3,7 @@
 ## Requirements
 
 > - **Sudo** privileges
-> - **Python**: 3.10 (?)
+> - **Python**: 3.10
 > - **Java 11**: instructions for [Linux install](https://docs.oracle.com/en/java/javase/11/install/installation-jdk-linux-platforms.html#GUID-737A84E4-2EFF-4D38-8E60-3E29D1B884B8)
 >     - [Download OpenJDK](https://jdk.java.net/11/) (open source version of Java)
 >     - Download the latest [RPM Package](https://www.oracle.com/java/technologies/downloads/#java11)
@@ -79,6 +79,7 @@ Change variables in the generated file `vhs-platform/vhs/.env` to corresponds to
 ALLOWED_HOSTS=['localhost','127.0.0.1']
 SECRET_KEY="<secret-key>"
 DEBUG=True
+DB_NAME="<database-name>"
 DB_USERNAME="<database-username>"
 DB_PASSWORD="<database-password>"
 ```
@@ -121,12 +122,12 @@ sudo java -Dcantaloupe.config=cantaloupe/cantaloupe.properties -Xmx2g -jar canta
 java -Dcantaloupe.config=C:cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe*.war
 ```
 
-If `Exception in thread "main" java.io.IOException: Failed to bind to /0.0.0.0:80`
-`Caused by: java.net.BindException: Address already in use`
-```shell
-sudo lsof -i :80
-sudo kill <pid1> <pid2> ...
-```
+[//]: # (If `Exception in thread "main" java.io.IOException: Failed to bind to /0.0.0.0:80`)
+[//]: # (`Caused by: java.net.BindException: Address already in use`)
+[//]: # (```shell)
+[//]: # (sudo lsof -i :80)
+[//]: # (sudo kill <pid1> <pid2> ...)
+[//]: # (```)
 
 #### Simple Annotation Server
 Run [Simple Annotation Server](https://github.com/glenrobson/SimpleAnnotationServer)
@@ -137,6 +138,4 @@ cd sas && mvn jetty:run
 Navigate to [http://localhost:8888/index.html](http://localhost:8888/index.html) to start annotating:
 You should now see Mirador with default example manifests.
 
-## Deploy
-
-> (soon) Docker image
+> For more documentation, see [docs folder](https://github.com/faouinti/vhs/tree/main/docs)

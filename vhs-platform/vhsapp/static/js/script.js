@@ -61,13 +61,44 @@ $(function() {
                             $td.remove();
                         } );
                     } else {
-                        idMessage = "message_bbox_" + idBbox
+                        idMessage = "message_" + idBbox;
                         showMessage("Failed to delete " + urlDelete + " due to " + xhr.status + ": '" + xhr.statusText + "'");
                     }
                 };
                 xhr.send();
             } else {
                 $(this).prop("checked", false);
+            }
+        }
+    } );
+
+    $("#delete_illustrations").click(function() {
+        var startIndex = parseInt(document.getElementById("startIndex").value);
+        var endIndex = parseInt(document.getElementById("endIndex").value);
+        if (confirm ("Êtes-vous sûr de vouloir supprimer toutes les images extraites de Vue " + startIndex + " à Vue " + endIndex + " ?")) {
+            for (var i = endIndex; i >= startIndex; i--) {
+                $("[id]").filter(function() {
+                    return this.id.indexOf("bbox_") !== -1;
+                }).each(function() {
+                    if (i == this.id.split("-")["2"]) {
+                        var idBbox = this.id.split("_").pop();
+                        urlDelete = "http://localhost:8888/annotation/destroy?uri=http://localhost:8888/annotation/" + idBbox;
+                        var xhr = new XMLHttpRequest();
+                        xhr.open("DELETE", urlDelete, true);
+                        xhr.onload = function() {
+                            if (xhr.status === 204) {
+                                var $td = $("#ill_" + idBbox).closest("td");
+                                $td.fadeOut(function() {
+                                    $td.remove();
+                                } );
+                            } else {
+                                idMessage = "message_" + idBbox;
+                                showMessage("Failed to delete " + urlDelete + " due to " + xhr.status + ": '" + xhr.statusText + "'");
+                            }
+                        };
+                        xhr.send();
+                    }
+                } );
             }
         }
     } );

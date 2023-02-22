@@ -2,13 +2,11 @@ from pathlib import Path
 import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-from vhsapp.utils.constants import APP_NAME
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env()
-environ.Env.read_env(env_file=f"{BASE_DIR}/{APP_NAME}/.env")
-print(env.list("ALLOWED_HOSTS"))
+environ.Env.read_env(env_file=f"{BASE_DIR}/vhs/.env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
@@ -92,7 +90,7 @@ WSGI_APPLICATION = "vhs.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "vhs",
+        "NAME": env("DB_NAME"),
         "USER": env("DB_USERNAME"),
         "PASSWORD": env("DB_PASSWORD"),
         "HOST": "localhost",
