@@ -58,10 +58,11 @@ DB_USERNAME="<database-username>"
 DB_PASSWORD="<database-password>"
 ```
 
-Update database schema and create super user
+Update database schema, create super user and collect static files
 ```bash
 ./venv/bin/python vhs-platform/manage.py migrate
 ./venv/bin/python vhs-platform/manage.py createsuperuser
+./venv/bin/python vhs-platform/manage.py  collectstatic
 ```
 
 Create exception for port 8000
