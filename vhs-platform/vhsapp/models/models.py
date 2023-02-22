@@ -182,59 +182,57 @@ class Manuscript(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     author = models.ForeignKey(
         Author,
-        verbose_name="Auteur",
+        verbose_name="Author",
         max_length=200,
         help_text=AUTHOR_INFO,
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
     )
-    work = models.ForeignKey(
-        Work,
-        verbose_name="Titre de l'oeuvre",
-        max_length=600,
-        help_text=WORK_INFO,
-        on_delete=models.SET_NULL,
-        null=True,
-    )
+    # work = models.ForeignKey(
+    #     Work,
+    #     verbose_name="Titre de l'oeuvre",
+    #     max_length=600,
+    #     help_text=WORK_INFO,
+    #     on_delete=models.SET_NULL,
+    #     null=True,
+    #     blank=True
+    # )
     digitized_version = models.ForeignKey(
         DigitizedVersion,
-        verbose_name="Source de la version numérisée",
+        verbose_name="Source of the digitized version",
         blank=True,
         help_text=DIGITIZED_VERSION_MS_INFO,
         on_delete=models.SET_NULL,
         null=True,
     )
     manifest_final = models.BooleanField(
-        verbose_name="Valider les annotations",
+        verbose_name="Validate annotations",
         default=False,
         help_text=MANIFEST_FINAL_INFO,
     )
     slug = models.SlugField(max_length=600)
     conservation_place = models.CharField(
-        verbose_name="Lieu de conservation", max_length=150
+        verbose_name="Conservation place", max_length=150
     )
-    reference_number = models.CharField(verbose_name="Cote", max_length=150)
-    date_century = models.CharField(
-        verbose_name="Date (siècle)", choices=CENTURY, max_length=150
-    )
-    date_free = models.CharField(
-        verbose_name="Date (champ libre)", max_length=150, blank=True
-    )
-    sheets = models.CharField(verbose_name="Feuillet(s)", max_length=150)
+    reference_number = models.CharField(verbose_name="Shelfmark", max_length=150)
+    date_free = models.CharField(verbose_name="Date", max_length=150, blank=True)
+    sheets = models.CharField(verbose_name="Number of folios/pages", max_length=150)
     origin_place = models.CharField(
-        verbose_name="Lieu d'origine", max_length=150, blank=True
+        verbose_name="Place of production", max_length=150, blank=True
     )
-    remarks = models.TextField(verbose_name="Remarques", blank=True)
-    copyists = models.CharField(verbose_name="copiste(s)", max_length=150, blank=True)
+    copyists = models.CharField(verbose_name="Copyist(s)", max_length=150, blank=True)
     miniaturists = models.CharField(
-        verbose_name="miniaturiste(s)", max_length=150, blank=True
+        verbose_name="Illuminator(s)", max_length=150, blank=True
     )
     pinakes_link = models.URLField(
-        verbose_name="Lien vers Pinakes (mss grecs) ou Medium-IRHT (mss latins)",
+        verbose_name="External link",
         blank=True,
     )
+    remarks = models.TextField(verbose_name="Additional notes", blank=True)
+
     published = models.BooleanField(
-        verbose_name="ATTENTION : rendre accessible publiquement",
+        verbose_name="Make public",
         default=False,
         help_text=PUBLISHED_INFO,
     )
@@ -242,14 +240,14 @@ class Manuscript(models.Model):
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
     class Meta:
-        verbose_name = "Manuscrit"
-        verbose_name_plural = "Manuscrits"
+        verbose_name = "Manuscript"
+        verbose_name_plural = "Manuscripts"
         ordering = ["-conservation_place"]
 
     def __str__(self):
         return self.work.title
 
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.work.title)
+        self.slug = slugify(self.reference_number)
         # Call the parent save method to save the model
         super().save(*args, **kwargs)
