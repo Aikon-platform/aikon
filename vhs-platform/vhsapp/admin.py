@@ -18,7 +18,7 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.template.defaultfilters import truncatewords_html
 
-from vhsapp.models import (
+from vhsapp.models.models import (
     Printed,
     Volume,
     Manuscript,
