@@ -195,6 +195,7 @@ server {
 
 # Once the app is deployed...
 
+## Code and files update
 On update of the code, you will need to restart gunicorn
 ```shell
 sudo systemctl restart gunicorn.socket
@@ -210,4 +211,22 @@ sudo systemctl restart nginx
 To make a command alias, copy that at the end of `~/.bashrc`:
 ```bash
 alias dj_update="sudo systemctl restart gunicorn.socket && sudo systemctl restart nginx && ./venv/bin/python vhs-platform/manage.py collectstatic"
+```
+
+## Data model update
+If the data model was changed, you will first need to check that the new data model do not cause any error in the application.
+Once the tests performed, a migration file can be generated locally by running:
+```shell
+./venv/bin/python vhs-platform/manage.py makemigrations
+```
+
+It will create a file that tells Django how to modify the Postgres database structure to fit the new model definition.
+To apply those modifications, run locally:
+```shell
+./venv/bin/python vhs-platform/manage.py migrate
+```
+
+If everything is set, update the remote database by running on the production server, once the code has been retrieve from origin:
+```shell
+./venv/bin/python vhs-platform/manage.py migrate
 ```
