@@ -25,9 +25,6 @@ from vhsapp.utils.functions import (
     rename_file,
     convert_to_jpeg,
     convert_pdf_to_image,
-    validate_gallica_manifest_url,
-    extract_images_from_iiif_manifest,
-    validate_iiif_manifest,
 )
 from vhsapp.utils.paths import (
     IMAGES_PATH,
@@ -36,7 +33,28 @@ from vhsapp.utils.paths import (
     MEDIA_PATH,
 )
 
+from vhsapp.utils.iiif import (
+    parse_manifest,
+    validate_manifest,
+    extract_images_from_iiif_manifest,
+)
+
 from vhsapp.models.models import Volume, Manuscript
+from vhsapp.models.model_const import MANIFEST
+
+
+class Digitization(models.Model):
+    # TODO link this class to a unique
+    # source = models.ForeignKey(
+    #     Witness, verbose_name=WITNESS, on_delete=models.SET_NULL, null=True
+    # )
+
+    # NOTE: unused fields for now => TODO: define forms in order to allow hidden fields etc. (django.forms)
+    # filename = models.CharField(null=True, max_length=200)
+    # app_manifest = models.CharField(null=True, max_length=500)
+
+    class Meta:
+        abstract = True
 
 
 class ImageVolume(models.Model):
@@ -78,11 +96,6 @@ def imagevolume_delete(sender, instance, **kwargs):
     instance.image.delete(False)
 
 
-"""
-PdfVolume model
-"""
-
-
 class PdfVolume(models.Model):
     volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
     pdf = models.FileField(
@@ -111,46 +124,6 @@ class PdfVolume(models.Model):
     def delete(self, using=None, keep_parents=False):
         self.pdf.storage.delete(self.pdf.name)
         super().delete()
-
-
-"""
-ManifestVolume model
-"""
-
-
-class ManifestVolume(models.Model):
-    volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
-    manifest = models.URLField(
-        verbose_name="Manifeste",
-        help_text=MANIFEST_INFO,
-        validators=[validate_gallica_manifest_url, validate_iiif_manifest],
-    )
-
-    class Meta:
-        verbose_name = "Manifeste"
-        verbose_name_plural = "Manifestes"
-
-    def __str__(self):
-        return self.manifest
-
-    def save(self, *args, **kwargs):
-        # Call the parent save method to save the model
-        super().save(*args, **kwargs)
-        # Run the async extraction of images from an IIIF manifest in the background using threading
-        t = threading.Thread(
-            target=extract_images_from_iiif_manifest,
-            args=(
-                self.manifest,
-                f"{MEDIA_PATH}{IMAGES_PATH}",
-                f"{VOLUME_ABBR}{self.volume.id}",
-            ),
-        )
-        t.start()
-
-
-"""
-ImageManuscript model
-"""
 
 
 class ImageManuscript(models.Model):
@@ -192,11 +165,6 @@ def imagemanuscript_delete(sender, instance, **kwargs):
     instance.image.delete(False)
 
 
-"""
-PdfManuscript model
-"""
-
-
 class PdfManuscript(models.Model):
     manuscript = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
     pdf = models.FileField(
@@ -227,25 +195,62 @@ class PdfManuscript(models.Model):
         super().delete()
 
 
-"""
-ManifestManuscript model
-"""
+############################
+#         MANIFEST         #
+############################
 
 
-class ManifestManuscript(models.Model):
-    manuscript = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
+class Manifest(Digitization):
     manifest = models.URLField(
-        verbose_name="Manifeste",
+        verbose_name=MANIFEST,
         help_text=MANIFEST_INFO,
-        validators=[validate_gallica_manifest_url, validate_iiif_manifest],
+        validators=[validate_manifest],
     )
 
     class Meta:
-        verbose_name = "Manifeste"
-        verbose_name_plural = "Manifestes"
+        verbose_name = "IIIF manifest"
+        verbose_name_plural = "IIIF manifests"
+        abstract = True  # TODO: make this class not abstract
 
     def __str__(self):
         return self.manifest
+
+    # TODO: make a common save method for manifests
+    # def save(self, *args, **kwargs):
+    #     # Call the parent save method to save the model
+    #     super().save(*args, **kwargs)
+    #     # Run the async extraction of images from an IIIF manifest in the background using threading
+    #     t = threading.Thread(
+    #         target=extract_images_from_iiif_manifest,
+    #         args=(
+    #             self.manifest,
+    #             f"{MEDIA_PATH}{IMAGES_PATH}",
+    #             f"{SRC_ABBR}{self.source.id}",
+    #         ),
+    #     )
+    #     t.start()
+
+
+class ManifestVolume(Manifest):
+    volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
+
+    def save(self, *args, **kwargs):
+        # Call the parent save method to save the model
+        super().save(*args, **kwargs)
+        # Run the async extraction of images from an IIIF manifest in the background using threading
+        t = threading.Thread(
+            target=extract_images_from_iiif_manifest,
+            args=(
+                self.manifest,
+                f"{MEDIA_PATH}{IMAGES_PATH}",
+                f"{VOLUME_ABBR}{self.volume.id}",
+            ),
+        )
+        t.start()
+
+
+class ManifestManuscript(Manifest):
+    manuscript = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
 
     def save(self, *args, **kwargs):
         # Call the parent save method to save the model
