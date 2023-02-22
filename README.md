@@ -75,13 +75,20 @@ cp vhs-platform/vhs/.env{.template,}
 
 Change variables in the generated file `vhs-platform/vhs/.env` to corresponds to your database and username
 
-```python
-ALLOWED_HOSTS=['localhost','127.0.0.1']
+```bash
+ALLOWED_HOSTS="localhost,127.0.0.1"
 SECRET_KEY="<secret-key>"
 DEBUG=True
 DB_NAME="<database-name>"
 DB_USERNAME="<database-username>"
 DB_PASSWORD="<database-password>"
+DB_HOST="<database-host>"
+DB_PORT="<database-port>"
+SAS_USERNAME="<sas-username>"
+SAS_PASSWORD="<sas-password>"
+GPU_REMOTE_HOST="<gpu-host>"
+GPU_USERNAME="<gpu-username>"
+GPU_PASSWORD="<gpu-password>"
 ```
 
 ### Launching the app
@@ -89,6 +96,11 @@ DB_PASSWORD="<database-password>"
 Update database schema with models that are stored inside `vhs-platform/vhsapp/migrations`
 ```bash
 ./venv/bin/python vhs-platform/manage.py migrate
+```
+
+Download static files to be stored in `vhs-platform/staticfiles`
+```bash
+./venv/bin/python vhs-platform/manage.py collectstatic
 ```
 
 Create a super user

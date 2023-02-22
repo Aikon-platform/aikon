@@ -49,13 +49,20 @@ cp vhs-platform/vhs/.env{.template,}
 ```
 
 Change variables in the generated file `vhs-platform/vhs/.env` to corresponds to your database and username
-```python
+```bash
 ALLOWED_HOSTS="localhost,127.0.0.1,<project-host-name>"
-SECRET_KEY="<secret-key>"
+SECRET_KEY="<secret-key>" # random string of characters
 DEBUG=False
 DB_NAME="<database-name>"
 DB_USERNAME="<database-username>"
 DB_PASSWORD="<database-password>"
+DB_HOST="<database-host>"
+DB_PORT="<database-port>"
+SAS_USERNAME="<sas-username>"
+SAS_PASSWORD="<sas-password>"
+GPU_REMOTE_HOST="<gpu-host>"
+GPU_USERNAME="<gpu-username>"
+GPU_PASSWORD="<gpu-password>"
 ```
 
 Update database schema, create super user and collect static files
