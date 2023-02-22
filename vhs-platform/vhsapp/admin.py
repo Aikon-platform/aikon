@@ -23,14 +23,17 @@ from vhsapp.models.models import (
     Volume,
     Manuscript,
     DigitizedVersion,
+    Author,
+    Work,
+)
+
+from vhsapp.models.digitization import (
     ImageVolume,
     PdfVolume,
     ImageManuscript,
     PdfManuscript,
-    Author,
     ManifestManuscript,
     ManifestVolume,
-    Work,
 )
 
 from vhsapp.utils.constants import (
