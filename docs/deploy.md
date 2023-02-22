@@ -69,13 +69,19 @@ Update database schema, create super user and collect static files
 ```bash
 ./venv/bin/python vhs-platform/manage.py migrate
 ./venv/bin/python vhs-platform/manage.py createsuperuser
-./venv/bin/python vhs-platform/manage.py  collectstatic
+./venv/bin/python vhs-platform/manage.py collectstatic
 ```
 
 Create exception for port 8000
 ```shell
 sudo ufw allow 8000
 ```
+
+Change app name in `vhs-platform/vhsapp/utils/constants.py` to fit your project name
+```python
+APP_NAME = "<your-project-name>"
+```
+
 
 ### Image servers
 
