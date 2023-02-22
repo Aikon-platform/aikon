@@ -26,19 +26,13 @@ MANIFEST_FINAL_INFO = (
 )
 PLACE_INFO = "Si différent de l'ensemble."
 IMAGE_INFO = "Envoyez des images jusqu'à 2 Go."
-MANIFEST_INFO = (
-    "<div class='tooltip'>"
-    "<i class='fa-solid fa-circle-info' title='Manifest'></i>"
-    "<span class='tooltiptext'>"
-    "A IIIF manifest is the package that contains all the information related to a particular digital object, "
-    "including the image itself as well as the metadata."
-    "</span>"
-    "</div> "
-    "Exemple : "
-    "<a href='https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json' target='_blank'>"
-    "https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json"
-    "</a>"
-)
+MANIFEST_INFO = """<div class='tooltip'>
+                 <i class='fa-solid fa-circle-info' title='Manifest'></i>
+                 <span class='tooltiptext'>A IIIF manifest is the package that contains all the information related
+                 to a particular digital object, including the image itself as well as the metadata.</span>
+             </div>
+             E.g.: <a href='https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json' target='_blank'>
+             https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json</a>"""
 
 # Dropdown options
 CENTURY = (

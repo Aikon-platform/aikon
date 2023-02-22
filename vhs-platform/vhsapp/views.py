@@ -14,7 +14,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
-from vhsapp.models import Volume, Manuscript
+from vhsapp.models.models import Volume, Manuscript
 from vhsapp.utils.constants import (
     SAS_URL_SECURE,
     APP_NAME,
@@ -45,7 +45,7 @@ def admin_vhs(request):
 
 
 """
-Build a manuscript manifest using iiif-prezi library 
+Build a manuscript manifest using iiif-prezi library
 IIIF Presentation API 2.0
 """
 
@@ -164,7 +164,7 @@ def manifest_manuscript(request, id, version):
 
 
 """
-Build a volume manifest using iiif-prezi library 
+Build a volume manifest using iiif-prezi library
 IIIF Presentation API 2.0
 """
 
