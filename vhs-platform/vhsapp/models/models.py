@@ -181,7 +181,7 @@ class Manuscript(models.Model):
         Author,
         verbose_name="Author",
         max_length=200,
-        help_text=AUTHOR_INFO,
+        help_text="Leave blank for no author",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -199,7 +199,7 @@ class Manuscript(models.Model):
         DigitizedVersion,
         verbose_name="Source of the digitized version",
         blank=True,
-        help_text=DIGITIZED_VERSION_MS_INFO,
+        help_text="E.g. Gallica, personal photos, etc.",
         on_delete=models.SET_NULL,
         null=True,
     )
@@ -210,11 +210,23 @@ class Manuscript(models.Model):
     )
     slug = models.SlugField(max_length=600)
     conservation_place = models.CharField(
-        verbose_name="Conservation place", max_length=150
+        verbose_name="Conservation place",
+        max_length=150,
+        help_text="City, Library name (e.g. 'Paris, BnF')",
     )
-    reference_number = models.CharField(verbose_name="Shelfmark", max_length=150)
-    date_free = models.CharField(verbose_name="Date", max_length=150, blank=True)
-    sheets = models.CharField(verbose_name="Number of folios/pages", max_length=150)
+    reference_number = models.CharField(
+        verbose_name="Shelfmark",
+        max_length=150,
+        help_text="Collection, shelfmark (e.g. 'Lat. 7271')",
+    )
+    date_free = models.CharField(
+        verbose_name="Date of production", max_length=150, blank=True
+    )
+    sheets = models.CharField(
+        verbose_name="Number of folios/pages",
+        help_text="E.g. '152 ff.' / '313 pp.'",
+        max_length=150,
+    )
     origin_place = models.CharField(
         verbose_name="Place of production", max_length=150, blank=True
     )
@@ -224,6 +236,7 @@ class Manuscript(models.Model):
     )
     pinakes_link = models.URLField(
         verbose_name="External link",
+        help_text="E.g. Online catalog URL",
         blank=True,
     )
     remarks = models.TextField(verbose_name="Additional notes", blank=True)
@@ -248,7 +261,7 @@ class Manuscript(models.Model):
             else "Unknown place of conservation"
         )
         ref = self.reference_number if self.reference_number else "No reference number"
-        return f"{self.conservation_place} | {self.reference_number}"
+        return f"{cons_place} | {ref}"
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.reference_number)
