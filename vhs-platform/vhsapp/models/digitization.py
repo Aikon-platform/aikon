@@ -49,16 +49,24 @@ class Digitization(models.Model):
     #     Witness, verbose_name=WITNESS, on_delete=models.SET_NULL, null=True
     # )
 
-    # NOTE: unused fields for now => TODO: define forms in order to allow hidden fields etc. (django.forms)
-    # filename = models.CharField(null=True, max_length=200)
-    # app_manifest = models.CharField(null=True, max_length=500)
-
     class Meta:
         abstract = True
 
 
-class ImageVolume(models.Model):
-    volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
+#############################
+#           IMAGE           #
+#############################
+
+
+class Picture(Digitization):
+    class Meta:
+        verbose_name = "Image file"
+        verbose_name_plural = "Images files"
+        abstract = True  # TODO: make this class not abstract
+
+    def __str__(self):
+        return self.image.name
+
     image = models.ImageField(
         verbose_name="Image",
         upload_to=partial(rename_file, path=IMAGES_PATH),
@@ -67,13 +75,6 @@ class ImageVolume(models.Model):
         ],
         help_text=IMAGE_INFO,
     )
-
-    class Meta:
-        verbose_name = "Fichiers image"
-        verbose_name_plural = "Fichiers image"
-
-    def __str__(self):
-        return self.image.name
 
     def save(self, *args, **kwargs):
         if self.image:
@@ -87,6 +88,17 @@ class ImageVolume(models.Model):
 
     def delete(self, using=None, keep_parents=False):
         super().delete()
+
+
+# Receive the pre_delete signal and delete the file associated with the model instance
+@receiver(pre_delete, sender=Picture)
+def image_delete(sender, instance, **kwargs):
+    # Pass false so ImageField doesn't save the model
+    instance.image.delete(False)
+
+
+class ImageVolume(Picture):
+    volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance
@@ -96,66 +108,8 @@ def imagevolume_delete(sender, instance, **kwargs):
     instance.image.delete(False)
 
 
-class PdfVolume(models.Model):
-    volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
-    pdf = models.FileField(
-        verbose_name="PDF",
-        upload_to=partial(rename_file, path=VOLUMES_PDFS_PATH),
-        validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
-    )
-
-    class Meta:
-        verbose_name = "Fichier PDF"
-        verbose_name_plural = "Fichiers PDF"
-
-    def __str__(self):
-        return self.pdf.name
-
-    def save(self, *args, **kwargs):
-        # Call the parent save method to save the model
-        super().save(*args, **kwargs)
-        # Run the PDF to image async conversion task in the background using threading
-        t = threading.Thread(
-            target=convert_pdf_to_image,
-            args=(f"{MEDIA_PATH}{self.pdf.name}", f"{MEDIA_PATH}{IMAGES_PATH}"),
-        )
-        t.start()
-
-    def delete(self, using=None, keep_parents=False):
-        self.pdf.storage.delete(self.pdf.name)
-        super().delete()
-
-
-class ImageManuscript(models.Model):
+class ImageManuscript(Picture):
     manuscript = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
-    image = models.ImageField(
-        verbose_name="Image",
-        upload_to=partial(rename_file, path=IMAGES_PATH),
-        validators=[
-            FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "tif"])
-        ],
-        help_text=IMAGE_INFO,
-    )
-
-    class Meta:
-        verbose_name = "Fichiers image"
-        verbose_name_plural = "Fichiers image"
-
-    def __str__(self):
-        return self.image.name
-
-    def save(self, *args, **kwargs):
-        if self.image:
-            img = Image.open(self.image)
-            # Check if the image format is not JPEG
-            if img.format != "JPEG":
-                # Convert the image to JPEG format
-                self.image = convert_to_jpeg(self.image)
-        # Call the parent save method to save the model
-        super().save(*args, **kwargs)
-
-    def delete(self, using=None, keep_parents=False):
-        super().delete()
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance
@@ -165,17 +119,16 @@ def imagemanuscript_delete(sender, instance, **kwargs):
     instance.image.delete(False)
 
 
-class PdfManuscript(models.Model):
-    manuscript = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
-    pdf = models.FileField(
-        verbose_name="PDF",
-        upload_to=partial(rename_file, path=MANUSCRIPTS_PDFS_PATH),
-        validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
-    )
+#############################
+#            PDF            #
+#############################
 
+
+class Pdf(Digitization):
     class Meta:
-        verbose_name = "Fichier PDF"
-        verbose_name_plural = "Fichiers PDF"
+        verbose_name = "PDF File"
+        verbose_name_plural = "PDF Files"
+        abstract = True  # TODO: make this class not abstract
 
     def __str__(self):
         return self.pdf.name
@@ -195,22 +148,40 @@ class PdfManuscript(models.Model):
         super().delete()
 
 
+class PdfManuscript(Pdf):
+    manuscript = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
+    pdf = models.FileField(
+        verbose_name="PDF",
+        upload_to=partial(rename_file, path=MANUSCRIPTS_PDFS_PATH),
+        validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
+    )
+
+
+class PdfVolume(Pdf):
+    volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
+    pdf = models.FileField(
+        verbose_name="PDF",
+        upload_to=partial(rename_file, path=VOLUMES_PDFS_PATH),
+        validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
+    )
+
+
 ############################
 #         MANIFEST         #
 ############################
 
 
 class Manifest(Digitization):
+    class Meta:
+        verbose_name = "IIIF manifest"
+        verbose_name_plural = "IIIF manifests"
+        abstract = True  # TODO: make this class not abstract
+
     manifest = models.URLField(
         verbose_name=MANIFEST,
         help_text=MANIFEST_INFO,
         validators=[validate_manifest],
     )
-
-    class Meta:
-        verbose_name = "IIIF manifest"
-        verbose_name_plural = "IIIF manifests"
-        abstract = True  # TODO: make this class not abstract
 
     def __str__(self):
         return self.manifest
