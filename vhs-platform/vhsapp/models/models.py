@@ -1,11 +1,10 @@
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils.text import slugify
+from django.template.defaultfilters import pluralize
 
-from vhsapp.utils.constants import (
+from vhsapp.models.constants import (
     CENTURY,
-    MANUSCRIPT_ABBR,
-    VOLUME_ABBR,
     AUTHOR_INFO,
     WORK_INFO,
     DIGITIZED_VERSION_MS_INFO,
@@ -13,8 +12,6 @@ from vhsapp.utils.constants import (
     PUBLISHED_INFO,
     MANIFEST_FINAL_INFO,
     PLACE_INFO,
-    IMAGE_INFO,
-    MANIFEST_INFO,
 )
 
 """
@@ -27,7 +24,7 @@ class Author(models.Model):
 
     class Meta:
         verbose_name = "Auteur"
-        verbose_name_plural = "Auteurs"
+        verbose_name_plural = pluralize("Auteur")
 
     def __str__(self):
         return self.name
@@ -43,7 +40,7 @@ class Work(models.Model):
 
     class Meta:
         verbose_name = "Titre"
-        verbose_name_plural = "Titres"
+        verbose_name_plural = pluralize("Titre")
 
     def __str__(self):
         return self.title
@@ -111,7 +108,7 @@ class Printed(models.Model):
 
     class Meta:
         verbose_name = "Imprimé"
-        verbose_name_plural = "Imprimés"
+        verbose_name_plural = pluralize("Imprimé")
         ordering = ["-place"]
 
     def __str__(self):
