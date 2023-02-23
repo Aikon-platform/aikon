@@ -7,17 +7,10 @@ from django.db import models
 from django.db.models.signals import pre_delete
 from django.dispatch.dispatcher import receiver
 
-from vhsapp.utils.constants import (
-    CENTURY,
+from vhsapp.models.constants import (
+    MANIFEST,
     MANUSCRIPT_ABBR,
     VOLUME_ABBR,
-    AUTHOR_INFO,
-    WORK_INFO,
-    DIGITIZED_VERSION_MS_INFO,
-    DIGITIZED_VERSION_VOL_INFO,
-    PUBLISHED_INFO,
-    MANIFEST_FINAL_INFO,
-    PLACE_INFO,
     IMAGE_INFO,
     MANIFEST_INFO,
 )
@@ -40,7 +33,6 @@ from vhsapp.utils.iiif import (
 )
 
 from vhsapp.models.models import Volume, Manuscript
-from vhsapp.models.model_const import MANIFEST
 
 
 class Digitization(models.Model):
