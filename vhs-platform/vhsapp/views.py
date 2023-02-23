@@ -15,14 +15,11 @@ from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
 from vhsapp.models.models import Volume, Manuscript
+from vhsapp.models.constants import MANUSCRIPT, VOLUME, MANUSCRIPT_ABBR, VOLUME_ABBR
 from vhsapp.utils.constants import (
     SAS_URL_SECURE,
     APP_NAME,
     APP_NAME_UPPER,
-    MANUSCRIPT,
-    MANUSCRIPT_ABBR,
-    VOLUME,
-    VOLUME_ABBR,
 )
 from vhsapp.utils.functions import credentials
 from iiif_prezi.factory import ManifestFactory
