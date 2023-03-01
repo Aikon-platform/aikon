@@ -1,7 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils.text import slugify
-from django.template.defaultfilters import pluralize
 
 from vhsapp.models.constants import (
     CENTURY,
@@ -24,7 +23,7 @@ class Author(models.Model):
 
     class Meta:
         verbose_name = "Auteur"
-        verbose_name_plural = pluralize("Auteur")
+        verbose_name_plural = "Auteurs"
 
     def __str__(self):
         return self.name
@@ -40,7 +39,7 @@ class Work(models.Model):
 
     class Meta:
         verbose_name = "Titre"
-        verbose_name_plural = pluralize("Titre")
+        verbose_name_plural = "Titre"
 
     def __str__(self):
         return self.title
