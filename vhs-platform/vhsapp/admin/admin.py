@@ -26,6 +26,8 @@ from vhsapp.models.models import (
     Work,
 )
 
+from vhsapp.models.constants import MS
+
 from vhsapp.admin.digitization import (
     PdfManuscriptInline,
     ManifestManuscriptInline,
@@ -41,6 +43,8 @@ from vhsapp.utils.constants import (
     SITE_INDEX_TITLE,
     TRUNCATEWORDS,
     MAX_ITEMS,
+    MANIFEST_AUTO,
+    MANIFEST_V2,
 )
 from vhsapp.utils.paths import (
     MEDIA_PATH,
@@ -124,40 +128,10 @@ class VolumeInline(nested_admin.NestedStackedInline):
 
     def manifest_v2(self, obj):
         if obj.id:
-            url_manifest = (
-                "http://localhost:8000/vhs/iiif/v2/volume/vol-"
-                + str(obj.id)
-                + "/manifest.json"
-            )
-            link_manifest = (
-                '<a id="url_manifest_'
-                + str(obj.id)
-                + '" href="/vhs/iiif/v2/volume/vol-'
-                + str(obj.id)
-                + '/manifest.json" target="_blank">'
-                + url_manifest
-                + "</a> "
-            )
-            if not obj.manifest_final:
-                button = (
-                    '<button id="annotate_manifest_'
-                    + str(obj.id)
-                    + '" class="button" style="background-color:#008CBA;color:white;padding:8px 10px;"><i class="fa-solid fa-pen-to-square"></i> ÉDITER ANNOTATIONS <i class="fa-solid fa-comment"></i></button><br>'
-                )
-            else:
-                button = (
-                    '<button id="manifest_final_'
-                    + str(obj.id)
-                    + '" class="button" style="background-color:#4CAF50;color:white;padding:8px 10px;"><i class="fa-solid fa-eye"></i> ANNOTATIONS FINALES <i class="fa-solid fa-comment"></i></button><br>'
-                )
-            return mark_safe(
-                link_manifest
-                + '<img alt="IIIF" src="https://iiif.io/assets/images/logos/logo-sm.png" height="15"/></a><br>'
-                + button
-                + '<a href="http://localhost:8888/search-api/vol-'
-                + str(obj.id)
-                + '/search/" target="_blank"><i class="fa-solid fa-download"></i> Télécharger les annotations (JSON)</a>'
-                '<span id="message_' + str(obj.id) + '" style="color:#FF0000"></span>'
+            if manifest_first := obj.manifestvolume_set.first():
+                return mark_safe(f"{get_link_manifest(obj.id, manifest_first)}<br>")
+            return gen_btn(
+                obj.id, "FINAL" if obj.manifest_final else "EDIT", MANIFEST_V2
             )
         return "-"
 
@@ -510,69 +484,15 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     inlines = [PdfManuscriptInline, ManifestManuscriptInline, ImageManuscriptInline]
 
     def manifest_auto(self, obj):
-        url_manifest_auto = (
-            "http://localhost:8000/vhs/iiif/auto/manuscript/ms-"
-            + str(obj.id)
-            + "/manifest.json"
-        )
-        link_manifest_auto = (
-            '<a id="url_manifest_auto_'
-            + str(obj.id)
-            + '" href="/vhs/iiif/auto/manuscript/ms-'
-            + str(obj.id)
-            + '/manifest.json" target="_blank">'
-            + url_manifest_auto
-            + "</a> "
-        )
-        return mark_safe(
-            link_manifest_auto
-            + '<img alt="IIIF" src="https://iiif.io/assets/images/logos/logo-sm.png" height="15"/></a><br>'
-            '<button id="annotate_manifest_auto_'
-            + str(obj.id)
-            + '" class="button" style="background-color:#EFB80B;color:white;padding:8px 10px;"><i class="fa-solid fa-eye"></i> VISUALISER ANNOTATIONS <i class="fa-solid fa-comment"></i></button><br>'
-            '<a href="/vhs/iiif/auto/manuscript/'
-            + str(obj.id)
-            + '/annotation/" target="_blank"><i class="fa-solid fa-download"></i> Télécharger les annotations (CSV)</a>'
-            '<span id="message_auto_' + str(obj.id) + '" style="color:#FF0000"></span>'
-        )
+        if manifest_first := obj.manifestmanuscript_set.first():
+            return mark_safe(f"{get_link_manifest(obj.id, manifest_first)}<br>")
+        return gen_btn(obj.id, "VISUALIZE", MANIFEST_AUTO, MS.lower())
 
     manifest_auto.short_description = "Manifeste (automatique)"
 
     def manifest_v2(self, obj):
-        url_manifest = (
-            "http://localhost:8000/vhs/iiif/v2/manuscript/ms-"
-            + str(obj.id)
-            + "/manifest.json"
-        )
-        link_manifest = (
-            '<a id="url_manifest_'
-            + str(obj.id)
-            + '" href="/vhs/iiif/v2/manuscript/ms-'
-            + str(obj.id)
-            + '/manifest.json" target="_blank">'
-            + url_manifest
-            + "</a> "
-        )
-        if not obj.manifest_final:
-            button = (
-                '<button id="annotate_manifest_'
-                + str(obj.id)
-                + '" class="button" style="background-color:#008CBA;color:white;padding:8px 10px;"><i class="fa-solid fa-pen-to-square"></i> ÉDITER ANNOTATIONS <i class="fa-solid fa-comment"></i></button><br>'
-            )
-        else:
-            button = (
-                '<button id="manifest_final_'
-                + str(obj.id)
-                + '" class="button" style="background-color:#4CAF50;color:white;padding:8px 10px;"><i class="fa-solid fa-eye"></i> ANNOTATIONS FINALES <i class="fa-solid fa-comment"></i></button><br>'
-            )
-        return mark_safe(
-            link_manifest
-            + '<img alt="IIIF" src="https://iiif.io/assets/images/logos/logo-sm.png" height="15"/></a><br>'
-            + button
-            + '<a href="http://localhost:8888/search-api/ms-'
-            + str(obj.id)
-            + '/search" target="_blank"><i class="fa-solid fa-download"></i> Télécharger les annotations (JSON)</a>'
-            '<span id="message_' + str(obj.id) + '" style="color:#FF0000"></span>'
+        return gen_btn(
+            obj.id, "FINAL" if obj.manifest_final else "EDIT", MANIFEST_V2, MS.lower()
         )
 
     manifest_v2.short_description = "Manifeste (en cours de vérification)"
