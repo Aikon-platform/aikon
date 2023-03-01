@@ -1,6 +1,8 @@
 from uuid import uuid4
 from PIL import Image
 from io import BytesIO
+
+from django.utils.html import format_html
 from pdf2image import pdfinfo_from_path, convert_from_path
 from django.core.files import File
 from urllib.request import (
@@ -72,3 +74,13 @@ def credentials(url, auth_user, auth_passwd):
     handler = HTTPBasicAuthHandler(passman)
     opener = build_opener(handler)
     install_opener(opener)
+
+
+def gen_link(url, text):
+    return format_html(f'<a href="{url}" target="_blank">{text}</a>')
+
+
+def gen_thumbnail(url, img_url):
+    return gen_link(
+        url, f"<img src='{img_url}' width='30' style='border-radius:50%;'>)"
+    )

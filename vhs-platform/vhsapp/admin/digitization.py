@@ -1,18 +1,7 @@
 import nested_admin
-from admin_extra_buttons.mixins import ExtraButtonsMixin
 
 from django.contrib import admin, messages
-from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-
-from vhsapp.models.models import (
-    Printed,
-    Volume,
-    Manuscript,
-    DigitizedVersion,
-    Author,
-    Work,
-)
 
 from vhsapp.models.digitization import (
     ImageVolume,
@@ -23,38 +12,56 @@ from vhsapp.models.digitization import (
     ManifestVolume,
 )
 
-from vhsapp.utils.iiif import (
-    IIIF_ICON,
+from vhsapp.utils.iiif import IIIF_ICON, gen_img_url
+
+from vhsapp.utils.functions import (
+    gen_thumbnail,
 )
+
+img_vol = "vhs-admin/vhsapp/imagevolume"  # TODO change that
+img_ms = "/vhs-admin/vhsapp/imagemanuscript"  # TODO: change that
 
 
 @admin.register(ImageVolume)
 class ImageVolumeAdmin(admin.ModelAdmin):
-    list_display = (
-        "image",
-        "thumbnail",
-    )
+    list_display = ("image", "thumbnail")
     search_fields = ("=volume__id", "=image")
     autocomplete_fields = ("volume",)
     list_per_page = 100
 
     def thumbnail(self, obj):
-        return format_html(
-            '<a href="{}" target="_blank">{}</a>'.format(
-                "http://localhost/iiif/2/"
-                + obj.image.name.split("/")[-1]
-                + "/full/full/0/default.jpg",
-                '<img src ="{}" width ="30" style="border-radius:50%;">'.format(
-                    obj.image.url
-                ),
-            )
-        )
+        return gen_thumbnail(gen_img_url(obj.image.name.split("/")[-1]), obj.image.url)
 
     def get_model_perms(self, request):
         """
         Return empty perms dict thus hiding the model from admin index
         """
         return {}
+
+
+@admin.register(ImageManuscript)
+class ImageManuscriptAdmin(admin.ModelAdmin):
+    list_display = (
+        "image",
+        "thumbnail",
+    )
+    search_fields = ("=manuscript__id", "=image")
+    autocomplete_fields = ("manuscript",)
+    list_per_page = 100
+
+    def thumbnail(self, obj):
+        return gen_thumbnail(gen_img_url(obj.image.name.split("/")[-1]), obj.image.url)
+
+    def get_model_perms(self, request):
+        """
+        Return empty perms dict thus hiding the model from admin index
+        """
+        return {}
+
+
+############################
+#          INLINE          #
+############################
 
 
 class ImageVolumeInline(nested_admin.NestedStackedInline):
@@ -69,7 +76,7 @@ class ImageVolumeInline(nested_admin.NestedStackedInline):
 
     def image_preview(self, obj):
         return mark_safe(
-            f'<a href="/{iiif_manage_url}/?q={obj.volume.id}" target="_blank">Manage {IIIF_ICON}</a>'
+            f'<a href="/{img_vol}/?q={obj.volume.id}" target="_blank">Manage {IIIF_ICON}</a>'
         )
 
     image_preview.short_description = "Images"
@@ -90,47 +97,6 @@ class ImageVolumeInline(nested_admin.NestedStackedInline):
         return fields
 
 
-class PdfVolumeInline(nested_admin.NestedStackedInline):
-    model = PdfVolume
-    extra = 1
-    max_num = 1
-
-
-class ManifestVolumeInline(nested_admin.NestedStackedInline):
-    model = ManifestVolume
-    extra = 1
-    max_num = 1
-
-
-@admin.register(ImageManuscript)
-class ImageManuscriptAdmin(admin.ModelAdmin):
-    list_display = (
-        "image",
-        "thumbnail",
-    )
-    search_fields = ("=manuscript__id", "=image")
-    autocomplete_fields = ("manuscript",)
-    list_per_page = 100
-
-    def thumbnail(self, obj):
-        return format_html(
-            '<a href="{}" target="_blank">{}</a>'.format(
-                "http://localhost/iiif/2/"
-                + obj.image.name.split("/")[-1]
-                + "/full/full/0/default.jpg",
-                '<img src ="{}" width ="30" style="border-radius:50%;">'.format(
-                    obj.image.url
-                ),
-            )
-        )
-
-    def get_model_perms(self, request):
-        """
-        Return empty perms dict thus hiding the model from admin index
-        """
-        return {}
-
-
 class ImageManuscriptInline(admin.StackedInline):
     class Media:
         css = {"all": ("css/style.css",)}
@@ -143,10 +109,7 @@ class ImageManuscriptInline(admin.StackedInline):
 
     def image_preview(self, obj):
         return mark_safe(
-            '<a href="/vhs-admin/vhsapp/imagemanuscript/?q='
-            + str(obj.manuscript.id)
-            + '" target="_blank">Cliquez ici pour gérer les images de ce manuscrit '
-            '<img alt="IIIF" src="https://iiif.io/assets/images/logos/logo-sm.png" height="15"/></a>'
+            f'<a href="/{img_ms}/?q={obj.manuscript.id}" target="_blank">Manage {IIIF_ICON}</a>'
         )
 
     image_preview.short_description = "Images"
@@ -173,5 +136,17 @@ class PdfManuscriptInline(admin.StackedInline):
 
 class ManifestManuscriptInline(admin.StackedInline):
     model = ManifestManuscript
+    extra = 1
+    max_num = 1
+
+
+class PdfVolumeInline(nested_admin.NestedStackedInline):
+    model = PdfVolume
+    extra = 1
+    max_num = 1
+
+
+class ManifestVolumeInline(nested_admin.NestedStackedInline):
+    model = ManifestVolume
     extra = 1
     max_num = 1

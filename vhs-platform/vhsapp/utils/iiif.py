@@ -77,3 +77,17 @@ def extract_images_from_iiif_manifest(url, image_path, work):
                     f.write(image_response.content)
                 image_counter += 1
                 time.sleep(15)
+
+
+def gen_img_url(
+    img,
+    scheme="http",
+    host="localhost",
+    port=None,
+    vers=2,
+    res="full/full/0",
+    color="default",
+    ext="jpg",
+):
+    # E.g. "http://localhost/iiif/2/image_name.jpg/full/full/0/default.jpg"
+    return f"{scheme}://{host}{f':{port}' if port else ''}/iiif/{vers}/{img}/{res}/{color}.{ext}"

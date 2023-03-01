@@ -55,7 +55,6 @@ Admin site
 admin.site.site_header = SITE_HEADER
 admin.site.site_title = SITE_TITLE
 admin.site.index_title = SITE_INDEX_TITLE
-iiif_manage_url = "vhs-admin/vhsapp/imagevolume"  # TODO change that
 
 
 class AuthorFilter(AutocompleteFilter):
