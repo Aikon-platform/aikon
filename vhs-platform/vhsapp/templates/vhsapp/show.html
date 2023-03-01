@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Annotations {{ work }} #{{ work_obj.id }}{% endblock %}
+
+{% block header %}
+    <div class="fixed-div">
+        <i class="fa-solid fa-arrows-rotate"></i> <a href="javascript:location.reload();" title="Actualiser la page courante">Actualiser</a>
+        <div style="margin:10px 0;">
+            <h3 style="margin:0;">
+                {% if work == "manuscript" %}
+                    Manuscrit #{{ work_obj.id }} : {{ work_obj.work.title }}
+                {% else %}
+                    Volume #{{ work_obj.id }} : {{ work_obj.title }}
+                {% endif %}
+            </h3>
+        </div>
+        <div>
+            <label for="startIndex">Vue de début :</label>
+            <input type="number" id="startIndex" value="1" min="1" max="{{ canvas_annos|length }}">
+            <label for="endIndex">Vue de fin :</label>
+            <input type="number" id="endIndex" value="2" min="1" max="{{ canvas_annos|length }}">
+            <button id="delete_illustrations">Supprimer illustrations</button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        {% for column in 2|range_filter %}
+            <div class="column">
+                <table class="anno-table">
+                    {% for annos, url in canvas_annos %}
+                        {% if column == 0 and not forloop.counter|divisibleby:2 or column == 1 and forloop.counter|divisibleby:2 %}
+                            <tr>
+                                <td class="anno-td" style="background-color:#F8F8F8;">
+                                    <b>Vue {{ forloop.counter }}</b>
+                                    <a href="{{ SAS_APP_URL }}index.html?iiif-content={{ url_manifest }}&canvas={{ forloop.counter }}" target="_blank">
+                                        <small>(Modifier l'extraction)</small>
+                                    </a><br>
+                                    <a href="{{ url }}" target="_blank">
+                                        <img src="{{ url|replace_nth_part_of_url:',120;7' }}">
+                                    </a>
+                                </td>
+                                {% for anno, bbox in annos %}
+                                    <td id="ill_{{ bbox }}" class="anno-td">
+                                        {% with region=anno|add:';6' size=',50;7' %}
+                                            <a href="{{ url|replace_nth_part_of_url:region }}" target="_blank">
+                                                <img src="{{ url|replace_nth_part_of_url:region|replace_nth_part_of_url:size }}">
+                                            </a>
+                                        {% endwith %}
+                                        <br>
+                                        <input id="bbox_{{ bbox }}" name="{{ bbox }}" type="checkbox"> Supprimer
+                                        <span id="message_{{ bbox }}" style="color:#FF0000;"></span>
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </table>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

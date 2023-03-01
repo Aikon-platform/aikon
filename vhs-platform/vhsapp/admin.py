@@ -122,7 +122,7 @@ class ImageVolumeAdmin(admin.ModelAdmin):
 
 class ImageVolumeInline(nested_admin.NestedStackedInline):
     class Media:
-        css = {"all": ("css/admin_style.css",)}
+        css = {"all": ("css/style.css",)}
         js = ("fontawesomefree/js/all.min.js",)
 
     model = ImageVolume
@@ -278,7 +278,7 @@ class PrintedAdmin(
     ExtraButtonsMixin, nested_admin.NestedModelAdmin, admin.SimpleListFilter
 ):
     class Media:
-        css = {"all": ("css/admin_style.css",)}
+        css = {"all": ("css/style.css",)}
         js = ("js/jquery-3.6.1.js", "js/script.js")
 
     list_display = (
@@ -583,7 +583,7 @@ class ImageManuscriptAdmin(admin.ModelAdmin):
 
 class ImageManuscriptInline(admin.StackedInline):
     class Media:
-        css = {"all": ("css/admin_style.css",)}
+        css = {"all": ("css/style.css",)}
         js = ("fontawesomefree/js/all.min.js",)
 
     model = ImageManuscript

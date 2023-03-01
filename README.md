@@ -91,7 +91,7 @@ GPU_USERNAME="<gpu-username>"
 GPU_PASSWORD="<gpu-password>"
 ```
 
-### Launching the app
+### Django
 
 Update database schema with models that are stored inside `vhs-platform/vhsapp/migrations`
 ```bash
@@ -113,25 +113,16 @@ Create exception for port 8000
 sudo ufw allow 8000
 ```
 
-Launch server
-```shell
-./venv/bin/python vhs-platform/manage.py runserver localhost:8000
-```
-
-You can now visit the app at [http://localhost:8000](http://localhost:8000) and connect with the credentials you just created
-
-## IIIF
-
 ### IIIF Image server
 
 #### Cantaloupe
 Run [Cantaloupe](https://cantaloupe-project.github.io/)
 ```shell
 # Unix distributions
-sudo java -Dcantaloupe.config=cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe*.war
+sudo java -Dcantaloupe.config=cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe-4.1.11.war
 
 # Windows
-java -Dcantaloupe.config=C:cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe*.war
+java -Dcantaloupe.config=C:cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe-4.1.11.war
 ```
 
 [//]: # (If `Exception in thread "main" java.io.IOException: Failed to bind to /0.0.0.0:80`)
@@ -149,5 +140,14 @@ cd sas && mvn jetty:run
 
 Navigate to [http://localhost:8888/index.html](http://localhost:8888/index.html) to start annotating:
 You should now see Mirador with default example manifests.
+
+## Launch app
+
+Run server
+```shell
+./venv/bin/python vhs-platform/manage.py runserver localhost:8000
+```
+
+You can now visit the app at [http://localhost:8000](http://localhost:8000) and connect with the credentials you created
 
 > For more documentation, see [docs folder](https://github.com/faouinti/vhs/tree/main/docs)

@@ -461,21 +461,12 @@ def show_work(request, id, work):
                         + "/full/full/0/default.jpg",
                     )
                 )
-    if work == VOLUME:
-        return render(
-            request,
-            "vhsapp/volume/show.html",
-            context={
-                "volume": work_obj,
-                "canvas_annos": canvas_annos,
-                "url_manifest": url_manifest,
-            },
-        )
     return render(
         request,
-        "vhsapp/manuscript/show.html",
+        "vhsapp/show.html",
         context={
-            "manuscript": work_obj,
+            "work": work,
+            "work_obj": work_obj,
             "canvas_annos": canvas_annos,
             "url_manifest": url_manifest,
         },

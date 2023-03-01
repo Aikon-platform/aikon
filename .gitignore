@@ -9,8 +9,8 @@ dist/
 build/
 
 # Django media and static files
-vhs-platform/mediafiles/img/*
-!vhs-platform/mediafiles/img/.gitkeep
+vhs-platform/mediafiles/*
+!vhs-platform/mediafiles/.gitkeep
 vhs-platform/staticfiles/*
 !vhs-platform/staticfiles/.gitkeep
 

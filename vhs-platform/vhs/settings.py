@@ -59,6 +59,19 @@ if DEBUG:
     INTERNAL_IPS = [
         "127.0.0.1",
     ]
+    
+# Define the default values for application URLs in development mode
+# VHS, CANTALOUPE, SAS
+
+VHS_APP_URL = "http://localhost:8000/"
+CANTALOUPE_APP_URL = "http://localhost:8182/"
+SAS_APP_URL = "http://localhost:8888/"
+
+# Override the default values in production mode
+if not DEBUG:
+    VHS_APP_URL = "https://iscd.huma-num.fr/"
+    CANTALOUPE_APP_URL = "https://iscd.huma-num.fr/"
+    SAS_APP_URL = "https://iscd.huma-num.fr/sas/"
 
 ROOT_URLCONF = "vhs.urls"
 
@@ -73,6 +86,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "vhsapp.context_processors.global_variables",
             ],
             "builtins": [
                 "vhsapp.filters",
@@ -93,8 +107,8 @@ DATABASES = {
         "NAME": env("DB_NAME"),
         "USER": env("DB_USERNAME"),
         "PASSWORD": env("DB_PASSWORD"),
-        "HOST": "localhost",
-        "PORT": "5432",
+        "HOST": env("DB_HOST"),
+        "PORT": env("DB_PORT"),
     }
 }
 
