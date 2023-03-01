@@ -14,7 +14,6 @@ from admin_searchable_dropdown.filters import AutocompleteFilter
 
 from django.contrib import admin, messages
 from django.http import HttpResponse, HttpResponseRedirect
-from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.template.defaultfilters import truncatewords_html
 
@@ -27,13 +26,13 @@ from vhsapp.models.models import (
     Work,
 )
 
-from vhsapp.models.digitization import (
-    ImageVolume,
-    PdfVolume,
-    ImageManuscript,
-    PdfManuscript,
-    ManifestManuscript,
-    ManifestVolume,
+from vhsapp.admin.digitization import (
+    PdfManuscriptInline,
+    ManifestManuscriptInline,
+    ImageManuscriptInline,
+    PdfVolumeInline,
+    ManifestVolumeInline,
+    ImageVolumeInline,
 )
 
 from vhsapp.utils.constants import (
@@ -48,9 +47,6 @@ from vhsapp.utils.paths import (
     VOLUMES_PDFS_PATH,
     IMAGES_PATH,
     MANUSCRIPTS_PDFS_PATH,
-)
-from vhsapp.utils.iiif import (
-    IIIF_ICON,
 )
 
 """
@@ -93,80 +89,6 @@ class DescriptiveElementsFilter(admin.SimpleListFilter):
             return queryset.filter(
                 descriptive_elements__contains="Sciences mathématiques",
             )
-
-
-@admin.register(ImageVolume)
-class ImageVolumeAdmin(admin.ModelAdmin):
-    list_display = (
-        "image",
-        "thumbnail",
-    )
-    search_fields = ("=volume__id", "=image")
-    autocomplete_fields = ("volume",)
-    list_per_page = 100
-
-    def thumbnail(self, obj):
-        return format_html(
-            '<a href="{}" target="_blank">{}</a>'.format(
-                "http://localhost/iiif/2/"
-                + obj.image.name.split("/")[-1]
-                + "/full/full/0/default.jpg",
-                '<img src ="{}" width ="30" style="border-radius:50%;">'.format(
-                    obj.image.url
-                ),
-            )
-        )
-
-    def get_model_perms(self, request):
-        """
-        Return empty perms dict thus hiding the model from admin index
-        """
-        return {}
-
-
-class ImageVolumeInline(nested_admin.NestedStackedInline):
-    class Media:
-        css = {"all": ("css/style.css",)}
-        js = ("fontawesomefree/js/all.min.js",)
-
-    model = ImageVolume
-    extra = 1
-    max_num = 1
-    readonly_fields = ("image_preview",)
-
-    def image_preview(self, obj):
-        return mark_safe(
-            f'<a href="/{iiif_manage_url}/?q={obj.volume.id}" target="_blank">Manage {IIIF_ICON}</a>'
-        )
-
-    image_preview.short_description = "Images"
-
-    def has_view_or_change_permission(self, request, obj=None):
-        return False
-
-    def get_fields(self, request, obj=None):
-        fields = list(super(ImageVolumeInline, self).get_fields(request, obj))
-        if not obj:  # obj will be None on the add page, and something on change pages
-            fields.remove("image_preview")
-        else:
-            fields.remove("image")
-        if request.method == "POST":
-            fields.append("image")
-        fields = list(set(fields))
-
-        return fields
-
-
-class PdfVolumeInline(nested_admin.NestedStackedInline):
-    model = PdfVolume
-    extra = 1
-    max_num = 1
-
-
-class ManifestVolumeInline(nested_admin.NestedStackedInline):
-    model = ManifestVolume
-    extra = 1
-    max_num = 1
 
 
 class VolumeInline(nested_admin.NestedStackedInline):
@@ -552,206 +474,6 @@ class DigitizedVersionAdmin(admin.ModelAdmin):
         """
         return {}
 
-
-@admin.register(ImageManuscript)
-class ImageManuscriptAdmin(admin.ModelAdmin):
-    list_display = (
-        "image",
-        "thumbnail",
-    )
-    search_fields = ("=manuscript__id", "=image")
-    autocomplete_fields = ("manuscript",)
-    list_per_page = 100
-
-    def thumbnail(self, obj):
-        return format_html(
-            '<a href="{}" target="_blank">{}</a>'.format(
-                "http://localhost/iiif/2/"
-                + obj.image.name.split("/")[-1]
-                + "/full/full/0/default.jpg",
-                '<img src ="{}" width ="30" style="border-radius:50%;">'.format(
-                    obj.image.url
-                ),
-            )
-        )
-
-    def get_model_perms(self, request):
-        """
-        Return empty perms dict thus hiding the model from admin index
-        """
-        return {}
-
-
-class ImageManuscriptInline(admin.StackedInline):
-    class Media:
-        css = {"all": ("css/style.css",)}
-        js = ("fontawesomefree/js/all.min.js",)
-
-    model = ImageManuscript
-    extra = 1
-    max_num = 1
-    readonly_fields = ("image_preview",)
-
-    def image_preview(self, obj):
-        return mark_safe(
-            '<a href="/vhs-admin/vhsapp/imagemanuscript/?q='
-            + str(obj.manuscript.id)
-            + '" target="_blank">Cliquez ici pour gérer les images de ce manuscrit '
-            '<img alt="IIIF" src="https://iiif.io/assets/images/logos/logo-sm.png" height="15"/></a>'
-        )
-
-    image_preview.short_description = "Images"
-
-    def has_view_or_change_permission(self, request, obj=None):
-        return False
-
-    def get_fields(self, request, obj=None):
-        fields = list(super(ImageManuscriptInline, self).get_fields(request, obj))
-        exclude_set = set()
-        if not obj:  # obj will be None on the add page, and something on change pages
-            exclude_set.add("image_preview")
-        else:
-            exclude_set.add("image")
-
-        return [f for f in fields if f not in exclude_set]
-
-
-class PdfManuscriptInline(admin.StackedInline):
-    model = PdfManuscript
-    extra = 1
-    max_num = 1
-
-
-class ManifestManuscriptInline(admin.StackedInline):
-    model = ManifestManuscript
-    extra = 1
-    max_num = 1
-
-
-@admin.register(Manuscript)
-class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
-    class Media:
-        js = ("js/jquery-3.6.1.js", "js/script.js")
-
-    list_display = (
-        "short_author",
-        "short_work",
-        "conservation_place",
-        "reference_number",
-        "date_century",
-        "sheets",
-        "published",
-    )
-    ordering = ("id",)
-    list_editable = ("date_century",)
-    search_fields = ("author__name", "work__title")
-    list_filter = (AuthorFilter, WorkFilter)
-    autocomplete_fields = ("author", "work", "digitized_version")
-    list_per_page = 100
-    exclude = ("slug", "created_at", "updated_at")
-    fieldsets = (
-        (
-            "Chaque manuscrit correspond à un exemplaire de l'oeuvre",
-            {
-                "fields": (
-                    "manifest_auto",
-                    "manifest_v2",
-                    "manifest_final",
-                    "author",
-                    "work",
-                    "conservation_place",
-                    "reference_number",
-                    "date_century",
-                    "date_free",
-                    "sheets",
-                    "origin_place",
-                    "remarks",
-                    "copyists",
-                    "miniaturists",
-                    "digitized_version",
-                    "pinakes_link",
-                    "published",
-                )
-            },
-        ),
-    )
-    readonly_fields = ("manifest_auto", "manifest_v2")
-    actions = [
-        "export_selected_manifests",
-        "export_selected_iiif_images",
-        "export_selected_images",
-        "export_selected_pdfs",
-    ]
-    inlines = [PdfManuscriptInline, ManifestManuscriptInline, ImageManuscriptInline]
-
-    def manifest_auto(self, obj):
-        url_manifest_auto = (
-            "http://localhost:8000/vhs/iiif/auto/manuscript/ms-"
-            + str(obj.id)
-            + "/manifest.json"
-        )
-        link_manifest_auto = (
-            '<a id="url_manifest_auto_'
-            + str(obj.id)
-            + '" href="/vhs/iiif/auto/manuscript/ms-'
-            + str(obj.id)
-            + '/manifest.json" target="_blank">'
-            + url_manifest_auto
-            + "</a> "
-        )
-        return mark_safe(
-            link_manifest_auto
-            + '<img alt="IIIF" src="https://iiif.io/assets/images/logos/logo-sm.png" height="15"/></a><br>'
-            '<button id="annotate_manifest_auto_'
-            + str(obj.id)
-            + '" class="button" style="background-color:#EFB80B;color:white;padding:8px 10px;"><i class="fa-solid fa-eye"></i> VISUALISER ANNOTATIONS <i class="fa-solid fa-comment"></i></button><br>'
-            '<a href="/vhs/iiif/auto/manuscript/'
-            + str(obj.id)
-            + '/annotation/" target="_blank"><i class="fa-solid fa-download"></i> Télécharger les annotations (CSV)</a>'
-            '<span id="message_auto_' + str(obj.id) + '" style="color:#FF0000"></span>'
-        )
-
-    manifest_auto.short_description = "Manifeste (automatique)"
-
-    def manifest_v2(self, obj):
-        url_manifest = (
-            "http://localhost:8000/vhs/iiif/v2/manuscript/ms-"
-            + str(obj.id)
-            + "/manifest.json"
-        )
-        link_manifest = (
-            '<a id="url_manifest_'
-            + str(obj.id)
-            + '" href="/vhs/iiif/v2/manuscript/ms-'
-            + str(obj.id)
-            + '/manifest.json" target="_blank">'
-            + url_manifest
-            + "</a> "
-        )
-        if not obj.manifest_final:
-            button = (
-                '<button id="annotate_manifest_'
-                + str(obj.id)
-                + '" class="button" style="background-color:#008CBA;color:white;padding:8px 10px;"><i class="fa-solid fa-pen-to-square"></i> ÉDITER ANNOTATIONS <i class="fa-solid fa-comment"></i></button><br>'
-            )
-        else:
-            button = (
-                '<button id="manifest_final_'
-                + str(obj.id)
-                + '" class="button" style="background-color:#4CAF50;color:white;padding:8px 10px;"><i class="fa-solid fa-eye"></i> ANNOTATIONS FINALES <i class="fa-solid fa-comment"></i></button><br>'
-            )
-        return mark_safe(
-            link_manifest
-            + '<img alt="IIIF" src="https://iiif.io/assets/images/logos/logo-sm.png" height="15"/></a><br>'
-            + button
-            + '<a href="http://localhost:8888/search-api/ms-'
-            + str(obj.id)
-            + '/search" target="_blank"><i class="fa-solid fa-download"></i> Télécharger les annotations (JSON)</a>'
-            '<span id="message_' + str(obj.id) + '" style="color:#FF0000"></span>'
-        )
-
-    manifest_v2.short_description = "Manifeste (en cours de vérification)"
-
     def get_fieldsets(self, request, obj=None):
         fieldsets = super(ManuscriptAdmin, self).get_fieldsets(request, obj)
         if not obj:
@@ -935,3 +657,128 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     def exporter_images(self, request):
         url = "https://iscd.huma-num.fr/media/images_vhs.zip"
         return HttpResponseRedirect(url)
+
+
+@admin.register(Manuscript)
+class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
+    class Media:
+        js = ("js/jquery-3.6.1.js", "js/script.js")
+
+    list_display = (
+        "short_author",
+        "short_work",
+        "conservation_place",
+        "reference_number",
+        "date_century",
+        "sheets",
+        "published",
+    )
+    ordering = ("id",)
+    list_editable = ("date_century",)
+    search_fields = ("author__name", "work__title")
+    list_filter = (AuthorFilter, WorkFilter)
+    autocomplete_fields = ("author", "work", "digitized_version")
+    list_per_page = 100
+    exclude = ("slug", "created_at", "updated_at")
+    fieldsets = (
+        (
+            "Chaque manuscrit correspond à un exemplaire de l'oeuvre",
+            {
+                "fields": (
+                    "manifest_auto",
+                    "manifest_v2",
+                    "manifest_final",
+                    "author",
+                    "work",
+                    "conservation_place",
+                    "reference_number",
+                    "date_century",
+                    "date_free",
+                    "sheets",
+                    "origin_place",
+                    "remarks",
+                    "copyists",
+                    "miniaturists",
+                    "digitized_version",
+                    "pinakes_link",
+                    "published",
+                )
+            },
+        ),
+    )
+    readonly_fields = ("manifest_auto", "manifest_v2")
+    actions = [
+        "export_selected_manifests",
+        "export_selected_iiif_images",
+        "export_selected_images",
+        "export_selected_pdfs",
+    ]
+    inlines = [PdfManuscriptInline, ManifestManuscriptInline, ImageManuscriptInline]
+
+    def manifest_auto(self, obj):
+        url_manifest_auto = (
+            "http://localhost:8000/vhs/iiif/auto/manuscript/ms-"
+            + str(obj.id)
+            + "/manifest.json"
+        )
+        link_manifest_auto = (
+            '<a id="url_manifest_auto_'
+            + str(obj.id)
+            + '" href="/vhs/iiif/auto/manuscript/ms-'
+            + str(obj.id)
+            + '/manifest.json" target="_blank">'
+            + url_manifest_auto
+            + "</a> "
+        )
+        return mark_safe(
+            link_manifest_auto
+            + '<img alt="IIIF" src="https://iiif.io/assets/images/logos/logo-sm.png" height="15"/></a><br>'
+            '<button id="annotate_manifest_auto_'
+            + str(obj.id)
+            + '" class="button" style="background-color:#EFB80B;color:white;padding:8px 10px;"><i class="fa-solid fa-eye"></i> VISUALISER ANNOTATIONS <i class="fa-solid fa-comment"></i></button><br>'
+            '<a href="/vhs/iiif/auto/manuscript/'
+            + str(obj.id)
+            + '/annotation/" target="_blank"><i class="fa-solid fa-download"></i> Télécharger les annotations (CSV)</a>'
+            '<span id="message_auto_' + str(obj.id) + '" style="color:#FF0000"></span>'
+        )
+
+    manifest_auto.short_description = "Manifeste (automatique)"
+
+    def manifest_v2(self, obj):
+        url_manifest = (
+            "http://localhost:8000/vhs/iiif/v2/manuscript/ms-"
+            + str(obj.id)
+            + "/manifest.json"
+        )
+        link_manifest = (
+            '<a id="url_manifest_'
+            + str(obj.id)
+            + '" href="/vhs/iiif/v2/manuscript/ms-'
+            + str(obj.id)
+            + '/manifest.json" target="_blank">'
+            + url_manifest
+            + "</a> "
+        )
+        if not obj.manifest_final:
+            button = (
+                '<button id="annotate_manifest_'
+                + str(obj.id)
+                + '" class="button" style="background-color:#008CBA;color:white;padding:8px 10px;"><i class="fa-solid fa-pen-to-square"></i> ÉDITER ANNOTATIONS <i class="fa-solid fa-comment"></i></button><br>'
+            )
+        else:
+            button = (
+                '<button id="manifest_final_'
+                + str(obj.id)
+                + '" class="button" style="background-color:#4CAF50;color:white;padding:8px 10px;"><i class="fa-solid fa-eye"></i> ANNOTATIONS FINALES <i class="fa-solid fa-comment"></i></button><br>'
+            )
+        return mark_safe(
+            link_manifest
+            + '<img alt="IIIF" src="https://iiif.io/assets/images/logos/logo-sm.png" height="15"/></a><br>'
+            + button
+            + '<a href="http://localhost:8888/search-api/ms-'
+            + str(obj.id)
+            + '/search" target="_blank"><i class="fa-solid fa-download"></i> Télécharger les annotations (JSON)</a>'
+            '<span id="message_' + str(obj.id) + '" style="color:#FF0000"></span>'
+        )
+
+    manifest_v2.short_description = "Manifeste (en cours de vérification)"

@@ -108,7 +108,7 @@ class Printed(models.Model):
 
     class Meta:
         verbose_name = "Imprimé"
-        verbose_name_plural = pluralize("Imprimé")
+        verbose_name_plural = "Imprimés"
         ordering = ["-place"]
 
     def __str__(self):
