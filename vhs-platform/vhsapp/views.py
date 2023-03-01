@@ -15,7 +15,7 @@ from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
 from vhsapp.models.models import Volume, Manuscript
-from vhsapp.models.constants import MANUSCRIPT, VOLUME, MANUSCRIPT_ABBR, VOLUME_ABBR
+from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhsapp.utils.constants import (
     SAS_URL_SECURE,
     APP_NAME,
@@ -26,9 +26,9 @@ from iiif_prezi.factory import ManifestFactory
 
 from vhsapp.utils.paths import (
     MEDIA_PATH,
-    VOLUMES_ANNOTATIONS_PATH,
-    MANUSCRIPTS_ANNOTATIONS_PATH,
-    IMAGES_PATH,
+    VOL_ANNO_PATH,
+    MS_ANNO_PATH,
+    IMG_PATH,
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -118,7 +118,7 @@ def manifest_manuscript(request, id, version):
                 .split("/")[-1]
                 .replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
             )
-            image = Image.open(f"{MEDIA_PATH}{IMAGES_PATH}{image_path}")
+            image = Image.open(f"{MEDIA_PATH}{IMG_PATH}{image_path}")
             # Build the canvas
             cvs = seq.canvas(
                 ident="c%s" % image_counter, label="Folio %s" % image_counter
@@ -134,7 +134,7 @@ def manifest_manuscript(request, id, version):
                 anno.text("Annotation")
     elif manifest_first := manuscript.manifestmanuscript_set.first():
         for image_counter, path in enumerate(
-            sorted(glob(f"{MEDIA_PATH}{IMAGES_PATH}ms{id}_*.jpg"))
+            sorted(glob(f"{MEDIA_PATH}{IMG_PATH}ms{id}_*.jpg"))
         ):
             image_counter += 1
             image_path = path.replace("\\", "/").split("/")[-1]
@@ -234,7 +234,7 @@ def manifest_volume(request, id, version):
                 .split("/")[-1]
                 .replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
             )
-            image = Image.open(f"{MEDIA_PATH}{IMAGES_PATH}{image_path}")
+            image = Image.open(f"{MEDIA_PATH}{IMG_PATH}{image_path}")
             # Build the canvas
             cvs = seq.canvas(
                 ident="c%s" % image_counter, label="Page %s" % image_counter
@@ -250,7 +250,7 @@ def manifest_volume(request, id, version):
                 anno.text("Annotation")
     elif manifest_first := volume.manifestvolume_set.first():
         for image_counter, path in enumerate(
-            sorted(glob(f"{MEDIA_PATH}{IMAGES_PATH}vol{id}_*.jpg"))
+            sorted(glob(f"{MEDIA_PATH}{IMG_PATH}vol{id}_*.jpg"))
         ):
             image_counter += 1
             image_path = path.replace("\\", "/").split("/")[-1]
@@ -283,9 +283,7 @@ def annotation_auto(request, id, work):
     )
     writer = csv.writer(response)
     writer.writerow(["IIIF_Image_Annotations"])
-    annotations_path = (
-        VOLUMES_ANNOTATIONS_PATH if work == VOLUME else MANUSCRIPTS_ANNOTATIONS_PATH
-    )
+    annotations_path = VOL_ANNO_PATH if work == VOL else MS_ANNO_PATH
     with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
         for line in lines:
@@ -315,9 +313,7 @@ def annotation_auto(request, id, work):
 
 
 def annotate_work(request, id, version, work, work_abbr, canvas):
-    annotations_path = (
-        VOLUMES_ANNOTATIONS_PATH if work == VOLUME else MANUSCRIPTS_ANNOTATIONS_PATH
-    )
+    annotations_path = VOL_ANNO_PATH if work == VOL else MS_ANNO_PATH
     with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
         nbr_anno = 0
@@ -353,8 +349,8 @@ Populate annotation store from IIIF Annotation List
 
 def populate_annotation(request, id, work):
     work_map = {
-        VOLUME: (VOLUME_ABBR, VOLUMES_ANNOTATIONS_PATH),
-        MANUSCRIPT: (MANUSCRIPT_ABBR, MANUSCRIPTS_ANNOTATIONS_PATH),
+        VOL: (VOL_ABBR, VOL_ANNO_PATH),
+        MS: (MS_ABBR, MS_ANNO_PATH),
     }
     work_abbr, annotations_path = work_map.get(work, (None, None))
     if not env("DEBUG"):
@@ -405,8 +401,8 @@ def populate_annotation(request, id, work):
 @login_required(login_url=f"/{APP_NAME}-admin/")
 def show_work(request, id, work):
     work_map = {
-        MANUSCRIPT: (Manuscript, MANUSCRIPT_ABBR, MANUSCRIPTS_ANNOTATIONS_PATH),
-        VOLUME: (Volume, VOLUME_ABBR, VOLUMES_ANNOTATIONS_PATH),
+        MS: (Manuscript, MS_ABBR, MS_ANNO_PATH),
+        VOL: (Volume, VOL_ABBR, VOL_ANNO_PATH),
     }
     work_model, work_abbr, annotations_path = work_map.get(work, (None, None, None))
     work_obj = get_object_or_404(work_model, pk=id)

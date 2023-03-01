@@ -44,10 +44,12 @@ from vhsapp.utils.constants import (
 )
 from vhsapp.utils.paths import (
     MEDIA_PATH,
-    VOLUMES_PDFS_PATH,
-    IMAGES_PATH,
-    MANUSCRIPTS_PDFS_PATH,
+    VOL_PDF_PATH,
+    IMG_PATH,
+    MS_PDF_PATH,
 )
+
+from vhsapp.utils.iiif import get_link_manifest, gen_btn
 
 """
 Admin site
@@ -113,33 +115,9 @@ class VolumeInline(nested_admin.NestedStackedInline):
 
     def manifest_auto(self, obj):
         if obj.id:
-            url_manifest_auto = (
-                "http://localhost:8000/vhs/iiif/auto/volume/vol-"
-                + str(obj.id)
-                + "/manifest.json"
-            )
-            link_manifest_auto = (
-                '<a id="url_manifest_auto_'
-                + str(obj.id)
-                + '" href="/vhs/iiif/auto/volume/vol-'
-                + str(obj.id)
-                + '/manifest.json" target="_blank">'
-                + url_manifest_auto
-                + "</a> "
-            )
-            return mark_safe(
-                link_manifest_auto
-                + '<img alt="IIIF" src="https://iiif.io/assets/images/logos/logo-sm.png" height="15"/></a><br>'
-                '<button id="annotate_manifest_auto_'
-                + str(obj.id)
-                + '" class="button" style="background-color:#EFB80B;color:white;padding:8px 10px;"><i class="fa-solid fa-eye"></i> VISUALISER ANNOTATIONS <i class="fa-solid fa-comment"></i></button><br>'
-                '<a href="/vhs/iiif/auto/volume/'
-                + str(obj.id)
-                + '/annotation/" target="_blank"><i class="fa-solid fa-download"></i> Télécharger les annotations (CSV)</a>'
-                '<span id="message_auto_'
-                + str(obj.id)
-                + '" style="color:#FF0000"></span>'
-            )
+            if manifest_first := obj.manifestvolume_set.first():
+                return mark_safe(f"{get_link_manifest(obj.id, manifest_first)}<br>")
+            return gen_btn(obj.id)
         return "-"
 
     manifest_auto.short_description = "Manifeste (automatique)"
@@ -314,7 +292,7 @@ class PrintedAdmin(
         pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
         pdf_images_list = []
         for pdf in pdfs_list:
-            pdf_file = Pdf.open(f"{MEDIA_PATH}{VOLUMES_PDFS_PATH}{pdf}")
+            pdf_file = Pdf.open(f"{MEDIA_PATH}{VOL_PDF_PATH}{pdf}")
             total_pages = len(pdf_file.pages)
             for image_counter in range(1, total_pages + 1):
                 pdf_images_list.append(
@@ -357,7 +335,7 @@ class PrintedAdmin(
         pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
         pdf_images_list = []
         for pdf in pdfs_list:
-            pdf_file = open(f"{MEDIA_PATH}{VOLUMES_PDFS_PATH}{pdf}", "rb")
+            pdf_file = open(f"{MEDIA_PATH}{VOL_PDF_PATH}{pdf}", "rb")
             readpdf = PyPDF2.PdfFileReader(pdf_file)
             total_pages = readpdf.numPages
             for image_counter in range(1, total_pages + 1):
@@ -368,7 +346,7 @@ class PrintedAdmin(
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w") as img_zip:
             # Iterate over all the files in directory
-            for foldername, _, filenames in os.walk(f"{MEDIA_PATH}{IMAGES_PATH}"):
+            for foldername, _, filenames in os.walk(f"{MEDIA_PATH}{IMG_PATH}"):
                 for filename in filenames:
                     if filename in all_images:
                         # Create complete filepath of file in directory
@@ -674,7 +652,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
         pdf_images_list = []
         for pdf in pdfs_list:
-            pdf_file = open(f"{MEDIA_PATH}{MANUSCRIPTS_PDFS_PATH}{pdf}", "rb")
+            pdf_file = open(f"{MEDIA_PATH}{MS_PDF_PATH}{pdf}", "rb")
             readpdf = PyPDF2.PdfFileReader(pdf_file)
             total_pages = readpdf.numPages
             for image_counter in range(1, total_pages + 1):
@@ -719,7 +697,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
         pdf_images_list = []
         for pdf in pdfs_list:
-            pdf_file = open(f"{MEDIA_PATH}{MANUSCRIPTS_PDFS_PATH}{pdf}", "rb")
+            pdf_file = open(f"{MEDIA_PATH}{MS_PDF_PATH}{pdf}", "rb")
             readpdf = PyPDF2.PdfFileReader(pdf_file)
             total_pages = readpdf.numPages
             for image_counter in range(1, total_pages + 1):
@@ -730,7 +708,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w") as img_zip:
             # Iterate over all the files in directory
-            for foldername, _, filenames in os.walk(f"{MEDIA_PATH}{IMAGES_PATH}"):
+            for foldername, _, filenames in os.walk(f"{MEDIA_PATH}{IMG_PATH}"):
                 for filename in filenames:
                     if filename in all_images:
                         # Create complete filepath of file in directory

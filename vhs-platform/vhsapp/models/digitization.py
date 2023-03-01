@@ -9,9 +9,9 @@ from django.dispatch.dispatcher import receiver
 
 from vhsapp.models.constants import (
     MANIFEST,
-    MANUSCRIPT_ABBR,
-    VOLUME_ABBR,
-    IMAGE_INFO,
+    MS_ABBR,
+    VOL_ABBR,
+    IMG_INFO,
     MANIFEST_INFO,
 )
 from vhsapp.utils.functions import (
@@ -20,9 +20,9 @@ from vhsapp.utils.functions import (
     convert_pdf_to_image,
 )
 from vhsapp.utils.paths import (
-    IMAGES_PATH,
-    MANUSCRIPTS_PDFS_PATH,
-    VOLUMES_PDFS_PATH,
+    IMG_PATH,
+    MS_PDF_PATH,
+    VOL_PDF_PATH,
     MEDIA_PATH,
 )
 
@@ -46,7 +46,7 @@ class Digitization(models.Model):
 
 
 #############################
-#           IMAGE           #
+#           IMG           #
 #############################
 
 
@@ -61,11 +61,11 @@ class Picture(Digitization):
 
     image = models.ImageField(
         verbose_name="Image",
-        upload_to=partial(rename_file, path=IMAGES_PATH),
+        upload_to=partial(rename_file, path=IMG_PATH),
         validators=[
             FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "tif"])
         ],
-        help_text=IMAGE_INFO,
+        help_text=IMG_INFO,
     )
 
     def save(self, *args, **kwargs):
@@ -131,7 +131,7 @@ class Pdf(Digitization):
         # Run the PDF to image async conversion task in the background using threading
         t = threading.Thread(
             target=convert_pdf_to_image,
-            args=(f"{MEDIA_PATH}{self.pdf.name}", f"{MEDIA_PATH}{IMAGES_PATH}"),
+            args=(f"{MEDIA_PATH}{self.pdf.name}", f"{MEDIA_PATH}{IMG_PATH}"),
         )
         t.start()
 
@@ -144,7 +144,7 @@ class PdfManuscript(Pdf):
     manuscript = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
     pdf = models.FileField(
         verbose_name="PDF",
-        upload_to=partial(rename_file, path=MANUSCRIPTS_PDFS_PATH),
+        upload_to=partial(rename_file, path=MS_PDF_PATH),
         validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
     )
 
@@ -153,7 +153,7 @@ class PdfVolume(Pdf):
     volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
     pdf = models.FileField(
         verbose_name="PDF",
-        upload_to=partial(rename_file, path=VOLUMES_PDFS_PATH),
+        upload_to=partial(rename_file, path=VOL_PDF_PATH),
         validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
     )
 
@@ -187,7 +187,7 @@ class Manifest(Digitization):
     #         target=extract_images_from_iiif_manifest,
     #         args=(
     #             self.manifest,
-    #             f"{MEDIA_PATH}{IMAGES_PATH}",
+    #             f"{MEDIA_PATH}{IMG_PATH}",
     #             f"{SRC_ABBR}{self.source.id}",
     #         ),
     #     )
@@ -205,8 +205,8 @@ class ManifestVolume(Manifest):
             target=extract_images_from_iiif_manifest,
             args=(
                 self.manifest,
-                f"{MEDIA_PATH}{IMAGES_PATH}",
-                f"{VOLUME_ABBR}{self.volume.id}",
+                f"{MEDIA_PATH}{IMG_PATH}",
+                f"{VOL_ABBR}{self.volume.id}",
             ),
         )
         t.start()
@@ -223,8 +223,8 @@ class ManifestManuscript(Manifest):
             target=extract_images_from_iiif_manifest,
             args=(
                 self.manifest,
-                f"{MEDIA_PATH}{IMAGES_PATH}",
-                f"{MANUSCRIPT_ABBR}{self.manuscript.id}",
+                f"{MEDIA_PATH}{IMG_PATH}",
+                f"{MS_ABBR}{self.manuscript.id}",
             ),
         )
         t.start()

@@ -63,3 +63,9 @@
     padding: 10px;
     vertical-align: bottom;
 }
+
+.annotate-manifest {
+    color: white;
+    padding: 8px 10px !important;
+    margin: 5px 0 !important;
+}

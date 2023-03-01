@@ -91,3 +91,36 @@ def log(msg):
 
     logger = logging.getLogger("django")
     logger.info(msg)
+
+
+def get_icon(icon):
+    return f"<i class='fa-solid fa-{icon}'></i>"
+
+
+def anno_btn(obj_id, action="VISUALIZE"):
+    match action:
+        case "VISUALIZE":
+            color = "#EFB80B"
+            tag_id = "annotate_manifest_auto_"
+            icon = get_icon("eye")
+        case "EDIT":
+            color = "#008CBA"
+            tag_id = "annotate_manifest_"
+            icon = get_icon("pen-to-square")
+        case "DOWNLOAD":
+            color = "#ed8a11"
+            tag_id = "download_manifest_"
+            icon = get_icon("download")
+        case "FINAL":
+            color = "#4CAF50"
+            tag_id = "manifest_final_"
+            icon = get_icon("check-square-o")
+        case _:
+            color = "#B3B3B3"
+            tag_id = "annotate_"
+            icon = get_icon("eye")
+
+    return (
+        f"<button id='{tag_id}{obj_id}' class='button annotate-manifest' "
+        f"style='background-color:{color};'>{icon} {f'{action} ANNOTATIONS'}</button><br>"
+    )

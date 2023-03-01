@@ -3,12 +3,12 @@
 #############################
 
 MANIFEST = "manifest"
-MANUSCRIPT = "manuscript"
-VOLUME = "volume"
+MS = "manuscript"
+VOL = "volume"
 
 # ABBREVIATION
-MANUSCRIPT_ABBR = "ms"
-VOLUME_ABBR = "vol"
+MS_ABBR = "ms"
+VOL_ABBR = "vol"
 
 #############################
 #        HELP TEXTS         #
@@ -32,7 +32,7 @@ MANIFEST_FINAL_INFO = (
     "ATTENTION : la version en cours de vérification ne peut plus être modifiée."
 )
 PLACE_INFO = "Si différent de l'ensemble."
-IMAGE_INFO = "Envoyez des images jusqu'à 2 Go."
+IMG_INFO = "Envoyez des images jusqu'à 2 Go."
 MANIFEST_INFO = """<div class='tooltip'>
                  <i class='fa-solid fa-circle-info' title='Manifest'></i>
                  <span class='tooltiptext'>A IIIF manifest is the package that contains all the information related
