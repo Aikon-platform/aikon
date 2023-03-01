@@ -27,9 +27,11 @@ from vhsapp.utils.functions import (
     rename_file,
     convert_to_jpeg,
     convert_pdf_to_image,
+)
+from vhsapp.utils.iiif import (
     validate_gallica_manifest_url,
-    extract_images_from_iiif_manifest,
     validate_iiif_manifest,
+    extract_images_from_iiif_manifest,
 )
 from vhsapp.utils.paths import (
     IMAGES_PATH,
