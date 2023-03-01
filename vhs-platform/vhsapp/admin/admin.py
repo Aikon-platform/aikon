@@ -49,6 +49,9 @@ from vhsapp.utils.paths import (
     IMAGES_PATH,
     MANUSCRIPTS_PDFS_PATH,
 )
+from vhsapp.utils.iiif import (
+    IIIF_ICON,
+)
 
 """
 Admin site
@@ -56,6 +59,7 @@ Admin site
 admin.site.site_header = SITE_HEADER
 admin.site.site_title = SITE_TITLE
 admin.site.index_title = SITE_INDEX_TITLE
+iiif_manage_url = "vhs-admin/vhsapp/imagevolume"  # TODO change that
 
 
 class AuthorFilter(AutocompleteFilter):
@@ -132,10 +136,7 @@ class ImageVolumeInline(nested_admin.NestedStackedInline):
 
     def image_preview(self, obj):
         return mark_safe(
-            '<a href="/vhs-admin/vhsapp/imagevolume/?q='
-            + str(obj.volume.id)
-            + '" target="_blank">Cliquez ici pour gérer les images de ce volume '
-            '<img alt="IIIF" src="https://iiif.io/assets/images/logos/logo-sm.png" height="15"/></a>'
+            f'<a href="/{iiif_manage_url}/?q={obj.volume.id}" target="_blank">Manage {IIIF_ICON}</a>'
         )
 
     image_preview.short_description = "Images"

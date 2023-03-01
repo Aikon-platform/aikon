@@ -8,6 +8,9 @@ from django.core.exceptions import ValidationError
 from tripoli import IIIFValidator
 
 
+IIIF_ICON = "<img alt='IIIF' src='https://iiif.io/assets/images/logos/logo-sm.png' height='15'/>"
+
+
 def parse_manifest(manifest):
     url = urlparse(manifest)
     return url.hostname, url.path.strip("/").split("/")
