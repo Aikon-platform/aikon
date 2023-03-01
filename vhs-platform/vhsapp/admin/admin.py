@@ -119,8 +119,8 @@ class VolumeInline(nested_admin.NestedStackedInline):
 
     def manifest_auto(self, obj):
         if obj.id:
-            if manifest_first := obj.manifestvolume_set.first():
-                return mark_safe(f"{get_link_manifest(obj.id, manifest_first)}<br>")
+            # if manifest_first := obj.manifestvolume_set.first():
+            #     return mark_safe(f"{get_link_manifest(obj.id, manifest_first)}<br>")
             return gen_btn(obj.id)
         return "-"
 
@@ -128,8 +128,6 @@ class VolumeInline(nested_admin.NestedStackedInline):
 
     def manifest_v2(self, obj):
         if obj.id:
-            if manifest_first := obj.manifestvolume_set.first():
-                return mark_safe(f"{get_link_manifest(obj.id, manifest_first)}<br>")
             return gen_btn(
                 obj.id, "FINAL" if obj.manifest_final else "EDIT", MANIFEST_V2
             )
@@ -484,8 +482,8 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     inlines = [PdfManuscriptInline, ManifestManuscriptInline, ImageManuscriptInline]
 
     def manifest_auto(self, obj):
-        if manifest_first := obj.manifestmanuscript_set.first():
-            return mark_safe(f"{get_link_manifest(obj.id, manifest_first)}<br>")
+        # if manifest_first := obj.manifestmanuscript_set.first():
+        #     return mark_safe(f"{get_link_manifest(obj.id, manifest_first)}<br>")
         return gen_btn(obj.id, "VISUALIZE", MANIFEST_AUTO, MS.lower())
 
     manifest_auto.short_description = "Manifeste (automatique)"
