@@ -59,7 +59,20 @@ if DEBUG:
     INTERNAL_IPS = [
         "127.0.0.1",
     ]
-    
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "console": {"class": "logging.StreamHandler"},
+        },
+        "loggers": {
+            "django": {
+                "handlers": ["console"],
+                "level": "INFO",
+            },
+        },
+    }
+
 # Define the default values for application URLs in development mode
 # VHS, CANTALOUPE, SAS
 

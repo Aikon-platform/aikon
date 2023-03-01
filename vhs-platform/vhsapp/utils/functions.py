@@ -84,3 +84,10 @@ def gen_thumbnail(url, img_url):
     return gen_link(
         url, f"<img src='{img_url}' width='30' style='border-radius:50%;'>)"
     )
+
+
+def log(msg):
+    import logging
+
+    logger = logging.getLogger("django")
+    logger.info(msg)
