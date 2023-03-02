@@ -4,6 +4,8 @@ import os
 import zipfile
 import requests
 import PyPDF2
+import environ
+from pathlib import Path
 from pikepdf import Pdf
 from vhs import settings
 
@@ -17,7 +19,9 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.template.defaultfilters import truncatewords_html
+from django.shortcuts import render
 
+from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
 from vhsapp.models import (
     Printed,
     Volume,
@@ -32,19 +36,25 @@ from vhsapp.models import (
     ManifestVolume,
     Work,
 )
-
+from vhsapp.tasking import (
+    connect_to_slurm_cluster,
+    start_slurm_job,
+    wait_for_job_completion,
+    retrieve_result_file,
+)
 from vhsapp.utils.constants import (
     SITE_HEADER,
     SITE_TITLE,
     SITE_INDEX_TITLE,
     TRUNCATEWORDS,
     MAX_ITEMS,
+    APP_NAME,
 )
 from vhsapp.utils.paths import (
     MEDIA_PATH,
-    VOLUMES_PDFS_PATH,
-    IMAGES_PATH,
-    MANUSCRIPTS_PDFS_PATH,
+    VOL_PDF_PATH,
+    IMG_PATH,
+    MS_PDF_PATH,
 )
 
 """
@@ -53,6 +63,11 @@ Admin site
 admin.site.site_header = SITE_HEADER
 admin.site.site_title = SITE_TITLE
 admin.site.index_title = SITE_INDEX_TITLE
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+env = environ.Env()
+environ.Env.read_env(env_file=f"{BASE_DIR}/{APP_NAME}/.env")
 
 
 class AuthorFilter(AutocompleteFilter):
@@ -101,7 +116,8 @@ class ImageVolumeAdmin(admin.ModelAdmin):
     def thumbnail(self, obj):
         return format_html(
             '<a href="{}" target="_blank">{}</a>'.format(
-                "http://localhost/iiif/2/"
+                CANTALOUPE_APP_URL
+                + "iiif/2/"
                 + obj.image.name.split("/")[-1]
                 + "/full/full/0/default.jpg",
                 '<img src ="{}" width ="30" style="border-radius:50%;">'.format(
@@ -189,7 +205,8 @@ class VolumeInline(nested_admin.NestedStackedInline):
     def manifest_auto(self, obj):
         if obj.id:
             url_manifest_auto = (
-                "http://localhost:8000/vhs/iiif/auto/volume/vol-"
+                VHS_APP_URL
+                + "vhs/iiif/auto/volume/vol-"
                 + str(obj.id)
                 + "/manifest.json"
             )
@@ -222,9 +239,7 @@ class VolumeInline(nested_admin.NestedStackedInline):
     def manifest_v2(self, obj):
         if obj.id:
             url_manifest = (
-                "http://localhost:8000/vhs/iiif/v2/volume/vol-"
-                + str(obj.id)
-                + "/manifest.json"
+                VHS_APP_URL + "vhs/iiif/v2/volume/vol-" + str(obj.id) + "/manifest.json"
             )
             link_manifest = (
                 '<a id="url_manifest_'
@@ -251,7 +266,9 @@ class VolumeInline(nested_admin.NestedStackedInline):
                 link_manifest
                 + '<img alt="IIIF" src="https://iiif.io/assets/images/logos/logo-sm.png" height="15"/></a><br>'
                 + button
-                + '<a href="http://localhost:8888/search-api/vol-'
+                + '<a href="'
+                + SAS_APP_URL
+                + "search-api/vol-"
                 + str(obj.id)
                 + '/search/" target="_blank"><i class="fa-solid fa-download"></i> Télécharger les annotations (JSON)</a>'
                 '<span id="message_' + str(obj.id) + '" style="color:#FF0000"></span>'
@@ -317,6 +334,7 @@ class PrintedAdmin(
         "export_selected_iiif_images",
         "export_selected_images",
         "export_selected_pdfs",
+        "detect_similarity",
     ]
     inlines = [VolumeInline]
 
@@ -367,10 +385,8 @@ class PrintedAdmin(
             else:
                 writer.writerow(
                     [
-                        request.scheme
-                        + "://"
-                        + request.META["HTTP_HOST"]
-                        + "/vhs/iiif/v2/volume/vol-"
+                        VHS_APP_URL
+                        + "vhs/iiif/v2/volume/vol-"
                         + str(manifest[0])
                         + "/manifest.json"
                     ]
@@ -388,7 +404,7 @@ class PrintedAdmin(
         pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
         pdf_images_list = []
         for pdf in pdfs_list:
-            pdf_file = Pdf.open(f"{MEDIA_PATH}{VOLUMES_PDFS_PATH}{pdf}")
+            pdf_file = Pdf.open(f"{MEDIA_PATH}{VOL_PDF_PATH}{pdf}")
             total_pages = len(pdf_file.pages)
             for image_counter in range(1, total_pages + 1):
                 pdf_images_list.append(
@@ -401,14 +417,7 @@ class PrintedAdmin(
         writer.writerow(["Image_IIIF"])
         for image in all_images:
             writer.writerow(
-                [
-                    request.scheme
-                    + "://"
-                    + request.META["HTTP_HOST"]
-                    + "/iiif/2/"
-                    + image
-                    + "/full/full/0/default.jpg"
-                ]
+                [CANTALOUPE_APP_URL + "iiif/2/" + image + "/full/full/0/default.jpg"]
             )
         return response
 
@@ -431,7 +440,7 @@ class PrintedAdmin(
         pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
         pdf_images_list = []
         for pdf in pdfs_list:
-            pdf_file = open(f"{MEDIA_PATH}{VOLUMES_PDFS_PATH}{pdf}", "rb")
+            pdf_file = open(f"{MEDIA_PATH}{VOL_PDF_PATH}{pdf}", "rb")
             readpdf = PyPDF2.PdfFileReader(pdf_file)
             total_pages = readpdf.numPages
             for image_counter in range(1, total_pages + 1):
@@ -442,7 +451,7 @@ class PrintedAdmin(
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w") as img_zip:
             # Iterate over all the files in directory
-            for foldername, _, filenames in os.walk(f"{MEDIA_PATH}{IMAGES_PATH}"):
+            for foldername, _, filenames in os.walk(f"{MEDIA_PATH}{IMG_PATH}"):
                 for filename in filenames:
                     if filename in all_images:
                         # Create complete filepath of file in directory
@@ -488,6 +497,23 @@ class PrintedAdmin(
         response["Content-Type"] = "application/x-zip-compressed"
         response["Content-Disposition"] = "attachment; filename=pdfs_volumes.zip"
         return response
+
+    @admin.action(
+        description="Détecter la similarité entre les images des Imprimés sélectionnés"
+    )
+    def detect_similarity(self, request, queryset):
+        host = env("GPU_REMOTE_HOST")
+        username = env("GPU_USERNAME")
+        password = env("GPU_PASSWORD")
+        job_script_path = "SimilarityDetection/simdet.sh"
+        remote_file_path = "SimilarityDetection/name_3.html"
+        local_file_path = "vhsapp/templates/vhsapp/printed/output.html"
+        ssh = connect_to_slurm_cluster(host, username, password)
+        job_id = start_slurm_job(ssh, job_script_path)
+        wait_for_job_completion(ssh, job_id)
+        content = retrieve_result_file(ssh, remote_file_path, local_file_path)
+        context = {"content": content}
+        return render(request, "vhsapp/printed/template.html", context)
 
     @button(
         permission="demo.add_demomodel1",
@@ -562,7 +588,8 @@ class ImageManuscriptAdmin(admin.ModelAdmin):
     def thumbnail(self, obj):
         return format_html(
             '<a href="{}" target="_blank">{}</a>'.format(
-                "http://localhost/iiif/2/"
+                CANTALOUPE_APP_URL
+                + "iiif/2/"
                 + obj.image.name.split("/")[-1]
                 + "/full/full/0/default.jpg",
                 '<img src ="{}" width ="30" style="border-radius:50%;">'.format(
@@ -682,7 +709,8 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
 
     def manifest_auto(self, obj):
         url_manifest_auto = (
-            "http://localhost:8000/vhs/iiif/auto/manuscript/ms-"
+            VHS_APP_URL
+            + "vhs/iiif/auto/manuscript/ms-"
             + str(obj.id)
             + "/manifest.json"
         )
@@ -711,9 +739,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
 
     def manifest_v2(self, obj):
         url_manifest = (
-            "http://localhost:8000/vhs/iiif/v2/manuscript/ms-"
-            + str(obj.id)
-            + "/manifest.json"
+            VHS_APP_URL + "vhs/iiif/v2/manuscript/ms-" + str(obj.id) + "/manifest.json"
         )
         link_manifest = (
             '<a id="url_manifest_'
@@ -740,7 +766,9 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             link_manifest
             + '<img alt="IIIF" src="https://iiif.io/assets/images/logos/logo-sm.png" height="15"/></a><br>'
             + button
-            + '<a href="http://localhost:8888/search-api/ms-'
+            + '<a href="'
+            + SAS_APP_URL
+            + "search-api/ms-"
             + str(obj.id)
             + '/search" target="_blank"><i class="fa-solid fa-download"></i> Télécharger les annotations (JSON)</a>'
             '<span id="message_' + str(obj.id) + '" style="color:#FF0000"></span>'
@@ -799,10 +827,8 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             else:
                 writer.writerow(
                     [
-                        request.scheme
-                        + "://"
-                        + request.META["HTTP_HOST"]
-                        + "/vhs/iiif/v2/manuscript/ms-"
+                        VHS_APP_URL
+                        + "vhs/iiif/v2/manuscript/ms-"
                         + str(manifest[0])
                         + "/manifest.json"
                     ]
@@ -820,7 +846,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
         pdf_images_list = []
         for pdf in pdfs_list:
-            pdf_file = open(f"{MEDIA_PATH}{MANUSCRIPTS_PDFS_PATH}{pdf}", "rb")
+            pdf_file = open(f"{MEDIA_PATH}{MS_PDF_PATH}{pdf}", "rb")
             readpdf = PyPDF2.PdfFileReader(pdf_file)
             total_pages = readpdf.numPages
             for image_counter in range(1, total_pages + 1):
@@ -836,14 +862,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         writer.writerow(["Image_IIIF"])
         for image in all_images:
             writer.writerow(
-                [
-                    request.scheme
-                    + "://"
-                    + request.META["HTTP_HOST"]
-                    + "/iiif/2/"
-                    + image
-                    + "/full/full/0/default.jpg"
-                ]
+                [CANTALOUPE_APP_URL + "iiif/2/" + image + "/full/full/0/default.jpg"]
             )
         return response
 
@@ -865,7 +884,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
         pdf_images_list = []
         for pdf in pdfs_list:
-            pdf_file = open(f"{MEDIA_PATH}{MANUSCRIPTS_PDFS_PATH}{pdf}", "rb")
+            pdf_file = open(f"{MEDIA_PATH}{MS_PDF_PATH}{pdf}", "rb")
             readpdf = PyPDF2.PdfFileReader(pdf_file)
             total_pages = readpdf.numPages
             for image_counter in range(1, total_pages + 1):
@@ -876,7 +895,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w") as img_zip:
             # Iterate over all the files in directory
-            for foldername, _, filenames in os.walk(f"{MEDIA_PATH}{IMAGES_PATH}"):
+            for foldername, _, filenames in os.walk(f"{MEDIA_PATH}{IMG_PATH}"):
                 for filename in filenames:
                     if filename in all_images:
                         # Create complete filepath of file in directory

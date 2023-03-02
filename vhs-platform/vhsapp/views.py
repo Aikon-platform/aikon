@@ -2,7 +2,6 @@ import json
 import csv
 import PyPDF2
 import environ
-from datetime import datetime
 from urllib.request import urlopen
 from urllib.parse import urlencode
 from PIL import Image
@@ -14,24 +13,26 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
-from vhsapp.models import Volume, Manuscript
+from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
+from vhsapp.models import Manuscript, Volume
 from vhsapp.utils.constants import (
-    SAS_URL_SECURE,
     APP_NAME,
     APP_NAME_UPPER,
     MANUSCRIPT,
     MANUSCRIPT_ABBR,
     VOLUME,
     VOLUME_ABBR,
+    APP_DESCRIPTION,
 )
 from vhsapp.utils.functions import credentials
 from iiif_prezi.factory import ManifestFactory
 
+from vhsapp.utils.iiif import annotate_canvas
 from vhsapp.utils.paths import (
     MEDIA_PATH,
-    VOLUMES_ANNOTATIONS_PATH,
-    MANUSCRIPTS_ANNOTATIONS_PATH,
-    IMAGES_PATH,
+    VOL_ANNO_PATH,
+    MS_ANNO_PATH,
+    IMG_PATH,
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -57,14 +58,20 @@ def manifest_manuscript(request, id, version):
         raise Http404("Le manuscrit #%s n'existe pas" % id)
 
     # Configure the factory
-    scheme = request.scheme
-    hostname = request.META["HTTP_HOST"]
     fac = ManifestFactory()
     fac.set_base_prezi_uri(
-        "http://localhost:8000/vhs/iiif/" + version + "/manuscript/ms-" + str(id) + "/"
+        VHS_APP_URL
+        + "vhs/iiif/"
+        + version
+        + "/"
+        + MANUSCRIPT
+        + "/"
+        + MANUSCRIPT_ABBR
+        + "-"
+        + str(id)
+        + "/"
     )
-    # fac.set_base_prezi_uri(scheme + '://' + hostname + '/vhs/iiif/' + version + '/manuscript/ms' + str(id) + '/')
-    fac.set_base_image_uri("http://localhost/iiif/2/")
+    fac.set_base_image_uri(CANTALOUPE_APP_URL + "iiif/2/")
     fac.set_iiif_image_info(version="2.0", lvl="2")
 
     # Build the manifest
@@ -91,8 +98,8 @@ def manifest_manuscript(request, id, version):
             {"Link to Pinakes (greek mss) or Medium-IRHT (latin mss)": pinakes_link}
         )
     mf.attribution = f"{APP_NAME_UPPER} platform"
+    mf.description = APP_DESCRIPTION
     mf.viewingHint = "individuals"
-    # mf.description = ''
 
     # And walk through the pages
     seq = mf.sequence(ident="normal", label="Normal Order")
@@ -121,7 +128,7 @@ def manifest_manuscript(request, id, version):
                 .split("/")[-1]
                 .replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
             )
-            image = Image.open(f"{MEDIA_PATH}{IMAGES_PATH}{image_path}")
+            image = Image.open(f"{MEDIA_PATH}{IMG_PATH}{image_path}")
             # Build the canvas
             cvs = seq.canvas(
                 ident="c%s" % image_counter, label="Folio %s" % image_counter
@@ -137,7 +144,7 @@ def manifest_manuscript(request, id, version):
                 anno.text("Annotation")
     elif manifest_first := manuscript.manifestmanuscript_set.first():
         for image_counter, path in enumerate(
-            sorted(glob(f"{MEDIA_PATH}{IMAGES_PATH}ms{id}_*.jpg"))
+            sorted(glob(f"{MEDIA_PATH}{IMG_PATH}ms{id}_*.jpg"))
         ):
             image_counter += 1
             image_path = path.replace("\\", "/").split("/")[-1]
@@ -176,14 +183,20 @@ def manifest_volume(request, id, version):
         raise Http404("Le volume #%s n'existe pas" % id)
 
     # Configure the factory
-    scheme = request.scheme
-    hostname = request.META["HTTP_HOST"]
     fac = ManifestFactory()
     fac.set_base_prezi_uri(
-        "http://localhost:8000/vhs/iiif/" + version + "/volume/vol-" + str(id) + "/"
+        VHS_APP_URL
+        + "vhs/iiif/"
+        + version
+        + "/"
+        + VOLUME
+        + "/"
+        + VOLUME_ABBR
+        + "-"
+        + str(id)
+        + "/"
     )
-    # fac.set_base_prezi_uri(scheme + '://' + hostname + '/vhs/iiif/' + version + '/volume/vol' + id + '/')
-    fac.set_base_image_uri("http://localhost/iiif/2/")
+    fac.set_base_image_uri(CANTALOUPE_APP_URL + "iiif/2/")
     fac.set_iiif_image_info(version="2.0", lvl="2")
 
     # Build the manifest
@@ -208,8 +221,8 @@ def manifest_volume(request, id, version):
     if other_copies := volume.other_copies:
         mf.set_metadata({"Other copy(ies)": other_copies})
     mf.attribution = f"{APP_NAME_UPPER} platform"
+    mf.description = APP_DESCRIPTION
     mf.viewingHint = "individuals"
-    # mf.description = ''
 
     # And walk through the pages
     seq = mf.sequence(ident="normal", label="Normal Order")
@@ -237,7 +250,7 @@ def manifest_volume(request, id, version):
                 .split("/")[-1]
                 .replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
             )
-            image = Image.open(f"{MEDIA_PATH}{IMAGES_PATH}{image_path}")
+            image = Image.open(f"{MEDIA_PATH}{IMG_PATH}{image_path}")
             # Build the canvas
             cvs = seq.canvas(
                 ident="c%s" % image_counter, label="Page %s" % image_counter
@@ -253,7 +266,7 @@ def manifest_volume(request, id, version):
                 anno.text("Annotation")
     elif manifest_first := volume.manifestvolume_set.first():
         for image_counter, path in enumerate(
-            sorted(glob(f"{MEDIA_PATH}{IMAGES_PATH}vol{id}_*.jpg"))
+            sorted(glob(f"{MEDIA_PATH}{IMG_PATH}vol{id}_*.jpg"))
         ):
             image_counter += 1
             image_path = path.replace("\\", "/").split("/")[-1]
@@ -287,7 +300,7 @@ def annotation_auto(request, id, work):
     writer = csv.writer(response)
     writer.writerow(["IIIF_Image_Annotations"])
     annotations_path = (
-        VOLUMES_ANNOTATIONS_PATH if work == VOLUME else MANUSCRIPTS_ANNOTATIONS_PATH
+        VOL_ANNO_PATH if work == VOLUME else MS_ANNO_PATH
     )
     with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
@@ -306,8 +319,8 @@ def annotation_auto(request, id, work):
                 )
                 writer.writerow(
                     [
-                        request.scheme
-                        + "://localhost/iiif/2/"
+                        CANTALOUPE_APP_URL
+                        + "iiif/2/"
                         + img_name
                         + "/"
                         + region
@@ -319,7 +332,7 @@ def annotation_auto(request, id, work):
 
 def annotate_work(request, id, version, work, work_abbr, canvas):
     annotations_path = (
-        VOLUMES_ANNOTATIONS_PATH if work == VOLUME else MANUSCRIPTS_ANNOTATIONS_PATH
+        VOL_ANNO_PATH if work == VOLUME else MS_ANNO_PATH
     )
     with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
@@ -356,18 +369,21 @@ Populate annotation store from IIIF Annotation List
 
 def populate_annotation(request, id, work):
     work_map = {
-        VOLUME: (VOLUME_ABBR, VOLUMES_ANNOTATIONS_PATH),
-        MANUSCRIPT: (MANUSCRIPT_ABBR, MANUSCRIPTS_ANNOTATIONS_PATH),
+        VOLUME: (VOLUME_ABBR, VOL_ANNO_PATH),
+        MANUSCRIPT: (MANUSCRIPT_ABBR, MS_ANNO_PATH),
     }
     work_abbr, annotations_path = work_map.get(work, (None, None))
     if not env("DEBUG"):
-        credentials(SAS_URL_SECURE, env("SAS_USERNAME"), env("SAS_PASSWORD"))
+        credentials(SAS_APP_URL, env("SAS_USERNAME"), env("SAS_PASSWORD"))
     with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
     canvas = [line.split()[0] for line in lines if len(line.split()) == 2]
     for c in canvas:
         url_search = (
-            "http://localhost:8888/annotation/search?uri=http://localhost:8000/vhs/iiif/v2/"
+            SAS_APP_URL
+            + "annotation/search?uri="
+            + VHS_APP_URL
+            + "vhs/iiif/v2/"
             + work
             + "/"
             + work_abbr
@@ -383,12 +399,13 @@ def populate_annotation(request, id, work):
         data = json.loads(response.read())
         if len(data) > 0:
             return HttpResponse(status=200)
-    url_populate = "http://localhost:8888/annotation/populate"
+    url_populate = SAS_APP_URL + "annotation/populate"
     for line in lines:
         if len(line.split()) == 2:
             canvas = line.split()[0]
             params = {
-                "uri": "http://localhost:8000/vhs/iiif/v2/"
+                "uri": VHS_APP_URL
+                + "vhs/iiif/v2/"
                 + work
                 + "/"
                 + work_abbr
@@ -408,16 +425,14 @@ def populate_annotation(request, id, work):
 @login_required(login_url=f"/{APP_NAME}-admin/")
 def show_work(request, id, work):
     work_map = {
-        MANUSCRIPT: (Manuscript, MANUSCRIPT_ABBR, MANUSCRIPTS_ANNOTATIONS_PATH),
-        VOLUME: (Volume, VOLUME_ABBR, VOLUMES_ANNOTATIONS_PATH),
+        MANUSCRIPT: (Manuscript, MANUSCRIPT_ABBR, MS_ANNO_PATH),
+        VOLUME: (Volume, VOLUME_ABBR, VOL_ANNO_PATH),
     }
     work_model, work_abbr, annotations_path = work_map.get(work, (None, None, None))
     work_obj = get_object_or_404(work_model, pk=id)
     url_manifest = (
-        request.scheme
-        + "://"
-        + request.META["HTTP_HOST"]
-        + "/vhs/iiif/v2/"
+        VHS_APP_URL
+        + "vhs/iiif/v2/"
         + work
         + "/"
         + work_abbr
@@ -427,13 +442,16 @@ def show_work(request, id, work):
     )
     canvas_annos = []
     if not env("DEBUG"):
-        credentials(SAS_URL_SECURE, env("SAS_USERNAME"), env("SAS_PASSWORD"))
+        credentials(SAS_APP_URL, env("SAS_USERNAME"), env("SAS_PASSWORD"))
     with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
         for line in lines:
             if len(line.split()) == 2:
                 url_search = (
-                    "http://localhost:8888/annotation/search?uri=http://localhost:8000/vhs/iiif/v2/"
+                    SAS_APP_URL
+                    + "annotation/search?uri="
+                    + VHS_APP_URL
+                    + "vhs/iiif/v2/"
                     + work
                     + "/"
                     + work_abbr
@@ -458,8 +476,8 @@ def show_work(request, id, work):
                 canvas_annos.append(
                     (
                         annos,
-                        request.scheme
-                        + "://localhost/iiif/2/"
+                        CANTALOUPE_APP_URL
+                        + "iiif/2/"
                         + line.split()[1]
                         + "/full/full/0/default.jpg",
                     )
@@ -474,101 +492,3 @@ def show_work(request, id, work):
             "url_manifest": url_manifest,
         },
     )
-
-
-def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
-    anno_json = {
-        "@id": "http://localhost:8888/annotation/"
-        + work_abbr
-        + "-"
-        + str(id)
-        + "-"
-        + str(canvas)
-        + "-"
-        + str(num_anno + 1),
-        "@type": "oa:Annotation",
-        "dcterms:created": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-        "dcterms:modified": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-        "resource": [
-            {
-                "@type": "dctypes:Text",
-                "http://localhost:8000/sas/full_text": "",
-                "format": "text/html",
-                "chars": "<p></p>",
-            }
-        ],
-        "on": [
-            {
-                "@type": "oa:SpecificResource",
-                "within": {
-                    "@id": "http://localhost:8000/vhs/iiif/"
-                    + version
-                    + "/"
-                    + work
-                    + "/"
-                    + work_abbr
-                    + "-"
-                    + str(id)
-                    + "/manifest.json",
-                    "@type": "sc:Manifest",
-                },
-                "selector": {
-                    "@type": "oa:Choice",
-                    "default": {
-                        "@type": "oa:FragmentSelector",
-                        "value": "xywh="
-                        + str(anno[0])
-                        + ","
-                        + str(anno[1])
-                        + ","
-                        + str(anno[2])
-                        + ","
-                        + str(anno[3]),
-                    },
-                    "item": {
-                        "@type": "oa:SvgSelector",
-                        "value": "<svg xmlns='http://www.w3.org/2000/svg'><path xmlns='http://www.w3.org/2000/svg' d='M"
-                        + str(anno[0])
-                        + " "
-                        + str(anno[1])
-                        + " h "
-                        + str(anno[2] // 2)
-                        + " v 0 h "
-                        + str(anno[2] // 2)
-                        + " v "
-                        + str(anno[3] // 2)
-                        + " v "
-                        + str(anno[3] // 2)
-                        + " h -"
-                        + str(anno[2] // 2)
-                        + " h -"
-                        + str(anno[2] // 2)
-                        + " v -"
-                        + str(anno[3] // 2)
-                        + 'Z\' data-paper-data=\'{"strokeWidth":1,"rotation":0,"deleteIcon":null,"rotationIcon":null,"group":null,"editable":true,"annotation":null}\' id=\'rectangle_'
-                        + work_abbr
-                        + str(id)
-                        + "-"
-                        + str(canvas)
-                        + "-"
-                        + str(num_anno + 1)
-                        + "' fill-opacity='0' fill='#00ff00' fill-rule='nonzero' stroke='#00ff00' stroke-width='1' stroke-linecap='butt' stroke-linejoin='miter' stroke-miterlimit='10' stroke-dashoffset='0' style='mix-blend-mode: normal'/></svg>",
-                    },
-                },
-                "full": "http://localhost:8000/vhs/iiif/"
-                + version
-                + "/"
-                + work
-                + "/"
-                + work_abbr
-                + "-"
-                + str(id)
-                + "/canvas/c"
-                + str(canvas)
-                + ".json",
-            }
-        ],
-        "motivation": ["oa:commenting", "oa:tagging"],
-        "@context": "http://iiif.io/api/presentation/2/context.json",
-    }
-    return anno_json

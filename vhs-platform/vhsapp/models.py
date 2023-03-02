@@ -34,9 +34,9 @@ from vhsapp.utils.iiif import (
     extract_images_from_iiif_manifest,
 )
 from vhsapp.utils.paths import (
-    IMAGES_PATH,
-    MANUSCRIPTS_PDFS_PATH,
-    VOLUMES_PDFS_PATH,
+    IMG_PATH,
+    MS_PDF_PATH,
+    VOL_PDF_PATH,
     MEDIA_PATH,
 )
 
@@ -205,7 +205,7 @@ class ImageVolume(models.Model):
     volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
     image = models.ImageField(
         verbose_name="Image",
-        upload_to=partial(rename_file, path=IMAGES_PATH),
+        upload_to=partial(rename_file, path=IMG_PATH),
         validators=[
             FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "tif"])
         ],
@@ -249,7 +249,7 @@ class PdfVolume(models.Model):
     volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
     pdf = models.FileField(
         verbose_name="PDF",
-        upload_to=partial(rename_file, path=VOLUMES_PDFS_PATH),
+        upload_to=partial(rename_file, path=VOL_PDF_PATH),
         validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
     )
 
@@ -266,7 +266,7 @@ class PdfVolume(models.Model):
         # Run the PDF to image async conversion task in the background using threading
         t = threading.Thread(
             target=convert_pdf_to_image,
-            args=(f"{MEDIA_PATH}{self.pdf.name}", f"{MEDIA_PATH}{IMAGES_PATH}"),
+            args=(f"{MEDIA_PATH}{self.pdf.name}", f"{MEDIA_PATH}{IMG_PATH}"),
         )
         t.start()
 
@@ -303,7 +303,7 @@ class ManifestVolume(models.Model):
             target=extract_images_from_iiif_manifest,
             args=(
                 self.manifest,
-                f"{MEDIA_PATH}{IMAGES_PATH}",
+                f"{MEDIA_PATH}{IMG_PATH}",
                 f"{VOLUME_ABBR}{self.volume.id}",
             ),
         )
@@ -401,7 +401,7 @@ class ImageManuscript(models.Model):
     manuscript = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
     image = models.ImageField(
         verbose_name="Image",
-        upload_to=partial(rename_file, path=IMAGES_PATH),
+        upload_to=partial(rename_file, path=IMG_PATH),
         validators=[
             FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "tif"])
         ],
@@ -445,7 +445,7 @@ class PdfManuscript(models.Model):
     manuscript = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
     pdf = models.FileField(
         verbose_name="PDF",
-        upload_to=partial(rename_file, path=MANUSCRIPTS_PDFS_PATH),
+        upload_to=partial(rename_file, path=MS_PDF_PATH),
         validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
     )
 
@@ -462,7 +462,7 @@ class PdfManuscript(models.Model):
         # Run the PDF to image async conversion task in the background using threading
         t = threading.Thread(
             target=convert_pdf_to_image,
-            args=(f"{MEDIA_PATH}{self.pdf.name}", f"{MEDIA_PATH}{IMAGES_PATH}"),
+            args=(f"{MEDIA_PATH}{self.pdf.name}", f"{MEDIA_PATH}{IMG_PATH}"),
         )
         t.start()
 
@@ -499,7 +499,7 @@ class ManifestManuscript(models.Model):
             target=extract_images_from_iiif_manifest,
             args=(
                 self.manifest,
-                f"{MEDIA_PATH}{IMAGES_PATH}",
+                f"{MEDIA_PATH}{IMG_PATH}",
                 f"{MANUSCRIPT_ABBR}{self.manuscript.id}",
             ),
         )
