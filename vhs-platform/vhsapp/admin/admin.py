@@ -53,7 +53,8 @@ from vhsapp.utils.paths import (
     MS_PDF_PATH,
 )
 
-from vhsapp.utils.iiif import get_link_manifest, gen_btn
+from vhsapp.utils.iiif import get_link_manifest, gen_btn, gen_manifest_url, gen_img_url
+from vhsapp.utils.functions import list_to_csv, zip_img, get_file_list
 
 """
 Admin site
@@ -196,6 +197,16 @@ class PrintedAdmin(
     ]
     inlines = [VolumeInline]
 
+    def check_selection(self, queryset, request):
+        if len(queryset) > MAX_ITEMS:
+            self.message_user(
+                request,
+                f"Actions can be performed on up to {MAX_ITEMS} elements only.",
+                messages.WARNING,
+            )
+            return True
+        return False
+
     def short_author(self, obj):
         return truncatewords_html(obj.author, TRUNCATEWORDS)
 
@@ -221,149 +232,152 @@ class PrintedAdmin(
         super(PrintedAdmin, self).save_related(request, form, formsets, change)
         count_volumes = form.instance.volume_set.count()
         for i in range(count_volumes):
-            files = request.FILES.getlist(
-                "volume_set-" + str(i) + "-imagevolume_set-0-image"
-            )
+            files = request.FILES.getlist(f"volume_set-{i}-imagevolume_set-0-image")
             for file in files[:-1]:
                 form.instance.volume_set.all()[i].imagevolume_set.create(image=file)
 
     @admin.action(description="Exporter les manifests IIIF des Imprimés sélectionnés")
     def export_selected_manifests(self, request, queryset):
-        printed = queryset.exclude(volume__isnull=True)
-        manifests_list = printed.values_list(
-            "volume__id", "volume__manifestvolume__manifest"
-        )
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = "attachment; filename=manifests_volumes.csv"
-        writer = csv.writer(response)
-        writer.writerow(["Manifest_IIIF"])
-        for manifest in manifests_list:
-            if mnf := manifest[1]:
-                writer.writerow([mnf])
-            else:
-                writer.writerow(
-                    [
-                        request.scheme
-                        + "://"
-                        + request.META["HTTP_HOST"]
-                        + "/vhs/iiif/v2/volume/vol-"
-                        + str(manifest[0])
-                        + "/manifest.json"
-                    ]
-                )
-        return response
+        results = queryset.exclude(volume__isnull=True).values_list("volume__id")
+        manifests = [
+            gen_manifest_url(
+                mnf[0], request.scheme, request.META["HTTP_HOST"], None, MANIFEST_V2
+            )
+            for mnf in results
+        ]
+        return list_to_csv(manifests, "Manifest_IIIF")
+        # printed = queryset.exclude(volume__isnull=True)
+        # manifests_list = printed.values_list(
+        #     "volume__id", "volume__manifestvolume__manifest"
+        # )
+        # response = HttpResponse(content_type="text/csv")
+        # response["Content-Disposition"] = "attachment; filename=manifests_volumes.csv"
+        # writer = csv.writer(response)
+        # writer.writerow(["Manifest_IIIF"])
+        # for manifest in manifests_list:
+        #     if mnf := manifest[1]:
+        #         writer.writerow([mnf])
+        #     else:
+        #         writer.writerow(
+        #             [
+        #                 request.scheme
+        #                 + "://"
+        #                 + request.META["HTTP_HOST"]
+        #                 + "/vhs/iiif/v2/volume/vol-"
+        #                 + str(manifest[0])
+        #                 + "/manifest.json"
+        #             ]
+        #         )
+        # return response
 
     @admin.action(description="Exporter les images IIIF des Imprimés sélectionnés")
     def export_selected_iiif_images(self, request, queryset):
-        printed = queryset.exclude(volume__isnull=True)
-        images_list = printed.values_list("volume__imagevolume__image", flat=True)
-        pdfs_list = printed.values_list("volume__pdfvolume__pdf", flat=True)
-        images_list = [
-            image.split("/")[-1] for image in images_list if image is not None
+        img_list = [
+            gen_img_url(img, request.scheme, request.META["HTTP_HOST"])
+            for img in self.get_img_list(queryset)
         ]
-        pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
-        pdf_images_list = []
-        for pdf in pdfs_list:
-            pdf_file = Pdf.open(f"{MEDIA_PATH}{VOL_PDF_PATH}{pdf}")
-            total_pages = len(pdf_file.pages)
-            for image_counter in range(1, total_pages + 1):
-                pdf_images_list.append(
-                    pdf.replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
-                )
-        all_images = images_list + pdf_images_list
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = "attachment; filename=images_iiif_volumes.csv"
-        writer = csv.writer(response)
-        writer.writerow(["Image_IIIF"])
-        for image in all_images:
-            writer.writerow(
-                [
-                    request.scheme
-                    + "://"
-                    + request.META["HTTP_HOST"]
-                    + "/iiif/2/"
-                    + image
-                    + "/full/full/0/default.jpg"
-                ]
-            )
-        return response
+        return list_to_csv(img_list, "Image_IIIF")
+        # printed = queryset.exclude(volume__isnull=True)
+        # images_list = printed.values_list("volume__imagevolume__image", flat=True)
+        # pdfs_list = printed.values_list("volume__pdfvolume__pdf", flat=True)
+        # images_list = [
+        #     image.split("/")[-1] for image in images_list if image is not None
+        # ]
+        # pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
+        # pdf_images_list = []
+        # for pdf in pdfs_list:
+        #     pdf_file = Pdf.open(f"{MEDIA_PATH}{VOL_PDF_PATH}{pdf}")
+        #     total_pages = len(pdf_file.pages)
+        #     for image_counter in range(1, total_pages + 1):
+        #         pdf_images_list.append(
+        #             pdf.replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
+        #         )
+        # all_images = images_list + pdf_images_list
+        # response = HttpResponse(content_type="text/csv")
+        # response["Content-Disposition"] = "attachment; filename=images_iiif_volumes.csv"
+        # writer = csv.writer(response)
+        # writer.writerow(["Image_IIIF"])
+        # for image in all_images:
+        #     writer.writerow(
+        #         [
+        #             request.scheme
+        #             + "://"
+        #             + request.META["HTTP_HOST"]
+        #             + "/iiif/2/"
+        #             + image
+        #             + "/full/full/0/default.jpg"
+        #         ]
+        #     )
+        # return response
 
     @admin.action(description="Exporter les images des Imprimés sélectionnés")
     def export_selected_images(self, request, queryset):
-        if len(queryset) > MAX_ITEMS:
-            self.message_user(
-                request,
-                f"{MAX_ITEMS} éléments au maximum doivent être sélectionnés afin d'appliquer les actions.",
-                messages.WARNING,
-            )
+        if self.check_selection(queryset, request):
             return HttpResponseRedirect(request.get_full_path())
-
-        printed = queryset.exclude(volume__isnull=True)
-        images_list = printed.values_list("volume__imagevolume__image", flat=True)
-        pdfs_list = printed.values_list("volume__pdfvolume__pdf", flat=True)
-        images_list = [
-            image.split("/")[-1] for image in images_list if image is not None
-        ]
-        pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
-        pdf_images_list = []
-        for pdf in pdfs_list:
-            pdf_file = open(f"{MEDIA_PATH}{VOL_PDF_PATH}{pdf}", "rb")
-            readpdf = PyPDF2.PdfFileReader(pdf_file)
-            total_pages = readpdf.numPages
-            for image_counter in range(1, total_pages + 1):
-                pdf_images_list.append(
-                    pdf.replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
-                )
-        all_images = images_list + pdf_images_list
-        buffer = io.BytesIO()
-        with zipfile.ZipFile(buffer, "w") as img_zip:
-            # Iterate over all the files in directory
-            for foldername, _, filenames in os.walk(f"{MEDIA_PATH}{IMG_PATH}"):
-                for filename in filenames:
-                    if filename in all_images:
-                        # Create complete filepath of file in directory
-                        filepath = os.path.join(foldername, filename)
-                        # Add file to zip
-                        img_zip.write(filepath, os.path.basename(filepath))
-        response = HttpResponse(buffer.getvalue())
-        response["Content-Type"] = "application/x-zip-compressed"
-        response["Content-Disposition"] = "attachment; filename=images_volumes.zip"
-        return response
+        return zip_img(zipfile, get_file_list(IMG_PATH, self.get_img_list(queryset)))
+        # printed = queryset.exclude(volume__isnull=True)
+        # images_list = printed.values_list("volume__imagevolume__image", flat=True)
+        # pdfs_list = printed.values_list("volume__pdfvolume__pdf", flat=True)
+        # images_list = [
+        #     image.split("/")[-1] for image in images_list if image is not None
+        # ]
+        # pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
+        # pdf_images_list = []
+        # for pdf in pdfs_list:
+        #     pdf_file = open(f"{MEDIA_PATH}{VOL_PDF_PATH}{pdf}", "rb")
+        #     readpdf = PyPDF2.PdfFileReader(pdf_file)
+        #     total_pages = readpdf.numPages
+        #     for image_counter in range(1, total_pages + 1):
+        #         pdf_images_list.append(
+        #             pdf.replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
+        #         )
+        # all_images = images_list + pdf_images_list
+        # buffer = io.BytesIO()
+        # with zipfile.ZipFile(buffer, "w") as img_zip:
+        #     # Iterate over all the files in directory
+        #     for foldername, _, filenames in os.walk(f"{MEDIA_PATH}{IMG_PATH}"):
+        #         for filename in filenames:
+        #             if filename in all_images:
+        #                 # Create complete filepath of file in directory
+        #                 filepath = os.path.join(foldername, filename)
+        #                 # Add file to zip
+        #                 img_zip.write(filepath, os.path.basename(filepath))
+        # response = HttpResponse(buffer.getvalue())
+        # response["Content-Type"] = "application/x-zip-compressed"
+        # response["Content-Disposition"] = "attachment; filename=images_volumes.zip"
+        # return response
 
     @admin.action(description="Exporter les documents PDF des Imprimés sélectionnés")
     def export_selected_pdfs(self, request, queryset):
-        if len(queryset) > MAX_ITEMS:
-            self.message_user(
-                request,
-                f"{MAX_ITEMS} éléments au maximum doivent être sélectionnés afin d'appliquer les actions.",
-                messages.WARNING,
-            )
+        if self.check_selection(queryset, request):
             return HttpResponseRedirect(request.get_full_path())
-
-        printed = queryset.exclude(volume__isnull=True)
-        pdfs_list = printed.values_list("volume__pdfvolume__pdf", flat=True)
-        pdfs_list = (pdf for pdf in pdfs_list if pdf is not None)
-        pdfs_list = [
-            request.scheme
-            + "://"
-            + request.META["HTTP_HOST"]
-            + "/"
-            + settings.MEDIA_URL
-            + s
-            for s in pdfs_list
-        ]
-
-        buffer = io.BytesIO()
-        with zipfile.ZipFile(buffer, "w") as pdf_zip:
-            for pdf_url in pdfs_list:
-                pdf_name = os.path.basename(pdf_url)
-                pdf_data = requests.get(pdf_url).content
-                pdf_zip.writestr(pdf_name, pdf_data)
-
-        response = HttpResponse(buffer.getvalue())
-        response["Content-Type"] = "application/x-zip-compressed"
-        response["Content-Disposition"] = "attachment; filename=pdfs_volumes.zip"
-        return response
+        return zip_img(
+            zipfile, self.get_img_list(queryset, with_img=False, with_pdf=True), "pdf"
+        )
+        # printed = queryset.exclude(volume__isnull=True)
+        # pdfs_list = printed.values_list("volume__pdfvolume__pdf", flat=True)
+        # pdfs_list = (pdf for pdf in pdfs_list if pdf is not None)
+        # pdfs_list = [
+        #     request.scheme
+        #     + "://"
+        #     + request.META["HTTP_HOST"]
+        #     + "/"
+        #     + settings.MEDIA_URL
+        #     + s
+        #     for s in pdfs_list
+        # ]
+        #
+        # buffer = io.BytesIO()
+        # with zipfile.ZipFile(buffer, "w") as pdf_zip:
+        #     for pdf_url in pdfs_list:
+        #         pdf_name = os.path.basename(pdf_url)
+        #         pdf_data = requests.get(pdf_url).content
+        #         pdf_zip.writestr(pdf_name, pdf_data)
+        #
+        # response = HttpResponse(buffer.getvalue())
+        # response["Content-Type"] = "application/x-zip-compressed"
+        # response["Content-Disposition"] = "attachment; filename=pdfs_volumes.zip"
+        # return response
 
     @button(
         permission="demo.add_demomodel1",
@@ -481,6 +495,16 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     ]
     inlines = [PdfManuscriptInline, ManifestManuscriptInline, ImageManuscriptInline]
 
+    def check_selection(self, queryset, request):
+        if len(queryset) > MAX_ITEMS:
+            self.message_user(
+                request,
+                f"Actions can be performed on up to {MAX_ITEMS} elements only.",
+                messages.WARNING,
+            )
+            return True
+        return False
+
     def manifest_auto(self, obj):
         # if manifest_first := obj.manifestmanuscript_set.first():
         #     return mark_safe(f"{get_link_manifest(obj.id, manifest_first)}<br>")
@@ -535,143 +559,151 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
 
     @admin.action(description="Exporter les manifests IIIF des Manuscrits sélectionnés")
     def export_selected_manifests(self, request, queryset):
-        manuscripts = queryset
-        manifests_list = manuscripts.values_list("id", "manifestmanuscript__manifest")
-        response = HttpResponse(content_type="text/csv")
-        response[
-            "Content-Disposition"
-        ] = "attachment; filename=manifests_manuscripts.csv"
-        writer = csv.writer(response)
-        writer.writerow(["Manifest_IIIF"])
-        for manifest in manifests_list:
-            if mnf := manifest[1]:
-                writer.writerow([mnf])
-            else:
-                writer.writerow(
-                    [
-                        request.scheme
-                        + "://"
-                        + request.META["HTTP_HOST"]
-                        + "/vhs/iiif/v2/manuscript/ms-"
-                        + str(manifest[0])
-                        + "/manifest.json"
-                    ]
-                )
-        return response
+        results = queryset.exclude(volume__isnull=True).values_list("volume__id")
+        manifests = [
+            gen_manifest_url(
+                mnf[0], request.scheme, request.META["HTTP_HOST"], None, MANIFEST_V2
+            )
+            for mnf in results
+        ]
+        return list_to_csv(manifests, "Manifest_IIIF")
+        # manuscripts = queryset
+        # manifests_list = manuscripts.values_list("id", "manifestmanuscript__manifest")
+        # response = HttpResponse(content_type="text/csv")
+        # response[
+        #     "Content-Disposition"
+        # ] = "attachment; filename=manifests_manuscripts.csv"
+        # writer = csv.writer(response)
+        # writer.writerow(["Manifest_IIIF"])
+        # for manifest in manifests_list:
+        #     if mnf := manifest[1]:
+        #         writer.writerow([mnf])
+        #     else:
+        #         writer.writerow(
+        #             [
+        #                 request.scheme
+        #                 + "://"
+        #                 + request.META["HTTP_HOST"]
+        #                 + "/vhs/iiif/v2/manuscript/ms-"
+        #                 + str(manifest[0])
+        #                 + "/manifest.json"
+        #             ]
+        #         )
+        # return response
 
     @admin.action(description="Exporter les images IIIF des Manuscrits sélectionnés")
     def export_selected_iiif_images(self, request, queryset):
-        manuscripts = queryset
-        images_list = manuscripts.values_list("imagemanuscript__image", flat=True)
-        pdfs_list = manuscripts.values_list("pdfmanuscript__pdf", flat=True)
-        images_list = [
-            image.split("/")[-1] for image in images_list if image is not None
+        img_list = [
+            gen_img_url(img, request.scheme, request.META["HTTP_HOST"])
+            for img in self.get_img_list(queryset)
         ]
-        pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
-        pdf_images_list = []
-        for pdf in pdfs_list:
-            pdf_file = open(f"{MEDIA_PATH}{MS_PDF_PATH}{pdf}", "rb")
-            readpdf = PyPDF2.PdfFileReader(pdf_file)
-            total_pages = readpdf.numPages
-            for image_counter in range(1, total_pages + 1):
-                pdf_images_list.append(
-                    pdf.replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
-                )
-        all_images = images_list + pdf_images_list
-        response = HttpResponse(content_type="text/csv")
-        response[
-            "Content-Disposition"
-        ] = "attachment; filename=images_iiif_manuscripts.csv"
-        writer = csv.writer(response)
-        writer.writerow(["Image_IIIF"])
-        for image in all_images:
-            writer.writerow(
-                [
-                    request.scheme
-                    + "://"
-                    + request.META["HTTP_HOST"]
-                    + "/iiif/2/"
-                    + image
-                    + "/full/full/0/default.jpg"
-                ]
-            )
-        return response
+        return list_to_csv(img_list, "Image_IIIF")
+        # manuscripts = queryset
+        # images_list = manuscripts.values_list("imagemanuscript__image", flat=True)
+        # pdfs_list = manuscripts.values_list("pdfmanuscript__pdf", flat=True)
+        # images_list = [
+        #     image.split("/")[-1] for image in images_list if image is not None
+        # ]
+        # pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
+        # pdf_images_list = []
+        # for pdf in pdfs_list:
+        #     pdf_file = open(f"{MEDIA_PATH}{MS_PDF_PATH}{pdf}", "rb")
+        #     readpdf = PyPDF2.PdfFileReader(pdf_file)
+        #     total_pages = readpdf.numPages
+        #     for image_counter in range(1, total_pages + 1):
+        #         pdf_images_list.append(
+        #             pdf.replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
+        #         )
+        # all_images = images_list + pdf_images_list
+        # response = HttpResponse(content_type="text/csv")
+        # response[
+        #     "Content-Disposition"
+        # ] = "attachment; filename=images_iiif_manuscripts.csv"
+        # writer = csv.writer(response)
+        # writer.writerow(["Image_IIIF"])
+        # for image in all_images:
+        #     writer.writerow(
+        #         [
+        #             request.scheme
+        #             + "://"
+        #             + request.META["HTTP_HOST"]
+        #             + "/iiif/2/"
+        #             + image
+        #             + "/full/full/0/default.jpg"
+        #         ]
+        #     )
+        # return response
 
     @admin.action(description="Exporter les images des Manuscrits sélectionnés")
     def export_selected_images(self, request, queryset):
-        if len(queryset) > MAX_ITEMS:
-            self.message_user(
-                request,
-                f"{MAX_ITEMS} éléments au maximum doivent être sélectionnés afin d'appliquer les actions.",
-                messages.WARNING,
-            )
+        if self.check_selection(queryset, request):
             return HttpResponseRedirect(request.get_full_path())
-        manuscripts = queryset
-        images_list = manuscripts.values_list("imagemanuscript__image", flat=True)
-        pdfs_list = manuscripts.values_list("pdfmanuscript__pdf", flat=True)
-        images_list = [
-            image.split("/")[-1] for image in images_list if image is not None
-        ]
-        pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
-        pdf_images_list = []
-        for pdf in pdfs_list:
-            pdf_file = open(f"{MEDIA_PATH}{MS_PDF_PATH}{pdf}", "rb")
-            readpdf = PyPDF2.PdfFileReader(pdf_file)
-            total_pages = readpdf.numPages
-            for image_counter in range(1, total_pages + 1):
-                pdf_images_list.append(
-                    pdf.replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
-                )
-        all_images = images_list + pdf_images_list
-        buffer = io.BytesIO()
-        with zipfile.ZipFile(buffer, "w") as img_zip:
-            # Iterate over all the files in directory
-            for foldername, _, filenames in os.walk(f"{MEDIA_PATH}{IMG_PATH}"):
-                for filename in filenames:
-                    if filename in all_images:
-                        # Create complete filepath of file in directory
-                        filepath = os.path.join(foldername, filename)
-                        # Add file to zip
-                        img_zip.write(filepath, os.path.basename(filepath))
+        return zip_img(zipfile, get_file_list(IMG_PATH, self.get_img_list(queryset)))
 
-        response = HttpResponse(buffer.getvalue())
-        response["Content-Type"] = "application/x-zip-compressed"
-        response["Content-Disposition"] = "attachment; filename=images_manuscripts.zip"
-        return response
+        # manuscripts = queryset
+        # images_list = manuscripts.values_list("imagemanuscript__image", flat=True)
+        # pdfs_list = manuscripts.values_list("pdfmanuscript__pdf", flat=True)
+        # images_list = [
+        #     image.split("/")[-1] for image in images_list if image is not None
+        # ]
+        # pdfs_list = [pdf.split("/")[-1] for pdf in pdfs_list if pdf is not None]
+        # pdf_images_list = []
+        # for pdf in pdfs_list:
+        #     pdf_file = open(f"{MEDIA_PATH}{MS_PDF_PATH}{pdf}", "rb")
+        #     readpdf = PyPDF2.PdfFileReader(pdf_file)
+        #     total_pages = readpdf.numPages
+        #     for image_counter in range(1, total_pages + 1):
+        #         pdf_images_list.append(
+        #             pdf.replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
+        #         )
+        # all_images = images_list + pdf_images_list
+        # buffer = io.BytesIO()
+        # with zipfile.ZipFile(buffer, "w") as img_zip:
+        #     # Iterate over all the files in directory
+        #     for foldername, _, filenames in os.walk(f"{MEDIA_PATH}{IMG_PATH}"):
+        #         for filename in filenames:
+        #             if filename in all_images:
+        #                 # Create complete filepath of file in directory
+        #                 filepath = os.path.join(foldername, filename)
+        #                 # Add file to zip
+        #                 img_zip.write(filepath, os.path.basename(filepath))
+        #
+        # response = HttpResponse(buffer.getvalue())
+        # response["Content-Type"] = "application/x-zip-compressed"
+        # response["Content-Disposition"] = "attachment; filename=images_manuscripts.zip"
+        # return response
 
     @admin.action(description="Exporter les documents PDF des Manuscrits sélectionnés")
     def export_selected_pdfs(self, request, queryset):
-        if len(queryset) > MAX_ITEMS:
-            self.message_user(
-                request,
-                f"{MAX_ITEMS} éléments au maximum doivent être sélectionnés afin d'appliquer les actions.",
-                messages.WARNING,
-            )
+        if self.check_selection(queryset, request):
             return HttpResponseRedirect(request.get_full_path())
+        return zip_img(
+            zipfile, self.get_img_list(queryset, with_img=False, with_pdf=True), "pdf"
+        )
 
-        manuscripts = queryset.exclude(pdfmanuscript__pdf__isnull=True)
-        pdfs_list = manuscripts.values_list("pdfmanuscript__pdf", flat=True)
-        pdfs_list = [
-            request.scheme
-            + "://"
-            + request.META["HTTP_HOST"]
-            + "/"
-            + settings.MEDIA_URL
-            + s
-            for s in pdfs_list
-        ]
-
-        buffer = io.BytesIO()
-        with zipfile.ZipFile(buffer, "w") as pdf_zip:
-            for pdf_url in pdfs_list:
-                pdf_name = os.path.basename(pdf_url)
-                pdf_data = requests.get(pdf_url).content
-                pdf_zip.writestr(pdf_name, pdf_data)
-
-        response = HttpResponse(buffer.getvalue())
-        response["Content-Type"] = "application/x-zip-compressed"
-        response["Content-Disposition"] = "attachment; filename=pdfs_manuscripts.zip"
-        return response
+        # manuscripts = queryset.exclude(pdfmanuscript__pdf__isnull=True)
+        # pdfs_list = manuscripts.values_list("pdfmanuscript__pdf", flat=True)
+        # pdfs_list = [
+        #     request.scheme
+        #     + "://"
+        #     + request.META["HTTP_HOST"]
+        #     + "/"
+        #     + settings.MEDIA_URL
+        #     + s
+        #     for s in pdfs_list
+        # ]
+        #
+        # buffer = io.BytesIO()
+        # with zipfile.ZipFile(buffer, "w") as pdf_zip:
+        #     for pdf_url in pdfs_list:
+        #         pdf_name = os.path.basename(pdf_url)
+        #         pdf_data = requests.get(pdf_url).content
+        #         pdf_zip.writestr(pdf_name, pdf_data)
+        #
+        # response = HttpResponse(buffer.getvalue())
+        # response["Content-Type"] = "application/x-zip-compressed"
+        # response["Content-Disposition"] = "attachment; filename=pdfs_manuscripts.zip"
+        # return response
 
     @button(
         permission="demo.add_demomodel1",

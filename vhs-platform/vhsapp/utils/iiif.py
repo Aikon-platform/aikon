@@ -120,3 +120,14 @@ def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, ps_type=VOL.lower())
         f'<a href="{download_url}" target="_blank">{get_icon("download")} Download annotation ({anno_type})</a>'
         f'<span id="{message_id}" style="color:#FF0000"></span>'
     )
+
+
+def gen_manifest_url(
+    m_id,
+    scheme="http",
+    host="localhost",
+    port=None,
+    vers=MANIFEST_AUTO,
+    m_type=VOL.lower(),
+):
+    return f"{scheme}://{host}{f':{port}' if port else ''}/{APP_NAME}/iiif/{vers}/{m_type}/{m_id}/manifest.json"

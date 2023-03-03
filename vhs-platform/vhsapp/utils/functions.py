@@ -1,8 +1,14 @@
+import csv
+import io
+import os
 from uuid import uuid4
+
+import requests
 from PIL import Image
 from io import BytesIO
 
 from django.utils.html import format_html
+from django.http import HttpResponse
 from pdf2image import pdfinfo_from_path, convert_from_path
 from django.core.files import File
 from urllib.request import (
@@ -10,6 +16,9 @@ from urllib.request import (
     HTTPBasicAuthHandler,
     build_opener,
     install_opener,
+)
+from vhsapp.utils.constants import (
+    APP_NAME,
 )
 
 
@@ -124,3 +133,49 @@ def anno_btn(obj_id, action="VISUALIZE"):
         f"<button id='{tag_id}{obj_id}' class='button annotate-manifest' "
         f"style='background-color:{color};'>{icon} {f'{action} ANNOTATIONS'}</button><br>"
     )
+
+
+def list_to_csv(item_list, first_row=None, file_name=None):
+    if file_name is None:
+        file_name = f"{APP_NAME}_export"
+
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f"attachment; filename={file_name}.csv"
+
+    writer = csv.writer(response)
+    if first_row:
+        writer.writerow([first_row])
+
+    writer.writerow([item] for item in item_list)
+    return response
+
+
+def zip_img(zip_file, img_list, file_type="img", file_name=None):  # maybe change name
+    buffer = io.BytesIO()
+    with zip_file.ZipFile(buffer, "w") as z:
+        for img_path in img_list:
+            match file_type:
+                case "img":
+                    # Add file to zip
+                    z.write(img_path, os.path.basename(img_path))
+                case "pdf":
+                    pdf_data = requests.get(img_path).content
+                    # Add pdf content to zip
+                    z.writestr(os.path.basename(img_path), pdf_data)
+
+    if file_name is None:
+        file_name = f"{APP_NAME}_export_{file_type}"
+    response = HttpResponse(
+        buffer.getvalue(), content_type="application/x-zip-compressed"
+    )
+    response["Content-Disposition"] = f"attachment; filename={file_name}.zip"
+    return response
+
+
+def get_file_list(path, filter_list=None):
+    file_list = []
+    for folder, _, files in os.walk(path):
+        for file in files:
+            if filter_list is None or file in filter_list:
+                file_list.append(os.path.join(folder, file))
+    return file_list
