@@ -14,7 +14,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
-from vhsapp.models.models import Volume, Manuscript
+from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhsapp.utils.constants import (
     SAS_URL_SECURE,

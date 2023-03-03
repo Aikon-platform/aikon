@@ -32,7 +32,7 @@ from vhsapp.utils.iiif import (
     extract_images_from_iiif_manifest,
 )
 
-from vhsapp.models.models import Volume, Manuscript
+from vhsapp.models.witness import Volume, Manuscript
 
 
 class Digitization(models.Model):
