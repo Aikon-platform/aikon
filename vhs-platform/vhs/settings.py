@@ -1,23 +1,19 @@
-from pathlib import Path
 import environ
+from vhsapp.utils.paths import BASE_DIR
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-env = environ.Env()
+ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/vhs/.env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env("SECRET_KEY")
+SECRET_KEY = ENV("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool("DEBUG")
+DEBUG = ENV.bool("DEBUG")
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+ALLOWED_HOSTS = ENV.list("ALLOWED_HOSTS")
 
 
 # Application definition
@@ -117,11 +113,11 @@ WSGI_APPLICATION = "vhs.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("DB_NAME"),
-        "USER": env("DB_USERNAME"),
-        "PASSWORD": env("DB_PASSWORD"),
-        "HOST": env("DB_HOST"),
-        "PORT": env("DB_PORT"),
+        "NAME": ENV("DB_NAME"),
+        "USER": ENV("DB_USERNAME"),
+        "PASSWORD": ENV("DB_PASSWORD"),
+        "HOST": ENV("DB_HOST"),
+        "PORT": ENV("DB_PORT"),
     }
 }
 

@@ -14,6 +14,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
+from vhs.settings import ENV
+
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhsapp.utils.constants import (
@@ -30,11 +32,6 @@ from vhsapp.utils.paths import (
     MS_ANNO_PATH,
     IMG_PATH,
 )
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-env = environ.Env()
-environ.Env.read_env(env_file=str(BASE_DIR / "vhs" / ".env"))
 
 
 def admin_vhs(request):
@@ -353,8 +350,8 @@ def populate_annotation(request, id, work):
         MS: (MS_ABBR, MS_ANNO_PATH),
     }
     work_abbr, annotations_path = work_map.get(work, (None, None))
-    if not env("DEBUG"):
-        credentials(SAS_URL_SECURE, env("SAS_USERNAME"), env("SAS_PASSWORD"))
+    if not ENV("DEBUG"):
+        credentials(SAS_URL_SECURE, ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
     with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
     canvas = [line.split()[0] for line in lines if len(line.split()) == 2]
@@ -419,8 +416,8 @@ def show_work(request, id, work):
         + "/manifest.json"
     )
     canvas_annos = []
-    if not env("DEBUG"):
-        credentials(SAS_URL_SECURE, env("SAS_USERNAME"), env("SAS_PASSWORD"))
+    if not ENV("DEBUG"):
+        credentials(SAS_URL_SECURE, ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
     with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
         for line in lines:
