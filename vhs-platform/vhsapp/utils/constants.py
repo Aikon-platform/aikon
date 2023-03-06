@@ -1,6 +1,7 @@
 # Application titles
 APP_NAME = "vhs"
 APP_NAME_UPPER = APP_NAME.upper()
+APP_DESCRIPTION = "Computer Vision and Historical Analysis of Scientific Illustration Circulation"
 SITE_HEADER = f"Administration de {APP_NAME_UPPER}"
 SITE_TITLE = f"Portail de {APP_NAME_UPPER}"
 SITE_INDEX_TITLE = "Bienvenue sur le site d'administration"
@@ -25,7 +26,7 @@ MANIFEST_FINAL_INFO = (
     "ATTENTION : la version en cours de vérification ne peut plus être modifiée."
 )
 PLACE_INFO = "Si différent de l'ensemble."
-IMAGE_INFO = "Envoyez des images jusqu'à 2 Go."
+IMG_INFO = "Envoyez des images jusqu'à 2 Go."
 MANIFEST_INFO = (
     "<div class='tooltip'>"
     "<i class='fa-solid fa-circle-info' title='Manifest'></i>"
@@ -64,14 +65,14 @@ CENTURY = (
 )
 
 # Works
-MANUSCRIPT = "manuscript"
-VOLUME = "volume"
-MANUSCRIPT_PLURAL = "manuscripts"
-VOLUME_plural = "volumes"
+MS = "manuscript"
+VOL = "volume"
+MS_PLURAL = "manuscripts"
+VOL_plural = "volumes"
 
 # Work abbreviations
-MANUSCRIPT_ABBR = "ms"
-VOLUME_ABBR = "vol"
+MS_ABBR = "ms"
+VOL_ABBR = "vol"
 
 # Manifest versions
 MANIFEST_AUTO = "auto"
@@ -82,9 +83,3 @@ TRUNCATEWORDS = 5
 
 # Maximum number of selected items for action application
 MAX_ITEMS = 5
-
-# URLs
-VHS_URL = "http://localhost:8000/"  # "http://iscd.huma-num.fr/"
-SAS_URL = "http://localhost:8888/"  # "http://iscd.huma-num.fr/sas/"
-VHS_URL_SECURE = ""  # "https://iscd.huma-num.fr/"
-SAS_URL_SECURE = ""  # "https://iscd.huma-num.fr/sas/"

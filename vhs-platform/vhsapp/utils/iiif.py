@@ -61,22 +61,14 @@ def extract_images_from_iiif_manifest(url, image_path, work):
 
 def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
     anno_json = {
-        "@id": SAS_APP_URL
-        + "annotation/"
-        + work_abbr
-        + "-"
-        + str(id)
-        + "-"
-        + str(canvas)
-        + "-"
-        + str(num_anno + 1),
+        "@id": f"{SAS_APP_URL}annotation/{work_abbr}-{id}-{canvas}-{num_anno + 1}",
         "@type": "oa:Annotation",
         "dcterms:created": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "dcterms:modified": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "resource": [
             {
                 "@type": "dctypes:Text",
-                SAS_APP_URL + "full_text": "",
+                f"{SAS_APP_URL}full_text": "",
                 "format": "text/html",
                 "chars": "<p></p>",
             }
@@ -85,30 +77,14 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
             {
                 "@type": "oa:SpecificResource",
                 "within": {
-                    "@id": VHS_APP_URL
-                    + "vhs/iiif/"
-                    + version
-                    + "/"
-                    + work
-                    + "/"
-                    + work_abbr
-                    + "-"
-                    + str(id)
-                    + "/manifest.json",
+                    "@id": f"{VHS_APP_URL}vhs/iiif/{version}/{work}/{work_abbr}-{id}/manifest.json",
                     "@type": "sc:Manifest",
                 },
                 "selector": {
                     "@type": "oa:Choice",
                     "default": {
                         "@type": "oa:FragmentSelector",
-                        "value": "xywh="
-                        + str(anno[0])
-                        + ","
-                        + str(anno[1])
-                        + ","
-                        + str(anno[2])
-                        + ","
-                        + str(anno[3]),
+                        "value": f"xywh={anno[0]},{anno[1]},{anno[2]},{anno[3]}",
                     },
                     "item": {
                         "@type": "oa:SvgSelector",
@@ -140,18 +116,7 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
                         + "' fill-opacity='0' fill='#00ff00' fill-rule='nonzero' stroke='#00ff00' stroke-width='1' stroke-linecap='butt' stroke-linejoin='miter' stroke-miterlimit='10' stroke-dashoffset='0' style='mix-blend-mode: normal'/></svg>",
                     },
                 },
-                "full": VHS_APP_URL
-                + "vhs/iiif/"
-                + version
-                + "/"
-                + work
-                + "/"
-                + work_abbr
-                + "-"
-                + str(id)
-                + "/canvas/c"
-                + str(canvas)
-                + ".json",
+                "full": f"{VHS_APP_URL}vhs/iiif/{version}/{work}/{work_abbr}-{id}/canvas/c{canvas}.json",
             }
         ],
         "motivation": ["oa:commenting", "oa:tagging"],
