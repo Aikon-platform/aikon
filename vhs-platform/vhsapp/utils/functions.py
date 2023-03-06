@@ -76,8 +76,10 @@ def convert_pdf_to_image(pdf_path, image_path):
             image_counter += 1
 
 
-# Basic authentication HTTP request
 def credentials(url, auth_user, auth_passwd):
+    """
+    Basic authentication HTTP request
+    """
     passman = HTTPPasswordMgrWithDefaultRealm()
     passman.add_password(None, url, auth_user, auth_passwd)
     handler = HTTPBasicAuthHandler(passman)
