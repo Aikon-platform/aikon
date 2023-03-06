@@ -6,5 +6,8 @@ https://stackoverflow.com/questions/61576670/databases-in-psql-dont-show-up-in-p
 localhost for Obs
 
 # See data
-Database > <dbname> > Schema > Public > Tables
-select * from public.vhsapp_manuscript;
+Database > <dbname> > Schema > Public > Tables > Right-click on desired table > View
+
+```sql
+select * from public.<table-name>;
+```
