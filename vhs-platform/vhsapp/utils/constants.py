@@ -67,8 +67,6 @@ CENTURY = (
 # Works
 MS = "manuscript"
 VOL = "volume"
-MS_PLURAL = "manuscripts"
-VOL_plural = "volumes"
 
 # Work abbreviations
 MS_ABBR = "ms"
