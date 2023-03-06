@@ -18,7 +18,7 @@ from vhsapp.utils.functions import (
     gen_thumbnail,
 )
 
-img_vol = "vhs-admin/vhsapp/imagevolume"  # TODO change that
+img_vol = "/vhs-admin/vhsapp/imagevolume"  # TODO change that
 img_ms = "/vhs-admin/vhsapp/imagemanuscript"  # TODO: change that
 
 
@@ -64,6 +64,64 @@ class ImageManuscriptAdmin(admin.ModelAdmin):
 ############################
 
 
+class DigitInline(admin.StackedInline):
+    class Meta:
+        abstract = True
+
+    class Media:
+        css = {"all": ("css/style.css",)}
+        js = ("fontawesomefree/js/all.min.js",)
+
+    extra = 1
+    max_num = 1
+
+
+class PdfManuscriptInline(DigitInline):
+    model = PdfManuscript
+
+
+class ManifestManuscriptInline(DigitInline):
+    model = ManifestManuscript
+
+
+class PdfVolumeInline(nested_admin.NestedStackedInline):
+    model = PdfVolume
+    extra = 1
+    max_num = 1
+
+
+class ManifestVolumeInline(nested_admin.NestedStackedInline):
+    model = ManifestVolume
+    extra = 1
+    max_num = 1
+
+
+class ImageInline(DigitInline):
+    readonly_fields = ("image_preview",)
+
+    def image_preview(self, obj):
+        return mark_safe(
+            f'<a href="/{img_vol}/?q={obj.volume.id}" target="_blank">{IIIF_ICON} Gérer les images de ce témoin</a>'
+        )
+
+    image_preview.short_description = "Images"
+
+    def has_view_or_change_permission(self, request, obj=None):
+        return False
+
+    def get_fields(self, request, obj=None):
+        fields = list(super(self.__class__, self).get_fields(request, obj))
+        if not obj:  # obj will be None on the add page, and something on change pages
+            fields.remove("image_preview")
+        else:
+            fields.remove("image")
+        if request.method == "POST":
+            fields.append("image")
+        fields = list(set(fields))
+
+        return fields
+
+
 class ImageVolumeInline(nested_admin.NestedStackedInline):
     class Media:
         css = {"all": ("css/style.css",)}
@@ -76,7 +134,7 @@ class ImageVolumeInline(nested_admin.NestedStackedInline):
 
     def image_preview(self, obj):
         return mark_safe(
-            f'<a href="/{img_vol}/?q={obj.volume.id}" target="_blank">Manage {IIIF_ICON}</a>'
+            f'<a href="/{img_vol}/?q={obj.volume.id}" target="_blank">{IIIF_ICON} Gérer les images de ce témoin</a>'
         )
 
     image_preview.short_description = "Images"
@@ -109,7 +167,7 @@ class ImageManuscriptInline(admin.StackedInline):
 
     def image_preview(self, obj):
         return mark_safe(
-            f'<a href="/{img_ms}/?q={obj.manuscript.id}" target="_blank">Manage {IIIF_ICON}</a>'
+            f'<a href="/{img_ms}/?q={obj.manuscript.id}" target="_blank">{IIIF_ICON} Gérer les images de ce témoin</a>'
         )
 
     image_preview.short_description = "Images"
@@ -126,27 +184,3 @@ class ImageManuscriptInline(admin.StackedInline):
             exclude_set.add("image")
 
         return [f for f in fields if f not in exclude_set]
-
-
-class PdfManuscriptInline(admin.StackedInline):
-    model = PdfManuscript
-    extra = 1
-    max_num = 1
-
-
-class ManifestManuscriptInline(admin.StackedInline):
-    model = ManifestManuscript
-    extra = 1
-    max_num = 1
-
-
-class PdfVolumeInline(nested_admin.NestedStackedInline):
-    model = PdfVolume
-    extra = 1
-    max_num = 1
-
-
-class ManifestVolumeInline(nested_admin.NestedStackedInline):
-    model = ManifestVolume
-    extra = 1
-    max_num = 1

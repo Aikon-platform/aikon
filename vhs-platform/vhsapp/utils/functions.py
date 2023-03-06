@@ -133,7 +133,7 @@ def anno_btn(obj_id, action="VISUALIZE"):
 
     return (
         f"<button id='{tag_id}{obj_id}' class='button annotate-manifest' "
-        f"style='background-color:{color};'>{icon} {f'{action} ANNOTATIONS'}</button><br>"
+        f"style='background-color:{color};'>{icon} {action} ANNOTATIONS</button><br>"
     )
 
 
