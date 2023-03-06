@@ -290,7 +290,7 @@ class PrintedAdmin(
 
     class Media:
         css = {"all": ("css/style.css",)}
-        js = ("js/jquery-3.6.1.js", "js/script.js")
+        js = ("js/jquery-3.6.1.js",)
 
     list_display = (
         "short_author",
@@ -634,7 +634,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     change_form_template = "admin/change.html"
 
     class Media:
-        js = ("js/jquery-3.6.1.js", "js/script.js")
+        js = ("js/jquery-3.6.1.js",)
 
     list_display = (
         "short_author",

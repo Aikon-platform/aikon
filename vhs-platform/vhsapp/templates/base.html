@@ -2,9 +2,10 @@
 <html>
 <head>
     <title>{% block title %}{% endblock %}</title>
-    <script src="{% static 'js/jquery-3.6.1.js' %}"></script>
-    <script src="{% static 'js/script.js' %}"></script>
-    <script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
+    {% block javascript %}
+        <script src="{% static 'js/jquery-3.6.1.js' %}"></script>
+        <script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
+    {% endblock %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>

@@ -1,6 +1,15 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Annotations {{ work }} #{{ work_obj.id }}{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script>
+        var SAS_APP_URL = "{{ SAS_APP_URL }}";
+    </script>
+    <script src="{% static 'js/delete_anno.js' %}"></script>
+{% endblock %}
 
 {% block header %}
     <div class="fixed-div">
