@@ -1,7 +1,9 @@
 # Application titles
 APP_NAME = "vhs"
 APP_NAME_UPPER = APP_NAME.upper()
-APP_DESCRIPTION = "Computer Vision and Historical Analysis of Scientific Illustration Circulation"
+APP_DESCRIPTION = (
+    "Computer Vision and Historical Analysis of Scientific Illustration Circulation"
+)
 SITE_HEADER = f"Administration de {APP_NAME_UPPER}"
 SITE_TITLE = f"Portail de {APP_NAME_UPPER}"
 SITE_INDEX_TITLE = "Bienvenue sur le site d'administration"
