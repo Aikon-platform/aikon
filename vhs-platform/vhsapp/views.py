@@ -18,10 +18,10 @@ from vhsapp.models import Manuscript, Volume
 from vhsapp.utils.constants import (
     APP_NAME,
     APP_NAME_UPPER,
-    MANUSCRIPT,
-    MANUSCRIPT_ABBR,
-    VOLUME,
-    VOLUME_ABBR,
+    MS,
+    MS_ABBR,
+    VOL,
+    VOL_ABBR,
     APP_DESCRIPTION,
 )
 from vhsapp.utils.functions import credentials
@@ -45,13 +45,11 @@ def admin_vhs(request):
     return redirect("admin:index")
 
 
-"""
-Build a manuscript manifest using iiif-prezi library 
-IIIF Presentation API 2.0
-"""
-
-
 def manifest_manuscript(request, id, version):
+    """
+    Build a manuscript manifest using iiif-prezi library
+    IIIF Presentation API 2.0
+    """
     try:
         manuscript = Manuscript.objects.get(pk=id)
     except Manuscript.DoesNotExist:
@@ -59,9 +57,7 @@ def manifest_manuscript(request, id, version):
 
     # Configure the factory
     fac = ManifestFactory()
-    fac.set_base_prezi_uri(
-        f"{VHS_APP_URL}vhs/iiif/{version}/{MANUSCRIPT}/{MANUSCRIPT_ABBR}-{id}/"
-    )
+    fac.set_base_prezi_uri(f"{VHS_APP_URL}vhs/iiif/{version}/{MS}/{MS_ABBR}-{id}/")
     fac.set_base_image_uri(f"{CANTALOUPE_APP_URL}iiif/2/")
     fac.set_iiif_image_info(version="2.0", lvl="2")
 
@@ -161,13 +157,11 @@ def manifest_manuscript(request, id, version):
     return JsonResponse(data)
 
 
-"""
-Build a volume manifest using iiif-prezi library 
-IIIF Presentation API 2.0
-"""
-
-
 def manifest_volume(request, id, version):
+    """
+    Build a volume manifest using iiif-prezi library
+    IIIF Presentation API 2.0
+    """
     try:
         volume = Volume.objects.get(pk=id)
     except Volume.DoesNotExist:
@@ -175,9 +169,7 @@ def manifest_volume(request, id, version):
 
     # Configure the factory
     fac = ManifestFactory()
-    fac.set_base_prezi_uri(
-        f"{VHS_APP_URL}vhs/iiif/{version}/{VOLUME}/{VOLUME_ABBR}-{id}/"
-    )
+    fac.set_base_prezi_uri(f"{VHS_APP_URL}vhs/iiif/{version}/{VOL}/{VOL_ABBR}-{id}/")
     fac.set_base_image_uri(f"{CANTALOUPE_APP_URL}iiif/2/")
     fac.set_iiif_image_info(version="2.0", lvl="2")
 
@@ -281,7 +273,7 @@ def annotation_auto(request, id, work):
     ] = f"attachment; filename=annotations_iiif_{work}_{id}.csv"
     writer = csv.writer(response)
     writer.writerow(["IIIF_Image_Annotations"])
-    annotations_path = VOL_ANNO_PATH if work == VOLUME else MS_ANNO_PATH
+    annotations_path = VOL_ANNO_PATH if work == VOL else MS_ANNO_PATH
     with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
         for line in lines:
@@ -298,7 +290,7 @@ def annotation_auto(request, id, work):
 
 
 def annotate_work(request, id, version, work, work_abbr, canvas):
-    annotations_path = VOL_ANNO_PATH if work == VOLUME else MS_ANNO_PATH
+    annotations_path = VOL_ANNO_PATH if work == VOL else MS_ANNO_PATH
     with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
         nbr_anno = 0
@@ -327,15 +319,13 @@ def annotate_work(request, id, version, work, work_abbr, canvas):
     return JsonResponse(data)
 
 
-"""
-Populate annotation store from IIIF Annotation List
-"""
-
-
 def populate_annotation(request, id, work):
+    """
+    Populate annotation store from IIIF Annotation List
+    """
     work_map = {
-        VOLUME: (VOLUME_ABBR, VOL_ANNO_PATH),
-        MANUSCRIPT: (MANUSCRIPT_ABBR, MS_ANNO_PATH),
+        VOL: (VOL_ABBR, VOL_ANNO_PATH),
+        MS: (MS_ABBR, MS_ANNO_PATH),
     }
     work_abbr, annotations_path = work_map.get(work, (None, None))
     if not env("DEBUG"):
@@ -368,8 +358,8 @@ def populate_annotation(request, id, work):
 @login_required(login_url=f"/{APP_NAME}-admin/")
 def show_work(request, id, work):
     work_map = {
-        MANUSCRIPT: (Manuscript, MANUSCRIPT_ABBR, MS_ANNO_PATH),
-        VOLUME: (Volume, VOLUME_ABBR, VOL_ANNO_PATH),
+        MS: (Manuscript, MS_ABBR, MS_ANNO_PATH),
+        VOL: (Volume, VOL_ABBR, VOL_ANNO_PATH),
     }
     work_model, work_abbr, annotations_path = work_map.get(work, (None, None, None))
     work_obj = get_object_or_404(work_model, pk=id)

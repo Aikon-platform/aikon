@@ -205,10 +205,7 @@ class VolumeInline(nested_admin.NestedStackedInline):
     def manifest_auto(self, obj):
         if obj.id:
             url_manifest_auto = (
-                VHS_APP_URL
-                + "vhs/iiif/auto/volume/vol-"
-                + str(obj.id)
-                + "/manifest.json"
+                f"{VHS_APP_URL}vhs/iiif/auto/volume/vol-{obj.id}/manifest.json"
             )
             link_manifest_auto = (
                 '<a id="url_manifest_auto_'
@@ -238,9 +235,7 @@ class VolumeInline(nested_admin.NestedStackedInline):
 
     def manifest_v2(self, obj):
         if obj.id:
-            url_manifest = (
-                VHS_APP_URL + "vhs/iiif/v2/volume/vol-" + str(obj.id) + "/manifest.json"
-            )
+            url_manifest = f"{VHS_APP_URL}vhs/iiif/v2/volume/vol-{obj.id}/manifest.json"
             link_manifest = (
                 '<a id="url_manifest_'
                 + str(obj.id)
@@ -291,6 +286,8 @@ class VolumeInline(nested_admin.NestedStackedInline):
 class PrintedAdmin(
     ExtraButtonsMixin, nested_admin.NestedModelAdmin, admin.SimpleListFilter
 ):
+    change_form_template = "admin/change.html"
+
     class Media:
         css = {"all": ("css/style.css",)}
         js = ("js/jquery-3.6.1.js", "js/script.js")
@@ -363,9 +360,7 @@ class PrintedAdmin(
         super(PrintedAdmin, self).save_related(request, form, formsets, change)
         count_volumes = form.instance.volume_set.count()
         for i in range(count_volumes):
-            files = request.FILES.getlist(
-                "volume_set-" + str(i) + "-imagevolume_set-0-image"
-            )
+            files = request.FILES.getlist(f"volume_set-{i}-imagevolume_set-0-image")
             for file in files[:-1]:
                 form.instance.volume_set.all()[i].imagevolume_set.create(image=file)
 
@@ -384,12 +379,7 @@ class PrintedAdmin(
                 writer.writerow([mnf])
             else:
                 writer.writerow(
-                    [
-                        VHS_APP_URL
-                        + "vhs/iiif/v2/volume/vol-"
-                        + str(manifest[0])
-                        + "/manifest.json"
-                    ]
+                    [f"{VHS_APP_URL}vhs/iiif/v2/volume/vol-{manifest[0]}/manifest.json"]
                 )
         return response
 
@@ -407,9 +397,7 @@ class PrintedAdmin(
             pdf_file = Pdf.open(f"{MEDIA_PATH}{VOL_PDF_PATH}{pdf}")
             total_pages = len(pdf_file.pages)
             for image_counter in range(1, total_pages + 1):
-                pdf_images_list.append(
-                    pdf.replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
-                )
+                pdf_images_list.append(pdf.replace(".pdf", f"_{image_counter:04d}.jpg"))
         all_images = images_list + pdf_images_list
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = "attachment; filename=images_iiif_volumes.csv"
@@ -417,7 +405,7 @@ class PrintedAdmin(
         writer.writerow(["Image_IIIF"])
         for image in all_images:
             writer.writerow(
-                [CANTALOUPE_APP_URL + "iiif/2/" + image + "/full/full/0/default.jpg"]
+                [f"{CANTALOUPE_APP_URL}iiif/2/{image}/full/full/0/default.jpg"]
             )
         return response
 
@@ -444,9 +432,7 @@ class PrintedAdmin(
             readpdf = PyPDF2.PdfFileReader(pdf_file)
             total_pages = readpdf.numPages
             for image_counter in range(1, total_pages + 1):
-                pdf_images_list.append(
-                    pdf.replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
-                )
+                pdf_images_list.append(pdf.replace(".pdf", f"_{image_counter:04d}.jpg"))
         all_images = images_list + pdf_images_list
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w") as img_zip:
@@ -476,15 +462,7 @@ class PrintedAdmin(
         printed = queryset.exclude(volume__isnull=True)
         pdfs_list = printed.values_list("volume__pdfvolume__pdf", flat=True)
         pdfs_list = (pdf for pdf in pdfs_list if pdf is not None)
-        pdfs_list = [
-            request.scheme
-            + "://"
-            + request.META["HTTP_HOST"]
-            + "/"
-            + settings.MEDIA_URL
-            + s
-            for s in pdfs_list
-        ]
+        pdfs_list = [f"{VHS_APP_URL}{settings.MEDIA_URL}{pdf}" for pdf in pdfs_list]
 
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w") as pdf_zip:
@@ -653,6 +631,8 @@ class ManifestManuscriptInline(admin.StackedInline):
 
 @admin.register(Manuscript)
 class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
+    change_form_template = "admin/change.html"
+
     class Media:
         js = ("js/jquery-3.6.1.js", "js/script.js")
 
@@ -709,10 +689,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
 
     def manifest_auto(self, obj):
         url_manifest_auto = (
-            VHS_APP_URL
-            + "vhs/iiif/auto/manuscript/ms-"
-            + str(obj.id)
-            + "/manifest.json"
+            f"{VHS_APP_URL}vhs/iiif/auto/manuscript/ms-{obj.id}/manifest.json"
         )
         link_manifest_auto = (
             '<a id="url_manifest_auto_'
@@ -738,9 +715,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     manifest_auto.short_description = "Manifeste (automatique)"
 
     def manifest_v2(self, obj):
-        url_manifest = (
-            VHS_APP_URL + "vhs/iiif/v2/manuscript/ms-" + str(obj.id) + "/manifest.json"
-        )
+        url_manifest = f"{VHS_APP_URL}vhs/iiif/v2/manuscript/ms-{obj.id}/manifest.json"
         link_manifest = (
             '<a id="url_manifest_'
             + str(obj.id)
@@ -827,10 +802,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             else:
                 writer.writerow(
                     [
-                        VHS_APP_URL
-                        + "vhs/iiif/v2/manuscript/ms-"
-                        + str(manifest[0])
-                        + "/manifest.json"
+                        f"{VHS_APP_URL}vhs/iiif/v2/manuscript/ms-{manifest[0]}/manifest.json"
                     ]
                 )
         return response
@@ -850,9 +822,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             readpdf = PyPDF2.PdfFileReader(pdf_file)
             total_pages = readpdf.numPages
             for image_counter in range(1, total_pages + 1):
-                pdf_images_list.append(
-                    pdf.replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
-                )
+                pdf_images_list.append(pdf.replace(".pdf", f"_{image_counter:04d}.jpg"))
         all_images = images_list + pdf_images_list
         response = HttpResponse(content_type="text/csv")
         response[
@@ -862,7 +832,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         writer.writerow(["Image_IIIF"])
         for image in all_images:
             writer.writerow(
-                [CANTALOUPE_APP_URL + "iiif/2/" + image + "/full/full/0/default.jpg"]
+                [f"{CANTALOUPE_APP_URL}iiif/2/{image}/full/full/0/default.jpg"]
             )
         return response
 
@@ -888,9 +858,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             readpdf = PyPDF2.PdfFileReader(pdf_file)
             total_pages = readpdf.numPages
             for image_counter in range(1, total_pages + 1):
-                pdf_images_list.append(
-                    pdf.replace(".pdf", "_{:04d}".format(image_counter) + ".jpg")
-                )
+                pdf_images_list.append(pdf.replace(".pdf", f"_{image_counter:04d}.jpg"))
         all_images = images_list + pdf_images_list
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w") as img_zip:
@@ -920,15 +888,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
 
         manuscripts = queryset.exclude(pdfmanuscript__pdf__isnull=True)
         pdfs_list = manuscripts.values_list("pdfmanuscript__pdf", flat=True)
-        pdfs_list = [
-            request.scheme
-            + "://"
-            + request.META["HTTP_HOST"]
-            + "/"
-            + settings.MEDIA_URL
-            + s
-            for s in pdfs_list
-        ]
+        pdfs_list = [f"{VHS_APP_URL}{settings.MEDIA_URL}{pdf}" for pdf in pdfs_list]
 
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w") as pdf_zip:

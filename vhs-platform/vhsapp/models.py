@@ -11,8 +11,8 @@ from django.dispatch.dispatcher import receiver
 
 from vhsapp.utils.constants import (
     CENTURY,
-    MANUSCRIPT_ABBR,
-    VOLUME_ABBR,
+    MS_ABBR,
+    VOL_ABBR,
     AUTHOR_INFO,
     WORK_INFO,
     DIGITIZED_VERSION_MS_INFO,
@@ -20,7 +20,7 @@ from vhsapp.utils.constants import (
     PUBLISHED_INFO,
     MANIFEST_FINAL_INFO,
     PLACE_INFO,
-    IMAGE_INFO,
+    IMG_INFO,
     MANIFEST_INFO,
 )
 from vhsapp.utils.functions import (
@@ -209,7 +209,7 @@ class ImageVolume(models.Model):
         validators=[
             FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "tif"])
         ],
-        help_text=IMAGE_INFO,
+        help_text=IMG_INFO,
     )
 
     class Meta:
@@ -304,7 +304,7 @@ class ManifestVolume(models.Model):
             args=(
                 self.manifest,
                 f"{MEDIA_PATH}{IMG_PATH}",
-                f"{VOLUME_ABBR}{self.volume.id}",
+                f"{VOL_ABBR}{self.volume.id}",
             ),
         )
         t.start()
@@ -405,7 +405,7 @@ class ImageManuscript(models.Model):
         validators=[
             FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "tif"])
         ],
-        help_text=IMAGE_INFO,
+        help_text=IMG_INFO,
     )
 
     class Meta:
@@ -500,7 +500,7 @@ class ManifestManuscript(models.Model):
             args=(
                 self.manifest,
                 f"{MEDIA_PATH}{IMG_PATH}",
-                f"{MANUSCRIPT_ABBR}{self.manuscript.id}",
+                f"{MS_ABBR}{self.manuscript.id}",
             ),
         )
         t.start()

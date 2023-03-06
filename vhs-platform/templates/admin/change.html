@@ -1,0 +1,9 @@
+{% extends "admin/change_form.html" %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <script>
+        var SAS_APP_URL = "{{ SAS_APP_URL }}";
+    </script>
+{% endblock %}
+

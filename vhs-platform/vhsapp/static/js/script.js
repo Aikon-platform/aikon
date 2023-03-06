@@ -21,7 +21,7 @@ $(function() {
             xhr.responseType = "json";
             xhr.onload = function() {
                 if (xhr.readyState === 4 && xhr.status === 200) {
-                    window.open("http://localhost:8888/indexAnnos.html?iiif-content=" + urlManifest, "_blank");
+                    window.open(SAS_APP_URL + "indexAnnos.html?iiif-content=" + urlManifest, "_blank");
                 } else {
                     showMessage("Failed to load " + urlManifest + " due to " + xhr.status + ": '" + xhr.statusText + "'");
                 }
@@ -42,7 +42,7 @@ $(function() {
         idManifest = idButton.split("_").pop();
         var urlManifest = $("#url_manifest_" + idManifest).prop("href");
         setLoading(idButton);
-        window.open("http://localhost:8888/indexView.html?iiif-content=" + urlManifest, "_blank");
+        window.open(SAS_APP_URL + "indexView.html?iiif-content=" + urlManifest, "_blank");
         clearLoadingView(idButton);
         return false;
     } );
@@ -51,7 +51,7 @@ $(function() {
         var idBbox = $(this).attr("id").split("_").pop();
         if (this.checked) {
             if (confirm ("Êtes-vous sûr de vouloir supprimer cette image extraite ?")) {
-                urlDelete = "http://localhost:8888/annotation/destroy?uri=http://localhost:8888/annotation/" + idBbox;
+                urlDelete = SAS_APP_URL + "annotation/destroy?uri=" + SAS_APP_URL + "annotation/" + idBbox;
                 var xhr = new XMLHttpRequest();
                 xhr.open("DELETE", urlDelete, true);
                 xhr.onload = function() {
@@ -82,7 +82,7 @@ $(function() {
                 }).each(function() {
                     if (i == this.id.split("-")["2"]) {
                         var idBbox = this.id.split("_").pop();
-                        urlDelete = "http://localhost:8888/annotation/destroy?uri=http://localhost:8888/annotation/" + idBbox;
+                        urlDelete = SAS_APP_URL + "annotation/destroy?uri=" + SAS_APP_URL + "annotation/" + idBbox;
                         var xhr = new XMLHttpRequest();
                         xhr.open("DELETE", urlDelete, true);
                         xhr.onload = function() {
@@ -120,7 +120,7 @@ var getJSON = function(url, callback) {
 
 var sendJson = function sendJson(status, data) {
     var xhr = new XMLHttpRequest();
-    xhr.open("POST", "http://localhost:8888/manifests", true);
+    xhr.open("POST", SAS_APP_URL + "manifests", true);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.onload = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
