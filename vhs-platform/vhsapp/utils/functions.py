@@ -97,7 +97,7 @@ def gen_thumbnail(url, img_url):
     )
 
 
-def log(msg):
+def log(msg="🚨🚨🚨"):
     import logging
 
     logger = logging.getLogger("django")

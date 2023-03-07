@@ -22,12 +22,20 @@ img_vol = "/vhs-admin/vhsapp/imagevolume"  # TODO change that
 img_ms = "/vhs-admin/vhsapp/imagemanuscript"  # TODO: change that
 
 
-@admin.register(ImageVolume)
-class ImageVolumeAdmin(admin.ModelAdmin):
-    list_display = ("image", "thumbnail")
-    search_fields = ("=volume__id", "=image")
-    autocomplete_fields = ("volume",)
+class ImageAdmin(admin.ModelAdmin):
     list_per_page = 100
+
+    def wit_type(self):
+        return "witness"
+
+    def __init__(self, model, admin_site):
+        super().__init__(model, admin_site)
+        self.list_display = (
+            "image",
+            "thumbnail",
+        )
+        self.search_fields = (f"={self.wit_type()}__id", "=image")
+        self.autocomplete_fields = (f"{self.wit_type()}",)
 
     def thumbnail(self, obj):
         return gen_thumbnail(gen_img_url(obj.image.name.split("/")[-1]), obj.image.url)
@@ -37,26 +45,18 @@ class ImageVolumeAdmin(admin.ModelAdmin):
         Return empty perms dict thus hiding the model from admin index
         """
         return {}
+
+
+@admin.register(ImageVolume)
+class ImageVolumeAdmin(ImageAdmin):
+    def wit_type(self):
+        return "volume"
 
 
 @admin.register(ImageManuscript)
-class ImageManuscriptAdmin(admin.ModelAdmin):
-    list_display = (
-        "image",
-        "thumbnail",
-    )
-    search_fields = ("=manuscript__id", "=image")
-    autocomplete_fields = ("manuscript",)
-    list_per_page = 100
-
-    def thumbnail(self, obj):
-        return gen_thumbnail(gen_img_url(obj.image.name.split("/")[-1]), obj.image.url)
-
-    def get_model_perms(self, request):
-        """
-        Return empty perms dict thus hiding the model from admin index
-        """
-        return {}
+class ImageManuscriptAdmin(ImageAdmin):
+    def wit_type(self):
+        return "manuscript"
 
 
 ############################
@@ -67,10 +67,6 @@ class ImageManuscriptAdmin(admin.ModelAdmin):
 class DigitInline(admin.StackedInline):
     class Meta:
         abstract = True
-
-    class Media:
-        css = {"all": ("css/style.css",)}
-        js = ("fontawesomefree/js/all.min.js",)
 
     extra = 1
     max_num = 1
@@ -84,24 +80,30 @@ class ManifestManuscriptInline(DigitInline):
     model = ManifestManuscript
 
 
-class PdfVolumeInline(nested_admin.NestedStackedInline):
+class PdfVolumeInline(nested_admin.NestedStackedInline, DigitInline):
     model = PdfVolume
-    extra = 1
-    max_num = 1
 
 
-class ManifestVolumeInline(nested_admin.NestedStackedInline):
+class ManifestVolumeInline(nested_admin.NestedStackedInline, DigitInline):
     model = ManifestVolume
-    extra = 1
-    max_num = 1
 
 
 class ImageInline(DigitInline):
+    class Media:
+        css = {"all": ("css/style.css",)}
+        js = ("fontawesomefree/js/all.min.js",)
+
     readonly_fields = ("image_preview",)
+
+    def obj_id(self, obj):
+        return None
+
+    def img_dir(self):
+        return "/"
 
     def image_preview(self, obj):
         return mark_safe(
-            f'<a href="/{img_vol}/?q={obj.volume.id}" target="_blank">{IIIF_ICON} Gérer les images de ce témoin</a>'
+            f'<a href="/{self.img_dir()}/?q={self.obj_id(obj)}" target="_blank">{IIIF_ICON} Gérer les images</a>'
         )
 
     image_preview.short_description = "Images"
@@ -110,77 +112,32 @@ class ImageInline(DigitInline):
         return False
 
     def get_fields(self, request, obj=None):
-        fields = list(super(self.__class__, self).get_fields(request, obj))
+        fields = list(super(ImageInline, self).get_fields(request, obj))
         if not obj:  # obj will be None on the add page, and something on change pages
             fields.remove("image_preview")
         else:
             fields.remove("image")
         if request.method == "POST":
             fields.append("image")
-        fields = list(set(fields))
 
-        return fields
+        return list(set(fields))
 
 
-class ImageVolumeInline(nested_admin.NestedStackedInline):
-    class Media:
-        css = {"all": ("css/style.css",)}
-        js = ("fontawesomefree/js/all.min.js",)
-
+class ImageVolumeInline(nested_admin.NestedStackedInline, ImageInline):
     model = ImageVolume
-    extra = 1
-    max_num = 1
-    readonly_fields = ("image_preview",)
 
-    def image_preview(self, obj):
-        return mark_safe(
-            f'<a href="/{img_vol}/?q={obj.volume.id}" target="_blank">{IIIF_ICON} Gérer les images de ce témoin</a>'
-        )
+    def obj_id(self, obj):
+        return obj.volume.id
 
-    image_preview.short_description = "Images"
-
-    def has_view_or_change_permission(self, request, obj=None):
-        return False
-
-    def get_fields(self, request, obj=None):
-        fields = list(super(ImageVolumeInline, self).get_fields(request, obj))
-        if not obj:  # obj will be None on the add page, and something on change pages
-            fields.remove("image_preview")
-        else:
-            fields.remove("image")
-        if request.method == "POST":
-            fields.append("image")
-        fields = list(set(fields))
-
-        return fields
+    def img_dir(self):
+        return img_vol
 
 
-class ImageManuscriptInline(admin.StackedInline):
-    class Media:
-        css = {"all": ("css/style.css",)}
-        js = ("fontawesomefree/js/all.min.js",)
-
+class ImageManuscriptInline(ImageInline):
     model = ImageManuscript
-    extra = 1
-    max_num = 1
-    readonly_fields = ("image_preview",)
 
-    def image_preview(self, obj):
-        return mark_safe(
-            f'<a href="/{img_ms}/?q={obj.manuscript.id}" target="_blank">{IIIF_ICON} Gérer les images de ce témoin</a>'
-        )
+    def obj_id(self, obj):
+        return obj.manuscript.id
 
-    image_preview.short_description = "Images"
-
-    def has_view_or_change_permission(self, request, obj=None):
-        return False
-
-    def get_fields(self, request, obj=None):
-        fields = list(super(ImageManuscriptInline, self).get_fields(request, obj))
-        exclude_set = set()
-        if not obj:  # obj will be None on the add page, and something on change pages
-            exclude_set.add("image_preview")
-        else:
-            exclude_set.add("image")
-
-        return [f for f in fields if f not in exclude_set]
+    def img_dir(self):
+        return img_ms
