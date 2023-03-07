@@ -3,6 +3,7 @@ import io
 import os
 from uuid import uuid4
 
+import PyPDF2
 import requests
 from PIL import Image
 from io import BytesIO
@@ -181,3 +182,24 @@ def get_file_list(path, filter_list=None):
             if filter_list is None or file in filter_list:
                 file_list.append(os.path.join(folder, file))
     return file_list
+
+
+def pdf_to_imgs(pdf_list, ps_type="volume"):
+    if type(pdf_list) != list:
+        pdf_list = [pdf_list]
+
+    img_list = []
+    for pdf in pdf_list:
+        pdf_file = open(f"mediafiles/{ps_type}/pdf/" + pdf, "rb")
+        pdf_reader = PyPDF2.PdfFileReader(pdf_file)
+        for img_nb in range(1, pdf_reader.numPages + 1):
+            img_list.append(
+                # name all the pdf images according to the format: "pdf_name_0001.jpg"
+                pdf.replace(".pdf", "_{:04d}".format(img_nb) + ".jpg")
+            )
+
+        # pdf_file = Pdf.open("mediafiles/volumes/pdf/" + pdf)
+        # for img_nb in range(1, len(pdf_file.pages) + 1):
+        #     img_list.append(pdf.replace(".pdf", "_{:04d}".format(img_nb) + ".jpg"))
+
+    return img_list
