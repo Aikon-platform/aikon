@@ -108,11 +108,11 @@ def extract_images_from_iiif_manifest(url, image_path, work):
                 time.sleep(15)
 
 
-def gen_img_url(
+def gen_iiif_url(
     img,
     scheme="http",
     host="localhost",
-    port=None,
+    port=8182,
     vers=2,
     res="full/full/0",
     color="default",

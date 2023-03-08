@@ -12,7 +12,7 @@ from vhsapp.models.digitization import (
     ManifestVolume,
 )
 
-from vhsapp.utils.iiif import IIIF_ICON, gen_img_url
+from vhsapp.utils.iiif import IIIF_ICON, gen_iiif_url
 from vhsapp.utils.constants import APP_NAME
 
 from vhsapp.utils.functions import (
@@ -42,7 +42,7 @@ class ImageAdmin(admin.ModelAdmin):
         self.autocomplete_fields = (f"{self.wit_type()}",)
 
     def thumbnail(self, obj):
-        return gen_thumbnail(gen_img_url(obj.image.name.split("/")[-1]), obj.image.url)
+        return gen_thumbnail(gen_iiif_url(obj.image.name.split("/")[-1]), obj.image.url)
 
     def get_model_perms(self, request):
         """

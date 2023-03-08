@@ -43,7 +43,7 @@ from vhsapp.utils.paths import (
     MS_PDF_PATH,
 )
 
-from vhsapp.utils.iiif import get_link_manifest, gen_btn, gen_manifest_url, gen_img_url
+from vhsapp.utils.iiif import get_link_manifest, gen_btn, gen_manifest_url, gen_iiif_url
 from vhsapp.utils.functions import list_to_csv, zip_img, get_file_list, pdf_to_imgs
 
 
@@ -239,7 +239,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     @admin.action(description="Exporter les images IIIF sélectionnées")
     def export_selected_iiif_images(self, request, queryset):
         img_list = [
-            gen_img_url(img, request.scheme, request.META["HTTP_HOST"])
+            gen_iiif_url(img, request.scheme, request.META["HTTP_HOST"])
             for img in self.get_img_list(queryset)
         ]
         return list_to_csv(img_list, "Image_IIIF")

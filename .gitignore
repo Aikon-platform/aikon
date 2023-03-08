@@ -13,10 +13,6 @@ vhs-platform/mediafiles/*
 !vhs-platform/mediafiles/.gitkeep
 vhs-platform/staticfiles/*
 !vhs-platform/staticfiles/.gitkeep
-mediafiles/*
-!mediafiles/.gitkeep
-staticfiles/*
-!staticfiles/.gitkeep
 
 # SQLite database file
 db.sqlite3
