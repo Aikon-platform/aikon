@@ -1,6 +1,6 @@
 $(function() {
-	$("[id$=-pdf]").attr("accept", "application/pdf");
-	$("p.url a, span.inline_label a, div.readonly a, .field-image p a, p.file-upload a").attr("target", "_blank");
+    $("[id$=-pdf]").attr("accept", "application/pdf");
+    $("p.url a, span.inline_label a, div.readonly a, .field-image p a, p.file-upload a").attr("target", "_blank");
     $("[id$=-0-image]").attr("multiple", true);
     $(".add-handler").on("click", function() {
         $("#id_volume_set-__prefix__-title").val($("#id_work").text());
@@ -45,62 +45,6 @@ $(function() {
         window.open(SAS_APP_URL + "indexView.html?iiif-content=" + urlManifest, "_blank");
         clearLoadingView(idButton);
         return false;
-    } );
-
-    $("[id^=bbox_]").change(function() {
-        var idBbox = $(this).attr("id").split("_").pop();
-        if (this.checked) {
-            if (confirm ("Êtes-vous sûr de vouloir supprimer cette image extraite ?")) {
-                urlDelete = SAS_APP_URL + "annotation/destroy?uri=" + SAS_APP_URL + "annotation/" + idBbox;
-                var xhr = new XMLHttpRequest();
-                xhr.open("DELETE", urlDelete, true);
-                xhr.onload = function() {
-                    if (xhr.status === 204) {
-                        var $td = $("#ill_" + idBbox).closest("td");
-                        $td.fadeOut(function() {
-                            $td.remove();
-                        } );
-                    } else {
-                        idMessage = "message_" + idBbox;
-                        showMessage("Failed to delete " + urlDelete + " due to " + xhr.status + ": '" + xhr.statusText + "'");
-                    }
-                };
-                xhr.send();
-            } else {
-                $(this).prop("checked", false);
-            }
-        }
-    } );
-
-    $("#delete_illustrations").click(function() {
-        var startIndex = parseInt(document.getElementById("startIndex").value);
-        var endIndex = parseInt(document.getElementById("endIndex").value);
-        if (confirm ("Êtes-vous sûr de vouloir supprimer toutes les images extraites de Vue " + startIndex + " à Vue " + endIndex + " ?")) {
-            for (var i = endIndex; i >= startIndex; i--) {
-                $("[id]").filter(function() {
-                    return this.id.indexOf("bbox_") !== -1;
-                }).each(function() {
-                    if (i == this.id.split("-")["2"]) {
-                        var idBbox = this.id.split("_").pop();
-                        urlDelete = SAS_APP_URL + "annotation/destroy?uri=" + SAS_APP_URL + "annotation/" + idBbox;
-                        var xhr = new XMLHttpRequest();
-                        xhr.open("DELETE", urlDelete, true);
-                        xhr.onload = function() {
-                            if (xhr.status === 204) {
-                                var $td = $("#ill_" + idBbox).closest("td");
-                                $td.fadeOut(function() {
-                                    $td.remove();
-                                } );
-                            } else {
-                                idMessage = "message_" + idBbox;
-                                showMessage("Failed to delete " + urlDelete + " due to " + xhr.status + ": '" + xhr.statusText + "'");
-                            }
-                        };
-                        xhr.send();
-                    }
-                } );
-            }
-        }
     } );
 } );
 

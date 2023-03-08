@@ -1,15 +1,10 @@
-import json
 import csv
-import PyPDF2
-import environ
+import json
 from urllib.request import urlopen
 from urllib.parse import urlencode
-from PIL import Image
-from django.contrib.auth.decorators import login_required
-from pikepdf import Pdf
-from glob import glob
 
-from django.http import HttpResponse, Http404, JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
 from vhs.settings import ENV
@@ -25,7 +20,7 @@ from vhsapp.utils.constants import (
 from vhsapp.utils.functions import credentials
 from iiif_prezi.factory import ManifestFactory
 
-from vhsapp.utils.iiif import annotate_canvas
+from vhsapp.utils.iiif import annotate_canvas, process_images
 from vhsapp.utils.paths import (
     MEDIA_PATH,
     VOL_ANNO_PATH,
@@ -43,26 +38,26 @@ def manifest_manuscript(request, id, version):
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
-    try:
-        manuscript = Manuscript.objects.get(pk=id)
-    except Manuscript.DoesNotExist:
-        raise Http404("Le manuscrit #%s n'existe pas" % id)
-
+    # Get the Manuscript object or return a 404 error if it doesn't exist
+    manuscript = get_object_or_404(Manuscript, pk=id)
     # Configure the factory
     fac = ManifestFactory()
     fac.set_base_prezi_uri(f"{VHS_APP_URL}vhs/iiif/{version}/{MS}/{MS_ABBR}-{id}/")
     fac.set_base_image_uri(f"{CANTALOUPE_APP_URL}iiif/2/")
     fac.set_iiif_image_info(version="2.0", lvl="2")
-
     # Build the manifest
     mf = fac.manifest(ident="manifest", label=manuscript.work.title)
-    mf.set_metadata({"Author": manuscript.author.name})
-    mf.set_metadata({"Place of conservation": manuscript.conservation_place})
-    mf.set_metadata({"Reference number": manuscript.reference_number})
-    mf.set_metadata({"Date (century)": manuscript.date_century})
+    mf.set_metadata(
+        {
+            "Author": manuscript.author.name,
+            "Place of conservation": manuscript.conservation_place,
+            "Reference number": manuscript.reference_number,
+            "Date (century)": manuscript.date_century,
+            "Sheet(s)": manuscript.sheets,
+        }
+    )
     if date_free := manuscript.date_free:
         mf.set_metadata({"Date": date_free})
-    mf.set_metadata({"Sheet(s)": manuscript.sheets})
     if origin_place := manuscript.origin_place:
         mf.set_metadata({"Place of origin": origin_place})
     if remarks := manuscript.remarks:
@@ -77,74 +72,13 @@ def manifest_manuscript(request, id, version):
         mf.set_metadata(
             {"Link to Pinakes (greek mss) or Medium-IRHT (latin mss)": pinakes_link}
         )
+    # Set the manifest's attribution, description, and viewing hint
     mf.attribution = f"{APP_NAME_UPPER} platform"
     mf.description = APP_DESCRIPTION
     mf.viewingHint = "individuals"
-
     # And walk through the pages
     seq = mf.sequence(ident="normal", label="Normal Order")
-    if images := manuscript.imagemanuscript_set.all():
-        for i, img in enumerate(images):
-            i += 1
-            image = Image.open(img.image)
-            # Build the canvas
-            cvs = seq.canvas(ident="c%s" % i, label="Folio %s" % i)
-            cvs.set_hw(image.height, image.width)
-            # Build the image annotation
-            anno = cvs.annotation(ident="a%s" % i)
-            img = anno.image(ident=img.image.url.split("/")[-1], iiif=True)
-            img.set_hw(image.height, image.width)
-            if version == "auto":
-                annoList = cvs.annotationList(ident="anno-%s" % i)
-                anno = annoList.annotation(ident="a-list-%s" % i)
-                anno.text("Annotation")
-    elif pdf_first := manuscript.pdfmanuscript_set.first():
-        pdf_file = open(f"{MEDIA_PATH}{pdf_first.pdf}", "rb")
-        readpdf = PyPDF2.PdfFileReader(pdf_file)
-        total_pages = readpdf.numPages
-        for image_counter in range(1, total_pages + 1):
-            image_path = (
-                str(pdf_first.pdf)
-                .split("/")[-1]
-                .replace(".pdf", f"_{image_counter:04d}.jpg")
-            )
-            image = Image.open(f"{MEDIA_PATH}{IMG_PATH}{image_path}")
-            # Build the canvas
-            cvs = seq.canvas(
-                ident="c%s" % image_counter, label="Folio %s" % image_counter
-            )
-            cvs.set_hw(image.height, image.width)
-            # Build the image annotation
-            anno = cvs.annotation(ident="a%s" % image_counter)
-            img = anno.image(ident=image_path, iiif=True)
-            img.set_hw(image.height, image.width)
-            if version == "auto":
-                annoList = cvs.annotationList(ident="anno-%s" % image_counter)
-                anno = annoList.annotation(ident="a-list-%s" % image_counter)
-                anno.text("Annotation")
-    elif manifest_first := manuscript.manifestmanuscript_set.first():
-        for image_counter, path in enumerate(
-            sorted(glob(f"{MEDIA_PATH}{IMG_PATH}ms{id}_*.jpg"))
-        ):
-            image_counter += 1
-            image_path = path.replace("\\", "/").split("/")[-1]
-            image = Image.open(path)
-            # Build the canvas
-            cvs = seq.canvas(
-                ident="c%s" % image_counter, label="Folio %s" % image_counter
-            )
-            cvs.set_hw(image.height, image.width)
-            # Build the image annotation
-            anno = cvs.annotation(ident="a%s" % image_counter)
-            img = anno.image(ident=image_path, iiif=True)
-            img.set_hw(image.height, image.width)
-            if version == "auto":
-                annoList = cvs.annotationList(ident="anno-%s" % image_counter)
-                anno = annoList.annotation(ident="a-list-%s" % image_counter)
-                anno.text("Annotation")
-    else:
-        raise Exception("There is no manifest!")
-
+    process_images(manuscript, seq, version)
     data = mf.toJSON(top=True)
 
     return JsonResponse(data)
@@ -155,105 +89,45 @@ def manifest_volume(request, id, version):
     Build a volume manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
-    try:
-        volume = Volume.objects.get(pk=id)
-    except Volume.DoesNotExist:
-        raise Http404("Le volume #%s n'existe pas" % id)
-
+    # Get the Volume object or return a 404 error if it doesn't exist
+    volume = get_object_or_404(Volume, pk=id)
     # Configure the factory
     fac = ManifestFactory()
     fac.set_base_prezi_uri(f"{VHS_APP_URL}vhs/iiif/{version}/{VOL}/{VOL_ABBR}-{id}/")
     fac.set_base_image_uri(f"{CANTALOUPE_APP_URL}iiif/2/")
     fac.set_iiif_image_info(version="2.0", lvl="2")
-
     # Build the manifest
     mf = fac.manifest(ident="manifest", label=volume.title)
-    if author := volume.printed.author:
-        mf.set_metadata({"Author": author.name})
-    mf.set_metadata({"Description of work": volume.printed.description})
+
+    mf.set_metadata(
+        {
+            "Author": volume.printed.author.name,
+            "Number or identifier of volume": volume.number_identifier,
+            "Place": volume.place,
+            "Date": volume.date,
+            "Publishers/booksellers": volume.publishers_booksellers,
+            "Description of work": volume.printed.description,
+        }
+    )
     if descriptive_elements := volume.printed.descriptive_elements:
         mf.set_metadata({"Descriptive elements of the content": descriptive_elements})
     if illustrators := volume.printed.illustrators:
         mf.set_metadata({"Illustrator(s)": illustrators})
     if engravers := volume.printed.engravers:
         mf.set_metadata({"Engraver(s)": engravers})
-    mf.set_metadata({"Number or identifier of volume": volume.number_identifier})
-    mf.set_metadata({"Place": volume.place})
-    mf.set_metadata({"Date": volume.date})
-    mf.set_metadata({"Publishers/booksellers": volume.publishers_booksellers})
     if digitized_version := volume.digitized_version:
         mf.set_metadata({"Source of the digitized version": digitized_version.source})
     if comment := volume.comment:
         mf.set_metadata({"Comment": comment})
     if other_copies := volume.other_copies:
         mf.set_metadata({"Other copy(ies)": other_copies})
+    # Set the manifest's attribution, description and viewing hint
     mf.attribution = f"{APP_NAME_UPPER} platform"
     mf.description = APP_DESCRIPTION
     mf.viewingHint = "individuals"
-
     # And walk through the pages
     seq = mf.sequence(ident="normal", label="Normal Order")
-    if images := volume.imagevolume_set.all():
-        for i, img in enumerate(images):
-            i += 1
-            image = Image.open(img.image)
-            # Build the canvas
-            cvs = seq.canvas(ident="c%s" % i, label="Page %s" % i)
-            cvs.set_hw(image.height, image.width)
-            # Build the image annotation
-            anno = cvs.annotation(ident="a%s" % i)
-            img = anno.image(ident=img.image.url.split("/")[-1], iiif=True)
-            img.set_hw(image.height, image.width)
-            if version == "auto":
-                annoList = cvs.annotationList(ident="anno-%s" % i)
-                anno = annoList.annotation(ident="a-list-%s" % i)
-                anno.text("Annotation")
-    elif pdf_first := volume.pdfvolume_set.first():
-        pdf_file = Pdf.open(f"{MEDIA_PATH}{pdf_first.pdf}")
-        total_pages = len(pdf_file.pages)
-        for image_counter in range(1, total_pages + 1):
-            image_path = (
-                str(pdf_first)
-                .split("/")[-1]
-                .replace(".pdf", f"_{image_counter:04d}.jpg")
-            )
-            image = Image.open(f"{MEDIA_PATH}{IMG_PATH}{image_path}")
-            # Build the canvas
-            cvs = seq.canvas(
-                ident="c%s" % image_counter, label="Page %s" % image_counter
-            )
-            cvs.set_hw(image.height, image.width)
-            # Build the image annotation
-            anno = cvs.annotation(ident="a%s" % image_counter)
-            img = anno.image(ident=image_path, iiif=True)
-            img.set_hw(image.height, image.width)
-            if version == "auto":
-                annoList = cvs.annotationList(ident="anno-%s" % image_counter)
-                anno = annoList.annotation(ident="a-list-%s" % image_counter)
-                anno.text("Annotation")
-    elif manifest_first := volume.manifestvolume_set.first():
-        for image_counter, path in enumerate(
-            sorted(glob(f"{MEDIA_PATH}{IMG_PATH}vol{id}_*.jpg"))
-        ):
-            image_counter += 1
-            image_path = path.replace("\\", "/").split("/")[-1]
-            image = Image.open(path)
-            # Build the canvas
-            cvs = seq.canvas(
-                ident="c%s" % image_counter, label="Page %s" % image_counter
-            )
-            cvs.set_hw(image.height, image.width)
-            # Build the image annotation
-            anno = cvs.annotation(ident="a%s" % image_counter)
-            img = anno.image(ident=image_path, iiif=True)
-            img.set_hw(image.height, image.width)
-            if version == "auto":
-                annoList = cvs.annotationList(ident="anno-%s" % image_counter)
-                anno = annoList.annotation(ident="a-list-%s" % image_counter)
-                anno.text("Annotation")
-    else:
-        raise Exception("There is no manifest!")
-
+    process_images(volume, seq, version)
     data = mf.toJSON(top=True)
 
     return JsonResponse(data)

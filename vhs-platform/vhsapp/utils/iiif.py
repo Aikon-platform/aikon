@@ -1,8 +1,12 @@
+import os
 import re
 import json
 import requests
 import time
+from glob import glob
 from datetime import datetime
+from PIL import Image
+from pikepdf import Pdf
 from tripoli import IIIFValidator
 from urllib.parse import urlparse
 
@@ -13,6 +17,8 @@ from vhsapp.utils.functions import get_icon, anno_btn
 
 from django.core.exceptions import ValidationError
 from vhs.settings import SAS_APP_URL, VHS_APP_URL
+from vhsapp.utils.constants import MS_ABBR, VOL_ABBR
+from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH
 
 
 IIIF_ICON = "<img alt='IIIF' src='https://iiif.io/assets/images/logos/logo-sm.png' height='15'/>"
@@ -154,13 +160,77 @@ def gen_manifest_url(
     return f"{scheme}://{host}{f':{port}' if port else ''}/{APP_NAME}/iiif/{vers}/{m_type}/{m_id}/manifest.json"
 
 
+def process_images(work, seq, version):
+    """
+    Process the images of a work and add them to a sequence
+    """
+    if hasattr(work, "imagemanuscript_set"):
+        images = work.imagemanuscript_set.all()
+        pdf_first = work.pdfmanuscript_set.first()
+        manifest_first = work.manifestmanuscript_set.first()
+        work_abbr = MS_ABBR
+    else:
+        images = work.imagevolume_set.all()
+        pdf_first = work.pdfvolume_set.first()
+        manifest_first = work.manifestvolume_set.first()
+        work_abbr = VOL_ABBR
+    # Check if there are any work images and process them
+    if images:
+        for counter, img in enumerate(images, start=1):
+            image_name = img.image.url.split("/")[-1]
+            image = Image.open(img.image)
+            build_canvas_and_annotation(seq, counter, image_name, image, version)
+    # Check if there is a PDF work and process it
+    elif pdf_first:
+        with Pdf.open(f"{MEDIA_PATH}{pdf_first.pdf}") as pdf_file:
+            total_pages = len(pdf_file.pages)
+            for counter in range(1, total_pages + 1):
+                image_name = pdf_first.pdf.name.split("/")[-1].replace(
+                    ".pdf", f"_{counter:04d}.jpg"
+                )
+                image = Image.open(f"{MEDIA_PATH}{IMG_PATH}{image_name}")
+                build_canvas_and_annotation(seq, counter, image_name, image, version)
+    # Check if there is a manifest work and process it
+    elif manifest_first:
+        for counter, path in enumerate(
+            sorted(glob(f"{MEDIA_PATH}{IMG_PATH}{work_abbr}{work.id}_*.jpg")),
+            start=1,
+        ):
+            image_name = os.path.basename(path)
+            image = Image.open(path)
+            build_canvas_and_annotation(seq, counter, image_name, image, version)
+    # If none of the above, raise an exception
+    else:
+        raise Exception("There is no manifest!")
+
+
+def build_canvas_and_annotation(seq, counter, image_name, image, version):
+    """
+    Build the canvas and annotation for each image
+    """
+    # Build the canvas
+    cvs = seq.canvas(ident=f"c{counter}", label=f"Page {counter}")
+    cvs.set_hw(image.height, image.width)
+    # Build the image annotation
+    anno = cvs.annotation(ident=f"a{counter}")
+    img = anno.image(ident=image_name, iiif=True)
+    img.set_hw(image.height, image.width)
+    if version == "auto":
+        anno_list = cvs.annotationList(ident=f"anno-{counter}")
+        anno = anno_list.annotation(ident=f"a-list-{counter}")
+        anno.text("Annotation")
+
+
 def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
     base_url = f"{VHS_APP_URL}vhs/iiif/{version}/{work}/{work_abbr}-{id}"
 
     anno2_2 = anno[2] // 2
     anno3_2 = anno[3] // 2
 
-    data_paper = '{"strokeWidth":1,"rotation":0,"deleteIcon":null,"rotationIcon":null,"group":null,"editable":true,"annotation":null}'
+    data_paper = (
+        '{"strokeWidth":1,"rotation":0,"deleteIcon":null,"rotationIcon":null,'
+        '"group":null,"editable":true,"annotation":null}'
+    )
 
     return {
         "@id": f"{SAS_APP_URL}annotation/{work_abbr}-{id}-{canvas}-{num_anno + 1}",
