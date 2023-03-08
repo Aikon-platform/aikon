@@ -47,6 +47,37 @@ from vhsapp.utils.iiif import get_link_manifest, gen_btn, gen_manifest_url, gen_
 from vhsapp.utils.functions import list_to_csv, zip_img, get_file_list, pdf_to_imgs
 
 
+class ManifestAdmin(admin.ModelAdmin):
+    class Meta:
+        abstract = True
+
+    readonly_fields = ("manifest_auto", "manifest_v2")
+
+    def wit_name(self):
+        return MANIFEST_AUTO
+
+    def manifest_auto(self, obj):
+        if obj.id:
+            # if manifest_first := obj.manifestvolume_set.first():
+            #     return mark_safe(f"{get_link_manifest(obj.id, manifest_first)}<br>")
+            return gen_btn(obj.id, "VISUALIZE", MANIFEST_AUTO, self.wit_name().lower())
+        return "-"
+
+    manifest_auto.short_description = "Manifeste (automatique)"
+
+    def manifest_v2(self, obj):
+        if obj.id:
+            return gen_btn(
+                obj.id,
+                "FINAL" if obj.manifest_final else "EDIT",
+                MANIFEST_V2,
+                self.wit_name().lower(),
+            )
+        return "-"
+
+    manifest_v2.short_description = "Manifeste (modifiable)"
+
+
 class VolumeInline(nested_admin.NestedStackedInline):
     model = Volume
     fields = [
@@ -62,29 +93,13 @@ class VolumeInline(nested_admin.NestedStackedInline):
         "comment",
         "other_copies",
     ]
-    readonly_fields = ("manifest_auto", "manifest_v2")
     autocomplete_fields = ("digitized_version",)
     extra = 0
     classes = ("collapse",)
     inlines = [PdfVolumeInline, ManifestVolumeInline, ImageVolumeInline]
 
-    def manifest_auto(self, obj):
-        if obj.id:
-            # if manifest_first := obj.manifestvolume_set.first():
-            #     return mark_safe(f"{get_link_manifest(obj.id, manifest_first)}<br>")
-            return gen_btn(obj.id)
-        return "-"
-
-    manifest_auto.short_description = "Manifeste (automatique)"
-
-    def manifest_v2(self, obj):
-        if obj.id:
-            return gen_btn(
-                obj.id, "FINAL" if obj.manifest_final else "EDIT", MANIFEST_V2
-            )
-        return "-"
-
-    manifest_v2.short_description = "Manifeste (modifiable)"
+    def wit_name(self):
+        return VOL
 
     def get_fields(self, request, obj=None):
         fields = list(super(VolumeInline, self).get_fields(request, obj))
@@ -94,6 +109,24 @@ class VolumeInline(nested_admin.NestedStackedInline):
             exclude_set.add("manifest_v2")
             exclude_set.add("manifest_final")
         return [f for f in fields if f not in exclude_set]
+
+    # TODO use Abstract Model ManifestAdmin instead
+    readonly_fields = ("manifest_auto", "manifest_v2")
+
+    def manifest_auto(self, obj):
+        if obj.id:
+            return gen_btn(obj.id, "VISUALIZE", MANIFEST_AUTO, self.wit_name().lower())
+        return "-"
+
+    manifest_auto.short_description = "Manifeste (automatique)"
+
+    def manifest_v2(self, obj):
+        if obj.id:
+            action = "FINAL" if obj.manifest_final else "EDIT"
+            return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
+        return "-"
+
+    manifest_v2.short_description = "Manifeste (modifiable)"
 
 
 @admin.register(Volume)
@@ -117,19 +150,23 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         css = {"all": ("css/style.css",)}
         js = ("js/jquery-3.6.1.js", "js/script.js")
 
-    change_form_template = "admin/change.html"
+    change_form_template = "admin/change.html"  # TODO check if correct
     ordering = ("id",)
     list_filter = (AuthorFilter, WorkFilter)
     autocomplete_fields = ("author", "work")
     list_per_page = 100
     exclude = ("slug", "created_at", "updated_at")
-    actions = [
-        "export_selected_manifests",
-        "export_selected_iiif_images",
-        "export_selected_images",
-        "export_selected_pdfs",
-        "detect_similarity",
-    ]
+
+    def __init__(self, model, admin_site):
+        super().__init__(model, admin_site)
+        self.actions = [
+            "export_selected_manifests",
+            "export_selected_iiif_images",
+            "export_selected_images",
+            "export_selected_pdfs",
+        ]
+        if self.wit_type() == "volume":
+            self.actions += ["detect_similarity"]
 
     def wit_type(self):
         return "witness"
@@ -137,7 +174,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     def short_author(self, obj):
         return truncatewords_html(obj.author, TRUNCATEWORDS)
 
-    short_author.short_description = "Auteurs et/ou Éditeurs scientifiques"
+    short_author.short_description = "Auteurs et/ou Éditeurs"
 
     def short_work(self, obj):
         return truncatewords_html(obj.work, TRUNCATEWORDS)
@@ -266,6 +303,9 @@ class PrintedAdmin(WitnessAdmin, nested_admin.NestedModelAdmin, admin.SimpleList
     )
     inlines = [VolumeInline]
 
+    def wit_type(self):
+        return "print"
+
     def save_file(self, request, obj):
         # TODO: check if needed for Volume
         files = request.FILES.getlist("imagevolume_set-0-image")
@@ -295,7 +335,7 @@ class PrintedAdmin(WitnessAdmin, nested_admin.NestedModelAdmin, admin.SimpleList
 
 
 @admin.register(Manuscript)
-class ManuscriptAdmin(WitnessAdmin):
+class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
     # list of fields that are displayed in the all witnesses tab
     list_display = (
         "short_author",
@@ -315,17 +355,8 @@ class ManuscriptAdmin(WitnessAdmin):
     def wit_type(self):
         return "manuscript"
 
-    def manifest_auto(self, obj):
-        return gen_btn(obj.id, "VISUALIZE", MANIFEST_AUTO, MS.lower())
-
-    manifest_auto.short_description = "Manifeste (automatique)"
-
-    def manifest_v2(self, obj):
-        return gen_btn(
-            obj.id, "FINAL" if obj.manifest_final else "EDIT", MANIFEST_V2, MS.lower()
-        )
-
-    manifest_v2.short_description = "Manifeste (modifiable)"
+    def wit_name(self):
+        return MS
 
     def save_file(self, request, obj):
         files = request.FILES.getlist("imagemanuscript_set-0-image")

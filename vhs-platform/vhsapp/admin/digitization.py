@@ -13,16 +13,20 @@ from vhsapp.models.digitization import (
 )
 
 from vhsapp.utils.iiif import IIIF_ICON, gen_img_url
+from vhsapp.utils.constants import APP_NAME
 
 from vhsapp.utils.functions import (
     gen_thumbnail,
 )
 
-img_vol = "/vhs-admin/vhsapp/imagevolume"  # TODO change that
-img_ms = "/vhs-admin/vhsapp/imagemanuscript"  # TODO: change that
+img_vol = f"/{APP_NAME}-admin/vhsapp/imagevolume"  # TODO change that
+img_ms = f"/{APP_NAME}-admin/vhsapp/imagemanuscript"  # TODO: change that
 
 
 class ImageAdmin(admin.ModelAdmin):
+    class Meta:
+        abstract = True
+
     list_per_page = 100
 
     def wit_type(self):
@@ -89,6 +93,9 @@ class ManifestVolumeInline(nested_admin.NestedStackedInline, DigitInline):
 
 
 class ImageInline(DigitInline):
+    class Meta:
+        abstract = True
+
     class Media:
         css = {"all": ("css/style.css",)}
         js = ("fontawesomefree/js/all.min.js",)
@@ -101,9 +108,12 @@ class ImageInline(DigitInline):
     def img_dir(self):
         return "/"
 
+    def wit_type(self):
+        return "manuscript" if "manuscript" in self.img_dir() else "volume"
+
     def image_preview(self, obj):
         return mark_safe(
-            f'<a href="/{self.img_dir()}/?q={self.obj_id(obj)}" target="_blank">{IIIF_ICON} Gérer les images</a>'
+            f'<a href="{self.img_dir()}/?q={self.obj_id(obj)}" target="_blank">{IIIF_ICON} Gérer les images</a>'
         )
 
     image_preview.short_description = "Images"
@@ -117,7 +127,7 @@ class ImageInline(DigitInline):
             fields.remove("image_preview")
         else:
             fields.remove("image")
-        if request.method == "POST":
+        if request.method == "POST" and self.wit_type() == "volume":
             fields.append("image")
 
         return list(set(fields))

@@ -127,6 +127,10 @@ def anno_btn(obj_id, action="VISUALIZE"):
             color = "#4CAF50"
             tag_id = "manifest_final_"
             icon = get_icon("check-square-o")
+        case "NOT AVAILABLE":
+            color = "#878787"
+            tag_id = "annotate_"
+            icon = get_icon("eye-slash")
         case _:
             color = "#B3B3B3"
             tag_id = "annotate_"
