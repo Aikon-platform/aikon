@@ -17,7 +17,7 @@ from vhsapp.utils.constants import APP_NAME, MANIFEST_AUTO, MANIFEST_V2
 from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH
 from vhsapp.utils.functions import get_icon, anno_btn
 from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
-from vhs.settings import SAS_APP_URL, VHS_APP_URL
+from vhs.settings import SAS_APP_URL, VHS_APP_URL, CANTALOUPE_APP_URL
 
 
 IIIF_ICON = "<img alt='IIIF' src='https://iiif.io/assets/images/logos/logo-sm.png' height='15'/>"
@@ -119,7 +119,8 @@ def gen_iiif_url(
     ext="jpg",
 ):
     # E.g. "http://localhost/iiif/2/image_name.jpg/full/full/0/default.jpg"
-    return f"{scheme}://{host}{f':{port}' if port else ''}/iiif/{vers}/{img}/{res}/{color}.{ext}"
+    # return f"{scheme}://{host}{f':{port}' if port else ''}/iiif/{vers}/{img}/{res}/{color}.{ext}"
+    return f"{CANTALOUPE_APP_URL}/iiif/{vers}/{img}/{res}/{color}.{ext}"
 
 
 def get_link_manifest(obj_id, manifest_url, tag_id="url_manifest_"):
@@ -128,7 +129,7 @@ def get_link_manifest(obj_id, manifest_url, tag_id="url_manifest_"):
 
 def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, ps_type=VOL.lower()):
     obj_ref = f"{APP_NAME}/iiif/{vers}/{ps_type}/{obj_id}"
-    manifest = f"http://localhost:8000/{obj_ref}/manifest.json"
+    manifest = f"{CANTALOUPE_APP_URL}/{obj_ref}/manifest.json"
 
     if vers == MANIFEST_AUTO:
         tag_id = f"iiif_auto_"
@@ -138,7 +139,7 @@ def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, ps_type=VOL.lower())
     else:
         tag_id = f"url_manifest_"
         message_id = f"message_{obj_id}"
-        download_url = f"http://localhost:8888/search-api/{obj_id}/search/"
+        download_url = f"{SAS_APP_URL}/search-api/{obj_id}/search/"
         anno_type = "JSON"
 
     return mark_safe(
@@ -152,11 +153,12 @@ def gen_manifest_url(
     m_id,
     scheme="http",
     host="localhost",
-    port=None,
+    port=8182,
     vers=MANIFEST_AUTO,
     m_type=VOL.lower(),
 ):
-    return f"{scheme}://{host}{f':{port}' if port else ''}/{APP_NAME}/iiif/{vers}/{m_type}/{m_id}/manifest.json"
+    # return f"{scheme}://{host}{f':{port}' if port else ''}/{APP_NAME}/iiif/{vers}/{m_type}/{m_id}/manifest.json"
+    return f"{CANTALOUPE_APP_URL}/{APP_NAME}/iiif/{vers}/{m_type}/{m_id}/manifest.json"
 
 
 def process_images(work, seq, version):
@@ -221,7 +223,7 @@ def build_canvas_and_annotation(seq, counter, image_name, image, version):
 
 
 def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
-    base_url = f"{VHS_APP_URL}vhs/iiif/{version}/{work}/{work_abbr}-{id}"
+    base_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{work}/{work_abbr}-{id}"
 
     anno2_2 = anno[2] // 2
     anno3_2 = anno[3] // 2
@@ -232,14 +234,14 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
     )
 
     return {
-        "@id": f"{SAS_APP_URL}annotation/{work_abbr}-{id}-{canvas}-{num_anno + 1}",
+        "@id": f"{SAS_APP_URL}/annotation/{work_abbr}-{id}-{canvas}-{num_anno + 1}",
         "@type": "oa:Annotation",
         "dcterms:created": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "dcterms:modified": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "resource": [
             {
                 "@type": "dctypes:Text",
-                f"{SAS_APP_URL}full_text": "",
+                f"{SAS_APP_URL}/full_text": "",
                 "format": "text/html",
                 "chars": "<p></p>",
             }

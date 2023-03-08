@@ -71,16 +71,19 @@ if DEBUG:
 
 # Define the default values for application URLs in development mode
 # VHS, CANTALOUPE, SAS
+VHS_PORT = 8000
+CANTALOUPE_PORT = 8182
+SAS_PORT = 8888
 
-VHS_APP_URL = "http://localhost:8000/"
-CANTALOUPE_APP_URL = "http://localhost:8182/"
-SAS_APP_URL = "http://localhost:8888/"
+VHS_APP_URL = f"http://localhost:{VHS_PORT}"
+CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
+SAS_APP_URL = f"http://localhost:{SAS_PORT}"
 
 # Override the default values in production mode
 if not DEBUG:
-    VHS_APP_URL = "https://iscd.huma-num.fr/"
-    CANTALOUPE_APP_URL = "https://iscd.huma-num.fr/"
-    SAS_APP_URL = "https://iscd.huma-num.fr/sas/"
+    VHS_APP_URL = "https://iscd.huma-num.fr"
+    CANTALOUPE_APP_URL = "https://iscd.huma-num.fr"
+    SAS_APP_URL = "https://iscd.huma-num.fr/sas"
 
 ROOT_URLCONF = "vhs.urls"
 

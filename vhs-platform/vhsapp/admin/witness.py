@@ -327,7 +327,7 @@ class PrintedAdmin(WitnessAdmin, nested_admin.NestedModelAdmin, admin.SimpleList
         )
         manifests = [
             gen_manifest_url(
-                mnf[0], request.scheme, request.META["HTTP_HOST"], None, MANIFEST_V2
+                mnf[0], request.scheme, request.META["HTTP_HOST"], 8182, MANIFEST_V2
             )
             for mnf in results
         ]
@@ -369,7 +369,7 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
         results = queryset.values_list("id", "manifestmanuscript__manifest")
         manifests = [
             gen_manifest_url(
-                mnf[0], request.scheme, request.META["HTTP_HOST"], None, MANIFEST_V2
+                mnf[0], request.scheme, request.META["HTTP_HOST"], 8182, MANIFEST_V2
             )
             for mnf in results
         ]
