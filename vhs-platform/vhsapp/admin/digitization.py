@@ -1,6 +1,6 @@
 import nested_admin
 
-from django.contrib import admin, messages
+from django.contrib import admin
 from django.utils.safestring import mark_safe
 
 from vhsapp.models.digitization import (

@@ -6,20 +6,19 @@ from urllib.parse import urlencode
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from iiif_prezi.factory import ManifestFactory
 
 from vhs.settings import ENV
 
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
+from vhsapp.utils.functions import credentials
 from vhsapp.utils.constants import (
     APP_NAME,
     APP_NAME_UPPER,
     APP_DESCRIPTION,
 )
-from vhsapp.utils.functions import credentials
-from iiif_prezi.factory import ManifestFactory
-
 from vhsapp.utils.iiif import annotate_canvas, process_images
 from vhsapp.utils.paths import (
     MEDIA_PATH,

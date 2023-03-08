@@ -10,15 +10,14 @@ from pikepdf import Pdf
 from tripoli import IIIFValidator
 from urllib.parse import urlparse
 
-from django.utils.safestring import mark_safe
-from vhsapp.utils.constants import APP_NAME, MANIFEST_AUTO, MANIFEST_V2
-from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
-from vhsapp.utils.functions import get_icon, anno_btn
-
 from django.core.exceptions import ValidationError
-from vhs.settings import SAS_APP_URL, VHS_APP_URL
-from vhsapp.utils.constants import MS_ABBR, VOL_ABBR
+from django.utils.safestring import mark_safe
+
+from vhsapp.utils.constants import APP_NAME, MANIFEST_AUTO, MANIFEST_V2
 from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH
+from vhsapp.utils.functions import get_icon, anno_btn
+from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
+from vhs.settings import SAS_APP_URL, VHS_APP_URL
 
 
 IIIF_ICON = "<img alt='IIIF' src='https://iiif.io/assets/images/logos/logo-sm.png' height='15'/>"
