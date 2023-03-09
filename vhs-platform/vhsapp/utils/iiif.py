@@ -3,7 +3,6 @@ import re
 import json
 import requests
 import time
-import logging
 from glob import glob
 from datetime import datetime
 from PIL import Image
@@ -11,11 +10,9 @@ from pikepdf import Pdf
 from tripoli import IIIFValidator
 from django.core.exceptions import ValidationError
 from vhs.settings import SAS_APP_URL, VHS_APP_URL
-from vhsapp.utils.constants import APP_NAME, MS_ABBR, VOL_ABBR
+from vhsapp.utils.constants import MS_ABBR, VOL_ABBR
+from vhsapp.utils.functions import log
 from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH
-
-# Create a logger instance
-logger = logging.getLogger(APP_NAME)
 
 
 def validate_gallica_manifest_url(value):
@@ -69,8 +66,8 @@ def extract_images_from_iiif_manifest(url, image_path, work):
                     image_counter += 1
                     time.sleep(15)
     except Exception as e:
-        # Log the exception to a file
-        logger.error(f"Failed to extract images from {url}: {e}")
+        # Log an error message
+        log(f"Failed to extract images from {url}: {e}")
 
 
 def process_images(work, seq, version):

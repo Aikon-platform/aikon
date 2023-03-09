@@ -1,4 +1,3 @@
-import logging
 from uuid import uuid4
 from PIL import Image
 from io import BytesIO
@@ -11,9 +10,6 @@ from urllib.request import (
     build_opener,
     install_opener,
 )
-
-# Create a logger instance
-logger = logging.getLogger(APP_NAME)
 
 
 def rename_file(instance, filename, path):
@@ -70,8 +66,8 @@ def convert_pdf_to_image(pdf_path, image_path):
                 # Increment the counter to update filename
                 image_counter += 1
     except Exception as e:
-        # Log the exception to a file
-        logger.error(f"Failed to convert {pdf_file} to images: {str(e)}")
+        # Log an error message
+        log(f"Failed to convert {pdf_file} to images: {str(e)}")
 
 
 def credentials(url, auth_user, auth_passwd):
@@ -83,3 +79,14 @@ def credentials(url, auth_user, auth_passwd):
     handler = HTTPBasicAuthHandler(passman)
     opener = build_opener(handler)
     install_opener(opener)
+
+
+def log(msg):
+    """
+    Record an error message in the system log
+    """
+    import logging
+
+    # Create a logger instance
+    logger = logging.getLogger(APP_NAME)
+    logger.error(msg)
