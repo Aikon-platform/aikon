@@ -28,7 +28,6 @@ from vhsapp.utils.paths import (
     MEDIA_PATH,
     VOL_ANNO_PATH,
     MS_ANNO_PATH,
-    IMG_PATH,
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -106,7 +105,6 @@ def manifest_volume(request, id, version):
     fac.set_iiif_image_info(version="2.0", lvl="2")
     # Build the manifest
     mf = fac.manifest(ident="manifest", label=volume.title)
-
     mf.set_metadata(
         {
             "Author": volume.printed.author.name,

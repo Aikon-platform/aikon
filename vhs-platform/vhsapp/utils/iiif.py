@@ -3,6 +3,7 @@ import re
 import json
 import requests
 import time
+import logging
 from glob import glob
 from datetime import datetime
 from PIL import Image
@@ -10,8 +11,11 @@ from pikepdf import Pdf
 from tripoli import IIIFValidator
 from django.core.exceptions import ValidationError
 from vhs.settings import SAS_APP_URL, VHS_APP_URL
-from vhsapp.utils.constants import MS_ABBR, VOL_ABBR
+from vhsapp.utils.constants import APP_NAME, MS_ABBR, VOL_ABBR
 from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH
+
+# Create a logger instance
+logger = logging.getLogger(APP_NAME)
 
 
 def validate_gallica_manifest_url(value):
@@ -49,20 +53,24 @@ def extract_images_from_iiif_manifest(url, image_path, work):
     """
     Extract all images from an IIIF manifest
     """
-    response = requests.get(url)
-    manifest = json.loads(response.text)
-    image_counter = 1
-    for sequence in manifest["sequences"]:
-        for canvas in sequence["canvases"]:
-            for image in canvas["images"]:
-                image_url = (
-                    f"{image['resource']['service']['@id']}/full/full/0/default.jpg"
-                )
-                image_response = requests.get(image_url)
-                with open(f"{image_path}{work}_{image_counter:04d}.jpg", "wb") as f:
-                    f.write(image_response.content)
-                image_counter += 1
-                time.sleep(15)
+    try:
+        response = requests.get(url)
+        manifest = json.loads(response.text)
+        image_counter = 1
+        for sequence in manifest["sequences"]:
+            for canvas in sequence["canvases"]:
+                for image in canvas["images"]:
+                    image_url = (
+                        f"{image['resource']['service']['@id']}/full/full/0/default.jpg"
+                    )
+                    image_response = requests.get(image_url)
+                    with open(f"{image_path}{work}_{image_counter:04d}.jpg", "wb") as f:
+                        f.write(image_response.content)
+                    image_counter += 1
+                    time.sleep(15)
+    except Exception as e:
+        # Log the exception to a file
+        logger.error(f"Failed to extract images from {url}: {e}")
 
 
 def process_images(work, seq, version):

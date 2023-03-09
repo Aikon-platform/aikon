@@ -1,12 +1,14 @@
-from pathlib import Path
 import environ
+from pathlib import Path
+from vhsapp.utils.constants import APP_NAME
+from vhsapp.utils.paths import LOG_PATH
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env()
-environ.Env.read_env(env_file=f"{BASE_DIR}/vhs/.env")
+environ.Env.read_env(env_file=f"{BASE_DIR}/{APP_NAME}/.env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
@@ -21,6 +23,7 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 
 
 # Application definition
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -59,7 +62,7 @@ if DEBUG:
     INTERNAL_IPS = [
         "127.0.0.1",
     ]
-    
+
 # Define the default values for application URLs in development mode
 # VHS, CANTALOUPE, SAS
 
@@ -165,3 +168,26 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240
 
 # Cross-Origin Resource Sharing (CORS) from any origin
 CORS_ALLOW_ALL_ORIGINS = True
+
+# Configure logging to record ERROR level messages to file
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": LOG_PATH,
+            "level": "ERROR",
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        APP_NAME: {
+            "handlers": ["file"],
+            "level": "ERROR",
+        },
+    },
+    "formatters": {
+        "verbose": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
+    },
+}

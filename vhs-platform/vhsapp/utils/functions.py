@@ -1,14 +1,19 @@
+import logging
 from uuid import uuid4
 from PIL import Image
 from io import BytesIO
 from pdf2image import pdfinfo_from_path, convert_from_path
 from django.core.files import File
+from vhsapp.utils.constants import APP_NAME
 from urllib.request import (
     HTTPPasswordMgrWithDefaultRealm,
     HTTPBasicAuthHandler,
     build_opener,
     install_opener,
 )
+
+# Create a logger instance
+logger = logging.getLogger(APP_NAME)
 
 
 def rename_file(instance, filename, path):
@@ -18,7 +23,7 @@ def rename_file(instance, filename, path):
     """
     extension = filename.split(".")[-1]
     # Set filename as random string
-    uuid_filename = "{}.{}".format(uuid4().hex, extension)
+    uuid_filename = f"{uuid4().hex}.{extension}"
     # Return the path to the file
     return f"{path}/{uuid_filename}"
 
@@ -49,20 +54,24 @@ def convert_pdf_to_image(pdf_path, image_path):
     pdf_info = pdfinfo_from_path(pdf_path, userpw=None, poppler_path=None)
     number_pages = pdf_info["Pages"]
     step = 2
-    for image_counter in range(1, number_pages + 1, step):
-        batch_pages = convert_from_path(
-            pdf_path,
-            dpi=300,
-            first_page=image_counter,
-            last_page=min(image_counter + step - 1, number_pages),
-        )
-        # Iterate through all the batch pages stored above
-        for page in batch_pages:
-            pathname = f"{image_path}{filename}_{image_counter:04d}.jpg"
-            # Save the image of the page in IMAGES_PATH
-            page.save(pathname, format="JPEG")
-            # Increment the counter to update filename
-            image_counter += 1
+    try:
+        for image_counter in range(1, number_pages + 1, step):
+            batch_pages = convert_from_path(
+                pdf_path,
+                dpi=300,
+                first_page=image_counter,
+                last_page=min(image_counter + step - 1, number_pages),
+            )
+            # Iterate through all the batch pages stored above
+            for page in batch_pages:
+                pathname = f"{image_path}{filename}_{image_counter:04d}.jpg"
+                # Save the image of the page in IMAGES_PATH
+                page.save(pathname, format="JPEG")
+                # Increment the counter to update filename
+                image_counter += 1
+    except Exception as e:
+        # Log the exception to a file
+        logger.error(f"Failed to convert {pdf_file} to images: {str(e)}")
 
 
 def credentials(url, auth_user, auth_passwd):
