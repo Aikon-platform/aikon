@@ -133,14 +133,14 @@ def build_canvas_and_annotation(seq, counter, image_name, image, version):
 
 def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
     anno_json = {
-        "@id": f"{SAS_APP_URL}annotation/{work_abbr}-{id}-{canvas}-{num_anno + 1}",
+        "@id": f"{SAS_APP_URL}/annotation/{work_abbr}-{id}-{canvas}-{num_anno + 1}",
         "@type": "oa:Annotation",
         "dcterms:created": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "dcterms:modified": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "resource": [
             {
                 "@type": "dctypes:Text",
-                f"{SAS_APP_URL}full_text": "",
+                f"{SAS_APP_URL}/full_text": "",
                 "format": "text/html",
                 "chars": "<p></p>",
             }
@@ -149,7 +149,7 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
             {
                 "@type": "oa:SpecificResource",
                 "within": {
-                    "@id": f"{VHS_APP_URL}vhs/iiif/{version}/{work}/{work_abbr}-{id}/manifest.json",
+                    "@id": f"{VHS_APP_URL}/vhs/iiif/{version}/{work}/{work_abbr}-{id}/manifest.json",
                     "@type": "sc:Manifest",
                 },
                 "selector": {
@@ -188,7 +188,7 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
                         + "' fill-opacity='0' fill='#00ff00' fill-rule='nonzero' stroke='#00ff00' stroke-width='1' stroke-linecap='butt' stroke-linejoin='miter' stroke-miterlimit='10' stroke-dashoffset='0' style='mix-blend-mode: normal'/></svg>",
                     },
                 },
-                "full": f"{VHS_APP_URL}vhs/iiif/{version}/{work}/{work_abbr}-{id}/canvas/c{canvas}.json",
+                "full": f"{VHS_APP_URL}/vhs/iiif/{version}/{work}/{work_abbr}-{id}/canvas/c{canvas}.json",
             }
         ],
         "motivation": ["oa:commenting", "oa:tagging"],

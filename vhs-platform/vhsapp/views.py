@@ -49,8 +49,8 @@ def manifest_manuscript(request, id, version):
     manuscript = get_object_or_404(Manuscript, pk=id)
     # Configure the factory
     fac = ManifestFactory()
-    fac.set_base_prezi_uri(f"{VHS_APP_URL}vhs/iiif/{version}/{MS}/{MS_ABBR}-{id}/")
-    fac.set_base_image_uri(f"{CANTALOUPE_APP_URL}iiif/2/")
+    fac.set_base_prezi_uri(f"{VHS_APP_URL}/vhs/iiif/{version}/{MS}/{MS_ABBR}-{id}/")
+    fac.set_base_image_uri(f"{CANTALOUPE_APP_URL}/iiif/2/")
     fac.set_iiif_image_info(version="2.0", lvl="2")
     # Build the manifest
     mf = fac.manifest(ident="manifest", label=manuscript.work.title)
@@ -100,8 +100,8 @@ def manifest_volume(request, id, version):
     volume = get_object_or_404(Volume, pk=id)
     # Configure the factory
     fac = ManifestFactory()
-    fac.set_base_prezi_uri(f"{VHS_APP_URL}vhs/iiif/{version}/{VOL}/{VOL_ABBR}-{id}/")
-    fac.set_base_image_uri(f"{CANTALOUPE_APP_URL}iiif/2/")
+    fac.set_base_prezi_uri(f"{VHS_APP_URL}/vhs/iiif/{version}/{VOL}/{VOL_ABBR}-{id}/")
+    fac.set_base_image_uri(f"{CANTALOUPE_APP_URL}/iiif/2/")
     fac.set_iiif_image_info(version="2.0", lvl="2")
     # Build the manifest
     mf = fac.manifest(ident="manifest", label=volume.title)
@@ -156,7 +156,7 @@ def annotation_auto(request, id, work):
                 region = f"{line.split()[0]},{line.split()[1]},{line.split()[2]},{line.split()[3]}"
                 writer.writerow(
                     [
-                        f"{CANTALOUPE_APP_URL}iiif/2/{img_name}/{region}/full/0/default.jpg"
+                        f"{CANTALOUPE_APP_URL}/iiif/2/{img_name}/{region}/full/0/default.jpg"
                     ]
                 )
     return response
@@ -207,19 +207,19 @@ def populate_annotation(request, id, work):
         lines = [line.strip() for line in f.readlines()]
     canvas = [line.split()[0] for line in lines if len(line.split()) == 2]
     for c in canvas:
-        url_search = f"{SAS_APP_URL}annotation/search?uri={VHS_APP_URL}vhs/iiif/v2/{work}/{work_abbr}-{id}/canvas/c{c}.json"
+        url_search = f"{SAS_APP_URL}/annotation/search?uri={VHS_APP_URL}/vhs/iiif/v2/{work}/{work_abbr}-{id}/canvas/c{c}.json"
         # Store the response of URL
         response = urlopen(url_search)
         # Store the JSON response from url in data
         data = json.loads(response.read())
         if len(data) > 0:
             return HttpResponse(status=200)
-    url_populate = f"{SAS_APP_URL}annotation/populate"
+    url_populate = f"{SAS_APP_URL}/annotation/populate"
     for line in lines:
         if len(line.split()) == 2:
             canvas = line.split()[0]
             params = {
-                "uri": f"{VHS_APP_URL}vhs/iiif/v2/{work}/{work_abbr}-{id}/list/anno-{canvas}.json"
+                "uri": f"{VHS_APP_URL}/vhs/iiif/v2/{work}/{work_abbr}-{id}/list/anno-{canvas}.json"
             }
             query_string = urlencode(params)
             data = query_string.encode("ascii")
@@ -236,7 +236,7 @@ def show_work(request, id, work):
     }
     work_model, work_abbr, annotations_path = work_map.get(work, (None, None, None))
     work_obj = get_object_or_404(work_model, pk=id)
-    url_manifest = f"{VHS_APP_URL}vhs/iiif/v2/{work}/{work_abbr}-{id}/manifest.json"
+    url_manifest = f"{VHS_APP_URL}/vhs/iiif/v2/{work}/{work_abbr}-{id}/manifest.json"
     canvas_annos = []
     if not env("DEBUG"):
         credentials(SAS_APP_URL, env("SAS_USERNAME"), env("SAS_PASSWORD"))
@@ -244,7 +244,7 @@ def show_work(request, id, work):
         lines = [line.strip() for line in f.readlines()]
         for line in lines:
             if len(line.split()) == 2:
-                url_search = f"{SAS_APP_URL}annotation/search?uri={VHS_APP_URL}vhs/iiif/v2/{work}/{work_abbr}-{id}/canvas/c{line.split()[0]}.json"
+                url_search = f"{SAS_APP_URL}/annotation/search?uri={VHS_APP_URL}/vhs/iiif/v2/{work}/{work_abbr}-{id}/canvas/c{line.split()[0]}.json"
                 # Store the response of URL
                 response = urlopen(url_search)
                 # Store the JSON response from url in data
@@ -260,7 +260,7 @@ def show_work(request, id, work):
                 canvas_annos.append(
                     (
                         annos,
-                        f"{CANTALOUPE_APP_URL}iiif/2/{line.split()[1]}/full/full/0/default.jpg",
+                        f"{CANTALOUPE_APP_URL}/iiif/2/{line.split()[1]}/full/full/0/default.jpg",
                     )
                 )
     return render(

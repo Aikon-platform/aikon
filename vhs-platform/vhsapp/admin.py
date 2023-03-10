@@ -117,7 +117,7 @@ class ImageVolumeAdmin(admin.ModelAdmin):
         return format_html(
             '<a href="{}" target="_blank">{}</a>'.format(
                 CANTALOUPE_APP_URL
-                + "iiif/2/"
+                + "/iiif/2/"
                 + obj.image.name.split("/")[-1]
                 + "/full/full/0/default.jpg",
                 '<img src ="{}" width ="30" style="border-radius:50%;">'.format(
@@ -205,7 +205,7 @@ class VolumeInline(nested_admin.NestedStackedInline):
     def manifest_auto(self, obj):
         if obj.id:
             url_manifest_auto = (
-                f"{VHS_APP_URL}vhs/iiif/auto/volume/vol-{obj.id}/manifest.json"
+                f"{VHS_APP_URL}/vhs/iiif/auto/volume/vol-{obj.id}/manifest.json"
             )
             link_manifest_auto = (
                 '<a id="url_manifest_auto_'
@@ -235,7 +235,7 @@ class VolumeInline(nested_admin.NestedStackedInline):
 
     def manifest_v2(self, obj):
         if obj.id:
-            url_manifest = f"{VHS_APP_URL}vhs/iiif/v2/volume/vol-{obj.id}/manifest.json"
+            url_manifest = f"{VHS_APP_URL}/vhs/iiif/v2/volume/vol-{obj.id}/manifest.json"
             link_manifest = (
                 '<a id="url_manifest_'
                 + str(obj.id)
@@ -263,7 +263,7 @@ class VolumeInline(nested_admin.NestedStackedInline):
                 + button
                 + '<a href="'
                 + SAS_APP_URL
-                + "search-api/vol-"
+                + "/search-api/vol-"
                 + str(obj.id)
                 + '/search/" target="_blank"><i class="fa-solid fa-download"></i> Télécharger les annotations (JSON)</a>'
                 '<span id="message_' + str(obj.id) + '" style="color:#FF0000"></span>'
@@ -379,7 +379,7 @@ class PrintedAdmin(
                 writer.writerow([mnf])
             else:
                 writer.writerow(
-                    [f"{VHS_APP_URL}vhs/iiif/v2/volume/vol-{manifest[0]}/manifest.json"]
+                    [f"{VHS_APP_URL}/vhs/iiif/v2/volume/vol-{manifest[0]}/manifest.json"]
                 )
         return response
 
@@ -405,7 +405,7 @@ class PrintedAdmin(
         writer.writerow(["Image_IIIF"])
         for image in all_images:
             writer.writerow(
-                [f"{CANTALOUPE_APP_URL}iiif/2/{image}/full/full/0/default.jpg"]
+                [f"{CANTALOUPE_APP_URL}/iiif/2/{image}/full/full/0/default.jpg"]
             )
         return response
 
@@ -462,7 +462,7 @@ class PrintedAdmin(
         printed = queryset.exclude(volume__isnull=True)
         pdfs_list = printed.values_list("volume__pdfvolume__pdf", flat=True)
         pdfs_list = (pdf for pdf in pdfs_list if pdf is not None)
-        pdfs_list = [f"{VHS_APP_URL}{settings.MEDIA_URL}{pdf}" for pdf in pdfs_list]
+        pdfs_list = [f"{VHS_APP_URL}/{settings.MEDIA_URL}{pdf}" for pdf in pdfs_list]
 
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w") as pdf_zip:
@@ -567,7 +567,7 @@ class ImageManuscriptAdmin(admin.ModelAdmin):
         return format_html(
             '<a href="{}" target="_blank">{}</a>'.format(
                 CANTALOUPE_APP_URL
-                + "iiif/2/"
+                + "/iiif/2/"
                 + obj.image.name.split("/")[-1]
                 + "/full/full/0/default.jpg",
                 '<img src ="{}" width ="30" style="border-radius:50%;">'.format(
@@ -689,7 +689,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
 
     def manifest_auto(self, obj):
         url_manifest_auto = (
-            f"{VHS_APP_URL}vhs/iiif/auto/manuscript/ms-{obj.id}/manifest.json"
+            f"{VHS_APP_URL}/vhs/iiif/auto/manuscript/ms-{obj.id}/manifest.json"
         )
         link_manifest_auto = (
             '<a id="url_manifest_auto_'
@@ -715,7 +715,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     manifest_auto.short_description = "Manifeste (automatique)"
 
     def manifest_v2(self, obj):
-        url_manifest = f"{VHS_APP_URL}vhs/iiif/v2/manuscript/ms-{obj.id}/manifest.json"
+        url_manifest = f"{VHS_APP_URL}/vhs/iiif/v2/manuscript/ms-{obj.id}/manifest.json"
         link_manifest = (
             '<a id="url_manifest_'
             + str(obj.id)
@@ -743,7 +743,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             + button
             + '<a href="'
             + SAS_APP_URL
-            + "search-api/ms-"
+            + "/search-api/ms-"
             + str(obj.id)
             + '/search" target="_blank"><i class="fa-solid fa-download"></i> Télécharger les annotations (JSON)</a>'
             '<span id="message_' + str(obj.id) + '" style="color:#FF0000"></span>'
@@ -802,7 +802,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             else:
                 writer.writerow(
                     [
-                        f"{VHS_APP_URL}vhs/iiif/v2/manuscript/ms-{manifest[0]}/manifest.json"
+                        f"{VHS_APP_URL}/vhs/iiif/v2/manuscript/ms-{manifest[0]}/manifest.json"
                     ]
                 )
         return response
@@ -832,7 +832,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         writer.writerow(["Image_IIIF"])
         for image in all_images:
             writer.writerow(
-                [f"{CANTALOUPE_APP_URL}iiif/2/{image}/full/full/0/default.jpg"]
+                [f"{CANTALOUPE_APP_URL}/iiif/2/{image}/full/full/0/default.jpg"]
             )
         return response
 
@@ -888,7 +888,7 @@ class ManuscriptAdmin(ExtraButtonsMixin, admin.ModelAdmin):
 
         manuscripts = queryset.exclude(pdfmanuscript__pdf__isnull=True)
         pdfs_list = manuscripts.values_list("pdfmanuscript__pdf", flat=True)
-        pdfs_list = [f"{VHS_APP_URL}{settings.MEDIA_URL}{pdf}" for pdf in pdfs_list]
+        pdfs_list = [f"{VHS_APP_URL}/{settings.MEDIA_URL}{pdf}" for pdf in pdfs_list]
 
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w") as pdf_zip:

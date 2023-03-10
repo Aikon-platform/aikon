@@ -21,7 +21,7 @@ $(function() {
             xhr.responseType = "json";
             xhr.onload = function() {
                 if (xhr.readyState === 4 && xhr.status === 200) {
-                    window.open(SAS_APP_URL + "indexAnnos.html?iiif-content=" + urlManifest, "_blank");
+                    window.open(SAS_APP_URL + "/indexAnnos.html?iiif-content=" + urlManifest, "_blank");
                 } else {
                     showMessage("Failed to load " + urlManifest + " due to " + xhr.status + ": '" + xhr.statusText + "'");
                 }
@@ -42,7 +42,7 @@ $(function() {
         idManifest = idButton.split("_").pop();
         var urlManifest = $("#url_manifest_" + idManifest).prop("href");
         setLoading(idButton);
-        window.open(SAS_APP_URL + "indexView.html?iiif-content=" + urlManifest, "_blank");
+        window.open(SAS_APP_URL + "/indexView.html?iiif-content=" + urlManifest, "_blank");
         clearLoadingView(idButton);
         return false;
     } );
@@ -64,7 +64,7 @@ var getJSON = function(url, callback) {
 
 var sendJson = function sendJson(status, data) {
     var xhr = new XMLHttpRequest();
-    xhr.open("POST", SAS_APP_URL + "manifests", true);
+    xhr.open("POST", SAS_APP_URL + "/manifests", true);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.onload = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
