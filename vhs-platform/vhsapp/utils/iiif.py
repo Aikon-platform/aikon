@@ -1,12 +1,14 @@
 import os
 import re
 import json
+
 import requests
 import time
 from glob import glob
 from datetime import datetime
 from PIL import Image
 from pikepdf import Pdf
+from requests.exceptions import SSLError
 from tripoli import IIIFValidator
 from urllib.parse import urlparse
 
@@ -14,7 +16,7 @@ from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 
 from vhsapp.utils.constants import APP_NAME, MANIFEST_AUTO, MANIFEST_V2
-from vhsapp.utils.functions import log
+from vhsapp.utils.functions import log, get_json
 from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH
 from vhsapp.utils.functions import get_icon, anno_btn
 from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
@@ -63,7 +65,7 @@ def validate_gallica_manifest_url(value):
         match = bool(pattern.match(value))
         # Check if the URL matches the pattern
         if not match:
-            raise ValidationError("URL de manifeste Gallica non valide.")
+            raise ValidationError("Invalid Gallica manifest")
 
 
 def validate_iiif_manifest(url):
@@ -72,12 +74,16 @@ def validate_iiif_manifest(url):
     Check if the manifest conforms to the IIIF Presentation API 2.1 specification
     """
     try:
-        response = requests.get(url)
-        manifest = json.loads(response.text)
+        manifest = get_json(url)
         validator = IIIFValidator()
         validator.validate(manifest)
+
+    except SSLError:
+        raise ValidationError(
+            "SSL error, something is wrong with the corresponding IIIF server"
+        )
     except Exception:
-        raise ValidationError("IIIF manifest is not valid.")
+        raise ValidationError("The URL is not a valid IIIF manifest")
 
 
 def validate_manifest(manifest):
@@ -85,7 +91,9 @@ def validate_manifest(manifest):
 
     hostname, path = parse_manifest(manifest)
     if hostname != "gallica.bnf.fr":
-        raise ValidationError("This format of manifest not supported for the moment.")
+        raise ValidationError(
+            "Non gallica manifests ne sont pas supportés pour le moment"
+        )
     validate_gallica_manifest(manifest, False)
 
 

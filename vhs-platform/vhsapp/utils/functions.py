@@ -1,10 +1,12 @@
 import csv
 import io
+import json
 import os
 from uuid import uuid4
 
 import PyPDF2
 import requests
+import urllib3
 from PIL import Image
 from io import BytesIO
 
@@ -207,6 +209,20 @@ def pdf_to_imgs(pdf_list, ps_type="volume"):
         #     img_list.append(pdf.replace(".pdf", "_{:04d}".format(img_nb) + ".jpg"))
 
     return img_list
+
+
+def get_json(url):
+    requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS += "HIGH:!DH:!aNULL"
+    try:
+        requests.packages.urllib3.contrib.pyopenssl.DEFAULT_SSL_CIPHER_LIST += (
+            "HIGH:!DH:!aNULL"
+        )
+    except AttributeError:
+        # no pyopenssl support used / needed / available
+        pass
+
+    r = requests.get(url, verify=False)
+    return json.loads(r.text)
 
 
 def log(msg):
