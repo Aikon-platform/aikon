@@ -3,11 +3,11 @@ import json
 from urllib.request import urlopen
 from urllib.parse import urlencode
 
-from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from iiif_prezi.factory import ManifestFactory
 
+from django.contrib.auth.decorators import login_required
 from vhs.settings import ENV
 
 from vhsapp.models.witness import Volume, Manuscript
@@ -24,7 +24,6 @@ from vhsapp.utils.paths import (
     MEDIA_PATH,
     VOL_ANNO_PATH,
     MS_ANNO_PATH,
-    IMG_PATH,
 )
 
 
@@ -101,7 +100,6 @@ def manifest_volume(request, id, version):
     fac.set_iiif_image_info(version="2.0", lvl="2")
     # Build the manifest
     mf = fac.manifest(ident="manifest", label=volume.title)
-
     mf.set_metadata(
         {
             "Author": volume.printed.author.name,
@@ -144,23 +142,23 @@ def annotation_auto(request, id, work):
     writer = csv.writer(response)
     writer.writerow(["IIIF_Image_Annotations"])
     annotations_path = VOL_ANNO_PATH if work == VOL else MS_ANNO_PATH
-    try:
-        with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
-            lines = [line.strip() for line in f.readlines()]
-            for line in lines:
-                if len(line.split()) == 2:
-                    img_name = line.split()[1]
-                else:
-                    region = f"{line.split()[0]},{line.split()[1]},{line.split()[2]},{line.split()[3]}"
-                    writer.writerow(
-                        [
-                            f"{CANTALOUPE_APP_URL}/iiif/2/{img_name}/{region}/full/0/default.jpg"
-                        ]
-                    )
-    except FileNotFoundError:
-        # TODO do something when there is no file
-        print("")
 
+    # try:
+    with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
+        lines = [line.strip() for line in f.readlines()]
+        for line in lines:
+            if len(line.split()) == 2:
+                img_name = line.split()[1]
+            else:
+                region = f"{line.split()[0]},{line.split()[1]},{line.split()[2]},{line.split()[3]}"
+                writer.writerow(
+                    [
+                        f"{CANTALOUPE_APP_URL}/iiif/2/{img_name}/{region}/full/0/default.jpg"
+                    ]
+                )
+    # except FileNotFoundError:
+    #     # TODO do something when there is no file
+    #     print("")
     return response
 
 
@@ -209,7 +207,7 @@ def populate_annotation(request, id, work):
         lines = [line.strip() for line in f.readlines()]
     canvas = [line.split()[0] for line in lines if len(line.split()) == 2]
     for c in canvas:
-        url_search = f"{SAS_APP_URL}/annotation/search?uri={VHS_APP_URL}/vhs/iiif/v2/{work}/{work_abbr}-{id}/canvas/c{c}.json"
+        url_search = f"{SAS_APP_URL}/annotation/search?uri={VHS_APP_URL}/{APP_NAME}/iiif/v2/{work}/{work_abbr}-{id}/canvas/c{c}.json"
         # Store the response of URL
         response = urlopen(url_search)
         # Store the JSON response from url in data

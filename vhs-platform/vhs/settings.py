@@ -1,5 +1,8 @@
 import environ
-from vhsapp.utils.paths import BASE_DIR
+from vhsapp.utils.paths import BASE_DIR, LOG_PATH
+from vhsapp.utils.constants import APP_NAME
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 
 ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/vhs/.env")
@@ -17,6 +20,7 @@ ALLOWED_HOSTS = ENV.list("ALLOWED_HOSTS")
 
 
 # Application definition
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -177,3 +181,26 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240
 
 # Cross-Origin Resource Sharing (CORS) from any origin
 CORS_ALLOW_ALL_ORIGINS = True
+
+# Configure logging to record ERROR level messages to file
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": LOG_PATH,
+            "level": "ERROR",
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        APP_NAME: {
+            "handlers": ["file"],
+            "level": "ERROR",
+        },
+    },
+    "formatters": {
+        "verbose": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
+    },
+}

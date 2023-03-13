@@ -14,6 +14,7 @@ from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 
 from vhsapp.utils.constants import APP_NAME, MANIFEST_AUTO, MANIFEST_V2
+from vhsapp.utils.functions import log
 from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH
 from vhsapp.utils.functions import get_icon, anno_btn
 from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
@@ -92,20 +93,24 @@ def extract_images_from_iiif_manifest(url, image_path, work):
     """
     Extract all images from an IIIF manifest
     """
-    response = requests.get(url)
-    manifest = json.loads(response.text)
-    image_counter = 1
-    for sequence in manifest["sequences"]:
-        for canvas in sequence["canvases"]:
-            for image in canvas["images"]:
-                image_url = (
-                    f"{image['resource']['service']['@id']}/full/full/0/default.jpg"
-                )
-                image_response = requests.get(image_url)
-                with open(f"{image_path}{work}_{image_counter:04d}.jpg", "wb") as f:
-                    f.write(image_response.content)
-                image_counter += 1
-                time.sleep(15)
+    try:
+        response = requests.get(url)
+        manifest = json.loads(response.text)
+        image_counter = 1
+        for sequence in manifest["sequences"]:
+            for canvas in sequence["canvases"]:
+                for image in canvas["images"]:
+                    image_url = (
+                        f"{image['resource']['service']['@id']}/full/full/0/default.jpg"
+                    )
+                    image_response = requests.get(image_url)
+                    with open(f"{image_path}{work}_{image_counter:04d}.jpg", "wb") as f:
+                        f.write(image_response.content)
+                    image_counter += 1
+                    time.sleep(15)
+    except Exception as e:
+        # Log an error message
+        log(f"Failed to extract images from {url}: {e}")
 
 
 def gen_iiif_url(

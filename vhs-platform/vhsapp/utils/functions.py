@@ -21,6 +21,9 @@ from urllib.request import (
 from vhsapp.utils.constants import (
     APP_NAME,
 )
+from vhsapp.utils.paths import (
+    LOG_PATH,
+)
 
 
 def rename_file(instance, filename, path):
@@ -30,7 +33,7 @@ def rename_file(instance, filename, path):
     """
     extension = filename.split(".")[-1]
     # Set filename as random string
-    uuid_filename = "{}.{}".format(uuid4().hex, extension)
+    uuid_filename = f"{uuid4().hex}.{extension}"
     # Return the path to the file
     return f"{path}/{uuid_filename}"
 
@@ -61,20 +64,24 @@ def convert_pdf_to_image(pdf_path, image_path):
     pdf_info = pdfinfo_from_path(pdf_path, userpw=None, poppler_path=None)
     number_pages = pdf_info["Pages"]
     step = 2
-    for image_counter in range(1, number_pages + 1, step):
-        batch_pages = convert_from_path(
-            pdf_path,
-            dpi=300,
-            first_page=image_counter,
-            last_page=min(image_counter + step - 1, number_pages),
-        )
-        # Iterate through all the batch pages stored above
-        for page in batch_pages:
-            pathname = f"{image_path}{filename}_{image_counter:04d}.jpg"
-            # Save the image of the page in IMAGES_PATH
-            page.save(pathname, format="JPEG")
-            # Increment the counter to update filename
-            image_counter += 1
+    try:
+        for image_counter in range(1, number_pages + 1, step):
+            batch_pages = convert_from_path(
+                pdf_path,
+                dpi=300,
+                first_page=image_counter,
+                last_page=min(image_counter + step - 1, number_pages),
+            )
+            # Iterate through all the batch pages stored above
+            for page in batch_pages:
+                pathname = f"{image_path}{filename}_{image_counter:04d}.jpg"
+                # Save the image of the page in IMAGES_PATH
+                page.save(pathname, format="JPEG")
+                # Increment the counter to update filename
+                image_counter += 1
+    except Exception as e:
+        # Log an error message
+        log(f"Failed to convert {pdf_file} to images: {str(e)}")
 
 
 def credentials(url, auth_user, auth_passwd):
@@ -96,13 +103,6 @@ def gen_thumbnail(url, img_url):
     return gen_link(
         url, f"<img src='{img_url}' width='30' style='border-radius:50%;'>)"
     )
-
-
-def log(msg="🚨🚨🚨"):
-    import logging
-
-    logger = logging.getLogger("django")
-    logger.info(msg)
 
 
 def get_icon(icon):
@@ -207,3 +207,25 @@ def pdf_to_imgs(pdf_list, ps_type="volume"):
         #     img_list.append(pdf.replace(".pdf", "_{:04d}".format(img_nb) + ".jpg"))
 
     return img_list
+
+
+def log(msg):
+    """
+    Record an error message in the system log
+    """
+    import logging
+
+    if not os.path.isfile(LOG_PATH):
+        f = open(LOG_PATH, "x")
+        f.close()
+
+    # Create a logger instance
+    logger = logging.getLogger(APP_NAME)
+    logger.error(msg)
+
+
+def console(msg="🚨🚨🚨"):
+    import logging
+
+    logger = logging.getLogger("django")
+    logger.info(msg)

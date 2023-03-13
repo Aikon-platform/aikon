@@ -64,7 +64,7 @@ var getJSON = function(url, callback) {
 
 var sendJson = function sendJson(status, data) {
     var xhr = new XMLHttpRequest();
-    xhr.open("POST", SAS_APP_URL + "manifests", true);
+    xhr.open("POST", SAS_APP_URL + "/manifests", true);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.onload = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {

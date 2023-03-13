@@ -3,7 +3,11 @@ $(function() {
         var idBbox = $(this).attr("id").split("_").pop();
         if (this.checked) {
             if (confirm ("Êtes-vous sûr de vouloir supprimer cette image extraite ?")) {
+<<<<<<< HEAD
                 urlDelete = SAS_APP_URL + "/annotation/destroy?uri=" + SAS_APP_URL.replace("https", "http") + "annotation/" + idBbox;
+=======
+                urlDelete = SAS_APP_URL + "/annotation/destroy?uri=" + SAS_APP_URL.replace("https", "http") + "/annotation/" + idBbox;
+>>>>>>> main
                 var xhr = new XMLHttpRequest();
                 xhr.open("DELETE", urlDelete, true);
                 xhr.onload = function() {
@@ -34,7 +38,11 @@ $(function() {
                 }).each(function() {
                     if (i == this.id.split("-")["2"]) {
                         var idBbox = this.id.split("_").pop();
+<<<<<<< HEAD
                         urlDelete = SAS_APP_URL + "/annotation/destroy?uri=" + SAS_APP_URL.replace("https", "http") + "annotation/" + idBbox;
+=======
+                        urlDelete = SAS_APP_URL + "/annotation/destroy?uri=" + SAS_APP_URL.replace("https", "http") + "/annotation/" + idBbox;
+>>>>>>> main
                         var xhr = new XMLHttpRequest();
                         xhr.open("DELETE", urlDelete, true);
                         xhr.onload = function() {
