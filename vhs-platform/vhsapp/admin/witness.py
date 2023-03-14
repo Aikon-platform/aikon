@@ -339,16 +339,17 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
     # list of fields that are displayed in the all witnesses tab
     list_display = (
         "short_author",
-        "short_work",
+        # "short_work",
         "conservation_place",
         "reference_number",
-        "date_century",
+        # "date_century",
         "sheets",
         "published",
     )
-    search_fields = ("author__name", "work__title")
-    autocomplete_fields = ("author", "work", "digitized_version")
-    list_editable = ("date_century",)
+    # search_fields = ("author__name", "work__title")
+    search_fields = ("conservation_place", "reference_number")
+    autocomplete_fields = ("author", "digitized_version")
+    # list_editable = ("date_century",)
     inlines = [PdfManuscriptInline, ManifestManuscriptInline, ImageManuscriptInline]
     readonly_fields = ("manifest_auto", "manifest_v2")
 
@@ -384,10 +385,10 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
                     "manifest_v2",
                     "manifest_final",
                     "author",
-                    "work",
+                    # "work",
                     "conservation_place",
                     "reference_number",
-                    "date_century",
+                    # "date_century",
                     "date_free",
                     "sheets",
                     "origin_place",
