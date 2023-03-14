@@ -1,7 +1,13 @@
-# Media file folders
+from pathlib import Path
+from vhsapp.utils.constants import APP_NAME
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Media file paths
 MEDIA_PATH = "mediafiles/"
-IMAGES_PATH = "img/"
-MANUSCRIPTS_PDFS_PATH = "manuscripts/pdf/"
-MANUSCRIPTS_ANNOTATIONS_PATH = "manuscripts/annotation/"
-VOLUMES_PDFS_PATH = "volumes/pdf/"
-VOLUMES_ANNOTATIONS_PATH = "volumes/annotation/"
+IMG_PATH = "img/"
+MS_PDF_PATH = "manuscripts/pdf/"
+MS_ANNO_PATH = "manuscripts/annotation/"
+VOL_PDF_PATH = "volumes/pdf/"
+VOL_ANNO_PATH = "volumes/annotation/"
+LOG_PATH = f"logs/{APP_NAME}.log"

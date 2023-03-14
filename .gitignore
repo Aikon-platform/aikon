@@ -105,3 +105,7 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Log files
+logs/*
+!logs/.gitkeep

@@ -1,26 +1,26 @@
-from pathlib import Path
 import environ
+from vhsapp.utils.paths import BASE_DIR, LOG_PATH
+from vhsapp.utils.constants import APP_NAME
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-env = environ.Env()
+ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/vhs/.env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env("SECRET_KEY")
+SECRET_KEY = ENV("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool("DEBUG")
+DEBUG = ENV.bool("DEBUG")
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+ALLOWED_HOSTS = ENV.list("ALLOWED_HOSTS")
 
 
 # Application definition
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -59,19 +59,35 @@ if DEBUG:
     INTERNAL_IPS = [
         "127.0.0.1",
     ]
-    
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "console": {"class": "logging.StreamHandler"},
+        },
+        "loggers": {
+            "django": {
+                "handlers": ["console"],
+                "level": "INFO",
+            },
+        },
+    }
+
 # Define the default values for application URLs in development mode
 # VHS, CANTALOUPE, SAS
+VHS_PORT = 8000
+CANTALOUPE_PORT = 8182
+SAS_PORT = 8888
 
-VHS_APP_URL = "http://localhost:8000/"
-CANTALOUPE_APP_URL = "http://localhost:8182/"
-SAS_APP_URL = "http://localhost:8888/"
+VHS_APP_URL = f"http://localhost:{VHS_PORT}"
+CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
+SAS_APP_URL = f"http://localhost:{SAS_PORT}"
 
 # Override the default values in production mode
 if not DEBUG:
-    VHS_APP_URL = "https://iscd.huma-num.fr/"
-    CANTALOUPE_APP_URL = "https://iscd.huma-num.fr/"
-    SAS_APP_URL = "https://iscd.huma-num.fr/sas/"
+    VHS_APP_URL = "https://iscd.huma-num.fr"
+    CANTALOUPE_APP_URL = "https://iscd.huma-num.fr"
+    SAS_APP_URL = "https://iscd.huma-num.fr/sas"
 
 ROOT_URLCONF = "vhs.urls"
 
@@ -104,11 +120,11 @@ WSGI_APPLICATION = "vhs.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("DB_NAME"),
-        "USER": env("DB_USERNAME"),
-        "PASSWORD": env("DB_PASSWORD"),
-        "HOST": env("DB_HOST"),
-        "PORT": env("DB_PORT"),
+        "NAME": ENV("DB_NAME"),
+        "USER": ENV("DB_USERNAME"),
+        "PASSWORD": ENV("DB_PASSWORD"),
+        "HOST": ENV("DB_HOST"),
+        "PORT": ENV("DB_PORT"),
     }
 }
 
@@ -165,3 +181,26 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240
 
 # Cross-Origin Resource Sharing (CORS) from any origin
 CORS_ALLOW_ALL_ORIGINS = True
+
+# Configure logging to record ERROR level messages to file
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": LOG_PATH,
+            "level": "ERROR",
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        APP_NAME: {
+            "handlers": ["file"],
+            "level": "ERROR",
+        },
+    },
+    "formatters": {
+        "verbose": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
+    },
+}

@@ -1,6 +1,6 @@
 $(function() {
-	$("[id$=-pdf]").attr("accept", "application/pdf");
-	$("p.url a, span.inline_label a, div.readonly a, .field-image p a, p.file-upload a").attr("target", "_blank");
+    $("[id$=-pdf]").attr("accept", "application/pdf");
+    $("p.url a, span.inline_label a, div.readonly a, .field-image p a, p.file-upload a").attr("target", "_blank");
     $("[id$=-0-image]").attr("multiple", true);
     $(".add-handler").on("click", function() {
         $("#id_volume_set-__prefix__-title").val($("#id_work").text());
@@ -21,7 +21,7 @@ $(function() {
             xhr.responseType = "json";
             xhr.onload = function() {
                 if (xhr.readyState === 4 && xhr.status === 200) {
-                    window.open("http://localhost:8888/indexAnnos.html?iiif-content=" + urlManifest, "_blank");
+                    window.open(SAS_APP_URL + "/indexAnnos.html?iiif-content=" + urlManifest, "_blank");
                 } else {
                     showMessage("Failed to load " + urlManifest + " due to " + xhr.status + ": '" + xhr.statusText + "'");
                 }
@@ -42,65 +42,9 @@ $(function() {
         idManifest = idButton.split("_").pop();
         var urlManifest = $("#url_manifest_" + idManifest).prop("href");
         setLoading(idButton);
-        window.open("http://localhost:8888/indexView.html?iiif-content=" + urlManifest, "_blank");
+        window.open(SAS_APP_URL + "/indexView.html?iiif-content=" + urlManifest, "_blank");
         clearLoadingView(idButton);
         return false;
-    } );
-
-    $("[id^=bbox_]").change(function() {
-        var idBbox = $(this).attr("id").split("_").pop();
-        if (this.checked) {
-            if (confirm ("Êtes-vous sûr de vouloir supprimer cette image extraite ?")) {
-                urlDelete = "http://localhost:8888/annotation/destroy?uri=http://localhost:8888/annotation/" + idBbox;
-                var xhr = new XMLHttpRequest();
-                xhr.open("DELETE", urlDelete, true);
-                xhr.onload = function() {
-                    if (xhr.status === 204) {
-                        var $td = $("#ill_" + idBbox).closest("td");
-                        $td.fadeOut(function() {
-                            $td.remove();
-                        } );
-                    } else {
-                        idMessage = "message_" + idBbox;
-                        showMessage("Failed to delete " + urlDelete + " due to " + xhr.status + ": '" + xhr.statusText + "'");
-                    }
-                };
-                xhr.send();
-            } else {
-                $(this).prop("checked", false);
-            }
-        }
-    } );
-
-    $("#delete_illustrations").click(function() {
-        var startIndex = parseInt(document.getElementById("startIndex").value);
-        var endIndex = parseInt(document.getElementById("endIndex").value);
-        if (confirm ("Êtes-vous sûr de vouloir supprimer toutes les images extraites de Vue " + startIndex + " à Vue " + endIndex + " ?")) {
-            for (var i = endIndex; i >= startIndex; i--) {
-                $("[id]").filter(function() {
-                    return this.id.indexOf("bbox_") !== -1;
-                }).each(function() {
-                    if (i == this.id.split("-")["2"]) {
-                        var idBbox = this.id.split("_").pop();
-                        urlDelete = "http://localhost:8888/annotation/destroy?uri=http://localhost:8888/annotation/" + idBbox;
-                        var xhr = new XMLHttpRequest();
-                        xhr.open("DELETE", urlDelete, true);
-                        xhr.onload = function() {
-                            if (xhr.status === 204) {
-                                var $td = $("#ill_" + idBbox).closest("td");
-                                $td.fadeOut(function() {
-                                    $td.remove();
-                                } );
-                            } else {
-                                idMessage = "message_" + idBbox;
-                                showMessage("Failed to delete " + urlDelete + " due to " + xhr.status + ": '" + xhr.statusText + "'");
-                            }
-                        };
-                        xhr.send();
-                    }
-                } );
-            }
-        }
     } );
 } );
 
@@ -120,7 +64,7 @@ var getJSON = function(url, callback) {
 
 var sendJson = function sendJson(status, data) {
     var xhr = new XMLHttpRequest();
-    xhr.open("POST", "http://localhost:8888/manifests", true);
+    xhr.open("POST", SAS_APP_URL + "/manifests", true);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.onload = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {

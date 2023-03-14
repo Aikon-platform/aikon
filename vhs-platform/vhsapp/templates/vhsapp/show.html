@@ -1,6 +1,15 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Annotations {{ work }} #{{ work_obj.id }}{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script>
+        var SAS_APP_URL = "{{ SAS_APP_URL }}";
+    </script>
+    <script src="{% static 'js/delete_anno.js' %}"></script>
+{% endblock %}
 
 {% block header %}
     <div class="fixed-div">
@@ -34,7 +43,7 @@
                             <tr>
                                 <td class="anno-td" style="background-color:#F8F8F8;">
                                     <b>Vue {{ forloop.counter }}</b>
-                                    <a href="{{ SAS_APP_URL }}index.html?iiif-content={{ url_manifest }}&canvas={{ forloop.counter }}" target="_blank">
+                                    <a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ forloop.counter }}" target="_blank">
                                         <small>(Modifier l'extraction)</small>
                                     </a><br>
                                     <a href="{{ url }}" target="_blank">
