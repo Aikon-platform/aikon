@@ -239,6 +239,9 @@ See `vhs-platform/logs`
 ## Nginx
 See `/var/log/nginx`
 
+## Gunicorn
+See `/var/log/gunicorn`: here are python code error that might provoke 502 bad gateway errors
+
 ## Cantaloupe
 See `cantaloupe/log`
 
