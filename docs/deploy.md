@@ -210,7 +210,7 @@ sudo systemctl restart nginx
 
 To make a command alias, copy that at the end of `~/.bashrc`:
 ```bash
-alias dj_update="sudo systemctl restart gunicorn.socket && sudo systemctl restart nginx && ./venv/bin/python vhs-platform/manage.py collectstatic"
+alias djupdate="sudo systemctl restart gunicorn.socket && sudo systemctl restart nginx"
 ```
 
 ## Data model update
@@ -241,6 +241,10 @@ See `/var/log/nginx`
 
 ## Gunicorn
 See `/var/log/gunicorn`: here are python code error that might provoke 502 bad gateway errors
+
+```bash
+alias gunilog="sudo cat /var/log/gunicorn/gunicorn-error.log"
+```
 
 ## Cantaloupe
 See `cantaloupe/log`
