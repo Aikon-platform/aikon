@@ -315,7 +315,10 @@ class IIIFDownloader:
         for url in self.manifest_urls:
             manifest = self.get_json(url)
             if manifest is not None:
-                manifest_id = Path(urlparse(manifest["@id"]).path).parent.name
+                try:
+                    manifest_id = Path(urlparse(manifest["@id"]).path).parent.name
+                except KeyError:
+                    manifest_id = url
                 console(f"Processing {manifest_id}...")
                 output_path = coerce_to_path_and_create_dir(
                     self.output_dir / manifest_id
@@ -331,11 +334,16 @@ class IIIFDownloader:
                     with requests.get(resource_url, stream=True) as response:
                         response.raw.decode_content = True
                         resrc_path = Path(urlparse(resource_url).path)
-                        name = f"{resrc_path.parts[-5]}{resrc_path.suffix}"
-                        output_file = output_path / name
+                        output_file = (
+                            output_path / f"{resrc_path.parts[-5]}{resrc_path.suffix}"
+                        )
                         console(f"Saving {output_file.relative_to(self.output_dir)}...")
-                        with open(output_file, mode="wb") as f:
-                            shutil.copyfileobj(response.raw, f)
+                        time.sleep(0.05)
+                        try:
+                            with open(output_file, mode="wb") as f:
+                                shutil.copyfileobj(response.raw, f)
+                        except Exception:
+                            console(f"{url} not working")
 
     @staticmethod
     def get_json(url):
