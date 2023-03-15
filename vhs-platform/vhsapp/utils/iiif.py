@@ -295,29 +295,28 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
 
 
 class IIIFDownloader:
-    """Download all image resources from a list of manifest urls."""
+    """
+    Download all image resources from a list of manifest urls.
+    @source https://github.com/monniert/docExtractor/blob/master/src/iiif_downloader.py
+    """
 
-    def __init__(self, manifest_urls, output_dir, width=None, height=None):
+    def __init__(self, manifest_urls, output_dir=IMG_PATH, width=None, height=None):
         self.manifest_urls = manifest_urls
         self.output_dir = coerce_to_path_and_create_dir(output_dir)
         self.size = self.get_formatted_size(width, height)
 
     @staticmethod
-    def get_formatted_size(width, height):
-        if width is None:
-            size = "full" if height is None else ",{}".format(height)
-        else:
-            size = (
-                "{},".format(width) if height is None else "{},{}".format(width, height)
-            )
-        return size
+    def get_formatted_size(width="", height=""):
+        if not width and not height:
+            return "full"
+        return f"{width or ''},{height or ''}"
 
     def run(self):
         for url in self.manifest_urls:
             manifest = self.get_json(url)
             if manifest is not None:
                 manifest_id = Path(urlparse(manifest["@id"]).path).parent.name
-                console("Processing {}...".format(manifest_id))
+                console(f"Processing {manifest_id}...")
                 output_path = coerce_to_path_and_create_dir(
                     self.output_dir / manifest_id
                 )
@@ -332,13 +331,9 @@ class IIIFDownloader:
                     with requests.get(resource_url, stream=True) as response:
                         response.raw.decode_content = True
                         resrc_path = Path(urlparse(resource_url).path)
-                        name = "{}{}".format(resrc_path.parts[-5], resrc_path.suffix)
+                        name = f"{resrc_path.parts[-5]}{resrc_path.suffix}"
                         output_file = output_path / name
-                        console(
-                            "Saving {}...".format(
-                                output_file.relative_to(self.output_dir)
-                            )
-                        )
+                        console(f"Saving {output_file.relative_to(self.output_dir)}...")
                         with open(output_file, mode="wb") as f:
                             shutil.copyfileobj(response.raw, f)
 
@@ -379,38 +374,3 @@ class IIIFDownloader:
         except KeyError as e:
             log(e)
             return []
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Download all image resources from a list of manifest urls"
-    )
-    parser.add_argument(
-        "-f",
-        "--file",
-        nargs="?",
-        type=str,
-        required=True,
-        help="File containing manifest urls",
-    )
-    parser.add_argument(
-        "-o",
-        "--output_dir",
-        nargs="?",
-        type=str,
-        default="output",
-        help="Output directory name",
-    )
-    parser.add_argument("--width", type=int, default=None, help="Image width")
-    parser.add_argument("--height", type=int, default=None, help="Image height")
-    args = parser.parse_args()
-
-    with open(args.file, mode="r") as f:
-        manifest_urls = f.read().splitlines()
-    manifest_urls = list(filter(None, manifest_urls))
-
-    output_dir = args.output_dir if args.output_dir is not None else "output"
-    downloader = IIIFDownloader(
-        manifest_urls, output_dir=output_dir, width=args.width, height=args.height
-    )
-    downloader.run()
