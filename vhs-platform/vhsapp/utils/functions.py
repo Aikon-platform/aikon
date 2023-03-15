@@ -113,31 +113,30 @@ def get_icon(icon):
 
 
 def anno_btn(obj_id, action="VISUALIZE"):
-    match action:
-        case "VISUALIZE":
-            color = "#EFB80B"
-            tag_id = "annotate_manifest_auto_"
-            icon = get_icon("eye")
-        case "EDIT":
-            color = "#008CBA"
-            tag_id = "annotate_manifest_"
-            icon = get_icon("pen-to-square")
-        case "DOWNLOAD":
-            color = "#ed8a11"
-            tag_id = "download_manifest_"
-            icon = get_icon("download")
-        case "FINAL":
-            color = "#4CAF50"
-            tag_id = "manifest_final_"
-            icon = get_icon("check-square-o")
-        case "NOT AVAILABLE":
-            color = "#878787"
-            tag_id = "annotate_"
-            icon = get_icon("eye-slash")
-        case _:
-            color = "#B3B3B3"
-            tag_id = "annotate_"
-            icon = get_icon("eye")
+    if action == "VISUALIZE":
+        color = "#EFB80B"
+        tag_id = "annotate_manifest_auto_"
+        icon = get_icon("eye")
+    elif action == "EDIT":
+        color = "#008CBA"
+        tag_id = "annotate_manifest_"
+        icon = get_icon("pen-to-square")
+    elif action == "DOWNLOAD":
+        color = "#ed8a11"
+        tag_id = "download_manifest_"
+        icon = get_icon("download")
+    elif action == "FINAL":
+        color = "#4CAF50"
+        tag_id = "manifest_final_"
+        icon = get_icon("check-square-o")
+    elif action == "NOT AVAILABLE":
+        color = "#878787"
+        tag_id = "annotate_"
+        icon = get_icon("eye-slash")
+    else:
+        color = "#B3B3B3"
+        tag_id = "annotate_"
+        icon = get_icon("eye")
 
     return (
         f"<button id='{tag_id}{obj_id}' class='button annotate-manifest' "
