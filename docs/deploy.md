@@ -230,3 +230,17 @@ If everything is set, update the remote database by running on the production se
 ```shell
 ./venv/bin/python vhs-platform/manage.py migrate
 ```
+
+# Error log
+
+## App errors
+See `vhs-platform/logs`
+
+## Nginx
+See `/var/log/nginx`
+
+## Cantaloupe
+See `cantaloupe/log`
+
+## SAS
+See `sas/log`
