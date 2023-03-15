@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import os
+from pathlib import Path
 from uuid import uuid4
 
 import PyPDF2
@@ -112,31 +113,30 @@ def get_icon(icon):
 
 
 def anno_btn(obj_id, action="VISUALIZE"):
-    match action:
-        case "VISUALIZE":
-            color = "#EFB80B"
-            tag_id = "annotate_manifest_auto_"
-            icon = get_icon("eye")
-        case "EDIT":
-            color = "#008CBA"
-            tag_id = "annotate_manifest_"
-            icon = get_icon("pen-to-square")
-        case "DOWNLOAD":
-            color = "#ed8a11"
-            tag_id = "download_manifest_"
-            icon = get_icon("download")
-        case "FINAL":
-            color = "#4CAF50"
-            tag_id = "manifest_final_"
-            icon = get_icon("check-square-o")
-        case "NOT AVAILABLE":
-            color = "#878787"
-            tag_id = "annotate_"
-            icon = get_icon("eye-slash")
-        case _:
-            color = "#B3B3B3"
-            tag_id = "annotate_"
-            icon = get_icon("eye")
+    if action == "VISUALIZE":
+        color = "#EFB80B"
+        tag_id = "annotate_manifest_auto_"
+        icon = get_icon("eye")
+    elif action == "EDIT":
+        color = "#008CBA"
+        tag_id = "annotate_manifest_"
+        icon = get_icon("pen-to-square")
+    elif action == "DOWNLOAD":
+        color = "#ed8a11"
+        tag_id = "download_manifest_"
+        icon = get_icon("download")
+    elif action == "FINAL":
+        color = "#4CAF50"
+        tag_id = "manifest_final_"
+        icon = get_icon("check-square-o")
+    elif action == "NOT AVAILABLE":
+        color = "#878787"
+        tag_id = "annotate_"
+        icon = get_icon("eye-slash")
+    else:
+        color = "#B3B3B3"
+        tag_id = "annotate_"
+        icon = get_icon("eye")
 
     return (
         f"<button id='{tag_id}{obj_id}' class='button annotate-manifest' "
@@ -245,3 +245,38 @@ def console(msg="🚨🚨🚨"):
 
     logger = logging.getLogger("django")
     logger.info(msg)
+
+
+def coerce_to_path_and_check_exist(path):
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError("{} does not exist".format(path.absolute()))
+    return path
+
+
+def coerce_to_path_and_create_dir(path):
+    path = Path(path)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def get_files_from_dir(dir_path, valid_extensions=None, recursive=False, sort=False):
+    path = coerce_to_path_and_check_exist(dir_path)
+    if recursive:
+        files = [f.absolute() for f in path.glob("**/*") if f.is_file()]
+    else:
+        files = [f.absolute() for f in path.glob("*") if f.is_file()]
+
+    if valid_extensions is not None:
+        valid_extensions = (
+            [valid_extensions]
+            if isinstance(valid_extensions, str)
+            else valid_extensions
+        )
+        valid_extensions = [
+            ".{}".format(ext) if not ext.startswith(".") else ext
+            for ext in valid_extensions
+        ]
+        files = list(filter(lambda f: f.suffix in valid_extensions, files))
+
+    return sorted(files) if sort else files

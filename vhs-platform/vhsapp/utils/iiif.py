@@ -10,13 +10,16 @@ from PIL import Image
 from pikepdf import Pdf
 from requests.exceptions import SSLError
 from tripoli import IIIFValidator
+import argparse
+from pathlib import Path
+import shutil
 from urllib.parse import urlparse
 
 from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 
 from vhsapp.utils.constants import APP_NAME, MANIFEST_AUTO, MANIFEST_V2
-from vhsapp.utils.functions import log, get_json
+from vhsapp.utils.functions import log, get_json, coerce_to_path_and_create_dir, console
 from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH
 from vhsapp.utils.functions import get_icon, anno_btn
 from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
@@ -289,3 +292,85 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
         "motivation": ["oa:commenting", "oa:tagging"],
         "@context": "http://iiif.io/api/presentation/2/context.json",
     }
+
+
+class IIIFDownloader:
+    """
+    Download all image resources from a list of manifest urls.
+    @source https://github.com/monniert/docExtractor/blob/master/src/iiif_downloader.py
+    """
+
+    def __init__(self, manifest_urls, output_dir=IMG_PATH, width=None, height=None):
+        self.manifest_urls = manifest_urls
+        self.output_dir = coerce_to_path_and_create_dir(output_dir)
+        self.size = self.get_formatted_size(width, height)
+
+    @staticmethod
+    def get_formatted_size(width="", height=""):
+        if not width and not height:
+            return "full"
+        return f"{width or ''},{height or ''}"
+
+    def run(self):
+        for url in self.manifest_urls:
+            manifest = self.get_json(url)
+            if manifest is not None:
+                manifest_id = Path(urlparse(manifest["@id"]).path).parent.name
+                console(f"Processing {manifest_id}...")
+                output_path = coerce_to_path_and_create_dir(
+                    self.output_dir / manifest_id
+                )
+                resources = self.get_resources(manifest)
+
+                for resource_url in resources:
+                    resource_url = "/".join(
+                        resource_url.split("/")[:-3]
+                        + [self.size]
+                        + resource_url.split("/")[-2:]
+                    )
+                    with requests.get(resource_url, stream=True) as response:
+                        response.raw.decode_content = True
+                        resrc_path = Path(urlparse(resource_url).path)
+                        name = f"{resrc_path.parts[-5]}{resrc_path.suffix}"
+                        output_file = output_path / name
+                        console(f"Saving {output_file.relative_to(self.output_dir)}...")
+                        with open(output_file, mode="wb") as f:
+                            shutil.copyfileobj(response.raw, f)
+
+    @staticmethod
+    def get_json(url):
+        try:
+            response = requests.get(url)
+            if response.ok:
+                return response.json()
+            else:
+                response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            log(e)
+            return None
+
+    @staticmethod
+    def get_resources(manifest):
+        try:
+            canvases = manifest["sequences"][0]["canvases"]
+            images_list = [canvas["images"] for canvas in canvases]
+            return [
+                image["resource"]["@id"] for images in images_list for image in images
+            ]
+        except KeyError as e:
+            log(e)
+            return []
+
+    @staticmethod
+    def get_resources_with_targets(manifest):
+        try:
+            canvases = manifest["sequences"][0]["canvases"]
+            images_list = [canvas["images"] for canvas in canvases]
+            return [
+                (image["resource"]["@id"], image["on"])
+                for images in images_list
+                for image in images
+            ]
+        except KeyError as e:
+            log(e)
+            return []
