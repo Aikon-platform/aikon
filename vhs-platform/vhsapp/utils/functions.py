@@ -163,14 +163,13 @@ def zip_img(zip_file, img_list, file_type="img", file_name=None):  # maybe chang
     buffer = io.BytesIO()
     with zip_file.ZipFile(buffer, "w") as z:
         for img_path in img_list:
-            match file_type:
-                case "img":
-                    # Add file to zip
-                    z.write(img_path, os.path.basename(img_path))
-                case "pdf":
-                    pdf_data = requests.get(img_path).content
-                    # Add pdf content to zip
-                    z.writestr(os.path.basename(img_path), pdf_data)
+            if file_type == "img":
+                # Add file to zip
+                z.write(img_path, os.path.basename(img_path))
+            elif file_type == "pdf":
+                pdf_data = requests.get(img_path).content
+                # Add pdf content to zip
+                z.writestr(os.path.basename(img_path), pdf_data)
 
     if file_name is None:
         file_name = f"{APP_NAME}_export_{file_type}"
