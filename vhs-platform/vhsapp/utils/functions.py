@@ -54,7 +54,7 @@ def convert_to_jpeg(image):
     # Save image to BytesIO object
     img.save(obj_io, format="JPEG")
     # Create a File object
-    img_jpg = File(obj_io, name="{}.jpg".format(filename))
+    img_jpg = File(obj_io, name=f"{filename}.jpg")
     return img_jpg
 
 
