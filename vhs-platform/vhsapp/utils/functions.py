@@ -213,16 +213,19 @@ def get_file_list(path, filter_list=None):
 
 
 def get_json(url):
-    requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS += "HIGH:!DH:!aNULL"
     try:
-        requests.packages.urllib3.contrib.pyopenssl.DEFAULT_SSL_CIPHER_LIST += (
-            "HIGH:!DH:!aNULL"
-        )
-    except AttributeError:
-        # no pyopenssl support used / needed / available
-        pass
+        r = requests.get(url)
+    except requests.exceptions.SSLError:
+        requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS += "HIGH:!DH:!aNULL"
+        try:
+            requests.packages.urllib3.contrib.pyopenssl.DEFAULT_SSL_CIPHER_LIST += (
+                "HIGH:!DH:!aNULL"
+            )
+        except AttributeError:
+            # no pyopenssl support used / needed / available
+            pass
+        r = requests.get(url, verify=False)
 
-    r = requests.get(url, verify=False)
     return json.loads(r.text)
 
 

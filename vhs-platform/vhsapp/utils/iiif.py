@@ -20,7 +20,7 @@ from django.utils.safestring import mark_safe
 
 from vhsapp.utils.constants import APP_NAME, MANIFEST_AUTO, MANIFEST_V2
 from vhsapp.utils.functions import log, get_json, coerce_to_path_and_create_dir, console
-from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH
+from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH, BASE_DIR
 from vhsapp.utils.functions import get_icon, anno_btn
 from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
 from vhs.settings import SAS_APP_URL, VHS_APP_URL, CANTALOUPE_APP_URL
@@ -81,10 +81,6 @@ def validate_iiif_manifest(url):
         validator = IIIFValidator()
         validator.validate(manifest)
 
-    except SSLError:
-        raise ValidationError(
-            "SSL error, something is wrong with the corresponding IIIF server"
-        )
     except Exception:
         raise ValidationError("The URL is not a valid IIIF manifest")
 
@@ -100,13 +96,13 @@ def validate_manifest(manifest):
     validate_gallica_manifest(manifest, False)
 
 
-def extract_images_from_iiif_manifest(url, image_path, work):
+def extract_images_from_iiif_manifest(url, img_path, work):
     """
     Extract all images from an IIIF manifest
     """
+    img_path = f"{BASE_DIR}/{img_path}"
     try:
-        response = requests.get(url)
-        manifest = json.loads(response.text)
+        manifest = get_json(url)
         image_counter = 1
         for sequence in manifest["sequences"]:
             for canvas in sequence["canvases"]:
@@ -115,7 +111,7 @@ def extract_images_from_iiif_manifest(url, image_path, work):
                         f"{image['resource']['service']['@id']}/full/full/0/default.jpg"
                     )
                     image_response = requests.get(image_url)
-                    with open(f"{image_path}{work}_{image_counter:04d}.jpg", "wb") as f:
+                    with open(f"{img_path}{work}_{image_counter:04d}.jpg", "wb") as f:
                         f.write(image_response.content)
                     image_counter += 1
                     time.sleep(15)
@@ -342,8 +338,8 @@ class IIIFDownloader:
                         try:
                             with open(output_file, mode="wb") as f:
                                 shutil.copyfileobj(response.raw, f)
-                        except Exception:
-                            console(f"{url} not working")
+                        except Exception as e:
+                            console(f"{url} not working\n{e}", "error")
 
     @staticmethod
     def get_json(url):
