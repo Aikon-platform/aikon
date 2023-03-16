@@ -7,7 +7,6 @@ from uuid import uuid4
 
 import PyPDF2
 import requests
-import urllib3
 from PIL import Image
 from io import BytesIO
 
@@ -25,8 +24,9 @@ from vhsapp.utils.constants import (
     APP_NAME,
 )
 from vhsapp.utils.paths import (
-    LOG_PATH,
+    BASE_DIR,
 )
+from vhsapp.utils.logger import log, console
 
 
 def rename_file(instance, filename, path):
@@ -58,10 +58,12 @@ def convert_to_jpeg(image):
     return img_jpg
 
 
-def convert_pdf_to_image(pdf_path, image_path):
+def convert_pdf_to_image(pdf_path, img_path):
     """
     Convert the PDF file to JPEG images
     """
+    pdf_path = f"{BASE_DIR}/{pdf_path}"
+    img_path = f"{BASE_DIR}/{img_path}"
     pdf_file = pdf_path.split("/")[-1]
     filename = pdf_file.split(".")[0]
     pdf_info = pdfinfo_from_path(pdf_path, userpw=None, poppler_path=None)
@@ -77,14 +79,35 @@ def convert_pdf_to_image(pdf_path, image_path):
             )
             # Iterate through all the batch pages stored above
             for page in batch_pages:
-                pathname = f"{image_path}{filename}_{image_counter:04d}.jpg"
+                pathname = f"{img_path}{filename}_{image_counter:04d}.jpg"
                 # Save the image of the page in IMAGES_PATH
                 page.save(pathname, format="JPEG")
                 # Increment the counter to update filename
                 image_counter += 1
     except Exception as e:
         # Log an error message
-        log(f"Failed to convert {pdf_file} to images: {str(e)}")
+        log(f"Failed to convert {pdf_file} to images:\n{e}")
+
+
+def pdf_to_imgs(pdf_list, ps_type="volume"):  # TODO
+    if type(pdf_list) != list:
+        pdf_list = [pdf_list]
+
+    img_list = []
+    for pdf in pdf_list:
+        pdf_file = open(f"mediafiles/{ps_type}/pdf/" + pdf, "rb")
+        pdf_reader = PyPDF2.PdfFileReader(pdf_file)
+        for img_nb in range(1, pdf_reader.numPages + 1):
+            img_list.append(
+                # name all the pdf images according to the format: "pdf_name_0001.jpg"
+                pdf.replace(".pdf", "_{:04d}".format(img_nb) + ".jpg")
+            )
+
+        # pdf_file = Pdf.open("mediafiles/volumes/pdf/" + pdf)
+        # for img_nb in range(1, len(pdf_file.pages) + 1):
+        #     img_list.append(pdf.replace(".pdf", "_{:04d}".format(img_nb) + ".jpg"))
+
+    return img_list
 
 
 def credentials(url, auth_user, auth_passwd):
@@ -189,27 +212,6 @@ def get_file_list(path, filter_list=None):
     return file_list
 
 
-def pdf_to_imgs(pdf_list, ps_type="volume"):
-    if type(pdf_list) != list:
-        pdf_list = [pdf_list]
-
-    img_list = []
-    for pdf in pdf_list:
-        pdf_file = open(f"mediafiles/{ps_type}/pdf/" + pdf, "rb")
-        pdf_reader = PyPDF2.PdfFileReader(pdf_file)
-        for img_nb in range(1, pdf_reader.numPages + 1):
-            img_list.append(
-                # name all the pdf images according to the format: "pdf_name_0001.jpg"
-                pdf.replace(".pdf", "_{:04d}".format(img_nb) + ".jpg")
-            )
-
-        # pdf_file = Pdf.open("mediafiles/volumes/pdf/" + pdf)
-        # for img_nb in range(1, len(pdf_file.pages) + 1):
-        #     img_list.append(pdf.replace(".pdf", "_{:04d}".format(img_nb) + ".jpg"))
-
-    return img_list
-
-
 def get_json(url):
     requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS += "HIGH:!DH:!aNULL"
     try:
@@ -222,28 +224,6 @@ def get_json(url):
 
     r = requests.get(url, verify=False)
     return json.loads(r.text)
-
-
-def log(msg):
-    """
-    Record an error message in the system log
-    """
-    import logging
-
-    if not os.path.isfile(LOG_PATH):
-        f = open(LOG_PATH, "x")
-        f.close()
-
-    # Create a logger instance
-    logger = logging.getLogger(APP_NAME)
-    logger.error(msg)
-
-
-def console(msg="🚨🚨🚨"):
-    import logging
-
-    logger = logging.getLogger("django")
-    logger.info(msg)
 
 
 def coerce_to_path_and_check_exist(path):
