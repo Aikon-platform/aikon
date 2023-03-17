@@ -229,21 +229,21 @@ def get_json(url):
     return json.loads(r.text)
 
 
-def coerce_to_path_and_check_exist(path):
+def check_dir(path):
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError("{} does not exist".format(path.absolute()))
     return path
 
 
-def coerce_to_path_and_create_dir(path):
+def create_dir(path):
     path = Path(path)
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
 def get_files_from_dir(dir_path, valid_extensions=None, recursive=False, sort=False):
-    path = coerce_to_path_and_check_exist(dir_path)
+    path = check_dir(dir_path)
     if recursive:
         files = [f.absolute() for f in path.glob("**/*") if f.is_file()]
     else:

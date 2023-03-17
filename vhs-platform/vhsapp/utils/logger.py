@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import time
@@ -56,14 +57,26 @@ def log(msg):
 
     # Create a logger instance
     logger = logging.getLogger(APP_NAME)
-    logger.error(f"{get_time()}\n{msg}")
+    logger.error(f"{get_time()}\n{pprint(msg)}")
+
+
+def pprint(o):
+    if type(o) == str:
+        try:
+            return json.dumps(json.loads(o), indent=4, sort_keys=True)
+        except ValueError:
+            return o
+    elif type(o) == dict or type(o) == list:
+        return json.dumps(o, indent=4, sort_keys=True)
+    else:
+        return str(o)
 
 
 def console(msg="🚨🚨🚨", msg_type=None):
     if not DEBUG:
         return
 
-    msg = f"\n\n\n{get_time()}\n{get_color(msg_type)}{TerminalColors.BOLD}{msg}{TerminalColors.ENDC}\n\n\n"
+    msg = f"\n\n\n{get_time()}\n{get_color(msg_type)}{TerminalColors.BOLD}{pprint(msg)}{TerminalColors.ENDC}\n\n\n"
 
     logger = logging.getLogger("django")
     if msg_type == "error":
