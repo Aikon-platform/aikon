@@ -318,8 +318,11 @@ def get_item_img(item_img):
 
 def get_img_id(img):
     img_id = get_id(img)
-    if "default.jpg" in img_id:
-        return img_id.split("/")[-5]
+    if ".jpg" in img_id:
+        try:
+            return img_id.split("/")[-5]
+        except IndexError:
+            return None
         # return Path(urlparse(img_id).path).parts[-5]
     return img_id.split("/")[-1]
 
@@ -349,30 +352,15 @@ class IIIFDownloader:
             console(f"Processing {manifest_id}...")
             output_path = create_dir(self.output_dir / manifest_id)
             resources = self.get_resources(manifest)
-
+            i = 1
             for rsrc in resources:
-                img_id = rsrc[0]
+                img_id = rsrc[0] if rsrc[0] is not None else i
                 img_url = f"{rsrc[1]}/full/{self.size}/0/default.jpg"
+                i += 1
 
                 with requests.get(img_url, stream=True) as response:
                     response.raw.decode_content = True
                     output_file = output_path / f"{img_id}.jpg"
-                    console(f"Saving {output_file.relative_to(self.output_dir)}...")
-                    time.sleep(0.25)
-                    try:
-                        with open(output_file, mode="wb") as f:
-                            shutil.copyfileobj(response.raw, f)
-                    except Exception as e:
-                        console(f"{self.manifest_url} not working\n{e}", "error")
-            for resource_url in resources:
-                img_url = f"{resource_url}/full/{self.size}/0/default.jpg"
-                console(resource_url)
-                with requests.get(img_url, stream=True) as response:
-                    response.raw.decode_content = True
-                    resrc_path = Path(urlparse(img_url).path)
-                    output_file = (
-                        output_path / f"{resrc_path.parts[-5]}{resrc_path.suffix}"
-                    )
                     console(f"Saving {output_file.relative_to(self.output_dir)}...")
                     time.sleep(0.25)
                     try:
@@ -391,13 +379,19 @@ class IIIFDownloader:
         except KeyError:
             try:
                 img_list = [
-                    item
-                    for items in manifest["items"]
-                    for item in items["items"][0]["body"]
+                    canvas["images"] for canvas in manifest["sequences"][0]["canvases"]
                 ]
-                img_info = [get_item_img(img) for imgs in img_list for img in imgs]
-            except KeyError as e:
-                log(f"Error when retrieving canvas {e}")
-                return []
+                img_info = [get_canvas_img(img) for imgs in img_list for img in imgs]
+            except KeyError:
+                try:
+                    img_list = [
+                        item
+                        for items in manifest["items"]
+                        for item in items["items"][0]["items"]
+                    ]
+                    img_info = [get_item_img(img) for img in img_list]
+                except KeyError as e:
+                    console(manifest["items"][0])
+                    return []
 
         return img_info
