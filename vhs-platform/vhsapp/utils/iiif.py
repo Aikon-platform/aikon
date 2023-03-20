@@ -84,37 +84,55 @@ def validate_iiif_manifest(url):
 
 def validate_manifest(manifest):
     validate_iiif_manifest(manifest)
-
     hostname, path = parse_manifest(manifest)
-    if hostname != "gallica.bnf.fr":
-        raise ValidationError(
-            "Non gallica manifests ne sont pas supportés pour le moment"
-        )
-    validate_gallica_manifest(manifest, False)
+    if hostname == "gallica.bnf.fr":
+        validate_gallica_manifest(manifest, False)
+        raise ValidationError("The URL is not a valid Gallica manifest")
 
 
-def extract_images_from_iiif_manifest(url, img_path, work):
+def extract_images_from_iiif_manifest(manifest_url, work, width=None, height=None):
     """
     Extract all images from an IIIF manifest
     """
-    img_path = f"{BASE_DIR}/{img_path}"
-    try:
-        manifest = get_json(url)
-        image_counter = 1
-        for sequence in manifest["sequences"]:
-            for canvas in sequence["canvases"]:
-                for image in canvas["images"]:
-                    image_url = (
-                        f"{image['resource']['service']['@id']}/full/full/0/default.jpg"
-                    )
-                    image_response = requests.get(image_url)
-                    with open(f"{img_path}{work}_{image_counter:04d}.jpg", "wb") as f:
-                        f.write(image_response.content)
-                    image_counter += 1
-                    time.sleep(0.5)
-    except Exception as e:
-        # Log an error message
-        log(f"Failed to extract images from {url}: {e}")
+    manifest = get_json(manifest_url)
+    size = get_formatted_size(width, height)
+    if manifest is not None:
+        manifest_id = Path(urlparse(get_id(manifest)).path).parent.name
+        console(f"Processing {manifest_id}...")
+        output_path = create_dir(BASE_DIR / IMG_PATH)
+        i = 1
+        for img_url in get_iiif_resources(manifest, True):
+            img_id = f"{i:04d}"
+            img_url = f"{img_url}/full/{size}/0/default.jpg"
+            i += 1
+
+            with requests.get(img_url, stream=True) as response:
+                response.raw.decode_content = True
+                output_file = output_path / f"{work}_{img_id}.jpg"
+                console(f"Saving {output_file.relative_to(BASE_DIR / IMG_PATH)}...")
+                time.sleep(0.1)
+                try:
+                    with open(output_file, mode="wb") as f:
+                        shutil.copyfileobj(response.raw, f)
+                        # f.write(image_response.content)
+                except Exception as e:
+                    log(f"Failed to extract images from {manifest_url}:\n{e}")
+
+    # img_path = f"{BASE_DIR}/{img_path}"
+    # try:
+    #     manifest = get_json(manifest_url)
+    #     image_counter = 1
+    #     for sequence in manifest["sequences"]:
+    #         for canvas in sequence["canvases"]:
+    #             for image in canvas["images"]:
+    #                 image_url = (
+    #                     f"{image['resource']['service']['@id']}/full/full/0/default.jpg"
+    #                 )
+    #                 image_response = requests.get(image_url)
+    #                 with open(f"{img_path}{work}_{image_counter:04d}.jpg", "wb") as f:
+    #                     f.write(image_response.content)
+    #                 image_counter += 1
+    #                 time.sleep(0.5)
 
 
 def gen_iiif_url(
@@ -198,12 +216,12 @@ def process_images(work, seq, version):
                 image_name = pdf_first.pdf.name.split("/")[-1].replace(
                     ".pdf", f"_{counter:04d}.jpg"
                 )
-                image = Image.open(f"{MEDIA_PATH}{IMG_PATH}{image_name}")
+                image = Image.open(f"{IMG_PATH}{image_name}")
                 build_canvas_and_annotation(seq, counter, image_name, image, version)
     # Check if there is a manifest work and process it
     elif manifest_first:
         for counter, path in enumerate(
-            sorted(glob(f"{MEDIA_PATH}{IMG_PATH}{work_abbr}{work.id}_*.jpg")),
+            sorted(glob(f"{IMG_PATH}{work_abbr}{work.id}_*.jpg")),
             start=1,
         ):
             image_name = os.path.basename(path)
@@ -304,16 +322,18 @@ def get_id(dic):
     return None
 
 
-def get_canvas_img(canvas_img):
-    img_id = get_img_id(canvas_img["resource"])
+def get_canvas_img(canvas_img, only_img_url=False):
     img_url = get_id(canvas_img["resource"]["service"])
-    return img_id, img_url
+    if only_img_url:
+        return img_url
+    return get_img_id(canvas_img["resource"]), img_url
 
 
-def get_item_img(item_img):
-    img_id = get_img_id(item_img)
+def get_item_img(item_img, only_img_url=False):
     img_url = get_id(item_img["body"]["service"][0])
-    return img_id, img_url
+    if only_img_url:
+        return img_url
+    return get_img_id(item_img), img_url
 
 
 def get_img_id(img):
@@ -327,71 +347,37 @@ def get_img_id(img):
     return img_id.split("/")[-1]
 
 
-class IIIFDownloader:
-    """
-    Download all image resources from a list of manifest urls.
-    @source https://github.com/monniert/docExtractor/blob/master/src/iiif_downloader.py
-    """
+def get_formatted_size(width="", height=""):
+    if not width and not height:
+        # return "full"
+        return "1000,"
+    return f"{width or ''},{height or ''}"
 
-    def __init__(self, manifest, output_dir=IMG_PATH, width=None, height=None):
-        self.manifest_url = manifest
-        self.output_dir = create_dir(output_dir)
-        self.size = self.get_formatted_size(width, height)
 
-    @staticmethod
-    def get_formatted_size(width="", height=""):
-        if not width and not height:
-            # return "full"
-            return "1000,"
-        return f"{width or ''},{height or ''}"
-
-    def run(self):
-        manifest = get_json(self.manifest_url)
-        if manifest is not None:
-            manifest_id = Path(urlparse(get_id(manifest)).path).parent.name
-            console(f"Processing {manifest_id}...")
-            output_path = create_dir(self.output_dir / manifest_id)
-            resources = self.get_resources(manifest)
-            i = 1
-            for rsrc in resources:
-                img_id = rsrc[0] if rsrc[0] is not None else i
-                img_url = f"{rsrc[1]}/full/{self.size}/0/default.jpg"
-                i += 1
-
-                with requests.get(img_url, stream=True) as response:
-                    response.raw.decode_content = True
-                    output_file = output_path / f"{img_id}.jpg"
-                    console(f"Saving {output_file.relative_to(self.output_dir)}...")
-                    time.sleep(0.25)
-                    try:
-                        with open(output_file, mode="wb") as f:
-                            shutil.copyfileobj(response.raw, f)
-                    except Exception as e:
-                        console(f"{self.manifest_url} not working\n{e}", "error")
-
-    @staticmethod
-    def get_resources(manifest):
+def get_iiif_resources(manifest, only_img_url=False):
+    try:
+        img_list = [canvas["images"] for canvas in manifest["sequences"][0]["canvases"]]
+        img_info = [
+            get_canvas_img(img, only_img_url) for imgs in img_list for img in imgs
+        ]
+    except KeyError:
         try:
             img_list = [
                 canvas["images"] for canvas in manifest["sequences"][0]["canvases"]
             ]
-            img_info = [get_canvas_img(img) for imgs in img_list for img in imgs]
+            img_info = [
+                get_canvas_img(img, only_img_url) for imgs in img_list for img in imgs
+            ]
         except KeyError:
             try:
                 img_list = [
-                    canvas["images"] for canvas in manifest["sequences"][0]["canvases"]
+                    item
+                    for items in manifest["items"]
+                    for item in items["items"][0]["items"]
                 ]
-                img_info = [get_canvas_img(img) for imgs in img_list for img in imgs]
-            except KeyError:
-                try:
-                    img_list = [
-                        item
-                        for items in manifest["items"]
-                        for item in items["items"][0]["items"]
-                    ]
-                    img_info = [get_item_img(img) for img in img_list]
-                except KeyError as e:
-                    console(manifest["items"][0])
-                    return []
+                img_info = [get_item_img(img) for img in img_list]
+            except KeyError as e:
+                console(f"Unable to retrieve resources from manifest {manifest}\n{e}")
+                return []
 
-        return img_info
+    return img_info

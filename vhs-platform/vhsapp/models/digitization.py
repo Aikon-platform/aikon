@@ -131,7 +131,7 @@ class Pdf(Digitization):
         # Run the PDF to image async conversion task in the background using threading
         t = threading.Thread(
             target=convert_pdf_to_image,
-            args=(f"{MEDIA_PATH}{self.pdf.name}", f"{MEDIA_PATH}{IMG_PATH}"),
+            args=(f"{MEDIA_PATH}{self.pdf.name}", f"{IMG_PATH}"),
         )
         t.start()
 
@@ -187,7 +187,7 @@ class Manifest(Digitization):
     #         target=extract_images_from_iiif_manifest,
     #         args=(
     #             self.manifest,
-    #             f"{MEDIA_PATH}{IMG_PATH}",
+    #             f"{IMG_PATH}",
     #             f"{SRC_ABBR}{self.source.id}",
     #         ),
     #     )
@@ -205,7 +205,6 @@ class ManifestVolume(Manifest):
             target=extract_images_from_iiif_manifest,
             args=(
                 self.manifest,
-                f"{MEDIA_PATH}{IMG_PATH}",
                 f"{VOL_ABBR}{self.volume.id}",
             ),
         )
@@ -223,7 +222,6 @@ class ManifestManuscript(Manifest):
             target=extract_images_from_iiif_manifest,
             args=(
                 self.manifest,
-                f"{MEDIA_PATH}{IMG_PATH}",
                 f"{MS_ABBR}{self.manuscript.id}",
             ),
         )
