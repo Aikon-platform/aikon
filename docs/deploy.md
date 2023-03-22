@@ -233,6 +233,11 @@ If everything is set, update the remote database by running on the production se
 
 # Debug
 
+Empty log file by running
+```shell
+sudo truncate -s 0 /path/to/logfile.log
+```
+
 ## App errors
 See `vhs-platform/logs`
 
@@ -241,6 +246,7 @@ See `/var/log/nginx`
 
 ```bash
 alias nglog="sudo cat /var/log/nginx/eida.error.log"
+alias empty_nglog="sudo truncate -s 0 /var/log/nginx/eida.error.log"
 ```
 
 ## Gunicorn error logs
@@ -248,6 +254,7 @@ See `/var/log/gunicorn`: here are python code error that might provoke 502 bad g
 
 ```bash
 alias gunilog="sudo cat /var/log/gunicorn/gunicorn-error.log"
+alias empty_gunilog="sudo truncate -s 0 /var/log/gunicorn/gunicorn-error.log"
 ```
 
 ## Cantaloupe error logs
