@@ -243,6 +243,14 @@ vi ~/.bashrc       # paste aliases at the end
 source ~/.bashrc   # to activate aliases
 ```
 
+To activate DEBUG in prod in order to see Django errors (instead of 500 errors)
+```shell
+# install vhs/platform/requirements-dev.txt
+vi vhs-platform/vhs/.env           # set DEBUG=True
+vi vhs-platform/vhs/settings.py    # l.87 `if not DEBUG:` => `if DEBUG:`
+```
+Don't forget to rollback those modifications afterwards
+
 ## App errors
 See `vhs-platform/logs`
 

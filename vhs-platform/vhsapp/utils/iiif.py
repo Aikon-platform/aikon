@@ -5,7 +5,7 @@ import requests
 import time
 from glob import glob
 from datetime import datetime
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from pikepdf import Pdf
 from tripoli import IIIFValidator
 from pathlib import Path
@@ -228,8 +228,12 @@ def process_images(work, seq, version):
             start=1,
         ):
             image_name = os.path.basename(path)
-            image = Image.open(path)
-            build_canvas_and_annotation(seq, counter, image_name, image, version)
+            try:
+                image = Image.open(path)
+                build_canvas_and_annotation(seq, counter, image_name, image, version)
+            except UnidentifiedImageError as e:
+                log(f"Unable to retrieve {image_name}\n{e}")
+                continue
     # If none of the above, raise an exception
     else:
         raise Exception("There is no manifest!")
