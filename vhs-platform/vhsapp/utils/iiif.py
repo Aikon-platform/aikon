@@ -155,8 +155,9 @@ def get_link_manifest(obj_id, manifest_url, tag_id="url_manifest_"):
 
 
 def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, ps_type=VOL.lower()):
-    obj_ref = f"{APP_NAME}/iiif/{vers}/{ps_type}/{obj_id}"
-    manifest = f"{CANTALOUPE_APP_URL}/{obj_ref}/manifest.json"
+    ps_prefix = "vol" if ps_type == VOL.lower() else "ms"
+    obj_ref = f"{APP_NAME}/iiif/{vers}/{ps_type}/{ps_prefix}-{obj_id}"
+    manifest = f"{VHS_APP_URL}/{obj_ref}/manifest.json"
 
     if vers == MANIFEST_AUTO:
         tag_id = f"iiif_auto_"
@@ -210,18 +211,18 @@ def process_images(work, seq, version):
             build_canvas_and_annotation(seq, counter, image_name, image, version)
     # Check if there is a PDF work and process it
     elif pdf_first:
-        with Pdf.open(f"{MEDIA_PATH}{pdf_first.pdf}") as pdf_file:
+        with Pdf.open(f"{MEDIA_PATH}/{pdf_first.pdf}") as pdf_file:
             total_pages = len(pdf_file.pages)
             for counter in range(1, total_pages + 1):
                 image_name = pdf_first.pdf.name.split("/")[-1].replace(
                     ".pdf", f"_{counter:04d}.jpg"
                 )
-                image = Image.open(f"{IMG_PATH}{image_name}")
+                image = Image.open(f"{IMG_PATH}/{image_name}")
                 build_canvas_and_annotation(seq, counter, image_name, image, version)
     # Check if there is a manifest work and process it
     elif manifest_first:
         for counter, path in enumerate(
-            sorted(glob(f"{IMG_PATH}{work_abbr}{work.id}_*.jpg")),
+            sorted(glob(f"{IMG_PATH}/{work_abbr}{work.id}_*.jpg")),
             start=1,
         ):
             image_name = os.path.basename(path)
@@ -350,7 +351,7 @@ def get_img_id(img):
 def get_formatted_size(width="", height=""):
     if not width and not height:
         # return "full"
-        return "1000,"
+        return "1500,"
     return f"{width or ''},{height or ''}"
 
 
@@ -363,21 +364,13 @@ def get_iiif_resources(manifest, only_img_url=False):
     except KeyError:
         try:
             img_list = [
-                canvas["images"] for canvas in manifest["sequences"][0]["canvases"]
+                item
+                for items in manifest["items"]
+                for item in items["items"][0]["items"]
             ]
-            img_info = [
-                get_canvas_img(img, only_img_url) for imgs in img_list for img in imgs
-            ]
-        except KeyError:
-            try:
-                img_list = [
-                    item
-                    for items in manifest["items"]
-                    for item in items["items"][0]["items"]
-                ]
-                img_info = [get_item_img(img) for img in img_list]
-            except KeyError as e:
-                console(f"Unable to retrieve resources from manifest {manifest}\n{e}")
-                return []
+            img_info = [get_item_img(img) for img in img_list]
+        except KeyError as e:
+            console(f"Unable to retrieve resources from manifest {manifest}\n{e}")
+            return []
 
     return img_info

@@ -34,9 +34,9 @@ def get_color(msg_type=None):
 
 
 # def get_logger(log_dir, name):
-#     # log_dir = coerce_to_path_and_check_exist(log_dir)
+#     # log_dir = create_dir(log_dir)
 #     logger = logging.getLogger(name)
-#     file_path = log_dir / "{}.log".format(name)
+#     file_path = log_dir / f"{name}.log"
 #     hdlr = logging.FileHandler(file_path)
 #     formatter = logging.Formatter("[%(asctime)s] %(levelname)s: %(message)s")
 #     hdlr.setFormatter(formatter)
