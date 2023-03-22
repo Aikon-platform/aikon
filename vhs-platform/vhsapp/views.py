@@ -47,7 +47,7 @@ def manifest_manuscript(request, id, version):
     )
     fac.set_iiif_image_info(version="2.0", lvl="2")
     # Build the manifest
-    mf = fac.manifest(ident="manifest", label=manuscript.work.title)
+    mf = fac.manifest(ident="manifest", label=manuscript.__str__())
     mf.set_metadata(
         {
             "Author": manuscript.author.name,
@@ -98,7 +98,7 @@ def manifest_volume(request, id, version):
     fac.set_base_image_uri(f"{CANTALOUPE_APP_URL}/iiif/2/")
     fac.set_iiif_image_info(version="2.0", lvl="2")
     # Build the manifest
-    mf = fac.manifest(ident="manifest", label=volume.title)
+    mf = fac.manifest(ident="manifest", label=volume.__str__())
     mf.set_metadata(
         {
             "Author": volume.printed.author.name,
