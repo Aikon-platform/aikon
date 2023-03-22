@@ -227,7 +227,6 @@ def process_images(work, seq, version):
             sorted(glob(f"{BASE_DIR}/{IMG_PATH}/{work_abbr}{work.id}_*.jpg")),
             start=1,
         ):
-            console(path)
             image_name = os.path.basename(path)
             image = Image.open(path)
             build_canvas_and_annotation(seq, counter, image_name, image, version)

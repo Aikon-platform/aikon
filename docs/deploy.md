@@ -231,23 +231,27 @@ If everything is set, update the remote database by running on the production se
 ./venv/bin/python vhs-platform/manage.py migrate
 ```
 
-# Error log
+# Debug
 
 ## App errors
 See `vhs-platform/logs`
 
-## Nginx
+## Nginx error logs
 See `/var/log/nginx`
 
-## Gunicorn
+```bash
+alias nglog="sudo cat /var/log/nginx/eida.error.log"
+```
+
+## Gunicorn error logs
 See `/var/log/gunicorn`: here are python code error that might provoke 502 bad gateway errors
 
 ```bash
 alias gunilog="sudo cat /var/log/gunicorn/gunicorn-error.log"
 ```
 
-## Cantaloupe
+## Cantaloupe error logs
 See `cantaloupe/log`
 
-## SAS
+## SAS error logs
 See `sas/log`
