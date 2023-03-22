@@ -6,6 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Media file paths
 MEDIA_PATH = "mediafiles"
+STATIC_PATH = "staticfiles"
 IMG_PATH = f"{MEDIA_PATH}/img"
 MS_PDF_PATH = "manuscripts/pdf"
 MS_ANNO_PATH = "manuscripts/annotation"

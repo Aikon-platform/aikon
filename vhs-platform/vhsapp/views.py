@@ -20,11 +20,7 @@ from vhsapp.utils.constants import (
     APP_DESCRIPTION,
 )
 from vhsapp.utils.iiif import annotate_canvas, process_images
-from vhsapp.utils.paths import (
-    MEDIA_PATH,
-    VOL_ANNO_PATH,
-    MS_ANNO_PATH,
-)
+from vhsapp.utils.paths import MEDIA_PATH, VOL_ANNO_PATH, MS_ANNO_PATH, BASE_DIR
 
 
 def admin_vhs(request):
@@ -78,7 +74,6 @@ def manifest_manuscript(request, id, version):
     mf.viewingHint = "individuals"
     # And walk through the pages
     seq = mf.sequence(ident="normal", label="Normal Order")
-    console(mf)
     process_images(manuscript, seq, version)
     return JsonResponse(mf.toJSON(top=True))
 
@@ -143,7 +138,7 @@ def annotation_auto(request, id, work):
     annotations_path = VOL_ANNO_PATH if work == VOL else MS_ANNO_PATH
 
     # try:
-    with open(f"{MEDIA_PATH}/{annotations_path}{id}.txt") as f:
+    with open(f"{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
         for line in lines:
             if len(line.split()) == 2:
@@ -202,7 +197,7 @@ def populate_annotation(request, id, work):
     work_abbr, annotations_path = work_map.get(work, (None, None))
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
-    with open(f"{MEDIA_PATH}/{annotations_path}{id}.txt") as f:
+    with open(f"{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
     canvas = [line.split()[0] for line in lines if len(line.split()) == 2]
     for c in canvas:
@@ -241,7 +236,7 @@ def show_work(request, id, work):
     canvas_annos = []
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
-    with open(f"{MEDIA_PATH}/{annotations_path}{id}.txt") as f:
+    with open(f"{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
         for line in lines:
             if len(line.split()) == 2:
