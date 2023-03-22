@@ -112,6 +112,7 @@ class ImageInline(DigitInline):
         return "manuscript" if "manuscript" in self.img_dir() else "volume"
 
     def image_preview(self, obj):
+        # TODO, do not display when there is None because the digitization is not images files
         return mark_safe(
             f'<a href="{self.img_dir()}/?q={self.obj_id(obj)}" target="_blank">{IIIF_ICON} Gérer les images</a>'
         )

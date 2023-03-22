@@ -55,17 +55,18 @@ def validate_gallica_manifest_url(value):
     """
     Validate the pattern of a Gallica manifest URL
     """
-    hostname = re.match(r"https?://(.*?)/", value).group(1)
-    # Check if the hostname of the URL matches the desired pattern
-    if hostname == "gallica.bnf.fr":
-        # Define the regular expression pattern for a valid Gallica manifest URL
-        pattern = re.compile(
-            r"https://gallica.bnf.fr/iiif/ark:/12148/[a-z0-9]+/manifest.json"
-        )
-        match = bool(pattern.match(value))
-        # Check if the URL matches the pattern
-        if not match:
-            raise ValidationError("Invalid Gallica manifest")
+    # hostname = re.match(r"https?://(.*?)/", value).group(1)
+    # # Check if the hostname of the URL matches the desired pattern
+    # if hostname == "gallica.bnf.fr":
+
+    # Define the regular expression pattern for a valid Gallica manifest URL
+    pattern = re.compile(
+        r"https://gallica.bnf.fr/iiif/ark:/12148/[a-z0-9]+/manifest.json"
+    )
+    match = bool(pattern.match(value))
+    # Check if the URL matches the pattern
+    if not match:
+        raise ValidationError("Invalid Gallica manifest")
 
 
 def validate_iiif_manifest(url):
@@ -87,7 +88,6 @@ def validate_manifest(manifest):
     hostname, path = parse_manifest(manifest)
     if hostname == "gallica.bnf.fr":
         validate_gallica_manifest(manifest, False)
-        raise ValidationError("The URL is not a valid Gallica manifest")
 
 
 def extract_images_from_iiif_manifest(manifest_url, work, width=None, height=None):
@@ -110,9 +110,10 @@ def extract_images_from_iiif_manifest(manifest_url, work, width=None, height=Non
                 response.raw.decode_content = True
                 output_file = output_path / f"{work}_{img_id}.jpg"
                 console(f"Saving {output_file.relative_to(BASE_DIR / IMG_PATH)}...")
-                time.sleep(0.1)
+                time.sleep(0.25)
                 try:
                     with open(output_file, mode="wb") as f:
+                        # TODO: check if it is an image not a Text file with an error message
                         shutil.copyfileobj(response.raw, f)
                         # f.write(image_response.content)
                 except Exception as e:
@@ -155,8 +156,9 @@ def get_link_manifest(obj_id, manifest_url, tag_id="url_manifest_"):
 
 
 def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, ps_type=VOL.lower()):
-    obj_ref = f"{APP_NAME}/iiif/{vers}/{ps_type}/{obj_id}"
-    manifest = f"{CANTALOUPE_APP_URL}/{obj_ref}/manifest.json"
+    ps_prefix = VOL_ABBR if ps_type == VOL.lower() else MS_ABBR
+    obj_ref = f"{APP_NAME}/iiif/{vers}/{ps_type}/{ps_prefix}-{obj_id}"
+    manifest = f"{VHS_APP_URL}/{obj_ref}/manifest.json"
 
     if vers == MANIFEST_AUTO:
         tag_id = f"iiif_auto_"
@@ -192,17 +194,18 @@ def process_images(work, seq, version):
     """
     Process the images of a work and add them to a sequence
     """
-    if hasattr(work, "imagemanuscript_set"):
+    if hasattr(work, "imagemanuscript_set"):  # Manuscripts
         images = work.imagemanuscript_set.all()
         pdf_first = work.pdfmanuscript_set.first()
         manifest_first = work.manifestmanuscript_set.first()
         work_abbr = MS_ABBR
-    else:
+    else:  # Volumes
         images = work.imagevolume_set.all()
         pdf_first = work.pdfvolume_set.first()
         manifest_first = work.manifestvolume_set.first()
         work_abbr = VOL_ABBR
-    # Check if there are any work images and process them
+
+    # Check type of scans that were uploaded
     if images:
         for counter, img in enumerate(images, start=1):
             image_name = img.image.url.split("/")[-1]
@@ -210,20 +213,21 @@ def process_images(work, seq, version):
             build_canvas_and_annotation(seq, counter, image_name, image, version)
     # Check if there is a PDF work and process it
     elif pdf_first:
-        with Pdf.open(f"{MEDIA_PATH}{pdf_first.pdf}") as pdf_file:
+        with Pdf.open(f"{BASE_DIR}/{MEDIA_PATH}/{pdf_first.pdf}") as pdf_file:
             total_pages = len(pdf_file.pages)
             for counter in range(1, total_pages + 1):
                 image_name = pdf_first.pdf.name.split("/")[-1].replace(
                     ".pdf", f"_{counter:04d}.jpg"
                 )
-                image = Image.open(f"{IMG_PATH}{image_name}")
+                image = Image.open(f"{IMG_PATH}/{image_name}")
                 build_canvas_and_annotation(seq, counter, image_name, image, version)
     # Check if there is a manifest work and process it
     elif manifest_first:
         for counter, path in enumerate(
-            sorted(glob(f"{IMG_PATH}{work_abbr}{work.id}_*.jpg")),
+            sorted(glob(f"{BASE_DIR}/{IMG_PATH}/{work_abbr}{work.id}_*.jpg")),
             start=1,
         ):
+            console(path)
             image_name = os.path.basename(path)
             image = Image.open(path)
             build_canvas_and_annotation(seq, counter, image_name, image, version)
@@ -309,7 +313,7 @@ def get_id(dic):
     if type(dic) == dict:
         try:
             return dic["@id"]
-        except KeyError as e:
+        except KeyError:
             try:
                 return dic["id"]
             except KeyError as e:
@@ -349,8 +353,8 @@ def get_img_id(img):
 
 def get_formatted_size(width="", height=""):
     if not width and not height:
-        # return "full"
-        return "1000,"
+        return "full"
+        # return "1500,"
     return f"{width or ''},{height or ''}"
 
 
@@ -363,21 +367,13 @@ def get_iiif_resources(manifest, only_img_url=False):
     except KeyError:
         try:
             img_list = [
-                canvas["images"] for canvas in manifest["sequences"][0]["canvases"]
+                item
+                for items in manifest["items"]
+                for item in items["items"][0]["items"]
             ]
-            img_info = [
-                get_canvas_img(img, only_img_url) for imgs in img_list for img in imgs
-            ]
-        except KeyError:
-            try:
-                img_list = [
-                    item
-                    for items in manifest["items"]
-                    for item in items["items"][0]["items"]
-                ]
-                img_info = [get_item_img(img) for img in img_list]
-            except KeyError as e:
-                console(f"Unable to retrieve resources from manifest {manifest}\n{e}")
-                return []
+            img_info = [get_item_img(img) for img in img_list]
+        except KeyError as e:
+            console(f"Unable to retrieve resources from manifest {manifest}\n{e}")
+            return []
 
     return img_info

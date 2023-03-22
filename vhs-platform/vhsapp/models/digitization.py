@@ -131,7 +131,7 @@ class Pdf(Digitization):
         # Run the PDF to image async conversion task in the background using threading
         t = threading.Thread(
             target=convert_pdf_to_image,
-            args=(f"{MEDIA_PATH}{self.pdf.name}", f"{IMG_PATH}"),
+            args=(f"{MEDIA_PATH}/{self.pdf.name}", f"{IMG_PATH}"),
         )
         t.start()
 

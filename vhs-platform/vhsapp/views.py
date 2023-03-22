@@ -13,7 +13,7 @@ from vhs.settings import ENV
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
-from vhsapp.utils.functions import credentials
+from vhsapp.utils.functions import credentials, console, log
 from vhsapp.utils.constants import (
     APP_NAME,
     APP_NAME_UPPER,
@@ -24,6 +24,8 @@ from vhsapp.utils.paths import (
     MEDIA_PATH,
     VOL_ANNO_PATH,
     MS_ANNO_PATH,
+    BASE_DIR,
+    IMG_PATH,
 )
 
 
@@ -39,11 +41,10 @@ def manifest_manuscript(request, id, version):
     # Get the Manuscript object or return a 404 error if it doesn't exist
     manuscript = get_object_or_404(Manuscript, pk=id)
     # Configure the factory
-    fac = ManifestFactory()
-    fac.set_base_prezi_uri(
-        f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{MS}/{MS_ABBR}-{id}/"
+    fac = ManifestFactory(
+        mdbase=f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{MS}/{MS_ABBR}-{id}/",
+        imgbase=f"{CANTALOUPE_APP_URL}/iiif/2/",
     )
-    fac.set_base_image_uri(f"{CANTALOUPE_APP_URL}/iiif/2/")
     fac.set_iiif_image_info(version="2.0", lvl="2")
     # Build the manifest
     mf = fac.manifest(ident="manifest", label=manuscript.work.title)
@@ -79,9 +80,7 @@ def manifest_manuscript(request, id, version):
     # And walk through the pages
     seq = mf.sequence(ident="normal", label="Normal Order")
     process_images(manuscript, seq, version)
-    data = mf.toJSON(top=True)
-
-    return JsonResponse(data)
+    return JsonResponse(mf.toJSON(top=True))
 
 
 def manifest_volume(request, id, version):
@@ -144,7 +143,7 @@ def annotation_auto(request, id, work):
     annotations_path = VOL_ANNO_PATH if work == VOL else MS_ANNO_PATH
 
     # try:
-    with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
+    with open(f"{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
         for line in lines:
             if len(line.split()) == 2:
@@ -164,7 +163,7 @@ def annotation_auto(request, id, work):
 
 def annotate_work(request, id, version, work, work_abbr, canvas):
     annotations_path = VOL_ANNO_PATH if work == VOL else MS_ANNO_PATH
-    with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
+    with open(f"{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
         nbr_anno = 0
         list_anno = []
@@ -203,7 +202,7 @@ def populate_annotation(request, id, work):
     work_abbr, annotations_path = work_map.get(work, (None, None))
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
-    with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
+    with open(f"{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
     canvas = [line.split()[0] for line in lines if len(line.split()) == 2]
     for c in canvas:
@@ -242,7 +241,7 @@ def show_work(request, id, work):
     canvas_annos = []
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
-    with open(f"{MEDIA_PATH}{annotations_path}{id}.txt") as f:
+    with open(f"{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
         for line in lines:
             if len(line.split()) == 2:
