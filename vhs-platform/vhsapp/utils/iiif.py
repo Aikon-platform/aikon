@@ -95,7 +95,9 @@ def extract_images_from_iiif_manifest(manifest_url, work, width=None, height=Non
     Extract all images from an IIIF manifest
     """
     manifest = get_json(manifest_url)
-    size = get_formatted_size(width, height)
+    size = (
+        "1500," if "gallica" in manifest_url else "full"
+    )  # get_formatted_size(width, height)
     if manifest is not None:
         manifest_id = Path(urlparse(get_id(manifest)).path).parent.name
         console(f"Processing {manifest_id}...")
@@ -376,7 +378,6 @@ def get_img_id(img):
 def get_formatted_size(width="", height=""):
     if not width and not height:
         return "full"
-        # return "1500,"
     return f"{width or ''},{height or ''}"
 
 
