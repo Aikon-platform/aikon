@@ -237,6 +237,11 @@ Empty log file by running
 ```shell
 sudo truncate -s 0 /path/to/logfile.log
 ```
+To add aliases to your `.bashrc` config
+```shell
+vi ~/.bashrc       # paste aliases at the end
+source ~/.bashrc   # to activate aliases
+```
 
 ## App errors
 See `vhs-platform/logs`
@@ -260,5 +265,15 @@ alias empty_gunilog="sudo truncate -s 0 /var/log/gunicorn/gunicorn-error.log"
 ## Cantaloupe error logs
 See `cantaloupe/log`
 
+```bash
+alias cantalog="cat cantaloupe/log"
+alias empty_cantalog="sudo truncate -s 0 cantaloupe/log"
+```
+
 ## SAS error logs
 See `sas/log`
+
+```bash
+alias slog="cat sas/log"
+alias empty_slog="sudo truncate -s 0 sas/log"
+```
