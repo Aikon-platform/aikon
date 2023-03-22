@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
-from iiif_prezi.factory import ManifestFactory
+from iiif_prezi.factory import ManifestFactory, StructuralError
 
 from django.contrib.auth.decorators import login_required
 from vhs.settings import ENV
@@ -80,7 +80,11 @@ def manifest_manuscript(request, id, version):
     # And walk through the pages
     seq = mf.sequence(ident="normal", label="Normal Order")
     process_images(ms, seq, version)
-    return JsonResponse(mf.toJSON(top=True))
+    try:
+        return JsonResponse(mf.toJSON(top=True))
+    except StructuralError as e:
+        log(f"Unable to create manifest for resource {id} (probably no images):\n{e}")
+        return JsonResponse({"error": "Unable to create a valid manifest"})
 
 
 def manifest_volume(request, id, version):
@@ -130,9 +134,12 @@ def manifest_volume(request, id, version):
     # And walk through the pages
     seq = mf.sequence(ident="normal", label="Normal Order")
     process_images(volume, seq, version)
-    data = mf.toJSON(top=True)
 
-    return JsonResponse(data)
+    try:
+        return JsonResponse(mf.toJSON(top=True))
+    except StructuralError as e:
+        log(f"Unable to create manifest for resource {id} (probably no images):\n{e}")
+        return JsonResponse({"error": "Unable to create a valid manifest"})
 
 
 def annotation_auto(request, id, work):
