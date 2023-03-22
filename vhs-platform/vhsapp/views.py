@@ -53,7 +53,7 @@ def manifest_manuscript(request, id, version):
             "Author": ms.author.name if ms.author else "No author",
             "Place of conservation": ms.conservation_place,
             "Reference number": ms.reference_number,
-            "Date (century)": ms.date_century,
+            # "Date (century)": ms.date_century,
             "Sheet(s)": ms.sheets,
         }
     )
