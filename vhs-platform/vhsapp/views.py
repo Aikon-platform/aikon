@@ -13,7 +13,7 @@ from vhs.settings import ENV
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
-from vhsapp.utils.functions import credentials
+from vhsapp.utils.functions import credentials, console, log
 from vhsapp.utils.constants import (
     APP_NAME,
     APP_NAME_UPPER,
@@ -78,6 +78,7 @@ def manifest_manuscript(request, id, version):
     mf.viewingHint = "individuals"
     # And walk through the pages
     seq = mf.sequence(ident="normal", label="Normal Order")
+    console(mf)
     process_images(manuscript, seq, version)
     return JsonResponse(mf.toJSON(top=True))
 

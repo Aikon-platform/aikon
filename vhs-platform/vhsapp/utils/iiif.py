@@ -55,17 +55,18 @@ def validate_gallica_manifest_url(value):
     """
     Validate the pattern of a Gallica manifest URL
     """
-    hostname = re.match(r"https?://(.*?)/", value).group(1)
-    # Check if the hostname of the URL matches the desired pattern
-    if hostname == "gallica.bnf.fr":
-        # Define the regular expression pattern for a valid Gallica manifest URL
-        pattern = re.compile(
-            r"https://gallica.bnf.fr/iiif/ark:/12148/[a-z0-9]+/manifest.json"
-        )
-        match = bool(pattern.match(value))
-        # Check if the URL matches the pattern
-        if not match:
-            raise ValidationError("Invalid Gallica manifest")
+    # hostname = re.match(r"https?://(.*?)/", value).group(1)
+    # # Check if the hostname of the URL matches the desired pattern
+    # if hostname == "gallica.bnf.fr":
+
+    # Define the regular expression pattern for a valid Gallica manifest URL
+    pattern = re.compile(
+        r"https://gallica.bnf.fr/iiif/ark:/12148/[a-z0-9]+/manifest.json"
+    )
+    match = bool(pattern.match(value))
+    # Check if the URL matches the pattern
+    if not match:
+        raise ValidationError("Invalid Gallica manifest")
 
 
 def validate_iiif_manifest(url):
@@ -87,7 +88,6 @@ def validate_manifest(manifest):
     hostname, path = parse_manifest(manifest)
     if hostname == "gallica.bnf.fr":
         validate_gallica_manifest(manifest, False)
-        raise ValidationError("The URL is not a valid Gallica manifest")
 
 
 def extract_images_from_iiif_manifest(manifest_url, work, width=None, height=None):
@@ -110,9 +110,10 @@ def extract_images_from_iiif_manifest(manifest_url, work, width=None, height=Non
                 response.raw.decode_content = True
                 output_file = output_path / f"{work}_{img_id}.jpg"
                 console(f"Saving {output_file.relative_to(BASE_DIR / IMG_PATH)}...")
-                time.sleep(0.1)
+                time.sleep(0.25)
                 try:
                     with open(output_file, mode="wb") as f:
+                        # TODO: check if it is an image not a Text file with an error message
                         shutil.copyfileobj(response.raw, f)
                         # f.write(image_response.content)
                 except Exception as e:
@@ -310,7 +311,7 @@ def get_id(dic):
     if type(dic) == dict:
         try:
             return dic["@id"]
-        except KeyError as e:
+        except KeyError:
             try:
                 return dic["id"]
             except KeyError as e:
@@ -350,8 +351,8 @@ def get_img_id(img):
 
 def get_formatted_size(width="", height=""):
     if not width and not height:
-        # return "full"
-        return "1500,"
+        return "full"
+        # return "1500,"
     return f"{width or ''},{height or ''}"
 
 
