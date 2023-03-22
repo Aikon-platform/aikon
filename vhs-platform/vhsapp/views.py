@@ -20,7 +20,13 @@ from vhsapp.utils.constants import (
     APP_DESCRIPTION,
 )
 from vhsapp.utils.iiif import annotate_canvas, process_images
-from vhsapp.utils.paths import MEDIA_PATH, VOL_ANNO_PATH, MS_ANNO_PATH, BASE_DIR
+from vhsapp.utils.paths import (
+    MEDIA_PATH,
+    VOL_ANNO_PATH,
+    MS_ANNO_PATH,
+    BASE_DIR,
+    IMG_PATH,
+)
 
 
 def admin_vhs(request):
@@ -35,11 +41,10 @@ def manifest_manuscript(request, id, version):
     # Get the Manuscript object or return a 404 error if it doesn't exist
     manuscript = get_object_or_404(Manuscript, pk=id)
     # Configure the factory
-    fac = ManifestFactory()
-    fac.set_base_prezi_uri(
-        f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{MS}/{MS_ABBR}-{id}/"
+    fac = ManifestFactory(
+        mdbase=f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{MS}/{MS_ABBR}-{id}/",
+        imgbase=f"{CANTALOUPE_APP_URL}/iiif/2/",
     )
-    fac.set_base_image_uri(f"{CANTALOUPE_APP_URL}/iiif/2/")
     fac.set_iiif_image_info(version="2.0", lvl="2")
     # Build the manifest
     mf = fac.manifest(ident="manifest", label=manuscript.work.title)

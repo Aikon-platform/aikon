@@ -194,17 +194,18 @@ def process_images(work, seq, version):
     """
     Process the images of a work and add them to a sequence
     """
-    if hasattr(work, "imagemanuscript_set"):
+    if hasattr(work, "imagemanuscript_set"):  # Manuscripts
         images = work.imagemanuscript_set.all()
         pdf_first = work.pdfmanuscript_set.first()
         manifest_first = work.manifestmanuscript_set.first()
         work_abbr = MS_ABBR
-    else:
+    else:  # Volumes
         images = work.imagevolume_set.all()
         pdf_first = work.pdfvolume_set.first()
         manifest_first = work.manifestvolume_set.first()
         work_abbr = VOL_ABBR
-    # Check if there are any work images and process them
+
+    # Check type of scans that were uploaded
     if images:
         for counter, img in enumerate(images, start=1):
             image_name = img.image.url.split("/")[-1]
@@ -212,7 +213,7 @@ def process_images(work, seq, version):
             build_canvas_and_annotation(seq, counter, image_name, image, version)
     # Check if there is a PDF work and process it
     elif pdf_first:
-        with Pdf.open(f"{MEDIA_PATH}/{pdf_first.pdf}") as pdf_file:
+        with Pdf.open(f"{BASE_DIR}/{MEDIA_PATH}/{pdf_first.pdf}") as pdf_file:
             total_pages = len(pdf_file.pages)
             for counter in range(1, total_pages + 1):
                 image_name = pdf_first.pdf.name.split("/")[-1].replace(
@@ -223,9 +224,10 @@ def process_images(work, seq, version):
     # Check if there is a manifest work and process it
     elif manifest_first:
         for counter, path in enumerate(
-            sorted(glob(f"{IMG_PATH}/{work_abbr}{work.id}_*.jpg")),
+            sorted(glob(f"{BASE_DIR}/{IMG_PATH}/{work_abbr}{work.id}_*.jpg")),
             start=1,
         ):
+            console(path)
             image_name = os.path.basename(path)
             image = Image.open(path)
             build_canvas_and_annotation(seq, counter, image_name, image, version)
