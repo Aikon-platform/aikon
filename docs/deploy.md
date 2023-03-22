@@ -233,6 +233,16 @@ If everything is set, update the remote database by running on the production se
 
 # Debug
 
+Empty log file by running
+```shell
+sudo truncate -s 0 /path/to/logfile.log
+```
+To add aliases to your `.bashrc` config
+```shell
+vi ~/.bashrc       # paste aliases at the end
+source ~/.bashrc   # to activate aliases
+```
+
 ## App errors
 See `vhs-platform/logs`
 
@@ -241,6 +251,7 @@ See `/var/log/nginx`
 
 ```bash
 alias nglog="sudo cat /var/log/nginx/eida.error.log"
+alias empty_nglog="sudo truncate -s 0 /var/log/nginx/eida.error.log"
 ```
 
 ## Gunicorn error logs
@@ -248,10 +259,21 @@ See `/var/log/gunicorn`: here are python code error that might provoke 502 bad g
 
 ```bash
 alias gunilog="sudo cat /var/log/gunicorn/gunicorn-error.log"
+alias empty_gunilog="sudo truncate -s 0 /var/log/gunicorn/gunicorn-error.log"
 ```
 
 ## Cantaloupe error logs
 See `cantaloupe/log`
 
+```bash
+alias cantalog="cat cantaloupe/log"
+alias empty_cantalog="sudo truncate -s 0 cantaloupe/log"
+```
+
 ## SAS error logs
 See `sas/log`
+
+```bash
+alias slog="cat sas/log"
+alias empty_slog="sudo truncate -s 0 sas/log"
+```
