@@ -163,32 +163,49 @@ def annotation_auto(request, id, work):
 
 def annotate_work(request, id, version, work, work_abbr, canvas):
     annotations_path = VOL_ANNO_PATH if work == VOL else MS_ANNO_PATH
-    with open(f"{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
-        lines = [line.strip() for line in f.readlines()]
-        nbr_anno = 0
-        list_anno = []
-        check = False
-        for line in lines:
-            if len(line.split()) == 2 and line.split()[0] == str(canvas):
-                check = True
-                continue
-            if check:
-                if len(line.split()) == 4:
-                    nbr_anno += 1
-                    list_anno.append(tuple(int(item) for item in tuple(line.split())))
-                else:
-                    break
-    data = {
-        "@type": "sc:AnnotationList",
-        "resources": [
-            annotate_canvas(
-                id, version, work, work_abbr, canvas, list_anno[num_anno], num_anno
+    try:
+        with open(f"{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
+            lines = [line.strip() for line in f.readlines()]
+            nbr_anno = 0
+            list_anno = []
+            check = False
+            for line in lines:
+                if len(line.split()) == 2 and line.split()[0] == str(canvas):
+                    check = True
+                    continue
+                if check:
+                    if len(line.split()) == 4:
+                        nbr_anno += 1
+                        list_anno.append(
+                            tuple(int(item) for item in tuple(line.split()))
+                        )
+                    else:
+                        break
+            return JsonResponse(
+                {
+                    "@type": "sc:AnnotationList",
+                    "resources": [
+                        annotate_canvas(
+                            id,
+                            version,
+                            work,
+                            work_abbr,
+                            canvas,
+                            list_anno[num_anno],
+                            num_anno,
+                        )
+                        for num_anno in range(nbr_anno)
+                        if nbr_anno > 0
+                    ],
+                }
             )
-            for num_anno in range(nbr_anno)
-            if nbr_anno > 0
-        ],
-    }
-    return JsonResponse(data)
+    except FileNotFoundError:
+        return JsonResponse(
+            {
+                "@type": "sc:AnnotationList",
+                "resources": [],
+            }
+        )
 
 
 def populate_annotation(request, id, work):
