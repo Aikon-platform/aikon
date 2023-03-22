@@ -84,7 +84,7 @@ def validate_iiif_manifest(url):
 
 
 def validate_manifest(manifest):
-    validate_iiif_manifest(manifest)
+    # validate_iiif_manifest(manifest)
     hostname, path = parse_manifest(manifest)
     if hostname == "gallica.bnf.fr":
         validate_gallica_manifest(manifest, False)
