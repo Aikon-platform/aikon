@@ -110,7 +110,7 @@ def extract_images_from_iiif_manifest(manifest_url, work, width=None, height=Non
                 response.raw.decode_content = True
                 output_file = output_path / f"{work}_{img_id}.jpg"
                 console(f"Saving {output_file.relative_to(BASE_DIR / IMG_PATH)}...")
-                time.sleep(0.25)
+                time.sleep(15)
                 try:
                     with open(output_file, mode="wb") as f:
                         # TODO: check if it is an image not a Text file with an error message
