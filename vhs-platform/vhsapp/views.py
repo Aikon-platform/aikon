@@ -39,7 +39,7 @@ def manifest_manuscript(request, id, version):
     IIIF Presentation API 2.0
     """
     # Get the Manuscript object or return a 404 error if it doesn't exist
-    manuscript = get_object_or_404(Manuscript, pk=id)
+    ms = get_object_or_404(Manuscript, pk=id)
     # Configure the factory
     fac = ManifestFactory(
         mdbase=f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{MS}/{MS_ABBR}-{id}/",
@@ -47,29 +47,29 @@ def manifest_manuscript(request, id, version):
     )
     fac.set_iiif_image_info(version="2.0", lvl="2")
     # Build the manifest
-    mf = fac.manifest(ident="manifest", label=manuscript.__str__())
+    mf = fac.manifest(ident="manifest", label=ms.__str__())
     mf.set_metadata(
         {
-            "Author": manuscript.author.name,
-            "Place of conservation": manuscript.conservation_place,
-            "Reference number": manuscript.reference_number,
-            "Date (century)": manuscript.date_century,
-            "Sheet(s)": manuscript.sheets,
+            "Author": ms.author.name if ms.author else "No author",
+            "Place of conservation": ms.conservation_place,
+            "Reference number": ms.reference_number,
+            "Date (century)": ms.date_century,
+            "Sheet(s)": ms.sheets,
         }
     )
-    if date_free := manuscript.date_free:
+    if date_free := ms.date_free:
         mf.set_metadata({"Date": date_free})
-    if origin_place := manuscript.origin_place:
+    if origin_place := ms.origin_place:
         mf.set_metadata({"Place of origin": origin_place})
-    if remarks := manuscript.remarks:
+    if remarks := ms.remarks:
         mf.set_metadata({"Remarks": remarks})
-    if copyists := manuscript.copyists:
+    if copyists := ms.copyists:
         mf.set_metadata({"Copyist(s)": copyists})
-    if miniaturists := manuscript.miniaturists:
+    if miniaturists := ms.miniaturists:
         mf.set_metadata({"Miniaturist(s)": miniaturists})
-    if digitized_version := manuscript.digitized_version:
+    if digitized_version := ms.digitized_version:
         mf.set_metadata({"Source of the digitized version": digitized_version.source})
-    if pinakes_link := manuscript.pinakes_link:
+    if pinakes_link := ms.pinakes_link:
         mf.set_metadata(
             {"Link to Pinakes (greek mss) or Medium-IRHT (latin mss)": pinakes_link}
         )
@@ -79,7 +79,7 @@ def manifest_manuscript(request, id, version):
     mf.viewingHint = "individuals"
     # And walk through the pages
     seq = mf.sequence(ident="normal", label="Normal Order")
-    process_images(manuscript, seq, version)
+    process_images(ms, seq, version)
     return JsonResponse(mf.toJSON(top=True))
 
 
@@ -101,7 +101,9 @@ def manifest_volume(request, id, version):
     mf = fac.manifest(ident="manifest", label=volume.__str__())
     mf.set_metadata(
         {
-            "Author": volume.printed.author.name,
+            "Author": volume.printed.author.name
+            if volume.printed.author
+            else "No author",
             "Number or identifier of volume": volume.number_identifier,
             "Place": volume.place,
             "Date": volume.date,
