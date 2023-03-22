@@ -195,44 +195,57 @@ def process_images(work, seq, version):
     Process the images of a work and add them to a sequence
     """
     if hasattr(work, "imagemanuscript_set"):  # Manuscripts
-        images = work.imagemanuscript_set.all()
+        imgs = work.imagemanuscript_set.all()
         pdf_first = work.pdfmanuscript_set.first()
         manifest_first = work.manifestmanuscript_set.first()
         work_abbr = MS_ABBR
     else:  # Volumes
-        images = work.imagevolume_set.all()
+        imgs = work.imagevolume_set.all()
         pdf_first = work.pdfvolume_set.first()
         manifest_first = work.manifestvolume_set.first()
         work_abbr = VOL_ABBR
 
     # Check type of scans that were uploaded
-    if images:
-        for counter, img in enumerate(images, start=1):
-            image_name = img.image.url.split("/")[-1]
-            image = Image.open(img.image)
-            build_canvas_and_annotation(seq, counter, image_name, image, version)
+    if imgs:  # IMAGES
+        for counter, img in enumerate(imgs, start=1):
+            img_name = img.image.url.split("/")[-1]
+            try:
+                build_canvas_and_annotation(
+                    seq, counter, img_name, Image.open(img.image), version
+                )
+            except UnidentifiedImageError as e:
+                log(f"Unable to retrieve {img_name}\n{e}")
+
     # Check if there is a PDF work and process it
-    elif pdf_first:
+    elif pdf_first:  # PDF
         with Pdf.open(f"{BASE_DIR}/{MEDIA_PATH}/{pdf_first.pdf}") as pdf_file:
-            total_pages = len(pdf_file.pages)
-            for counter in range(1, total_pages + 1):
-                image_name = pdf_first.pdf.name.split("/")[-1].replace(
+            for counter in range(1, len(pdf_file.pages) + 1):
+                img_name = pdf_first.pdf.name.split("/")[-1].replace(
                     ".pdf", f"_{counter:04d}.jpg"
                 )
-                image = Image.open(f"{IMG_PATH}/{image_name}")
-                build_canvas_and_annotation(seq, counter, image_name, image, version)
+                try:
+                    build_canvas_and_annotation(
+                        seq,
+                        counter,
+                        img_name,
+                        Image.open(f"{IMG_PATH}/{img_name}"),
+                        version,
+                    )
+                except UnidentifiedImageError as e:
+                    log(f"Unable to retrieve {img_name}\n{e}")
+                    continue
     # Check if there is a manifest work and process it
     elif manifest_first:
         for counter, path in enumerate(
             sorted(glob(f"{BASE_DIR}/{IMG_PATH}/{work_abbr}{work.id}_*.jpg")),
             start=1,
         ):
-            image_name = os.path.basename(path)
+            img_name = os.path.basename(path)
             try:
                 image = Image.open(path)
-                build_canvas_and_annotation(seq, counter, image_name, image, version)
+                build_canvas_and_annotation(seq, counter, img_name, image, version)
             except UnidentifiedImageError as e:
-                log(f"Unable to retrieve {image_name}\n{e}")
+                log(f"Unable to retrieve {img_name}\n{e}")
                 continue
     # If none of the above, raise an exception
     else:
