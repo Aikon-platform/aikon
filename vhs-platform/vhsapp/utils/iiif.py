@@ -155,7 +155,7 @@ def get_link_manifest(obj_id, manifest_url, tag_id="url_manifest_"):
 
 
 def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, ps_type=VOL.lower()):
-    ps_prefix = "vol" if ps_type == VOL.lower() else "ms"
+    ps_prefix = VOL_ABBR if ps_type == VOL.lower() else MS_ABBR
     obj_ref = f"{APP_NAME}/iiif/{vers}/{ps_type}/{ps_prefix}-{obj_id}"
     manifest = f"{VHS_APP_URL}/{obj_ref}/manifest.json"
 

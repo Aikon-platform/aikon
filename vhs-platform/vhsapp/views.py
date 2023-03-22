@@ -79,9 +79,7 @@ def manifest_manuscript(request, id, version):
     # And walk through the pages
     seq = mf.sequence(ident="normal", label="Normal Order")
     process_images(manuscript, seq, version)
-    data = mf.toJSON(top=True)
-
-    return JsonResponse(data)
+    return JsonResponse(mf.toJSON(top=True))
 
 
 def manifest_volume(request, id, version):
