@@ -215,6 +215,8 @@ def process_images(work, seq, version):
                 )
             except UnidentifiedImageError as e:
                 log(f"Unable to retrieve {img_name}\n{e}")
+            except FileNotFoundError as e:
+                log(f"Non existing {img_name}\n{e}")
 
     # Check if there is a PDF work and process it
     elif pdf_first:  # PDF
@@ -233,7 +235,9 @@ def process_images(work, seq, version):
                     )
                 except UnidentifiedImageError as e:
                     log(f"Unable to retrieve {img_name}\n{e}")
-                    continue
+                except FileNotFoundError as e:
+                    log(f"Non existing {img_name}\n{e}")
+
     # Check if there is a manifest work and process it
     elif manifest_first:
         for counter, path in enumerate(
@@ -247,6 +251,8 @@ def process_images(work, seq, version):
             except UnidentifiedImageError as e:
                 log(f"Unable to retrieve {img_name}\n{e}")
                 continue
+            except FileNotFoundError as e:
+                log(f"Non existing {img_name}\n{e}")
     # If none of the above, raise an exception
     else:
         raise Exception("There is no manifest!")
