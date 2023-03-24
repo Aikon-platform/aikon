@@ -21,9 +21,9 @@ $(function() {
             xhr.responseType = "json";
             xhr.onload = function() {
                 if (xhr.readyState === 4 && xhr.status === 200) {
-                    window.open(SAS_APP_URL + "/indexAnnos.html?iiif-content=" + urlManifest, "_blank");
+                    window.open(`${SAS_APP_URL}/indexAnnos.html?iiif-content=${urlManifest}`, "_blank");
                 } else {
-                    showMessage("Failed to load " + urlManifest + " due to " + xhr.status + ": '" + xhr.statusText + "'");
+                    showMessage(`Failed to load ${urlManifest} due to ${xhr.status}: ${xhr.statusText}`);
                 }
             };
             xhr.send();
@@ -38,11 +38,11 @@ $(function() {
     } );
 
     $("[id^=manifest_final_]").on("click", function() {
-        idButton = $(this).attr("id");
+        const idButton = $(this).attr("id");
         idManifest = idButton.split("_").pop();
-        const urlManifest = $("#url_manifest_" + idManifest).prop("href");
+        const urlManifest = $(`#url_manifest_${idManifest}`).prop("href");
         setLoading(idButton);
-        window.open(SAS_APP_URL + "/indexView.html?iiif-content=" + urlManifest, "_blank");
+        window.open(`${SAS_APP_URL}/indexView.html?iiif-content=${urlManifest}`, "_blank");
         clearLoadingView(idButton);
         return false;
     } );
@@ -56,7 +56,7 @@ var getJSON = function(url, callback) {
         if (xhr.readyState === 4 && xhr.status === 200) {
             callback(xhr.status, xhr.response);
         } else {
-            showMessage("Failed to load " + url + " due to " + xhr.status + ": '" + xhr.statusText + "'");
+            showMessage(`Failed to load ${url} due to ${xhr.status}: ${xhr.statusText}`);
         }
     };
     xhr.send();
@@ -64,7 +64,7 @@ var getJSON = function(url, callback) {
 
 var sendJson = function sendJson(status, data) {
     let xhr = new XMLHttpRequest();
-    xhr.open("POST", SAS_APP_URL + "/manifests", true);
+    xhr.open("POST", `${SAS_APP_URL}/manifests`, true);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.onload = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
@@ -77,7 +77,7 @@ var sendJson = function sendJson(status, data) {
 };
 
 function showMessage(message) {
-    var messages = document.getElementById(idMessage);
+    const messages = document.getElementById(idMessage);
     messages.textContent = message;
     messages.style.display = "block";
 }

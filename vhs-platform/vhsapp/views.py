@@ -152,7 +152,7 @@ def annotation_auto(request, id, work):
     annotations_path = VOL_ANNO_PATH if work == VOL else MS_ANNO_PATH
 
     # try:
-    with open(f"{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
+    with open(f"{BASE_DIR}/{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
         for line in lines:
             if len(line.split()) == 2:
@@ -173,7 +173,7 @@ def annotation_auto(request, id, work):
 def annotate_work(request, id, version, work, work_abbr, canvas):
     annotations_path = VOL_ANNO_PATH if work == VOL else MS_ANNO_PATH
     try:
-        with open(f"{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
+        with open(f"{BASE_DIR}/{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
             lines = [line.strip() for line in f.readlines()]
             nbr_anno = 0
             list_anno = []
@@ -228,7 +228,7 @@ def populate_annotation(request, id, work):
     work_abbr, annotations_path = work_map.get(work, (None, None))
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
-    with open(f"{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
+    with open(f"{BASE_DIR}/{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
     canvas = [line.split()[0] for line in lines if len(line.split()) == 2]
     for c in canvas:
@@ -267,7 +267,7 @@ def show_work(request, id, work):
     canvas_annos = []
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
-    with open(f"{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
+    with open(f"{BASE_DIR}/{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
         lines = [line.strip() for line in f.readlines()]
         for line in lines:
             if len(line.split()) == 2:
