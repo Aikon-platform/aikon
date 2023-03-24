@@ -16,7 +16,7 @@ from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 
 from vhsapp.utils.constants import APP_NAME, MANIFEST_AUTO, MANIFEST_V2
-from vhsapp.utils.functions import log, get_json, create_dir, console
+from vhsapp.utils.functions import log, get_json, create_dir, console, save_img
 from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH, BASE_DIR
 from vhsapp.utils.functions import get_icon, anno_btn
 from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
@@ -90,52 +90,132 @@ def validate_manifest(manifest):
         validate_gallica_manifest(manifest, False)
 
 
-def extract_images_from_iiif_manifest(manifest_url, work, width=None, height=None):
+def get_id(dic):
+    if type(dic) == list:
+        dic = dic[0]
+
+    if type(dic) == dict:
+        try:
+            return dic["@id"]
+        except KeyError:
+            try:
+                return dic["id"]
+            except KeyError as e:
+                log(f"No id provided {e}")
+
+    if type(dic) == str:
+        return dic
+
+    return None
+
+
+def get_img_rsrc(iiif_img):
+    try:
+        img_rscr = iiif_img["resource"]
+    except KeyError:
+        try:
+            img_rscr = iiif_img["body"]
+        except KeyError:
+            return None
+    return img_rscr
+
+
+def get_canvas_img(canvas_img, only_img_url=False):
+    img_url = get_id(canvas_img["resource"]["service"])
+    if only_img_url:
+        return img_url
+    return get_img_id(canvas_img["resource"]), img_url
+
+
+def get_item_img(item_img, only_img_url=False):
+    img_url = get_id(item_img["body"]["service"][0])
+    if only_img_url:
+        return img_url
+    return get_img_id(item_img), img_url
+
+
+def get_img_id(img):
+    img_id = get_id(img)
+    if ".jpg" in img_id:
+        try:
+            return img_id.split("/")[-5]
+        except IndexError:
+            return None
+        # return Path(urlparse(img_id).path).parts[-5]
+    return img_id.split("/")[-1]
+
+
+def get_formatted_size(width="", height=""):
+    if not width and not height:
+        return "full"
+    return f"{width or ''},{height or ''}"
+
+
+def get_iiif_resources(manifest, only_img_url=False):
+    try:
+        img_list = [canvas["images"] for canvas in manifest["sequences"][0]["canvases"]]
+        # img_info = [get_canvas_img(img, only_img_url) for imgs in img_list for img in imgs]
+        img_info = [get_img_rsrc(img) for imgs in img_list for img in imgs]
+    except KeyError:
+        try:
+            img_list = [
+                item
+                for items in manifest["items"]
+                for item in items["items"][0]["items"]
+            ]
+            # img_info = [get_item_img(img, only_img_url) for img in img_list]
+            img_info = [get_img_rsrc(img) for img in img_list]
+        except KeyError as e:
+            log(f"Unable to retrieve resources from manifest {manifest}\n{e}")
+            return []
+
+    return img_info
+
+
+def extract_images_from_iiif_manifest(manifest_url, work):
     """
     Extract all images from an IIIF manifest
     """
     manifest = get_json(manifest_url)
-    size = (
-        "1500," if "gallica" in manifest_url else "full"
-    )  # get_formatted_size(width, height)
     if manifest is not None:
-        manifest_id = Path(urlparse(get_id(manifest)).path).parent.name
-        console(f"Processing {manifest_id}...")
-        output_path = create_dir(BASE_DIR / IMG_PATH)
+        # manifest_id = Path(urlparse(get_id(manifest)).path).parent.name
         i = 1
-        for img_url in get_iiif_resources(manifest, True):
-            img_id = f"{i:04d}"
-            img_url = f"{img_url}/full/{size}/0/default.jpg"
+        for img_rscr in get_iiif_resources(manifest, True):
+            save_iiif_img(img_rscr, i, work)
             i += 1
+            time.sleep(5 if "gallica" in manifest_url else 0.25)
 
-            with requests.get(img_url, stream=True) as response:
-                response.raw.decode_content = True
-                output_file = output_path / f"{work}_{img_id}.jpg"
-                console(f"Saving {output_file.relative_to(BASE_DIR / IMG_PATH)}...")
-                time.sleep(0.25)
-                try:
-                    with open(output_file, mode="wb") as f:
-                        # TODO: check if it is an image not a Text file with an error message
-                        shutil.copyfileobj(response.raw, f)
-                        # f.write(image_response.content)
-                except Exception as e:
-                    log(f"Failed to extract images from {manifest_url}:\n{e}")
 
-    # img_path = f"{BASE_DIR}/{img_path}"
-    # try:
-    #     manifest = get_json(manifest_url)
-    #     image_counter = 1
-    #     for sequence in manifest["sequences"]:
-    #         for canvas in sequence["canvases"]:
-    #             for image in canvas["images"]:
-    #                 image_url = (
-    #                     f"{image['resource']['service']['@id']}/full/full/0/default.jpg"
-    #                 )
-    #                 image_response = requests.get(image_url)
-    #                 with open(f"{img_path}{work}_{image_counter:04d}.jpg", "wb") as f:
-    #                     f.write(image_response.content)
-    #                 image_counter += 1
-    #                 time.sleep(0.5)
+def get_reduced_size(size, min_size=1500):
+    size = int(size)
+    if size < min_size:
+        return ""
+    if size > min_size * 2:
+        return str(int(size / 2))
+    return str(min_size)
+
+
+def save_iiif_img(img_rscr, i, work, size="full"):
+    img_id = f"{i:04d}"
+    img_url = get_id(img_rscr["service"])
+    iiif_url = f"{img_url}/full/{size}/0/default.jpg"
+
+    # TODO add something when img already exists, to prevent downloading several time the same img
+
+    with requests.get(iiif_url, stream=True) as response:
+        response.raw.decode_content = True
+        try:
+            img = Image.open(response.raw)
+        except UnidentifiedImageError:
+            if size == "full":
+                size = get_reduced_size(img_rscr["width"])
+                save_iiif_img(img_rscr, i, work, get_formatted_size(size))
+                return
+            else:
+                log(f"Failed to extract images from {img_url}")
+                return
+
+        save_img(img, f"{work}_{img_id}.jpg", f"Failed to extract from {img_url}")
 
 
 def gen_iiif_url(
@@ -222,6 +302,8 @@ def process_images(work, seq, version):
 
     # Check if there is a PDF work and process it
     elif pdf_first:  # PDF
+        # TODO: factorize with pdf_to_img() in functions.py
+        # MARKER console(pdf_first.pdf)
         with Pdf.open(f"{BASE_DIR}/{MEDIA_PATH}/{pdf_first.pdf}") as pdf_file:
             for counter in range(1, len(pdf_file.pages) + 1):
                 img_name = pdf_first.pdf.name.split("/")[-1].replace(
@@ -331,72 +413,3 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
         "motivation": ["oa:commenting", "oa:tagging"],
         "@context": "http://iiif.io/api/presentation/2/context.json",
     }
-
-
-def get_id(dic):
-    if type(dic) == dict:
-        try:
-            return dic["@id"]
-        except KeyError:
-            try:
-                return dic["id"]
-            except KeyError as e:
-                log(f"No id provided {e}")
-    console(dic)
-
-    if type(dic) == str:
-        return dic
-
-    return None
-
-
-def get_canvas_img(canvas_img, only_img_url=False):
-    img_url = get_id(canvas_img["resource"]["service"])
-    if only_img_url:
-        return img_url
-    return get_img_id(canvas_img["resource"]), img_url
-
-
-def get_item_img(item_img, only_img_url=False):
-    img_url = get_id(item_img["body"]["service"][0])
-    if only_img_url:
-        return img_url
-    return get_img_id(item_img), img_url
-
-
-def get_img_id(img):
-    img_id = get_id(img)
-    if ".jpg" in img_id:
-        try:
-            return img_id.split("/")[-5]
-        except IndexError:
-            return None
-        # return Path(urlparse(img_id).path).parts[-5]
-    return img_id.split("/")[-1]
-
-
-def get_formatted_size(width="", height=""):
-    if not width and not height:
-        return "full"
-    return f"{width or ''},{height or ''}"
-
-
-def get_iiif_resources(manifest, only_img_url=False):
-    try:
-        img_list = [canvas["images"] for canvas in manifest["sequences"][0]["canvases"]]
-        img_info = [
-            get_canvas_img(img, only_img_url) for imgs in img_list for img in imgs
-        ]
-    except KeyError:
-        try:
-            img_list = [
-                item
-                for items in manifest["items"]
-                for item in items["items"][0]["items"]
-            ]
-            img_info = [get_item_img(img) for img in img_list]
-        except KeyError as e:
-            console(f"Unable to retrieve resources from manifest {manifest}\n{e}")
-            return []
-
-    return img_info

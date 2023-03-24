@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import os
+import shutil
 from pathlib import Path
 from uuid import uuid4
 
@@ -23,7 +24,7 @@ from urllib.request import (
 from vhsapp.utils.constants import (
     APP_NAME,
 )
-from vhsapp.utils.paths import BASE_DIR, MEDIA_PATH
+from vhsapp.utils.paths import BASE_DIR, MEDIA_PATH, IMG_PATH
 from vhsapp.utils.logger import log, console
 
 
@@ -92,13 +93,14 @@ def pdf_to_imgs(pdf_list, ps_type="volume"):  # TODO
         pdf_list = [pdf_list]
 
     img_list = []
-    for pdf in pdf_list:
-        pdf_file = open(f"{MEDIA_PATH}/{ps_type}/pdf/" + pdf, "rb")
-        pdf_reader = PyPDF2.PdfFileReader(pdf_file)
+    for pdf_name in pdf_list:
+        pdf_reader = PyPDF2.PdfFileReader(
+            open(f"{MEDIA_PATH}/{ps_type}/pdf/{pdf_name}", "rb")
+        )
         for img_nb in range(1, pdf_reader.numPages + 1):
             img_list.append(
                 # name all the pdf images according to the format: "pdf_name_0001.jpg"
-                pdf.replace(".pdf", f"_{img_nb:04d}.jpg")
+                pdf_name.replace(".pdf", f"_{img_nb:04d}.jpg")
             )
 
         # pdf_file = Pdf.open("mediafiles/volumes/pdf/" + pdf)
@@ -260,3 +262,13 @@ def get_files_from_dir(dir_path, valid_extensions=None, recursive=False, sort=Fa
         files = list(filter(lambda f: f.suffix in valid_extensions, files))
 
     return sorted(files) if sort else files
+
+
+def save_img(img: Image, img_filename, error_msg="Failed to save img"):
+    try:
+        img.save(BASE_DIR / IMG_PATH / img_filename)
+        # with open(BASE_DIR / IMG_PATH / img_filename, mode="wb") as f:
+        #     shutil.copyfileobj(img, f)
+        #     # f.write(image_response.content)
+    except Exception as e:
+        log(f"{error_msg}:\n{e}")
