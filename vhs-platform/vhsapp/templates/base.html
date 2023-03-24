@@ -1,5 +1,5 @@
 {% load static %}
-<html>
+<html lang="en">
 <head>
     <title>{% block title %}{% endblock %}</title>
     {% block javascript %}
@@ -7,6 +7,10 @@
         <script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
     {% endblock %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script>
+        {#const APP_NAME = "{{ APP_NAME }}";#}
+        {#const SAS_APP_URL = "{{ SAS_APP_URL }}";#}
+    </script>
 </head>
 <body>
     <div id="header">
