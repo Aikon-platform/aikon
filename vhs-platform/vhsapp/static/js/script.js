@@ -14,7 +14,7 @@ $(function() {
         idButton = $(this).attr("id");
         idManifest = idButton.split("_").pop();
         if (idButton.includes("annotate_manifest_auto_")) {
-            var urlManifest = $("#url_manifest_auto_" + idManifest).prop("href");
+            const urlManifest = $("#url_manifest_auto_" + idManifest).prop("href");
             idMessage = "message_auto_" + idManifest;
             var xhr = new XMLHttpRequest();
             xhr.open("GET", urlManifest, true);
@@ -29,7 +29,7 @@ $(function() {
             xhr.send();
             return false;
         }
-        var urlManifest = $("#url_manifest_" + idManifest).prop("href");
+        const urlManifest = $("#url_manifest_" + idManifest).prop("href");
         idMessage = "message_" + idManifest;
         work = new URL(urlManifest).pathname.split("/")[4];
         setLoading(idButton);
@@ -40,7 +40,7 @@ $(function() {
     $("[id^=manifest_final_]").on("click", function() {
         idButton = $(this).attr("id");
         idManifest = idButton.split("_").pop();
-        var urlManifest = $("#url_manifest_" + idManifest).prop("href");
+        const urlManifest = $("#url_manifest_" + idManifest).prop("href");
         setLoading(idButton);
         window.open(SAS_APP_URL + "/indexView.html?iiif-content=" + urlManifest, "_blank");
         clearLoadingView(idButton);
@@ -49,7 +49,7 @@ $(function() {
 } );
 
 var getJSON = function(url, callback) {
-    var xhr = new XMLHttpRequest();
+    let xhr = new XMLHttpRequest();
     xhr.open("GET", url, true);
     xhr.responseType = "json";
     xhr.onload = function() {
@@ -63,14 +63,14 @@ var getJSON = function(url, callback) {
 };
 
 var sendJson = function sendJson(status, data) {
-    var xhr = new XMLHttpRequest();
+    let xhr = new XMLHttpRequest();
     xhr.open("POST", SAS_APP_URL + "/manifests", true);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.onload = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
-            populateAnnotation("/vhs/iiif/v2/" + work + "/" + idManifest + "/populate/");
+            populateAnnotation(`/${APP_NAME}/iiif/v2/${work}/${idManifest}/populate/`);
         } else {
-            showMessage("Failed to index " + data["@id"] + " due to " + xhr.status + ": '" + xhr.statusText + "'");
+            showMessage(`Failed to index ${data["@id"]} due to ${xhr.status}: ${xhr.statusText}`);
         }
     };
     xhr.send(JSON.stringify(data));
@@ -116,10 +116,10 @@ function populateAnnotation(url) {
     xhr.open("GET", url, true); // true for asynchronous
     xhr.onload = function() {
         if (xhr.readyState === 4 && xhr.status === 200) {
-            window.open("/vhs/" + work + "/" + idManifest + "/show/", "_blank");
+            window.open(`/${APP_NAME}/${work}/${idManifest}/show/`, "_blank");
             clearLoadingEdit(idButton);
         } else {
-            showMessage("Failed to populate " + url + " due to " + xhr.status + ": '" + xhr.statusText + "'");
+            showMessage(`Failed to display ${url} due to ${xhr.status}: ${xhr.statusText}`);
         }
     }
     xhr.send(null);

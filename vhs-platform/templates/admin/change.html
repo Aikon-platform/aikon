@@ -3,9 +3,9 @@
 
 {% block extrahead %}
     {{ block.super }}
-    <script>
-        var SAS_APP_URL = "{{ SAS_APP_URL }}";
-    </script>
     <script src="{% static 'js/script.js' %}"></script>
+    <script>
+        const APP_NAME = "{{ APP_NAME }}";
+        const SAS_APP_URL = "{{ SAS_APP_URL }}";
+    </script>
 {% endblock %}
-
