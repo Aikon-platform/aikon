@@ -11,10 +11,10 @@ $(function() {
     } );
 
     $("[id^=annotate_manifest_]").on("click", function() {
-        idButton = $(this).attr("id");
+        idButton = $(this).attr("id")
         idManifest = idButton.split("_").pop();
         if (idButton.includes("annotate_manifest_auto_")) {
-            const urlManifest = $("#url_manifest_auto_" + idManifest).prop("href");
+            const urlManifest = $("iiif_auto_" + idManifest).prop("href");
             idMessage = "message_auto_" + idManifest;
             var xhr = new XMLHttpRequest();
             xhr.open("GET", urlManifest, true);
@@ -29,7 +29,7 @@ $(function() {
             xhr.send();
             return false;
         }
-        const urlManifest = $("#url_manifest_" + idManifest).prop("href");
+        urlManifest = $("#url_manifest_" + idManifest).prop("href");
         idMessage = "message_" + idManifest;
         work = new URL(urlManifest).pathname.split("/")[4];
         setLoading(idButton);
@@ -38,9 +38,9 @@ $(function() {
     } );
 
     $("[id^=manifest_final_]").on("click", function() {
-        const idButton = $(this).attr("id");
+        idButton = $(this).attr("id");
         idManifest = idButton.split("_").pop();
-        const urlManifest = $(`#url_manifest_${idManifest}`).prop("href");
+        urlManifest = $(`#url_manifest_${idManifest}`).prop("href");
         setLoading(idButton);
         window.open(`${SAS_APP_URL}/indexView.html?iiif-content=${urlManifest}`, "_blank");
         clearLoadingView(idButton);
@@ -119,7 +119,7 @@ function populateAnnotation(url) {
             window.open(`/${APP_NAME}/${work}/${idManifest}/show/`, "_blank");
             clearLoadingEdit(idButton);
         } else {
-            showMessage(`Failed to display ${url} due to ${xhr.status}: ${xhr.statusText}`);
+            showMessage(`Failed to display ${url} due to ${xhr.status}: ${xhr.statusText}`, idManifest);
         }
     }
     xhr.send(null);
