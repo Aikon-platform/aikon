@@ -10,11 +10,21 @@ $(function() {
         $("#id_volume_set-__prefix__-manifest_final").replaceWith("<i class='fa-solid fa-circle-xmark' style='color:red'></i>");
     } );
 
-    $("[id^=annotate_manifest_]").on("click", function() {
+    $("[id^=manifest_final_]").on("click", function() {
+        idButton = $(this).attr("id");
+        idManifest = idButton.split("_").pop();
+        urlManifest = $(`#url_manifest_${idManifest}`).prop("href");
+        setLoading(idButton);
+        window.open(`${SAS_APP_URL}/indexView.html?iiif-content=${urlManifest}`, "_blank");
+        clearLoadingView(idButton);
+        return false;
+    } );
+
+    $("[id^=annotate_manifest_]").off("click").on("click", function() {
         idButton = $(this).attr("id")
         idManifest = idButton.split("_").pop();
         if (idButton.includes("annotate_manifest_auto_")) {
-            const urlManifest = $(`iiif_auto_${idManifest}`).prop("href");
+            const urlManifest = $(`#iiif_auto_${idManifest}`).prop("href");
             idMessage = "message_auto_" + idManifest;
             var xhr = new XMLHttpRequest();
             xhr.open("GET", urlManifest, true);
@@ -34,16 +44,6 @@ $(function() {
         work = new URL(urlManifest).pathname.split("/")[4];
         setLoading(idButton);
         sendUrlManifest(urlManifest);
-        return false;
-    } );
-
-    $("[id^=manifest_final_]").on("click", function() {
-        idButton = $(this).attr("id");
-        idManifest = idButton.split("_").pop();
-        urlManifest = $(`#url_manifest_${idManifest}`).prop("href");
-        setLoading(idButton);
-        window.open(`${SAS_APP_URL}/indexView.html?iiif-content=${urlManifest}`, "_blank");
-        clearLoadingView(idButton);
         return false;
     } );
 } );
