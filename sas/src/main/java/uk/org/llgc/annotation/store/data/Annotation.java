@@ -108,7 +108,7 @@ public class Annotation {
             // turn into Array?
             List tList = new ArrayList();
             tList.add(_annotation.get("resource"));
-            
+
             _annotation.put("resource", tList);
         }
     }
@@ -162,8 +162,8 @@ public class Annotation {
         if (_annotation.get("dcterms:" + DCTerms.created.getLocalName()) == null) {
             return null;
         } else {
-            String tDate = (String)_annotation.get("dcterms:" + DCTerms.created.getLocalName());
             try {
+                String tDate = (String)_annotation.get("dcterms:" + DCTerms.created.getLocalName());
                 return _dateFormatter.parse(tDate);
             } catch (ParseException tExcpt) {
                 // This shouldn't happen as date is created above...
@@ -205,11 +205,11 @@ public class Annotation {
     }
 
     public List<Body> getBodies() {
-        return _bodies; 
+        return _bodies;
     }
 
     public List<Target> getTargets() {
-        return _targets; 
+        return _targets;
     }
 
     /**
@@ -337,7 +337,7 @@ public class Annotation {
             _encoder.decode(tClone);
 
             return tClone;
-        } else {    
+        } else {
             return _annotation;
         }
     }
@@ -346,7 +346,7 @@ public class Annotation {
         Map<String,Object> tClone = (Map<String,Object>)((HashMap)_annotation).clone();
         collapseFragment(tClone);
         if (((List)tClone.get("resource")).size() == 1) {
-            tClone.put("resource", ((List)tClone.get("resource")).get(0)); 
+            tClone.put("resource", ((List)tClone.get("resource")).get(0));
         }
         return tClone;
     }
