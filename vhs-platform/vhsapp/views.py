@@ -218,7 +218,7 @@ def annotate_work(request, id, version, work, work_abbr, canvas):
         )
 
 
-def populate_annotation(request, id, work):
+def populate_annotation(request, id, work):  # TODO factorize with show work
     """
     Populate annotation store from IIIF Annotation List
     """
@@ -263,27 +263,35 @@ def show_work(request, id, work):
     work_model, work_abbr, annotations_path = work_map.get(work, (None, None, None))
     work_obj = get_object_or_404(work_model, pk=id)
     url_iiif = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{work}/{work_abbr}-{id}"
-    url_manifest = f"{url_iiif}/manifest.json"
     canvas_annos = []
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
     anno_file = f"{BASE_DIR}/{MEDIA_PATH}/{annotations_path}/{id}.txt"
-
     if not os.path.exists(anno_file):
-        return JsonResponse({"error": "the annotation were not yet generated"})
+        return JsonResponse({"error": "the annotations were not yet generated"})
 
     with open(anno_file) as f:
         lines = [line.strip() for line in f.readlines()]
         for line in lines:
+            # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
             if len(line.split()) == 2:
                 # Store the response of URL
+                img_nb, img_file = line.split()
+                iiif_img = (
+                    f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/full/full/0/default.jpg"
+                )
                 try:
                     response = urlopen(
-                        f"{SAS_APP_URL}/annotation/search?uri={url_iiif}/canvas/c{line.split()[0]}.json"
+                        f"{SAS_APP_URL}/annotation/search?uri={url_iiif}/canvas/c{img_nb}.json"
                     )
-                except Exception:
-                    return JsonResponse({"error": "unable to retrieve annotation"})
+                except Exception as e:
+                    log(e)
+                    return JsonResponse(
+                        {
+                            "error": f"unable to retrieve annotation {img_nb} for {iiif_img}"
+                        }
+                    )
                 # Store the JSON response from url in data
                 data = json.loads(response.read())
                 annos = [
@@ -294,12 +302,7 @@ def show_work(request, id, work):
                     for d in data
                     if len(data) > 0
                 ]
-                canvas_annos.append(
-                    (
-                        annos,
-                        f"{CANTALOUPE_APP_URL}/iiif/2/{line.split()[1]}/full/full/0/default.jpg",
-                    )
-                )
+                canvas_annos.append((annos, iiif_img))
     return render(
         request,
         "vhsapp/show.html",
@@ -307,6 +310,6 @@ def show_work(request, id, work):
             "work": work,
             "work_obj": work_obj,
             "canvas_annos": canvas_annos,
-            "url_manifest": url_manifest,
+            "url_manifest": f"{url_iiif}/manifest.json",
         },
     )
