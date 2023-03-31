@@ -162,11 +162,16 @@ public class Annotation {
         if (_annotation.get("dcterms:" + DCTerms.created.getLocalName()) == null) {
             return null;
         } else {
+            String tDate = (String)_annotation.get("dcterms:" + DCTerms.created.getLocalName());
             try {
-                String tDate = (String)_annotation.get("dcterms:" + DCTerms.created.getLocalName());
                 return _dateFormatter.parse(tDate);
             } catch (ParseException tExcpt) {
                 // This shouldn't happen as date is created above...
+                tExcpt.printStackTrace();
+                return null;
+            } catch (ClassCastException tExcpt) {
+                // class java.util.ArrayList cannot be cast to class java.lang.String
+                // (java.util.ArrayList and java.lang.String are in module java.base of loader 'bootstrap')
                 tExcpt.printStackTrace();
                 return null;
             }
