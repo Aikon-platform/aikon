@@ -254,6 +254,11 @@ Don't forget to rollback those modifications afterwards
 ## App errors
 See `vhs-platform/logs`
 
+```bash
+alias djlog="cat vhs-platform/logs/<appname>.log"
+alias empty_djlog="sudo truncate -s 0 vhs-platform/logs/<appname>.log"
+```
+
 ## Nginx error logs
 See `/var/log/nginx`
 
