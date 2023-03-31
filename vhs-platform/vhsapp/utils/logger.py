@@ -57,7 +57,7 @@ def log(msg):
 
     # Create a logger instance
     logger = logging.getLogger(APP_NAME)
-    logger.error(f"{get_time()}\n{pprint(msg)}")
+    logger.error(f"\n\n{get_time()}\n{pprint(msg)}")
 
 
 def pprint(o):

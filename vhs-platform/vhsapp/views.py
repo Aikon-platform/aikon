@@ -289,7 +289,8 @@ def show_work(request, id, work):
                     log(e)
                     return JsonResponse(
                         {
-                            "error": f"unable to retrieve annotation {img_nb} for {iiif_img}"
+                            "error": f"unable to retrieve annotation for {iiif_img}",
+                            "source": f"{SAS_APP_URL}/annotation/search?uri={url_iiif}/canvas/c{img_nb}.json",
                         }
                     )
                 # Store the JSON response from url in data
