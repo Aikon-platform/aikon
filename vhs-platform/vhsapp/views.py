@@ -1,5 +1,6 @@
 import csv
 import json
+import os
 from urllib.request import urlopen
 from urllib.parse import urlencode
 
@@ -261,19 +262,28 @@ def show_work(request, id, work):
     }
     work_model, work_abbr, annotations_path = work_map.get(work, (None, None, None))
     work_obj = get_object_or_404(work_model, pk=id)
-    url_manifest = (
-        f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{work}/{work_abbr}-{id}/manifest.json"
-    )
+    url_iiif = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{work}/{work_abbr}-{id}"
+    url_manifest = f"{url_iiif}/manifest.json"
     canvas_annos = []
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
-    with open(f"{BASE_DIR}/{MEDIA_PATH}/{annotations_path}/{id}.txt") as f:
+
+    anno_file = f"{BASE_DIR}/{MEDIA_PATH}/{annotations_path}/{id}.txt"
+
+    if not os.path.exists(anno_file):
+        return JsonResponse({"error": "the annotation were not yet generated"})
+
+    with open(anno_file) as f:
         lines = [line.strip() for line in f.readlines()]
         for line in lines:
             if len(line.split()) == 2:
-                url_search = f"{SAS_APP_URL}/annotation/search?uri={VHS_APP_URL}/{APP_NAME}/iiif/v2/{work}/{work_abbr}-{id}/canvas/c{line.split()[0]}.json"
                 # Store the response of URL
-                response = urlopen(url_search)
+                try:
+                    response = urlopen(
+                        f"{SAS_APP_URL}/annotation/search?uri={url_iiif}/canvas/c{line.split()[0]}.json"
+                    )
+                except Exception:
+                    return JsonResponse({"error": "unable to retrieve annotation"})
                 # Store the JSON response from url in data
                 data = json.loads(response.read())
                 annos = [

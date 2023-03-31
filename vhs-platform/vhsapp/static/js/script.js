@@ -14,7 +14,7 @@ $(function() {
         idButton = $(this).attr("id")
         idManifest = idButton.split("_").pop();
         if (idButton.includes("annotate_manifest_auto_")) {
-            const urlManifest = $("iiif_auto_" + idManifest).prop("href");
+            const urlManifest = $(`iiif_auto_${idManifest}`).prop("href");
             idMessage = "message_auto_" + idManifest;
             var xhr = new XMLHttpRequest();
             xhr.open("GET", urlManifest, true);
