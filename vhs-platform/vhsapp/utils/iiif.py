@@ -6,6 +6,8 @@ import time
 from glob import glob
 from datetime import datetime
 from PIL import Image, UnidentifiedImageError
+from django.shortcuts import get_object_or_404
+from iiif_prezi.factory import ManifestFactory
 from pikepdf import Pdf
 from tripoli import IIIFValidator
 from pathlib import Path
@@ -15,12 +17,19 @@ from urllib.parse import urlparse
 from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 
-from vhsapp.utils.constants import APP_NAME, MANIFEST_AUTO, MANIFEST_V2
+from vhsapp.utils.constants import (
+    APP_NAME,
+    MANIFEST_AUTO,
+    MANIFEST_V2,
+    APP_NAME_UPPER,
+    APP_DESCRIPTION,
+)
 from vhsapp.utils.functions import log, get_json, create_dir, console, save_img
 from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH, BASE_DIR
 from vhsapp.utils.functions import get_icon, anno_btn
 from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
 from vhs.settings import SAS_APP_URL, VHS_APP_URL, CANTALOUPE_APP_URL
+from vhsapp.models.witness import Volume, Manuscript
 
 
 IIIF_ICON = "<img alt='IIIF' src='https://iiif.io/assets/images/logos/logo-sm.png' height='15'/>"
@@ -413,3 +422,33 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
         "motivation": ["oa:commenting", "oa:tagging"],
         "@context": "http://iiif.io/api/presentation/2/context.json",
     }
+
+
+def manifest_witness(id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
+    """
+    Build a manuscript manifest using iiif-prezi library
+    IIIF Presentation API 2.0
+    """
+    wit_class = Manuscript if wit_abbr == MS_ABBR else Volume
+    wit_name = MS if wit_abbr == MS_ABBR else VOL
+    witness = get_object_or_404(wit_class, pk=id)
+    fac = ManifestFactory(
+        mdbase=f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_name}/{wit_abbr}-{id}/",
+        imgbase=f"{CANTALOUPE_APP_URL}/iiif/2/",
+    )
+
+    fac.set_iiif_image_info(version="2.0", lvl="2")
+    # Build the manifest
+    manifest = fac.manifest(ident="manifest", label=witness.__str__())
+    manifest.set_metadata(witness.get_metadata())
+
+    # Set the manifest's attribution, description, and viewing hint
+    manifest.attribution = f"{APP_NAME_UPPER} platform"
+    manifest.description = APP_DESCRIPTION
+    manifest.viewingHint = "individuals"
+
+    # And walk through the pages
+    seq = manifest.sequence(ident="normal", label="Normal Order")
+    process_images(witness, seq, version)
+
+    return manifest

@@ -33,18 +33,6 @@ def get_color(msg_type=None):
     return TerminalColors.OKBLUE
 
 
-# def get_logger(log_dir, name):
-#     # log_dir = create_dir(log_dir)
-#     logger = logging.getLogger(name)
-#     file_path = log_dir / f"{name}.log"
-#     hdlr = logging.FileHandler(file_path)
-#     formatter = logging.Formatter("[%(asctime)s] %(levelname)s: %(message)s")
-#     hdlr.setFormatter(formatter)
-#     logger.addHandler(hdlr)
-#     logger.setLevel(logging.INFO)
-#     return logger
-
-
 def log(msg):
     """
     Record an error message in the system log
@@ -73,10 +61,11 @@ def pprint(o):
 
 
 def console(msg="🚨🚨🚨", msg_type=None):
-    if not DEBUG:
-        return
-
     msg = f"\n\n\n{get_time()}\n{get_color(msg_type)}{TerminalColors.BOLD}{pprint(msg)}{TerminalColors.ENDC}\n\n\n"
+
+    if not DEBUG:
+        log(msg)
+        return
 
     logger = logging.getLogger("django")
     if msg_type == "error":

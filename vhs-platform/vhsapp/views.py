@@ -20,7 +20,7 @@ from vhsapp.utils.constants import (
     APP_NAME_UPPER,
     APP_DESCRIPTION,
 )
-from vhsapp.utils.iiif import annotate_canvas, process_images
+from vhsapp.utils.iiif import annotate_canvas, process_images, manifest_witness
 from vhsapp.utils.paths import (
     MEDIA_PATH,
     VOL_ANNO_PATH,
@@ -39,53 +39,17 @@ def manifest_manuscript(request, id, version):
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
-    # Get the Manuscript object or return a 404 error if it doesn't exist
-    ms = get_object_or_404(Manuscript, pk=id)
-    # Configure the factory
-    fac = ManifestFactory(
-        mdbase=f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{MS}/{MS_ABBR}-{id}/",
-        imgbase=f"{CANTALOUPE_APP_URL}/iiif/2/",
-    )
-    fac.set_iiif_image_info(version="2.0", lvl="2")
-    # Build the manifest
-    mf = fac.manifest(ident="manifest", label=ms.__str__())
-    mf.set_metadata(
-        {
-            "Author": ms.author.name if ms.author else "No author",
-            "Place of conservation": ms.conservation_place,
-            "Reference number": ms.reference_number,
-            # "Date (century)": ms.date_century,
-            "Sheet(s)": ms.sheets,
-        }
-    )
-    if date_free := ms.date_free:
-        mf.set_metadata({"Date": date_free})
-    if origin_place := ms.origin_place:
-        mf.set_metadata({"Place of origin": origin_place})
-    if remarks := ms.remarks:
-        mf.set_metadata({"Remarks": remarks})
-    if copyists := ms.copyists:
-        mf.set_metadata({"Copyist(s)": copyists})
-    if miniaturists := ms.miniaturists:
-        mf.set_metadata({"Miniaturist(s)": miniaturists})
-    if digitized_version := ms.digitized_version:
-        mf.set_metadata({"Source of the digitized version": digitized_version.source})
-    if pinakes_link := ms.pinakes_link:
-        mf.set_metadata(
-            {"Link to Pinakes (greek mss) or Medium-IRHT (latin mss)": pinakes_link}
-        )
-    # Set the manifest's attribution, description, and viewing hint
-    mf.attribution = f"{APP_NAME_UPPER} platform"
-    mf.description = APP_DESCRIPTION
-    mf.viewingHint = "individuals"
-    # And walk through the pages
-    seq = mf.sequence(ident="normal", label="Normal Order")
-    process_images(ms, seq, version)
+    manifest = manifest_witness(id, MS_ABBR, version)
     try:
-        return JsonResponse(mf.toJSON(top=True))
+        return JsonResponse(manifest.toJSON(top=True))
     except StructuralError as e:
         log(f"Unable to create manifest for resource {id} (probably no images):\n{e}")
-        return JsonResponse({"error": "Unable to create a valid manifest"})
+        return JsonResponse(
+            {
+                "error": "Unable to create a valid manifest",
+                "reason": f"Unable to create manifest for resource {id} (probably no image):\n{e}",
+            }
+        )
 
 
 def manifest_volume(request, id, version):
@@ -93,54 +57,18 @@ def manifest_volume(request, id, version):
     Build a volume manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
-    # Get the Volume object or return a 404 error if it doesn't exist
-    volume = get_object_or_404(Volume, pk=id)
-    # Configure the factory
-    fac = ManifestFactory()
-    fac.set_base_prezi_uri(
-        f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{VOL}/{VOL_ABBR}-{id}/"
-    )
-    fac.set_base_image_uri(f"{CANTALOUPE_APP_URL}/iiif/2/")
-    fac.set_iiif_image_info(version="2.0", lvl="2")
-    # Build the manifest
-    mf = fac.manifest(ident="manifest", label=volume.__str__())
-    mf.set_metadata(
-        {
-            "Author": volume.printed.author.name
-            if volume.printed.author
-            else "No author",
-            "Number or identifier of volume": volume.number_identifier,
-            "Place": volume.place,
-            "Date": volume.date,
-            "Publishers/booksellers": volume.publishers_booksellers,
-            "Description of work": volume.printed.description,
-        }
-    )
-    if descriptive_elements := volume.printed.descriptive_elements:
-        mf.set_metadata({"Descriptive elements of the content": descriptive_elements})
-    if illustrators := volume.printed.illustrators:
-        mf.set_metadata({"Illustrator(s)": illustrators})
-    if engravers := volume.printed.engravers:
-        mf.set_metadata({"Engraver(s)": engravers})
-    if digitized_version := volume.digitized_version:
-        mf.set_metadata({"Source of the digitized version": digitized_version.source})
-    if comment := volume.comment:
-        mf.set_metadata({"Comment": comment})
-    if other_copies := volume.other_copies:
-        mf.set_metadata({"Other copy(ies)": other_copies})
-    # Set the manifest's attribution, description and viewing hint
-    mf.attribution = f"{APP_NAME_UPPER} platform"
-    mf.description = APP_DESCRIPTION
-    mf.viewingHint = "individuals"
-    # And walk through the pages
-    seq = mf.sequence(ident="normal", label="Normal Order")
-    process_images(volume, seq, version)
+    manifest = manifest_witness(id, VOL_ABBR, version)
 
     try:
-        return JsonResponse(mf.toJSON(top=True))
+        return JsonResponse(manifest.toJSON(top=True))
     except StructuralError as e:
         log(f"Unable to create manifest for resource {id} (probably no images):\n{e}")
-        return JsonResponse({"error": "Unable to create a valid manifest"})
+        return JsonResponse(
+            {
+                "error": "Unable to create a valid manifest",
+                "reason": f"Unable to create manifest for resource {id} (probably no image):\n{e}",
+            }
+        )
 
 
 def annotation_auto(request, id, work):
