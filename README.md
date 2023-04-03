@@ -55,6 +55,7 @@ sudo -u postgres psql
 postgres=# CREATE DATABASE vhs;
 postgres=# CREATE USER <username> WITH PASSWORD '<password>';
 postgres=# ALTER ROLE <username> SET client_encoding TO 'utf8';
+postgres=# ALTER DATABASE vhs OWNER TO <username>;
 postgres=# ALTER ROLE <username> SET default_transaction_isolation TO 'read committed';
 postgres=# ALTER ROLE <username> SET timezone TO 'UTC';
 postgres=# GRANT ALL PRIVILEGES ON DATABASE vhs TO <username>;
