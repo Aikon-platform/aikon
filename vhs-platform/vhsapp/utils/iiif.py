@@ -314,7 +314,7 @@ def process_images(work, seq, version):
                         seq,
                         counter,
                         img_name,
-                        Image.open(f"{IMG_PATH}/{img_name}"),
+                        Image.open(f"{BASE_DIR}/{IMG_PATH}/{img_name}"),
                         version,
                     )
                 except UnidentifiedImageError as e:
