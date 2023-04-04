@@ -44,7 +44,7 @@ from vhsapp.utils.paths import (
 )
 
 from vhsapp.utils.iiif import get_link_manifest, gen_btn, gen_manifest_url, gen_iiif_url
-from vhsapp.utils.functions import list_to_csv, zip_img, get_file_list, pdf_to_imgs
+from vhsapp.utils.functions import list_to_csv, zip_img, get_file_list, pdfs_to_imgs
 
 
 class ManifestAdmin(admin.ModelAdmin):
@@ -214,7 +214,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             )
             pdf_list = results.values_list(field_tag, flat=True)
             pdf_list = [pdf.split("/")[-1] for pdf in pdf_list if pdf is not None]
-            result_list = result_list + pdf_to_imgs(pdf_list, wit_type)
+            result_list = result_list + pdfs_to_imgs(pdf_list, wit_type)
 
         return result_list
 
