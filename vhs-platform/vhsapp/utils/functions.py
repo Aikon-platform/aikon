@@ -57,38 +57,36 @@ def convert_to_jpeg(image):
     return img_jpg
 
 
-def convert_pdf_to_image(pdf_path, img_path):
+def convert_pdf_to_image(pdf_name):
     """
     Convert the PDF file to JPEG images
     """
-    pdf_path = f"{BASE_DIR}/{pdf_path}"
-    img_path = f"{BASE_DIR}/{img_path}"
-    pdf_file = pdf_path.split("/")[-1]
-    filename = pdf_file.split(".")[0]
+    pdf_path = f"{BASE_DIR}/{MEDIA_PATH}/{pdf_name}"
+    # e.g. pdf_name = "volumes/pdf/filename.pdf" => filename = "filename"
+    filename = pdf_path.split("/")[-1].split(".")[0]
     pdf_info = pdfinfo_from_path(pdf_path, userpw=None, poppler_path=None)
-    number_pages = pdf_info["Pages"]
+    page_nb = pdf_info["Pages"]
     step = 2
     try:
-        for image_counter in range(1, number_pages + 1, step):
+        for img_nb in range(1, page_nb + 1, step):
             batch_pages = convert_from_path(
                 pdf_path,
                 dpi=300,
-                first_page=image_counter,
-                last_page=min(image_counter + step - 1, number_pages),
+                first_page=img_nb,
+                last_page=min(img_nb + step - 1, page_nb),
             )
             # Iterate through all the batch pages stored above
             for page in batch_pages:
-                pathname = f"{img_path}/{filename}_{image_counter:04d}.jpg"
-                # Save the image of the page in IMAGES_PATH
-                page.save(pathname, format="JPEG")
+                page.save(
+                    f"{BASE_DIR}/{IMG_PATH}/{filename}_{img_nb:04d}.jpg", format="JPEG"
+                )
                 # Increment the counter to update filename
-                image_counter += 1
+                img_nb += 1
     except Exception as e:
-        # Log an error message
-        log(f"Failed to convert {pdf_file} to images:\n{e}")
+        log(f"Failed to convert {filename}.pdf to images:\n{e}")
 
 
-def pdf_to_imgs(pdf_list, ps_type="volume"):  # TODO
+def pdfs_to_imgs(pdf_list, ps_type="volume"):  # TODO: merge with previous function
     if type(pdf_list) != list:
         pdf_list = [pdf_list]
 
@@ -102,10 +100,6 @@ def pdf_to_imgs(pdf_list, ps_type="volume"):  # TODO
                 # name all the pdf images according to the format: "pdf_name_0001.jpg"
                 pdf_name.replace(".pdf", f"_{img_nb:04d}.jpg")
             )
-
-        # pdf_file = Pdf.open("mediafiles/volumes/pdf/" + pdf)
-        # for img_nb in range(1, len(pdf_file.pages) + 1):
-        #     img_list.append(pdf.replace(".pdf", "_{:04d}".format(img_nb) + ".jpg"))
 
     return img_list
 
