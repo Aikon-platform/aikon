@@ -162,8 +162,8 @@ public class Annotation {
         if (_annotation.get("dcterms:" + DCTerms.created.getLocalName()) == null) {
             return null;
         } else {
-            String tDate = (String)_annotation.get("dcterms:" + DCTerms.created.getLocalName());
             try {
+                String tDate = (String)_annotation.get("dcterms:" + DCTerms.created.getLocalName());
                 return _dateFormatter.parse(tDate);
             } catch (ParseException tExcpt) {
                 // This shouldn't happen as date is created above...
