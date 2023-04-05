@@ -59,6 +59,7 @@ def convert_to_jpeg(image):
 
 def convert_pdf_to_image(pdf_name):
     """
+    TODO: remove because turned into method of the PDF class
     Convert the PDF file to JPEG images
     """
     pdf_path = f"{BASE_DIR}/{MEDIA_PATH}/{pdf_name}"
@@ -86,7 +87,7 @@ def convert_pdf_to_image(pdf_name):
         log(f"Failed to convert {filename}.pdf to images:\n{e}")
 
 
-def pdfs_to_imgs(pdf_list, ps_type="volume"):  # TODO: merge with previous function
+def get_pdf_imgs(pdf_list, ps_type="volume"):
     if type(pdf_list) != list:
         pdf_list = [pdf_list]
 

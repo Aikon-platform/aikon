@@ -6,6 +6,9 @@ from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.db.models.signals import pre_delete
 from django.dispatch.dispatcher import receiver
+from pdf2image import convert_from_path
+
+from vhsapp.utils.logger import log, console
 
 from vhsapp.models.constants import (
     MANIFEST,
@@ -17,9 +20,9 @@ from vhsapp.models.constants import (
 from vhsapp.utils.functions import (
     rename_file,
     convert_to_jpeg,
-    convert_pdf_to_image,
 )
 from vhsapp.utils.paths import (
+    BASE_DIR,
     IMG_PATH,
     MS_PDF_PATH,
     VOL_PDF_PATH,
@@ -129,15 +132,54 @@ class Pdf(Digitization):
         # Call the parent save method to save the model
         super().save(*args, **kwargs)
         # Run the PDF to image async conversion task in the background using threading
-        t = threading.Thread(
-            target=convert_pdf_to_image,
-            args=(self.pdf.name,),
-        )
+        t = threading.Thread(target=self.to_img())
         t.start()
 
     def delete(self, using=None, keep_parents=False):
         self.pdf.storage.delete(self.pdf.name)
+        # TODO delete images extracted from the pdf
         super().delete()
+
+    def get_path(self):
+        return f"{BASE_DIR}/{MEDIA_PATH}/{self.pdf.name}"
+
+    def get_filename(self):
+        # e.g. self.pdf.name = "volumes/pdf/filename.pdf" => filename = "filename"
+        return self.pdf.name.split("/")[-1].split(".")[0]
+
+    def get_page_nb(self):
+        import PyPDF2
+
+        with open(self.get_path(), "rb") as pdf_file:
+            pdf_reader = PyPDF2.PdfFileReader(pdf_file)
+            page_nb = pdf_reader.getNumPages()
+        return page_nb
+
+    def to_img(self):
+        """
+        Convert the PDF file to JPEG images
+        """
+        filename = self.get_filename()
+        page_nb = self.get_page_nb()
+        step = 2
+        try:
+            for img_nb in range(1, page_nb + 1, step):
+                batch_pages = convert_from_path(
+                    self.get_path(),
+                    dpi=300,
+                    first_page=img_nb,
+                    last_page=min(img_nb + step - 1, page_nb),
+                )
+                # Iterate through all the batch pages stored above
+                for page in batch_pages:
+                    page.save(
+                        f"{BASE_DIR}/{IMG_PATH}/{filename}_{img_nb:04d}.jpg",
+                        format="JPEG",
+                    )
+                    # Increment the counter to update filename
+                    img_nb += 1
+        except Exception as e:
+            log(f"Failed to convert {filename}.pdf to images:\n{e}")
 
 
 class PdfManuscript(Pdf):
