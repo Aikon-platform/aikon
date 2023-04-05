@@ -347,7 +347,12 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
         "published",
     )
     # search_fields = ("author__name", "work__title")
-    search_fields = ("conservation_place", "reference_number")
+    search_fields = (
+        "author__name",
+        "conservation_place",
+        "reference_number",
+        "remarks",
+    )
     autocomplete_fields = ("author", "digitized_version")
     # list_editable = ("date_century",)
     inlines = [PdfManuscriptInline, ManifestManuscriptInline, ImageManuscriptInline]
