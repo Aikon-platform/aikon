@@ -28,18 +28,6 @@ from vhsapp.utils.paths import BASE_DIR, MEDIA_PATH, IMG_PATH
 from vhsapp.utils.logger import log, console
 
 
-def rename_file(instance, filename, path):
-    """
-    Rename the file using uuid4
-    The file will be uploaded to "{path}/{uuid_filename}"
-    """
-    extension = filename.split(".")[-1]
-    # Set filename as random string
-    uuid_filename = f"{uuid4().hex}.{extension}"
-    # Return the path to the file
-    return f"{path}/{uuid_filename}"
-
-
 def convert_to_jpeg(image):
     """
     Convert the image to JPEG format

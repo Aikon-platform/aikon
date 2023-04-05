@@ -5,6 +5,7 @@ from vhsapp.utils.constants import APP_NAME
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Media file paths
+# TODO make path actual paths (from BASE_DIR) and other call them DIR
 MEDIA_PATH = "mediafiles"
 STATIC_PATH = "staticfiles"
 IMG_PATH = f"{MEDIA_PATH}/img"

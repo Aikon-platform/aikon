@@ -1,4 +1,6 @@
 import threading
+from uuid import uuid4
+
 from PIL import Image
 from functools import partial
 
@@ -16,9 +18,10 @@ from vhsapp.models.constants import (
     VOL_ABBR,
     IMG_INFO,
     MANIFEST_INFO,
+    MS,
+    VOL,
 )
 from vhsapp.utils.functions import (
-    rename_file,
     convert_to_jpeg,
 )
 from vhsapp.utils.paths import (
@@ -39,17 +42,88 @@ from vhsapp.models.witness import Volume, Manuscript
 
 
 class Digitization(models.Model):
-    # TODO link this class to a unique
-    # source = models.ForeignKey(
-    #     Witness, verbose_name=WITNESS, on_delete=models.SET_NULL, null=True
-    # )
-
     class Meta:
         abstract = True
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.witness = None
+        self.wit_type = "witness"
+        self.digit_type = "digit"
+        self.ext = "ext"
+
+    @property
+    def witness(self):
+        return self.witness
+
+    @witness.setter
+    def witness(self, witness):
+        self.witness = witness
+
+    @property
+    def wit_type(self):
+        return self.witness
+
+    @wit_type.setter
+    def wit_type(self, wit_type):
+        self.wit_type = wit_type
+
+    @property
+    def digit_type(self):
+        return self.digit_type
+
+    @digit_type.setter
+    def digit_type(self, digit_type):
+        self.digit_type = digit_type
+
+    @property
+    def ext(self):
+        return self.ext
+
+    @ext.setter
+    def ext(self, extension):
+        self.ext = extension
+
+    def get_wit_abbr(self):
+        return VOL_ABBR if self.wit_type == VOL else MS_ABBR
+
+    def get_wit_id(self):
+        if self.witness is None:
+            return 0
+        return self.witness.id
+
+    def get_wit_ref(self):
+        return f"{self.wit_type}{self.get_wit_id()}"
+
+    def get_filename(self):
+        try:
+            return f"{self.get_wit_ref()}_{self.digit_type}{self.id}"
+        except Exception:
+            return None
+
+    def get_path(self):
+        return f"{BASE_DIR}/{MEDIA_PATH}"
+
+    def get_filepath(self):
+        return f"{self.get_path()}/{self.get_filename()}.{self.ext}"
+
+
+def rename_file(instance: Digitization, original_filename):
+    """
+    Rename the file using its witness id and specific id
+    The file will be uploaded to "{path}/{filename}.{ext}"
+    """
+    instance.ext = original_filename.split(".")[-1]
+    new_filename = instance.get_filename()
+    if new_filename is None:
+        # Set filename as random string
+        new_filename = f"{uuid4().hex}.{instance.ext}"
+    # Return the path to the file
+    return f"{instance.get_path()}/{new_filename}.{instance.ext}"
+
 
 #############################
-#           IMG           #
+#           IMG             #
 #############################
 
 
@@ -59,17 +133,20 @@ class Picture(Digitization):
         verbose_name_plural = "Images files"
         abstract = True  # TODO: make this class not abstract
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.digit_type = "img"
+        self.image = models.ImageField(
+            verbose_name="Image",
+            upload_to=partial(rename_file),
+            validators=[
+                FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "tif"])
+            ],
+            help_text=IMG_INFO,
+        )
+
     def __str__(self):
         return self.image.name
-
-    image = models.ImageField(
-        verbose_name="Image",
-        upload_to=partial(rename_file, path=IMG_PATH),
-        validators=[
-            FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "tif"])
-        ],
-        help_text=IMG_INFO,
-    )
 
     def save(self, *args, **kwargs):
         if self.image:
@@ -93,7 +170,10 @@ def image_delete(sender, instance, **kwargs):
 
 
 class ImageVolume(Picture):
-    volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.wit_type = VOL
+        self.witness = models.ForeignKey(Volume, on_delete=models.CASCADE)
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance
@@ -104,7 +184,12 @@ def imagevolume_delete(sender, instance, **kwargs):
 
 
 class ImageManuscript(Picture):
-    manuscript = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
+    witness = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.wit_type = MS
+        self.witness = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance
@@ -125,11 +210,19 @@ class Pdf(Digitization):
         verbose_name_plural = "PDF Files"
         abstract = True  # TODO: make this class not abstract
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.digit_type = "pdf"
+        self.pdf = models.FileField(
+            verbose_name="PDF",
+            upload_to=partial(rename_file),
+            validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
+        )
+
     def __str__(self):
         return self.pdf.name
 
     def save(self, *args, **kwargs):
-        # Call the parent save method to save the model
         super().save(*args, **kwargs)
         # Run the PDF to image async conversion task in the background using threading
         t = threading.Thread(target=self.to_img())
@@ -139,13 +232,6 @@ class Pdf(Digitization):
         self.pdf.storage.delete(self.pdf.name)
         # TODO delete images extracted from the pdf
         super().delete()
-
-    def get_path(self):
-        return f"{BASE_DIR}/{MEDIA_PATH}/{self.pdf.name}"
-
-    def get_filename(self):
-        # e.g. self.pdf.name = "volumes/pdf/filename.pdf" => filename = "filename"
-        return self.pdf.name.split("/")[-1].split(".")[0]
 
     def get_page_nb(self):
         import PyPDF2
@@ -183,21 +269,23 @@ class Pdf(Digitization):
 
 
 class PdfManuscript(Pdf):
-    manuscript = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
-    pdf = models.FileField(
-        verbose_name="PDF",
-        upload_to=partial(rename_file, path=MS_PDF_PATH),
-        validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
-    )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.witness = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
+        self.wit_type = MS
+
+    def get_path(self):
+        return f"{BASE_DIR}/{MEDIA_PATH}/{MS_PDF_PATH}"
 
 
 class PdfVolume(Pdf):
-    volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
-    pdf = models.FileField(
-        verbose_name="PDF",
-        upload_to=partial(rename_file, path=VOL_PDF_PATH),
-        validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
-    )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.witness = models.ForeignKey(Volume, on_delete=models.CASCADE)
+        self.wit_type = VOL
+
+    def get_path(self):
+        return f"{BASE_DIR}/{MEDIA_PATH}/{VOL_PDF_PATH}"
 
 
 ############################
@@ -211,60 +299,43 @@ class Manifest(Digitization):
         verbose_name_plural = "IIIF manifests"
         abstract = True  # TODO: make this class not abstract
 
-    manifest = models.URLField(
-        verbose_name=MANIFEST,
-        help_text=MANIFEST_INFO,
-        validators=[validate_manifest],
-    )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.digit_type = "manifest"
+        self.manifest = models.URLField(
+            verbose_name=MANIFEST,
+            help_text=MANIFEST_INFO,
+            validators=[validate_manifest],
+        )
 
     def __str__(self):
         return self.manifest
 
     # TODO: make a common save method for manifests
-    # def save(self, *args, **kwargs):
-    #     # Call the parent save method to save the model
-    #     super().save(*args, **kwargs)
-    #     # Run the async extraction of images from an IIIF manifest in the background using threading
-    #     t = threading.Thread(
-    #         target=extract_images_from_iiif_manifest,
-    #         args=(
-    #             self.manifest,
-    #             f"{IMG_PATH}",
-    #             f"{SRC_ABBR}{self.source.id}",
-    #         ),
-    #     )
-    #     t.start()
+    def save(self, *args, **kwargs):
+        # Call the parent save method to save the model
+        super().save(*args, **kwargs)
+        # Run the async extraction of images from an IIIF manifest in the background using threading
+        t = threading.Thread(
+            target=extract_images_from_iiif_manifest,
+            args=(
+                self.manifest,
+                f"{IMG_PATH}",
+                f"{self.get_wit_abbr()}{self.get_wit_id()}",
+            ),
+        )
+        t.start()
 
 
 class ManifestVolume(Manifest):
-    volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
-
-    def save(self, *args, **kwargs):
-        # Call the parent save method to save the model
-        super().save(*args, **kwargs)
-        # Run the async extraction of images from an IIIF manifest in the background using threading
-        t = threading.Thread(
-            target=extract_images_from_iiif_manifest,
-            args=(
-                self.manifest,
-                f"{VOL_ABBR}{self.volume.id}",
-            ),
-        )
-        t.start()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.witness = models.ForeignKey(Volume, on_delete=models.CASCADE)
+        self.wit_type = VOL
 
 
 class ManifestManuscript(Manifest):
-    manuscript = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
-
-    def save(self, *args, **kwargs):
-        # Call the parent save method to save the model
-        super().save(*args, **kwargs)
-        # Run the async extraction of images from an IIIF manifest in the background using threading
-        t = threading.Thread(
-            target=extract_images_from_iiif_manifest,
-            args=(
-                self.manifest,
-                f"{MS_ABBR}{self.manuscript.id}",
-            ),
-        )
-        t.start()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.witness = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
+        self.wit_type = MS

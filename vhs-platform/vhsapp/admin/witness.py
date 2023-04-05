@@ -150,6 +150,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         css = {"all": ("css/style.css",)}
         js = ("js/jquery-3.6.1.js", "js/script.js")
 
+    wit_type = "witness"
     change_form_template = "admin/change.html"  # TODO check if correct
     ordering = ("id",)
     list_filter = (AuthorFilter, WorkFilter)
@@ -165,11 +166,11 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             "export_selected_images",
             "export_selected_pdfs",
         ]
-        if self.wit_type() == "volume":
+        if self.get_wit_type() == "volume":
             self.actions += ["detect_similarity"]
 
-    def wit_type(self):
-        return "witness"
+    def get_wit_type(self):
+        return self.wit_type
 
     def short_author(self, obj):
         return truncatewords_html(obj.author, TRUNCATEWORDS)
@@ -194,7 +195,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     def get_img_list(self, queryset, with_img=True, with_pdf=True):
         results = queryset.exclude(volume__isnull=True)
         result_list = []
-        wit_type = self.wit_type()
+        wit_type = self.get_wit_type()
 
         if with_img:
             field_tag = (
@@ -303,7 +304,7 @@ class PrintedAdmin(WitnessAdmin, nested_admin.NestedModelAdmin, admin.SimpleList
     )
     inlines = [VolumeInline]
 
-    def wit_type(self):
+    def get_wit_type(self):
         return "print"
 
     def save_file(self, request, obj):
@@ -352,7 +353,7 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
     inlines = [PdfManuscriptInline, ManifestManuscriptInline, ImageManuscriptInline]
     readonly_fields = ("manifest_auto", "manifest_v2")
 
-    def wit_type(self):
+    def get_wit_type(self):
         return "manuscript"
 
     def wit_name(self):

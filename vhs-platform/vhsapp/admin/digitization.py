@@ -28,8 +28,9 @@ class ImageAdmin(admin.ModelAdmin):
         abstract = True
 
     list_per_page = 100
+    wit_type = "wit"
 
-    def wit_type(self):
+    def get_wit_type(self):
         return "witness"
 
     def __init__(self, model, admin_site):
@@ -38,8 +39,8 @@ class ImageAdmin(admin.ModelAdmin):
             "image",
             "thumbnail",
         )
-        self.search_fields = (f"={self.wit_type()}__id", "=image")
-        self.autocomplete_fields = (f"{self.wit_type()}",)
+        self.search_fields = (f"=witness__id", "=image")
+        self.autocomplete_fields = (f"witness",)
 
     def thumbnail(self, obj):
         return gen_thumbnail(gen_iiif_url(obj.image.name.split("/")[-1]), obj.image.url)
@@ -53,14 +54,12 @@ class ImageAdmin(admin.ModelAdmin):
 
 @admin.register(ImageVolume)
 class ImageVolumeAdmin(ImageAdmin):
-    def wit_type(self):
-        return "volume"
+    placeholder = ""  # TODO REMOVE
 
 
 @admin.register(ImageManuscript)
 class ImageManuscriptAdmin(ImageAdmin):
-    def wit_type(self):
-        return "manuscript"
+    placeholder = ""  # TODO REMOVE
 
 
 ############################
@@ -138,7 +137,7 @@ class ImageVolumeInline(nested_admin.NestedStackedInline, ImageInline):
     model = ImageVolume
 
     def obj_id(self, obj):
-        return obj.volume.id
+        return obj.witness.id
 
     def img_dir(self):
         return img_vol
@@ -148,7 +147,7 @@ class ImageManuscriptInline(ImageInline):
     model = ImageManuscript
 
     def obj_id(self, obj):
-        return obj.manuscript.id
+        return obj.witness.id
 
     def img_dir(self):
         return img_ms
