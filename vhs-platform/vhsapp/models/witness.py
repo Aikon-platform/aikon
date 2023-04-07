@@ -13,7 +13,13 @@ from vhsapp.models.constants import (
     PLACE_INFO,
 )
 
-from vhsapp.models.models import Work, Author, DigitizedVersion
+from vhsapp.models.models import (
+    Work,
+    Author,
+    DigitizedVersion,
+    Place,
+    ConservationPlace,
+)
 
 
 class Printed(models.Model):
@@ -145,9 +151,16 @@ class Manuscript(models.Model):
         default=False,
         help_text=MANIFEST_FINAL_INFO,
     )
-    slug = models.SlugField(max_length=600)
-    conservation_place = models.CharField(
-        verbose_name="Lieu de conservation", max_length=150
+    # slug = models.SlugField(max_length=600)
+    # conservation_place = models.CharField(
+    #     verbose_name="Lieu de conservation", max_length=150
+    # )
+    conservation_place = models.ForeignKey(
+        ConservationPlace,
+        verbose_name="Lieu de conservation",
+        blank=True,
+        on_delete=models.SET_NULL,
+        null=True,
     )
     reference_number = models.CharField(verbose_name="Cote", max_length=150)
     date_century = models.CharField(
@@ -157,8 +170,15 @@ class Manuscript(models.Model):
         verbose_name="Date (champ libre)", max_length=150, blank=True
     )
     sheets = models.CharField(verbose_name="Feuillet(s)", max_length=150)
-    origin_place = models.CharField(
-        verbose_name="Lieu d'origine", max_length=150, blank=True
+    # origin_place = models.CharField(
+    #     verbose_name="Lieu d'origine", max_length=150, blank=True
+    # )
+    origin_place = models.ForeignKey(
+        Place,
+        verbose_name="Lieu de création",
+        blank=True,
+        on_delete=models.SET_NULL,
+        null=True,
     )
     remarks = models.TextField(verbose_name="Remarques", blank=True)
     copyists = models.CharField(verbose_name="copiste(s)", max_length=150, blank=True)

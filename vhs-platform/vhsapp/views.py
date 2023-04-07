@@ -1,15 +1,17 @@
 import csv
 import json
 import os
+import requests
 from urllib.request import urlopen
 from urllib.parse import urlencode
+from dal import autocomplete
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from iiif_prezi.factory import ManifestFactory, StructuralError
 
 from django.contrib.auth.decorators import login_required
-from vhs.settings import ENV
+from vhs.settings import ENV, GEONAMES_USER
 
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
@@ -314,3 +316,16 @@ def show_work(request, id, work):
             "url_manifest": f"{url_iiif}/manifest.json",
         },
     )
+
+
+class PlaceAutocomplete(autocomplete.Select2ListView):
+    def get_list(self):
+        query = self.request.GET.get("q", "")
+        url = f"http://api.geonames.org/searchJSON?q={query}&maxRows=10&username={GEONAMES_USER}"
+        response = requests.get(url)
+        data = response.json()
+        suggestions = []
+        for suggestion in data["geonames"]:
+            suggestions.append(suggestion["name"])
+
+        return suggestions

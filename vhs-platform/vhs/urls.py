@@ -13,6 +13,7 @@ from vhsapp.views import (
     populate_annotation,
     annotate_work,
     annotation_auto,
+    PlaceAutocomplete,
 )
 
 
@@ -44,6 +45,11 @@ urlpatterns = [
         f"{APP_NAME}/iiif/{MANIFEST_AUTO}/<str:work>/<int:id>/annotation/",
         annotation_auto,
         name="annotation-auto",
+    ),
+    path(
+        f"{APP_NAME}/autocomplete/place/",
+        PlaceAutocomplete.as_view(),
+        name="place-autocomplete",
     ),
 ]
 
