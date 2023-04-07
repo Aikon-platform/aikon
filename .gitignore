@@ -14,6 +14,9 @@ vhs-platform/mediafiles/*
 vhs-platform/staticfiles/*
 !vhs-platform/staticfiles/.gitkeep
 
+# Django migration files (to be generated on prod - even if this is bad)
+vhs-platform/vhsapp/migrations/0*
+
 # SQLite database file
 db.sqlite3
 
