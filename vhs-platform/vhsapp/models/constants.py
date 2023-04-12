@@ -5,6 +5,7 @@
 MANIFEST = "manifest"
 MS = "manuscript"
 VOL = "volume"
+WIT = "witness"
 
 # ABBREVIATION
 MS_ABBR = "ms"

@@ -3,7 +3,7 @@ import logging
 import os
 import time
 
-from vhsapp.utils.paths import LOG_PATH, MEDIA_PATH, BASE_DIR
+from vhsapp.utils.paths import LOG_PATH, MEDIA_DIR, BASE_DIR
 from vhs.settings import DEBUG
 from vhsapp.utils.constants import (
     APP_NAME,
@@ -38,6 +38,12 @@ def log(msg):
     Record an error message in the system log
     """
     import logging
+    import traceback
+
+    trace = traceback.format_exc()
+    if trace == "NoneType: None\n":
+        # trace = traceback.extract_stack(limit=10)
+        trace = ""
 
     if not os.path.isfile(LOG_PATH):
         f = open(LOG_PATH, "x")
@@ -45,7 +51,8 @@ def log(msg):
 
     # Create a logger instance
     logger = logging.getLogger(APP_NAME)
-    logger.error(f"\n\n{get_time()}\n{pprint(msg)}")
+    # get_time() is already printed by the logger object
+    logger.error(f"\n{pprint(msg)}{trace}\n")
 
 
 def pprint(o):

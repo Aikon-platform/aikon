@@ -1,5 +1,5 @@
 import environ
-from vhsapp.utils.paths import BASE_DIR, LOG_PATH, MEDIA_PATH, STATIC_PATH
+from vhsapp.utils.paths import BASE_DIR, LOG_PATH, MEDIA_DIR, STATIC_DIR
 from vhsapp.utils.constants import APP_NAME
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -164,10 +164,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / STATIC_PATH
+STATIC_ROOT = BASE_DIR / STATIC_DIR
 
 MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / MEDIA_PATH
+MEDIA_ROOT = BASE_DIR / MEDIA_DIR
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field

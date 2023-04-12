@@ -14,13 +14,11 @@ from vhsapp.models.digitization import (
 
 from vhsapp.utils.iiif import IIIF_ICON, gen_iiif_url
 from vhsapp.utils.constants import APP_NAME
+from vhsapp.models.constants import MS, VOL, WIT
 
 from vhsapp.utils.functions import (
     gen_thumbnail,
 )
-
-img_vol = f"/{APP_NAME}-admin/vhsapp/imagevolume"  # TODO change that
-img_ms = f"/{APP_NAME}-admin/vhsapp/imagemanuscript"  # TODO: change that
 
 
 class ImageAdmin(admin.ModelAdmin):
@@ -28,10 +26,10 @@ class ImageAdmin(admin.ModelAdmin):
         abstract = True
 
     list_per_page = 100
-    wit_type = "wit"
+    wit_type = WIT
 
     def get_wit_type(self):
-        return "witness"
+        return self.wit_type
 
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
@@ -39,8 +37,8 @@ class ImageAdmin(admin.ModelAdmin):
             "image",
             "thumbnail",
         )
-        self.search_fields = (f"=witness__id", "=image")
-        self.autocomplete_fields = (f"witness",)
+        self.search_fields = (f"={WIT}__id", "=image")
+        self.autocomplete_fields = (f"{WIT}",)
 
     def thumbnail(self, obj):
         return gen_thumbnail(gen_iiif_url(obj.image.name.split("/")[-1]), obj.image.url)
@@ -54,12 +52,12 @@ class ImageAdmin(admin.ModelAdmin):
 
 @admin.register(ImageVolume)
 class ImageVolumeAdmin(ImageAdmin):
-    placeholder = ""  # TODO REMOVE
+    wit_type = VOL
 
 
 @admin.register(ImageManuscript)
 class ImageManuscriptAdmin(ImageAdmin):
-    placeholder = ""  # TODO REMOVE
+    wit_type = MS
 
 
 ############################
@@ -73,22 +71,30 @@ class DigitInline(admin.StackedInline):
 
     extra = 1
     max_num = 1
+    wit_type = WIT
+
+    def get_wit_type(self):
+        return self.wit_type
 
 
 class PdfManuscriptInline(DigitInline):
     model = PdfManuscript
+    wit_type = MS
 
 
 class ManifestManuscriptInline(DigitInline):
     model = ManifestManuscript
+    wit_type = MS
 
 
 class PdfVolumeInline(nested_admin.NestedStackedInline, DigitInline):
     model = PdfVolume
+    wit_type = VOL
 
 
 class ManifestVolumeInline(nested_admin.NestedStackedInline, DigitInline):
     model = ManifestVolume
+    wit_type = VOL
 
 
 class ImageInline(DigitInline):
@@ -100,20 +106,23 @@ class ImageInline(DigitInline):
         js = ("fontawesomefree/js/all.min.js",)
 
     readonly_fields = ("image_preview",)
+    wit_type = WIT
 
     def obj_id(self, obj):
-        return None
+        return obj.witness.id
 
-    def img_dir(self):
-        return "/"
+    def img_url(self):
+        return (
+            f"/{APP_NAME}-admin/vhsapp/image{self.get_wit_type()}"  # TODO change that
+        )
 
-    def wit_type(self):
-        return "manuscript" if "manuscript" in self.img_dir() else "volume"
+    def get_wit_type(self):
+        return self.wit_type
 
     def image_preview(self, obj):
         # TODO, do not display when there is None because the digitization is not images files
         return mark_safe(
-            f'<a href="{self.img_dir()}/?q={self.obj_id(obj)}" target="_blank">{IIIF_ICON} Gérer les images</a>'
+            f'<a href="{self.img_url()}/?q={self.obj_id(obj)}" target="_blank">{IIIF_ICON} Gérer les images</a>'
         )
 
     image_preview.short_description = "Images"
@@ -127,7 +136,7 @@ class ImageInline(DigitInline):
             fields.remove("image_preview")
         else:
             fields.remove("image")
-        if request.method == "POST" and self.wit_type() == "volume":
+        if request.method == "POST" and self.get_wit_type() == "volume":
             fields.append("image")
 
         return list(set(fields))
@@ -135,19 +144,9 @@ class ImageInline(DigitInline):
 
 class ImageVolumeInline(nested_admin.NestedStackedInline, ImageInline):
     model = ImageVolume
-
-    def obj_id(self, obj):
-        return obj.witness.id
-
-    def img_dir(self):
-        return img_vol
+    wit_type = VOL
 
 
 class ImageManuscriptInline(ImageInline):
     model = ImageManuscript
-
-    def obj_id(self, obj):
-        return obj.witness.id
-
-    def img_dir(self):
-        return img_ms
+    wit_type = MS

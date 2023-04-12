@@ -37,7 +37,7 @@ from vhsapp.utils.constants import (
     MANIFEST_V2,
 )
 from vhsapp.utils.paths import (
-    MEDIA_PATH,
+    MEDIA_DIR,
     VOL_PDF_PATH,
     IMG_PATH,
     MS_PDF_PATH,

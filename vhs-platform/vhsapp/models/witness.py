@@ -214,6 +214,11 @@ class Manuscript(models.Model):
         # Call the parent save method to save the model
         super().save(*args, **kwargs)
 
+    # def delete(self, *args, **kwargs):
+    #     # delete related images
+    #     self.images.all().delete()  # MARKER: supposedly accessible because of related_names in Digitization
+    #     super().delete(*args, **kwargs)
+
     def get_metadata(self):
         metadata = {
             "Author": self.author.name if self.author else "No author",

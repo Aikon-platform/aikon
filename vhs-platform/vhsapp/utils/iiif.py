@@ -25,7 +25,7 @@ from vhsapp.utils.constants import (
     APP_DESCRIPTION,
 )
 from vhsapp.utils.functions import log, get_json, create_dir, console, save_img
-from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH, BASE_DIR
+from vhsapp.utils.paths import MEDIA_DIR, IMG_PATH, BASE_DIR
 from vhsapp.utils.functions import get_icon, anno_btn
 from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
 from vhs.settings import SAS_APP_URL, VHS_APP_URL, CANTALOUPE_APP_URL
@@ -313,7 +313,7 @@ def process_images(work, seq, version):
     elif pdf_first:  # PDF
         # TODO: factorize with pdf_to_img() in functions.py
         # MARKER console(pdf_first.pdf)
-        with Pdf.open(f"{BASE_DIR}/{MEDIA_PATH}/{pdf_first.pdf}") as pdf_file:
+        with Pdf.open(f"{BASE_DIR}/{MEDIA_DIR}/{pdf_first.pdf}") as pdf_file:
             for counter in range(1, len(pdf_file.pages) + 1):
                 img_name = pdf_first.pdf.name.split("/")[-1].replace(
                     ".pdf", f"_{counter:04d}.jpg"
