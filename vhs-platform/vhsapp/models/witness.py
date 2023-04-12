@@ -14,6 +14,21 @@ from vhsapp.models.constants import (
 )
 
 from vhsapp.models.models import Work, Author, DigitizedVersion
+from vhsapp.models.constants import (
+    MS,
+    VOL,
+    WIT,
+)
+
+
+# TODO factorize Volume and Printed attributes/methods in this class
+class Witness(models.Model):
+    class Meta:
+        abstract = True
+        verbose_name = WIT
+        verbose_name_plural = "Witnesses"
+
+    type = WIT
 
 
 class Printed(models.Model):
@@ -28,7 +43,7 @@ class Printed(models.Model):
     )
     work = models.ForeignKey(
         Work,
-        verbose_name="Titre de l'oeuvre",
+        verbose_name="Titre de l'œuvre",
         max_length=600,
         on_delete=models.SET_NULL,
         null=True,
@@ -39,7 +54,7 @@ class Printed(models.Model):
     publishers_booksellers = models.CharField(
         verbose_name="Éditeurs/libraires", max_length=150
     )
-    description = models.TextField(verbose_name="Description de l'oeuvre")
+    description = models.TextField(verbose_name="Description de l'œuvre")
     descriptive_elements = models.TextField(
         verbose_name="Éléments descriptifs du contenu", blank=True
     )
@@ -70,6 +85,7 @@ class Printed(models.Model):
 
 
 class Volume(models.Model):
+    type = VOL
     printed = models.ForeignKey(
         Printed, verbose_name="Imprimé", on_delete=models.CASCADE
     )
@@ -139,6 +155,7 @@ class Volume(models.Model):
 
 
 class Manuscript(models.Model):
+    type = MS
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     author = models.ForeignKey(
         Author,
@@ -150,7 +167,7 @@ class Manuscript(models.Model):
     )
     work = models.ForeignKey(
         Work,
-        verbose_name="Titre de l'oeuvre",
+        verbose_name="Titre de l'œuvre",
         max_length=600,
         help_text=WORK_INFO,
         on_delete=models.SET_NULL,

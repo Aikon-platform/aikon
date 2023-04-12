@@ -50,7 +50,7 @@ class Digitization(models.Model):
 
     # TODO: make this reference the Witness class
     witness = None  # models.ForeignKey(Witness, on_delete=models.CASCADE)
-    wit_type = WIT
+    wit_type = WIT  # TODO remove to use self.witness.type
     digit_type = "digit"
 
     def __init__(self, nb=None, ext=None, *args, **kwargs):
@@ -62,7 +62,9 @@ class Digitization(models.Model):
         return self.witness
 
     def get_wit_type(self):
-        return self.wit_type
+        if self.witness is None:
+            return self.wit_type
+        return self.witness.type
 
     def get_digit_type(self):
         return self.digit_type
