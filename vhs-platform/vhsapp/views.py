@@ -47,7 +47,7 @@ def manifest_manuscript(request, id, version):
         return JsonResponse(
             {
                 "error": "Unable to create a valid manifest",
-                "reason": f"Unable to create manifest for resource {id} (probably no image):\n{e}",
+                "reason": f"Unable to create manifest for resource {id} (probably no image):{e}",
             }
         )
 
@@ -66,7 +66,7 @@ def manifest_volume(request, id, version):
         return JsonResponse(
             {
                 "error": "Unable to create a valid manifest",
-                "reason": f"Unable to create manifest for resource {id} (probably no image):\n{e}",
+                "reason": f"Unable to create manifest for resource {id} (probably no image):{e}",
             }
         )
 
