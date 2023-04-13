@@ -3,7 +3,7 @@ import logging
 import os
 import time
 
-from vhsapp.utils.paths import LOG_PATH, MEDIA_DIR, BASE_DIR
+from vhsapp.utils.paths import LOG_PATH, MEDIA_PATH, BASE_DIR, IIIF_LOG_PATH
 from vhs.settings import DEBUG
 from vhsapp.utils.constants import (
     APP_NAME,
@@ -81,3 +81,12 @@ def console(msg="🚨🚨🚨", msg_type=None):
         logger.warning(msg)
     else:
         logger.info(msg)
+
+
+def iiif_log(img_url):
+    if not os.path.isfile(IIIF_LOG_PATH):
+        f = open(IIIF_LOG_PATH, "x")
+        f.close()
+
+    with open(IIIF_LOG_PATH, "a") as f:
+        f.write(f"{img_url}\n")

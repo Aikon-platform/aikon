@@ -24,12 +24,13 @@ from vhsapp.utils.constants import (
     APP_NAME_UPPER,
     APP_DESCRIPTION,
 )
-from vhsapp.utils.functions import log, get_json, create_dir, console, save_img
-from vhsapp.utils.paths import MEDIA_DIR, IMG_PATH, BASE_DIR
+from vhsapp.utils.functions import get_json, create_dir, save_img
+from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH, BASE_DIR
 from vhsapp.utils.functions import get_icon, anno_btn
 from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
 from vhs.settings import SAS_APP_URL, VHS_APP_URL, CANTALOUPE_APP_URL
 from vhsapp.models.witness import Volume, Manuscript
+from vhsapp.utils.logger import iiif_log, console, log
 
 
 IIIF_ICON = "<img alt='IIIF' src='https://iiif.io/assets/images/logos/logo-sm.png' height='15'/>"
@@ -190,9 +191,10 @@ def extract_images_from_iiif_manifest(manifest_url, work):
         # manifest_id = Path(urlparse(get_id(manifest)).path).parent.name
         i = 1
         for img_rscr in get_iiif_resources(manifest, True):
-            save_iiif_img(img_rscr, i, work)
+            is_downloaded = save_iiif_img(img_rscr, i, work)
             i += 1
-            time.sleep(5 if "gallica" in manifest_url else 0.25)
+            if is_downloaded:
+                time.sleep(5 if "gallica" in manifest_url else 0.25)
 
 
 def get_reduced_size(size, min_size=1500):
@@ -204,12 +206,15 @@ def get_reduced_size(size, min_size=1500):
     return str(min_size)
 
 
-def save_iiif_img(img_rscr, i, work, size="full"):
-    img_id = f"{i:04d}"
+def save_iiif_img(img_rscr, i, work, size="full", re_download=False):
+    img_name = f"{work}_{i:04d}.jpg"
+
+    if os.path.isfile(BASE_DIR / IMG_PATH / img_name) and not re_download:
+        # if the img is already downloaded, don't download it again
+        return False
+
     img_url = get_id(img_rscr["service"])
     iiif_url = f"{img_url}/full/{size}/0/default.jpg"
-
-    # TODO add something when img already exists, to prevent downloading several time the same img
 
     with requests.get(iiif_url, stream=True) as response:
         response.raw.decode_content = True
@@ -222,9 +227,11 @@ def save_iiif_img(img_rscr, i, work, size="full"):
                 return
             else:
                 log(f"Failed to extract images from {img_url}")
+                iiif_log(img_url)
                 return
 
-        save_img(img, f"{work}_{img_id}.jpg", f"Failed to extract from {img_url}")
+        save_img(img, img_name, f"Failed to extract from {img_url}")
+    return True
 
 
 def gen_iiif_url(
@@ -429,9 +436,8 @@ def manifest_witness(id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
-    wit_class = Manuscript if wit_abbr == MS_ABBR else Volume
     wit_name = MS if wit_abbr == MS_ABBR else VOL
-    witness = get_object_or_404(wit_class, pk=id)
+    witness = get_object_or_404(Manuscript if wit_abbr == MS_ABBR else Volume, pk=id)
     fac = ManifestFactory(
         mdbase=f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_name}/{wit_abbr}-{id}/",
         imgbase=f"{CANTALOUPE_APP_URL}/iiif/2/",
