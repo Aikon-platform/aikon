@@ -111,7 +111,7 @@ def get_id(dic):
             try:
                 return dic["id"]
             except KeyError as e:
-                log(f"No id provided {e}")
+                log(f"[Get id] No id provided {e}")
 
     if type(dic) == str:
         return dic
@@ -176,7 +176,9 @@ def get_iiif_resources(manifest, only_img_url=False):
             # img_info = [get_item_img(img, only_img_url) for img in img_list]
             img_info = [get_img_rsrc(img) for img in img_list]
         except KeyError as e:
-            log(f"Unable to retrieve resources from manifest {manifest}\n{e}")
+            log(
+                f"[get_iiif_resources] Unable to retrieve resources from manifest {manifest}\n{e}"
+            )
             return []
 
     return img_info
@@ -226,7 +228,7 @@ def save_iiif_img(img_rscr, i, work, size="full", re_download=False):
                 save_iiif_img(img_rscr, i, work, get_formatted_size(size))
                 return
             else:
-                log(f"Failed to extract images from {img_url}")
+                log(f"[save_iiif_img] Failed to extract images from {img_url}")
                 iiif_log(img_url)
                 return
 
@@ -312,9 +314,9 @@ def process_images(work, seq, version):
                     seq, counter, img_name, Image.open(img.image), version
                 )
             except UnidentifiedImageError as e:
-                log(f"Unable to retrieve {img_name}\n{e}")
+                log(f"[process_images] Unable to retrieve {img_name}\n{e}")
             except FileNotFoundError as e:
-                log(f"Non existing {img_name}\n{e}")
+                log(f"[process_images] Non existing {img_name}\n{e}")
 
     # Check if there is a PDF work and process it
     elif pdf_first:  # PDF
@@ -349,10 +351,10 @@ def process_images(work, seq, version):
                 image = Image.open(path)
                 build_canvas_and_annotation(seq, counter, img_name, image, version)
             except UnidentifiedImageError as e:
-                log(f"Unable to retrieve {img_name}\n{e}")
+                log(f"[process_images] Unable to retrieve {img_name}\n{e}")
                 continue
             except FileNotFoundError as e:
-                log(f"Non existing {img_name}\n{e}")
+                log(f"[process_images] Non existing {img_name}\n{e}")
     # If none of the above, raise an exception
     else:
         raise Exception("There is no manifest!")
@@ -361,16 +363,18 @@ def process_images(work, seq, version):
 def build_canvas_and_annotation(seq, counter, image_name, image, version):
     """
     Build the canvas and annotation for each image
+    Called for each manifest (v2) image when a witness is being indexed
     """
+    h, w = image.height, image.width
     # Build the canvas
-    cvs = seq.canvas(ident=f"c{counter}", label=f"Page {counter}")
-    cvs.set_hw(image.height, image.width)
+    canvas = seq.canvas(ident=f"c{counter}", label=f"Page {counter}")
+    canvas.set_hw(h, w)
     # Build the image annotation
-    anno = cvs.annotation(ident=f"a{counter}")
+    anno = canvas.annotation(ident=f"a{counter}")
     img = anno.image(ident=image_name, iiif=True)
-    img.set_hw(image.height, image.width)
+    img.set_hw(h, w)
     if version == "auto":
-        anno_list = cvs.annotationList(ident=f"anno-{counter}")
+        anno_list = canvas.annotationList(ident=f"anno-{counter}")
         anno = anno_list.annotation(ident=f"a-list-{counter}")
         anno.text("Annotation")
 

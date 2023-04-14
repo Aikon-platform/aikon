@@ -14,6 +14,9 @@ vhs-platform/mediafiles/*
 vhs-platform/staticfiles/*
 !vhs-platform/staticfiles/.gitkeep
 
+cantaloupe/temp/*
+!cantaloupe/temp/.gitkeep
+
 # SQLite database file
 db.sqlite3
 
