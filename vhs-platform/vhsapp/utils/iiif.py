@@ -468,16 +468,16 @@ def manifest_witness(id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
     return manifest
 
 
-def has_manifest(wit_id, wit_type):
+def has_manifest(img_prefix):
     # if there is at least one image file named after the current witness
-    if len(glob(f"{BASE_DIR}/{IMG_PATH}/{wit_type}{wit_id}_*.jpg")) > 0:
+    if len(glob(f"{BASE_DIR}/{IMG_PATH}/{img_prefix}_*.jpg")) > 0:
         return True
     return False
 
 
-def has_annotations(wit_id, wit_type):
+def has_annotations(witness, wit_type):
     # if there is at least one image file named after the current witness
     wit_dir = "manuscripts" if wit_type == "ms" else "volumes"
-    if len(glob(f"{BASE_DIR}/{MEDIA_PATH}/{wit_dir}/annotation/{wit_id}.txt")) > 0:
+    if len(glob(f"{BASE_DIR}/{MEDIA_PATH}/{wit_dir}/annotation/{witness.id}.txt")) > 0:
         return True
     return False
