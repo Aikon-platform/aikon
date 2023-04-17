@@ -53,6 +53,7 @@ from vhsapp.utils.iiif import (
     has_annotations,
 )
 from vhsapp.utils.functions import list_to_csv, zip_img, get_file_list, get_pdf_imgs
+from vhsapp.utils.logger import console, log
 
 
 class ManifestAdmin(admin.ModelAdmin):
@@ -66,7 +67,17 @@ class ManifestAdmin(admin.ModelAdmin):
 
     def manifest_auto(self, obj, wit_type=MS_ABBR):
         if obj.id:
-            action = "VISUALIZE" if has_manifest(obj.id, wit_type) else "NO MANIFEST"
+            # TODO, generalize that to make it work for every type of digitization
+            img_prefix = f"{obj.id}{wit_type}"
+            if hasattr(obj, "pdfmanuscript_set"):
+                if obj.pdfmanuscript_set.first():
+                    img_prefix = (
+                        obj.pdfmanuscript_set.first()
+                        .pdf.name.split("/")[-1]
+                        .split(".")[0]
+                    )
+
+            action = "VISUALIZE" if has_manifest(img_prefix) else "NO MANIFEST"
             return gen_btn(obj.id, action, MANIFEST_AUTO, self.wit_name().lower())
         return "-"
 
@@ -75,7 +86,7 @@ class ManifestAdmin(admin.ModelAdmin):
     def manifest_v2(self, obj, wit_type=MS_ABBR):
         if obj.id:
             action = "FINAL" if obj.manifest_final else "EDIT"
-            if not has_annotations(obj.id, wit_type):
+            if not has_annotations(obj, wit_type):
                 action = "NO ANNOTATION YET"
             return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
         return "-"
@@ -120,7 +131,13 @@ class VolumeInline(nested_admin.NestedStackedInline):
 
     def manifest_auto(self, obj):
         if obj.id:
-            action = "VISUALIZE" if has_manifest(obj.id, VOL_ABBR) else "NO MANIFEST"
+            img_prefix = f"{obj.id}{VOL_ABBR}"
+            if hasattr(obj, "pdfvolume_set"):
+                if obj.pdfvolume_set.first():
+                    img_prefix = (
+                        obj.pdfvolume_set.first().pdf.name.split("/")[-1].split(".")[0]
+                    )
+            action = "VISUALIZE" if has_manifest(img_prefix) else "NO MANIFEST"
             return gen_btn(obj.id, action, MANIFEST_AUTO, self.wit_name().lower())
         return "-"
 
@@ -129,8 +146,8 @@ class VolumeInline(nested_admin.NestedStackedInline):
     def manifest_v2(self, obj):
         if obj.id:
             action = "FINAL" if obj.manifest_final else "EDIT"
-            if not has_annotations(obj.id, VOL_ABBR):
-                action = "NO ANNOTATION"
+            if not has_annotations(obj, VOL_ABBR):
+                action = "NO ANNOTATION YET"
             return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
         return "-"
 
