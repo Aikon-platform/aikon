@@ -131,6 +131,8 @@ def get_icon(icon):
 
 
 def anno_btn(obj_id, action="VISUALIZE"):
+    disabled = ""
+
     if action == "VISUALIZE":
         color = "#EFB80B"
         tag_id = "annotate_manifest_auto_"
@@ -151,13 +153,14 @@ def anno_btn(obj_id, action="VISUALIZE"):
         color = "#878787"
         tag_id = "annotate_"
         icon = get_icon("eye-slash")
+        disabled = "disabled"
     else:
         color = "#B3B3B3"
         tag_id = "annotate_"
         icon = get_icon("eye")
 
     return (
-        f"<button id='{tag_id}{obj_id}' class='button annotate-manifest' "
+        f"<button id='{tag_id}{obj_id}' class='button annotate-manifest' {disabled}"
         f"style='background-color:{color};'>{icon} {action} ANNOTATIONS</button><br>"
     )
 
