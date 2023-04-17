@@ -50,6 +50,7 @@ from vhsapp.utils.iiif import (
     gen_manifest_url,
     gen_iiif_url,
     has_manifest,
+    has_annotations,
 )
 from vhsapp.utils.functions import list_to_csv, zip_img, get_file_list, get_pdf_imgs
 
@@ -63,19 +64,19 @@ class ManifestAdmin(admin.ModelAdmin):
     def wit_name(self):
         return MANIFEST_AUTO
 
-    def manifest_auto(self, obj, wit_type=WIT_ABBR):
+    def manifest_auto(self, obj, wit_type=MS_ABBR):
         if obj.id:
-            action = "VISUALIZE" if has_manifest(obj.id, MS_ABBR) else "NOT AVAILABLE"
+            action = "VISUALIZE" if has_manifest(obj.id, wit_type) else "NO MANIFEST"
             return gen_btn(obj.id, action, MANIFEST_AUTO, self.wit_name().lower())
         return "-"
 
     manifest_auto.short_description = "Manifeste (automatique)"
 
-    def manifest_v2(self, obj, wit_type=WIT_ABBR):
+    def manifest_v2(self, obj, wit_type=MS_ABBR):
         if obj.id:
             action = "FINAL" if obj.manifest_final else "EDIT"
-            if not has_manifest(obj.id, MS_ABBR):
-                action = "NOT AVAILABLE"
+            if not has_annotations(obj.id, wit_type):
+                action = "NO ANNOTATION YET"
             return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
         return "-"
 

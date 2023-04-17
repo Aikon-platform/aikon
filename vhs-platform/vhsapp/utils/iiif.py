@@ -259,11 +259,8 @@ def get_link_manifest(obj_id, manifest_url, tag_id="url_manifest_"):
 def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, ps_type=VOL.lower()):
     msg_id = f"message_auto_{obj_id}" if vers == MANIFEST_AUTO else f"message_{obj_id}"
 
-    if action == "NOT AVAILABLE":
-        return mark_safe(
-            f"{anno_btn(obj_id, action)}"
-            f'<span id="{msg_id}" style="color:#FF0000"></span>'
-        )
+    if action == "NO MANIFEST" or action == "NO ANNOTATION YET":
+        return mark_safe(anno_btn(obj_id, action))
 
     ps_prefix = VOL_ABBR if ps_type == VOL.lower() else MS_ABBR
     obj_ref = f"{APP_NAME}/iiif/{vers}/{ps_type}/{ps_prefix}-{obj_id}"
@@ -474,5 +471,13 @@ def manifest_witness(id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
 def has_manifest(wit_id, wit_type):
     # if there is at least one image file named after the current witness
     if len(glob(f"{BASE_DIR}/{IMG_PATH}/{wit_type}{wit_id}_*.jpg")) > 0:
+        return True
+    return False
+
+
+def has_annotations(wit_id, wit_type):
+    # if there is at least one image file named after the current witness
+    wit_dir = "manuscripts" if wit_type == "ms" else "volumes"
+    if len(glob(f"{BASE_DIR}/{MEDIA_PATH}/{wit_dir}/annotation/{wit_id}.txt")) > 0:
         return True
     return False
