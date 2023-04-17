@@ -68,7 +68,7 @@ class ManifestAdmin(admin.ModelAdmin):
     def manifest_auto(self, obj, wit_type=MS_ABBR):
         if obj.id:
             # TODO, generalize that to make it work for every type of digitization
-            img_prefix = f"{obj.id}{wit_type}"
+            img_prefix = f"{wit_type}{obj.id}"
             if hasattr(obj, "pdfmanuscript_set"):
                 if obj.pdfmanuscript_set.first():
                     img_prefix = (
@@ -131,7 +131,7 @@ class VolumeInline(nested_admin.NestedStackedInline):
 
     def manifest_auto(self, obj):
         if obj.id:
-            img_prefix = f"{obj.id}{VOL_ABBR}"
+            img_prefix = f"{VOL_ABBR}{obj.id}"
             if hasattr(obj, "pdfvolume_set"):
                 if obj.pdfvolume_set.first():
                     img_prefix = (
