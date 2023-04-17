@@ -1,3 +1,4 @@
+import glob
 import zipfile
 
 import nested_admin
@@ -16,7 +17,7 @@ from vhsapp.models.witness import (
     Manuscript,
 )
 
-from vhsapp.models.constants import MS, VOL
+from vhsapp.models.constants import MS, VOL, WIT, MS_ABBR, VOL_ABBR, WIT_ABBR
 
 from vhsapp.admin.digitization import (
     PdfManuscriptInline,
@@ -43,7 +44,14 @@ from vhsapp.utils.paths import (
     MS_PDF_PATH,
 )
 
-from vhsapp.utils.iiif import get_link_manifest, gen_btn, gen_manifest_url, gen_iiif_url
+from vhsapp.utils.iiif import (
+    get_link_manifest,
+    gen_btn,
+    gen_manifest_url,
+    gen_iiif_url,
+    has_manifest,
+    has_annotations,
+)
 from vhsapp.utils.functions import list_to_csv, zip_img, get_file_list, get_pdf_imgs
 
 
@@ -56,23 +64,20 @@ class ManifestAdmin(admin.ModelAdmin):
     def wit_name(self):
         return MANIFEST_AUTO
 
-    def manifest_auto(self, obj):
+    def manifest_auto(self, obj, wit_type=MS_ABBR):
         if obj.id:
-            # if manifest_first := obj.manifestvolume_set.first():
-            #     return mark_safe(f"{get_link_manifest(obj.id, manifest_first)}<br>")
-            return gen_btn(obj.id, "VISUALIZE", MANIFEST_AUTO, self.wit_name().lower())
+            action = "VISUALIZE" if has_manifest(obj.id, wit_type) else "NO MANIFEST"
+            return gen_btn(obj.id, action, MANIFEST_AUTO, self.wit_name().lower())
         return "-"
 
     manifest_auto.short_description = "Manifeste (automatique)"
 
-    def manifest_v2(self, obj):
+    def manifest_v2(self, obj, wit_type=MS_ABBR):
         if obj.id:
-            return gen_btn(
-                obj.id,
-                "FINAL" if obj.manifest_final else "EDIT",
-                MANIFEST_V2,
-                self.wit_name().lower(),
-            )
+            action = "FINAL" if obj.manifest_final else "EDIT"
+            if not has_annotations(obj.id, wit_type):
+                action = "NO ANNOTATION YET"
+            return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
         return "-"
 
     manifest_v2.short_description = "Manifeste (modifiable)"
@@ -115,7 +120,8 @@ class VolumeInline(nested_admin.NestedStackedInline):
 
     def manifest_auto(self, obj):
         if obj.id:
-            return gen_btn(obj.id, "VISUALIZE", MANIFEST_AUTO, self.wit_name().lower())
+            action = "VISUALIZE" if has_manifest(obj.id, VOL_ABBR) else "NOT AVAILABLE"
+            return gen_btn(obj.id, action, MANIFEST_AUTO, self.wit_name().lower())
         return "-"
 
     manifest_auto.short_description = "Manifeste (automatique)"
@@ -123,6 +129,8 @@ class VolumeInline(nested_admin.NestedStackedInline):
     def manifest_v2(self, obj):
         if obj.id:
             action = "FINAL" if obj.manifest_final else "EDIT"
+            if not has_manifest(obj.id, VOL_ABBR):
+                action = "NOT AVAILABLE"
             return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
         return "-"
 
