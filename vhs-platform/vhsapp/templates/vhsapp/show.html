@@ -47,18 +47,18 @@
                                         <small>(Modifier l'extraction)</small>
                                     </a><br>
                                     <a href="{{ url }}" target="_blank">
-                                        <img src="{{ url|replace_nth_part_of_url:',120;7' }}">
+                                        <img src="{{ url|replace_nth_part_of_url:'150,;7' }}" alt="scan preview">
                                     </a>
                                 </td>
                                 {% for anno, bbox in annos %}
                                     <td id="ill_{{ bbox }}" class="anno-td">
                                         {% with region=anno|add:';6' size=',50;7' %}
                                             <a href="{{ url|replace_nth_part_of_url:region }}" target="_blank">
-                                                <img src="{{ url|replace_nth_part_of_url:region|replace_nth_part_of_url:size }}">
+                                                <img src="{{ url|replace_nth_part_of_url:region|replace_nth_part_of_url:size }}" alt="scan preview">
                                             </a>
                                         {% endwith %}
                                         <br>
-                                        <input id="bbox_{{ bbox }}" name="{{ bbox }}" type="checkbox"> Supprimer
+                                        <input id="bbox_{{ bbox }}" name="{{ bbox }}" type="checkbox"><label for="bbox_{{ bbox }}"> Supprimer</label>
                                         <span id="message_{{ bbox }}" style="color:#FF0000;"></span>
                                     </td>
                                 {% endfor %}
