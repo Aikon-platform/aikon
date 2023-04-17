@@ -120,7 +120,7 @@ class VolumeInline(nested_admin.NestedStackedInline):
 
     def manifest_auto(self, obj):
         if obj.id:
-            action = "VISUALIZE" if has_manifest(obj.id, VOL_ABBR) else "NOT AVAILABLE"
+            action = "VISUALIZE" if has_manifest(obj.id, VOL_ABBR) else "NO MANIFEST"
             return gen_btn(obj.id, action, MANIFEST_AUTO, self.wit_name().lower())
         return "-"
 
@@ -129,8 +129,8 @@ class VolumeInline(nested_admin.NestedStackedInline):
     def manifest_v2(self, obj):
         if obj.id:
             action = "FINAL" if obj.manifest_final else "EDIT"
-            if not has_manifest(obj.id, VOL_ABBR):
-                action = "NOT AVAILABLE"
+            if not has_annotations(obj.id, VOL_ABBR):
+                action = "NO ANNOTATION"
             return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
         return "-"
 
