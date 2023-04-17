@@ -338,14 +338,16 @@ class PrintedAdmin(WitnessAdmin, nested_admin.NestedModelAdmin, admin.SimpleList
 class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
     # list of fields that are displayed in the all witnesses tab
     list_display = (
+        "id",
+        "reference_number",
+        "conservation_place",
         "short_author",
         # "short_work",
-        "conservation_place",
-        "reference_number",
         # "date_century",
         "sheets",
         "published",
     )
+    list_display_links = ("reference_number",)
     # search_fields = ("author__name", "work__title")
     search_fields = (
         "author__name",
