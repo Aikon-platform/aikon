@@ -175,7 +175,9 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         css = {"all": ("css/style.css",)}
         js = ("js/jquery-3.6.1.js", "js/script.js")
 
-    change_form_template = "admin/change.html"  # TODO check if correct
+    # NOTE: attribute to use to change to template of witness (template at: templates/admin/change.html)
+    # change_form_template = "admin/change.html"
+
     ordering = ("id",)
     # list_filter = (AuthorFilter, WorkFilter)
     # autocomplete_fields = ("author", "work")
