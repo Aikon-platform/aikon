@@ -6,16 +6,17 @@
 
 {% block extrahead %}
     {{ block.super }}
-    <title>{% block title %}{% endblock %}</title>
+    {# TITLE IS DEFINED IN THE SETTINGS #}
+    {# <title>{% block title %}{{ APP_NAME_UPPER }} platform{% endblock %}</title>#}
 
+    <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.png' %}">
     <script>
         const APP_NAME = "{{ APP_NAME }}";
         const SAS_APP_URL = "{{ SAS_APP_URL }}";
     </script>
-    <script src="{% static 'js/script.js' %}"></script>
     <script src="{% static 'js/jquery-3.6.1.js' %}"></script>
     <script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
 
-    <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.png' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="{% static 'js/script.js' %}"></script>
 {% endblock %}

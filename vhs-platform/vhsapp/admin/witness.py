@@ -52,7 +52,13 @@ from vhsapp.utils.iiif import (
     has_manifest,
     has_annotations,
 )
-from vhsapp.utils.functions import list_to_csv, zip_img, get_file_list, get_pdf_imgs
+from vhsapp.utils.functions import (
+    list_to_csv,
+    zip_img,
+    get_file_list,
+    get_pdf_imgs,
+    get_icon,
+)
 from vhsapp.utils.logger import console, log
 
 
@@ -64,6 +70,14 @@ class ManifestAdmin(admin.ModelAdmin):
 
     def wit_name(self):
         return MANIFEST_AUTO
+
+    def is_annotated(self, obj, wit_type=MS_ABBR):
+        is_anno = has_annotations(obj, wit_type)
+        icon = "pen-nib" if is_anno else "x"
+        color = "#dbc997" if is_anno else "#4a3a3a"
+        return get_icon(icon, color)
+
+    is_annotated.short_description = "Is annotated"
 
     def manifest_auto(self, obj, wit_type=MS_ABBR):
         if obj.id:
@@ -374,6 +388,7 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
         # "date_century",
         "sheets",
         "published",
+        "is_annotated",
     )
     list_display_links = ("reference_number",)
     # search_fields = ("author__name", "work__title")
