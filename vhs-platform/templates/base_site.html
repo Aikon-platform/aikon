@@ -1,4 +1,4 @@
-{% extends "admin/base_site.html" %}
+{% extends "base_site.html" %}
 
 {# TEMPLATE EXTENSION FOR THE DEFAULT ADMIN INTERFACE #}
 
@@ -6,13 +6,15 @@
 
 {% block extrahead %}
     {{ block.super }}
-    {# TITLE IS DEFINED IN THE SETTINGS #}
-    {# <title>{% block title %}{{ APP_NAME_UPPER }} platform{% endblock %}</title>#}
+    <title>{% block title %}YOUPI YOUPI{% endblock %}</title>
 
     <script>
         const APP_NAME = "{{ APP_NAME }}";
         const SAS_APP_URL = "{{ SAS_APP_URL }}";
     </script>
+    <script src="{% static 'js/script.js' %}"></script>
+    <script src="{% static 'js/jquery-3.6.1.js' %}"></script>
+    <script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
 
     <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.png' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
