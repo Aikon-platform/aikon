@@ -84,10 +84,10 @@ CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
 SAS_APP_URL = f"http://localhost:{SAS_PORT}"
 
 # Override the default values in production mode
-if not DEBUG:
-    VHS_APP_URL = "https://iscd.huma-num.fr"
-    CANTALOUPE_APP_URL = "https://iscd.huma-num.fr"
-    SAS_APP_URL = "https://iscd.huma-num.fr/sas"
+if DEBUG:
+    VHS_APP_URL = "https://eida.obspm.fr"
+    CANTALOUPE_APP_URL = "https://eida.obspm.fr"
+    SAS_APP_URL = "https://eida.obspm.fr/sas"
 
 ROOT_URLCONF = "vhs.urls"
 

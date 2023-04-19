@@ -1,3 +1,4 @@
+import fnmatch
 import os
 import re
 
@@ -25,7 +26,7 @@ from vhsapp.utils.constants import (
     APP_DESCRIPTION,
 )
 from vhsapp.utils.functions import get_json, create_dir, save_img
-from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH, BASE_DIR
+from vhsapp.utils.paths import MEDIA_DIR, IMG_PATH, BASE_DIR
 from vhsapp.utils.functions import get_icon, anno_btn
 from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
 from vhs.settings import SAS_APP_URL, VHS_APP_URL, CANTALOUPE_APP_URL
@@ -94,7 +95,7 @@ def validate_iiif_manifest(url):
 
 
 def validate_manifest(manifest):
-    validate_iiif_manifest(manifest)
+    # validate_iiif_manifest(manifest)
     hostname, path = parse_manifest(manifest)
     if hostname == "gallica.bnf.fr":
         validate_gallica_manifest(manifest, False)
@@ -111,7 +112,7 @@ def get_id(dic):
             try:
                 return dic["id"]
             except KeyError as e:
-                log(f"No id provided {e}")
+                log(f"[Get id] No id provided {e}")
 
     if type(dic) == str:
         return dic
@@ -176,7 +177,9 @@ def get_iiif_resources(manifest, only_img_url=False):
             # img_info = [get_item_img(img, only_img_url) for img in img_list]
             img_info = [get_img_rsrc(img) for img in img_list]
         except KeyError as e:
-            log(f"Unable to retrieve resources from manifest {manifest}\n{e}")
+            log(
+                f"[get_iiif_resources] Unable to retrieve resources from manifest {manifest}\n{e}"
+            )
             return []
 
     return img_info
@@ -226,7 +229,7 @@ def save_iiif_img(img_rscr, i, work, size="full", re_download=False):
                 save_iiif_img(img_rscr, i, work, get_formatted_size(size))
                 return
             else:
-                log(f"Failed to extract images from {img_url}")
+                log(f"[save_iiif_img] Failed to extract images from {img_url}")
                 iiif_log(img_url)
                 return
 
@@ -254,25 +257,28 @@ def get_link_manifest(obj_id, manifest_url, tag_id="url_manifest_"):
 
 
 def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, ps_type=VOL.lower()):
+    msg_id = f"message_auto_{obj_id}" if vers == MANIFEST_AUTO else f"message_{obj_id}"
+
+    if action == "NO MANIFEST" or action == "NO ANNOTATION YET":
+        return mark_safe(anno_btn(obj_id, action))
+
     ps_prefix = VOL_ABBR if ps_type == VOL.lower() else MS_ABBR
     obj_ref = f"{APP_NAME}/iiif/{vers}/{ps_type}/{ps_prefix}-{obj_id}"
     manifest = f"{VHS_APP_URL}/{obj_ref}/manifest.json"
 
     if vers == MANIFEST_AUTO:
         tag_id = f"iiif_auto_"
-        message_id = f"message_auto_{obj_id}"
         download_url = f"/{obj_ref}/annotation/"
         anno_type = "CSV"
     else:
         tag_id = f"url_manifest_"
-        message_id = f"message_{obj_id}"
         download_url = f"{SAS_APP_URL}/search-api/{obj_id}/search/"
         anno_type = "JSON"
 
     return mark_safe(
         f"{get_link_manifest(obj_id, manifest, tag_id)}<br>{anno_btn(obj_id, action)}"
         f'<a href="{download_url}" target="_blank">{get_icon("download")} Download annotation ({anno_type})</a>'
-        f'<span id="{message_id}" style="color:#FF0000"></span>'
+        f'<span id="{msg_id}" style="color:#FF0000"></span>'
     )
 
 
@@ -312,9 +318,9 @@ def process_images(work, seq, version):
                     seq, counter, img_name, Image.open(img.image), version
                 )
             except UnidentifiedImageError as e:
-                log(f"Unable to retrieve {img_name}\n{e}")
+                log(f"[process_images] Unable to retrieve {img_name}\n{e}")
             except FileNotFoundError as e:
-                log(f"Non existing {img_name}\n{e}")
+                log(f"[process_images] Non existing {img_name}\n{e}")
 
     # Check if there is a PDF work and process it
     elif pdf_first:  # PDF
@@ -349,10 +355,10 @@ def process_images(work, seq, version):
                 image = Image.open(path)
                 build_canvas_and_annotation(seq, counter, img_name, image, version)
             except UnidentifiedImageError as e:
-                log(f"Unable to retrieve {img_name}\n{e}")
+                log(f"[process_images] Unable to retrieve {img_name}\n{e}")
                 continue
             except FileNotFoundError as e:
-                log(f"Non existing {img_name}\n{e}")
+                log(f"[process_images] Non existing {img_name}\n{e}")
     # If none of the above, raise an exception
     else:
         raise Exception("There is no manifest!")
@@ -361,16 +367,18 @@ def process_images(work, seq, version):
 def build_canvas_and_annotation(seq, counter, image_name, image, version):
     """
     Build the canvas and annotation for each image
+    Called for each manifest (v2) image when a witness is being indexed
     """
+    h, w = image.height, image.width
     # Build the canvas
-    cvs = seq.canvas(ident=f"c{counter}", label=f"Page {counter}")
-    cvs.set_hw(image.height, image.width)
+    canvas = seq.canvas(ident=f"c{counter}", label=f"Page {counter}")
+    canvas.set_hw(h, w)
     # Build the image annotation
-    anno = cvs.annotation(ident=f"a{counter}")
+    anno = canvas.annotation(ident=f"a{counter}")
     img = anno.image(ident=image_name, iiif=True)
-    img.set_hw(image.height, image.width)
+    img.set_hw(h, w)
     if version == "auto":
-        anno_list = cvs.annotationList(ident=f"anno-{counter}")
+        anno_list = canvas.annotationList(ident=f"anno-{counter}")
         anno = anno_list.annotation(ident=f"a-list-{counter}")
         anno.text("Annotation")
 
@@ -458,3 +466,18 @@ def manifest_witness(id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
     process_images(witness, seq, version)
 
     return manifest
+
+
+def has_manifest(img_prefix):
+    # if there is at least one image file named after the current witness
+    if len(glob(f"{BASE_DIR}/{IMG_PATH}/{img_prefix}_*.jpg")) > 0:
+        return True
+    return False
+
+
+def has_annotations(witness, wit_type):
+    # if there is at least one image file named after the current witness
+    wit_dir = "manuscripts" if wit_type == "ms" else "volumes"
+    if len(glob(f"{BASE_DIR}/{MEDIA_DIR}/{wit_dir}/annotation/{witness.id}.txt")) > 0:
+        return True
+    return False

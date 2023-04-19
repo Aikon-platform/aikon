@@ -44,7 +44,7 @@ def manifest_manuscript(request, id, version):
         return JsonResponse(manifest.toJSON(top=True))
     except StructuralError as e:
         log(
-            f"Unable to create manifest for manuscript n°{id} (probably no images):\n{e}"
+            f"[manifest_manuscript] Unable to create manifest for manuscript n°{id} (probably no images):\n{e}"
         )
         return JsonResponse(
             {
@@ -64,7 +64,9 @@ def manifest_volume(request, id, version):
     try:
         return JsonResponse(manifest.toJSON(top=True))
     except StructuralError as e:
-        log(f"Unable to create manifest for volume n°{id} (probably no images):\n{e}")
+        log(
+            f"[manifest_volume] Unable to create manifest for volume n°{id} (probably no images):\n{e}"
+        )
         return JsonResponse(
             {
                 "error": "Unable to create a valid manifest",
@@ -77,7 +79,7 @@ def get_annotations(wit_id, annotations_path):
     try:
         with open(f"{BASE_DIR}/{MEDIA_DIR}/{annotations_path}/{wit_id}.txt") as f:
             return [line.strip() for line in f.readlines()]
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         return None
 
 

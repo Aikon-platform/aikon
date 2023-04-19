@@ -17,7 +17,7 @@ class Work(models.Model):
 
     class Meta:
         verbose_name = "Titre"
-        verbose_name_plural = "Titre"
+        verbose_name_plural = "Titres"
 
     def __str__(self):
         return self.title

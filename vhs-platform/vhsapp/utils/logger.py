@@ -3,7 +3,7 @@ import logging
 import os
 import time
 
-from vhsapp.utils.paths import LOG_PATH, MEDIA_PATH, BASE_DIR, IIIF_LOG_PATH
+from vhsapp.utils.paths import LOG_PATH, MEDIA_DIR, BASE_DIR, IIIF_LOG_PATH
 from vhs.settings import DEBUG
 from vhsapp.utils.constants import (
     APP_NAME,

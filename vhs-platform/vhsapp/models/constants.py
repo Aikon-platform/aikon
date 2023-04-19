@@ -10,6 +10,7 @@ WIT = "witness"
 # ABBREVIATION
 MS_ABBR = "ms"
 VOL_ABBR = "vol"
+WIT_ABBR = "wit"
 
 #############################
 #        HELP TEXTS         #

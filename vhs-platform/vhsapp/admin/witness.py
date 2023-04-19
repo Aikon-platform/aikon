@@ -1,3 +1,4 @@
+import glob
 import zipfile
 
 import nested_admin
@@ -16,7 +17,7 @@ from vhsapp.models.witness import (
     Manuscript,
 )
 
-from vhsapp.models.constants import MS, VOL
+from vhsapp.models.constants import MS, VOL, WIT, MS_ABBR, VOL_ABBR, WIT_ABBR
 
 from vhsapp.admin.digitization import (
     PdfManuscriptInline,
@@ -43,8 +44,16 @@ from vhsapp.utils.paths import (
     MS_PDF_PATH,
 )
 
-from vhsapp.utils.iiif import get_link_manifest, gen_btn, gen_manifest_url, gen_iiif_url
+from vhsapp.utils.iiif import (
+    get_link_manifest,
+    gen_btn,
+    gen_manifest_url,
+    gen_iiif_url,
+    has_manifest,
+    has_annotations,
+)
 from vhsapp.utils.functions import list_to_csv, zip_img, get_file_list, get_pdf_imgs
+from vhsapp.utils.logger import console, log
 
 
 class ManifestAdmin(admin.ModelAdmin):
@@ -56,23 +65,30 @@ class ManifestAdmin(admin.ModelAdmin):
     def wit_name(self):
         return MANIFEST_AUTO
 
-    def manifest_auto(self, obj):
+    def manifest_auto(self, obj, wit_type=MS_ABBR):
         if obj.id:
-            # if manifest_first := obj.manifestvolume_set.first():
-            #     return mark_safe(f"{get_link_manifest(obj.id, manifest_first)}<br>")
-            return gen_btn(obj.id, "VISUALIZE", MANIFEST_AUTO, self.wit_name().lower())
+            # TODO, generalize that to make it work for every type of digitization
+            img_prefix = f"{wit_type}{obj.id}"
+            if hasattr(obj, "pdfmanuscript_set"):
+                if obj.pdfmanuscript_set.first():
+                    img_prefix = (
+                        obj.pdfmanuscript_set.first()
+                        .pdf.name.split("/")[-1]
+                        .split(".")[0]
+                    )
+
+            action = "VISUALIZE" if has_manifest(img_prefix) else "NO MANIFEST"
+            return gen_btn(obj.id, action, MANIFEST_AUTO, self.wit_name().lower())
         return "-"
 
     manifest_auto.short_description = "Manifeste (automatique)"
 
-    def manifest_v2(self, obj):
+    def manifest_v2(self, obj, wit_type=MS_ABBR):
         if obj.id:
-            return gen_btn(
-                obj.id,
-                "FINAL" if obj.manifest_final else "EDIT",
-                MANIFEST_V2,
-                self.wit_name().lower(),
-            )
+            action = "FINAL" if obj.manifest_final else "EDIT"
+            if not has_annotations(obj, wit_type):
+                action = "NO ANNOTATION YET"
+            return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
         return "-"
 
     manifest_v2.short_description = "Manifeste (modifiable)"
@@ -115,7 +131,14 @@ class VolumeInline(nested_admin.NestedStackedInline):
 
     def manifest_auto(self, obj):
         if obj.id:
-            return gen_btn(obj.id, "VISUALIZE", MANIFEST_AUTO, self.wit_name().lower())
+            img_prefix = f"{VOL_ABBR}{obj.id}"
+            if hasattr(obj, "pdfvolume_set"):
+                if obj.pdfvolume_set.first():
+                    img_prefix = (
+                        obj.pdfvolume_set.first().pdf.name.split("/")[-1].split(".")[0]
+                    )
+            action = "VISUALIZE" if has_manifest(img_prefix) else "NO MANIFEST"
+            return gen_btn(obj.id, action, MANIFEST_AUTO, self.wit_name().lower())
         return "-"
 
     manifest_auto.short_description = "Manifeste (automatique)"
@@ -123,6 +146,8 @@ class VolumeInline(nested_admin.NestedStackedInline):
     def manifest_v2(self, obj):
         if obj.id:
             action = "FINAL" if obj.manifest_final else "EDIT"
+            if not has_annotations(obj, VOL_ABBR):
+                action = "NO ANNOTATION YET"
             return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
         return "-"
 
@@ -151,10 +176,12 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         js = ("js/jquery-3.6.1.js", "js/script.js")
 
     wit_type = "witness"
-    change_form_template = "admin/change.html"  # TODO check if correct
+    # NOTE: attribute to use to change to template of witness (template at: templates/admin/change.html)
+    # change_form_template = "admin/change.html"
+
     ordering = ("id",)
-    list_filter = (AuthorFilter, WorkFilter)
-    autocomplete_fields = ("author", "work")
+    # list_filter = (AuthorFilter, WorkFilter)
+    # autocomplete_fields = ("author", "work")
     list_per_page = 100
     exclude = ("slug", "created_at", "updated_at")
 
@@ -339,17 +366,25 @@ class PrintedAdmin(WitnessAdmin, nested_admin.NestedModelAdmin, admin.SimpleList
 class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
     # list of fields that are displayed in the all witnesses tab
     list_display = (
-        "short_author",
-        "short_work",
-        "conservation_place",
+        "id",
         "reference_number",
-        "date_century",
+        "conservation_place",
+        "short_author",
+        # "short_work",
+        # "date_century",
         "sheets",
         "published",
     )
-    search_fields = ("author__name", "work__title")
-    autocomplete_fields = ("author", "work", "digitized_version")
-    list_editable = ("date_century",)
+    list_display_links = ("reference_number",)
+    # search_fields = ("author__name", "work__title")
+    search_fields = (
+        "author__name",
+        "conservation_place",
+        "reference_number",
+        "remarks",
+    )
+    autocomplete_fields = ("author", "digitized_version")
+    # list_editable = ("date_century",)
     inlines = [PdfManuscriptInline, ManifestManuscriptInline, ImageManuscriptInline]
     readonly_fields = ("manifest_auto", "manifest_v2")
 
@@ -385,10 +420,10 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
                     "manifest_v2",
                     "manifest_final",
                     "author",
-                    "work",
+                    # "work",
                     "conservation_place",
                     "reference_number",
-                    "date_century",
+                    # "date_century",
                     "date_free",
                     "sheets",
                     "origin_place",
