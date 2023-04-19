@@ -13,6 +13,7 @@ from io import BytesIO
 
 from django.utils.html import format_html
 from django.http import HttpResponse
+from django.utils.safestring import mark_safe
 from pdf2image import pdfinfo_from_path, convert_from_path
 from django.core.files import File
 from urllib.request import (
@@ -126,8 +127,10 @@ def gen_thumbnail(url, img_url):
     )
 
 
-def get_icon(icon):
-    return f"<i class='fa-solid fa-{icon}'></i>"
+def get_icon(icon, color=None):
+    if color:
+        color = f"style='color: {color}'"
+    return mark_safe(f"<i class='fa-solid fa-{icon}' {color}></i>")
 
 
 def anno_btn(obj_id, action="VISUALIZE"):
