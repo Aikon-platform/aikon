@@ -1,7 +1,7 @@
-{% extends "base_site.html" %}
+{% extends "admin/base_site.html" %}
 {% load static %}
 
-{% block title %}Annotations {{ work }} #{{ work_obj.id }}{% endblock %}
+{% block title %}{{ block.super }} | Annotations {{ work }} #{{ work_obj.id }}{% endblock %}
 
 {% block javascript %}
     {{ block.super }}
