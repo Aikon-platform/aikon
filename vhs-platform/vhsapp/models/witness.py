@@ -98,7 +98,8 @@ class Volume(models.Model):
         verbose_name="Numéro ou élément d'identification du volume", max_length=150
     )
     place = models.CharField(verbose_name="Lieu", max_length=150, help_text=PLACE_INFO)
-    date = models.CharField(max_length=150)
+    date_min = models.IntegerField(verbose_name="Date min", null=True, blank=True)
+    date_max = models.IntegerField(verbose_name="Date max", null=True, blank=True)
     publishers_booksellers = models.CharField(
         verbose_name="Éditeurs/libraires", max_length=150
     )
@@ -151,10 +152,6 @@ class Manuscript(models.Model):
         default=False,
         help_text=MANIFEST_FINAL_INFO,
     )
-    # slug = models.SlugField(max_length=600)
-    # conservation_place = models.CharField(
-    #     verbose_name="Lieu de conservation", max_length=150
-    # )
     conservation_place = models.ForeignKey(
         ConservationPlace,
         verbose_name="Lieu de conservation",
@@ -166,13 +163,9 @@ class Manuscript(models.Model):
     date_century = models.CharField(
         verbose_name="Date (siècle)", choices=CENTURY, max_length=150
     )
-    date_free = models.CharField(
-        verbose_name="Date (champ libre)", max_length=150, blank=True
-    )
+    date_min = models.IntegerField(verbose_name="Date min", null=True, blank=True)
+    date_max = models.IntegerField(verbose_name="Date max", null=True, blank=True)
     sheets = models.CharField(verbose_name="Feuillet(s)", max_length=150)
-    # origin_place = models.CharField(
-    #     verbose_name="Lieu d'origine", max_length=150, blank=True
-    # )
     origin_place = models.ForeignKey(
         Place,
         verbose_name="Lieu de création",

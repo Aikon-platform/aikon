@@ -1,0 +1,126 @@
+                                                                       Table "public.vhsapp_manuscript"
+        Column         |           Type           | Collation | Nullable |                    Default                    | Storage  | Compression | Stats target | Description
+-----------------------+--------------------------+-----------+----------+-----------------------------------------------+----------+-------------+--------------+-------------
+ id                    | bigint                   |           | not null | nextval('vhsapp_manuscript_id_seq'::regclass) | plain    |             |              |
+ manifest_final        | boolean                  |           | not null |                                               | plain    |             |              |
+ conservation_place_id | bigint                   |           |          |                                               | plain    |             |              |
+ reference_number      | character varying(150)   |           | not null |                                               | extended |             |              |
+ date_century          | character varying(150)   |           | not null |                                               | extended |             |              |
+ sheets                | character varying(150)   |           | not null |                                               | extended |             |              |
+ remarks               | text                     |           | not null |                                               | extended |             |              |
+ copyists              | character varying(150)   |           | not null |                                               | extended |             |              |
+ miniaturists          | character varying(150)   |           | not null |                                               | extended |             |              |
+ pinakes_link          | character varying(200)   |           | not null |                                               | extended |             |              |
+ published             | boolean                  |           | not null |                                               | plain    |             |              |
+ created_at            | timestamp with time zone |           |          |                                               | plain    |             |              |
+ updated_at            | timestamp with time zone |           |          |                                               | plain    |             |              |
+ author_id             | bigint                   |           |          |                                               | plain    |             |              |
+ digitized_version_id  | bigint                   |           |          |                                               | plain    |             |              |
+ user_id               | integer                  |           |          |                                               | plain    |             |              |
+ work_id               | bigint                   |           |          |                                               | plain    |             |              |
+ origin_place_id       | bigint                   |           |          |                                               | plain    |             |              |
+ date_max              | integer                  |           |          |                                               | plain    |             |              |
+Indexes:
+    "vhsapp_manuscript_pkey" PRIMARY KEY, btree (id)
+    "vhsapp_manuscript_author_id_a3566c9c" btree (author_id)
+    "vhsapp_manuscript_conservation_place_id_5f5856f5" btree (conservation_place_id)
+    "vhsapp_manuscript_creation_place_id_2de8ede3" btree (origin_place_id)
+    "vhsapp_manuscript_digitized_version_id_230673ce" btree (digitized_version_id)
+    "vhsapp_manuscript_user_id_e234d2c4" btree (user_id)
+    "vhsapp_manuscript_work_id_cf8dbbaf" btree (work_id)
+Foreign-key constraints:
+    "vhsapp_manuscript_author_id_a3566c9c_fk_vhsapp_author_id" FOREIGN KEY (author_id) REFERENCES vhsapp_author(id) DEFERRABLE INITIALLY DEFERRED
+    "vhsapp_manuscript_conservation_place_i_5f5856f5_fk_vhsapp_co" FOREIGN KEY (conservation_place_id) REFERENCES vhsapp_conservationplace(id) DEFERRABLE INITIALLY DEFERRED
+    "vhsapp_manuscript_digitized_version_id_230673ce_fk_vhsapp_di" FOREIGN KEY (digitized_version_id) REFERENCES vhsapp_digitizedversion(id) DEFERRABLE INITIALLY DEFERRED
+    "vhsapp_manuscript_origin_place_id_6f0b3200_fk_vhsapp_place_id" FOREIGN KEY (origin_place_id) REFERENCES vhsapp_place(id) DEFERRABLE INITIALLY DEFERRED
+    "vhsapp_manuscript_user_id_e234d2c4_fk_auth_user_id" FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+    "vhsapp_manuscript_work_id_cf8dbbaf_fk_vhsapp_work_id" FOREIGN KEY (work_id) REFERENCES vhsapp_work(id) DEFERRABLE INITIALLY DEFERRED
+Referenced by:
+    TABLE "vhsapp_imagemanuscript" CONSTRAINT "vhsapp_imagemanuscri_manuscript_id_a55b6ba2_fk_vhsapp_ma" FOREIGN KEY (manuscript_id) REFERENCES vhsapp_manuscript(id) DEFERRABLE INITIALLY DEFERRED
+    TABLE "vhsapp_manifestmanuscript" CONSTRAINT "vhsapp_manifestmanus_manuscript_id_2ef8c20f_fk_vhsapp_ma" FOREIGN KEY (manuscript_id) REFERENCES vhsapp_manuscript(id) DEFERRABLE INITIALLY DEFERRED
+    TABLE "vhsapp_pdfmanuscript" CONSTRAINT "vhsapp_pdfmanuscript_manuscript_id_82d6f912_fk_vhsapp_ma" FOREIGN KEY (manuscript_id) REFERENCES vhsapp_manuscript(id) DEFERRABLE INITIALLY DEFERRED
+Access method: heap
+
+                                            Table "public.vhsapp_manuscript"
+        Column         |           Type           | Collation | Nullable |                    Default
+-----------------------+--------------------------+-----------+----------+-----------------------------------------------
+ id                    | bigint                   |           | not null | nextval('vhsapp_manuscript_id_seq'::regclass)
+ manifest_final        | boolean                  |           | not null |
+ conservation_place_id | bigint                   |           |          |
+ reference_number      | character varying(150)   |           | not null |
+ date_century          | character varying(150)   |           | not null |
+ sheets                | character varying(150)   |           | not null |
+ remarks               | text                     |           | not null |
+ copyists              | character varying(150)   |           | not null |
+ miniaturists          | character varying(150)   |           | not null |
+ pinakes_link          | character varying(200)   |           | not null |
+ published             | boolean                  |           | not null |
+ created_at            | timestamp with time zone |           |          |
+ updated_at            | timestamp with time zone |           |          |
+ author_id             | bigint                   |           |          |
+ digitized_version_id  | bigint                   |           |          |
+ user_id               | integer                  |           |          |
+ work_id               | bigint                   |           |          |
+ origin_place_id       | bigint                   |           |          |
+ date_max              | integer                  |           |          |
+Indexes:
+    "vhsapp_manuscript_pkey" PRIMARY KEY, btree (id)
+    "vhsapp_manuscript_author_id_a3566c9c" btree (author_id)
+    "vhsapp_manuscript_conservation_place_id_5f5856f5" btree (conservation_place_id)
+    "vhsapp_manuscript_creation_place_id_2de8ede3" btree (origin_place_id)
+    "vhsapp_manuscript_digitized_version_id_230673ce" btree (digitized_version_id)
+    "vhsapp_manuscript_user_id_e234d2c4" btree (user_id)
+    "vhsapp_manuscript_work_id_cf8dbbaf" btree (work_id)
+Foreign-key constraints:
+    "vhsapp_manuscript_author_id_a3566c9c_fk_vhsapp_author_id" FOREIGN KEY (author_id) REFERENCES vhsapp_author(id) DEFERRABLE INITIALLY DEFERRED
+    "vhsapp_manuscript_conservation_place_i_5f5856f5_fk_vhsapp_co" FOREIGN KEY (conservation_place_id) REFERENCES vhsapp_conservationplace(id) DEFERRABLE INITIALLY DEFERRED
+    "vhsapp_manuscript_digitized_version_id_230673ce_fk_vhsapp_di" FOREIGN KEY (digitized_version_id) REFERENCES vhsapp_digitizedversion(id) DEFERRABLE INITIALLY DEFERRED
+    "vhsapp_manuscript_origin_place_id_6f0b3200_fk_vhsapp_place_id" FOREIGN KEY (origin_place_id) REFERENCES vhsapp_place(id) DEFERRABLE INITIALLY DEFERRED
+    "vhsapp_manuscript_user_id_e234d2c4_fk_auth_user_id" FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+    "vhsapp_manuscript_work_id_cf8dbbaf_fk_vhsapp_work_id" FOREIGN KEY (work_id) REFERENCES vhsapp_work(id) DEFERRABLE INITIALLY DEFERRED
+Referenced by:
+    TABLE "vhsapp_imagemanuscript" CONSTRAINT "vhsapp_imagemanuscri_manuscript_id_a55b6ba2_fk_vhsapp_ma" FOREIGN KEY (manuscript_id) REFERENCES vhsapp_manuscript(id) DEFERRABLE INITIALLY DEFERRED
+    TABLE "vhsapp_manifestmanuscript" CONSTRAINT "vhsapp_manifestmanus_manuscript_id_2ef8c20f_fk_vhsapp_ma" FOREIGN KEY (manuscript_id) REFERENCES vhsapp_manuscript(id) DEFERRABLE INITIALLY DEFERRED
+    TABLE "vhsapp_pdfmanuscript" CONSTRAINT "vhsapp_pdfmanuscript_manuscript_id_82d6f912_fk_vhsapp_ma" FOREIGN KEY (manuscript_id) REFERENCES vhsapp_manuscript(id) DEFERRABLE INITIALLY DEFERRED
+
+                                            Table "public.vhsapp_manuscript"
+        Column         |           Type           | Collation | Nullable |                    Default
+-----------------------+--------------------------+-----------+----------+-----------------------------------------------
+ id                    | bigint                   |           | not null | nextval('vhsapp_manuscript_id_seq'::regclass)
+ manifest_final        | boolean                  |           | not null |
+ conservation_place_id | bigint                   |           |          |
+ reference_number      | character varying(150)   |           | not null |
+ date_century          | character varying(150)   |           | not null |
+ sheets                | character varying(150)   |           | not null |
+ remarks               | text                     |           | not null |
+ copyists              | character varying(150)   |           | not null |
+ miniaturists          | character varying(150)   |           | not null |
+ pinakes_link          | character varying(200)   |           | not null |
+ published             | boolean                  |           | not null |
+ created_at            | timestamp with time zone |           |          |
+ updated_at            | timestamp with time zone |           |          |
+ author_id             | bigint                   |           |          |
+ digitized_version_id  | bigint                   |           |          |
+ user_id               | integer                  |           |          |
+ work_id               | bigint                   |           |          |
+ origin_place_id       | bigint                   |           |          |
+ date_max              | integer                  |           |          |
+Indexes:
+    "vhsapp_manuscript_pkey" PRIMARY KEY, btree (id)
+    "vhsapp_manuscript_author_id_a3566c9c" btree (author_id)
+    "vhsapp_manuscript_conservation_place_id_5f5856f5" btree (conservation_place_id)
+    "vhsapp_manuscript_creation_place_id_2de8ede3" btree (origin_place_id)
+    "vhsapp_manuscript_digitized_version_id_230673ce" btree (digitized_version_id)
+    "vhsapp_manuscript_user_id_e234d2c4" btree (user_id)
+    "vhsapp_manuscript_work_id_cf8dbbaf" btree (work_id)
+Foreign-key constraints:
+    "vhsapp_manuscript_author_id_a3566c9c_fk_vhsapp_author_id" FOREIGN KEY (author_id) REFERENCES vhsapp_author(id) DEFERRABLE INITIALLY DEFERRED
+    "vhsapp_manuscript_conservation_place_i_5f5856f5_fk_vhsapp_co" FOREIGN KEY (conservation_place_id) REFERENCES vhsapp_conservationplace(id) DEFERRABLE INITIALLY DEFERRED
+    "vhsapp_manuscript_digitized_version_id_230673ce_fk_vhsapp_di" FOREIGN KEY (digitized_version_id) REFERENCES vhsapp_digitizedversion(id) DEFERRABLE INITIALLY DEFERRED
+    "vhsapp_manuscript_origin_place_id_6f0b3200_fk_vhsapp_place_id" FOREIGN KEY (origin_place_id) REFERENCES vhsapp_place(id) DEFERRABLE INITIALLY DEFERRED
+    "vhsapp_manuscript_user_id_e234d2c4_fk_auth_user_id" FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+    "vhsapp_manuscript_work_id_cf8dbbaf_fk_vhsapp_work_id" FOREIGN KEY (work_id) REFERENCES vhsapp_work(id) DEFERRABLE INITIALLY DEFERRED
+Referenced by:
+    TABLE "vhsapp_imagemanuscript" CONSTRAINT "vhsapp_imagemanuscri_manuscript_id_a55b6ba2_fk_vhsapp_ma" FOREIGN KEY (manuscript_id) REFERENCES vhsapp_manuscript(id) DEFERRABLE INITIALLY DEFERRED
+    TABLE "vhsapp_manifestmanuscript" CONSTRAINT "vhsapp_manifestmanus_manuscript_id_2ef8c20f_fk_vhsapp_ma" FOREIGN KEY (manuscript_id) REFERENCES vhsapp_manuscript(id) DEFERRABLE INITIALLY DEFERRED
+    TABLE "vhsapp_pdfmanuscript" CONSTRAINT "vhsapp_pdfmanuscript_manuscript_id_82d6f912_fk_vhsapp_ma" FOREIGN KEY (manuscript_id) REFERENCES vhsapp_manuscript(id) DEFERRABLE INITIALLY DEFERRED
