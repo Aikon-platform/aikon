@@ -4,7 +4,7 @@ import os
 import time
 
 from vhsapp.utils.paths import LOG_PATH, MEDIA_DIR, BASE_DIR, IIIF_LOG_PATH
-from vhs.settings import DEBUG, APP_NAME
+from vhs.settings import DEBUG
 
 
 class TerminalColors:
@@ -47,7 +47,7 @@ def log(msg):
         f.close()
 
     # Create a logger instance
-    logger = logging.getLogger(APP_NAME)
+    logger = logging.getLogger("django")
     # get_time() is already printed by the logger object
     logger.error(f"\n{pprint(msg)}{trace}\n")
 

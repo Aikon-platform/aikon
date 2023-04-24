@@ -83,9 +83,10 @@ VHS_APP_URL = f"http://localhost:{VHS_PORT}"
 CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
 SAS_APP_URL = f"http://localhost:{SAS_PORT}"
 
+PROD_URL = ENV("PROD_URL")
+
 # Override the default values in production mode
 if not DEBUG:
-    PROD_URL = ENV("PROD_URL")
     VHS_APP_URL = f"{PROD_URL}"
     CANTALOUPE_APP_URL = f"{PROD_URL}"
     SAS_APP_URL = f"{PROD_URL}/sas"
@@ -196,9 +197,9 @@ LOGGING = {
         },
     },
     "loggers": {
-        APP_NAME: {
+        "django": {
             "handlers": ["file"],
-            "level": "ERROR",
+            "level": "WARNING",
         },
     },
     "formatters": {
