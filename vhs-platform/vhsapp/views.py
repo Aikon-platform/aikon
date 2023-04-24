@@ -9,17 +9,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from iiif_prezi.factory import ManifestFactory, StructuralError
 
 from django.contrib.auth.decorators import login_required
-from vhs.settings import ENV
+from vhs.settings import APP_NAME, ENV
 
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
 from vhsapp.utils.functions import credentials, console, log
-from vhsapp.utils.constants import (
-    APP_NAME,
-    APP_NAME_UPPER,
-    APP_DESCRIPTION,
-)
 from vhsapp.utils.iiif import annotate_canvas, process_images, manifest_witness
 from vhsapp.utils.paths import (
     MEDIA_DIR,

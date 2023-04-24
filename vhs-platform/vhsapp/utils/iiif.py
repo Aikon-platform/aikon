@@ -19,17 +19,15 @@ from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 
 from vhsapp.utils.constants import (
-    APP_NAME,
     MANIFEST_AUTO,
     MANIFEST_V2,
     APP_NAME_UPPER,
     APP_DESCRIPTION,
 )
-from vhsapp.utils.functions import get_json, create_dir, save_img
+from vhsapp.utils.functions import get_json, create_dir, save_img, get_icon, anno_btn
 from vhsapp.utils.paths import MEDIA_DIR, IMG_PATH, BASE_DIR
-from vhsapp.utils.functions import get_icon, anno_btn
 from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
-from vhs.settings import SAS_APP_URL, VHS_APP_URL, CANTALOUPE_APP_URL
+from vhs.settings import APP_NAME, SAS_APP_URL, VHS_APP_URL, CANTALOUPE_APP_URL
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.utils.logger import iiif_log, console, log
 

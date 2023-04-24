@@ -1,5 +1,6 @@
+from vhs.settings import APP_NAME
+
 # Application titles
-APP_NAME = "eida"
 APP_NAME_UPPER = APP_NAME.upper()
 APP_DESCRIPTION = (
     "Computer Vision and Historical Analysis of Scientific Illustration Circulation"

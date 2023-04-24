@@ -23,9 +23,7 @@ from urllib.request import (
     build_opener,
     install_opener,
 )
-from vhsapp.utils.constants import (
-    APP_NAME,
-)
+from vhs.settings import APP_NAME
 from vhsapp.utils.paths import BASE_DIR, MEDIA_DIR, IMG_PATH
 from vhsapp.utils.logger import log, console
 

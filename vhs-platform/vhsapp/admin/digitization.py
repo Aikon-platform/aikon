@@ -13,7 +13,7 @@ from vhsapp.models.digitization import (
 )
 
 from vhsapp.utils.iiif import IIIF_ICON, gen_iiif_url
-from vhsapp.utils.constants import APP_NAME
+from vhs.settings import APP_NAME
 from vhsapp.models.constants import MS, VOL, WIT
 
 from vhsapp.utils.functions import (

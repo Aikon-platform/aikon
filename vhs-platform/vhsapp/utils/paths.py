@@ -1,5 +1,4 @@
 from pathlib import Path
-from vhsapp.utils.constants import APP_NAME
 
 # absolute path to vhs-platform
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -20,5 +19,5 @@ MS_PDF_PATH = f"{MS_DIR}/{PDF_DIR}"
 MS_ANNO_PATH = f"{MS_DIR}/{ANNO_DIR}"
 VOL_PDF_PATH = f"{VOL_DIR}/{PDF_DIR}"
 VOL_ANNO_PATH = f"{VOL_DIR}/{ANNO_DIR}"
-LOG_PATH = f"{BASE_DIR}/{LOG_DIR}/{APP_NAME}.log"
+LOG_PATH = f"{BASE_DIR}/{LOG_DIR}/app_log.log"
 IIIF_LOG_PATH = f"{BASE_DIR}/{LOG_DIR}/iiif.log"

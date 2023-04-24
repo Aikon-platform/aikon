@@ -1,11 +1,11 @@
 import environ
 from vhsapp.utils.paths import BASE_DIR, LOG_PATH, MEDIA_DIR, STATIC_DIR
-from vhsapp.utils.constants import APP_NAME
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
 ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/vhs/.env")
+APP_NAME = ENV("APP_NAME")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
