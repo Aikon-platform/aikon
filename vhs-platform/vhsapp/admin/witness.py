@@ -16,7 +16,6 @@ from vhsapp.models.witness import (
     Volume,
     Manuscript,
 )
-
 from vhsapp.models.constants import MS, VOL, WIT, MS_ABBR, VOL_ABBR, WIT_ABBR
 
 from vhsapp.admin.digitization import (
@@ -27,7 +26,7 @@ from vhsapp.admin.digitization import (
     ManifestVolumeInline,
     ImageVolumeInline,
 )
-
+from vhs.settings import PROD_URL
 from vhsapp.utils.constants import (
     SITE_HEADER,
     SITE_TITLE,
@@ -43,7 +42,6 @@ from vhsapp.utils.paths import (
     IMG_PATH,
     MS_PDF_PATH,
 )
-
 from vhsapp.utils.iiif import (
     get_link_manifest,
     gen_btn,
@@ -307,7 +305,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     )
     def exporter_images(self, request):
         return HttpResponseRedirect(
-            "https://iscd.huma-num.fr/media/images_vhs.zip"
+            f"{PROD_URL}/media/images_vhs.zip"
         )  # TODO CHANGE THAT
 
 
