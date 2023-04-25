@@ -1,16 +1,60 @@
+from vhs.settings import APP_LANG
+
 #############################
 #        MODEL NAMES        #
 #############################
 
-MANIFEST = "manifest"
-MS = "manuscript"
-VOL = "volume"
-WIT = "witness"
+MODEL_NAMES = {
+    "Work": {"en": "work", "fr": "œuvre"},
+    "Witness": {"en": "witness", "fr": "témoin"},
+    "Language": {"en": "language", "fr": "langue"},
+    "ConservationPlace": {"en": "conservation place", "fr": "lieu de conservation"},
+    "Manifest": {"en": "manifest", "fr": "manifest"},
+    "Manuscript": {"en": "manuscript", "fr": "manuscrit"},
+    "Volume": {"en": "volume", "fr": "tome"},
+    "Print": {"en": "print", "fr": "imprimé"},
+    "Person": {"en": "historical actor", "fr": "acteur historique"},
+    "Series": {"en": "series", "fr": "série"},
+    "Content": {"en": "content", "fr": "contenu"},
+    "Tag": {"en": "tag", "fr": "tag"},
+    "Place": {"en": "place", "fr": "lieu"},
+    "Digitization": {"en": "digitization", "fr": "numérisation"},
+    "Edition": {"en": "edition", "fr": "édition"},
+    "Role": {"en": "role", "fr": "rôle"},
+}
+
+MANIFEST = MODEL_NAMES["Manifest"][APP_LANG]
+MS = MODEL_NAMES["Manuscript"][APP_LANG]
+VOL = MODEL_NAMES["Volume"][APP_LANG]
+WIT = MODEL_NAMES["Witness"][APP_LANG]
+PR = MODEL_NAMES["Print"][APP_LANG]
+SER = MODEL_NAMES["Series"][APP_LANG]
+CONT = MODEL_NAMES["Content"][APP_LANG]
+WORK = MODEL_NAMES["Work"][APP_LANG]
+TAG = MODEL_NAMES["Tag"][APP_LANG]
+PLA = MODEL_NAMES["Place"][APP_LANG]
+CONS_PLA = MODEL_NAMES["ConservationPlace"][APP_LANG]
+DIG = MODEL_NAMES["Digitization"][APP_LANG]
+ED = MODEL_NAMES["Edition"][APP_LANG]
+LANG = MODEL_NAMES["Language"][APP_LANG]
+PERS = MODEL_NAMES["Person"][APP_LANG]
+ROLE = MODEL_NAMES["Role"][APP_LANG]
 
 # ABBREVIATION
 MS_ABBR = "ms"
 VOL_ABBR = "vol"
 WIT_ABBR = "wit"
+WPR_ABBR = "wpr"
+TPR_ABBR = "tpr"
+
+TPR = f"letterpress {PR}" if APP_LANG == "en" else "typographie"
+WPR = f"woodblock {PR}" if APP_LANG == "en" else "bois gravés"
+
+WIT_TYPE = (
+    (MS_ABBR, MS.capitalize()),
+    (TPR_ABBR, TPR.capitalize()),
+    (WPR_ABBR, WPR.capitalize()),
+)
 
 #############################
 #        HELP TEXTS         #

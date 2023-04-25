@@ -100,6 +100,8 @@ Create a [Geonames](https://www.geonames.org/login) account, activate it and cha
 
 Add an `APP_NAME` and an `PROD_URL` with the scheme and domain used in production (e.g. "https://eida.obspm.fr")
 
+Provide as well an `APP_LANG`: only "fr" or "en" values are supported for now
+
 ### Django
 
 Update database schema with models that are stored inside `vhs-platform/vhsapp/migrations`

@@ -155,7 +155,8 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
-LANGUAGE_CODE = "fr-FR"
+APP_LANG = ENV("APP_LANG")
+LANGUAGE_CODE = "en-us" if APP_LANG == "en" else "fr-FR"
 
 TIME_ZONE = "UTC"
 
