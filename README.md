@@ -77,7 +77,7 @@ cp vhs-platform/vhs/.env{.template,}
 Change variables in the generated file `vhs-platform/vhs/.env` to corresponds to your database and username
 
 ```bash
-ALLOWED_HOSTS="localhost,127.0.0.1"
+ALLOWED_HOSTS="localhost,127.0.0.1,145.238.203.8"
 SECRET_KEY="<secret-key>"
 DEBUG=True
 DB_NAME="<database-name>"
@@ -90,7 +90,15 @@ SAS_PASSWORD="<sas-password>"
 GPU_REMOTE_HOST="<gpu-host>"
 GPU_USERNAME="<gpu-username>"
 GPU_PASSWORD="<gpu-password>"
+PROD_URL="<url-used-for-prod>"
+APP_NAME="<app-name-lowercase>"
+GEONAMES_USER="<geonames-username>"
+APP_LANG="<fr-or-en>"
 ```
+
+Create a [Geonames](https://www.geonames.org/login) account, activate it and change `<geonames-username>` in the `.env` file
+
+Add an `APP_NAME` and an `PROD_URL` with the scheme and domain used in production (e.g. "https://eida.obspm.fr")
 
 ### Django
 
