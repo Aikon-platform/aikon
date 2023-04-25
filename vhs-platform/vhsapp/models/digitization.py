@@ -49,7 +49,7 @@ class Digitization(models.Model):
         abstract = True
 
     # TODO: make this reference the Witness class
-    witness = None  # models.ForeignKey(Witness, on_delete=models.CASCADE)
+    # witness = None  # models.ForeignKey(Witness, on_delete=models.CASCADE)
     wit_type = WIT  # TODO remove to use self.witness.type
     digit_type = "digit"
 
@@ -59,12 +59,16 @@ class Digitization(models.Model):
         self.ext = ext
 
     def get_witness(self):
-        return self.witness
+        try:
+            return self.witness
+        except AttributeError:
+            return None
 
     def get_wit_type(self):
-        if self.witness is None:
+        witness = self.get_witness()
+        if witness is None:
             return self.wit_type
-        return self.witness.type
+        return witness.type
 
     def get_digit_type(self):
         return self.digit_type
@@ -88,9 +92,10 @@ class Digitization(models.Model):
         return VOL_ABBR if self.wit_type == VOL else MS_ABBR
 
     def get_wit_id(self):
-        if self.witness is None:
+        witness = self.get_witness()
+        if witness is None:
             return 0
-        return self.witness.id
+        return witness.id
 
     def get_wit_ref(self):
         return f"{self.get_wit_abbr()}{self.get_wit_id()}"

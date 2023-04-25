@@ -64,7 +64,7 @@ def get_pdf_imgs(pdf_list, ps_type="volume"):
     img_list = []
     for pdf_name in pdf_list:
         pdf_reader = PyPDF2.PdfFileReader(
-            open(f"{MEDIA_DIR}/{ps_type}/pdf/{pdf_name}", "rb")
+            open(f"{BASE_DIR}/{MEDIA_DIR}/{ps_type}/pdf/{pdf_name}", "rb")
         )
         for img_nb in range(1, pdf_reader.numPages + 1):
             img_list.append(
