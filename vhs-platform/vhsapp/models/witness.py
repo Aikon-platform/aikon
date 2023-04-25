@@ -108,7 +108,8 @@ class Volume(models.Model):
         verbose_name="Numéro ou élément d'identification du volume", max_length=150
     )
     place = models.CharField(verbose_name="Lieu", max_length=150, help_text=PLACE_INFO)
-    date = models.CharField(max_length=150)
+    date_min = models.IntegerField(verbose_name="Date min", null=True, blank=True)
+    date_max = models.IntegerField(verbose_name="Date max", null=True, blank=True)
     publishers_booksellers = models.CharField(
         verbose_name="Éditeurs/libraires", max_length=150
     )

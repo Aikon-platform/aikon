@@ -15,6 +15,7 @@ deprecation==2.1.0
 Django==4.0.4
 django-admin-extra-buttons==1.5.4
 django-admin-searchable-dropdown==1.2
+django-autocomplete-light==3.9.0
 django-classy-tags==3.0.1
 django-cors-headers==3.13.0
 django-js-asset==2.0.0

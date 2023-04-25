@@ -22,6 +22,8 @@ ALLOWED_HOSTS = ENV.list("ALLOWED_HOSTS")
 # Application definition
 
 INSTALLED_APPS = [
+    "dal",
+    "dal_select2",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -206,3 +208,5 @@ LOGGING = {
         "verbose": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
     },
 }
+
+GEONAMES_USER = ENV("GEONAMES_USER")
