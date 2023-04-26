@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # HOW TO USE
+# in the script directory
 # sh annotate.sh filename.txt
 # filename.txt -> each line is a manifest URL from eida
 
@@ -26,6 +27,8 @@ input_file=$1
 file_name=$(basename -- "${input_file%.*}")
 
 echo "$(figlet ANNOTATOR)"
+
+# TODO EITHER change detect_vhs.py to only detect newly downloaded images OR empty input_img/ before running detect_vhs
 
 colorEcho "info" "Copying $input_file to dishas-ia ..."
 scp "$input_file" dishas-ia:yolov5/manifests/ || error "Failed to copy file to dishas-ia"

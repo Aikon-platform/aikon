@@ -114,3 +114,5 @@ target/
 # Log files
 logs/*
 !logs/.gitkeep
+
+scripts/manifest.txt
