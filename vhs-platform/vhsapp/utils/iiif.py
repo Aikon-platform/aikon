@@ -428,7 +428,7 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
                         f"id='rectangle_{work_abbr}{id}-{canvas}-{num_anno + 1}' fill-opacity='0' "
                         f"fill='#00ff00' fill-rule='nonzero' stroke='#00ff00' stroke-width='1' "
                         f"stroke-linecap='butt' stroke-linejoin='miter' stroke-miterlimit='10' "
-                        f"stroke-dashoffset='0' style='mix-blend-mode: normal'/></svg",
+                        f"stroke-dashoffset='0' style='mix-blend-mode: normal'/></svg>",
                     },
                 },
                 "full": f"{base_url}/canvas/c{canvas}.json",
