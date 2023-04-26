@@ -76,19 +76,24 @@ cp vhs-platform/vhs/.env{.template,}
 Change variables in the generated file `vhs-platform/vhs/.env` to corresponds to your database and username
 
 ```bash
-ALLOWED_HOSTS="localhost,127.0.0.1"
-SECRET_KEY="<secret-key>"
-DEBUG=True
-DB_NAME="<database-name>"
-DB_USERNAME="<database-username>"
-DB_PASSWORD="<database-password>"
-DB_HOST="<database-host>"
-DB_PORT="<database-port>"
+
+ALLOWED_HOSTS="localhost,127.0.0.1,145.238.203.8"
+SECRET_KEY="<secret-key>"            # random string of characters
+DEBUG=True                           # leave to True on local
+DB_NAME="<database-name>"            # database name you defined
+DB_USERNAME="<database-username>"    # database username you defined
+DB_PASSWORD="<database-password>"    # database password you defined
+DB_HOST="<database-host>"            # localhost
+DB_PORT="<database-port>"            # 5432
 SAS_USERNAME="<sas-username>"
 SAS_PASSWORD="<sas-password>"
 GPU_REMOTE_HOST="<gpu-host>"
 GPU_USERNAME="<gpu-username>"
 GPU_PASSWORD="<gpu-password>"
+PROD_URL="<url-used-for-prod>"       # e.g. "https://eida.obspm.fr"
+APP_NAME="<app-name-lowercase>"      # name of the application, e.g. "eida"
+GEONAMES_USER="<geonames-username>"
+APP_LANG="<fr-or-en>"                # lang to be used in the app: work either for french (fr) or english (en)
 ```
 
 ### Django
@@ -116,21 +121,31 @@ sudo ufw allow 8000
 ### IIIF Image server
 
 #### Cantaloupe
-Run [Cantaloupe](https://cantaloupe-project.github.io/)
-```shell
-# Unix distributions
-sudo java -Dcantaloupe.config=cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe-4.1.11.war
+Copy the content of the cantaloupe settings template file
 
-# Windows
-java -Dcantaloupe.config=C:cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe-4.1.11.war
+```bash
+cp cantaloupe/.env{.template,}
 ```
 
-[//]: # (If `Exception in thread "main" java.io.IOException: Failed to bind to /0.0.0.0:80`)
-[//]: # (`Caused by: java.net.BindException: Address already in use`)
-[//]: # (```shell)
-[//]: # (sudo lsof -i :80)
-[//]: # (sudo kill <pid1> <pid2> ...)
-[//]: # (```)
+Change variables in the generated file `cantaloupe/.env` (more important is `BASE_URI`: leave it blank on local)
+```bash
+BASE_URI=
+FILE_SYSTEM_SOURCE=./vhs-platform/mediafiles/img/
+HTTP_PORT=8182
+HTTPS_PORT=8183
+LOG_PATH=/path/to/logs
+```
+
+Run [Cantaloupe](https://cantaloupe-project.github.io/)
+```shell
+cd cantaloupe
+
+# Unix distributions
+export $(cat .env | xargs) && sudo java -Dcantaloupe.config=cantaloupe.properties -Xmx2g -jar cantaloupe-4.1.11.war
+
+# Windows
+for /f "usebackq delims=" %i in (.env) do set %i && java -Dcantaloupe.config=C:cantaloupe.properties -Xmx2g -jar cantaloupe-4.1.11.war
+```
 
 #### Simple Annotation Server
 Run [Simple Annotation Server](https://github.com/glenrobson/SimpleAnnotationServer)

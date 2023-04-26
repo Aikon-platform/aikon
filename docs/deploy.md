@@ -48,21 +48,25 @@ Configure project variables
 cp vhs-platform/vhs/.env{.template,}
 ```
 
-Change variables in the generated file `vhs-platform/vhs/.env` to corresponds to your database and username
+Change variables in the generated file `vhs-platform/vhs/.env` to corresponds to your project
 ```bash
-ALLOWED_HOSTS="localhost,127.0.0.1,<project-host-name>"
-SECRET_KEY="<secret-key>" # random string of characters
-DEBUG=False
-DB_NAME="<database-name>"
-DB_USERNAME="<database-username>"
-DB_PASSWORD="<database-password>"
-DB_HOST="<database-host>"
-DB_PORT="<database-port>"
+ALLOWED_HOSTS="localhost,127.0.0.1,145.238.203.8"  # add the domain name used on prod, e.g. "eida.obspm.fr"
+SECRET_KEY="<secret-key>"            # random string of characters
+DEBUG=True                           # set to False on prod
+DB_NAME="<database-name>"            # database name you defined
+DB_USERNAME="<database-username>"    # database username you defined
+DB_PASSWORD="<database-password>"    # database password you defined
+DB_HOST="<database-host>"            # localhost
+DB_PORT="<database-port>"            # 5432
 SAS_USERNAME="<sas-username>"
 SAS_PASSWORD="<sas-password>"
 GPU_REMOTE_HOST="<gpu-host>"
 GPU_USERNAME="<gpu-username>"
 GPU_PASSWORD="<gpu-password>"
+PROD_URL="<url-used-for-prod>"       # e.g. "https://eida.obspm.fr"
+APP_NAME="<app-name-lowercase>"      # name of the application, e.g. "eida"
+GEONAMES_USER="<geonames-username>"  # same username as the one defined on local
+APP_LANG="<fr-or-en>"                # lang to be used in the app: work either for french (fr) or english (en)
 ```
 
 Update database schema, create super user and collect static files
@@ -82,21 +86,40 @@ Change app name in `vhs-platform/vhsapp/utils/constants.py` to fit your project 
 APP_NAME = "<your-project-name>"
 ```
 
-
 ### Image servers
 
-Change the following parameters in `cantaloupe.properties`:
-```yaml
-http.port = 8182
-...
-https.port = 8183
-...
-base_uri = http://<project-domaine-name>
+Copy the content of the cantaloupe settings template file
+```bash
+cp cantaloupe/.env{.template,}
 ```
 
-Run Cantaloupe
+Change variables in the generated file `cantaloupe/.env` (more important is `BASE_URI`: leave it blank on local)
 ```bash
-sudo java -Dcantaloupe.config=cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe-4.1.11.war
+BASE_URI=<url-used-for-prod-or-blank>
+FILE_SYSTEM_SOURCE=./vhs-platform/mediafiles/img/
+HTTP_PORT=8182
+HTTPS_PORT=8183
+LOG_PATH=/path/to/logs
+```
+
+Create a service for cantaloupe
+```bash
+vi /etc/systemd/system/cantaloupe.service
+```
+
+```bash
+[Unit]
+Description=start cantaloupe
+After=network.target
+After=nginx.service
+
+[Service]
+WorkingDirectory=/<absolute/path/to>/vhs/
+ExecStart=/bin/bash -c 'cd /<absolute/path/to>/vhs/cantaloupe && export $(cat .env | xargs) && sudo java -Dcantaloupe.config=cantaloupe.properties -Xmx2g -jar cantaloupe-4.1.11.war'
+StandardError=append:/<absolute/path/to>/vhs/cantaloupe/log
+
+[Install]
+WantedBy=multi-user.target
 ```
 
 Launch SAS
@@ -187,6 +210,11 @@ server {
         proxy_pass              http://unix:/run/gunicorn.sock;
     }
 }
+```
+
+Reload the `systemd` manager configuration
+```shell
+sudo systemctl daemon-reload
 ```
 
 - [Install VHS on Observatoire servers](https://syrte-int.obspm.fr/dokuwiki/wiki/informatique/prive/eida/installspe#cantaloupe_sas_et_vhs)
