@@ -69,4 +69,4 @@ class Content(models.Model):
     page_max = models.IntegerField(
         verbose_name=get_name("page_max"), null=True, blank=True
     )
-    tags = models.ManyToManyField(Tag, verbose_name=get_name(TAG))
+    tags = models.ManyToManyField(Tag, verbose_name=get_name("Tag"))
