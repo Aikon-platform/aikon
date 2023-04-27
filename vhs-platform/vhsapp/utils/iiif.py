@@ -387,10 +387,26 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
     anno2_2 = anno[2] // 2
     anno3_2 = anno[3] // 2
 
-    data_paper = (
-        '{"strokeWidth":1,"rotation":0,"deleteIcon":null,"rotationIcon":null,'
-        '"group":null,"editable":true,"annotation":null}'
-    )
+    d = f"M{anno[0]} {anno[1]} h {anno2_2} v 0 h {anno2_2} v {anno3_2} v {anno3_2} h -{anno2_2} h -{anno2_2} v -{anno3_2}Z"
+    r_id = f"rectangle_{work_abbr}{id}-{canvas}-{num_anno + 1}"
+
+    svg_anno = f"""
+        <svg xmlns='http://www.w3.org/2000/svg'>
+          <path xmlns='http://www.w3.org/2000/svg'
+                d='{d}'
+                id='{r_id}'
+                data-paper-data='{{"strokeWidth":1,"rotation":0,"deleteIcon":null,"rotationIcon":null,"group":null,"editable":true,"annotation":null}}'
+                fill-opacity='0'
+                fill='#00ff00'
+                fill-rule='nonzero'
+                stroke='#00ff00'
+                stroke-width='1'
+                stroke-linecap='butt'
+                stroke-linejoin='miter'
+                stroke-miterlimit='10'
+                stroke-dashoffset='0'
+                style='mix-blend-mode: normal'/>
+        </svg>"""
 
     return {
         "@id": f"{SAS_APP_URL}/annotation/{work_abbr}-{id}-{canvas}-{num_anno + 1}",
@@ -420,13 +436,7 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
                     },
                     "item": {
                         "@type": "oa:SvgSelector",
-                        "value": "<svg xmlns='http://www.w3.org/2000/svg'><path xmlns='http://www.w3.org/2000/svg' "
-                        f"d='M{anno[0]} {anno[1]} h {anno2_2} v 0 h {anno2_2} v {anno3_2} v {anno3_2} "
-                        f"h -{anno2_2} h -{anno2_2} v -{anno3_2}Z' data-paper-data='{data_paper}'"
-                        f"id='rectangle_{work_abbr}{id}-{canvas}-{num_anno + 1}' fill-opacity='0' "
-                        f"fill='#00ff00' fill-rule='nonzero' stroke='#00ff00' stroke-width='1' "
-                        f"stroke-linecap='butt' stroke-linejoin='miter' stroke-miterlimit='10' "
-                        f"stroke-dashoffset='0' style='mix-blend-mode: normal'/></svg",
+                        "value": svg_anno,
                     },
                 },
                 "full": f"{base_url}/canvas/c{canvas}.json",
