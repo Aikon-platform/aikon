@@ -93,7 +93,7 @@ Copy the content of the cantaloupe settings template file
 cp cantaloupe/.env{.template,}
 ```
 
-Change variables in the generated file `cantaloupe/.env` (more important is `BASE_URI`: leave it blank on local)
+Change variables in the generated file `cantaloupe/.env` (more important is `BASE_URI`: use format as `https://eida.obspm.fr`)
 ```bash
 BASE_URI=<url-used-for-prod-or-blank>
 FILE_SYSTEM_SOURCE=./vhs-platform/mediafiles/img/
