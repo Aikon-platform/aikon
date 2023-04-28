@@ -15,6 +15,7 @@ vhs-platform/staticfiles/*
 !vhs-platform/staticfiles/.gitkeep
 
 cantaloupe/temp/*
+cantaloupe/cantaloupe.properties
 !cantaloupe/temp/.gitkeep
 
 # SQLite database file
