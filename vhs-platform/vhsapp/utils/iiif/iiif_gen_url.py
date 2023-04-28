@@ -13,6 +13,7 @@ from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH, BASE_DIR
 from vhsapp.utils.functions import get_icon, anno_btn
 from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
 from vhs.settings import SAS_APP_URL, VHS_APP_URL, CANTALOUPE_APP_URL
+from vhsapp.utils.iiif.iiif_utils import IIIF_ICON
 
 
 def get_link_manifest(obj_id, manifest_url, tag_id="url_manifest_"):
