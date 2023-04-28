@@ -121,10 +121,10 @@ sudo ufw allow 8000
 ### IIIF Image server
 
 #### Cantaloupe
-Copy the content of the cantaloupe settings template file
 
+Create a .ENV file for cantaloupe
 ```bash
-cp cantaloupe/.env{.template,}
+sudo chmod +x <path/to>/cantaloupe/init.sh && cp <path/to>/cantaloupe/.env{.template,} && nano <path/to>/cantaloupe/.env
 ```
 
 Change variables in the generated file `cantaloupe/.env` (more important is `BASE_URI`: leave it blank on local)
@@ -136,15 +136,14 @@ HTTPS_PORT=8183
 LOG_PATH=/path/to/logs
 ```
 
+Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with your variables):
+```shell
+<path/to>/cantaloupe/init.sh
+```
+
 Run [Cantaloupe](https://cantaloupe-project.github.io/)
 ```shell
-cd cantaloupe
-
-# Unix distributions
-export $(cat .env | xargs) && sudo java -Dcantaloupe.config=cantaloupe.properties -Xmx2g -jar cantaloupe-4.1.11.war
-
-# Windows
-for /f "usebackq delims=" %i in (.env) do set %i && java -Dcantaloupe.config=C:cantaloupe.properties -Xmx2g -jar cantaloupe-4.1.11.war
+<path/to>/cantaloupe/start.sh
 ```
 
 #### Simple Annotation Server
