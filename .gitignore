@@ -17,6 +17,7 @@ vhs-platform/staticfiles/*
 # Django migration files (to be generated on prod - even if this is bad)
 vhs-platform/vhsapp/migrations/0*
 cantaloupe/temp/*
+cantaloupe/cantaloupe.properties
 !cantaloupe/temp/.gitkeep
 
 # SQLite database file
