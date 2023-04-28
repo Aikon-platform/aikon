@@ -29,9 +29,12 @@ from vhsapp.utils.paths import (
     MEDIA_PATH,
 )
 
-from vhsapp.utils.iiif import (
+from vhsapp.utils.iiif.iiif_validation import (
     parse_manifest,
     validate_manifest,
+)
+
+from vhsapp.utils.iiif.iiif_extraction import (
     extract_images_from_iiif_manifest,
 )
 
