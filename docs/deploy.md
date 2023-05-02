@@ -88,18 +88,23 @@ APP_NAME = "<your-project-name>"
 
 ### Image servers
 
-Copy the content of the cantaloupe settings template file
+Create a .ENV file for cantaloupe
 ```bash
-cp cantaloupe/.env{.template,}
+sudo chmod +x <path/to>/cantaloupe/init.sh && cp <path/to>/cantaloupe/.env{.template,} && nano <path/to>/cantaloupe/.env
 ```
 
-Change variables in the generated file `cantaloupe/.env` (more important is `BASE_URI`: use format as `https://eida.obspm.fr`)
+Modify the variables in order to fit your project (`BASE_URI` example: https://eida.obspm.fr)
 ```bash
 BASE_URI=<url-used-for-prod-or-blank>
 FILE_SYSTEM_SOURCE=./vhs-platform/mediafiles/img/
 HTTP_PORT=8182
 HTTPS_PORT=8183
 LOG_PATH=/path/to/logs
+```
+
+Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with your variables):
+```shell
+<path/to>/cantaloupe/init.sh
 ```
 
 Create a service for cantaloupe
@@ -115,7 +120,7 @@ After=nginx.service
 
 [Service]
 WorkingDirectory=/<absolute/path/to>/vhs/
-ExecStart=/bin/bash -c 'cd /<absolute/path/to>/vhs/cantaloupe && export $(cat .env | xargs) && sudo java -Dcantaloupe.config=cantaloupe.properties -Xmx2g -jar cantaloupe-4.1.11.war'
+ExecStart=/<absolute/path/to>/vhs/cantaloupe/start.sh
 StandardError=append:/<absolute/path/to>/vhs/cantaloupe/log
 
 [Install]
