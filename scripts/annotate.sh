@@ -7,20 +7,20 @@
 
 # function to print colored output
 colorEcho () {
-    Color_Off="\[\033[0m\]"
-    Red="\[\033[1;91m\]"        # Red
-    Green="\[\033[1;92m\]"      # Green
-    Yellow="\[\033[1;93m\]"     # Yellow
-    Blue="\[\033[1;94m\]"       # Blue
-    Purple="\[\033[1;95m\]"     # Purple
-    Cyan="\[\033[1;96m\]"       # Cyan
+    Color_Off="\033[0m"
+    Red="\033[1;91m"        # Red
+    Green="\033[1;92m"      # Green
+    Yellow="\033[1;93m"     # Yellow
+    Blue="\033[1;94m"       # Blue
+    Purple="\033[1;95m"     # Purple
+    Cyan="\033[1;96m"       # Cyan
     case "$1" in
-        "success") echo "$Green$2$Color_Off\$";;
-        "error") echo "$Red$2$Color_Off\$";;
-        "log") echo "$Yellow$2$Color_Off\$";;
-        "info") echo "$Blue$2$Color_Off\$";;
-        "warning") echo "$Purple$2$Color_Off\$";;
-        "message") echo "$Cyan$2$Color_Off\$";;
+        "success") echo "$Green$2$Color_Off";;
+        "error") echo "$Red$2$Color_Off";;
+        "log") echo "$Yellow$2$Color_Off";;
+        "info") echo "$Blue$2$Color_Off";;
+        "warning") echo "$Purple$2$Color_Off";;
+        "message") echo "$Cyan$2$Color_Off";;
         *) echo "$2";;
     esac
 }
@@ -45,7 +45,7 @@ ssh eida "ls yolov5/output/"
 
 colorEcho "info" "Copying output files to eida server..."
 scp dishas-ia:yolov5/output/* eida:vhs/vhs-platform/mediafiles/manuscripts/annotation/ || colorEcho "error" "Failed to copy output files to eida server"
-scp dishas-ia:yolov5/output/* ../mediafiles/manuscripts/annotation/ || colorEcho "error" "Failed to copy output files to local app"
+scp dishas-ia:yolov5/output/* ../vhs-platform/mediafiles/manuscripts/annotation/ || colorEcho "error" "Failed to copy output files to local app"
 
 colorEcho "log" "Content of the annotation directory:"
 ssh eida "ls vhs/vhs-platform/mediafiles/manuscripts/annotation/"
