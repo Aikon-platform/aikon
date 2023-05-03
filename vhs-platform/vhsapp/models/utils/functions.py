@@ -23,7 +23,7 @@ def get_fieldname(field, fields, plural=False):
     if field[0].isupper():
         return MODEL_NAMES[field][APP_LANG].capitalize()
 
-    if fields in common_fields:
+    if field in common_fields:
         return common_fields[field][APP_LANG].capitalize()
 
     return "???"

@@ -1,6 +1,6 @@
 from django.db import models
 
-from vhsapp.models.utils.model_fields import get_fieldname
+from vhsapp.models.utils.functions import get_fieldname
 
 
 def get_name(fieldname, plural=False):
