@@ -93,7 +93,9 @@ Create a .ENV file for cantaloupe
 sudo chmod +x <path/to>/cantaloupe/init.sh && cp <path/to>/cantaloupe/.env{.template,} && nano <path/to>/cantaloupe/.env
 ```
 
-Modify the variables in order to fit your project (`BASE_URI` example: https://eida.obspm.fr)
+Modify the variables in order to fit your project:
+- `BASE_URI` example: https://eida.obspm.fr
+- `FILE_SYSTEM_SOURCE` on prod: `./vhs-platform/mediafiles/img/`
 ```bash
 BASE_URI=<url-used-for-prod-or-blank>
 FILE_SYSTEM_SOURCE=./vhs-platform/mediafiles/img/
@@ -282,7 +284,7 @@ To activate DEBUG in prod in order to see Django errors (instead of 500 errors)
 vi vhs-platform/vhs/.env           # set DEBUG=True
 vi vhs-platform/vhs/settings.py    # l.87 `if not DEBUG:` => `if DEBUG:`
 ```
-Don't forget to rollback those modifications afterwards
+Don't forget to roll back those modifications afterward
 
 ## App errors
 See `vhs-platform/logs`

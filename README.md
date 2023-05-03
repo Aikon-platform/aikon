@@ -127,7 +127,9 @@ Create a .ENV file for cantaloupe
 sudo chmod +x <path/to>/cantaloupe/init.sh && cp <path/to>/cantaloupe/.env{.template,} && nano <path/to>/cantaloupe/.env
 ```
 
-Change variables in the generated file `cantaloupe/.env` (more important is `BASE_URI`: leave it blank on local)
+Change variables in the generated file `cantaloupe/.env`:
+- `BASE_URI`: leave it blank on local
+- `FILE_SYSTEM_SOURCE` on local: `../vhs-platform/mediafiles/img/` (double dots)
 ```bash
 BASE_URI=
 FILE_SYSTEM_SOURCE=./vhs-platform/mediafiles/img/
