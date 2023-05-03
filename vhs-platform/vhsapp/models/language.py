@@ -1,6 +1,5 @@
 from django.db import models
 
-from vhsapp.models.utils.constants import LANG
 from vhsapp.models.utils.functions import get_fieldname
 
 

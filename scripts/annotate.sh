@@ -32,6 +32,8 @@ fi
 input_file=$1
 file_name=$(basename -- "${input_file%.*}")
 
+# TODO: add --rerun + --model param
+
 echo "$(figlet ANNOTATOR)"
 
 colorEcho "info" "Copying $input_file to dishas-ia ..."
