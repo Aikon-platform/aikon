@@ -16,8 +16,8 @@ def get_name(fieldname, plural=False):
 
 class Work(models.Model):
     class Meta:
-        verbose_name = get_name("work")
-        verbose_name_plural = get_name("work", True)
+        verbose_name = get_name("Work")
+        verbose_name_plural = get_name("Work", True)
 
     def __str__(self):
         return self.title

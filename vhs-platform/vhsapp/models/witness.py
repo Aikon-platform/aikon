@@ -41,7 +41,7 @@ class Witness(models.Model):
         blank=True,
         null=True,
     )
-    # nb_pages, title, link, is_paginated, is_public, volume, series
+    # TODO nb_pages, title, link, is_paginated, is_public, volume, series
     note = models.CharField(verbose_name=get_name("note"), max_length=500, unique=True)
 
     def get_metadata(self):

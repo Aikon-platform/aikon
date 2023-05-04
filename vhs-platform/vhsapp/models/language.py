@@ -1,6 +1,5 @@
 from django.db import models
 
-from vhsapp.models.utils.constants import LANG
 from vhsapp.models.utils.functions import get_fieldname
 
 
@@ -20,7 +19,7 @@ class Language(models.Model):
     def __str__(self):
         return self.lang
 
-    lang = models.CharField(verbose_name="lang", max_length=200, unique=True)
+    lang = models.CharField(verbose_name=get_name("lang"), max_length=200, unique=True)
     code = models.CharField(
-        verbose_name="code", max_length=200, unique=True
+        verbose_name=get_name("code"), max_length=200, unique=True
     )  # TODO: ISO-code

@@ -26,7 +26,7 @@ from vhsapp.utils.constants import (
 )
 from vhsapp.utils.functions import get_json, create_dir, save_img, get_icon, anno_btn
 from vhsapp.utils.paths import MEDIA_DIR, IMG_PATH, BASE_DIR
-from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
+from vhsapp.models.utils.constants import VOL_ABBR, MS_ABBR, VOL, MS
 from vhs.settings import APP_NAME, SAS_APP_URL, VHS_APP_URL, CANTALOUPE_APP_URL
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.utils.logger import iiif_log, console, log
