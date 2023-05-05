@@ -12,5 +12,5 @@ class ConservationPlaceFilter(AutocompleteFilter):
 
 @admin.register(ConservationPlace)
 class ConservationPlaceAdmin(UnregisteredAdmin):
-    search_fields = ("name",)
-    list_filter = ("name",)
+    search_fields = ("name", "city")
+    list_filter = ("name", "city")

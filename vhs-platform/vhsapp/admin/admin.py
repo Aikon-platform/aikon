@@ -13,6 +13,10 @@ admin.site.index_title = SITE_INDEX_TITLE
 
 
 class UnregisteredAdmin(admin.ModelAdmin):
+    """
+    Abstract class used for models that don't have a form accessible from the admin index
+    """
+
     class Meta:
         abstract = True
 

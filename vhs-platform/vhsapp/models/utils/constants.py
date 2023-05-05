@@ -20,7 +20,8 @@ MODEL_NAMES = {
     "Place": {"en": "place", "fr": "lieu"},
     "Digitization": {"en": "digitization", "fr": "numérisation"},
     "Edition": {"en": "edition", "fr": "édition"},
-    "Role": {"en": "role", "fr": "rôle"},
+    "Image": {"en": "image", "fr": "image"},
+    "Pdf": {"en": "PDF", "fr": "PDF"},
 }
 
 MANIFEST = MODEL_NAMES["Manifest"][APP_LANG]
@@ -39,13 +40,19 @@ ED = MODEL_NAMES["Edition"][APP_LANG]
 LANG = MODEL_NAMES["Language"][APP_LANG]
 PERS = MODEL_NAMES["Person"][APP_LANG]
 ROLE = MODEL_NAMES["Role"][APP_LANG]
+IMG = MODEL_NAMES["Image"][APP_LANG]
+PDF = MODEL_NAMES["Pdf"][APP_LANG]
+
 
 # ABBREVIATION
 MS_ABBR = "ms"
-VOL_ABBR = "vol"
-WIT_ABBR = "wit"
 WPR_ABBR = "wpr"
 TPR_ABBR = "tpr"
+VOL_ABBR = "vol"
+WIT_ABBR = "wit"
+IMG_ABBR = "img"
+PDF_ABBR = "pdf"
+MAN_ABBR = "man"
 
 TPR = f"letterpress {PR}" if APP_LANG == "en" else "typographie"
 WPR = f"woodblock {PR}" if APP_LANG == "en" else "bois gravés"
@@ -54,6 +61,12 @@ WIT_TYPE = (
     (MS_ABBR, MS.capitalize()),
     (TPR_ABBR, TPR.capitalize()),
     (WPR_ABBR, WPR.capitalize()),
+)
+
+DIGIT_TYPE = (
+    (IMG_ABBR, IMG.capitalize()),
+    (PDF_ABBR, PDF.capitalize()),
+    (MAN_ABBR, MANIFEST.capitalize()),
 )
 
 #############################

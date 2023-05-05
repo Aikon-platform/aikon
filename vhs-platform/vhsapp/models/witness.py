@@ -44,6 +44,13 @@ class Witness(models.Model):
     # TODO nb_pages, title, link, is_paginated, is_public, volume, series
     note = models.CharField(verbose_name=get_name("note"), max_length=500, unique=True)
 
+    def get_type(self):
+        # NOTE should be returning "tpr" (letterpress) / "wpr" (woodblock) / "ms" (manuscript)
+        return self.type[0]
+
+    def get_ref(self):
+        return f"{self.get_type()}{self.id}"
+
     def get_metadata(self):
         metadata = {
             "Place of conservation": self.place,

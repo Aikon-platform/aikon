@@ -10,13 +10,13 @@ from uuid import uuid4
 import PyPDF2
 import requests
 from PIL import Image
-from io import BytesIO
+
 
 from django.utils.html import format_html
 from django.http import HttpResponse
 from django.utils.safestring import mark_safe
 from pdf2image import pdfinfo_from_path, convert_from_path
-from django.core.files import File
+
 from urllib.request import (
     HTTPPasswordMgrWithDefaultRealm,
     HTTPBasicAuthHandler,
@@ -26,23 +26,6 @@ from urllib.request import (
 from vhs.settings import APP_NAME
 from vhsapp.utils.paths import BASE_DIR, MEDIA_DIR, IMG_PATH
 from vhsapp.utils.logger import log, console
-
-
-def convert_to_jpeg(image):
-    """
-    Convert the image to JPEG format
-    """
-    filename = image.name.split(".")[0]
-    img = Image.open(image)
-    if img.mode != "RGB":
-        img = img.convert("RGB")
-    # Create a BytesIO object
-    obj_io = BytesIO()
-    # Save image to BytesIO object
-    img.save(obj_io, format="JPEG")
-    # Create a File object
-    img_jpg = File(obj_io, name=f"{filename}.jpg")
-    return img_jpg
 
 
 def get_last_file(path, prefix):
