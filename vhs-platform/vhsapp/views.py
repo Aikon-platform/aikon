@@ -46,7 +46,7 @@ def manifest_manuscript(request, id, version):
         return JsonResponse(
             {
                 "error": "Unable to create a valid manifest",
-                "reason": f"Unable to create manifest for resource {id} (probably no image):{e}",
+                "reason": f"Unable to create manifest for resource {id} (probably no image): {e}",
             }
         )
 
