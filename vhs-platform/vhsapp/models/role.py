@@ -9,15 +9,20 @@ from vhsapp.models.utils.model_fields import get_fieldname
 
 def get_name(fieldname, plural=False):
     fields = {
-        "source": {"en": "digitization source", "fr": "source de la numérisation"}
+        "source": {"en": "digitization source", "fr": "source de la numérisation"},
+        "pub": {"en": "publisher", "fr": "éditeur/diffuseur"},
+        "aut": {"en": "author", "fr": "auteur"},
+        "ill": {"en": "illuminator", "fr": "enlumineur"},
+        "sel": {"en": "bookseller", "fr": "libraire"},
     }
     return get_fieldname(fieldname, fields, plural)
 
 
 ROLES = (
-    ("pub", "Publisher"),
-    ("aut", "Author"),
-    ("ill", "Illuminator"),  # TODO: make those bilingual
+    ("pub", get_name("pub")),
+    ("aut", get_name("aut")),
+    ("ill", get_name("ill")),
+    ("sel", get_name("sel")),
 )
 
 

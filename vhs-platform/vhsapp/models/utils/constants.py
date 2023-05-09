@@ -86,10 +86,6 @@ PUBLISHED_INFO = (
 )
 DIGITIZED_VERSION_MS_INFO = "Exemples : Gallica, Photos personnelles [Stavros Lazaris], Biblioteca Apostolica Vaticana."
 DIGITIZED_VERSION_VOL_INFO = "Exemple : Gallica."
-MANIFEST_FINAL_INFO = (
-    "<i style='color:#efb80b' class='fa-solid fa-triangle-exclamation'></i> "
-    "ATTENTION : la version en cours de vérification ne peut plus être modifiée."
-)
 PLACE_INFO = "Si différent de l'ensemble."
 IMG_INFO = "Envoyez des images jusqu'à 2 Go."
 MANIFEST_INFO = """<div class='tooltip'>
