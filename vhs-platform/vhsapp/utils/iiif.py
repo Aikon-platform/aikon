@@ -408,7 +408,7 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
     path = re.sub(r"\s+", " ", path).strip()
 
     return {
-        "@id": f"{SAS_APP_URL}/annotation/{work_abbr}-{id}-{canvas}-{num_anno + 1}",
+        "@id": f"{SAS_APP_URL.replace('https', 'http')}/annotation/{work_abbr}-{id}-{canvas}-{num_anno + 1}",
         "@type": "oa:Annotation",
         "dcterms:created": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "dcterms:modified": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
