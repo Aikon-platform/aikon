@@ -14,15 +14,20 @@ colorEcho () {
     Blue="\033[1;94m"       # Blue
     Purple="\033[1;95m"     # Purple
     Cyan="\033[1;96m"       # Cyan
+
+    echo ""
+    echo ""
+
     case "$1" in
         "success") echo "$Green$2$Color_Off";;
         "error") echo "$Red$2$Color_Off";;
-        "log") echo "$Yellow$2$Color_Off";;
         "info") echo "$Blue$2$Color_Off";;
         "warning") echo "$Purple$2$Color_Off";;
         "message") echo "$Cyan$2$Color_Off";;
         *) echo "$2";;
     esac
+
+    echo ""
 }
 
 if test "$#" -ne 1; then
@@ -43,11 +48,11 @@ colorEcho "info" "Launching detection..."
 ssh -t dishas-ia "cd yolov5 && vhs/bin/python detect_vhs.py -f manifests/$file_name.txt" || colorEcho "error" "Failed to run detection"
 
 colorEcho "info" "Content of the output directory:"
-ssh eida "ls yolov5/output/"
+ssh dishas-ia "ls yolov5/output/"
 
 colorEcho "info" "Copying output files to eida server..."
 scp dishas-ia:yolov5/output/* eida:vhs/vhs-platform/mediafiles/manuscripts/annotation/ || colorEcho "error" "Failed to copy output files to eida server"
 scp dishas-ia:yolov5/output/* ../vhs-platform/mediafiles/manuscripts/annotation/ || colorEcho "error" "Failed to copy output files to local app"
 
-colorEcho "log" "Content of the annotation directory:"
+colorEcho "log" "\nContent of the annotation directory:"
 ssh eida "ls vhs/vhs-platform/mediafiles/manuscripts/annotation/"
