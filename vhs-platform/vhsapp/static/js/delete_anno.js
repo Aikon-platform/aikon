@@ -1,5 +1,3 @@
-const HTTP_SAS = SAS_APP_URL.replace("https", "http");
-
 function showMessage(message) {
     var messages = document.getElementById(idMessage);
     messages.textContent = message;
@@ -7,7 +5,8 @@ function showMessage(message) {
 }
 
 function send_deletion(idBbox){
-    const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${SAS_APP_URL}/annotation/${idBbox}`;
+    const HTTP_SAS = SAS_APP_URL.replace("https", "http");
+    const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${HTTP_SAS}/annotation/${idBbox}`;
     var xhr = new XMLHttpRequest();
     xhr.open("DELETE", urlDelete, true);
     xhr.onload = function() {
