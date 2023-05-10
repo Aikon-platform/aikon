@@ -84,7 +84,7 @@ CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
 SAS_APP_URL = f"http://localhost:{SAS_PORT}"
 
 # Override the default values in production mode
-if DEBUG:
+if not DEBUG:
     VHS_APP_URL = "https://eida.obspm.fr"
     CANTALOUPE_APP_URL = "https://eida.obspm.fr"
     SAS_APP_URL = "https://eida.obspm.fr/sas"
@@ -204,3 +204,10 @@ LOGGING = {
         "verbose": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
     },
 }
+
+# Celery settings
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
