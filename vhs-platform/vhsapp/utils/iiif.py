@@ -389,13 +389,12 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
 
     d = f"M{anno[0]} {anno[1]} h {anno2_2} v 0 h {anno2_2} v {anno3_2} v {anno3_2} h -{anno2_2} h -{anno2_2} v -{anno3_2}Z"
     r_id = f"rectangle_{work_abbr}{id}-{canvas}-{num_anno + 1}"
+    d_paper = "{&quot;strokeWidth&quot;:1,&quot;rotation&quot;:0,&quot;annotation&quot;:null,&quot;nonHoverStrokeColor&quot;:[&quot;Color&quot;,0,1,0],&quot;editable&quot;:true,&quot;deleteIcon&quot;:null,&quot;rotationIcon&quot;:null,&quot;group&quot;:null}"
 
-    svg_anno = f"""
-        <svg xmlns='http://www.w3.org/2000/svg'>
-          <path xmlns='http://www.w3.org/2000/svg'
+    path = f"""<path xmlns='http://www.w3.org/2000/svg'
                 d='{d}'
                 id='{r_id}'
-                data-paper-data='{{"strokeWidth":1,"rotation":0,"deleteIcon":null,"rotationIcon":null,"group":null,"editable":true,"annotation":null}}'
+                data-paper-data='{d_paper}'
                 fill-opacity='0'
                 fill='#00ff00'
                 fill-rule='nonzero'
@@ -405,8 +404,8 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
                 stroke-linejoin='miter'
                 stroke-miterlimit='10'
                 stroke-dashoffset='0'
-                style='mix-blend-mode: normal'/>
-        </svg>"""
+                style='mix-blend-mode: normal'/>"""
+    path = re.sub(r"\s+", " ", path).strip()
 
     return {
         "@id": f"{SAS_APP_URL}/annotation/{work_abbr}-{id}-{canvas}-{num_anno + 1}",
@@ -436,7 +435,7 @@ def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
                     },
                     "item": {
                         "@type": "oa:SvgSelector",
-                        "value": svg_anno,
+                        "value": f'<svg xmlns="http://www.w3.org/2000/svg">{path}</svg>',
                     },
                 },
                 "full": f"{base_url}/canvas/c{canvas}.json",
