@@ -7,7 +7,7 @@ function showMessage(message) {
 }
 
 function send_deletion(idBbox){
-    const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${HTTP_SAS}/annotation/${idBbox}`;
+    const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${SAS_APP_URL}/annotation/${idBbox}`;
     var xhr = new XMLHttpRequest();
     xhr.open("DELETE", urlDelete, true);
     xhr.onload = function() {
