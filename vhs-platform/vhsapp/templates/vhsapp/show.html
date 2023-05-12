@@ -1,5 +1,6 @@
 {% extends "admin/base_site.html" %}
-{% load static %}
+
+{% load static %} {# NOTE: is it necessary if the parent template load statics as well #}
 
 {% block title %}Annotations {{ work }} #{{ work_obj.id }}{% endblock %}
 
@@ -130,7 +131,6 @@
         <button class="reload-button" onclick="location.reload()" title="Actualiser la page courante">
             <i class="fa-solid fa-arrows-rotate"></i> Actualiser
         </button>
-
     </div>
 {% endblock %}
 
@@ -138,35 +138,37 @@
     <div class="row">
         <div class="column">
             <table class="anno-table">
-                {% for annos, url in page_annos %}
+                {% for canvas_nb, annos, img_file in page_annos %}
                     <tr style="width: 100%">
                         <td class="nb-col">
-                            {% with canvas_nb=forloop.counter %} {# TODO change to have real page number #}
-                                <b>Page</b> {{ canvas_nb }}
-                                <br>
+                            <b>Page</b> {{ canvas_nb }}
+                            <br>
+                            {# <button class="anno-btn"> #}
+                                <i class="fa-solid fa-pen-to-square"></i> Annotate{% if APP_LANG == "fr" %}r{% endif %}
                                 <a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ canvas_nb }}" target="_blank">
-                                    <small>(Open in Mirador)</small>
+                                    <small>{% if APP_LANG == "en" %}Open in{% else %}Ouvrir avec{% endif %} Mirador</small>
                                 </a>
-                            {% endwith %}
+                            {# </button> #}
                         </td>
                         <td class="anno-td page-col">
-                            <a href="{{ url }}" target="_blank">
-                                <img class="page-preview" src="{{ url|replace_nth_part_of_url:'300,;7' }}" alt="scan preview">
+                            <a href="{{ img_file|img_to_iiif }}" target="_blank">
+                                <img class="page-preview" src="{{ img_file|img_to_iiif::"300," }}" alt="scan preview">
                             </a>
                         </td>
-                        {% for anno, bbox in annos %}
+                        {% for coord, bbox in annos %}
                             <td id="ill_{{ bbox }}" class="anno-td anno-col">
-                                {% with region=anno|add:';6' size=',100;7' %}
-                                    <a href="{{ url|replace_nth_part_of_url:region }}" target="_blank">
-                                        <img class="anno" src="{{ url|replace_nth_part_of_url:region|replace_nth_part_of_url:size }}" alt="scan preview">
+                                <a href="{{ img_file|img_to_iiif:coord }}" target="_blank">
+                                        <img class="anno" src="{{ img_file|img_to_iiif:coord:",100" }}" alt="scan preview">
                                     </a>
-                                {% endwith %}
+                                {# {% with region=coord|add:';6' size=',100;7' %}
+                                     <a href="{{ img_file|replace_nth_part_of_url:region }}" target="_blank">
+                                         <img class="anno" src="{{ img_file|replace_nth_part_of_url:region|replace_nth_part_of_url:size }}" alt="scan preview">
+                                     </a>
+                                 {% endwith %} #}
                                 <br>
                                 <input id="bbox_{{ bbox }}" name="{{ bbox }}" type="checkbox"><label for="bbox_{{ bbox }}"> Supprimer</label>
                                 <span id="message_{{ bbox }}" style="color:#FF0000;"></span>
                             </td>
-                            {% empty %} {# if there is no annotations #}
-                            <td class="anno-td anno-col" style="width: calc(100% - 300px)"></td>
                         {% endfor %}
                     </tr>
                     {% empty %} {# if there is no annotations #}
@@ -179,41 +181,3 @@
         </div>
     </div>
 {% endblock %}
-
-{#{% block content %}#}
-{#    <div class="row">#}
-{#        {% for column in 2|range_filter %}#}
-{#            <div class="column">#}
-{#                <table class="anno-table">#}
-{#                    {% for annos, url in canvas_annos %}#}
-{#                        {% if column == 0 and not forloop.counter|divisibleby:2 or column == 1 and forloop.counter|divisibleby:2 %}#}
-{#                            <tr>#}
-{#                                <td class="anno-td" style="background-color:#F8F8F8;">#}
-{#                                    <b>Vue {{ forloop.counter }}</b>#}
-{#                                    <a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ forloop.counter }}" target="_blank">#}
-{#                                        <small>(Modifier l'extraction)</small>#}
-{#                                    </a><br>#}
-{#                                    <a href="{{ url }}" target="_blank">#}
-{#                                        <img src="{{ url|replace_nth_part_of_url:'150,;7' }}" alt="scan preview">#}
-{#                                    </a>#}
-{#                                </td>#}
-{#                                {% for anno, bbox in annos %}#}
-{#                                    <td id="ill_{{ bbox }}" class="anno-td">#}
-{#                                        {% with region=anno|add:';6' size=',50;7' %}#}
-{#                                            <a href="{{ url|replace_nth_part_of_url:region }}" target="_blank">#}
-{#                                                <img src="{{ url|replace_nth_part_of_url:region|replace_nth_part_of_url:size }}" alt="scan preview">#}
-{#                                            </a>#}
-{#                                        {% endwith %}#}
-{#                                        <br>#}
-{#                                        <input id="bbox_{{ bbox }}" name="{{ bbox }}" type="checkbox"><label for="bbox_{{ bbox }}"> Supprimer</label>#}
-{#                                        <span id="message_{{ bbox }}" style="color:#FF0000;"></span>#}
-{#                                    </td>#}
-{#                                {% endfor %}#}
-{#                            </tr>#}
-{#                        {% endif %}#}
-{#                    {% endfor %}#}
-{#                </table>#}
-{#            </div>#}
-{#        {% endfor %}#}
-{#    </div>#}
-{#{% endblock %}#}

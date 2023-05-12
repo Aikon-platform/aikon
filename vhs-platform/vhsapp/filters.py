@@ -1,4 +1,5 @@
 from django.template import Library
+from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
 
 register = Library()
 
@@ -29,3 +30,8 @@ def replace_nth_part_of_url(url, args):
     parts = url.split("/")
     parts[n] = new_part
     return "/".join(parts)
+
+
+@register.filter
+def img_to_iiif(img_file, region="full", size="full", orientation="0"):
+    return f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/{region}/{size}/{orientation}/default.jpg"
