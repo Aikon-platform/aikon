@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from iiif_prezi.factory import ManifestFactory, StructuralError
 
 from django.contrib.auth.decorators import login_required
@@ -208,12 +209,14 @@ def show_work(request, id, work):
     work_obj = get_object_or_404(work_model, pk=id)
     iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{work}/{work_abbr}-{id}"
     canvas_annos = []
+    # TODO: do we need to load again all the annotations everytime?
+    # TODO: maybe loop on images of the manifest?
     for line in lines:
         # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
         if len(line.split()) == 2:
             # Store the response of URL
             img_nb, img_file = line.split()
-            iiif_img = f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/full/full/0/default.jpg"
+            img_url = f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/full/full/0/default.jpg"
             try:
                 response = urlopen(
                     f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{img_nb}.json"
@@ -224,7 +227,7 @@ def show_work(request, id, work):
                 )
                 return JsonResponse(
                     {
-                        "error": f"unable to retrieve annotation for {iiif_img}",
+                        "error": f"unable to retrieve annotation for {img_url}",
                         "source": f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{img_nb}.json",
                     }
                 )
@@ -238,14 +241,23 @@ def show_work(request, id, work):
                 for d in data
                 if len(data) > 0
             ]
-            canvas_annos.append((annos, iiif_img))
+            canvas_annos.append((img_nb, annos, img_file))
+
+    paginator = Paginator(canvas_annos, 10)
+    try:
+        page_annos = paginator.page(request.GET.get("page"))
+    except PageNotAnInteger:
+        page_annos = paginator.page(1)
+    except EmptyPage:
+        page_annos = paginator.page(paginator.num_pages)
+
     return render(
         request,
         "vhsapp/show.html",
         context={
             "work": work,
             "work_obj": work_obj,
-            "canvas_annos": canvas_annos,
+            "page_annos": page_annos,
             "url_manifest": f"{iiif_url}/manifest.json",
         },
     )
