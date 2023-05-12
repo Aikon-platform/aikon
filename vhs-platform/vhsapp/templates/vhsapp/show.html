@@ -157,7 +157,7 @@
                         </td>
                         {% for coord, bbox in annos %}
                             <td id="ill_{{ bbox }}" class="anno-td anno-col">
-                                {% with region_full=coord|add:'/full/0' region='/,100/0' %}
+                                {% with region_full=coord|add:'/full/0' region=coord|add:'/,100/0' %}
                                     <a href="{{ img_file|img_to_iiif:region_full }}" target="_blank">
                                         <img class="anno" src="{{ img_file|img_to_iiif:region }}" alt="scan preview">
                                     </a>
