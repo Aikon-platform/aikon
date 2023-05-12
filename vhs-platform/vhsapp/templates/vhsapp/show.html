@@ -162,11 +162,6 @@
                                         <img class="anno" src="{{ img_file|img_to_iiif:region }}" alt="scan preview">
                                     </a>
                                 {% endwith %}
-                                {# {% with region=coord|add:';6' size=',100;7' %}
-                                     <a href="{{ img_file|replace_nth_part_of_url:region }}" target="_blank">
-                                         <img class="anno" src="{{ img_file|replace_nth_part_of_url:region|replace_nth_part_of_url:size }}" alt="scan preview">
-                                     </a>
-                                 {% endwith %} #}
                                 <br>
                                 <input id="bbox_{{ bbox }}" name="{{ bbox }}" type="checkbox"><label for="bbox_{{ bbox }}"> Supprimer</label>
                                 <span id="message_{{ bbox }}" style="color:#FF0000;"></span>
