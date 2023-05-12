@@ -33,5 +33,6 @@ def replace_nth_part_of_url(url, args):
 
 
 @register.filter
-def img_to_iiif(img_file, region="full", size="full", orientation="0"):
-    return f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/{region}/{size}/{orientation}/default.jpg"
+def img_to_iiif(img_file, args="full/full/0"):
+    # args = {region}/{size}/{orientation}
+    return f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/{args}/default.jpg"
