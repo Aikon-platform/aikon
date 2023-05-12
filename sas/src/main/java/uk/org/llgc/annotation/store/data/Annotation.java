@@ -162,9 +162,19 @@ public class Annotation {
         if (_annotation.get("dcterms:" + DCTerms.created.getLocalName()) == null) {
             return null;
         } else {
+            // note: somehow "class java.util.ArrayList cannot be cast to class java.lang.String"
             try {
-                String tDate = (String)_annotation.get("dcterms:" + DCTerms.created.getLocalName());
-                return _dateFormatter.parse(tDate);
+                Object value = _annotation.get("dcterms:" + DCTerms.created.getLocalName());
+                if (value instanceof String) {
+                    String tDate = (String) value;
+                    return _dateFormatter.parse(tDate);
+                } else if (value instanceof ArrayList) {
+                    ArrayList list = (ArrayList) value;
+                    String tDate = (String) list.get(0);
+                    return _dateFormatter.parse(tDate);
+                } else {
+                    return null;
+                }
             } catch (ParseException tExcpt) {
                 // This shouldn't happen as date is created above...
                 tExcpt.printStackTrace();

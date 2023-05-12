@@ -18,51 +18,51 @@
 <script type="text/javascript">
     $(function() {
         var configuration = {
-            "id": "viewer",
-            "layout": "1x1",
-            "buildPath": "mirador-2.6.1/",
-            "mainMenuSettings" :
+            id: "viewer",
+            layout: "1x1",
+            buildPath: "mirador-2.6.1/",
+            mainMenuSettings :
                 {
-                    "show": true,
-                    "buttons" : {"bookmark" : false, "layout" : true},
-                    "userLogo": {"label": "IIIF", "attributes": {"href": "http://iiif.io"}},
-                    "userButtons": [
+                    show: true,
+                    buttons : {bookmark: false, layout: true},
+                    userLogo: {label: "IIIF", attributes: {href: "http://iiif.io"}},
+                    userButtons: [
                         {
-                            "label": "Load Annotation List",
-                            "iconClass": "fa fa-upload",
-                            "attributes": {"href": "populate.xhtml"}
+                            label: "Load Annotation List",
+                            iconClass: "fa fa-upload",
+                            attributes: {href: "populate.xhtml"}
                         },
                         {
-                            "label": "Index Manifest",
-                            "iconClass": "fab fa-searchengin",
-                            "attributes": { "href": "uploadManifest.xhtml"}
+                            label: "Index Manifest",
+                            iconClass: "fab fa-searchengin",
+                            attributes: {href: "uploadManifest.xhtml"}
                         },
                         {
-                            "label": "View Annotations",
-                            "iconClass": "fas fa-file-download",
-                            "attributes": { "href": "manifests.xhtml"}
+                            label: "View Annotations",
+                            iconClass: "fas fa-file-download",
+                            attributes: {href: "manifests.xhtml"}
                         }
                     ]
                 },
-            'showAddFromURLBox' : true,
-            "saveSession": false,
-            "data": [
-                { "manifestUri": "http://dms-data.stanford.edu/data/manifests/Walters/qm670kv1873/manifest.json", "location": "Stanford University"},
-                { "manifestUri": "http://dms-data.stanford.edu/data/manifests/Stanford/ege1/manifest.json", "location": "Stanford University"},
-                { "manifestUri": "http://dms-data.stanford.edu/data/manifests/BnF/jr903ng8662/manifest.json ", "location": "Stanford University"},
-                { "manifestUri": "http://dams.llgc.org.uk/iiif/4574752/manifest.json", "location": "National Library of Wales"},
-                { "manifestUri": "http://www.e-codices.unifr.ch/metadata/iiif/sl-0002/manifest.json", "location": 'e-codices'},
-                { "manifestUri": "http://www.e-codices.unifr.ch/metadata/iiif/bge-cl0015/manifest.json", "location": 'e-codices'},
-                { "manifestUri": "https://data.ucd.ie/api/img/manifests/ucdlib:40851", "location": "University College Dublin"},
-                { "manifestUri": "https://data.ucd.ie/api/img/manifests/ucdlib:30708", "location": "University College Dublin"},
-                { "manifestUri": "http://media.nga.gov/public/manifests/nga_highlights.json", "location": "National Gallery of Art"},
-                { "manifestUri": "https://iiif.lib.harvard.edu/manifests/drs:48309543", "location": "Harvard University"},
-                { "manifestUri": "https://purl.stanford.edu/rd447dz7630/iiif/manifest.json", "location": "Stanford University"},
-                { "manifestUri": "https://manifests.britishart.yale.edu/manifest/5005", "location": "Yale Center For British Art"},
-                { "manifestUri": "http://dams.llgc.org.uk/iiif/2.0/1465298/manifest.json", "location": "National Library of Wales"},
-                { "manifestUri": "http://localhost:8888/examples/Cambrian_1804-01-28.json", "location": 'National Library of Wales'}
+            showAddFromURLBox : true,
+            saveSession: false,
+            data: [
+                { manifestUri: "http://dms-data.stanford.edu/data/manifests/Walters/qm670kv1873/manifest.json", location: "Stanford University"},
+                { manifestUri: "http://dms-data.stanford.edu/data/manifests/Stanford/ege1/manifest.json", location: "Stanford University"},
+                { manifestUri: "http://dms-data.stanford.edu/data/manifests/BnF/jr903ng8662/manifest.json ", location: "Stanford University"},
+                { manifestUri: "http://dams.llgc.org.uk/iiif/4574752/manifest.json", location: "National Library of Wales"},
+                { manifestUri: "http://www.e-codices.unifr.ch/metadata/iiif/sl-0002/manifest.json", location: 'e-codices'},
+                { manifestUri: "http://www.e-codices.unifr.ch/metadata/iiif/bge-cl0015/manifest.json", location: 'e-codices'},
+                { manifestUri: "https://data.ucd.ie/api/img/manifests/ucdlib:40851", location: "University College Dublin"},
+                { manifestUri: "https://data.ucd.ie/api/img/manifests/ucdlib:30708", location: "University College Dublin"},
+                { manifestUri: "http://media.nga.gov/public/manifests/nga_highlights.json", location: "National Gallery of Art"},
+                { manifestUri: "https://iiif.lib.harvard.edu/manifests/drs:48309543", location: "Harvard University"},
+                { manifestUri: "https://purl.stanford.edu/rd447dz7630/iiif/manifest.json", location: "Stanford University"},
+                { manifestUri: "https://manifests.britishart.yale.edu/manifest/5005", location: "Yale Center For British Art"},
+                { manifestUri: "http://dams.llgc.org.uk/iiif/2.0/1465298/manifest.json", location: "National Library of Wales"},
+                { manifestUri: "http://localhost:8888/examples/Cambrian_1804-01-28.json", location: 'National Library of Wales'}
             ],
-            "windowObjects": [],
+            windowObjects: [],
             annotationEndpoint: {
                 name: 'Simple Annotation Store Endpoint',
                 module: 'SimpleASEndpoint',
@@ -70,26 +70,18 @@
                     url: 'annotation',
                 }
             },
-            "sidePanelOptions" : {
-                "toc": false,
-                "tocTabAvailable": false,
-                "layersTabAvailable": false,
-                "searchTabAvailable": false
+            sidePanelOptions : {
+                toc: false,
+                tocTabAvailable: false,
+                layersTabAvailable: false,
+                searchTabAvailable: false
             }
         };
-        // From Getty code: http://www.getty.edu/art/collection/static/viewers/mirador/?manifest=https://data.getty.edu/museum/api/iiif/1895/manifest.json
+
         function getURLParameter(param) {
-            if (typeof(param) == "string" && param.length > 0) {
-                if (typeof(window.location.search) == "string" && window.location.search.length > 0) {
-                    var _results = new RegExp(param + "=([^&]*)", "i").exec(window.location.search);
-                    if (typeof(_results) == "object" && _results !== null && typeof(_results.length) == "number" && _results.length > 0 && _results[1]) {
-                        if (typeof(_results[1]) == "string" && _results[1].length > 0) {
-                            return unescape(_results[1]);
-                        }
-                    }
-                }
-            }
-            return null;
+            const searchParams = new URLSearchParams(window.location.search);
+            const value = searchParams.get(param);
+            return value ? decodeURIComponent(value) : null;
         }
 
         var manifest = getURLParameter("iiif-content");
@@ -98,14 +90,13 @@
             canvas = "1";
         }
         if (typeof(manifest) == "string" && manifest.length > 0) {
-
             configuration.data = [{
-                "manifestUri": manifest,
+                manifestUri: manifest,
             }];
             configuration.windowObjects = [{
                 "loadedManifest": manifest,
-                "canvasID": manifest.replace("manifest.json", "canvas/c"+canvas+".json"),
-                "canvasControls": {"annotations":{"annotationState":"on"}}
+                "canvasID": manifest.replace("manifest.json", `canvas/c${canvas}.json`),
+                "canvasControls": {annotations: {annotationState: "on"}}
             }];
         }
         Mirador(configuration);

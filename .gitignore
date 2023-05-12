@@ -113,3 +113,5 @@ target/
 # Log files
 logs/*
 !logs/.gitkeep
+
+scripts/*.txt

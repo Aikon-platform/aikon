@@ -38,6 +38,7 @@ def rename_file(instance, filename, path):
     # Set filename as random string
     uuid_filename = f"{uuid4().hex}.{extension}"
     # Return the path to the file
+    log(f"[rename_file] {path}/{uuid_filename}")
     return f"{path}/{uuid_filename}"
 
 
