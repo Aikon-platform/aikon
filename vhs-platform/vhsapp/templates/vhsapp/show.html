@@ -77,40 +77,53 @@
         .reload-button:hover {
             background-color: rgb(35, 115, 128);
         }
-
         .anno-table {
-            table-layout: fixed;
+        {#table-layout: fixed;#}
             background: #F8F8F8;
+            margin-top: 3em;
         }
-
-        .nb-col {
-            width: 80px;
-            background-color: #333;
-            color: white;
-            text-align: center;
-        }
-
         .page-col {
-            width: 320px;
+            width: 420px;
             background-color: #333;
             color: white;
             text-align: center;
         }
-
+        td {
+            border: none !important;
+        }
         .anno-col {
             background-color: #F8F8F8;
             text-align: center;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: left;
+            align-items: center;
+            height: 100%;
         }
-
         .page-preview {
             max-height: 500px;
         }
-
+        .anno-div {
+            flex: 1;
+            align-items: center;
+            justify-content: left;
+        }
         .anno {
-            display: block;
-            margin: auto;
+            margin: 5px;
             border: 1px solid #b0aaaa;
             max-height: 450px;
+            max-width: 150px;
+        }
+        .anno-info {
+            color: #bdbbbb;
+            padding-bottom: 10px;
+            font-style: italic;
+        }
+        .anno-row {
+            width: 100%;
+            height: 100%;
+            border-bottom: 1px solid black;
+            background-color: #F8F8F8 !important;
         }
     </style>
 {% endblock %}
@@ -126,10 +139,10 @@
             <label for="endIndex">Vue de fin :</label>
             <input type="number" id="endIndex" value="2" min="1" max="{{ canvas_annos|length }}">
         </div>
-        <button id="delete_illustrations" class="delete-illustrations-button">Supprimer illustrations</button>
+        <button id="delete_illustrations" class="delete-illustrations-button">{% if APP_LANG == "en" %}Delete{% else %}Supprimer{% endif %} annotations</button>
 
-        <button class="reload-button" onclick="location.reload()" title="Actualiser la page courante">
-            <i class="fa-solid fa-arrows-rotate"></i> Actualiser
+        <button class="reload-button" onclick="location.reload()" title="{% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}">
+            <i class="fa-solid fa-arrows-rotate"></i> {% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}
         </button>
     </div>
 {% endblock %}
@@ -139,38 +152,41 @@
         <div class="column">
             <table class="anno-table">
                 {% for canvas_nb, annos, img_file in page_annos %}
-                    <tr style="width: 100%">
-                        <td class="nb-col">
-                            <b>Page</b> {{ canvas_nb }}
-                            <br>
-                            {# <button class="anno-btn"> #}
-                            <i class="fa-solid fa-pen-to-square"></i> Annotate{% if APP_LANG == "fr" %}r{% endif %}
-                            <a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ canvas_nb }}" target="_blank">
-                                <small>{% if APP_LANG == "en" %}Open in{% else %}Ouvrir avec{% endif %} Mirador</small>
-                            </a>
-                            {# </button> #}
-                        </td>
+                    <tr class="anno-row">
                         <td class="anno-td page-col">
-                            <a href="{{ img_file|img_to_iiif }}" target="_blank">
-                                <img class="page-preview" src="{{ img_file|img_to_iiif:"full/300,/0" }}" alt="scan preview">
+                            <div class="anno-info">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                                {% if APP_LANG == "en" %}
+                                    Click on image to correct annotation
+                                {% else %}
+                                    Clicker sur l'image pour corriger l'annotation
+                                {% endif %}
+                            </div>
+                            <a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ canvas_nb }}" target="_blank" title="Correct annotation">
+                                <img class="page-preview" src="{{ img_file|img_to_iiif:"full/400,/0" }}" alt="scan preview">
                             </a>
+                            <br>
+                            <h3><a href="{{ img_file|img_to_iiif }}" target="_blank">Page {{ canvas_nb }}</a></h3>
                         </td>
-                        {% for coord, bbox in annos %}
-                            <td id="ill_{{ bbox }}" class="anno-td anno-col">
-                                {% with region_full=coord|add:'/full/0' region=coord|add:'/,100/0' %}
-                                    <a href="{{ img_file|img_to_iiif:region_full }}" target="_blank">
-                                        <img class="anno" src="{{ img_file|img_to_iiif:region }}" alt="scan preview">
-                                    </a>
-                                {% endwith %}
-                                <br>
-                                <input id="bbox_{{ bbox }}" name="{{ bbox }}" type="checkbox"><label for="bbox_{{ bbox }}"> Supprimer</label>
-                                <span id="message_{{ bbox }}" style="color:#FF0000;"></span>
-                            </td>
-                        {% endfor %}
+                        <td class="anno-td anno-col">
+                            {% for coord, bbox in annos %}
+                                <div id="ill_{{ bbox }}" class="anno-div">
+                                    {% with region_full=coord|add:'/full/0' region=coord|add:'/,150/0' %}
+                                        <a href="{{ img_file|img_to_iiif:region_full }}" target="_blank">
+                                            <img class="anno" src="{{ img_file|img_to_iiif:region }}" alt="scan preview">
+                                        </a>
+                                    {% endwith %}
+                                    <br>
+                                    <input id="bbox_{{ bbox }}" name="{{ bbox }}" type="checkbox">
+                                    <label for="bbox_{{ bbox }}">{% if APP_LANG == "en" %}Delete{% else %}Supprimer{% endif %}</label>
+                                    <span id="message_{{ bbox }}" style="color:#FF0000;"></span>
+                                </div>
+                            {% endfor %}
+                        </td>
                     </tr>
                     {% empty %} {# if there is no annotations #}
                     <tr>
-                        <td style="width: 100%">Aucune annotation à afficher.</td>
+                        <td style="width: 100%">{% if APP_LANG == "en" %}No{% else %}Aucune{% endif %} annotation</td>
                     </tr>
                 {% endfor %}
             </table>

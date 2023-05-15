@@ -243,7 +243,7 @@ def show_work(request, id, work):
             ]
             canvas_annos.append((img_nb, annos, img_file))
 
-    paginator = Paginator(canvas_annos, 10)
+    paginator = Paginator(canvas_annos, 50)
     try:
         page_annos = paginator.page(request.GET.get("page"))
     except PageNotAnInteger:
