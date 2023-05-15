@@ -155,7 +155,7 @@ cantaloupe/init.sh
 
 Run [Cantaloupe](https://cantaloupe-project.github.io/)
 ```shell
-<path/to>/cantaloupe/start.sh
+cantaloupe/start.sh
 ```
 
 #### Simple Annotation Server
