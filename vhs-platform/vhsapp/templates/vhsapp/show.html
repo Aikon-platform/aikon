@@ -134,12 +134,12 @@
         <div class="title {{ work }}-title">
             <b>{{ work|title }} #{{ work_obj.id }}</b> : {{ work_obj }}
         </div>
-        {# <div class="views">
+        <!-- <div class="views">
             <label for="startIndex">Vue de début :</label>
             <input type="number" id="startIndex" value="1" min="1" max="{{ canvas_annos|length }}">
             <label for="endIndex">Vue de fin :</label>
             <input type="number" id="endIndex" value="2" min="1" max="{{ canvas_annos|length }}">
-        </div> #}
+        </div> -->
         <button id="delete_illustrations" class="delete-illustrations-button">{% if APP_LANG == "en" %}Delete{% else %}Supprimer{% endif %} annotations</button>
 
         <button class="reload-button" onclick="location.reload()" title="{% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}">
