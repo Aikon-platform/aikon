@@ -3,6 +3,7 @@
 ## Requirements
 
 > - **Sudo** privileges
+> - **Bash** terminal
 > - **Python**: 3.10
 > - **Java 11**: instructions for [Linux install](https://docs.oracle.com/en/java/javase/11/install/installation-jdk-linux-platforms.html#GUID-737A84E4-2EFF-4D38-8E60-3E29D1B884B8)
 >     - [Download OpenJDK](https://jdk.java.net/11/) (open source version of Java)
@@ -12,6 +13,8 @@
 > - **Git**:
 >     - `sudo apt install git`
 >     - Having configured [SSH access to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
+
+[//]: # (&#40;Mac: https://www.oracle.com/java/technologies/downloads/#java11-mac&#41;)
 
 ## App set up
 
@@ -32,6 +35,11 @@ sudo apt-get install wget ca-certificates
 sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql poppler-utils redis-server ghostscript
 ```
 
+Mac
+```bash
+brew install wget ca-certificates postgresql maven nginx libpq poppler redis ghostscript
+```
+
 ### Python environment
 
 ```bash
@@ -49,6 +57,9 @@ pre-commit install
 ### Database
 
 Open Postgres command prompt, create a database (`vhs`) and a user
+
+[//]: # (createuser -s postgres)
+[//]: # (psql -U postgres)
 
 ```bash
 sudo -u postgres psql
@@ -130,7 +141,7 @@ sudo ufw allow 8000
 
 Create a .ENV file for cantaloupe
 ```bash
-sudo chmod +x <path/to>/cantaloupe/init.sh && cp <path/to>/cantaloupe/.env{.template,} && nano <path/to>/cantaloupe/.env
+sudo chmod +x cantaloupe/init.sh && cp cantaloupe/.env{.template,} && nano cantaloupe/.env
 ```
 
 Change variables in the generated file `cantaloupe/.env`:
@@ -146,7 +157,7 @@ LOG_PATH=/path/to/logs
 
 Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with your variables):
 ```shell
-<path/to>/cantaloupe/init.sh
+cantaloupe/init.sh
 ```
 
 Run [Cantaloupe](https://cantaloupe-project.github.io/)

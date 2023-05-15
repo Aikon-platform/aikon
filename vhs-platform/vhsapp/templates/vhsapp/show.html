@@ -1,69 +1,176 @@
 {% extends "admin/base_site.html" %}
-{% load static %}
 
-{% block title %}{{ block.super }} | Annotations {{ work }} #{{ work_obj.id }}{% endblock %}
+{% load static %} {# NOTE: is it necessary if the parent template load statics as well #}
+
+{% block title %}Annotations {{ work }} #{{ work_obj.id }}{% endblock %}
 
 {% block extrahead %}
     {{ block.super }}
     <script src="{% static 'js/delete_anno.js' %}"></script>
+    <style>
+        .fixed-div {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px;
+            background-color: #cccfd3;
+            color: #111111 !important;
+            box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+        }
+
+        .title {
+            font-size: 2em;
+            padding: 0.2em;
+        }
+
+        .fixed-div h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .fixed-div label {
+            margin-right: 10px;
+        }
+
+        .fixed-div input {
+            margin-right: 10px;
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .views {
+            display: inline-block;
+        }
+
+        .fixed-div button {
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: none;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-block;
+            font-size: 14px;
+            line-height: 1.42857143;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+
+        .delete-illustrations-button {
+            background-color: #cb4848;
+        }
+
+        .delete-illustrations-button:hover {
+            background-color: #b63434;
+        }
+
+        .reload-button {
+            background-color: rgb(48, 148, 164);
+        }
+
+        .reload-button:hover {
+            background-color: rgb(35, 115, 128);
+        }
+
+        .anno-table {
+            table-layout: fixed;
+            background: #F8F8F8;
+        }
+
+        .nb-col {
+            width: 80px;
+            background-color: #333;
+            color: white;
+            text-align: center;
+        }
+
+        .page-col {
+            width: 320px;
+            background-color: #333;
+            color: white;
+            text-align: center;
+        }
+
+        .anno-col {
+            background-color: #F8F8F8;
+            text-align: center;
+        }
+
+        .page-preview {
+            max-height: 500px;
+        }
+
+        .anno {
+            display: block;
+            margin: auto;
+            border: 1px solid #b0aaaa;
+            max-height: 450px;
+        }
+    </style>
 {% endblock %}
 
 {% block header %}
     <div class="fixed-div">
-        <i class="fa-solid fa-arrows-rotate"></i> <a href="javascript:location.reload();" title="Actualiser la page courante">Actualiser</a>
-        <div style="margin:10px 0;">
-            <h3 style="margin:0;">
-                {% if work == "manuscript" %}
-                    Manuscrit #{{ work_obj.id }} : {{ work_obj.work.title }}
-                {% else %}
-                    Volume #{{ work_obj.id }} : {{ work_obj.title }}
-                {% endif %}
-            </h3>
+        <div class="title {{ work }}-title">
+            <b>{{ work|title }} #{{ work_obj.id }}</b> : {{ work_obj }}
         </div>
-        <div>
+        <div class="views">
             <label for="startIndex">Vue de début :</label>
             <input type="number" id="startIndex" value="1" min="1" max="{{ canvas_annos|length }}">
             <label for="endIndex">Vue de fin :</label>
             <input type="number" id="endIndex" value="2" min="1" max="{{ canvas_annos|length }}">
-            <button id="delete_illustrations">Supprimer illustrations</button>
         </div>
+        <button id="delete_illustrations" class="delete-illustrations-button">Supprimer illustrations</button>
+
+        <button class="reload-button" onclick="location.reload()" title="Actualiser la page courante">
+            <i class="fa-solid fa-arrows-rotate"></i> Actualiser
+        </button>
     </div>
 {% endblock %}
-
 
 {% block content %}
     <div class="row">
         <div class="column">
             <table class="anno-table">
-                {% for annos, url in page_annos %}
-                    <tr>
-                        <td class="anno-td" style="background-color:#F8F8F8;">
-                            <b>Vue {{ forloop.counter }}</b>
-                            <a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ forloop.counter }}" target="_blank">
-                                <small>(Modifier l'extraction)</small>
-                            </a><br>
-                            <a href="{{ url }}" target="_blank">
-                                <img src="{{ url|replace_nth_part_of_url:'150,;7' }}" alt="scan preview">
+                {% for canvas_nb, annos, img_file in page_annos %}
+                    <tr style="width: 100%">
+                        <td class="nb-col">
+                            <b>Page</b> {{ canvas_nb }}
+                            <br>
+                            {# <button class="anno-btn"> #}
+                            <i class="fa-solid fa-pen-to-square"></i> Annotate{% if APP_LANG == "fr" %}r{% endif %}
+                            <a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ canvas_nb }}" target="_blank">
+                                <small>{% if APP_LANG == "en" %}Open in{% else %}Ouvrir avec{% endif %} Mirador</small>
+                            </a>
+                            {# </button> #}
+                        </td>
+                        <td class="anno-td page-col">
+                            <a href="{{ img_file|img_to_iiif }}" target="_blank">
+                                <img class="page-preview" src="{{ img_file|img_to_iiif:"full/300,/0" }}" alt="scan preview">
                             </a>
                         </td>
-                    </tr>
-                    {% for anno, bbox in annos %}
-                        <tr>
-                            <td id="ill_{{ bbox }}" class="anno-td">
-                                {% with region=anno|add:';6' size=',50;7' %}
-                                    <a href="{{ url|replace_nth_part_of_url:region }}" target="_blank">
-                                        <img src="{{ url|replace_nth_part_of_url:region|replace_nth_part_of_url:size }}" alt="scan preview">
+                        {% for coord, bbox in annos %}
+                            <td id="ill_{{ bbox }}" class="anno-td anno-col">
+                                {% with region_full=coord|add:'/full/0' region=coord|add:'/,100/0' %}
+                                    <a href="{{ img_file|img_to_iiif:region_full }}" target="_blank">
+                                        <img class="anno" src="{{ img_file|img_to_iiif:region }}" alt="scan preview">
                                     </a>
                                 {% endwith %}
                                 <br>
                                 <input id="bbox_{{ bbox }}" name="{{ bbox }}" type="checkbox"><label for="bbox_{{ bbox }}"> Supprimer</label>
                                 <span id="message_{{ bbox }}" style="color:#FF0000;"></span>
                             </td>
-                        </tr>
-                    {% endfor %}
-                    {% empty %}
+                        {% endfor %}
+                    </tr>
+                    {% empty %} {# if there is no annotations #}
                     <tr>
-                        <td>Aucune annotation à afficher.</td>
+                        <td style="width: 100%">Aucune annotation à afficher.</td>
                     </tr>
                 {% endfor %}
             </table>
@@ -71,99 +178,3 @@
         </div>
     </div>
 {% endblock %}
-
-
-
-{#{% block content %}#}
-{#    <div class="row">#}
-{#        {% for column in 2|range_filter %}#}
-{#            <div class="column">#}
-{#                <table class="anno-table">#}
-{#                    {% for annos, url in page_annos %}#}
-{#                        {% if column == 0 and not forloop.counter|divisibleby:2 or column == 1 and forloop.counter|divisibleby:2 %}#}
-{#                            <tr>#}
-{#                                <td class="anno-td">#}
-{#                                    <b>Vue {{ forloop.counter }}</b>#}
-{#                                    <a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ forloop.counter }}" target="_blank">#}
-{#                                        <small>(Modifier l'extraction)</small>#}
-{#                                    </a><br>#}
-{#                                    <a href="{{ url }}" target="_blank">#}
-{#                                        <img src="{{ url|replace_nth_part_of_url:'150,;7' }}" alt="scan preview">#}
-{#                                    </a>#}
-{#                                </td>#}
-{#                                {% for anno, bbox in annos %}#}
-{#                                    <td id="ill_{{ bbox }}" class="anno-td">#}
-{#                                        {% with region=anno|add:';6' size=',50;7' %}#}
-{#                                            <a href="{{ url|replace_nth_part_of_url:region }}" target="_blank">#}
-{#                                                <img src="{{ url|replace_nth_part_of_url:region|replace_nth_part_of_url:size }}" alt="scan preview">#}
-{#                                            </a>#}
-{#                                        {% endwith %}#}
-{#                                        <br>#}
-{#                                        <input id="bbox_{{ bbox }}" name="{{ bbox }}" type="checkbox"><label for="bbox_{{ bbox }}"> Supprimer</label>#}
-{#                                        <span id="message_{{ bbox }}" style="color:#FF0000;"></span>#}
-{#                                    </td>#}
-{#                                {% endfor %}#}
-{#                            </tr>#}
-{#                        {% endif %}#}
-{#                    {% endfor %}#}
-{#                </table>#}
-{#            </div>#}
-{#        {% endfor %}#}
-{#    </div>#}
-{#    <div class="pagination">#}
-{#        <span class="step-links">#}
-{#            {% if page_obj.has_previous %}#}
-{#                <a href="?page=1">&laquo; first</a>#}
-{#                <a href="?page={{ page_obj.previous_page_number }}">previous</a>#}
-{#            {% endif %}#}
-{##}
-{#            <span class="current-page">#}
-{#                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.#}
-{#            </span>#}
-{##}
-{#            {% if page_obj.has_next %}#}
-{#                <a href="?page={{ page_obj.next_page_number }}">next</a>#}
-{#                <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>#}
-{#            {% endif %}#}
-{#        </span>#}
-{#    </div>#}
-{#{% endblock %}#}
-
-
-{#{% block content %}#}
-{#    <div class="row">#}
-{#        {% for column in 2|range_filter %}#}
-{#            <div class="column">#}
-{#                <table class="anno-table">#}
-{#                    {% for annos, url in canvas_annos %}#}
-{#                        {% if column == 0 and not forloop.counter|divisibleby:2 or column == 1 and forloop.counter|divisibleby:2 %}#}
-{#                            <tr>#}
-{#                                <td class="anno-td" style="background-color:#F8F8F8;">#}
-{#                                    <b>Vue {{ forloop.counter }}</b>#}
-{#                                    <a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ forloop.counter }}" target="_blank">#}
-{#                                        <small>(Modifier l'extraction)</small>#}
-{#                                    </a><br>#}
-{#                                    <a href="{{ url }}" target="_blank">#}
-{#                                        <img src="{{ url|replace_nth_part_of_url:'150,;7' }}" alt="scan preview">#}
-{#                                    </a>#}
-{#                                </td>#}
-{#                                {% for anno, bbox in annos %}#}
-{#                                    <td id="ill_{{ bbox }}" class="anno-td">#}
-{#                                        {% with region=anno|add:';6' size=',50;7' %}#}
-{#                                            <a href="{{ url|replace_nth_part_of_url:region }}" target="_blank">#}
-{#                                                <img src="{{ url|replace_nth_part_of_url:region|replace_nth_part_of_url:size }}" alt="scan preview">#}
-{#                                            </a>#}
-{#                                        {% endwith %}#}
-{#                                        <br>#}
-{#                                        <input id="bbox_{{ bbox }}" name="{{ bbox }}" type="checkbox"><label for="bbox_{{ bbox }}"> Supprimer</label>#}
-{#                                        <span id="message_{{ bbox }}" style="color:#FF0000;"></span>#}
-{#                                    </td>#}
-{#                                {% endfor %}#}
-{#                            </tr>#}
-{#                        {% endif %}#}
-{#                    {% endfor %}#}
-{#                </table>#}
-{#            </div>#}
-{#        {% endfor %}#}
-{#    </div>#}
-{#{% endblock %}#}

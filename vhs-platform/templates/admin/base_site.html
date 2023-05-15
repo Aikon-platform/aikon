@@ -1,7 +1,6 @@
 {% extends "admin/base_site.html" %}
 
 {# TEMPLATE EXTENSION FOR THE DEFAULT ADMIN INTERFACE #}
-
 {% load static %}
 
 {% block extrahead %}
@@ -13,6 +12,7 @@
     <script>
         const APP_NAME = "{{ APP_NAME }}";
         const SAS_APP_URL = "{{ SAS_APP_URL }}";
+        const APP_LANG = "{{ APP_LANG }}";
     </script>
     <script src="{% static 'js/jquery-3.6.1.js' %}"></script>
     <script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>

@@ -207,13 +207,13 @@ def show_work(request, id, work):
     iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{work}/{work_abbr}-{id}"
     canvas_annos = []
     # TODO: do we need to load again all the annotations everytime?
-    # TOOD: maybe loop on images of the manifest?
+    # TODO: maybe loop on images of the manifest?
     for line in lines:
         # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
         if len(line.split()) == 2:
             # Store the response of URL
             img_nb, img_file = line.split()
-            iiif_img = f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/full/full/0/default.jpg"
+            img_url = f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/full/full/0/default.jpg"
             try:
                 response = urlopen(
                     f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{img_nb}.json"
@@ -224,7 +224,7 @@ def show_work(request, id, work):
                 )
                 return JsonResponse(
                     {
-                        "error": f"unable to retrieve annotation for {iiif_img}",
+                        "error": f"unable to retrieve annotation for {img_url}",
                         "source": f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{img_nb}.json",
                     }
                 )
@@ -238,7 +238,7 @@ def show_work(request, id, work):
                 for d in data
                 if len(data) > 0
             ]
-            canvas_annos.append((annos, iiif_img))
+            canvas_annos.append((img_nb, annos, img_file))
 
     paginator = Paginator(canvas_annos, 10)
     try:
