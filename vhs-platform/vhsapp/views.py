@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+import re
 from urllib.request import urlopen
 from urllib.parse import urlencode
 
@@ -153,7 +154,7 @@ def annotate_work(request, id, version, work, work_abbr, canvas):
     )
 
 
-def populate_annotation(request, id, work):  # TODO factorize with show work
+def populate_annotation(request, id, work):
     """
     Populate annotation store from IIIF Annotation List
     """
@@ -173,15 +174,14 @@ def populate_annotation(request, id, work):  # TODO factorize with show work
 
     for c in canvas:
         url_search = f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{c}.json"
-        # Store the response of URL
         response = urlopen(url_search)
-        # Store the JSON response from url in data
         data = json.loads(response.read())
         if len(data) > 0:
             return HttpResponse(status=200)
 
     url_populate = f"{SAS_APP_URL}/annotation/populate"
     for line in lines:
+        # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
         if len(line.split()) == 2:
             canvas = line.split()[0]
             params = {"uri": f"{iiif_url}/list/anno-{canvas}.json"}
@@ -192,43 +192,74 @@ def populate_annotation(request, id, work):  # TODO factorize with show work
     return HttpResponse(status=200)
 
 
+def get_img_prefix(obj, wit=MS, wit_abbr=MS_ABBR):
+    img_prefix = f"{wit_abbr}{obj.id}"
+    if hasattr(obj, f"pdf{wit}_set"):
+        if getattr(obj, f"pdf{wit}_set").first():
+            img_prefix = (
+                obj.pdfmanuscript_set.first().pdf.name.split("/")[-1].split(".")[0]
+            )
+    return img_prefix
+
+
+def get_imgs(wit_prefix):
+    # TODO make a method of Witness class out of this function
+    pattern = re.compile(rf"{wit_prefix}_\d{{4}}\.jpg", re.IGNORECASE)
+    wit_imgs = []
+
+    for img in os.listdir(f"{BASE_DIR}/{IMG_PATH}"):
+        if pattern.match(img):
+            wit_imgs.append(img)
+
+    return wit_imgs
+
+
 @login_required(login_url=f"/{APP_NAME}-admin/")
-def show_work(request, id, work):
-    work_model = Volume if work == VOL else Manuscript
-    work_abbr = VOL_ABBR if work == VOL else MS_ABBR
-    annotations_path = VOL_ANNO_PATH if work == VOL else MS_ANNO_PATH
+def show_witness(request, id, wit):
+    wit_model = Volume if wit == VOL else Manuscript
+    wit_abbr = VOL_ABBR if wit == VOL else MS_ABBR
+    annotations_path = VOL_ANNO_PATH if wit == VOL else MS_ANNO_PATH
 
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
     lines = get_annotations(id, annotations_path)
     if lines is None:
-        log(f"[show_work] no annotation file for {work} n°{id}")
+        log(f"[show_wit] no annotation file for {wit} n°{id}")
         return JsonResponse({"error": "the annotations were not yet generated"})
 
-    work_obj = get_object_or_404(work_model, pk=id)
-    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{work}/{work_abbr}-{id}"
+    wit_obj = get_object_or_404(wit_model, pk=id)
+    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit}/{wit_abbr}-{id}"
+
+    wit_imgs = get_imgs(get_img_prefix(wit_obj, wit, wit_abbr))
     canvas_annos = []
+    bboxes = []
     # TODO: do we need to load again all the annotations everytime?
     # TODO: maybe loop on images of the manifest?
+
     for line in lines:
         # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
         if len(line.split()) == 2:
             # Store the response of URL
-            img_nb, img_file = line.split()
+            canvas_nb, img_file = line.split()
+
+            if img_file not in wit_imgs:
+                # log(f"[show_wit]: Missing img {img_file}")
+                continue
+
             img_url = f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/full/full/0/default.jpg"
             try:
                 response = urlopen(
-                    f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{img_nb}.json"
+                    f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{canvas_nb}.json"
                 )
             except Exception as e:
                 log(
-                    f"[show_work]: Unable to retrieve annotation for {img_file}, annotation {img_nb}\n{e}"
+                    f"[show_wit]: Unable to retrieve annotation for {img_file}, annotation {canvas_nb}\n{e}"
                 )
                 return JsonResponse(
                     {
                         "error": f"unable to retrieve annotation for {img_url}",
-                        "source": f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{img_nb}.json",
+                        "source": f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{canvas_nb}.json",
                     }
                 )
             # Store the JSON response from url in data
@@ -241,7 +272,9 @@ def show_work(request, id, work):
                 for d in data
                 if len(data) > 0
             ]
-            canvas_annos.append((img_nb, annos, img_file))
+            bbox_ids = [str(d["@id"].split("/")[-1]) for d in data if len(data) > 0]
+            bboxes.extend(bbox_ids)
+            canvas_annos.append((canvas_nb, annos, img_file))
 
     paginator = Paginator(canvas_annos, 50)
     try:
@@ -255,9 +288,15 @@ def show_work(request, id, work):
         request,
         "vhsapp/show.html",
         context={
-            "work": work,
-            "work_obj": work_obj,
+            "wit": wit,
+            "wit_obj": wit_obj,
             "page_annos": page_annos,
+            "bboxes": json.dumps(bboxes),
             "url_manifest": f"{iiif_url}/manifest.json",
         },
     )
+
+
+# TODO: create test to find integrity of a manuscript:
+#  if it has the correct number of images, if all its images are img files
+#  if annotations were correctly defined (same img name in file that images on server)

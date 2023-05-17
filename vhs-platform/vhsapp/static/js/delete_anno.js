@@ -23,16 +23,24 @@ function send_deletion(idBbox){
     xhr.send();
 }
 
+function delete_all_anno() {
+     if (confirm(APP_LANG === "en" ? "Are you sure you want to delete all annotations?"
+         : "Êtes-vous sûr de vouloir supprimer toutes les annotations ?")) {
+         for (let i = bboxes.length - 1; i >= 0; i--) {
+             send_deletion(bboxes[i]);
+         }
+     }
+}
+
 $(function() {
-    $("#delete_illustrations").click(function() {
+    $("#delete_anno").click(function() {
         let ids = [];
         const checkedAnno = $("[id^=bbox_]:checked");
         checkedAnno.each(function() {
             ids.push($(this).attr("id").split("_").pop());
         });
-
         if (ids.length > 0) {
-            if (confirm(APP_LANG === "en" ? "Are you sure you want to delete corresponding annotations"
+            if (confirm(APP_LANG === "en" ? "Are you sure you want to delete corresponding annotations?"
                 : "Êtes-vous sûr de vouloir supprimer les annotations sélectionnées ?")) {
                 for (let i = 0; i < ids.length; i++) {
                     send_deletion(ids[i]);
@@ -43,5 +51,16 @@ $(function() {
         } else {
             alert(APP_LANG === "en" ? "Please select at least one annotation to delete" : "Veuillez sélectionner au moins une image à supprimer.");
         }
+    });
+
+    /* $("#delete_all").click(function() {
+        delete_all_anno();
+    }); */
+
+    $("#select_anno").click(function() {
+        const checkedAnno = $("[id^=bbox_]");
+        checkedAnno.each(function() {
+            $(this).prop("checked", true);
+        });
     });
 } );

@@ -2,7 +2,7 @@
 
 {% load static %} {# NOTE: is it necessary if the parent template load statics as well #}
 
-{% block title %}Annotations {{ work }} #{{ work_obj.id }}{% endblock %}
+{% block title %}Annotations {{ wit }} #{{ wit_obj.id }}{% endblock %}
 
 {% block extrahead %}
     {{ block.super }}
@@ -13,7 +13,7 @@
             top: 0;
             left: 0;
             width: 100%;
-            padding: 10px;
+            padding: 10px 25px 15px;
             background-color: #cccfd3;
             color: #111111 !important;
             box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
@@ -62,12 +62,28 @@
             margin-left: 10px;
         }
 
-        .delete-illustrations-button {
+        .delete-button {
             background-color: #cb4848;
         }
 
-        .delete-illustrations-button:hover {
+        .delete-button:hover {
             background-color: #b63434;
+        }
+
+        .delete-all-button {
+            background-color: #ad2b2b;
+        }
+
+        .delete-all-button:hover {
+            background-color: #931c1c;
+        }
+
+        .select-button {
+            background-color: #e3c035;
+        }
+
+        .select-button:hover {
+            background-color: #c0a124;
         }
 
         .reload-button {
@@ -127,24 +143,36 @@
             background-color: #F8F8F8 !important;
         }
     </style>
+    <!--<script>
+        let bboxes = JSON.parse('{{ bboxes|safe }}')
+    </script>-->
 {% endblock %}
 
 {% block header %}
     <div class="fixed-div">
-        <div class="title {{ work }}-title">
-            <b>{{ work|title }} #{{ work_obj.id }}</b> : {{ work_obj }}
+        <div class="title {{ wit }}-title">
+            <b>{{ wit|title }} #{{ wit_obj.id }}</b> : {{ wit_obj }}
         </div>
-        <!-- <div class="views">
-            <label for="startIndex">Vue de début :</label>
-            <input type="number" id="startIndex" value="1" min="1" max="{{ canvas_annos|length }}">
-            <label for="endIndex">Vue de fin :</label>
-            <input type="number" id="endIndex" value="2" min="1" max="{{ canvas_annos|length }}">
-        </div> -->
-        <button id="delete_illustrations" class="delete-illustrations-button">{% if APP_LANG == "en" %}Delete{% else %}Supprimer{% endif %} annotations</button>
+
+        <button id="select_anno" class="select-button">
+            <i class="fa-regular fa-square-check"></i>&nbsp;
+            {% if APP_LANG == "en" %}Select all{% else %}Sélectionner toutes les{% endif %} annotations
+        </button>
 
         <button class="reload-button" onclick="location.reload()" title="{% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}">
-            <i class="fa-solid fa-arrows-rotate"></i> {% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}
+            <i class="fa-solid fa-arrows-rotate"></i>
+            {% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}
         </button>
+
+        <button id="delete_anno" class="delete-button">
+            <i class="fa-solid fa-trash"></i>
+            {% if APP_LANG == "en" %}Delete{% else %}Supprimer{% endif %} annotations
+        </button>
+
+        <!--<button id="delete_all" class="delete-all-button">
+            <i class="fa-solid fa-trash"></i>
+            {% if APP_LANG == "en" %}Delete all the{% else %}Supprimer toutes les{% endif %} annotations
+        </button>-->
     </div>
 {% endblock %}
 
