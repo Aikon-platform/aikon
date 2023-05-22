@@ -134,6 +134,8 @@ class Volume(models.Model):
             metadata["Comment"] = comment
         if other_copies := self.other_copies:
             metadata["Other copy(ies)"] = other_copies
+        if manifest := self.manifestvolume_set.first():
+            metadata["Source manifest"] = str(manifest)
 
         return metadata
 
@@ -241,5 +243,7 @@ class Manuscript(models.Model):
             metadata["Source of the digitized version"] = digitized_version.source
         if pinakes_link := self.pinakes_link:
             metadata["External link"] = pinakes_link
+        if manifest := self.manifestmanuscript_set.first():
+            metadata["Source manifest"] = str(manifest)
 
         return metadata

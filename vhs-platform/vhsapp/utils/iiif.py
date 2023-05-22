@@ -300,13 +300,13 @@ def process_images(work, seq, version):
     """
     if hasattr(work, "imagemanuscript_set"):  # Manuscripts
         imgs = work.imagemanuscript_set.all()
-        pdf_first = work.pdfmanuscript_set.first()
-        manifest_first = work.manifestmanuscript_set.first()
+        pdf = work.pdfmanuscript_set.first()
+        manifest = work.manifestmanuscript_set.first()
         work_abbr = MS_ABBR
     else:  # Volumes
         imgs = work.imagevolume_set.all()
-        pdf_first = work.pdfvolume_set.first()
-        manifest_first = work.manifestvolume_set.first()
+        pdf = work.pdfvolume_set.first()
+        manifest = work.manifestvolume_set.first()
         work_abbr = VOL_ABBR
 
     # Check type of scans that were uploaded
@@ -323,12 +323,12 @@ def process_images(work, seq, version):
                 log(f"[process_images] Non existing {img_name}\n{e}")
 
     # Check if there is a PDF work and process it
-    elif pdf_first:  # PDF
+    elif pdf:  # PDF
         # TODO: factorize with pdf_to_img() in functions.py
-        # MARKER console(pdf_first.pdf)
-        with Pdf.open(f"{BASE_DIR}/{MEDIA_PATH}/{pdf_first.pdf}") as pdf_file:
+        # MARKER console(pdf.pdf)
+        with Pdf.open(f"{BASE_DIR}/{MEDIA_PATH}/{pdf.pdf}") as pdf_file:
             for counter in range(1, len(pdf_file.pages) + 1):
-                img_name = pdf_first.pdf.name.split("/")[-1].replace(
+                img_name = pdf.pdf.name.split("/")[-1].replace(
                     ".pdf", f"_{counter:04d}.jpg"
                 )
                 try:
@@ -345,7 +345,7 @@ def process_images(work, seq, version):
                     log(f"Non existing {img_name}\n{e}")
 
     # Check if there is a manifest work and process it
-    elif manifest_first:
+    elif manifest:
         for counter, path in enumerate(
             sorted(glob(f"{BASE_DIR}/{IMG_PATH}/{work_abbr}{work.id}_*.jpg")),
             start=1,

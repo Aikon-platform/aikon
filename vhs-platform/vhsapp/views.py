@@ -22,7 +22,7 @@ from vhsapp.utils.constants import (
     APP_NAME_UPPER,
     APP_DESCRIPTION,
 )
-from vhsapp.utils.iiif import annotate_canvas, process_images, manifest_witness
+from vhsapp.utils.iiif import annotate_canvas, manifest_witness
 from vhsapp.utils.paths import (
     MEDIA_PATH,
     VOL_ANNO_PATH,
