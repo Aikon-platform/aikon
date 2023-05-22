@@ -17,10 +17,7 @@ from vhsapp.models.constants import (
     IMG_INFO,
     MANIFEST_INFO,
 )
-from vhsapp.utils.functions import (
-    rename_file,
-    convert_to_jpeg,
-)
+from vhsapp.utils.functions import rename_file, convert_to_jpeg, pdf_to_img
 from vhsapp.utils.paths import (
     BASE_DIR,
     IMG_PATH,
@@ -95,6 +92,9 @@ def image_delete(sender, instance, **kwargs):
 class ImageVolume(Picture):
     volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
 
+    def get_wit_ref(self):
+        return f"vol{self.volume.id}"
+
 
 # Receive the pre_delete signal and delete the file associated with the model instance
 @receiver(pre_delete, sender=ImageVolume)
@@ -105,6 +105,9 @@ def imagevolume_delete(sender, instance, **kwargs):
 
 class ImageManuscript(Picture):
     manuscript = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
+
+    def get_wit_ref(self):
+        return f"ms{self.manuscript.id}"
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance
@@ -132,7 +135,8 @@ class Pdf(Digitization):
         # Call the parent save method to save the model
         super().save(*args, **kwargs)
         # Run the PDF to image async conversion task in the background using threading
-        t = threading.Thread(target=self.to_img())
+        # t = threading.Thread(target=self.to_img())
+        t = threading.Thread(target=pdf_to_img, args=(f"{self.pdf.name}",))
         t.start()
 
     def delete(self, using=None, keep_parents=False):
@@ -190,6 +194,9 @@ class PdfManuscript(Pdf):
         validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
     )
 
+    def get_wit_ref(self):
+        return f"ms{self.manuscript.id}"
+
 
 class PdfVolume(Pdf):
     volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
@@ -198,6 +205,9 @@ class PdfVolume(Pdf):
         upload_to=partial(rename_file, path=VOL_PDF_PATH),
         validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
     )
+
+    def get_wit_ref(self):
+        return f"vol{self.volume.id}"
 
 
 ############################
@@ -252,6 +262,9 @@ class ManifestVolume(Manifest):
         )
         t.start()
 
+    def get_wit_ref(self):
+        return f"vol{self.volume.id}"
+
 
 class ManifestManuscript(Manifest):
     manuscript = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
@@ -268,3 +281,6 @@ class ManifestManuscript(Manifest):
             ),
         )
         t.start()
+
+    def get_wit_ref(self):
+        return f"ms{self.manuscript.id}"

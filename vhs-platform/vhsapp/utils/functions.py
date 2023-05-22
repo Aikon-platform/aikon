@@ -3,6 +3,7 @@ import io
 import json
 import os
 import shutil
+from os.path import exists
 from pathlib import Path
 from uuid import uuid4
 
@@ -35,11 +36,17 @@ def rename_file(instance, filename, path):
     The file will be uploaded to "{path}/{uuid_filename}"
     """
     extension = filename.split(".")[-1]
-    # Set filename as random string
-    uuid_filename = f"{uuid4().hex}.{extension}"
+    try:
+        new_filename = f"{instance.get_wit_ref()}.{extension}"
+        if exists(f"{path}/{new_filename}"):
+            # TODO: create fct that increment the number if there is already a file named like so
+            # here it just erase the currently uploaded file
+            new_filename = f"{instance.get_wit_ref()}.{extension}"
+    except Exception:
+        # Set filename as random string
+        new_filename = f"{uuid4().hex}.{extension}"
     # Return the path to the file
-    log(f"[rename_file] {path}/{uuid_filename}")
-    return f"{path}/{uuid_filename}"
+    return f"{path}/{new_filename}"
 
 
 def convert_to_jpeg(image):
@@ -59,14 +66,15 @@ def convert_to_jpeg(image):
     return img_jpg
 
 
-def convert_pdf_to_image(pdf_name):
+def pdf_to_img(pdf_name):
     """
-    TODO: remove because turned into method of the PDF class
+    TODO: use method of class PDF?
     Convert the PDF file to JPEG images
     """
     pdf_path = f"{BASE_DIR}/{MEDIA_PATH}/{pdf_name}"
-    # e.g. pdf_name = "volumes/pdf/filename.pdf" => filename = "filename"
-    filename = pdf_path.split("/")[-1].split(".")[0]
+
+    # e.g. pdf_name = "volumes/pdf/filename.pdf" => "filename"
+    pdf_name = pdf_path.split("/")[-1].split(".")[0]
     pdf_info = pdfinfo_from_path(pdf_path, userpw=None, poppler_path=None)
     page_nb = pdf_info["Pages"]
     step = 2
@@ -78,15 +86,13 @@ def convert_pdf_to_image(pdf_name):
                 first_page=img_nb,
                 last_page=min(img_nb + step - 1, page_nb),
             )
-            # Iterate through all the batch pages stored above
             for page in batch_pages:
                 page.save(
-                    f"{BASE_DIR}/{IMG_PATH}/{filename}_{img_nb:04d}.jpg", format="JPEG"
+                    f"{BASE_DIR}/{IMG_PATH}/{pdf_name}_{img_nb:04d}.jpg", format="JPEG"
                 )
-                # Increment the counter to update filename
                 img_nb += 1
     except Exception as e:
-        log(f"Failed to convert {filename}.pdf to images:\n{e}")
+        log(f"Failed to convert {pdf_name}.pdf to images:\n{e}")
 
 
 def get_pdf_imgs(pdf_list, ps_type="volume"):
