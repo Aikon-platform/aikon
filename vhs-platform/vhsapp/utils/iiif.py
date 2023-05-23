@@ -267,7 +267,7 @@ def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, ps_type=VOL.lower())
     manifest = f"{VHS_APP_URL}/{obj_ref}/manifest.json"
 
     if vers == MANIFEST_AUTO:
-        tag_id = f"iiif_auto_"
+        tag_id = "iiif_auto_"
         download_url = f"/{obj_ref}/annotation/"
         anno_type = "CSV"
     else:
@@ -282,16 +282,19 @@ def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, ps_type=VOL.lower())
     )
 
 
-def gen_manifest_url(
-    m_id,
-    scheme="http",
-    host="localhost",
-    port=8182,
-    vers=MANIFEST_AUTO,
-    m_type=VOL.lower(),
-):
-    # return f"{scheme}://{host}{f':{port}' if port else ''}/{APP_NAME}/iiif/{vers}/{m_type}/{m_id}/manifest.json"
-    return f"{CANTALOUPE_APP_URL}/{APP_NAME}/iiif/{vers}/{m_type}/{m_id}/manifest.json"
+def gen_manifest_url(wit_id, vers=MANIFEST_AUTO, wit_type=VOL.lower()):
+    wit_abbr = VOL_ABBR if wit_type == VOL.lower() else MS_ABBR
+    return f"{CANTALOUPE_APP_URL}/{APP_NAME}/iiif/{vers}/{wit_type}/{wit_abbr}-{wit_id}/manifest.json"
+
+
+def gen_manifest_btn(obj_id, wit_type=MS, has_manifest=True):
+    manifest = gen_manifest_url(obj_id, MANIFEST_AUTO, wit_type.lower())
+    mf = (
+        f"<a href='{manifest}' target='_blank'>{IIIF_ICON}</a>"
+        if has_manifest
+        else "<span class='faded'>No manifest</span>"
+    )
+    return mark_safe(f"<div class='iiif-icon'>{mf}</div>")
 
 
 def process_images(work, seq, version):

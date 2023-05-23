@@ -68,4 +68,10 @@
     color: white;
     padding: 8px 10px !important;
     margin: 5px 0 !important;
+    width: 170px;
+}
+
+.faded {
+    font-style: italic;
+    color: rgba(0, 0, 0, 0.50);
 }
