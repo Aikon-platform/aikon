@@ -73,5 +73,5 @@
 
 .faded {
     font-style: italic;
-    color: rgba(0, 0, 0, 0.50);
+    color: rgba(var(--body-fg), 0.75);
 }
