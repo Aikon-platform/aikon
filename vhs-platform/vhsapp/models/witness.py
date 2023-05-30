@@ -178,7 +178,9 @@ class Manuscript(models.Model):
         verbose_name="Conservation place", max_length=150
     )
     reference_number = models.CharField(verbose_name="Shelfmark", max_length=150)
-    # date_century = models.CharField(verbose_name="Century", choices=CENTURY, max_length=150)
+    # date_century = models.CharField(
+    #     verbose_name="Century", choices=CENTURY, blank=True, max_length=150
+    # )
     date_free = models.CharField(verbose_name="Date", max_length=150, blank=True)
     sheets = models.CharField(verbose_name="Number of folios/pages", max_length=150)
     origin_place = models.CharField(
