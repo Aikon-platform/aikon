@@ -11,12 +11,29 @@
     <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.png' %}">
     <script>
         const APP_NAME = "{{ APP_NAME }}";
-        const SAS_APP_URL = "{{ SAS_APP_URL }}";
         const APP_LANG = "{{ APP_LANG }}";
+
+        const VHS_APP_URL = "{{ VHS_APP_URL }}"
+        const SAS_APP_URL = "{{ SAS_APP_URL }}";
+        const CANTALOUPE_APP_URL = "{{ CANTALOUPE_APP_URL }}"
+
+        const MS = "{{ MS }}"
+        const VOL = "{{ VOL }}";
+        const WIT = "{{ WIT }}"
+
+        const MS_ABBR = "{{ MS_ABBR }}"
+        const VOL_ABBR = "{{ VOL_ABBR }}";
+        const WIT_ABBR = "{{ WIT_ABBR }}"
+
+        const to_manifest = (witness_ref, version) => {
+            const wit_type = witness_ref.startsWith(MS_ABBR) ? MS.toLowerCase() : VOL.toLowerCase()
+            return `${VHS_APP_URL}/${APP_NAME}/iiif/${version}/${witness_ref}/${witness_ref}/manifest.json`
+        }
     </script>
     <script src="{% static 'js/jquery-3.6.1.js' %}"></script>
     <script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
 
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <script src="{% static 'js/script.js' %}"></script>
+    <script src="{% static 'js/eventListeners.js' %}"></script>
 {% endblock %}
