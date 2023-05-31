@@ -8,19 +8,19 @@ IIIF_ICON = "<img alt='IIIF' src='https://iiif.io/assets/images/logos/logo-sm.pn
 
 
 def get_id(dic):
-    if type(dic) == list:
+    if isinstance(dic, list):
         dic = dic[0]
 
-    if type(dic) == dict:
+    if isinstance(dic, dict):
         try:
             return dic["@id"]
         except KeyError:
             try:
                 return dic["id"]
             except KeyError as e:
-                log(f"[Get id] No id provided {e}")
+                log(f"[get_id] No id provided {e}")
 
-    if type(dic) == str:
+    if isinstance(dic, str):
         return dic
 
     return None
