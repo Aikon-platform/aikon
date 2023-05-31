@@ -11,9 +11,9 @@ function send_deletion(idBbox){
     xhr.open("DELETE", urlDelete, true);
     xhr.onload = function() {
         if (xhr.status === 204) {
-            var $td = $(`#ill_${idBbox}`).closest("td");
-            $td.fadeOut(function() {
-                $td.remove();
+            const annoDiv = $(`#ill_${idBbox}`).closest("div");
+            annoDiv.fadeOut(function() {
+                annoDiv.remove();
             } );
         } else {
             idMessage = `message_${idBbox}`;
@@ -23,30 +23,44 @@ function send_deletion(idBbox){
     xhr.send();
 }
 
-$(function() {
-    $("[id^=bbox_]").change(function() {
-        if (this.checked) {
-            if (confirm ("Êtes-vous sûr de vouloir supprimer cette image extraite ?")) {
-                send_deletion($(this).attr("id").split("_").pop())
-            } else {
-                $(this).prop("checked", false);
-            }
-        }
-    } );
+function delete_all_anno() {
+     if (confirm(APP_LANG === "en" ? "Are you sure you want to delete all annotations?"
+         : "Êtes-vous sûr de vouloir supprimer toutes les annotations ?")) {
+         for (let i = bboxes.length - 1; i >= 0; i--) {
+             send_deletion(bboxes[i]);
+         }
+     }
+}
 
-    $("#delete_illustrations").click(function() {
-        const startIndex = parseInt(document.getElementById("startIndex").value);
-        const endIndex = parseInt(document.getElementById("endIndex").value);
-        if (confirm ("Êtes-vous sûr de vouloir supprimer toutes les images extraites de Vue " + startIndex + " à Vue " + endIndex + " ?")) {
-            for (var i = endIndex; i >= startIndex; i--) {
-                $("[id]").filter(function() {
-                    return this.id.indexOf("bbox_") !== -1;
-                }).each(function() {
-                    if (i === parseInt(this.id.split("-")["2"])) {
-                        send_deletion(this.id.split("_").pop())
-                    }
-                } );
+$(function() {
+    $("#delete_anno").click(function() {
+        let ids = [];
+        const checkedAnno = $("[id^=bbox_]:checked");
+        checkedAnno.each(function() {
+            ids.push($(this).attr("id").split("_").pop());
+        });
+        if (ids.length > 0) {
+            if (confirm(APP_LANG === "en" ? "Are you sure you want to delete corresponding annotations?"
+                : "Êtes-vous sûr de vouloir supprimer les annotations sélectionnées ?")) {
+                for (let i = 0; i < ids.length; i++) {
+                    send_deletion(ids[i]);
+                }
+            } else {
+                checkedAnno.prop("checked", false);
             }
+        } else {
+            alert(APP_LANG === "en" ? "Please select at least one annotation to delete" : "Veuillez sélectionner au moins une image à supprimer.");
         }
-    } );
+    });
+
+    /* $("#delete_all").click(function() {
+        delete_all_anno();
+    }); */
+
+    $("#select_anno").click(function() {
+        const checkedAnno = $("[id^=bbox_]");
+        checkedAnno.each(function() {
+            $(this).prop("checked", true);
+        });
+    });
 } );

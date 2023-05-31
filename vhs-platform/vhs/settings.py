@@ -84,6 +84,7 @@ CANTALOUPE_PORT = 8182
 SAS_PORT = 8888
 
 VHS_APP_URL = f"http://localhost:{VHS_PORT}"
+# CANTALOUPE_APP_URL = f"http://localhost:{VHS_PORT}"
 CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
 SAS_APP_URL = f"http://localhost:{SAS_PORT}"
 

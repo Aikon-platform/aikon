@@ -3,8 +3,6 @@ from django.db import models
 
 class Author(models.Model):
     name = models.CharField(verbose_name="Nom", max_length=200, unique=True)
-    date_min = models.IntegerField(verbose_name="Date min", null=True, blank=True)
-    date_max = models.IntegerField(verbose_name="Date max", null=True, blank=True)
 
     class Meta:
         verbose_name = "Auteur"
@@ -12,6 +10,17 @@ class Author(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Work(models.Model):
+    title = models.CharField(verbose_name="Titre", max_length=600, unique=True)
+
+    class Meta:
+        verbose_name = "Titre"
+        verbose_name_plural = "Titres"
+
+    def __str__(self):
+        return self.title
 
 
 class DigitizedVersion(models.Model):

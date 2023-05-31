@@ -4,26 +4,29 @@ import json
 import os
 import re
 import shutil
+from os.path import exists
 from pathlib import Path
 from uuid import uuid4
 
 import PyPDF2
 import requests
 from PIL import Image
-
+from io import BytesIO
 
 from django.utils.html import format_html
 from django.http import HttpResponse
 from django.utils.safestring import mark_safe
 from pdf2image import pdfinfo_from_path, convert_from_path
-
+from django.core.files import File
 from urllib.request import (
     HTTPPasswordMgrWithDefaultRealm,
     HTTPBasicAuthHandler,
     build_opener,
     install_opener,
 )
-from vhs.settings import APP_NAME
+from vhsapp.utils.constants import (
+    APP_NAME,
+)
 from vhsapp.utils.paths import BASE_DIR, MEDIA_DIR, IMG_PATH
 from vhsapp.utils.logger import log, console
 
@@ -38,6 +41,71 @@ def get_last_file(path, prefix):
             if number > last_number:
                 last_number = number
     return last_number
+
+
+def rename_file(instance, filename, path):
+    """
+    Rename the file using uuid4
+    The file will be uploaded to "{path}/{uuid_filename}"
+    """
+    extension = filename.split(".")[-1]
+    try:
+        new_filename = f"{instance.get_wit_ref()}.{extension}"
+        if exists(f"{path}/{new_filename}"):
+            # TODO: create fct that increment the number if there is already a file named like so
+            # here it just erase the currently uploaded file
+            new_filename = f"{instance.get_wit_ref()}.{extension}"
+    except Exception:
+        # Set filename as random string
+        new_filename = f"{uuid4().hex}.{extension}"
+    # Return the path to the file
+    return f"{path}/{new_filename}"
+
+
+def convert_to_jpeg(image):
+    """
+    Convert the image to JPEG format
+    """
+    filename = image.name.split(".")[0]
+    img = Image.open(image)
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    # Create a BytesIO object
+    obj_io = BytesIO()
+    # Save image to BytesIO object
+    img.save(obj_io, format="JPEG")
+    # Create a File object
+    img_jpg = File(obj_io, name=f"{filename}.jpg")
+    return img_jpg
+
+
+def pdf_to_img(pdf_name):
+    """
+    TODO: use method of class PDF?
+    Convert the PDF file to JPEG images
+    """
+    pdf_path = f"{BASE_DIR}/{MEDIA_PATH}/{pdf_name}"
+
+    # e.g. pdf_name = "volumes/pdf/filename.pdf" => "filename"
+    pdf_name = pdf_path.split("/")[-1].split(".")[0]
+    pdf_info = pdfinfo_from_path(pdf_path, userpw=None, poppler_path=None)
+    page_nb = pdf_info["Pages"]
+    step = 2
+    try:
+        for img_nb in range(1, page_nb + 1, step):
+            batch_pages = convert_from_path(
+                pdf_path,
+                dpi=300,
+                first_page=img_nb,
+                last_page=min(img_nb + step - 1, page_nb),
+            )
+            for page in batch_pages:
+                page.save(
+                    f"{BASE_DIR}/{IMG_PATH}/{pdf_name}_{img_nb:04d}.jpg", format="JPEG"
+                )
+                img_nb += 1
+    except Exception as e:
+        log(f"Failed to convert {pdf_name}.pdf to images:\n{e}")
 
 
 def get_pdf_imgs(pdf_list, ps_type="volume"):
@@ -220,11 +288,22 @@ def get_files_from_dir(dir_path, valid_extensions=None, recursive=False, sort=Fa
     return sorted(files) if sort else files
 
 
-def save_img(img: Image, img_filename, error_msg="Failed to save img"):
+def save_img(img, img_filename, error_msg="Failed to save img"):
     try:
         img.save(BASE_DIR / IMG_PATH / img_filename)
-        # with open(BASE_DIR / IMG_PATH / img_filename, mode="wb") as f:
-        #     shutil.copyfileobj(img, f)
-        #     # f.write(image_response.content)
+        return True
     except Exception as e:
-        log(f"{error_msg}:\n{e}")
+        log(f"[save_img] {error_msg}:\n{e}")
+    return False
+
+
+def check_and_create_if_not(path):
+    path = Path(path)
+    if not path.exists():
+        create_dir(path)
+        return False
+    return True
+
+
+def sanitize_url(string):
+    return string.replace(" ", "+").replace(" ", "+")

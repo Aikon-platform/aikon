@@ -1,14 +1,10 @@
 from admin_searchable_dropdown.filters import AutocompleteFilter
 from django.contrib import admin, messages
 
-from vhsapp.forms import PlaceForm
-
 from vhsapp.models.models import (
     DigitizedVersion,
     Author,
     Work,
-    Place,
-    ConservationPlace,
 )
 
 from vhsapp.utils.constants import (
@@ -93,33 +89,6 @@ class WorkAdmin(admin.ModelAdmin):
 class DigitizedVersionAdmin(admin.ModelAdmin):
     search_fields = ("source",)
     list_filter = ("source",)
-    list_per_page = 5
-
-    def get_model_perms(self, request):
-        """
-        Return empty perms dict thus hiding the model from admin index
-        """
-        return {}
-
-
-@admin.register(Place)
-class PlaceAdmin(admin.ModelAdmin):
-    form = PlaceForm
-    search_fields = ("name",)
-    list_filter = ("name",)
-    list_per_page = 5
-
-    def get_model_perms(self, request):
-        """
-        Return empty perms dict thus hiding the model from admin index
-        """
-        return {}
-
-
-@admin.register(ConservationPlace)
-class ConservationPlaceAdmin(admin.ModelAdmin):
-    search_fields = ("name",)
-    list_filter = ("name",)
     list_per_page = 5
 
     def get_model_perms(self, request):

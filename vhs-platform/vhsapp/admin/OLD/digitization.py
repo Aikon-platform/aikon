@@ -12,13 +12,16 @@ from vhsapp.models.digitization import (
     ManifestVolume,
 )
 
-from vhsapp.utils.iiif import IIIF_ICON, gen_iiif_url
-from vhs.settings import APP_NAME
-from vhsapp.models.constants import MS, VOL, WIT
+from vhsapp.utils.iiif.iiif_gen_url import gen_iiif_url
+from vhsapp.utils.iiif import IIIF_ICON
+from vhsapp.utils.constants import APP_NAME
 
 from vhsapp.utils.functions import (
     gen_thumbnail,
 )
+
+img_vol = f"/{APP_NAME}-admin/vhsapp/imagevolume"  # TODO change that
+img_ms = f"/{APP_NAME}-admin/vhsapp/imagemanuscript"  # TODO: change that
 
 
 class ImageAdmin(admin.ModelAdmin):
@@ -26,10 +29,9 @@ class ImageAdmin(admin.ModelAdmin):
         abstract = True
 
     list_per_page = 100
-    wit_type = WIT
 
-    def get_wit_type(self):
-        return self.wit_type
+    def wit_type(self):
+        return "witness"
 
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
@@ -37,8 +39,8 @@ class ImageAdmin(admin.ModelAdmin):
             "image",
             "thumbnail",
         )
-        self.search_fields = (f"={WIT}__id", "=image")
-        self.autocomplete_fields = (f"{WIT}",)
+        self.search_fields = (f"={self.wit_type()}__id", "=image")
+        self.autocomplete_fields = (f"{self.wit_type()}",)
 
     def thumbnail(self, obj):
         return gen_thumbnail(gen_iiif_url(obj.image.name.split("/")[-1]), obj.image.url)
@@ -52,12 +54,14 @@ class ImageAdmin(admin.ModelAdmin):
 
 @admin.register(ImageVolume)
 class ImageVolumeAdmin(ImageAdmin):
-    wit_type = VOL
+    def wit_type(self):
+        return "volume"
 
 
 @admin.register(ImageManuscript)
 class ImageManuscriptAdmin(ImageAdmin):
-    wit_type = MS
+    def wit_type(self):
+        return "manuscript"
 
 
 ############################
@@ -71,30 +75,22 @@ class DigitInline(admin.StackedInline):
 
     extra = 1
     max_num = 1
-    wit_type = WIT
-
-    def get_wit_type(self):
-        return self.wit_type
 
 
 class PdfManuscriptInline(DigitInline):
     model = PdfManuscript
-    wit_type = MS
 
 
 class ManifestManuscriptInline(DigitInline):
     model = ManifestManuscript
-    wit_type = MS
 
 
 class PdfVolumeInline(nested_admin.NestedStackedInline, DigitInline):
     model = PdfVolume
-    wit_type = VOL
 
 
 class ManifestVolumeInline(nested_admin.NestedStackedInline, DigitInline):
     model = ManifestVolume
-    wit_type = VOL
 
 
 class ImageInline(DigitInline):
@@ -106,23 +102,20 @@ class ImageInline(DigitInline):
         js = ("fontawesomefree/js/all.min.js",)
 
     readonly_fields = ("image_preview",)
-    wit_type = WIT
 
     def obj_id(self, obj):
-        return obj.witness.id
+        return None
 
-    def img_url(self):
-        return (
-            f"/{APP_NAME}-admin/vhsapp/image{self.get_wit_type()}"  # TODO change that
-        )
+    def img_dir(self):
+        return "/"
 
-    def get_wit_type(self):
-        return self.wit_type
+    def wit_type(self):
+        return "manuscript" if "manuscript" in self.img_dir() else "volume"
 
     def image_preview(self, obj):
         # TODO, do not display when there is None because the digitization is not images files
         return mark_safe(
-            f'<a href="{self.img_url()}/?q={self.obj_id(obj)}" target="_blank">{IIIF_ICON} Gérer les images</a>'
+            f'<a href="{self.img_dir()}/?q={self.obj_id(obj)}" target="_blank">{IIIF_ICON} Gérer les images</a>'
         )
 
     image_preview.short_description = "Images"
@@ -136,7 +129,7 @@ class ImageInline(DigitInline):
             fields.remove("image_preview")
         else:
             fields.remove("image")
-        if request.method == "POST" and self.get_wit_type() == "volume":
+        if request.method == "POST" and self.wit_type() == "volume":
             fields.append("image")
 
         return list(set(fields))
@@ -144,9 +137,19 @@ class ImageInline(DigitInline):
 
 class ImageVolumeInline(nested_admin.NestedStackedInline, ImageInline):
     model = ImageVolume
-    wit_type = VOL
+
+    def obj_id(self, obj):
+        return obj.volume.id
+
+    def img_dir(self):
+        return img_vol
 
 
 class ImageManuscriptInline(ImageInline):
     model = ImageManuscript
-    wit_type = MS
+
+    def obj_id(self, obj):
+        return obj.manuscript.id
+
+    def img_dir(self):
+        return img_ms

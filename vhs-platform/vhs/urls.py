@@ -6,7 +6,7 @@ from vhs.settings import APP_NAME, MEDIA_URL, MEDIA_ROOT, DEBUG
 from vhsapp.utils.constants import MANIFEST_AUTO, MANIFEST_V2
 
 from vhsapp.views import (
-    show_work,
+    show_witness,
     admin_vhs,
     manifest_volume,
     manifest_manuscript,
@@ -20,7 +20,7 @@ from vhsapp.views import (
 urlpatterns = [
     path("", admin_vhs, name="admin-vhs"),
     path(f"{APP_NAME}-admin/", admin.site.urls),
-    path(f"{APP_NAME}/<str:work>/<int:id>/show/", show_work, name="show-work"),
+    path(f"{APP_NAME}/<str:wit>/<int:id>/show/", show_witness, name="show-witness"),
     path(
         f"{APP_NAME}/iiif/<str:version>/volume/vol-<int:id>/manifest.json",
         manifest_volume,
