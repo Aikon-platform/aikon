@@ -275,11 +275,22 @@ def get_files_from_dir(dir_path, valid_extensions=None, recursive=False, sort=Fa
     return sorted(files) if sort else files
 
 
-def save_img(img: Image, img_filename, error_msg="Failed to save img"):
+def save_img(img, img_filename, error_msg="Failed to save img"):
     try:
         img.save(BASE_DIR / IMG_PATH / img_filename)
-        # with open(BASE_DIR / IMG_PATH / img_filename, mode="wb") as f:
-        #     shutil.copyfileobj(img, f)
-        #     # f.write(image_response.content)
+        return True
     except Exception as e:
-        log(f"{error_msg}:\n{e}")
+        log(f"[save_img] {error_msg}:\n{e}")
+    return False
+
+
+def check_and_create_if_not(path):
+    path = Path(path)
+    if not path.exists():
+        create_dir(path)
+        return False
+    return True
+
+
+def sanitize_url(string):
+    return string.replace(" ", "+").replace(" ", "+")

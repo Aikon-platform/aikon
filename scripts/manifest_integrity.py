@@ -55,10 +55,12 @@ def compare_manifests(manifest_url):
                 f"👽 {app_id}: The source manifest ({source_manifest_url}) has fewer canvases: {num_canvases2} < {num_canvases1}"
             )
         else:
+            append_to_file(manifest_url, "complete_manifests.txt")
             print(
                 f"👌 {app_id}: Both manifests have the same number of canvases: {num_canvases1}."
             )
     else:
+        append_to_file(manifest_url, "complete_manifests.txt")
         print(f"👌 {app_id}: No source manifest found in the metadata.")
 
 

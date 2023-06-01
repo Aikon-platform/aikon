@@ -45,7 +45,7 @@ from vhsapp.utils.paths import (
     MS_PDF_PATH,
 )
 
-from vhsapp.utils.iiif import (
+from vhsapp.utils.iiif.iiif_gen_url import (
     get_link_manifest,
     gen_btn,
     gen_manifest_url,
