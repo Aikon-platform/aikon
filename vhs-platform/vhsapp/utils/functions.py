@@ -140,7 +140,7 @@ def get_icon(icon, color=None):
     return mark_safe(f"<i class='fa-solid fa-{icon}' {color}></i>")
 
 
-def anno_btn(obj_id, action="VISUALIZE"):
+def anno_btn(wit_ref, action="VISUALIZE"):
     disabled = ""
     btn = f"{action} ANNOTATIONS"
 
@@ -173,7 +173,7 @@ def anno_btn(obj_id, action="VISUALIZE"):
         icon = get_icon("eye")
 
     return (
-        f"<button id='{tag_id}{obj_id}' class='button annotate-manifest' {disabled}"
+        f"<button id='{tag_id}{wit_ref}' class='button annotate-manifest' {disabled}"
         f"style='background-color:{color};'>{icon} {btn}</button><br>"
     )
 

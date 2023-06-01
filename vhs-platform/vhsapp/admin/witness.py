@@ -86,7 +86,7 @@ class ManifestAdmin(admin.ModelAdmin):
     def is_annotated(self, obj, wit_abbr=MS_ABBR):
         return mark_safe(
             anno_btn(
-                obj.id,
+                f"{wit_abbr}{obj.id}",
                 "EDIT" if has_annotations(obj, wit_abbr) else "NO ANNOTATION YET",
             )
         )
