@@ -35,6 +35,9 @@ def compare_manifests(manifest_url):
         if source_manifest is None:
             return
 
+        if "gallica" in source_manifest_url:
+            append_to_file(source_manifest_url, "gallica.txt")
+
         try:
             num_canvases1 = len(manifest["sequences"][0]["canvases"])
             num_canvases2 = len(source_manifest["sequences"][0]["canvases"])
