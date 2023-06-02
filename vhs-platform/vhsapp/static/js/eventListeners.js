@@ -13,9 +13,9 @@ $(function() {
 
         if (idButton.includes("annotate_manifest_auto_")) {
             viewAnnotations(witnessRef)
+            return false;
         }
         editAnnotations(witnessRef, idButton)
-
         return false;
     }).on("click", "[id^=manifest_final_]", function(e) {
         finalAnnotations($(this));

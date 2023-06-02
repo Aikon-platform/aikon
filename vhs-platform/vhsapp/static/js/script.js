@@ -4,7 +4,7 @@ function to_manifest(witnessRef, version) {
 }
 
 function extractNb(str) {
-  return str.match(/\d+/g).toString();
+    return str.match(/\d+/g).toString();
 }
 
 function formatWitRef(witnessRef, onlyId= false){
@@ -90,23 +90,18 @@ function finalAnnotations(btn) {
 
 function viewAnnotations(witnessRef) {
     /* Function triggered on click on the "auto" btn that redirects to a Mirador viewer */
-    const manifestUrl = to_manifest(witnessRef, "auto")// $(`#iiif_auto_${witnessRef}`).prop("href");
+    const manifestUrl = to_manifest(witnessRef, "auto");
     const idMessage = `message_auto_${witnessRef}`;
 
-    fetchManifest(manifestUrl)
-        .then(response => {
-            if (response.ok) {
-                window.open(`${SAS_APP_URL}/indexAnnos.html?iiif-content=${manifestUrl}`, "_blank");
-            } else {
-                showMessage(`Failed to load ${manifestUrl} due to ${response.status}: ${response.statusText}`, idMessage);
-            }
-        })
-        .catch(error => {
-            showMessage(`Failed to load ${manifestUrl}: ${error.message}`, idMessage);
-        });
-
-    return false;
-
+    fetch(manifestUrl).then(response => {
+        if (response.ok) {
+            window.open(`${SAS_APP_URL}/indexAnnos.html?iiif-content=${manifestUrl}`, "_blank");
+        } else {
+            showMessage(`Failed to load ${manifestUrl} due to ${response.status}: ${response.statusText}`, idMessage);
+        }
+    }).catch(error => {
+        showMessage(`Failed to load ${manifestUrl}: ${error.message}`, idMessage);
+    });
 }
 
 function showMessage(message, idMessage) {
@@ -127,8 +122,4 @@ function clearLoading(idButton, innerHtml) {
     const button = document.getElementById(idButton);
     button.innerHTML = innerHtml;
     button.disabled = false;
-}
-
-function fetchManifest(url) {
-    return fetch(url).then(response => response.json());
 }
