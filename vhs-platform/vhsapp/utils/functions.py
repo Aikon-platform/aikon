@@ -1,4 +1,5 @@
 import csv
+import glob
 import io
 import json
 import os
@@ -23,9 +24,7 @@ from urllib.request import (
     build_opener,
     install_opener,
 )
-from vhsapp.utils.constants import (
-    APP_NAME,
-)
+from vhsapp.utils.constants import APP_NAME, MAX_SIZE
 from vhsapp.utils.paths import BASE_DIR, MEDIA_PATH, IMG_PATH
 from vhsapp.utils.logger import log, console
 
@@ -87,9 +86,7 @@ def pdf_to_img(pdf_name):
                 last_page=min(img_nb + step - 1, page_nb),
             )
             for page in batch_pages:
-                page.save(
-                    f"{BASE_DIR}/{IMG_PATH}/{pdf_name}_{img_nb:04d}.jpg", format="JPEG"
-                )
+                save_img(page, f"{pdf_name}_{img_nb:04d}.jpg")
                 img_nb += 1
     except Exception as e:
         log(f"Failed to convert {pdf_name}.pdf to images:\n{e}")
@@ -275,9 +272,21 @@ def get_files_from_dir(dir_path, valid_extensions=None, recursive=False, sort=Fa
     return sorted(files) if sort else files
 
 
-def save_img(img, img_filename, error_msg="Failed to save img"):
+def save_img(
+    img,
+    img_filename,
+    img_path=BASE_DIR / IMG_PATH,
+    error_msg="Failed to save img",
+    max_dim=MAX_SIZE,
+    img_format="JPEG",
+):
+    # if glob.glob(img_path / img_filename):
+    #     return False  # NOTE: maybe download again anyway because manifest / pdf might have changed
+
     try:
-        img.save(BASE_DIR / IMG_PATH / img_filename)
+        if img.width > max_dim or img.height > max_dim:
+            img.thumbnail((max_dim, max_dim), Image.ANTIALIAS)
+        img.save(img_path / img_filename, format=img_format)
         return True
     except Exception as e:
         log(f"[save_img] {error_msg}:\n{e}")

@@ -17,3 +17,6 @@ TRUNCATEWORDS = 5
 
 # Maximum number of selected items for action application
 MAX_ITEMS = 5
+
+# Maximal size for image download
+MAX_SIZE = 2500

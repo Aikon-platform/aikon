@@ -6,6 +6,7 @@ import requests
 from PIL import Image, UnidentifiedImageError
 
 from vhsapp.utils.functions import get_json, create_dir, save_img, sanitize_url
+from vhsapp.utils.constants import MAX_SIZE
 from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH, BASE_DIR
 from vhsapp.utils.logger import iiif_log, console, log
 from vhsapp.utils.iiif import get_height, get_width, get_id
@@ -29,18 +30,18 @@ class IIIFDownloader:
         width=None,
         height=None,
         sleep=0.25,
-        max_dim=None,
+        max_dim=MAX_SIZE,
         min_dim=1500,
     ):
         self.manifest_url = manifest_url
         self.manifest_id = witness_ref  # Prefix to be used for img filenames
         self.manifest_dir_path = BASE_DIR / IMG_PATH
 
-        self.size = self.get_formatted_size(width, height)
-        self.max_dim = (
-            1000 if "gallica" in self.manifest_url else max_dim
-        )  # Maximal height in px
-        self.min_dim = min_dim  # Minimal height in px
+        # self.size = self.get_formatted_size(width, height)
+        self.max_dim = max_dim  # Maximal height in px
+        self.min_dim = (
+            1000 if "gallica" in self.manifest_url else min_dim
+        )  # Minimal height in px
 
         # Gallica is not accepting more than 5 downloads of >1000px / min after
         self.sleep = 12 if "gallica" in self.manifest_url else sleep
@@ -61,20 +62,22 @@ class IIIFDownloader:
             #         )
             #     f.close()
 
-    def save_iiif_img(self, img_rscr, i, size="full", re_download=False):
+    def save_iiif_img(self, img_rsrc, i, size=None, re_download=False):
         img_name = f"{self.manifest_id}_{i:04d}.jpg"
+        f_size = size if size is not None else self.get_size(img_rsrc)
 
+        # NOTE: maybe download again anyway because manifest might have changed
         if (
             glob.glob(os.path.join(self.manifest_dir_path, img_name))
             and not re_download
         ):
             img = Image.open(self.manifest_dir_path / img_name)
-            if str(img.height) == get_height(img_rscr):
-                # if the img is already downloaded in full size, don't download it again
+            if self.check_size(img, img_rsrc):
+                # if the img is already downloaded and has the correct size, don't download it again
                 return False
 
-        img_url = get_id(img_rscr["service"])
-        iiif_url = sanitize_url(f"{img_url}/full/{size}/0/default.jpg")
+        img_url = get_id(img_rsrc["service"])
+        iiif_url = sanitize_url(f"{img_url}/full/{f_size}/0/default.jpg")
 
         time.sleep(self.sleep)
 
@@ -85,44 +88,38 @@ class IIIFDownloader:
                     img = Image.open(response.raw)
                 except (UnidentifiedImageError, SyntaxError) as e:
                     time.sleep(self.sleep)
-                    if size == "full":
-                        size = self.get_reduced_size(img_rscr["width"])
-                        self.save_iiif_img(img_rscr, i, self.get_formatted_size(size))
+                    if size == f_size:
+                        size = self.get_reduced_size(img_rsrc)
+                        self.save_iiif_img(img_rsrc, i, self.get_formatted_size(size))
                         return
                     else:
                         log(f"[save_iiif_img] {iiif_url} is not a valid img file: {e}")
                         return
                 except (IOError, OSError) as e:
                     if size == "full":
-                        size = self.get_reduced_size(img_rscr["width"])
-                        self.save_iiif_img(img_rscr, i, self.get_formatted_size(size))
+                        size = self.get_reduced_size(img_rsrc)
+                        self.save_iiif_img(img_rsrc, i, self.get_formatted_size(size))
                         return
                     else:
                         log(
                             f"[save_iiif_img] {iiif_url} is a truncated or corrupted image: {e}"
                         )
                         return
+                return save_img(img, img_name)
 
-                try:
-                    img.save(self.manifest_dir_path / img_name)
-                except Exception as e:
-                    log(f"[save_iiif_img] Failed to save {iiif_url}:\n{e}")
-                    return False
         except requests.exceptions.RequestException as e:
             log(f"[save_iiif_img] Failed to download image from {iiif_url}:\n{e}")
             return False
 
-        return True
-
     def get_img_rsrc(self, iiif_img):
         try:
-            img_rscr = iiif_img["resource"]
+            img_rsrc = iiif_img["resource"]
         except KeyError:
             try:
-                img_rscr = iiif_img["body"]
+                img_rsrc = iiif_img["body"]
             except KeyError:
                 return None
-        return img_rscr
+        return img_rsrc
 
     def get_iiif_resources(self, manifest, only_img_url=False):
         try:
@@ -148,6 +145,29 @@ class IIIFDownloader:
 
         return img_info
 
+    def get_size(self, img_rsrc):
+        if self.max_dim is None:
+            return "full"
+        h, w = get_height(img_rsrc), get_width(img_rsrc)
+        if h > w:
+            return self.get_formatted_size("", str(self.max_dim))
+        return self.get_formatted_size(str(self.max_dim), "")
+
+    def check_size(self, img, img_rsrc):
+        """
+        Checks if an already downloaded image has the correct dimensions
+        """
+        if self.max_dim is None:
+            if int(img.height) == get_height(img_rsrc):  # for full size
+                return True
+
+        if int(img.height) == self.max_dim or int(img.width) == self.max_dim:
+            # if either the height or the width corresponds to max dimension
+            # if it is too big, re-download again
+            return True
+
+        return False  # Download again
+
     def get_formatted_size(self, width="", height=""):
         if not hasattr(self, "max_dim"):
             self.max_dim = None
@@ -157,17 +177,19 @@ class IIIFDownloader:
                 return f",{self.max_dim}"
             return "full"
 
-        if self.max_dim is not None and int(width) > self.max_dim:
+        if width and self.max_dim and int(width) > self.max_dim:
             width = f"{self.max_dim}"
-        if self.max_dim is not None and int(height) > self.max_dim:
+        if height and self.max_dim and int(height) > self.max_dim:
             height = f"{self.max_dim}"
 
         return f"{width or ''},{height or ''}"
 
-    def get_reduced_size(self, size):
-        size = int(size)
-        if size < self.min_dim:
+    def get_reduced_size(self, img_rsrc):
+        h, w = get_height(img_rsrc), get_width(img_rsrc)
+        larger_side = h if h > w else w
+
+        if larger_side < self.min_dim:
             return ""
-        if size > self.min_dim * 2:
-            return str(int(size / 2))
+        if larger_side > self.min_dim * 2:
+            return str(int(larger_side / 2))
         return str(self.min_dim)

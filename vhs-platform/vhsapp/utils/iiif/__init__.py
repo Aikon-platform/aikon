@@ -31,7 +31,7 @@ def get_height(img_rsrc):
         img_height = img_rsrc["height"]
     except KeyError:
         return None
-    return img_height
+    return int(img_height)
 
 
 def get_width(img_rsrc):
@@ -39,4 +39,4 @@ def get_width(img_rsrc):
         img_width = img_rsrc["width"]
     except KeyError:
         return None
-    return img_width
+    return int(img_width)
