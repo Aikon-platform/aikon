@@ -6,7 +6,6 @@
 
 {% block extrahead %}
     {{ block.super }}
-    <script src="{% static 'js/delete_anno.js' %}"></script>
     <style>
         .fixed-div {
             position: fixed;
@@ -94,7 +93,6 @@
             background-color: rgb(35, 115, 128);
         }
         .anno-table {
-        {#table-layout: fixed;#}
             background: #F8F8F8;
             margin-top: 3em;
         }
@@ -143,9 +141,9 @@
             background-color: #F8F8F8 !important;
         }
     </style>
-    <!--<script>
-        let bboxes = JSON.parse('{{ bboxes|safe }}')
-    </script>-->
+    <script>
+        let allAnnos = JSON.parse('{{ bboxes|safe }}');
+    </script>
 {% endblock %}
 
 {% block header %}
@@ -169,10 +167,10 @@
             {% if APP_LANG == "en" %}Delete{% else %}Supprimer{% endif %} annotations
         </button>
 
-        <!--<button id="delete_all" class="delete-all-button">
+        <button id="delete_all" class="delete-all-button">
             <i class="fa-solid fa-trash"></i>
             {% if APP_LANG == "en" %}Delete all the{% else %}Supprimer toutes les{% endif %} annotations
-        </button>-->
+        </button>
     </div>
 {% endblock %}
 

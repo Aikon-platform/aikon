@@ -26,4 +26,27 @@ $(function() {
         $("#id_volume_set-__prefix__-publishers_booksellers").val($("#id_publishers_booksellers").val());
         $("#id_volume_set-__prefix__-manifest_final").replaceWith("<i class='fa-solid fa-circle-xmark' style='color:red'></i>");
     });
+
+    $("#delete_anno").click(function() {
+        const checkedAnno = $("[id^=bbox_]:checked");
+        let annoIds = [];
+        checkedAnno.each(function() {
+            annoIds.push($(this).attr("id").split("_").pop());
+        });
+        if (!deleteAnnotations(annoIds)){
+            // if the user decided to not delete the selected annotations
+            checkedAnno.prop("checked", false);
+        }
+    });
+
+    $("#select_anno").click(function() {
+        const checkedAnno = $("[id^=bbox_]");
+        checkedAnno.each(function() {
+            $(this).prop("checked", true);
+        });
+    });
+
+    $("#delete_all").click(function() {
+        deleteAllAnnotations(allAnnos ?? []);
+    });
 });

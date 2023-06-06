@@ -34,7 +34,7 @@ function getJSON(url, callback, idMessage) {
 
 function editAnnotations(witnessRef, idButton) {
     /* Function triggered on click on the "v2" btn that redirects to the show page to correct annotations */
-    const manifestUrl = to_manifest(witnessRef, "auto"); // $(`#url_manifest_${witnessRef}`).prop("href");
+    const manifestUrl = to_manifest(witnessRef, "auto");
     const idMessage = `message_${witnessRef}`;
     const witnessType = new URL(manifestUrl).pathname.split("/")[4];
     const innerHtml = $(`#${idButton}`).html();
@@ -122,4 +122,46 @@ function clearLoading(idButton, innerHtml) {
     const button = document.getElementById(idButton);
     button.innerHTML = innerHtml;
     button.disabled = false;
+}
+
+function deleteAnnotation(annoId) {
+    const HTTP_SAS = SAS_APP_URL.replace("https", "http");
+    const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${HTTP_SAS}/annotation/${annoId}`;
+
+    fetch(urlDelete, {
+        method: "DELETE"
+    }).then(response => {
+        if (response.status === 204) {
+            const annoDiv = $(`#ill_${annoId}`).closest("div");
+            annoDiv.fadeOut(function() { annoDiv.remove() });
+        } else {
+            showMessage(`Failed to delete ${urlDelete} due to ${response.status}: '${response.statusText}'`, `message_${annoId}`);
+        }
+    }).catch(error => {
+        showMessage(`Failed to delete ${urlDelete}: ${error.message}`, `message_${annoId}`);
+    });
+}
+
+function deleteAnnotations(annoIds){
+    if (annoIds.length > 0) {
+        if (confirm(APP_LANG === "en" ? "Are you sure you want to delete corresponding annotations?"
+            : "Êtes-vous sûr de vouloir supprimer les annotations sélectionnées ?")) {
+            for (let i = 0; i < annoIds.length; i++) {
+                deleteAnnotation(annoIds[i]);
+            }
+            return true;
+        }
+        return false;
+    }
+    alert(APP_LANG === "en" ? "Please select at least one annotation to delete" : "Veuillez sélectionner au moins une image à supprimer.");
+    return false;
+}
+
+function deleteAllAnnotations(allAnnos) {
+    if (confirm(APP_LANG === "en" ? "Are you sure you want to delete all annotations?"
+        : "Êtes-vous sûr de vouloir supprimer toutes les annotations ?")) {
+        for (let i = allAnnos.length - 1; i >= 0; i--) {
+            deleteAnnotation(allAnnos[i]);
+        }
+    }
 }
