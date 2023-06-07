@@ -203,8 +203,9 @@ def populate_annotation(request, id, witness):
         )
         indexed_anno = json.loads(response.read())
 
-        # if the canvas is not correctly annotated in comparison with the content of the annotation text file
+        # if the canvas has not the same nb of annotations as in the content of the annotation text file
         if len(indexed_anno) != detected_anno:
+            # TODO here, if there is not the same number, all annotations are reindexed, causing possibly duplicates
             # {iiif_url}/list/anno-{c}.json is calling annotate_witness(), thus indexing annotations for each canvas
             params = urlencode({"uri": f"{iiif_url}/list/anno-{c}.json"}).encode(
                 "ascii"
