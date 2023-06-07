@@ -11,7 +11,7 @@ from vhsapp.views import (
     manifest_volume,
     manifest_manuscript,
     populate_annotation,
-    annotate_work,
+    annotate_witness,
     annotation_auto,
 )
 
@@ -31,17 +31,17 @@ urlpatterns = [
         name="manifest-manuscript",
     ),
     path(
-        f"{APP_NAME}/iiif/{MANIFEST_V2}/<str:work>/<int:id>/populate/",
+        f"{APP_NAME}/iiif/{MANIFEST_V2}/<str:witness>/<int:id>/populate/",
         populate_annotation,
         name="populate-annotation",
     ),
     path(
-        f"{APP_NAME}/iiif/<str:version>/<str:work>/<str:work_abbr>-<int:id>/list/anno-<int:canvas>.json",
-        annotate_work,
-        name="annotate-work",
+        f"{APP_NAME}/iiif/<str:version>/<str:witness>/<str:wit_abbr>-<int:id>/list/anno-<int:canvas>.json",
+        annotate_witness,
+        name="annotate-witness",
     ),
     path(
-        f"{APP_NAME}/iiif/{MANIFEST_AUTO}/<str:work>/<int:id>/annotation/",
+        f"{APP_NAME}/iiif/{MANIFEST_AUTO}/<str:witness>/<int:id>/annotation/",
         annotation_auto,
         name="annotation-auto",
     ),
