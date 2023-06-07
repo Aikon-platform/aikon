@@ -195,7 +195,6 @@ def populate_annotation(request, id, witness):
 
     iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{witness}/{wit_abbr}-{id}"
 
-    check_anno = True
     for c in annotated_canvases:
         # check if annotations are already indexed
         detected_anno = annotated_canvases[c]
@@ -203,20 +202,14 @@ def populate_annotation(request, id, witness):
             f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{c}.json"
         )
         indexed_anno = json.loads(response.read())
+
+        # if the canvas is not correctly annotated in comparison with the content of the annotation text file
         if len(indexed_anno) != detected_anno:
-            check_anno = False
-            break
-
-    if check_anno:
-        # if everything is correctly indexed, display show page
-        return HttpResponse(status=200)
-
-    for c in annotated_canvases:
-        # {iiif_url}/list/anno-{c}.json is calling annotate_witness(), thus indexing annotations for each canvas
-        params = urlencode({"uri": f"{iiif_url}/list/anno-{c}.json"}).encode("ascii")
-        urlopen(
-            f"{SAS_APP_URL}/annotation/populate", params
-        )  # This will make the method "POST"
+            # {iiif_url}/list/anno-{c}.json is calling annotate_witness(), thus indexing annotations for each canvas
+            params = urlencode({"uri": f"{iiif_url}/list/anno-{c}.json"}).encode(
+                "ascii"
+            )
+            urlopen(f"{SAS_APP_URL}/annotation/populate", params)
 
     return HttpResponse(status=200)
 

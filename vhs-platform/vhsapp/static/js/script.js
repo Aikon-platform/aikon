@@ -19,60 +19,61 @@ function formatWitRef(witnessRef, onlyId= false){
 }
 
 function getJSON(url, callback, idMessage) {
-    let xhr = new XMLHttpRequest();
-    xhr.open("GET", url, true);
-    xhr.responseType = "json";
-    xhr.onload = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            callback(xhr.status, xhr.response);
-        } else {
-            showMessage(`Failed to load ${url} due to ${xhr.status}: ${xhr.statusText}`, idMessage);
-        }
-    };
-    xhr.send();
+    fetch(url).then(response => {
+        if (response.ok) { return response.json(); }
+        throw new Error(`Failed to load ${url} due to ${response.status}: ${response.statusText}`);
+    }).then(response => {
+        callback(response.status, response);
+    }).catch(error => {
+        showMessage(error.message, idMessage);
+    });
 }
 
 function editAnnotations(witnessRef, idButton) {
     /* Function triggered on click on the "v2" btn that redirects to the show page to correct annotations */
     const manifestUrl = to_manifest(witnessRef, "auto");
-    const idMessage = `message_${witnessRef}`;
+    const idMessage = `message_${extractNb(witnessRef)}`;
     const witnessType = new URL(manifestUrl).pathname.split("/")[4];
     const innerHtml = $(`#${idButton}`).html();
 
     setLoading(idButton);
 
-    const sendJson = function sendJson(status, data) {
+    function populate_annotations(status, data, idMessage) {
         fetch(`${SAS_APP_URL}/manifests`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }).then(response => {
-            if (response.ok) {
-                const populateUrl = `/${APP_NAME}/iiif/v2/${witnessType}/${formatWitRef(witnessRef, true)}/populate/`
-                populateAnnotation(populateUrl, idButton);
-            } else {
+            if (!response.ok) {
                 throw new Error(`Failed to index ${data["@id"]} due to ${response.status}: ${response.statusText}`);
             }
+
+            fetch(`/${APP_NAME}/iiif/v2/${witnessType}/${formatWitRef(witnessRef, true)}/populate/`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to load and display annotations for ${witnessRef} due to ${response.status}: ${response.statusText}`);
+                    }
+                    window.open(`/${APP_NAME}/${witnessType}/${formatWitRef(witnessRef, true)}/show/`, "_blank");
+                    clearLoading(idButton, innerHtml)
+                })
+                .catch(error => {
+                    showMessage(error.message, idMessage);
+                });
         }).catch(error => {
             showMessage(error.message, idMessage);
         });
-    };
-    function populateAnnotation(url, idButton) {
-        fetch(url)
-            .then(response => {
-                if (response.ok) {
-                    window.open(`/${APP_NAME}/${witnessType}/${formatWitRef(witnessRef, true)}/show/`, "_blank");
-                    clearLoading(idButton, innerHtml)
-                } else {
-                    throw new Error(`Failed to display ${url} due to ${response.status}: ${response.statusText}`);
-                }
-            })
-            .catch(error => {
-                showMessage(`Failed to display ${url} due to: ${error.message}`, idMessage);
-            });
     }
 
-    getJSON(manifestUrl, sendJson, idMessage);
+    fetch(manifestUrl).then(response => {
+        // first check if the manifest is correct
+        if (response.ok) { return response.json(); }
+        throw new Error(`Failed to load ${url} due to ${response.status}: ${response.statusText}`);
+    }).then(response => {
+        // second, launch indexing of annotations
+        populate_annotations(response.status, response, idMessage);
+    }).catch(error => {
+        showMessage(error.message, idMessage);
+    });
 }
 
 
@@ -91,7 +92,7 @@ function finalAnnotations(btn) {
 function viewAnnotations(witnessRef) {
     /* Function triggered on click on the "auto" btn that redirects to a Mirador viewer */
     const manifestUrl = to_manifest(witnessRef, "auto");
-    const idMessage = `message_auto_${witnessRef}`;
+    const idMessage = `message_auto_${extractNb(witnessRef)}`;
 
     fetch(manifestUrl).then(response => {
         if (response.ok) {
