@@ -25,7 +25,6 @@ from vhsapp.utils.paths import (
     VOL_PDF_PATH,
     MEDIA_PATH,
 )
-
 from vhsapp.utils.iiif.validation import (
     parse_manifest,
     validate_manifest,

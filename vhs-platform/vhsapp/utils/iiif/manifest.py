@@ -20,7 +20,7 @@ from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
 from vhs.settings import SAS_APP_URL, VHS_APP_URL, CANTALOUPE_APP_URL
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.utils.logger import iiif_log, console, log
-from vhsapp.utils.iiif.annotation import set_canvas_annos
+from vhsapp.utils.iiif.annotation import set_canvas
 
 
 def process_images(work, seq, version):
@@ -43,7 +43,7 @@ def process_images(work, seq, version):
         for counter, img in enumerate(imgs, start=1):
             img_name = img.image.url.split("/")[-1]
             try:
-                set_canvas_annos(seq, counter, img_name, Image.open(img.image), version)
+                set_canvas(seq, counter, img_name, Image.open(img.image), version)
             except UnidentifiedImageError as e:
                 log(f"[process_images] Unable to retrieve {img_name}\n{e}")
             except FileNotFoundError as e:
@@ -59,7 +59,7 @@ def process_images(work, seq, version):
                     ".pdf", f"_{counter:04d}.jpg"
                 )
                 try:
-                    set_canvas_annos(
+                    set_canvas(
                         seq,
                         counter,
                         img_name,
@@ -83,7 +83,7 @@ def process_images(work, seq, version):
     #             }
     #             img_url = line.split(" ")[2]
     #
-    #             set_canvas_annos(
+    #             set_canvas(
     #                 seq, counter, img_url, img_dimensions, version
     #             )
 
@@ -95,7 +95,7 @@ def process_images(work, seq, version):
         ):
             img_name = os.path.basename(path)
             try:
-                set_canvas_annos(seq, counter, img_name, Image.open(path), version)
+                set_canvas(seq, counter, img_name, Image.open(path), version)
             except UnidentifiedImageError as e:
                 log(f"[process_images] Unable to retrieve {img_name}\n{e}")
                 continue

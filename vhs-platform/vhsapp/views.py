@@ -30,6 +30,7 @@ from vhsapp.utils.iiif.annotation import (
     get_txt_annos,
     get_indexed_annos,
     annotate_wit,
+    check_wit_annotation,
 )
 from vhsapp.utils.paths import (
     MEDIA_PATH,
@@ -61,6 +62,9 @@ def manifest_volume(request, id, version):
 
 
 def annotation_auto(request, id, witness):
+    """
+    TODO rename to export anno? and displace into annotation.py
+    """
     response = HttpResponse(content_type="text/csv")
     response[
         "Content-Disposition"
@@ -96,47 +100,10 @@ def populate_annotation(request, id, wit_type):
     """
     Populate annotation store from IIIF Annotation List
     """
-    wit_abbr = VOL_ABBR if wit_type == VOL else MS_ABBR
-    annotations_path = VOL_ANNO_PATH if wit_type == VOL else MS_ANNO_PATH
-
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    lines = get_txt_annos(id, annotations_path)
-    if lines is None:
-        log(f"[populate_annotation] no annotation file for {wit_type} n°{id}")
-        return HttpResponse(status=500)
-
-    annotated_canvases = {}
-    current_canvas = "0"
-    for line in lines:
-        # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
-        if len(line.split()) == 2:
-            current_canvas = str(line.split()[0])
-            annotated_canvases[current_canvas] = 0
-        else:
-            if current_canvas in annotated_canvases:
-                annotated_canvases[current_canvas] += 1
-
-    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_abbr}-{id}"
-
-    for c in annotated_canvases:
-        # check if annotations are already indexed
-        detected_anno = annotated_canvases[c]
-
-        indexed_anno = get_indexed_annos(c, id, wit_type)
-
-        # if the canvas has not the same nb of annotations as in the content of the annotation text file
-        if len(indexed_anno) != detected_anno:
-            # TODO here, if there is not the same number, all annotations are reindexed, causing possibly duplicates
-            # TODO also might contain manual annotations => compare
-            # {iiif_url}/list/anno-{c}.json is calling annotate_witness(), thus indexing annotations for each canvas
-            params = urlencode({"uri": f"{iiif_url}/list/anno-{c}.json"}).encode(
-                "ascii"
-            )
-            urlopen(f"{SAS_APP_URL}/annotation/populate", params)
-
-    return HttpResponse(status=200)
+    return HttpResponse(status=200 if check_wit_annotation(id, wit_type) else 500)
 
 
 def get_img_prefix(obj, wit=MS, wit_abbr=MS_ABBR):
@@ -184,6 +151,7 @@ def show_witness(request, id, wit):
     # TODO: do we need to load again all the annotations everytime?
     # TODO: maybe loop on images of the manifest?
 
+    # TODO displace in annotation.py and create get_witness_annos()
     for line in lines:
         # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
         if len(line.split()) == 2:

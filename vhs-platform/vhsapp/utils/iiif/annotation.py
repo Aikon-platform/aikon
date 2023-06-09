@@ -2,6 +2,7 @@ import json
 import re
 from datetime import datetime
 from glob import glob
+from urllib.parse import urlencode
 from urllib.request import urlopen
 
 from vhsapp.utils.paths import MEDIA_PATH, BASE_DIR, VOL_ANNO_PATH, MS_ANNO_PATH
@@ -12,6 +13,46 @@ from vhsapp.utils.functions import console, log
 
 
 def unindex_anno(canvas, anno_id):
+    return True
+
+
+def check_wit_annotation(wit_id, wit_type):
+    wit_abbr = VOL_ABBR if wit_type == VOL else MS_ABBR
+    annotations_path = VOL_ANNO_PATH if wit_type == VOL else MS_ANNO_PATH
+
+    lines = get_txt_annos(wit_id, annotations_path)
+    if lines is None:
+        log(f"[populate_annotation] no annotation file for {wit_type} n°{wit_id}")
+        return False
+
+    annotated_canvases = {}
+    current_canvas = "0"
+    for line in lines:
+        # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
+        if len(line.split()) == 2:
+            current_canvas = str(line.split()[0])
+            annotated_canvases[current_canvas] = 0
+        else:
+            if current_canvas in annotated_canvases:
+                annotated_canvases[current_canvas] += 1
+
+    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_abbr}-{wit_id}"
+
+    for c in annotated_canvases:
+        # check if annotations are already indexed
+        detected_anno = annotated_canvases[c]
+        indexed_anno = get_indexed_annos(c, wit_id, wit_type)
+
+        # if the canvas has not the same nb of annotations as in the content of the annotation text file
+        if len(indexed_anno) != detected_anno:
+            # TODO here, if there is not the same number, all annotations are reindexed, causing possibly duplicates
+            # TODO also might contain manual annotations => compare
+            # {iiif_url}/list/anno-{c}.json is calling annotate_wit(), thus indexing annotations for each canvas
+            params = urlencode({"uri": f"{iiif_url}/list/anno-{c}.json"}).encode(
+                "ascii"
+            )
+            urlopen(f"{SAS_APP_URL}/annotation/populate", params)
+
     return True
 
 
@@ -149,7 +190,7 @@ def index_annotation(wit_id, version, wit_type, wit_abbr, canvas, xywh, num_anno
     }
 
 
-def set_canvas_annos(seq, canvas_nb, img_name, img, version):
+def set_canvas(seq, canvas_nb, img_name, img, version):
     """
     Build the canvas and annotation for each image
     Called for each manifest (v2) image when a witness is being indexed

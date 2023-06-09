@@ -11,7 +11,7 @@ from vhsapp.models.digitization import (
     ManifestManuscript,
     ManifestVolume,
 )
-
+from vhsapp.models.constants import MS, VOL
 from vhsapp.utils.iiif import gen_iiif_url
 from vhsapp.utils.iiif import IIIF_ICON
 from vhsapp.utils.constants import APP_NAME
@@ -55,13 +55,13 @@ class ImageAdmin(admin.ModelAdmin):
 @admin.register(ImageVolume)
 class ImageVolumeAdmin(ImageAdmin):
     def wit_type(self):
-        return "volume"
+        return VOL
 
 
 @admin.register(ImageManuscript)
 class ImageManuscriptAdmin(ImageAdmin):
     def wit_type(self):
-        return "manuscript"
+        return MS
 
 
 ############################
@@ -110,7 +110,7 @@ class ImageInline(DigitInline):
         return "/"
 
     def wit_type(self):
-        return "manuscript" if "manuscript" in self.img_dir() else "volume"
+        return MS if MS in self.img_dir() else VOL
 
     def image_preview(self, obj):
         # TODO, do not display when there is None because the digitization is not images files
@@ -129,7 +129,7 @@ class ImageInline(DigitInline):
             fields.remove("image_preview")
         else:
             fields.remove("image")
-        if request.method == "POST" and self.wit_type() == "volume":
+        if request.method == "POST" and self.wit_type() == VOL:
             fields.append("image")
 
         return list(set(fields))

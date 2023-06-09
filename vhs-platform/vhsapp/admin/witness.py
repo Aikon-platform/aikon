@@ -55,7 +55,7 @@ from vhsapp.utils.iiif.gen_html import (
     gen_manifest_btn,
 )
 from vhsapp.utils.functions import (
-    list_to_csv,
+    list_to_txt,
     zip_img,
     get_file_list,
     get_pdf_imgs,
@@ -218,7 +218,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             "export_selected_images",
             "export_selected_pdfs",
         ]
-        if self.wit_type() == "volume":
+        if self.wit_type() == VOL:
             self.actions += ["detect_similarity"]
 
     def wit_type(self):
@@ -245,7 +245,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         return False
 
     def get_img_list(self, queryset, with_img=True, with_pdf=True):
-        results = queryset.exclude(volume__isnull=True)
+        results = queryset.exclude()
         result_list = []
         wit_type = self.wit_type()
 
@@ -292,21 +292,22 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     @admin.action(description="Exporter les images IIIF sélectionnées")
     def export_selected_iiif_images(self, request, queryset):
         img_list = [gen_iiif_url(img) for img in self.get_img_list(queryset)]
-        return list_to_csv(img_list, "Image_IIIF")
+        return list_to_txt(img_list, f"IIIF_images")
 
-    @admin.action(description="Exporter les images sélectionnées")
-    def export_selected_images(self, request, queryset):
-        if self.check_selection(queryset, request):
-            return HttpResponseRedirect(request.get_full_path())
-        return zip_img(zipfile, get_file_list(IMG_PATH, self.get_img_list(queryset)))
+    # @admin.action(description="Exporter les images sélectionnées")
+    # def export_selected_images(self, request, queryset):
+    #     if self.check_selection(queryset, request):
+    #         return HttpResponseRedirect(request.get_full_path())
+    #     # NOTE get_file_list(IMG_PATH, self.get_img_list(queryset)) is returning None
+    #     return zip_img(zipfile, get_file_list(IMG_PATH, self.get_img_list(queryset)))
 
-    @admin.action(description="Exporter les documents PDF sélectionnés")
-    def export_selected_pdfs(self, request, queryset):
-        if self.check_selection(queryset, request):
-            return HttpResponseRedirect(request.get_full_path())
-        return zip_img(
-            zipfile, self.get_img_list(queryset, with_img=False, with_pdf=True), "pdf"
-        )
+    # @admin.action(description="Exporter les documents PDF sélectionnés")
+    # def export_selected_pdfs(self, request, queryset):
+    #     if self.check_selection(queryset, request):
+    #         return HttpResponseRedirect(request.get_full_path())
+    #     return zip_img(
+    #         zipfile, self.get_img_list(queryset, with_img=False, with_pdf=True), "pdf"
+    #     )
 
     @button(
         permission="demo.add_demomodel1",
@@ -376,7 +377,7 @@ class PrintedAdmin(WitnessAdmin, nested_admin.NestedModelAdmin, admin.SimpleList
             "volume__id", "volume__manifestvolume__manifest"
         )
         manifests = [gen_manifest_url(mnf[0], MANIFEST_V2) for mnf in results]
-        return list_to_csv(manifests, "Manifest_IIIF")
+        return list_to_txt(manifests, f"IIIF_manifest")
 
 
 @admin.register(Manuscript)
@@ -425,7 +426,7 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
         manifests = [
             gen_manifest_url(mnf[0], MANIFEST_V2, MS.lower()) for mnf in results
         ]
-        return list_to_csv(manifests, "Manifest_IIIF")
+        return list_to_txt(manifests, "Manifest_IIIF")
 
     fieldsets = (
         (

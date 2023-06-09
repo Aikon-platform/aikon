@@ -1,4 +1,5 @@
 import csv
+import datetime
 import glob
 import io
 import json
@@ -6,6 +7,7 @@ import os
 import shutil
 from os.path import exists
 from pathlib import Path
+from urllib.parse import urlparse
 from uuid import uuid4
 
 import PyPDF2
@@ -24,8 +26,9 @@ from urllib.request import (
     build_opener,
     install_opener,
 )
+from vhsapp.models.constants import MS, VOL
 from vhsapp.utils.constants import APP_NAME, MAX_SIZE
-from vhsapp.utils.paths import BASE_DIR, MEDIA_PATH, IMG_PATH
+from vhsapp.utils.paths import BASE_DIR, MEDIA_PATH, IMG_PATH, MS_PDF_PATH, VOL_PDF_PATH
 from vhsapp.utils.logger import log, console
 
 
@@ -92,14 +95,16 @@ def pdf_to_img(pdf_name):
         log(f"Failed to convert {pdf_name}.pdf to images:\n{e}")
 
 
-def get_pdf_imgs(pdf_list, ps_type="volume"):
+def get_pdf_imgs(pdf_list, ps_type=VOL):
     if type(pdf_list) != list:
         pdf_list = [pdf_list]
+
+    path = MS_PDF_PATH if ps_type == MS else VOL_PDF_PATH
 
     img_list = []
     for pdf_name in pdf_list:
         pdf_reader = PyPDF2.PdfFileReader(
-            open(f"{MEDIA_PATH}/{ps_type}/pdf/{pdf_name}", "rb")
+            open(f"{BASE_DIR}/{MEDIA_PATH}/{path}/{pdf_name}", "rb")
         )
         for img_nb in range(1, pdf_reader.numPages + 1):
             img_list.append(
@@ -175,18 +180,18 @@ def anno_btn(wit_ref, action="VISUALIZE"):
     )
 
 
-def list_to_csv(item_list, first_row=None, file_name=None):
+def list_to_txt(item_list, file_name=None):
     if file_name is None:
         file_name = f"{APP_NAME}_export"
 
-    response = HttpResponse(content_type="text/csv")
-    response["Content-Disposition"] = f"attachment; filename={file_name}.csv"
+    file_name = f"{datetime.date.today()}-{file_name}"
 
-    writer = csv.writer(response)
-    if first_row:
-        writer.writerow([first_row])
+    response = HttpResponse(content_type="text/txt")
+    response["Content-Disposition"] = f"attachment; filename={file_name}.txt"
 
-    writer.writerow([item] for item in item_list)
+    content = "\n".join(str(item) for item in item_list)
+    response.write(content)
+
     return response
 
 
@@ -197,10 +202,16 @@ def zip_img(zip_file, img_list, file_type="img", file_name=None):  # maybe chang
             if file_type == "img":
                 # Add file to zip
                 z.write(img_path, os.path.basename(img_path))
-            elif file_type == "pdf":
-                pdf_data = requests.get(img_path).content
-                # Add pdf content to zip
-                z.writestr(os.path.basename(img_path), pdf_data)
+            # elif file_type == "pdf":
+            #     if urlparse(img_path).scheme == '':
+            #         # Local file path
+            #         with open(img_path, "rb") as pdf_file:
+            #             pdf_data = pdf_file.read()
+            #     else:
+            #         pdf_data = requests.get(img_path).content
+            #
+            #     # Add pdf content to zip
+            #     z.writestr(os.path.basename(img_path), pdf_data)
 
     if file_name is None:
         file_name = f"{APP_NAME}_export_{file_type}"
