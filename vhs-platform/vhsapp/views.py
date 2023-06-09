@@ -8,7 +8,6 @@ from urllib.parse import urlencode
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from iiif_prezi.factory import ManifestFactory, StructuralError
 
 from django.contrib.auth.decorators import login_required
 from vhs.settings import ENV
@@ -22,10 +21,15 @@ from vhsapp.utils.constants import (
     APP_NAME_UPPER,
     APP_DESCRIPTION,
 )
-from vhsapp.utils.iiif.iiif_process import (
-    annotate_canvas,
+from vhsapp.utils.iiif.manifest import (
     process_images,
-    manifest_witness,
+    manifest_wit_type,
+)
+from vhsapp.utils.iiif.annotation import (
+    index_annotation,
+    get_txt_annos,
+    get_indexed_annos,
+    annotate_wit,
 )
 from vhsapp.utils.paths import (
     MEDIA_PATH,
@@ -45,28 +49,7 @@ def manifest_manuscript(request, id, version):
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
-    try:
-        manifest = manifest_witness(id, MS_ABBR, version)
-    except Exception as e:
-        return JsonResponse(
-            {
-                "error": "Unable to create a valid manifest",
-                "reason": f"Unable to create manifest for resource {id} (probably no manuscript): {e}",
-            }
-        )
-
-    try:
-        return JsonResponse(manifest.toJSON(top=True))
-    except StructuralError as e:
-        log(
-            f"[manifest_manuscript] Unable to create manifest for manuscript n°{id} (probably no images):\n{e}"
-        )
-        return JsonResponse(
-            {
-                "error": "Unable to create a valid manifest",
-                "reason": f"Unable to create manifest for resource {id} (probably no image): {e}",
-            }
-        )
+    return JsonResponse(manifest_wit_type(id, MS, version))
 
 
 def manifest_volume(request, id, version):
@@ -74,28 +57,7 @@ def manifest_volume(request, id, version):
     Build a volume manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
-    manifest = manifest_witness(id, VOL_ABBR, version)
-
-    try:
-        return JsonResponse(manifest.toJSON(top=True))
-    except StructuralError as e:
-        log(
-            f"[manifest_volume] Unable to create manifest for volume n°{id} (probably no images):\n{e}"
-        )
-        return JsonResponse(
-            {
-                "error": "Unable to create a valid manifest",
-                "reason": f"Unable to create manifest for resource {id} (probably no image):{e}",
-            }
-        )
-
-
-def get_annotations(wit_id, annotations_path):
-    try:
-        with open(f"{BASE_DIR}/{MEDIA_PATH}/{annotations_path}/{wit_id}.txt") as f:
-            return [line.strip() for line in f.readlines()]
-    except FileNotFoundError:
-        return None
+    return JsonResponse(manifest_wit_type(id, VOL, version))
 
 
 def annotation_auto(request, id, witness):
@@ -107,7 +69,7 @@ def annotation_auto(request, id, witness):
     writer.writerow(["IIIF_Image_Annotations"])
     annotations_path = VOL_ANNO_PATH if witness == VOL else MS_ANNO_PATH
 
-    lines = get_annotations(id, annotations_path)
+    lines = get_txt_annos(id, annotations_path)
     if lines is None:
         log(f"[annotation_auto] no annotation file for {witness} n°{id}")
         writer.writerow([f"No annotation were generated for {witness} n°{id}"])
@@ -126,60 +88,23 @@ def annotation_auto(request, id, witness):
     return response
 
 
-def annotate_witness(request, id, version, witness, wit_abbr, canvas):
-    annotations_path = VOL_ANNO_PATH if witness == VOL else MS_ANNO_PATH
-
-    lines = get_annotations(id, annotations_path)
-    if lines is None:
-        log(f"[annotate_witness] no annotation file for {witness} n°{id}")
-        return JsonResponse({"@type": "sc:AnnotationList", "resources": []})
-
-    nbr_anno = 0
-    list_anno = []
-    check = False
-    for line in lines:
-        if len(line.split()) == 2 and line.split()[0] == str(canvas):
-            check = True
-            continue
-        if check:
-            if len(line.split()) == 4:
-                nbr_anno += 1
-                list_anno.append(tuple(int(item) for item in tuple(line.split())))
-            else:
-                break
-    return JsonResponse(
-        {
-            "@type": "sc:AnnotationList",
-            "resources": [
-                annotate_canvas(
-                    id,
-                    version,
-                    witness,
-                    wit_abbr,
-                    canvas,
-                    list_anno[num_anno],
-                    num_anno,
-                )
-                for num_anno in range(nbr_anno)
-                if nbr_anno > 0
-            ],
-        }
-    )
+def annotate_witness(request, id, version, wit_type, wit_abbr, canvas):
+    return JsonResponse(annotate_wit(id, version, wit_type, wit_abbr, canvas))
 
 
-def populate_annotation(request, id, witness):
+def populate_annotation(request, id, wit_type):
     """
     Populate annotation store from IIIF Annotation List
     """
-    wit_abbr = VOL_ABBR if witness == VOL else MS_ABBR
-    annotations_path = VOL_ANNO_PATH if witness == VOL else MS_ANNO_PATH
+    wit_abbr = VOL_ABBR if wit_type == VOL else MS_ABBR
+    annotations_path = VOL_ANNO_PATH if wit_type == VOL else MS_ANNO_PATH
 
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    lines = get_annotations(id, annotations_path)
+    lines = get_txt_annos(id, annotations_path)
     if lines is None:
-        log(f"[populate_annotation] no annotation file for {witness} n°{id}")
+        log(f"[populate_annotation] no annotation file for {wit_type} n°{id}")
         return HttpResponse(status=500)
 
     annotated_canvases = {}
@@ -193,19 +118,18 @@ def populate_annotation(request, id, witness):
             if current_canvas in annotated_canvases:
                 annotated_canvases[current_canvas] += 1
 
-    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{witness}/{wit_abbr}-{id}"
+    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_abbr}-{id}"
 
     for c in annotated_canvases:
         # check if annotations are already indexed
         detected_anno = annotated_canvases[c]
-        response = urlopen(
-            f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{c}.json"
-        )
-        indexed_anno = json.loads(response.read())
+
+        indexed_anno = get_indexed_annos(c, id, wit_type)
 
         # if the canvas has not the same nb of annotations as in the content of the annotation text file
         if len(indexed_anno) != detected_anno:
             # TODO here, if there is not the same number, all annotations are reindexed, causing possibly duplicates
+            # TODO also might contain manual annotations => compare
             # {iiif_url}/list/anno-{c}.json is calling annotate_witness(), thus indexing annotations for each canvas
             params = urlencode({"uri": f"{iiif_url}/list/anno-{c}.json"}).encode(
                 "ascii"
@@ -246,7 +170,7 @@ def show_witness(request, id, wit):
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    lines = get_annotations(id, annotations_path)
+    lines = get_txt_annos(id, annotations_path)
     if lines is None:
         log(f"[show_wit] no annotation file for {wit} n°{id}")
         return JsonResponse({"error": "the annotations were not yet generated"})

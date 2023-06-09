@@ -1,7 +1,5 @@
-from glob import glob
-
 from vhsapp.utils.logger import iiif_log, console, log
-from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH, BASE_DIR
+from vhs.settings import CANTALOUPE_APP_URL
 
 
 IIIF_ICON = "<img alt='IIIF' src='https://iiif.io/assets/images/logos/logo-sm.png' height='15'/>"
@@ -40,3 +38,15 @@ def get_width(img_rsrc):
     except KeyError:
         return None
     return int(img_width)
+
+
+def gen_iiif_url(
+    img,
+    vers=2,
+    res="full/full/0",
+    color="default",
+    ext="jpg",
+):
+    # E.g. "http://localhost/iiif/2/image_name.jpg/full/full/0/default.jpg"
+    # return f"{scheme}://{host}{f':{port}' if port else ''}/iiif/{vers}/{img}/{res}/{color}.{ext}"
+    return f"{CANTALOUPE_APP_URL}/iiif/{vers}/{img}/{res}/{color}.{ext}"

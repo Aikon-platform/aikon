@@ -1,12 +1,11 @@
 import os
 import re
 
-from datetime import datetime
 from glob import glob
 
 from PIL import Image, UnidentifiedImageError
 from django.shortcuts import get_object_or_404
-from iiif_prezi.factory import ManifestFactory
+from iiif_prezi.factory import ManifestFactory, StructuralError
 from pikepdf import Pdf
 
 from vhsapp.utils.constants import (
@@ -21,6 +20,7 @@ from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
 from vhs.settings import SAS_APP_URL, VHS_APP_URL, CANTALOUPE_APP_URL
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.utils.logger import iiif_log, console, log
+from vhsapp.utils.iiif.annotation import set_canvas_annos
 
 
 def process_images(work, seq, version):
@@ -43,9 +43,7 @@ def process_images(work, seq, version):
         for counter, img in enumerate(imgs, start=1):
             img_name = img.image.url.split("/")[-1]
             try:
-                build_canvas_and_annotation(
-                    seq, counter, img_name, Image.open(img.image), version
-                )
+                set_canvas_annos(seq, counter, img_name, Image.open(img.image), version)
             except UnidentifiedImageError as e:
                 log(f"[process_images] Unable to retrieve {img_name}\n{e}")
             except FileNotFoundError as e:
@@ -61,7 +59,7 @@ def process_images(work, seq, version):
                     ".pdf", f"_{counter:04d}.jpg"
                 )
                 try:
-                    build_canvas_and_annotation(
+                    set_canvas_annos(
                         seq,
                         counter,
                         img_name,
@@ -85,7 +83,7 @@ def process_images(work, seq, version):
     #             }
     #             img_url = line.split(" ")[2]
     #
-    #             build_canvas_and_annotation(
+    #             set_canvas_annos(
     #                 seq, counter, img_url, img_dimensions, version
     #             )
 
@@ -97,9 +95,7 @@ def process_images(work, seq, version):
         ):
             img_name = os.path.basename(path)
             try:
-                build_canvas_and_annotation(
-                    seq, counter, img_name, Image.open(path), version
-                )
+                set_canvas_annos(seq, counter, img_name, Image.open(path), version)
             except UnidentifiedImageError as e:
                 log(f"[process_images] Unable to retrieve {img_name}\n{e}")
                 continue
@@ -108,104 +104,6 @@ def process_images(work, seq, version):
     # If none of the above, raise an exception
     else:
         raise Exception("There is no manifest!")
-
-
-def build_canvas_and_annotation(seq, counter, image_name, image, version):
-    """
-    Build the canvas and annotation for each image
-    Called for each manifest (v2) image when a witness is being indexed
-    """
-    try:
-        h, w = int(image["height"]), int(image["width"])
-    except TypeError:
-        h, w = image.height, image.width
-    except ValueError:
-        h, w = 900, 600
-    # Build the canvas
-    canvas = seq.canvas(ident=f"c{counter}", label=f"Page {counter}")
-    canvas.set_hw(h, w)
-
-    # Build the image annotation
-    anno = canvas.annotation(ident=f"a{counter}")
-    if re.match(r"https?://(.*?)/", image_name):
-        img = anno.image(image_name, iiif=False)
-        setattr(img, "format", "image/jpeg")
-    else:
-        img = anno.image(ident=image_name, iiif=True)
-    # anno = canvas.annotation(ident=f"a{counter}")
-    # img = anno.image(ident=image_name, iiif=True)
-    # img.set_hw(h, w)
-
-    img.set_hw(h, w)
-    if version == "auto":
-        anno_list = canvas.annotationList(ident=f"anno-{counter}")
-        anno = anno_list.annotation(ident=f"a-list-{counter}")
-        anno.text("Annotation")
-
-
-def annotate_canvas(id, version, work, work_abbr, canvas, anno, num_anno):
-    base_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{work}/{work_abbr}-{id}"
-
-    anno2_2 = anno[2] // 2
-    anno3_2 = anno[3] // 2
-
-    d = f"M{anno[0]} {anno[1]} h {anno2_2} v 0 h {anno2_2} v {anno3_2} v {anno3_2} h -{anno2_2} h -{anno2_2} v -{anno3_2}Z"
-    r_id = f"rectangle_{work_abbr}{id}-{canvas}-{num_anno + 1}"
-    d_paper = "{&quot;strokeWidth&quot;:1,&quot;rotation&quot;:0,&quot;annotation&quot;:null,&quot;nonHoverStrokeColor&quot;:[&quot;Color&quot;,0,1,0],&quot;editable&quot;:true,&quot;deleteIcon&quot;:null,&quot;rotationIcon&quot;:null,&quot;group&quot;:null}"
-
-    path = f"""<path xmlns='http://www.w3.org/2000/svg'
-                    d='{d}'
-                    id='{r_id}'
-                    data-paper-data='{d_paper}'
-                    fill-opacity='0'
-                    fill='#00ff00'
-                    fill-rule='nonzero'
-                    stroke='#00ff00'
-                    stroke-width='1'
-                    stroke-linecap='butt'
-                    stroke-linejoin='miter'
-                    stroke-miterlimit='10'
-                    stroke-dashoffset='0'
-                    style='mix-blend-mode: normal'/>"""
-    path = re.sub(r"\s+", " ", path).strip()
-
-    return {
-        "@id": f"{SAS_APP_URL.replace('https', 'http')}/annotation/{work_abbr}-{id}-{canvas}-{num_anno + 1}",
-        "@type": "oa:Annotation",
-        "dcterms:created": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-        "dcterms:modified": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-        "resource": [
-            {
-                "@type": "dctypes:Text",
-                f"{SAS_APP_URL}/full_text": "",
-                "format": "text/html",
-                "chars": "<p></p>",
-            }
-        ],
-        "on": [
-            {
-                "@type": "oa:SpecificResource",
-                "within": {
-                    "@id": f"{base_url}/manifest.json",
-                    "@type": "sc:Manifest",
-                },
-                "selector": {
-                    "@type": "oa:Choice",
-                    "default": {
-                        "@type": "oa:FragmentSelector",
-                        "value": f"xywh={anno[0]},{anno[1]},{anno[2]},{anno[3]}",
-                    },
-                    "item": {
-                        "@type": "oa:SvgSelector",
-                        "value": f'<svg xmlns="http://www.w3.org/2000/svg">{path}</svg>',
-                    },
-                },
-                "full": f"{base_url}/canvas/c{canvas}.json",
-            }
-        ],
-        "motivation": ["oa:commenting", "oa:tagging"],
-        "@context": "http://iiif.io/api/presentation/2/context.json",
-    }
 
 
 def manifest_witness(id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
@@ -235,3 +133,42 @@ def manifest_witness(id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
     process_images(witness, seq, version)
 
     return manifest
+
+
+def manifest_wit_type(wit_id, wit_type, version):
+    try:
+        manifest = manifest_witness(
+            wit_id, VOL_ABBR if wit_type == VOL else MS_ABBR, version
+        )
+    except Exception as e:
+        error = f"Unable to create manifest for {wit_type} n°{wit_id} (probably no {wit_type}): {e}"
+        log(f"[manifest_wit_type] {error}")
+        return {
+            "error": "Unable to create a valid manifest",
+            "reason": error,
+        }
+
+    try:
+        return manifest.toJSON(top=True)
+    except StructuralError as e:
+        error = f"Unable to create manifest for {wit_type} n°{wit_id} (probably no images):\n{e}"
+        log(f"[manifest_wit_type] {error}")
+        return {
+            "error": "Unable to create a valid manifest",
+            "reason": error,
+        }
+
+
+def has_manifest(work):
+    # if there is at least one image file named after the current witness
+    if (
+        len(glob(f"{BASE_DIR}/{IMG_PATH}/{work}_*.jpg"))
+        or len(glob(f"{BASE_DIR}/{IMG_PATH}/{work}.txt")) > 0
+    ):
+        return True
+    return False
+
+
+def gen_manifest_url(wit_id, vers=MANIFEST_AUTO, wit_type=VOL.lower()):
+    wit_abbr = VOL_ABBR if wit_type == VOL.lower() else MS_ABBR
+    return f"{CANTALOUPE_APP_URL}/{APP_NAME}/iiif/{vers}/{wit_type}/{wit_abbr}-{wit_id}/manifest.json"

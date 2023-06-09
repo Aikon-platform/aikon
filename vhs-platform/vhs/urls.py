@@ -31,12 +31,12 @@ urlpatterns = [
         name="manifest-manuscript",
     ),
     path(
-        f"{APP_NAME}/iiif/{MANIFEST_V2}/<str:witness>/<int:id>/populate/",
+        f"{APP_NAME}/iiif/{MANIFEST_V2}/<str:wit_type>/<int:id>/populate/",
         populate_annotation,
         name="populate-annotation",
     ),
     path(
-        f"{APP_NAME}/iiif/<str:version>/<str:witness>/<str:wit_abbr>-<int:id>/list/anno-<int:canvas>.json",
+        f"{APP_NAME}/iiif/<str:version>/<str:wit_type>/<str:wit_abbr>-<int:id>/list/anno-<int:canvas>.json",
         annotate_witness,
         name="annotate-witness",
     ),

@@ -4,7 +4,6 @@ from tripoli import IIIFValidator
 from urllib.parse import urlparse
 
 from django.core.exceptions import ValidationError
-
 from vhsapp.utils.functions import get_json, create_dir, save_img
 
 

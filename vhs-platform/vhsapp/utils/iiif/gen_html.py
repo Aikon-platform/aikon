@@ -9,11 +9,11 @@ from vhsapp.utils.constants import (
     APP_NAME_UPPER,
     APP_DESCRIPTION,
 )
-from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH, BASE_DIR
 from vhsapp.utils.functions import get_icon, anno_btn
 from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
 from vhs.settings import SAS_APP_URL, VHS_APP_URL, CANTALOUPE_APP_URL
 from vhsapp.utils.iiif import IIIF_ICON
+from vhsapp.utils.iiif.manifest import gen_manifest_url
 
 
 def get_link_manifest(obj_id, manifest_url, tag_id="url_manifest_"):
@@ -50,21 +50,6 @@ def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, ps_type=VOL.lower())
     )
 
 
-# def gen_manifest_url(
-#     m_id,
-#     scheme="http",
-#     host="localhost",
-#     port=8182,
-#     vers=MANIFEST_AUTO,
-#     m_type=VOL.lower(),
-# ):
-#     # return f"{scheme}://{host}{f':{port}' if port else ''}/{APP_NAME}/iiif/{vers}/{m_type}/{m_id}/manifest.json"
-#     return f"{CANTALOUPE_APP_URL}/{APP_NAME}/iiif/{vers}/{m_type}/{m_id}/manifest.json"
-def gen_manifest_url(wit_id, vers=MANIFEST_AUTO, wit_type=VOL.lower()):
-    wit_abbr = VOL_ABBR if wit_type == VOL.lower() else MS_ABBR
-    return f"{CANTALOUPE_APP_URL}/{APP_NAME}/iiif/{vers}/{wit_type}/{wit_abbr}-{wit_id}/manifest.json"
-
-
 def gen_manifest_btn(obj_id, wit_type=MS, has_manifest=True):
     manifest = gen_manifest_url(obj_id, MANIFEST_AUTO, wit_type.lower())
     mf = (
@@ -73,36 +58,3 @@ def gen_manifest_btn(obj_id, wit_type=MS, has_manifest=True):
         else "<span class='faded'>No manifest</span>"
     )
     return mark_safe(f"<div class='iiif-icon'>{mf}</div>")
-
-
-def gen_iiif_url(
-    img,
-    scheme="http",
-    host="localhost",
-    port=8182,
-    vers=2,
-    res="full/full/0",
-    color="default",
-    ext="jpg",
-):
-    # E.g. "http://localhost/iiif/2/image_name.jpg/full/full/0/default.jpg"
-    # return f"{scheme}://{host}{f':{port}' if port else ''}/iiif/{vers}/{img}/{res}/{color}.{ext}"
-    return f"{CANTALOUPE_APP_URL}/iiif/{vers}/{img}/{res}/{color}.{ext}"
-
-
-def has_manifest(work):
-    # if there is at least one image file named after the current witness
-    if (
-        len(glob(f"{BASE_DIR}/{IMG_PATH}/{work}_*.jpg"))
-        or len(glob(f"{BASE_DIR}/{IMG_PATH}/{work}.txt")) > 0
-    ):
-        return True
-    return False
-
-
-def has_annotations(witness, wit_type):
-    # if there is at least one image file named after the current witness
-    wit_dir = "manuscripts" if wit_type == "ms" else "volumes"
-    if len(glob(f"{BASE_DIR}/{MEDIA_PATH}/{wit_dir}/annotation/{witness.id}.txt")) > 0:
-        return True
-    return False

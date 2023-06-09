@@ -12,7 +12,7 @@ from vhsapp.models.digitization import (
     ManifestVolume,
 )
 
-from vhsapp.utils.iiif.iiif_gen_url import gen_iiif_url
+from vhsapp.utils.iiif import gen_iiif_url
 from vhsapp.utils.iiif import IIIF_ICON
 from vhsapp.utils.constants import APP_NAME
 
