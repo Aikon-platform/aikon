@@ -15,7 +15,7 @@ from vhs.settings import ENV
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
-from vhsapp.utils.functions import credentials, console, log
+from vhsapp.utils.functions import credentials, console, log, list_to_txt
 from vhsapp.utils.constants import (
     APP_NAME,
     APP_NAME_UPPER,
@@ -26,11 +26,10 @@ from vhsapp.utils.iiif.manifest import (
     manifest_wit_type,
 )
 from vhsapp.utils.iiif.annotation import (
-    index_annotation,
     get_txt_annos,
-    get_indexed_annos,
-    annotate_wit,
+    format_canvas_annos,
     check_wit_annotation,
+    get_anno_img,
 )
 from vhsapp.utils.paths import (
     MEDIA_PATH,
@@ -61,39 +60,13 @@ def manifest_volume(request, id, version):
     return JsonResponse(manifest_wit_type(id, VOL, version))
 
 
-def annotation_auto(request, id, witness):
-    """
-    TODO rename to export anno? and displace into annotation.py
-    """
-    response = HttpResponse(content_type="text/csv")
-    response[
-        "Content-Disposition"
-    ] = f"attachment; filename=annotations_iiif_{witness}_{id}.csv"
-    writer = csv.writer(response)
-    writer.writerow(["IIIF_Image_Annotations"])
-    annotations_path = VOL_ANNO_PATH if witness == VOL else MS_ANNO_PATH
-
-    lines = get_txt_annos(id, annotations_path)
-    if lines is None:
-        log(f"[annotation_auto] no annotation file for {witness} n°{id}")
-        writer.writerow([f"No annotation were generated for {witness} n°{id}"])
-        return response
-
-    img_name = f"{witness}{id}_0000.jpg"
-    for line in lines:
-        if len(line.split()) == 2:
-            img_name = line.split()[1]
-        else:
-            region = f"{line.split()[0]},{line.split()[1]},{line.split()[2]},{line.split()[3]}"
-            writer.writerow(
-                [f"{CANTALOUPE_APP_URL}/iiif/2/{img_name}/{region}/full/0/default.jpg"]
-            )
-
-    return response
+def export_anno_img(request, id, wit_type):
+    annotations = get_anno_img(id, wit_type)
+    return list_to_txt(annotations, f"{wit_type}#{id}_ annotations")
 
 
-def annotate_witness(request, id, version, wit_type, wit_abbr, canvas):
-    return JsonResponse(annotate_wit(id, version, wit_type, wit_abbr, canvas))
+def canvas_annotations(request, id, version, wit_type, wit_abbr, canvas):
+    return JsonResponse(format_canvas_annos(id, version, wit_type, wit_abbr, canvas))
 
 
 def populate_annotation(request, id, wit_type):

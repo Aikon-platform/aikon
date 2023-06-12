@@ -11,8 +11,8 @@ from vhsapp.views import (
     manifest_volume,
     manifest_manuscript,
     populate_annotation,
-    annotate_witness,
-    annotation_auto,
+    canvas_annotations,
+    export_anno_img,
 )
 
 
@@ -25,7 +25,7 @@ urlpatterns = [
         manifest_volume,
         name="manifest-volume",
     ),
-    path(
+    path(  # todo : f"{APP_NAME}/iiif/<str:version>/<str:wit_type>/<str:wit_abbr>-<int:id>/manifest.json"
         f"{APP_NAME}/iiif/<str:version>/manuscript/ms-<int:id>/manifest.json",
         manifest_manuscript,
         name="manifest-manuscript",
@@ -37,12 +37,12 @@ urlpatterns = [
     ),
     path(
         f"{APP_NAME}/iiif/<str:version>/<str:wit_type>/<str:wit_abbr>-<int:id>/list/anno-<int:canvas>.json",
-        annotate_witness,
-        name="annotate-witness",
+        canvas_annotations,
+        name="canvas-annotations",
     ),
     path(
-        f"{APP_NAME}/iiif/{MANIFEST_AUTO}/<str:witness>/<int:id>/annotation/",
-        annotation_auto,
+        f"{APP_NAME}/iiif/{MANIFEST_AUTO}/<str:wit_type>/<int:id>/annotation/",
+        export_anno_img,
         name="annotation-auto",
     ),
 ]

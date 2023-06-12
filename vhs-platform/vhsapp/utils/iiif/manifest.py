@@ -52,7 +52,6 @@ def process_images(work, seq, version):
     # Check if there is a PDF work and process it
     elif pdf_first:  # PDF
         # TODO: factorize with pdf_to_img() in functions.py
-        # MARKER console(pdf_first.pdf)
         with Pdf.open(f"{BASE_DIR}/{MEDIA_PATH}/{pdf_first.pdf}") as pdf_file:
             for counter in range(1, len(pdf_file.pages) + 1):
                 img_name = pdf_first.pdf.name.split("/")[-1].replace(
@@ -67,9 +66,9 @@ def process_images(work, seq, version):
                         version,
                     )
                 except UnidentifiedImageError as e:
-                    log(f"Unable to retrieve {img_name}\n{e}")
+                    log(f"[process_images] Unable to retrieve {img_name}\n{e}")
                 except FileNotFoundError as e:
-                    log(f"Non existing {img_name}\n{e}")
+                    log(f"[process_images] Non existing {img_name}\n{e}")
 
     # Check if there is a manifest work and a list of images url and process it
     # elif manifest_first and f"{work_abbr}{work.id}.txt" in os.listdir(

@@ -314,3 +314,16 @@ def check_and_create_if_not(path):
 
 def sanitize_url(string):
     return string.replace(" ", "+").replace(" ", "+")
+
+
+def read_json_file(file_path):
+    try:
+        with open(file_path) as json_file:
+            return json.load(json_file)
+    except FileNotFoundError:
+        return None
+
+
+def write_json_file(file_path, dictionary):
+    with open(file_path, "w") as file:
+        json.dump(dictionary, file)
