@@ -94,13 +94,13 @@ def get_annos_per_canvas(wit_id, wit_type, last_canvas=0, specific_canvas=""):
 def check_wit_annotation(wit_id, wit_type):
     wit_abbr = VOL_ABBR if wit_type == VOL else MS_ABBR
     last_canvases = get_last_indexed_canvas()
-    last_index_canvas = (
+    last_indexed_canvas = (
         last_canvases[str(wit_id)] if str(wit_id) in last_canvases else 0
     )
 
     # contains only annotations that were not yet indexed in SAS
     annotated_canvases = get_annos_per_canvas(
-        wit_id, wit_type, last_canvas=last_index_canvas
+        wit_id, wit_type, last_canvas=last_indexed_canvas
     )
 
     if not bool(annotated_canvases):
@@ -216,8 +216,6 @@ def format_annotation(wit_id, version, wit_type, wit_abbr, canvas, xywh, num_ann
                     stroke-dashoffset='0'
                     style='mix-blend-mode: normal'/>"""
     path = re.sub(r"\s+", " ", path).strip()
-
-    set_last_indexed_canvas(wit_id, canvas)
 
     return {
         "@id": f"{SAS_APP_URL.replace('https', 'http')}/annotation/{anno_id}",
