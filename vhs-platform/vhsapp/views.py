@@ -1,9 +1,7 @@
-import csv
 import json
 import os
 import re
 from urllib.request import urlopen
-from urllib.parse import urlencode
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -44,45 +42,45 @@ def admin_vhs(request):
     return redirect("admin:index")
 
 
-def manifest_manuscript(request, id, version):
+def manifest_manuscript(request, wit_id, version):
     """
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
-    return JsonResponse(manifest_wit_type(id, MS, version))
+    return JsonResponse(manifest_wit_type(wit_id, MS, version))
 
 
-def manifest_volume(request, id, version):
+def manifest_volume(request, wit_id, version):
     """
     Build a volume manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
-    return JsonResponse(manifest_wit_type(id, VOL, version))
+    return JsonResponse(manifest_wit_type(wit_id, VOL, version))
 
 
-def export_anno_img(request, id, wit_type):
-    annotations = get_anno_img(id, wit_type)
-    return list_to_txt(annotations, f"{wit_type}#{id}_ annotations")
+def export_anno_img(request, wit_id, wit_type):
+    annotations = get_anno_img(wit_id, wit_type)
+    return list_to_txt(annotations, f"{wit_type}#{wit_id}_ annotations")
 
 
-def canvas_annotations(request, id, version, wit_type, wit_abbr, canvas):
-    return JsonResponse(format_canvas_annos(id, version, wit_type, wit_abbr, canvas))
+def canvas_annotations(request, wit_id, version, wit_type, canvas):
+    return JsonResponse(format_canvas_annos(wit_id, version, wit_type, canvas))
 
 
-def populate_annotation(request, id, wit_type):
+def populate_annotation(request, wit_id, wit_type):
     """
     Populate annotation store from IIIF Annotation List
     """
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    return HttpResponse(status=200 if check_wit_annotation(id, wit_type) else 500)
+    return HttpResponse(status=200 if check_wit_annotation(wit_id, wit_type) else 500)
 
 
-def get_img_prefix(obj, wit=MS, wit_abbr=MS_ABBR):
+def get_img_prefix(obj, wit_type=MS, wit_abbr=MS_ABBR):
     img_prefix = f"{wit_abbr}{obj.id}"
-    if hasattr(obj, f"pdf{wit}_set"):
-        if getattr(obj, f"pdf{wit}_set").first():
+    if hasattr(obj, f"pdf{wit_type}_set"):
+        if getattr(obj, f"pdf{wit_type}_set").first():
             img_prefix = (
                 obj.pdfmanuscript_set.first().pdf.name.split("/")[-1].split(".")[0]
             )
@@ -102,23 +100,25 @@ def get_imgs(wit_prefix):
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/")
-def show_witness(request, id, wit):
-    wit_model = Volume if wit == VOL else Manuscript
-    wit_abbr = VOL_ABBR if wit == VOL else MS_ABBR
-    annotations_path = VOL_ANNO_PATH if wit == VOL else MS_ANNO_PATH
+def show_witness(request, wit_id, wit_type):
+    # TODO simplify
+
+    wit_model = Volume if wit_type == VOL else Manuscript
+    wit_abbr = VOL_ABBR if wit_type == VOL else MS_ABBR
+    annotations_path = VOL_ANNO_PATH if wit_type == VOL else MS_ANNO_PATH
 
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    lines = get_txt_annos(id, annotations_path)
+    lines = get_txt_annos(wit_id, annotations_path)
     if lines is None:
-        log(f"[show_wit] no annotation file for {wit} n°{id}")
+        log(f"[show_wit] no annotation file for {wit_type} n°{wit_id}")
         return JsonResponse({"error": "the annotations were not yet generated"})
 
-    wit_obj = get_object_or_404(wit_model, pk=id)
-    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit}/{wit_abbr}-{id}"
+    wit_obj = get_object_or_404(wit_model, pk=wit_id)
+    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}"
 
-    wit_imgs = get_imgs(get_img_prefix(wit_obj, wit, wit_abbr))
+    wit_imgs = get_imgs(get_img_prefix(wit_obj, wit_type, wit_abbr))
     canvas_annos = []
     bboxes = []
     # TODO: do we need to load again all the annotations everytime?
@@ -176,7 +176,7 @@ def show_witness(request, id, wit):
         request,
         "vhsapp/show.html",
         context={
-            "wit": wit,
+            "wit_type": wit_type,
             "wit_obj": wit_obj,
             "page_annos": page_annos,
             "bboxes": json.dumps(bboxes),

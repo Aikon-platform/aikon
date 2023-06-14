@@ -20,18 +20,13 @@ def get_link_manifest(obj_id, manifest_url, tag_id="url_manifest_"):
     return f"<a id='{tag_id}{obj_id}' href='{manifest_url}' target='_blank'>{manifest_url} {IIIF_ICON}</a>"
 
 
-def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, ps_type=VOL.lower()):
-    wit_abbr = VOL_ABBR if ps_type == VOL.lower() else MS_ABBR
-    msg_id = (
-        f"message_auto_{wit_abbr}{obj_id}"
-        if vers == MANIFEST_AUTO
-        else f"message_{obj_id}"
-    )
+def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, wit_type=VOL.lower()):
+    msg_id = f"message_auto_{obj_id}" if vers == MANIFEST_AUTO else f"message_{obj_id}"
 
     if action == "NO MANIFEST" or action == "NO ANNOTATION YET":
-        return mark_safe(anno_btn(f"{wit_abbr}{obj_id}", action))
+        return mark_safe(anno_btn(obj_id, action))
 
-    obj_ref = f"{APP_NAME}/iiif/{vers}/{ps_type}/{wit_abbr}-{obj_id}"
+    obj_ref = f"{APP_NAME}/iiif/{vers}/{wit_type}/{obj_id}"
     manifest = f"{VHS_APP_URL}/{obj_ref}/manifest.json"
 
     if vers == MANIFEST_AUTO:
@@ -44,7 +39,7 @@ def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, ps_type=VOL.lower())
         anno_type = "JSON"
 
     return mark_safe(
-        f"{get_link_manifest(obj_id, manifest, tag_id)}<br>{anno_btn(f'{wit_abbr}{obj_id}', action)}"
+        f"{get_link_manifest(obj_id, manifest, tag_id)}<br>{anno_btn(obj_id, action)}"
         f'<a href="{download_url}" target="_blank">{get_icon("download")} Download annotation ({anno_type})</a>'
         f'<span id="{msg_id}" style="color:#FF0000"></span>'
     )

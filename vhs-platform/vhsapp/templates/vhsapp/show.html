@@ -2,7 +2,7 @@
 
 {% load static %} {# NOTE: is it necessary if the parent template load statics as well #}
 
-{% block title %}Annotations {{ wit }} #{{ wit_obj.id }}{% endblock %}
+{% block title %}Annotations {{ wit_type }} #{{ wit_obj.id }}{% endblock %}
 
 {% block extrahead %}
     {{ block.super }}
@@ -148,8 +148,8 @@
 
 {% block header %}
     <div class="fixed-div">
-        <div class="title {{ wit }}-title">
-            <b>{{ wit|title }} #{{ wit_obj.id }}</b> : {{ wit_obj }}
+        <div class="title">
+            <b>{{ wit_type|title }} #{{ wit_obj.id }}</b> : {{ wit_obj }}
         </div>
 
         <button id="select_anno" class="select-button">

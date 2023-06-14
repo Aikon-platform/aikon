@@ -5,11 +5,40 @@ from glob import glob
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
+import requests
 from vhsapp.utils.paths import MEDIA_PATH, BASE_DIR, VOL_ANNO_PATH, MS_ANNO_PATH
+from vhsapp.models import get_wit_abbr, get_wit_type
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
 from vhsapp.utils.constants import APP_NAME
 from vhsapp.utils.functions import console, log, read_json_file, write_json_file
+
+
+def check_wit_annotation(wit_id, wit_type):
+    last_canvases = get_last_indexed_canvas()
+    last_indexed_canvas = (
+        last_canvases[str(wit_id)] if str(wit_id) in last_canvases else 0
+    )
+
+    # contains only annotations that were not yet indexed in SAS
+    annotated_canvases = get_annos_per_canvas(
+        wit_id, wit_type, last_canvas=last_indexed_canvas
+    )
+
+    if not bool(annotated_canvases):
+        # if the annotation file is empty
+        return True
+
+    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}"
+    for c in annotated_canvases:
+        try:
+            index_annos_on_canvas(iiif_url, wit_id, c, last_canvases)
+        except Exception as e:
+            log(
+                f"[check_wit_annotation]: Problem indexing annotation for {wit_type} n°{wit_id} (canvas {c}): {e}"
+            )
+
+    return True
 
 
 def unindex_anno(canvas, anno_id):
@@ -18,14 +47,19 @@ def unindex_anno(canvas, anno_id):
 
 
 def index_annos_on_canvas(base_url, wit_id, canvas, last_canvases=None):
-    if last_canvases is None:
-        last_canvases = get_last_indexed_canvas()
+    # this url is calling format_canvas_annos(), thus returning formatted annos for each canvas
+    formatted_annos = f"{base_url}/list/anno-{canvas}.json"
+    # POST request that index the annotations
+    response = urlopen(
+        f"{SAS_APP_URL}/annotation/populate",
+        urlencode({"uri": formatted_annos}).encode("ascii"),
+    )
 
-    # {base_url}/list/anno-{c}.json is calling format_canvas_annos(), thus returning formatted annos for each canvas
-    params = urlencode({"uri": f"{base_url}/list/anno-{canvas}.json"}).encode("ascii")
-    urlopen(
-        f"{SAS_APP_URL}/annotation/populate", params
-    )  # POST request that index the annos
+    if response.status != 201:
+        log(
+            f"[index_annos_on_canvas] Failed to index annotations. Status code: {response.status_code}: {response.text}"
+        )
+        return
     set_last_indexed_canvas(wit_id, canvas, last_canvases)
 
 
@@ -70,6 +104,7 @@ def get_annos_per_canvas(wit_id, wit_type, last_canvas=0, specific_canvas=""):
         # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
         if len(line.split()) == 2:
             current_canvas = line.split()[0]
+            # todo maybe create a json file to store annotations in another form
             if int(current_canvas) > last_canvas or specific_canvas == current_canvas:
                 # if the current annotation was not already annotated, add it to the list to annotate
                 # or if it is the specific canvas that we need to retrieve
@@ -89,34 +124,6 @@ def get_annos_per_canvas(wit_id, wit_type, last_canvas=0, specific_canvas=""):
         )
 
     return annotated_canvases
-
-
-def check_wit_annotation(wit_id, wit_type):
-    wit_abbr = VOL_ABBR if wit_type == VOL else MS_ABBR
-    last_canvases = get_last_indexed_canvas()
-    last_indexed_canvas = (
-        last_canvases[str(wit_id)] if str(wit_id) in last_canvases else 0
-    )
-
-    # contains only annotations that were not yet indexed in SAS
-    annotated_canvases = get_annos_per_canvas(
-        wit_id, wit_type, last_canvas=last_indexed_canvas
-    )
-
-    if not bool(annotated_canvases):
-        # if the annotation file is empty
-        return True
-
-    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_abbr}-{wit_id}"
-    for c in annotated_canvases:
-        try:
-            index_annos_on_canvas(iiif_url, wit_id, c, last_canvases)
-        except Exception as e:
-            log(
-                f"[check_wit_annotation]: Problem indexing annotation for {wit_type} n°{wit_id} (canvas {c}): {e}"
-            )
-
-    return True
 
 
 def get_txt_annos(wit_id, annotations_path):
@@ -152,8 +159,7 @@ def get_indexed_wit_annos(wit_id, wit_type):
 
 
 def get_indexed_canvas_annos(canvas_nb, wit_id, wit_type):
-    wit_abbr = VOL_ABBR if wit_type == VOL else MS_ABBR
-    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_abbr}-{wit_id}"
+    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}"
     try:
         response = urlopen(
             f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{canvas_nb}.json"
@@ -166,8 +172,9 @@ def get_indexed_canvas_annos(canvas_nb, wit_id, wit_type):
         return []
 
 
-def format_canvas_annos(wit_id, version, wit_type, wit_abbr, canvas):
+def format_canvas_annos(wit_id, version, wit_type, canvas):
     canvas_annos = get_annos_per_canvas(wit_id, wit_type, specific_canvas=str(canvas))
+    # todo, check that
     if len(canvas_annos) == 0:
         return {"@type": "sc:AnnotationList", "resources": []}
 
@@ -178,7 +185,6 @@ def format_canvas_annos(wit_id, version, wit_type, wit_abbr, canvas):
                 wit_id,
                 version,
                 wit_type,
-                wit_abbr,
                 canvas,
                 canvas_annos[anno_num],
                 anno_num,
@@ -188,8 +194,9 @@ def format_canvas_annos(wit_id, version, wit_type, wit_abbr, canvas):
     }
 
 
-def format_annotation(wit_id, version, wit_type, wit_abbr, canvas, xywh, num_anno):
-    base_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{wit_abbr}-{wit_id}"
+def format_annotation(wit_id, version, wit_type, canvas, xywh, num_anno):
+    wit_abbr = get_wit_abbr(wit_type)
+    base_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{wit_id}"
 
     x, y, w, h = xywh
 
@@ -293,3 +300,12 @@ def has_annotations(witness, wit_type):
     if len(glob(f"{BASE_DIR}/{MEDIA_PATH}/{wit_dir}/annotation/{witness.id}.txt")) > 0:
         return True
     return False
+
+
+def index_manifest_in_sas(manifest_content):
+    response = requests.post(f"{SAS_APP_URL}/manifests", json=manifest_content)
+
+    if response.status_code != 201:
+        log(
+            f"[index_manifest_in_sas] Failed to index manifest. Status code: {response.status_code}: {response.text}"
+        )

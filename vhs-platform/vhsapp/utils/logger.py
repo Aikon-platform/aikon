@@ -3,6 +3,7 @@ import logging
 import os
 import time
 
+from django.utils.html import strip_tags
 from vhsapp.utils.paths import LOG_PATH, MEDIA_PATH, BASE_DIR, IIIF_LOG_PATH
 from vhs.settings import DEBUG
 from vhsapp.utils.constants import (
@@ -50,6 +51,8 @@ def log(msg):
 
 def pprint(o):
     if type(o) == str:
+        if "html" in o:
+            return strip_tags(o)[:500]
         try:
             return json.dumps(json.loads(o), indent=4, sort_keys=True)
         except ValueError:
@@ -81,7 +84,5 @@ def iiif_log(img_url):
         f = open(IIIF_LOG_PATH, "x")
         f.close()
 
-    with open(IIIF_LOG_PATH, 'a') as f:
+    with open(IIIF_LOG_PATH, "a") as f:
         f.write(f"{img_url}\n")
-
-

@@ -38,12 +38,6 @@ from vhsapp.utils.constants import (
     MANIFEST_AUTO,
     MANIFEST_V2,
 )
-from vhsapp.utils.paths import (
-    MEDIA_PATH,
-    VOL_PDF_PATH,
-    IMG_PATH,
-    MS_PDF_PATH,
-)
 
 from vhsapp.utils.iiif import gen_iiif_url
 from vhsapp.utils.iiif.annotation import has_annotations
@@ -86,7 +80,7 @@ class ManifestAdmin(admin.ModelAdmin):
     def is_annotated(self, obj, wit_abbr=MS_ABBR):
         return mark_safe(
             anno_btn(
-                f"{wit_abbr}{obj.id}",
+                obj.id,
                 "EDIT" if has_annotations(obj, wit_abbr) else "NO ANNOTATION YET",
             )
         )

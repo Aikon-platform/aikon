@@ -113,7 +113,7 @@ def manifest_witness(id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
     wit_name = MS if wit_abbr == MS_ABBR else VOL
     witness = get_object_or_404(Manuscript if wit_abbr == MS_ABBR else Volume, pk=id)
     fac = ManifestFactory(
-        mdbase=f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_name}/{wit_abbr}-{id}/",
+        mdbase=f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_name}/{id}/",
         imgbase=f"{CANTALOUPE_APP_URL}/iiif/2/",
     )
 
@@ -170,4 +170,6 @@ def has_manifest(work):
 
 def gen_manifest_url(wit_id, vers=MANIFEST_AUTO, wit_type=VOL.lower()):
     wit_abbr = VOL_ABBR if wit_type == VOL.lower() else MS_ABBR
-    return f"{CANTALOUPE_APP_URL}/{APP_NAME}/iiif/{vers}/{wit_type}/{wit_abbr}-{wit_id}/manifest.json"
+    return (
+        f"{CANTALOUPE_APP_URL}/{APP_NAME}/iiif/{vers}/{wit_type}/{wit_id}/manifest.json"
+    )

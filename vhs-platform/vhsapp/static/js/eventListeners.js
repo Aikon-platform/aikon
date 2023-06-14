@@ -9,13 +9,13 @@ $(function() {
         e.preventDefault();
 
         const idButton = $(this).attr("id");
-        const witnessRef = idButton.split("_").pop();
+        const witnessId = idButton.split("_").pop();
 
         if (idButton.includes("annotate_manifest_auto_")) {
-            viewAnnotations(witnessRef)
+            viewAnnotations(witnessId)
             return false;
         }
-        editAnnotations(witnessRef, idButton)
+        editAnnotations(witnessId, idButton)
         return false;
     }).on("click", "[id^=manifest_final_]", function(e) {
         finalAnnotations($(this));
