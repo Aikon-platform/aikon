@@ -11,7 +11,14 @@ from vhsapp.models import get_wit_abbr, get_wit_type
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
 from vhsapp.utils.constants import APP_NAME
-from vhsapp.utils.functions import console, log, read_json_file, write_json_file
+from vhsapp.utils.functions import (
+    console,
+    log,
+    read_json_file,
+    write_json_file,
+    get_imgs,
+    get_img_prefix,
+)
 
 
 def check_wit_annotation(wit_id, wit_type):
@@ -104,6 +111,7 @@ def get_annos_per_canvas(wit_id, wit_type, last_canvas=0, specific_canvas=""):
         # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
         if len(line.split()) == 2:
             current_canvas = line.split()[0]
+            # TODO change, because for one specific canvas, we retrieve all the canvas before
             # todo maybe create a json file to store annotations in another form
             if int(current_canvas) > last_canvas or specific_canvas == current_canvas:
                 # if the current annotation was not already annotated, add it to the list to annotate
@@ -152,24 +160,6 @@ def get_anno_img(wit_id, wit_type):
                 f"{CANTALOUPE_APP_URL}/iiif/2/{img_name}/{x},{y},{w},{h}/full/0/default.jpg"
             )
     return imgs
-
-
-def get_indexed_wit_annos(wit_id, wit_type):
-    return {}
-
-
-def get_indexed_canvas_annos(canvas_nb, wit_id, wit_type):
-    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}"
-    try:
-        response = urlopen(
-            f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{canvas_nb}.json"
-        )
-        return json.loads(response.read())
-    except Exception as e:
-        log(
-            f"[get_indexed_canvas_annos] Could not retrieve anno for {wit_type} n°{wit_id}: {e}"
-        )
-        return []
 
 
 def format_canvas_annos(wit_id, version, wit_type, canvas):
@@ -309,3 +299,85 @@ def index_manifest_in_sas(manifest_content):
         log(
             f"[index_manifest_in_sas] Failed to index manifest. Status code: {response.status_code}: {response.text}"
         )
+
+
+def get_canvas_list(witness, wit_type):
+    lines = get_txt_annos(
+        witness.id, VOL_ANNO_PATH if wit_type == VOL else MS_ANNO_PATH
+    )
+    if not lines:
+        log(f"[get_canvas_list] no annotation file for {wit_type} n°{witness.id}")
+        return {
+            "error": "the annotations were not yet generated"
+        }  # TODO find a way to display error msg
+
+    wit_imgs = get_imgs(get_img_prefix(witness, wit_type))
+
+    canvases = []
+    for line in lines:
+        # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
+        if len(line.split()) == 2:
+            canvas_nb, img_file = line.split()
+            if img_file in wit_imgs:
+                canvases.append((canvas_nb, img_file))
+
+    return canvases
+
+
+def get_indexed_wit_annos(wit_id, wit_type):
+    return {}
+
+
+def get_indexed_canvas_annos(canvas_nb, wit_id, wit_type):
+    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}"
+    try:
+        response = urlopen(
+            f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{canvas_nb}.json"
+        )
+        return json.loads(response.read())
+    except Exception as e:
+        log(
+            f"[get_indexed_canvas_annos] Could not retrieve anno for {wit_type} n°{wit_id}: {e}"
+        )
+        return []
+
+
+def get_coord_from_anno(anno):
+    try:
+        # coordinates => "x,y,w,h"
+        return (anno["on"][0]["selector"]["default"]["value"]).split("=")[1]
+    except Exception as e:
+        log(f"[get_coord_from_anno] Could not retrieve coord from anno: {e}")
+        return "0,0,0,0"
+
+
+def get_id_from_anno(anno):
+    try:
+        # annotation id => "wit_abbr-wit_id-canvas_nb-anno_nb
+        return anno["@id"].split("/")[-1]
+    except Exception as e:
+        log(f"[get_id_from_anno] Could not retrieve i from anno: {e}")
+        return ""
+
+
+def formatted_wit_anno(witness, wit_type):
+    canvas_annos = []
+    wit_anno_ids = []
+
+    for canvas_nb, img_file in get_canvas_list(witness, wit_type):
+        c_annos = get_indexed_canvas_annos(canvas_nb, witness.id, wit_type)
+        coord_annos = []
+
+        if bool(c_annos):
+            coord_annos = [
+                (
+                    get_coord_from_anno(anno),
+                    get_id_from_anno(anno),
+                )
+                for anno in c_annos
+            ]
+            wit_anno_ids.extend(anno_id for _, anno_id in coord_annos)
+
+        canvas_annos.append((canvas_nb, coord_annos, img_file))
+
+    return wit_anno_ids, canvas_annos

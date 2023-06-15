@@ -1,13 +1,10 @@
-import csv
 import datetime
-import glob
 import io
 import json
 import os
-import shutil
+import re
 from os.path import exists
 from pathlib import Path
-from urllib.parse import urlparse
 from uuid import uuid4
 
 import PyPDF2
@@ -26,7 +23,8 @@ from urllib.request import (
     build_opener,
     install_opener,
 )
-from vhsapp.models.constants import MS, VOL
+from vhsapp.models import get_wit_abbr, get_wit_type
+from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhsapp.utils.constants import APP_NAME, MAX_SIZE, MAX_RES
 from vhsapp.utils.paths import BASE_DIR, MEDIA_PATH, IMG_PATH, MS_PDF_PATH, VOL_PDF_PATH
 from vhsapp.utils.logger import log, console
@@ -338,3 +336,25 @@ def read_json_file(file_path):
 def write_json_file(file_path, dictionary):
     with open(file_path, "w") as file:
         json.dump(dictionary, file)
+
+
+def get_img_prefix(obj, wit_type=MS):
+    img_prefix = f"{get_wit_abbr(wit_type)}{obj.id}"
+    if hasattr(obj, f"pdf{wit_type}_set"):
+        if getattr(obj, f"pdf{wit_type}_set").first():
+            img_prefix = (
+                obj.pdfmanuscript_set.first().pdf.name.split("/")[-1].split(".")[0]
+            )
+    return img_prefix
+
+
+def get_imgs(wit_prefix):
+    # TODO make a method of Witness class out of this function
+    pattern = re.compile(rf"{wit_prefix}_\d{{4}}\.jpg", re.IGNORECASE)
+    wit_imgs = []
+
+    for img in os.listdir(f"{BASE_DIR}/{IMG_PATH}"):
+        if pattern.match(img):
+            wit_imgs.append(img)
+
+    return wit_imgs
