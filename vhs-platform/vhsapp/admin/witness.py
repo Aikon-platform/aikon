@@ -78,10 +78,11 @@ class ManifestAdmin(admin.ModelAdmin):
         return MANIFEST_AUTO
 
     def is_annotated(self, obj, wit_abbr=MS_ABBR):
+        action = "FINAL" if obj.manifest_final else "EDIT"
         return mark_safe(
             anno_btn(
                 obj.id,
-                "EDIT" if has_annotations(obj, wit_abbr) else "NO ANNOTATION YET",
+                action if has_annotations(obj, wit_abbr) else "NO ANNOTATION YET",
             )
         )
 

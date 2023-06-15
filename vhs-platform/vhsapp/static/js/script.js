@@ -62,13 +62,15 @@ function editAnnotations(witId, idButton) {
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error(`Failed to load and display annotations for ${witId} due to ${response.status}: ${response.statusText}`);
+                throw new Error(`Failed to load and display annotations for ${witId} due to ${response.status}: ${response.statusText}
+                Click again to continue annotation indexing`);
             }
             window.open(`/${APP_NAME}/${witnessType}/${witId}/show/`, "_blank");
             clearLoading(idButton, innerHtml);
         })
         .catch(error => {
             showMessage(error.message, idMessage);
+            clearLoading(idButton, innerHtml);
         });
 }
 
@@ -106,6 +108,8 @@ function showMessage(message, idMessage) {
     if (msgElement) {
         msgElement.textContent = message;
         msgElement.style.display = "block";
+    } else {
+        alert(message)
     }
 }
 

@@ -317,7 +317,9 @@ def get_canvas_list(witness, wit_type):
     for line in lines:
         # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
         if len(line.split()) == 2:
-            canvas_nb, img_file = line.split()
+            _, img_file = line.split()
+            # use the image number as canvas number because it is more reliable that the one provided in the anno file
+            canvas_nb = int(img_file.split("_")[1].split(".")[0])
             if img_file in wit_imgs:
                 canvases.append((canvas_nb, img_file))
 

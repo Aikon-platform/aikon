@@ -117,7 +117,9 @@ def save_img(
 
     try:
         if img.width > max_dim or img.height > max_dim:
-            img.thumbnail((max_dim, max_dim), Image.ANTIALIAS)
+            img.thumbnail(
+                (max_dim, max_dim), Image.ANTIALIAS
+            )  # Image.Resampling.LANCZOS
         img.save(img_path / img_filename, format=img_format)
         return True
     except Exception as e:
@@ -192,7 +194,7 @@ def anno_btn(wit_ref, action="VISUALIZE"):
     elif action == "FINAL":
         color = "#4CAF50"
         tag_id = "manifest_final_"
-        icon = get_icon("check-square-o")
+        icon = get_icon("check")
     elif action == "NO MANIFEST" or action == "NO ANNOTATION YET":
         btn = action
         color = "#878787"
