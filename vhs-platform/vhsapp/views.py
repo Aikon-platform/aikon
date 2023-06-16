@@ -35,16 +35,14 @@ def admin_vhs(request):
 
 def manifest_manuscript(request, wit_id, version):
     """
-    Build a manuscript manifest using iiif-prezi library
-    IIIF Presentation API 2.0
+    Build a manuscript manifest using iiif-prezi library IIIF Presentation API 2.0
     """
     return JsonResponse(manifest_wit_type(wit_id, MS, version))
 
 
 def manifest_volume(request, wit_id, version):
     """
-    Build a volume manifest using iiif-prezi library
-    IIIF Presentation API 2.0
+    Build a volume manifest using iiif-prezi library IIIF Presentation API 2.0
     """
     return JsonResponse(manifest_wit_type(wit_id, VOL, version))
 
@@ -66,6 +64,23 @@ def populate_annotation(request, wit_id, wit_type):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
     return HttpResponse(status=200 if check_wit_annotation(wit_id, wit_type) else 500)
+
+
+def validate_annotation(request, wit_id, wit_type):
+    """
+    Validate the manually corrected annotations
+    """
+    try:
+        witness = get_object_or_404(
+            Volume if wit_type == VOL else Manuscript, pk=wit_id
+        )
+        witness.manifest_final = True
+        witness.save()
+        return HttpResponse(status=200)
+    except (Manuscript.DoesNotExist, Volume.DoesNotExist):
+        return HttpResponse(f"{wit_type} #{wit_id} does not exist", status=500)
+    except Exception as e:
+        return HttpResponse(f"An error occurred: {e}", status=500)
 
 
 def witness_annotations(request, wit_id, wit_type):

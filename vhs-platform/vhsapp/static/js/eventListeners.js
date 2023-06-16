@@ -49,4 +49,8 @@ $(function() {
     $("#delete_all").click(function() {
         deleteAllAnnotations(allAnnos ?? []);
     });
+
+    $("#validate_anno").click(function() {
+        validateAnnotations();
+    });
 });

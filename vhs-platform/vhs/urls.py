@@ -14,6 +14,7 @@ from vhsapp.views import (
     canvas_annotations,
     export_anno_img,
     witness_annotations,
+    validate_annotation,
 )
 
 
@@ -44,6 +45,11 @@ urlpatterns = [
         f"{APP_NAME}/iiif/{MANIFEST_V2}/<str:wit_type>/<int:wit_id>/populate/",
         populate_annotation,
         name="populate-annotation",
+    ),
+    path(
+        f"{APP_NAME}/iiif/{MANIFEST_V2}/<str:wit_type>/<int:wit_id>/validate/",
+        validate_annotation,
+        name="validate-annotation",
     ),
     path(
         f"{APP_NAME}/iiif/<str:version>/<str:wit_type>/<int:wit_id>/list/anno-<int:canvas>.json",

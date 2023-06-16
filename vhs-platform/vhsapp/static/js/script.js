@@ -12,6 +12,14 @@ function getWitType(){
     return null;
 }
 
+function getWitId(){
+    const currentUrl = getUrl();
+    if (currentUrl.includes("show")){
+        return extractNb(currentUrl).replace("8000,",""); // todo: remove 8000 because of localhost
+    }
+    return null;
+}
+
 function toManifest(witId, witType, version) {
     return `${VHS_APP_URL}/${APP_NAME}/iiif/${version}/${witType}/${witId}/manifest.json`
 }
@@ -62,8 +70,8 @@ function editAnnotations(witId, idButton) {
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error(`Failed to load and display annotations for ${witId} due to ${response.status}: ${response.statusText}
-                Click again to continue annotation indexing`);
+                console.log(response)
+                throw new Error(`Could not finish indexing annotations of ${witnessType} #${witId}. To resume, click again.`);
             }
             window.open(`/${APP_NAME}/${witnessType}/${witId}/show/`, "_blank");
             clearLoading(idButton, innerHtml);
@@ -76,7 +84,7 @@ function editAnnotations(witId, idButton) {
 
 
 function finalAnnotations(btn) {
-    /* Function triggered on click on the "final" btn that redirects to the show page to correct annotations */
+    /* Function triggered on click on the "final" btn that redirects a mirador viewer with final annotations */
     const idButton = btn.attr("id");
     const innerHtml = btn.html()
     const witId = idButton.split("_").pop();
@@ -103,8 +111,8 @@ function viewAnnotations(witnessId) {
     });
 }
 
-function showMessage(message, idMessage) {
-    const msgElement = document.getElementById(idMessage);
+function showMessage(message, idMessage=null) {
+    const msgElement = idMessage ? document.getElementById(idMessage) : null;
     if (msgElement) {
         msgElement.textContent = message;
         msgElement.style.display = "block";
@@ -164,5 +172,32 @@ function deleteAllAnnotations(allAnnos) {
         for (let i = allAnnos.length - 1; i >= 0; i--) {
             deleteAnnotation(allAnnos[i]);
         }
+    }
+}
+
+function validateAnnotations(witId=null) {
+    const witType = getWitType();
+
+    if (!witId){
+        witId = getWitId();
+        if (!witId){
+            console.log("No witness id")
+            return
+        }
+    }
+
+    if (confirm(APP_LANG === "en" ? `Once validated, the annotations of the entire ${witType} cannot be modified. Continue?`
+        : `Une fois validées, les annotations de l'ensemble du ${witType} ne pourront plus être modifiées. Continuer ?`)) {
+        fetch(`/${APP_NAME}/iiif/v2/${witType}/${witId}/validate/`)
+            .then(response => {
+            if (response.status === 200) {
+                // window.open(`${SAS_APP_URL}/indexView.html?iiif-content=${toManifest(witId, witType, "v2")}`);
+                window.open(`${VHS_APP_URL}/${APP_NAME}-admin/vhsapp/${witType}/`)
+            } else {
+                throw new Error(`Could not validate annotations of ${witType} #${witId}.`);
+            }
+        }).catch(error => {
+            showMessage(`Error: ${error.message}`);
+        });
     }
 }

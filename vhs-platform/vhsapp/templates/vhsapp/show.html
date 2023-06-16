@@ -77,6 +77,14 @@
             background-color: #931c1c;
         }
 
+        .validate-button {
+            background-color: #5aa926;
+        }
+
+        .validate-button:hover {
+            background-color: #44851a;
+        }
+
         .select-button {
             background-color: #e3c035;
         }
@@ -164,7 +172,12 @@
 
         <button id="delete_anno" class="delete-button">
             <i class="fa-solid fa-trash"></i>
-            {% if APP_LANG == "en" %}Delete{% else %}Supprimer{% endif %} annotations
+            {% if APP_LANG == "en" %}Delete{% else %}Supprimer les{% endif %} annotations
+        </button>
+
+        <button id="validate_anno" class="validate-button">
+            <i class="fa-solid fa-check"></i>
+            Valid{% if APP_LANG == "en" %}ate{% else %}er les{% endif %} annotations
         </button>
 
         <!-- <button id="delete_all" class="delete-all-button">
