@@ -1,9 +1,8 @@
-import csv
+import datetime
 import io
 import json
 import os
 import re
-import shutil
 from os.path import exists
 from pathlib import Path
 from uuid import uuid4
@@ -24,10 +23,10 @@ from urllib.request import (
     build_opener,
     install_opener,
 )
-from vhsapp.utils.constants import (
-    APP_NAME,
-)
-from vhsapp.utils.paths import BASE_DIR, MEDIA_DIR, IMG_PATH
+from vhsapp.utils.paths import BASE_DIR, MEDIA_DIR, IMG_PATH, MS_PDF_PATH, VOL_PDF_PATH
+from vhsapp.models import get_wit_abbr, get_wit_type
+from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
+from vhsapp.utils.constants import APP_NAME, MAX_SIZE, MAX_RES
 from vhsapp.utils.logger import log, console
 
 
@@ -81,10 +80,9 @@ def convert_to_jpeg(image):
 
 def pdf_to_img(pdf_name):
     """
-    TODO: use method of class PDF?
     Convert the PDF file to JPEG images
     """
-    pdf_path = f"{BASE_DIR}/{MEDIA_PATH}/{pdf_name}"
+    pdf_path = f"{BASE_DIR}/{MEDIA_DIR}/{pdf_name}"
 
     # e.g. pdf_name = "volumes/pdf/filename.pdf" => "filename"
     pdf_name = pdf_path.split("/")[-1].split(".")[0]
@@ -100,22 +98,57 @@ def pdf_to_img(pdf_name):
                 last_page=min(img_nb + step - 1, page_nb),
             )
             for page in batch_pages:
-                page.save(
-                    f"{BASE_DIR}/{IMG_PATH}/{pdf_name}_{img_nb:04d}.jpg", format="JPEG"
-                )
+                save_img(page, f"{pdf_name}_{img_nb:04d}.jpg")
                 img_nb += 1
     except Exception as e:
-        log(f"Failed to convert {pdf_name}.pdf to images:\n{e}")
+        log(f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e}")
 
 
-def get_pdf_imgs(pdf_list, ps_type="volume"):
+# def reduce_image_resolution(image, resolution):
+#     """
+#     Reduce the resolution of the image
+#     """
+#     width, height = image.size
+#     aspect_ratio = width / height
+#     new_width = int(resolution * aspect_ratio)
+#     reduced_image = image.resize((new_width, resolution), Image.ANTIALIAS)
+#     return reduced_image
+
+
+def save_img(
+    img,
+    img_filename,
+    img_path=BASE_DIR / IMG_PATH,
+    error_msg="Failed to save img",
+    max_dim=MAX_SIZE,
+    dpi=MAX_RES,
+    img_format="JPEG",
+):
+    # if glob.glob(img_path / img_filename):
+    #     return False  # NOTE: maybe download again anyway because manifest / pdf might have changed
+
+    try:
+        if img.width > max_dim or img.height > max_dim:
+            img.thumbnail(
+                (max_dim, max_dim), Image.ANTIALIAS
+            )  # Image.Resampling.LANCZOS
+        img.save(img_path / img_filename, format=img_format)
+        return True
+    except Exception as e:
+        log(f"[save_img] {error_msg}:\n{e}")
+    return False
+
+
+def get_pdf_imgs(pdf_list, ps_type=VOL):
     if type(pdf_list) != list:
         pdf_list = [pdf_list]
+
+    path = MS_PDF_PATH if ps_type == MS else VOL_PDF_PATH
 
     img_list = []
     for pdf_name in pdf_list:
         pdf_reader = PyPDF2.PdfFileReader(
-            open(f"{BASE_DIR}/{MEDIA_DIR}/{ps_type}/pdf/{pdf_name}", "rb")
+            open(f"{BASE_DIR}/{MEDIA_DIR}/{path}/{pdf_name}", "rb")
         )
         for img_nb in range(1, pdf_reader.numPages + 1):
             img_list.append(
@@ -153,7 +186,7 @@ def get_icon(icon, color=None):
     return mark_safe(f"<i class='fa-solid fa-{icon}' {color}></i>")
 
 
-def anno_btn(obj_id, action="VISUALIZE"):
+def anno_btn(wit_ref, action="VISUALIZE"):
     disabled = ""
     btn = f"{action} ANNOTATIONS"
 
@@ -173,7 +206,7 @@ def anno_btn(obj_id, action="VISUALIZE"):
     elif action == "FINAL":
         color = "#4CAF50"
         tag_id = "manifest_final_"
-        icon = get_icon("check-square-o")
+        icon = get_icon("check")
     elif action == "NO MANIFEST" or action == "NO ANNOTATION YET":
         btn = action
         color = "#878787"
@@ -186,23 +219,23 @@ def anno_btn(obj_id, action="VISUALIZE"):
         icon = get_icon("eye")
 
     return (
-        f"<button id='{tag_id}{obj_id}' class='button annotate-manifest' {disabled}"
+        f"<button id='{tag_id}{wit_ref}' class='button annotate-manifest' {disabled}"
         f"style='background-color:{color};'>{icon} {btn}</button><br>"
     )
 
 
-def list_to_csv(item_list, first_row=None, file_name=None):
+def list_to_txt(item_list, file_name=None):
     if file_name is None:
         file_name = f"{APP_NAME}_export"
 
-    response = HttpResponse(content_type="text/csv")
-    response["Content-Disposition"] = f"attachment; filename={file_name}.csv"
+    file_name = f"{datetime.date.today()}-{file_name}"
 
-    writer = csv.writer(response)
-    if first_row:
-        writer.writerow([first_row])
+    response = HttpResponse(content_type="text/txt")
+    response["Content-Disposition"] = f"attachment; filename={file_name}.txt"
 
-    writer.writerow([item] for item in item_list)
+    content = "\n".join(str(item) for item in item_list)
+    response.write(content)
+
     return response
 
 
@@ -213,10 +246,16 @@ def zip_img(zip_file, img_list, file_type="img", file_name=None):  # maybe chang
             if file_type == "img":
                 # Add file to zip
                 z.write(img_path, os.path.basename(img_path))
-            elif file_type == "pdf":
-                pdf_data = requests.get(img_path).content
-                # Add pdf content to zip
-                z.writestr(os.path.basename(img_path), pdf_data)
+            # elif file_type == "pdf":
+            #     if urlparse(img_path).scheme == '':
+            #         # Local file path
+            #         with open(img_path, "rb") as pdf_file:
+            #             pdf_data = pdf_file.read()
+            #     else:
+            #         pdf_data = requests.get(img_path).content
+            #
+            #     # Add pdf content to zip
+            #     z.writestr(os.path.basename(img_path), pdf_data)
 
     if file_name is None:
         file_name = f"{APP_NAME}_export_{file_type}"
@@ -288,15 +327,6 @@ def get_files_from_dir(dir_path, valid_extensions=None, recursive=False, sort=Fa
     return sorted(files) if sort else files
 
 
-def save_img(img, img_filename, error_msg="Failed to save img"):
-    try:
-        img.save(BASE_DIR / IMG_PATH / img_filename)
-        return True
-    except Exception as e:
-        log(f"[save_img] {error_msg}:\n{e}")
-    return False
-
-
 def check_and_create_if_not(path):
     path = Path(path)
     if not path.exists():
@@ -307,3 +337,38 @@ def check_and_create_if_not(path):
 
 def sanitize_url(string):
     return string.replace(" ", "+").replace(" ", "+")
+
+
+def read_json_file(file_path):
+    try:
+        with open(file_path) as json_file:
+            return json.load(json_file)
+    except FileNotFoundError:
+        return None
+
+
+def write_json_file(file_path, dictionary):
+    with open(file_path, "w") as file:
+        json.dump(dictionary, file)
+
+
+def get_img_prefix(obj, wit_type=MS):
+    img_prefix = f"{get_wit_abbr(wit_type)}{obj.id}"
+    if hasattr(obj, f"pdf{wit_type}_set"):
+        if getattr(obj, f"pdf{wit_type}_set").first():
+            img_prefix = (
+                obj.pdfmanuscript_set.first().pdf.name.split("/")[-1].split(".")[0]
+            )
+    return img_prefix
+
+
+def get_imgs(wit_prefix):
+    # TODO make a method of Witness class out of this function
+    pattern = re.compile(rf"{wit_prefix}_\d{{4}}\.jpg", re.IGNORECASE)
+    wit_imgs = []
+
+    for img in os.listdir(f"{BASE_DIR}/{IMG_PATH}"):
+        if pattern.match(img):
+            wit_imgs.append(img)
+
+    return wit_imgs

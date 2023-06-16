@@ -3,7 +3,8 @@ import logging
 import os
 import time
 
-from vhsapp.utils.paths import LOG_PATH, MEDIA_DIR, BASE_DIR, IIIF_LOG_PATH
+from django.utils.html import strip_tags
+from vhsapp.utils.paths import LOG_PATH, MEDIA_PATH, BASE_DIR, IIIF_LOG_PATH
 from vhs.settings import DEBUG
 
 
@@ -54,6 +55,8 @@ def log(msg):
 
 def pprint(o):
     if type(o) == str:
+        if "html" in o:
+            return strip_tags(o)[:500]
         try:
             return json.dumps(json.loads(o), indent=4, sort_keys=True)
         except ValueError:

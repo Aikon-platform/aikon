@@ -2,11 +2,10 @@
 
 {% load static %} {# NOTE: is it necessary if the parent template load statics as well #}
 
-{% block title %}Annotations {{ wit }} #{{ wit_obj.id }}{% endblock %}
+{% block title %}Annotations {{ wit_type }} #{{ wit_obj.id }}{% endblock %}
 
 {% block extrahead %}
     {{ block.super }}
-    <script src="{% static 'js/delete_anno.js' %}"></script>
     <style>
         .fixed-div {
             position: fixed;
@@ -78,6 +77,14 @@
             background-color: #931c1c;
         }
 
+        .validate-button {
+            background-color: #5aa926;
+        }
+
+        .validate-button:hover {
+            background-color: #44851a;
+        }
+
         .select-button {
             background-color: #e3c035;
         }
@@ -94,7 +101,6 @@
             background-color: rgb(35, 115, 128);
         }
         .anno-table {
-        {#table-layout: fixed;#}
             background: #F8F8F8;
             margin-top: 3em;
         }
@@ -143,15 +149,15 @@
             background-color: #F8F8F8 !important;
         }
     </style>
-    <!--<script>
-        let bboxes = JSON.parse('{{ bboxes|safe }}')
-    </script>-->
+    <script>
+        let allAnnos = JSON.parse('{{ bboxes|safe }}');
+    </script>
 {% endblock %}
 
 {% block header %}
     <div class="fixed-div">
-        <div class="title {{ wit }}-title">
-            <b>{{ wit|title }} #{{ wit_obj.id }}</b> : {{ wit_obj }}
+        <div class="title">
+            <b>{{ wit_type|title }} #{{ wit_obj.id }}</b> : {{ wit_obj }}
         </div>
 
         <button id="select_anno" class="select-button">
@@ -166,13 +172,18 @@
 
         <button id="delete_anno" class="delete-button">
             <i class="fa-solid fa-trash"></i>
-            {% if APP_LANG == "en" %}Delete{% else %}Supprimer{% endif %} annotations
+            {% if APP_LANG == "en" %}Delete{% else %}Supprimer les{% endif %} annotations
         </button>
 
-        <!--<button id="delete_all" class="delete-all-button">
+        <button id="validate_anno" class="validate-button">
+            <i class="fa-solid fa-check"></i>
+            Valid{% if APP_LANG == "en" %}ate{% else %}er les{% endif %} annotations
+        </button>
+
+        <!-- <button id="delete_all" class="delete-all-button">
             <i class="fa-solid fa-trash"></i>
             {% if APP_LANG == "en" %}Delete all the{% else %}Supprimer toutes les{% endif %} annotations
-        </button>-->
+        </button> -->
     </div>
 {% endblock %}
 
