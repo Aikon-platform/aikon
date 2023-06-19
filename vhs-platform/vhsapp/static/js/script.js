@@ -15,7 +15,7 @@ function getWitType(){
 function getWitId(){
     const currentUrl = getUrl();
     if (currentUrl.includes("show")){
-        return extractNb(currentUrl).replace("8000,",""); // todo: remove 8000 because of localhost
+        return extractNb(currentUrl.split("/show")[0]).replace("8000,",""); // todo: remove 8000 because of localhost
     }
     return null;
 }
@@ -191,8 +191,8 @@ function validateAnnotations(witId=null) {
         fetch(`/${APP_NAME}/iiif/v2/${witType}/${witId}/validate/`)
             .then(response => {
             if (response.status === 200) {
-                // window.open(`${SAS_APP_URL}/indexView.html?iiif-content=${toManifest(witId, witType, "v2")}`);
-                window.open(`${VHS_APP_URL}/${APP_NAME}-admin/vhsapp/${witType}/`)
+                // window.replace(`${SAS_APP_URL}/indexView.html?iiif-content=${toManifest(witId, witType, "v2")}`);
+                window.replace(`${VHS_APP_URL}/${APP_NAME}-admin/vhsapp/${witType}/`)
             } else {
                 throw new Error(`Could not validate annotations of ${witType} #${witId}.`);
             }
