@@ -15,6 +15,7 @@ admin.site.index_title = SITE_INDEX_TITLE
 class UnregisteredAdmin(admin.ModelAdmin):
     """
     Abstract class used for models that don't have a form accessible from the admin index
+    But that exists as sub-forms within main forms (i.e. Witness & Series)
     """
 
     class Meta:
