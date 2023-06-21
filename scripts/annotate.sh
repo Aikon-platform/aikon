@@ -51,8 +51,8 @@ colorEcho "info" "Content of the output directory:"
 ssh dishas-ia "ls yolov5/output/"
 
 colorEcho "info" "Copying output files to eida server..."
-scp dishas-ia:yolov5/output/* eida:vhs/vhs-platform/mediafiles/manuscripts/annotation/ || colorEcho "error" "Failed to copy output files to eida server"
-scp dishas-ia:yolov5/output/* ../vhs-platform/mediafiles/manuscripts/annotation/ || colorEcho "error" "Failed to copy output files to local app"
+scp dishas-ia:yolov5/output/* eida:vhs/app/mediafiles/manuscripts/annotation/ || colorEcho "error" "Failed to copy output files to eida server"
+scp dishas-ia:yolov5/output/* ../app/mediafiles/manuscripts/annotation/ || colorEcho "error" "Failed to copy output files to local app"
 
 colorEcho "log" "\nContent of the annotation directory:"
-ssh eida "ls vhs/vhs-platform/mediafiles/manuscripts/annotation/"
+ssh eida "ls vhs/app/mediafiles/manuscripts/annotation/"

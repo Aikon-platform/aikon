@@ -9,13 +9,13 @@ dist/
 build/
 
 # Django media and static files
-vhs-platform/mediafiles/*
-!vhs-platform/mediafiles/.gitkeep
-vhs-platform/staticfiles/*
-!vhs-platform/staticfiles/.gitkeep
+app/mediafiles/*
+!app/mediafiles/.gitkeep
+app/staticfiles/*
+!app/staticfiles/.gitkeep
 
 # Django migration files (to be generated on prod - even if this is bad)
-vhs-platform/vhsapp/migrations/0*
+app/webapp/migrations/0*
 cantaloupe/temp/*
 cantaloupe/cantaloupe.properties
 !cantaloupe/temp/.gitkeep

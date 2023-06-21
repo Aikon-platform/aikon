@@ -14,11 +14,11 @@ repos:
       hooks:
           - id: black
             exclude: ^dist/
-  - repo: https://github.com/aufdenpunkt/pre-commit-js-beautify
-    rev: 1.13.0 # represents the used version of JS Beautify as well
-    hooks:
-      - id: js-beautify
-        args: [ ] # list of arguments like '--editorconfig', '--end-with-newline', '--wrap-attributes=auto', '--wrap-line-length=120'
+#  - repo: https://github.com/aufdenpunkt/pre-commit-js-beautify
+#    rev: 1.13.0 # represents the used version of JS Beautify as well
+#    hooks:
+#      - id: js-beautify
+#        args: [ ] # list of arguments like '--editorconfig', '--end-with-newline', '--wrap-attributes=auto', '--wrap-line-length=120'
 #  - repo: https://github.com/PyCQA/isort
 #    rev: 5.5.2
 #    hooks:
