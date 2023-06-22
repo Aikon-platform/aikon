@@ -45,7 +45,7 @@ brew install wget ca-certificates postgresql maven nginx libpq poppler redis gho
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-pip install -r vhs-platform/requirements-dev.txt
+pip install -r app/requirements-dev.txt
 ```
 
 Enable `pre-commit` hooks (auto-test and formatting)
@@ -56,20 +56,20 @@ pre-commit install
 
 ### Database
 
-Open Postgres command prompt, create a database (`vhs`) and a user
+Open Postgres command prompt, create a database (`<database>`) and a user
 
 [//]: # (createuser -s postgres)
 [//]: # (psql -U postgres)
 
 ```bash
 sudo -u postgres psql
-postgres=# CREATE DATABASE vhs;
+postgres=# CREATE DATABASE <database>;
 postgres=# CREATE USER <username> WITH PASSWORD '<password>';
 postgres=# ALTER ROLE <username> SET client_encoding TO 'utf8';
-postgres=# ALTER DATABASE vhs OWNER TO <username>;
+postgres=# ALTER DATABASE <database> OWNER TO <username>;
 postgres=# ALTER ROLE <username> SET default_transaction_isolation TO 'read committed';
 postgres=# ALTER ROLE <username> SET timezone TO 'UTC';
-postgres=# GRANT ALL PRIVILEGES ON DATABASE vhs TO <username>;
+postgres=# GRANT ALL PRIVILEGES ON DATABASE <database> TO <username>;
 postgres=# \q
 ```
 
@@ -82,10 +82,10 @@ postgres=# \q
 Copy the content of the settings template file
 
 ```bash
-cp vhs-platform/vhs/.env{.template,}
+cp app/config/.env{.template,}
 ```
 
-Change variables in the generated file `vhs-platform/vhs/.env` to corresponds to your database and username
+Change variables in the generated file `app/config/.env` to corresponds to your database and username
 
 ```bash
 ALLOWED_HOSTS="localhost,127.0.0.1,145.238.203.8"
@@ -115,19 +115,19 @@ Provide as well an `APP_LANG`: only "fr" or "en" values are supported for now
 
 ### Django
 
-Update database schema with models that are stored inside `vhs-platform/vhsapp/migrations`
+Update database schema with models that are stored inside `app/webapp/migrations`
 ```bash
-./venv/bin/python vhs-platform/manage.py migrate
+./venv/bin/python app/manage.py migrate
 ```
 
-Download static files to be stored in `vhs-platform/staticfiles`
+Download static files to be stored in `app/staticfiles`
 ```bash
-./venv/bin/python vhs-platform/manage.py collectstatic
+./venv/bin/python app/manage.py collectstatic
 ```
 
 Create a super user
 ```shell
-./venv/bin/python vhs-platform/manage.py createsuperuser
+./venv/bin/python app/manage.py createsuperuser
 ```
 
 Create exception for port 8000
@@ -146,10 +146,10 @@ sudo chmod +x cantaloupe/init.sh && cp cantaloupe/.env{.template,} && nano canta
 
 Change variables in the generated file `cantaloupe/.env`:
 - `BASE_URI`: leave it blank on local
-- `FILE_SYSTEM_SOURCE` on local: `../vhs-platform/mediafiles/img/` (double dots)
+- `FILE_SYSTEM_SOURCE` on local: `../app/mediafiles/img/` (double dots)
 ```bash
 BASE_URI=
-FILE_SYSTEM_SOURCE=./vhs-platform/mediafiles/img/
+FILE_SYSTEM_SOURCE=./app/mediafiles/img/
 HTTP_PORT=8182
 HTTPS_PORT=8183
 LOG_PATH=/path/to/logs
@@ -178,7 +178,7 @@ You should now see Mirador with default example manifests.
 
 Run server
 ```shell
-./venv/bin/python vhs-platform/manage.py runserver localhost:8000
+./venv/bin/python app/manage.py runserver localhost:8000
 ```
 
 You can now visit the app at [http://localhost:8000](http://localhost:8000) and connect with the credentials you created

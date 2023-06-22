@@ -24,7 +24,7 @@ ssh -t eida "sh dump_db.sh" || error "Failed dump database"
 scp eida:backup/$db_file $current_dir || error "Failed to download database dump file"
 
 # Load environment variables from .env file
-. ../vhs-platform/vhs/.env
+. ../app/config/.env
 
 dbname=${1:-${DB_NAME}_2}
 username=${DB_USERNAME:-admin}
@@ -41,11 +41,11 @@ psql -h localhost -d $dbname -U $username -f $db_file || error "Failed to import
 rm $db_file
 
 # Set variables in .env file
-sed -i "s/DB_NAME=.*/DB_NAME=$dbname/" ../vhs-platform/vhs/.env
+sed -i "s/DB_NAME=.*/DB_NAME=$dbname/" ../app/config/.env
 
 # Empty migration directory and create new migrations
-find ../vhs-platform/vhsapp/migrations -type f ! -name '__init__.py' -delete
-../venv/bin/python ../vhs-platform/manage.py makemigrations || error "Failed to create new migrations"
+find ../app/webapp/migrations -type f ! -name '__init__.py' -delete
+../venv/bin/python ../app/manage.py makemigrations || error "Failed to create new migrations"
 
 # Update database schema with new migrations
-../venv/bin/python ../vhs-platform/manage.py migrate || error "Failed to apply new model to database"
+../venv/bin/python ../app/manage.py migrate || error "Failed to apply new model to database"

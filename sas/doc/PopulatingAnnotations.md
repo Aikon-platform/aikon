@@ -4,7 +4,7 @@ If you already have an IIIF Annotation List you can populate the Annotation Serv
 
 [http://localhost:8888/examples/anno_list.json](../src/main/webapp/examples/anno_list.json)
 
-To load this navigate to:
+To load this, navigate to:
 
 [http://localhost:8888/populate.xhtml](http://localhost:8888/populate.xhtml)
 

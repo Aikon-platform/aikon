@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd "../vhs-platform/mediafiles/img" || exit
+cd "../app/mediafiles/img" || exit
 
 for file in *.jpg; do
     if ! file "$file" | grep -q "JPEG image data"; then

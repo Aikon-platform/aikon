@@ -4,4 +4,4 @@
 # Inside the scripts/ directory, run:
 # sh prod_media.sh
 
-scp -r eida:vhs/vhs-platform/mediafiles/* ../vhs-platform/mediafiles
+scp -r eida:vhs/app/mediafiles/* ../app/mediafiles

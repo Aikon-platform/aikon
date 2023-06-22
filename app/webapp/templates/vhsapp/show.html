@@ -1,0 +1,238 @@
+{% extends "admin/base_site.html" %}
+
+{% load static %} {# NOTE: is it necessary if the parent template load statics as well #}
+
+{% block title %}Annotations {{ wit_type }} #{{ wit_obj.id }}{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <style>
+        .fixed-div {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px 25px 15px;
+            background-color: #cccfd3;
+            color: #111111 !important;
+            box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+        }
+
+        .title {
+            font-size: 2em;
+            padding: 0.2em;
+        }
+
+        .fixed-div h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .fixed-div label {
+            margin-right: 10px;
+        }
+
+        .fixed-div input {
+            margin-right: 10px;
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .views {
+            display: inline-block;
+        }
+
+        .fixed-div button {
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: none;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-block;
+            font-size: 14px;
+            line-height: 1.42857143;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+
+        .delete-button {
+            background-color: #cb4848;
+        }
+
+        .delete-button:hover {
+            background-color: #b63434;
+        }
+
+        .delete-all-button {
+            background-color: #ad2b2b;
+        }
+
+        .delete-all-button:hover {
+            background-color: #931c1c;
+        }
+
+        .validate-button {
+            background-color: #5aa926;
+        }
+
+        .validate-button:hover {
+            background-color: #44851a;
+        }
+
+        .select-button {
+            background-color: #e3c035;
+        }
+
+        .select-button:hover {
+            background-color: #c0a124;
+        }
+
+        .reload-button {
+            background-color: rgb(48, 148, 164);
+        }
+
+        .reload-button:hover {
+            background-color: rgb(35, 115, 128);
+        }
+        .anno-table {
+            background: #F8F8F8;
+            margin-top: 3em;
+        }
+        .page-col {
+            width: 420px;
+            background-color: #333;
+            color: white;
+            text-align: center;
+        }
+        td {
+            border: none !important;
+        }
+        .anno-col {
+            background-color: #F8F8F8;
+            text-align: center;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: left;
+            align-items: center;
+            height: 100%;
+        }
+        .page-preview {
+            max-height: 500px;
+        }
+        .anno-div {
+            flex: 1;
+            align-items: center;
+            justify-content: left;
+            color: black;
+        }
+        .anno {
+            margin: 5px;
+            border: 1px solid #b0aaaa;
+            max-height: 450px;
+            max-width: 150px;
+        }
+        .anno-info {
+            color: #bdbbbb;
+            padding-bottom: 10px;
+            font-style: italic;
+        }
+        .anno-row {
+            width: 100%;
+            height: 100%;
+            border-bottom: 1px solid black;
+            background-color: #F8F8F8 !important;
+        }
+    </style>
+    <script>
+        let allAnnos = JSON.parse('{{ bboxes|safe }}');
+    </script>
+{% endblock %}
+
+{% block header %}
+    <div class="fixed-div">
+        <div class="title">
+            <b>{{ wit_type|title }} #{{ wit_obj.id }}</b> : {{ wit_obj }}
+        </div>
+
+        <button id="select_anno" class="select-button">
+            <i class="fa-regular fa-square-check"></i>&nbsp;
+            {% if APP_LANG == "en" %}Select all{% else %}Sélectionner toutes les{% endif %} annotations
+        </button>
+
+        <button class="reload-button" onclick="location.reload()" title="{% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}">
+            <i class="fa-solid fa-arrows-rotate"></i>
+            {% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}
+        </button>
+
+        <button id="delete_anno" class="delete-button">
+            <i class="fa-solid fa-trash"></i>
+            {% if APP_LANG == "en" %}Delete{% else %}Supprimer les{% endif %} annotations
+        </button>
+
+        <button id="validate_anno" class="validate-button">
+            <i class="fa-solid fa-check"></i>
+            Valid{% if APP_LANG == "en" %}ate{% else %}er les{% endif %} annotations
+        </button>
+
+        <!-- <button id="delete_all" class="delete-all-button">
+            <i class="fa-solid fa-trash"></i>
+            {% if APP_LANG == "en" %}Delete all the{% else %}Supprimer toutes les{% endif %} annotations
+        </button> -->
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="column">
+            <table class="anno-table">
+                {% for canvas_nb, annos, img_file in page_annos %}
+                    <tr class="anno-row">
+                        <td class="anno-td page-col">
+                            <div class="anno-info">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                                {% if APP_LANG == "en" %}
+                                    Click on image to correct annotation
+                                {% else %}
+                                    Clicker sur l'image pour corriger l'annotation
+                                {% endif %}
+                            </div>
+                            <a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ canvas_nb }}" target="_blank" title="Correct annotation">
+                                <img class="page-preview" src="{{ img_file|img_to_iiif:"full/400,/0" }}" alt="Click to correct the annotations">
+                            </a>
+                            <br>
+                            <h3><a href="{{ img_file|img_to_iiif }}" target="_blank">Page {{ canvas_nb }}</a></h3>
+                        </td>
+                        <td class="anno-td anno-col">
+                            {% for coord, bbox in annos %}
+                                <div id="ill_{{ bbox }}" class="anno-div">
+                                    {% with region_full=coord|add:'/full/0' region=coord|add:'/,150/0' %}
+                                        <a href="{{ img_file|img_to_iiif:region_full }}" target="_blank">
+                                            <img class="anno" src="{{ img_file|img_to_iiif:region }}" alt="scan preview">
+                                        </a>
+                                    {% endwith %}
+                                    <br>
+                                    <input id="bbox_{{ bbox }}" name="{{ bbox }}" type="checkbox">
+                                    <label for="bbox_{{ bbox }}">
+                                        {% if APP_LANG == "en" %}Delete{% else %}Supprimer{% endif %}
+                                    </label>
+                                    <span id="message_{{ bbox }}" style="color:#FF0000;"></span>
+                                </div>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% empty %} {# if there is no annotations #}
+                    <tr>
+                        <td style="width: 100%">{% if APP_LANG == "en" %}No{% else %}Aucune{% endif %} annotation</td>
+                    </tr>
+                {% endfor %}
+            </table>
+            {% include 'includes/pagination.html' with current_page=page_annos %}
+        </div>
+    </div>
+{% endblock %}

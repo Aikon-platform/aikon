@@ -5,7 +5,7 @@
 # sh new_db.sh dbName
 
 # Load environment variables from .env file
-. ../vhs-platform/vhs/.env
+. ../app/config/.env
 
 dbname=${1:-${DB_NAME}_2}
 username=${DB_USERNAME:-admin}
@@ -19,11 +19,11 @@ sudo -i -u postgres psql -c "CREATE DATABASE $dbname;"
 sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $dbname TO $username;"
 
 # Set variables in .env file
-sed -i "s/DB_NAME=.*/DB_NAME=$dbname/" ../vhs-platform/vhs/.env
+sed -i "s/DB_NAME=.*/DB_NAME=$dbname/" ../app/config/.env
 
 # Empty migration directory and create new migrations
-find ../vhs-platform/vhsapp/migrations -type f ! -name '__init__.py' -delete
-../venv/bin/python ../vhs-platform/manage.py makemigrations
+find ../app/webapp/migrations -type f ! -name '__init__.py' -delete
+../venv/bin/python ../app/manage.py makemigrations
 
 # Update database schema with new migrations
-../venv/bin/python ../vhs-platform/manage.py migrate
+../venv/bin/python ../app/manage.py migrate
