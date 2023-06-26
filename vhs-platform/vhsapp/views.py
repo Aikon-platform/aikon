@@ -26,6 +26,8 @@ from vhsapp.utils.iiif.annotation import (
     check_wit_annotation,
     get_anno_img,
     formatted_wit_anno,
+    get_canvas_list,
+    get_indexed_canvas_annos,
 )
 
 
@@ -83,10 +85,31 @@ def validate_annotation(request, wit_id, wit_type):
         return HttpResponse(f"An error occurred: {e}", status=500)
 
 
-def witness_annotations(request, wit_id, wit_type):
+def witness_sas_annotations(request, wit_id, wit_type):
     witness = get_object_or_404(Volume if wit_type == VOL else Manuscript, pk=wit_id)
     _, canvas_annos = formatted_wit_anno(witness, wit_type)
     return JsonResponse(canvas_annos, safe=False)
+
+
+def test(request, wit_id, wit_type):
+    witness = get_object_or_404(Volume if wit_type == VOL else Manuscript, pk=wit_id)
+    canvas_annos = {}
+
+    canvas_list = get_canvas_list(witness, wit_type)
+
+    try:
+        for canvas_nb, img_file in canvas_list:
+            canvas_annos[canvas_nb] = get_indexed_canvas_annos(
+                canvas_nb, witness.id, wit_type
+            )
+    except ValueError as e:
+        log(
+            f"[witness_auto_annotations] Error when generating auto annotation list (probably no annotation file): {e}"
+        )
+
+    return JsonResponse(
+        {"get_canvas_list": canvas_list, "canvas_annos": canvas_annos}, safe=False
+    )
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/")
