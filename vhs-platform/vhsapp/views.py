@@ -9,8 +9,8 @@ from vhs.settings import ENV
 
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
+from vhsapp.utils.paths import MEDIA_PATH, BASE_DIR, VOL_ANNO_PATH, MS_ANNO_PATH
 from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
-from vhsapp.utils.functions import credentials, console, log, list_to_txt
 from vhsapp.utils.constants import (
     APP_NAME,
     APP_NAME_UPPER,
@@ -28,6 +28,16 @@ from vhsapp.utils.iiif.annotation import (
     formatted_wit_anno,
     get_canvas_list,
     get_indexed_canvas_annos,
+)
+from vhsapp.utils.functions import (
+    console,
+    log,
+    read_json_file,
+    write_json_file,
+    get_imgs,
+    get_img_prefix,
+    credentials,
+    list_to_txt,
 )
 
 
@@ -95,7 +105,26 @@ def test(request, wit_id, wit_type):
     witness = get_object_or_404(Volume if wit_type == VOL else Manuscript, pk=wit_id)
     canvas_annos = {}
 
-    canvas_list = get_canvas_list(witness, wit_type)
+    lines = get_txt_annos(
+        witness.id, VOL_ANNO_PATH if wit_type == VOL else MS_ANNO_PATH
+    )
+    if not lines:
+        log(f"[get_canvas_list] no annotation file for {wit_type} n°{witness.id}")
+        return {
+            "error": "the annotations were not yet generated"
+        }  # TODO find a way to display error msg
+
+    wit_imgs = get_imgs(get_img_prefix(witness, wit_type))
+
+    canvas_list = []
+    for line in lines:
+        # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
+        if len(line.split()) == 2:
+            _, img_file = line.split()
+            # use the image number as canvas number because it is more reliable that the one provided in the anno file
+            canvas_nb = int(img_file.split("_")[1].split(".")[0])
+            if img_file in wit_imgs:
+                canvas_list.append((canvas_nb, img_file))
 
     try:
         for canvas_nb, img_file in canvas_list:
@@ -108,7 +137,13 @@ def test(request, wit_id, wit_type):
         )
 
     return JsonResponse(
-        {"get_canvas_list": canvas_list, "canvas_annos": canvas_annos}, safe=False
+        {
+            "get_canvas_list": canvas_list,
+            "wit_img": wit_imgs,
+            "lines": lines,
+            "canvas_annos": canvas_annos,
+        },
+        safe=False,
     )
 
 
