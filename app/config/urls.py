@@ -14,7 +14,8 @@ from app.webapp.views import (
     PlaceAutocomplete,
     canvas_annotations,
     export_anno_img,
-    witness_annotations,
+    witness_sas_annotations,
+    test,
     validate_annotation,
 )
 
@@ -29,8 +30,13 @@ urlpatterns = [
     ),
     path(
         f"{APP_NAME}/<str:wit_type>/<int:wit_id>/annotations/",
-        witness_annotations,
+        witness_sas_annotations,
         name="witness-annotations",
+    ),
+    path(
+        f"{APP_NAME}/<str:wit_type>/<int:wit_id>/test/",
+        test,
+        name="test",
     ),
     path(
         f"{APP_NAME}/iiif/<str:version>/volume/<int:wit_id>/manifest.json",

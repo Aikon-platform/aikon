@@ -14,8 +14,8 @@ function getWitType() {
 
 function getWitId() {
     const currentUrl = getUrl();
-    if (currentUrl.includes("show")) {
-        return extractNb(currentUrl).replace("8000,", ""); // todo: remove 8000 because of localhost
+    if (currentUrl.includes("show")){
+        return extractNb(currentUrl.split("/show")[0]).replace("8000,",""); // todo: remove 8000 because of localhost
     }
     return null;
 }
@@ -196,14 +196,15 @@ function validateAnnotations(witId = null) {
             `Une fois validées, les annotations de l'ensemble du ${witType} ne pourront plus être modifiées. Continuer ?`)) {
         fetch(`/${APP_NAME}/iiif/v2/${witType}/${witId}/validate/`)
             .then(response => {
-                if (response.status === 200) {
-                    // window.open(`${SAS_APP_URL}/indexView.html?iiif-content=${toManifest(witId, witType, "v2")}`);
-                    window.open(`${APP_URL}/${APP_NAME}-admin/${witType}/`)
-                } else {
-                    throw new Error(`Could not validate annotations of ${witType} #${witId}.`);
-                }
-            }).catch(error => {
-                showMessage(`Error: ${error.message}`);
-            });
+            if (response.status === 200) {
+                // window.replace(`${SAS_APP_URL}/indexView.html?iiif-content=${toManifest(witId, witType, "v2")}`);
+                try { window.replace(`${APP_URL}/${APP_NAME}-admin/vhsapp/${witType}/`); }
+                catch(e) { window.location = `${APP_URL}/${APP_NAME}-admin/vhsapp/${witType}/`; }
+            } else {
+                throw new Error(`Could not validate annotations of ${witType} #${witId}.`);
+            }
+        }).catch(error => {
+            showMessage(`Error: ${error.message}`);
+        });
     }
 }

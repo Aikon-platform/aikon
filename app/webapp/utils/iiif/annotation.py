@@ -365,20 +365,25 @@ def formatted_wit_anno(witness, wit_type):
     canvas_annos = []
     wit_anno_ids = []
 
-    for canvas_nb, img_file in get_canvas_list(witness, wit_type):
-        c_annos = get_indexed_canvas_annos(canvas_nb, witness.id, wit_type)
-        coord_annos = []
+    try:
+        for canvas_nb, img_file in get_canvas_list(witness, wit_type):
+            c_annos = get_indexed_canvas_annos(canvas_nb, witness.id, wit_type)
+            coord_annos = []
 
-        if bool(c_annos):
-            coord_annos = [
-                (
-                    get_coord_from_anno(anno),
-                    get_id_from_anno(anno),
-                )
-                for anno in c_annos
-            ]
-            wit_anno_ids.extend(anno_id for _, anno_id in coord_annos)
+            if bool(c_annos):
+                coord_annos = [
+                    (
+                        get_coord_from_anno(anno),
+                        get_id_from_anno(anno),
+                    )
+                    for anno in c_annos
+                ]
+                wit_anno_ids.extend(anno_id for _, anno_id in coord_annos)
 
-        canvas_annos.append((canvas_nb, coord_annos, img_file))
+            canvas_annos.append((canvas_nb, coord_annos, img_file))
+    except ValueError as e:
+        log(
+            f"[formatted_wit_anno] Error when generating auto annotation list (probably no annotation file): {e}"
+        )
 
     return wit_anno_ids, canvas_annos

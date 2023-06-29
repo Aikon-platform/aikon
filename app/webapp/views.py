@@ -26,6 +26,8 @@ from app.webapp.utils.iiif.annotation import (
     check_wit_annotation,
     get_anno_img,
     formatted_wit_anno,
+    get_canvas_list,
+    get_indexed_canvas_annos,
 )
 
 
@@ -83,10 +85,18 @@ def validate_annotation(request, wit_id, wit_type):
         return HttpResponse(f"An error occurred: {e}", status=500)
 
 
-def witness_annotations(request, wit_id, wit_type):
+def witness_sas_annotations(request, wit_id, wit_type):
     witness = get_object_or_404(Volume if wit_type == VOL else Manuscript, pk=wit_id)
     _, canvas_annos = formatted_wit_anno(witness, wit_type)
     return JsonResponse(canvas_annos, safe=False)
+
+
+def test(request, wit_id, wit_type):
+
+    return JsonResponse(
+        {"response": f"Nothing to test for {wit_type} #{wit_id}"},
+        safe=False,
+    )
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/")
