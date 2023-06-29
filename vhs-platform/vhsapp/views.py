@@ -139,6 +139,7 @@ def test(request, wit_id, wit_type):
     return JsonResponse(
         {
             "get_canvas_list": canvas_list,
+            "wit_prefix": get_img_prefix(witness, wit_type),
             "wit_img": wit_imgs,
             "lines": lines,
             "canvas_annos": canvas_annos,
