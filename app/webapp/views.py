@@ -29,7 +29,7 @@ from app.webapp.utils.iiif.annotation import (
 )
 
 
-def admin_vhs(request):
+def admin_app(request):
     return redirect("admin:index")
 
 

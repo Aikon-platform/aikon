@@ -48,7 +48,9 @@ def compare_manifests(manifest_url):
             )
             append_to_file(f"{app_id}: {num_canvases1} < {num_canvases2}", output_file)
             if "gallica" in source_manifest_url:
-                append_to_file(source_manifest_url, "gallica.txt")
+                append_to_file(
+                    f"{app_id} {source_manifest_url} {num_canvases1 - 1}", "gallica.txt"
+                )
         elif num_canvases2 < num_canvases1:
             print(
                 f"👽 {app_id}: The source manifest ({source_manifest_url}) has fewer canvases: {num_canvases2} < {num_canvases1}"
