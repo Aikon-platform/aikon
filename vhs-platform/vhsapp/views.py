@@ -102,48 +102,9 @@ def witness_sas_annotations(request, wit_id, wit_type):
 
 
 def test(request, wit_id, wit_type):
-    witness = get_object_or_404(Volume if wit_type == VOL else Manuscript, pk=wit_id)
-    canvas_annos = {}
-
-    lines = get_txt_annos(
-        witness.id, VOL_ANNO_PATH if wit_type == VOL else MS_ANNO_PATH
-    )
-    if not lines:
-        log(f"[get_canvas_list] no annotation file for {wit_type} n°{witness.id}")
-        return {
-            "error": "the annotations were not yet generated"
-        }  # TODO find a way to display error msg
-
-    wit_imgs = get_imgs(get_img_prefix(witness, wit_type))
-
-    canvas_list = []
-    for line in lines:
-        # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
-        if len(line.split()) == 2:
-            _, img_file = line.split()
-            # use the image number as canvas number because it is more reliable that the one provided in the anno file
-            canvas_nb = int(img_file.split("_")[1].split(".")[0])
-            if img_file in wit_imgs:
-                canvas_list.append((canvas_nb, img_file))
-
-    try:
-        for canvas_nb, img_file in canvas_list:
-            canvas_annos[canvas_nb] = get_indexed_canvas_annos(
-                canvas_nb, witness.id, wit_type
-            )
-    except ValueError as e:
-        log(
-            f"[witness_auto_annotations] Error when generating auto annotation list (probably no annotation file): {e}"
-        )
 
     return JsonResponse(
-        {
-            "get_canvas_list": canvas_list,
-            "wit_prefix": get_img_prefix(witness, wit_type),
-            "wit_img": wit_imgs,
-            "lines": lines,
-            "canvas_annos": canvas_annos,
-        },
+        {"response": f"Nothing to test for {wit_type} #{wit_id}"},
         safe=False,
     )
 
