@@ -8,7 +8,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
 from django.contrib.auth.decorators import login_required
 
-from app.webapp.models.witness import Volume, Manuscript
+from app.webapp.models.OLD.witness import Volume, Manuscript
 from app.webapp.models.utils.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from app.config.settings import (
     APP_URL,
@@ -92,7 +92,6 @@ def witness_sas_annotations(request, wit_id, wit_type):
 
 
 def test(request, wit_id, wit_type):
-
     return JsonResponse(
         {"response": f"Nothing to test for {wit_type} #{wit_id}"},
         safe=False,
