@@ -8,11 +8,12 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
 from django.contrib.auth.decorators import login_required
 
-from app.webapp.models.OLD.witness import Volume, Manuscript
+from app.webapp.models.volume import Volume
+from app.webapp.models.witness import Witness
+from app.webapp.models.OLD.witness import Manuscript
 from app.webapp.models.utils.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from app.config.settings import (
     APP_URL,
-    CANTALOUPE_APP_URL,
     SAS_APP_URL,
     APP_NAME,
     ENV,

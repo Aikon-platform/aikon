@@ -31,7 +31,7 @@ from app.webapp.utils.iiif.validation import (
 )
 
 from app.webapp.utils.iiif.download import extract_images_from_iiif_manifest
-from app.webapp.models.witness import Volume, Manuscript
+from app.webapp.models.OLD.witness import Volume, Manuscript
 
 
 class Digitization(models.Model):
@@ -42,6 +42,7 @@ class Digitization(models.Model):
 
     class Meta:
         abstract = True
+        app_label = "webapp"
 
 
 #############################
@@ -54,6 +55,7 @@ class Picture(Digitization):
         verbose_name = "Image file"
         verbose_name_plural = "Images files"
         abstract = True  # TODO: make this class not abstract
+        app_label = "webapp"
 
     def __str__(self):
         return self.image.name
@@ -126,6 +128,7 @@ class Pdf(Digitization):
         verbose_name = "PDF File"
         verbose_name_plural = "PDF Files"
         abstract = True  # TODO: make this class not abstract
+        app_label = "webapp"
 
     def __str__(self):
         return self.pdf.name
@@ -219,6 +222,7 @@ class Manifest(Digitization):
         verbose_name = "IIIF manifest"
         verbose_name_plural = "IIIF manifests"
         abstract = True  # TODO: make this class not abstract
+        app_label = "webapp"
 
     manifest = models.URLField(
         verbose_name=MANIFEST,

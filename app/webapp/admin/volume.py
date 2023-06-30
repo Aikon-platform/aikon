@@ -12,5 +12,5 @@ class VolumeFilter(AutocompleteFilter):
 
 @admin.register(Volume)
 class VolumeAdmin(UnregisteredAdmin):
-    search_fields = ("name",)
-    list_filter = ("name",)
+    search_fields = ("title",)
+    list_filter = ("title",)

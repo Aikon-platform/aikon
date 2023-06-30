@@ -7,20 +7,22 @@ class Author(models.Model):
     class Meta:
         verbose_name = "Auteur"
         verbose_name_plural = "Auteurs"
+        app_label = "webapp"
 
     def __str__(self):
         return self.name
 
 
-class Work(models.Model):
-    title = models.CharField(verbose_name="Titre", max_length=600, unique=True)
-
-    class Meta:
-        verbose_name = "Titre"
-        verbose_name_plural = "Titres"
-
-    def __str__(self):
-        return self.title
+# class Work(models.Model):
+#     title = models.CharField(verbose_name="Titre", max_length=600, unique=True)
+#
+#     class Meta:
+#         verbose_name = "Titre"
+#         verbose_name_plural = "Titres"
+#         app_label = "webapp"
+#
+#     def __str__(self):
+#         return self.title
 
 
 class DigitizedVersion(models.Model):
@@ -29,6 +31,7 @@ class DigitizedVersion(models.Model):
     class Meta:
         verbose_name = "Source de la version numérisée"
         verbose_name_plural = "Sources des versions numérisées"
+        app_label = "webapp"
 
     def __str__(self):
         return self.source

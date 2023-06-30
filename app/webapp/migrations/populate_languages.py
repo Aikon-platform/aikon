@@ -192,9 +192,9 @@ def populate_languages(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("webapp", "0001_initial"),
-    ]
+    # dependencies = [
+    #     ("webapp", "0001_initial"),
+    # ]
     operations = [
         migrations.RunPython(populate_languages),
     ]
