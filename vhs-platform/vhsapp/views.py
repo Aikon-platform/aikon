@@ -102,7 +102,6 @@ def witness_sas_annotations(request, wit_id, wit_type):
 
 
 def test(request, wit_id, wit_type):
-
     return JsonResponse(
         {"response": f"Nothing to test for {wit_type} #{wit_id}"},
         safe=False,

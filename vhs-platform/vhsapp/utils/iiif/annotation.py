@@ -284,9 +284,9 @@ def set_canvas(seq, canvas_nb, img_name, img, version):
         anno.text("Annotation")
 
 
-def has_annotations(witness, wit_type):
+def has_annotations(witness, wit_abbr):
     # if there is at least one image file named after the current witness
-    wit_dir = "manuscripts" if wit_type == "ms" else "volumes"
+    wit_dir = "manuscripts" if wit_abbr == MS_ABBR else "volumes"
     if len(glob(f"{BASE_DIR}/{MEDIA_PATH}/{wit_dir}/annotation/{witness.id}.txt")) > 0:
         return True
     return False
