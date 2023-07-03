@@ -27,7 +27,7 @@ class IIIFDownloader:
         self,
         manifest_url,
         witness_ref,
-        sleep=0.5,
+        sleep=2,
         max_dim=MAX_SIZE,
         min_dim=1500,
     ):
