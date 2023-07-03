@@ -10,6 +10,11 @@ Checks that a list of manifests has the correct number of canvases
 """
 
 output_file = "incomplete_manifests.txt"
+no_file = "no_manifests.txt"
+anno_file = "manifest_to_annotate.txt"
+download_file = "manifest_to_download.txt"
+ok_file = "complete_manifests.txt"
+gallica_file = "gallica.txt"
 
 
 def compare_manifests(manifest_url):
@@ -28,7 +33,7 @@ def compare_manifests(manifest_url):
             if metadata["label"] == "Is annotated":
                 is_annotated = bool(metadata["value"])
     except KeyError as e:
-        append_to_file(f"🛑 {app_id}", "no_manifests.txt")
+        append_to_file(f"🛑 {app_id}", no_file)
         print(f"🛑 Non existing metadata for {app_id}: {e}")
         return
 
@@ -49,13 +54,11 @@ def compare_manifests(manifest_url):
                 f"💩 {app_id} has fewer canvases than original: {num_canvases1} < {num_canvases2}"
             )
             append_to_file(f"{app_id}: {num_canvases1} < {num_canvases2}", output_file)
-            append_to_file(
-                f"{source_manifest_url} {num_canvases1}", "manifest_to_download.txt"
-            )
+            append_to_file(f"{source_manifest_url} {num_canvases1}", download_file)
 
             if "gallica" in source_manifest_url:
                 append_to_file(
-                    f"{app_id} {source_manifest_url} {num_canvases1 - 1}", "gallica.txt"
+                    f"{app_id} {source_manifest_url} {num_canvases1 - 1}", gallica_file
                 )
         elif num_canvases2 < num_canvases1:
             print(
@@ -63,16 +66,16 @@ def compare_manifests(manifest_url):
             )
         else:
             if not is_annotated:
-                append_to_file(f"{manifest_url}", "manifest_to_annotate.txt")
-            append_to_file(manifest_url, "complete_manifests.txt")
+                append_to_file(f"{manifest_url}", anno_file)
+            append_to_file(manifest_url, ok_file)
             print(
                 f"👌 {app_id}: Both manifests have the same number of canvases: {num_canvases1}."
             )
             return
     else:
         if not is_annotated:
-            append_to_file(f"{manifest_url}", "manifest_to_annotate.txt")
-        append_to_file(manifest_url, "complete_manifests.txt")
+            append_to_file(f"{manifest_url}", anno_file)
+        append_to_file(manifest_url, ok_file)
         print(f"👌 {app_id}: No source manifest found in the metadata.")
         return
 
@@ -82,7 +85,7 @@ def fetch_manifest(manifest_url):
         response = requests.get(manifest_url)
         return response.json()
     except requests.exceptions.RequestException as e:
-        print(f"🛑 Non existing manifest for {get_app_id(manifest_url)}: {e}")
+        print(f"🛑 Non-existing manifest for {get_app_id(manifest_url)}: {e}")
     except json.JSONDecodeError as e:
         print(f"🛑 Invalid JSON in the manifest for {get_app_id(manifest_url)}: {e}")
     except Exception as e:
