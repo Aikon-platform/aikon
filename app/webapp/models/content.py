@@ -71,3 +71,7 @@ class Content(models.Model):
         verbose_name=get_name("page_max"), null=True, blank=True
     )
     tags = models.ManyToManyField(Tag, verbose_name=get_name("Tag"))
+
+    def get_roles(self):
+        # Django automatically creates a reverse relationship from Content to Role
+        return self.role_set.all()

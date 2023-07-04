@@ -6,6 +6,7 @@ from app.webapp.utils.paths import BASE_DIR, LOG_PATH, MEDIA_DIR, STATIC_DIR
 ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
 APP_NAME = ENV("APP_NAME")
+WEBAPP_NAME = "webapp"  # TODO change name of the app
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
@@ -32,7 +33,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "webapp",
+    f"{WEBAPP_NAME}",
     "nested_admin",
     "fontawesomefree",
     "admin_searchable_dropdown",

@@ -32,7 +32,7 @@ from app.webapp.models.utils.constants import (
     PDF,
     MANIFEST,
 )
-from app.webapp.utils.functions import convert_to_jpeg, get_last_file
+from app.webapp.utils.functions import get_last_file
 from app.webapp.utils.paths import (
     BASE_DIR,
     IMG_PATH,
@@ -62,6 +62,7 @@ def rename_file(digitization, original_filename):
     """
     digitization.ext = original_filename.split(".")[-1]
     new_filename = digitization.get_filename()
+    # TODO: create fct that do not erase the file if a image was already recorded with the same name
     return f"{digitization.get_relative_path()}/{new_filename}.{digitization.ext}"
 
 
@@ -121,13 +122,16 @@ class Digitization(models.Model):
         return witness.get_ref()
 
     def get_digit_type(self):
-        # NOTE should be returning "Image" / "PDF" / "Manifest"
-        return self.digit_type[1]
+        # NOTE should be returning "image" / "pdf" / "manifest"
+        return self.digit_type
 
     def get_filename(self):
         """
         Returns filename without extension
         """
+        # TODO: find a solution to have multiple digitizations without the same name
+        # OLD return self.pdf.name.split("/")[-1].split(".")[0]
+        # e.g. self.pdf.name = "pdf/filename.pdf" => filename = "filename"
         try:
             return f"{self.get_wit_ref()}{self.get_nb()}"
         except Exception:
@@ -137,15 +141,23 @@ class Digitization(models.Model):
         digit_type = self.get_digit_type()
 
         if digit_type == IMG:
-            # TODO check if image_delete can be put here
-            if self.image.name.split(".")[1] != "JPEG":
+            # NOTE old version
+            # if self.image:
+            #     img = Image.open(self.image)
+            #     if img.format != "JPEG":
+            #         self.image = convert_to_jpeg(self.image)
+
+            ext = self.image.name.split(".")[1]
+            if ext != "jpg" and ext != "jpeg":
                 self.to_jpg()
             super().save(*args, **kwargs)
 
         elif digit_type == PDF:
             super().save(*args, **kwargs)
             # Run the PDF to image async conversion task in the background using threading
-            t = threading.Thread(target=self.to_jpg())
+            t = threading.Thread(
+                target=self.to_jpg()
+            )  # TODO check if a class method is working with threading
             t.start()
 
         elif digit_type == MANIFEST:
@@ -158,7 +170,9 @@ class Digitization(models.Model):
             t.start()
 
     def delete(self, using=None, keep_parents=False):
-        super().delete()
+        # TODO check if image_delete can be put here
+
+        # super().delete()
         digit_type = self.get_digit_type()
 
         if digit_type == IMG:
@@ -173,6 +187,7 @@ class Digitization(models.Model):
         self.ext = extension
 
     def get_nb(self):
+        # TODO: find better solution
         if self.nb is None:
             self.set_nb(
                 get_last_file(self.get_absolute_path(), f"{self.get_wit_ref()}_") + 1
@@ -209,6 +224,7 @@ class Digitization(models.Model):
         digit_type = self.get_digit_type()
 
         if digit_type == IMG:
+            # NOTE: might be necessary to use an external function
             img = Image.open(self.image)
             if img.mode != "RGB":
                 img = img.convert("RGB")
@@ -220,7 +236,10 @@ class Digitization(models.Model):
             self.image = img_jpg
 
         if digit_type == PDF:
-            filename = self.get_wit_ref()
+            # NOTE see for threading or task queuing
+            filename = (
+                self.get_wit_ref()
+            )  # TODO see is not self.pdf.name (when multiple digits for one witness)
             page_nb = self.get_nb_of_pages()
             step = 2
             try:

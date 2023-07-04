@@ -13,4 +13,5 @@ class PersonFilter(AutocompleteFilter):
 @admin.register(Person)
 class PersonAdmin(UnregisteredAdmin):
     search_fields = ("name",)
-    # TODO
+    list_filter = ("name",)
+    list_per_page = 5

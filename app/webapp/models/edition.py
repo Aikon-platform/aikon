@@ -33,7 +33,6 @@ class Edition(models.Model):
         help_text=get_name("name_info"),
         unique=True,
     )
-
     place = models.ForeignKey(
         Place,
         verbose_name=get_name("pub_place"),

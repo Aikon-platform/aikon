@@ -23,7 +23,7 @@ from urllib.request import (
     build_opener,
     install_opener,
 )
-from app.config.settings import APP_NAME
+from app.config.settings import APP_NAME, APP_LANG
 from app.webapp.utils.paths import (
     BASE_DIR,
     MEDIA_DIR,
@@ -35,6 +35,10 @@ from app.webapp.models import get_wit_abbr, get_wit_type
 from app.webapp.models.utils.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from app.webapp.utils.constants import MAX_SIZE, MAX_RES
 from app.webapp.utils.logger import log, console
+
+
+def flatten(l):
+    return [item for sublist in l for item in sublist]
 
 
 def get_last_file(path, prefix):
@@ -49,40 +53,21 @@ def get_last_file(path, prefix):
     return last_number
 
 
-def rename_file(instance, filename, path):
-    """
-    Rename the file using uuid4
-    The file will be uploaded to "{path}/{uuid_filename}"
-    """
-    extension = filename.split(".")[-1]
-    try:
-        new_filename = f"{instance.get_wit_ref()}.{extension}"
-        if exists(f"{path}/{new_filename}"):
-            # TODO: create fct that increment the number if there is already a file named like so
-            # here it just erase the currently uploaded file
-            new_filename = f"{instance.get_wit_ref()}.{extension}"
-    except Exception:
-        # Set filename as random string
-        new_filename = f"{uuid4().hex}.{extension}"
-    # Return the path to the file
-    return f"{path}/{new_filename}"
-
-
-def convert_to_jpeg(image):
-    """
-    Convert the image to JPEG format
-    """
-    filename = image.name.split(".")[0]
-    img = Image.open(image)
-    if img.mode != "RGB":
-        img = img.convert("RGB")
-    # Create a BytesIO object
-    obj_io = BytesIO()
-    # Save image to BytesIO object
-    img.save(obj_io, format="JPEG")
-    # Create a File object
-    img_jpg = File(obj_io, name=f"{filename}.jpg")
-    return img_jpg
+# def convert_to_jpeg(image):
+#     """
+#     Convert the image to JPEG format
+#     """
+#     filename = image.name.split(".")[0]
+#     img = Image.open(image)
+#     if img.mode != "RGB":
+#         img = img.convert("RGB")
+#     # Create a BytesIO object
+#     obj_io = BytesIO()
+#     # Save image to BytesIO object
+#     img.save(obj_io, format="JPEG")
+#     # Create a File object
+#     img_jpg = File(obj_io, name=f"{filename}.jpg")
+#     return img_jpg
 
 
 def pdf_to_img(pdf_name):
@@ -193,29 +178,46 @@ def get_icon(icon, color=None):
     return mark_safe(f"<i class='fa-solid fa-{icon}' {color}></i>")
 
 
-def anno_btn(wit_ref, action="VISUALIZE"):
-    disabled = ""
-    btn = f"{action} ANNOTATIONS"
+def get_action(action, formatting=None):
+    actions = {
+        "view": {"en": "visualize", "fr": "visualiser les"},
+        "no_manifest": {"en": "no manifest", "fr": "pas de manifest"},
+        "no_anno": {"en": "no annotation yet", "fr": "non annoté"},
+        "download": {"en": "download", "fr": "télécharger les"},
+        "edit": {"en": "edit", "fr": "modifier les"},
+        "final": {"en": "final", "fr": "modifier les"},
+    }
+    action = actions[action][APP_LANG]
+    if formatting == "capitalize":  # => ACTION
+        action = action.capitalize()
+    if formatting == "title":  # => Action
+        action = action.title()
+    return action
 
-    if action == "VISUALIZE":
+
+def anno_btn(wit_ref, action="view"):
+    disabled = ""
+    btn = f"{get_action(action, 'capitalize')} ANNOTATIONS"
+
+    if action == "view":
         color = "#EFB80B"
         tag_id = "annotate_manifest_auto_"
         icon = get_icon("eye")
         btn = f"{action} SOURCE"
-    elif action == "EDIT":
+    elif action == "edit":
         color = "#008CBA"
         tag_id = "annotate_manifest_"
         icon = get_icon("pen-to-square")
-    elif action == "DOWNLOAD":
+    elif action == "download":
         color = "#ed8a11"
         tag_id = "download_manifest_"
         icon = get_icon("download")
-    elif action == "FINAL":
+    elif action == "final":
         color = "#4CAF50"
         tag_id = "manifest_final_"
         icon = get_icon("check")
-    elif action == "NO MANIFEST" or action == "NO ANNOTATION YET":
-        btn = action
+    elif action == "no_manifest" or action == "no_anno":
+        btn = get_action(action, "capitalize")
         color = "#878787"
         tag_id = "annotate_"
         icon = get_icon("eye-slash")

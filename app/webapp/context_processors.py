@@ -4,6 +4,7 @@ from app.config.settings import (
     APP_URL,
     CANTALOUPE_APP_URL,
     APP_NAME,
+    WEBAPP_NAME,
 )
 from app.webapp.utils.constants import APP_NAME_UPPER
 from app.webapp.models.utils.constants import MS, VOL, WIT, MS_ABBR, VOL_ABBR, WIT_ABBR
@@ -18,6 +19,7 @@ def global_variables(request):
         "APP_NAME": APP_NAME,
         "APP_LANG": APP_LANG,
         "APP_NAME_UPPER": APP_NAME_UPPER,
+        "WEBAPP_NAME": WEBAPP_NAME,
         "SAS_APP_URL": SAS_APP_URL,
         "APP_URL": APP_URL,
         "CANTALOUPE_APP_URL": CANTALOUPE_APP_URL,

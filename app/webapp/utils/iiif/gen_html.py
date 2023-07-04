@@ -8,9 +8,15 @@ from app.webapp.utils.constants import (
     APP_NAME_UPPER,
     APP_DESCRIPTION,
 )
-from app.webapp.utils.functions import get_icon, anno_btn
+from app.webapp.utils.functions import get_icon, anno_btn, get_action
 from app.webapp.models.utils.constants import VOL_ABBR, MS_ABBR, VOL, MS
-from app.config.settings import SAS_APP_URL, APP_URL, CANTALOUPE_APP_URL, APP_NAME
+from app.config.settings import (
+    SAS_APP_URL,
+    APP_URL,
+    CANTALOUPE_APP_URL,
+    APP_NAME,
+    APP_LANG,
+)
 from app.webapp.utils.iiif import IIIF_ICON
 from app.webapp.utils.iiif.manifest import gen_manifest_url
 
@@ -19,10 +25,10 @@ def get_link_manifest(obj_id, manifest_url, tag_id="url_manifest_"):
     return f"<a id='{tag_id}{obj_id}' href='{manifest_url}' target='_blank'>{manifest_url} {IIIF_ICON}</a>"
 
 
-def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, wit_type=VOL.lower()):
+def gen_btn(obj_id, action="view", vers=MANIFEST_AUTO, wit_type=VOL.lower()):
     msg_id = f"message_auto_{obj_id}" if vers == MANIFEST_AUTO else f"message_{obj_id}"
 
-    if action == "NO MANIFEST" or action == "NO ANNOTATION YET":
+    if action == "no_manifest" or action == "no_anno":
         return mark_safe(anno_btn(obj_id, action))
 
     obj_ref = f"{APP_NAME}/iiif/{vers}/{wit_type}/{obj_id}"
@@ -39,7 +45,7 @@ def gen_btn(obj_id, action="VISUALIZE", vers=MANIFEST_AUTO, wit_type=VOL.lower()
 
     return mark_safe(
         f"{get_link_manifest(obj_id, manifest, tag_id)}<br>{anno_btn(obj_id, action)}"
-        f'<a href="{download_url}" target="_blank">{get_icon("download")} Download annotation ({anno_type})</a>'
+        f'<a href="{download_url}" target="_blank">{get_icon("download")} {get_action("download")} annotations ({anno_type})</a>'
         f'<span id="{msg_id}" style="color:#FF0000"></span>'
     )
 

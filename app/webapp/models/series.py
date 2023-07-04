@@ -26,7 +26,7 @@ class Series(models.Model):
     date_max = models.IntegerField(
         verbose_name=get_name("date_max"), null=True, blank=True
     )
-    models.BooleanField(
+    is_public = models.BooleanField(
         verbose_name=get_name("is_public"), default=False, help_text=PUBLISHED_INFO
     )
     edition = models.ForeignKey(
@@ -36,3 +36,6 @@ class Series(models.Model):
         blank=True,
         null=True,
     )
+
+    def get_witnesses(self):
+        return self.witness_set.all()
