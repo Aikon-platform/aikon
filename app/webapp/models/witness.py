@@ -19,6 +19,10 @@ def get_name(fieldname, plural=False):
             "fr": "lien externe (catalogue en ligne, etc.)",
         },
         "is_paginated": {"en": "paginated?", "fr": "paginé ?"},
+        "is_paginated_info": {
+            "en": "is the witness paginated (leave checked) or folioed (uncheck)?",
+            "fr": "le témoin est-il paginé (laisser coché) ou folioté (case à décocher)?",
+        },
         "volume": {"en": VOL, "fr": "tome"},
         "series": {"en": SER, "fr": "série"},
         "title": {"en": "title of the volume", "fr": "titre du volume"},
@@ -45,9 +49,7 @@ class Witness(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        cons_place = (
-            self.place.name if self.place.name else "Unknown place of conservation"
-        )
+        cons_place = self.place.name if self.place else "Unknown place of conservation"
         return f"{cons_place} | {self.id_nb} #{self.id}"
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -63,12 +65,16 @@ class Witness(models.Model):
         null=True,
     )
 
-    # TODO volume, series
     note = models.TextField(verbose_name=get_name("note"), max_length=1000, unique=True)
     nb_pages = models.IntegerField(
         verbose_name=get_name("nb_pages"),
         null=True,  # NOTE: this field can be automatically filled with the scan metadata
         blank=True,
+    )
+    is_paginated = models.BooleanField(
+        verbose_name=get_name("is_paginated"),
+        default=True,
+        help_text=f"{get_icon('page')} {get_name('is_paginated_info')}",
     )
     is_validated = models.BooleanField(
         verbose_name=get_name("is_validated"),
@@ -159,6 +165,9 @@ class Witness(models.Model):
         for content in self.get_contents():
             roles.append(content.get_roles())
         return flatten(roles)
+
+    def get_persons(self):
+        return self.content_set.values_list("roles__person", flat=True).distinct()
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.work.title)

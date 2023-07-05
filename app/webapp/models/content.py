@@ -8,6 +8,7 @@ from app.webapp.models.tag import Tag
 
 from app.webapp.models.utils.constants import CONT, WIT, WORK, TAG
 from app.webapp.models.utils.functions import get_fieldname
+from app.webapp.utils.functions import format_start_end
 
 
 def get_name(fieldname, plural=False):
@@ -20,6 +21,15 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, fields, plural)
 
 
+def folios_to_pages(page: str):
+    page_nb = int(page.replace("r", "").replace("v", ""))
+    if page.endswith("r"):
+        return page_nb * 2 - 1
+    if page.endswith("v"):
+        return page_nb * 2
+    return page_nb
+
+
 class Content(models.Model):
     class Meta:
         verbose_name = get_name("Content")
@@ -27,7 +37,7 @@ class Content(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        return ""  # TODO find a name
+        return f"{self.witness.__str__()} ({self.get_pages()})"
 
     witness = models.ForeignKey(
         Witness,
@@ -64,6 +74,7 @@ class Content(models.Model):
     date_max = models.IntegerField(
         verbose_name=get_name("date_max"), null=True, blank=True
     )
+    # TODO add field validation => when it is foliated, allow "v" and "r"
     page_min = models.IntegerField(
         verbose_name=get_name("page_min"), null=True, blank=True
     )
@@ -71,6 +82,9 @@ class Content(models.Model):
         verbose_name=get_name("page_max"), null=True, blank=True
     )
     tags = models.ManyToManyField(Tag, verbose_name=get_name("Tag"))
+
+    def get_pages(self):
+        return format_start_end(self.page_min, self.page_max)
 
     def get_roles(self):
         # Django automatically creates a reverse relationship from Content to Role

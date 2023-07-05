@@ -1,9 +1,5 @@
-import nested_admin
-from admin_extra_buttons.mixins import ExtraButtonsMixin
-from django.contrib import admin
-from django.utils.safestring import mark_safe
-
-from app.webapp.admin import DigitizationInline
+from app.config.settings import APP_LANG
+from app.webapp.admin import DigitizationInline, VolumeInline
 from app.webapp.models import MS_ABBR, MS, VOL
 from app.webapp.models.witness import Witness, get_name
 from app.webapp.utils.constants import (
@@ -12,37 +8,21 @@ from app.webapp.utils.constants import (
     MAX_ITEMS,
     TRUNCATEWORDS,
 )
-from app.webapp.utils.functions import anno_btn
-from app.webapp.utils.iiif.annotation import has_annotations
-from app.webapp.utils.iiif.gen_html import gen_manifest_btn, gen_btn
-from app.webapp.utils.iiif.manifest import has_manifest
 
 import nested_admin
 from admin_extra_buttons.decorators import button
 from admin_extra_buttons.mixins import ExtraButtonsMixin
 
 from django.contrib import admin, messages
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.template.defaultfilters import truncatewords_html
 from django.utils.safestring import mark_safe
 
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.utils.iiif.annotation import has_annotations
 from app.webapp.utils.iiif.manifest import has_manifest, gen_manifest_url
-
-from app.webapp.utils.iiif.gen_html import (
-    get_link_manifest,
-    gen_btn,
-    gen_manifest_btn,
-)
-from app.webapp.utils.functions import (
-    list_to_txt,
-    zip_img,
-    get_file_list,
-    get_pdf_imgs,
-    get_icon,
-    anno_btn,
-)
+from app.webapp.utils.iiif.gen_html import gen_btn, gen_manifest_btn
+from app.webapp.utils.functions import list_to_txt, get_pdf_imgs, anno_btn
 
 
 # TODO change MS/VOL
@@ -55,31 +35,10 @@ def get_img_prefix(obj: Witness, wit_abbr=MS_ABBR):
 
 @admin.register(Witness)
 class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
-    class Meta:
-        # TODO check if necessary since it is already defined in the Witness model
-        verbose_name = get_name("Witness")
-        verbose_name_plural = get_name("Witness", True)
-        abstract = True
-
+    # DEFINITION OF THE MAIN FORM => Add Witness
     class Media:
-        css = {"all": ("css/style.css",)}
-        js = ("js/jquery-3.6.1.js", "js/script.js")
-
-    # TODO clean that until the end of the class
-    search_fields = ("id_nb", "place")
-    # search_fields = (
-    #     "author__name",
-    #     "conservation_place",
-    #     "reference_number",
-    #     "remarks",
-    # )
-    list_filter = ("id_nb", "place")
-    inlines = [DigitizationInline]  # TODO check if necessary
-    ordering = ("id",)
-    # list_filter = (AuthorFilter, WorkFilter)
-    # autocomplete_fields = ("author", "work")
-    list_per_page = 100
-    exclude = ("slug", "created_at", "updated_at")
+        css = {"all": ("css/form.css",)}
+        js = ("js/witness-form.js",)
 
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
@@ -87,77 +46,138 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             "export_selected_manifests",
             "export_selected_iiif_images",
             "export_selected_images",
-            "export_selected_pdfs",
+            # TODO add export annotations as training data
         ]
-        if self.wit_type() == VOL:
-            self.actions += ["detect_similarity"]
 
+    ordering = ("id", "place__name")
+    list_per_page = 100
+
+    # Fields that are taken into account by the search bar
+    search_fields = (
+        "id_nb",
+        "place__name",
+        "type",
+        "contents__roles__person__name",
+        "contents__work__name",
+    )
+    # Filters options in the sidebar
+    list_filter = ("id_nb", "place")  # list_filter = (AuthorFilter, WorkFilter)
+    # Attributes to be excluded from the form fields
+    exclude = ("slug", "created_at", "updated_at")
+    # Dropdown fields
+    autocomplete_fields = ("place",)
+    # Fields that cannot be modified by the User
+    readonly_fields = ("manifest_auto", "manifest_v2")
+
+    # MARKER FORM FIELDS
     # info on fieldsets: https://docs.djangoproject.com/en/4.2/ref/contrib/admin/#django.contrib.admin.ModelAdmin.fieldsets
     fieldsets = (
         (
-            None,
-            {"fields": ["type", ("id_nb", "place")]},
-        ),  # place and id_nb should appear on the same line
-        (
-            "Optional Fields",
+            None,  # Text to be displayed in the banner on top of this part of the form
             {
-                "fields": ("title",),
-                "classes": ("collapse",),  # probably not collapse
-                "description": 'Only display if type is "manuscript"',  # TODO bilingual
+                "fields": [
+                    "type",
+                    ("id_nb", "place"),  # place and id_nb appear on the same line
+                ]
             },
         ),
+        """
+        ( # fields to be displayed only for prints (i.e. "wpr" and "tpr")
+            "Print description" if APP_LANG == "en" else "Description de l'imprimé",
+            {
+                "fields": ("title",),
+                "classes": ("print-field",),
+            },
+        ),
+        """,
     )
 
-    # fieldsets = (
-    #     (
-    #         "Chaque manuscrit correspond à un exemplaire de l'œuvre",
-    #         {
-    #             "fields": (
-    #                 "manifest_auto",
-    #                 "manifest_v2",
-    #                 "manifest_final",
-    #                 "author",
-    #                 # "work",
-    #                 "conservation_place",
-    #                 "reference_number",
-    #                 # "date_century",
-    #                 "date_free",
-    #                 "sheets",
-    #                 "origin_place",
-    #                 "remarks",
-    #                 "copyists",
-    #                 "miniaturists",
-    #                 "digitized_version",
-    #                 "pinakes_link",
-    #                 "published",
-    #             )
-    #         },
-    #     ),
-    # )
-
     def get_fieldsets(self, request, obj: Witness = None):
+        # called every time the form is rendered without need of refreshing the page
         fieldsets = super().get_fieldsets(request, obj=obj)
-        if obj and obj.type != "manuscript":
-            fieldsets = fieldsets[:-1]
+
+        # TODO: exclude manifest fields when no digitization was uploaded
+
+        if obj:
+            # when the witness is a print (i.e. "wpr" and "tpr"), display all the fields
+            if obj.type != "manuscript":
+                return fieldsets
+
+            # from copy import deepcopy
+            # exclude_fieldsets = deepcopy(fieldsets)
+            # exclude_fieldsets[0][1]["fields"] = exclude_fieldsets[0][1]["fields"][3:]
+
+            # else, exclude "title" TODO finish to remove "title"
+            fieldsets[0][1]["fields"] = tuple(
+                field for field in fieldsets[0][1]["fields"] if field != "title"
+            )
+
         return fieldsets
 
-    # def get_fieldsets(self, request, obj=None):
-    #     """
-    #     Show 3 first manifest fields only if the object exists
-    #     """
-    #     fieldsets = super(ManuscriptAdmin, self).get_fieldsets(request, obj)
-    #     if not obj:
-    #         from copy import deepcopy
-    #
-    #         exclude_fieldsets = deepcopy(fieldsets)
-    #         exclude_fieldsets[0][1]["fields"] = exclude_fieldsets[0][1]["fields"][3:]
-    #         return exclude_fieldsets
-    #     return fieldsets
+    # MARKER SUB-FORMS existing within the Witness form
+    inlines = [DigitizationInline, VolumeInline]
 
-    def wit_type(self):
-        # TODO: return the real wit type
-        return MS
+    def get_inline_instances(self, request, obj=None):
+        # TODO finish this
+        # called every time the form is rendered without need of refreshing the page
+        inline_instances = super().get_inline_instances(request, obj)
 
+        # Exclude Volume if the type is "manuscript"
+        if obj and obj.type == "manuscript":
+            inline_instances = [
+                inline
+                for inline in inline_instances
+                if not isinstance(inline, VolumeInline)
+            ]
+
+        return inline_instances
+
+    # MARKER ADDITIONAL FIELDS
+
+    def manifest_auto(self, obj, wit_abbr=MS_ABBR):
+        if obj.id:
+            img_prefix = get_img_prefix(obj, wit_abbr)
+            action = "view" if has_manifest(img_prefix) else "no_manifest"
+            return gen_btn(obj.id, action, MANIFEST_AUTO, self.wit_name().lower())
+        return "-"
+
+    manifest_auto.short_description = "Manifeste (automatique)"  # TODO bilingual
+
+    def manifest_v2(self, obj, wit_type=MS_ABBR):
+        if obj.id:
+            action = "final" if obj.manifest_final else "edit"
+            if not has_annotations(obj, wit_type):
+                action = "no_anno"
+            return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
+        return "-"
+
+    manifest_v2.short_description = "Manifeste (modifiable)"  # TODO bilingual
+
+    # MARKER SAVING METHODS
+
+    def save_file(self, request, obj):
+        # instantiated by inheritance (following code is fake) TODO check utilitu
+        files = request.FILES.getlist("imagewitness_set-0-image")
+        for file in files[:-1]:
+            obj.imagewitness_set.create(image=file)
+
+    def save_model(self, request, obj, form, change):
+        if not obj.user:
+            obj.user = request.user
+        obj.save()
+        messages.warning(
+            request,
+            "Le processus de conversion de.s fichier.s PDF en images et/ou d'extraction des images à partir de "
+            "manifeste.s externe.s est en cours. Veuillez patienter quelques instants pour corriger "
+            "les annotations automatiques.",  # TODO bilingual
+        )
+        self.save_file(request, obj)
+
+    # # # # # # # # # # # #
+    # MARKER WITNESS LIST #
+    # # # # # # # # # # # #
+
+    # MARKER LIST COLUMNS
     def is_annotated(self, obj: Witness, wit_abbr=MS_ABBR):
         # To display a button in the list of witnesses to know if they were annotated or not
         action = "final" if obj.is_validated else "edit"
@@ -179,36 +199,59 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
 
     manifest_link.short_description = "IIIF manifest"
 
-    readonly_fields = ("manifest_auto", "manifest_v2")
+    # TODO authors method to access all authors
+    def authors(self, obj: Witness):
+        return obj.get_persons()
 
-    def manifest_auto(self, obj, wit_abbr=MS_ABBR):
-        if obj.id:
-            img_prefix = get_img_prefix(obj, wit_abbr)
-            action = "view" if has_manifest(img_prefix) else "no_manifest"
-            return gen_btn(obj.id, action, MANIFEST_AUTO, self.wit_name().lower())
-        return "-"
+    authors.short_description = "persons"  # TODO bilingual and with use of constants
 
-    manifest_auto.short_description = "Manifeste (automatique)"  # TODO bilingual
+    # list of fields that are displayed in the witnesses list view
+    list_display = (
+        "id",
+        "id_nb",
+        "place",
+        "authors",
+        "manifest_link",
+        "is_annotated",
+    )
+    list_display_links = ("id_nb",)
 
-    def manifest_v2(self, obj, wit_type=MS_ABBR):
-        if obj.id:
-            action = "final" if obj.manifest_final else "edit"
-            if not has_annotations(obj, wit_type):
-                action = "no_anno"
-            return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
-        return "-"
+    # MARKER LIST ACTIONS
 
-    manifest_v2.short_description = "Manifeste (modifiable)"  # TODO bilingual
+    def get_img_list(self, queryset, with_img=True, with_pdf=True):
+        results = queryset.exclude()
+        result_list = []
+        # TODO redo this method, probably by creating a Witness method to retrieve witness images
+        # wit_type = self.wit_type()
+        #
+        # if with_img:
+        #     field_tag = (
+        #         f"{wit_type}__image{wit_type}__image"
+        #         if wit_type == VOL.lower()
+        #         else f"image{wit_type}__image"
+        #     )
+        #     img_list = results.values_list(field_tag, flat=True)
+        #     img_list = [img.split("/")[-1] for img in img_list if img is not None]
+        #     result_list = result_list + img_list
+        #
+        # if with_pdf:
+        #     field_tag = (
+        #         f"{wit_type}__pdf{wit_type}__pdf"
+        #         if wit_type == VOL.lower()
+        #         else f"pdf{wit_type}__pdf"
+        #     )
+        #     pdf_list = results.values_list(field_tag, flat=True)
+        #     pdf_list = [pdf.split("/")[-1] for pdf in pdf_list if pdf is not None]
+        #     result_list = result_list + get_pdf_imgs(pdf_list, wit_type)
 
-    def short_author(self, obj):
-        return truncatewords_html(obj.author, TRUNCATEWORDS)
+        return result_list
 
-    short_author.short_description = "Auteurs et/ou Éditeurs"
-
-    def short_work(self, obj):
-        return truncatewords_html(obj.work, TRUNCATEWORDS)
-
-    short_work.short_description = "Titre de l'œuvre"
+    @admin.action(
+        description="Exporter les images IIIF sélectionnées"
+    )  # TODO bilingual
+    def export_selected_iiif_images(self, request, queryset):
+        img_list = [gen_iiif_url(img) for img in self.get_img_list(queryset)]
+        return list_to_txt(img_list, f"IIIF_images")
 
     def check_selection(self, queryset, request):
         if len(queryset) > MAX_ITEMS:
@@ -220,56 +263,6 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             return True
         return False
 
-    def get_img_list(self, queryset, with_img=True, with_pdf=True):
-        results = queryset.exclude()
-        result_list = []
-        wit_type = self.wit_type()
-
-        if with_img:
-            field_tag = (
-                f"{wit_type}__image{wit_type}__image"
-                if wit_type == VOL.lower()
-                else f"image{wit_type}__image"
-            )
-            img_list = results.values_list(field_tag, flat=True)
-            img_list = [img.split("/")[-1] for img in img_list if img is not None]
-            result_list = result_list + img_list
-
-        if with_pdf:
-            field_tag = (
-                f"{wit_type}__pdf{wit_type}__pdf"
-                if wit_type == VOL.lower()
-                else f"pdf{wit_type}__pdf"
-            )
-            pdf_list = results.values_list(field_tag, flat=True)
-            pdf_list = [pdf.split("/")[-1] for pdf in pdf_list if pdf is not None]
-            result_list = result_list + get_pdf_imgs(pdf_list, wit_type)
-
-        return result_list
-
-    def save_file(self, request, obj):
-        # instantiated by inheritance (following code is fake)
-        files = request.FILES.getlist("imagewitness_set-0-image")
-        for file in files[:-1]:
-            obj.imagewitness_set.create(image=file)
-
-    def save_model(self, request, obj, form, change):
-        if not obj.user:
-            obj.user = request.user
-        obj.save()
-        messages.warning(
-            request,
-            "Le processus de conversion de.s fichier.s PDF en images et/ou d'extraction des images à partir de "
-            "manifeste.s externe.s est en cours. Veuillez patienter quelques instants pour corriger "
-            "les annotations automatiques.",
-        )
-        self.save_file(request, obj)
-
-    @admin.action(description="Exporter les images IIIF sélectionnées")
-    def export_selected_iiif_images(self, request, queryset):
-        img_list = [gen_iiif_url(img) for img in self.get_img_list(queryset)]
-        return list_to_txt(img_list, f"IIIF_images")
-
     # @admin.action(description="Exporter les images sélectionnées")
     # def export_selected_images(self, request, queryset):
     #     if self.check_selection(queryset, request):
@@ -277,50 +270,18 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     #     # NOTE get_file_list(IMG_PATH, self.get_img_list(queryset)) is returning None
     #     return zip_img(zipfile, get_file_list(IMG_PATH, self.get_img_list(queryset)))
 
-    # @admin.action(description="Exporter les documents PDF sélectionnés")
-    # def export_selected_pdfs(self, request, queryset):
-    #     if self.check_selection(queryset, request):
-    #         return HttpResponseRedirect(request.get_full_path())
-    #     return zip_img(
-    #         zipfile, self.get_img_list(queryset, with_img=False, with_pdf=True), "pdf"
-    #     )
-
-    @button(
-        permission="demo.add_demomodel1",
-        change_form=False,
-        html_attrs={"style": "background-color:#88FF88;color:black"},
-    )
-    def exporter_images(self, request):
-        return HttpResponseRedirect(
-            "https://iscd.huma-num.fr/media/images_vhs.zip"
-        )  # TODO CHANGE THAT
-
-    @admin.action(description="Exporter les manifests IIIF sélectionnés")
+    @admin.action(
+        description="Exporter les manifests IIIF sélectionnés"
+    )  # TODO bilingual
     def export_selected_manifests(self, request, queryset):
         # results = queryset.exclude(volume__isnull=True).values_list("volume__id")
-        results = queryset.values_list("id", "manifestmanuscript__manifest")
+        results = queryset.values_list(
+            "id", "manifestmanuscript__manifest"
+        )  # TODO make it available for all witnesses
         manifests = [
             gen_manifest_url(mnf[0], MANIFEST_V2, MS.lower()) for mnf in results
         ]
         return list_to_txt(manifests, "Manifest_IIIF")
-
-    # list of fields that are displayed in the all witnesses tab
-    list_display = (
-        "id",
-        "reference_number",
-        "conservation_place",
-        "short_author",
-        # "short_work",
-        # "date_century",
-        # "sheets",
-        # "published",
-        "manifest_link",
-        "is_annotated",
-    )
-    list_display_links = ("reference_number",)
-    # search_fields = ("author__name", "work__title")
-    autocomplete_fields = ("author", "digitized_version")
-    # list_editable = ("date_century",)
 
 
 class WitnessInline(nested_admin.NestedStackedInline):

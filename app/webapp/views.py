@@ -8,9 +8,8 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
 from django.contrib.auth.decorators import login_required
 
-from app.webapp.models.volume import Volume
 from app.webapp.models.witness import Witness
-from app.webapp.models.utils.constants import MS, VOL, MS_ABBR, VOL_ABBR
+from app.webapp.models.utils.constants import MS, VOL
 from app.config.settings import (
     APP_URL,
     SAS_APP_URL,
@@ -26,8 +25,6 @@ from app.webapp.utils.iiif.annotation import (
     check_wit_annotation,
     get_anno_img,
     formatted_wit_anno,
-    get_canvas_list,
-    get_indexed_canvas_annos,
 )
 
 
@@ -73,20 +70,18 @@ def validate_annotation(request, wit_id, wit_type):
     Validate the manually corrected annotations
     """
     try:
-        witness = get_object_or_404(
-            Volume if wit_type == VOL else Manuscript, pk=wit_id
-        )
+        witness = get_object_or_404(Witness, pk=wit_id)
         witness.manifest_final = True
         witness.save()
         return HttpResponse(status=200)
-    except (Manuscript.DoesNotExist, Volume.DoesNotExist):
-        return HttpResponse(f"{wit_type} #{wit_id} does not exist", status=500)
+    # except (Witness.DoesNotExist):
+    #     return HttpResponse(f"{wit_type} #{wit_id} does not exist", status=500)
     except Exception as e:
         return HttpResponse(f"An error occurred: {e}", status=500)
 
 
 def witness_sas_annotations(request, wit_id, wit_type):
-    witness = get_object_or_404(Volume if wit_type == VOL else Manuscript, pk=wit_id)
+    witness = get_object_or_404(Witness, pk=wit_id)
     _, canvas_annos = formatted_wit_anno(witness, wit_type)
     return JsonResponse(canvas_annos, safe=False)
 
@@ -100,7 +95,7 @@ def test(request, wit_id, wit_type):
 
 @login_required(login_url=f"/{APP_NAME}-admin/")
 def show_witness(request, wit_id, wit_type):
-    witness = get_object_or_404(Volume if wit_type == VOL else Manuscript, pk=wit_id)
+    witness = get_object_or_404(Witness, pk=wit_id)
 
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))

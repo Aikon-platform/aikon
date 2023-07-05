@@ -178,6 +178,16 @@ def get_icon(icon, color=None):
     return mark_safe(f"<i class='fa-solid fa-{icon}' {color}></i>")
 
 
+def format_start_end(start=None, end=None, no_info="?-?", separator="-"):
+    if bool(start) or bool(end):
+        start = start or "?"
+        end = end or "?"
+        if start == end:
+            return f"{start}"
+        return f"{start}{separator}{end}"
+    return no_info
+
+
 def get_action(action, formatting=None):
     actions = {
         "view": {"en": "visualize", "fr": "visualiser les"},

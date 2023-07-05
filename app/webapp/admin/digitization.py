@@ -5,6 +5,7 @@ from django.utils.safestring import mark_safe
 from app.config.settings import APP_NAME, WEBAPP_NAME
 from app.webapp.admin import UnregisteredAdmin
 from app.webapp.models.digitization import Digitization
+from app.webapp.models.utils.constants import IMG
 from app.webapp.utils.functions import gen_thumbnail
 from app.webapp.utils.iiif import gen_iiif_url, IIIF_ICON
 
@@ -24,9 +25,12 @@ class DigitizationAdmin(UnregisteredAdmin):
         self.search_fields = (f"=witness__id", "=image")
         self.autocomplete_fields = (f"witness",)
 
-    def thumbnail(self, obj):
-        # FOR IMAGES WHERE obj = Digitization (?)
-        return gen_thumbnail(gen_iiif_url(obj.image.name.split("/")[-1]), obj.image.url)
+    def thumbnail(self, obj: Digitization):
+        if obj.digit_type == IMG:
+            return gen_thumbnail(
+                gen_iiif_url(obj.image.name.split("/")[-1]), obj.image.url
+            )
+        # TODO for other types
 
 
 ############################
@@ -35,13 +39,9 @@ class DigitizationAdmin(UnregisteredAdmin):
 
 
 class DigitizationInline(admin.StackedInline):
-    class Media:
-        css = {"all": ("css/style.css",)}
-        js = ("fontawesomefree/js/all.min.js",)
-
     model = Digitization
     extra = 1
-    max_num = 1
+    max_num = 1  # TODO allow multiple digitizations
     readonly_fields = ("digit_preview",)
 
     def obj_id(self, obj):

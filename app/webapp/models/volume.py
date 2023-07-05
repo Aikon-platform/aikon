@@ -6,7 +6,14 @@ from app.webapp.models.utils.functions import get_fieldname
 
 
 def get_name(fieldname, plural=False):
-    return get_fieldname(fieldname, {}, plural)
+    fields = {
+        "number": {"en": "volume number", "fr": "numéro de tome"},
+        "number_info": {
+            "en": "number useful for classifying the different volumes of an edition, but not necessarily of historical value",
+            "fr": "numéro utile pour classer les différents tomes d'une édition, mais qui n'a pas nécessairement de valeur historique",
+        },
+    }
+    return get_fieldname(fieldname, fields, plural)
 
 
 class Volume(models.Model):
@@ -20,6 +27,12 @@ class Volume(models.Model):
 
     title = models.CharField(
         verbose_name=get_name("title"), max_length=150, unique=True
+    )
+    number = models.IntegerField(
+        verbose_name=get_name("number"),
+        help_text=get_name("number_info"),
+        blank=True,
+        null=True,
     )
     edition = models.ForeignKey(
         Edition,

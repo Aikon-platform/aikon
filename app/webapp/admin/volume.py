@@ -14,3 +14,11 @@ class VolumeFilter(AutocompleteFilter):
 class VolumeAdmin(UnregisteredAdmin):
     search_fields = ("title",)
     list_filter = ("title",)
+
+
+class VolumeInline(admin.StackedInline):
+    # NOTE Inline and not just only autocomplete_field? there won't be many version of one volume in the platform
+
+    model = Volume
+    # TODO create the sub-form for Volume inside the Content sub-form
+    autocomplete_fields = ("edition",)
