@@ -11,6 +11,7 @@ from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
 from vhsapp.utils.functions import credentials, console, log, list_to_txt
+from vhsapp.utils.paths import MS_ANNO_PATH, VOL_ANNO_PATH
 from vhsapp.utils.constants import (
     APP_NAME,
     APP_NAME_UPPER,
@@ -45,6 +46,26 @@ def manifest_volume(request, wit_id, version):
     Build a volume manifest using iiif-prezi library IIIF Presentation API 2.0
     """
     return JsonResponse(manifest_wit_type(wit_id, VOL, version))
+
+
+def receive_anno(request, wit_id, wit_type):
+    if request.method == "POST":
+        annotation_file = request.FILES["annotation_file"]
+
+        if wit_type == "manuscript":
+            with open(f"{MS_ANNO_PATH}/{wit_id}.txt", "wb") as f:
+                for chunk in annotation_file.chunks():
+                    f.write(chunk)
+            return JsonResponse({"message": "Annotation received."})
+
+        if wit_type == "volume":
+            with open(f"{VOL_ANNO_PATH}/{wit_id}.txt", "wb") as f:
+                for chunk in annotation_file.chunks():
+                    f.write(chunk)
+            return JsonResponse({"message": "Annotation received."})
+
+    else:
+        return JsonResponse({"message": "Invalid request."}, status=400)
 
 
 def export_anno_img(request, wit_id, wit_type):

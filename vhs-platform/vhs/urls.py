@@ -15,6 +15,7 @@ from vhsapp.views import (
     export_anno_img,
     witness_annotations,
     validate_annotation,
+    receive_anno,
 )
 
 
@@ -60,6 +61,11 @@ urlpatterns = [
         f"{APP_NAME}/iiif/{MANIFEST_AUTO}/<str:wit_type>/<int:wit_id>/annotation/",
         export_anno_img,
         name="annotation-auto",
+    ),
+    path(
+        f"{APP_NAME}/<str:wit_type>/<int:wit_id>/annotate/",
+        receive_anno,
+        name="receive-annotations",
     ),
 ]
 
