@@ -75,6 +75,7 @@ def pdf_to_img(pdf_name):
     Convert the PDF file to JPEG images
     """
     pdf_path = f"{BASE_DIR}/{MEDIA_DIR}/{pdf_name}"
+    Image.MAX_IMAGE_PIXELS = 900000000
 
     # e.g. pdf_name = "volumes/pdf/filename.pdf" => "filename"
     pdf_name = pdf_path.split("/")[-1].split(".")[0]
@@ -85,7 +86,7 @@ def pdf_to_img(pdf_name):
         for img_nb in range(1, page_nb + 1, step):
             batch_pages = convert_from_path(
                 pdf_path,
-                dpi=300,
+                dpi=500,
                 first_page=img_nb,
                 last_page=min(img_nb + step - 1, page_nb),
             )

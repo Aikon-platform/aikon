@@ -40,9 +40,11 @@ class DigitizationAdmin(UnregisteredAdmin):
 
 class DigitizationInline(admin.StackedInline):
     model = Digitization
-    extra = 1
-    max_num = 1  # TODO allow multiple digitizations
+    extra = 1  # Display only one empty form in the parent form
+    max_num = 5  # TODO change naming convention to allow multiple digitizations
     readonly_fields = ("digit_preview",)
+
+    # TODO choose first the type of digit then display the corresponding field
 
     def obj_id(self, obj):
         return obj.witness.id
@@ -74,6 +76,8 @@ class DigitizationInline(admin.StackedInline):
             fields.append("image")
 
         return list(set(fields))
+
+    #
 
 
 class DigitizationNestedInline(nested_admin.NestedStackedInline, DigitizationInline):
