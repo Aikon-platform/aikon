@@ -17,7 +17,12 @@ from vhsapp.models.constants import (
     IMG_INFO,
     MANIFEST_INFO,
 )
-from vhsapp.utils.functions import rename_file, convert_to_jpeg, pdf_to_img
+from vhsapp.utils.functions import (
+    rename_file,
+    convert_to_jpeg,
+    pdf_to_img,
+    annotate_wit,
+)
 from vhsapp.utils.paths import (
     BASE_DIR,
     IMG_PATH,
@@ -250,15 +255,29 @@ class ManifestVolume(Manifest):
     def save(self, *args, **kwargs):
         # Call the parent save method to save the model
         super().save(*args, **kwargs)
+
+        event = threading.Event()
+
         # Run the async extraction of images from an IIIF manifest in the background using threading
         t = threading.Thread(
             target=extract_images_from_iiif_manifest,
             args=(
                 self.manifest,
                 f"{VOL_ABBR}{self.volume.id}",
+                event,
             ),
         )
         t.start()
+
+        t2 = threading.Thread(
+            target=annotate_wit,
+            args=(
+                event,
+                f"{self.volume.id}",
+                f"{VOL_ABBR}",
+            ),
+        )
+        t2.start()
 
     def get_wit_ref(self):
         return f"vol{self.volume.id}"
@@ -270,15 +289,29 @@ class ManifestManuscript(Manifest):
     def save(self, *args, **kwargs):
         # Call the parent save method to save the model
         super().save(*args, **kwargs)
+
+        event = threading.Event()
+
         # Run the async extraction of images from an IIIF manifest in the background using threading
         t = threading.Thread(
             target=extract_images_from_iiif_manifest,
             args=(
                 self.manifest,
                 f"{MS_ABBR}{self.manuscript.id}",
+                event,
             ),
         )
         t.start()
+
+        t2 = threading.Thread(
+            target=annotate_wit,
+            args=(
+                event,
+                f"{self.manuscript.id}",
+                f"{MS_ABBR}",
+            ),
+        )
+        t2.start()
 
     def get_wit_ref(self):
         return f"ms{self.manuscript.id}"

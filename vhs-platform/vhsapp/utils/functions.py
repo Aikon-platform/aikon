@@ -25,9 +25,10 @@ from urllib.request import (
 )
 from vhsapp.models import get_wit_abbr, get_wit_type
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
-from vhsapp.utils.constants import APP_NAME, MAX_SIZE, MAX_RES
+from vhsapp.utils.constants import APP_NAME, MAX_SIZE, MAX_RES, APP_NAME, MANIFEST_AUTO
 from vhsapp.utils.paths import BASE_DIR, MEDIA_PATH, IMG_PATH, MS_PDF_PATH, VOL_PDF_PATH
 from vhsapp.utils.logger import log, console
+from vhs.settings import VHS_APP_URL
 
 
 def rename_file(instance, filename, path):
@@ -360,3 +361,19 @@ def get_imgs(wit_prefix):
             wit_imgs.append(img)
 
     return wit_imgs
+
+
+def annotate_wit(event, witness_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
+    wit_type = MS if wit_abbr == MS_ABBR else VOL
+
+    api_endpoint = f"http://dishas-ia:5000/run_detect"
+
+    manifest_url = (
+        f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{witness_id}/manifest.json"
+    )
+    data = {"manifest_url": manifest_url, "wit_abbr": wit_abbr}
+
+    event.wait()
+    requests.post(url=api_endpoint, data=data)
+
+    return print(f"Witness {witness_id} sent for diagram extraction")
