@@ -90,29 +90,36 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             },
         ),
         """,
+        (  # fields to be displayed only for prints (i.e. "wpr" and "tpr")
+            get_name("Digitization"),
+            {
+                "fields": ("title",),
+                "classes": ("print-field",),
+            },
+        ),
     )
 
-    def get_fieldsets(self, request, obj: Witness = None):
-        # called every time the form is rendered without need of refreshing the page
-        fieldsets = super().get_fieldsets(request, obj=obj)
-
-        # TODO: exclude manifest fields when no digitization was uploaded
-
-        if obj:
-            # when the witness is a print (i.e. "wpr" and "tpr"), display all the fields
-            if obj.type != "manuscript":
-                return fieldsets
-
-            # from copy import deepcopy
-            # exclude_fieldsets = deepcopy(fieldsets)
-            # exclude_fieldsets[0][1]["fields"] = exclude_fieldsets[0][1]["fields"][3:]
-
-            # else, exclude "title" TODO finish to remove "title"
-            fieldsets[0][1]["fields"] = tuple(
-                field for field in fieldsets[0][1]["fields"] if field != "title"
-            )
-
-        return fieldsets
+    # def get_fieldsets(self, request, obj: Witness = None):
+    #     # called every time the form is rendered without need of refreshing the page
+    #     fieldsets = super().get_fieldsets(request, obj=obj)
+    #
+    #     # TODO: exclude manifest fields when no digitization was uploaded
+    #
+    #     if obj:
+    #         # when the witness is a print (i.e. "wpr" and "tpr"), display all the fields
+    #         if obj.type != "manuscript":
+    #             return fieldsets
+    #
+    #         # from copy import deepcopy
+    #         # exclude_fieldsets = deepcopy(fieldsets)
+    #         # exclude_fieldsets[0][1]["fields"] = exclude_fieldsets[0][1]["fields"][3:]
+    #
+    #         # else, exclude "title" TODO finish to remove "title"
+    #         fieldsets[0][1]["fields"] = tuple(
+    #             field for field in fieldsets[0][1]["fields"] if field != "title"
+    #         )
+    #
+    #     return fieldsets
 
     # MARKER SUB-FORMS existing within the Witness form
     inlines = [DigitizationInline, VolumeInline]

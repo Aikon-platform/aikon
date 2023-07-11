@@ -13,7 +13,7 @@ common_fields = {
 }
 
 
-def get_fieldname(field, fields, plural=False):
+def get_fieldname(field, fields, plural=False, capitalise=False):
     # add try / except
     # add pluralize method
 

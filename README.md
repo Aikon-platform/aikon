@@ -43,7 +43,7 @@ brew install wget ca-certificates postgresql maven nginx libpq poppler redis gho
 ### Python environment
 
 ```bash
-python3 -m venv venv
+python3.10 -m venv venv
 source venv/bin/activate
 pip install -r app/requirements-dev.txt
 ```
@@ -117,17 +117,17 @@ Provide as well an `APP_LANG`: only "fr" or "en" values are supported for now
 
 Update database schema with models that are stored inside `app/webapp/migrations`
 ```bash
-./venv/bin/python app/manage.py migrate
+./venv/bin/python3.10 app/manage.py migrate
 ```
 
-Download static files to be stored in `app/staticfiles`
-```bash
-./venv/bin/python app/manage.py collectstatic
-```
+[//]: # (Download static files to be stored in `app/staticfiles`)
+[//]: # (```bash)
+[//]: # (./venv/bin/python3.10 app/manage.py collectstatic)
+[//]: # (```)
 
 Create a super user
 ```shell
-./venv/bin/python app/manage.py createsuperuser
+./venv/bin/python3.10 app/manage.py createsuperuser
 ```
 
 Create exception for port 8000
@@ -178,7 +178,7 @@ You should now see Mirador with default example manifests.
 
 Run server
 ```shell
-./venv/bin/python app/manage.py runserver localhost:8000
+./venv/bin/python3.10 app/manage.py runserver localhost:8000
 ```
 
 You can now visit the app at [http://localhost:8000](http://localhost:8000) and connect with the credentials you created
