@@ -140,8 +140,27 @@ class Pdf(Digitization):
         super().save(*args, **kwargs)
         # Run the PDF to image async conversion task in the background using threading
         # t = threading.Thread(target=self.to_img())
-        t = threading.Thread(target=pdf_to_img, args=(f"{self.pdf.name}",))
+
+        event = threading.Event()
+
+        t = threading.Thread(
+            target=pdf_to_img,
+            args=(
+                event,
+                f"{self.pdf.name}",
+            ),
+        )
         t.start()
+
+        t2 = threading.Thread(
+            target=annotate_wit,
+            args=(
+                event,
+                f"{self.volume.id if 'vol' in self.pdf.name else self.manuscript.id}",
+                f"{VOL_ABBR if 'vol' in self.pdf.name else MS_ABBR}",
+            ),
+        )
+        t2.start()
 
     def delete(self, using=None, keep_parents=False):
         self.pdf.storage.delete(self.pdf.name)

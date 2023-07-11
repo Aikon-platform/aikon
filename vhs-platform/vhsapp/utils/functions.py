@@ -67,7 +67,7 @@ def convert_to_jpeg(image):
     return img_jpg
 
 
-def pdf_to_img(pdf_name):
+def pdf_to_img(event, pdf_name):
     """
     Convert the PDF file to JPEG images
     """
@@ -89,6 +89,7 @@ def pdf_to_img(pdf_name):
             for page in batch_pages:
                 save_img(page, f"{pdf_name}_{img_nb:04d}.jpg")
                 img_nb += 1
+        event.set()
     except Exception as e:
         log(f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e}")
 
