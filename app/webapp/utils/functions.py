@@ -3,20 +3,16 @@ import io
 import json
 import os
 import re
-from os.path import exists
 from pathlib import Path
-from uuid import uuid4
 
 import PyPDF2
 import requests
 from PIL import Image
-from io import BytesIO
 
 from django.utils.html import format_html
 from django.http import HttpResponse
 from django.utils.safestring import mark_safe
 from pdf2image import pdfinfo_from_path, convert_from_path
-from django.core.files import File
 from urllib.request import (
     HTTPPasswordMgrWithDefaultRealm,
     HTTPBasicAuthHandler,
@@ -70,31 +66,43 @@ def get_last_file(path, prefix):
 #     return img_jpg
 
 
-def pdf_to_img(pdf_name):
+def pdf_to_img(pdf_name, dpi=MAX_RES):
     """
     Convert the PDF file to JPEG images
     """
-    pdf_path = f"{BASE_DIR}/{MEDIA_DIR}/{pdf_name}"
-    Image.MAX_IMAGE_PIXELS = 900000000
+    import subprocess
 
-    # e.g. pdf_name = "volumes/pdf/filename.pdf" => "filename"
-    pdf_name = pdf_path.split("/")[-1].split(".")[0]
-    pdf_info = pdfinfo_from_path(pdf_path, userpw=None, poppler_path=None)
-    page_nb = pdf_info["Pages"]
-    step = 2
+    pdf_path = f"{BASE_DIR}/{MEDIA_DIR}/{pdf_name}"
+    pdf_name = Path(pdf_name).stem
     try:
-        for img_nb in range(1, page_nb + 1, step):
-            batch_pages = convert_from_path(
-                pdf_path,
-                dpi=500,
-                first_page=img_nb,
-                last_page=min(img_nb + step - 1, page_nb),
-            )
-            for page in batch_pages:
-                save_img(page, f"{pdf_name}_{img_nb:04d}.jpg")
-                img_nb += 1
+        command = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {BASE_DIR / IMG_PATH / pdf_name} -sep _ "
+        subprocess.run(command, shell=True, check=True)
     except Exception as e:
-        log(f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e}")
+        log(
+            f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e} ({e.__class__.__name__})"
+        )
+
+    # pdf_path = f"{BASE_DIR}/{MEDIA_DIR}/{pdf_name}"
+    # Image.MAX_IMAGE_PIXELS = 900000000
+    #
+    # # e.g. pdf_name = "volumes/pdf/filename.pdf" => "filename"
+    # pdf_name = pdf_path.split("/")[-1].split(".")[0] # pdf_path.stem
+    # pdf_info = pdfinfo_from_path(pdf_path, userpw=None, poppler_path=None)
+    # page_nb = pdf_info["Pages"]
+    # step = 2
+    # try:
+    #     for img_nb in range(1, page_nb + 1, step):
+    #         batch_pages = convert_from_path(
+    #             pdf_path,
+    #             dpi=dpi,
+    #             first_page=img_nb,
+    #             last_page=min(img_nb + step - 1, page_nb),
+    #         )
+    #         for page in batch_pages:
+    #             save_img(page, f"{pdf_name}_{img_nb:04d}.jpg")
+    #             img_nb += 1
+    # except Exception as e:
+    #     log(f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e}")
 
 
 # def reduce_image_resolution(image, resolution):
@@ -114,7 +122,6 @@ def save_img(
     img_path=BASE_DIR / IMG_PATH,
     error_msg="Failed to save img",
     max_dim=MAX_SIZE,
-    dpi=MAX_RES,
     img_format="JPEG",
 ):
     # if glob.glob(img_path / img_filename):
