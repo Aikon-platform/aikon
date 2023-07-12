@@ -1,6 +1,7 @@
 import os
 
 from glob import glob
+from pathlib import Path
 
 from PIL import Image, UnidentifiedImageError
 from django.shortcuts import get_object_or_404
@@ -52,10 +53,16 @@ def process_images(work, seq, version):
     elif pdf_first:  # PDF
         # TODO: factorize with pdf_to_img() in functions.py
         with Pdf.open(f"{BASE_DIR}/{MEDIA_PATH}/{pdf_first.pdf}") as pdf_file:
-            for counter in range(1, len(pdf_file.pages) + 1):
-                img_name = pdf_first.pdf.name.split("/")[-1].replace(
-                    ".pdf", f"_{counter:04d}.jpg"
-                )
+            page_nb = len(pdf_file.pages)
+            digit_nb = len(str(page_nb))
+            pdf_name = Path(pdf_first.pdf.name).stem
+
+            if not os.path.exists(f"{pdf_name}_{str(1).zfill(digit_nb)}.jpg"):
+                digit_nb = 4
+
+            for counter in range(1, page_nb + 1):
+                img_name = f"{pdf_name}_{str(counter).zfill(digit_nb)}.jpg"
+
                 try:
                     set_canvas(
                         seq,
