@@ -4,6 +4,7 @@ import json
 import os
 import re
 from pathlib import Path
+from subprocess import CalledProcessError
 
 import PyPDF2
 import requests
@@ -77,10 +78,10 @@ def pdf_to_img(pdf_name, dpi=MAX_RES):
     try:
         command = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {BASE_DIR / IMG_PATH / pdf_name} -sep _ "
         subprocess.run(command, shell=True, check=True)
+    except CalledProcessError as e:
+        log(f"[pdf_to_img] Command to convert {pdf_name}.pdf failed", e)
     except Exception as e:
-        log(
-            f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e} ({e.__class__.__name__})"
-        )
+        log(f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images", e)
 
     # pdf_path = f"{BASE_DIR}/{MEDIA_DIR}/{pdf_name}"
     # Image.MAX_IMAGE_PIXELS = 900000000

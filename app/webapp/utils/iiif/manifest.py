@@ -57,11 +57,14 @@ def process_images(work, seq, version):
     elif pdf_first:  # PDF
         # TODO: factorize with pdf_to_img() in functions.py
         with Pdf.open(f"{BASE_DIR}/{MEDIA_DIR}/{pdf_first.pdf}") as pdf_file:
+            # TODO no need to open a pdf to access its nb of pages
             page_nb = len(pdf_file.pages)
             digit_nb = len(str(page_nb))
             pdf_name = Path(pdf_first.pdf.name).stem
 
-            if not os.path.exists(f"{pdf_name}_{str(1).zfill(digit_nb)}.jpg"):
+            if not os.path.exists(
+                BASE_DIR / IMG_PATH / f"{pdf_name}_{str(1).zfill(digit_nb)}.jpg"
+            ):
                 digit_nb = 4
 
             for counter in range(1, page_nb + 1):

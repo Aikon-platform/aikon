@@ -31,12 +31,16 @@ def get_color(msg_type=None):
     return TerminalColors.OKBLUE
 
 
-def log(msg):
+def log(msg, exception: Exception = None):
     """
     Record an error message in the system log
     """
     import logging
     import traceback
+
+    exc = ""
+    if exception:
+        exc = f"\n[{exception.__class__.__name__}] {exception}"
 
     trace = traceback.format_exc()
     if trace == "NoneType: None\n":
@@ -50,7 +54,7 @@ def log(msg):
     # Create a logger instance
     logger = logging.getLogger("django")
     # get_time() is already printed by the logger object
-    logger.error(f"\n{pprint(msg)}{trace}\n")
+    logger.error(f"{exc}\n{pprint(msg)}{trace}\n")
 
 
 def pprint(o):
