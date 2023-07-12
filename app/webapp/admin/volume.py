@@ -14,6 +14,7 @@ class VolumeFilter(AutocompleteFilter):
 class VolumeAdmin(UnregisteredAdmin):
     search_fields = ("title",)
     list_filter = ("title",)
+    autocomplete_fields = ("edition",)
 
 
 class VolumeInline(admin.StackedInline):

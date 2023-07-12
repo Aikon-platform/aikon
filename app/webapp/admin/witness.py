@@ -47,6 +47,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             "export_selected_iiif_images",
             "export_selected_images",
             # TODO add export annotations as training data
+            # TODO add
         ]
 
     ordering = ("id", "place__name")
@@ -65,7 +66,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     # Attributes to be excluded from the form fields
     exclude = ("slug", "created_at", "updated_at")
     # Dropdown fields
-    autocomplete_fields = ("place",)
+    autocomplete_fields = ("place", "volume")
     # Fields that cannot be modified by the User
     readonly_fields = ("manifest_auto", "manifest_v2")
 
@@ -81,15 +82,6 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
                 ]
             },
         ),
-        """
-        ( # fields to be displayed only for prints (i.e. "wpr" and "tpr")
-            "Print description" if APP_LANG == "en" else "Description de l'imprimé",
-            {
-                "fields": ("title",),
-                "classes": ("print-field",),
-            },
-        ),
-        """,
         (  # fields to be displayed only for prints (i.e. "wpr" and "tpr")
             get_name("Digitization"),
             {
@@ -98,6 +90,16 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             },
         ),
     )
+
+    """
+        ( # fields to be displayed only for prints (i.e. "wpr" and "tpr")
+            "Print description" if APP_LANG == "en" else "Description de l'imprimé",
+            {
+                "fields": ("title",),
+                "classes": ("print-field",),
+            },
+        ),
+        ,"""
 
     # def get_fieldsets(self, request, obj: Witness = None):
     #     # called every time the form is rendered without need of refreshing the page
@@ -122,7 +124,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     #     return fieldsets
 
     # MARKER SUB-FORMS existing within the Witness form
-    inlines = [DigitizationInline, VolumeInline]
+    inlines = [DigitizationInline]  # No VolumeInline but autocomplete_fields
 
     def get_inline_instances(self, request, obj=None):
         # TODO finish this
@@ -159,6 +161,9 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         return "-"
 
     manifest_v2.short_description = "Manifeste (modifiable)"  # TODO bilingual
+    # manifest_v2.admin_order_field = (
+    #     "-author__name"  # By what value to order this column in the admin list view
+    # )
 
     # MARKER SAVING METHODS
 

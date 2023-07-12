@@ -98,6 +98,7 @@ class Witness(models.Model):
     volume = models.ForeignKey(
         Volume,
         verbose_name=get_name("Volume"),
+        related_name="witness",  # to access the all witnesses from Volume
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
