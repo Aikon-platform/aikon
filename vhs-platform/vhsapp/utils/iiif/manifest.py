@@ -57,7 +57,9 @@ def process_images(work, seq, version):
             digit_nb = len(str(page_nb))
             pdf_name = Path(pdf_first.pdf.name).stem
 
-            if not os.path.exists(f"{pdf_name}_{str(1).zfill(digit_nb)}.jpg"):
+            if not os.path.exists(
+                BASE_DIR / IMG_PATH / f"{pdf_name}_{str(1).zfill(digit_nb)}.jpg"
+            ):
                 digit_nb = 4
 
             for counter in range(1, page_nb + 1):
