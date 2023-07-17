@@ -54,9 +54,16 @@ WIT_ABBR = "wit"
 IMG_ABBR = "img"
 PDF_ABBR = "pdf"
 MAN_ABBR = "man"
+PAG_ABBR = "pag"
+FOL_ABBR = "fol"
+OTH_ABBR = "oth"
 
 TPR = f"letterpress {PR}" if APP_LANG == "en" else "typographie"
 WPR = f"woodblock {PR}" if APP_LANG == "en" else "bois gravés"
+
+PAGE = "page" if APP_LANG == "en" else "paginé"
+FOLIO = "folio" if APP_LANG == "en" else "folioté"
+OTHER = "other" if APP_LANG == "en" else "autre"
 
 WIT_TYPE = (
     (MS_ABBR, MS.capitalize()),
@@ -70,6 +77,12 @@ DIGIT_TYPE = (
     (MAN_ABBR, MANIFEST.capitalize()),
 )
 
+PAGE_TYPE = (
+    (PAG_ABBR, PAGE.capitalize()),
+    (FOL_ABBR, FOLIO.capitalize()),
+    (OTH_ABBR, OTHER.capitalize()),
+)
+
 #############################
 #        HELP TEXTS         #
 #############################
@@ -77,7 +90,7 @@ DIGIT_TYPE = (
 PUBLISHED_INFO = (
     "Les informations seront accessibles aux autres utilisateurs de la base."
 )
-IMG_INFO = "Envoyez des images jusqu'à 2 Go."
+IMG_INFO = "" if APP_LANG == "en" else "Envoyez des images jusqu'à 2 Go."
 MANIFEST_INFO = """<div class='tooltip'>
                  <i class='fa-solid fa-circle-info' title='Manifest'></i>
                  <span class='tooltiptext'>A IIIF manifest is the package that contains all the information related

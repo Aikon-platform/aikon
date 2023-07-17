@@ -3,7 +3,7 @@ from glob import glob
 from django.utils.safestring import mark_safe
 
 from app.webapp.utils.constants import (
-    MANIFEST_AUTO,
+    MANIFEST_V1,
     MANIFEST_V2,
     APP_NAME_UPPER,
     APP_DESCRIPTION,
@@ -25,8 +25,8 @@ def get_link_manifest(obj_id, manifest_url, tag_id="url_manifest_"):
     return f"<a id='{tag_id}{obj_id}' href='{manifest_url}' target='_blank'>{manifest_url} {IIIF_ICON}</a>"
 
 
-def gen_btn(obj_id, action="view", vers=MANIFEST_AUTO, wit_type=VOL.lower()):
-    msg_id = f"message_auto_{obj_id}" if vers == MANIFEST_AUTO else f"message_{obj_id}"
+def gen_btn(obj_id, action="view", vers=MANIFEST_V1, wit_type=VOL.lower()):
+    msg_id = f"message_auto_{obj_id}" if vers == MANIFEST_V1 else f"message_{obj_id}"
 
     if action == "no_manifest" or action == "no_anno":
         return mark_safe(anno_btn(obj_id, action))
@@ -34,7 +34,7 @@ def gen_btn(obj_id, action="view", vers=MANIFEST_AUTO, wit_type=VOL.lower()):
     obj_ref = f"{APP_NAME}/iiif/{vers}/{wit_type}/{obj_id}"
     manifest = f"{APP_URL}/{obj_ref}/manifest.json"
 
-    if vers == MANIFEST_AUTO:
+    if vers == MANIFEST_V1:
         tag_id = "iiif_auto_"
         download_url = f"/{obj_ref}/annotation/"
         anno_type = "CSV"
@@ -51,7 +51,7 @@ def gen_btn(obj_id, action="view", vers=MANIFEST_AUTO, wit_type=VOL.lower()):
 
 
 def gen_manifest_btn(obj_id, wit_type=MS, has_manifest=True):
-    manifest = gen_manifest_url(obj_id, MANIFEST_AUTO, wit_type.lower())
+    manifest = gen_manifest_url(obj_id, MANIFEST_V1, wit_type.lower())
     mf = (
         f"<a href='{manifest}' target='_blank'>{IIIF_ICON}</a>"
         if has_manifest

@@ -198,6 +198,8 @@ def populate_languages(apps, schema_editor):
             lang=language["lang"], code=language["code"]
         )
 
+    # TODO: create ontology for the Tag class
+
 
 class Migration(migrations.Migration):
 

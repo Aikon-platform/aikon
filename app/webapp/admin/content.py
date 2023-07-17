@@ -1,5 +1,8 @@
+from nested_admin import nested
+import nested_admin
 from django.contrib import admin
 
+from app.webapp.admin.role import RoleInline
 from app.webapp.admin.admin import UnregisteredAdmin
 from app.webapp.models.content import Content, get_name
 
@@ -7,13 +10,22 @@ from app.webapp.models.content import Content, get_name
 @admin.register(Content)
 class ContentAdmin(UnregisteredAdmin):
     search_fields = ("work", "witness")
+    inlines = [RoleInline]
 
 
 class ContentInline(admin.StackedInline):
     model = Content
-    # TODO create the sub-form for Contents inside the Witness and Series forms
+    extra = 1  # Display only one empty form in the parent form
+
+    fields = [
+        "work",
+        ("page_min", "page_max"),
+        ("date_min", "date_max"),
+        "place",
+    ]
 
     autocomplete_fields = ("work", "place")
+    inlines = [RoleInline]
 
 
 # TabularInline: most common type of inline model. It displays the related models in a tabular format, similar to a table. Each row represents a related model instance. It is suitable for models with a large number of instances and provides a compact view.

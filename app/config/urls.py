@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.urls import path, include
 
 from app.config.settings import APP_NAME, MEDIA_URL, MEDIA_ROOT, DEBUG
-from app.webapp.utils.constants import MANIFEST_AUTO, MANIFEST_V2
+from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2
 
 from app.webapp.views import (
     show_witness,
@@ -64,7 +64,7 @@ urlpatterns = [
         name="canvas-annotations",
     ),
     path(
-        f"{APP_NAME}/iiif/{MANIFEST_AUTO}/<str:wit_type>/<int:wit_id>/annotation/",
+        f"{APP_NAME}/iiif/{MANIFEST_V1}/<str:wit_type>/<int:wit_id>/annotation/",
         export_anno_img,
         name="annotation-auto",
     ),

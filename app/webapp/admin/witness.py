@@ -1,9 +1,9 @@
 from app.config.settings import APP_LANG
-from app.webapp.admin import DigitizationInline, VolumeInline
+from app.webapp.admin import DigitizationInline, ContentInline
 from app.webapp.models import MS_ABBR, MS, VOL
 from app.webapp.models.witness import Witness, get_name
 from app.webapp.utils.constants import (
-    MANIFEST_AUTO,
+    MANIFEST_V1,
     MANIFEST_V2,
     MAX_ITEMS,
     TRUNCATEWORDS,
@@ -47,7 +47,6 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             "export_selected_iiif_images",
             "export_selected_images",
             # TODO add export annotations as training data
-            # TODO add
         ]
 
     ordering = ("id", "place__name")
@@ -67,39 +66,32 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     exclude = ("slug", "created_at", "updated_at")
     # Dropdown fields
     autocomplete_fields = ("place", "volume")
-    # Fields that cannot be modified by the User
-    readonly_fields = ("manifest_auto", "manifest_v2")
 
     # MARKER FORM FIELDS
     # info on fieldsets: https://docs.djangoproject.com/en/4.2/ref/contrib/admin/#django.contrib.admin.ModelAdmin.fieldsets
     fieldsets = (
         (
-            None,  # Text to be displayed in the banner on top of this part of the form
+            f"{get_name('Witness')} identification"
+            if APP_LANG == "en"
+            else f"Identification du {get_name('Witness')}",
             {
                 "fields": [
                     "type",
                     ("id_nb", "place"),  # place and id_nb appear on the same line
+                    ("page_type", "nb_pages"),  # same
+                    "note",
+                    "volume",
                 ]
             },
         ),
-        (  # fields to be displayed only for prints (i.e. "wpr" and "tpr")
-            get_name("Digitization"),
-            {
-                "fields": ("title",),
-                "classes": ("print-field",),
-            },
-        ),
+        # (  # fields to be displayed only for prints (i.e. "wpr" and "tpr")
+        #     "Print description" if APP_LANG == "en" else "Description de l'imprimé",
+        #     {
+        #         "fields": ("title",),
+        #         "classes": ("print-field",),
+        #     },
+        # ),
     )
-
-    """
-        ( # fields to be displayed only for prints (i.e. "wpr" and "tpr")
-            "Print description" if APP_LANG == "en" else "Description de l'imprimé",
-            {
-                "fields": ("title",),
-                "classes": ("print-field",),
-            },
-        ),
-        ,"""
 
     # def get_fieldsets(self, request, obj: Witness = None):
     #     # called every time the form is rendered without need of refreshing the page
@@ -124,7 +116,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     #     return fieldsets
 
     # MARKER SUB-FORMS existing within the Witness form
-    inlines = [DigitizationInline]  # No VolumeInline but autocomplete_fields
+    inlines = [DigitizationInline, ContentInline]
 
     def get_inline_instances(self, request, obj=None):
         # TODO finish this
@@ -132,43 +124,23 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         inline_instances = super().get_inline_instances(request, obj)
 
         # Exclude Volume if the type is "manuscript"
-        if obj and obj.type == "manuscript":
-            inline_instances = [
-                inline
-                for inline in inline_instances
-                if not isinstance(inline, VolumeInline)
-            ]
+        # if obj and obj.type == "manuscript":
+        #     inline_instances = [
+        #         inline
+        #         for inline in inline_instances
+        #         if not isinstance(inline, VolumeInline)
+        #     ]
 
         return inline_instances
 
     # MARKER ADDITIONAL FIELDS
 
-    def manifest_auto(self, obj, wit_abbr=MS_ABBR):
-        if obj.id:
-            img_prefix = get_img_prefix(obj, wit_abbr)
-            action = "view" if has_manifest(img_prefix) else "no_manifest"
-            return gen_btn(obj.id, action, MANIFEST_AUTO, self.wit_name().lower())
-        return "-"
-
-    manifest_auto.short_description = "Manifeste (automatique)"  # TODO bilingual
-
-    def manifest_v2(self, obj, wit_type=MS_ABBR):
-        if obj.id:
-            action = "final" if obj.manifest_final else "edit"
-            if not has_annotations(obj, wit_type):
-                action = "no_anno"
-            return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
-        return "-"
-
-    manifest_v2.short_description = "Manifeste (modifiable)"  # TODO bilingual
-    # manifest_v2.admin_order_field = (
-    #     "-author__name"  # By what value to order this column in the admin list view
-    # )
+    # TODO add a field to access to direct annotation int the list view
 
     # MARKER SAVING METHODS
 
     def save_file(self, request, obj):
-        # instantiated by inheritance (following code is fake) TODO check utilitu
+        # instantiated by inheritance (following code is fake) TODO check utility
         files = request.FILES.getlist("imagewitness_set-0-image")
         for file in files[:-1]:
             obj.imagewitness_set.create(image=file)
@@ -190,6 +162,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     # # # # # # # # # # # #
 
     # MARKER LIST COLUMNS
+    @admin.display(description="Annotation")
     def is_annotated(self, obj: Witness, wit_abbr=MS_ABBR):
         # To display a button in the list of witnesses to know if they were annotated or not
         action = "final" if obj.is_validated else "edit"
@@ -199,8 +172,6 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
                 action if has_annotations(obj, wit_abbr) else "no_anno",
             )
         )
-
-    is_annotated.short_description = "Annotation"
 
     def manifest_link(self, obj, wit_abbr=MS_ABBR):
         # To display a button in the list of witnesses to give direct link to witness manifest
@@ -302,9 +273,6 @@ class WitnessInline(nested_admin.NestedStackedInline):
 
     # TODO CHANGE FROM THIS TO END OF CLASS
     fields = [
-        "manifest_auto",
-        "manifest_v2",
-        "manifest_final",
         "title",
         "number_identifier",
         "place",
@@ -322,26 +290,26 @@ class WitnessInline(nested_admin.NestedStackedInline):
     def wit_name(self):
         return VOL
 
-    def get_fields(self, request, obj=None):
-        fields = list(super(WitnessInline, self).get_fields(request, obj))
-        exclude_set = set()
-        if not obj:  # obj will be None on the add page, and something on change pages
-            exclude_set.add("manifest_auto")
-            exclude_set.add("manifest_v2")
-            exclude_set.add("manifest_final")
-        return [f for f in fields if f not in exclude_set]
+    # def get_fields(self, request, obj=None):
+    #     fields = list(super(WitnessInline, self).get_fields(request, obj))
+    #     exclude_set = set()
+    #     if not obj:  # obj will be None on the add page, and something on change pages
+    #         exclude_set.add("manifest_v1")
+    #         exclude_set.add("manifest_v2")
+    #         exclude_set.add("manifest_final")
+    #     return [f for f in fields if f not in exclude_set]
 
     # # TODO use Abstract Model ManifestAdmin instead
-    # readonly_fields = ("manifest_auto", "manifest_v2")
+    # readonly_fields = ("manifest_v1", "manifest_v2")
     #
-    # def manifest_auto(self, obj):
+    # def manifest_v1(self, obj):
     #     if obj.id:
     #         img_prefix = get_img_prefix(obj, VOL_ABBR)
     #         action = "view" if has_manifest(img_prefix) else "no_manifest"
-    #         return gen_btn(obj.id, action, MANIFEST_AUTO, self.wit_name().lower())
+    #         return gen_btn(obj.id, action, MANIFEST_V1, self.wit_name().lower())
     #     return "-"
     #
-    # manifest_auto.short_description = "Manifeste (automatique)"
+    # manifest_v1.short_description = "Manifeste (automatique)"
     #
     # def manifest_v2(self, obj):
     #     if obj.id:

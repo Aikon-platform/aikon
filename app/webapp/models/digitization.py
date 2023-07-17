@@ -32,7 +32,7 @@ from app.webapp.models.utils.constants import (
     PDF,
     MANIFEST,
 )
-from app.webapp.utils.functions import get_last_file
+from app.webapp.utils.functions import get_last_file, get_icon
 from app.webapp.utils.paths import (
     BASE_DIR,
     IMG_PATH,
@@ -50,7 +50,21 @@ from app.webapp.models.witness import Witness
 
 def get_name(fieldname, plural=False):
     fields = {
-        "source": {"en": "digitization source", "fr": "source de la numérisation"}
+        "source": {"en": "digitization source", "fr": "source de la numérisation"},
+        "app_manifest": {
+            "en": "automatic annotations",
+            "fr": "annotations automatiques",
+        },
+        "manifest_v1": {
+            "en": "automatic annotations",
+            "fr": "annotations automatiques",
+        },
+        "manifest_v2": {"en": "corrected annotations", "fr": "annotations corrigées"},
+        "is_validated": {"en": "validate annotations", "fr": "valider les annotations"},
+        "is_validated_info": {
+            "en": "annotations will no longer be editable",
+            "fr": "les annotations ne seront plus modifiables",
+        },
     }
     return get_fieldname(fieldname, fields, plural)
 
@@ -105,6 +119,11 @@ class Digitization(models.Model):
         verbose_name=MANIFEST,
         help_text=MANIFEST_INFO,
         validators=[validate_manifest],
+    )
+    is_validated = models.BooleanField(
+        verbose_name=get_name("is_validated"),
+        default=False,
+        help_text=f"{get_icon('triangle-exclamation', '#efb80b')} {get_name('is_validated_info')}",
     )
 
     def get_witness(self):
@@ -220,6 +239,7 @@ class Digitization(models.Model):
     def to_jpg(self):
         """
         Convert images and pdf file to JPEG images
+        TODO check if it works
         """
         digit_type = self.get_digit_type()
 

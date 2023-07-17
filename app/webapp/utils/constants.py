@@ -10,7 +10,7 @@ SITE_TITLE = f"Portail de {APP_NAME_UPPER}"
 SITE_INDEX_TITLE = "Bienvenue sur le site d'administration"
 
 # Manifest versions
-MANIFEST_AUTO = "auto"
+MANIFEST_V1 = "auto"
 MANIFEST_V2 = "v2"
 
 # Maximum number of words to be kept in the truncated string

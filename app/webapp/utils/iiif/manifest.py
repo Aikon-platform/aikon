@@ -9,7 +9,7 @@ from iiif_prezi.factory import ManifestFactory, StructuralError
 from pikepdf import Pdf
 
 from app.webapp.utils.constants import (
-    MANIFEST_AUTO,
+    MANIFEST_V1,
     MANIFEST_V2,
     APP_NAME_UPPER,
     APP_DESCRIPTION,
@@ -118,7 +118,7 @@ def process_images(work, seq, version):
         raise Exception("There is no manifest!")
 
 
-def manifest_witness(wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
+def manifest_witness(wit_id, wit_abbr=MS_ABBR, version=MANIFEST_V1):
     """
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
@@ -186,5 +186,5 @@ def has_manifest(work):
     return False
 
 
-def gen_manifest_url(wit_id, vers=MANIFEST_AUTO, wit_type=VOL.lower()):
+def gen_manifest_url(wit_id, vers=MANIFEST_V1, wit_type=VOL.lower()):
     return f"{APP_URL}/{APP_NAME}/iiif/{vers}/{wit_type}/{wit_id}/manifest.json"

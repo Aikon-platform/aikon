@@ -5,7 +5,7 @@ from django.utils.text import slugify
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.volume import Volume
 from app.webapp.models.series import Series
-from app.webapp.models.utils.constants import MS, VOL, WIT, WIT_TYPE, SER
+from app.webapp.models.utils.constants import MS, VOL, WIT, WIT_TYPE, SER, PAGE_TYPE
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.functions import get_icon, flatten
 
@@ -18,19 +18,14 @@ def get_name(fieldname, plural=False):
             "en": "external link (online catalog, etc.)",
             "fr": "lien externe (catalogue en ligne, etc.)",
         },
-        "is_paginated": {"en": "paginated?", "fr": "paginé ?"},
-        "is_paginated_info": {
-            "en": "is the witness paginated (leave checked) or folioed (uncheck)?",
-            "fr": "le témoin est-il paginé (laisser coché) ou folioté (case à décocher)?",
+        "page_type": {"en": "pagination type", "fr": "type de pagination"},
+        "page_type_info": {
+            "en": "is the witness paginated, folioed, or other (scroll, etc.)?",
+            "fr": "le témoin est-il paginé, folioté ou autre (rouleau, etc.)?",
         },
-        "volume": {"en": VOL, "fr": "tome"},
-        "series": {"en": SER, "fr": "série"},
+        "volume": {"en": VOL, "fr": VOL},
+        "series": {"en": SER, "fr": SER},
         "title": {"en": "title of the volume", "fr": "titre du volume"},
-        "is_validated": {"en": "validate annotations", "fr": "valider les annotations"},
-        "is_validated_info": {
-            "en": "annotations will no longer be editable",
-            "fr": "les annotations ne seront plus modifiables",
-        },
         "is_public": {"en": "make it public", "fr": "rendre public"},
         "is_public_info": {
             "en": "record details will be accessible to other users of the database",
@@ -71,15 +66,11 @@ class Witness(models.Model):
         null=True,  # NOTE: this field can be automatically filled with the scan metadata
         blank=True,
     )
-    is_paginated = models.BooleanField(
-        verbose_name=get_name("is_paginated"),
-        default=True,
-        help_text=f"{get_icon('page')} {get_name('is_paginated_info')}",
-    )
-    is_validated = models.BooleanField(
-        verbose_name=get_name("is_validated"),
-        default=False,
-        help_text=f"{get_icon('triangle-exclamation', '#efb80b')} {get_name('is_validated_info')}",
+    page_type = models.CharField(
+        verbose_name=get_name("page_type"),
+        choices=PAGE_TYPE,
+        max_length=150,
+        # help_text=get_name('page_type_info'),
     )
     is_public = models.BooleanField(
         verbose_name=get_name("is_public"),

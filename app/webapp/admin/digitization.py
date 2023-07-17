@@ -4,10 +4,14 @@ from django.utils.safestring import mark_safe
 
 from app.config.settings import APP_NAME, WEBAPP_NAME
 from app.webapp.admin import UnregisteredAdmin
-from app.webapp.models.digitization import Digitization
-from app.webapp.models.utils.constants import IMG
-from app.webapp.utils.functions import gen_thumbnail
+from app.webapp.models.digitization import Digitization, get_name
+from app.webapp.models.utils.constants import IMG, MS_ABBR, IMG_ABBR, PDF_ABBR, MAN_ABBR
+from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
+from app.webapp.utils.functions import gen_thumbnail, get_img_prefix
 from app.webapp.utils.iiif import gen_iiif_url, IIIF_ICON
+from app.webapp.utils.iiif.annotation import has_annotations
+from app.webapp.utils.iiif.gen_html import gen_btn
+from app.webapp.utils.iiif.manifest import has_manifest
 
 
 @admin.register(Digitization)
@@ -42,9 +46,17 @@ class DigitizationInline(admin.StackedInline):
     model = Digitization
     extra = 1  # Display only one empty form in the parent form
     max_num = 5  # TODO change naming convention to allow multiple digitizations
-    readonly_fields = ("digit_preview",)
+    readonly_fields = ("digit_preview", "manifest_v1", "manifest_v2")
 
-    # TODO choose first the type of digit then display the corresponding field
+    fields = [
+        "digit_type",
+        "image",
+        "pdf",
+        "manifest",
+        # "manifest_v1",
+        # "manifest_v2",
+        # "manifest_final",
+    ]
 
     def obj_id(self, obj):
         return obj.witness.id
@@ -64,20 +76,62 @@ class DigitizationInline(admin.StackedInline):
         # TODO check what does it do
         return False
 
-    def get_fields(self, request, obj=None):
-        # TODO check what does it do
+    def get_fields(self, request, obj: Digitization = None):
+        # TODO if not obj: everything stays / if obj: add manifest links
         fields = list(super(DigitizationInline, self).get_fields(request, obj))
         if not obj:  # obj will be None on the add page, and something on change pages
-            fields.remove("digit_preview")
+            print(request)
+            # type = obj.digit_type
+            # if type == IMG_ABBR:
+            #     fields.append("image")
+            # elif type == PDF_ABBR:
+            #     fields.append("pdf")
+            # elif type == MAN_ABBR:
+            #     fields.append("manifest")
+
         else:
-            fields.remove("image")
+            type = obj.digit_type
+            if type == IMG_ABBR:
+                fields.append("image")
+            elif type == PDF_ABBR:
+                fields.append("pdf")
+            elif type == MAN_ABBR:
+                fields.append("manifest")
+            # fields.remove("image")
+
         # if request.method == "POST" and self.wit_type() == VOL: # NOTE old version
-        if request.method == "POST":
-            fields.append("image")
+        #     fields.append("image") # check what was the purpose
 
         return list(set(fields))
 
-    #
+    @admin.display(description=get_name("manifest_v1"))
+    def manifest_v1(self, obj, wit_abbr=MS_ABBR):
+        if obj.id:
+            img_prefix = get_img_prefix(obj, wit_abbr)
+            action = "view" if has_manifest(img_prefix) else "no_manifest"
+            return gen_btn(obj.id, action, MANIFEST_V1, self.wit_name().lower())
+        return "-"
+
+    @admin.display(description=get_name("manifest_v2"))
+    def manifest_v2(self, obj: Digitization, wit_type=MS_ABBR):
+        if obj.id:
+            action = "final" if obj.manifest_final else "edit"
+            if not has_annotations(obj, wit_type):
+                action = "no_anno"
+            return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
+        return "-"
+
+    # manifest_v2.admin_order_field = (
+    #     "-author__name"  # By what value to order this column in the admin list view
+    # )
+    # def get_fields(self, request, obj=None):
+    #     fields = list(super(WitnessInline, self).get_fields(request, obj))
+    #     exclude_set = set()
+    #     if not obj:  # obj will be None on the add page, and something on change pages
+    #         exclude_set.add("manifest_v1")
+    #         exclude_set.add("manifest_v2")
+    #         exclude_set.add("manifest_final")
+    #     return [f for f in fields if f not in exclude_set]
 
 
 class DigitizationNestedInline(nested_admin.NestedStackedInline, DigitizationInline):
