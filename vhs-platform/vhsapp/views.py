@@ -1,4 +1,5 @@
 import json
+from os.path import exists
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -11,7 +12,7 @@ from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
 from vhsapp.utils.functions import credentials, console, log, list_to_txt
-from vhsapp.utils.paths import MS_ANNO_PATH, VOL_ANNO_PATH
+from vhsapp.utils.paths import BASE_DIR, MEDIA_PATH, MS_ANNO_PATH, VOL_ANNO_PATH
 from vhsapp.utils.constants import (
     APP_NAME,
     APP_NAME_UPPER,
@@ -50,19 +51,22 @@ def manifest_volume(request, wit_id, version):
 
 def receive_anno(request, wit_id, wit_type):
     if request.method == "POST":
+        # TODO: vérification du format des annotations reçues
         annotation_file = request.FILES["annotation_file"]
 
-        if wit_type == "manuscript":
-            with open(f"{MS_ANNO_PATH}/{wit_id}.txt", "wb") as f:
-                for chunk in annotation_file.chunks():
-                    f.write(chunk)
-            return JsonResponse({"message": "Annotation received."})
+        anno_path = (
+            f"{BASE_DIR}/{MEDIA_PATH}/{MS_ANNO_PATH}"
+            if wit_type == "manuscript"
+            else f"{BASE_DIR}/{MEDIA_PATH}/{VOL_ANNO_PATH}"
+        )
 
-        if wit_type == "volume":
-            with open(f"{VOL_ANNO_PATH}/{wit_id}.txt", "wb") as f:
+        if exists(f"{anno_path}/{wit_id}.txt"):
+            open(f"{anno_path}/{wit_id}.txt", "w").close()
+        else:
+            with open(f"{anno_path}/{wit_id}.txt", "wb") as f:
                 for chunk in annotation_file.chunks():
                     f.write(chunk)
-            return JsonResponse({"message": "Annotation received."})
+        return JsonResponse({"message": "Annotation received."})
 
     else:
         return JsonResponse({"message": "Invalid request."}, status=400)
