@@ -82,6 +82,18 @@ class Picture(Digitization):
         # Call the parent save method to save the model
         super().save(*args, **kwargs)
 
+        event = threading.Event()
+
+        t = threading.Thread(
+            target=annotate_wit,
+            args=(
+                event,
+                f"{self.volume.id if 'vol' in self.image.name else self.manuscript.id}",
+                f"{VOL_ABBR if 'vol' in self.image.name else MS_ABBR}",
+            ),
+        )
+        t.start()
+
     def delete(self, using=None, keep_parents=False):
         super().delete()
 
