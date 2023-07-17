@@ -28,7 +28,7 @@ from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhsapp.utils.constants import APP_NAME, MAX_SIZE, MAX_RES, APP_NAME, MANIFEST_AUTO
 from vhsapp.utils.paths import BASE_DIR, MEDIA_PATH, IMG_PATH, MS_PDF_PATH, VOL_PDF_PATH
 from vhsapp.utils.logger import log, console
-from vhs.settings import VHS_APP_URL
+from vhs.settings import VHS_APP_URL, GPU_URL
 
 
 def rename_file(instance, filename, path):
@@ -367,7 +367,7 @@ def get_imgs(wit_prefix):
 def annotate_wit(event, witness_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
     wit_type = MS if wit_abbr == MS_ABBR else VOL
 
-    api_endpoint = f"http://dishas-ia:5000/run_detect"
+    api_endpoint = f"{GPU_URL}/run_detect"
 
     manifest_url = (
         f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{witness_id}/manifest.json"
