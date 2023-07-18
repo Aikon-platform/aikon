@@ -60,12 +60,9 @@ def receive_anno(request, wit_id, wit_type):
             else f"{BASE_DIR}/{MEDIA_PATH}/{VOL_ANNO_PATH}"
         )
 
-        if exists(f"{anno_path}/{wit_id}.txt"):
-            open(f"{anno_path}/{wit_id}.txt", "w").close()
-        else:
-            with open(f"{anno_path}/{wit_id}.txt", "wb") as f:
-                for chunk in annotation_file.chunks():
-                    f.write(chunk)
+        with open(f"{anno_path}/{wit_id}.txt", "w+b") as f:
+            f.write(annotation_file.read())
+
         return JsonResponse({"message": "Annotation received."})
 
     else:
