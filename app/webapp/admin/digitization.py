@@ -16,18 +16,18 @@ from app.webapp.utils.iiif.manifest import has_manifest
 
 @admin.register(Digitization)
 class DigitizationAdmin(UnregisteredAdmin):
+    # NOTE useful class for list and search features
     search_fields = ("witness",)
-
     list_per_page = 100
 
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
         self.list_display = (
-            # "image",
             "thumbnail",
+            "witness",  # show witness __str__()
+            "witness__page_nb",
+            # todo btn to see digit + nb of annotations + is valideted or not
         )
-        self.search_fields = (f"=witness__id", "=image")
-        self.autocomplete_fields = (f"witness",)
 
     def thumbnail(self, obj: Digitization):
         if obj.digit_type == IMG:
@@ -42,7 +42,7 @@ class DigitizationAdmin(UnregisteredAdmin):
 ############################
 
 
-class DigitizationInline(admin.StackedInline):
+class DigitizationInline(nested_admin.NestedStackedInline):
     model = Digitization
     extra = 1  # Display only one empty form in the parent form
     max_num = 5  # TODO change naming convention to allow multiple digitizations
@@ -77,27 +77,8 @@ class DigitizationInline(admin.StackedInline):
         return False
 
     def get_fields(self, request, obj: Digitization = None):
-        # TODO if not obj: everything stays / if obj: add manifest links
+        # TODO if obj + has_manifest: add manifest links
         fields = list(super(DigitizationInline, self).get_fields(request, obj))
-        if not obj:  # obj will be None on the add page, and something on change pages
-            print(request)
-            # type = obj.digit_type
-            # if type == IMG_ABBR:
-            #     fields.append("image")
-            # elif type == PDF_ABBR:
-            #     fields.append("pdf")
-            # elif type == MAN_ABBR:
-            #     fields.append("manifest")
-
-        else:
-            type = obj.digit_type
-            if type == IMG_ABBR:
-                fields.append("image")
-            elif type == PDF_ABBR:
-                fields.append("pdf")
-            elif type == MAN_ABBR:
-                fields.append("manifest")
-            # fields.remove("image")
 
         # if request.method == "POST" and self.wit_type() == VOL: # NOTE old version
         #     fields.append("image") # check what was the purpose
@@ -134,5 +115,5 @@ class DigitizationInline(admin.StackedInline):
     #     return [f for f in fields if f not in exclude_set]
 
 
-class DigitizationNestedInline(nested_admin.NestedStackedInline, DigitizationInline):
-    model = Digitization
+# class DigitizationNestedInline(DigitizationInline):
+#     model = Digitization

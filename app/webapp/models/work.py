@@ -2,6 +2,7 @@ from django.db import models
 
 from app.webapp.models.place import Place
 from app.webapp.models.person import Person
+from app.webapp.models.tag import Tag
 
 from app.webapp.models.utils.functions import get_fieldname
 
@@ -46,4 +47,5 @@ class Work(models.Model):
         blank=True,
         null=True,
     )
-    note = models.CharField(verbose_name=get_name("note"), max_length=500, unique=True)
+    note = models.TextField(verbose_name=get_name("note"), max_length=1000)
+    tags = models.ManyToManyField(Tag, verbose_name=get_name("Tag"))

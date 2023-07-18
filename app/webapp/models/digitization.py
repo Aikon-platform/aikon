@@ -36,8 +36,6 @@ from app.webapp.utils.functions import get_last_file, get_icon
 from app.webapp.utils.paths import (
     BASE_DIR,
     IMG_PATH,
-    MS_PDF_PATH,
-    VOL_PDF_PATH,
     MEDIA_DIR,
     IMG_DIR,
 )
@@ -95,7 +93,7 @@ class Digitization(models.Model):
         self.ext = ext
 
     def __str__(self):
-        return f"{self.digit_type.capitalize()} #{self.id} | {self.witness.__str__()}"
+        return f"{self.get_digit_type().capitalize()} #{self.id} | {self.witness.__str__()}"
 
     witness = models.ForeignKey(Witness, on_delete=models.CASCADE)
     digit_type = models.CharField(
@@ -142,7 +140,7 @@ class Digitization(models.Model):
 
     def get_digit_type(self):
         # NOTE should be returning "image" / "pdf" / "manifest"
-        return self.digit_type
+        return str(self.digit_type)
 
     def get_filename(self):
         """
@@ -152,7 +150,7 @@ class Digitization(models.Model):
         # OLD return self.pdf.name.split("/")[-1].split(".")[0]
         # e.g. self.pdf.name = "pdf/filename.pdf" => filename = "filename"
         try:
-            return f"{self.get_wit_ref()}{self.get_nb()}"
+            return f"{self.get_wit_ref()}_{self.id}_{self.get_nb()}"
         except Exception:
             return None
 

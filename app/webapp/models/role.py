@@ -33,7 +33,7 @@ class Role(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        return ""  # TODO find a name
+        return f"{self.person.name} ({self.role})"
 
     content = models.ForeignKey(
         Content,

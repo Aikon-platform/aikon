@@ -34,7 +34,7 @@ def get_img_prefix(obj: Witness, wit_abbr=MS_ABBR):
 
 
 @admin.register(Witness)
-class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
+class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     # DEFINITION OF THE MAIN FORM => Add Witness
     class Media:
         css = {"all": ("css/form.css",)}
@@ -57,7 +57,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         "id_nb",
         "place__name",
         "type",
-        "contents__roles__person__name",
+        "contents__roles__person__name",  # todo check if it works
         "contents__work__name",
     )
     # Filters options in the sidebar
@@ -80,7 +80,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
                     ("id_nb", "place"),  # place and id_nb appear on the same line
                     ("page_type", "nb_pages"),  # same
                     "note",
-                    "volume",
+                    ("title", "volume"),
                 ]
             },
         ),

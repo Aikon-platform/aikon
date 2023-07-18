@@ -4,7 +4,6 @@ from app.webapp.models.witness import Witness
 from app.webapp.models.work import Work
 from app.webapp.models.place import Place
 from app.webapp.models.language import Language
-from app.webapp.models.tag import Tag
 
 from app.webapp.models.utils.constants import CONT, WIT, WORK, TAG
 from app.webapp.models.utils.functions import get_fieldname
@@ -81,7 +80,6 @@ class Content(models.Model):
     page_max = models.IntegerField(
         verbose_name=get_name("page_max"), null=True, blank=True
     )
-    tags = models.ManyToManyField(Tag, verbose_name=get_name("Tag"))
 
     def get_pages(self):
         return format_start_end(self.page_min, self.page_max)

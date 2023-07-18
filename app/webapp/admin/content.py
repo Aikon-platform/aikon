@@ -1,4 +1,3 @@
-from nested_admin import nested
 import nested_admin
 from django.contrib import admin
 
@@ -9,11 +8,18 @@ from app.webapp.models.content import Content, get_name
 
 @admin.register(Content)
 class ContentAdmin(UnregisteredAdmin):
+    # NOTE useful class for list and search features
     search_fields = ("work", "witness")
+    fields = [
+        "work",
+        ("page_min", "page_max"),
+        ("date_min", "date_max"),
+        ("place", "lang"),
+    ]
     inlines = [RoleInline]
 
 
-class ContentInline(admin.StackedInline):
+class ContentInline(nested_admin.NestedStackedInline):
     model = Content
     extra = 1  # Display only one empty form in the parent form
 
@@ -21,7 +27,7 @@ class ContentInline(admin.StackedInline):
         "work",
         ("page_min", "page_max"),
         ("date_min", "date_max"),
-        "place",
+        ("place", "lang"),
     ]
 
     autocomplete_fields = ("work", "place")

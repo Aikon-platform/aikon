@@ -15,3 +15,5 @@ class PersonAdmin(UnregisteredAdmin):
     search_fields = ("name",)
     list_filter = ("name",)
     list_per_page = 5
+
+    fields = ["name", ("date_min", "date_max")]
