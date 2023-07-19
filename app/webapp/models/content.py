@@ -84,12 +84,14 @@ class Content(models.Model):
         verbose_name=get_name("page_min"),
         null=True,
         blank=True,
+        max_length=15,
         validators=[validate_page],
     )
     page_max = models.CharField(
         verbose_name=get_name("page_max"),
         null=True,
         blank=True,
+        max_length=15,
         validators=[validate_page],
     )
 

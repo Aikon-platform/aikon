@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 from urllib.request import urlopen
 
 import requests
-from app.webapp.utils.paths import MEDIA_DIR, BASE_DIR, VOL_ANNO_PATH, MS_ANNO_PATH
+from app.webapp.utils.paths import MEDIA_DIR, BASE_DIR, ANNO_PATH
 from app.webapp.models import get_wit_abbr, get_wit_type
 from app.webapp.models.utils.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from app.config.settings import APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL, APP_NAME
@@ -99,7 +99,7 @@ def get_annos_per_canvas(wit_id, wit_type, last_canvas=0, specific_canvas=""):
 
     coord = (x, y, width, height)
     """
-    lines = get_txt_annos(wit_id, VOL_ANNO_PATH if wit_type == VOL else MS_ANNO_PATH)
+    lines = get_txt_annos(wit_id)  # TODO not witness id but anno id
     if lines is None:
         log(f"[get_annos_per_canvas] no annotation file for {wit_type} n°{wit_id}")
         return {}
@@ -133,18 +133,16 @@ def get_annos_per_canvas(wit_id, wit_type, last_canvas=0, specific_canvas=""):
     return annotated_canvases
 
 
-def get_txt_annos(wit_id, annotations_path):
+def get_txt_annos(wit_id):  # TODO change in order to retrieve the correct file
     try:
-        with open(f"{BASE_DIR}/{MEDIA_DIR}/{annotations_path}/{wit_id}.txt") as f:
+        with open(f"{BASE_DIR}/{MEDIA_DIR}/{ANNO_PATH}/{wit_id}.txt") as f:
             return [line.strip() for line in f.readlines()]
     except FileNotFoundError:
         return None
 
 
 def get_anno_img(wit_id, wit_type):
-    annotations_path = VOL_ANNO_PATH if wit_type == VOL else MS_ANNO_PATH
-
-    lines = get_txt_annos(wit_id, annotations_path)
+    lines = get_txt_annos(wit_id)  # TODO not witness id but anno id
     if lines is None:
         return []
 
@@ -301,9 +299,7 @@ def index_manifest_in_sas(manifest_content):
 
 
 def get_canvas_list(witness, wit_type):
-    lines = get_txt_annos(
-        witness.id, VOL_ANNO_PATH if wit_type == VOL else MS_ANNO_PATH
-    )
+    lines = get_txt_annos(witness.id)  # TODO not witness id but anno id
     if not lines:
         log(f"[get_canvas_list] no annotation file for {wit_type} n°{witness.id}")
         return {

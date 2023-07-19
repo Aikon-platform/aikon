@@ -3,7 +3,6 @@ from django.contrib.auth.models import User
 from django.utils.text import slugify
 
 from app.webapp.models.conservation_place import ConservationPlace
-from app.webapp.models.content import Content
 from app.webapp.models.volume import Volume
 from app.webapp.models.series import Series
 from app.webapp.models.utils.constants import MS, VOL, WIT, WIT_TYPE, SER, PAGE_TYPE

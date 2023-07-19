@@ -25,8 +25,7 @@ from app.webapp.utils.paths import (
     BASE_DIR,
     MEDIA_DIR,
     IMG_PATH,
-    MS_PDF_PATH,
-    VOL_PDF_PATH,
+    PDF_DIR,
 )
 from app.webapp.models import get_wit_abbr, get_wit_type
 from app.webapp.models.utils.constants import MS, VOL, MS_ABBR, VOL_ABBR
@@ -112,12 +111,10 @@ def get_pdf_imgs(pdf_list, ps_type=VOL):
     if type(pdf_list) != list:
         pdf_list = [pdf_list]
 
-    path = MS_PDF_PATH if ps_type == MS else VOL_PDF_PATH
-
     img_list = []
     for pdf_name in pdf_list:
         pdf_reader = PyPDF2.PdfFileReader(
-            open(f"{BASE_DIR}/{MEDIA_DIR}/{path}/{pdf_name}", "rb")
+            open(f"{BASE_DIR}/{MEDIA_DIR}/{PDF_DIR}/{pdf_name}", "rb")
         )
         for img_nb in range(1, pdf_reader.numPages + 1):
             img_list.append(

@@ -9,7 +9,6 @@ from app.webapp.models.utils.constants import IMG, MS_ABBR, IMG_ABBR, PDF_ABBR, 
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.webapp.utils.functions import gen_thumbnail, get_img_prefix, anno_btn
 from app.webapp.utils.iiif import gen_iiif_url, IIIF_ICON
-from app.webapp.utils.iiif.annotation import has_annotations
 from app.webapp.utils.iiif.gen_html import gen_btn, gen_manifest_btn
 from app.webapp.utils.iiif.manifest import has_manifest
 
@@ -19,15 +18,20 @@ class DigitizationAdmin(UnregisteredAdmin):
     # NOTE useful class for list and search features
     search_fields = ("witness",)
     list_per_page = 100
+    list_display = (
+        "thumbnail",
+        "witness",
+        "get_nb_pages",
+    )
 
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
-        self.list_display = (
-            "thumbnail",
-            "witness",  # show witness __str__()
-            "witness__page_nb",
-            # todo btn to see digit + nb of annotations + is validated or not
-        )
+        # self.list_display = (
+        #     "thumbnail",
+        #     "witness",  # show witness __str__()
+        #     "witness__nb_pages",
+        #     # todo btn to see digit + nb of annotations + is validated or not
+        # )
 
     def thumbnail(self, obj: Digitization):
         if obj.digit_type == IMG:
@@ -35,6 +39,9 @@ class DigitizationAdmin(UnregisteredAdmin):
                 gen_iiif_url(obj.image.name.split("/")[-1]), obj.image.url
             )
         # TODO for other types
+
+    def get_nb_pages(self, obj: Digitization):
+        return obj.witness.nb_pages if obj.witness else None
 
 
 ############################
@@ -93,7 +100,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     def manifest_v2(self, obj: Digitization, wit_type=MS_ABBR):
         if obj.id:
             action = "final" if obj.manifest_final else "edit"
-            if not has_annotations(obj, wit_type):
+            if not obj.has_annotations():
                 action = "no_anno"
             return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
         return "-"

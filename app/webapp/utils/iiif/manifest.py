@@ -22,7 +22,7 @@ from app.webapp.models.witness import Witness
 
 # from app.webapp.models.witness import Volume, Manuscript
 from app.webapp.utils.logger import iiif_log, console, log
-from app.webapp.utils.iiif.annotation import set_canvas, has_annotations
+from app.webapp.utils.iiif.annotation import set_canvas
 
 # TODO change MS/VOL
 
@@ -124,9 +124,7 @@ def manifest_witness(wit_id, wit_abbr=MS_ABBR, version=MANIFEST_V1):
     IIIF Presentation API 2.0
     """
     wit_type = MS if wit_abbr == MS_ABBR else VOL
-    witness = get_object_or_404(
-        Manuscript if wit_abbr == MS_ABBR else Volume, pk=wit_id
-    )
+    witness = get_object_or_404(Witness, pk=wit_id)
     fac = ManifestFactory(
         mdbase=f"{APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{wit_id}/",
         imgbase=f"{CANTALOUPE_APP_URL}/iiif/2/",
@@ -136,7 +134,7 @@ def manifest_witness(wit_id, wit_abbr=MS_ABBR, version=MANIFEST_V1):
     # Build the manifest
     manifest = fac.manifest(ident="manifest", label=witness.__str__())
     metadata = witness.get_metadata()
-    metadata["Is annotated"] = has_annotations(witness, wit_abbr)
+    metadata["Is annotated"] = witness.has_annotations()
 
     manifest.set_metadata(metadata)
 
