@@ -19,7 +19,6 @@ from django.template.defaultfilters import truncatewords_html
 from django.utils.safestring import mark_safe
 
 from app.webapp.utils.iiif import gen_iiif_url
-from app.webapp.utils.iiif.annotation import has_annotations
 from app.webapp.utils.iiif.manifest import has_manifest, gen_manifest_url
 from app.webapp.utils.iiif.gen_html import gen_btn, gen_manifest_btn
 from app.webapp.utils.functions import list_to_txt, get_pdf_imgs, anno_btn
@@ -69,11 +68,14 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     # MARKER FORM FIELDS
     # info on fieldsets: https://docs.djangoproject.com/en/4.2/ref/contrib/admin/#django.contrib.admin.ModelAdmin.fieldsets
+    banner = (
+        f"{get_name('Witness')} identification"
+        if APP_LANG == "en"
+        else f"Identification du {get_name('Witness')}"
+    )
     fieldsets = (
         (
-            f"{get_name('Witness')} identification"
-            if APP_LANG == "en"
-            else f"Identification du {get_name('Witness')}",
+            banner.capitalize(),
             {
                 "fields": [
                     "type",
@@ -81,16 +83,10 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                     ("page_type", "nb_pages"),  # same
                     "note",
                     ("title", "volume"),
+                    "is_public",
                 ]
             },
         ),
-        # (  # fields to be displayed only for prints (i.e. "wpr" and "tpr")
-        #     "Print description" if APP_LANG == "en" else "Description de l'imprimé",
-        #     {
-        #         "fields": ("title",),
-        #         "classes": ("print-field",),
-        #     },
-        # ),
     )
 
     # def get_fieldsets(self, request, obj: Witness = None):
@@ -163,26 +159,23 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     # MARKER LIST COLUMNS
     @admin.display(description="Annotation")
-    def is_annotated(self, obj: Witness, wit_abbr=MS_ABBR):
+    def is_annotated(self, obj: Witness):
         # To display a button in the list of witnesses to know if they were annotated or not
-        action = "final" if obj.is_validated else "edit"
-        return mark_safe(
-            anno_btn(
-                obj.id,
-                action if has_annotations(obj, wit_abbr) else "no_anno",
-            )
-        )
+        btns = ""
+        for digit in obj.get_digits():
+            btns += f"{digit.anno_btn()}<br>"
+        return mark_safe(btns)
 
-    def manifest_link(self, obj, wit_abbr=MS_ABBR):
+    @admin.display(description="IIIF manifest")
+    def manifest_link(self, obj):
         # To display a button in the list of witnesses to give direct link to witness manifest
-        wit_type = MS if wit_abbr == MS_ABBR else VOL
-        return gen_manifest_btn(
-            obj.id, wit_type, has_manifest(get_img_prefix(obj, wit_abbr))
-        )
-
-    manifest_link.short_description = "IIIF manifest"
+        links = ""
+        for digit in obj.get_digits():
+            links += f"{digit.manifest_link()}<br>"
+        return mark_safe(links)
 
     # TODO authors method to access all authors
+    @admin.display(description=get_name("Person", plural=True))
     def authors(self, obj: Witness):
         return obj.get_persons()
 

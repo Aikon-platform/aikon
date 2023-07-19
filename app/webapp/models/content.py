@@ -1,3 +1,5 @@
+import re
+
 from django.db import models
 
 from app.webapp.models.witness import Witness
@@ -27,6 +29,11 @@ def folios_to_pages(page: str):
     if page.endswith("v"):
         return page_nb * 2
     return page_nb
+
+
+def validate_page(page):
+    match = re.match(r"^\d+[rv]?$", page)
+    return match is not None
 
 
 class Content(models.Model):
@@ -73,12 +80,17 @@ class Content(models.Model):
     date_max = models.IntegerField(
         verbose_name=get_name("date_max"), null=True, blank=True
     )
-    # TODO add field validation => when it is foliated, allow "v" and "r"
-    page_min = models.IntegerField(
-        verbose_name=get_name("page_min"), null=True, blank=True
+    page_min = models.CharField(
+        verbose_name=get_name("page_min"),
+        null=True,
+        blank=True,
+        validators=[validate_page],
     )
-    page_max = models.IntegerField(
-        verbose_name=get_name("page_max"), null=True, blank=True
+    page_max = models.CharField(
+        verbose_name=get_name("page_max"),
+        null=True,
+        blank=True,
+        validators=[validate_page],
     )
 
     def get_pages(self):

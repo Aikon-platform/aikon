@@ -13,9 +13,9 @@ common_fields = {
 }
 
 
-def get_fieldname(field, fields, plural=False, capitalise=False):
-    # add try / except
-    # add pluralize method
+def get_fieldname(field, fields, plural=False, capitalize=False):
+    # TODO add try / except
+    # TODO add pluralize method
 
     if field in fields:
         return fields[field][APP_LANG].capitalize()

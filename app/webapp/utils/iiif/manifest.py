@@ -49,9 +49,9 @@ def process_images(work, seq, version):
             try:
                 set_canvas(seq, counter, img_name, Image.open(img.image), version)
             except UnidentifiedImageError as e:
-                log(f"[process_images] Unable to retrieve {img_name}\n{e}")
+                log(f"[process_images] Unable to retrieve {img_name}", e)
             except FileNotFoundError as e:
-                log(f"[process_images] Non existing {img_name}\n{e}")
+                log(f"[process_images] Non existing {img_name}", e)
 
     # Check if there is a PDF work and process it
     elif pdf_first:  # PDF
@@ -79,9 +79,9 @@ def process_images(work, seq, version):
                         version,
                     )
                 except UnidentifiedImageError as e:
-                    log(f"[process_images] Unable to retrieve {img_name}\n{e}")
+                    log(f"[process_images] Unable to retrieve {img_name}", e)
                 except FileNotFoundError as e:
-                    log(f"[process_images] Non existing {img_name}\n{e}")
+                    log(f"[process_images] Non existing {img_name}", e)
 
     # Check if there is a manifest work and a list of images url and process it
     # elif manifest_first and f"{work_abbr}{work.id}.txt" in os.listdir(
@@ -109,10 +109,10 @@ def process_images(work, seq, version):
             try:
                 set_canvas(seq, counter, img_name, Image.open(path), version)
             except UnidentifiedImageError as e:
-                log(f"[process_images] Unable to retrieve {img_name}\n{e}")
+                log(f"[process_images] Unable to retrieve {img_name}", e)
                 continue
             except FileNotFoundError as e:
-                log(f"[process_images] Non existing {img_name}\n{e}")
+                log(f"[process_images] Non existing {img_name}", e)
     # If none of the above, raise an exception
     else:
         raise Exception("There is no manifest!")
@@ -168,8 +168,10 @@ def manifest_wit_type(wit_id, wit_type, version):
     try:
         return manifest.toJSON(top=True)
     except StructuralError as e:
-        error = f"Unable to create manifest for {wit_type} n°{wit_id} (probably no images):\n{e}"
-        log(f"[manifest_wit_type] {error}")
+        error = (
+            f"Unable to create manifest for {wit_type} n°{wit_id} (probably no images)"
+        )
+        log(f"[manifest_wit_type] {error}", e)
         return {
             "error": "Unable to create a valid manifest",
             "reason": error,

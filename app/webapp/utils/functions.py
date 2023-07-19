@@ -9,11 +9,11 @@ from subprocess import CalledProcessError
 import PyPDF2
 import requests
 from PIL import Image
+from django.core.files import File
 
 from django.utils.html import format_html
 from django.http import HttpResponse
 from django.utils.safestring import mark_safe
-from pdf2image import pdfinfo_from_path, convert_from_path
 from urllib.request import (
     HTTPPasswordMgrWithDefaultRealm,
     HTTPBasicAuthHandler,
@@ -50,21 +50,21 @@ def get_last_file(path, prefix):
     return last_number
 
 
-# def convert_to_jpeg(image):
-#     """
-#     Convert the image to JPEG format
-#     """
-#     filename = image.name.split(".")[0]
-#     img = Image.open(image)
-#     if img.mode != "RGB":
-#         img = img.convert("RGB")
-#     # Create a BytesIO object
-#     obj_io = BytesIO()
-#     # Save image to BytesIO object
-#     img.save(obj_io, format="JPEG")
-#     # Create a File object
-#     img_jpg = File(obj_io, name=f"{filename}.jpg")
-#     return img_jpg
+def to_jpg(image):
+    try:
+        return save_img(Image.open(image), image.name)
+    except Exception as e:
+        log("[to_jpg] Failed to convert img to jpg", e)
+    return False
+
+    # filename = image.name.split(".")[0]
+    # img = Image.open(image)
+    # if img.mode != "RGB":
+    #     img = img.convert("RGB")
+    # obj_io = io.BytesIO()
+    # img.save(obj_io, format="JPEG")
+    # img_jpg = File(obj_io, name=f"{filename}.jpg")
+    # return img_jpg
 
 
 def pdf_to_img(pdf_name, dpi=MAX_RES):
@@ -83,61 +83,29 @@ def pdf_to_img(pdf_name, dpi=MAX_RES):
     except Exception as e:
         log(f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images", e)
 
-    # pdf_path = f"{BASE_DIR}/{MEDIA_DIR}/{pdf_name}"
-    # Image.MAX_IMAGE_PIXELS = 900000000
-    #
-    # # e.g. pdf_name = "volumes/pdf/filename.pdf" => "filename"
-    # pdf_name = pdf_path.split("/")[-1].split(".")[0] # pdf_path.stem
-    # pdf_info = pdfinfo_from_path(pdf_path, userpw=None, poppler_path=None)
-    # page_nb = pdf_info["Pages"]
-    # step = 2
-    # try:
-    #     for img_nb in range(1, page_nb + 1, step):
-    #         batch_pages = convert_from_path(
-    #             pdf_path,
-    #             dpi=dpi,
-    #             first_page=img_nb,
-    #             last_page=min(img_nb + step - 1, page_nb),
-    #         )
-    #         for page in batch_pages:
-    #             save_img(page, f"{pdf_name}_{img_nb:04d}.jpg")
-    #             img_nb += 1
-    # except Exception as e:
-    #     log(f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e}")
-
-
-# def reduce_image_resolution(image, resolution):
-#     """
-#     Reduce the resolution of the image
-#     """
-#     width, height = image.size
-#     aspect_ratio = width / height
-#     new_width = int(resolution * aspect_ratio)
-#     reduced_image = image.resize((new_width, resolution), Image.ANTIALIAS)
-#     return reduced_image
-
 
 def save_img(
-    img,
+    img: Image,
     img_filename,
     img_path=BASE_DIR / IMG_PATH,
-    error_msg="Failed to save img",
     max_dim=MAX_SIZE,
     img_format="JPEG",
 ):
-    # if glob.glob(img_path / img_filename):
-    #     return False  # NOTE: maybe download again anyway because manifest / pdf might have changed
-
     try:
+        filename = img_filename.split(".")[0]
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+
         if img.width > max_dim or img.height > max_dim:
             img.thumbnail(
                 (max_dim, max_dim), Image.ANTIALIAS
             )  # Image.Resampling.LANCZOS
-        img.save(img_path / img_filename, format=img_format)
-        return True
+
+        img.save(img_path / f"{filename}.jpg", format=img_format)
+        return img
     except Exception as e:
-        log(f"[save_img] {error_msg}:\n{e}")
-    return False
+        log("Failed to save img as JPEG", e)
+        return False
 
 
 def get_pdf_imgs(pdf_list, ps_type=VOL):
@@ -207,16 +175,16 @@ def get_action(action, formatting=None):
         "final": {"en": "final", "fr": "modifier les"},
     }
     action = actions[action][APP_LANG]
-    if formatting == "capitalize":  # => ACTION
+    if formatting == "upper":  # => ACTION
+        action = action.upper()
+    if formatting == "capitalize":  # => Action
         action = action.capitalize()
-    if formatting == "title":  # => Action
-        action = action.title()
     return action
 
 
 def anno_btn(wit_ref, action="view"):
     disabled = ""
-    btn = f"{get_action(action, 'capitalize')} ANNOTATIONS"
+    btn = f"{get_action(action, 'upper')} ANNOTATIONS"
 
     if action == "view":
         color = "#EFB80B"
@@ -236,7 +204,7 @@ def anno_btn(wit_ref, action="view"):
         tag_id = "manifest_final_"
         icon = get_icon("check")
     elif action == "no_manifest" or action == "no_anno":
-        btn = get_action(action, "capitalize")
+        btn = get_action(action, "upper")
         color = "#878787"
         tag_id = "annotate_"
         icon = get_icon("eye-slash")

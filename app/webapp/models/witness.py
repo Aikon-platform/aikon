@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.utils.text import slugify
 
 from app.webapp.models.conservation_place import ConservationPlace
+from app.webapp.models.content import Content
 from app.webapp.models.volume import Volume
 from app.webapp.models.series import Series
 from app.webapp.models.utils.constants import MS, VOL, WIT, WIT_TYPE, SER, PAGE_TYPE
@@ -85,7 +86,6 @@ class Witness(models.Model):
 
     # FIELDS USED ONLY FOR PRINTS
     title = models.CharField(verbose_name=get_name("title"), max_length=600)
-    # todo finish that
     volume = models.ForeignKey(
         Volume,
         verbose_name=get_name("Volume"),
@@ -113,6 +113,8 @@ class Witness(models.Model):
         return f"{self.get_type()}{self.id}"
 
     def get_metadata(self):
+        # todo finish defining manifest metadata
+
         metadata = {
             "Place of conservation": self.place,
             "Reference number": self.id_nb,
@@ -151,6 +153,21 @@ class Witness(models.Model):
     def get_contents(self):
         # Django automatically creates a reverse relationship from Witness to Content
         return self.content_set.all()
+
+    def get_digits(self):
+        return self.digitization_set.all()
+
+    def is_validated(self):
+        for digit in self.get_digits():
+            if digit.is_validated():
+                return True
+        return False
+
+    def has_annotations(self):
+        for digit in self.get_digits():
+            if digit.has_annotations():
+                return True
+        return False
 
     def get_roles(self):
         roles = []

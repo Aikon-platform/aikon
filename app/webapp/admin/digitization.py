@@ -2,15 +2,15 @@ import nested_admin
 from django.contrib import admin
 from django.utils.safestring import mark_safe
 
-from app.config.settings import APP_NAME, WEBAPP_NAME
+from app.config.settings import APP_NAME, WEBAPP_NAME, APP_LANG
 from app.webapp.admin import UnregisteredAdmin
 from app.webapp.models.digitization import Digitization, get_name
 from app.webapp.models.utils.constants import IMG, MS_ABBR, IMG_ABBR, PDF_ABBR, MAN_ABBR
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
-from app.webapp.utils.functions import gen_thumbnail, get_img_prefix
+from app.webapp.utils.functions import gen_thumbnail, get_img_prefix, anno_btn
 from app.webapp.utils.iiif import gen_iiif_url, IIIF_ICON
 from app.webapp.utils.iiif.annotation import has_annotations
-from app.webapp.utils.iiif.gen_html import gen_btn
+from app.webapp.utils.iiif.gen_html import gen_btn, gen_manifest_btn
 from app.webapp.utils.iiif.manifest import has_manifest
 
 
@@ -26,7 +26,7 @@ class DigitizationAdmin(UnregisteredAdmin):
             "thumbnail",
             "witness",  # show witness __str__()
             "witness__page_nb",
-            # todo btn to see digit + nb of annotations + is valideted or not
+            # todo btn to see digit + nb of annotations + is validated or not
         )
 
     def thumbnail(self, obj: Digitization):
@@ -58,23 +58,19 @@ class DigitizationInline(nested_admin.NestedStackedInline):
         # "manifest_final",
     ]
 
-    def obj_id(self, obj):
-        return obj.witness.id
-
     def digit_url(self):
         return f"/{APP_NAME}-admin/{WEBAPP_NAME}/digitization"
 
+    @admin.display(description=get_name("Digitization"))
     def digit_preview(self, obj: Digitization):
-        # TODO, do not display when there is None because the digitization is not image files
+        txt = "Manage images" if APP_LANG == "en" else "Gérer les images"
         return mark_safe(
-            f'<a href="{self.digit_url()}/?q={self.obj_id(obj)}" target="_blank">{IIIF_ICON} Gérer les images</a>'
+            f'<a href="{self.digit_url()}/?q={obj.id}" target="_blank">{IIIF_ICON} {txt}</a>'
         )
 
-    digit_preview.short_description = "Digitization"
-
-    def has_view_or_change_permission(self, request, obj=None):
-        # TODO check what does it do
-        return False
+    # def has_view_or_change_permission(self, request, obj=None):
+    #     # TODO check what does it do
+    #     return False
 
     def get_fields(self, request, obj: Digitization = None):
         # TODO if obj + has_manifest: add manifest links

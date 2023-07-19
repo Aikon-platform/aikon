@@ -64,4 +64,6 @@ $(function() {
     witTypeSelect.change(function () {
         showPrintFields($(this).val());
     });
+
+    // TODO if folio is selected, allow "r" or "v" at the end of the page fields
 });

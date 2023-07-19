@@ -23,6 +23,7 @@ MODEL_NAMES = {
     "Role": {"en": "role", "fr": "rôle"},
     "Image": {"en": "image", "fr": "image"},
     "Pdf": {"en": "PDF", "fr": "PDF"},
+    "Annotation": {"en": "annotation", "fr": "annotation"},
 }
 
 MANIFEST = MODEL_NAMES["Manifest"][APP_LANG]
@@ -43,6 +44,7 @@ PERS = MODEL_NAMES["Person"][APP_LANG]
 ROLE = MODEL_NAMES["Role"][APP_LANG]
 IMG = MODEL_NAMES["Image"][APP_LANG]
 PDF = MODEL_NAMES["Pdf"][APP_LANG]
+ANNO = MODEL_NAMES["Annotation"][APP_LANG]
 
 
 # ABBREVIATION

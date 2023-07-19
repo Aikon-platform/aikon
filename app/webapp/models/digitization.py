@@ -1,4 +1,8 @@
+import os
+from glob import glob
+
 from django.db import models
+from django.utils.safestring import mark_safe
 
 from app.webapp.models.utils.functions import get_fieldname
 
@@ -16,6 +20,7 @@ from django.db.models.signals import pre_delete
 from django.dispatch.dispatcher import receiver
 from pdf2image import convert_from_path
 
+from app.webapp.utils.iiif.gen_html import gen_manifest_btn
 from app.webapp.utils.logger import log, console
 
 from app.webapp.models.utils.constants import (
@@ -32,12 +37,19 @@ from app.webapp.models.utils.constants import (
     PDF,
     MANIFEST,
 )
-from app.webapp.utils.functions import get_last_file, get_icon
+from app.webapp.utils.functions import (
+    get_last_file,
+    get_icon,
+    pdf_to_img,
+    to_jpg,
+    anno_btn,
+)
 from app.webapp.utils.paths import (
     BASE_DIR,
     IMG_PATH,
     MEDIA_DIR,
     IMG_DIR,
+    ANNO_PATH,
 )
 
 from app.webapp.utils.iiif.validation import validate_manifest
@@ -49,10 +61,6 @@ from app.webapp.models.witness import Witness
 def get_name(fieldname, plural=False):
     fields = {
         "source": {"en": "digitization source", "fr": "source de la numérisation"},
-        "app_manifest": {
-            "en": "automatic annotations",
-            "fr": "annotations automatiques",
-        },
         "manifest_v1": {
             "en": "automatic annotations",
             "fr": "annotations automatiques",
@@ -76,9 +84,6 @@ def rename_file(digitization, original_filename):
     new_filename = digitization.get_filename()
     # TODO: create fct that do not erase the file if a image was already recorded with the same name
     return f"{digitization.get_relative_path()}/{new_filename}.{digitization.ext}"
-
-
-# TODO make import work, make deletion work, make the link between witness and its digitizitaion work
 
 
 class Digitization(models.Model):
@@ -124,7 +129,7 @@ class Digitization(models.Model):
         help_text=f"{get_icon('triangle-exclamation', '#efb80b')} {get_name('is_validated_info')}",
     )
 
-    def get_witness(self):
+    def get_witness(self) -> Witness | None:
         try:
             return self.witness
         except AttributeError:
@@ -134,47 +139,67 @@ class Digitization(models.Model):
         witness = self.get_witness()
         return witness.type
 
-    def get_wit_ref(self):
+    def get_wit_prefix(self):
         witness = self.get_witness()
-        return witness.get_ref()
+        if witness:
+            return f"{witness.get_ref()}"
+        return ""
 
     def get_digit_type(self):
         # NOTE should be returning "image" / "pdf" / "manifest"
         return str(self.digit_type)
 
+    def get_annotations(self):
+        return self.annotation_set.all()
+
     def get_filename(self):
         """
         Returns filename without extension
         """
-        # TODO: find a solution to have multiple digitizations without the same name
         # OLD return self.pdf.name.split("/")[-1].split(".")[0]
         # e.g. self.pdf.name = "pdf/filename.pdf" => filename = "filename"
         try:
-            return f"{self.get_wit_ref()}_{self.id}_{self.get_nb()}"
+            return f"{self.get_wit_prefix()}_{self.id}"
         except Exception:
             return None
+
+    def get_anno_filenames(self):
+        anno_files = []
+        for anno in self.get_annotations():
+            anno_files.append(anno.get_filename())
+        return anno_files
+
+    def has_annotations(self):
+        # if there is at least one annotation record and its associated annotation file
+        for anno_file in self.get_anno_filenames():
+            if len(glob(f"{BASE_DIR}/{ANNO_PATH}/{anno_file}.txt")) > 0:
+                return True
+        return False
+
+    def get_imgs(self):
+        imgs = []
+        for filename in os.listdir(IMG_PATH):
+            if filename.startswith(self.get_filename()):
+                imgs.append(filename)
+        return imgs
+
+    def has_manifest(self):
+        return len(self.get_imgs()) != 0
 
     def save(self, *args, **kwargs):
         digit_type = self.get_digit_type()
 
         if digit_type == IMG:
-            # NOTE old version
-            # if self.image:
-            #     img = Image.open(self.image)
-            #     if img.format != "JPEG":
-            #         self.image = convert_to_jpeg(self.image)
-
             ext = self.image.name.split(".")[1]
             if ext != "jpg" and ext != "jpeg":
-                self.to_jpg()
+                # TODO check how it does for multiple images
+                to_jpg(self.image)
             super().save(*args, **kwargs)
 
         elif digit_type == PDF:
             super().save(*args, **kwargs)
             # Run the PDF to image async conversion task in the background using threading
-            t = threading.Thread(
-                target=self.to_jpg()
-            )  # TODO check if a class method is working with threading
+            t = threading.Thread(target=pdf_to_img)
             t.start()
 
         elif digit_type == MANIFEST:
@@ -182,42 +207,29 @@ class Digitization(models.Model):
             # Run the async extraction of images from IIIF using threading
             t = threading.Thread(
                 target=extract_images_from_iiif_manifest,
-                args=(self.manifest, f"{self.get_wit_ref()}"),
+                args=(self.manifest, self.get_filename()),
             )
             t.start()
 
     def delete(self, using=None, keep_parents=False):
-        # TODO check if image_delete can be put here
-
-        # super().delete()
-        digit_type = self.get_digit_type()
-
-        if digit_type == IMG:
-            super().delete()
-
-        elif digit_type == PDF:
+        if self.get_digit_type() == PDF:  # NOTE: maybe not for manifests
             self.pdf.storage.delete(self.get_file_path(False))
-            # TODO delete images extracted from the pdf
-            super().delete()
+            for filename in self.get_imgs():
+                try:
+                    os.remove(os.path.join(IMG_PATH, filename))
+                except OSError as e:
+                    log(
+                        f"[Digitization.delete()] Error deleting PDF images ({filename})",
+                        e,
+                    )
+        super().delete()
 
     def set_ext(self, extension):
         self.ext = extension
 
-    def get_nb(self):
-        # TODO: find better solution
-        if self.nb is None:
-            self.set_nb(
-                get_last_file(self.get_absolute_path(), f"{self.get_wit_ref()}_") + 1
-            )
-        return f"_{self.nb:04d}"
-
-    def set_nb(self, nb):
-        self.nb = nb
-
     def get_relative_path(self):
         # must be relative to MEDIA_DIR
-        # TODO reorganise media folders: do we want one folder by witness or every images in the same dir
-        return IMG_PATH
+        return IMG_DIR
 
     def get_absolute_path(self):
         return f"{BASE_DIR}/{MEDIA_DIR}/{self.get_relative_path()}"
@@ -234,59 +246,26 @@ class Digitization(models.Model):
             page_nb = pdf_reader.getNumPages()
         return page_nb
 
-    def to_jpg(self):
-        """
-        Convert images and pdf file to JPEG images
-        TODO check if it works
-        """
-        digit_type = self.get_digit_type()
+        # NOTE methods to be used inside list columns of witnesses
 
-        if digit_type == IMG:
-            # NOTE: might be necessary to use an external function
-            img = Image.open(self.image)
-            if img.mode != "RGB":
-                img = img.convert("RGB")
-            obj_io = BytesIO()
-            img.save(obj_io, format="JPEG")
-            img_jpg = File(
-                obj_io, name=f"{self.get_filename()}.jpg"
-            )  # TODO filename = img.name.split(".")[0]
-            self.image = img_jpg
+    def anno_btn(self):
+        # To display a button in the list of witnesses to know if they were annotated or not
+        action = "final" if self.is_validated else "edit"
+        return mark_safe(
+            anno_btn(
+                self.id,  # TODO handle multiple annotations files
+                action if self.has_annotations() else "no_anno",
+            )
+        )
 
-        if digit_type == PDF:
-            # NOTE see for threading or task queuing
-            filename = (
-                self.get_wit_ref()
-            )  # TODO see is not self.pdf.name (when multiple digits for one witness)
-            page_nb = self.get_nb_of_pages()
-            step = 2
-            try:
-                for img_nb in range(1, page_nb + 1, step):
-                    batch_pages = convert_from_path(
-                        self.get_file_path(),
-                        dpi=300,
-                        first_page=img_nb,
-                        last_page=min(img_nb + step - 1, page_nb),
-                    )
-                    # Iterate through all the batch pages stored above
-                    for page in batch_pages:
-                        page.save(
-                            f"{BASE_DIR}/{MEDIA_DIR}/{IMG_DIR}/{filename}_{img_nb:04d}.jpg",
-                            format="JPEG",
-                        )
-                        # Increment the counter to update filename
-                        img_nb += 1
-            except Exception as e:
-                log(f"Failed to convert {filename}.pdf to images:\n{e}")
+    def manifest_link(self):
+        return gen_manifest_btn(self.id, self.get_wit_type(), self.has_manifest())
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance
 @receiver(pre_delete, sender=Digitization)
-def image_delete(
-    sender, digitization: Digitization, **kwargs
-):  # NOTE does the function name have an importance?
-    if digitization.get_digit_type() != IMG:
+def image_delete(sender, digit: Digitization, **kwargs):
+    if digit.get_digit_type() != IMG:
         return
-    # Pass false so ImageField doesn't save the model
-    # todo check if we can displace that into the delete method
-    digitization.image.delete(False)
+    # Pass False so ImageField doesn't save the model
+    digit.image.delete(False)

@@ -12,11 +12,11 @@ from app.webapp.utils.logger import iiif_log, console, log
 from app.webapp.utils.iiif import get_height, get_width, get_id
 
 
-def extract_images_from_iiif_manifest(manifest_url, witness_ref):
+def extract_images_from_iiif_manifest(manifest_url, file_prefix):
     """
     Extract all images from an IIIF manifest
     """
-    downloader = IIIFDownloader(manifest_url, witness_ref)
+    downloader = IIIFDownloader(manifest_url, file_prefix)
     downloader.run()
 
 
@@ -26,13 +26,13 @@ class IIIFDownloader:
     def __init__(
         self,
         manifest_url,
-        witness_ref,
+        file_prefix,
         sleep=2,
         max_dim=MAX_SIZE,
         min_dim=1500,
     ):
         self.manifest_url = manifest_url
-        self.manifest_id = witness_ref  # Prefix to be used for img filenames
+        self.manifest_id = file_prefix  # Prefix to be used for img filenames
         self.manifest_dir_path = BASE_DIR / IMG_PATH
 
         # self.size = self.get_formatted_size(width, height)
@@ -106,7 +106,7 @@ class IIIFDownloader:
                 return save_img(img, img_name)
 
         except requests.exceptions.RequestException as e:
-            log(f"[save_iiif_img] Failed to download image from {iiif_url}:\n{e}")
+            log(f"[save_iiif_img] Failed to download image from {iiif_url}", e)
             return False
 
     def get_img_rsrc(self, iiif_img):
@@ -137,7 +137,8 @@ class IIIFDownloader:
                 img_info = [self.get_img_rsrc(img) for img in img_list]
             except KeyError as e:
                 log(
-                    f"[get_iiif_resources] Unable to retrieve resources from manifest {self.manifest_url}\n{e}"
+                    f"[get_iiif_resources] Unable to retrieve resources from manifest {self.manifest_url}",
+                    e,
                 )
                 return []
 
