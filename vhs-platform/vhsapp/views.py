@@ -28,6 +28,7 @@ from vhsapp.utils.iiif.annotation import (
     check_wit_annotation,
     get_anno_img,
     formatted_wit_anno,
+    index_anno,
 )
 
 
@@ -63,7 +64,12 @@ def receive_anno(request, wit_id, wit_type):
         with open(f"{anno_path}/{wit_id}.txt", "w+b") as f:
             f.write(annotation_file.read())
 
-        return JsonResponse({"message": "Annotation received."})
+        manifest_url = (
+            f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/manifest.json"
+        )
+        index_anno(manifest_url, wit_type, wit_id)
+
+        return JsonResponse({"message": "Annotation received and indexed."})
 
     else:
         return JsonResponse({"message": "Invalid request."}, status=400)
