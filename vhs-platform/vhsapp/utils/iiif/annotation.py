@@ -20,6 +20,26 @@ from vhsapp.utils.functions import (
     get_img_prefix,
 )
 
+from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
+from vhsapp.utils.constants import APP_NAME, MAX_SIZE, MAX_RES, APP_NAME, MANIFEST_AUTO
+from vhs.settings import VHS_APP_URL, GPU_URL
+
+
+def annotate_wit(event, witness_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
+    wit_type = MS if wit_abbr == MS_ABBR else VOL
+
+    api_endpoint = f"{GPU_URL}/run_detect"
+
+    manifest_url = (
+        f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{witness_id}/manifest.json"
+    )
+    data = {"manifest_url": manifest_url, "wit_abbr": wit_abbr}
+
+    event.wait()
+    requests.post(url=api_endpoint, data=data)
+
+    return print(f"Witness {witness_id} sent for diagram extraction")
+
 
 def check_wit_annotation(wit_id, wit_type):
     last_canvases = get_last_indexed_canvas()

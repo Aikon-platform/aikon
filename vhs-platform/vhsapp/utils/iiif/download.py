@@ -10,7 +10,6 @@ from vhsapp.utils.functions import (
     create_dir,
     save_img,
     sanitize_url,
-    annotate_wit,
 )
 from vhsapp.utils.constants import MAX_SIZE
 from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH, BASE_DIR
@@ -25,7 +24,6 @@ def extract_images_from_iiif_manifest(manifest_url, witness_ref, event):
     downloader = IIIFDownloader(manifest_url, witness_ref)
     downloader.run()
     event.set()
-    # annotate_wit(witness_ref.replace("ms", ""))
 
 
 class IIIFDownloader:

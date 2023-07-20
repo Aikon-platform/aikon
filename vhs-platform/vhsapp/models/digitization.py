@@ -21,7 +21,6 @@ from vhsapp.utils.functions import (
     rename_file,
     convert_to_jpeg,
     pdf_to_img,
-    annotate_wit,
 )
 from vhsapp.utils.paths import (
     BASE_DIR,
@@ -36,6 +35,7 @@ from vhsapp.utils.iiif.validation import (
 )
 
 from vhsapp.utils.iiif.download import extract_images_from_iiif_manifest
+from vhsapp.utils.iiif.annotation import annotate_wit
 from vhsapp.models.witness import Volume, Manuscript
 
 
