@@ -133,9 +133,9 @@ def get_annos_per_canvas(wit_id, wit_type, last_canvas=0, specific_canvas=""):
     return annotated_canvases
 
 
-def get_txt_annos(wit_id):  # TODO change in order to retrieve the correct file
+def get_txt_annos(digit_ref):
     try:
-        with open(f"{BASE_DIR}/{MEDIA_DIR}/{ANNO_PATH}/{wit_id}.txt") as f:
+        with open(f"{BASE_DIR}/{MEDIA_DIR}/{ANNO_PATH}/{digit_ref}.txt") as f:
             return [line.strip() for line in f.readlines()]
     except FileNotFoundError:
         return None
@@ -306,7 +306,9 @@ def get_canvas_list(witness, wit_type):
             "error": "the annotations were not yet generated"
         }  # TODO find a way to display error msg
 
-    wit_imgs = get_imgs(get_img_prefix(witness, wit_type))
+    wit_imgs = get_imgs(
+        get_img_prefix(witness, wit_type)
+    )  # TODO change that to use digitization.get_filename
 
     canvases = []
     for line in lines:

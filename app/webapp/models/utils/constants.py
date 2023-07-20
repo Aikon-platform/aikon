@@ -59,6 +59,10 @@ MAN_ABBR = "man"
 PAG_ABBR = "pag"
 FOL_ABBR = "fol"
 OTH_ABBR = "oth"
+PUB_ABBR = "pub"
+AUT_ABBR = "aut"
+ILL_ABBR = "ill"
+SEL_ABBR = "sel"
 
 TPR = f"letterpress {PR}" if APP_LANG == "en" else "typographie"
 WPR = f"woodblock {PR}" if APP_LANG == "en" else "bois gravés"
@@ -66,6 +70,11 @@ WPR = f"woodblock {PR}" if APP_LANG == "en" else "bois gravés"
 PAGE = "page" if APP_LANG == "en" else "paginé"
 FOLIO = "folio" if APP_LANG == "en" else "folioté"
 OTHER = "other" if APP_LANG == "en" else "autre"
+
+PUBLI = "publisher" if APP_LANG == "en" else "éditeur/diffuseur"
+AUTHOR = "author" if APP_LANG == "en" else "auteur"
+ILLUM = "illuminator" if APP_LANG == "en" else "enlumineur"
+SELLER = "bookseller" if APP_LANG == "en" else "libraire"
 
 WIT_TYPE = (
     (MS_ABBR, MS.capitalize()),
@@ -85,18 +94,31 @@ PAGE_TYPE = (
     (OTH_ABBR, OTHER.capitalize()),
 )
 
+ROLES = (
+    (PUB_ABBR, PUBLI),
+    (AUT_ABBR, AUTHOR),
+    (ILL_ABBR, ILLUM),
+    (SEL_ABBR, SELLER),
+)
+
 #############################
 #        HELP TEXTS         #
 #############################
-# TODO make it bilingual
 PUBLISHED_INFO = (
-    "Les informations seront accessibles aux autres utilisateurs de la base."
+    "record details will be accessible to other users of the database"
+    if APP_LANG == "en"
+    else "Les informations seront accessibles aux autres utilisateurs de la base."
 )
 IMG_INFO = "" if APP_LANG == "en" else "Envoyez des images jusqu'à 2 Go."
-MANIFEST_INFO = """<div class='tooltip'>
-                 <i class='fa-solid fa-circle-info' title='Manifest'></i>
-                 <span class='tooltiptext'>A IIIF manifest is the package that contains all the information related
-                 to a particular digital object, including the image itself as well as the metadata.</span>
+
+MANIFEST_DESC = (
+    "A manifest allow to describe and share scans with their metadata based on the IIIF standard."
+    if APP_LANG == "en"
+    else "Un manifeste permet de décrire et de partager des numérisations avec leurs métadonnées selon la norme IIIF."
+)
+MANIFEST_INFO = f"""<div class='tooltip'>
+                 <i class='fa-solid fa-circle-info' title='Manifest'>{MANIFEST_DESC}</i>
+                 <span class='tooltiptext'></span>
              </div>
              E.g.: <a href='https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json' target='_blank'>
              https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json</a>"""

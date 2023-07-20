@@ -22,16 +22,11 @@ class DigitizationAdmin(UnregisteredAdmin):
         "thumbnail",
         "witness",
         "get_nb_pages",
+        # todo btn to open mirador + nb of annotations + is validated or not
     )
 
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
-        # self.list_display = (
-        #     "thumbnail",
-        #     "witness",  # show witness __str__()
-        #     "witness__nb_pages",
-        #     # todo btn to see digit + nb of annotations + is validated or not
-        # )
 
     def thumbnail(self, obj: Digitization):
         if obj.digit_type == IMG:
@@ -52,7 +47,7 @@ class DigitizationAdmin(UnregisteredAdmin):
 class DigitizationInline(nested_admin.NestedStackedInline):
     model = Digitization
     extra = 1  # Display only one empty form in the parent form
-    max_num = 5  # TODO change naming convention to allow multiple digitizations
+    max_num = 5
     readonly_fields = ("digit_preview", "manifest_v1", "manifest_v2")
 
     fields = [
@@ -89,25 +84,21 @@ class DigitizationInline(nested_admin.NestedStackedInline):
         return list(set(fields))
 
     @admin.display(description=get_name("manifest_v1"))
-    def manifest_v1(self, obj, wit_abbr=MS_ABBR):
+    def manifest_v1(self, obj: Digitization):
         if obj.id:
-            img_prefix = get_img_prefix(obj, wit_abbr)
-            action = "view" if has_manifest(img_prefix) else "no_manifest"
-            return gen_btn(obj.id, action, MANIFEST_V1, self.wit_name().lower())
+            action = "view" if obj.has_manifest() else "no_manifest"
+            return gen_btn(obj.id, action, MANIFEST_V1, obj.get_wit_type())
         return "-"
 
     @admin.display(description=get_name("manifest_v2"))
-    def manifest_v2(self, obj: Digitization, wit_type=MS_ABBR):
+    def manifest_v2(self, obj: Digitization):
         if obj.id:
-            action = "final" if obj.manifest_final else "edit"
+            action = "final" if obj.is_validated else "edit"
             if not obj.has_annotations():
                 action = "no_anno"
-            return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
+            return gen_btn(obj.id, action, MANIFEST_V2, obj.get_wit_type())
         return "-"
 
-    # manifest_v2.admin_order_field = (
-    #     "-author__name"  # By what value to order this column in the admin list view
-    # )
     # def get_fields(self, request, obj=None):
     #     fields = list(super(WitnessInline, self).get_fields(request, obj))
     #     exclude_set = set()

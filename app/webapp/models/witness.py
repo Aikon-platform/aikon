@@ -5,7 +5,16 @@ from django.utils.text import slugify
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.volume import Volume
 from app.webapp.models.series import Series
-from app.webapp.models.utils.constants import MS, VOL, WIT, WIT_TYPE, SER, PAGE_TYPE
+from app.webapp.models.utils.constants import (
+    MS,
+    VOL,
+    WIT,
+    WIT_TYPE,
+    SER,
+    PAGE_TYPE,
+    PUBLISHED_INFO,
+    AUTHOR,
+)
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.functions import get_icon, flatten
 
@@ -27,10 +36,6 @@ def get_name(fieldname, plural=False):
         "series": {"en": SER, "fr": SER},
         "title": {"en": "title of the volume", "fr": "titre du volume"},
         "is_public": {"en": "make it public", "fr": "rendre public"},
-        "is_public_info": {
-            "en": "record details will be accessible to other users of the database",
-            "fr": "les informations seront accessibles aux autres utilisateurs de la base",
-        },
     }
 
     return get_fieldname(fieldname, fields, plural)
@@ -75,7 +80,7 @@ class Witness(models.Model):
     is_public = models.BooleanField(
         verbose_name=get_name("is_public"),
         default=False,
-        help_text=f"{get_icon('triangle-exclamation')} {get_name('is_public_info')}",
+        help_text=f"{get_icon('triangle-exclamation')} {PUBLISHED_INFO}",
     )
     link = models.URLField(
         verbose_name=get_name("link"),
@@ -117,13 +122,14 @@ class Witness(models.Model):
         metadata = {
             "Place of conservation": self.place,
             "Reference number": self.id_nb,
+            "Author(s)": self.get_author_names(),
+            "Work(s)": self.get_work_titles(),
+            "Place(s) of production": self.get_place_names(),
         }
         if note := self.note:
             metadata["Notes"] = note
 
         # metadata = {
-        #             "Author": self.printed.author.name if self.printed.author else "No author",
-        #             "Number or identifier of self": self.number_identifier,
         #             "Place": self.place,
         #             "Date": self.date,
         #             "Publishers/booksellers": self.publishers_booksellers,
@@ -163,19 +169,35 @@ class Witness(models.Model):
         return False
 
     def has_annotations(self):
-        for digit in self.get_digits():
-            if digit.has_annotations():
-                return True
-        return False
+        return any(digit.has_annotations() for digit in self.get_digits())
+
+    def get_works(self):
+        return [content.work for content in self.get_contents()]
+
+    def get_work_titles(self):
+        return "\n".join([work.__str__() for work in self.get_works()])
+
+    def get_places(self):
+        return [content.place for content in self.get_contents()]
+
+    def get_place_names(self):
+        return "\n".join([place.__str__() for place in self.get_places()])
 
     def get_roles(self):
-        roles = []
-        for content in self.get_contents():
-            roles.append(content.get_roles())
-        return flatten(roles)
+        return flatten([content.get_roles() for content in self.get_contents()])
 
     def get_persons(self):
         return self.content_set.values_list("roles__person", flat=True).distinct()
+
+    def get_person_names(self):
+        return "<br>".join([role.__str__() for role in self.get_roles()])
+
+    def get_authors(self):
+        return [role.person for role in self.get_roles() if role.role == AUTHOR]
+
+    def get_author_names(self):
+        # TODO add something when no author defined
+        return "\n".join([author.__str__() for author in self.get_authors()])
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.work.title)

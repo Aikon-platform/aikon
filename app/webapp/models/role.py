@@ -3,6 +3,7 @@ from django.db import models
 from app.webapp.models.content import Content
 from app.webapp.models.series import Series
 from app.webapp.models.person import Person
+from app.webapp.models.utils.constants import ROLES
 
 from app.webapp.models.utils.functions import get_fieldname
 
@@ -10,20 +11,8 @@ from app.webapp.models.utils.functions import get_fieldname
 def get_name(fieldname, plural=False):
     fields = {
         "source": {"en": "digitization source", "fr": "source de la numérisation"},
-        "pub": {"en": "publisher", "fr": "éditeur/diffuseur"},
-        "aut": {"en": "author", "fr": "auteur"},
-        "ill": {"en": "illuminator", "fr": "enlumineur"},
-        "sel": {"en": "bookseller", "fr": "libraire"},
     }
     return get_fieldname(fieldname, fields, plural)
-
-
-ROLES = (
-    ("pub", get_name("pub")),
-    ("aut", get_name("aut")),
-    ("ill", get_name("ill")),
-    ("sel", get_name("sel")),
-)
 
 
 class Role(models.Model):

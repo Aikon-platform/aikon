@@ -161,25 +161,25 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     @admin.display(description="Annotation")
     def is_annotated(self, obj: Witness):
         # To display a button in the list of witnesses to know if they were annotated or not
-        btns = ""
-        for digit in obj.get_digits():
-            btns += f"{digit.anno_btn()}<br>"
-        return mark_safe(btns)
+        return mark_safe("<br>".join(digit.anno_btn() for digit in obj.get_digits()))
 
     @admin.display(description="IIIF manifest")
     def manifest_link(self, obj):
         # To display a button in the list of witnesses to give direct link to witness manifest
-        links = ""
-        for digit in obj.get_digits():
-            links += f"{digit.manifest_link()}<br>"
-        return mark_safe(links)
+        return mark_safe(
+            "<br>".join(digit.manifest_link() for digit in obj.get_digits())
+        )
 
-    # TODO authors method to access all authors
-    @admin.display(description=get_name("Person", plural=True))
+    @admin.display(
+        description=get_name("Person", plural=True),
+        # ordering= TODO find something to order the column
+    )
     def authors(self, obj: Witness):
-        return obj.get_persons()
+        return obj.get_person_names()
 
-    authors.short_description = "persons"  # TODO bilingual and with use of constants
+    # # or TODO authors.admin_order_field = (
+    #     "-author__name"  # By what value to order this column in the admin list view
+    # )
 
     # list of fields that are displayed in the witnesses list view
     list_display = (
@@ -280,9 +280,6 @@ class WitnessInline(nested_admin.NestedStackedInline):
     classes = ("collapse",)
     inlines = [DigitizationInline]
 
-    def wit_name(self):
-        return VOL
-
     # def get_fields(self, request, obj=None):
     #     fields = list(super(WitnessInline, self).get_fields(request, obj))
     #     exclude_set = set()
@@ -299,7 +296,7 @@ class WitnessInline(nested_admin.NestedStackedInline):
     #     if obj.id:
     #         img_prefix = get_img_prefix(obj, VOL_ABBR)
     #         action = "view" if has_manifest(img_prefix) else "no_manifest"
-    #         return gen_btn(obj.id, action, MANIFEST_V1, self.wit_name().lower())
+    #         return gen_btn(obj.id, action, MANIFEST_V1, self.wit_type().lower())
     #     return "-"
     #
     # manifest_v1.short_description = "Manifeste (automatique)"
@@ -309,7 +306,7 @@ class WitnessInline(nested_admin.NestedStackedInline):
     #         action = "final" if obj.manifest_final else "edit"
     #         if not has_annotations(obj, VOL_ABBR):
     #             action = "no_anno"
-    #         return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
+    #         return gen_btn(obj.id, action, MANIFEST_V2, self.wit_type().lower())
     #     return "-"
     #
     # manifest_v2.short_description = "Manifeste (modifiable)"

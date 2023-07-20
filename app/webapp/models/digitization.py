@@ -184,7 +184,11 @@ class Digitization(models.Model):
         return imgs
 
     def has_manifest(self):
-        return len(self.get_imgs()) != 0
+        # check if at least one file begins with the correct filename prefix
+        for entry in os.scandir(IMG_PATH):
+            if entry.name.startswith(self.get_filename()) and entry.is_file():
+                return True
+        return False
 
     def save(self, *args, **kwargs):
         digit_type = self.get_digit_type()
@@ -260,6 +264,17 @@ class Digitization(models.Model):
 
     def manifest_link(self):
         return gen_manifest_btn(self.id, self.get_wit_type(), self.has_manifest())
+
+    def get_metadata(self):
+        metadata = self.get_witness().get_metadata()
+
+        # TODO finish this
+
+        if manifest := self.manifest:
+            metadata["Source manifest"] = str(manifest)
+            metadata["Is annotated"] = self.has_annotations()
+
+        return metadata
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance
