@@ -9,8 +9,8 @@ import requests
 from vhsapp.utils.paths import MEDIA_PATH, BASE_DIR, VOL_ANNO_PATH, MS_ANNO_PATH
 from vhsapp.models import get_wit_abbr, get_wit_type
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
-from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
-from vhsapp.utils.constants import APP_NAME
+from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL, GPU_URL
+from vhsapp.utils.constants import APP_NAME, MANIFEST_AUTO
 from vhsapp.utils.functions import (
     console,
     log,
@@ -19,10 +19,6 @@ from vhsapp.utils.functions import (
     get_imgs,
     get_img_prefix,
 )
-
-from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
-from vhsapp.utils.constants import APP_NAME, MAX_SIZE, MAX_RES, APP_NAME, MANIFEST_AUTO
-from vhs.settings import VHS_APP_URL, GPU_URL
 
 
 def annotate_wit(event, witness_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
@@ -39,6 +35,21 @@ def annotate_wit(event, witness_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
     requests.post(url=api_endpoint, data=data)
 
     return print(f"Witness {witness_id} sent for diagram extraction")
+
+
+def index_anno(manifest_url, wit_type, wit_id):
+    try:
+        manifest = requests.get(manifest_url)
+        manifest_content = manifest.json()
+    except Exception as e:
+        log(f"[index_anno]: Failed to load manifest for {wit_type} n°{wit_id}: {e}")
+
+    requests.post(f"{SAS_APP_URL}/manifests", json=manifest_content)
+
+    try:
+        requests.get(f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/populate/")
+    except Exception as e:
+        log(f"[index_anno]: Failed to index {wit_type} n°{wit_id}: {e}")
 
 
 def check_wit_annotation(wit_id, wit_type):
