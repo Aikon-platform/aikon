@@ -18,6 +18,10 @@ from vhsapp.models.witness import (
     Manuscript,
 )
 
+from vhsapp.utils.iiif.annotation import (
+    formatted_wit_anno,
+)
+
 from vhsapp.models.constants import MS, VOL, WIT, MS_ABBR, VOL_ABBR, WIT_ABBR
 
 from vhsapp.admin.digitization import (
@@ -212,6 +216,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             "export_selected_iiif_images",
             "export_selected_images",
             "export_selected_pdfs",
+            "export_annotated_imgs"
         ]
         if self.wit_type() == VOL:
             self.actions += ["detect_similarity"]
@@ -292,31 +297,6 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         img_list = [gen_iiif_url(img) for img in self.get_img_list(queryset)]
         return list_to_txt(img_list, f"IIIF_images")
 
-    # @admin.action(description="Exporter les images sélectionnées")
-    # def export_selected_images(self, request, queryset):
-    #     if self.check_selection(queryset, request):
-    #         return HttpResponseRedirect(request.get_full_path())
-    #     # NOTE get_file_list(IMG_PATH, self.get_img_list(queryset)) is returning None
-    #     return zip_img(zipfile, get_file_list(IMG_PATH, self.get_img_list(queryset)))
-
-    # @admin.action(description="Exporter les documents PDF sélectionnés")
-    # def export_selected_pdfs(self, request, queryset):
-    #     if self.check_selection(queryset, request):
-    #         return HttpResponseRedirect(request.get_full_path())
-    #     return zip_img(
-    #         zipfile, self.get_img_list(queryset, with_img=False, with_pdf=True), "pdf"
-    #     )
-
-    @button(
-        permission="demo.add_demomodel1",
-        change_form=False,
-        html_attrs={"style": "background-color:#88FF88;color:black"},
-    )
-    def exporter_images(self, request):
-        return HttpResponseRedirect(
-            "https://iscd.huma-num.fr/media/images_vhs.zip"
-        )  # TODO CHANGE THAT
-
 
 @admin.register(Printed)
 class PrintedAdmin(WitnessAdmin, nested_admin.NestedModelAdmin, admin.SimpleListFilter):
@@ -380,6 +360,13 @@ class PrintedAdmin(WitnessAdmin, nested_admin.NestedModelAdmin, admin.SimpleList
 
 @admin.register(Manuscript)
 class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
+
+    def __init__(self, model, admin_site):
+        super().__init__(model, admin_site)
+        self.actions += [
+            "export_annotated_imgs"
+        ]
+
     # list of fields that are displayed in the all witnesses tab
     list_display = (
         "id",
@@ -416,6 +403,7 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
         files = request.FILES.getlist("imagemanuscript_set-0-image")
         for file in files[:-1]:
             obj.imagemanuscript_set.create(image=file)
+
 
     @admin.action(description="Exporter les manifests IIIF sélectionnés")
     def export_selected_manifests(self, request, queryset):
@@ -465,3 +453,17 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
             exclude_fieldsets[0][1]["fields"] = exclude_fieldsets[0][1]["fields"][3:]
             return exclude_fieldsets
         return fieldsets
+
+    @admin.action(description="Export diagrams annotated in selected sources")
+    def export_annotated_imgs(self, request, queryset):
+        results = queryset.values_list("id")
+
+        for wit_id in results:
+            witness = Manuscript.objects.get(pk=wit_id[0])
+            bboxes, canvas_annos = formatted_wit_anno(witness, MS)
+            log(canvas_annos)
+
+        #
+        # return HttpResponseRedirect(
+        #     "https://iscd.huma-num.fr/media/images_vhs.zip"
+        # )
