@@ -65,7 +65,9 @@ class Witness(models.Model):
         null=True,
     )
 
-    note = models.TextField(verbose_name=get_name("note"), max_length=1000, unique=True)
+    notes = models.TextField(
+        verbose_name=get_name("notes"), max_length=1000, unique=True
+    )
     nb_pages = models.IntegerField(
         verbose_name=get_name("nb_pages"),
         null=True,  # NOTE: this field can be automatically filled with the scan metadata
@@ -130,7 +132,6 @@ class Witness(models.Model):
             metadata["Notes"] = note
 
         # metadata = {
-        #             "Place": self.place,
         #             "Date": self.date,
         #             "Publishers/booksellers": self.publishers_booksellers,
         #             "Description of work": self.printed.description,
@@ -141,17 +142,6 @@ class Witness(models.Model):
         #             metadata["Illustrator(s)"] = illustrators
         #         if engravers := self.printed.engravers:
         #             metadata["Engraver(s)"] = engravers
-        #         if digitized_version := self.digitized_version:
-        #             metadata["Source of the digitized version"] = digitized_version.source
-        #         if comment := self.comment:
-        #             metadata["Comment"] = comment
-        #         if other_copies := self.other_copies:
-        #             metadata["Other copy(ies)"] = other_copies
-        #         if manifest := self.manifestvolume_set.first():
-        #             metadata["Source manifest"] = str(manifest)
-        # if manifest := self.manifestmanuscript_set.first():
-        #             metadata["Source manifest"] = str(manifest)
-        #             metadata["Is annotated"] = has_annotations(witness, wit_abbr)
 
         return metadata
 

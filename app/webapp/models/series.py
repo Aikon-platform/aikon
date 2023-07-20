@@ -19,7 +19,9 @@ class Series(models.Model):
     def __str__(self):
         return ""  # TODO find a name
 
-    note = models.CharField(verbose_name=get_name("note"), max_length=500, unique=True)
+    notes = models.CharField(
+        verbose_name=get_name("notes"), max_length=500, unique=True
+    )
     date_min = models.IntegerField(
         verbose_name=get_name("date_min"), null=True, blank=True
     )

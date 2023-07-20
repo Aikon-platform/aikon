@@ -8,7 +8,7 @@ common_fields = {
     "name": {"en": "name", "fr": "nom"},
     "title": {"en": "title", "fr": "titre"},
     "type": {"en": "type", "fr": "type"},
-    "note": {"en": "additional notes", "fr": "notes complémentaires"},
+    "notes": {"en": "additional notes", "fr": "notes complémentaires"},
     "is_public": {"en": "Make it public", "fr": "Rendre public"},
 }
 

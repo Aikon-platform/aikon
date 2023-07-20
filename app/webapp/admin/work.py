@@ -1,3 +1,4 @@
+import nested_admin
 from django.contrib import admin
 from admin_searchable_dropdown.filters import AutocompleteFilter
 
@@ -16,3 +17,7 @@ class WorkAdmin(UnregisteredAdmin):
     list_filter = ("title",)
     fields = ["title", "author", ("date_min", "date_max"), "place", "note", "tags"]
     autocomplete_fields = ("author", "place")
+
+
+# class WorkInline(nested_admin.NestedStackedInline):
+#     fields = ["title", "author", ("date_min", "date_max")]

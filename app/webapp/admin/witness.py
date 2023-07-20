@@ -1,5 +1,5 @@
 from app.config.settings import APP_LANG
-from app.webapp.admin import DigitizationInline, ContentInline
+from app.webapp.admin import DigitizationInline, ContentInline, ContentWorkInline
 from app.webapp.models import MS_ABBR, MS, VOL
 from app.webapp.models.witness import Witness, get_name
 from app.webapp.utils.constants import (
@@ -81,35 +81,13 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                     "type",
                     ("id_nb", "place"),  # place and id_nb appear on the same line
                     ("page_type", "nb_pages"),  # same
-                    "note",
+                    "notes",
                     ("title", "volume"),
                     "is_public",
                 ]
             },
         ),
     )
-
-    # def get_fieldsets(self, request, obj: Witness = None):
-    #     # called every time the form is rendered without need of refreshing the page
-    #     fieldsets = super().get_fieldsets(request, obj=obj)
-    #
-    #     # TODO: exclude manifest fields when no digitization was uploaded
-    #
-    #     if obj:
-    #         # when the witness is a print (i.e. "wpr" and "tpr"), display all the fields
-    #         if obj.type != "manuscript":
-    #             return fieldsets
-    #
-    #         # from copy import deepcopy
-    #         # exclude_fieldsets = deepcopy(fieldsets)
-    #         # exclude_fieldsets[0][1]["fields"] = exclude_fieldsets[0][1]["fields"][3:]
-    #
-    #         # else, exclude "title" TODO finish to remove "title"
-    #         fieldsets[0][1]["fields"] = tuple(
-    #             field for field in fieldsets[0][1]["fields"] if field != "title"
-    #         )
-    #
-    #     return fieldsets
 
     # MARKER SUB-FORMS existing within the Witness form
     inlines = [DigitizationInline, ContentInline]
@@ -261,52 +239,11 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
 
 class WitnessInline(nested_admin.NestedStackedInline):
-    # FORM to be contained within the Series form
+    # FORM contained in the Series form
     model = Witness
-
-    # TODO CHANGE FROM THIS TO END OF CLASS
-    fields = [
-        "title",
-        "number_identifier",
-        "place",
-        "date",
-        "publishers_booksellers",
-        "digitized_version",
-        "comment",
-        "other_copies",
-    ]
-    autocomplete_fields = ("",)
-    extra = 0
-    classes = ("collapse",)
-    inlines = [DigitizationInline]
-
-    # def get_fields(self, request, obj=None):
-    #     fields = list(super(WitnessInline, self).get_fields(request, obj))
-    #     exclude_set = set()
-    #     if not obj:  # obj will be None on the add page, and something on change pages
-    #         exclude_set.add("manifest_v1")
-    #         exclude_set.add("manifest_v2")
-    #         exclude_set.add("manifest_final")
-    #     return [f for f in fields if f not in exclude_set]
-
-    # # TODO use Abstract Model ManifestAdmin instead
-    # readonly_fields = ("manifest_v1", "manifest_v2")
-    #
-    # def manifest_v1(self, obj):
-    #     if obj.id:
-    #         img_prefix = get_img_prefix(obj, VOL_ABBR)
-    #         action = "view" if has_manifest(img_prefix) else "no_manifest"
-    #         return gen_btn(obj.id, action, MANIFEST_V1, self.wit_type().lower())
-    #     return "-"
-    #
-    # manifest_v1.short_description = "Manifeste (automatique)"
-    #
-    # def manifest_v2(self, obj):
-    #     if obj.id:
-    #         action = "final" if obj.manifest_final else "edit"
-    #         if not has_annotations(obj, VOL_ABBR):
-    #             action = "no_anno"
-    #         return gen_btn(obj.id, action, MANIFEST_V2, self.wit_type().lower())
-    #     return "-"
-    #
-    # manifest_v2.short_description = "Manifeste (modifiable)"
+    verbose_name_plural = ""  # No title in the blue banner on top of the inline form
+    extra = 1
+    # classes = ("collapse",)
+    # TODO make
+    fields = [("id_nb", "place")]
+    inlines = [ContentWorkInline]

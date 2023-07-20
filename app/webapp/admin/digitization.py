@@ -57,7 +57,6 @@ class DigitizationInline(nested_admin.NestedStackedInline):
         "manifest",
         # "manifest_v1",
         # "manifest_v2",
-        # "manifest_final",
     ]
 
     def digit_url(self):
@@ -105,7 +104,6 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     #     if not obj:  # obj will be None on the add page, and something on change pages
     #         exclude_set.add("manifest_v1")
     #         exclude_set.add("manifest_v2")
-    #         exclude_set.add("manifest_final")
     #     return [f for f in fields if f not in exclude_set]
 
 

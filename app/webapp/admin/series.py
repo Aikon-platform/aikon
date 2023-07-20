@@ -2,24 +2,26 @@ import nested_admin
 from admin_extra_buttons.mixins import ExtraButtonsMixin
 from django.contrib import admin
 
-from app.webapp.admin import DigitizationInline
-from app.webapp.models import VOL
+from app.webapp.admin import RoleInline
+from app.webapp.admin.witness import WitnessInline
 from app.webapp.models.series import Series, get_name
 
 
 @admin.register(Series)
-class SeriesAdmin(admin.ModelAdmin):
+class SeriesAdmin(nested_admin.NestedModelAdmin):
     search_fields = ("edition_name",)
 
-    # class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
     class Meta:
         verbose_name = get_name("Series")
         verbose_name_plural = get_name("Series", True)
-        abstract = True
 
     class Media:
-        css = {"all": ("css/style.css",)}
-        js = ("js/jquery-3.6.1.js", "js/script.js")
+        css = {"all": ("css/form.css",)}
+        js = ("js/witness-form.js",)
 
-    # NOTE: attribute to use to change to template of witness (template at: templates/admin/change.html)
-    # change_form_template = "admin/change.html"
+    fields = ["edition", ("date_min", "date_max"), "notes", "is_public"]
+
+    inlines = [RoleInline, WitnessInline]
+
+    # NOTE: attribute to use to change to template of witness (template at: templates/admin/series_form.html)
+    # change_form_template = "admin/series_form.html"
