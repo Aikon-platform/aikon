@@ -1,4 +1,5 @@
 import json
+from os.path import exists
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -11,6 +12,7 @@ from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhsapp.utils.paths import MEDIA_PATH, BASE_DIR, VOL_ANNO_PATH, MS_ANNO_PATH
 from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
+
 from vhsapp.utils.constants import (
     APP_NAME,
     APP_NAME_UPPER,
@@ -26,6 +28,7 @@ from vhsapp.utils.iiif.annotation import (
     check_wit_annotation,
     get_anno_img,
     formatted_wit_anno,
+    index_anno,
     get_canvas_list,
     get_indexed_canvas_annos,
 )
@@ -38,6 +41,7 @@ from vhsapp.utils.functions import (
     get_img_prefix,
     credentials,
     list_to_txt,
+    credentials
 )
 
 
@@ -57,6 +61,31 @@ def manifest_volume(request, wit_id, version):
     Build a volume manifest using iiif-prezi library IIIF Presentation API 2.0
     """
     return JsonResponse(manifest_wit_type(wit_id, VOL, version))
+
+
+def receive_anno(request, wit_id, wit_type):
+    if request.method == "POST":
+        # TODO: vérification du format des annotations reçues
+        annotation_file = request.FILES["annotation_file"]
+
+        anno_path = (
+            f"{BASE_DIR}/{MEDIA_PATH}/{MS_ANNO_PATH}"
+            if wit_type == "manuscript"
+            else f"{BASE_DIR}/{MEDIA_PATH}/{VOL_ANNO_PATH}"
+        )
+
+        with open(f"{anno_path}/{wit_id}.txt", "w+b") as f:
+            f.write(annotation_file.read())
+
+        manifest_url = (
+            f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/manifest.json"
+        )
+        index_anno(manifest_url, wit_type, wit_id)
+
+        return JsonResponse({"message": "Annotation received and indexed."})
+
+    else:
+        return JsonResponse({"message": "Invalid request."}, status=400)
 
 
 def export_anno_img(request, wit_id, wit_type):
