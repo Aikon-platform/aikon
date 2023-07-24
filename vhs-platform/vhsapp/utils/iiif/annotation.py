@@ -388,3 +388,25 @@ def formatted_wit_anno(witness, wit_type):
         )
 
     return wit_anno_ids, canvas_annos
+
+
+def get_imgs_annotations(witness, wit_type):
+    imgs = []
+
+    try:
+        for canvas_nb, img_file in get_canvas_list(witness, wit_type):
+            c_annos = get_indexed_canvas_annos(canvas_nb, witness.id, wit_type)
+
+            if bool(c_annos):
+                canvas_imgs = [
+                    f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/{get_coord_from_anno(anno)}/full/0/default.jpg"
+                    for anno in c_annos
+                ]
+                imgs.extend(canvas_imgs)
+    except ValueError as e:
+        log(
+            f"[get_imgs_annotations] Error when retrieving annotations: {e}"
+        )
+
+    return imgs
+

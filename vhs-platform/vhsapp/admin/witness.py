@@ -17,10 +17,8 @@ from vhsapp.models.witness import (
     Volume,
     Manuscript,
 )
-
-from vhsapp.utils.iiif.annotation import (
-    formatted_wit_anno,
-)
+from vhs.settings import VHS_APP_URL
+from vhsapp.utils.iiif.annotation import get_imgs_annotations
 
 from vhsapp.models.constants import MS, VOL, WIT, MS_ABBR, VOL_ABBR, WIT_ABBR
 
@@ -59,6 +57,7 @@ from vhsapp.utils.functions import (
     get_pdf_imgs,
     get_icon,
     anno_btn,
+    zip_img
 )
 from vhsapp.utils.logger import console, log
 
@@ -456,14 +455,17 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
 
     @admin.action(description="Export diagrams annotated in selected sources")
     def export_annotated_imgs(self, request, queryset):
+        if queryset.count() > 5:
+            messages.warning(request, "You can select up to 5 manuscripts for export.")
+            return
+
         results = queryset.values_list("id")
 
         for wit_id in results:
             witness = Manuscript.objects.get(pk=wit_id[0])
-            bboxes, canvas_annos = formatted_wit_anno(witness, MS)
-            log(canvas_annos)
+            imgs_urls = get_imgs_annotations(witness, MS)
+            zip_img("annotations.zip", imgs_urls)
 
-        #
-        # return HttpResponseRedirect(
-        #     "https://iscd.huma-num.fr/media/images_vhs.zip"
-        # )
+        return HttpResponseRedirect(
+            f"{VHS_APP_URL}/media/annotations.zip"
+        )

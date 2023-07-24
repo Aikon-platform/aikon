@@ -15,6 +15,7 @@ vhs-platform/mediafiles/img/*
 !vhs-platform/mediafiles/img/.gitkeep
 vhs-platform/staticfiles/*
 !vhs-platform/staticfiles/.gitkeep
+vhs-platform/mediafiles/all_anno.json
 
 cantaloupe/temp/*
 cantaloupe/cantaloupe.properties

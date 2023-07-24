@@ -3,8 +3,10 @@ import io
 import json
 import os
 import re
+import zipfile
 from os.path import exists
 from pathlib import Path
+from urllib.parse import urlparse
 from uuid import uuid4
 
 import PyPDF2
@@ -238,13 +240,22 @@ def list_to_txt(item_list, file_name=None):
     return response
 
 
-def zip_img(zip_file, img_list, file_type="img", file_name=None):  # maybe change name
+def zip_img(img_list, file_type="img", file_name=None):
     buffer = io.BytesIO()
-    with zip_file.ZipFile(buffer, "w") as z:
+    with zipfile.ZipFile(buffer, "w") as z:
         for img_path in img_list:
             if file_type == "img":
-                # Add file to zip
-                z.write(img_path, os.path.basename(img_path))
+                if urlparse(img_path).scheme == '':
+                    z.write(img_path, os.path.basename(img_path))
+                else:
+                    response = requests.get(img_path)
+                    if response.status_code == 200:
+                        z.writestr(os.path.basename(img_path), response.content)
+                    else:
+                        log(
+                            f"[zip_imgs] Fail to download img: {img_path}"
+                        )
+                        pass
             # elif file_type == "pdf":
             #     if urlparse(img_path).scheme == '':
             #         # Local file path
