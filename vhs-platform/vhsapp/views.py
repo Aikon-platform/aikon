@@ -10,9 +10,9 @@ from vhs.settings import ENV
 
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
+from vhsapp.utils.paths import MEDIA_PATH, BASE_DIR, VOL_ANNO_PATH, MS_ANNO_PATH
 from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
-from vhsapp.utils.functions import credentials, console, log, list_to_txt
-from vhsapp.utils.paths import BASE_DIR, MEDIA_PATH, MS_ANNO_PATH, VOL_ANNO_PATH
+
 from vhsapp.utils.constants import (
     APP_NAME,
     APP_NAME_UPPER,
@@ -29,6 +29,19 @@ from vhsapp.utils.iiif.annotation import (
     get_anno_img,
     formatted_wit_anno,
     index_anno,
+    get_canvas_list,
+    get_indexed_canvas_annos,
+)
+from vhsapp.utils.functions import (
+    console,
+    log,
+    read_json_file,
+    write_json_file,
+    get_imgs,
+    get_img_prefix,
+    credentials,
+    list_to_txt,
+    credentials
 )
 
 
@@ -111,10 +124,17 @@ def validate_annotation(request, wit_id, wit_type):
         return HttpResponse(f"An error occurred: {e}", status=500)
 
 
-def witness_annotations(request, wit_id, wit_type):
+def witness_sas_annotations(request, wit_id, wit_type):
     witness = get_object_or_404(Volume if wit_type == VOL else Manuscript, pk=wit_id)
     _, canvas_annos = formatted_wit_anno(witness, wit_type)
     return JsonResponse(canvas_annos, safe=False)
+
+
+def test(request, wit_id, wit_type):
+    return JsonResponse(
+        {"response": f"Nothing to test for {wit_type} #{wit_id}"},
+        safe=False,
+    )
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/")

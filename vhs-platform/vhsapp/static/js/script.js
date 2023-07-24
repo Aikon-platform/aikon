@@ -192,7 +192,8 @@ function validateAnnotations(witId=null) {
             .then(response => {
             if (response.status === 200) {
                 // window.replace(`${SAS_APP_URL}/indexView.html?iiif-content=${toManifest(witId, witType, "v2")}`);
-                window.replace(`${VHS_APP_URL}/${APP_NAME}-admin/vhsapp/${witType}/`)
+                try { window.replace(`${VHS_APP_URL}/${APP_NAME}-admin/vhsapp/${witType}/`); }
+                catch(e) { window.location = `${VHS_APP_URL}/${APP_NAME}-admin/vhsapp/${witType}/`; }
             } else {
                 throw new Error(`Could not validate annotations of ${witType} #${witId}.`);
             }

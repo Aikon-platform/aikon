@@ -1,7 +1,7 @@
 import os
-import re
 
 from glob import glob
+from pathlib import Path
 
 from PIL import Image, UnidentifiedImageError
 from django.shortcuts import get_object_or_404
@@ -20,7 +20,7 @@ from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
 from vhs.settings import SAS_APP_URL, VHS_APP_URL, CANTALOUPE_APP_URL
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.utils.logger import iiif_log, console, log
-from vhsapp.utils.iiif.annotation import set_canvas
+from vhsapp.utils.iiif.annotation import set_canvas, has_annotations
 
 
 def process_images(work, seq, version):
@@ -53,10 +53,18 @@ def process_images(work, seq, version):
     elif pdf_first:  # PDF
         # TODO: factorize with pdf_to_img() in functions.py
         with Pdf.open(f"{BASE_DIR}/{MEDIA_PATH}/{pdf_first.pdf}") as pdf_file:
-            for counter in range(1, len(pdf_file.pages) + 1):
-                img_name = pdf_first.pdf.name.split("/")[-1].replace(
-                    ".pdf", f"_{counter:04d}.jpg"
-                )
+            page_nb = len(pdf_file.pages)
+            digit_nb = len(str(page_nb))
+            pdf_name = Path(pdf_first.pdf.name).stem
+
+            if not os.path.exists(
+                BASE_DIR / IMG_PATH / f"{pdf_name}_{str(1).zfill(digit_nb)}.jpg"
+            ):
+                digit_nb = 4
+
+            for counter in range(1, page_nb + 1):
+                img_name = f"{pdf_name}_{str(counter).zfill(digit_nb)}.jpg"
+
                 try:
                     set_canvas(
                         seq,
@@ -110,17 +118,20 @@ def manifest_witness(id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
-    wit_name = MS if wit_abbr == MS_ABBR else VOL
+    wit_type = MS if wit_abbr == MS_ABBR else VOL
     witness = get_object_or_404(Manuscript if wit_abbr == MS_ABBR else Volume, pk=id)
     fac = ManifestFactory(
-        mdbase=f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_name}/{id}/",
+        mdbase=f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{id}/",
         imgbase=f"{CANTALOUPE_APP_URL}/iiif/2/",
     )
 
     fac.set_iiif_image_info(version="2.0", lvl="2")
     # Build the manifest
     manifest = fac.manifest(ident="manifest", label=witness.__str__())
-    manifest.set_metadata(witness.get_metadata())
+    metadata = witness.get_metadata()
+    metadata["Is annotated"] = has_annotations(witness, wit_abbr)
+
+    manifest.set_metadata(metadata)
 
     # Set the manifest's attribution, description, and viewing hint
     manifest.attribution = f"{APP_NAME_UPPER} platform"
@@ -169,7 +180,4 @@ def has_manifest(work):
 
 
 def gen_manifest_url(wit_id, vers=MANIFEST_AUTO, wit_type=VOL.lower()):
-    wit_abbr = VOL_ABBR if wit_type == VOL.lower() else MS_ABBR
-    return (
-        f"{CANTALOUPE_APP_URL}/{APP_NAME}/iiif/{vers}/{wit_type}/{wit_id}/manifest.json"
-    )
+    return f"{VHS_APP_URL}/{APP_NAME}/iiif/{vers}/{wit_type}/{wit_id}/manifest.json"

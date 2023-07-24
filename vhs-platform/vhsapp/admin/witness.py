@@ -223,6 +223,9 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         return truncatewords_html(obj.author, TRUNCATEWORDS)
 
     short_author.short_description = "Auteurs et/ou Éditeurs"
+    short_author.admin_order_field = (
+        "-author__name"  # How to order this column in the admin list view
+    )
 
     def short_work(self, obj):
         return truncatewords_html(obj.work, TRUNCATEWORDS)

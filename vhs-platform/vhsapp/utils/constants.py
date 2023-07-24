@@ -20,4 +20,4 @@ MAX_ITEMS = 5
 
 # Maximal size for image download
 MAX_SIZE = 2500
-MAX_RES = 300
+MAX_RES = 500
