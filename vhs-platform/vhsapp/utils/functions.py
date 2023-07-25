@@ -26,7 +26,7 @@ from urllib.request import (
 )
 from vhsapp.models import get_wit_abbr, get_wit_type
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
-from vhsapp.utils.constants import APP_NAME, MAX_SIZE, MAX_RES
+from vhsapp.utils.constants import APP_NAME, MAX_SIZE, MAX_RES, APP_NAME, MANIFEST_AUTO
 from vhsapp.utils.paths import BASE_DIR, MEDIA_PATH, IMG_PATH, MS_PDF_PATH, VOL_PDF_PATH
 from vhsapp.utils.logger import log, console
 
@@ -67,7 +67,8 @@ def convert_to_jpeg(image):
     return img_jpg
 
 
-def pdf_to_img(pdf_name, dpi=MAX_RES):
+
+def pdf_to_img(event, pdf_name, dpi=MAX_RES):
     """
     Convert the PDF file to JPEG images
     """
@@ -78,6 +79,7 @@ def pdf_to_img(pdf_name, dpi=MAX_RES):
     try:
         command = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {BASE_DIR / IMG_PATH / pdf_name} -sep _ "
         subprocess.run(command, shell=True, check=True)
+        event.set()
     except Exception as e:
         log(
             f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e} ({e.__class__.__name__})"

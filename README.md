@@ -104,6 +104,7 @@ PROD_URL="<url-used-for-prod>"       # e.g. "https://eida.obspm.fr"
 APP_NAME="<app-name-lowercase>"      # name of the application, e.g. "eida"
 GEONAMES_USER="<geonames-username>"
 APP_LANG="<fr-or-en>"                # lang to be used in the app: work either for french (fr) or english (en)
+EXAPI="<gpu-api-address>"            # e.g. "https://dishas-ia.obspm.fr"
 ```
 
 ### Django

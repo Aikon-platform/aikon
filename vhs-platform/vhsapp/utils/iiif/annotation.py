@@ -9,8 +9,8 @@ import requests
 from vhsapp.utils.paths import MEDIA_PATH, BASE_DIR, VOL_ANNO_PATH, MS_ANNO_PATH
 from vhsapp.models import get_wit_abbr, get_wit_type
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
-from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
-from vhsapp.utils.constants import APP_NAME
+from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL, GPU_URL
+from vhsapp.utils.constants import APP_NAME, MANIFEST_AUTO
 from vhsapp.utils.functions import (
     console,
     log,
@@ -19,6 +19,44 @@ from vhsapp.utils.functions import (
     get_imgs,
     get_img_prefix,
 )
+
+
+def annotate_wit(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
+    wit_type = MS if wit_abbr == MS_ABBR else VOL
+
+    manifest_url = (
+        f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{wit_id}/manifest.json"
+    )
+
+    event.wait()
+
+    try:
+        requests.post(url=f"{GPU_URL}/run_detect", data={
+            "manifest_url": manifest_url,
+            "wit_abbr": wit_abbr
+        })
+    except Exception as e:
+        log(f"[annotate_wit] Failed to send annotation request for {wit_type} #{wit_id}: {e}")
+        return
+
+    # console(f"[annotate_wit] {wit_type} #{wit_id} was correctly sent for diagram extraction")
+    return
+
+
+def index_anno(manifest_url, wit_type, wit_id):
+    try:
+        manifest = requests.get(manifest_url)
+        manifest_content = manifest.json()
+    except Exception as e:
+        log(f"[index_anno]: Failed to load manifest for {wit_type} n°{wit_id}: {e}")
+        return
+
+    requests.post(f"{SAS_APP_URL}/manifests", json=manifest_content)
+
+    try:
+        requests.get(f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/populate/")
+    except Exception as e:
+        log(f"[index_anno]: Failed to index {wit_type} n°{wit_id}: {e}")
 
 
 def check_wit_annotation(wit_id, wit_type):

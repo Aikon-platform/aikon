@@ -5,19 +5,25 @@ import time
 import requests
 from PIL import Image, UnidentifiedImageError
 
-from vhsapp.utils.functions import get_json, create_dir, save_img, sanitize_url
+from vhsapp.utils.functions import (
+    get_json,
+    create_dir,
+    save_img,
+    sanitize_url,
+)
 from vhsapp.utils.constants import MAX_SIZE
 from vhsapp.utils.paths import MEDIA_PATH, IMG_PATH, BASE_DIR
 from vhsapp.utils.logger import iiif_log, console, log
 from vhsapp.utils.iiif import get_height, get_width, get_id
 
 
-def extract_images_from_iiif_manifest(manifest_url, witness_ref):
+def extract_images_from_iiif_manifest(manifest_url, witness_ref, event):
     """
     Extract all images from an IIIF manifest
     """
     downloader = IIIFDownloader(manifest_url, witness_ref)
     downloader.run()
+    event.set()
 
 
 class IIIFDownloader:
