@@ -11,12 +11,13 @@ from vhs.settings import ENV
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhsapp.utils.paths import MEDIA_PATH, BASE_DIR, VOL_ANNO_PATH, MS_ANNO_PATH
-from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL
+from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL, GPU_URL
 
 from vhsapp.utils.constants import (
     APP_NAME,
     APP_NAME_UPPER,
     APP_DESCRIPTION,
+    MANIFEST_AUTO
 )
 from vhsapp.utils.iiif.manifest import (
     process_images,
@@ -43,6 +44,7 @@ from vhsapp.utils.functions import (
     list_to_txt,
     credentials
 )
+import requests
 
 
 def admin_vhs(request):
@@ -61,6 +63,32 @@ def manifest_volume(request, wit_id, version):
     Build a volume manifest using iiif-prezi library IIIF Presentation API 2.0
     """
     return JsonResponse(manifest_wit_type(wit_id, VOL, version))
+
+
+def send_anno(request, wit_id, wit_type):
+    """
+    To relaunch annotations in case the automatic annotation failed
+    """
+    wit_abbr = MS_ABBR if wit_type == MS else VOL_ABBR
+    manifest_url = (
+        f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_AUTO}/{wit_type}/{wit_id}/manifest.json"
+    )
+    try:
+        requests.post(url=f"{GPU_URL}/run_detect", data={
+            "manifest_url": manifest_url,
+            "wit_abbr": wit_abbr
+        })
+    except Exception as e:
+        log(f"[send_anno] Failed to send annotation request for {wit_type} #{wit_id}: {e}")
+        return JsonResponse({
+            "response": f"Failed to send annotation request for {wit_type} #{wit_id}",
+            "cause": e
+        },safe=False,)
+
+    return JsonResponse(
+        {"response": f"Annotations were relaunched for {wit_type} #{wit_id}"},
+        safe=False,
+    )
 
 
 def receive_anno(request, wit_id, wit_type):
