@@ -69,18 +69,21 @@ def receive_anno(request, wit_id, wit_type):
         annotation_file = request.FILES["annotation_file"]
 
         anno_path = (
-            f"{BASE_DIR}/{MEDIA_PATH}/{MS_ANNO_PATH}"
-            if wit_type == "manuscript"
-            else f"{BASE_DIR}/{MEDIA_PATH}/{VOL_ANNO_PATH}"
+            f"{BASE_DIR}/{MEDIA_PATH}/{MS_ANNO_PATH if wit_type == 'manuscript' else VOL_ANNO_PATH}"
         )
-
-        with open(f"{anno_path}/{wit_id}.txt", "w+b") as f:
-            f.write(annotation_file.read())
+        try:
+            with open(f"{anno_path}/{wit_id}.txt", "w+b") as f:
+                f.write(annotation_file.read())
+        except Exception as e:
+            log(f"[receive_anno] Failed to open received annotations for {wit_type} #{wit_id}: {e}")
 
         manifest_url = (
             f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/manifest.json"
         )
-        index_anno(manifest_url, wit_type, wit_id)
+        try:
+            index_anno(manifest_url, wit_type, wit_id)
+        except Exception as e:
+            log(f"[receive_anno] Failed to index annotations for {wit_type} #{wit_id}: {e}")
 
         return JsonResponse({"message": "Annotation received and indexed."})
 
