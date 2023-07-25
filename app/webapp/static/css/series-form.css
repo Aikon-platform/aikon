@@ -1,0 +1,15 @@
+.djn-fieldset > h2 {
+    display: none;
+}
+
+#witness_set-0-contents-group .djn-add-item {
+    display: none;
+}
+
+#witness_set-0-contents-0 h3 {
+    display: none;
+}
+
+.field-volume {
+    display: block !important; /* TODO check why volume field is hidden */
+}

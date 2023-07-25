@@ -41,6 +41,10 @@ class ContentWorkInline(nested_admin.NestedStackedInline):
     fields = ["work"]
     autocomplete_fields = ("work",)
 
+    # def has_add_permission(self, request, obj=None):
+    #     # Returning False will hide the "Add another" link
+    #     return False
+
 
 # TabularInline: most common type of inline model. It displays the related models in a tabular format, similar to a table. Each row represents a related model instance. It is suitable for models with a large number of instances and provides a compact view.
 # StackedInline: inline model displays the related models as a stack of collapsible fieldsets. Each fieldset represents a related model instance. It provides a more visually prominent display of related models compared to TabularInline but takes up more vertical space.

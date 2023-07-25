@@ -47,5 +47,5 @@ class Work(models.Model):
         blank=True,
         null=True,
     )
-    note = models.TextField(verbose_name=get_name("note"), max_length=1000)
+    note = models.TextField(verbose_name=get_name("notes"), max_length=1000)
     tags = models.ManyToManyField(Tag, verbose_name=get_name("Tag"))

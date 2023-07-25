@@ -244,6 +244,6 @@ class WitnessInline(nested_admin.NestedStackedInline):
     verbose_name_plural = ""  # No title in the blue banner on top of the inline form
     extra = 1
     # classes = ("collapse",)
-    # TODO make
-    fields = [("id_nb", "place")]
+    fields = [("id_nb", "place"), "volume"]
     inlines = [ContentWorkInline]
+    autocomplete_fields = ("place", "volume")

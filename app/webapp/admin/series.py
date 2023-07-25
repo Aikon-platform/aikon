@@ -16,7 +16,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         verbose_name_plural = get_name("Series", True)
 
     class Media:
-        css = {"all": ("css/form.css",)}
+        css = {"all": ("css/form.css", "css/series-form.css")}
         js = ("js/witness-form.js",)
 
     fields = ["edition", ("date_min", "date_max"), "notes", "is_public"]
