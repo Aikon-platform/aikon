@@ -33,6 +33,7 @@ from vhsapp.utils.iiif.annotation import (
     index_anno,
     get_canvas_list,
     get_indexed_canvas_annos,
+    check_wit_annos,
 )
 from vhsapp.utils.functions import (
     console,
@@ -128,7 +129,7 @@ def receive_anno(request, wit_id, wit_type):
 
 def export_anno_img(request, wit_id, wit_type):
     annotations = get_anno_img(wit_id, wit_type)
-    return list_to_txt(annotations, f"{wit_type}#{wit_id}_ annotations")
+    return list_to_txt(annotations, f"{wit_type}#{wit_id}_annotations")
 
 
 def canvas_annotations(request, wit_id, version, wit_type, canvas):
@@ -169,6 +170,14 @@ def witness_sas_annotations(request, wit_id, wit_type):
 
 
 def test(request, wit_id, wit_type):
+    model = Volume if wit_type == VOL else Manuscript
+    witnesses = model.objects.all()
+
+    for witness in witnesses:
+        if witness.manifest_final:
+            continue
+        check_wit_annos(witness.id, wit_type, True)
+
     return JsonResponse(
         {"response": f"Nothing to test for {wit_type} #{wit_id}"},
         safe=False,
