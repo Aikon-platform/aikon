@@ -39,7 +39,6 @@ def annotate_wit(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
         log(f"[annotate_wit] Failed to send annotation request for {wit_type} #{wit_id}: {e}")
         return
 
-    # console(f"[annotate_wit] {wit_type} #{wit_id} was correctly sent for diagram extraction")
     return
 
 
@@ -51,36 +50,38 @@ def index_anno(manifest_url, wit_type, wit_id):
         log(f"[index_anno]: Failed to load manifest for {wit_type} n°{wit_id}: {e}")
         return
 
-    requests.post(f"{SAS_APP_URL}/manifests", json=manifest_content)
+    try:
+        # Index the manifest into SAS
+        requests.post(f"{SAS_APP_URL}/manifests", json=manifest_content)
+    except Exception as e:
+        log(f"[index_anno]: Failed to index manifest {wit_type} #{wit_id} in SAS: {e}")
 
     try:
+        # Populate the annotation
         requests.get(f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/populate/")
     except Exception as e:
-        log(f"[index_anno]: Failed to index {wit_type} n°{wit_id}: {e}")
+        log(f"[index_anno]: Failed to index annotations generated for {wit_type} #{wit_id}: {e}")
 
 
-def check_wit_annotation(wit_id, wit_type):
-    last_canvases = get_last_indexed_canvas()
-    last_indexed_canvas = (
-        last_canvases[str(wit_id)] if str(wit_id) in last_canvases else 0
-    )
+def index_wit_annotations(wit_id, wit_type):
+    # last_canvases = get_last_indexed_canvas()
+    # last_indexed_canvas = (
+    #     last_canvases[str(wit_id)] if str(wit_id) in last_canvases else 0
+    # )
 
-    # contains only annotations that were not yet indexed in SAS
-    annotated_canvases = get_annos_per_canvas(
-        wit_id, wit_type, last_canvas=last_indexed_canvas
-    )
+    canvases_to_annotate = get_annos_per_canvas(wit_id, wit_type)
 
-    if not bool(annotated_canvases):
+    if not bool(canvases_to_annotate):
         # if the annotation file is empty
         return True
 
     iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}"
-    for c in annotated_canvases:
+    for c in canvases_to_annotate:
         try:
-            index_annos_on_canvas(iiif_url, wit_id, c, last_canvases)
+            index_annos_on_canvas(iiif_url, c, 0)
         except Exception as e:
             log(
-                f"[check_wit_annotation]: Problem indexing annotation for {wit_type} n°{wit_id} (canvas {c}): {e}"
+                f"[index_wit_annotations]: Problem indexing annotation for {wit_type} n°{wit_id} (canvas {c}): {e}"
             )
 
     return True
@@ -91,9 +92,9 @@ def unindex_anno(canvas, anno_id):
     return True
 
 
-def index_annos_on_canvas(base_url, wit_id, canvas, last_canvases=None):
+def index_annos_on_canvas(wit_url, canvas, last_canvases=None):
     # this url is calling format_canvas_annos(), thus returning formatted annos for each canvas
-    formatted_annos = f"{base_url}/list/anno-{canvas}.json"
+    formatted_annos = f"{wit_url}/list/anno-{canvas}.json"
     # POST request that index the annotations
     response = urlopen(
         f"{SAS_APP_URL}/annotation/populate",
@@ -105,9 +106,9 @@ def index_annos_on_canvas(base_url, wit_id, canvas, last_canvases=None):
             f"[index_annos_on_canvas] Failed to index annotations. Status code: {response.status_code}: {response.text}"
         )
         return
-    set_last_indexed_canvas(wit_id, canvas, last_canvases)
+    # set_last_indexed_canvas(wit_id, canvas, last_canvases)
 
-
+"""
 def get_last_indexed_canvas(wit_id=None):
     last_canvases = read_json_file(f"{BASE_DIR}/{MEDIA_PATH}/all_anno.json")
     if not last_canvases:
@@ -127,6 +128,7 @@ def set_last_indexed_canvas(wit_id, last_canvas=0, last_canvases=None):
 
     last_canvases[str(wit_id)] = int(last_canvas)
     write_json_file(f"{BASE_DIR}/{MEDIA_PATH}/all_anno.json", last_canvases)
+"""
 
 
 def get_annos_per_canvas(wit_id, wit_type, last_canvas=0, specific_canvas=""):

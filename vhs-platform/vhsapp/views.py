@@ -27,7 +27,7 @@ from vhsapp.utils.iiif.manifest import (
 from vhsapp.utils.iiif.annotation import (
     get_txt_annos,
     format_canvas_annos,
-    check_wit_annotation,
+    index_wit_annotations,
     get_anno_img,
     formatted_wit_anno,
     index_anno,
@@ -142,7 +142,7 @@ def populate_annotation(request, wit_id, wit_type):
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    return HttpResponse(status=200 if check_wit_annotation(wit_id, wit_type) else 500)
+    return HttpResponse(status=200 if index_wit_annotations(wit_id, wit_type) else 500)
 
 
 def validate_annotation(request, wit_id, wit_type):
