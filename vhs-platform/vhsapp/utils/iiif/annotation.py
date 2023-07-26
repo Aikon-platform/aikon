@@ -31,12 +31,14 @@ def annotate_wit(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
     event.wait()
 
     try:
-        requests.post(url=f"{GPU_URL}/run_detect", data={
-            "manifest_url": manifest_url,
-            "wit_abbr": wit_abbr
-        })
+        requests.post(
+            url=f"{GPU_URL}/run_detect",
+            data={"manifest_url": manifest_url, "wit_abbr": wit_abbr},
+        )
     except Exception as e:
-        log(f"[annotate_wit] Failed to send annotation request for {wit_type} #{wit_id}: {e}")
+        log(
+            f"[annotate_wit] Failed to send annotation request for {wit_type} #{wit_id}: {e}"
+        )
         return
 
     return
@@ -60,7 +62,9 @@ def index_anno(manifest_url, wit_type, wit_id):
         # Populate the annotation
         requests.get(f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/populate/")
     except Exception as e:
-        log(f"[index_anno]: Failed to index annotations generated for {wit_type} #{wit_id}: {e}")
+        log(
+            f"[index_anno]: Failed to index annotations generated for {wit_type} #{wit_id}: {e}"
+        )
 
 
 def index_wit_annotations(wit_id, wit_type):
@@ -87,9 +91,21 @@ def index_wit_annotations(wit_id, wit_type):
     return True
 
 
-def unindex_anno(canvas, anno_id):
-    # TODO (check js function in script.js)
-    return True
+def unindex_anno(anno_id):
+    http_sas = SAS_APP_URL.replace("https", "http")
+    # anno_id = f"{wit_abbr}-{wit_id}-{canvas_nb}-{anno_nb}"
+    delete_url = f"{SAS_APP_URL}/annotation/destroy?uri={http_sas}/annotation/{anno_id}"
+    try:
+        response = requests.delete(delete_url)
+        if response.status_code == 204:
+            return True
+        else:
+            log(
+                f"[unindex_anno] Delete anno request failed with status code: {response.status_code}"
+            )
+    except requests.exceptions.RequestException as e:
+        log(f"[unindex_anno] Delete anno request failed: {e}")
+    return False
 
 
 def index_annos_on_canvas(wit_url, canvas, last_canvases=None):
@@ -107,6 +123,7 @@ def index_annos_on_canvas(wit_url, canvas, last_canvases=None):
         )
         return
     # set_last_indexed_canvas(wit_id, canvas, last_canvases)
+
 
 """
 def get_last_indexed_canvas(wit_id=None):
@@ -398,7 +415,7 @@ def get_id_from_anno(anno):
         # annotation id => "wit_abbr-wit_id-canvas_nb-anno_nb
         return anno["@id"].split("/")[-1]
     except Exception as e:
-        log(f"[get_id_from_anno] Could not retrieve i from anno: {e}")
+        log(f"[get_id_from_anno] Could not retrieve id from anno: {e}")
         return ""
 
 
@@ -430,6 +447,60 @@ def formatted_wit_anno(witness, wit_type):
     return wit_anno_ids, canvas_annos
 
 
+def get_manifest_annotations(manifest_uri):
+    # NOTE Do not work: always return []
+    try:
+        response = requests.get(
+            f"{SAS_APP_URL}/annotation/search", params={"uri": manifest_uri}
+        )
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            log(
+                f"[get_manifest_annotations] Failed to retrieve annotations: {response.status_code}"
+            )
+    except requests.exceptions.RequestException as e:
+        log(f"[get_manifest_annotations] Failed to retrieve annotations: {e}")
+    return False
+
+
+def check_wit_annos(wit_id, wit_type, reindex=False):
+    lines = get_txt_annos(wit_id, VOL_ANNO_PATH if wit_type == VOL else MS_ANNO_PATH)
+    if not lines:
+        return
+
+    generated_annos = 0
+    indexed_annos = 0
+
+    anno_ids = []
+    try:
+        for line in lines:
+            len_line = len(line.split())
+            if len_line == 2:
+                # if line = "canvas_nb img_name"
+                canvas_nb = line.split()[0]
+                sas_annos = get_indexed_canvas_annos(canvas_nb, wit_id, wit_type)
+                nb_annos = len(sas_annos)
+
+                if nb_annos != 0:
+                    indexed_annos += nb_annos
+                    anno_ids.extend([get_id_from_anno(anno) for anno in sas_annos])
+            elif len_line == 4:
+                # if line = "x y w h"
+                generated_annos += 1
+    except Exception as e:
+        log(
+            f"[check_wit_annos] Failed to compare annotations for {wit_type} #{wit_id}: {e}"
+        )
+
+    if generated_annos != indexed_annos:
+        for anno_id in anno_ids:
+            unindex_anno(anno_id)
+        if reindex:
+            index_wit_annotations(wit_id, wit_type)
+
+
 def get_imgs_annotations(witness, wit_type):
     imgs = []
 
@@ -444,9 +515,6 @@ def get_imgs_annotations(witness, wit_type):
                 ]
                 imgs.extend(canvas_imgs)
     except ValueError as e:
-        log(
-            f"[get_imgs_annotations] Error when retrieving annotations: {e}"
-        )
+        log(f"[get_imgs_annotations] Error when retrieving annotations: {e}")
 
     return imgs
-
