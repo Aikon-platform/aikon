@@ -4,6 +4,7 @@ from os.path import exists
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.decorators import login_required
 from vhs.settings import ENV
@@ -50,6 +51,7 @@ def manifest_volume(request, wit_id, version):
     return JsonResponse(manifest_wit_type(wit_id, VOL, version))
 
 
+@csrf_exempt
 def receive_anno(request, wit_id, wit_type):
     if request.method == "POST":
         # TODO: vérification du format des annotations reçues
