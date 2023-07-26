@@ -44,8 +44,7 @@ function editAnnotations(witId, idButton) {
     const manifestUrl = toManifest(witId, witnessType, "v2");
     const idMessage = `message_${witId}`;
     const innerHtml = $(`#${idButton}`).html();
-
-    setLoading(idButton);
+    // TODO send request to backend verify that everything is correct with manifest
 
     fetch(manifestUrl)
         .then(response => {
@@ -54,6 +53,17 @@ function editAnnotations(witId, idButton) {
             }
             return response.json();
         })
+        .then(response => {
+            window.open(`/${APP_NAME}/${witnessType}/${witId}/show/`, "_blank");
+        })
+        .catch(error => {
+            showMessage(error.message, idMessage);
+            clearLoading(idButton, innerHtml);
+        });
+
+    /*
+    setLoading(idButton);
+
         .then(manifestContent => {
             // Index the manifest
             return fetch(`${SAS_APP_URL}/manifests`, {
@@ -76,10 +86,7 @@ function editAnnotations(witId, idButton) {
             window.open(`/${APP_NAME}/${witnessType}/${witId}/show/`, "_blank");
             clearLoading(idButton, innerHtml);
         })
-        .catch(error => {
-            showMessage(error.message, idMessage);
-            clearLoading(idButton, innerHtml);
-        });
+*/
 }
 
 
@@ -190,14 +197,14 @@ function validateAnnotations(witId=null) {
         : `Une fois validées, les annotations de l'ensemble du ${witType} ne pourront plus être modifiées. Continuer ?`)) {
         fetch(`/${APP_NAME}/iiif/v2/${witType}/${witId}/validate/`)
             .then(response => {
-            if (response.status === 200) {
-                // window.replace(`${SAS_APP_URL}/indexView.html?iiif-content=${toManifest(witId, witType, "v2")}`);
-                try { window.replace(`${VHS_APP_URL}/${APP_NAME}-admin/vhsapp/${witType}/`); }
-                catch(e) { window.location = `${VHS_APP_URL}/${APP_NAME}-admin/vhsapp/${witType}/`; }
-            } else {
-                throw new Error(`Could not validate annotations of ${witType} #${witId}.`);
-            }
-        }).catch(error => {
+                if (response.status === 200) {
+                    // window.replace(`${SAS_APP_URL}/indexView.html?iiif-content=${toManifest(witId, witType, "v2")}`);
+                    try { window.replace(`${VHS_APP_URL}/${APP_NAME}-admin/vhsapp/${witType}/`); }
+                    catch(e) { window.location = `${VHS_APP_URL}/${APP_NAME}-admin/vhsapp/${witType}/`; }
+                } else {
+                    throw new Error(`Could not validate annotations of ${witType} #${witId}.`);
+                }
+            }).catch(error => {
             showMessage(`Error: ${error.message}`);
         });
     }
