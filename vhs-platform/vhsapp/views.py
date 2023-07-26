@@ -4,6 +4,7 @@ from os.path import exists
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.decorators import login_required
 from vhs.settings import ENV
@@ -17,7 +18,7 @@ from vhsapp.utils.constants import (
     APP_NAME,
     APP_NAME_UPPER,
     APP_DESCRIPTION,
-    MANIFEST_AUTO
+    MANIFEST_AUTO,
 )
 from vhsapp.utils.iiif.manifest import (
     process_images,
@@ -42,7 +43,7 @@ from vhsapp.utils.functions import (
     get_img_prefix,
     credentials,
     list_to_txt,
-    credentials
+    credentials,
 )
 import requests
 
@@ -70,20 +71,23 @@ def send_anno(request, wit_id, wit_type):
     To relaunch annotations in case the automatic annotation failed
     """
     wit_abbr = MS_ABBR if wit_type == MS else VOL_ABBR
-    manifest_url = (
-        f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_AUTO}/{wit_type}/{wit_id}/manifest.json"
-    )
+    manifest_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_AUTO}/{wit_type}/{wit_id}/manifest.json"
     try:
-        requests.post(url=f"{GPU_URL}/run_detect", data={
-            "manifest_url": manifest_url,
-            "wit_abbr": wit_abbr
-        })
+        requests.post(
+            url=f"{GPU_URL}/run_detect",
+            data={"manifest_url": manifest_url, "wit_abbr": wit_abbr},
+        )
     except Exception as e:
-        log(f"[send_anno] Failed to send annotation request for {wit_type} #{wit_id}: {e}")
-        return JsonResponse({
-            "response": f"Failed to send annotation request for {wit_type} #{wit_id}",
-            "cause": e
-        },safe=False,)
+        log(
+            f"[send_anno] Failed to send annotation request for {wit_type} #{wit_id}: {e}"
+        )
+        return JsonResponse(
+            {
+                "response": f"Failed to send annotation request for {wit_type} #{wit_id}",
+                "cause": e,
+            },
+            safe=False,
+        )
 
     return JsonResponse(
         {"response": f"Annotations were relaunched for {wit_type} #{wit_id}"},
@@ -91,19 +95,20 @@ def send_anno(request, wit_id, wit_type):
     )
 
 
+@csrf_exempt
 def receive_anno(request, wit_id, wit_type):
     if request.method == "POST":
         # TODO: vérification du format des annotations reçues
         annotation_file = request.FILES["annotation_file"]
 
-        anno_path = (
-            f"{BASE_DIR}/{MEDIA_PATH}/{MS_ANNO_PATH if wit_type == 'manuscript' else VOL_ANNO_PATH}"
-        )
+        anno_path = f"{BASE_DIR}/{MEDIA_PATH}/{MS_ANNO_PATH if wit_type == 'manuscript' else VOL_ANNO_PATH}"
         try:
             with open(f"{anno_path}/{wit_id}.txt", "w+b") as f:
                 f.write(annotation_file.read())
         except Exception as e:
-            log(f"[receive_anno] Failed to open received annotations for {wit_type} #{wit_id}: {e}")
+            log(
+                f"[receive_anno] Failed to open received annotations for {wit_type} #{wit_id}: {e}"
+            )
 
         manifest_url = (
             f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/manifest.json"
@@ -111,7 +116,9 @@ def receive_anno(request, wit_id, wit_type):
         try:
             index_anno(manifest_url, wit_type, wit_id)
         except Exception as e:
-            log(f"[receive_anno] Failed to index annotations for {wit_type} #{wit_id}: {e}")
+            log(
+                f"[receive_anno] Failed to index annotations for {wit_type} #{wit_id}: {e}"
+            )
 
         return JsonResponse({"message": "Annotation received and indexed."})
 
