@@ -498,6 +498,7 @@ def check_wit_annos(wit_id, wit_type, reindex=False):
         for anno_id in anno_ids:
             unindex_anno(anno_id)
         if reindex:
+            log(f"[check_wit_annos] reindexing {wit_id}")
             index_wit_annotations(wit_id, wit_type)
 
 
