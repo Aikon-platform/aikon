@@ -1,4 +1,5 @@
 import json
+import threading
 from os.path import exists
 
 from django.http import HttpResponse, JsonResponse
@@ -173,10 +174,16 @@ def test(request, wit_id, wit_type):
     model = Volume if wit_type == VOL else Manuscript
     witnesses = model.objects.all()
 
+    threads = []
     for witness in witnesses:
-        if witness.manifest_final:
-            continue
-        check_wit_annos(witness.id, wit_type, True)
+        if not witness.manifest_final:
+            thread = threading.Thread(
+                target=check_wit_annos, args=(witness.id, wit_type, True)
+            )
+            thread.start()
+            threads.append(thread)
+    for thread in threads:
+        thread.join()
 
     return JsonResponse(
         {"response": f"Nothing to test for {wit_type} #{wit_id}"},

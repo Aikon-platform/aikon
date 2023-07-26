@@ -45,18 +45,8 @@ def annotate_wit(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
 
 
 def index_anno(manifest_url, wit_type, wit_id):
-    try:
-        manifest = requests.get(manifest_url)
-        manifest_content = manifest.json()
-    except Exception as e:
-        log(f"[index_anno]: Failed to load manifest for {wit_type} n°{wit_id}: {e}")
+    if not index_manifest_in_sas(manifest_url):
         return
-
-    try:
-        # Index the manifest into SAS
-        requests.post(f"{SAS_APP_URL}/manifests", json=manifest_content)
-    except Exception as e:
-        log(f"[index_anno]: Failed to index manifest {wit_type} #{wit_id} in SAS: {e}")
 
     try:
         # Populate the annotation
@@ -349,13 +339,28 @@ def has_annotations(witness, wit_abbr):
     return False
 
 
-def index_manifest_in_sas(manifest_content):
-    response = requests.post(f"{SAS_APP_URL}/manifests", json=manifest_content)
+def index_manifest_in_sas(manifest_url):
+    try:
+        manifest = requests.get(manifest_url)
+        manifest_content = manifest.json()
+    except Exception as e:
+        log(f"[index_manifest_in_sas]: Failed to load manifest for {manifest_url}: {e}")
+        return False
 
-    if response.status_code != 201:
+    try:
+        # Index the manifest into SAS
+        r = requests.post(f"{SAS_APP_URL}/manifests", json=manifest_content)
+        if r.status_code != 201:
+            log(
+                f"[index_manifest_in_sas] Failed to index manifest. Status code: {r.status_code}: {r.text}"
+            )
+            return False
+    except Exception as e:
         log(
-            f"[index_manifest_in_sas] Failed to index manifest. Status code: {response.status_code}: {response.text}"
+            f"[index_manifest_in_sas]: Failed to index manifest {manifest_url} in SAS: {e}"
         )
+        return False
+    return True
 
 
 def get_canvas_list(witness, wit_type):
@@ -486,6 +491,12 @@ def check_wit_annos(wit_id, wit_type, reindex=False):
                 if nb_annos != 0:
                     indexed_annos += nb_annos
                     anno_ids.extend([get_id_from_anno(anno) for anno in sas_annos])
+                else:
+                    res = index_manifest_in_sas(
+                        f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/manifest.json"
+                    )
+                    if not res:
+                        return
             elif len_line == 4:
                 # if line = "x y w h"
                 generated_annos += 1
@@ -498,6 +509,7 @@ def check_wit_annos(wit_id, wit_type, reindex=False):
         for anno_id in anno_ids:
             unindex_anno(anno_id)
         if reindex:
+            log(f"[check_wit_annos] reindexing {wit_id}")
             index_wit_annotations(wit_id, wit_type)
 
 
