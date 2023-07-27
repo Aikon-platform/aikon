@@ -350,7 +350,7 @@ def index_manifest_in_sas(manifest_url):
     try:
         # Index the manifest into SAS
         r = requests.post(f"{SAS_APP_URL}/manifests", json=manifest_content)
-        if r.status_code != 201:
+        if r.status_code != 200:
             log(
                 f"[index_manifest_in_sas] Failed to index manifest. Status code: {r.status_code}: {r.text}"
             )
@@ -450,6 +450,20 @@ def formatted_wit_anno(witness, wit_type):
         )
 
     return wit_anno_ids, canvas_annos
+
+
+def check_anno_file(file_content):
+    textchars = (
+        bytearray([7, 8, 9, 10, 12, 13, 27])
+        + bytearray(range(0x20, 0x7F))
+        + bytearray(range(0x80, 0x100))
+    )
+    is_binary_string = lambda bytes: bool(bytes.translate(None, textchars))
+
+    if not is_binary_string(file_content[:1024]):
+        return True
+    else:
+        return False
 
 
 def get_manifest_annotations(manifest_uri):
