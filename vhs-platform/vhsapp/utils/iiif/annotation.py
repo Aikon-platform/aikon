@@ -21,20 +21,26 @@ from vhsapp.utils.functions import (
 )
 
 
-def annotate_wit(event, witness_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
+def annotate_wit(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
     wit_type = MS if wit_abbr == MS_ABBR else VOL
 
-    api_endpoint = f"{GPU_URL}/run_detect"
-
     manifest_url = (
-        f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{witness_id}/manifest.json"
+        f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{wit_id}/manifest.json"
     )
-    data = {"manifest_url": manifest_url, "wit_abbr": wit_abbr}
 
     event.wait()
-    requests.post(url=api_endpoint, data=data)
 
-    return print(f"Witness {witness_id} sent for diagram extraction")
+    try:
+        requests.post(url=f"{GPU_URL}/run_detect", data={
+            "manifest_url": manifest_url,
+            "wit_abbr": wit_abbr
+        })
+    except Exception as e:
+        log(f"[annotate_wit] Failed to send annotation request for {wit_type} #{wit_id}: {e}")
+        return
+
+    # console(f"[annotate_wit] {wit_type} #{wit_id} was correctly sent for diagram extraction")
+    return
 
 
 def index_anno(manifest_url, wit_type, wit_id):
@@ -43,6 +49,7 @@ def index_anno(manifest_url, wit_type, wit_id):
         manifest_content = manifest.json()
     except Exception as e:
         log(f"[index_anno]: Failed to load manifest for {wit_type} n°{wit_id}: {e}")
+        return
 
     requests.post(f"{SAS_APP_URL}/manifests", json=manifest_content)
 
