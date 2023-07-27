@@ -452,6 +452,20 @@ def formatted_wit_anno(witness, wit_type):
     return wit_anno_ids, canvas_annos
 
 
+def is_text_file(file_content):
+    textchars = (
+        bytearray([7, 8, 9, 10, 12, 13, 27])
+        + bytearray(range(0x20, 0x7F))
+        + bytearray(range(0x80, 0x100))
+    )
+    is_binary_string = lambda bytes: bool(bytes.translate(None, textchars))
+
+    if not is_binary_string(file_content[:1024]):
+        return True
+    else:
+        return False
+
+      
 def get_manifest_annotations(manifest_uri):
     # NOTE Do not work: always return []
     try:
