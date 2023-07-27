@@ -34,7 +34,7 @@ from vhsapp.utils.iiif.annotation import (
     index_anno,
     get_canvas_list,
     get_indexed_canvas_annos,
-    is_text_file,
+    check_anno_file,
     check_wit_annos,
 )
 from vhsapp.utils.functions import (
@@ -105,7 +105,7 @@ def receive_anno(request, wit_id, wit_type):
         annotation_file = request.FILES["annotation_file"]
         file_content = annotation_file.read()
 
-        if is_text_file(file_content):
+        if check_anno_file(file_content):
             anno_path = f"{BASE_DIR}/{MEDIA_PATH}/{MS_ANNO_PATH if wit_type == 'manuscript' else VOL_ANNO_PATH}"
             try:
                 with open(f"{anno_path}/{wit_id}.txt", "w+b") as f:
@@ -180,7 +180,18 @@ def witness_sas_annotations(request, wit_id, wit_type):
 
 def test(request, wit_id, wit_type):
     model = Volume if wit_type == VOL else Manuscript
-    witnesses = model.objects.all()
+    try:
+        wit_id = int(wit_id)
+        if int(wit_id) == 0:
+            witnesses = model.objects.all()
+        else:
+            witnesses = [get_object_or_404(model, pk=wit_id)]
+    except ValueError as e:
+        console(f"[test] wit_id is not an integer: {e}")
+        return JsonResponse(
+            {"response": f"wit_id is not an integer: {wit_id}\n{e}"},
+            safe=False,
+        )
 
     threads = []
     for witness in witnesses:
