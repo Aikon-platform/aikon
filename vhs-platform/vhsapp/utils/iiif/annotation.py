@@ -31,12 +31,14 @@ def annotate_wit(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
     event.wait()
 
     try:
-        requests.post(url=f"{GPU_URL}/run_detect", data={
-            "manifest_url": manifest_url,
-            "wit_abbr": wit_abbr
-        })
+        requests.post(
+            url=f"{GPU_URL}/run_detect",
+            data={"manifest_url": manifest_url, "wit_abbr": wit_abbr},
+        )
     except Exception as e:
-        log(f"[annotate_wit] Failed to send annotation request for {wit_type} #{wit_id}: {e}")
+        log(
+            f"[annotate_wit] Failed to send annotation request for {wit_type} #{wit_id}: {e}"
+        )
         return
 
     # console(f"[annotate_wit] {wit_type} #{wit_id} was correctly sent for diagram extraction")
@@ -426,3 +428,17 @@ def formatted_wit_anno(witness, wit_type):
         )
 
     return wit_anno_ids, canvas_annos
+
+
+def is_text_file(file_content):
+    textchars = (
+        bytearray([7, 8, 9, 10, 12, 13, 27])
+        + bytearray(range(0x20, 0x7F))
+        + bytearray(range(0x80, 0x100))
+    )
+    is_binary_string = lambda bytes: bool(bytes.translate(None, textchars))
+
+    if not is_binary_string(file_content[:1024]):
+        return True
+    else:
+        return False

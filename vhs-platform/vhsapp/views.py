@@ -33,6 +33,7 @@ from vhsapp.utils.iiif.annotation import (
     index_anno,
     get_canvas_list,
     get_indexed_canvas_annos,
+    is_text_file,
 )
 from vhsapp.utils.functions import (
     console,
@@ -100,28 +101,35 @@ def receive_anno(request, wit_id, wit_type):
     if request.method == "POST":
         # TODO: vérification du format des annotations reçues
         annotation_file = request.FILES["annotation_file"]
+        file_content = annotation_file.read()
 
-        anno_path = f"{BASE_DIR}/{MEDIA_PATH}/{MS_ANNO_PATH if wit_type == 'manuscript' else VOL_ANNO_PATH}"
-        try:
-            with open(f"{anno_path}/{wit_id}.txt", "w+b") as f:
-                f.write(annotation_file.read())
-        except Exception as e:
-            log(
-                f"[receive_anno] Failed to open received annotations for {wit_type} #{wit_id}: {e}"
+        if is_text_file(file_content):
+            anno_path = f"{BASE_DIR}/{MEDIA_PATH}/{MS_ANNO_PATH if wit_type == 'manuscript' else VOL_ANNO_PATH}"
+            try:
+                with open(f"{anno_path}/{wit_id}.txt", "w+b") as f:
+                    f.write(file_content)
+
+            except Exception as e:
+                log(
+                    f"[receive_anno] Failed to open received annotations for {wit_type} #{wit_id}: {e}"
+                )
+
+            manifest_url = (
+                f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/manifest.json"
             )
+            try:
+                index_anno(manifest_url, wit_type, wit_id)
+            except Exception as e:
+                log(
+                    f"[receive_anno] Failed to index annotations for {wit_type} #{wit_id}: {e}"
+                )
 
-        manifest_url = (
-            f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/manifest.json"
-        )
-        try:
-            index_anno(manifest_url, wit_type, wit_id)
-        except Exception as e:
-            log(
-                f"[receive_anno] Failed to index annotations for {wit_type} #{wit_id}: {e}"
+            return JsonResponse({"message": "Annotation received and indexed."})
+
+        else:
+            return JsonResponse(
+                {"message": "Invalid request. File is not a text file."}, status=400
             )
-
-        return JsonResponse({"message": "Annotation received and indexed."})
-
     else:
         return JsonResponse({"message": "Invalid request."}, status=400)
 
