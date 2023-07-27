@@ -1,4 +1,5 @@
 import json
+import threading
 from os.path import exists
 
 from django.http import HttpResponse, JsonResponse
@@ -27,13 +28,14 @@ from vhsapp.utils.iiif.manifest import (
 from vhsapp.utils.iiif.annotation import (
     get_txt_annos,
     format_canvas_annos,
-    check_wit_annotation,
+    index_wit_annotations,
     get_anno_img,
     formatted_wit_anno,
     index_anno,
     get_canvas_list,
     get_indexed_canvas_annos,
     is_text_file,
+    check_wit_annos,
 )
 from vhsapp.utils.functions import (
     console,
@@ -136,7 +138,7 @@ def receive_anno(request, wit_id, wit_type):
 
 def export_anno_img(request, wit_id, wit_type):
     annotations = get_anno_img(wit_id, wit_type)
-    return list_to_txt(annotations, f"{wit_type}#{wit_id}_ annotations")
+    return list_to_txt(annotations, f"{wit_type}#{wit_id}_annotations")
 
 
 def canvas_annotations(request, wit_id, version, wit_type, canvas):
@@ -150,7 +152,7 @@ def populate_annotation(request, wit_id, wit_type):
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    return HttpResponse(status=200 if check_wit_annotation(wit_id, wit_type) else 500)
+    return HttpResponse(status=200 if index_wit_annotations(wit_id, wit_type) else 500)
 
 
 def validate_annotation(request, wit_id, wit_type):
@@ -177,6 +179,20 @@ def witness_sas_annotations(request, wit_id, wit_type):
 
 
 def test(request, wit_id, wit_type):
+    model = Volume if wit_type == VOL else Manuscript
+    witnesses = model.objects.all()
+
+    threads = []
+    for witness in witnesses:
+        if not witness.manifest_final:
+            thread = threading.Thread(
+                target=check_wit_annos, args=(witness.id, wit_type, True)
+            )
+            thread.start()
+            threads.append(thread)
+    for thread in threads:
+        thread.join()
+
     return JsonResponse(
         {"response": f"Nothing to test for {wit_type} #{wit_id}"},
         safe=False,
