@@ -35,7 +35,7 @@ from vhsapp.utils.iiif.validation import (
 )
 
 from vhsapp.utils.iiif.download import extract_images_from_iiif_manifest
-from vhsapp.utils.iiif.annotation import annotate_wit
+from vhsapp.utils.iiif.annotation import send_anno_request
 from vhsapp.models.witness import Volume, Manuscript
 
 
@@ -85,7 +85,7 @@ class Picture(Digitization):
         event = threading.Event()
 
         t = threading.Thread(
-            target=annotate_wit,
+            target=send_anno_request,
             args=(
                 event,
                 f"{self.volume.id if 'vol' in self.image.name else self.manuscript.id}",
@@ -165,7 +165,7 @@ class Pdf(Digitization):
         t.start()
 
         t2 = threading.Thread(
-            target=annotate_wit,
+            target=send_anno_request,
             args=(
                 event,
                 f"{self.volume.id if 'vol' in self.pdf.name else self.manuscript.id}",
@@ -301,7 +301,7 @@ class ManifestVolume(Manifest):
         t.start()
 
         t2 = threading.Thread(
-            target=annotate_wit,
+            target=send_anno_request,
             args=(
                 event,
                 f"{self.volume.id}",
@@ -335,7 +335,7 @@ class ManifestManuscript(Manifest):
         t.start()
 
         t2 = threading.Thread(
-            target=annotate_wit,
+            target=send_anno_request,
             args=(
                 event,
                 f"{self.manuscript.id}",

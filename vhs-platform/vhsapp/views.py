@@ -31,7 +31,7 @@ from vhsapp.utils.iiif.annotation import (
     index_wit_annotations,
     get_anno_img,
     formatted_wit_anno,
-    index_anno,
+    # index_anno,
     get_canvas_list,
     get_indexed_canvas_annos,
     check_anno_file,
@@ -116,11 +116,12 @@ def receive_anno(request, wit_id, wit_type):
                     f"[receive_anno] Failed to open received annotations for {wit_type} #{wit_id}: {e}"
                 )
 
-            manifest_url = (
-                f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/manifest.json"
-            )
+            # manifest_url = (
+            #     f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/manifest.json"
+            # )
             try:
-                index_anno(manifest_url, wit_type, wit_id)
+                index_wit_annotations(wit_id, wit_type)
+                # index_anno(manifest_url, wit_type, wit_id)
             except Exception as e:
                 log(
                     f"[receive_anno] Failed to index annotations for {wit_type} #{wit_id}: {e}"

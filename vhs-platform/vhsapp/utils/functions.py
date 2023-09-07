@@ -67,7 +67,6 @@ def convert_to_jpeg(image):
     return img_jpg
 
 
-
 def pdf_to_img(event, pdf_name, dpi=MAX_RES):
     """
     Convert the PDF file to JPEG images
@@ -247,16 +246,14 @@ def zip_img(img_list, file_type="img", file_name=None):
     with zipfile.ZipFile(buffer, "w") as z:
         for img_path in img_list:
             if file_type == "img":
-                if urlparse(img_path).scheme == '':
+                if urlparse(img_path).scheme == "":
                     z.write(img_path, os.path.basename(img_path))
                 else:
                     response = requests.get(img_path)
                     if response.status_code == 200:
                         z.writestr(os.path.basename(img_path), response.content)
                     else:
-                        log(
-                            f"[zip_imgs] Fail to download img: {img_path}"
-                        )
+                        log(f"[zip_imgs] Fail to download img: {img_path}")
                         pass
             # elif file_type == "pdf":
             #     if urlparse(img_path).scheme == '':
@@ -376,7 +373,7 @@ def get_img_prefix(obj, wit_type=MS):
 
 def get_imgs(wit_prefix):
     # TODO make a method of Witness class out of this function
-    pattern = re.compile(rf"{wit_prefix}_\d{{4}}\.jpg", re.IGNORECASE)
+    pattern = re.compile(rf"{wit_prefix}_\d{{1,4}}\.jpg", re.IGNORECASE)
     wit_imgs = []
 
     for img in os.listdir(f"{BASE_DIR}/{IMG_PATH}"):

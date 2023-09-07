@@ -10,7 +10,7 @@ from vhsapp.utils.paths import MEDIA_PATH, BASE_DIR, VOL_ANNO_PATH, MS_ANNO_PATH
 from vhsapp.models import get_wit_abbr, get_wit_type
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL, GPU_URL
-from vhsapp.utils.constants import APP_NAME, MANIFEST_AUTO
+from vhsapp.utils.constants import APP_NAME, MANIFEST_AUTO, MANIFEST_V2
 from vhsapp.utils.functions import (
     console,
     log,
@@ -21,55 +21,55 @@ from vhsapp.utils.functions import (
 )
 
 
-def annotate_wit(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
-    wit_type = MS if wit_abbr == MS_ABBR else VOL
+def send_anno_request(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
+    wit_type = get_wit_type(wit_abbr)
 
     manifest_url = (
         f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{wit_id}/manifest.json"
     )
 
     event.wait()
-
     try:
         requests.post(
             url=f"{GPU_URL}/run_detect",
             data={"manifest_url": manifest_url, "wit_abbr": wit_abbr},
         )
     except Exception as e:
-        log(
-            f"[annotate_wit] Failed to send annotation request for {wit_type} #{wit_id}: {e}"
-        )
+        log(f"[send_anno_request] Failed to send request for {wit_type} #{wit_id}: {e}")
         return
 
     return
 
 
-def index_anno(manifest_url, wit_type, wit_id):
-    if not index_manifest_in_sas(manifest_url):
-        return
-
-    try:
-        # Populate the annotation
-        requests.get(f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/populate/")
-    except Exception as e:
-        log(
-            f"[index_anno]: Failed to index annotations generated for {wit_type} #{wit_id}: {e}"
-        )
+# def index_anno(manifest_url, wit_type, wit_id):
+#     if not index_manifest_in_sas(manifest_url):
+#         return
+#
+#     try:
+#         # Populate the annotation: the view is calling index_wit_annotations()
+#         # requests.get(f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/populate/")
+#         index_wit_annotations(wit_id, wit_type)
+#     except Exception as e:
+#         log(
+#             f"[index_anno]: Failed to index annotations generated for {wit_type} #{wit_id}: {e}"
+#         )
 
 
 def index_wit_annotations(wit_id, wit_type):
+    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}"
+    if not index_manifest_in_sas(f"{iiif_url}/manifest.json"):
+        return
+
     # last_canvases = get_last_indexed_canvas()
     # last_indexed_canvas = (
     #     last_canvases[str(wit_id)] if str(wit_id) in last_canvases else 0
     # )
 
     canvases_to_annotate = get_annos_per_canvas(wit_id, wit_type)
-
     if not bool(canvases_to_annotate):
         # if the annotation file is empty
         return True
 
-    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}"
     for c in canvases_to_annotate:
         try:
             index_annos_on_canvas(iiif_url, c, 0)
@@ -339,7 +339,22 @@ def has_annotations(witness, wit_abbr):
     return False
 
 
+def get_indexed_manifests():
+    try:
+        r = requests.get(f"{SAS_APP_URL}/manifests")
+        manifests = r.json()["manifests"]
+    except Exception as e:
+        log(f"[get_indexed_manifests]: Failed to load indexed manifests in SAS: {e}")
+        return False
+    return [m["@id"] for m in manifests]
+
+
 def index_manifest_in_sas(manifest_url):
+    manifests = get_indexed_manifests()
+    if manifests and manifest_url in manifests:
+        # if the manifest was already indexed
+        return True
+
     try:
         manifest = requests.get(manifest_url)
         manifest_content = manifest.json()
@@ -467,7 +482,7 @@ def check_anno_file(file_content):
 
 
 def get_manifest_annotations(manifest_uri):
-    # NOTE Do not work: always return []
+    # NOTE Do not work: always return [] / is never used apparently
     try:
         response = requests.get(
             f"{SAS_APP_URL}/annotation/search", params={"uri": manifest_uri}
@@ -527,7 +542,8 @@ def check_wit_annos(wit_id, wit_type, reindex=False):
             index_wit_annotations(wit_id, wit_type)
 
 
-def get_imgs_annotations(witness, wit_type):
+def get_anno_images(witness, wit_type):
+    # Used to export images annotations
     imgs = []
 
     try:
@@ -541,6 +557,6 @@ def get_imgs_annotations(witness, wit_type):
                 ]
                 imgs.extend(canvas_imgs)
     except ValueError as e:
-        log(f"[get_imgs_annotations] Error when retrieving annotations: {e}")
+        log(f"[get_anno_images] Error when retrieving annotations: {e}")
 
     return imgs

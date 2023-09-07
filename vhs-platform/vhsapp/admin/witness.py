@@ -18,7 +18,7 @@ from vhsapp.models.witness import (
     Manuscript,
 )
 from vhs.settings import VHS_APP_URL
-from vhsapp.utils.iiif.annotation import get_imgs_annotations
+from vhsapp.utils.iiif.annotation import get_anno_images
 
 from vhsapp.models.constants import MS, VOL, WIT, MS_ABBR, VOL_ABBR, WIT_ABBR
 
@@ -57,7 +57,7 @@ from vhsapp.utils.functions import (
     get_pdf_imgs,
     get_icon,
     anno_btn,
-    zip_img
+    zip_img,
 )
 from vhsapp.utils.logger import console, log
 
@@ -215,7 +215,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             "export_selected_iiif_images",
             "export_selected_images",
             "export_selected_pdfs",
-            "export_annotated_imgs"
+            "export_annotated_imgs",
         ]
         if self.wit_type() == VOL:
             self.actions += ["detect_similarity"]
@@ -359,12 +359,9 @@ class PrintedAdmin(WitnessAdmin, nested_admin.NestedModelAdmin, admin.SimpleList
 
 @admin.register(Manuscript)
 class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
-
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
-        self.actions += [
-            "export_annotated_imgs"
-        ]
+        self.actions += ["export_annotated_imgs"]
 
     # list of fields that are displayed in the all witnesses tab
     list_display = (
@@ -402,7 +399,6 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
         files = request.FILES.getlist("imagemanuscript_set-0-image")
         for file in files[:-1]:
             obj.imagemanuscript_set.create(image=file)
-
 
     @admin.action(description="Exporter les manifests IIIF sélectionnés")
     def export_selected_manifests(self, request, queryset):
@@ -463,9 +459,7 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
 
         for wit_id in results:
             witness = Manuscript.objects.get(pk=wit_id[0])
-            imgs_urls = get_imgs_annotations(witness, MS)
+            imgs_urls = get_anno_images(witness, MS)
             zip_img("annotations.zip", imgs_urls)
 
-        return HttpResponseRedirect(
-            f"{VHS_APP_URL}/media/annotations.zip"
-        )
+        return HttpResponseRedirect(f"{VHS_APP_URL}/media/annotations.zip")
