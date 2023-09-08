@@ -198,16 +198,14 @@ def test(request, wit_id, wit_type):
 
     threads = []
     wit_ids = []
-    for witness in witnesses:
-        if not witness.manifest_final:
-            wit_ids.append(witness.id)
-            thread = threading.Thread(
-                target=check_wit_annos, args=(witness.id, wit_type, True)
-            )
-            thread.start()
-            threads.append(thread)
-    # for thread in threads:
-    #     thread.join()
+    # for witness in witnesses:
+    #     if not witness.manifest_final:
+    #         wit_ids.append(witness.id)
+    #         thread = threading.Thread(
+    #             target=check_wit_annos, args=(witness.id, wit_type, True)
+    #         )
+    #         thread.start()
+    #         threads.append(thread)
 
     return JsonResponse(
         {"response": f"Execution time: {start} > {get_time()}", "checked ids": wit_ids},

@@ -449,7 +449,7 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
             return exclude_fieldsets
         return fieldsets
 
-    @admin.action(description="Export diagrams annotated in selected sources")
+    @admin.action(description="Export diagram images in selected sources")
     def export_annotated_imgs(self, request, queryset):
         if queryset.count() > 5:
             messages.warning(request, "You can select up to 5 manuscripts for export.")
@@ -457,9 +457,9 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
 
         results = queryset.values_list("id")
 
+        img_urls = []
         for wit_id in results:
             witness = Manuscript.objects.get(pk=wit_id[0])
-            imgs_urls = get_anno_images(witness, MS)
-            zip_img("annotations.zip", imgs_urls)
+            img_urls.extend(get_anno_images(witness, MS))
 
-        return HttpResponseRedirect(f"{VHS_APP_URL}/media/annotations.zip")
+        return zip_img(request, img_urls)

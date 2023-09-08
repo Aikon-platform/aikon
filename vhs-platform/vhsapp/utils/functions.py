@@ -24,6 +24,7 @@ from urllib.request import (
     build_opener,
     install_opener,
 )
+from vhs.settings import CANTALOUPE_APP_URL
 from vhsapp.models import get_wit_abbr, get_wit_type
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhsapp.utils.constants import APP_NAME, MAX_SIZE, MAX_RES, APP_NAME, MANIFEST_AUTO
@@ -241,17 +242,27 @@ def list_to_txt(item_list, file_name=None):
     return response
 
 
-def zip_img(img_list, file_type="img", file_name=None):
+def url_to_name(iiif_img_url):
+    return (
+        iiif_img_url.replace(f"{CANTALOUPE_APP_URL}/iiif/2/", "")
+        .replace("/full/0/default", "")
+        .replace("/", "_")
+        .replace(".jpg", "")
+    )
+
+
+def zip_img(request, img_list, file_type="img", file_name=None):
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as z:
         for img_path in img_list:
+            img_name = f"{url_to_name(img_path)}.jpg"
             if file_type == "img":
                 if urlparse(img_path).scheme == "":
-                    z.write(img_path, os.path.basename(img_path))
+                    z.write(img_path, img_name)
                 else:
                     response = requests.get(img_path)
                     if response.status_code == 200:
-                        z.writestr(os.path.basename(img_path), response.content)
+                        z.writestr(img_name, response.content)
                     else:
                         log(f"[zip_imgs] Fail to download img: {img_path}")
                         pass
