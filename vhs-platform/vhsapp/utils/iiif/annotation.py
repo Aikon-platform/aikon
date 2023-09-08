@@ -47,7 +47,7 @@ def send_anno_request(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
 #
 #     try:
 #         # Populate the annotation: the view is calling index_wit_annotations()
-#         # requests.get(f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/populate/")
+#         # requests.get(f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}/populate/")
 #         index_wit_annotations(wit_id, wit_type)
 #     except Exception as e:
 #         log(
@@ -403,12 +403,16 @@ def get_canvas_list(witness, wit_type):
     return canvases
 
 
-def get_indexed_wit_annos(wit_id, wit_type):
-    return {}
+def get_indexed_wit_annos(witness, wit_type):
+    # NOTE not used
+    wit_annos = {}
+    for canvas_nb, _ in get_canvas_list(witness, wit_type):
+        wit_annos[canvas_nb] = get_indexed_canvas_annos(canvas_nb, witness.id, wit_type)
+    return wit_annos
 
 
 def get_indexed_canvas_annos(canvas_nb, wit_id, wit_type):
-    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}"
+    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}"
     try:
         response = urlopen(
             f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{canvas_nb}.json"
@@ -522,7 +526,7 @@ def check_wit_annos(wit_id, wit_type, reindex=False):
                     anno_ids.extend([get_id_from_anno(anno) for anno in sas_annos])
                 else:
                     res = index_manifest_in_sas(
-                        f"{VHS_APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/manifest.json"
+                        f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}/manifest.json"
                     )
                     if not res:
                         return
@@ -538,8 +542,8 @@ def check_wit_annos(wit_id, wit_type, reindex=False):
         for anno_id in anno_ids:
             unindex_anno(anno_id)
         if reindex:
-            log(f"[check_wit_annos] reindexing {wit_id}")
-            index_wit_annotations(wit_id, wit_type)
+            if index_wit_annotations(wit_id, wit_type):
+                log(f"[check_wit_annos] {wit_type} #{wit_id} was reindexed")
 
 
 def get_anno_images(witness, wit_type):

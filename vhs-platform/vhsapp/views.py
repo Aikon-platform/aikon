@@ -40,6 +40,7 @@ from vhsapp.utils.iiif.annotation import (
 from vhsapp.utils.functions import (
     console,
     log,
+    get_time,
     read_json_file,
     write_json_file,
     get_imgs,
@@ -180,6 +181,7 @@ def witness_sas_annotations(request, wit_id, wit_type):
 
 
 def test(request, wit_id, wit_type):
+    start = get_time()
     model = Volume if wit_type == VOL else Manuscript
     try:
         wit_id = int(wit_id)
@@ -195,18 +197,20 @@ def test(request, wit_id, wit_type):
         )
 
     threads = []
+    wit_ids = []
     for witness in witnesses:
         if not witness.manifest_final:
+            wit_ids.append(witness.id)
             thread = threading.Thread(
                 target=check_wit_annos, args=(witness.id, wit_type, True)
             )
             thread.start()
             threads.append(thread)
-    for thread in threads:
-        thread.join()
+    # for thread in threads:
+    #     thread.join()
 
     return JsonResponse(
-        {"response": f"Nothing to test for {wit_type} #{wit_id}"},
+        {"response": f"Execution time: {start} > {get_time()}", "checked ids": wit_ids},
         safe=False,
     )
 

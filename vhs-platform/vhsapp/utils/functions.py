@@ -28,7 +28,7 @@ from vhsapp.models import get_wit_abbr, get_wit_type
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhsapp.utils.constants import APP_NAME, MAX_SIZE, MAX_RES, APP_NAME, MANIFEST_AUTO
 from vhsapp.utils.paths import BASE_DIR, MEDIA_PATH, IMG_PATH, MS_PDF_PATH, VOL_PDF_PATH
-from vhsapp.utils.logger import log, console
+from vhsapp.utils.logger import log, console, get_time
 
 
 def rename_file(instance, filename, path):
