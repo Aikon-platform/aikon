@@ -81,12 +81,13 @@ VHS_PORT = 8000
 CANTALOUPE_PORT = 8182
 SAS_PORT = 8888
 GPU_PORT = 5000
+API_KEY = ENV("API_KEY")
 
 VHS_APP_URL = f"http://localhost:{VHS_PORT}"
 # CANTALOUPE_APP_URL = f"http://localhost:{VHS_PORT}"
 CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
 SAS_APP_URL = f"http://localhost:{SAS_PORT}"
-GPU_URL = f"{ENV('EXAPI')}:{GPU_PORT}"
+API_GPU_URL = f"{ENV('EXAPI')}:{GPU_PORT}"
 
 # Override the default values in production mode
 if not DEBUG:

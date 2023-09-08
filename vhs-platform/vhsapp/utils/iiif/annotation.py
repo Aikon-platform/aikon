@@ -9,7 +9,13 @@ import requests
 from vhsapp.utils.paths import MEDIA_PATH, BASE_DIR, VOL_ANNO_PATH, MS_ANNO_PATH
 from vhsapp.models import get_wit_abbr, get_wit_type
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
-from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL, GPU_URL
+from vhs.settings import (
+    VHS_APP_URL,
+    CANTALOUPE_APP_URL,
+    SAS_APP_URL,
+    API_GPU_URL,
+    API_KEY,
+)
 from vhsapp.utils.constants import APP_NAME, MANIFEST_AUTO, MANIFEST_V2
 from vhsapp.utils.functions import (
     console,
@@ -31,7 +37,8 @@ def send_anno_request(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
     event.wait()
     try:
         requests.post(
-            url=f"{GPU_URL}/run_detect",
+            url=f"{API_GPU_URL}/run_detect",
+            headers={"X-API-Key": API_KEY},
             data={"manifest_url": manifest_url, "wit_abbr": wit_abbr},
         )
     except Exception as e:
