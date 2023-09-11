@@ -13,7 +13,7 @@ from vhs.settings import ENV
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhsapp.utils.paths import MEDIA_PATH, BASE_DIR, VOL_ANNO_PATH, MS_ANNO_PATH
-from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL, GPU_URL
+from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL, API_GPU_URL
 
 from vhsapp.utils.constants import (
     APP_NAME,
