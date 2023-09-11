@@ -21,6 +21,8 @@ from vhsapp.utils.functions import (
     rename_file,
     convert_to_jpeg,
     pdf_to_img,
+    get_imgs,
+    delete_files,
 )
 from vhsapp.utils.paths import (
     BASE_DIR,
@@ -35,8 +37,9 @@ from vhsapp.utils.iiif.validation import (
 )
 
 from vhsapp.utils.iiif.download import extract_images_from_iiif_manifest
-from vhsapp.utils.iiif.annotation import send_anno_request
+from vhsapp.utils.iiif.annotation import send_anno_request, unindex_witness
 from vhsapp.models.witness import Volume, Manuscript
+from vhsapp.models import get_wit_type
 
 
 class Digitization(models.Model):
@@ -72,6 +75,12 @@ class Picture(Digitization):
         help_text=IMG_INFO,
     )
 
+    def get_wit_id(self):
+        return self.volume.id if "vol" in self.image.name else self.manuscript.id
+
+    def get_wit_abbr(self):
+        return VOL_ABBR if "vol" in self.image.name else MS_ABBR
+
     def save(self, *args, **kwargs):
         if self.image:
             img = Image.open(self.image)
@@ -88,8 +97,8 @@ class Picture(Digitization):
             target=send_anno_request,
             args=(
                 event,
-                f"{self.volume.id if 'vol' in self.image.name else self.manuscript.id}",
-                f"{VOL_ABBR if 'vol' in self.image.name else MS_ABBR}",
+                f"{self.get_wit_id()}",
+                f"{self.get_wit_abbr()}",
             ),
         )
         t.start()
@@ -147,6 +156,12 @@ class Pdf(Digitization):
     def __str__(self):
         return self.pdf.name
 
+    def get_wit_id(self):
+        return self.volume.id if "vol" in self.pdf.name else self.manuscript.id
+
+    def get_wit_abbr(self):
+        return VOL_ABBR if "vol" in self.pdf.name else MS_ABBR
+
     def save(self, *args, **kwargs):
         # Call the parent save method to save the model
         super().save(*args, **kwargs)
@@ -168,15 +183,16 @@ class Pdf(Digitization):
             target=send_anno_request,
             args=(
                 event,
-                f"{self.volume.id if 'vol' in self.pdf.name else self.manuscript.id}",
-                f"{VOL_ABBR if 'vol' in self.pdf.name else MS_ABBR}",
+                f"{self.get_wit_id()}",
+                f"{self.get_wit_abbr()}",
             ),
         )
         t2.start()
 
     def delete(self, using=None, keep_parents=False):
+        unindex_witness(self.get_wit_id(), get_wit_type(self.get_wit_abbr()))
+        delete_files(get_imgs(f"{self.get_wit_abbr()}{self.get_wit_id()}"))
         self.pdf.storage.delete(self.pdf.name)
-        # TODO delete images extracted from the pdf
         super().delete()
 
     def get_path(self):
@@ -197,6 +213,7 @@ class Pdf(Digitization):
     def to_img(self):
         """
         Convert the PDF file to JPEG images
+        NOTE: it is not functioning and use apparently
         """
         filename = self.get_filename()
         page_nb = self.get_page_nb()
@@ -265,19 +282,26 @@ class Manifest(Digitization):
     def __str__(self):
         return self.manifest
 
-    # TODO: make a common save method for manifests
-    # def save(self, *args, **kwargs):
-    #     # Call the parent save method to save the model
-    #     super().save(*args, **kwargs)
-    #     # Run the async extraction of images from an IIIF manifest in the background using threading
-    #     t = threading.Thread(
-    #         target=extract_images_from_iiif_manifest,
-    #         args=(
-    #             self.manifest,
-    #             f"{SRC_ABBR}{self.source.id}",
-    #         ),
-    #     )
-    #     t.start()
+
+def save_manifest(instance, wit_id, wit_abbr):
+    event = threading.Event()
+
+    # Run the async extraction of images from an IIIF manifest in the background using threading
+    t = threading.Thread(
+        target=extract_images_from_iiif_manifest,
+        args=(
+            instance.manifest,
+            f"{wit_abbr}{wit_id}",
+            event,
+        ),
+    )
+    t.start()
+
+    t2 = threading.Thread(
+        target=send_anno_request,
+        args=(event, wit_id, wit_abbr),
+    )
+    t2.start()
 
 
 class ManifestVolume(Manifest):
@@ -286,29 +310,7 @@ class ManifestVolume(Manifest):
     def save(self, *args, **kwargs):
         # Call the parent save method to save the model
         super().save(*args, **kwargs)
-
-        event = threading.Event()
-
-        # Run the async extraction of images from an IIIF manifest in the background using threading
-        t = threading.Thread(
-            target=extract_images_from_iiif_manifest,
-            args=(
-                self.manifest,
-                f"{VOL_ABBR}{self.volume.id}",
-                event,
-            ),
-        )
-        t.start()
-
-        t2 = threading.Thread(
-            target=send_anno_request,
-            args=(
-                event,
-                f"{self.volume.id}",
-                f"{VOL_ABBR}",
-            ),
-        )
-        t2.start()
+        save_manifest(self, self.volume.id, VOL_ABBR)
 
     def get_wit_ref(self):
         return f"vol{self.volume.id}"
@@ -320,29 +322,7 @@ class ManifestManuscript(Manifest):
     def save(self, *args, **kwargs):
         # Call the parent save method to save the model
         super().save(*args, **kwargs)
-
-        event = threading.Event()
-
-        # Run the async extraction of images from an IIIF manifest in the background using threading
-        t = threading.Thread(
-            target=extract_images_from_iiif_manifest,
-            args=(
-                self.manifest,
-                f"{MS_ABBR}{self.manuscript.id}",
-                event,
-            ),
-        )
-        t.start()
-
-        t2 = threading.Thread(
-            target=send_anno_request,
-            args=(
-                event,
-                f"{self.manuscript.id}",
-                f"{MS_ABBR}",
-            ),
-        )
-        t2.start()
+        save_manifest(self, self.manuscript.id, MS_ABBR)
 
     def get_wit_ref(self):
         return f"ms{self.manuscript.id}"

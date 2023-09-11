@@ -112,10 +112,10 @@ class ManifestAdmin(admin.ModelAdmin):
 
     manifest_auto.short_description = "Manifeste (automatique)"
 
-    def manifest_v2(self, obj, wit_type=MS_ABBR):
-        if obj.id:
+    def manifest_v2(self, obj, wit_abbr=MS_ABBR):
+        if obj.id and has_manifest(get_img_prefix(obj, wit_abbr)):
             action = "FINAL" if obj.manifest_final else "EDIT"
-            if not has_annotations(obj, wit_type):
+            if not has_annotations(obj, wit_abbr):
                 action = "NO ANNOTATION YET"
             return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
         return "-"
@@ -168,7 +168,7 @@ class VolumeInline(nested_admin.NestedStackedInline):
     manifest_auto.short_description = "Manifeste (automatique)"
 
     def manifest_v2(self, obj):
-        if obj.id:
+        if obj.id and has_manifest(get_img_prefix(obj, VOL_ABBR)):
             action = "FINAL" if obj.manifest_final else "EDIT"
             if not has_annotations(obj, VOL_ABBR):
                 action = "NO ANNOTATION YET"

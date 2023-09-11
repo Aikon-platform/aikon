@@ -156,7 +156,9 @@ def get_pdf_imgs(pdf_list, ps_type=VOL):
         for img_nb in range(1, pdf_reader.numPages + 1):
             img_list.append(
                 # name all the pdf images according to the format: "pdf_name_0001.jpg"
-                pdf_name.replace(".pdf", f"_{img_nb:04d}.jpg")
+                pdf_name.replace(
+                    ".pdf", f"_{img_nb:04d}.jpg"
+                )  # TODO: here it is retrieving only 4 digits
             )
 
     return img_list
@@ -391,4 +393,15 @@ def get_imgs(wit_prefix):
         if pattern.match(img):
             wit_imgs.append(img)
 
-    return wit_imgs
+    return sorted(wit_imgs)
+
+
+def delete_files(filenames, directory=f"{BASE_DIR}/{IMG_PATH}"):
+    for file in filenames:
+        try:
+            os.remove(f"{directory}/{file}")
+        except FileNotFoundError:
+            log(f"[delete_files] File not found: {directory}/{file}")
+        except Exception as e:
+            log(f"[delete_files] Error deleting {directory}/{file}: {e}")
+    return True
