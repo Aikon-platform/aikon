@@ -397,6 +397,9 @@ def get_imgs(wit_prefix):
 
 
 def delete_files(filenames, directory=f"{BASE_DIR}/{IMG_PATH}"):
+    if type(filenames) != list:
+        filenames = [filenames]
+
     for file in filenames:
         try:
             os.remove(f"{directory}/{file}")

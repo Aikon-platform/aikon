@@ -93,8 +93,7 @@ def unindex_anno(anno_id):
 
 def unindex_witness(wit_id, wit_type):
     iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}"
-    if not index_manifest_in_sas(f"{iiif_url}/manifest.json"):
-        return False
+    index_manifest_in_sas(f"{iiif_url}/manifest.json")
 
     try:
         for anno in get_manifest_annos(wit_id, wit_type):
@@ -525,6 +524,9 @@ def get_manifest_annos(wit_id, wit_type):
     except requests.exceptions.RequestException as e:
         log(f"[get_manifest_annos] Failed to retrieve annotations: {e}")
         return False
+
+    if not "resources" in annos or len(annos["resources"]) == 0:
+        return []
 
     try:
         manifest_annos = [anno["@id"] for anno in annos["resources"]]

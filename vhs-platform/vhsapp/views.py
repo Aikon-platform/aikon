@@ -78,7 +78,7 @@ def send_anno(request, wit_id, wit_type):
     manifest_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_AUTO}/{wit_type}/{wit_id}/manifest.json"
     try:
         requests.post(
-            url=f"{GPU_URL}/run_detect",
+            url=f"{API_GPU_URL}/run_detect",
             data={"manifest_url": manifest_url, "wit_abbr": wit_abbr},
         )
     except Exception as e:

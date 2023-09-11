@@ -39,7 +39,14 @@ from vhsapp.utils.iiif.validation import (
 from vhsapp.utils.iiif.download import extract_images_from_iiif_manifest
 from vhsapp.utils.iiif.annotation import send_anno_request, unindex_witness
 from vhsapp.models.witness import Volume, Manuscript
-from vhsapp.models import get_wit_type
+from vhsapp.models import get_wit_type, get_wit_abbr
+
+
+def remove_digitization(wit_id, wit_abbr, other_media=None):
+    unindex_witness(wit_id, get_wit_type(wit_abbr))
+    delete_files(get_imgs(f"{wit_abbr}{wit_id}"))
+    if other_media:
+        delete_files(other_media, f"{BASE_DIR}/{MEDIA_PATH}")
 
 
 class Digitization(models.Model):
@@ -111,6 +118,7 @@ class Picture(Digitization):
 @receiver(pre_delete, sender=Picture)
 def image_delete(sender, instance, **kwargs):
     # Pass false so ImageField doesn't save the model
+    unindex_witness(instance.get_wit_id(), get_wit_type(instance.get_wit_abbr()))
     instance.image.delete(False)
 
 
@@ -125,6 +133,8 @@ class ImageVolume(Picture):
 @receiver(pre_delete, sender=ImageVolume)
 def imagevolume_delete(sender, instance, **kwargs):
     # Pass false so ImageField doesn't save the model
+    # TODO use remove_digitization for all type of digit
+    # unindex_witness(instance.get_wit_id(), get_wit_type(instance.get_wit_abbr()))
     instance.image.delete(False)
 
 
@@ -139,6 +149,8 @@ class ImageManuscript(Picture):
 @receiver(pre_delete, sender=ImageManuscript)
 def imagemanuscript_delete(sender, instance, **kwargs):
     # Pass false so ImageField doesn't save the model
+    # TODO use remove_digitization for all type of digit
+    # unindex_witness(instance.get_wit_id(), get_wit_type(instance.get_wit_abbr()))
     instance.image.delete(False)
 
 
@@ -190,9 +202,11 @@ class Pdf(Digitization):
         t2.start()
 
     def delete(self, using=None, keep_parents=False):
-        unindex_witness(self.get_wit_id(), get_wit_type(self.get_wit_abbr()))
-        delete_files(get_imgs(f"{self.get_wit_abbr()}{self.get_wit_id()}"))
-        self.pdf.storage.delete(self.pdf.name)
+        t = threading.Thread(
+            target=remove_digitization,
+            args=(self.get_wit_id(), self.get_wit_abbr(), self.pdf.name),
+        )
+        t.start()
         super().delete()
 
     def get_path(self):
