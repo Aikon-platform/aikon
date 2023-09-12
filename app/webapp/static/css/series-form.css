@@ -2,11 +2,13 @@
     display: none;
 }
 
-#witness_set-0-contents-group .djn-add-item {
+/* #witness_set-0-contents-group */
+[id^="witness_set-"][id$="-contents-group"] .djn-add-item {
     display: none;
 }
 
-#witness_set-0-contents-0 h3 {
+/* #witness_set-0-contents-0 */
+[id^="witness_set-"][id*="-contents-"] h3 {
     display: none;
 }
 

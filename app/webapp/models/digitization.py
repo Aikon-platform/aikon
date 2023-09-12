@@ -97,16 +97,6 @@ def remove_digitization(wit_id, wit_abbr, other_media=None):
         delete_files(other_media, f"{BASE_DIR}/{MEDIA_DIR}")
 
 
-# Receive the pre_delete signal and delete the file associated with the model instance
-@receiver(pre_delete, sender=Digitization)
-def pre_delete_digit(sender, digit: Digitization, **kwargs):
-    # TODO use remove_digit for all type of digit
-    if digit.get_digit_type() != IMG:
-        return
-    # Pass False so ImageField doesn't save the model
-    digit.image.delete(False)
-
-
 class Digitization(models.Model):
     class Meta:
         verbose_name = get_name("Digitization")
@@ -302,3 +292,13 @@ class Digitization(models.Model):
             metadata["Is annotated"] = self.has_annotations()
 
         return metadata
+
+
+# Receive the pre_delete signal and delete the file associated with the model instance
+@receiver(pre_delete, sender=Digitization)
+def pre_delete_digit(sender, digit: Digitization, **kwargs):
+    # TODO use remove_digit for all type of digit
+    if digit.get_digit_type() != IMG:
+        return
+    # Pass False so ImageField doesn't save the model
+    digit.image.delete(False)

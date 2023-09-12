@@ -7,7 +7,7 @@ from urllib.request import urlopen
 
 import requests
 
-from app.webapp.utils.constants import MANIFEST_V2
+from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.webapp.utils.paths import MEDIA_DIR, BASE_DIR, ANNO_PATH
 from app.webapp.models import get_wit_abbr, get_wit_type
 from app.webapp.models.utils.constants import MS, VOL, MS_ABBR, VOL_ABBR
