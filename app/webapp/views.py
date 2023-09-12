@@ -1,13 +1,17 @@
 import json
 import requests
 from dal import autocomplete
+import threading
+from os.path import exists
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.decorators import login_required
 
+from app.webapp.models import get_wit_abbr
 from app.webapp.models.witness import Witness
 from app.webapp.models.utils.constants import MS, VOL
 from app.config.settings import (
@@ -16,16 +20,26 @@ from app.config.settings import (
     APP_NAME,
     ENV,
     GEONAMES_USER,
+    API_GPU_URL,
 )
+from app.webapp.utils.constants import MANIFEST_V1
 from app.webapp.utils.functions import credentials, list_to_txt
-from app.webapp.utils.logger import console, log
+from app.webapp.utils.logger import console, log, get_time
 from app.webapp.utils.iiif.manifest import manifest_wit_type
 from app.webapp.utils.iiif.annotation import (
     format_canvas_annos,
-    check_wit_annotation,
+    index_wit_annotations,
     get_anno_img,
     formatted_wit_anno,
+    # index_anno,
+    get_canvas_list,
+    get_indexed_canvas_annos,
+    check_anno_file,
+    check_wit_annos,
 )
+import requests
+
+from app.webapp.utils.paths import BASE_DIR, ANNO_PATH
 
 
 def admin_app(request):
@@ -46,9 +60,78 @@ def manifest_volume(request, wit_id, version):
     return JsonResponse(manifest_wit_type(wit_id, VOL, version))
 
 
+def send_anno(request, wit_id, wit_type):
+    """
+    To relaunch annotations in case the automatic annotation failed
+    """
+    wit_abbr = get_wit_abbr(wit_type)
+    manifest_url = (
+        f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V1}/{wit_type}/{wit_id}/manifest.json"
+    )
+    try:
+        requests.post(
+            url=f"{API_GPU_URL}/run_detect",
+            data={"manifest_url": manifest_url, "wit_abbr": wit_abbr},
+        )
+    except Exception as e:
+        log(
+            f"[send_anno] Failed to send annotation request for {wit_type} #{wit_id}: {e}"
+        )
+        return JsonResponse(
+            {
+                "response": f"Failed to send annotation request for {wit_type} #{wit_id}",
+                "cause": e,
+            },
+            safe=False,
+        )
+
+    return JsonResponse(
+        {"response": f"Annotations were relaunched for {wit_type} #{wit_id}"},
+        safe=False,
+    )
+
+
+@csrf_exempt
+def receive_anno(request, wit_id, wit_type):
+    if request.method == "POST":
+        # TODO: vérification du format des annotations reçues
+        annotation_file = request.FILES["annotation_file"]
+        file_content = annotation_file.read()
+
+        if check_anno_file(file_content):
+            try:
+                with open(f"{BASE_DIR}/{ANNO_PATH}/{wit_id}.txt", "w+b") as f:
+                    f.write(file_content)
+
+            except Exception as e:
+                log(
+                    f"[receive_anno] Failed to open received annotations for {wit_type} #{wit_id}: {e}"
+                )
+
+            # manifest_url = (
+            #     f"{APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/manifest.json"
+            # )
+            try:
+                index_wit_annotations(wit_id, wit_type)
+                # index_anno(manifest_url, wit_type, wit_id)
+            except Exception as e:
+                log(
+                    f"[receive_anno] Failed to index annotations for {wit_type} #{wit_id}: {e}"
+                )
+
+            return JsonResponse({"message": "Annotation received and indexed."})
+
+        else:
+            return JsonResponse(
+                {"message": "Invalid request. File is not a text file."}, status=400
+            )
+    else:
+        return JsonResponse({"message": "Invalid request."}, status=400)
+
+
 def export_anno_img(request, wit_id, wit_type):
     annotations = get_anno_img(wit_id, wit_type)
-    return list_to_txt(annotations, f"{wit_type}#{wit_id}_ annotations")
+    return list_to_txt(annotations, f"{wit_type}#{wit_id}_annotations")
 
 
 def canvas_annotations(request, wit_id, version, wit_type, canvas):
@@ -62,7 +145,7 @@ def populate_annotation(request, wit_id, wit_type):
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    return HttpResponse(status=200 if check_wit_annotation(wit_id, wit_type) else 500)
+    return HttpResponse(status=200 if index_wit_annotations(wit_id, wit_type) else 500)
 
 
 def validate_annotation(request, wit_id, wit_type):
@@ -87,8 +170,34 @@ def witness_sas_annotations(request, wit_id, wit_type):
 
 
 def test(request, wit_id, wit_type):
+    start = get_time()
+    model = Witness
+    try:
+        wit_id = int(wit_id)
+        if int(wit_id) == 0:
+            witnesses = model.objects.all()
+        else:
+            witnesses = [get_object_or_404(model, pk=wit_id)]
+    except ValueError as e:
+        console(f"[test] wit_id is not an integer: {e}")
+        return JsonResponse(
+            {"response": f"wit_id is not an integer: {wit_id}\n{e}"},
+            safe=False,
+        )
+
+    threads = []
+    wit_ids = []
+    # for witness in witnesses:
+    #     if not witness.manifest_final:
+    #         wit_ids.append(witness.id)
+    #         thread = threading.Thread(
+    #             target=check_wit_annos, args=(witness.id, wit_type, True)
+    #         )
+    #         thread.start()
+    #         threads.append(thread)
+
     return JsonResponse(
-        {"response": f"Nothing to test for {wit_type} #{wit_id}"},
+        {"response": f"Execution time: {start} > {get_time()}", "checked ids": wit_ids},
         safe=False,
     )
 

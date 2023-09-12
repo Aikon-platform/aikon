@@ -17,6 +17,8 @@ from app.webapp.views import (
     witness_sas_annotations,
     test,
     validate_annotation,
+    receive_anno,
+    send_anno,
 )
 
 
@@ -72,6 +74,16 @@ urlpatterns = [
         f"{APP_NAME}/autocomplete/place/",
         PlaceAutocomplete.as_view(),
         name="place-autocomplete",
+    ),
+    path(
+        f"{APP_NAME}/<str:wit_type>/<int:wit_id>/annotate/",
+        receive_anno,
+        name="receive-annotations",
+    ),
+    path(
+        f"{APP_NAME}/<str:wit_type>/<int:wit_id>/run-annotation/",
+        send_anno,
+        name="send-annotations",
     ),
 ]
 

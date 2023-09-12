@@ -105,6 +105,7 @@ PROD_URL="<url-used-for-prod>"       # e.g. "https://eida.obspm.fr"
 APP_NAME="<app-name-lowercase>"      # name of the application, e.g. "eida"
 GEONAMES_USER="<geonames-username>"
 APP_LANG="<fr-or-en>"                # lang to be used in the app: work either for french (fr) or english (en)
+EXAPI="<gpu-api-address>"            # e.g. "https://dishas-ia.obspm.fr"
 ```
 
 Create a [Geonames](https://www.geonames.org/login) account, activate it and change `<geonames-username>` in the `.env` file
@@ -146,10 +147,10 @@ sudo chmod +x cantaloupe/init.sh && cp cantaloupe/.env{.template,} && nano canta
 
 Change variables in the generated file `cantaloupe/.env`:
 - `BASE_URI`: leave it blank on local
-- `FILE_SYSTEM_SOURCE` on local: `../app/mediafiles/img/` (double dots)
+- `FILE_SYSTEM_SOURCE` depends on the folder in which you run cantaloupe (inside cantaloupe/ folder: `../vhs-platform/mediafiles/img/`)
 ```bash
 BASE_URI=
-FILE_SYSTEM_SOURCE=./app/mediafiles/img/
+FILE_SYSTEM_SOURCE=./vhs-platform/mediafiles/img/  # inside the project directory
 HTTP_PORT=8182
 HTTPS_PORT=8183
 LOG_PATH=/path/to/logs

@@ -4,6 +4,7 @@ from glob import glob
 from django.db import models
 from django.utils.safestring import mark_safe
 
+from app.webapp.models import get_wit_type, get_wit_abbr
 from app.webapp.models.utils.functions import get_fieldname
 
 import threading
@@ -20,6 +21,7 @@ from django.db.models.signals import pre_delete
 from django.dispatch.dispatcher import receiver
 from pdf2image import convert_from_path
 
+from app.webapp.utils.iiif.annotation import unindex_witness, send_anno_request
 from app.webapp.utils.iiif.gen_html import gen_manifest_btn
 from app.webapp.utils.logger import log, console
 
@@ -43,6 +45,8 @@ from app.webapp.utils.functions import (
     pdf_to_img,
     to_jpg,
     anno_btn,
+    delete_files,
+    get_imgs,
 )
 from app.webapp.utils.paths import (
     BASE_DIR,
@@ -84,6 +88,23 @@ def rename_file(digitization, original_filename):
     new_filename = digitization.get_filename()
     # TODO: create fct that do not erase the file if a image was already recorded with the same name
     return f"{digitization.get_relative_path()}/{new_filename}.{digitization.ext}"
+
+
+def remove_digitization(wit_id, wit_abbr, other_media=None):
+    unindex_witness(wit_id, get_wit_type(wit_abbr))
+    delete_files(get_imgs(f"{wit_abbr}{wit_id}"))
+    if other_media:
+        delete_files(other_media, f"{BASE_DIR}/{MEDIA_DIR}")
+
+
+# Receive the pre_delete signal and delete the file associated with the model instance
+@receiver(pre_delete, sender=Digitization)
+def pre_delete_digit(sender, digit: Digitization, **kwargs):
+    # TODO use remove_digit for all type of digit
+    if digit.get_digit_type() != IMG:
+        return
+    # Pass False so ImageField doesn't save the model
+    digit.image.delete(False)
 
 
 class Digitization(models.Model):
@@ -135,9 +156,9 @@ class Digitization(models.Model):
         except AttributeError:
             return None
 
-    def get_wit_type(self):
+    def get_wit_type(self, abbr=False):
         witness = self.get_witness()
-        return witness.type
+        return witness.type if not abbr else get_wit_abbr(witness.type)
 
     def get_wit_prefix(self):
         witness = self.get_witness()
@@ -192,6 +213,9 @@ class Digitization(models.Model):
 
     def save(self, *args, **kwargs):
         digit_type = self.get_digit_type()
+        wit_id = self.get_witness().id
+        wit_abbr = self.get_wit_type(abbr=True)
+        event = threading.Event()
 
         if digit_type == IMG:
             ext = self.image.name.split(".")[1]
@@ -202,30 +226,33 @@ class Digitization(models.Model):
 
         elif digit_type == PDF:
             super().save(*args, **kwargs)
-            # Run the PDF to image async conversion task in the background using threading
-            t = threading.Thread(target=pdf_to_img)
+            t = threading.Thread(
+                target=pdf_to_img,
+                args=(event, self.pdf.name),
+            )
             t.start()
 
         elif digit_type == MANIFEST:
             super().save(*args, **kwargs)
-            # Run the async extraction of images from IIIF using threading
             t = threading.Thread(
                 target=extract_images_from_iiif_manifest,
-                args=(self.manifest, self.get_filename()),
+                args=(self.manifest, f"{wit_abbr}{wit_id}", event),
             )
             t.start()
 
+        anno_t = threading.Thread(
+            target=send_anno_request,
+            args=(event, wit_id, wit_abbr),
+        )
+        anno_t.start()
+
     def delete(self, using=None, keep_parents=False):
-        if self.get_digit_type() == PDF:  # NOTE: maybe not for manifests
-            self.pdf.storage.delete(self.get_file_path(False))
-            for filename in self.get_imgs():
-                try:
-                    os.remove(os.path.join(IMG_PATH, filename))
-                except OSError as e:
-                    log(
-                        f"[Digitization.delete()] Error deleting PDF images ({filename})",
-                        e,
-                    )
+        if self.get_digit_type() == PDF:
+            t = threading.Thread(
+                target=remove_digitization,
+                args=(self.get_witness().id, self.get_wit_type(True), self.pdf.name),
+            )
+            t.start()
         super().delete()
 
     def set_ext(self, extension):
@@ -275,12 +302,3 @@ class Digitization(models.Model):
             metadata["Is annotated"] = self.has_annotations()
 
         return metadata
-
-
-# Receive the pre_delete signal and delete the file associated with the model instance
-@receiver(pre_delete, sender=Digitization)
-def image_delete(sender, digit: Digitization, **kwargs):
-    if digit.get_digit_type() != IMG:
-        return
-    # Pass False so ImageField doesn't save the model
-    digit.image.delete(False)

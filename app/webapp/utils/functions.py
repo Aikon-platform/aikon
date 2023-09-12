@@ -3,8 +3,12 @@ import io
 import json
 import os
 import re
-from pathlib import Path
 from subprocess import CalledProcessError
+import zipfile
+from os.path import exists
+from pathlib import Path
+from urllib.parse import urlparse
+from uuid import uuid4
 
 import PyPDF2
 import requests
@@ -14,13 +18,15 @@ from django.core.files import File
 from django.utils.html import format_html
 from django.http import HttpResponse
 from django.utils.safestring import mark_safe
+from django.core.files import File
+from pdf2image import pdfinfo_from_path, convert_from_path
 from urllib.request import (
     HTTPPasswordMgrWithDefaultRealm,
     HTTPBasicAuthHandler,
     build_opener,
     install_opener,
 )
-from app.config.settings import APP_NAME, APP_LANG
+from app.config.settings import APP_NAME, APP_LANG, CANTALOUPE_APP_URL
 from app.webapp.utils.paths import (
     BASE_DIR,
     MEDIA_DIR,
@@ -56,32 +62,6 @@ def to_jpg(image):
         log("[to_jpg] Failed to convert img to jpg", e)
     return False
 
-    # filename = image.name.split(".")[0]
-    # img = Image.open(image)
-    # if img.mode != "RGB":
-    #     img = img.convert("RGB")
-    # obj_io = io.BytesIO()
-    # img.save(obj_io, format="JPEG")
-    # img_jpg = File(obj_io, name=f"{filename}.jpg")
-    # return img_jpg
-
-
-def pdf_to_img(pdf_name, dpi=MAX_RES):
-    """
-    Convert the PDF file to JPEG images
-    """
-    import subprocess
-
-    pdf_path = f"{BASE_DIR}/{MEDIA_DIR}/{pdf_name}"
-    pdf_name = Path(pdf_name).stem
-    try:
-        command = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {BASE_DIR / IMG_PATH / pdf_name} -sep _ "
-        subprocess.run(command, shell=True, check=True)
-    except CalledProcessError as e:
-        log(f"[pdf_to_img] Command to convert {pdf_name}.pdf failed", e)
-    except Exception as e:
-        log(f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images", e)
-
 
 def save_img(
     img: Image,
@@ -107,7 +87,43 @@ def save_img(
         return False
 
 
-def get_pdf_imgs(pdf_list, ps_type=VOL):
+# def convert_to_jpeg(image):
+#     """
+#     Convert the image to JPEG format
+#     TODO check which performs better
+#     """
+#     filename = image.name.split(".")[0]
+#     img = Image.open(image)
+#     if img.mode != "RGB":
+#         img = img.convert("RGB")
+#     # Create a BytesIO object
+#     obj_io = io.BytesIO()
+#     # Save image to BytesIO object
+#     img.save(obj_io, format="JPEG")
+#     # Create a File object
+#     img_jpg = File(obj_io, name=f"{filename}.jpg")
+#     return img_jpg
+
+
+def pdf_to_img(event, pdf_name, dpi=MAX_RES):
+    """
+    Convert the PDF file to JPEG images
+    """
+    import subprocess
+
+    pdf_path = f"{BASE_DIR}/{MEDIA_DIR}/{pdf_name}"
+    pdf_name = Path(pdf_name).stem
+    try:
+        command = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {BASE_DIR / IMG_PATH / pdf_name} -sep _ "
+        subprocess.run(command, shell=True, check=True)
+        event.set()
+    except Exception as e:
+        log(
+            f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e} ({e.__class__.__name__})"
+        )
+
+
+def get_pdf_imgs(pdf_list):
     if type(pdf_list) != list:
         pdf_list = [pdf_list]
 
@@ -119,7 +135,9 @@ def get_pdf_imgs(pdf_list, ps_type=VOL):
         for img_nb in range(1, pdf_reader.numPages + 1):
             img_list.append(
                 # name all the pdf images according to the format: "pdf_name_0001.jpg"
-                pdf_name.replace(".pdf", f"_{img_nb:04d}.jpg")
+                pdf_name.replace(
+                    ".pdf", f"_{img_nb:04d}.jpg"
+                )  # TODO: here it is retrieving only 4 digits
             )
 
     return img_list
@@ -232,26 +250,31 @@ def list_to_txt(item_list, file_name=None):
     return response
 
 
-def zip_img(zip_file, img_list, file_type="img", file_name=None):  # maybe change name
-    buffer = io.BytesIO()
-    with zip_file.ZipFile(buffer, "w") as z:
-        for img_path in img_list:
-            if file_type == "img":
-                # Add file to zip
-                z.write(img_path, os.path.basename(img_path))
-            # elif file_type == "pdf":
-            #     if urlparse(img_path).scheme == '':
-            #         # Local file path
-            #         with open(img_path, "rb") as pdf_file:
-            #             pdf_data = pdf_file.read()
-            #     else:
-            #         pdf_data = requests.get(img_path).content
-            #
-            #     # Add pdf content to zip
-            #     z.writestr(os.path.basename(img_path), pdf_data)
+def url_to_name(iiif_img_url):
+    return (
+        iiif_img_url.replace(f"{CANTALOUPE_APP_URL}/iiif/2/", "")
+        .replace("/full/0/default", "")
+        .replace("/", "_")
+        .replace(".jpg", "")
+    )
 
-    if file_name is None:
-        file_name = f"{APP_NAME}_export_{file_type}"
+
+def zip_img(request, img_list, file_type="img", file_name=f"{APP_NAME}_export"):
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as z:
+        for img_path in img_list:
+            img_name = f"{url_to_name(img_path)}.jpg"
+            if file_type == "img":
+                if urlparse(img_path).scheme == "":
+                    z.write(img_path, img_name)
+                else:
+                    response = requests.get(img_path)
+                    if response.status_code == 200:
+                        z.writestr(img_name, response.content)
+                    else:
+                        log(f"[zip_imgs] Fail to download img: {img_path}")
+                        pass
+
     response = HttpResponse(
         buffer.getvalue(), content_type="application/x-zip-compressed"
     )
@@ -357,11 +380,25 @@ def get_img_prefix(obj, wit_type=MS):
 
 def get_imgs(wit_prefix):
     # TODO make a method of Witness class out of this function
-    pattern = re.compile(rf"{wit_prefix}_\d{{4}}\.jpg", re.IGNORECASE)
+    pattern = re.compile(rf"{wit_prefix}_\d{{1,4}}\.jpg", re.IGNORECASE)
     wit_imgs = []
 
     for img in os.listdir(f"{BASE_DIR}/{IMG_PATH}"):
         if pattern.match(img):
             wit_imgs.append(img)
 
-    return wit_imgs
+    return sorted(wit_imgs)
+
+
+def delete_files(filenames, directory=f"{BASE_DIR}/{IMG_PATH}"):
+    if type(filenames) != list:
+        filenames = [filenames]
+
+    for file in filenames:
+        try:
+            os.remove(f"{directory}/{file}")
+        except FileNotFoundError:
+            log(f"[delete_files] File not found: {directory}/{file}")
+        except Exception as e:
+            log(f"[delete_files] Error deleting {directory}/{file}: {e}")
+    return True

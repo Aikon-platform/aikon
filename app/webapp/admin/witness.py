@@ -19,9 +19,10 @@ from django.template.defaultfilters import truncatewords_html
 from django.utils.safestring import mark_safe
 
 from app.webapp.utils.iiif import gen_iiif_url
+from app.webapp.utils.iiif.annotation import get_anno_images
 from app.webapp.utils.iiif.manifest import has_manifest, gen_manifest_url
 from app.webapp.utils.iiif.gen_html import gen_btn, gen_manifest_btn
-from app.webapp.utils.functions import list_to_txt, get_pdf_imgs, anno_btn
+from app.webapp.utils.functions import list_to_txt, get_pdf_imgs, anno_btn, zip_img
 
 
 # TODO change MS/VOL
@@ -236,6 +237,21 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             gen_manifest_url(mnf[0], MANIFEST_V2, MS.lower()) for mnf in results
         ]
         return list_to_txt(manifests, "Manifest_IIIF")
+
+    @admin.action(description="Export diagram images in selected sources")
+    def export_annotated_imgs(self, request, queryset):
+        if queryset.count() > 5:
+            messages.warning(request, "You can select up to 5 manuscripts for export.")
+            return
+
+        results = queryset.values_list("id")
+
+        img_urls = []
+        for wit_id in results:
+            witness = Witness.objects.get(pk=wit_id[0])
+            img_urls.extend(get_anno_images(witness, MS))
+
+        return zip_img(request, img_urls)
 
 
 class WitnessInline(nested_admin.NestedStackedInline):

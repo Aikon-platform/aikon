@@ -46,8 +46,7 @@ function editAnnotations(witId, idButton) {
     const manifestUrl = toManifest(witId, witnessType, "v2");
     const idMessage = `message_${witId}`;
     const innerHtml = $(`#${idButton}`).html();
-
-    setLoading(idButton);
+    // TODO send request to backend verify that everything is correct with manifest
 
     fetch(manifestUrl)
         .then(response => {
@@ -56,6 +55,17 @@ function editAnnotations(witId, idButton) {
             }
             return response.json();
         })
+        .then(response => {
+            window.open(`/${APP_NAME}/${witnessType}/${witId}/show/`, "_blank");
+        })
+        .catch(error => {
+            showMessage(error.message, idMessage);
+            clearLoading(idButton, innerHtml);
+        });
+
+    /*
+    setLoading(idButton);
+
         .then(manifestContent => {
             // Index the manifest
             return fetch(`${SAS_APP_URL}/manifests`, {
@@ -80,10 +90,7 @@ function editAnnotations(witId, idButton) {
             window.open(`/${APP_NAME}/${witnessType}/${witId}/show/`, "_blank");
             clearLoading(idButton, innerHtml);
         })
-        .catch(error => {
-            showMessage(error.message, idMessage);
-            clearLoading(idButton, innerHtml);
-        });
+*/
 }
 
 

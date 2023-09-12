@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
 
+from app.webapp.models import get_wit_abbr
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.volume import Volume
 from app.webapp.models.series import Series
@@ -14,6 +15,7 @@ from app.webapp.models.utils.constants import (
     PAGE_TYPE,
     PUBLISHED_INFO,
     AUTHOR,
+    MS_ABBR,
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.functions import get_icon, flatten
