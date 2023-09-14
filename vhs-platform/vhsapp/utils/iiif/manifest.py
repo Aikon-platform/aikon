@@ -120,10 +120,7 @@ def manifest_wit_type(wit_id, wit_type, version):
 
 def has_manifest(wit_ref):
     # if there is at least one image file named after the current witness
-    if (
-        len(glob(f"{BASE_DIR}/{IMG_PATH}/{wit_ref}_*.jpg"))
-        or len(glob(f"{BASE_DIR}/{IMG_PATH}/{wit_ref}.txt")) > 0
-    ):
+    if len(glob(f"{BASE_DIR}/{IMG_PATH}/{wit_ref}_*.jpg")):
         return True
     return False
 
