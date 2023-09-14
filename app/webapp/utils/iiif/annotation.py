@@ -343,17 +343,16 @@ def has_annotations(witness, wit_abbr):
     wit_dir = "manuscripts" if wit_abbr == MS_ABBR else "volumes"
     wit_type = get_wit_type(wit_abbr)
     # if there is at least one image file named after the current witness
-    if (
-        not len(glob(f"{BASE_DIR}/{MEDIA_DIR}/{wit_dir}/annotation/{witness.id}.txt"))
-        > 0
-    ):
+    anno_file = f"{BASE_DIR}/{MEDIA_DIR}/{wit_dir}/annotation/{witness.id}.txt"
+    if not len(glob(anno_file)) > 0:
         return False
 
-    # if there is at least one annotation indexed in SAS
-    if len(get_manifest_annos(witness.id, wit_type)) != 0:
-        return True
-
-    return False
+    # # if there is at least one annotation indexed in SAS
+    # if len(get_manifest_annos(witness.id, wit_type)) != 0:
+    #     return True
+    #
+    # return False
+    return True
 
 
 def get_indexed_manifests():
@@ -518,19 +517,19 @@ def get_manifest_annos(wit_id, wit_type):
             log(
                 f"[get_manifest_annos] Failed to get annos from SAS: {response.status_code}"
             )
-            return False
+            return []
     except requests.exceptions.RequestException as e:
         log(f"[get_manifest_annos] Failed to retrieve annotations: {e}")
-        return False
+        return []
 
-    if not "resources" in annos or len(annos["resources"]) == 0:
+    if "resources" not in annos or len(annos["resources"]) == 0:
         return []
 
     try:
         manifest_annos = [anno["@id"] for anno in annos["resources"]]
     except Exception as e:
         log(f"[get_manifest_annos] Failed to parse annotations: {e}")
-        return False
+        return []
 
     return manifest_annos
 
