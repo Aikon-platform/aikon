@@ -35,7 +35,7 @@ from app.webapp.utils.functions import (
 
 def send_anno_request(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_V1):
     wit_type = get_wit_type(wit_abbr)
-
+    # TODO change manifest URL component to be at the digit level
     manifest_url = (
         f"{APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{wit_id}/manifest.json"
     )

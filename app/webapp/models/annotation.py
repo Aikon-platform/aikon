@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django.db import models
 
 from app.webapp.models.digitization import Digitization
@@ -10,6 +12,8 @@ def get_name(fieldname, plural=False):
 
 class Annotation(models.Model):
     # TODO create annotation when the platform receives the response from the extractor API
+    # NOTE one Annotation obj is linked to an annotation file => one Digit can have multiple Annotations
+    # One Annotation is linked to
     class Meta:
         verbose_name = get_name("Annotation")
         verbose_name_plural = get_name("Annotation", True)
@@ -31,7 +35,14 @@ class Annotation(models.Model):
         blank=True,
     )
 
+    def get_anno_prefix(self):
+        # filename = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}"
+        return f"{self.digitization.get_filename()}_anno{self.id}"
+
     def get_filename(self):
-        # TODO here indicate canvas nb
-        # TODO store id for SAS that use a random string of char
-        return f"{self.digitization.get_filename()}_{self.id}"
+        return f"{self.get_anno_prefix()}.txt"
+
+    def gen_anno_id(self, canvas_nb):
+        # OLD anno_id = f"{wit_abbr}-{wit_id}-{canvas_nb}-{anno_nb}"
+        # TODO : find how to store generated anno_ids + to delete anno_ids that were deleted
+        return f"{self.get_anno_prefix()}_c{canvas_nb}_{uuid4().hex[:8]}"
