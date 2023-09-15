@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from iiif_prezi.factory import ManifestFactory, StructuralError
 
 from app.webapp.models import get_wit_abbr
+from app.webapp.models.digitization import Digitization
 from app.webapp.utils.constants import (
     MANIFEST_V1,
     MANIFEST_V2,
@@ -56,7 +57,8 @@ def process_images(witness, seq, version):
     return True
 
 
-def manifest_witness(wit_id, wit_abbr=MS_ABBR, version=MANIFEST_V1):
+def manifest_witness(digit: Digitization, version=MANIFEST_V1):
+    # TODO here digit
     """
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
@@ -70,7 +72,7 @@ def manifest_witness(wit_id, wit_abbr=MS_ABBR, version=MANIFEST_V1):
 
     try:
         fac = ManifestFactory(
-            mdbase=f"{APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{wit_id}/",
+            mdbase=gen_manifest_base(digit, version),
             imgbase=f"{CANTALOUPE_APP_URL}/iiif/2/",
         )
     except Exception as e:
@@ -82,9 +84,8 @@ def manifest_witness(wit_id, wit_abbr=MS_ABBR, version=MANIFEST_V1):
     fac.set_iiif_image_info(version="2.0", lvl="2")
     # Build the manifest
     manifest = fac.manifest(ident="manifest", label=witness.__str__())
-    metadata = witness.get_metadata()
+    metadata = digit.get_metadata()
     metadata["Is annotated"] = has_annotations(witness, wit_abbr)
-
     manifest.set_metadata(metadata)
 
     # Set the manifest's attribution, description, and viewing hint
@@ -106,7 +107,7 @@ def manifest_witness(wit_id, wit_abbr=MS_ABBR, version=MANIFEST_V1):
 
 
 def manifest_wit_type(wit_id, wit_type, version):
-    manifest = manifest_witness(wit_id, get_wit_abbr(wit_type), version)
+    manifest = manifest_witness(digit, version)
     if not manifest:
         return {"error": "Unable to create a valid manifest"}
 
@@ -128,5 +129,9 @@ def has_manifest(wit_ref):
     return False
 
 
-def gen_manifest_url(wit_id, vers=MANIFEST_V1, wit_type=VOL.lower()):
-    return f"{APP_URL}/{APP_NAME}/iiif/{vers}/{wit_type}/{wit_id}/manifest.json"
+def gen_manifest_base(digit: Digitization, vers=MANIFEST_V1):
+    return f"{APP_URL}/{APP_NAME}/iiif/{vers}/{digit.get_wit_type()}/{digit.get_wit_id()}/{digit.id}"
+
+
+def gen_manifest_url(digit: Digitization, vers=MANIFEST_V1):
+    return f"{gen_manifest_base(digit, vers)}/manifest.json"

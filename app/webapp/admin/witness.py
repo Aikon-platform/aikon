@@ -10,18 +10,14 @@ from app.webapp.utils.constants import (
 )
 
 import nested_admin
-from admin_extra_buttons.decorators import button
 from admin_extra_buttons.mixins import ExtraButtonsMixin
 
 from django.contrib import admin, messages
-from django.http import HttpResponseRedirect
-from django.template.defaultfilters import truncatewords_html
 from django.utils.safestring import mark_safe
 
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.utils.iiif.annotation import get_anno_images
 from app.webapp.utils.iiif.manifest import has_manifest, gen_manifest_url
-from app.webapp.utils.iiif.gen_html import gen_btn, gen_manifest_btn
 from app.webapp.utils.functions import list_to_txt, get_pdf_imgs, anno_btn, zip_img
 
 
@@ -230,12 +226,10 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     )  # TODO bilingual
     def export_selected_manifests(self, request, queryset):
         # results = queryset.exclude(volume__isnull=True).values_list("volume__id")
-        results = queryset.values_list(
+        results = queryset.values_list(  # TODO : here change for digit
             "id", "manifestmanuscript__manifest"
         )  # TODO make it available for all witnesses
-        manifests = [
-            gen_manifest_url(mnf[0], MANIFEST_V2, MS.lower()) for mnf in results
-        ]
+        manifests = [gen_manifest_url(digit for digit in results)]
         return list_to_txt(manifests, "Manifest_IIIF")
 
     @admin.action(description="Export diagram images in selected sources")
@@ -249,7 +243,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         img_urls = []
         for wit_id in results:
             witness = Witness.objects.get(pk=wit_id[0])
-            img_urls.extend(get_anno_images(witness, MS))
+            # img_urls.extend(get_anno_images(digit)) TODO : here change for digit
 
         return zip_img(request, img_urls)
 

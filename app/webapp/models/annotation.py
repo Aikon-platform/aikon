@@ -29,11 +29,6 @@ class Annotation(models.Model):
     )
     # NOTE machine learning model used to generate annotations
     model = models.CharField(max_length=150)
-    # NOTE canvas nb on which the annotation can be found
-    canvas = models.IntegerField(
-        null=True,
-        blank=True,
-    )
 
     def get_anno_prefix(self):
         # filename = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}"
