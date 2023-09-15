@@ -7,6 +7,7 @@ from urllib.request import urlopen
 
 import requests
 
+from app.webapp.models.digitization import Digitization
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.webapp.utils.paths import MEDIA_DIR, BASE_DIR, ANNO_PATH
 from app.webapp.models import get_wit_abbr, get_wit_type
@@ -27,6 +28,9 @@ from app.webapp.utils.functions import (
     get_imgs,
     get_img_prefix,
 )
+
+
+# TODO MS/VOL
 
 
 def send_anno_request(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_V1):
@@ -55,11 +59,6 @@ def index_wit_annotations(wit_id, wit_type):
     if not index_manifest_in_sas(f"{iiif_url}/manifest.json", True):
         return
 
-    # last_canvases = get_last_indexed_canvas()
-    # last_indexed_canvas = (
-    #     last_canvases[str(wit_id)] if str(wit_id) in last_canvases else 0
-    # )
-
     canvases_to_annotate = get_annos_per_canvas(wit_id, wit_type)
     if not bool(canvases_to_annotate):
         # if the annotation file is empty
@@ -78,7 +77,7 @@ def index_wit_annotations(wit_id, wit_type):
 
 def unindex_anno(anno_id):
     http_sas = SAS_APP_URL.replace("https", "http")
-    # anno_id = f"{wit_abbr}-{wit_id}-{canvas_nb}-{anno_nb}"
+    # anno_id = f"{wit_abbr}-{wit_id}-{canvas_nb}-{anno_nb}" # TODO here change anno_id
     delete_url = f"{SAS_APP_URL}/annotation/destroy?uri={http_sas}/annotation/{anno_id}"
     try:
         response = requests.delete(delete_url)
@@ -122,30 +121,6 @@ def index_annos_on_canvas(wit_url, canvas, last_canvases=None):
             f"[index_annos_on_canvas] Failed to index annotations. Status code: {response.status_code}: {response.text}"
         )
         return
-    # set_last_indexed_canvas(wit_id, canvas, last_canvases)
-
-
-"""
-def get_last_indexed_canvas(wit_id=None):
-    last_canvases = read_json_file(f"{BASE_DIR}/{MEDIA_DIR}/all_anno.json")
-    if not last_canvases:
-        return 0 if wit_id is not None else {}
-
-    if wit_id is None:
-        return last_canvases
-
-    if str(wit_id) not in last_canvases:
-        return 0
-    return last_canvases[str(wit_id)]
-
-
-def set_last_indexed_canvas(wit_id, last_canvas=0, last_canvases=None):
-    if last_canvases is None:
-        last_canvases = get_last_indexed_canvas()
-
-    last_canvases[str(wit_id)] = int(last_canvas)
-    write_json_file(f"{BASE_DIR}/{MEDIA_DIR}/all_anno.json", last_canvases)
-"""
 
 
 def get_annos_per_canvas(wit_id, wit_type, last_canvas=0, specific_canvas=""):
@@ -248,7 +223,7 @@ def format_annotation(wit_id, version, wit_type, canvas, xywh, num_anno):
     width = w // 2
     height = h // 2
 
-    anno_id = f"{wit_abbr}-{wit_id}-{canvas}-{num_anno + 1}"
+    anno_id = f"{wit_abbr}-{wit_id}-{canvas}-{num_anno + 1}"  # TODO here change the way anno id are generated
     d = f"M{x} {y} h {width} v 0 h {width} v {height} v {height} h -{width} h -{width} v -{height}Z"
     r_id = f"rectangle_{anno_id}"
     d_paper = "{&quot;strokeWidth&quot;:1,&quot;rotation&quot;:0,&quot;annotation&quot;:null,&quot;nonHoverStrokeColor&quot;:[&quot;Color&quot;,0,1,0],&quot;editable&quot;:true,&quot;deleteIcon&quot;:null,&quot;rotationIcon&quot;:null,&quot;group&quot;:null}"
@@ -339,11 +314,10 @@ def set_canvas(seq, canvas_nb, img_name, img, version):
         anno.text("Annotation")
 
 
-def has_annotations(witness, wit_abbr):
-    wit_dir = "manuscripts" if wit_abbr == MS_ABBR else "volumes"
-    wit_type = get_wit_type(wit_abbr)
-    # if there is at least one image file named after the current witness
-    anno_file = f"{BASE_DIR}/{MEDIA_DIR}/{wit_dir}/annotation/{witness.id}.txt"
+def has_annotations(digit: Digitization):
+    # if there is at least one annotation file named after the current witness
+    # TODO here the annotation file is at the level of the annotation and not the digit
+    anno_file = f"{BASE_DIR}/{MEDIA_DIR}/annotation/{digit.get_filename()}.txt"
     if not len(glob(anno_file)) > 0:
         return False
 

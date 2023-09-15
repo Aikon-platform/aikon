@@ -23,8 +23,15 @@ class Annotation(models.Model):
         blank=True,
         null=True,
     )
-    # NOTE model used to generate annotations
+    # NOTE machine learning model used to generate annotations
     model = models.CharField(max_length=150)
+    # NOTE canvas nb on which the annotation can be found
+    canvas = models.IntegerField(
+        null=True,
+        blank=True,
+    )
 
     def get_filename(self):
+        # TODO here indicate canvas nb
+        # TODO store id for SAS that use a random string of char
         return f"{self.digitization.get_filename()}_{self.id}"

@@ -164,8 +164,6 @@ class Digitization(models.Model):
         return self.annotation_set.all()
 
     def get_filename(self):
-        # OLD return self.pdf.name.split("/")[-1].split(".")[0]
-        # e.g. self.pdf.name = "pdf/filename.pdf" => filename = "filename"
         # NOTE img name = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_{canvas_nb}.jpg"
         try:
             return f"{self.get_wit_ref()}_{self.get_ref()}"
