@@ -150,7 +150,7 @@ class Digitization(models.Model):
         witness = self.get_witness()
         return witness.type if not abbr else get_wit_abbr(witness.type)
 
-    def get_wit_prefix(self):
+    def get_wit_ref(self):
         witness = self.get_witness()
         if witness:
             return f"{witness.get_ref()}"
@@ -164,15 +164,30 @@ class Digitization(models.Model):
         return self.annotation_set.all()
 
     def get_filename(self):
-        """
-        Returns filename without extension
-        """
         # OLD return self.pdf.name.split("/")[-1].split(".")[0]
         # e.g. self.pdf.name = "pdf/filename.pdf" => filename = "filename"
+        # NOTE img name = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_{canvas_nb}.jpg"
         try:
-            return f"{self.get_wit_prefix()}_{self.id}"
+            return f"{self.get_wit_ref()}_{self.get_ref()}"
         except Exception:
             return None
+
+    def set_ext(self, extension):
+        self.ext = extension
+
+    def get_relative_path(self):
+        # must be relative to MEDIA_DIR
+        return IMG_DIR
+
+    def get_absolute_path(self):
+        return f"{BASE_DIR}/{MEDIA_DIR}/{self.get_relative_path()}"
+
+    def get_file_path(self, is_abs=True):
+        path = self.get_absolute_path() if is_abs else self.get_relative_path()
+        return f"{path}/{self.get_filename()}.{self.ext}"
+
+    def get_ref(self):
+        return f"{self.id}{self.get_ref()}"
 
     def get_anno_filenames(self):
         anno_files = []
@@ -244,20 +259,6 @@ class Digitization(models.Model):
             )
             t.start()
         super().delete()
-
-    def set_ext(self, extension):
-        self.ext = extension
-
-    def get_relative_path(self):
-        # must be relative to MEDIA_DIR
-        return IMG_DIR
-
-    def get_absolute_path(self):
-        return f"{BASE_DIR}/{MEDIA_DIR}/{self.get_relative_path()}"
-
-    def get_file_path(self, is_abs=True):
-        path = self.get_absolute_path() if is_abs else self.get_relative_path()
-        return f"{path}/{self.get_filename()}.{self.ext}"
 
     def get_nb_of_pages(self):
         import PyPDF2

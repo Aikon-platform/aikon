@@ -27,6 +27,7 @@ from app.webapp.utils.iiif.annotation import set_canvas, has_annotations
 
 
 # TODO change MS/VOL
+# NOTE img name = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_{canvas_nb}.jpg"
 
 
 def process_images(witness, seq, version):
