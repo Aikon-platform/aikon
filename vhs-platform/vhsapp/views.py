@@ -13,7 +13,13 @@ from vhs.settings import ENV
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhsapp.utils.paths import MEDIA_PATH, BASE_DIR, VOL_ANNO_PATH, MS_ANNO_PATH
-from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL, API_GPU_URL
+from vhs.settings import (
+    VHS_APP_URL,
+    CANTALOUPE_APP_URL,
+    SAS_APP_URL,
+    API_GPU_URL,
+    API_KEY,
+)
 
 from vhsapp.utils.constants import (
     APP_NAME,
@@ -78,7 +84,8 @@ def send_anno(request, wit_id, wit_type):
     manifest_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_AUTO}/{wit_type}/{wit_id}/manifest.json"
     try:
         requests.post(
-            url=f"{GPU_URL}/run_detect",
+            url=f"{API_GPU_URL}/run_detect",
+            headers={"X-API-Key": API_KEY},
             data={"manifest_url": manifest_url, "wit_abbr": wit_abbr},
         )
     except Exception as e:
@@ -101,6 +108,9 @@ def send_anno(request, wit_id, wit_type):
 
 @csrf_exempt
 def receive_anno(request, wit_id, wit_type):
+    """
+    To receive annotations from the detection API
+    """
     if request.method == "POST":
         # TODO: vérification du format des annotations reçues
         annotation_file = request.FILES["annotation_file"]
