@@ -106,6 +106,38 @@ def send_anno(request, wit_id, wit_type):
     )
 
 
+def delete_send_anno(request, wit_id, wit_type):
+    """
+    To delete images on the GPU and relaunch annotations
+    """
+    wit_abbr = MS_ABBR if wit_type == MS else VOL_ABBR
+    manifest_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_AUTO}/{wit_type}/{wit_id}/manifest.json"
+    try:
+        requests.post(
+            url=f"{API_GPU_URL}/delete_detect",
+            headers={"X-API-Key": API_KEY},
+            data={"manifest_url": manifest_url, "wit_abbr": wit_abbr},
+        )
+    except Exception as e:
+        log(
+            f"[delete_send_anno] Failed to send deletion and annotation request for {wit_type} #{wit_id}: {e}"
+        )
+        return JsonResponse(
+            {
+                "response": f"Failed to send deletion and annotation request for {wit_type} #{wit_id}",
+                "cause": e,
+            },
+            safe=False,
+        )
+
+    return JsonResponse(
+        {
+            "response": f"Images were deleted and annotations were relaunched for {wit_type} #{wit_id}"
+        },
+        safe=False,
+    )
+
+
 @csrf_exempt
 def receive_anno(request, wit_id, wit_type):
     """
