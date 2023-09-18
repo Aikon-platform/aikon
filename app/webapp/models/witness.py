@@ -47,6 +47,7 @@ class Witness(models.Model):
     class Meta:
         verbose_name = get_name("Witness")
         verbose_name_plural = get_name("Witness", True)
+        unique_together = ("id_nb", "place")
         ordering = ["-place"]
         app_label = "webapp"
 
