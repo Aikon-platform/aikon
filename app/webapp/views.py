@@ -28,14 +28,14 @@ from app.webapp.utils.logger import console, log, get_time
 from app.webapp.utils.iiif.manifest import manifest_wit_type
 from app.webapp.utils.iiif.annotation import (
     format_canvas_annos,
-    index_wit_annotations,
+    index_digit_annotations,
     get_anno_img,
-    formatted_wit_anno,
+    formatted_digit_anno,
     # index_anno,
     get_canvas_list,
     get_indexed_canvas_annos,
     check_anno_file,
-    check_wit_annos,
+    check_digit_annos,
 )
 import requests
 
@@ -112,7 +112,7 @@ def receive_anno(request, wit_id, wit_type):
             #     f"{APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/manifest.json"
             # )
             try:
-                index_wit_annotations(wit_id, wit_type)
+                index_digit_annotations(digit)
                 # index_anno(manifest_url, wit_type, wit_id)
             except Exception as e:
                 log(
@@ -130,12 +130,12 @@ def receive_anno(request, wit_id, wit_type):
 
 
 def export_anno_img(request, wit_id, wit_type):
-    annotations = get_anno_img(wit_id, wit_type)
-    return list_to_txt(annotations, f"{wit_type}#{wit_id}_annotations")
+    annotations = get_anno_img(digit)
+    return list_to_txt(annotations, f"{digit.get_wit_ref()}_{digit.id}_annotations")
 
 
 def canvas_annotations(request, wit_id, version, wit_type, canvas):
-    return JsonResponse(format_canvas_annos(wit_id, version, wit_type, canvas))
+    return JsonResponse(format_canvas_annos(digit, version, canvas))
 
 
 def populate_annotation(request, wit_id, wit_type):
@@ -145,7 +145,9 @@ def populate_annotation(request, wit_id, wit_type):
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    return HttpResponse(status=200 if index_wit_annotations(wit_id, wit_type) else 500)
+    return HttpResponse(
+        status=200 if index_digit_annotations(wit_id, wit_type) else 500
+    )
 
 
 def validate_annotation(request, wit_id, wit_type):
@@ -165,7 +167,7 @@ def validate_annotation(request, wit_id, wit_type):
 
 def witness_sas_annotations(request, wit_id, wit_type):
     witness = get_object_or_404(Witness, pk=wit_id)
-    _, canvas_annos = formatted_wit_anno(witness, wit_type)
+    _, canvas_annos = formatted_digit_anno(digit)
     return JsonResponse(canvas_annos, safe=False)
 
 
@@ -191,7 +193,7 @@ def test(request, wit_id, wit_type):
     #     if not witness.manifest_final:
     #         wit_ids.append(witness.id)
     #         thread = threading.Thread(
-    #             target=check_wit_annos, args=(witness.id, wit_type, True)
+    #             target=check_digit_annos, args=(digit, True)
     #         )
     #         thread.start()
     #         threads.append(thread)
@@ -209,7 +211,7 @@ def show_witness(request, wit_id, wit_type):
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    bboxes, canvas_annos = formatted_wit_anno(witness, wit_type)
+    bboxes, canvas_annos = formatted_digit_anno(digit)
 
     paginator = Paginator(canvas_annos, 50)
     try:

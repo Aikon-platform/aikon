@@ -21,7 +21,7 @@ from django.db.models.signals import pre_delete
 from django.dispatch.dispatcher import receiver
 from pdf2image import convert_from_path
 
-from app.webapp.utils.iiif.annotation import unindex_witness, send_anno_request
+from app.webapp.utils.iiif.annotation import unindex_digit, send_anno_request
 from app.webapp.utils.iiif.gen_html import gen_manifest_btn
 from app.webapp.utils.logger import log, console
 
@@ -90,11 +90,13 @@ def rename_file(digitization, original_filename):
     return f"{digitization.get_relative_path()}/{new_filename}.{digitization.ext}"
 
 
-def remove_digitization(wit_id, wit_abbr, other_media=None):
-    unindex_witness(wit_id, get_wit_type(wit_abbr))
-    delete_files(get_imgs(f"{wit_abbr}{wit_id}"))
+def remove_digitization(digit, other_media=None):
+    unindex_digit(digit)
+    delete_files(get_imgs(digit.get_filename()))
     if other_media:
-        delete_files(other_media, f"{BASE_DIR}/{MEDIA_DIR}")
+        delete_files(
+            other_media, f"{BASE_DIR}/{MEDIA_DIR}"
+        )  # TODO check if other media must be deleted in this dir
 
 
 class Digitization(models.Model):
@@ -147,14 +149,19 @@ class Digitization(models.Model):
             return None
 
     def get_wit_type(self, abbr=False):
-        witness = self.get_witness()
-        return witness.type if not abbr else get_wit_abbr(witness.type)
+        if witness := self.get_witness():
+            return witness.type if not abbr else get_wit_abbr(witness.type)
+        return None
 
-    def get_wit_prefix(self):
-        witness = self.get_witness()
-        if witness:
-            return f"{witness.get_ref()}"
-        return ""
+    def get_wit_ref(self):
+        if witness := self.get_witness():
+            return witness.get_ref()
+        return None
+
+    def get_wit_id(self):
+        if witness := self.get_witness():
+            return witness.id
+        return None
 
     def get_digit_type(self):
         # NOTE should be returning "image" / "pdf" / "manifest"
@@ -164,15 +171,26 @@ class Digitization(models.Model):
         return self.annotation_set.all()
 
     def get_filename(self):
-        """
-        Returns filename without extension
-        """
-        # OLD return self.pdf.name.split("/")[-1].split(".")[0]
-        # e.g. self.pdf.name = "pdf/filename.pdf" => filename = "filename"
+        # TODO rename to get_ref()
+        # NOTE img name = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_{canvas_nb}.jpg"
         try:
-            return f"{self.get_wit_prefix()}_{self.id}"
+            return f"{self.get_wit_ref()}_{self.get_digit_type()}{self.id}"
         except Exception:
             return None
+
+    def set_ext(self, extension):
+        self.ext = extension
+
+    def get_relative_path(self):
+        # must be relative to MEDIA_DIR
+        return IMG_DIR
+
+    def get_absolute_path(self):
+        return f"{BASE_DIR}/{MEDIA_DIR}/{self.get_relative_path()}"
+
+    def get_file_path(self, is_abs=True):
+        path = self.get_absolute_path() if is_abs else self.get_relative_path()
+        return f"{path}/{self.get_filename()}.{self.ext}"
 
     def get_anno_filenames(self):
         anno_files = []
@@ -226,38 +244,36 @@ class Digitization(models.Model):
             super().save(*args, **kwargs)
             t = threading.Thread(
                 target=extract_images_from_iiif_manifest,
-                args=(self.manifest, f"{wit_abbr}{wit_id}", event),
+                args=(self.manifest, self.get_filename(), event),
             )
             t.start()
 
         anno_t = threading.Thread(
             target=send_anno_request,
-            args=(event, wit_id, wit_abbr),
+            args=(event, self),
         )
         anno_t.start()
 
+    def get_metadata(self):
+        # todo finish defining manifest metadata (type, id, etc)
+        metadata = self.get_witness().get_metadata() if self.get_witness() else {}
+        metadata["@id"] = self.get_filename()
+
+        if manifest := self.manifest:
+            metadata["Source manifest"] = str(manifest)
+            metadata["Is annotated"] = self.has_annotations()
+
+        return metadata
+
     def delete(self, using=None, keep_parents=False):
+        # TODO redo that for all type of digitization
         if self.get_digit_type() == PDF:
             t = threading.Thread(
                 target=remove_digitization,
-                args=(self.get_witness().id, self.get_wit_type(True), self.pdf.name),
+                args=(self, self.pdf.name),
             )
             t.start()
         super().delete()
-
-    def set_ext(self, extension):
-        self.ext = extension
-
-    def get_relative_path(self):
-        # must be relative to MEDIA_DIR
-        return IMG_DIR
-
-    def get_absolute_path(self):
-        return f"{BASE_DIR}/{MEDIA_DIR}/{self.get_relative_path()}"
-
-    def get_file_path(self, is_abs=True):
-        path = self.get_absolute_path() if is_abs else self.get_relative_path()
-        return f"{path}/{self.get_filename()}.{self.ext}"
 
     def get_nb_of_pages(self):
         import PyPDF2
@@ -281,17 +297,6 @@ class Digitization(models.Model):
 
     def manifest_link(self):
         return gen_manifest_btn(self.id, self.get_wit_type(), self.has_manifest())
-
-    def get_metadata(self):
-        metadata = self.get_witness().get_metadata()
-
-        # TODO finish this
-
-        if manifest := self.manifest:
-            metadata["Source manifest"] = str(manifest)
-            metadata["Is annotated"] = self.has_annotations()
-
-        return metadata
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance

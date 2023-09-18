@@ -12,11 +12,11 @@ from app.webapp.utils.logger import iiif_log, console, log
 from app.webapp.utils.iiif import get_height, get_width, get_id
 
 
-def extract_images_from_iiif_manifest(manifest_url, witness_ref, event):
+def extract_images_from_iiif_manifest(manifest_url, digit_ref, event):
     """
     Extract all images from an IIIF manifest
     """
-    downloader = IIIFDownloader(manifest_url, witness_ref)
+    downloader = IIIFDownloader(manifest_url, digit_ref)
     downloader.run()
     event.set()
 

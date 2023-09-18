@@ -378,9 +378,9 @@ def get_img_prefix(obj, wit_type=MS):
     return img_prefix
 
 
-def get_imgs(wit_prefix):
+def get_imgs(img_prefix):
     # TODO make a method of Witness class out of this function
-    pattern = re.compile(rf"{wit_prefix}_\d{{1,4}}\.jpg", re.IGNORECASE)
+    pattern = re.compile(rf"{img_prefix}_\d{{1,4}}\.jpg", re.IGNORECASE)
     wit_imgs = []
 
     for img in os.listdir(f"{BASE_DIR}/{IMG_PATH}"):

@@ -122,7 +122,7 @@ class Witness(models.Model):
         return f"{self.get_type()}{self.id}"
 
     def get_metadata(self):
-        # todo finish defining manifest metadata
+        # todo finish defining manifest metadata (type, id, etc)
 
         metadata = {
             "Place of conservation": self.place,

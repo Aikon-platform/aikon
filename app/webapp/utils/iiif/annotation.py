@@ -7,7 +7,10 @@ from urllib.request import urlopen
 
 import requests
 
+from app.webapp.models.annotation import Annotation
+from app.webapp.models.digitization import Digitization
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
+from app.webapp.utils.iiif.manifest import gen_manifest_url, gen_manifest_base
 from app.webapp.utils.paths import MEDIA_DIR, BASE_DIR, ANNO_PATH
 from app.webapp.models import get_wit_abbr, get_wit_type
 from app.webapp.models.utils.constants import MS, VOL, MS_ABBR, VOL_ABBR
@@ -29,48 +32,42 @@ from app.webapp.utils.functions import (
 )
 
 
-def send_anno_request(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_V1):
-    wit_type = get_wit_type(wit_abbr)
-
-    manifest_url = (
-        f"{APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{wit_id}/manifest.json"
-    )
+def send_anno_request(event, digit: Digitization, version=MANIFEST_V1):
+    # TODO change manifest URL component to be at the digit level
+    manifest_url = gen_manifest_url(digit, version)
 
     event.wait()
     try:
         requests.post(
             url=f"{API_GPU_URL}/run_detect",
             headers={"X-API-Key": API_KEY},
-            data={"manifest_url": manifest_url, "wit_abbr": wit_abbr},
+            data={
+                "manifest_url": manifest_url
+            },  # TODO see what additional data is needed for the API
         )
     except Exception as e:
-        log(f"[send_anno_request] Failed to send request for {wit_type} #{wit_id}: {e}")
+        log(f"[send_anno_request] Failed to send request for digit #{digit.id}: {e}")
         return
 
     return
 
 
-def index_wit_annotations(wit_id, wit_type):
-    iiif_url = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}"
-    if not index_manifest_in_sas(f"{iiif_url}/manifest.json", True):
+def index_digit_annotations(digit: Digitization):
+    if not index_manifest_in_sas(gen_manifest_url(digit, MANIFEST_V2), True):
         return
 
-    # last_canvases = get_last_indexed_canvas()
-    # last_indexed_canvas = (
-    #     last_canvases[str(wit_id)] if str(wit_id) in last_canvases else 0
-    # )
-
-    canvases_to_annotate = get_annos_per_canvas(wit_id, wit_type)
+    canvases_to_annotate = get_annos_per_canvas(digit)
     if not bool(canvases_to_annotate):
         # if the annotation file is empty
         return True
 
     for c in canvases_to_annotate:
         try:
-            index_annos_on_canvas(iiif_url, c, 0)
+            index_annos_on_canvas(gen_manifest_base(digit, MANIFEST_V2), c, 0)
         except Exception as e:
             log(
-                f"[index_wit_annotations]: Problem indexing annotation for {wit_type} n°{wit_id} (canvas {c}): {e}"
+                f"[index_digit_annotations]: Problem indexing annotation for digit n°{digit.id} (canvas {c})",
+                e,
             )
 
     return True
@@ -78,7 +75,7 @@ def index_wit_annotations(wit_id, wit_type):
 
 def unindex_anno(anno_id):
     http_sas = SAS_APP_URL.replace("https", "http")
-    # anno_id = f"{wit_abbr}-{wit_id}-{canvas_nb}-{anno_nb}"
+    # anno_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}_c{canvas_nb}_{uuid4().hex[:8]}
     delete_url = f"{SAS_APP_URL}/annotation/destroy?uri={http_sas}/annotation/{anno_id}"
     try:
         response = requests.delete(delete_url)
@@ -93,24 +90,23 @@ def unindex_anno(anno_id):
     return False
 
 
-def unindex_witness(wit_id, wit_type):
-    iiif_url = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}"
-    index_manifest_in_sas(f"{iiif_url}/manifest.json")
+def unindex_digit(digit: Digitization):
+    index_manifest_in_sas(gen_manifest_url(digit, MANIFEST_V2))
 
     try:
-        for anno in get_manifest_annos(wit_id, wit_type):
+        for anno in get_manifest_annos(digit):
             anno_id = anno.split("/")[-1]
             unindex_anno(anno_id)
     except Exception as e:
-        log(f"[unindex_witness] Failed to unindex witness: {e}")
+        log(f"[unindex_digit] Failed to unindex digitization: {e}")
         return False
 
     return True
 
 
-def index_annos_on_canvas(wit_url, canvas, last_canvases=None):
+def index_annos_on_canvas(manifest_base, canvas):
     # this url is calling format_canvas_annos(), thus returning formatted annos for each canvas
-    formatted_annos = f"{wit_url}/list/anno-{canvas}.json"
+    formatted_annos = f"{manifest_base}/list/anno-{canvas}.json"
     # POST request that index the annotations
     response = urlopen(
         f"{SAS_APP_URL}/annotation/populate",
@@ -122,33 +118,9 @@ def index_annos_on_canvas(wit_url, canvas, last_canvases=None):
             f"[index_annos_on_canvas] Failed to index annotations. Status code: {response.status_code}: {response.text}"
         )
         return
-    # set_last_indexed_canvas(wit_id, canvas, last_canvases)
 
 
-"""
-def get_last_indexed_canvas(wit_id=None):
-    last_canvases = read_json_file(f"{BASE_DIR}/{MEDIA_DIR}/all_anno.json")
-    if not last_canvases:
-        return 0 if wit_id is not None else {}
-
-    if wit_id is None:
-        return last_canvases
-
-    if str(wit_id) not in last_canvases:
-        return 0
-    return last_canvases[str(wit_id)]
-
-
-def set_last_indexed_canvas(wit_id, last_canvas=0, last_canvases=None):
-    if last_canvases is None:
-        last_canvases = get_last_indexed_canvas()
-
-    last_canvases[str(wit_id)] = int(last_canvas)
-    write_json_file(f"{BASE_DIR}/{MEDIA_DIR}/all_anno.json", last_canvases)
-"""
-
-
-def get_annos_per_canvas(wit_id, wit_type, last_canvas=0, specific_canvas=""):
+def get_annos_per_canvas(digit: Digitization, last_canvas=0, specific_canvas=""):
     """
     Returns a dict with the text annotation file info:
     { "canvas1": [ coord1, coord2 ], "canvas2": [], "canvas3": [ coord1 ] }
@@ -157,9 +129,9 @@ def get_annos_per_canvas(wit_id, wit_type, last_canvas=0, specific_canvas=""):
 
     coord = (x, y, width, height)
     """
-    lines = get_txt_annos(wit_id)
+    lines = get_txt_annos(digit)
     if lines is None:
-        log(f"[get_annos_per_canvas] no annotation file for {wit_type} n°{wit_id}")
+        log(f"[get_annos_per_canvas] no annotation file for digit n°{digit.id}")
         return {}
 
     annotated_canvases = {}
@@ -191,21 +163,21 @@ def get_annos_per_canvas(wit_id, wit_type, last_canvas=0, specific_canvas=""):
     return annotated_canvases
 
 
-def get_txt_annos(wit_id):
+def get_txt_annos(digit: Digitization):
     try:
-        with open(f"{BASE_DIR}/{ANNO_PATH}/{wit_id}.txt") as f:
+        with open(f"{BASE_DIR}/{ANNO_PATH}/{digit.get_filename()}.txt") as f:
             return [line.strip() for line in f.readlines()]
     except FileNotFoundError:
         return None
 
 
-def get_anno_img(wit_id, wit_type):
-    lines = get_txt_annos(wit_id)
+def get_anno_img(digit: Digitization):
+    lines = get_txt_annos(digit)
     if lines is None:
         return []
 
     imgs = []
-    img_name = f"{wit_type}{wit_id}_0000.jpg"
+    img_name = f"{digit.get_filename()}_0000.jpg"
     for line in lines:
         if len(line.split()) == 2:
             img_name = line.split()[1]
@@ -217,8 +189,8 @@ def get_anno_img(wit_id, wit_type):
     return imgs
 
 
-def format_canvas_annos(wit_id, version, wit_type, canvas):
-    canvas_annos = get_annos_per_canvas(wit_id, wit_type, specific_canvas=str(canvas))
+def format_canvas_annos(digit: Digitization, version, canvas):
+    canvas_annos = get_annos_per_canvas(digit, specific_canvas=str(canvas))
     # todo, check that
     if len(canvas_annos) == 0:
         return {"@type": "sc:AnnotationList", "resources": []}
@@ -227,9 +199,8 @@ def format_canvas_annos(wit_id, version, wit_type, canvas):
         "@type": "sc:AnnotationList",
         "resources": [
             format_annotation(
-                wit_id,
+                digit,
                 version,
-                wit_type,
                 canvas,
                 canvas_annos[anno_num],
                 anno_num,
@@ -239,16 +210,16 @@ def format_canvas_annos(wit_id, version, wit_type, canvas):
     }
 
 
-def format_annotation(wit_id, version, wit_type, canvas, xywh, num_anno):
-    wit_abbr = get_wit_abbr(wit_type)
-    base_url = f"{APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{wit_id}"
+def format_annotation(digit: Digitization, version, canvas, xywh, num_anno):
+    # TODO here work with Annotation and not Digitization
+    base_url = gen_manifest_base(digit, version)
 
     x, y, w, h = xywh
 
     width = w // 2
     height = h // 2
 
-    anno_id = f"{wit_abbr}-{wit_id}-{canvas}-{num_anno + 1}"
+    anno_id = anno.gen_anno_id()
     d = f"M{x} {y} h {width} v 0 h {width} v {height} v {height} h -{width} h -{width} v -{height}Z"
     r_id = f"rectangle_{anno_id}"
     d_paper = "{&quot;strokeWidth&quot;:1,&quot;rotation&quot;:0,&quot;annotation&quot;:null,&quot;nonHoverStrokeColor&quot;:[&quot;Color&quot;,0,1,0],&quot;editable&quot;:true,&quot;deleteIcon&quot;:null,&quot;rotationIcon&quot;:null,&quot;group&quot;:null}"
@@ -324,7 +295,9 @@ def set_canvas(seq, canvas_nb, img_name, img, version):
     canvas.set_hw(h, w)
 
     # Build the image annotation
-    anno = canvas.annotation(ident=f"a{canvas_nb}")
+    anno = canvas.annotation(
+        ident=f"a{canvas_nb}"
+    )  # TODO here maybe generated id with anno.gen_anno_id()
     if re.match(r"https?://(.*?)/", img_name):
         # to build hybrid manifest referencing images from other IIIF repositories
         img = anno.image(img_name, iiif=False)
@@ -339,21 +312,19 @@ def set_canvas(seq, canvas_nb, img_name, img, version):
         anno.text("Annotation")
 
 
-def has_annotations(witness, wit_abbr):
-    wit_dir = "manuscripts" if wit_abbr == MS_ABBR else "volumes"
-    wit_type = get_wit_type(wit_abbr)
-    # if there is at least one image file named after the current witness
-    if (
-        not len(glob(f"{BASE_DIR}/{MEDIA_DIR}/{wit_dir}/annotation/{witness.id}.txt"))
-        > 0
-    ):
+def has_annotations(digit: Digitization):
+    # if there is at least one annotation file named after the current witness
+    # TODO here the annotation file is at the level of the annotation and not the digit
+    anno_file = f"{BASE_DIR}/{MEDIA_DIR}/annotation/{digit.get_filename()}.txt"
+    if not len(glob(anno_file)) > 0:
         return False
 
-    # if there is at least one annotation indexed in SAS
-    if len(get_manifest_annos(witness.id, wit_type)) != 0:
-        return True
-
-    return False
+    # # if there is at least one annotation indexed in SAS
+    # if len(get_manifest_annos(witness.id, wit_type)) != 0:
+    #     return True
+    #
+    # return False
+    return True
 
 
 def get_indexed_manifests():
@@ -396,15 +367,15 @@ def index_manifest_in_sas(manifest_url, reindex=False):
     return True
 
 
-def get_canvas_list(witness, wit_type):
-    lines = get_txt_annos(witness.id, ANNO_PATH)
+def get_canvas_list(digit: Digitization):
+    lines = get_txt_annos(digit)
     if not lines:
-        log(f"[get_canvas_list] no annotation file for {wit_type} n°{witness.id}")
+        log(f"[get_canvas_list] no annotation file for digit n°{digit.id}")
         return {
             "error": "the annotations were not yet generated"
         }  # TODO find a way to display error msg
 
-    wit_imgs = get_imgs(get_img_prefix(witness, wit_type))
+    imgs = digit.get_imgs()
 
     canvases = []
     for line in lines:
@@ -413,30 +384,32 @@ def get_canvas_list(witness, wit_type):
             _, img_file = line.split()
             # use the image number as canvas number because it is more reliable that the one provided in the anno file
             canvas_nb = int(img_file.split("_")[1].split(".")[0])
-            if img_file in wit_imgs:
+            if img_file in imgs:
                 canvases.append((canvas_nb, img_file))
 
     return canvases
 
 
-def get_indexed_wit_annos(witness, wit_type):
+def get_indexed_wit_annos(anno: Annotation):
     # NOTE not used
+    # TODO here check which is Digit / which is Anno
     wit_annos = {}
-    for canvas_nb, _ in get_canvas_list(witness, wit_type):
-        wit_annos[canvas_nb] = get_indexed_canvas_annos(canvas_nb, witness.id, wit_type)
+    for canvas_nb, _ in get_canvas_list(digit):
+        wit_annos[canvas_nb] = get_indexed_canvas_annos(digit, canvas_nb)
     return wit_annos
 
 
-def get_indexed_canvas_annos(canvas_nb, wit_id, wit_type):
-    iiif_url = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}"
+def get_indexed_canvas_annos(digit: Digitization, canvas_nb):
+    # TODO anno instead of Digit
     try:
         response = urlopen(
-            f"{SAS_APP_URL}/annotation/search?uri={iiif_url}/canvas/c{canvas_nb}.json"
+            f"{SAS_APP_URL}/annotation/search?uri={gen_manifest_base(digit, MANIFEST_V2)}/canvas/c{canvas_nb}.json"
         )
         return json.loads(response.read())
     except Exception as e:
         log(
-            f"[get_indexed_canvas_annos] Could not retrieve anno for {wit_type} n°{wit_id}: {e}"
+            f"[get_indexed_canvas_annos] Could not retrieve anno for digit n°{digit.id}",
+            e,
         )
         return []
 
@@ -452,22 +425,23 @@ def get_coord_from_anno(anno):
 
 def get_id_from_anno(anno):
     try:
-        # annotation id => "wit_abbr-wit_id-canvas_nb-anno_nb
-        return anno["@id"].split("/")[-1]
+        # annotation id => "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}_c{canvas_nb}_{uuid4().hex[:8]}"
+        return anno["@id"].split("/")[-1]  # todo check if it is still the case
     except Exception as e:
         log(f"[get_id_from_anno] Could not retrieve id from anno: {e}")
         return ""
 
 
-def formatted_wit_anno(witness, wit_type):
+def formatted_digit_anno(digit):
+    # TODO anno instead of Digit
     canvas_annos = []
-    wit_anno_ids = []
+    digit_anno_ids = []
 
     # TODO: here allow to display images that are not present in the annotation file
 
     try:
-        for canvas_nb, img_file in get_canvas_list(witness, wit_type):
-            c_annos = get_indexed_canvas_annos(canvas_nb, witness.id, wit_type)
+        for canvas_nb, img_file in get_canvas_list(digit):
+            c_annos = get_indexed_canvas_annos(digit, canvas_nb)
             coord_annos = []
 
             if bool(c_annos):
@@ -478,18 +452,19 @@ def formatted_wit_anno(witness, wit_type):
                     )
                     for anno in c_annos
                 ]
-                wit_anno_ids.extend(anno_id for _, anno_id in coord_annos)
+                digit_anno_ids.extend(anno_id for _, anno_id in coord_annos)
 
             canvas_annos.append((canvas_nb, coord_annos, img_file))
     except ValueError as e:
         log(
-            f"[formatted_wit_anno] Error when generating auto annotation list (probably no annotation file): {e}"
+            f"[formatted_digit_anno] Error when generating auto annotation list (probably no annotation file): {e}"
         )
 
-    return wit_anno_ids, canvas_annos
+    return digit_anno_ids, canvas_annos
 
 
 def check_anno_file(file_content):
+    # TODO check file content (if it contains the correct info)
     textchars = (
         bytearray([7, 8, 9, 10, 12, 13, 27])
         + bytearray(range(0x20, 0x7F))
@@ -503,40 +478,39 @@ def check_anno_file(file_content):
         return False
 
 
-def get_manifest_annos(wit_id, wit_type):
-    # NOTE Do not work: always return []
-    # response = requests.get(
-    #     f"{SAS_APP_URL}/annotation/search",
-    #     params={"uri": f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}/manifest.json"}
-    # )
+def get_manifest_annos(digit: Digitization):
+    # TODO anno instead of Digit
     try:
-        # NOTE here, manifests are indexed in SAS with uniquely the id, meaning the volume do not work
-        response = requests.get(f"{SAS_APP_URL}/search-api/{wit_id}/search")
+        # TODO: check which digit_ref is used
+        response = requests.get(
+            f"{SAS_APP_URL}/search-api/{digit.get_filename()}/search"
+        )
         annos = response.json()
 
         if response.status_code != 200:
             log(
                 f"[get_manifest_annos] Failed to get annos from SAS: {response.status_code}"
             )
-            return False
+            return []
     except requests.exceptions.RequestException as e:
         log(f"[get_manifest_annos] Failed to retrieve annotations: {e}")
-        return False
+        return []
 
-    if not "resources" in annos or len(annos["resources"]) == 0:
+    if "resources" not in annos or len(annos["resources"]) == 0:
         return []
 
     try:
         manifest_annos = [anno["@id"] for anno in annos["resources"]]
     except Exception as e:
         log(f"[get_manifest_annos] Failed to parse annotations: {e}")
-        return False
+        return []
 
     return manifest_annos
 
 
-def check_wit_annos(wit_id, wit_type, reindex=False):
-    lines = get_txt_annos(wit_id)
+def check_digit_annos(digit: Digitization, reindex=False):
+    # TODO: DO WE NEED TO CREATE A MANIFEST V2 BY ANNOTATION IF WE WANT TO HAVE DIFFERENT ANNOTATIONS FOR ONE DIGIT????
+    lines = get_txt_annos(digit)
     if not lines:
         return
 
@@ -550,39 +524,39 @@ def check_wit_annos(wit_id, wit_type, reindex=False):
             if len_line == 2:
                 # if line = "canvas_nb img_name"
                 canvas_nb = line.split()[0]
-                sas_annos = get_indexed_canvas_annos(canvas_nb, wit_id, wit_type)
+                sas_annos = get_indexed_canvas_annos(digit, canvas_nb)
                 nb_annos = len(sas_annos)
 
                 if nb_annos != 0:
                     indexed_annos += nb_annos
                     anno_ids.extend([get_id_from_anno(anno) for anno in sas_annos])
                 else:
-                    manifest = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}/manifest.json"
-                    if not index_manifest_in_sas(manifest):
+                    if not index_manifest_in_sas(gen_manifest_url(digit, MANIFEST_V2)):
                         return
             elif len_line == 4:
                 # if line = "x y w h"
                 generated_annos += 1
     except Exception as e:
         log(
-            f"[check_wit_annos] Failed to compare annotations for {wit_type} #{wit_id}: {e}"
+            f"[check_digit_annos] Failed to compare annotations for digit n°{digit.id}: {e}"
         )
 
     if generated_annos != indexed_annos:
         for anno_id in anno_ids:
             unindex_anno(anno_id)
         if reindex:
-            if index_wit_annotations(wit_id, wit_type):
-                log(f"[check_wit_annos] {wit_type} #{wit_id} was reindexed")
+            if index_digit_annotations(digit):
+                log(f"[check_digit_annos] Digit n°{digit.id} was reindexed")
 
 
-def get_anno_images(witness, wit_type):
+def get_anno_images(digit: Digitization):
+    # TODO anno instead of Digit
     # Used to export images annotations
     imgs = []
 
     try:
-        for canvas_nb, img_file in get_canvas_list(witness, wit_type):
-            c_annos = get_indexed_canvas_annos(canvas_nb, witness.id, wit_type)
+        for canvas_nb, img_file in get_canvas_list(digit):
+            c_annos = get_indexed_canvas_annos(digit, canvas_nb)
 
             if bool(c_annos):
                 canvas_imgs = [
