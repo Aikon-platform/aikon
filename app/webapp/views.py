@@ -10,8 +10,10 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.decorators import login_required
+from iiif_prezi.factory import StructuralError
 
 from app.webapp.models import get_wit_abbr
+from app.webapp.models.digitization import Digitization
 from app.webapp.models.witness import Witness
 from app.webapp.models.utils.constants import MS, VOL
 from app.config.settings import (
@@ -46,18 +48,23 @@ def admin_app(request):
     return redirect("admin:index")
 
 
-def manifest_manuscript(request, wit_id, version):
-    """
-    Build a manuscript manifest using iiif-prezi library IIIF Presentation API 2.0
-    """
-    return JsonResponse(manifest_wit_type(wit_id, MS, version))
+def manifest_digitization(request, digit_id):
+    digit = get_object_or_404(Digitization, pk=digit_id)
+    return JsonResponse(digit.get_manifest_json())
 
 
-def manifest_volume(request, wit_id, version):
-    """
-    Build a volume manifest using iiif-prezi library IIIF Presentation API 2.0
-    """
-    return JsonResponse(manifest_wit_type(wit_id, VOL, version))
+# def manifest_manuscript(request, wit_id, version):
+#     """
+#     Build a manuscript manifest using iiif-prezi library IIIF Presentation API 2.0
+#     """
+#     return JsonResponse(manifest_wit_type(wit_id, MS, version))
+#
+#
+# def manifest_volume(request, wit_id, version):
+#     """
+#     Build a volume manifest using iiif-prezi library IIIF Presentation API 2.0
+#     """
+#     return JsonResponse(manifest_wit_type(wit_id, VOL, version))
 
 
 def send_anno(request, wit_id, wit_type):
@@ -100,6 +107,7 @@ def receive_anno(request, wit_id, wit_type):
 
         if check_anno_file(file_content):
             try:
+                # TODO change anno file name
                 with open(f"{BASE_DIR}/{ANNO_PATH}/{wit_id}.txt", "w+b") as f:
                     f.write(file_content)
 

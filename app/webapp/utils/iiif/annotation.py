@@ -10,7 +10,6 @@ import requests
 from app.webapp.models.annotation import Annotation
 from app.webapp.models.digitization import Digitization
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
-from app.webapp.utils.iiif.manifest import gen_manifest_url, gen_manifest_base
 from app.webapp.utils.paths import MEDIA_DIR, BASE_DIR, ANNO_PATH
 from app.webapp.models import get_wit_abbr, get_wit_type
 from app.webapp.models.utils.constants import MS, VOL, MS_ABBR, VOL_ABBR
@@ -33,16 +32,13 @@ from app.webapp.utils.functions import (
 
 
 def send_anno_request(event, digit: Digitization, version=MANIFEST_V1):
-    # TODO change manifest URL component to be at the digit level
-    manifest_url = gen_manifest_url(digit, version)
-
     event.wait()
     try:
         requests.post(
             url=f"{API_GPU_URL}/run_detect",
             headers={"X-API-Key": API_KEY},
             data={
-                "manifest_url": manifest_url
+                "manifest_url": digit.gen_manifest_url()
             },  # TODO see what additional data is needed for the API
         )
     except Exception as e:
@@ -53,7 +49,7 @@ def send_anno_request(event, digit: Digitization, version=MANIFEST_V1):
 
 
 def index_digit_annotations(digit: Digitization):
-    if not index_manifest_in_sas(gen_manifest_url(digit, MANIFEST_V2), True):
+    if not index_manifest_in_sas(anno.gen_manifest_url(), True):
         return
 
     canvases_to_annotate = get_annos_per_canvas(digit)
@@ -91,7 +87,7 @@ def unindex_anno(anno_id):
 
 
 def unindex_digit(digit: Digitization):
-    index_manifest_in_sas(gen_manifest_url(digit, MANIFEST_V2))
+    index_manifest_in_sas(anno.gen_manifest_url())
 
     try:
         for anno in get_manifest_annos(digit):
@@ -165,7 +161,7 @@ def get_annos_per_canvas(digit: Digitization, last_canvas=0, specific_canvas="")
 
 def get_txt_annos(digit: Digitization):
     try:
-        with open(f"{BASE_DIR}/{ANNO_PATH}/{digit.get_filename()}.txt") as f:
+        with open(f"{BASE_DIR}/{ANNO_PATH}/{digit.get_ref()}.txt") as f:
             return [line.strip() for line in f.readlines()]
     except FileNotFoundError:
         return None
@@ -177,7 +173,7 @@ def get_anno_img(digit: Digitization):
         return []
 
     imgs = []
-    img_name = f"{digit.get_filename()}_0000.jpg"
+    img_name = f"{digit.get_ref()}_0000.jpg"
     for line in lines:
         if len(line.split()) == 2:
             img_name = line.split()[1]
@@ -212,7 +208,7 @@ def format_canvas_annos(digit: Digitization, version, canvas):
 
 def format_annotation(digit: Digitization, version, canvas, xywh, num_anno):
     # TODO here work with Annotation and not Digitization
-    base_url = gen_manifest_base(digit, version)
+    base_url = anno.gen_manifest_ur(only_base=True)
 
     x, y, w, h = xywh
 
@@ -315,7 +311,7 @@ def set_canvas(seq, canvas_nb, img_name, img, version):
 def has_annotations(digit: Digitization):
     # if there is at least one annotation file named after the current witness
     # TODO here the annotation file is at the level of the annotation and not the digit
-    anno_file = f"{BASE_DIR}/{MEDIA_DIR}/annotation/{digit.get_filename()}.txt"
+    anno_file = f"{BASE_DIR}/{MEDIA_DIR}/annotation/{digit.get_ref()}.txt"
     if not len(glob(anno_file)) > 0:
         return False
 
@@ -403,7 +399,7 @@ def get_indexed_canvas_annos(digit: Digitization, canvas_nb):
     # TODO anno instead of Digit
     try:
         response = urlopen(
-            f"{SAS_APP_URL}/annotation/search?uri={gen_manifest_base(digit, MANIFEST_V2)}/canvas/c{canvas_nb}.json"
+            f"{SAS_APP_URL}/annotation/search?uri={anno.gen_manifest_base()}/canvas/c{canvas_nb}.json"
         )
         return json.loads(response.read())
     except Exception as e:
@@ -482,9 +478,7 @@ def get_manifest_annos(digit: Digitization):
     # TODO anno instead of Digit
     try:
         # TODO: check which digit_ref is used
-        response = requests.get(
-            f"{SAS_APP_URL}/search-api/{digit.get_filename()}/search"
-        )
+        response = requests.get(f"{SAS_APP_URL}/search-api/{digit.get_ref()}/search")
         annos = response.json()
 
         if response.status_code != 200:
@@ -531,7 +525,7 @@ def check_digit_annos(digit: Digitization, reindex=False):
                     indexed_annos += nb_annos
                     anno_ids.extend([get_id_from_anno(anno) for anno in sas_annos])
                 else:
-                    if not index_manifest_in_sas(gen_manifest_url(digit, MANIFEST_V2)):
+                    if not index_manifest_in_sas(anno.gen_manifest_url()):
                         return
             elif len_line == 4:
                 # if line = "x y w h"

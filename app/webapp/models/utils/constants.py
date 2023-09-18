@@ -88,6 +88,12 @@ DIGIT_TYPE = (
     (MAN_ABBR, MANIFEST.capitalize()),
 )
 
+DIGIT_ABBR = {
+    IMG: IMG_ABBR,
+    PDF: PDF_ABBR,
+    MANIFEST: MAN_ABBR,
+}
+
 PAGE_TYPE = (
     (PAG_ABBR, PAGE.capitalize()),
     (FOL_ABBR, FOLIO.capitalize()),

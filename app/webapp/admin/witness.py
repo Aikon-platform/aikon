@@ -228,8 +228,8 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         # results = queryset.exclude(volume__isnull=True).values_list("volume__id")
         results = queryset.values_list(  # TODO : here change for digit
             "id", "manifestmanuscript__manifest"
-        )  # TODO make it available for all witnesses
-        manifests = [gen_manifest_url(digit for digit in results)]
+        )
+        manifests = [digit.gen_manifest_url() for digit in results]
         return list_to_txt(manifests, "Manifest_IIIF")
 
     @admin.action(description="Export diagram images in selected sources")

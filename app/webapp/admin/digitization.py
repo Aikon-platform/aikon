@@ -93,7 +93,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     @admin.display(description=get_name("manifest_v2"))
     def manifest_v2(self, obj: Digitization):
         wit_abbr = get_wit_abbr(obj.get_wit_type())
-        if obj.id and has_manifest(get_img_prefix(obj, wit_abbr)):
+        if obj.id and obj.has_images():
             action = "final" if obj.is_validated else "edit"
             if not obj.has_annotations():
                 action = "no_anno"

@@ -3,7 +3,9 @@ from glob import glob
 
 from django.db import models
 from django.utils.safestring import mark_safe
+from iiif_prezi.factory import StructuralError
 
+from app.config.settings import APP_URL, APP_NAME
 from app.webapp.models import get_wit_type, get_wit_abbr
 from app.webapp.models.utils.functions import get_fieldname
 
@@ -21,8 +23,11 @@ from django.db.models.signals import pre_delete
 from django.dispatch.dispatcher import receiver
 from pdf2image import convert_from_path
 
+from app.webapp.utils.constants import MANIFEST_V1
+from app.webapp.utils.iiif import get_manifest_url_base
 from app.webapp.utils.iiif.annotation import unindex_digit, send_anno_request
 from app.webapp.utils.iiif.gen_html import gen_manifest_btn
+from app.webapp.utils.iiif.manifest import manifest_v1, gen_manifest_json
 from app.webapp.utils.logger import log, console
 
 from app.webapp.models.utils.constants import (
@@ -38,6 +43,7 @@ from app.webapp.models.utils.constants import (
     IMG,
     PDF,
     MANIFEST,
+    DIGIT_ABBR,
 )
 from app.webapp.utils.functions import (
     get_last_file,
@@ -79,20 +85,21 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, fields, plural)
 
 
-def rename_file(digitization, original_filename):
+def rename_file(digit, original_filename):
     """
     Rename the file using its witness id and specific id
     The file will be uploaded to "{path}/{filename}.{ext}"
     """
-    digitization.ext = original_filename.split(".")[-1]
-    new_filename = digitization.get_filename()
+    digit.ext = original_filename.split(".")[-1]
+    new_filename = digit.get_ref()
     # TODO: create fct that do not erase the file if a image was already recorded with the same name
-    return f"{digitization.get_relative_path()}/{new_filename}.{digitization.ext}"
+    # TODO check how does it work for multiple images
+    return f"{digit.get_relative_path()}/{new_filename}.{digit.ext}"
 
 
 def remove_digitization(digit, other_media=None):
     unindex_digit(digit)
-    delete_files(get_imgs(digit.get_filename()))
+    delete_files(get_imgs(digit.get_ref()))
     if other_media:
         delete_files(
             other_media, f"{BASE_DIR}/{MEDIA_DIR}"
@@ -167,14 +174,17 @@ class Digitization(models.Model):
         # NOTE should be returning "image" / "pdf" / "manifest"
         return str(self.digit_type)
 
+    def get_digit_abbr(self):
+        return DIGIT_ABBR[self.get_digit_type()]
+
     def get_annotations(self):
         return self.annotation_set.all()
 
-    def get_filename(self):
+    def get_ref(self):
         # TODO rename to get_ref()
         # NOTE img name = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_{canvas_nb}.jpg"
         try:
-            return f"{self.get_wit_ref()}_{self.get_digit_type()}{self.id}"
+            return f"{self.get_wit_ref()}_{self.get_digit_abbr()}{self.id}"
         except Exception:
             return None
 
@@ -190,39 +200,35 @@ class Digitization(models.Model):
 
     def get_file_path(self, is_abs=True):
         path = self.get_absolute_path() if is_abs else self.get_relative_path()
-        return f"{path}/{self.get_filename()}.{self.ext}"
+        return f"{path}/{self.get_ref()}.{self.ext}"
 
     def get_anno_filenames(self):
         anno_files = []
         for anno in self.get_annotations():
-            anno_files.append(anno.get_filename())
+            anno_files.append(anno.get_ref())
         return anno_files
 
     def has_annotations(self):
-        # if there is at least one annotation record and its associated annotation file
-        for anno_file in self.get_anno_filenames():
-            if len(glob(f"{BASE_DIR}/{ANNO_PATH}/{anno_file}.txt")) > 0:
-                return True
+        # if there is at least one annotation file named after the current digitization
+        if len(glob(f"{BASE_DIR}/{ANNO_PATH}/{self.get_ref()}_*.txt")):
+            return True
+        return False
+
+    def has_images(self):
+        # if there is at least one image file named after the current digitization
+        if len(glob(f"{BASE_DIR}/{IMG_PATH}/{self.get_ref()}_*.jpg")):
+            return True
         return False
 
     def get_imgs(self):
         imgs = []
         for filename in os.listdir(IMG_PATH):
-            if filename.startswith(self.get_filename()):
+            if filename.startswith(self.get_ref()):
                 imgs.append(filename)
         return imgs
 
-    def has_manifest(self):
-        # check if at least one file begins with the correct filename prefix
-        for entry in os.scandir(IMG_PATH):
-            if entry.name.startswith(self.get_filename()) and entry.is_file():
-                return True
-        return False
-
     def save(self, *args, **kwargs):
         digit_type = self.get_digit_type()
-        wit_id = self.get_witness().id
-        wit_abbr = self.get_wit_type(abbr=True)
         event = threading.Event()
 
         if digit_type == IMG:
@@ -244,7 +250,7 @@ class Digitization(models.Model):
             super().save(*args, **kwargs)
             t = threading.Thread(
                 target=extract_images_from_iiif_manifest,
-                args=(self.manifest, self.get_filename(), event),
+                args=(self.manifest, self.get_ref(), event),
             )
             t.start()
 
@@ -257,13 +263,27 @@ class Digitization(models.Model):
     def get_metadata(self):
         # todo finish defining manifest metadata (type, id, etc)
         metadata = self.get_witness().get_metadata() if self.get_witness() else {}
-        metadata["@id"] = self.get_filename()
+        metadata["@id"] = self.get_ref()
 
         if manifest := self.manifest:
             metadata["Source manifest"] = str(manifest)
             metadata["Is annotated"] = self.has_annotations()
 
         return metadata
+
+    def gen_manifest_url(self, only_base=False):
+        base_url = f"{get_manifest_url_base()}/{MANIFEST_V1}/{self.get_wit_type()}/{self.get_wit_id()}/{self.id}"
+        return f"{base_url}{'' if only_base else '/manifest.json'}"
+
+    def gen_manifest_json(self):
+        error = {"error": "Unable to create a valid manifest"}
+        if manifest := gen_manifest_json(self):
+            try:
+                return manifest.toJSON(top=True)
+            except StructuralError as e:
+                error["reason"] = f"{e}"
+                return error
+        return error
 
     def delete(self, using=None, keep_parents=False):
         # TODO redo that for all type of digitization
@@ -296,7 +316,7 @@ class Digitization(models.Model):
         )
 
     def manifest_link(self):
-        return gen_manifest_btn(self.id, self.get_wit_type(), self.has_manifest())
+        return gen_manifest_btn(self.id, self.get_wit_type(), self.has_images())
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance

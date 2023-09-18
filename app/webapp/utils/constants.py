@@ -10,8 +10,10 @@ SITE_TITLE = f"Portail de {APP_NAME_UPPER}"
 SITE_INDEX_TITLE = "Bienvenue sur le site d'administration"
 
 # Manifest versions
-MANIFEST_V1 = "auto"
-MANIFEST_V2 = "v2"
+MANIFEST_V1 = "auto"  # Used for the manifest linked to the Digitization
+MANIFEST_V2 = (
+    "v2"  # Used for the manifest holding the annotation (linked to the Annotation)
+)
 
 # Maximum number of words to be kept in the truncated string
 TRUNCATEWORDS = 5

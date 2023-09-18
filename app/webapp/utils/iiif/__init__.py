@@ -1,6 +1,5 @@
 from app.webapp.utils.logger import iiif_log, console, log
-from app.config.settings import CANTALOUPE_APP_URL
-
+from app.config.settings import CANTALOUPE_APP_URL, APP_URL, APP_NAME
 
 IIIF_ICON = "<img alt='IIIF' src='https://iiif.io/assets/images/logos/logo-sm.png' height='15'/>"
 
@@ -50,3 +49,7 @@ def gen_iiif_url(
     # E.g. "http://localhost/iiif/2/image_name.jpg/full/full/0/default.jpg"
     # return f"{scheme}://{host}{f':{port}' if port else ''}/iiif/{vers}/{img}/{res}/{color}.{ext}"
     return f"{CANTALOUPE_APP_URL}/iiif/{vers}/{img}/{res}/{color}.{ext}"
+
+
+def get_manifest_url_base():
+    return f"{APP_URL}/{APP_NAME}/iiif/"

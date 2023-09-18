@@ -51,7 +51,7 @@ def gen_btn(wit_id, action="view", vers=MANIFEST_V1, wit_type=VOL.lower()):
 
 
 def gen_manifest_btn(wit_id, wit_type=MS, has_manifest=True):
-    manifest = gen_manifest_url(digit, MANIFEST_V1)
+    manifest = digit.gen_manifest_url()
     mf = (
         f"<a href='{manifest}' target='_blank'>{IIIF_ICON}</a>"
         if has_manifest
