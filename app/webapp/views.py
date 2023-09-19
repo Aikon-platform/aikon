@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import login_required
 from iiif_prezi.factory import StructuralError
 
 from app.webapp.models import get_wit_abbr
+from app.webapp.models.annotation import Annotation
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.witness import Witness
 from app.webapp.models.utils.constants import MS, VOL
@@ -31,41 +32,27 @@ from app.webapp.utils.iiif.annotation import (
     format_canvas_annos,
     index_annotations,
     get_anno_img,
-    formatted_digit_anno,
-    # index_anno,
-    get_canvas_list,
-    get_indexed_canvas_annos,
-    check_anno_file,
-    check_indexation_annos,
+    formatted_annotations,
     anno_request,
     process_anno,
 )
 import requests
-
-from app.webapp.utils.paths import BASE_DIR, ANNO_PATH
 
 
 def admin_app(request):
     return redirect("admin:index")
 
 
-def manifest_digitization(request, digit_id):
+def manifest_digitization(request, wit_id, digit_id):
+    # TODO do we check correct that wit_id is correct??
     digit = get_object_or_404(Digitization, pk=digit_id)
-    return JsonResponse(digit.get_manifest_json())
+    return JsonResponse(digit.gen_manifest_json())
 
 
-# def manifest_manuscript(request, wit_id, version):
-#     """
-#     Build a manuscript manifest using iiif-prezi library IIIF Presentation API 2.0
-#     """
-#     return JsonResponse(manifest_wit_type(wit_id, MS, version))
-#
-#
-# def manifest_volume(request, wit_id, version):
-#     """
-#     Build a volume manifest using iiif-prezi library IIIF Presentation API 2.0
-#     """
-#     return JsonResponse(manifest_wit_type(wit_id, VOL, version))
+def manifest_annotation(request, wit_id, digit_id, anno_id):
+    # TODO do we check correct that wit_id and digit_ids are correct??
+    anno = get_object_or_404(Annotation, pk=anno_id)
+    return JsonResponse(anno.gen_manifest_json())
 
 
 def send_anno(request, digit_id):
@@ -96,92 +83,61 @@ def receive_anno(request, digit_id):
         file_content = annotation_file.read()
 
         if process_anno(file_content, digit):
+            # process file and create Annotation record
             return JsonResponse({"response": "OK"}, status=200)
     else:
         return JsonResponse({"message": "Invalid request"}, status=400)
 
 
-def export_anno_img(request, wit_id, wit_type):
+def export_anno_img(request, anno_id):
+    anno = get_object_or_404(Annotation, pk=anno_id)
     annotations = get_anno_img(anno)
-    return list_to_txt(annotations, anno.get_ref)
+    return list_to_txt(annotations, anno.get_ref())
 
 
-def canvas_annotations(request, wit_id, version, wit_type, canvas):
-    return JsonResponse(format_canvas_annos(anno, canvas))
+def canvas_annotations(request, anno_id, canvas_nb):
+    anno = get_object_or_404(Annotation, pk=anno_id)
+    return JsonResponse(format_canvas_annos(anno, canvas_nb))
 
 
-def populate_annotation(request, wit_id, wit_type):
+def populate_annotation(request, anno_id):
     """
     Populate annotation store from IIIF Annotation List
     """
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    return HttpResponse(status=200 if index_annotations(wit_id, wit_type) else 500)
+    anno = get_object_or_404(Annotation, pk=anno_id)
+    return HttpResponse(status=200 if index_annotations(anno) else 500)
 
 
-def validate_annotation(request, wit_id, wit_type):
+def validate_annotation(request, anno_id):
     """
     Validate the manually corrected annotations
     """
     try:
-        witness = get_object_or_404(Witness, pk=wit_id)
-        witness.manifest_final = True
-        witness.save()
+        anno = get_object_or_404(Annotation, pk=anno_id)
+        anno.is_validated = True
+        anno.save()
         return HttpResponse(status=200)
-    # except (Witness.DoesNotExist):
-    #     return HttpResponse(f"{wit_type} #{wit_id} does not exist", status=500)
     except Exception as e:
         return HttpResponse(f"An error occurred: {e}", status=500)
 
 
-def witness_sas_annotations(request, wit_id, wit_type):
-    witness = get_object_or_404(Witness, pk=wit_id)
-    _, canvas_annos = formatted_digit_anno(digit)
+def witness_sas_annotations(request, anno_id):
+    anno = get_object_or_404(Annotation, pk=anno_id)
+    _, canvas_annos = formatted_annotations(anno)
     return JsonResponse(canvas_annos, safe=False)
 
 
-def test(request, wit_id, wit_type):
-    start = get_time()
-    model = Annotation
-    try:
-        wit_id = int(wit_id)
-        if int(wit_id) == 0:
-            annos = model.objects.all()
-        else:
-            annos = [get_object_or_404(model, pk=anno_id)]
-    except ValueError as e:
-        console(f"[test] wit_id is not an integer: {e}")
-        return JsonResponse(
-            {"response": f"wit_id is not an integer: {wit_id}\n{e}"},
-            safe=False,
-        )
-
-    threads = []
-    wit_ids = []
-    # for witness in witnesses:
-    #     if not witness.manifest_final:
-    #         wit_ids.append(witness.id)
-    #         thread = threading.Thread(
-    #             target=check_indexation_annos, args=(digit, True)
-    #         )
-    #         thread.start()
-    #         threads.append(thread)
-
-    return JsonResponse(
-        {"response": f"Execution time: {start} > {get_time()}", "checked ids": wit_ids},
-        safe=False,
-    )
-
-
 @login_required(login_url=f"/{APP_NAME}-admin/")
-def show_witness(request, wit_id, wit_type):
-    witness = get_object_or_404(Witness, pk=wit_id)
+def show_annotations(request, anno_id):
+    anno = get_object_or_404(Annotation, pk=anno_id)
 
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    bboxes, canvas_annos = formatted_digit_anno(digit)
+    bboxes, canvas_annos = formatted_annotations(anno)
 
     paginator = Paginator(canvas_annos, 50)
     try:
@@ -195,12 +151,45 @@ def show_witness(request, wit_id, wit_type):
         request,
         "webapp/show.html",
         context={
-            "wit_type": wit_type,
-            "wit_obj": witness,
+            # "wit_type": wit_type,
+            # "wit_obj": witness,
             "page_annos": page_annos,
             "bboxes": json.dumps(bboxes),
-            "url_manifest": f"{APP_URL}/{APP_NAME}/iiif/v2/{wit_type}/{wit_id}/manifest.json",
+            "url_manifest": anno.gen_manifest_url(),
         },
+    )
+
+
+def test(request, wit_id, wit_type):
+    start = get_time()
+    model = Annotation
+    # try:
+    #     wit_id = int(wit_id)
+    #     if int(wit_id) == 0:
+    #         annos = model.objects.all()
+    #     else:
+    #         annos = [get_object_or_404(model, pk=anno_id)]
+    # except ValueError as e:
+    #     console(f"[test] wit_id is not an integer: {e}")
+    #     return JsonResponse(
+    #         {"response": f"wit_id is not an integer: {wit_id}\n{e}"},
+    #         safe=False,
+    #     )
+    #
+    # threads = []
+    # wit_ids = []
+    # # for witness in witnesses:
+    # #     if not witness.manifest_final:
+    # #         wit_ids.append(witness.id)
+    # #         thread = threading.Thread(
+    # #             target=check_indexation_annos, args=(digit, True)
+    # #         )
+    # #         thread.start()
+    # #         threads.append(thread)
+
+    return JsonResponse(
+        {"response": f"Execution time: {start} > {get_time()}"},
+        safe=False,
     )
 
 

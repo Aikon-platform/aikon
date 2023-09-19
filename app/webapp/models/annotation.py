@@ -3,12 +3,14 @@ from uuid import uuid4
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+from iiif_prezi.factory import StructuralError
 
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2
 from app.webapp.utils.iiif import get_manifest_url_base
+from app.webapp.utils.iiif.manifest import gen_manifest_json
 from app.webapp.utils.paths import BASE_DIR, ANNO_PATH
 
 
@@ -33,6 +35,7 @@ class Annotation(models.Model):
     # NOTE machine learning model used to generate annotations
     model = models.CharField(max_length=150)
     anno_ids = ArrayField(models.CharField(max_length=150), blank=True, null=True)
+    is_validated = models.BooleanField(default=False)
 
     def get_digit(self) -> Digitization | None:
         try:
@@ -50,10 +53,21 @@ class Annotation(models.Model):
         digit = self.get_digit()
         if not witness or not digit:
             return None
-        wit_type = digit.get_wit_type()
 
-        base_url = f"{get_manifest_url_base()}/{MANIFEST_V2}/{wit_type}/{witness.id}/{digit.id}/{self.id}"
+        base_url = (
+            f"{get_manifest_url_base()}/{MANIFEST_V2}/{witness.id}/{digit.id}/{self.id}"
+        )
         return f"{base_url}{'' if only_base else '/manifest.json'}"
+
+    def gen_manifest_json(self):
+        error = {"error": "Unable to create a valid manifest"}
+        if manifest := gen_manifest_json(self):
+            try:
+                return manifest.toJSON(top=True)
+            except StructuralError as e:
+                error["reason"] = f"{e}"
+                return error
+        return error
 
     def get_ref(self):
         if digit := self.get_digit():

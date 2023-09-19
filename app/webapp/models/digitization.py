@@ -143,11 +143,6 @@ class Digitization(models.Model):
         help_text=MANIFEST_INFO,
         validators=[validate_manifest],
     )
-    is_validated = models.BooleanField(
-        verbose_name=get_name("is_validated"),
-        default=False,
-        help_text=f"{get_icon('triangle-exclamation', '#efb80b')} {get_name('is_validated_info')}",
-    )
 
     def get_witness(self) -> Witness | None:
         try:
@@ -272,7 +267,9 @@ class Digitization(models.Model):
         return metadata
 
     def gen_manifest_url(self, only_base=False):
-        base_url = f"{get_manifest_url_base()}/{MANIFEST_V1}/{self.get_wit_type()}/{self.get_wit_id()}/{self.id}"
+        base_url = (
+            f"{get_manifest_url_base()}/{MANIFEST_V1}/{self.get_wit_id()}/{self.id}"
+        )
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 
     def gen_manifest_json(self):

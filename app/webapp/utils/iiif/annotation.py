@@ -144,9 +144,11 @@ def delete_annos(anno: Annotation):
     return True
 
 
-def index_annos_on_canvas(anno: Annotation, canvas):
+def index_annos_on_canvas(anno: Annotation, canvas_nb):
     # this url is calling format_canvas_annos(), thus returning formatted annos for each canvas
-    formatted_annos = f"{anno.gen_manifest_url(True)}/list/anno-{canvas}.json"
+    formatted_annos = (
+        f"{APP_NAME}/iiif/annotation/{anno.id}/list/canvas-{canvas_nb}.json"
+    )
     # POST request that index the annotations
     response = urlopen(
         f"{SAS_APP_URL}/annotation/populate",
@@ -256,7 +258,7 @@ def format_annotation(anno: Annotation, canvas_nb, xywh):
     width = w // 2
     height = h // 2
 
-    anno_id = anno.gen_anno_id(canvas_nb)  # TODO do we store annotations ids?
+    anno_id = anno.gen_anno_id(canvas_nb)
     d = f"M{x} {y} h {width} v 0 h {width} v {height} v {height} h -{width} h -{width} v -{height}Z"
     r_id = f"rectangle_{anno_id}"
     d_paper = "{&quot;strokeWidth&quot;:1,&quot;rotation&quot;:0,&quot;annotation&quot;:null,&quot;nonHoverStrokeColor&quot;:[&quot;Color&quot;,0,1,0],&quot;editable&quot;:true,&quot;deleteIcon&quot;:null,&quot;rotationIcon&quot;:null,&quot;group&quot;:null}"
@@ -453,7 +455,7 @@ def get_id_from_anno(sas_anno):
         return ""
 
 
-def formatted_digit_anno(anno: Annotation):
+def formatted_annotations(anno: Annotation):
     canvas_annos = []
     anno_ids = []
 
@@ -477,7 +479,7 @@ def formatted_digit_anno(anno: Annotation):
             canvas_annos.append((canvas_nb, coord_annos, img_file))
     except ValueError as e:
         log(
-            f"[formatted_digit_anno] Error when generating auto annotation list (probably no annotation file): {e}"
+            f"[formatted_annotations] Error when generating auto annotation list (probably no annotation file): {e}"
         )
 
     return anno_ids, canvas_annos

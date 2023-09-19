@@ -6,10 +6,10 @@ from app.config.settings import APP_NAME, MEDIA_URL, MEDIA_ROOT, DEBUG
 from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2
 
 from app.webapp.views import (
-    show_witness,
+    show_annotations,
     admin_app,
-    manifest_volume,
-    manifest_manuscript,
+    manifest_digitization,
+    manifest_annotation,
     populate_annotation,
     PlaceAutocomplete,
     canvas_annotations,
@@ -26,12 +26,12 @@ urlpatterns = [
     path("", admin_app, name="admin-config"),
     path(f"{APP_NAME}-admin/", admin.site.urls),
     path(
-        f"{APP_NAME}/<str:wit_type>/<int:wit_id>/show/",
-        show_witness,
-        name="show-witness",
+        f"{APP_NAME}/show/<int:anno_id>",
+        show_annotations,
+        name="show-annotations",
     ),
     path(
-        f"{APP_NAME}/<str:wit_type>/<int:wit_id>/annotations/",
+        f"{APP_NAME}/annotations/<int:anno_id>",
         witness_sas_annotations,
         name="witness-annotations",
     ),
@@ -41,34 +41,34 @@ urlpatterns = [
         name="test",
     ),
     path(
-        f"{APP_NAME}/iiif/<str:version>/volume/<int:wit_id>/manifest.json",
-        manifest_volume,
-        name="manifest-volume",
-    ),
-    path(  # todo : f"{APP_NAME}/iiif/<str:version>/<str:wit_type>/<int:wit_id>/manifest.json"
-        f"{APP_NAME}/iiif/<str:version>/manuscript/<int:wit_id>/manifest.json",
-        manifest_manuscript,
-        name="manifest-manuscript",
+        f"{APP_NAME}/iiif/{MANIFEST_V1}/<int:wit_id>/<int:digit_id>/manifest.json",
+        manifest_digitization,
+        name="manifest-digitization",
     ),
     path(
-        f"{APP_NAME}/iiif/{MANIFEST_V2}/<str:wit_type>/<int:wit_id>/populate/",
+        f"{APP_NAME}/iiif/{MANIFEST_V2}/<int:wit_id>/<int:digit_id>/<int:anno_id>/manifest.json",
+        manifest_annotation,
+        name="manifest-annotation",
+    ),
+    path(
+        f"{APP_NAME}/iiif/populate/<int:anno_id>",
         populate_annotation,
         name="populate-annotation",
     ),
     path(
-        f"{APP_NAME}/iiif/{MANIFEST_V2}/<str:wit_type>/<int:wit_id>/validate/",
+        f"{APP_NAME}/iiif/validate/<int:anno_id>",
         validate_annotation,
         name="validate-annotation",
     ),
     path(
-        f"{APP_NAME}/iiif/<str:version>/<str:wit_type>/<int:wit_id>/list/anno-<int:canvas>.json",
+        f"{APP_NAME}/iiif/annotation/<int:anno_id>/list/canvas-<int:canvas_nb>.json",
         canvas_annotations,
         name="canvas-annotations",
     ),
     path(
-        f"{APP_NAME}/iiif/{MANIFEST_V1}/<str:wit_type>/<int:wit_id>/annotation/",
+        f"{APP_NAME}/iiif/annotation/<int:anno_id>",
         export_anno_img,
-        name="annotation-auto",
+        name="annotation-imgs",
     ),
     path(
         f"{APP_NAME}/autocomplete/place/",
@@ -76,12 +76,12 @@ urlpatterns = [
         name="place-autocomplete",
     ),
     path(
-        f"{APP_NAME}/<str:wit_type>/<int:wit_id>/annotate/",
+        f"{APP_NAME}/annotate/<int:digit_id>",
         receive_anno,
         name="receive-annotations",
     ),
     path(
-        f"{APP_NAME}/<str:wit_type>/<int:wit_id>/run-annotation/",
+        f"{APP_NAME}/run-annotation/<int:digit_id>",
         send_anno,
         name="send-annotations",
     ),
