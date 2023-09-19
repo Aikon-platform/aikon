@@ -243,7 +243,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         img_urls = []
         for wit_id in results:
             witness = Witness.objects.get(pk=wit_id[0])
-            # img_urls.extend(get_anno_images(digit)) TODO : here change for digit
+            # img_urls.extend(get_anno_images(anno)) TODO : here change for anno
 
         return zip_img(request, img_urls)
 

@@ -25,7 +25,7 @@ from app.webapp.models.witness import Witness
 
 # from app.webapp.models.witness import Volume, Manuscript
 from app.webapp.utils.logger import iiif_log, console, log
-from app.webapp.utils.iiif.annotation import set_canvas, has_annotations
+from app.webapp.utils.iiif.annotation import set_canvas
 
 # NOTE img name = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_{canvas_nb}.jpg"
 

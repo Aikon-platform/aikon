@@ -25,7 +25,7 @@ from pdf2image import convert_from_path
 
 from app.webapp.utils.constants import MANIFEST_V1
 from app.webapp.utils.iiif import get_manifest_url_base
-from app.webapp.utils.iiif.annotation import unindex_digit, send_anno_request
+from app.webapp.utils.iiif.annotation import delete_annos, send_anno_request
 from app.webapp.utils.iiif.gen_html import gen_manifest_btn
 from app.webapp.utils.iiif.manifest import manifest_v1, gen_manifest_json
 from app.webapp.utils.logger import log, console
@@ -98,7 +98,7 @@ def rename_file(digit, original_filename):
 
 
 def remove_digitization(digit, other_media=None):
-    unindex_digit(digit)
+    delete_annos(digit)
     delete_files(get_imgs(digit.get_ref()))
     if other_media:
         delete_files(

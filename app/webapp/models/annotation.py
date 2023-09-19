@@ -1,6 +1,7 @@
 from glob import glob
 from uuid import uuid4
 
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 from app.webapp.models.digitization import Digitization
@@ -16,9 +17,6 @@ def get_name(fieldname, plural=False):
 
 
 class Annotation(models.Model):
-    # TODO create annotation when the platform receives the response from the extractor API
-    # NOTE one Annotation obj is linked to an annotation file => one Digit can have multiple Annotations
-    # One Annotation is linked to
     class Meta:
         verbose_name = get_name("Annotation")
         verbose_name_plural = get_name("Annotation", True)
@@ -34,6 +32,7 @@ class Annotation(models.Model):
     )
     # NOTE machine learning model used to generate annotations
     model = models.CharField(max_length=150)
+    anno_ids = ArrayField(models.CharField(max_length=150), blank=True, null=True)
 
     def get_digit(self) -> Digitization | None:
         try:
@@ -65,10 +64,15 @@ class Annotation(models.Model):
     def get_filename(self):
         return f"{self.get_ref()}.txt"
 
-    def gen_anno_id(self, canvas_nb):
-        # OLD anno_id = f"{wit_abbr}-{wit_id}-{canvas_nb}-{anno_nb}"
-        # TODO : find how to store generated anno_ids + to delete anno_ids that were deleted
-        return f"{self.get_ref()}_c{canvas_nb}_{uuid4().hex[:8]}"
+    def gen_anno_id(self, canvas_nb, save_id=False):
+        # anno_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}_c{canvas_nb}_{uuid4().hex[:8]}"
+        anno_id = f"{self.get_ref()}_c{canvas_nb}_{uuid4().hex[:8]}"
+
+        # TODO check if it is necessary
+        if save_id:
+            self.anno_ids.append(anno_id)
+            self.save()
+        return anno_id
 
     def has_annotations(self):
         # if there is an annotation file named after the current Annotation
