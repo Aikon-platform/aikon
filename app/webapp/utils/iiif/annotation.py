@@ -81,7 +81,7 @@ def process_anno(anno_file_content, digit):
 
 
 def index_annotations(anno: Annotation):
-    if not index_manifest_in_sas(anno.gen_manifest_url(), True):
+    if not index_manifest_in_sas(anno.gen_manifest_url(version=MANIFEST_V2), True):
         return
 
     canvases_to_annotate = get_annos_per_canvas(anno)
@@ -103,9 +103,10 @@ def index_annotations(anno: Annotation):
 
 def unindex_anno(anno_id, remove_from_anno_ids=False):
     http_sas = SAS_APP_URL.replace("https", "http")
-    if remove_from_anno_ids:
-        id_annotation = re.search(r"_anno(\d+)", anno_id).group(1)
-        # TODO remove from anno.anno_ids when it is only one anno that is deleted
+
+    # if remove_from_anno_ids:
+    #     id_annotation = re.search(r"_anno(\d+)", anno_id).group(1)
+    #     # TODO remove from anno.anno_ids when it is only one anno that is deleted
 
     # anno_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}_c{canvas_nb}_{uuid4().hex[:8]}
     delete_url = f"{SAS_APP_URL}/annotation/destroy?uri={http_sas}/annotation/{anno_id}"
@@ -123,7 +124,7 @@ def unindex_anno(anno_id, remove_from_anno_ids=False):
 
 
 def delete_annos(anno: Annotation):
-    index_manifest_in_sas(anno.gen_manifest_url())
+    index_manifest_in_sas(anno.gen_manifest_url(version=MANIFEST_V2))
     anno_id = 0
     try:
         for anno in get_manifest_annos(anno):
@@ -144,10 +145,10 @@ def delete_annos(anno: Annotation):
     return True
 
 
-def index_annos_on_canvas(anno: Annotation, canvas_nb):
-    # this url is calling format_canvas_annos(), thus returning formatted annos for each canvas
+def index_annos_on_canvas(anno: Annotation, canvas_nb, version):
+    # this url (view canvas_annotations()) is calling format_canvas_annos(), thus returning formatted annos for each canvas
     formatted_annos = (
-        f"{APP_NAME}/iiif/annotation/{anno.id}/list/canvas-{canvas_nb}.json"
+        f"{APP_NAME}/iiif/{version}/{anno.get_ref()}/list/anno-{canvas_nb}.json"
     )
     # POST request that index the annotations
     response = urlopen(
@@ -251,7 +252,7 @@ def format_canvas_annos(anno: Annotation, canvas_nb):
 
 
 def format_annotation(anno: Annotation, canvas_nb, xywh):
-    base_url = anno.gen_manifest_url(only_base=True)
+    base_url = anno.gen_manifest_url(only_base=True, version=MANIFEST_V2)
 
     x, y, w, h = xywh
 
@@ -318,10 +319,10 @@ def format_annotation(anno: Annotation, canvas_nb, xywh):
     }
 
 
-def set_canvas(seq, canvas_nb, img_name, img, version):
+def set_canvas(seq, canvas_nb, img_name, img, version=MANIFEST_V1 | MANIFEST_V2 | None):
     """
     Build the canvas and annotation for each image
-    Called for each manifest (v2) image when a witness is being indexed
+    Called for each manifest (v2: corrected annotations) image when a witness is being indexed
     """
     try:
         h, w = int(img["height"]), int(img["width"])
@@ -334,9 +335,7 @@ def set_canvas(seq, canvas_nb, img_name, img, version):
     canvas.set_hw(h, w)
 
     # Build the image annotation
-    anno = canvas.annotation(
-        ident=f"a{canvas_nb}"
-    )  # TODO here maybe generated id with anno.gen_anno_id()
+    anno = canvas.annotation(ident=f"a{canvas_nb}")
     if re.match(r"https?://(.*?)/", img_name):
         # to build hybrid manifest referencing images from other IIIF repositories
         img = anno.image(img_name, iiif=False)
@@ -345,8 +344,10 @@ def set_canvas(seq, canvas_nb, img_name, img, version):
         img = anno.image(ident=img_name, iiif=True)
 
     img.set_hw(h, w)
-    # TODO here check if this is correct for manifest_v1
+    # In case we do not really index "automatic" annotations but keep them as "otherContents"
     if version == MANIFEST_V1:
+        # is calling f"{APP_NAME}/iiif/{version}/{anno.get_ref()}/list/anno-{canvas_nb}.json"
+        # (canvas_annotations() view) that returns formatted annotations format_canvas_annos()
         anno_list = canvas.annotationList(ident=f"anno-{canvas_nb}")
         anno = anno_list.annotation(ident=f"a-list-{canvas_nb}")
         anno.text("Annotation")
@@ -427,7 +428,7 @@ def get_indexed_annos(anno: Annotation):
 def get_indexed_canvas_annos(anno: Annotation, canvas_nb):
     try:
         response = urlopen(
-            f"{SAS_APP_URL}/annotation/search?uri={anno.gen_manifest_url(True)}/canvas/c{canvas_nb}.json"
+            f"{SAS_APP_URL}/annotation/search?uri={anno.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
         )
         return json.loads(response.read())
     except Exception as e:
@@ -553,7 +554,9 @@ def check_indexation_annos(anno: Annotation, reindex=False):
                         [get_id_from_anno(sas_anno) for sas_anno in sas_annos]
                     )
                 else:
-                    if not index_manifest_in_sas(anno.gen_manifest_url()):
+                    if not index_manifest_in_sas(
+                        anno.gen_manifest_url(version=MANIFEST_V2)
+                    ):
                         return
             elif len_line == 4:
                 # if line = "x y w h"

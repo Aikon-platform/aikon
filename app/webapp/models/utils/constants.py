@@ -1,4 +1,5 @@
 from app.config.settings import APP_LANG
+from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2
 
 #############################
 #        MODEL NAMES        #
@@ -80,6 +81,11 @@ WIT_TYPE = (
     (MS_ABBR, MS.capitalize()),
     (TPR_ABBR, TPR.capitalize()),
     (WPR_ABBR, WPR.capitalize()),
+)
+
+ANNO_VERSION = (
+    (MANIFEST_V1, "automatic"),
+    (MANIFEST_V2, "corrected"),
 )
 
 DIGIT_TYPE = (

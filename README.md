@@ -181,6 +181,8 @@ You should now see Mirador with default example manifests.
 
 Run server
 ```shell
+# FIX DUE TO SPECIFIC PROJECT STRUCTURE
+
 ./venv/bin/python3.10 app/manage.py runserver localhost:8000
 ```
 

@@ -30,12 +30,11 @@ from app.webapp.utils.iiif.annotation import set_canvas
 # NOTE img name = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_{canvas_nb}.jpg"
 
 
-def process_images(obj: Digitization | Annotation, seq):
+def process_images(obj: Digitization | Annotation, seq, version=None):
     """
     Process the images of a witness and add them to a sequence
     """
     class_name = obj.__class__.__name__
-    version = MANIFEST_V1 if class_name == "Digitization" else MANIFEST_V2
 
     try:
         for counter, img in enumerate(obj.get_imgs(), start=1):
@@ -57,7 +56,7 @@ def process_images(obj: Digitization | Annotation, seq):
     return True
 
 
-def gen_manifest_json(obj: Digitization | Annotation):
+def gen_manifest_json(obj: Digitization | Annotation, version=None):
     """
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
@@ -66,7 +65,7 @@ def gen_manifest_json(obj: Digitization | Annotation):
 
     try:
         fac = ManifestFactory(
-            mdbase=obj.gen_manifest_url(True),
+            mdbase=obj.gen_manifest_url(only_base=True, version=version),
             imgbase=f"{CANTALOUPE_APP_URL}/iiif/2/",
         )
     except Exception as e:
@@ -80,7 +79,7 @@ def gen_manifest_json(obj: Digitization | Annotation):
     # Build the manifest
     manifest = fac.manifest(ident="manifest", label=obj.__str__())
     metadata = obj.get_metadata()
-    metadata["Is annotated"] = obj.has_annotations()
+    # metadata["Is annotated"] = obj.has_annotations()
     manifest.set_metadata(metadata)
 
     # Set the manifest's attribution, description, and viewing hint
@@ -91,7 +90,7 @@ def gen_manifest_json(obj: Digitization | Annotation):
     try:
         # And walk through the pages
         seq = manifest.sequence(ident="normal", label="Normal Order")
-        process_images(obj, seq)
+        process_images(obj, seq, version)
     except Exception as e:
         log(
             f"[gen_manifest_json] Unable to process images for {class_name} n°{obj.id}",

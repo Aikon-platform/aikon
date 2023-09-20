@@ -41,12 +41,15 @@ urlpatterns = [
         name="test",
     ),
     path(
-        f"{APP_NAME}/iiif/{MANIFEST_V1}/<int:wit_id>/<int:digit_id>/manifest.json",
+        # digit_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}
+        f"{APP_NAME}/iiif/<int:wit_id>/<str:digit_ref>/manifest.json",
         manifest_digitization,
         name="manifest-digitization",
     ),
     path(
-        f"{APP_NAME}/iiif/{MANIFEST_V2}/<int:wit_id>/<int:digit_id>/<int:anno_id>/manifest.json",
+        # TODO enforce that the url is correctly formatted
+        # anno_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}
+        f"{APP_NAME}/iiif/<str:version>/<str:anno_ref>/manifest.json",
         manifest_annotation,
         name="manifest-annotation",
     ),
@@ -61,7 +64,7 @@ urlpatterns = [
         name="validate-annotation",
     ),
     path(
-        f"{APP_NAME}/iiif/annotation/<int:anno_id>/list/canvas-<int:canvas_nb>.json",
+        f"{APP_NAME}/iiif/<str:version>/<str:anno_ref>/list/anno-<int:canvas_nb>.json",
         canvas_annotations,
         name="canvas-annotations",
     ),

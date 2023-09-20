@@ -266,15 +266,16 @@ class Digitization(models.Model):
 
         return metadata
 
-    def gen_manifest_url(self, only_base=False):
-        base_url = (
-            f"{get_manifest_url_base()}/{MANIFEST_V1}/{self.get_wit_id()}/{self.id}"
-        )
+    def gen_manifest_url(self, only_base=False, version=None):
+        # usage of version parameter to copy parameters of Annotation.gen_manifest_url()
+        base_url = f"{get_manifest_url_base()}/{self.get_wit_id()}/{self.id}"
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 
     def gen_manifest_json(self):
         error = {"error": "Unable to create a valid manifest"}
-        if manifest := gen_manifest_json(self):
+        if manifest := gen_manifest_json(
+            self
+        ):  # TODO add version depending on auto or corrected
             try:
                 return manifest.toJSON(top=True)
             except StructuralError as e:

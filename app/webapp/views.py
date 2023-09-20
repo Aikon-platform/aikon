@@ -1,4 +1,6 @@
 import json
+import re
+
 import requests
 from dal import autocomplete
 import threading
@@ -16,7 +18,7 @@ from app.webapp.models import get_wit_abbr
 from app.webapp.models.annotation import Annotation
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.witness import Witness
-from app.webapp.models.utils.constants import MS, VOL
+from app.webapp.models.utils.constants import MS, VOL, DIGIT_TYPE
 from app.config.settings import (
     APP_URL,
     SAS_APP_URL,
@@ -25,7 +27,7 @@ from app.config.settings import (
     GEONAMES_USER,
     API_GPU_URL,
 )
-from app.webapp.utils.constants import MANIFEST_V1
+from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2
 from app.webapp.utils.functions import credentials, list_to_txt
 from app.webapp.utils.logger import console, log, get_time
 from app.webapp.utils.iiif.annotation import (
@@ -43,16 +45,18 @@ def admin_app(request):
     return redirect("admin:index")
 
 
-def manifest_digitization(request, wit_id, digit_id):
-    # TODO do we check correct that wit_id is correct??
+def manifest_digitization(request, digit_ref):
+    # TODO enforce that digit_ref is structured as: {wit_abbr}{wit_id}_{digit_abbr}{digit_id}
+    digit_id = re.search(r"_(\d+)", digit_ref)
     digit = get_object_or_404(Digitization, pk=digit_id)
     return JsonResponse(digit.gen_manifest_json())
 
 
-def manifest_annotation(request, wit_id, digit_id, anno_id):
-    # TODO do we check correct that wit_id and digit_ids are correct??
+def manifest_annotation(request, version, anno_ref):
+    # TODO enforce tha anno_ref is structured as: {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}
+    anno_id = anno_ref.split("_")[-1].replace("anno", "")
     anno = get_object_or_404(Annotation, pk=anno_id)
-    return JsonResponse(anno.gen_manifest_json())
+    return JsonResponse(anno.gen_manifest_json(version))
 
 
 def send_anno(request, digit_id):
@@ -95,9 +99,10 @@ def export_anno_img(request, anno_id):
     return list_to_txt(annotations, anno.get_ref())
 
 
-def canvas_annotations(request, anno_id, canvas_nb):
+def canvas_annotations(request, version, anno_ref, canvas_nb):
+    anno_id = anno_ref.split("_")[-1].replace("anno", "")
     anno = get_object_or_404(Annotation, pk=anno_id)
-    return JsonResponse(format_canvas_annos(anno, canvas_nb))
+    return JsonResponse(format_canvas_annos(anno, canvas_nb, version))
 
 
 def populate_annotation(request, anno_id):
@@ -155,7 +160,7 @@ def show_annotations(request, anno_id):
             # "wit_obj": witness,
             "page_annos": page_annos,
             "bboxes": json.dumps(bboxes),
-            "url_manifest": anno.gen_manifest_url(),
+            "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2),
         },
     )
 
