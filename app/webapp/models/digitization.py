@@ -32,7 +32,6 @@ from app.webapp.utils.functions import (
     to_jpg,
     anno_btn,
     delete_files,
-    get_imgs,
 )
 from app.webapp.utils.paths import (
     BASE_DIR,
