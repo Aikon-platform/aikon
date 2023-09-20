@@ -113,16 +113,19 @@ class Digitization(models.Model):
             FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "tif"])
         ],
         help_text=IMG_INFO,
+        blank=True,
     )
     pdf = models.FileField(
         verbose_name=PDF,
         upload_to=partial(rename_file),
         validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
+        blank=True,
     )
     manifest = models.URLField(
         verbose_name=MANIFEST,
         help_text=MANIFEST_INFO,
         validators=[validate_manifest],
+        blank=True,
     )
 
     def get_witness(self) -> Witness | None:
