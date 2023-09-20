@@ -92,7 +92,7 @@ class IIIFDownloader:
                         self.save_iiif_img(img_rsrc, i, self.get_formatted_size(size))
                         return
                     else:
-                        log(f"[save_iiif_img] {iiif_url} is not a valid img file: {e}")
+                        log(f"[save_iiif_img] {iiif_url} is not a valid img file", e)
                         return
                 except (IOError, OSError) as e:
                     if size == "full":
@@ -101,13 +101,14 @@ class IIIFDownloader:
                         return
                     else:
                         log(
-                            f"[save_iiif_img] {iiif_url} is a truncated or corrupted image: {e}"
+                            f"[save_iiif_img] {iiif_url} is a truncated or corrupted image",
+                            e,
                         )
                         return
                 return save_img(img, img_name)
 
         except requests.exceptions.RequestException as e:
-            log(f"[save_iiif_img] Failed to download image from {iiif_url}:\n{e}")
+            log(f"[save_iiif_img] Failed to download image from {iiif_url}", e)
             return False
 
     def get_img_rsrc(self, iiif_img):
@@ -138,7 +139,8 @@ class IIIFDownloader:
                 img_info = [self.get_img_rsrc(img) for img in img_list]
             except KeyError as e:
                 log(
-                    f"[get_iiif_resources] Unable to retrieve resources from manifest {self.manifest_url}\n{e}"
+                    f"[get_iiif_resources] Unable to retrieve resources from manifest {self.manifest_url}",
+                    e,
                 )
                 return []
 

@@ -400,5 +400,5 @@ def delete_files(filenames, directory=f"{BASE_DIR}/{IMG_PATH}"):
         except FileNotFoundError:
             log(f"[delete_files] File not found: {directory}/{file}")
         except Exception as e:
-            log(f"[delete_files] Error deleting {directory}/{file}: {e}")
+            log(f"[delete_files] Error deleting {directory}/{file}", e)
     return True

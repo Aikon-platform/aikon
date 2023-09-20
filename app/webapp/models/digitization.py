@@ -313,7 +313,7 @@ class Digitization(models.Model):
         )
 
     def manifest_link(self):
-        return gen_manifest_btn(self.id, self.get_wit_type(), self.has_images())
+        return gen_manifest_btn(self, self.has_images())
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance

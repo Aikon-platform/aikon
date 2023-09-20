@@ -36,7 +36,7 @@ def send_anno_request(event, digit: Digitization):
     try:
         anno_request(digit)
     except Exception as e:
-        log(f"[send_anno_request] Failed to send request for digit #{digit.id}: {e}")
+        log(f"[send_anno_request] Failed to send request for digit #{digit.id}", e)
         return False
 
     return True
@@ -357,7 +357,7 @@ def get_indexed_manifests():
         r = requests.get(f"{SAS_APP_URL}/manifests")
         manifests = r.json()["manifests"]
     except Exception as e:
-        log(f"[get_indexed_manifests]: Failed to load indexed manifests in SAS: {e}")
+        log(f"[get_indexed_manifests]: Failed to load indexed manifests in SAS", e)
         return False
     return [m["@id"] for m in manifests]
 
@@ -373,7 +373,7 @@ def index_manifest_in_sas(manifest_url, reindex=False):
         manifest = requests.get(manifest_url)
         manifest_content = manifest.json()
     except Exception as e:
-        log(f"[index_manifest_in_sas]: Failed to load manifest for {manifest_url}: {e}")
+        log(f"[index_manifest_in_sas]: Failed to load manifest for {manifest_url}", e)
         return False
 
     try:
@@ -386,7 +386,8 @@ def index_manifest_in_sas(manifest_url, reindex=False):
             return False
     except Exception as e:
         log(
-            f"[index_manifest_in_sas]: Failed to index manifest {manifest_url} in SAS: {e}"
+            f"[index_manifest_in_sas]: Failed to index manifest {manifest_url} in SAS",
+            e,
         )
         return False
     return True
@@ -442,7 +443,7 @@ def get_coord_from_anno(sas_anno):
         # coordinates => "x,y,w,h"
         return (sas_anno["on"][0]["selector"]["default"]["value"]).split("=")[1]
     except Exception as e:
-        log(f"[get_coord_from_anno] Could not retrieve coord from anno: {e}")
+        log(f"[get_coord_from_anno] Could not retrieve coord from anno", e)
         return "0,0,0,0"
 
 
@@ -479,7 +480,8 @@ def formatted_annotations(anno: Annotation):
             canvas_annos.append((canvas_nb, coord_annos, img_file))
     except ValueError as e:
         log(
-            f"[formatted_annotations] Error when generating auto annotation list (probably no annotation file): {e}"
+            f"[formatted_annotations] Error when generating auto annotation list (probably no annotation file)",
+            e,
         )
 
     return anno_ids, canvas_annos
@@ -585,6 +587,6 @@ def get_anno_images(anno: Annotation):
                 ]
                 imgs.extend(canvas_imgs)
     except ValueError as e:
-        log(f"[get_anno_images] Error when retrieving annotations: {e}")
+        log(f"[get_anno_images] Error when retrieving annotations", e)
 
     return imgs

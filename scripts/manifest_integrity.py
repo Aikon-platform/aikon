@@ -34,7 +34,7 @@ def compare_manifests(manifest_url):
                 is_annotated = bool(metadata["value"])
     except KeyError as e:
         append_to_file(f"🛑 {app_id}", no_file)
-        print(f"🛑 Non existing metadata for {app_id}: {e}")
+        print(f"🛑 Non existing metadata for {app_id}", e)
         return
 
     if source_manifest_url:
@@ -46,7 +46,7 @@ def compare_manifests(manifest_url):
             num_canvases1 = len(manifest["sequences"][0]["canvases"])
             num_canvases2 = len(source_manifest["sequences"][0]["canvases"])
         except KeyError as e:
-            print(f"🛑 Non-existing sequences or canvases for {app_id}: {e}")
+            print(f"🛑 Non-existing sequences or canvases for {app_id}", e)
             return
 
         if num_canvases1 < num_canvases2:
@@ -85,11 +85,11 @@ def fetch_manifest(manifest_url):
         response = requests.get(manifest_url)
         return response.json()
     except requests.exceptions.RequestException as e:
-        print(f"🛑 Non-existing manifest for {get_app_id(manifest_url)}: {e}")
+        print(f"🛑 Non-existing manifest for {get_app_id(manifest_url)}", e)
     except json.JSONDecodeError as e:
-        print(f"🛑 Invalid JSON in the manifest for {get_app_id(manifest_url)}: {e}")
+        print(f"🛑 Invalid JSON in the manifest for {get_app_id(manifest_url)}", e)
     except Exception as e:
-        print(f"🛑 Other error for {get_app_id(manifest_url)}: {e}")
+        print(f"🛑 Other error for {get_app_id(manifest_url)}", e)
     return None
 
 

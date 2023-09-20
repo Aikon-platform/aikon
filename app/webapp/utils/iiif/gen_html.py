@@ -2,6 +2,7 @@ from glob import glob
 
 from django.utils.safestring import mark_safe
 
+from app.webapp.models.digitization import Digitization
 from app.webapp.utils.constants import (
     MANIFEST_V1,
     MANIFEST_V2,
@@ -50,7 +51,7 @@ def gen_btn(wit_id, action="view", vers=MANIFEST_V1, wit_type=VOL.lower()):
     )
 
 
-def gen_manifest_btn(wit_id, wit_type=MS, has_manifest=True):
+def gen_manifest_btn(digit: Digitization, has_manifest=True):
     manifest = digit.gen_manifest_url()
     mf = (
         f"<a href='{manifest}' target='_blank'>{IIIF_ICON}</a>"

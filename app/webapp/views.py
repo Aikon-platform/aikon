@@ -172,7 +172,7 @@ def test(request, wit_id, wit_type):
     # except ValueError as e:
     #     console(f"[test] wit_id is not an integer: {e}")
     #     return JsonResponse(
-    #         {"response": f"wit_id is not an integer: {wit_id}\n{e}"},
+    #         {"response": f"wit_id is not an integer: {wit_id}", e},
     #         safe=False,
     #     )
     #
