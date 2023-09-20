@@ -81,7 +81,7 @@ def remove_digitization(digit, other_media=None):
     from app.webapp.utils.iiif.annotation import delete_annos
 
     delete_annos(digit)
-    delete_files(get_imgs(digit.get_ref()))
+    delete_files(digit.get_imgs())
     if other_media:
         delete_files(
             other_media, f"{BASE_DIR}/{MEDIA_DIR}"
@@ -199,10 +199,17 @@ class Digitization(models.Model):
 
     def get_imgs(self):
         imgs = []
+
+        # pattern = re.compile(rf"{self.get_ref()}_\d{{1,4}}\.jpg", re.IGNORECASE)
+        #
+        # for img in os.listdir(f"{BASE_DIR}/{IMG_PATH}"):
+        #     if pattern.match(img):
+        #         imgs.append(img)
+
         for filename in os.listdir(IMG_PATH):
             if filename.startswith(self.get_ref()):
                 imgs.append(filename)
-        return imgs
+        return sorted(imgs)
 
     def save(self, *args, **kwargs):
         from app.webapp.utils.iiif.annotation import send_anno_request

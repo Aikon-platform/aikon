@@ -4,13 +4,12 @@ from django.utils.safestring import mark_safe
 
 from app.config.settings import APP_NAME, WEBAPP_NAME, APP_LANG
 from app.webapp.admin import UnregisteredAdmin
-from app.webapp.models import get_wit_abbr
 from app.webapp.models.digitization import Digitization, get_name
-from app.webapp.models.utils.constants import IMG, MS_ABBR, IMG_ABBR, PDF_ABBR, MAN_ABBR
+from app.webapp.models.utils.constants import IMG
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
-from app.webapp.utils.functions import gen_thumbnail, get_img_prefix, anno_btn
+from app.webapp.utils.functions import gen_thumbnail
 from app.webapp.utils.iiif import gen_iiif_url, IIIF_ICON
-from app.webapp.utils.iiif.gen_html import gen_btn, gen_manifest_btn
+from app.webapp.utils.iiif.gen_html import gen_btn
 
 
 @admin.register(Digitization)
@@ -45,6 +44,7 @@ class DigitizationAdmin(UnregisteredAdmin):
 
 
 class DigitizationInline(nested_admin.NestedStackedInline):
+    # TODO here change manifest link
     model = Digitization
     extra = 1  # Display only one empty form in the parent form
     max_num = 5
@@ -91,7 +91,6 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
     @admin.display(description=get_name("manifest_v2"))
     def manifest_v2(self, obj: Digitization):
-        wit_abbr = get_wit_abbr(obj.get_wit_type())
         if obj.id and obj.has_images():
             action = "final" if obj.is_validated else "edit"
             if not obj.has_annotations():

@@ -7,7 +7,7 @@ from app.webapp.models.work import Work
 from app.webapp.models.place import Place
 from app.webapp.models.language import Language
 
-from app.webapp.models.utils.constants import CONT, WIT, WORK, TAG
+from app.webapp.models.utils.constants import TAG
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.functions import format_start_end
 

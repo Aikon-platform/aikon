@@ -1,7 +1,6 @@
 from django.db import models
 
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.models.witness import Witness
 
 
 def get_name(fieldname, plural=False):

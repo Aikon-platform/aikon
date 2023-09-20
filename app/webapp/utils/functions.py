@@ -3,23 +3,17 @@ import io
 import json
 import os
 import re
-from subprocess import CalledProcessError
 import zipfile
-from os.path import exists
 from pathlib import Path
 from urllib.parse import urlparse
-from uuid import uuid4
 
 import PyPDF2
 import requests
 from PIL import Image
-from django.core.files import File
 
 from django.utils.html import format_html
 from django.http import HttpResponse
 from django.utils.safestring import mark_safe
-from django.core.files import File
-from pdf2image import pdfinfo_from_path, convert_from_path
 from urllib.request import (
     HTTPPasswordMgrWithDefaultRealm,
     HTTPBasicAuthHandler,
@@ -33,8 +27,6 @@ from app.webapp.utils.paths import (
     IMG_PATH,
     PDF_DIR,
 )
-from app.webapp.models import get_wit_abbr, get_wit_type
-from app.webapp.models.utils.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from app.webapp.utils.constants import MAX_SIZE, MAX_RES
 from app.webapp.utils.logger import log, console
 
@@ -366,28 +358,6 @@ def read_json_file(file_path):
 def write_json_file(file_path, dictionary):
     with open(file_path, "w") as file:
         json.dump(dictionary, file)
-
-
-def get_img_prefix(obj, wit_type=MS):
-    img_prefix = f"{get_wit_abbr(wit_type)}{obj.id}"
-    if hasattr(obj, f"pdf{wit_type}_set"):
-        if getattr(obj, f"pdf{wit_type}_set").first():
-            img_prefix = (
-                obj.pdfmanuscript_set.first().pdf.name.split("/")[-1].split(".")[0]
-            )
-    return img_prefix
-
-
-def get_imgs(img_prefix):
-    # TODO make a method of Witness class out of this function
-    pattern = re.compile(rf"{img_prefix}_\d{{1,4}}\.jpg", re.IGNORECASE)
-    wit_imgs = []
-
-    for img in os.listdir(f"{BASE_DIR}/{IMG_PATH}"):
-        if pattern.match(img):
-            wit_imgs.append(img)
-
-    return sorted(wit_imgs)
 
 
 def delete_files(filenames, directory=f"{BASE_DIR}/{IMG_PATH}"):

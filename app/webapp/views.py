@@ -1,10 +1,7 @@
 import json
 import re
 
-import requests
 from dal import autocomplete
-import threading
-from os.path import exists
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -12,22 +9,16 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.decorators import login_required
-from iiif_prezi.factory import StructuralError
 
-from app.webapp.models import get_wit_abbr
 from app.webapp.models.annotation import Annotation
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.witness import Witness
-from app.webapp.models.utils.constants import MS, VOL, DIGIT_TYPE
 from app.config.settings import (
-    APP_URL,
     SAS_APP_URL,
     APP_NAME,
     ENV,
     GEONAMES_USER,
-    API_GPU_URL,
 )
-from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2
+from app.webapp.utils.constants import MANIFEST_V2
 from app.webapp.utils.functions import credentials, list_to_txt
 from app.webapp.utils.logger import console, log, get_time
 from app.webapp.utils.iiif.annotation import (

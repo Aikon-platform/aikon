@@ -11,20 +11,13 @@ from app.webapp.models import get_wit_abbr
 from app.webapp.models.annotation import Annotation
 from app.webapp.models.digitization import Digitization
 from app.webapp.utils.constants import (
-    MANIFEST_V1,
-    MANIFEST_V2,
     APP_NAME_UPPER,
     APP_DESCRIPTION,
 )
-from app.webapp.utils.functions import get_imgs
-from app.webapp.utils.paths import MEDIA_DIR, IMG_PATH, BASE_DIR
-from app.webapp.models.utils.constants import VOL_ABBR, MS_ABBR, VOL, MS
-from app.config.settings import SAS_APP_URL, APP_URL, CANTALOUPE_APP_URL, APP_NAME
-from app.webapp.models.volume import Volume
-from app.webapp.models.witness import Witness
+from app.webapp.utils.paths import IMG_PATH, BASE_DIR
+from app.config.settings import CANTALOUPE_APP_URL
 
-# from app.webapp.models.witness import Volume, Manuscript
-from app.webapp.utils.logger import iiif_log, console, log
+from app.webapp.utils.logger import console, log
 from app.webapp.utils.iiif.annotation import set_canvas
 
 # NOTE img name = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_{canvas_nb}.jpg"

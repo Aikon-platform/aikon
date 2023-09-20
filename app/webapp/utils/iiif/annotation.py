@@ -9,7 +9,7 @@ import requests
 from app.webapp.models.annotation import Annotation
 from app.webapp.models.digitization import Digitization
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
-from app.webapp.utils.paths import MEDIA_DIR, BASE_DIR, ANNO_PATH
+from app.webapp.utils.paths import BASE_DIR, ANNO_PATH
 from app.config.settings import (
     CANTALOUPE_APP_URL,
     SAS_APP_URL,

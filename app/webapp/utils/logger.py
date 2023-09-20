@@ -4,7 +4,7 @@ import os
 import time
 
 from django.utils.html import strip_tags
-from app.webapp.utils.paths import LOG_PATH, MEDIA_DIR, BASE_DIR, IIIF_LOG_PATH
+from app.webapp.utils.paths import LOG_PATH, IIIF_LOG_PATH
 from app.config.settings import DEBUG
 
 

@@ -57,5 +57,4 @@ class Work(models.Model):
         Tag,
         verbose_name=get_name("Tag"),
         blank=True,
-        null=True,
     )

@@ -1,16 +1,9 @@
-from glob import glob
-
 from django.utils.safestring import mark_safe
 
 from app.webapp.models.digitization import Digitization
-from app.webapp.utils.constants import (
-    MANIFEST_V1,
-    MANIFEST_V2,
-    APP_NAME_UPPER,
-    APP_DESCRIPTION,
-)
+from app.webapp.utils.constants import MANIFEST_V1
 from app.webapp.utils.functions import get_icon, anno_btn, get_action
-from app.webapp.models.utils.constants import VOL_ABBR, MS_ABBR, VOL, MS
+from app.webapp.models.utils.constants import VOL
 from app.config.settings import (
     SAS_APP_URL,
     APP_URL,

@@ -1,5 +1,4 @@
 import nested_admin
-from admin_extra_buttons.mixins import ExtraButtonsMixin
 from django.contrib import admin
 
 from app.webapp.admin import RoleInline

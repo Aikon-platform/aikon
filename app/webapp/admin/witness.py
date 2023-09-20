@@ -1,13 +1,7 @@
 from app.config.settings import APP_LANG
 from app.webapp.admin import DigitizationInline, ContentInline, ContentWorkInline
-from app.webapp.models import MS_ABBR, MS, VOL
 from app.webapp.models.witness import Witness, get_name
-from app.webapp.utils.constants import (
-    MANIFEST_V1,
-    MANIFEST_V2,
-    MAX_ITEMS,
-    TRUNCATEWORDS,
-)
+from app.webapp.utils.constants import MAX_ITEMS
 
 import nested_admin
 from admin_extra_buttons.mixins import ExtraButtonsMixin
@@ -17,14 +11,6 @@ from django.utils.safestring import mark_safe
 
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.utils.functions import list_to_txt, zip_img
-
-
-# TODO change MS/VOL
-
-
-def get_img_prefix(obj: Witness, wit_abbr=MS_ABBR):
-    # TODO find a solution that better suits the new app structure and data model
-    return f"{wit_abbr}{obj.id}"
 
 
 @admin.register(Witness)

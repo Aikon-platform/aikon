@@ -4,7 +4,7 @@ from tripoli import IIIFValidator
 from urllib.parse import urlparse
 
 from django.core.exceptions import ValidationError
-from app.webapp.utils.functions import get_json, create_dir, save_img
+from app.webapp.utils.functions import get_json
 
 
 def parse_manifest(manifest):
