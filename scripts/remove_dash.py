@@ -29,7 +29,5 @@ def process_files_in_directory(directory):
 
 
 # Example usage
-directory = (
-    "../app/mediafiles/manuscripts/annotation/"  # Replace with your directory path
-)
+directory = "../app/mediafiles/annotation/"  # Replace with your directory path
 process_files_in_directory(directory)

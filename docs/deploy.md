@@ -193,12 +193,12 @@ server {
 
     location /static/ {
         autoindex off;
-        alias </path/to>/config/app/staticfiles;           # CHANGE HERE
+        alias </path/to>/app/staticfiles;           # CHANGE HERE
     }
 
     location /media/ {
         autoindex off;
-        alias </path/to>/config/app/mediafiles/;           # CHANGE HERE
+        alias </path/to>/app/mediafiles/;           # CHANGE HERE
     }
 
     location / {
