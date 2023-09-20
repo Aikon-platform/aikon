@@ -1,7 +1,6 @@
 import json
 import re
 from datetime import datetime
-from glob import glob
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
@@ -11,24 +10,14 @@ from app.webapp.models.annotation import Annotation
 from app.webapp.models.digitization import Digitization
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.webapp.utils.paths import MEDIA_DIR, BASE_DIR, ANNO_PATH
-from app.webapp.models import get_wit_abbr, get_wit_type
-from app.webapp.models.utils.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from app.config.settings import (
-    APP_URL,
     CANTALOUPE_APP_URL,
     SAS_APP_URL,
     APP_NAME,
     API_GPU_URL,
     API_KEY,
 )
-from app.webapp.utils.functions import (
-    console,
-    log,
-    read_json_file,
-    write_json_file,
-    get_imgs,
-    get_img_prefix,
-)
+from app.webapp.utils.functions import log
 
 
 def send_anno_request(event, digit: Digitization):
@@ -319,7 +308,7 @@ def format_annotation(anno: Annotation, canvas_nb, xywh):
     }
 
 
-def set_canvas(seq, canvas_nb, img_name, img, version=MANIFEST_V1 | MANIFEST_V2 | None):
+def set_canvas(seq, canvas_nb, img_name, img, version=None):
     """
     Build the canvas and annotation for each image
     Called for each manifest (v2: corrected annotations) image when a witness is being indexed

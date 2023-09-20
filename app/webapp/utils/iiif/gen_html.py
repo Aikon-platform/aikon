@@ -14,12 +14,9 @@ from app.webapp.models.utils.constants import VOL_ABBR, MS_ABBR, VOL, MS
 from app.config.settings import (
     SAS_APP_URL,
     APP_URL,
-    CANTALOUPE_APP_URL,
     APP_NAME,
-    APP_LANG,
 )
 from app.webapp.utils.iiif import IIIF_ICON
-from app.webapp.utils.iiif.manifest import gen_manifest_url
 
 
 def get_link_manifest(wit_id, manifest_url, tag_id="url_manifest_"):

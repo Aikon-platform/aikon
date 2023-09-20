@@ -16,9 +16,7 @@ from django.contrib import admin, messages
 from django.utils.safestring import mark_safe
 
 from app.webapp.utils.iiif import gen_iiif_url
-from app.webapp.utils.iiif.annotation import get_anno_images
-from app.webapp.utils.iiif.manifest import has_manifest, gen_manifest_url
-from app.webapp.utils.functions import list_to_txt, get_pdf_imgs, anno_btn, zip_img
+from app.webapp.utils.functions import list_to_txt, zip_img
 
 
 # TODO change MS/VOL

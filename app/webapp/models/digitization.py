@@ -1,7 +1,6 @@
 import os
 from glob import glob
 
-from django.db import models
 from django.utils.safestring import mark_safe
 from iiif_prezi.factory import StructuralError
 
@@ -10,35 +9,18 @@ from app.webapp.models import get_wit_type, get_wit_abbr
 from app.webapp.models.utils.functions import get_fieldname
 
 import threading
-from uuid import uuid4
-from io import BytesIO
-from django.core.files import File
-
-from PIL import Image
 from functools import partial
 
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.db.models.signals import pre_delete
 from django.dispatch.dispatcher import receiver
-from pdf2image import convert_from_path
 
-from app.webapp.utils.constants import MANIFEST_V1
-from app.webapp.utils.iiif import get_manifest_url_base
-from app.webapp.utils.iiif.annotation import delete_annos, send_anno_request
-from app.webapp.utils.iiif.gen_html import gen_manifest_btn
-from app.webapp.utils.iiif.manifest import manifest_v1, gen_manifest_json
 from app.webapp.utils.logger import log, console
 
 from app.webapp.models.utils.constants import (
-    MANIFEST,
-    MS_ABBR,
-    VOL_ABBR,
     IMG_INFO,
     MANIFEST_INFO,
-    MS,
-    VOL,
-    WIT,
     DIGIT_TYPE,
     IMG,
     PDF,
@@ -46,8 +28,6 @@ from app.webapp.models.utils.constants import (
     DIGIT_ABBR,
 )
 from app.webapp.utils.functions import (
-    get_last_file,
-    get_icon,
     pdf_to_img,
     to_jpg,
     anno_btn,
@@ -98,6 +78,8 @@ def rename_file(digit, original_filename):
 
 
 def remove_digitization(digit, other_media=None):
+    from app.webapp.utils.iiif.annotation import delete_annos
+
     delete_annos(digit)
     delete_files(get_imgs(digit.get_ref()))
     if other_media:
@@ -223,6 +205,8 @@ class Digitization(models.Model):
         return imgs
 
     def save(self, *args, **kwargs):
+        from app.webapp.utils.iiif.annotation import send_anno_request
+
         digit_type = self.get_digit_type()
         event = threading.Event()
 
@@ -268,10 +252,12 @@ class Digitization(models.Model):
 
     def gen_manifest_url(self, only_base=False, version=None):
         # usage of version parameter to copy parameters of Annotation.gen_manifest_url()
-        base_url = f"{get_manifest_url_base()}/{self.get_wit_id()}/{self.id}"
+        base_url = f"{APP_URL}/{APP_NAME}/iiif//{self.get_wit_id()}/{self.id}"
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 
     def gen_manifest_json(self):
+        from app.webapp.utils.iiif.manifest import gen_manifest_json
+
         error = {"error": "Unable to create a valid manifest"}
         if manifest := gen_manifest_json(
             self
@@ -314,6 +300,8 @@ class Digitization(models.Model):
         )
 
     def manifest_link(self):
+        from app.webapp.utils.iiif.gen_html import gen_manifest_btn
+
         return gen_manifest_btn(self, self.has_images())
 
 

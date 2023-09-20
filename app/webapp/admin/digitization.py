@@ -11,7 +11,6 @@ from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.webapp.utils.functions import gen_thumbnail, get_img_prefix, anno_btn
 from app.webapp.utils.iiif import gen_iiif_url, IIIF_ICON
 from app.webapp.utils.iiif.gen_html import gen_btn, gen_manifest_btn
-from app.webapp.utils.iiif.manifest import has_manifest
 
 
 @admin.register(Digitization)

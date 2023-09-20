@@ -5,13 +5,11 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from iiif_prezi.factory import StructuralError
 
+from app.config.settings import APP_URL, APP_NAME
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.utils.constants import ANNO_VERSION
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
-from app.webapp.utils.iiif import get_manifest_url_base
-from app.webapp.utils.iiif.manifest import gen_manifest_json
 from app.webapp.utils.paths import BASE_DIR, ANNO_PATH
 
 
@@ -57,11 +55,13 @@ class Annotation(models.Model):
             return None
 
         base_url = (
-            f"{get_manifest_url_base()}/{version}/{witness.id}/{digit.id}/{self.id}"
+            f"{APP_URL}/{APP_NAME}/iiif/{version}/{witness.id}/{digit.id}/{self.id}"
         )
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 
     def gen_manifest_json(self, version=MANIFEST_V1):
+        from app.webapp.utils.iiif.manifest import gen_manifest_json
+
         error = {"error": "Unable to create a valid manifest"}
         if manifest := gen_manifest_json(self, version):
             try:
