@@ -48,15 +48,15 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     model = Digitization
     extra = 1  # Display only one empty form in the parent form
     max_num = 5
-    readonly_fields = ("digit_preview", "manifest_v1", "manifest_v2")
+    readonly_fields = ("digit_preview", "view_digit", "view_anno")
 
     fields = [
         "digit_type",
         "image",
         "pdf",
         "manifest",
-        # "manifest_v1",
-        # "manifest_v2",
+        "view_digit",
+        "view_anno",
     ]
 
     def digit_url(self):
@@ -82,15 +82,18 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
         return list(set(fields))
 
-    @admin.display(description=get_name("manifest_v1"))
-    def manifest_v1(self, obj: Digitization):
+    # TODO here change that to be field for the DigitInline models
+    @admin.display(description=get_name("view_digit"))
+    def view_digit(self, obj: Digitization):
+        # here access to Mirador without annotation
         if obj.id:
             action = "view" if obj.has_manifest() else "no_manifest"
             return gen_btn(obj.id, action, MANIFEST_V1, obj.get_wit_type())
         return "-"
 
-    @admin.display(description=get_name("manifest_v2"))
-    def manifest_v2(self, obj: Digitization):
+    @admin.display(description=get_name("view_anno"))
+    def view_anno(self, obj: Digitization):
+        # TODO here multiple button for multiple annotation
         if obj.id and obj.has_images():
             action = "final" if obj.is_validated else "edit"
             if not obj.has_annotations():
@@ -102,8 +105,8 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     #     fields = list(super(WitnessInline, self).get_fields(request, obj))
     #     exclude_set = set()
     #     if not obj:  # obj will be None on the add page, and something on change pages
-    #         exclude_set.add("manifest_v1")
-    #         exclude_set.add("manifest_v2")
+    #         exclude_set.add("view_digit")
+    #         exclude_set.add("view_anno")
     #     return [f for f in fields if f not in exclude_set]
 
 

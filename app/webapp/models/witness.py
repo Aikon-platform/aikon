@@ -12,6 +12,8 @@ from app.webapp.models.utils.constants import (
     PAGE_TYPE,
     PUBLISHED_INFO,
     AUTHOR,
+    PAG_ABBR,
+    PAGE,
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.functions import get_icon, flatten
@@ -76,6 +78,7 @@ class Witness(models.Model):
         verbose_name=get_name("page_type"),
         choices=PAGE_TYPE,
         max_length=150,
+        default=(PAG_ABBR, PAGE.capitalize())
         # help_text=get_name('page_type_info'),
     )
     is_public = models.BooleanField(

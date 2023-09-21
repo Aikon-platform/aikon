@@ -30,7 +30,6 @@ from app.webapp.models.utils.constants import (
 from app.webapp.utils.functions import (
     pdf_to_img,
     to_jpg,
-    anno_btn,
     delete_files,
 )
 from app.webapp.utils.paths import (
@@ -50,11 +49,8 @@ from app.webapp.models.witness import Witness
 def get_name(fieldname, plural=False):
     fields = {
         "source": {"en": "digitization source", "fr": "source de la numérisation"},
-        "manifest_v1": {
-            "en": "automatic annotations",
-            "fr": "annotations automatiques",
-        },
-        "manifest_v2": {"en": "corrected annotations", "fr": "annotations corrigées"},
+        "view_digit": {"en": "visualize", "fr": "visualiser"},
+        "view_anno": {"en": "annotations", "fr": "annotations"},
         "is_validated": {"en": "validate annotations", "fr": "valider les annotations"},
         "is_validated_info": {
             "en": "annotations will no longer be editable",
@@ -160,8 +156,7 @@ class Digitization(models.Model):
         return self.annotation_set.all()
 
     def get_ref(self):
-        # TODO rename to get_ref()
-        # NOTE img name = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_{canvas_nb}.jpg"
+        # digit_ref = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}"
         try:
             return f"{self.get_wit_ref()}_{self.get_digit_abbr()}{self.id}"
         except Exception:
@@ -268,9 +263,7 @@ class Digitization(models.Model):
         from app.webapp.utils.iiif.manifest import gen_manifest_json
 
         error = {"error": "Unable to create a valid manifest"}
-        if manifest := gen_manifest_json(
-            self
-        ):  # TODO add version depending on auto or corrected
+        if manifest := gen_manifest_json(self):
             try:
                 return manifest.toJSON(top=True)
             except StructuralError as e:
@@ -300,13 +293,7 @@ class Digitization(models.Model):
 
     def anno_btn(self):
         # To display a button in the list of witnesses to know if they were annotated or not
-        action = "final" if self.is_validated else "edit"
-        return mark_safe(
-            anno_btn(
-                self.id,  # TODO handle multiple annotations files
-                action if self.has_annotations() else "no_anno",
-            )
-        )
+        return "<br>".join(anno.view_btn() for anno in self.get_annos())
 
     def manifest_link(self):
         from app.webapp.utils.iiif.gen_html import gen_manifest_btn

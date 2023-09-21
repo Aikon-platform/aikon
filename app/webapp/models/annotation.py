@@ -2,6 +2,7 @@ from glob import glob
 from uuid import uuid4
 
 from django.contrib.postgres.fields import ArrayField
+from django.utils.safestring import mark_safe
 from django.db import models
 from iiif_prezi.factory import StructuralError
 
@@ -15,6 +16,12 @@ from app.webapp.utils.paths import BASE_DIR, ANNO_PATH
 
 def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, {}, plural)
+
+
+def check_version(version):
+    if version != MANIFEST_V1 and version != MANIFEST_V2:
+        return MANIFEST_V1
+    return version
 
 
 class Annotation(models.Model):
@@ -54,16 +61,14 @@ class Annotation(models.Model):
         if not witness or not digit:
             return None
 
-        base_url = (
-            f"{APP_URL}/{APP_NAME}/iiif/{version}/{witness.id}/{digit.id}/{self.id}"
-        )
+        base_url = f"{APP_URL}/{APP_NAME}/iiif/{check_version(version)}/{witness.id}/{digit.id}/{self.id}"
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 
     def gen_manifest_json(self, version=MANIFEST_V1):
         from app.webapp.utils.iiif.manifest import gen_manifest_json
 
         error = {"error": "Unable to create a valid manifest"}
-        if manifest := gen_manifest_json(self, version):
+        if manifest := gen_manifest_json(self, check_version(version)):
             try:
                 return manifest.toJSON(top=True)
             except StructuralError as e:
@@ -96,13 +101,11 @@ class Annotation(models.Model):
             return True
         return False
 
-    def get_metadate(self):
+    def get_metadata(self):
         if digit := self.get_digit():
             metadata = digit.get_metadata()
 
             # TODO FIND HOW TO MAKE {SAS_APP_URL}/search-api/{anno.get_ref()}/search use get_ref()
-            # if it doesn't work, change manifest url to :
-            # f"{APP_NAME}/iiif/<str:version>/<str:ann_ref>/manifest.json"
             # {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}
             metadata["@id"] = self.get_ref()
 
@@ -113,3 +116,14 @@ class Annotation(models.Model):
         if digit := self.get_digit():
             return digit.get_imgs()
         return []
+
+    def view_btn(self):
+        from app.webapp.utils.iiif.gen_html import anno_btn
+
+        action = "final" if self.is_validated else "edit"
+        return mark_safe(
+            anno_btn(
+                self,
+                action if self.has_annotations() else "no_anno",
+            )
+        )

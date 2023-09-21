@@ -31,6 +31,10 @@ from app.webapp.utils.constants import MAX_SIZE, MAX_RES
 from app.webapp.utils.logger import log, console
 
 
+def cls(obj):
+    return obj.__class__
+
+
 def flatten(l):
     return [item for sublist in l for item in sublist]
 
@@ -189,44 +193,6 @@ def get_action(action, formatting=None):
     return action
 
 
-def anno_btn(wit_ref, action="view"):
-    disabled = ""
-    btn = f"{get_action(action, 'upper')} ANNOTATIONS"
-
-    if action == "view":
-        color = "#EFB80B"
-        tag_id = "annotate_manifest_auto_"
-        icon = get_icon("eye")
-        btn = f"{action} SOURCE"
-    elif action == "edit":
-        color = "#008CBA"
-        tag_id = "annotate_manifest_"
-        icon = get_icon("pen-to-square")
-    elif action == "download":
-        color = "#ed8a11"
-        tag_id = "download_manifest_"
-        icon = get_icon("download")
-    elif action == "final":
-        color = "#4CAF50"
-        tag_id = "manifest_final_"
-        icon = get_icon("check")
-    elif action == "no_manifest" or action == "no_anno":
-        btn = get_action(action, "upper")
-        color = "#878787"
-        tag_id = "annotate_"
-        icon = get_icon("eye-slash")
-        disabled = "disabled"
-    else:
-        color = "#B3B3B3"
-        tag_id = "annotate_"
-        icon = get_icon("eye")
-
-    return (
-        f"<button id='{tag_id}{wit_ref}' class='button annotate-manifest' {disabled}"
-        f"style='background-color:{color};'>{icon} {btn}</button><br>"
-    )
-
-
 def list_to_txt(item_list, file_name=None):
     if file_name is None:
         file_name = f"{APP_NAME}_export"
@@ -251,7 +217,7 @@ def url_to_name(iiif_img_url):
     )
 
 
-def zip_img(request, img_list, file_type="img", file_name=f"{APP_NAME}_export"):
+def zip_img(img_list, file_type="img", file_name=f"{APP_NAME}_export"):
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as z:
         for img_path in img_list:
@@ -264,7 +230,7 @@ def zip_img(request, img_list, file_type="img", file_name=f"{APP_NAME}_export"):
                     if response.status_code == 200:
                         z.writestr(img_name, response.content)
                     else:
-                        log(f"[zip_imgs] Fail to download img: {img_path}")
+                        log(f"[zip_img] Fail to download img: {img_path}")
                         pass
 
     response = HttpResponse(

@@ -10,7 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.decorators import login_required
 
-from app.webapp.models.annotation import Annotation
+from app.webapp.models.annotation import Annotation, check_version
 from app.webapp.models.digitization import Digitization
 from app.config.settings import (
     SAS_APP_URL,
@@ -45,9 +45,10 @@ def manifest_digitization(request, digit_ref):
 
 def manifest_annotation(request, version, anno_ref):
     # TODO enforce tha anno_ref is structured as: {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}
+    # TODO enforce that version is either MANIFEST_V1 or MANIFEST_V2
     anno_id = anno_ref.split("_")[-1].replace("anno", "")
     anno = get_object_or_404(Annotation, pk=anno_id)
-    return JsonResponse(anno.gen_manifest_json(version))
+    return JsonResponse(anno.gen_manifest_json())
 
 
 def send_anno(request, digit_id):

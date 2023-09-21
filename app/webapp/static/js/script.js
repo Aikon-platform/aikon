@@ -41,86 +41,86 @@ function getJSON(url, callback, idMessage) {
     });
 }
 
-function editAnnotations(witId, idButton) {
-    const witnessType = getWitType();
-    const manifestUrl = toManifest(witId, witnessType, "v2");
-    const idMessage = `message_${witId}`;
-    const innerHtml = $(`#${idButton}`).html();
-    // TODO send request to backend verify that everything is correct with manifest
-
-    fetch(manifestUrl)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Failed to load ${manifestUrl} due to ${response.status}: ${response.statusText}`);
-            }
-            return response.json();
-        })
-        .then(response => {
-            window.open(`/${APP_NAME}/${witnessType}/${witId}/show/`, "_blank");
-        })
-        .catch(error => {
-            showMessage(error.message, idMessage);
-            clearLoading(idButton, innerHtml);
-        });
-
-    /*
-    setLoading(idButton);
-
-        .then(manifestContent => {
-            // Index the manifest
-            return fetch(`${SAS_APP_URL}/manifests`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(manifestContent)
-            });
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Failed to index ${manifestUrl} due to ${response.status}: ${response.statusText}`);
-            }
-            return fetch(`/${APP_NAME}/iiif/v2/${witnessType}/${witId}/populate/`);
-        })
-        .then(response => {
-            if (!response.ok) {
-                console.log(response)
-                throw new Error(`Could not finish indexing annotations of ${witnessType} #${witId}. To resume, click again.`);
-            }
-            window.open(`/${APP_NAME}/${witnessType}/${witId}/show/`, "_blank");
-            clearLoading(idButton, innerHtml);
-        })
-*/
-}
-
-
-function finalAnnotations(btn) {
-    /* Function triggered on click on the "final" btn that redirects a mirador viewer with final annotations */
-    const idButton = btn.attr("id");
-    const innerHtml = btn.html()
-    const witId = idButton.split("_").pop();
-    setLoading(idButton);
-    window.open(`${SAS_APP_URL}/indexView.html?iiif-content=${toManifest(witId, getWitType(), "v2")}`, "_blank");
-    clearLoading(idButton, innerHtml);
-    return false;
-}
+// function editAnnotations(witId, idButton) {
+//     const witnessType = getWitType();
+//     const manifestUrl = toManifest(witId, witnessType, "v2");
+//     const idMessage = `message_${witId}`;
+//     const innerHtml = $(`#${idButton}`).html();
+//     // TODO send request to backend verify that everything is correct with manifest
+//
+//     fetch(manifestUrl)
+//         .then(response => {
+//             if (!response.ok) {
+//                 throw new Error(`Failed to load ${manifestUrl} due to ${response.status}: ${response.statusText}`);
+//             }
+//             return response.json();
+//         })
+//         .then(response => {
+//             window.open(`/${APP_NAME}/${witnessType}/${witId}/show/`, "_blank");
+//         })
+//         .catch(error => {
+//             showMessage(error.message, idMessage);
+//             clearLoading(idButton, innerHtml);
+//         });
+//
+//     /*
+//     setLoading(idButton);
+//
+//         .then(manifestContent => {
+//             // Index the manifest
+//             return fetch(`${SAS_APP_URL}/manifests`, {
+//                 method: "POST",
+//                 headers: {
+//                     "Content-Type": "application/json"
+//                 },
+//                 body: JSON.stringify(manifestContent)
+//             });
+//         })
+//         .then(response => {
+//             if (!response.ok) {
+//                 throw new Error(`Failed to index ${manifestUrl} due to ${response.status}: ${response.statusText}`);
+//             }
+//             return fetch(`/${APP_NAME}/iiif/v2/${witnessType}/${witId}/populate/`);
+//         })
+//         .then(response => {
+//             if (!response.ok) {
+//                 console.log(response)
+//                 throw new Error(`Could not finish indexing annotations of ${witnessType} #${witId}. To resume, click again.`);
+//             }
+//             window.open(`/${APP_NAME}/${witnessType}/${witId}/show/`, "_blank");
+//             clearLoading(idButton, innerHtml);
+//         })
+// */
+// }
 
 
-function viewAnnotations(witnessId) {
-    /* Function triggered on click on the "auto" btn that redirects to a Mirador viewer */
-    const manifestUrl = toManifest(witnessId, getWitType(), "auto");
-    const idMessage = `message_auto_${witnessId}`;
-
-    fetch(manifestUrl).then(response => {
-        if (response.ok) {
-            window.open(`${SAS_APP_URL}/indexAnnos.html?iiif-content=${manifestUrl}`, "_blank");
-        } else {
-            showMessage(`Failed to load ${manifestUrl} due to ${response.status}: ${response.statusText}`, idMessage);
-        }
-    }).catch(error => {
-        showMessage(`Failed to load ${manifestUrl}: ${error.message}`, idMessage);
-    });
-}
+// function finalAnnotations(btn) {
+//     /* Function triggered on click on the "final" btn that redirects a mirador viewer with final annotations */
+//     const idButton = btn.attr("id");
+//     const innerHtml = btn.html()
+//     const witId = idButton.split("_").pop();
+//     setLoading(idButton);
+//     window.open(`${SAS_APP_URL}/indexView.html?iiif-content=${toManifest(witId, getWitType(), "v2")}`, "_blank");
+//     clearLoading(idButton, innerHtml);
+//     return false;
+// }
+//
+//
+// function viewAnnotations(witnessId) {
+//     /* Function triggered on click on the "auto" btn that redirects to a Mirador viewer */
+//     const manifestUrl = toManifest(witnessId, getWitType(), "auto");
+//     const idMessage = `message_auto_${witnessId}`;
+//
+//     fetch(manifestUrl).then(response => {
+//         if (response.ok) {
+//             window.open(`${SAS_APP_URL}/indexAnnos.html?iiif-content=${manifestUrl}`, "_blank");
+//         } else {
+//             showMessage(`Failed to load ${manifestUrl} due to ${response.status}: ${response.statusText}`, idMessage);
+//         }
+//     }).catch(error => {
+//         showMessage(`Failed to load ${manifestUrl}: ${error.message}`, idMessage);
+//     });
+// }
 
 function showMessage(message, idMessage = null) {
     const msgElement = idMessage ? document.getElementById(idMessage) : null;
