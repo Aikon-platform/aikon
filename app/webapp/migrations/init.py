@@ -419,7 +419,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
-                    "note",
+                    "notes",
                     models.CharField(
                         max_length=500, unique=True, verbose_name="Additional notes"
                     ),
@@ -549,7 +549,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
-                    "note",
+                    "notes",
                     models.CharField(
                         max_length=500, unique=True, verbose_name="Additional notes"
                     ),
@@ -611,7 +611,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
-                    "note",
+                    "notes",
                     models.TextField(
                         max_length=1000, unique=True, verbose_name="Additional notes"
                     ),

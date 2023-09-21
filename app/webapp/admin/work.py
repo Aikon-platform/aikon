@@ -15,7 +15,7 @@ class WorkFilter(AutocompleteFilter):
 class WorkAdmin(UnregisteredAdmin):
     search_fields = ("title",)
     list_filter = ("title",)
-    fields = ["title", "author", ("date_min", "date_max"), "place", "note", "tags"]
+    fields = ["title", "author", ("date_min", "date_max"), "place", "notes", "tags"]
     autocomplete_fields = ("author", "place")
 
 

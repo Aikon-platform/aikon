@@ -198,13 +198,6 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             return True
         return False
 
-    # @admin.action(description="Exporter les images sélectionnées")
-    # def export_selected_images(self, request, queryset):
-    #     if self.check_selection(queryset, request):
-    #         return HttpResponseRedirect(request.get_full_path())
-    #     # NOTE get_file_list(IMG_PATH, self.get_img_list(queryset)) is returning None
-    #     return zip_img(zipfile, get_file_list(IMG_PATH, self.get_img_list(queryset)))
-
     @admin.action(
         description="Exporter les manifests IIIF sélectionnés"
     )  # TODO bilingual
@@ -229,7 +222,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             witness = Witness.objects.get(pk=wit_id[0])
             # img_urls.extend(get_anno_images(anno)) TODO : here change for anno
 
-        return zip_img(request, img_urls)
+        return zip_img(img_urls)
 
 
 class WitnessInline(nested_admin.NestedStackedInline):

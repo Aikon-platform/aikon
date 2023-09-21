@@ -47,7 +47,7 @@ class Work(models.Model):
         blank=True,
         null=True,
     )
-    note = models.TextField(
+    notes = models.TextField(
         verbose_name=get_name("notes"),
         max_length=1000,
         blank=True,

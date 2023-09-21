@@ -65,7 +65,7 @@ class Witness(models.Model):
     )
 
     notes = models.TextField(
-        verbose_name=get_name("notes"), max_length=1000, unique=True
+        verbose_name=get_name("notes"), max_length=1000, blank=True
     )
     nb_pages = models.IntegerField(
         verbose_name=get_name("nb_pages"),
@@ -126,7 +126,7 @@ class Witness(models.Model):
             "Work(s)": self.get_work_titles(),
             "Place(s) of production": self.get_place_names(),
         }
-        if note := self.note:
+        if note := self.notes:
             metadata["Notes"] = note
 
         # metadata = {
