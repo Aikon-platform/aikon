@@ -1,20 +1,26 @@
 # VHS platform
 
-#### *VHS is a research project funded and supported by the Agence Nationale pour la Recherche (VHS [ANR-21-CE38-0008](https://anr.fr/Projet-ANR-21-CE38-0008) / EiDA [ANR-22-CE38-0014](https://anr.fr/Projet-ANR-22-CE38-0014)) and the European Research Council (ERC project DISCOVER [101076028](https://cordis.europa.eu/project/id/101076028/fr))*
+> ### *VHS is a research project funded and supported by the Agence Nationale pour la Recherche and the European Research Council*
+> - **VHS** [ANR-21-CE38-0008](https://anr.fr/Projet-ANR-21-CE38-0008): Vision artificielle et analyse Historique de la circulation de l'illustration Scientifique
+> - **EiDA** [ANR-22-CE38-0014](https://anr.fr/Projet-ANR-22-CE38-0014): EdIter et analyser les Diagrammes astronomiques historiques avec l’intelligence Artificielle
+> - **DISCOVER** project [ERC-101076028](https://cordis.europa.eu/project/id/101076028): Discovering and Analyzing Visual Structures
+
+[//]: # (<img src="https://cdn-assets.inwink.com/e35f09cd-74e4-4383-8b70-15153fc0de48/9e39a716-4b31-408b-94f2-3af40901e6ac1">)
+[//]: # (<img src="https://www.scattererid.eu/wp-content/uploads/2019/02/erc_logo.png">)
 
 ## Requirements
 
-> - **Sudo** privileges
-> - **Bash** terminal
-> - **Python**: 3.10
-> - **Java 11**: instructions for [Linux install](https://docs.oracle.com/en/java/javase/11/install/installation-jdk-linux-platforms.html#GUID-737A84E4-2EFF-4D38-8E60-3E29D1B884B8)
->     - [Download OpenJDK](https://jdk.java.net/11/) (open source version of Java)
->     - Download the latest [RPM Package](https://www.oracle.com/java/technologies/downloads/#java11)
->     - `sudo alien -i jdk-11.0.17_linux-aarch64_bin.rpm`
->     - `java -version` => `openjdk 11.x.x` // `java version "1.11.x"`
-> - **Git**:
->     - `sudo apt install git`
->     - Having configured [SSH access to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
+- **Sudo** privileges
+- **Bash** terminal
+- **Python**: 3.10
+- **Java 11**: instructions for [Linux install](https://docs.oracle.com/en/java/javase/11/install/installation-jdk-linux-platforms.html#GUID-737A84E4-2EFF-4D38-8E60-3E29D1B884B8)
+    - [Download OpenJDK](https://jdk.java.net/11/) (open source version of Java)
+    - Download the latest [RPM Package](https://www.oracle.com/java/technologies/downloads/#java11)
+    - `sudo alien -i jdk-11.0.17_linux-aarch64_bin.rpm`
+    - `java -version` => `openjdk 11.x.x` // `java version "1.11.x"`
+- **Git**:
+    - `sudo apt install git`
+    - Having configured [SSH access to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
 
 [//]: # (&#40;Mac: https://www.oracle.com/java/technologies/downloads/#java11-mac&#41;)
 
@@ -56,29 +62,6 @@ Enable `pre-commit` hooks (auto-test and formatting)
 pre-commit install
 ```
 
-### Database
-
-Open Postgres command prompt, create a database (`<database>`) and a user
-
-[//]: # (createuser -s postgres)
-[//]: # (psql -U postgres)
-
-```bash
-sudo -u postgres psql
-postgres=# CREATE DATABASE <database>;
-postgres=# CREATE USER <username> WITH PASSWORD '<password>';
-postgres=# ALTER ROLE <username> SET client_encoding TO 'utf8';
-postgres=# ALTER DATABASE <database> OWNER TO <username>;
-postgres=# ALTER ROLE <username> SET default_transaction_isolation TO 'read committed';
-postgres=# ALTER ROLE <username> SET timezone TO 'UTC';
-postgres=# GRANT ALL PRIVILEGES ON DATABASE <database> TO <username>;
-postgres=# \q
-```
-
-[//]: # (#### [pgAdmin]&#40;https://www.pgadmin.org&#41; &#40;GUI for PostgreSQL&#41;)
-[//]: # ()
-[//]: # (Provide email address and password. You should now access the interface )
-
 ### Project settings
 
 Copy the content of the settings template file
@@ -116,22 +99,55 @@ Add an `APP_NAME` and an `PROD_URL` with the scheme and domain used in productio
 
 Provide as well an `APP_LANG`: only "fr" or "en" values are supported for now
 
-### Django
+### Database
 
-Update database schema with models that are stored inside `app/webapp/migrations`
-```bash
-./venv/bin/python3.10 app/manage.py migrate
-```
+In a terminal inside the `scripts/` directory, run:
 
-[//]: # (Download static files to be stored in `app/staticfiles`)
-[//]: # (```bash)
-[//]: # (./venv/bin/python3.10 app/manage.py collectstatic)
-[//]: # (```)
-
-Create a super user
 ```shell
-./venv/bin/python3.10 app/manage.py createsuperuser
+sh new_db.sh <database-name>
 ```
+
+You will be asked to type the password used for the superuser twice.
+
+> #### Instructions done by the script
+> Open Postgres command prompt, create a database (`<database>`) and a user
+> 
+> [//]: # (createuser -s postgres)
+> [//]: # (psql -U postgres)
+> 
+> ```bash
+> sudo -u postgres psql
+> postgres=# CREATE DATABASE <database>;
+> postgres=# CREATE USER <username> WITH PASSWORD '<password>';
+> postgres=# ALTER ROLE <username> SET client_encoding TO 'utf8';
+> postgres=# ALTER DATABASE <database> OWNER TO <username>;
+> postgres=# ALTER ROLE <username> SET default_transaction_isolation TO 'read committed';
+> postgres=# ALTER ROLE <username> SET timezone TO 'UTC';
+> postgres=# GRANT ALL PRIVILEGES ON DATABASE <database> TO <username>;
+> postgres=# \q
+> ```
+> 
+> [//]: # (#### [pgAdmin]&#40;https://www.pgadmin.org&#41; &#40;GUI for PostgreSQL&#41;)
+> [//]: # ()
+> [//]: # (Provide email address and password. You should now access the interface )
+> 
+> 
+> ### Django
+> 
+> Update database schema with models that are stored inside `app/webapp/migrations`
+> ```bash
+> ./venv/bin/python3.10 app/manage.py migrate
+> ```
+> 
+> [//]: # (Download static files to be stored in `app/staticfiles`)
+> [//]: # (```bash)
+> [//]: # (./venv/bin/python3.10 app/manage.py collectstatic)
+> [//]: # (```)
+> 
+> Create a super user
+> ```shell
+> ./venv/bin/python3.10 app/manage.py createsuperuser
+> ```
 
 Create exception for port 8000
 ```shell
