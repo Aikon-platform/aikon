@@ -52,32 +52,29 @@ def get_link_manifest(obj: Annotation | Digitization, version=None):
     return f"<a id='{obj.get_ref()}' href='{manifest_url}' target='_blank'>{manifest_url} {IIIF_ICON}</a>"
 
 
-def gen_btn(wit_id, action="view", vers=MANIFEST_V1, wit_type=VOL.lower()):
+def gen_btn(obj: Annotation | Digitization, action="view"):
     """
-    # TODO change to Anno and Digitization
-    Used to create button
+    Used to create button in the witness form
     """
-    msg_id = f"message_auto_{wit_id}" if vers == MANIFEST_V1 else f"message_{wit_id}"
-
     if action == "no_manifest" or action == "no_anno":
-        return mark_safe(anno_btn(wit_id, action))
+        return mark_safe(anno_btn(obj, action))
 
-    obj_ref = f"{APP_NAME}/iiif/{vers}/{wit_type}/{wit_id}"
-    manifest = f"{APP_URL}/{obj_ref}/manifest.json"
-
-    if vers == MANIFEST_V1:
-        tag_id = "iiif_auto_"
-        download_url = f"/{obj_ref}/annotation/"
-        anno_type = "CSV"
-    else:
-        tag_id = f"url_manifest_"
-        download_url = f"{SAS_APP_URL}/search-api/{wit_id}/search/"
+    if cls(obj) == Annotation:
+        download_url = f"{SAS_APP_URL}/search-api/{obj.get_ref()}/search/"
         anno_type = "JSON"
+        version = MANIFEST_V2
+    elif cls(obj) == Digitization:
+        download_url = f"{APP_NAME}/iiif/digit-annotation/{obj.id}"
+        anno_type = "TXT"
+        version = None
+    else:
+        return mark_safe(
+            "PROUT"
+        )  # TODO change that even though it is not supposed to occur
 
     return mark_safe(
-        f"{get_link_manifest(wit_id, manifest, tag_id)}<br>{anno_btn(wit_id, action)}"
+        f"{get_link_manifest(obj, version)}<br>{anno_btn(obj, action)}"
         f'<a href="{download_url}" target="_blank">{get_icon("download")} {get_action("download")} annotations ({anno_type})</a>'
-        f'<span id="{msg_id}" style="color:#FF0000"></span>'
     )
 
 

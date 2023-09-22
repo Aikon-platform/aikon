@@ -6,7 +6,6 @@ from app.config.settings import APP_NAME, WEBAPP_NAME, APP_LANG
 from app.webapp.admin import UnregisteredAdmin
 from app.webapp.models.digitization import Digitization, get_name
 from app.webapp.models.utils.constants import IMG
-from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.webapp.utils.functions import gen_thumbnail
 from app.webapp.utils.iiif import gen_iiif_url, IIIF_ICON
 from app.webapp.utils.iiif.gen_html import gen_btn
@@ -88,7 +87,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
         # here access to Mirador without annotation
         if obj.id:
             action = "view" if obj.has_manifest() else "no_manifest"
-            return gen_btn(obj.id, action, MANIFEST_V1, obj.get_wit_type())
+            return gen_btn(self, action)
         return "-"
 
     @admin.display(description=get_name("view_anno"))
@@ -98,7 +97,8 @@ class DigitizationInline(nested_admin.NestedStackedInline):
             action = "final" if obj.is_validated else "edit"
             if not obj.has_annotations():
                 action = "no_anno"
-            return gen_btn(obj.id, action, MANIFEST_V2, obj.get_wit_type())
+            # todo loop on linked annotations.
+            # return gen_btn(obj.id, action, MANIFEST_V2, obj.get_wit_type())
         return "-"
 
     # def get_fields(self, request, obj=None):

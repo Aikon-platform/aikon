@@ -3,7 +3,6 @@ from django.contrib import admin
 from django.urls import path, include
 
 from app.config.settings import APP_NAME, MEDIA_URL, MEDIA_ROOT, DEBUG
-from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2
 
 from app.webapp.views import (
     show_annotations,
@@ -19,6 +18,8 @@ from app.webapp.views import (
     validate_annotation,
     receive_anno,
     send_anno,
+    export_wit_img,
+    export_digit_img,
 )
 
 
@@ -72,6 +73,16 @@ urlpatterns = [
         f"{APP_NAME}/iiif/annotation/<int:anno_id>",
         export_anno_img,
         name="annotation-imgs",
+    ),
+    path(
+        f"{APP_NAME}/iiif/digit-annotation/<int:digit_id>",
+        export_digit_img,
+        name="digitization-imgs",
+    ),
+    path(
+        f"{APP_NAME}/iiif/witness-annotation/<int:wit_id>",
+        export_wit_img,
+        name="witness-imgs",
     ),
     path(
         f"{APP_NAME}/autocomplete/place/",

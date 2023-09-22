@@ -18,6 +18,7 @@ from app.config.settings import (
     ENV,
     GEONAMES_USER,
 )
+from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2
 from app.webapp.utils.functions import credentials, list_to_txt
 from app.webapp.utils.logger import console, log, get_time
@@ -37,18 +38,21 @@ def admin_app(request):
 
 
 def manifest_digitization(request, digit_ref):
-    # TODO enforce that digit_ref is structured as: {wit_abbr}{wit_id}_{digit_abbr}{digit_id}
     digit_id = re.search(r"_(\d+)", digit_ref)
     digit = get_object_or_404(Digitization, pk=digit_id)
+    if digit_ref == digit.get_ref():
+        return JsonResponse(digit.gen_manifest_json())
     return JsonResponse(digit.gen_manifest_json())
 
 
 def manifest_annotation(request, version, anno_ref):
-    # TODO enforce tha anno_ref is structured as: {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}
-    # TODO enforce that version is either MANIFEST_V1 or MANIFEST_V2
     anno_id = anno_ref.split("_")[-1].replace("anno", "")
     anno = get_object_or_404(Annotation, pk=anno_id)
-    return JsonResponse(anno.gen_manifest_json())
+    if anno_ref == anno.get_ref():
+        return JsonResponse(anno.gen_manifest_json(version=check_version(version)))
+    return JsonResponse(
+        {"response": f"Wrong reference for Annotation #{anno_id}"}, safe=False
+    )
 
 
 def send_anno(request, digit_id):
@@ -89,6 +93,22 @@ def export_anno_img(request, anno_id):
     anno = get_object_or_404(Annotation, pk=anno_id)
     annotations = get_anno_img(anno)
     return list_to_txt(annotations, anno.get_ref())
+
+
+def export_digit_img(request, digit_id):
+    digit = get_object_or_404(Digitization, pk=digit_id)
+    annotations = []
+    for anno in digit.get_annotations():
+        annotations.extend(get_anno_img(anno))
+    return list_to_txt(annotations, digit.get_ref())
+
+
+def export_wit_img(request, wit_id):
+    wit = get_object_or_404(Witness, pk=wit_id)
+    annotations = []
+    for anno in wit.get_annotations():
+        annotations.extend(get_anno_img(anno))
+    return list_to_txt(annotations, wit.get_ref())
 
 
 def canvas_annotations(request, version, anno_ref, canvas_nb):

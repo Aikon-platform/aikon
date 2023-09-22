@@ -153,6 +153,12 @@ class Witness(models.Model):
     def get_digits(self):
         return self.digitization_set.all()
 
+    def get_annotations(self):
+        annos = []
+        for digit in self.get_digits():
+            annos.extend(digit.get_annotations())
+        return annos
+
     def is_validated(self):
         for digit in self.get_digits():
             if digit.is_validated():
