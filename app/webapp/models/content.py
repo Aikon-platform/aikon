@@ -1,7 +1,9 @@
 import re
 
+from django.core.exceptions import ValidationError
 from django.db import models
 
+from app.config.settings import APP_LANG
 from app.webapp.models.witness import Witness
 from app.webapp.models.work import Work
 from app.webapp.models.place import Place
@@ -23,8 +25,10 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, fields, plural)
 
 
-def folios_to_pages(page: str):
-    page_nb = int(page.replace("r", "").replace("v", ""))
+def folios_to_pages(page: str = None):
+    page_nb = extract_nb(page)
+    if page_nb is None:
+        return None
     if page.endswith("r"):
         return page_nb * 2 - 1
     if page.endswith("v"):
@@ -34,7 +38,12 @@ def folios_to_pages(page: str):
 
 def validate_page(page):
     match = re.match(r"^\d+[rv]?$", page)
-    return match is not None
+    if not match:
+        raise ValidationError(
+            "Page value must be numeric or end with 'r' or 'v'"
+            if APP_LANG == "en"
+            else "Les bornes de pages doivent être définies numériquement ou par terminer par 'r' ou 'v'"
+        )
 
 
 class Content(models.Model):
@@ -103,15 +112,16 @@ class Content(models.Model):
             return None
 
     def get_pages(self):
+        return format_start_end(self.page_min, self.page_max)
+
+    def get_nb_of_page(self, only_nb=True):
         wit = self.get_witness()
-        p_min, p_max = extract_nb(self.page_min), extract_nb(self.page_max)
+        p_min, p_max = folios_to_pages(self.page_min), folios_to_pages(self.page_max)
         if wit and p_min is not None and p_max is not None:
             page_t = "p" if wit.page_type == PAG_ABBR else "f"
             nb = p_max - p_min
             p_abbr = f"{page_t}{page_t}" if nb > 1 else page_t
-            return f"{format_start_end(p_min, p_max)} {p_abbr}."
-
-        return format_start_end(self.page_min, self.page_max)
+            return nb if only_nb else f"{nb} {p_abbr}."
 
     def get_roles(self):
         # Django automatically creates a reverse relationship from Content to Role

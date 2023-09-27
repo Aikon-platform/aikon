@@ -46,5 +46,8 @@ class Role(models.Model):
         null=True,
     )
     role = models.CharField(
-        verbose_name=get_name("Role"), choices=ROLES, max_length=150
+        verbose_name=get_name("Role"),
+        choices=ROLES,
+        max_length=150,
+        blank=True,
     )
