@@ -39,6 +39,12 @@ def flatten(l):
     return [item for sublist in l for item in sublist]
 
 
+def extract_nb(string):
+    matches = re.compile(r"\d+").findall(string)
+    digits = "".join(matches)
+    return int(digits) if digits else None
+
+
 def get_last_file(path, prefix):
     pattern = re.compile(r"^{}(\d+)\.\w+$".format(prefix))
     last_number = 0
