@@ -329,3 +329,11 @@ See `sas/log`
 alias slog="cat sas/log"
 alias empty_slog="sudo truncate -s 0 sas/log"
 ```
+
+## Celery error logs
+See `celery/log`
+
+```bash
+alias celog="cat celery/log"
+alias empty_celog="sudo truncate -s 0 celery/log"
+```
