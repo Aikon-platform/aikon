@@ -7,9 +7,10 @@ from app.webapp.models.work import Work
 from app.webapp.models.place import Place
 from app.webapp.models.language import Language
 
-from app.webapp.models.utils.constants import TAG
+from app.webapp.models.utils.constants import TAG, PAG_ABBR
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.utils.functions import format_start_end
+from app.webapp.utils.functions import format_start_end, extract_nb
+from app.webapp.utils.logger import log
 
 
 def get_name(fieldname, plural=False):
@@ -95,7 +96,21 @@ class Content(models.Model):
         validators=[validate_page],
     )
 
+    def get_witness(self) -> Witness | None:
+        try:
+            return self.witness
+        except AttributeError:
+            return None
+
     def get_pages(self):
+        wit = self.get_witness()
+        p_min, p_max = extract_nb(self.page_min), extract_nb(self.page_max)
+        if wit and p_min is not None and p_max is not None:
+            page_t = "p" if wit.page_type == PAG_ABBR else "f"
+            nb = p_max - p_min
+            p_abbr = f"{page_t}{page_t}" if nb > 1 else page_t
+            return f"{format_start_end(p_min, p_max)} {p_abbr}."
+
         return format_start_end(self.page_min, self.page_max)
 
     def get_roles(self):
