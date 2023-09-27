@@ -44,6 +44,7 @@ def anno_request(digit: Digitization):
 def process_anno(anno_file_content, digit):
     if check_anno_file(anno_file_content):
         try:
+            # TODO add step to check if an annotation wasn't generated before for the same model
             anno = Annotation(digitization=digit, model="CHANGE THIS VALUE")
             anno.save()
         except Exception as e:

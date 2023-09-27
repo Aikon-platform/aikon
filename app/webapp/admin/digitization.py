@@ -6,14 +6,14 @@ from app.config.settings import APP_NAME, WEBAPP_NAME, APP_LANG
 from app.webapp.admin import UnregisteredAdmin
 from app.webapp.models.digitization import Digitization, get_name
 from app.webapp.models.utils.constants import IMG
-from app.webapp.utils.functions import gen_thumbnail
+from app.webapp.utils.functions import gen_thumbnail, cls
 from app.webapp.utils.iiif import gen_iiif_url, IIIF_ICON
 from app.webapp.utils.iiif.gen_html import gen_btn
 
 
 @admin.register(Digitization)
 class DigitizationAdmin(UnregisteredAdmin):
-    # NOTE useful class for list and search features
+    # Class for list display and search features
     search_fields = ("witness",)
     list_per_page = 100
     list_display = (
@@ -54,8 +54,8 @@ class DigitizationInline(nested_admin.NestedStackedInline):
         "image",
         "pdf",
         "manifest",
-        "view_digit",
-        "view_anno",
+        # "view_digit",
+        # "view_anno",
     ]
 
     def digit_url(self):
@@ -79,9 +79,21 @@ class DigitizationInline(nested_admin.NestedStackedInline):
         # if request.method == "POST" and self.wit_type() == VOL: # NOTE old version
         #     fields.append("image") # check what was the purpose
 
+        if obj and obj.has_images():
+            fields.append("view_digit")
+            if obj.has_annotations():
+                fields.append("view_anno")
+
         return list(set(fields))
 
-    # TODO here change that to be field for the DigitInline models
+    # def get_fields(self, request, obj=None):
+    #     fields = list(super(WitnessInline, self).get_fields(request, obj))
+    #     exclude_set = set()
+    #     if not obj:  # obj will be None on the add page, and something on change pages
+    #         exclude_set.add("view_digit")
+    #         exclude_set.add("view_anno")
+    #     return [f for f in fields if f not in exclude_set]
+
     @admin.display(description=get_name("view_digit"))
     def view_digit(self, obj: Digitization):
         # here access to Mirador without annotation
@@ -96,18 +108,13 @@ class DigitizationInline(nested_admin.NestedStackedInline):
         if obj.id and obj.has_images():
             action = "final" if obj.is_validated else "edit"
             if not obj.has_annotations():
-                action = "no_anno"
-            # todo loop on linked annotations.
-            # return gen_btn(obj.id, action, MANIFEST_V2, obj.get_wit_type())
-        return "-"
+                return gen_btn(obj, action)
 
-    # def get_fields(self, request, obj=None):
-    #     fields = list(super(WitnessInline, self).get_fields(request, obj))
-    #     exclude_set = set()
-    #     if not obj:  # obj will be None on the add page, and something on change pages
-    #         exclude_set.add("view_digit")
-    #         exclude_set.add("view_anno")
-    #     return [f for f in fields if f not in exclude_set]
+            anno_btn = []
+            for anno in obj.get_annotations():
+                anno_btn.append(gen_btn(anno, action))
+            return "<br>".join(anno_btn)
+        return "-"
 
 
 # class DigitizationNestedInline(DigitizationInline):

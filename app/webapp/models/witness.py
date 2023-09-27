@@ -165,6 +165,9 @@ class Witness(models.Model):
                 return True
         return False
 
+    def has_images(self):
+        return any(digit.has_images() for digit in self.get_digits())
+
     def has_annotations(self):
         return any(digit.has_annotations() for digit in self.get_digits())
 
@@ -197,5 +200,5 @@ class Witness(models.Model):
         return "\n".join([author.__str__() for author in self.get_authors()])
 
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.work.title)
+        self.slug = slugify(self.__str__())
         super().save(*args, **kwargs)
