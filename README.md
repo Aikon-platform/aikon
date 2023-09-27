@@ -226,25 +226,3 @@ Test the password
 ```
 redis-cli -a <your_password>
 ```
-### Celery
-Create a service for Celery
-```
-vi /etc/systemd/system/celery.service
-```
-TEST
-```
-[Unit]
-Description=Celery Service
-After=network.target
-
-[Service]
-User=<production-server-username>
-Group=<production-server-group>
-WorkingDirectory=<path/to>/app
-ExecStart=<path/to>/venv/bin/celery -A <celery_app> worker --loglevel=info -P threads
-StandardOutput=file:<path/to>/log/celery/access.log
-StandardError=file:<path/to>/log/celery/error.log
-
-[Install]
-WantedBy=multi-user.target
-```

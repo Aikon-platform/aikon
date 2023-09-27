@@ -223,6 +223,29 @@ server {
 }
 ```
 
+### Celery
+Create a service for Celery
+```bash
+vi /etc/systemd/system/celery.service
+```
+
+```bash
+[Unit]
+Description=Celery Service
+After=network.target
+
+[Service]
+User=<production-server-username>
+Group=<production-server-group>
+WorkingDirectory=<path/to>/app
+ExecStart=<path/to>/venv/bin/celery -A <celery_app> worker --loglevel=info -P threads
+StandardOutput=file:<path/to>/log/celery/access.log
+StandardError=file:<path/to>/log/celery/error.log
+
+[Install]
+WantedBy=multi-user.target
+```
+
 Reload the `systemd` manager configuration
 ```shell
 sudo systemctl daemon-reload
