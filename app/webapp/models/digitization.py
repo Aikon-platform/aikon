@@ -97,7 +97,11 @@ class Digitization(models.Model):
     def __str__(self):
         return f"{self.get_digit_type().capitalize()} #{self.id} | {self.witness.__str__()}"
 
-    witness = models.ForeignKey(Witness, on_delete=models.CASCADE)
+    witness = models.ForeignKey(
+        Witness,
+        on_delete=models.CASCADE,
+        related_name="digitizations",  # to access the related contents from Witness: witness.digitizations.all()
+    )
     digit_type = models.CharField(
         verbose_name=get_name("type"), choices=DIGIT_TYPE, max_length=150
     )

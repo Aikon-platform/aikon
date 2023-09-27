@@ -148,10 +148,10 @@ class Witness(models.Model):
 
     def get_contents(self):
         # Django automatically creates a reverse relationship from Witness to Content
-        return self.content_set.all()
+        return self.contents.all()
 
     def get_digits(self):
-        return self.digitization_set.all()
+        return self.digitizations.all()
 
     def get_annotations(self):
         annos = []
