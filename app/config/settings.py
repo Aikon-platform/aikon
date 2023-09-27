@@ -174,10 +174,8 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / STATIC_DIR
 
-# MEDIA_DIR = ENV('MEDIA_DIR')
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / MEDIA_DIR
-# MEDIA_ROOT = BASE_DIR / MEDIA_DIR  # TODO: To check with Ségolène
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field

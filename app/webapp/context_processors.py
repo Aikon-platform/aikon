@@ -12,8 +12,7 @@ from app.webapp.models.utils.constants import MS, VOL, WIT, MS_ABBR, VOL_ABBR, W
 
 def global_variables(request):
     """
-    A context processor that adds global variables to the context of all rendered templates
-    platform
+    Add global variables to the context of all rendered templates
     """
     return {
         "APP_NAME": APP_NAME,
