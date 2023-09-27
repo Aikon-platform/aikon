@@ -25,7 +25,7 @@ class Edition(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        return ""  # TODO find a name
+        return self.name
 
     name = models.CharField(
         verbose_name=get_name("name"),
