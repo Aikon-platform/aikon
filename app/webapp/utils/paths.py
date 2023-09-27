@@ -1,10 +1,15 @@
+import environ
 from pathlib import Path
 
-# absolute path to app
+# Absolute path to app
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+# Load environment variables
+ENV = environ.Env()
+environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
+
 # Directory names
-MEDIA_DIR = "mediafiles"
+MEDIA_DIR = ENV("MEDIA_DIR")
 STATIC_DIR = "staticfiles"
 IMG_DIR = "img"
 MS_DIR = "manuscripts"
