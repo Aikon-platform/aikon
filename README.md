@@ -196,23 +196,11 @@ cd sas && mvn jetty:run
 Navigate to [http://localhost:8888/index.html](http://localhost:8888/index.html) to start annotating:
 You should now see Mirador with default example manifests.
 
-## Launch app
-
-Run server
-```shell
-# FIX DUE TO SPECIFIC PROJECT STRUCTURE
-
-python app/manage.py runserver localhost:8000
-```
-
-You can now visit the app at [http://localhost:8000](http://localhost:8000) and connect with the credentials you created
-
-> For more documentation, see [docs folder](https://github.com/faouinti/vhs/tree/main/docs)
-
-### Enabling authentication for Redis instance
+### Celery with Redis setup
+#### Enabling authentication for Redis instance
 Open the Redis configuration file
 ```
-vim /etc/redis/redis.conf
+vi /etc/redis/redis.conf
 ```
 Uncomment and set a password
 ```
@@ -226,3 +214,39 @@ Test the password
 ```
 redis-cli -a <your_password>
 ```
+
+#### Celery
+Create a service for Celery
+```bash
+vi /etc/systemd/system/celery.service
+```
+
+```bash
+[Unit]
+Description=Celery Service
+After=network.target
+
+[Service]
+User=<production-server-username>
+Group=<production-server-group>
+WorkingDirectory=<path/to>/app
+ExecStart=<path/to>/venv/bin/celery -A <celery_app> worker --loglevel=info -P threads
+StandardOutput=file:<path/to>/celery/log
+StandardError=file:<path/to>/celery/log
+
+[Install]
+WantedBy=multi-user.target
+```
+
+## Launch app
+
+Run server
+```shell
+# FIX DUE TO SPECIFIC PROJECT STRUCTURE
+
+python app/manage.py runserver localhost:8000
+```
+
+You can now visit the app at [http://localhost:8000](http://localhost:8000) and connect with the credentials you created
+
+> For more documentation, see [docs folder](https://github.com/faouinti/vhs/tree/main/docs)

@@ -223,6 +223,24 @@ server {
 }
 ```
 
+### Enabling authentication for Redis instance
+Open the Redis configuration file
+```
+vi /etc/redis/redis.conf
+```
+Uncomment and set a password
+```
+requirepass <your_password>
+```
+Restart Redis
+```
+sudo systemctl restart redis-server
+```
+Test the password
+```
+redis-cli -a <your_password>
+```
+
 ### Celery
 Create a service for Celery
 ```bash
@@ -239,8 +257,8 @@ User=<production-server-username>
 Group=<production-server-group>
 WorkingDirectory=<path/to>/app
 ExecStart=<path/to>/venv/bin/celery -A <celery_app> worker --loglevel=info -P threads
-StandardOutput=file:<path/to>/log/celery/access.log
-StandardError=file:<path/to>/log/celery/error.log
+StandardOutput=file:<path/to>/celery/log
+StandardError=file:<path/to>/celery/log
 
 [Install]
 WantedBy=multi-user.target
