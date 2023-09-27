@@ -75,9 +75,9 @@ MEDIA_DIR="<media-dir>"
 
 Update database schema, create super user and collect static files
 ```bash
-./venv/bin/python app/manage.py migrate
-./venv/bin/python app/manage.py createsuperuser
-./venv/bin/python app/manage.py collectstatic
+python app/manage.py migrate
+python app/manage.py createsuperuser
+python app/manage.py collectstatic
 ```
 
 Create exception for port 8000
@@ -244,7 +244,7 @@ On modification of the static files, you will need to restart nginx
 then copy static files into `app/staticfiles` in order to be served but nginx
 ```shell
 sudo systemctl restart nginx
-./venv/bin/python app/manage.py collectstatic
+python app/manage.py collectstatic
 ```
 
 To make a command alias, copy that at the end of `~/.bashrc`:
@@ -256,18 +256,18 @@ alias djupdate="sudo systemctl restart gunicorn.socket && sudo systemctl restart
 If the data model was changed, you will first need to check that the new data model do not cause any error in the application.
 Once the tests performed, a migration file can be generated locally by running:
 ```shell
-./venv/bin/python app/manage.py makemigrations
+python app/manage.py makemigrations
 ```
 
 It will create a file that tells Django how to modify the Postgres database structure to fit the new model definition.
 To apply those modifications, run locally:
 ```shell
-./venv/bin/python app/manage.py migrate
+python app/manage.py migrate
 ```
 
 If everything is set, update the remote database by running on the production server, once the code has been retrieve from origin:
 ```shell
-./venv/bin/python app/manage.py migrate
+python app/manage.py migrate
 ```
 
 # Debug

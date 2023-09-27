@@ -91,6 +91,9 @@ APP_NAME="<app-name-lowercase>"      # name of the application, e.g. "eida"
 GEONAMES_USER="<geonames-username>"
 APP_LANG="<fr-or-en>"                # lang to be used in the app: work either for french (fr) or english (en)
 EXAPI="<gpu-api-address>"            # e.g. "https://dishas-ia.obspm.fr"
+API_KEY="<api-key>"
+REDIS_PASSWORD="<redis-password>"
+MEDIA_DIR="<media-dir>"
 ```
 
 Create a [Geonames](https://www.geonames.org/login) account, activate it and change `<geonames-username>` in the `.env` file
@@ -111,10 +114,10 @@ You will be asked to type the password used for the superuser twice.
 
 > #### Instructions done by the script
 > Open Postgres command prompt, create a database (`<database>`) and a user
-> 
+>
 > [//]: # (createuser -s postgres)
 > [//]: # (psql -U postgres)
-> 
+>
 > ```bash
 > sudo -u postgres psql
 > postgres=# CREATE DATABASE <database>;
@@ -126,27 +129,27 @@ You will be asked to type the password used for the superuser twice.
 > postgres=# GRANT ALL PRIVILEGES ON DATABASE <database> TO <username>;
 > postgres=# \q
 > ```
-> 
+>
 > [//]: # (#### [pgAdmin]&#40;https://www.pgadmin.org&#41; &#40;GUI for PostgreSQL&#41;)
 > [//]: # ()
 > [//]: # (Provide email address and password. You should now access the interface )
-> 
-> 
+>
+>
 > ### Django
-> 
+>
 > Update database schema with models that are stored inside `app/webapp/migrations`
 > ```bash
-> ./venv/bin/python3.10 app/manage.py migrate
+> python app/manage.py migrate
 > ```
-> 
+>
 > [//]: # (Download static files to be stored in `app/staticfiles`)
 > [//]: # (```bash)
-> [//]: # (./venv/bin/python3.10 app/manage.py collectstatic)
+> [//]: # (python app/manage.py collectstatic)
 > [//]: # (```)
-> 
+>
 > Create a super user
 > ```shell
-> ./venv/bin/python3.10 app/manage.py createsuperuser
+> python app/manage.py createsuperuser
 > ```
 
 Create exception for port 8000
@@ -199,9 +202,49 @@ Run server
 ```shell
 # FIX DUE TO SPECIFIC PROJECT STRUCTURE
 
-./venv/bin/python3.10 app/manage.py runserver localhost:8000
+python app/manage.py runserver localhost:8000
 ```
 
 You can now visit the app at [http://localhost:8000](http://localhost:8000) and connect with the credentials you created
 
 > For more documentation, see [docs folder](https://github.com/faouinti/vhs/tree/main/docs)
+
+### Enabling authentication for Redis instance
+Open the Redis configuration file
+```
+vim /etc/redis/redis.conf
+```
+Uncomment and set a password
+```
+requirepass <your_password>
+```
+Restart Redis
+```
+sudo systemctl restart redis-server
+```
+Test the password
+```
+redis-cli -a <your_password>
+```
+### Celery
+Create a service for Celery
+```
+vi /etc/systemd/system/celery.service
+```
+TEST
+```
+[Unit]
+Description=Celery Service
+After=network.target
+
+[Service]
+User=<production-server-username>
+Group=<production-server-group>
+WorkingDirectory=<path/to>/app
+ExecStart=<path/to>/venv/bin/celery -A <celery_app> worker --loglevel=info -P threads
+StandardOutput=file:<path/to>/log/celery/access.log
+StandardError=file:<path/to>/log/celery/error.log
+
+[Install]
+WantedBy=multi-user.target
+```
