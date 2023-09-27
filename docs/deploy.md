@@ -223,6 +223,47 @@ server {
 }
 ```
 
+### Enabling authentication for Redis instance
+Open the Redis configuration file
+```
+vi /etc/redis/redis.conf
+```
+Uncomment and set a password
+```
+requirepass <your_password>
+```
+Restart Redis
+```
+sudo systemctl restart redis-server
+```
+Test the password
+```
+redis-cli -a <your_password>
+```
+
+### Celery
+Create a service for Celery
+```bash
+vi /etc/systemd/system/celery.service
+```
+
+```bash
+[Unit]
+Description=Celery Service
+After=network.target
+
+[Service]
+User=<production-server-username>
+Group=<production-server-group>
+WorkingDirectory=<path/to>/app
+ExecStart=<path/to>/venv/bin/celery -A <celery_app> worker --loglevel=info -P threads
+StandardOutput=file:<path/to>/celery/log
+StandardError=file:<path/to>/celery/log
+
+[Install]
+WantedBy=multi-user.target
+```
+
 Reload the `systemd` manager configuration
 ```shell
 sudo systemctl daemon-reload
