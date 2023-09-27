@@ -67,6 +67,10 @@ PROD_URL="<url-used-for-prod>"       # e.g. "https://eida.obspm.fr"
 APP_NAME="<app-name-lowercase>"      # name of the application, e.g. "eida"
 GEONAMES_USER="<geonames-username>"  # same username as the one defined on local
 APP_LANG="<fr-or-en>"                # lang to be used in the app: work either for french (fr) or english (en)
+EXAPI="<gpu-api-address>"            # e.g. "https://dishas-ia.obspm.fr"
+API_KEY="<api-key>"
+REDIS_PASSWORD="<redis-password>"
+MEDIA_DIR="<media-dir>"
 ```
 
 Update database schema, create super user and collect static files

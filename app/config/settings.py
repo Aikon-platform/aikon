@@ -174,8 +174,10 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / STATIC_DIR
 
+# MEDIA_DIR = ENV('MEDIA_DIR')
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / MEDIA_DIR
+# MEDIA_ROOT = BASE_DIR / MEDIA_DIR  # TODO: To check with Ségolène
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -216,8 +218,8 @@ LOGGING = {
 GEONAMES_USER = ENV("GEONAMES_USER")
 
 # Celery settings
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+CELERY_BROKER_URL = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
+CELERY_RESULT_BACKEND = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
