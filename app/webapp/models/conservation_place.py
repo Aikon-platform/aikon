@@ -20,7 +20,9 @@ class ConservationPlace(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        return f"{self.city} | {self.name}"
+        if self.city:
+            return f"{self.city} | {self.name}"
+        return self.name
 
     name = models.CharField(verbose_name=get_name("name"), max_length=200, unique=True)
     city = models.ForeignKey(
