@@ -138,6 +138,42 @@ Launch SAS
 cd sas && mvn jetty:run
 ```
 
+The Simple Annotation Server project does not currently contain authentication although it is possible to secure the SAS web application with a single username and password using Nginx forwarding.
+
+Create the password file using the OpenSSL utilities and add a username to the file
+```bash
+sudo sh -c "echo -n '<username>:' >> /etc/nginx/.htpasswd"
+```
+
+Next, add an encrypted password entry for the username
+```bash
+sudo sh -c "openssl passwd <password> >> /etc/nginx/.htpasswd"
+```
+
+You can repeat this process for additional usernames
+
+To configure Nginx password authentication, open up the server block configuration file and set up authentication
+```bash
+sudo vi /etc/nginx/sites-enabled/vhs
+```
+
+```bash
+server {
+	server_name <project-domain-name>;
+	...
+	location /sas/ {
+	...
+	auth_basic              "Restricted Content";
+	auth_basic_user_file    /etc/nginx/.htpasswd;
+	}
+}
+```
+
+Restart Nginx to implement your password policy
+```bash
+sudo systemctl restart nginx
+```
+
 ### Gunicorn
 
 Make sure you can serve app with Gunicorn then quit with Ctrl+C
