@@ -20,7 +20,7 @@ class Series(models.Model):
         return ""  # TODO find a name
 
     notes = models.TextField(
-        verbose_name=get_name("notes"), max_length=500, unique=True
+        verbose_name=get_name("notes"), max_length=500, unique=True, blank=True
     )
     date_min = models.IntegerField(
         verbose_name=get_name("date_min"), null=True, blank=True
@@ -35,7 +35,6 @@ class Series(models.Model):
         Edition,
         verbose_name=get_name("Edition"),
         on_delete=models.SET_NULL,
-        blank=True,
         null=True,
     )
 
