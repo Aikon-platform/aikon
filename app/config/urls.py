@@ -20,6 +20,7 @@ from app.webapp.views import (
     send_anno,
     export_wit_img,
     export_digit_img,
+    search_similarity,
 )
 
 
@@ -98,6 +99,11 @@ urlpatterns = [
         f"{APP_NAME}/run-annotation/<int:digit_id>",
         send_anno,
         name="send-annotations",
+    ),
+    path(
+        f"{APP_NAME}/search-similarity/<str:experiment_id>/",
+        search_similarity,
+        name="search-similarity",
     ),
 ]
 

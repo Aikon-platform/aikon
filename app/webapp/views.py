@@ -147,7 +147,7 @@ def witness_sas_annotations(request, anno_id):
     return JsonResponse(canvas_annos, safe=False)
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/")
+@login_required(login_url=f"/{APP_NAME}-admin/login/")
 def show_annotations(request, anno_id):
     anno = get_object_or_404(Annotation, pk=anno_id)
 
@@ -221,6 +221,11 @@ class PlaceAutocomplete(autocomplete.Select2ListView):
             suggestions.append(suggestion["name"])
 
         return suggestions
+
+
+def search_similarity(request, experiment_id):
+    # Call search_similarity task
+    pass
 
 
 # TODO: create test to find integrity of a manuscript:
