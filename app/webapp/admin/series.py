@@ -9,6 +9,7 @@ from app.webapp.models.series import Series, get_name
 @admin.register(Series)
 class SeriesAdmin(nested_admin.NestedModelAdmin):
     search_fields = ("edition_name",)
+    list_display = ("edition",)
 
     class Meta:
         verbose_name = get_name("Series")
