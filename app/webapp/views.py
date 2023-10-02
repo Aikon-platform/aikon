@@ -147,7 +147,7 @@ def witness_sas_annotations(request, anno_id):
     return JsonResponse(canvas_annos, safe=False)
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/")
+@login_required(login_url=f"/{APP_NAME}-admin/login/")
 def show_annotations(request, anno_id):
     anno = get_object_or_404(Annotation, pk=anno_id)
 
