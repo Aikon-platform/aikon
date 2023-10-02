@@ -208,7 +208,7 @@ Next, add an encrypted password entry for the username
 sudo sh -c "openssl passwd <password> >> /etc/nginx/.htpasswd"
 ```
 
-You can repeat this process for additional usernames
+You can repeat this process for additional usernames.
 
 To configure Nginx password authentication, open up the server block configuration file and set up authentication
 ```bash

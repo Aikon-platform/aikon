@@ -223,6 +223,11 @@ class PlaceAutocomplete(autocomplete.Select2ListView):
         return suggestions
 
 
+def search_similarity(request, experiment_id):
+    # Call search_similarity task
+    pass
+
+
 # TODO: create test to find integrity of a manuscript:
 #  if it has the correct number of images, if all its images are img files
 #  if annotations were correctly defined (same img name in file that images on server)
