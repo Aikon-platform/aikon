@@ -54,8 +54,6 @@ class DigitizationInline(nested_admin.NestedStackedInline):
         "image",
         "pdf",
         "manifest",
-        # "view_digit",
-        # "view_anno",
     ]
 
     def digit_url(self):
@@ -67,6 +65,28 @@ class DigitizationInline(nested_admin.NestedStackedInline):
         return mark_safe(
             f'<a href="{self.digit_url()}/?q={obj.id}" target="_blank">{IIIF_ICON} {txt}</a>'
         )
+
+    @admin.display(description=get_name("view_digit"))
+    def view_digit(self, obj: Digitization):
+        # here access to Mirador without annotation
+        if obj.id:
+            action = "view" if obj.has_manifest() else "no_manifest"
+            return gen_btn(self, action)
+        return "-"
+
+    @admin.display(description=get_name("view_anno"))
+    def view_anno(self, obj: Digitization):
+        # TODO here multiple button for multiple annotation
+        if obj.id and obj.has_images():
+            action = "final" if obj.is_validated else "edit"
+            if not obj.has_annotations():
+                return gen_btn(obj, action)
+
+            anno_btn = []
+            for anno in obj.get_annotations():
+                anno_btn.append(gen_btn(anno, action))
+            return "<br>".join(anno_btn)
+        return "-"
 
     # def has_view_or_change_permission(self, request, obj=None):
     #     # TODO check what does it do
@@ -93,28 +113,6 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     #         exclude_set.add("view_digit")
     #         exclude_set.add("view_anno")
     #     return [f for f in fields if f not in exclude_set]
-
-    @admin.display(description=get_name("view_digit"))
-    def view_digit(self, obj: Digitization):
-        # here access to Mirador without annotation
-        if obj.id:
-            action = "view" if obj.has_manifest() else "no_manifest"
-            return gen_btn(self, action)
-        return "-"
-
-    @admin.display(description=get_name("view_anno"))
-    def view_anno(self, obj: Digitization):
-        # TODO here multiple button for multiple annotation
-        if obj.id and obj.has_images():
-            action = "final" if obj.is_validated else "edit"
-            if not obj.has_annotations():
-                return gen_btn(obj, action)
-
-            anno_btn = []
-            for anno in obj.get_annotations():
-                anno_btn.append(gen_btn(anno, action))
-            return "<br>".join(anno_btn)
-        return "-"
 
 
 # class DigitizationNestedInline(DigitizationInline):

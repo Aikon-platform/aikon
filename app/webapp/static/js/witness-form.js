@@ -3,43 +3,47 @@ $(function() {
      * TOGGLE FIELDS FOR DIGIT TYPE
      */
 
-    const manifestDiv = $(".field-manifest").first();
-    const pdfDiv = $(".field-pdf").first();
-    const imageDiv = $(".field-image").first();
-    const digitSelect = $("#id_digitization_set-0-digit_type");
-
     function hide(div) {
         div.find("input").first().val(null);
         div.hide();
     }
 
-    function toggleDiv(divToShow=null, divs=[manifestDiv, pdfDiv, imageDiv]){
-        divs.filter(div => div !== divToShow)
-            .map(divToHide => hide(divToHide));
-        if (divToShow){
-            divToShow.show();
-        }
-    }
+    function getFields(digitType, selectNb = "0"){
+        const manifestDiv = $(`#digitizations-${selectNb} .field-manifest`).first();
+        const pdfDiv = $(`#digitizations-${selectNb} .field-pdf`).first();
+        const imageDiv = $(`#digitizations-${selectNb} .field-image`).first();
 
-    function showDigitField(digitType) {
         switch (digitType) {
             case "man": // TODO use variables defined in model constants
-                toggleDiv(manifestDiv);
-                break
+                return [manifestDiv, [pdfDiv, imageDiv]]
             case "pdf":
-                toggleDiv(pdfDiv);
-                break
+                return [pdfDiv, [manifestDiv, imageDiv]]
             case "img":
-                toggleDiv(imageDiv);
-                break
+                return [imageDiv, [manifestDiv, pdfDiv]]
             default:
-                toggleDiv();
+                return [null, [manifestDiv, pdfDiv, imageDiv]]
         }
     }
 
-    showDigitField(digitSelect.val());
-    digitSelect.change(function () {
-        showDigitField($(this).val());
+    function showDigitField(digitSelect){
+        const selectNb = $(digitSelect).attr('id').match(/\d+/);
+        const digitType = $(digitSelect).val()
+        if (selectNb){
+            const [divToShow, divsToHide] = getFields(digitType, selectNb);
+
+            divsToHide.map(divToHide => hide(divToHide));
+            if (divToShow){
+                divToShow.show();
+            }
+        }
+    }
+
+    const digitSelects = $('[id^="id_digitizations-"][id$="-digit_type"]');
+    digitSelects.each(function() {
+        showDigitField(this);
+    });
+    digitSelects.change(function () {
+        showDigitField(this);
     });
 
     /**
