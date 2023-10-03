@@ -113,10 +113,10 @@ def pdf_to_img(event, pdf_name, dpi=MAX_RES):
     """
     import subprocess
 
-    pdf_path = f"{BASE_DIR}/{MEDIA_DIR}/{pdf_name}"
+    pdf_path = f"{MEDIA_DIR}/{pdf_name}"
     pdf_name = Path(pdf_name).stem
     try:
-        command = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {BASE_DIR / IMG_PATH / pdf_name} -sep _ "
+        command = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
         subprocess.run(command, shell=True, check=True)
         event.set()
     except Exception as e:
@@ -132,7 +132,7 @@ def get_pdf_imgs(pdf_list):
     img_list = []
     for pdf_name in pdf_list:
         pdf_reader = PyPDF2.PdfFileReader(
-            open(f"{BASE_DIR}/{MEDIA_DIR}/{PDF_DIR}/{pdf_name}", "rb")
+            open(f"{MEDIA_DIR}/{PDF_DIR}/{pdf_name}", "rb")
         )
         for img_nb in range(1, pdf_reader.numPages + 1):
             img_list.append(
@@ -332,15 +332,17 @@ def write_json_file(file_path, dictionary):
         json.dump(dictionary, file)
 
 
-def delete_files(filenames, directory=f"{BASE_DIR}/{IMG_PATH}"):
+def delete_files(filenames, directory=IMG_PATH):
     if type(filenames) != list:
         filenames = [filenames]
 
     for file in filenames:
-        try:
-            os.remove(f"{directory}/{file}")
-        except FileNotFoundError:
-            log(f"[delete_files] File not found: {directory}/{file}")
-        except Exception as e:
-            log(f"[delete_files] Error deleting {directory}/{file}", e)
+        file_path = os.path.join(directory, file)
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                log(f"[delete_files] Error deleting {file_path}", e)
+        else:
+            print(f"[delete_files] File not found: {file_path}")
     return True

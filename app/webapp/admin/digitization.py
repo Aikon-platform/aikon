@@ -43,7 +43,6 @@ class DigitizationAdmin(UnregisteredAdmin):
 
 
 class DigitizationInline(nested_admin.NestedStackedInline):
-    # TODO here change manifest link
     model = Digitization
     extra = 1  # Display only one empty form in the parent form
     max_num = 5
