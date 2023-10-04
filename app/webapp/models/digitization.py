@@ -76,25 +76,14 @@ def save_to(digit, original_filename):
     return f"{digit.get_relative_path()}/{new_filename}.{digit.ext}"
 
 
-def rename_digit_files(digit, event):
-    digit_files = [digit.pdf] if digit.digit_type == PDF_ABBR else digit.image.all()
+def rename_digit_files(event, digit):
+    digit_type = digit.get_digit_abbr()
+    digit_files = [digit.pdf] if digit_type == PDF_ABBR else digit.image.all()
     for file in digit_files:
         os.rename(file.path, digit.get_file_path())
         file.name = digit.get_file_path(is_abs=False)
-        file.save(update_fields=["name"])
-
-    # if digit.digit_type == PDF_ABBR:
-    #     # Construct the new file path with the actual id
-    #     old_path = digit.pdf.path
-    #     new_path = old_path.replace("None", f"{digit.id}")
-    #
-    #     digit.upload.name = new_path[len(MEDIA_DIR) + 1:]
-    #     digit.pdf.name = f"{digit.get_relative_path()}/{digit.get_ref()}.{digit.ext}"
-    # elif digit.digit_type == IMG_ABBR:
-    #     # TODO check how it performs for multiple images
-    #     digit.image.name = f"{digit.get_relative_path()}/{digit.get_ref()}.{digit.ext}"
-
-    # super().save(update_fields=["pdf" if digit.digit_type == PDF_ABBR else "image"])
+    # digit.save(update_fields=["pdf" if digit_type == PDF_ABBR else "image"])
+    digit.save()
     event.set()
 
 
@@ -232,40 +221,35 @@ class Digitization(models.Model):
         if not self.id:
             # TODO check to not relaunch anno if the digit didn't change
             # If the instance is being saved for the first time
-            super(Digitization, self).save(*args, **kwargs)
+            pass
 
         digit_type = self.get_digit_abbr()
         event = threading.Event()
 
-        # TODO remove duplicates of super().save(*args, **kwargs)
-
-        # Thread to rename images
+        # Thread to rename images + save instance
         naming_t = threading.Thread(
             target=rename_digit_files,
-            args=(self, event),
+            args=(event, self),
         )
-        # TODO make saving effective
-        super().save(update_fields=["pdf" if self.digit_type == PDF_ABBR else "image"])
         naming_t.start()
+
+        super().save(*args, **kwargs)
 
         if digit_type == IMG_ABBR:
             self.ext = self.image.name.split(".")[1]
+            # self.save(update_fields=["ext"])
             if self.ext != "jpg" and self.ext != "jpeg":
                 # TODO check how it does for multiple images
                 to_jpg(self.image)
-            # super().save(*args, **kwargs)
 
         elif digit_type == PDF_ABBR:
-            # super().save(*args, **kwargs)
             t = threading.Thread(
                 target=pdf_to_img,
-                # args=(event, self.pdf.name),
                 args=(event, self.get_file_path(is_abs=False)),
             )
             t.start()
 
         elif digit_type == MAN_ABBR:
-            # super().save(*args, **kwargs)
             t = threading.Thread(
                 target=extract_images_from_iiif_manifest,
                 args=(self.manifest, self.get_ref(), event),
@@ -278,7 +262,6 @@ class Digitization(models.Model):
         )
         anno_t.start()
         # TODO check how self.ext is used
-        # TODO check if record is correctly saved after renaming (maybe move renaming inside this fct)
 
     def get_metadata(self):
         # todo finish defining manifest metadata (type, id, etc)
@@ -336,6 +319,7 @@ class Digitization(models.Model):
 def pre_delete_digit(sender, instance: Digitization, **kwargs):
     # Used to delete files associated to the Digitization instance
     if instance.digit_type == PDF_ABBR:
+        # TODO here images associated to pdf are not deleted
         t = threading.Thread(
             target=remove_digitization,
             args=(instance, instance.pdf.name),
