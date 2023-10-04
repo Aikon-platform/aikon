@@ -3,6 +3,7 @@ from admin_searchable_dropdown.filters import AutocompleteFilter
 
 from app.webapp.admin.admin import UnregisteredAdmin
 from app.webapp.models.place import Place, get_name
+from app.webapp.forms import PlaceForm
 
 
 class PlaceFilter(AutocompleteFilter):
@@ -14,5 +15,13 @@ class PlaceFilter(AutocompleteFilter):
 
 @admin.register(Place)
 class PlaceAdmin(UnregisteredAdmin):
+    form = PlaceForm
     search_fields = ("name",)
-    # TODO
+    list_filter = ("name",)
+    list_per_page = 5
+
+    def get_model_perms(self, request):
+        """
+        Return empty perms dict thus hiding the model from admin index
+        """
+        return {}
