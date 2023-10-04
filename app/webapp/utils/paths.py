@@ -9,7 +9,10 @@ ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
 
 # Directory names
-MEDIA_DIR = ENV("MEDIA_DIR")
+# TODO rename to MEDIA_PATH
+MEDIA_DIR = ENV(
+    "MEDIA_DIR"
+)  # NOTE: this is an absolute path, containing already BASE_DIR
 STATIC_DIR = "staticfiles"
 IMG_DIR = "img"
 MS_DIR = "manuscripts"

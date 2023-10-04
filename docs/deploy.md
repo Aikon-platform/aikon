@@ -70,7 +70,7 @@ APP_LANG="<fr-or-en>"                # lang to be used in the app: work either f
 EXAPI="<gpu-api-address>"            # e.g. "https://dishas-ia.obspm.fr"
 API_KEY="<api-key>"
 REDIS_PASSWORD="<redis-password>"
-MEDIA_DIR="<media-dir>"              # media files directory
+MEDIA_DIR="<media-dir>"              # absolute path to media files directory
 ```
 
 Update database schema, create super user and collect static files

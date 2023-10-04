@@ -1,7 +1,6 @@
 import os
 from glob import glob
 
-from django.utils.safestring import mark_safe
 from iiif_prezi.factory import StructuralError
 
 from app.config.settings import APP_URL, APP_NAME
@@ -26,6 +25,9 @@ from app.webapp.models.utils.constants import (
     PDF,
     MANIFEST,
     DIGIT_ABBR,
+    IMG_ABBR,
+    MAN_ABBR,
+    PDF_ABBR,
 )
 from app.webapp.utils.functions import (
     pdf_to_img,
@@ -38,6 +40,7 @@ from app.webapp.utils.paths import (
     MEDIA_DIR,
     IMG_DIR,
     ANNO_PATH,
+    PDF_DIR,
 )
 
 from app.webapp.utils.iiif.validation import validate_manifest
@@ -60,27 +63,28 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, fields, plural)
 
 
-def rename_file(digit, original_filename):
+def save_to(digit, original_filename):
     """
     Rename the file using its witness id and specific id
     The file will be uploaded to "{path}/{filename}.{ext}"
     """
     digit.ext = original_filename.split(".")[-1]
+    # NOTE here, digit_id is not yet set, so ref is always: "{wit_abbr}{wit_id}_{digit_abbr}None"
     new_filename = digit.get_ref()
     # TODO: create fct that do not erase the file if a image was already recorded with the same name
     # TODO check how does it work for multiple images
     return f"{digit.get_relative_path()}/{new_filename}.{digit.ext}"
 
 
-def remove_digitization(digit, other_media=None):
-    from app.webapp.utils.iiif.annotation import delete_annos
-
-    delete_annos(digit)
-    delete_files(digit.get_imgs())
-    if other_media:
-        delete_files(
-            other_media, f"{BASE_DIR}/{MEDIA_DIR}"
-        )  # TODO check if other media must be deleted in this dir
+def rename_digit_files(event, digit):
+    digit_type = digit.get_digit_abbr()
+    digit_files = [digit.pdf] if digit_type == PDF_ABBR else digit.image.all()
+    for file in digit_files:
+        os.rename(file.path, digit.get_file_path())
+        file.name = digit.get_file_path(is_abs=False)
+    # digit.save(update_fields=["pdf" if digit_type == PDF_ABBR else "image"])
+    digit.save()
+    event.set()
 
 
 class Digitization(models.Model):
@@ -89,13 +93,8 @@ class Digitization(models.Model):
         verbose_name_plural = get_name("Digitization", True)
         app_label = "webapp"
 
-    def __init__(self, nb=None, ext=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.nb = nb
-        self.ext = ext
-
     def __str__(self):
-        return f"{self.get_digit_type().capitalize()} #{self.id} | {self.witness.__str__()}"
+        return f"{self.get_digit_type()} #{self.id}: {self.witness.__str__()}"
 
     witness = models.ForeignKey(
         Witness,
@@ -105,10 +104,9 @@ class Digitization(models.Model):
     digit_type = models.CharField(
         verbose_name=get_name("type"), choices=DIGIT_TYPE, max_length=150
     )
-
     image = models.ImageField(
         verbose_name=IMG,
-        upload_to=partial(rename_file),
+        upload_to=partial(save_to),
         validators=[
             FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "tif"])
         ],
@@ -117,7 +115,7 @@ class Digitization(models.Model):
     )
     pdf = models.FileField(
         verbose_name=PDF,
-        upload_to=partial(rename_file),
+        upload_to=partial(save_to),
         validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
         blank=True,
     )
@@ -127,6 +125,7 @@ class Digitization(models.Model):
         validators=[validate_manifest],
         blank=True,
     )
+    ext = models.CharField(verbose_name="Extension", max_length=15, default="jpg")
 
     def get_witness(self) -> Witness | None:
         try:
@@ -150,14 +149,18 @@ class Digitization(models.Model):
         return None
 
     def get_digit_type(self):
-        # NOTE should be returning "image" / "pdf" / "manifest"
-        return str(self.digit_type)
+        # Returns "image" / "pdf" / "manifest" or "None"
+        return str({v: k for k, v in DIGIT_ABBR.items()}.get(self.digit_type))
 
     def get_digit_abbr(self):
-        return DIGIT_ABBR[self.get_digit_type()]
+        # Returns "img" / "pdf" / "man"
+        return str(self.digit_type)
 
     def get_annotations(self):
-        return self.annotation_set.all()
+        return self.annotations.all()
+
+    def gen_ref(self):
+        log(self.id)  # marker
 
     def get_ref(self):
         # digit_ref = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}"
@@ -171,10 +174,10 @@ class Digitization(models.Model):
 
     def get_relative_path(self):
         # must be relative to MEDIA_DIR
-        return IMG_DIR
+        return IMG_DIR if self.digit_type == IMG_ABBR else PDF_DIR
 
     def get_absolute_path(self):
-        return f"{BASE_DIR}/{MEDIA_DIR}/{self.get_relative_path()}"
+        return f"{MEDIA_DIR}/{self.get_relative_path()}"
 
     def get_file_path(self, is_abs=True):
         path = self.get_absolute_path() if is_abs else self.get_relative_path()
@@ -215,26 +218,38 @@ class Digitization(models.Model):
     def save(self, *args, **kwargs):
         from app.webapp.utils.iiif.annotation import send_anno_request
 
-        digit_type = self.get_digit_type()
+        if not self.id:
+            # TODO check to not relaunch anno if the digit didn't change
+            # If the instance is being saved for the first time
+            pass
+
+        digit_type = self.get_digit_abbr()
         event = threading.Event()
 
-        if digit_type == IMG:
-            ext = self.image.name.split(".")[1]
-            if ext != "jpg" and ext != "jpeg":
+        # Thread to rename images + save instance
+        naming_t = threading.Thread(
+            target=rename_digit_files,
+            args=(event, self),
+        )
+        naming_t.start()
+
+        super().save(*args, **kwargs)
+
+        if digit_type == IMG_ABBR:
+            self.ext = self.image.name.split(".")[1]
+            # self.save(update_fields=["ext"])
+            if self.ext != "jpg" and self.ext != "jpeg":
                 # TODO check how it does for multiple images
                 to_jpg(self.image)
-            super().save(*args, **kwargs)
 
-        elif digit_type == PDF:
-            super().save(*args, **kwargs)
+        elif digit_type == PDF_ABBR:
             t = threading.Thread(
                 target=pdf_to_img,
-                args=(event, self.pdf.name),
+                args=(event, self.get_file_path(is_abs=False)),
             )
             t.start()
 
-        elif digit_type == MANIFEST:
-            super().save(*args, **kwargs)
+        elif digit_type == MAN_ABBR:
             t = threading.Thread(
                 target=extract_images_from_iiif_manifest,
                 args=(self.manifest, self.get_ref(), event),
@@ -246,6 +261,7 @@ class Digitization(models.Model):
             args=(event, self),
         )
         anno_t.start()
+        # TODO check how self.ext is used
 
     def get_metadata(self):
         # todo finish defining manifest metadata (type, id, etc)
@@ -260,7 +276,7 @@ class Digitization(models.Model):
 
     def gen_manifest_url(self, only_base=False, version=None):
         # usage of version parameter to copy parameters of Annotation.gen_manifest_url()
-        base_url = f"{APP_URL}/{APP_NAME}/iiif//{self.get_wit_id()}/{self.id}"
+        base_url = f"{APP_URL}/{APP_NAME}/iiif/{self.get_wit_id()}/{self.id}"
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 
     def gen_manifest_json(self):
@@ -276,13 +292,6 @@ class Digitization(models.Model):
         return error
 
     def delete(self, using=None, keep_parents=False):
-        # TODO redo that for all type of digitization
-        if self.get_digit_type() == PDF:
-            t = threading.Thread(
-                target=remove_digitization,
-                args=(self, self.pdf.name),
-            )
-            t.start()
         super().delete()
 
     def get_nb_of_pages(self):
@@ -297,7 +306,7 @@ class Digitization(models.Model):
 
     def anno_btn(self):
         # To display a button in the list of witnesses to know if they were annotated or not
-        return "<br>".join(anno.view_btn() for anno in self.get_annos())
+        return "<br>".join(anno.view_btn() for anno in self.get_annotations())
 
     def manifest_link(self):
         from app.webapp.utils.iiif.gen_html import gen_manifest_btn
@@ -307,9 +316,32 @@ class Digitization(models.Model):
 
 # Receive the pre_delete signal and delete the file associated with the model instance
 @receiver(pre_delete, sender=Digitization)
-def pre_delete_digit(sender, digit: Digitization, **kwargs):
-    # TODO use remove_digit for all type of digit
-    if digit.get_digit_type() != IMG:
-        return
-    # Pass False so ImageField doesn't save the model
-    digit.image.delete(False)
+def pre_delete_digit(sender, instance: Digitization, **kwargs):
+    # Used to delete files associated to the Digitization instance
+    if instance.digit_type == PDF_ABBR:
+        # TODO here images associated to pdf are not deleted
+        t = threading.Thread(
+            target=remove_digitization,
+            args=(instance, instance.pdf.name),
+        )
+        t.start()
+    elif instance.digit_type == IMG_ABBR:
+        # Pass False so ImageField doesn't save the model
+        instance.image.delete(False)
+    elif instance.digit_type == MAN_ABBR:
+        # TODO define what to do when a manifest is deleted
+        pass
+    return
+
+
+def remove_digitization(digit: Digitization, other_media=None):
+    from app.webapp.utils.iiif.annotation import delete_annos
+
+    for anno in digit.get_annotations():
+        delete_annos(anno)
+
+    delete_files(digit.get_imgs())
+    if other_media:
+        delete_files(
+            other_media, MEDIA_DIR
+        )  # TODO check if other media must be deleted in this dir

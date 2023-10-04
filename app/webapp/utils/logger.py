@@ -54,7 +54,7 @@ def log(msg, exception: Exception = None):
     # Create a logger instance
     logger = logging.getLogger("django")
     # get_time() is already printed by the logger object
-    logger.error(f"{exc}\n{pprint(msg)}{trace}\n")
+    logger.error(f"{get_time()}{exc}\n{pprint(msg)}\n{trace}\n")
 
 
 def pprint(o):

@@ -814,7 +814,7 @@ class Migration(migrations.Migration):
                     models.ImageField(
                         help_text="Envoyez des images jusqu'à 2 Go.",
                         upload_to=functools.partial(
-                            app.webapp.models.digitization.rename_file, *(), **{}
+                            app.webapp.models.digitization.save_to, *(), **{}
                         ),
                         validators=[
                             django.core.validators.FileExtensionValidator(
@@ -828,7 +828,7 @@ class Migration(migrations.Migration):
                     "pdf",
                     models.FileField(
                         upload_to=functools.partial(
-                            app.webapp.models.digitization.rename_file, *(), **{}
+                            app.webapp.models.digitization.save_to, *(), **{}
                         ),
                         validators=[
                             django.core.validators.FileExtensionValidator(
