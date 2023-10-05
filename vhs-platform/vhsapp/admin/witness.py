@@ -293,8 +293,13 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
 
     @admin.action(description="Exporter les images IIIF sélectionnées")
     def export_selected_iiif_images(self, request, queryset):
-        img_list = [gen_iiif_url(img) for img in self.get_img_list(queryset)]
-        return list_to_txt(img_list, f"IIIF_images")
+        results = queryset.values_list("id")
+        img_urls = []
+        for wit_id in results:
+            witness = Manuscript.objects.get(pk=wit_id[0])
+            img_urls.extend(get_anno_images(witness, MS))
+        # img_list = [gen_iiif_url(img) for img in self.get_img_list(queryset)]
+        return list_to_txt(img_urls, f"IIIF_images")
 
 
 @admin.register(Printed)
@@ -461,5 +466,4 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
         for wit_id in results:
             witness = Manuscript.objects.get(pk=wit_id[0])
             img_urls.extend(get_anno_images(witness, MS))
-        log(img_urls)
         return zip_img(request, img_urls)
