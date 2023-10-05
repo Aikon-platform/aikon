@@ -461,5 +461,5 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
         for wit_id in results:
             witness = Manuscript.objects.get(pk=wit_id[0])
             img_urls.extend(get_anno_images(witness, MS))
-
+        log(img_urls)
         return zip_img(request, img_urls)
