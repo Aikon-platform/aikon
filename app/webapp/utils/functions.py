@@ -107,7 +107,7 @@ def save_img(
 #     return img_jpg
 
 
-def pdf_to_img(event, pdf_name, dpi=MAX_RES):
+def pdf_to_img(pdf_name, event=None, dpi=MAX_RES):
     """
     Convert the PDF file to JPEG images
     """
@@ -118,7 +118,8 @@ def pdf_to_img(event, pdf_name, dpi=MAX_RES):
     try:
         command = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
         subprocess.run(command, shell=True, check=True)
-        event.set()
+        if event:
+            event.set()
     except Exception as e:
         log(
             f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e} ({e.__class__.__name__})"

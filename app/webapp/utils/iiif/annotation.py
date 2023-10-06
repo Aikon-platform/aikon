@@ -20,7 +20,7 @@ from app.config.settings import (
 from app.webapp.utils.functions import log
 
 
-def send_anno_request(event, digit: Digitization):
+def send_anno_request(digit: Digitization, event):
     event.wait()
     try:
         anno_request(digit)
