@@ -228,8 +228,8 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 class WitnessInline(nested_admin.NestedStackedInline):
     # FORM contained in the Series form
     model = Witness
-    verbose_name_plural = ""  # No title in the blue banner on top of the inline form
-    extra = 1
+    # verbose_name_plural = ""  # No title in the blue banner on top of the inline form
+    extra = 0  # 1
     # classes = ("collapse",)
     fields = [("id_nb", "place"), "volume"]
     inlines = [ContentWorkInline]
