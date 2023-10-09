@@ -2,6 +2,7 @@ from app.config.settings import APP_NAME
 
 # Application titles
 APP_NAME_UPPER = APP_NAME.upper()
+APP_NAME_CAPITALIZED = APP_NAME.capitalize()
 APP_DESCRIPTION = (
     "Computer Vision and Historical Analysis of Scientific Illustration Circulation"
 )
