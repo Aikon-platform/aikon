@@ -38,7 +38,7 @@ class ContentWorkInline(nested_admin.NestedStackedInline):
     model = Content
     verbose_name_plural = ""
     extra = 0  # 1
-    fields = ["work", ("page_min", "page_max")]
+    fields = ["work"]  # ("page_min", "page_max")
     autocomplete_fields = ("work",)
 
     # def has_add_permission(self, request, obj=None):

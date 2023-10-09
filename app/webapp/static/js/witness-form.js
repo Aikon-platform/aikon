@@ -70,8 +70,9 @@ $(function() {
         showPrintFields($(this).val());
     });
 
-    // Remove all h2 tags inside the selected div
+    // Remove all h2/h3 tags inside the selected div
     $("div[id$='-contents-group'] h2").remove();
+    $("div[id$='-contents-group'] h3").remove();
 
     // TODO if folio is selected, allow "r" or "v" at the end of the page fields
 });
