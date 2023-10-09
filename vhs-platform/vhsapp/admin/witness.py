@@ -18,7 +18,12 @@ from vhsapp.models.witness import (
     Manuscript,
 )
 from vhs.settings import VHS_APP_URL
-from vhsapp.utils.iiif.annotation import get_anno_images
+from vhsapp.utils.iiif.annotation import (
+    get_anno_images,
+    get_canvas_list,
+    get_indexed_canvas_annos,
+    get_coord_from_anno,
+)
 
 from vhsapp.models.constants import MS, VOL, WIT, MS_ABBR, VOL_ABBR, WIT_ABBR
 
@@ -216,6 +221,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             "export_selected_images",
             "export_selected_pdfs",
             "export_annotated_imgs",
+            "export_selected_annotations",
         ]
         if self.wit_type() == VOL:
             self.actions += ["detect_similarity"]
@@ -300,6 +306,39 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             img_urls.extend(get_anno_images(witness, MS))
         # img_list = [gen_iiif_url(img) for img in self.get_img_list(queryset)]
         return list_to_txt(img_urls, f"IIIF_images")
+
+    @admin.action(description="Exporter les annotations des témoins sélectionnés")
+    def export_selected_annotations(self, request, queryset):
+        for wit_id in queryset.values_list("id"):
+            img_urls = []
+            annotations = []
+
+            # for wit_id in results:
+            witness = Manuscript.objects.get(pk=wit_id[0])
+            img_urls.extend(get_canvas_list(witness, MS))
+            i = 1
+
+            for canvas_nb, img_file in img_urls:
+                annotations.append(f"{i} {img_file}")
+                i = i + 1
+
+                annos = get_indexed_canvas_annos(canvas_nb, witness.id, MS)
+                if bool(annos):
+                    for anno in annos:
+                        coord = get_coord_from_anno(anno).replace(",", " ")
+                        annotations.append(coord)
+
+            return list_to_txt(annotations, witness.id)
+
+    @admin.action(description="Export diagram images in selected sources")
+    def export_annotated_imgs(self, request, queryset):
+        results = queryset.values_list("id")
+
+        img_urls = []
+        for wit_id in results:
+            witness = Manuscript.objects.get(pk=wit_id[0])
+            img_urls.extend(get_anno_images(witness, MS))
+        return zip_img(request, img_urls)
 
 
 @admin.register(Printed)

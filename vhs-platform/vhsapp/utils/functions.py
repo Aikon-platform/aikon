@@ -233,7 +233,8 @@ def list_to_txt(item_list, file_name=None):
     if file_name is None:
         file_name = f"{APP_NAME}_export"
 
-    file_name = f"{datetime.date.today()}-{file_name}"
+    # file_name = f"{datetime.date.today()}-{file_name}"
+    file_name = f"{file_name}"
 
     response = HttpResponse(content_type="text/txt")
     response["Content-Disposition"] = f"attachment; filename={file_name}.txt"
