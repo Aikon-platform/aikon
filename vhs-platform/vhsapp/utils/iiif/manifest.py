@@ -20,110 +20,61 @@ from vhsapp.models.constants import VOL_ABBR, MS_ABBR, VOL, MS
 from vhs.settings import SAS_APP_URL, VHS_APP_URL, CANTALOUPE_APP_URL
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.utils.logger import iiif_log, console, log
+from vhsapp.models import get_wit_abbr
 from vhsapp.utils.iiif.annotation import set_canvas, has_annotations
+from vhsapp.utils.functions import get_imgs
 
 
-def process_images(work, seq, version):
+def process_images(witness, seq, version):
     """
-    Process the images of a work and add them to a sequence
+    Process the images of a witness and add them to a sequence
     """
-    if hasattr(work, "imagemanuscript_set"):  # Manuscripts
-        imgs = work.imagemanuscript_set.all()
-        pdf_first = work.pdfmanuscript_set.first()
-        manifest_first = work.manifestmanuscript_set.first()
-        work_abbr = MS_ABBR
-    else:  # Volumes
-        imgs = work.imagevolume_set.all()
-        pdf_first = work.pdfvolume_set.first()
-        manifest_first = work.manifestvolume_set.first()
-        work_abbr = VOL_ABBR
+    wit_ref = f"{MS_ABBR if witness.__class__ == Manuscript else VOL_ABBR}{witness.id}"
 
-    # Check type of scans that were uploaded
-    if imgs:  # IMAGES
-        for counter, img in enumerate(imgs, start=1):
-            img_name = img.image.url.split("/")[-1]
+    try:
+        for counter, img in enumerate(get_imgs(wit_ref), start=1):
             try:
-                set_canvas(seq, counter, img_name, Image.open(img.image), version)
+                set_canvas(
+                    seq,
+                    counter,
+                    img,
+                    Image.open(f"{BASE_DIR}/{IMG_PATH}/{img}"),
+                    version,
+                )
             except UnidentifiedImageError as e:
-                log(f"[process_images] Unable to retrieve {img_name}\n{e}")
+                log(f"[process_images] Unable to retrieve {img}\n{e}")
             except FileNotFoundError as e:
-                log(f"[process_images] Non existing {img_name}\n{e}")
-
-    # Check if there is a PDF work and process it
-    elif pdf_first:  # PDF
-        # TODO: factorize with pdf_to_img() in functions.py
-        with Pdf.open(f"{BASE_DIR}/{MEDIA_PATH}/{pdf_first.pdf}") as pdf_file:
-            page_nb = len(pdf_file.pages)
-            digit_nb = len(str(page_nb))
-            pdf_name = Path(pdf_first.pdf.name).stem
-
-            if not os.path.exists(
-                BASE_DIR / IMG_PATH / f"{pdf_name}_{str(1).zfill(digit_nb)}.jpg"
-            ):
-                digit_nb = 4
-
-            for counter in range(1, page_nb + 1):
-                img_name = f"{pdf_name}_{str(counter).zfill(digit_nb)}.jpg"
-
-                try:
-                    set_canvas(
-                        seq,
-                        counter,
-                        img_name,
-                        Image.open(f"{BASE_DIR}/{IMG_PATH}/{img_name}"),
-                        version,
-                    )
-                except UnidentifiedImageError as e:
-                    log(f"[process_images] Unable to retrieve {img_name}\n{e}")
-                except FileNotFoundError as e:
-                    log(f"[process_images] Non existing {img_name}\n{e}")
-
-    # Check if there is a manifest work and a list of images url and process it
-    # elif manifest_first and f"{work_abbr}{work.id}.txt" in os.listdir(
-    #     BASE_DIR / IMG_PATH
-    # ):
-    #     with open(f"{BASE_DIR}/{IMG_PATH}/{work_abbr}{work.id}.txt", "r") as f:
-    #         for counter, line in enumerate(f.read().splitlines(), start=1):
-    #             img_dimensions = {
-    #                 "height": line.split(" ")[0],
-    #                 "width": line.split(" ")[1],
-    #             }
-    #             img_url = line.split(" ")[2]
-    #
-    #             set_canvas(
-    #                 seq, counter, img_url, img_dimensions, version
-    #             )
-
-    # Check if there is a manifest work and process it
-    elif manifest_first:
-        for counter, path in enumerate(
-            sorted(glob(f"{BASE_DIR}/{IMG_PATH}/{work_abbr}{work.id}_*.jpg")),
-            start=1,
-        ):
-            img_name = os.path.basename(path)
-            try:
-                set_canvas(seq, counter, img_name, Image.open(path), version)
-            except UnidentifiedImageError as e:
-                log(f"[process_images] Unable to retrieve {img_name}\n{e}")
-                continue
-            except FileNotFoundError as e:
-                log(f"[process_images] Non existing {img_name}\n{e}")
-    # If none of the above, raise an exception
-    else:
-        raise Exception("There is no manifest!")
+                log(f"[process_images] Non existing {img}\n{e}")
+    except Exception as e:
+        log(f"[process_images] Couldn't retrieve image for #{wit_ref}: {e}")
+        return False
+    return True
 
 
-def manifest_witness(id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
+def manifest_witness(wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
     """
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
     wit_type = MS if wit_abbr == MS_ABBR else VOL
-    witness = get_object_or_404(Manuscript if wit_abbr == MS_ABBR else Volume, pk=id)
-    fac = ManifestFactory(
-        mdbase=f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{id}/",
-        imgbase=f"{CANTALOUPE_APP_URL}/iiif/2/",
-    )
+    try:
+        witness = get_object_or_404(
+            Manuscript if wit_abbr == MS_ABBR else Volume, pk=wit_id
+        )
+    except Exception as e:
+        log(f"[manifest_witness] Unable to retrieve {wit_type} n°{wit_id}: {e}")
+        return False
+
+    try:
+        fac = ManifestFactory(
+            mdbase=f"{VHS_APP_URL}/{APP_NAME}/iiif/{version}/{wit_type}/{wit_id}/",
+            imgbase=f"{CANTALOUPE_APP_URL}/iiif/2/",
+        )
+    except Exception as e:
+        log(
+            f"[manifest_witness] Unable to create manifest for {wit_type} n°{wit_id}: {e}"
+        )
+        return False
 
     fac.set_iiif_image_info(version="2.0", lvl="2")
     # Build the manifest
@@ -138,25 +89,23 @@ def manifest_witness(id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
     manifest.description = APP_DESCRIPTION
     manifest.viewingHint = "individuals"
 
-    # And walk through the pages
-    seq = manifest.sequence(ident="normal", label="Normal Order")
-    process_images(witness, seq, version)
+    try:
+        # And walk through the pages
+        seq = manifest.sequence(ident="normal", label="Normal Order")
+        process_images(witness, seq, version)
+    except Exception as e:
+        log(
+            f"[manifest_witness] Unable to process images for {wit_type} n°{wit_id}: {e}"
+        )
+        return False
 
     return manifest
 
 
 def manifest_wit_type(wit_id, wit_type, version):
-    try:
-        manifest = manifest_witness(
-            wit_id, VOL_ABBR if wit_type == VOL else MS_ABBR, version
-        )
-    except Exception as e:
-        error = f"Unable to create manifest for {wit_type} n°{wit_id} (probably no {wit_type}): {e}"
-        log(f"[manifest_wit_type] {error}")
-        return {
-            "error": "Unable to create a valid manifest",
-            "reason": error,
-        }
+    manifest = manifest_witness(wit_id, get_wit_abbr(wit_type), version)
+    if not manifest:
+        return {"error": "Unable to create a valid manifest"}
 
     try:
         return manifest.toJSON(top=True)
@@ -169,12 +118,9 @@ def manifest_wit_type(wit_id, wit_type, version):
         }
 
 
-def has_manifest(work):
+def has_manifest(wit_ref):
     # if there is at least one image file named after the current witness
-    if (
-        len(glob(f"{BASE_DIR}/{IMG_PATH}/{work}_*.jpg"))
-        or len(glob(f"{BASE_DIR}/{IMG_PATH}/{work}.txt")) > 0
-    ):
+    if len(glob(f"{BASE_DIR}/{IMG_PATH}/{wit_ref}_*.jpg")):
         return True
     return False
 

@@ -112,10 +112,10 @@ class ManifestAdmin(admin.ModelAdmin):
 
     manifest_auto.short_description = "Manifeste (automatique)"
 
-    def manifest_v2(self, obj, wit_type=MS_ABBR):
-        if obj.id:
+    def manifest_v2(self, obj, wit_abbr=MS_ABBR):
+        if obj.id and has_manifest(get_img_prefix(obj, wit_abbr)):
             action = "FINAL" if obj.manifest_final else "EDIT"
-            if not has_annotations(obj, wit_type):
+            if not has_annotations(obj, wit_abbr):
                 action = "NO ANNOTATION YET"
             return gen_btn(obj.id, action, MANIFEST_V2, self.wit_name().lower())
         return "-"
@@ -168,7 +168,7 @@ class VolumeInline(nested_admin.NestedStackedInline):
     manifest_auto.short_description = "Manifeste (automatique)"
 
     def manifest_v2(self, obj):
-        if obj.id:
+        if obj.id and has_manifest(get_img_prefix(obj, VOL_ABBR)):
             action = "FINAL" if obj.manifest_final else "EDIT"
             if not has_annotations(obj, VOL_ABBR):
                 action = "NO ANNOTATION YET"
@@ -293,8 +293,13 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
 
     @admin.action(description="Exporter les images IIIF sélectionnées")
     def export_selected_iiif_images(self, request, queryset):
-        img_list = [gen_iiif_url(img) for img in self.get_img_list(queryset)]
-        return list_to_txt(img_list, f"IIIF_images")
+        results = queryset.values_list("id")
+        img_urls = []
+        for wit_id in results:
+            witness = Manuscript.objects.get(pk=wit_id[0])
+            img_urls.extend(get_anno_images(witness, MS))
+        # img_list = [gen_iiif_url(img) for img in self.get_img_list(queryset)]
+        return list_to_txt(img_urls, f"IIIF_images")
 
 
 @admin.register(Printed)
@@ -449,7 +454,7 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
             return exclude_fieldsets
         return fieldsets
 
-    @admin.action(description="Export diagrams annotated in selected sources")
+    @admin.action(description="Export diagram images in selected sources")
     def export_annotated_imgs(self, request, queryset):
         if queryset.count() > 5:
             messages.warning(request, "You can select up to 5 manuscripts for export.")
@@ -457,9 +462,8 @@ class ManuscriptAdmin(WitnessAdmin, ManifestAdmin):
 
         results = queryset.values_list("id")
 
+        img_urls = []
         for wit_id in results:
             witness = Manuscript.objects.get(pk=wit_id[0])
-            imgs_urls = get_anno_images(witness, MS)
-            zip_img("annotations.zip", imgs_urls)
-
-        return HttpResponseRedirect(f"{VHS_APP_URL}/media/annotations.zip")
+            img_urls.extend(get_anno_images(witness, MS))
+        return zip_img(request, img_urls)

@@ -24,6 +24,7 @@ from urllib.request import (
     build_opener,
     install_opener,
 )
+from vhs.settings import CANTALOUPE_APP_URL
 from vhsapp.models import get_wit_abbr, get_wit_type
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhsapp.utils.constants import APP_NAME, MAX_SIZE, MAX_RES, APP_NAME, MANIFEST_AUTO
@@ -155,7 +156,9 @@ def get_pdf_imgs(pdf_list, ps_type=VOL):
         for img_nb in range(1, pdf_reader.numPages + 1):
             img_list.append(
                 # name all the pdf images according to the format: "pdf_name_0001.jpg"
-                pdf_name.replace(".pdf", f"_{img_nb:04d}.jpg")
+                pdf_name.replace(
+                    ".pdf", f"_{img_nb:04d}.jpg"
+                )  # TODO: here it is retrieving only 4 digits
             )
 
     return img_list
@@ -241,17 +244,27 @@ def list_to_txt(item_list, file_name=None):
     return response
 
 
-def zip_img(img_list, file_type="img", file_name=None):
+def url_to_name(iiif_img_url):
+    return (
+        iiif_img_url.replace(f"{CANTALOUPE_APP_URL}/iiif/2/", "")
+        .replace("/full/0/default", "")
+        .replace("/", "_")
+        .replace(".jpg", "")
+    )
+
+
+def zip_img(request, img_list, file_type="img", file_name=None):
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as z:
         for img_path in img_list:
+            img_name = f"{url_to_name(img_path)}.jpg"
             if file_type == "img":
                 if urlparse(img_path).scheme == "":
-                    z.write(img_path, os.path.basename(img_path))
+                    z.write(img_path, img_name)
                 else:
                     response = requests.get(img_path)
                     if response.status_code == 200:
-                        z.writestr(os.path.basename(img_path), response.content)
+                        z.writestr(img_name, response.content)
                     else:
                         log(f"[zip_imgs] Fail to download img: {img_path}")
                         pass
@@ -380,4 +393,18 @@ def get_imgs(wit_prefix):
         if pattern.match(img):
             wit_imgs.append(img)
 
-    return wit_imgs
+    return sorted(wit_imgs)
+
+
+def delete_files(filenames, directory=f"{BASE_DIR}/{IMG_PATH}"):
+    if type(filenames) != list:
+        filenames = [filenames]
+
+    for file in filenames:
+        try:
+            os.remove(f"{directory}/{file}")
+        except FileNotFoundError:
+            log(f"[delete_files] File not found: {directory}/{file}")
+        except Exception as e:
+            log(f"[delete_files] Error deleting {directory}/{file}: {e}")
+    return True

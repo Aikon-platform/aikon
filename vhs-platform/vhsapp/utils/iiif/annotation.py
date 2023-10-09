@@ -51,26 +51,12 @@ def send_anno_request(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
     return
 
 
-# def index_anno(manifest_url, wit_type, wit_id):
-#     if not index_manifest_in_sas(manifest_url):
-#         return
-#
-#     try:
-#         # Populate the annotation: the view is calling index_wit_annotations()
-#         # requests.get(f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}/populate/")
-#         index_wit_annotations(wit_id, wit_type)
-#     except Exception as e:
-#         log(
-#             f"[index_anno]: Failed to index annotations generated for {wit_type} #{wit_id}: {e}"
-#         )
-
-
 def index_wit_annotations(wit_id, wit_type):
     """
     To index annotations received from the detection API
     """
     iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}"
-    if not index_manifest_in_sas(f"{iiif_url}/manifest.json"):
+    if not index_manifest_in_sas(f"{iiif_url}/manifest.json", True):
         return
 
     # last_canvases = get_last_indexed_canvas()
@@ -109,6 +95,21 @@ def unindex_anno(anno_id):
     except requests.exceptions.RequestException as e:
         log(f"[unindex_anno] Delete anno request failed: {e}")
     return False
+
+
+def unindex_witness(wit_id, wit_type):
+    iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}"
+    index_manifest_in_sas(f"{iiif_url}/manifest.json")
+
+    try:
+        for anno in get_manifest_annos(wit_id, wit_type):
+            anno_id = anno.split("/")[-1]
+            unindex_anno(anno_id)
+    except Exception as e:
+        log(f"[unindex_witness] Failed to unindex witness: {e}")
+        return False
+
+    return True
 
 
 def index_annos_on_canvas(wit_url, canvas, last_canvases=None):
@@ -345,11 +346,19 @@ def set_canvas(seq, canvas_nb, img_name, img, version):
 
 
 def has_annotations(witness, wit_abbr):
-    # if there is at least one image file named after the current witness
     wit_dir = "manuscripts" if wit_abbr == MS_ABBR else "volumes"
-    if len(glob(f"{BASE_DIR}/{MEDIA_PATH}/{wit_dir}/annotation/{witness.id}.txt")) > 0:
-        return True
-    return False
+    wit_type = get_wit_type(wit_abbr)
+    # if there is at least one image file named after the current witness
+    anno_file = f"{BASE_DIR}/{MEDIA_PATH}/{wit_dir}/annotation/{witness.id}.txt"
+    if not len(glob(anno_file)) > 0:
+        return False
+
+    # # if there is at least one annotation indexed in SAS
+    # if len(get_manifest_annos(witness.id, wit_type)) != 0:
+    #     return True
+    #
+    # return False
+    return True
 
 
 def get_indexed_manifests():
@@ -362,11 +371,12 @@ def get_indexed_manifests():
     return [m["@id"] for m in manifests]
 
 
-def index_manifest_in_sas(manifest_url):
-    manifests = get_indexed_manifests()
-    if manifests and manifest_url in manifests:
-        # if the manifest was already indexed
-        return True
+def index_manifest_in_sas(manifest_url, reindex=False):
+    if not reindex:
+        manifests = get_indexed_manifests()
+        if manifests and manifest_url in manifests:
+            # if the manifest was already indexed
+            return True
 
     try:
         manifest = requests.get(manifest_url)
@@ -440,8 +450,10 @@ def get_indexed_canvas_annos(canvas_nb, wit_id, wit_type):
 
 def get_coord_from_anno(anno):
     try:
-        # coordinates => "x,y,w,h"
-        return (anno["on"][0]["selector"]["default"]["value"]).split("=")[1]
+        # coord => "x,y,w,h"
+        coord = (anno["on"][0]["selector"]["default"]["value"]).split("=")[1]
+        # remove negative values if some of the coordinates exceed the image boundaries
+        return ",".join(["0" if int(num) < 0 else num for num in coord.split(",")])
     except Exception as e:
         log(f"[get_coord_from_anno] Could not retrieve coord from anno: {e}")
         return "0,0,0,0"
@@ -459,6 +471,8 @@ def get_id_from_anno(anno):
 def formatted_wit_anno(witness, wit_type):
     canvas_annos = []
     wit_anno_ids = []
+
+    # TODO: here allow to display images that are not present in the annotation file
 
     try:
         for canvas_nb, img_file in get_canvas_list(witness, wit_type):
@@ -498,22 +512,36 @@ def check_anno_file(file_content):
         return False
 
 
-def get_manifest_annotations(manifest_uri):
-    # NOTE Do not work: always return [] / is never used apparently
+def get_manifest_annos(wit_id, wit_type):
+    # NOTE Do not work: always return []
+    # response = requests.get(
+    #     f"{SAS_APP_URL}/annotation/search",
+    #     params={"uri": f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}/manifest.json"}
+    # )
     try:
-        response = requests.get(
-            f"{SAS_APP_URL}/annotation/search", params={"uri": manifest_uri}
-        )
+        # NOTE here, manifests are indexed in SAS with uniquely the id, meaning the volume do not work
+        response = requests.get(f"{SAS_APP_URL}/search-api/{wit_id}/search")
+        annos = response.json()
 
-        if response.status_code == 200:
-            return response.json()
-        else:
+        if response.status_code != 200:
             log(
-                f"[get_manifest_annotations] Failed to retrieve annotations: {response.status_code}"
+                f"[get_manifest_annos] Failed to get annos from SAS: {response.status_code}"
             )
+            return []
     except requests.exceptions.RequestException as e:
-        log(f"[get_manifest_annotations] Failed to retrieve annotations: {e}")
-    return False
+        log(f"[get_manifest_annos] Failed to retrieve annotations: {e}")
+        return []
+
+    if "resources" not in annos or len(annos["resources"]) == 0:
+        return []
+
+    try:
+        manifest_annos = [anno["@id"] for anno in annos["resources"]]
+    except Exception as e:
+        log(f"[get_manifest_annos] Failed to parse annotations: {e}")
+        return []
+
+    return manifest_annos
 
 
 def check_wit_annos(wit_id, wit_type, reindex=False):
@@ -538,10 +566,8 @@ def check_wit_annos(wit_id, wit_type, reindex=False):
                     indexed_annos += nb_annos
                     anno_ids.extend([get_id_from_anno(anno) for anno in sas_annos])
                 else:
-                    res = index_manifest_in_sas(
-                        f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}/manifest.json"
-                    )
-                    if not res:
+                    manifest = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}/manifest.json"
+                    if not index_manifest_in_sas(manifest):
                         return
             elif len_line == 4:
                 # if line = "x y w h"
