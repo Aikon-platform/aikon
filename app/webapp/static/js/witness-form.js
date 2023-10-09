@@ -54,6 +54,7 @@ $(function() {
     const witTypeSelect = $("#id_type");
 
     function showPrintFields(witType) {
+        // TODO desactivate pour le series form
         switch (witType) {
             case "tpr": case "wpr": // TODO use variables defined in model constants
                 [titleDiv, volumeDiv].map(div => div.show())
