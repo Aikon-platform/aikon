@@ -1,9 +1,9 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 
 from app.webapp.models.edition import Edition
-
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.models.utils.constants import PUBLISHED_INFO
+from app.webapp.models.utils.constants import PUBLISHED_INFO, DATE_ERROR
 
 
 def get_name(fieldname, plural=False):
@@ -17,7 +17,7 @@ class Series(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        return ""  # TODO find a name
+        return self.edition.name  # TODO find a name
 
     notes = models.TextField(
         verbose_name=get_name("notes"), max_length=500, unique=True, blank=True
@@ -40,3 +40,9 @@ class Series(models.Model):
 
     def get_witnesses(self):
         return self.witness_set.all()
+
+    def clean(self):
+        # TODO: needs improvement
+        super().clean()
+        if self.date_min and self.date_max and self.date_min > self.date_max:
+            raise ValidationError(DATE_ERROR)
