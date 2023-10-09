@@ -14,6 +14,7 @@ from app.webapp.models.utils.constants import (
     AUTHOR,
     PAG_ABBR,
     PAGE,
+    CONSERVATION_PLACE_MSG,
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.functions import get_icon, flatten
@@ -50,8 +51,8 @@ class Witness(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        cons_place = self.place.name if self.place else "Unknown place of conservation"
-        return f"{cons_place} | {self.id_nb} #{self.id}"
+        cons_place = self.place.name if self.place else CONSERVATION_PLACE_MSG
+        return f"{cons_place} | {self.id_nb}"  # TODO: to check #{self.id}"
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(

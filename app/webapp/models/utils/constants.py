@@ -116,12 +116,17 @@ ROLES = (
 #############################
 #        HELP TEXTS         #
 #############################
+
 PUBLISHED_INFO = (
-    "record details will be accessible to other users of the database"
+    "Record details will be accessible to other users of the database."
     if APP_LANG == "en"
     else "Les informations seront accessibles aux autres utilisateurs de la base."
 )
-IMG_INFO = "" if APP_LANG == "en" else "Envoyez des images jusqu'à 2 Go."
+IMG_INFO = (
+    "Send images up to 2 GB."
+    if APP_LANG == "en"
+    else "Envoyez des images jusqu'à 2 Go."
+)
 
 MANIFEST_DESC = (
     "A manifest allow to describe and share scans with their metadata based on the IIIF standard."
@@ -134,3 +139,28 @@ MANIFEST_INFO = f"""<div class='tooltip'>
              </div>
              E.g.: <a href='https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json' target='_blank'>
              https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json</a>"""
+
+###################################
+#        VALIDATION ERRORS        #
+###################################
+
+DATE_ERROR = (
+    "Date min cannot be greater than Date max."
+    if APP_LANG == "en"
+    else "Date min ne peut pas être supérieure à Date max."
+)
+PAGE_ERROR = (
+    "Page value must be numeric or end with 'r' or 'v'."
+    if APP_LANG == "en"
+    else "Les bornes de pages doivent être définies numériquement ou par terminer par 'r' ou 'v'."
+)
+
+##########################
+#        MESSAGES        #
+##########################
+
+CONSERVATION_PLACE_MSG = (
+    "Unknown place of conservation"
+    if APP_LANG == "en"
+    else "Lieu de conservation inconnu"
+)
