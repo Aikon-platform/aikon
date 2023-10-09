@@ -5,7 +5,7 @@ from glob import glob
 from iiif_prezi.factory import StructuralError
 
 from app.config.settings import APP_URL, APP_NAME
-from app.webapp.models import get_wit_type, get_wit_abbr
+from app.webapp.models import get_wit_abbr
 from app.webapp.models.utils.functions import get_fieldname
 
 import threading
@@ -13,7 +13,7 @@ from functools import partial
 
 from django.core.validators import FileExtensionValidator
 from django.db import models
-from django.db.models.signals import pre_delete, pre_save, post_save
+from django.db.models.signals import pre_delete, post_save
 from django.dispatch.dispatcher import receiver
 
 from app.webapp.utils.logger import log, console
@@ -32,8 +32,8 @@ from app.webapp.models.utils.constants import (
 )
 from app.webapp.utils.functions import (
     pdf_to_img,
-    to_jpg,
     delete_files,
+    to_jpgs,
 )
 from app.webapp.utils.paths import (
     BASE_DIR,
@@ -50,6 +50,9 @@ from app.webapp.utils.iiif.download import extract_images_from_iiif_manifest
 from app.webapp.models.witness import Witness
 
 
+ALLOWED_EXT = ["jpg", "jpeg", "png", "tif"]
+
+
 def get_name(fieldname, plural=False):
     fields = {
         "source": {"en": "digitization source", "fr": "source de la numérisation"},
@@ -64,22 +67,16 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, fields, plural)
 
 
-def save_to(digit, original_filename):
-    """
-    Rename the file using its witness id and specific id
-    The file will be uploaded to "{path}/{filename}.{ext}"
-    """
+def save_to(instance, original_filename):
     ext = original_filename.split(".")[-1]
-    # images are always converted to jpg
-    digit.set_ext(ext if digit.get_digit_abbr() != IMG_ABBR else "jpg")
+    digit = instance.digitization if ext in ALLOWED_EXT else instance
     # NOTE here, digit_id is not yet set, digit files are renamed after with rename_digit_files()
-    # TODO check how does it work for multiple images
     return f"{digit.get_relative_path()}/{uuid.uuid4()}.{ext}"
 
 
 def rename_digit_files(digit):
     digit_files = (
-        [digit.pdf] if digit.get_digit_abbr() == PDF_ABBR else digit.image.all()
+        [digit.pdf] if digit.get_digit_abbr() == PDF_ABBR else digit.images.all()
     )
     for file in digit_files:
         if os.path.exists(digit.get_file_path()):
@@ -107,15 +104,6 @@ class Digitization(models.Model):
     digit_type = models.CharField(
         verbose_name=get_name("type"), choices=DIGIT_TYPE, max_length=150
     )
-    image = models.ImageField(
-        verbose_name=IMG,
-        upload_to=partial(save_to),
-        validators=[
-            FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "tif"])
-        ],
-        help_text=IMG_INFO,
-        blank=True,
-    )
     pdf = models.FileField(
         verbose_name=PDF,
         upload_to=partial(save_to),
@@ -128,7 +116,6 @@ class Digitization(models.Model):
         validators=[validate_manifest],
         blank=True,
     )
-    ext = models.CharField(verbose_name="Extension", max_length=15, default="jpg")
 
     def get_witness(self) -> Witness | None:
         try:
@@ -169,8 +156,8 @@ class Digitization(models.Model):
         except Exception:
             return None
 
-    def set_ext(self, extension):
-        self.ext = extension
+    def get_ext(self):
+        return "jpg" if self.digit_type == IMG_ABBR else "pdf"
 
     def get_relative_path(self):
         # must be relative to MEDIA_DIR
@@ -181,7 +168,7 @@ class Digitization(models.Model):
 
     def get_file_path(self, is_abs=True):
         path = self.get_absolute_path() if is_abs else self.get_relative_path()
-        return f"{path}/{self.get_ref()}.{self.ext}"
+        return f"{path}/{self.get_ref()}.{self.get_ext()}"
 
     def get_anno_filenames(self):
         anno_files = []
@@ -269,12 +256,20 @@ class Digitization(models.Model):
         return gen_manifest_btn(self, self.has_images())
 
 
-# @receiver(pre_save, sender=Digitization)
-# def digitization_pre_save(sender, instance, **kwargs):
-#     # instance.ext = os.path.splitext(instance.image.name)[-1].lower()
-#     # if instance.get_digit_abbr() == IMG_ABBR and instance.ext not in [".jpg", ".jpeg"]:
-#     #     to_jpg(instance.image)
-#     #     instance.ext = "jpg"
+class DigitizationImage(models.Model):
+    class Meta:
+        app_label = "webapp"
+
+    digitization = models.ForeignKey(
+        Digitization, on_delete=models.CASCADE, related_name="images"
+    )
+    image = models.ImageField(
+        verbose_name=IMG,
+        upload_to=partial(save_to),
+        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_EXT)],
+        help_text=IMG_INFO,
+        blank=True,
+    )
 
 
 @receiver(post_save, sender=Digitization)
@@ -299,13 +294,11 @@ def digitization_post_save(sender, instance, created, **kwargs):
             t.start()
 
         elif digit_type == IMG_ABBR:
-            ext = os.path.splitext(instance.image.name)[-1].lower()
-            if ext not in [".jpg", ".jpeg"]:
-                t = threading.Thread(
-                    target=to_jpg,
-                    args=(instance.image, event),
-                )
-                t.start()
+            t = threading.Thread(
+                target=to_jpgs,
+                args=(instance.images.all(), event),
+            )
+            t.start()
 
         anno_t = threading.Thread(
             target=send_anno_request,

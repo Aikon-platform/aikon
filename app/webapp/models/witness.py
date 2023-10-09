@@ -52,7 +52,9 @@ class Witness(models.Model):
 
     def __str__(self):
         cons_place = self.place.name if self.place else CONSERVATION_PLACE_MSG
-        return f"{cons_place} | {self.id_nb}"  # TODO: to check #{self.id}"
+        contents = self.get_contents()
+        work = f": {contents[0].work}" if contents and len(contents) == 1 else ""
+        return f"{cons_place} | {self.id_nb}{work}"  # TODO: to check #{self.id}"
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
