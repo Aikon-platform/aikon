@@ -1,4 +1,5 @@
 import os
+import uuid
 from glob import glob
 
 from iiif_prezi.factory import StructuralError
@@ -68,21 +69,25 @@ def save_to(digit, original_filename):
     Rename the file using its witness id and specific id
     The file will be uploaded to "{path}/{filename}.{ext}"
     """
-    digit.ext = original_filename.split(".")[-1]
-    # NOTE here, digit_id is not yet set, so ref is always: "{wit_abbr}{wit_id}_{digit_abbr}None"
-    new_filename = digit.get_ref()
-    # TODO: create fct that do not erase the file if a image was already recorded with the same name
+    ext = original_filename.split(".")[-1]
+    # images are always converted to jpg
+    digit.set_ext(ext if digit.get_digit_abbr() != IMG_ABBR else "jpg")
+    # NOTE here, digit_id is not yet set, digit files are renamed after with rename_digit_files()
     # TODO check how does it work for multiple images
-    return f"{digit.get_relative_path()}/{new_filename}.{digit.ext}"
+    return f"{digit.get_relative_path()}/{uuid.uuid4()}.{ext}"
 
 
 def rename_digit_files(digit):
-    digit_type = digit.get_digit_abbr()
-    digit_files = [digit.pdf] if digit_type == PDF_ABBR else digit.image.all()
+    digit_files = (
+        [digit.pdf] if digit.get_digit_abbr() == PDF_ABBR else digit.image.all()
+    )
     for file in digit_files:
+        if os.path.exists(digit.get_file_path()):
+            log(
+                f"[rename_digit_files] Already find a file with the path {digit.get_file_path()}"
+            )
         os.rename(file.path, digit.get_file_path())
         file.name = digit.get_file_path(is_abs=False)
-    # digit.save(update_fields=["pdf" if digit_type == PDF_ABBR else "image"])
 
 
 class Digitization(models.Model):
@@ -207,15 +212,9 @@ class Digitization(models.Model):
     def save(self, *args, **kwargs):
         if not self.id:
             # TODO check to not relaunch anno if the digit didn't change
-            # If the instance is being saved for the first time
-            pass
+            # If the instance is being saved for the first time, save it in order to have an id
+            super().save(*args, **kwargs)
 
-        # Thread to rename images + save instance
-        # naming_t = threading.Thread(
-        #     target=rename_digit_files,
-        #     args=(self,),
-        # )
-        # naming_t.start()
         rename_digit_files(self)
         super().save(*args, **kwargs)
 
@@ -270,13 +269,12 @@ class Digitization(models.Model):
         return gen_manifest_btn(self, self.has_images())
 
 
-@receiver(pre_save, sender=Digitization)
-def digitization_pre_save(sender, instance, **kwargs):
-    instance.ext = os.path.splitext(instance.image.name)[-1].lower()
-    if instance.get_digit_abbr() == IMG_ABBR and instance.ext not in [".jpg", ".jpeg"]:
-        # TODO check how it does for multiple images
-        to_jpg(instance.image)
-        instance.ext = "jpg"
+# @receiver(pre_save, sender=Digitization)
+# def digitization_pre_save(sender, instance, **kwargs):
+#     # instance.ext = os.path.splitext(instance.image.name)[-1].lower()
+#     # if instance.get_digit_abbr() == IMG_ABBR and instance.ext not in [".jpg", ".jpeg"]:
+#     #     to_jpg(instance.image)
+#     #     instance.ext = "jpg"
 
 
 @receiver(post_save, sender=Digitization)
@@ -285,11 +283,6 @@ def digitization_post_save(sender, instance, created, **kwargs):
 
     if created:
         event = threading.Event()
-
-        # naming_t = threading.Thread(target=rename_digit_files, args=(instance,))
-        # naming_t.start()
-        #
-        # naming_t.join()
 
         digit_type = instance.get_digit_abbr()
         if digit_type == PDF_ABBR:
@@ -304,6 +297,15 @@ def digitization_post_save(sender, instance, created, **kwargs):
                 args=(instance.manifest, instance.get_ref(), event),
             )
             t.start()
+
+        elif digit_type == IMG_ABBR:
+            ext = os.path.splitext(instance.image.name)[-1].lower()
+            if ext not in [".jpg", ".jpeg"]:
+                t = threading.Thread(
+                    target=to_jpg,
+                    args=(instance.image, event),
+                )
+                t.start()
 
         anno_t = threading.Thread(
             target=send_anno_request,
