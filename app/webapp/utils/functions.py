@@ -57,12 +57,18 @@ def get_last_file(path, prefix):
     return last_number
 
 
-def to_jpg(image, event=None):
+def to_jpgs(images, event=None):
+    for img in images:
+        ext = os.path.splitext(img.name)[-1].lower()
+        if ext not in [".jpg", ".jpeg"]:
+            to_jpg(img)
+    if event:
+        event.set()
+
+
+def to_jpg(image):
     try:
-        img = save_img(Image.open(image), image.name)
-        if event:
-            event.set()
-        return img
+        return save_img(Image.open(image), image.name)
     except Exception as e:
         log("[to_jpg] Failed to convert img to jpg", e)
     return False

@@ -4,7 +4,7 @@ from django.utils.safestring import mark_safe
 
 from app.config.settings import APP_NAME, WEBAPP_NAME, APP_LANG
 from app.webapp.admin import UnregisteredAdmin
-from app.webapp.models.digitization import Digitization, get_name
+from app.webapp.models.digitization import Digitization, get_name, DigitizationImage
 from app.webapp.models.utils.constants import IMG
 from app.webapp.utils.functions import gen_thumbnail, cls
 from app.webapp.utils.iiif import gen_iiif_url, IIIF_ICON
@@ -42,6 +42,12 @@ class DigitizationAdmin(UnregisteredAdmin):
 ############################
 
 
+class DigitizationImageInline(nested_admin.NestedStackedInline):
+    model = DigitizationImage
+    extra = 1  # Display only one empty form in the parent form
+    max_num = 5
+
+
 class DigitizationInline(nested_admin.NestedStackedInline):
     model = Digitization
     extra = 1  # Display only one empty form in the parent form
@@ -50,10 +56,10 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
     fields = [
         "digit_type",
-        "image",
         "pdf",
         "manifest",
     ]
+    inlines = [DigitizationImageInline]
 
     def digit_url(self):
         return f"/{APP_NAME}-admin/{WEBAPP_NAME}/digitization"
@@ -113,6 +119,13 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     #         exclude_set.add("view_anno")
     #     return [f for f in fields if f not in exclude_set]
 
+    def save_model(self, request, obj: Digitization, form, change):
+        if not obj.user:
+            obj.user = request.user
+        obj.save()
 
-# class DigitizationNestedInline(DigitizationInline):
-#     model = Digitization
+        files = request.FILES.getlist(
+            "imagemanuscript_set-0-image"
+        )  # todo change selector
+        for file in files[:-1]:
+            obj.images.create(image=file)
