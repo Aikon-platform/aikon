@@ -82,7 +82,7 @@ def save_img(
     img_format="JPEG",
 ):
     try:
-        filename = img_filename.split(".")[0]
+        filename = img_filename.split(".")[0].split("/")[-1]
         if img.mode != "RGB":
             img = img.convert("RGB")
 

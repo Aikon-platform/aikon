@@ -11,7 +11,7 @@ $(function() {
     function getFields(digitType, selectNb = "0"){
         const manifestDiv = $(`#digitizations-${selectNb} .field-manifest`).first();
         const pdfDiv = $(`#digitizations-${selectNb} .field-pdf`).first();
-        const imageDiv = $(`#digitizations-${selectNb}-images-0 .field-image`).first();
+        const imageDiv = $(`#digitizations-${selectNb} .field-images`).first();
 
         switch (digitType) {
             case "man": // TODO use variables defined in model constants

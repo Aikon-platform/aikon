@@ -4,11 +4,12 @@ from django.utils.safestring import mark_safe
 
 from app.config.settings import APP_NAME, WEBAPP_NAME, APP_LANG
 from app.webapp.admin import UnregisteredAdmin
-from app.webapp.models.digitization import Digitization, get_name, DigitizationImage
+from app.webapp.models.digitization import Digitization, get_name
 from app.webapp.models.utils.constants import IMG
 from app.webapp.utils.functions import gen_thumbnail, cls
 from app.webapp.utils.iiif import gen_iiif_url, IIIF_ICON
 from app.webapp.utils.iiif.gen_html import gen_btn
+from app.webapp.utils.logger import log
 
 
 @admin.register(Digitization)
@@ -42,24 +43,13 @@ class DigitizationAdmin(UnregisteredAdmin):
 ############################
 
 
-class DigitizationImageInline(nested_admin.NestedStackedInline):
-    model = DigitizationImage
-    extra = 1  # Display only one empty form in the parent form
-    max_num = 5
-
-
 class DigitizationInline(nested_admin.NestedStackedInline):
     model = Digitization
     extra = 1  # Display only one empty form in the parent form
     max_num = 5
     readonly_fields = ("digit_preview", "view_digit", "view_anno")
 
-    fields = [
-        "digit_type",
-        "pdf",
-        "manifest",
-    ]
-    inlines = [DigitizationImageInline]
+    fields = ["digit_type", "pdf", "manifest", "images"]
 
     def digit_url(self):
         return f"/{APP_NAME}-admin/{WEBAPP_NAME}/digitization"
@@ -81,7 +71,6 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
     @admin.display(description=get_name("view_anno"))
     def view_anno(self, obj: Digitization):
-        # TODO here multiple button for multiple annotation
         if obj.id and obj.has_images():
             action = "final" if obj.is_validated else "edit"
             if not obj.has_annotations():
@@ -110,22 +99,3 @@ class DigitizationInline(nested_admin.NestedStackedInline):
                 fields.append("view_anno")
 
         return list(set(fields))
-
-    # def get_fields(self, request, obj=None):
-    #     fields = list(super(WitnessInline, self).get_fields(request, obj))
-    #     exclude_set = set()
-    #     if not obj:  # obj will be None on the add page, and something on change pages
-    #         exclude_set.add("view_digit")
-    #         exclude_set.add("view_anno")
-    #     return [f for f in fields if f not in exclude_set]
-
-    def save_model(self, request, obj: Digitization, form, change):
-        if not obj.user:
-            obj.user = request.user
-        obj.save()
-
-        files = request.FILES.getlist(
-            "imagemanuscript_set-0-image"
-        )  # todo change selector
-        for file in files[:-1]:
-            obj.images.create(image=file)

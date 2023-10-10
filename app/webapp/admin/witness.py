@@ -1,5 +1,8 @@
+from django.core.files.base import ContentFile
+
 from app.config.settings import APP_LANG
 from app.webapp.admin import DigitizationInline, ContentInline, ContentWorkInline
+from app.webapp.models.digitization import Digitization
 from app.webapp.models.witness import Witness, get_name
 from app.webapp.utils.constants import MAX_ITEMS
 
@@ -11,6 +14,8 @@ from django.utils.safestring import mark_safe
 
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.utils.functions import list_to_txt, zip_img
+from app.webapp.utils.logger import log
+from app.webapp.utils.paths import IMG_PATH
 
 
 @admin.register(Witness)
@@ -101,9 +106,28 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             obj.imagewitness_set.create(image=file)
 
     def save_model(self, request, obj, form, change):
+        # called on submission of form
         if not obj.user:
             obj.user = request.user
         obj.save()
+
+        # it can't have more than 5 digits per witness, each digit can have only one image field
+        for nb in range(0, 4):
+            digit_id = request.POST.get(f"digitizations-{nb}-id", None)
+            if digit_id:
+                # TODO don't save again digit that were already treated
+                continue
+            digit_type = request.POST.get(f"digitizations-{nb}-digit_type", None)
+            files = request.FILES.getlist(f"digitizations-{nb}-images")
+            if len(files):
+                for i, file in enumerate(files):
+                    filename, ext = file.name.split("/")[-1].split(".")
+                    # TODO check if get_ref() works for newly created witnesses
+                    with open(
+                        f"{IMG_PATH}/temp_{obj.get_ref()}_{digit_type}_{i}.{ext}", "wb"
+                    ) as saved_file:
+                        saved_file.write(file.read())
+
         messages.warning(
             request,
             "Le processus de conversion de.s fichier.s PDF en images et/ou d'extraction des images à partir de "

@@ -1,5 +1,4 @@
 import os
-import uuid
 from glob import glob
 
 from iiif_prezi.factory import StructuralError
@@ -67,24 +66,30 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, fields, plural)
 
 
-def save_to(instance, original_filename):
-    ext = original_filename.split(".")[-1]
-    digit = instance.digitization if ext in ALLOWED_EXT else instance
-    # NOTE here, digit_id is not yet set, digit files are renamed after with rename_digit_files()
-    return f"{digit.get_relative_path()}/{uuid.uuid4()}.{ext}"
+def no_save(instance, original_filename):
+    # ext = original_filename.split(".")[-1]
+    # NOTE here, digit_id is not yet set, digit files are renamed after with rename_files()
+    return f"{instance.get_relative_path()}/to_delete.txt"
 
 
-def rename_digit_files(digit):
-    digit_files = (
-        [digit.pdf] if digit.get_digit_abbr() == PDF_ABBR else digit.images.all()
+def rename_files(digit):
+    d_type = digit.get_digit_abbr()
+    digit_paths = (
+        [digit.pdf.path]
+        if d_type == PDF_ABBR
+        else digit.get_imgs(temp=True, is_abs=True)
     )
-    for file in digit_files:
-        if os.path.exists(digit.get_file_path()):
-            log(
-                f"[rename_digit_files] Already find a file with the path {digit.get_file_path()}"
-            )
-        os.rename(file.path, digit.get_file_path())
-        file.name = digit.get_file_path(is_abs=False)
+    digit_field = digit.pdf if d_type == PDF_ABBR else digit.images
+    delete_files(f"{IMG_PATH}/to_delete.txt")
+
+    for i, path in enumerate(digit_paths):
+        nb = i + 1 if len(digit_paths) > 1 else None
+        if os.path.exists(digit.get_file_path(i=nb)):
+            log(f"[rename_files] {digit.get_file_path()} already exists")
+        os.rename(path, digit.get_file_path(i=nb))
+
+        # TODO change the name to display number of uploaded images instead
+        digit_field.name = digit.get_file_path(is_abs=False, i=nb)
 
 
 class Digitization(models.Model):
@@ -106,7 +111,7 @@ class Digitization(models.Model):
     )
     pdf = models.FileField(
         verbose_name=PDF,
-        upload_to=partial(save_to),
+        upload_to=PDF_DIR,
         validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
         blank=True,
     )
@@ -114,6 +119,13 @@ class Digitization(models.Model):
         verbose_name=MANIFEST,
         help_text=MANIFEST_INFO,
         validators=[validate_manifest],
+        blank=True,
+    )
+    images = models.ImageField(
+        verbose_name=IMG,
+        upload_to=partial(no_save),
+        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_EXT)],
+        help_text=IMG_INFO,
         blank=True,
     )
 
@@ -166,9 +178,10 @@ class Digitization(models.Model):
     def get_absolute_path(self):
         return f"{MEDIA_DIR}/{self.get_relative_path()}"
 
-    def get_file_path(self, is_abs=True):
+    def get_file_path(self, is_abs=True, i=None):
         path = self.get_absolute_path() if is_abs else self.get_relative_path()
-        return f"{path}/{self.get_ref()}.{self.get_ext()}"
+        nb = f"_{i:04d}" if i else ""
+        return f"{path}/{self.get_ref()}{nb}.{self.get_ext()}"
 
     def get_anno_filenames(self):
         anno_files = []
@@ -188,22 +201,15 @@ class Digitization(models.Model):
             return True
         return False
 
-    def get_imgs(self):
+    def get_imgs(self, temp=False, is_abs=False):
         imgs = []
-
+        path = f"{IMG_PATH}/" if is_abs else ""
         for filename in os.listdir(IMG_PATH):
-            if filename.startswith(self.get_ref()):
-                imgs.append(filename)
+            if filename.startswith(
+                self.get_ref() if not temp else f"temp_{self.get_wit_ref()}"
+            ):
+                imgs.append(f"{path}{filename}")
         return sorted(imgs)
-
-    def save(self, *args, **kwargs):
-        if not self.id:
-            # TODO check to not relaunch anno if the digit didn't change
-            # If the instance is being saved for the first time, save it in order to have an id
-            super().save(*args, **kwargs)
-
-        rename_digit_files(self)
-        super().save(*args, **kwargs)
 
     def get_metadata(self):
         # todo finish defining manifest metadata (type, id, etc)
@@ -233,9 +239,6 @@ class Digitization(models.Model):
                 return error
         return error
 
-    def delete(self, using=None, keep_parents=False):
-        super().delete()
-
     def get_nb_of_pages(self):
         import PyPDF2
 
@@ -255,21 +258,33 @@ class Digitization(models.Model):
 
         return gen_manifest_btn(self, self.has_images())
 
+    def save(self, *args, **kwargs):
+        if not self.id:
+            # TODO check to not relaunch anno if the digit didn't change
+            # If the instance is being saved for the first time, save it in order to have an id
+            super().save(*args, **kwargs)
 
-class DigitizationImage(models.Model):
-    class Meta:
-        app_label = "webapp"
+        rename_files(self)
+        super().save(*args, **kwargs)
 
-    digitization = models.ForeignKey(
-        Digitization, on_delete=models.CASCADE, related_name="images"
-    )
-    image = models.ImageField(
-        verbose_name=IMG,
-        upload_to=partial(save_to),
-        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_EXT)],
-        help_text=IMG_INFO,
-        blank=True,
-    )
+    def delete(self, using=None, keep_parents=False):
+        super().delete()
+
+
+# class DigitizationImage(models.Model):
+#     class Meta:
+#         app_label = "webapp"
+#
+#     digitization = models.ForeignKey(
+#         Digitization, on_delete=models.CASCADE, related_name="images"
+#     )
+#     image = models.ImageField(
+#         verbose_name=IMG,
+#         upload_to=partial(save_to),
+#         validators=[FileExtensionValidator(allowed_extensions=ALLOWED_EXT)],
+#         help_text=IMG_INFO,
+#         blank=True,
+#     )
 
 
 @receiver(post_save, sender=Digitization)
@@ -294,11 +309,13 @@ def digitization_post_save(sender, instance, created, **kwargs):
             t.start()
 
         elif digit_type == IMG_ABBR:
-            t = threading.Thread(
-                target=to_jpgs,
-                args=(instance.images.all(), event),
-            )
-            t.start()
+            log(instance.images)
+            # imgs = [digit_img.image for digit_img in instance.images.all()]
+            # t = threading.Thread(
+            #     target=to_jpgs,
+            #     args=(imgs, event),
+            # )
+            # t.start()
 
         anno_t = threading.Thread(
             target=send_anno_request,
@@ -310,20 +327,28 @@ def digitization_post_save(sender, instance, created, **kwargs):
 # Receive the pre_delete signal and delete the file associated with the model instance
 @receiver(pre_delete, sender=Digitization)
 def pre_delete_digit(sender, instance: Digitization, **kwargs):
-    # Used to delete files associated to the Digitization instance
-    if instance.digit_type == PDF_ABBR:
-        # TODO here images associated to pdf are not deleted
-        t = threading.Thread(
-            target=remove_digitization,
-            args=(instance, instance.pdf.name),
-        )
-        t.start()
-    elif instance.digit_type == IMG_ABBR:
-        # Pass False so ImageField doesn't save the model
-        instance.image.delete(False)
-    elif instance.digit_type == MAN_ABBR:
-        # TODO define what to do when a manifest is deleted
-        pass
+    # Used to delete digit files and annotations
+    other_media = instance.pdf.name if instance.digit_type == PDF_ABBR else None
+    t = threading.Thread(
+        target=remove_digitization,
+        args=(instance, other_media),
+    )
+    t.start()
+
+    # if instance.digit_type == PDF_ABBR:
+    #     # TODO here images associated to pdf are not deleted
+    #     t = threading.Thread(
+    #         target=remove_digitization,
+    #         args=(instance, instance.pdf.name),
+    #     )
+    #     t.start()
+    # elif instance.digit_type == IMG_ABBR:
+    #     # for img in instance.images:
+    #     #     # Pass False so ImageField doesn't save the model
+    #     #     img.image.delete(False)
+    # elif instance.digit_type == MAN_ABBR:
+    #     # TODO define what to do when a manifest is deleted
+    #     pass
     return
 
 

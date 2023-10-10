@@ -5,3 +5,11 @@
 #contents-0-role_set-group h2 {
     display: none;
 }
+
+[id^="digitizations-"][id*="-images-group"] h2 {
+    display: none;
+}
+
+[id^="digitizations-"][id*="-images-group"] h3 {
+    display: none;
+}
