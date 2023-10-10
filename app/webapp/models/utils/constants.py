@@ -145,9 +145,9 @@ MANIFEST_INFO = f"""<div class='tooltip'>
 ###################################
 
 DATE_ERROR = (
-    "Date min cannot be greater than Date max."
+    "Minimum date cannot be greater than maximum date."
     if APP_LANG == "en"
-    else "Date min ne peut pas être supérieure à Date max."
+    else "La date minimale ne peut pas être supérieure à la date maximale."
 )
 PAGE_ERROR = (
     "Page value must be numeric or end with 'r' or 'v'."

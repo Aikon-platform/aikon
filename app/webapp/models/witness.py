@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
+from django.urls import reverse
 
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.volume import Volume
@@ -52,9 +53,10 @@ class Witness(models.Model):
 
     def __str__(self):
         cons_place = self.place.name if self.place else CONSERVATION_PLACE_MSG
-        contents = self.get_contents()
-        work = f": {contents[0].work}" if contents and len(contents) == 1 else ""
-        return f"{cons_place} | {self.id_nb}{work}"  # TODO: to check #{self.id}"
+        return f"{cons_place} | {self.id_nb}"
+
+    def get_absolute_url(self):
+        return reverse("admin:webapp_witness_change", args=[self.id])
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
