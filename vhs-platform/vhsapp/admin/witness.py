@@ -1,5 +1,6 @@
 import glob
 import zipfile
+import io
 
 import nested_admin
 from admin_extra_buttons.decorators import button
@@ -307,28 +308,37 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         # img_list = [gen_iiif_url(img) for img in self.get_img_list(queryset)]
         return list_to_txt(img_urls, f"IIIF_images")
 
-    @admin.action(description="Exporter les annotations des témoins sélectionnés")
+    @admin.action(description="Exporter les annotations")
     def export_selected_annotations(self, request, queryset):
-        for wit_id in queryset.values_list("id"):
-            img_urls = []
-            annotations = []
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            for wit_id in queryset.values_list("id"):
+                img_urls = []
+                annotations = []
 
-            # for wit_id in results:
-            witness = Manuscript.objects.get(pk=wit_id[0])
-            img_urls.extend(get_canvas_list(witness, MS))
-            i = 1
+                witness = Manuscript.objects.get(pk=wit_id[0])
+                img_urls.extend(get_canvas_list(witness, MS))
+                i = 1
 
-            for canvas_nb, img_file in img_urls:
-                annotations.append(f"{i} {img_file}")
-                i = i + 1
+                for canvas_nb, img_file in img_urls:
+                    annotations.append(f"{i} {img_file}")
+                    i = i + 1
 
-                annos = get_indexed_canvas_annos(canvas_nb, witness.id, MS)
-                if bool(annos):
-                    for anno in annos:
-                        coord = get_coord_from_anno(anno).replace(",", " ")
-                        annotations.append(coord)
+                    annos = get_indexed_canvas_annos(canvas_nb, witness.id, MS)
+                    if bool(annos):
+                        for anno in annos:
+                            coord = get_coord_from_anno(anno).replace(",", " ")
+                            annotations.append(coord)
 
-            return list_to_txt(annotations, witness.id)
+                # list_to_txt(annotations, witness.id)
+                txt_filename = f"{witness.id}.txt"
+                txt_content = "\n".join(annotations)
+                zip_file.writestr(txt_filename, txt_content)
+
+        zip_buffer.seek(0)
+        response = HttpResponse(zip_buffer, content_type="application/zip")
+        response["Content-Disposition"] = 'attachment; filename="annotations.zip"'
+        return response
 
     @admin.action(description="Export diagram images in selected sources")
     def export_annotated_imgs(self, request, queryset):
