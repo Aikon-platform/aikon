@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
-from django.utils.safestring import mark_safe
 from django.urls import reverse
 
 from app.webapp.models.conservation_place import ConservationPlace
@@ -54,8 +53,10 @@ class Witness(models.Model):
 
     def __str__(self):
         cons_place = self.place.name if self.place else CONSERVATION_PLACE_MSG
-        change_url = reverse("admin:webapp_witness_change", args=[self.id])
-        return mark_safe(f"<a href='{change_url}'>{cons_place} | {self.id_nb}</a>")
+        return f"{cons_place} | {self.id_nb}"
+
+    def get_absolute_url(self):
+        return reverse("admin:webapp_witness_change", args=[self.id])
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
