@@ -223,6 +223,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             "export_selected_pdfs",
             "export_annotated_imgs",
             "export_selected_annotations",
+            "export_training",
         ]
         if self.wit_type() == VOL:
             self.actions += ["detect_similarity"]
@@ -308,7 +309,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         # img_list = [gen_iiif_url(img) for img in self.get_img_list(queryset)]
         return list_to_txt(img_urls, f"IIIF_images")
 
-    @admin.action(description="Exporter les annotations")
+    @admin.action(description="Exporter les annotations au format texte")
     def export_selected_annotations(self, request, queryset):
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
@@ -328,9 +329,8 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
                     if bool(annos):
                         for anno in annos:
                             coord = get_coord_from_anno(anno).replace(",", " ")
-                            annotations.append(coord)
+                            annotations.append(f"0 {coord}")
 
-                # list_to_txt(annotations, witness.id)
                 txt_filename = f"{witness.id}.txt"
                 txt_content = "\n".join(annotations)
                 zip_file.writestr(txt_filename, txt_content)
@@ -349,6 +349,41 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             witness = Manuscript.objects.get(pk=wit_id[0])
             img_urls.extend(get_anno_images(witness, MS))
         return zip_img(request, img_urls)
+
+    @admin.action(description="Exporter les annotations pour l'entraînement")
+    def export_training(self, request, queryset):
+        try:
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                for wit_id in queryset.values_list("id"):
+                    img_urls = []
+
+                    witness = Manuscript.objects.get(pk=wit_id[0])
+                    img_urls.extend(get_canvas_list(witness, MS))
+
+                    for canvas_nb, img_file in img_urls:
+                        annos = get_indexed_canvas_annos(canvas_nb, witness.id, MS)
+                        if bool(annos):
+                            annotations = [img_file]
+
+                            for anno in annos:
+                                coord = get_coord_from_anno(anno).replace(",", " ")
+                                annotations.append(f"0 {coord}")
+
+                            txt_filename = f"{img_file}".replace(".jpg", ".txt")
+                            txt_content = "\n".join(annotations)
+                            zip_file.writestr(txt_filename, txt_content)
+
+            zip_buffer.seek(0)
+            response = HttpResponse(zip_buffer, content_type="application/zip")
+            response["Content-Disposition"] = 'attachment; filename="annotations.zip"'
+            return response
+
+        except Exception as e:
+            messages.error(
+                request,
+                f"Les annotations n'ont pas pu être exportées : {e}.",
+            )
 
 
 @admin.register(Printed)
