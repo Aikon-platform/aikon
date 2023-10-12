@@ -117,6 +117,11 @@ ROLES = (
 #        HELP TEXTS         #
 #############################
 
+DATE_INFO = (
+    ""
+    if APP_LANG == "en"
+    else "<ul><li>Saisissez une année sous forme de nombre.</li><li>Exemple : 1435 représente le 15<sup>ème</sup> siècle.</li>"
+)
 PUBLISHED_INFO = (
     "Record details will be accessible to other users of the database."
     if APP_LANG == "en"
@@ -159,8 +164,10 @@ PAGE_ERROR = (
 #        MESSAGES        #
 ##########################
 
-CONSERVATION_PLACE_MSG = (
+CONS_PLA_MSG = (
     "Unknown place of conservation"
     if APP_LANG == "en"
     else "Lieu de conservation inconnu"
 )
+
+WIT_CHANGE = "Change the witness" if APP_LANG == "en" else "Modifier le témoin"

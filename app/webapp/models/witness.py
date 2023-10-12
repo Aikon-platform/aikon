@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
+from django.utils.html import format_html
 from django.urls import reverse
 
 from app.webapp.models.conservation_place import ConservationPlace
@@ -15,7 +16,8 @@ from app.webapp.models.utils.constants import (
     AUTHOR,
     PAG_ABBR,
     PAGE,
-    CONSERVATION_PLACE_MSG,
+    CONS_PLA_MSG,
+    WIT_CHANGE,
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.functions import get_icon, flatten
@@ -52,11 +54,11 @@ class Witness(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        cons_place = self.place.name if self.place else CONSERVATION_PLACE_MSG
-        return f"{cons_place} | {self.id_nb}"
-
-    def get_absolute_url(self):
-        return reverse("admin:webapp_witness_change", args=[self.id])
+        cons_place = self.place.name if self.place else CONS_PLA_MSG
+        change_url = reverse("admin:webapp_witness_change", args=[self.id])
+        return format_html(
+            f"{cons_place} | {self.id_nb} <a href='{change_url}'>{WIT_CHANGE} #{self.id}</a>"
+        )
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
@@ -70,7 +72,6 @@ class Witness(models.Model):
         blank=True,
         null=True,
     )
-
     notes = models.TextField(
         verbose_name=get_name("notes"), max_length=1000, blank=True
     )
