@@ -22,6 +22,10 @@ from app.webapp.utils.functions import log
 
 def send_anno_request(digit: Digitization, event):
     event.wait()
+    if not API_GPU_URL.startswith("http"):
+        # on local to prevent bugs
+        return True
+
     try:
         anno_request(digit)
     except Exception as e:

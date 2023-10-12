@@ -63,7 +63,7 @@ class IIIFDownloader:
 
     def save_iiif_img(self, img_rsrc, i, size=None, re_download=False):
         img_name = f"{self.manifest_id}_{i:04d}.jpg"
-        f_size = size if size is not None else self.get_size(img_rsrc)
+        f_size = size or self.get_size(img_rsrc)
 
         # NOTE: maybe download again anyway because manifest might have changed
         if (

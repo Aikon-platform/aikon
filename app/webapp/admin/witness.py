@@ -13,7 +13,7 @@ from django.contrib import admin, messages
 from django.utils.safestring import mark_safe
 
 from app.webapp.utils.iiif import gen_iiif_url
-from app.webapp.utils.functions import list_to_txt, zip_img
+from app.webapp.utils.functions import list_to_txt, zip_img, get_file_ext
 from app.webapp.utils.logger import log
 from app.webapp.utils.paths import IMG_PATH
 
@@ -121,8 +121,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             files = request.FILES.getlist(f"digitizations-{nb}-images")
             if len(files):
                 for i, file in enumerate(files):
-                    filename, ext = file.name.split("/")[-1].split(".")
-                    # TODO check if get_ref() works for newly created witnesses
+                    filename, ext = get_file_ext(file.name)
                     with open(
                         f"{IMG_PATH}/temp_{obj.get_ref()}_{digit_type}_{i}.{ext}", "wb"
                     ) as saved_file:
