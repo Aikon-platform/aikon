@@ -32,3 +32,9 @@
     <script src="{% static 'js/script.js' %}"></script>
     <script src="{% static 'js/eventListeners.js' %}"></script>
 {% endblock %}
+
+{% block footer %}
+    <div id="footer">
+        {{ APP_NAME_UPPER }} &copy; {% now "Y" %} <!-- All rights reserved. Tous droits réservés. -->
+    </div>
+{% endblock %}
