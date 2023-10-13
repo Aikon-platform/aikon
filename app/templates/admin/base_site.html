@@ -8,7 +8,7 @@
     {# TITLE IS DEFINED IN THE SETTINGS #}
     {# <title>{% block title %}{{ APP_NAME_UPPER }} platform{% endblock %}</title> #}
 
-    <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.png' %}">
+    <link rel="icon" type="image/x-icon" href="{% static 'img/favicon-'|add:APP_NAME|add:'.png' %}">
     <script>
         const APP_NAME = "{{ APP_NAME }}";
         const APP_LANG = "{{ APP_LANG }}";
