@@ -36,7 +36,7 @@ class ContentInline(nested_admin.NestedStackedInline):
 
 class ContentWorkInline(nested_admin.NestedStackedInline):
     model = Content
-    verbose_name_plural = ""
+    # verbose_name_plural = ""
     extra = 1
     max_num = 1
     fields = ["work"]  # ("page_min", "page_max")
