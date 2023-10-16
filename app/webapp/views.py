@@ -43,24 +43,31 @@ def manifest_digitization(request, digit_ref):
         return JsonResponse(
             {
                 "response": f"Wrong format of digitization reference:{digit_ref}",
-                "reason": "Reference must follow this format: {witness_abbreviation}{witness_id}_{digit_abbr}{digit_id}",
+                "reason": "Reference must follow this format: {witness_abbr}{witness_id}_{digit_abbr}{digit_id}",
             },
             safe=False,
         )
     digit_id = int(match.group(1))
-    digit = get_object_or_404(Digitization, pk=digit_id)
-    if digit_ref == digit.get_ref():
-        return JsonResponse(digit.gen_manifest_json())
-    return JsonResponse(
-        {
-            "response": f"Wrong reference for digitization #{digit_id}",
-            "reason": "Reference must follow this format: {witness_abbreviation}{witness_id}_{digit_abbr}{digit_id}",
-        },
-        safe=False,
-    )
+    digit = Digitization.objects.filter(pk=digit_id).first()
+    if not digit:
+        return JsonResponse(
+            {"response": f"No digitization matching the id #{digit_id}"},
+            safe=False,
+        )
+
+    if digit_ref != digit.get_ref():
+        return JsonResponse(
+            {
+                "response": f"Wrong reference for digitization #{digit_id}",
+                "reason": "Reference must follow this format: {witness_abbr}{witness_id}_{digit_abbr}{digit_id}",
+            },
+            safe=False,
+        )
+    return JsonResponse(digit.gen_manifest_json())
 
 
 def manifest_annotation(request, version, anno_ref):
+    # TODO: better handling of wrong references as above
     anno_id = anno_ref.split("_")[-1].replace("anno", "")
     anno = get_object_or_404(Annotation, pk=anno_id)
     if anno_ref == anno.get_ref():

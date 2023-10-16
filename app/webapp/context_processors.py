@@ -7,7 +7,17 @@ from app.config.settings import (
     WEBAPP_NAME,
 )
 from app.webapp.utils.constants import APP_NAME_UPPER
-from app.webapp.models.utils.constants import MS, VOL, WIT, MS_ABBR, VOL_ABBR, WIT_ABBR
+from app.webapp.models.utils.constants import (
+    MS,
+    VOL,
+    WIT,
+    MS_ABBR,
+    VOL_ABBR,
+    WIT_ABBR,
+    IMG_ABBR,
+    PDF_ABBR,
+    MAN_ABBR,
+)
 
 
 def global_variables(request):
@@ -29,4 +39,7 @@ def global_variables(request):
         "MS_ABBR": MS_ABBR,
         "VOL_ABBR": VOL_ABBR,
         "WIT_ABBR": WIT_ABBR,
+        "IMG_ABBR": IMG_ABBR,
+        "PDF_ABBR": PDF_ABBR,
+        "MAN_ABBR": MAN_ABBR,
     }

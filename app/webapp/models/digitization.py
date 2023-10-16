@@ -254,7 +254,7 @@ class Digitization(models.Model):
                 # TODO: check need of threading to do that
                 to_jpg(img_path, self.get_file_path(i=i + 1))
                 delete_files(img_path)
-            # TODO change the name to display number of uploaded images instead
+            # TODO change to have list of image name
             self.images.name = f"{i+1} {IMG} uploaded.jpg"
 
         super().save(*args, **kwargs)
