@@ -151,8 +151,10 @@ class IIIFDownloader:
             return "full"
         h, w = get_height(img_rsrc), get_width(img_rsrc)
         if h > w:
-            return self.get_formatted_size("", str(self.max_dim))
-        return self.get_formatted_size(str(self.max_dim), "")
+            max_h = self.max_dim if self.max_dim < h else h
+            return self.get_formatted_size("", str(max_h))
+        max_w = self.max_dim if self.max_dim < w else w
+        return self.get_formatted_size(str(max_w), "")
 
     def check_size(self, img, img_rsrc):
         """
