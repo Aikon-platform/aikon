@@ -66,8 +66,10 @@ class DigitizationInline(nested_admin.NestedStackedInline):
         # here access to Mirador without annotation
         if obj.id:
             action = "view" if obj.has_images() else "no_manifest"
-            return gen_btn(Digitization.objects.filter(pk=obj.id).first(), action)
-        return "-"  # todo do not display field
+            return gen_btn(
+                Digitization.objects.filter(pk=obj.id).first(), action
+            )  # TODO show auto annotation if exists
+        return "-"  # todo do not display field hasn't been created
 
     @admin.display(description=get_name("view_anno"))
     def view_anno(self, obj: Digitization):

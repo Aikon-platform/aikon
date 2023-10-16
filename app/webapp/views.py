@@ -126,21 +126,16 @@ def reindex_anno(request, anno_ref):
 
     anno_id = ref["anno"][1]
     anno = Annotation.objects.filter(pk=anno_id).first()
-    if not anno:
-        return JsonResponse(
-            {"response": f"No annotation matching the id #{anno_id}"},
-            safe=False,
-        )
+    if anno:
+        try:
+            delete_annos(anno)
+        except Exception as e:
+            return JsonResponse(
+                {"message": f"Failed to delete annotation #{anno_id}: {e}"}
+            )
 
     if exists(f"{ANNO_PATH}/{anno_ref}.txt"):
         with open(f"{ANNO_PATH}/{anno_ref}.txt", "r") as file:
-            try:
-                delete_annos(anno)
-            except Exception as e:
-                return JsonResponse(
-                    {"message": f"Failed to delete annotation #{anno_id}: {e}"}
-                )
-
             try:
                 process_anno(file.read(), digit)
                 return JsonResponse({"message": "Annotations were re-indexed."})
@@ -227,7 +222,7 @@ def export_wit_img(request, wit_id):
 def canvas_annotations(request, version, anno_ref, canvas_nb):
     anno_id = anno_ref.split("_")[-1].replace("anno", "")
     anno = get_object_or_404(Annotation, pk=anno_id)
-    return JsonResponse(format_canvas_annos(anno, canvas_nb, version))
+    return JsonResponse(format_canvas_annos(anno, canvas_nb))
 
 
 def populate_annotation(request, anno_id):
