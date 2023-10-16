@@ -1,5 +1,6 @@
 import json
 import re
+from os.path import exists
 
 from dal import autocomplete
 
@@ -21,6 +22,7 @@ from app.config.settings import (
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2
 from app.webapp.utils.functions import credentials, list_to_txt
+from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.logger import console, log, get_time
 from app.webapp.utils.iiif.annotation import (
     format_canvas_annos,
@@ -29,8 +31,11 @@ from app.webapp.utils.iiif.annotation import (
     formatted_annotations,
     anno_request,
     process_anno,
+    delete_annos,
 )
 import requests
+
+from app.webapp.utils.paths import ANNO_PATH
 
 
 def admin_app(request):
@@ -42,7 +47,7 @@ def manifest_digitization(request, digit_ref):
     if not match:
         return JsonResponse(
             {
-                "response": f"Wrong format of digitization reference:{digit_ref}",
+                "response": f"Wrong format of digitization reference: {digit_ref}",
                 "reason": "Reference must follow this format: {witness_abbr}{witness_id}_{digit_abbr}{digit_id}",
             },
             safe=False,
@@ -95,6 +100,92 @@ def send_anno(request, digit_id):
             safe=False,
         )
     return JsonResponse(error, safe=False)
+
+
+def reindex_anno(request, anno_ref):
+    """
+    To reindex annotations from a text file
+    """
+    ref = parse_ref(anno_ref)
+    if not ref:
+        return JsonResponse(
+            {
+                "response": f"Wrong format of annotation reference: {anno_ref}",
+                "reason": "Reference must follow this format: {witness_abbr}{witness_id}_{digit_abbr}{digit_id}_anno{anno_id}",
+            },
+            safe=False,
+        )
+
+    digit_id = ref["digit"][1]
+    digit = Digitization.objects.filter(pk=digit_id).first()
+    if not digit:
+        return JsonResponse(
+            {"response": f"No digitization matching the id #{digit_id}"},
+            safe=False,
+        )
+
+    anno_id = ref["anno"][1]
+    anno = Annotation.objects.filter(pk=anno_id).first()
+    if not anno:
+        return JsonResponse(
+            {"response": f"No annotation matching the id #{anno_id}"},
+            safe=False,
+        )
+
+    if exists(f"{ANNO_PATH}/{anno_ref}.txt"):
+        with open(f"{ANNO_PATH}/{anno_ref}.txt", "r") as file:
+            try:
+                delete_annos(anno)
+            except Exception as e:
+                return JsonResponse(
+                    {"message": f"Failed to delete annotation #{anno_id}: {e}"}
+                )
+
+            try:
+                process_anno(file.read(), digit)
+                return JsonResponse({"message": "Annotations were re-indexed."})
+
+            except Exception as e:
+                return JsonResponse(
+                    {
+                        "message": f"Failed to index annotations for digit #{digit_id}: {e}"
+                    }
+                )
+
+    return JsonResponse({"message": f"No annotation file for reference #{anno_ref}."})
+
+
+def delete_send_anno(request, anno_ref):
+    """
+    To delete images on the GPU and relaunch annotations
+    """
+    ref = parse_ref(anno_ref)
+    # TODO redo entirely
+    # manifest_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_AUTO}/{wit_type}/{wit_id}/manifest.json"
+    # try:
+    #     requests.post(
+    #         url=f"{API_GPU_URL}/delete_detect",
+    #         headers={"X-API-Key": API_KEY},
+    #         data={"manifest_url": manifest_url},
+    #     )
+    # except Exception as e:
+    #     log(
+    #         f"[delete_send_anno] Failed to send deletion and annotation request for {wit_type} #{wit_id}: {e}"
+    #     )
+    #     return JsonResponse(
+    #         {
+    #             "response": f"Failed to send deletion and annotation request for {wit_type} #{wit_id}",
+    #             "cause": e,
+    #         },
+    #         safe=False,
+    #     )
+
+    return JsonResponse(
+        {
+            "response": f"Images were deleted and annotations were relaunched for {ref['wit'][0]} #{ref['wit'][1]}"
+        },
+        safe=False,
+    )
 
 
 @csrf_exempt

@@ -79,7 +79,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     inlines = [DigitizationInline, ContentInline]
 
     def get_inline_instances(self, request, obj=None):
-        # TODO finish this
+        # TODO to delete?
         # called every time the form is rendered without need of refreshing the page
         inline_instances = super().get_inline_instances(request, obj)
 

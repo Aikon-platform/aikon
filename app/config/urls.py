@@ -21,6 +21,8 @@ from app.webapp.views import (
     export_wit_img,
     export_digit_img,
     search_similarity,
+    reindex_anno,
+    delete_send_anno,
 )
 
 
@@ -99,6 +101,16 @@ urlpatterns = [
         f"{APP_NAME}/run-annotation/<int:digit_id>",
         send_anno,
         name="send-annotations",
+    ),
+    path(
+        f"{APP_NAME}/reindex-annotation/<str:anno_ref>",
+        reindex_anno,
+        name="reindex-annotations",
+    ),
+    path(
+        f"{APP_NAME}/delete-run-annotation/<str:anno_ref>",
+        delete_send_anno,
+        name="delete-run-annotations",
     ),
     path(
         f"{APP_NAME}/search-similarity/<str:experiment_id>/",

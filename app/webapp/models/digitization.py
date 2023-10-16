@@ -251,6 +251,7 @@ class Digitization(models.Model):
 
         elif self.get_digit_abbr() == IMG_ABBR:
             delete_files(f"{IMG_PATH}/to_delete.txt")
+            i = 0
             for i, img_path in enumerate(self.get_imgs(is_abs=True, temp=True)):
                 # TODO: check need of threading to do that
                 to_jpg(img_path, self.get_file_path(i=i + 1))
