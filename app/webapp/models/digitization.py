@@ -171,7 +171,8 @@ class Digitization(models.Model):
 
     def has_annotations(self):
         # if there is at least one annotation file named after the current digitization
-        if len(glob(f"{BASE_DIR}/{ANNO_PATH}/{self.get_ref()}_*.txt")):
+        if len(glob(f"{ANNO_PATH}/{self.get_ref()}_*.txt")):
+            # TODO check self.get_annotations()
             return True
         return False
 

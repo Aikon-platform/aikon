@@ -22,7 +22,7 @@ def anno_btn(obj: Annotation | Digitization, action="view"):
         icon = get_icon("eye")
         # The link redirects to Mirador with no annotations (Digitization) or automatic annotations (Annotation)
         link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V1)}"
-        btn = f"{action} SOURCE"
+        btn = f"{get_action(action, 'upper')} SOURCE"
     elif action == "edit":
         color = "#008CBA"
         icon = get_icon("pen-to-square")
@@ -42,7 +42,7 @@ def anno_btn(obj: Annotation | Digitization, action="view"):
         disabled = "disabled"
 
     return (
-        f"<a href='{link}' class='btn btn-md active annotate-manifest' role='button' aria-pressed='true' "
+        f"<a href='{link}' class='btn btn-md active view-btn' role='button' aria-pressed='true' "
         f"{disabled} style='background-color:{color};'>{icon} {btn}</a>"
     )
 
@@ -59,22 +59,25 @@ def gen_btn(obj: Annotation | Digitization, action="view"):
     if action == "no_manifest" or action == "no_anno":
         return mark_safe(anno_btn(obj, action))
 
+    download_link = ""
+
     if cls(obj) == Annotation:
         download_url = f"{SAS_APP_URL}/search-api/{obj.get_ref()}/search/"
         anno_type = "JSON"
         version = MANIFEST_V2
     elif cls(obj) == Digitization:
-        download_url = f"{APP_NAME}/iiif/digit-annotation/{obj.id}"
+        download_url = f"{APP_URL}/{APP_NAME}/iiif/digit-annotation/{obj.id}"
         anno_type = "TXT"
         version = None
     else:
-        return mark_safe(
-            "PROUT"
-        )  # TODO change that even though it is not supposed to occur
+        return mark_safe("-")
+
+    if obj.has_annotations():
+        download_link = f'<br><br><a href="{download_url}" target="_blank">{get_icon("download")} {get_action("download")} annotations ({anno_type})</a>'
 
     return mark_safe(
-        f"{get_link_manifest(obj, version)}<br>{anno_btn(obj, action)}"
-        f'<a href="{download_url}" target="_blank">{get_icon("download")} {get_action("download")} annotations ({anno_type})</a>'
+        f"{get_link_manifest(obj, version)}<br><br>{anno_btn(obj, action)}"
+        f"{download_link}"
     )
 
 

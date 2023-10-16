@@ -205,7 +205,7 @@ def format_start_end(start=None, end=None, no_info="?-?", separator="-"):
 
 def get_action(action, formatting=None):
     actions = {
-        "view": {"en": "visualize", "fr": "visualiser les"},
+        "view": {"en": "visualize", "fr": "visualiser la"},
         "no_manifest": {"en": "no manifest", "fr": "pas de manifest"},
         "no_anno": {"en": "no annotation yet", "fr": "non annoté"},
         "download": {"en": "download", "fr": "télécharger les"},

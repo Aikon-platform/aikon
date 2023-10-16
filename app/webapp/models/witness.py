@@ -55,7 +55,7 @@ class Witness(models.Model):
 
     def __str__(self):
         cons_place = self.place.name if self.place else CONS_PLA_MSG
-        return format_html(f"{cons_place} | {self.id_nb} {self.change_url()}")
+        return format_html(f"{cons_place} | {self.id_nb}")
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(

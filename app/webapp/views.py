@@ -238,6 +238,7 @@ class PlaceAutocomplete(autocomplete.Select2ListView):
         url = f"http://api.geonames.org/searchJSON?q={query}&maxRows=10&username={GEONAMES_USER}"
         response = requests.get(url)
         data = response.json()
+        # TODO use try/except to avoid bug if geonames key doesn't exist
         suggestions = []
         for suggestion in data["geonames"]:
             suggestions.append(suggestion["name"])

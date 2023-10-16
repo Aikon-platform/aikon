@@ -37,7 +37,7 @@ $(function() {
             if (selectNb) { selectNb = parseInt(selectNb[0]) }
         }
         const digitType = $(digitSelect).val()
-        if (selectNb){
+        if (selectNb !== null){
             lastDigitSelect = selectNb > lastDigitSelect ? selectNb : lastDigitSelect;
             const [divToShow, divsToHide] = getFields(digitType, String(selectNb));
             divsToHide.map(divToHide => hide(divToHide));
