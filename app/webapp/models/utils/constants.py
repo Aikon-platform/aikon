@@ -139,8 +139,8 @@ MANIFEST_DESC = (
     else "Un manifeste permet de décrire et de partager des numérisations avec leurs métadonnées selon la norme IIIF."
 )
 MANIFEST_INFO = f"""<div class='tooltip'>
-                 <i class='fa-solid fa-circle-info' title='Manifest'>{MANIFEST_DESC}</i>
-                 <span class='tooltiptext'></span>
+                 <i class='fa-solid fa-circle-info' title='Manifest'></i>
+                 <span class='tooltiptext'>{MANIFEST_DESC}</span>
              </div>
              E.g.: <a href='https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json' target='_blank'>
              https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json</a>"""
