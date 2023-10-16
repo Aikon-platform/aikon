@@ -41,13 +41,23 @@ def manifest_digitization(request, digit_ref):
     match = re.search(r"_[a-zA-Z]{3}(\d+)", digit_ref)
     if not match:
         return JsonResponse(
-            {"response": f"Wrong reference for Digitization {digit_ref}"}, safe=False
+            {
+                "response": f"Wrong format of digitization reference:{digit_ref}",
+                "reason": "Reference must follow this format: {witness_abbreviation}{witness_id}_{digit_abbr}{digit_id}",
+            },
+            safe=False,
         )
     digit_id = int(match.group(1))
     digit = get_object_or_404(Digitization, pk=digit_id)
     if digit_ref == digit.get_ref():
         return JsonResponse(digit.gen_manifest_json())
-    return JsonResponse(digit.gen_manifest_json())
+    return JsonResponse(
+        {
+            "response": f"Wrong reference for digitization #{digit_id}",
+            "reason": "Reference must follow this format: {witness_abbreviation}{witness_id}_{digit_abbr}{digit_id}",
+        },
+        safe=False,
+    )
 
 
 def manifest_annotation(request, version, anno_ref):

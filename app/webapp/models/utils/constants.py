@@ -170,4 +170,4 @@ CONS_PLA_MSG = (
     else "Lieu de conservation inconnu"
 )
 
-WIT_CHANGE = f"Change the {WIT}" if APP_LANG == "en" else f"Modifier le {WIT}"
+WIT_CHANGE = f"Modify {WIT}" if APP_LANG == "en" else f"Modifier le {WIT}"
