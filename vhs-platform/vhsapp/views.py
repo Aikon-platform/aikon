@@ -13,7 +13,13 @@ from vhs.settings import ENV
 from vhsapp.models.witness import Volume, Manuscript
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhsapp.utils.paths import MEDIA_PATH, BASE_DIR, VOL_ANNO_PATH, MS_ANNO_PATH
-from vhs.settings import VHS_APP_URL, CANTALOUPE_APP_URL, SAS_APP_URL, API_GPU_URL
+from vhs.settings import (
+    VHS_APP_URL,
+    CANTALOUPE_APP_URL,
+    SAS_APP_URL,
+    API_GPU_URL,
+    API_KEY,
+)
 
 from vhsapp.utils.constants import (
     APP_NAME,
@@ -74,12 +80,12 @@ def send_anno(request, wit_id, wit_type):
     """
     To relaunch annotations in case the automatic annotation failed
     """
-    wit_abbr = MS_ABBR if wit_type == MS else VOL_ABBR
     manifest_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_AUTO}/{wit_type}/{wit_id}/manifest.json"
     try:
         requests.post(
             url=f"{API_GPU_URL}/run_detect",
-            data={"manifest_url": manifest_url, "wit_abbr": wit_abbr},
+            headers={"X-API-Key": API_KEY},
+            data={"manifest_url": manifest_url},
         )
     except Exception as e:
         log(
@@ -99,10 +105,71 @@ def send_anno(request, wit_id, wit_type):
     )
 
 
+def reindex_anno(request, wit_id, wit_type):
+    """
+    To reindex annotations from a text file
+    """
+    anno_path = f"{BASE_DIR}/{MEDIA_PATH}/{MS_ANNO_PATH if wit_type == 'manuscript' else VOL_ANNO_PATH}"
+
+    if exists(f"{anno_path}/{wit_id}.txt"):
+        try:
+            index_wit_annotations(wit_id, wit_type)
+            return JsonResponse({"message": "Annotations were re-indexed."})
+
+        except Exception as e:
+            log(
+                f"[reindex_anno] Failed to index annotations for {wit_type} #{wit_id}: {e}"
+            )
+            return JsonResponse(
+                {
+                    "message": f"Failed to index annotations for {wit_type} #{wit_id}: {e}"
+                }
+            )
+
+    else:
+        log(f"[reindex_anno] No annotation file for {wit_type} #{wit_id}.")
+        return JsonResponse(
+            {"message": f"No annotation file for {wit_type} #{wit_id}."}
+        )
+
+
+def delete_send_anno(request, wit_id, wit_type):
+    """
+    To delete images on the GPU and relaunch annotations
+    """
+    manifest_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_AUTO}/{wit_type}/{wit_id}/manifest.json"
+    try:
+        requests.post(
+            url=f"{API_GPU_URL}/delete_detect",
+            headers={"X-API-Key": API_KEY},
+            data={"manifest_url": manifest_url},
+        )
+    except Exception as e:
+        log(
+            f"[delete_send_anno] Failed to send deletion and annotation request for {wit_type} #{wit_id}: {e}"
+        )
+        return JsonResponse(
+            {
+                "response": f"Failed to send deletion and annotation request for {wit_type} #{wit_id}",
+                "cause": e,
+            },
+            safe=False,
+        )
+
+    return JsonResponse(
+        {
+            "response": f"Images were deleted and annotations were relaunched for {wit_type} #{wit_id}"
+        },
+        safe=False,
+    )
+
+
 @csrf_exempt
 def receive_anno(request, wit_id, wit_type):
+    """
+    To receive annotations from the detection API
+    """
     if request.method == "POST":
-        # TODO: vérification du format des annotations reçues
         annotation_file = request.FILES["annotation_file"]
         file_content = annotation_file.read()
 

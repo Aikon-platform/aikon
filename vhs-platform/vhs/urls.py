@@ -17,7 +17,9 @@ from vhsapp.views import (
     test,
     validate_annotation,
     receive_anno,
-    send_anno
+    send_anno,
+    delete_send_anno,
+    reindex_anno,
 )
 
 
@@ -78,6 +80,16 @@ urlpatterns = [
         f"{APP_NAME}/<str:wit_type>/<int:wit_id>/run-annotation/",
         send_anno,
         name="send-annotations",
+    ),
+    path(
+        f"{APP_NAME}/<str:wit_type>/<int:wit_id>/reindex-annotation/",
+        reindex_anno,
+        name="reindex-annotations",
+    ),
+    path(
+        f"{APP_NAME}/<str:wit_type>/<int:wit_id>/delete-run-annotation/",
+        delete_send_anno,
+        name="delete-run-annotations",
     ),
 ]
 

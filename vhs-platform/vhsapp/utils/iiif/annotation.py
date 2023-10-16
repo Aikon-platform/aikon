@@ -28,6 +28,9 @@ from vhsapp.utils.functions import (
 
 
 def send_anno_request(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
+    """
+    To send a request to a detection API for image annotation
+    """
     wit_type = get_wit_type(wit_abbr)
 
     manifest_url = (
@@ -49,6 +52,9 @@ def send_anno_request(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
 
 
 def index_wit_annotations(wit_id, wit_type):
+    """
+    To index annotations received from the detection API
+    """
     iiif_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{wit_type}/{wit_id}"
     if not index_manifest_in_sas(f"{iiif_url}/manifest.json", True):
         return
