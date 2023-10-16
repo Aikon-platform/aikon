@@ -118,9 +118,9 @@ ROLES = (
 #############################
 
 DATE_INFO = (
-    ""
+    "Enter a year in numeric format. Example: '1400' to '1499' to indicate the 15<sup>th</sup> century."
     if APP_LANG == "en"
-    else "<ul><li>Saisissez une année sous forme de nombre.</li><li>Exemple : 1435 représente le 15<sup>ème</sup> siècle.</li>"
+    else "Saisissez une année au format numérique. Exemple : '1400' à '1499' pour indiquer le 15<sup>ème</sup> siècle."
 )
 PUBLISHED_INFO = (
     "Record details will be accessible to other users of the database."
