@@ -24,6 +24,7 @@ from vhsapp.utils.iiif.annotation import (
     get_canvas_list,
     get_indexed_canvas_annos,
     get_coord_from_anno,
+    get_full_images,
 )
 
 from vhsapp.models.constants import MS, VOL, WIT, MS_ABBR, VOL_ABBR, WIT_ABBR
@@ -222,8 +223,9 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             "export_selected_images",
             "export_selected_pdfs",
             "export_annotated_imgs",
-            "export_selected_annotations",
-            "export_training",
+            "export_training_anno",
+            "export_training_imgs",
+            "export_training_data",
         ]
         if self.wit_type() == VOL:
             self.actions += ["detect_similarity"]
@@ -351,7 +353,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         return zip_img(request, img_urls)
 
     @admin.action(description="Exporter les annotations pour l'entraînement")
-    def export_training(self, request, queryset):
+    def export_training_anno(self, request, queryset):
         try:
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
@@ -384,6 +386,16 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
                 request,
                 f"Les annotations n'ont pas pu être exportées : {e}.",
             )
+
+    @admin.action(description="Exporter les images pour l'entraînement")
+    def export_training_imgs(self, request, queryset):
+        results = queryset.values_list("id")
+
+        img_urls = []
+        for wit_id in results:
+            witness = Manuscript.objects.get(pk=wit_id[0])
+            img_urls.extend(get_full_images(witness, MS))
+        return zip_img(request, img_urls)
 
 
 @admin.register(Printed)
