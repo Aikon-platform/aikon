@@ -38,7 +38,12 @@ def admin_app(request):
 
 
 def manifest_digitization(request, digit_ref):
-    digit_id = re.search(r"_(\d+)", digit_ref)
+    match = re.search(r"_[a-zA-Z]{3}(\d+)", digit_ref)
+    if not match:
+        return JsonResponse(
+            {"response": f"Wrong reference for Digitization {digit_ref}"}, safe=False
+        )
+    digit_id = int(match.group(1))
     digit = get_object_or_404(Digitization, pk=digit_id)
     if digit_ref == digit.get_ref():
         return JsonResponse(digit.gen_manifest_json())

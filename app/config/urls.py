@@ -44,7 +44,7 @@ urlpatterns = [
     ),
     path(
         # digit_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}
-        f"{APP_NAME}/iiif/<int:wit_id>/<str:digit_ref>/manifest.json",
+        f"{APP_NAME}/iiif/<str:digit_ref>/manifest.json",
         manifest_digitization,
         name="manifest-digitization",
     ),
