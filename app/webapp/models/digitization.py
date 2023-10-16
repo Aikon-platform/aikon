@@ -177,15 +177,13 @@ class Digitization(models.Model):
 
     def has_images(self):
         # if there is at least one image file named after the current digitization
-        if len(glob(f"{BASE_DIR}/{IMG_PATH}/{self.get_ref()}_*.jpg")):
+        if len(glob(f"{IMG_PATH}/{self.get_ref()}_*.jpg")):
             return True
         return False
 
     def get_imgs(self, is_abs=False, temp=False):
         imgs = []
         path = f"{IMG_PATH}/" if is_abs else ""
-        # log(os.listdir(IMG_PATH)) # MARKER
-        # log(self.get_ref())
         for filename in os.listdir(IMG_PATH):
             if filename.startswith(
                 self.get_ref() if not temp else f"temp_{self.get_wit_ref()}"
@@ -206,7 +204,7 @@ class Digitization(models.Model):
 
     def gen_manifest_url(self, only_base=False, version=None):
         # usage of version parameter to copy parameters of Annotation.gen_manifest_url()
-        base_url = f"{APP_URL}/{APP_NAME}/iiif/{self.get_wit_id()}/{self.id}"
+        base_url = f"{APP_URL}/{APP_NAME}/iiif/{self.get_ref()}"
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 
     def gen_manifest_json(self):
