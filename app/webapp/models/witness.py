@@ -55,10 +55,7 @@ class Witness(models.Model):
 
     def __str__(self):
         cons_place = self.place.name if self.place else CONS_PLA_MSG
-        change_url = reverse("admin:webapp_witness_change", args=[self.id])
-        return format_html(
-            f"{cons_place} | {self.id_nb} <a href='{change_url}'>{WIT_CHANGE} #{self.id}</a>"
-        )
+        return format_html(f"{cons_place} | {self.id_nb} {self.change_url()}")
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
@@ -124,6 +121,10 @@ class Witness(models.Model):
 
     def get_ref(self):
         return f"{self.get_type()}{self.id}"
+
+    def change_url(self):
+        change_url = reverse("admin:webapp_witness_change", args=[self.id])
+        return f"<a href='{change_url}' target='_blank'>{WIT_CHANGE} #{self.id}</a>"
 
     def get_metadata(self):
         # todo finish defining manifest metadata (type, id, etc)
