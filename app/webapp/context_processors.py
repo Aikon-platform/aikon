@@ -17,6 +17,7 @@ from app.webapp.models.utils.constants import (
     IMG_ABBR,
     PDF_ABBR,
     MAN_ABBR,
+    WIT_CHANGE,
 )
 
 
@@ -42,4 +43,5 @@ def global_variables(request):
         "IMG_ABBR": IMG_ABBR,
         "PDF_ABBR": PDF_ABBR,
         "MAN_ABBR": MAN_ABBR,
+        "WIT_CHANGE": WIT_CHANGE,
     }
