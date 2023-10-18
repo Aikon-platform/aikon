@@ -4,7 +4,7 @@ from glob import glob
 from iiif_prezi.factory import StructuralError
 
 from app.config.settings import APP_URL, APP_NAME
-from app.webapp.models import get_wit_abbr
+from app.webapp.models import get_wit_abbr, get_wit_type
 from app.webapp.models.utils.functions import get_fieldname
 
 import threading
@@ -117,7 +117,7 @@ class Digitization(models.Model):
 
     def get_wit_type(self, abbr=False):
         if witness := self.get_witness():
-            return witness.type if not abbr else get_wit_abbr(witness.type)
+            return witness.type if abbr else get_wit_type(witness.type)
         return None
 
     def get_wit_ref(self):

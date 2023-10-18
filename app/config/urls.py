@@ -51,7 +51,6 @@ urlpatterns = [
         name="manifest-digitization",
     ),
     path(
-        # TODO enforce that the url is correctly formatted
         # anno_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}
         f"{APP_NAME}/iiif/<str:version>/<str:anno_ref>/manifest.json",
         manifest_annotation,

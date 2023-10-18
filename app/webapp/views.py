@@ -11,6 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.decorators import login_required
 
+from app.webapp.models import get_wit_type
 from app.webapp.models.annotation import Annotation, check_version
 from app.webapp.models.digitization import Digitization
 from app.config.settings import (
@@ -256,8 +257,11 @@ def witness_sas_annotations(request, anno_id):
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
-def show_annotations(request, anno_id):
+def show_annotations(
+    request, anno_id
+):  # TODO maybe change to have anno_ref instead of anno_id
     anno = get_object_or_404(Annotation, pk=anno_id)
+    witness = anno.get_witness()
 
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
@@ -276,8 +280,8 @@ def show_annotations(request, anno_id):
         request,
         "webapp/show.html",
         context={
-            # "wit_type": wit_type,
-            # "wit_obj": witness,
+            "wit_type": get_wit_type(witness.type),
+            "wit_obj": witness,
             "page_annos": page_annos,
             "bboxes": json.dumps(bboxes),
             "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2),
