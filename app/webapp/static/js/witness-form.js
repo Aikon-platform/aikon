@@ -8,6 +8,10 @@ $(function() {
         div.hide();
     }
 
+    const digitInlines = $('#digitizations-group [id^="digitizations-"]');
+    // TODO remove visualize and annotations if empty
+    // TODO enforce the order of the fields
+
     function getFields(digitType, selectNb = "0"){
         // TODO enforce order of fields, in order to have type select always at first
         const manifestDiv = $(`#digitizations-${selectNb} .field-manifest`).first();

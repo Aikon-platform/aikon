@@ -15,14 +15,14 @@ from app.webapp.utils.iiif import IIIF_ICON
 
 def anno_btn(obj: Annotation | Digitization, action="view"):
     disabled = ""
-    btn = f"{get_action(action, 'upper')} ANNOTATIONS"
+    thing = "ANNOTATIONS" if cls(obj) == Annotation else "SOURCE"
+    btn = f"{get_action(action, 'upper')} {thing}"
 
     if action == "view":
         color = "#EFB80B"
         icon = get_icon("eye")
         # The link redirects to Mirador with no annotations (Digitization) or automatic annotations (Annotation)
         link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V1)}"
-        btn = f"{get_action(action, 'upper')} SOURCE"
     elif action == "edit":
         color = "#008CBA"
         icon = get_icon("pen-to-square")
@@ -42,7 +42,7 @@ def anno_btn(obj: Annotation | Digitization, action="view"):
         disabled = "disabled"
 
     return (
-        f"<a href='{link}' class='btn btn-md active view-btn' role='button' aria-pressed='true' "
+        f"<a href='{link}' class='btn btn-md active view-btn' role='button' aria-pressed='true' target='_blank'"
         f"{disabled} style='background-color:{color};'>{icon} {btn}</a>"
     )
 
