@@ -22,7 +22,7 @@ from app.config.settings import (
 )
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2
-from app.webapp.utils.functions import credentials, list_to_txt
+from app.webapp.utils.functions import credentials, list_to_txt, delete_files
 from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.logger import console, log, get_time
 from app.webapp.utils.iiif.annotation import (
@@ -106,9 +106,10 @@ def send_anno(request, digit_id):
 def reindex_anno(request, anno_ref):
     """
     To reindex annotations from a text file
+    url f"{APP_NAME}/reindex-annotation/<str:anno_ref>"
     """
     ref = parse_ref(anno_ref)
-    if not ref:
+    if not ref and not ref["digit"]:
         return JsonResponse(
             {
                 "response": f"Wrong format of annotation reference: {anno_ref}",
@@ -125,7 +126,7 @@ def reindex_anno(request, anno_ref):
             safe=False,
         )
 
-    anno_id = ref["anno"][1]
+    anno_id = ref["anno"][1] if ref["anno"] else 0
     anno = Annotation.objects.filter(pk=anno_id).first()
     if anno:
         try:
@@ -136,17 +137,19 @@ def reindex_anno(request, anno_ref):
             )
 
     if exists(f"{ANNO_PATH}/{anno_ref}.txt"):
+        # TODO delete anno txt file here
         with open(f"{ANNO_PATH}/{anno_ref}.txt", "r") as file:
             try:
                 process_anno(file.read(), digit)
-                return JsonResponse({"message": "Annotations were re-indexed."})
-
             except Exception as e:
                 return JsonResponse(
                     {
                         "message": f"Failed to index annotations for digit #{digit_id}: {e}"
                     }
                 )
+        # log([anno.id for anno in Annotation.objects.all()])
+        delete_files(f"{ANNO_PATH}/{anno_ref}.txt")
+        return JsonResponse({"message": "Annotations were re-indexed."})
 
     return JsonResponse({"message": f"No annotation file for reference #{anno_ref}."})
 

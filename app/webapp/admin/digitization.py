@@ -1,7 +1,6 @@
 import nested_admin
 from django.contrib import admin
 from django.utils.safestring import mark_safe
-from nested_inlines.forms import BaseNestedModelForm
 
 from app.config.settings import APP_NAME, WEBAPP_NAME, APP_LANG
 from app.webapp.admin import UnregisteredAdmin
