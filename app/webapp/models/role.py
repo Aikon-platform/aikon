@@ -22,7 +22,7 @@ class Role(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        return f"{self.person.name} ({self.role})"
+        return f"{self.person} ({dict(ROLES).get(self.role)})"  # self.role
 
     content = models.ForeignKey(
         Content,

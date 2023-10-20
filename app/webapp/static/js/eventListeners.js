@@ -3,7 +3,9 @@ $(function() {
 
     $("p.url a, span.inline_label a, div.readonly a, .field-image p a, p.file-upload a").attr("target", "_blank");
 
-    $("[id$=-0-image]").attr("multiple", true);
+    // Allow multiple image selection
+    $(`[id^="id_digitizations-"][id$="-images"]`).attr("multiple", true);
+
 
     // $(document).on("click", "[id^=annotate_manifest_]", function(e) {
     //     e.preventDefault();

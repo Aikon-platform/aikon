@@ -3,6 +3,7 @@ function getUrl() {
 }
 
 function getWitType() {
+    // TODO change to accept all type included in the application (tpr, wpr, ms)
     const currentUrl = getUrl();
     if (currentUrl.includes(MS)) {
         return MS;

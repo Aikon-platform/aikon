@@ -21,6 +21,8 @@ from app.webapp.views import (
     export_wit_img,
     export_digit_img,
     search_similarity,
+    reindex_anno,
+    delete_send_anno,
 )
 
 
@@ -44,12 +46,11 @@ urlpatterns = [
     ),
     path(
         # digit_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}
-        f"{APP_NAME}/iiif/<int:wit_id>/<str:digit_ref>/manifest.json",
+        f"{APP_NAME}/iiif/<str:digit_ref>/manifest.json",
         manifest_digitization,
         name="manifest-digitization",
     ),
     path(
-        # TODO enforce that the url is correctly formatted
         # anno_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}
         f"{APP_NAME}/iiif/<str:version>/<str:anno_ref>/manifest.json",
         manifest_annotation,
@@ -99,6 +100,16 @@ urlpatterns = [
         f"{APP_NAME}/run-annotation/<int:digit_id>",
         send_anno,
         name="send-annotations",
+    ),
+    path(
+        f"{APP_NAME}/reindex-annotation/<str:anno_ref>",
+        reindex_anno,
+        name="reindex-annotations",
+    ),
+    path(
+        f"{APP_NAME}/delete-run-annotation/<str:anno_ref>",
+        delete_send_anno,
+        name="delete-run-annotations",
     ),
     path(
         f"{APP_NAME}/search-similarity/<str:experiment_id>/",

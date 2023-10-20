@@ -36,7 +36,7 @@ def process_images(obj: Digitization | Annotation, seq, version=None):
                     seq,
                     counter,
                     img,
-                    Image.open(f"{BASE_DIR}/{IMG_PATH}/{img}"),
+                    Image.open(f"{IMG_PATH}/{img}"),
                     version,
                 )
             except UnidentifiedImageError as e:

@@ -22,10 +22,20 @@ class Place(models.Model):
         return f"{self.country}, {self.name}"
 
     name = models.CharField(verbose_name=get_name("name"), max_length=200, unique=True)
-    country = models.CharField(verbose_name=get_name("country"), max_length=150)
+    country = models.CharField(
+        verbose_name=get_name("country"), max_length=150, blank=True
+    )
     latitude = models.DecimalField(
-        verbose_name=get_name("latitude"), max_digits=8, decimal_places=4, null=True
+        verbose_name=get_name("latitude"),
+        max_digits=8,
+        decimal_places=4,
+        null=True,
+        blank=True,
     )
     longitude = models.DecimalField(
-        verbose_name=get_name("longitude"), max_digits=8, decimal_places=4, null=True
+        verbose_name=get_name("longitude"),
+        max_digits=8,
+        decimal_places=4,
+        null=True,
+        blank=True,
     )

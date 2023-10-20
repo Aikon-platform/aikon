@@ -3,13 +3,12 @@ import re
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from app.config.settings import APP_LANG
 from app.webapp.models.witness import Witness
 from app.webapp.models.work import Work
 from app.webapp.models.place import Place
 from app.webapp.models.language import Language
 
-from app.webapp.models.utils.constants import TAG, PAG_ABBR
+from app.webapp.models.utils.constants import TAG, PAG_ABBR, PAGE_ERROR
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.functions import format_start_end, extract_nb
 from app.webapp.utils.logger import log
@@ -39,11 +38,7 @@ def folios_to_pages(page: str = None):
 def validate_page(page):
     match = re.match(r"^\d+[rv]?$", page)
     if not match:
-        raise ValidationError(
-            "Page value must be numeric or end with 'r' or 'v'"
-            if APP_LANG == "en"
-            else "Les bornes de pages doivent être définies numériquement ou par terminer par 'r' ou 'v'"
-        )
+        raise ValidationError(PAGE_ERROR)
 
 
 class Content(models.Model):
@@ -112,6 +107,10 @@ class Content(models.Model):
             return None
 
     def get_pages(self):
+        if self.page_min == "" and self.page_max == "":
+            # TODO allow to use "-" to tell that a content takes all witness
+            return ""
+
         return format_start_end(self.page_min, self.page_max)
 
     def get_nb_of_page(self, only_nb=True):

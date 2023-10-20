@@ -8,22 +8,28 @@
     {# TITLE IS DEFINED IN THE SETTINGS #}
     {# <title>{% block title %}{{ APP_NAME_UPPER }} platform{% endblock %}</title> #}
 
-    <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.png' %}">
+    <link rel="icon" type="image/x-icon" href="{% static 'img/favicon-'|add:APP_NAME|add:'.png' %}">
     <script>
         const APP_NAME = "{{ APP_NAME }}";
         const APP_LANG = "{{ APP_LANG }}";
 
-        const APP_URL = "{{ APP_URL }}"
-        const WEBAPP_NAME = "{{ WEBAPP_NAME }}"
+        const APP_URL = "{{ APP_URL }}";
+        const WEBAPP_NAME = "{{ WEBAPP_NAME }}";
         const SAS_APP_URL = "{{ SAS_APP_URL }}";
-        const CANTALOUPE_APP_URL = "{{ CANTALOUPE_APP_URL }}"
+        const CANTALOUPE_APP_URL = "{{ CANTALOUPE_APP_URL }}";
 
-        const MS = "{{ MS }}"
+        const MS = "{{ MS }}";
         const VOL = "{{ VOL }}";
-        const WIT = "{{ WIT }}"
+        const WIT = "{{ WIT }}";
 
-        const MS_ABBR = "{{ MS_ABBR }}"
+        const MS_ABBR = "{{ MS_ABBR }}";
         const VOL_ABBR = "{{ VOL_ABBR }}";
+
+        const IMG_ABBR = "{{ IMG_ABBR }}";
+        const PDF_ABBR = "{{ PDF_ABBR }}";
+        const MAN_ABBR = "{{ MAN_ABBR }}";
+
+        const WIT_CHANGE = "{{ WIT_CHANGE }}";
     </script>
     <script src="{% static 'js/jquery-3.6.1.js' %}"></script>
     <script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
@@ -31,4 +37,10 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <script src="{% static 'js/script.js' %}"></script>
     <script src="{% static 'js/eventListeners.js' %}"></script>
+{% endblock %}
+
+{% block footer %}
+    <div id="footer">
+        {{ APP_NAME_UPPER }} &copy; {% now "Y" %} <!-- All rights reserved. Tous droits réservés. -->
+    </div>
 {% endblock %}

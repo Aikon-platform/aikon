@@ -57,9 +57,15 @@ def get_last_file(path, prefix):
     return last_number
 
 
-def to_jpg(image):
+def get_file_ext(filepath):
+    path, ext = os.path.splitext(filepath)
+    _, filename = os.path.split(path)
+    return filename if ext else None, ext[1:] if ext else None
+
+
+def to_jpg(image, new_filename=None):
     try:
-        return save_img(Image.open(image), image.name)
+        return save_img(Image.open(image), new_filename or image.name)
     except Exception as e:
         log("[to_jpg] Failed to convert img to jpg", e)
     return False
@@ -73,7 +79,7 @@ def save_img(
     img_format="JPEG",
 ):
     try:
-        filename = img_filename.split(".")[0]
+        filename, _ = get_file_ext(img_filename)
         if img.mode != "RGB":
             img = img.convert("RGB")
 
@@ -89,12 +95,26 @@ def save_img(
         return False
 
 
+def rename_file(old_path, new_path):
+    if not os.path.exists(old_path):
+        log(f"[rename_file] {old_path} does not exist")
+        return False
+    if os.path.exists(new_path):
+        log(f"[rename_file] {new_path} already exists")
+    try:
+        os.rename(old_path, new_path)
+    except Exception as e:
+        log(f"[rename_file] {old_path} > {new_path}", e)
+        return False
+    return True
+
+
 # def convert_to_jpeg(image):
 #     """
 #     Convert the image to JPEG format
 #     TODO check which performs better
 #     """
-#     filename = image.name.split(".")[0]
+#     filename, _ = get_file_ext(image.name)
 #     img = Image.open(image)
 #     if img.mode != "RGB":
 #         img = img.convert("RGB")
@@ -107,7 +127,7 @@ def save_img(
 #     return img_jpg
 
 
-def pdf_to_img(event, pdf_name, dpi=MAX_RES):
+def pdf_to_img(pdf_name, event=None, dpi=MAX_RES):
     """
     Convert the PDF file to JPEG images
     """
@@ -118,7 +138,8 @@ def pdf_to_img(event, pdf_name, dpi=MAX_RES):
     try:
         command = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
         subprocess.run(command, shell=True, check=True)
-        event.set()
+        if event:
+            event.set()
     except Exception as e:
         log(
             f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e} ({e.__class__.__name__})"
@@ -184,7 +205,7 @@ def format_start_end(start=None, end=None, no_info="?-?", separator="-"):
 
 def get_action(action, formatting=None):
     actions = {
-        "view": {"en": "visualize", "fr": "visualiser les"},
+        "view": {"en": "visualize", "fr": "visualiser la"},
         "no_manifest": {"en": "no manifest", "fr": "pas de manifest"},
         "no_anno": {"en": "no annotation yet", "fr": "non annoté"},
         "download": {"en": "download", "fr": "télécharger les"},

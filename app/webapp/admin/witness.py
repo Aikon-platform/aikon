@@ -1,5 +1,8 @@
+from django.core.files.base import ContentFile
+
 from app.config.settings import APP_LANG
 from app.webapp.admin import DigitizationInline, ContentInline, ContentWorkInline
+from app.webapp.models.digitization import Digitization
 from app.webapp.models.witness import Witness, get_name
 from app.webapp.utils.constants import MAX_ITEMS
 
@@ -10,7 +13,9 @@ from django.contrib import admin, messages
 from django.utils.safestring import mark_safe
 
 from app.webapp.utils.iiif import gen_iiif_url
-from app.webapp.utils.functions import list_to_txt, zip_img
+from app.webapp.utils.functions import list_to_txt, zip_img, get_file_ext
+from app.webapp.utils.logger import log
+from app.webapp.utils.paths import IMG_PATH
 
 
 @admin.register(Witness)
@@ -74,7 +79,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     inlines = [DigitizationInline, ContentInline]
 
     def get_inline_instances(self, request, obj=None):
-        # TODO finish this
+        # TODO to delete?
         # called every time the form is rendered without need of refreshing the page
         inline_instances = super().get_inline_instances(request, obj)
 
@@ -101,9 +106,27 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             obj.imagewitness_set.create(image=file)
 
     def save_model(self, request, obj, form, change):
+        # called on submission of form
         if not obj.user:
             obj.user = request.user
         obj.save()
+
+        # it can't have more than 5 digits per witness, each digit can have only one image field
+        for nb in range(0, 4):
+            digit_id = request.POST.get(f"digitizations-{nb}-id", None)
+            if digit_id:
+                # TODO don't save again digit that were already treated
+                continue
+            digit_type = request.POST.get(f"digitizations-{nb}-digit_type", None)
+            files = request.FILES.getlist(f"digitizations-{nb}-images")
+            if len(files):
+                for i, file in enumerate(files):
+                    filename, ext = get_file_ext(file.name)
+                    with open(
+                        f"{IMG_PATH}/temp_{obj.get_ref()}_{digit_type}_{i}.{ext}", "wb"
+                    ) as saved_file:
+                        saved_file.write(file.read())
+
         messages.warning(
             request,
             "Le processus de conversion de.s fichier.s PDF en images et/ou d'extraction des images à partir de "
@@ -228,8 +251,8 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 class WitnessInline(nested_admin.NestedStackedInline):
     # FORM contained in the Series form
     model = Witness
-    verbose_name_plural = ""  # No title in the blue banner on top of the inline form
-    extra = 1
+    # verbose_name_plural = ""  # No title in the blue banner on top of the inline form
+    extra = 0  # 1
     # classes = ("collapse",)
     fields = [("id_nb", "place"), "volume"]
     inlines = [ContentWorkInline]

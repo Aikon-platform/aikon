@@ -61,7 +61,9 @@ class Annotation(models.Model):
         if not witness or not digit:
             return None
 
-        base_url = f"{APP_URL}/{APP_NAME}/iiif/{check_version(version)}/{witness.id}/{digit.id}/{self.id}"
+        base_url = (
+            f"{APP_URL}/{APP_NAME}/iiif/{check_version(version)}/{self.get_ref()}"
+        )
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 
     def gen_manifest_json(self, version=MANIFEST_V1):

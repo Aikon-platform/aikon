@@ -20,8 +20,12 @@ from app.config.settings import (
 from app.webapp.utils.functions import log
 
 
-def send_anno_request(event, digit: Digitization):
+def send_anno_request(digit: Digitization, event):
     event.wait()
+    if not API_GPU_URL.startswith("http"):
+        # on local to prevent bugs
+        return True
+
     try:
         anno_request(digit)
     except Exception as e:
@@ -52,8 +56,8 @@ def process_anno(anno_file_content, digit):
             return False
 
         try:
-            with open(f"{BASE_DIR}/{ANNO_PATH}/{anno.get_ref}.txt", "w+b") as f:
-                f.write(anno_file_content)
+            with open(f"{ANNO_PATH}/{anno.get_ref()}.txt", "w+b") as f:
+                f.write(anno_file_content.encode("utf-8"))
         except Exception as e:
             log(
                 f"[receive_anno] Failed to save received annotations for digit #{digit.id}",
@@ -114,6 +118,7 @@ def unindex_anno(anno_id, remove_from_anno_ids=False):
 
 
 def delete_annos(anno: Annotation):
+    # TODO HERE CHECK IF IT WORKS !!!
     index_manifest_in_sas(anno.gen_manifest_url(version=MANIFEST_V2))
     anno_id = 0
     try:
@@ -135,10 +140,10 @@ def delete_annos(anno: Annotation):
     return True
 
 
-def index_annos_on_canvas(anno: Annotation, canvas_nb, version):
+def index_annos_on_canvas(anno: Annotation, canvas_nb):
     # this url (view canvas_annotations()) is calling format_canvas_annos(), thus returning formatted annos for each canvas
     formatted_annos = (
-        f"{APP_NAME}/iiif/{version}/{anno.get_ref()}/list/anno-{canvas_nb}.json"
+        f"{APP_NAME}/iiif/{MANIFEST_V2}/{anno.get_ref()}/list/anno-{canvas_nb}.json"
     )
     # POST request that index the annotations
     response = urlopen(
@@ -199,7 +204,7 @@ def get_annos_per_canvas(anno: Annotation, last_canvas=0, specific_canvas=""):
 
 def get_txt_annos(anno: Annotation):
     try:
-        with open(f"{BASE_DIR}/{ANNO_PATH}/{anno.get_ref()}.txt") as f:
+        with open(f"{ANNO_PATH}/{anno.get_ref()}.txt") as f:
             return [line.strip() for line in f.readlines()]
     except FileNotFoundError:
         return None
@@ -243,7 +248,6 @@ def format_canvas_annos(anno: Annotation, canvas_nb):
 
 def format_annotation(anno: Annotation, canvas_nb, xywh):
     base_url = anno.gen_manifest_url(only_base=True, version=MANIFEST_V2)
-
     x, y, w, h = xywh
 
     width = w // 2
@@ -384,7 +388,12 @@ def index_manifest_in_sas(manifest_url, reindex=False):
     return True
 
 
-def get_canvas_list(anno: Annotation):
+def get_canvas_list(anno: Annotation, all_img=False):
+    imgs = anno.get_imgs()
+    if all_img:
+        # Display all images associated to the digitization, even though they were not annotated
+        return [(int(img.split("_")[-1].split(".")[0]), img) for img in imgs]
+
     lines = get_txt_annos(anno)
     if not lines:
         log(f"[get_canvas_list] no annotation file for annotation #{anno.id}")
@@ -392,15 +401,13 @@ def get_canvas_list(anno: Annotation):
             "error": "the annotations were not yet generated"
         }  # TODO find a way to display error msg
 
-    imgs = anno.get_imgs()
-
     canvases = []
     for line in lines:
         # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
         if len(line.split()) == 2:
             _, img_file = line.split()
             # use the image number as canvas number because it is more reliable that the one provided in the anno file
-            canvas_nb = int(img_file.split("_")[1].split(".")[0])
+            canvas_nb = int(img_file.split("_")[-1].split(".")[0])
             if img_file in imgs:
                 canvases.append((canvas_nb, img_file))
 
@@ -482,17 +489,22 @@ def formatted_annotations(anno: Annotation):
 
 def check_anno_file(file_content):
     # TODO check file content (if it contains the correct info)
-    textchars = (
-        bytearray([7, 8, 9, 10, 12, 13, 27])
-        + bytearray(range(0x20, 0x7F))
-        + bytearray(range(0x80, 0x100))
-    )
-    is_binary_string = lambda bytes: bool(bytes.translate(None, textchars))
+    # textchars = (
+    #     bytearray([7, 8, 9, 10, 12, 13, 27])
+    #     + bytearray(range(0x20, 0x7F))
+    #     + bytearray(range(0x80, 0x100))
+    # )
+    # is_binary_string = lambda bytes: bool(bytes.translate(None, textchars))
+    #
+    # if not is_binary_string(file_content[:1024]):
+    #     return True
+    # else:
+    #     return False
 
-    if not is_binary_string(file_content[:1024]):
-        return True
-    else:
-        return False
+    for line in file_content.split("\n"):
+        if not re.match(r"(\d+\s\d+\s\d+\s\d+|\d+\s\w+\.jpg)", line):
+            return False
+    return True
 
 
 def get_manifest_annos(anno: Annotation):

@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
+from django.utils.html import format_html
+from django.urls import reverse
 
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.volume import Volume
@@ -14,6 +16,8 @@ from app.webapp.models.utils.constants import (
     AUTHOR,
     PAG_ABBR,
     PAGE,
+    CONS_PLA_MSG,
+    WIT_CHANGE,
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.functions import get_icon, flatten
@@ -50,8 +54,11 @@ class Witness(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        cons_place = self.place.name if self.place else "Unknown place of conservation"
-        return f"{cons_place} | {self.id_nb} #{self.id}"
+        cons_place = self.place.name if self.place else CONS_PLA_MSG
+        return format_html(f"{cons_place} | {self.id_nb}")
+
+    def get_absolute_url(self):
+        return reverse("admin:webapp_witness_change", args=[self.id])
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
@@ -65,7 +72,6 @@ class Witness(models.Model):
         blank=True,
         null=True,
     )
-
     notes = models.TextField(
         verbose_name=get_name("notes"), max_length=1000, blank=True
     )
@@ -118,6 +124,10 @@ class Witness(models.Model):
 
     def get_ref(self):
         return f"{self.get_type()}{self.id}"
+
+    def change_url(self):
+        change_url = reverse("admin:webapp_witness_change", args=[self.id])
+        return f"<a href='{change_url}' target='_blank'>{WIT_CHANGE} #{self.id}</a>"
 
     def get_metadata(self):
         # todo finish defining manifest metadata (type, id, etc)

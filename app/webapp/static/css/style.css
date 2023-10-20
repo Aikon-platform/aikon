@@ -64,10 +64,11 @@
     vertical-align: bottom;
 }
 
-.annotate-manifest {
-    color: white;
+.view-btn {
+    color: white !important;
     padding: 8px 10px !important;
-    margin: 5px 0 !important;
+    margin: 15px 0 !important;
+    border-radius: 5px !important;
     width: 170px;
 }
 

@@ -1,13 +1,24 @@
-from app.config.settings import APP_NAME
+from app.config.settings import APP_NAME, APP_LANG
 
 # Application titles
 APP_NAME_UPPER = APP_NAME.upper()
+APP_NAME_CAPITALIZED = APP_NAME.capitalize()
 APP_DESCRIPTION = (
     "Computer Vision and Historical Analysis of Scientific Illustration Circulation"
 )
-SITE_HEADER = f"Administration de {APP_NAME_UPPER}"
-SITE_TITLE = f"Portail de {APP_NAME_UPPER}"
-SITE_INDEX_TITLE = "Bienvenue sur le site d'administration"
+SITE_HEADER = (
+    f"{APP_NAME_UPPER} administration"
+    if APP_LANG == "en"
+    else f"Administration de {APP_NAME_UPPER}"
+)
+SITE_TITLE = (
+    f"{APP_NAME_UPPER} portal" if APP_LANG == "en" else f"Portail de {APP_NAME_UPPER}"
+)
+SITE_INDEX_TITLE = (
+    "Welcome to the administration website"
+    if APP_LANG == "en"
+    else "Bienvenue sur le site d'administration"
+)
 
 # Manifest versions
 MANIFEST_V1 = "auto"  # Used for the manifest with automatic annotation

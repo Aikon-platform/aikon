@@ -116,12 +116,22 @@ ROLES = (
 #############################
 #        HELP TEXTS         #
 #############################
+
+DATE_INFO = (
+    "Enter a year in numeric format. Example: '1400' to '1499' to indicate the 15<sup>th</sup> century."
+    if APP_LANG == "en"
+    else "Saisissez une année au format numérique. Exemple : '1400' à '1499' pour indiquer le 15<sup>ème</sup> siècle."
+)
 PUBLISHED_INFO = (
-    "record details will be accessible to other users of the database"
+    "Record details will be accessible to other users of the database."
     if APP_LANG == "en"
     else "Les informations seront accessibles aux autres utilisateurs de la base."
 )
-IMG_INFO = "" if APP_LANG == "en" else "Envoyez des images jusqu'à 2 Go."
+IMG_INFO = (
+    "Send images up to 2 GB."
+    if APP_LANG == "en"
+    else "Envoyez des images jusqu'à 2 Go."
+)
 
 MANIFEST_DESC = (
     "A manifest allow to describe and share scans with their metadata based on the IIIF standard."
@@ -129,8 +139,35 @@ MANIFEST_DESC = (
     else "Un manifeste permet de décrire et de partager des numérisations avec leurs métadonnées selon la norme IIIF."
 )
 MANIFEST_INFO = f"""<div class='tooltip'>
-                 <i class='fa-solid fa-circle-info' title='Manifest'>{MANIFEST_DESC}</i>
-                 <span class='tooltiptext'></span>
+                 <i class='fa-solid fa-circle-info' title='Manifest'></i>
+                 <span class='tooltiptext'>{MANIFEST_DESC}</span>
              </div>
              E.g.: <a href='https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json' target='_blank'>
              https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json</a>"""
+
+###################################
+#        VALIDATION ERRORS        #
+###################################
+
+DATE_ERROR = (
+    "Minimum date cannot be greater than maximum date."
+    if APP_LANG == "en"
+    else "La date minimale ne peut pas être supérieure à la date maximale."
+)
+PAGE_ERROR = (
+    "Page value must be numeric or end with 'r' or 'v'."
+    if APP_LANG == "en"
+    else "Les bornes de pages doivent être définies numériquement ou par terminer par 'r' ou 'v'."
+)
+
+##########################
+#        MESSAGES        #
+##########################
+
+CONS_PLA_MSG = (
+    "Unknown place of conservation"
+    if APP_LANG == "en"
+    else "Lieu de conservation inconnu"
+)
+
+WIT_CHANGE = f"Modify {WIT}" if APP_LANG == "en" else f"Modifier le {WIT}"
