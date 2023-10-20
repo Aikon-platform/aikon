@@ -431,8 +431,10 @@ def get_indexed_canvas_annos(anno: Annotation, canvas_nb):
 
 def get_coord_from_anno(sas_anno):
     try:
-        # coordinates => "x,y,w,h"
-        return (sas_anno["on"][0]["selector"]["default"]["value"]).split("=")[1]
+        # coord => "x,y,w,h"
+        coord = (sas_anno["on"][0]["selector"]["default"]["value"]).split("=")[1]
+        # remove negative values if some of the coordinates exceed the image boundaries
+        return ",".join(["0" if int(num) < 0 else num for num in coord.split(",")])
     except Exception as e:
         log(f"[get_coord_from_anno] Could not retrieve coord from anno", e)
         return "0,0,0,0"
