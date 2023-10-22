@@ -118,6 +118,7 @@ def unindex_anno(anno_id, remove_from_anno_ids=False):
 
 
 def delete_annos(anno: Annotation):
+    # TODO HERE CHECK IF IT WORKS !!!
     index_manifest_in_sas(anno.gen_manifest_url(version=MANIFEST_V2))
     anno_id = 0
     try:
@@ -387,7 +388,12 @@ def index_manifest_in_sas(manifest_url, reindex=False):
     return True
 
 
-def get_canvas_list(anno: Annotation):
+def get_canvas_list(anno: Annotation, all_img=False):
+    imgs = anno.get_imgs()
+    if all_img:
+        # Display all images associated to the digitization, even though they were not annotated
+        return [(int(img.split("_")[-1].split(".")[0]), img) for img in imgs]
+
     lines = get_txt_annos(anno)
     if not lines:
         log(f"[get_canvas_list] no annotation file for annotation #{anno.id}")
@@ -395,15 +401,13 @@ def get_canvas_list(anno: Annotation):
             "error": "the annotations were not yet generated"
         }  # TODO find a way to display error msg
 
-    imgs = anno.get_imgs()
-
     canvases = []
     for line in lines:
         # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
         if len(line.split()) == 2:
             _, img_file = line.split()
             # use the image number as canvas number because it is more reliable that the one provided in the anno file
-            canvas_nb = int(img_file.split("_")[1].split(".")[0])
+            canvas_nb = int(img_file.split("_")[-1].split(".")[0])
             if img_file in imgs:
                 canvases.append((canvas_nb, img_file))
 
@@ -434,8 +438,10 @@ def get_indexed_canvas_annos(anno: Annotation, canvas_nb):
 
 def get_coord_from_anno(sas_anno):
     try:
-        # coordinates => "x,y,w,h"
-        return (sas_anno["on"][0]["selector"]["default"]["value"]).split("=")[1]
+        # coord => "x,y,w,h"
+        coord = (sas_anno["on"][0]["selector"]["default"]["value"]).split("=")[1]
+        # remove negative values if some of the coordinates exceed the image boundaries
+        return ",".join(["0" if int(num) < 0 else num for num in coord.split(",")])
     except Exception as e:
         log(f"[get_coord_from_anno] Could not retrieve coord from anno", e)
         return "0,0,0,0"

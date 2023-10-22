@@ -27,7 +27,7 @@ def anno_btn(obj: Annotation | Digitization, action="view"):
         color = "#008CBA"
         icon = get_icon("pen-to-square")
         # The link redirects to the edit annotation page (show_annotations() view)
-        link = f"{APP_NAME}/show/{obj.id}"
+        link = f"{APP_URL}/{APP_NAME}/show/{obj.id}"
     elif action == "final":
         color = "#4CAF50"
         icon = get_icon("check")
