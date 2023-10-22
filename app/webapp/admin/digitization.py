@@ -1,13 +1,11 @@
 import nested_admin
 from django.contrib import admin
 from django.utils.safestring import mark_safe
-from nested_inlines.forms import BaseNestedModelForm
 
 from app.config.settings import APP_NAME, WEBAPP_NAME, APP_LANG
 from app.webapp.admin import UnregisteredAdmin
 from app.webapp.models.digitization import Digitization, get_name
 from app.webapp.models.utils.constants import IMG
-from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import gen_thumbnail, cls
 from app.webapp.utils.iiif import gen_iiif_url, IIIF_ICON
 from app.webapp.utils.iiif.gen_html import gen_btn
@@ -64,34 +62,37 @@ class DigitizationInline(nested_admin.NestedStackedInline):
         )
 
     @admin.display(description=get_name("view_digit"))
-    def view_digit(self, obj):
-        digit = Digitization.objects.filter(pk=obj.id).first()
-        if digit and digit.has_images():
-            if digit.has_annotations():
-                return mark_safe(
-                    "<br><br>".join(
-                        gen_btn(anno, "view") for anno in digit.get_annotations()
-                    )
-                )
-            return gen_btn(digit, "view")
-        return "-"
+    def view_digit(self, obj: Digitization):
+        # here access to Mirador without annotation
+        if obj.id:
+            action = "view" if obj.has_images() else "no_manifest"
+            return gen_btn(Digitization.objects.filter(pk=obj.id).first(), action)
+        return "-"  # todo do not display field
 
     @admin.display(description=get_name("view_anno"))
-    def view_anno(self, obj):
-        digit = Digitization.objects.filter(pk=obj.id).first()
-        if digit and digit.has_annotations():
+    def view_anno(self, obj: Digitization):
+        if obj.id and obj.has_images():
+            action = "final" if obj.is_validated else "edit"
+            if not obj.has_annotations():
+                return gen_btn(obj, action)
+
             anno_btn = []
-            for anno in digit.get_annotations():
-                action = "final" if anno.is_validated else "edit"
+            for anno in obj.get_annotations():
                 anno_btn.append(gen_btn(anno, action))
-            return mark_safe("<br><br>".join(anno_btn))
+            return "<br>".join(anno_btn)
         return "-"
 
-    def get_fields(self, request, obj: Witness = None):
+    # def has_view_or_change_permission(self, request, obj=None):
+    #     # TODO check what does it do
+    #     return False
+
+    def get_fields(self, request, obj: Digitization = None):
+        # TODO if obj + has_manifest: add manifest links
         fields = list(super(DigitizationInline, self).get_fields(request, obj))
 
-        # PROBLEM the issue here is that obj is a Witness and not a Digitization
-        # thus all inline forms are treated identically
+        # if request.method == "POST" and self.wit_type() == VOL: # NOTE old version
+        #     fields.append("image") # check what was the purpose
+
         if obj and obj.has_images():
             fields.append("view_digit")
             if obj.has_annotations():

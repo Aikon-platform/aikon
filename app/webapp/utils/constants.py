@@ -30,6 +30,9 @@ TRUNCATEWORDS = 5
 # Maximum number of selected items for action application
 MAX_ITEMS = 5
 
+# Maximum number of rows to retrieve from the Geonames API search
+MAX_ROWS = 10
+
 # Maximal size for image download
 MAX_SIZE = 2500
 MAX_RES = 500

@@ -19,9 +19,10 @@ from app.config.settings import (
     ENV,
     GEONAMES_USER,
 )
+from app.webapp.models.place import Place
 from app.webapp.models.witness import Witness
-from app.webapp.utils.constants import MANIFEST_V2
-from app.webapp.utils.functions import credentials, list_to_txt
+from app.webapp.utils.constants import MANIFEST_V2, MAX_ROWS
+from app.webapp.utils.functions import credentials, list_to_txt, get_json
 from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.logger import console, log, get_time
 from app.webapp.utils.iiif.annotation import (
@@ -320,16 +321,41 @@ def test(request, wit_id, wit_type):
 
 class PlaceAutocomplete(autocomplete.Select2ListView):
     def get_list(self):
-        query = self.request.GET.get("q", "")
-        url = f"http://api.geonames.org/searchJSON?q={query}&maxRows=10&username={GEONAMES_USER}"
-        response = requests.get(url)
-        data = response.json()
+        name = self.forwarded.get("name")
+        query = {name} if name else self.q
+        data = get_json(
+            f"http://api.geonames.org/searchJSON?q={query}&maxRows={MAX_ROWS}&username={GEONAMES_USER}"
+        )
         # TODO use try/except to avoid bug if geonames key doesn't exist
         suggestions = []
         for suggestion in data["geonames"]:
             suggestions.append(suggestion["name"])
 
         return suggestions
+
+
+def retrieve_place_info(request):
+    """
+    Extract the relevant information (country, latitude, longitude) from the Geonames API response
+    """
+    name = request.GET.get("name")
+    if name:
+        data = get_json(
+            f"http://api.geonames.org/searchJSON?q={name}&maxRows={MAX_ROWS}&username={GEONAMES_USER}"
+        )
+        country = data["geonames"][0].get("countryName")
+        latitude = data["geonames"][0].get("lat")
+        longitude = data["geonames"][0].get("lng")
+
+        return JsonResponse(
+            {
+                "country": country,
+                "latitude": f"{float(latitude):.4f}",
+                "longitude": f"{float(longitude):.4f}",
+            }
+        )
+
+    return JsonResponse({"country": "", "latitude": "", "longitude": ""})
 
 
 def search_similarity(request, experiment_id):

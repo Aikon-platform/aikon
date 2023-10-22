@@ -23,6 +23,7 @@ from app.webapp.views import (
     search_similarity,
     reindex_anno,
     delete_send_anno,
+    retrieve_place_info,
 )
 
 
@@ -92,6 +93,7 @@ urlpatterns = [
         PlaceAutocomplete.as_view(),
         name="place-autocomplete",
     ),
+    path("retrieve_place_info/", retrieve_place_info, name="retrieve-place-info"),
     path(
         f"{APP_NAME}/annotate/<int:digit_id>",
         receive_anno,
@@ -121,7 +123,6 @@ urlpatterns = [
 
 if DEBUG:
     urlpatterns += static(MEDIA_URL, document_root=MEDIA_ROOT)
-    # urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
     import debug_toolbar
 
