@@ -5,6 +5,7 @@ from app.webapp.admin import RoleInline
 from app.webapp.admin.witness import WitnessInline
 from app.webapp.models.series import Series
 from app.webapp.models.edition import get_name
+from app.webapp.utils.functions import format_start_end
 
 
 @admin.register(Series)
@@ -16,8 +17,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         "edition",
         "get_publisher",
         "get_place",
-        "date_min",
-        "date_max",
+        "get_date",
         "is_public",
     )
     list_display_links = ("edition",)
@@ -34,15 +34,17 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
 
     inlines = [RoleInline, WitnessInline]
 
+    @admin.display(description=get_name("publisher"))
     def get_publisher(self, obj):
         return obj.edition.publisher
 
-    get_publisher.short_description = get_name("publisher")
-
+    @admin.display(description=get_name("pub_place"))
     def get_place(self, obj):
         return obj.edition.place
 
-    get_place.short_description = get_name("pub_place")
+    @admin.display(description="Date")
+    def get_date(self, obj):
+        return format_start_end(obj.date_min, obj.date_max)
 
     # NOTE: attribute to use to change to template of witness (template at: templates/admin/series_form.html)
     # change_form_template = "admin/series_form.html"
