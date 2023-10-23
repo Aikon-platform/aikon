@@ -31,7 +31,7 @@ urlpatterns = [
     path("", admin_app, name="admin-config"),
     path(f"{APP_NAME}-admin/", admin.site.urls),
     path(
-        f"{APP_NAME}/show/<int:anno_id>",
+        f"{APP_NAME}/<str:anno_ref>/show/",
         show_annotations,
         name="show-annotations",
     ),

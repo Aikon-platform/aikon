@@ -282,8 +282,11 @@ def witness_sas_annotations(request, anno_id):
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
-def show_annotations(request, anno_id):
-    anno = get_object_or_404(Annotation, pk=anno_id)
+def show_annotations(request, anno_ref):
+    passed, anno = check_ref(anno_ref, "Annotation")
+    if not passed:
+        # TODO create new annotation from scratch
+        return JsonResponse(anno)
 
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))

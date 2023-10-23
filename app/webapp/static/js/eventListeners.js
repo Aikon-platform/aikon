@@ -33,7 +33,7 @@ $(function() {
         const checkedAnno = $("[id^=bbox_]:checked");
         let annoIds = [];
         checkedAnno.each(function() {
-            annoIds.push($(this).attr("id").split("_").pop());
+            annoIds.push($(this).attr("id").replace("bbox_", ""));
         });
         if (!deleteAnnotations(annoIds)) {
             // if the user decided to not delete the selected annotations

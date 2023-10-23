@@ -30,6 +30,7 @@ class Annotation(models.Model):
         verbose_name_plural = get_name("Annotation", True)
         app_label = "webapp"
 
+    # TODO __str__ pour affichage SAS
     digitization = models.ForeignKey(
         Digitization,
         related_name="annotations",  # to access the all annotations from Digitization
