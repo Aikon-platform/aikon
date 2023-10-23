@@ -1,6 +1,7 @@
 from django.db import models
 
 from app.webapp.models.utils.functions import get_fieldname
+from app.webapp.utils.functions import validate_dates
 
 
 def get_name(fieldname, plural=False):
@@ -23,3 +24,7 @@ class Person(models.Model):
     date_max = models.IntegerField(
         verbose_name=get_name("date_max"), null=True, blank=True
     )
+
+    def clean(self):
+        super().clean()
+        validate_dates(self.date_min, self.date_max)
