@@ -133,14 +133,16 @@ class Witness(models.Model):
         # todo finish defining manifest metadata (type, id, etc)
 
         metadata = {
-            "Place of conservation": self.place,
+            "Place of conservation": self.place.__str__(),
             "Reference number": self.id_nb,
-            "Author(s)": self.get_author_names(),
             "Work(s)": self.get_work_titles(),
             "Place(s) of production": self.get_place_names(),
         }
         if note := self.notes:
             metadata["Notes"] = note
+
+        if self.get_persons():
+            metadata = self.add_roles(metadata)
 
         # metadata = {
         #             "Date": self.date,
@@ -168,12 +170,6 @@ class Witness(models.Model):
         for digit in self.get_digits():
             annos.extend(digit.get_annotations())
         return annos
-
-    def get_works(self):
-        works = []
-        for content in self.get_contents():
-            works.extend(content.work)
-        return works
 
     def is_validated(self):
         for digit in self.get_digits():
@@ -203,7 +199,7 @@ class Witness(models.Model):
         return flatten([content.get_roles() for content in self.get_contents()])
 
     def get_persons(self):
-        return self.content_set.values_list("roles__person", flat=True).distinct()
+        return self.contents.values_list("roles__person", flat=True).distinct()
 
     def get_person_names(self):
         return "<br>".join([role.__str__() for role in self.get_roles()])
@@ -214,6 +210,16 @@ class Witness(models.Model):
     def get_author_names(self):
         # TODO add something when no author defined
         return "\n".join([author.__str__() for author in self.get_authors()])
+
+    def add_roles(self, metadata):
+        for role in self.get_roles():
+            key = role.get_role().capitalize()
+            value = role.person.__str__()
+            if key in metadata:
+                metadata[key] += ", " + value
+            else:
+                metadata[key] = value
+        return metadata
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.__str__())
