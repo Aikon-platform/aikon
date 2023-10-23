@@ -94,12 +94,12 @@ urlpatterns = [
     ),
     path("retrieve_place_info/", retrieve_place_info, name="retrieve-place-info"),
     path(
-        f"{APP_NAME}/annotate/<int:digit_id>",
+        f"{APP_NAME}/annotate/<int:digit_ref>",
         receive_anno,
         name="receive-annotations",
     ),
     path(
-        f"{APP_NAME}/run-annotation/<int:digit_id>",
+        f"{APP_NAME}/run-annotation/<int:digit_ref>",
         send_anno,
         name="send-annotations",
     ),

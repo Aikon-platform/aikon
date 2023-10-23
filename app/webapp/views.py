@@ -22,7 +22,7 @@ from app.config.settings import (
 from app.webapp.models.place import Place
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, MAX_ROWS
-from app.webapp.utils.functions import credentials, list_to_txt, get_json
+from app.webapp.utils.functions import credentials, list_to_txt, get_json, cls
 from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.logger import console, log, get_time
 from app.webapp.utils.iiif.annotation import (
@@ -43,52 +43,73 @@ def admin_app(request):
     return redirect("admin:index")
 
 
-def manifest_digitization(request, digit_ref):
-    match = re.search(r"_[a-zA-Z]{3}(\d+)", digit_ref)
-    if not match:
-        return JsonResponse(
-            {
-                "response": f"Wrong format of digitization reference: {digit_ref}",
-                "reason": "Reference must follow this format: {witness_abbr}{witness_id}_{digit_abbr}{digit_id}",
-            },
-            safe=False,
-        )
-    digit_id = int(match.group(1))
+def check_ref(obj_ref, obj="Digitization"):
+    ref = parse_ref(obj_ref)
+    ref_format = (
+        "{witness_abbr}{witness_id}_{digit_abbr}{digit_id}"
+        if obj == "Digitization"
+        else "{witness_abbr}{witness_id}_{digit_abbr}{digit_id}_anno{anno_id}"
+    )
+    if not ref:
+        return False, {
+            "response": f"Wrong format of {obj} reference: {obj_ref}",
+            "reason": f"Reference must follow this format: {ref_format}",
+        }
+
+    digit_id = ref["digit"][1]
     digit = Digitization.objects.filter(pk=digit_id).first()
     if not digit:
-        return JsonResponse(
-            {"response": f"No digitization matching the id #{digit_id}"},
-            safe=False,
-        )
+        return False, {"response": f"No digitization matching the id #{digit_id}"}
 
-    if digit_ref != digit.get_ref():
-        return JsonResponse(
-            {
-                "response": f"Wrong reference for digitization #{digit_id}",
-                "reason": "Reference must follow this format: {witness_abbr}{witness_id}_{digit_abbr}{digit_id}",
-            },
-            safe=False,
-        )
+    if obj == "Digitization" or ref["anno"] is None:
+        if obj_ref != digit.get_ref():
+            return False, {
+                "response": f"Wrong info given in reference for digitization #{digit_id}",
+                "reason": f"Reference must follow this format: {ref_format}",
+            }
+        return True, digit
+
+    anno_id = ref["anno"][1]
+    anno = Annotation.objects.filter(pk=anno_id).first()
+    if not anno:
+        return False, {"response": f"No annotation matching the id #{anno_id}"}
+
+    if obj == "Annotation":
+        if obj_ref != anno.get_ref():
+            return False, {
+                "response": f"Wrong info given in reference for annotation #{anno_id}",
+                "reason": f"Reference must follow this format: {ref_format}",
+            }
+        return True, anno
+
+    return False, {"response": f"Nothing to retrieve for {obj} #{obj_ref}"}
+
+
+def manifest_digitization(request, digit_ref):
+    passed, digit = check_ref(digit_ref)
+    if not passed:
+        return JsonResponse(digit, safe=False)
+
     return JsonResponse(digit.gen_manifest_json())
 
 
 def manifest_annotation(request, version, anno_ref):
-    # TODO: better handling of wrong references as above
-    anno_id = anno_ref.split("_")[-1].replace("anno", "")
-    anno = get_object_or_404(Annotation, pk=anno_id)
-    if anno_ref == anno.get_ref():
-        return JsonResponse(anno.gen_manifest_json(version=check_version(version)))
-    return JsonResponse(
-        {"response": f"Wrong reference for Annotation #{anno_id}"}, safe=False
-    )
+    passed, anno = check_ref(anno_ref, "Annotation")
+    if not passed:
+        return JsonResponse(anno, safe=False)
+
+    return JsonResponse(anno.gen_manifest_json(version=check_version(version)))
 
 
-def send_anno(request, digit_id):
+def send_anno(request, digit_ref):
     """
     To relaunch annotations in case the automatic annotation failed
     """
-    digit = get_object_or_404(Digitization, pk=digit_id)
-    error = {"response": f"Failed to send annotation request for digit #{digit_id}"}
+    passed, digit = check_ref(digit_ref)
+    if not passed:
+        return JsonResponse(digit, safe=False)
+
+    error = {"response": f"Failed to send annotation request for digit #{digit.id}"}
     try:
         status = anno_request(digit)
     except Exception as e:
@@ -97,7 +118,7 @@ def send_anno(request, digit_id):
 
     if status:
         return JsonResponse(
-            {"response": f"Annotations were relaunched for digit #{digit_id}"},
+            {"response": f"Annotations were relaunched for digit #{digit.id}"},
             safe=False,
         )
     return JsonResponse(error, safe=False)
@@ -107,33 +128,24 @@ def reindex_anno(request, anno_ref):
     """
     To reindex annotations from a text file
     """
-    ref = parse_ref(anno_ref)
-    if not ref:
-        return JsonResponse(
-            {
-                "response": f"Wrong format of annotation reference: {anno_ref}",
-                "reason": "Reference must follow this format: {witness_abbr}{witness_id}_{digit_abbr}{digit_id}_anno{anno_id}",
-            },
-            safe=False,
-        )
+    passed, obj = check_ref(anno_ref, "Annotation")
+    if not passed:
+        return JsonResponse(obj)
 
-    digit_id = ref["digit"][1]
-    digit = Digitization.objects.filter(pk=digit_id).first()
-    if not digit:
-        return JsonResponse(
-            {"response": f"No digitization matching the id #{digit_id}"},
-            safe=False,
-        )
-
-    anno_id = ref["anno"][1]
-    anno = Annotation.objects.filter(pk=anno_id).first()
+    anno = obj if cls(obj) == Annotation else None
     if anno:
         try:
             delete_annos(anno)
         except Exception as e:
             return JsonResponse(
-                {"message": f"Failed to delete annotation #{anno_id}: {e}"}
+                {"message": f"Failed to delete annotation #{anno.id}: {e}"}
             )
+
+    digit = anno.get_digit() if anno else obj
+    if not digit:
+        return JsonResponse(
+            {"error": f"Failed to retrieve digitization for annotation #{anno_ref}"}
+        )
 
     if exists(f"{ANNO_PATH}/{anno_ref}.txt"):
         with open(f"{ANNO_PATH}/{anno_ref}.txt", "r") as file:
@@ -143,19 +155,19 @@ def reindex_anno(request, anno_ref):
 
             except Exception as e:
                 return JsonResponse(
-                    {
-                        "message": f"Failed to index annotations for digit #{digit_id}: {e}"
-                    }
+                    {"error": f"Failed to index annotations for digit #{digit.id}: {e}"}
                 )
 
-    return JsonResponse({"message": f"No annotation file for reference #{anno_ref}."})
+    return JsonResponse({"error": f"No annotation file for reference #{anno_ref}."})
 
 
 def delete_send_anno(request, anno_ref):
     """
     To delete images on the GPU and relaunch annotations
     """
-    ref = parse_ref(anno_ref)
+    passed, anno = check_ref(anno_ref, "Annotation")
+    if not passed:
+        return JsonResponse(anno)
     # TODO redo entirely
     # manifest_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_AUTO}/{wit_type}/{wit_id}/manifest.json"
     # try:
@@ -185,8 +197,14 @@ def delete_send_anno(request, anno_ref):
 
 
 @csrf_exempt
-def receive_anno(request, digit_id):
-    digit = get_object_or_404(Digitization, pk=digit_id)
+def receive_anno(request, digit_ref):
+    passed, digit = check_ref(digit_ref)
+    if not passed:
+        # In this case, digit is an error message dict
+        digit["source"] = "[receive_anno]"
+        digit["request"] = request
+        return log(digit)
+
     if request.method == "POST":
         annotation_file = request.FILES["annotation_file"]
         file_content = annotation_file.read()
