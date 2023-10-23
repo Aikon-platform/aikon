@@ -13,10 +13,11 @@ function getWitType() {
     return null;
 }
 
-function getWitId() {
+function getAnnoRef() {
     const currentUrl = getUrl();
     if (currentUrl.includes("show")){
-        return extractNb(currentUrl.split("/show")[0]).replace("8000,",""); // todo: remove 8000 because of localhost
+        const parts = currentUrl.split("/show")[0].split("/");
+        return parts[parts.length - 1];
     }
     return null;
 }
@@ -189,27 +190,25 @@ function deleteAllAnnotations(allAnnos) {
     }
 }
 
-function validateAnnotations(witId = null) {
-    const witType = getWitType();
-
-    if (!witId) {
-        witId = getWitId();
-        if (!witId) {
-            console.log("No witness id")
+function validateAnnotations(anno_ref = null) {
+    if (!anno_ref) {
+        anno_ref = getAnnoRef();
+        if (!anno_ref) {
+            console.log("No annotation reference")
             return
         }
     }
 
-    if (confirm(APP_LANG === "en" ? `Once validated, the annotations of the entire ${witType} cannot be modified. Continue?` :
-            `Une fois validées, les annotations de l'ensemble du ${witType} ne pourront plus être modifiées. Continuer ?`)) {
-        fetch(`/${APP_NAME}/iiif/v2/${witType}/${witId}/validate/`)
+    if (confirm(APP_LANG === "en" ? `Once validated, the annotations cannot be modified. Continue?` :
+            `Une fois validées, les annotations ne pourront plus être modifiées. Continuer ?`)) {
+        fetch(`${APP_URL}/${APP_NAME}/iiif/validate/${anno_ref}`)
             .then(response => {
             if (response.status === 200) {
                 // window.replace(`${SAS_APP_URL}/indexView.html?iiif-content=${toManifest(witId, witType, "v2")}`);
-                try { window.replace(`${APP_URL}/${APP_NAME}-admin/${WEBAPP_NAME}/${witType}/`); }
-                catch(e) { window.location = `${APP_URL}/${APP_NAME}-admin/${WEBAPP_NAME}/${witType}/`; }
+                try { window.replace(`${APP_URL}/${APP_NAME}-admin/${WEBAPP_NAME}/witness`); }
+                catch(e) { window.location = `${APP_URL}/${APP_NAME}-admin/${WEBAPP_NAME}/witness`; }
             } else {
-                throw new Error(`Could not validate annotations of ${witType} #${witId}.`);
+                throw new Error(`Could not validate annotations #${anno_ref}.`);
             }
         }).catch(error => {
             showMessage(`Error: ${error.message}`);

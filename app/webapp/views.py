@@ -262,12 +262,14 @@ def populate_annotation(request, anno_id):
     return HttpResponse(status=200 if index_annotations(anno) else 500)
 
 
-def validate_annotation(request, anno_id):
+def validate_annotation(request, anno_ref):
     """
     Validate the manually corrected annotations
     """
     try:
-        anno = get_object_or_404(Annotation, pk=anno_id)
+        passed, anno = check_ref(anno_ref, "Annotation")
+        if not passed:
+            return HttpResponse(anno, status=500)
         anno.is_validated = True
         anno.save()
         return HttpResponse(status=200)

@@ -63,7 +63,7 @@ urlpatterns = [
         name="populate-annotation",
     ),
     path(
-        f"{APP_NAME}/iiif/validate/<int:anno_id>",
+        f"{APP_NAME}/iiif/validate/<str:anno_ref>",
         validate_annotation,
         name="validate-annotation",
     ),
