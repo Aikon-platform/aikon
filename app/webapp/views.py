@@ -22,7 +22,13 @@ from app.config.settings import (
 from app.webapp.models.place import Place
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, MAX_ROWS
-from app.webapp.utils.functions import credentials, list_to_txt, get_json, cls
+from app.webapp.utils.functions import (
+    credentials,
+    list_to_txt,
+    get_json,
+    cls,
+    delete_files,
+)
 from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.logger import console, log, get_time
 from app.webapp.utils.iiif.annotation import (
@@ -124,11 +130,13 @@ def send_anno(request, digit_ref):
     return JsonResponse(error, safe=False)
 
 
-def reindex_anno(request, anno_ref):
+def reindex_anno(request, obj_ref):
     """
-    To reindex annotations from a text file
+    To reindex annotations from a text file named after <obj_ref>
+    either to create an Annotation obj from an annotation txt file if obj_ref is a digit_ref
+    or to delete then create a new annotation if obj_ref is a anno_ref
     """
-    passed, obj = check_ref(anno_ref, "Annotation")
+    passed, obj = check_ref(obj_ref, "Annotation")
     if not passed:
         return JsonResponse(obj)
 
@@ -144,21 +152,22 @@ def reindex_anno(request, anno_ref):
     digit = anno.get_digit() if anno else obj
     if not digit:
         return JsonResponse(
-            {"error": f"Failed to retrieve digitization for annotation #{anno_ref}"}
+            {"error": f"Failed to retrieve digitization for annotation #{obj_ref}"}
         )
 
-    if exists(f"{ANNO_PATH}/{anno_ref}.txt"):
-        with open(f"{ANNO_PATH}/{anno_ref}.txt", "r") as file:
-            try:
+    if exists(f"{ANNO_PATH}/{obj_ref}.txt"):
+        try:
+            with open(f"{ANNO_PATH}/{obj_ref}.txt", "r") as file:
                 process_anno(file.read(), digit)
-                return JsonResponse({"message": "Annotations were re-indexed."})
+            delete_files(f"{ANNO_PATH}/{obj_ref}.txt")
+            return JsonResponse({"message": "Annotations were re-indexed."})
 
-            except Exception as e:
-                return JsonResponse(
-                    {"error": f"Failed to index annotations for digit #{digit.id}: {e}"}
-                )
+        except Exception as e:
+            return JsonResponse(
+                {"error": f"Failed to index annotations for digit #{digit.id}: {e}"}
+            )
 
-    return JsonResponse({"error": f"No annotation file for reference #{anno_ref}."})
+    return JsonResponse({"error": f"No annotation file for reference #{obj_ref}."})
 
 
 def delete_send_anno(request, anno_ref):
@@ -190,7 +199,7 @@ def delete_send_anno(request, anno_ref):
 
     return JsonResponse(
         {
-            "response": f"Images were deleted and annotations were relaunched for {ref['wit'][0]} #{ref['wit'][1]}"
+            "response": f"Images were deleted and annotations were relaunched for Digit #{digit}"
         },
         safe=False,
     )

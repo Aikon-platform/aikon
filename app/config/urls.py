@@ -104,7 +104,7 @@ urlpatterns = [
         name="send-annotations",
     ),
     path(
-        f"{APP_NAME}/reindex-annotation/<str:anno_ref>",
+        f"{APP_NAME}/reindex-annotation/<str:obj_ref>",
         reindex_anno,
         name="reindex-annotations",
     ),

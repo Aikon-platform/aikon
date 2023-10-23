@@ -16,6 +16,7 @@ from app.config.settings import (
     APP_NAME,
     API_GPU_URL,
     API_KEY,
+    APP_URL,
 )
 from app.webapp.utils.functions import log
 
@@ -142,9 +143,7 @@ def delete_annos(anno: Annotation):
 
 def index_annos_on_canvas(anno: Annotation, canvas_nb):
     # this url (view canvas_annotations()) is calling format_canvas_annos(), thus returning formatted annos for each canvas
-    formatted_annos = (
-        f"{APP_NAME}/iiif/{MANIFEST_V2}/{anno.get_ref()}/list/anno-{canvas_nb}.json"
-    )
+    formatted_annos = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{anno.get_ref()}/list/anno-{canvas_nb}.json"
     # POST request that index the annotations
     response = urlopen(
         f"{SAS_APP_URL}/annotation/populate",
