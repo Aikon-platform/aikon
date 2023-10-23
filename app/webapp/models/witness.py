@@ -169,6 +169,12 @@ class Witness(models.Model):
             annos.extend(digit.get_annotations())
         return annos
 
+    def get_works(self):
+        works = []
+        for content in self.get_contents():
+            works.extend(content.work)
+        return works
+
     def is_validated(self):
         for digit in self.get_digits():
             if digit.is_validated():

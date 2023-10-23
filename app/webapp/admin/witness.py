@@ -171,6 +171,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         "authors",
         "manifest_link",
         "is_annotated",
+        # TODO ADD WORK + DATES
     )
     list_display_links = ("id_nb",)
 

@@ -146,7 +146,7 @@ def reindex_anno(request, obj_ref):
             delete_annos(anno)
         except Exception as e:
             return JsonResponse(
-                {"message": f"Failed to delete annotation #{anno.id}: {e}"}
+                {"error": f"Failed to delete annotation #{anno.id}: {e}"}
             )
 
     digit = anno.get_digit() if anno else obj
@@ -160,6 +160,7 @@ def reindex_anno(request, obj_ref):
             with open(f"{ANNO_PATH}/{obj_ref}.txt", "r") as file:
                 process_anno(file.read(), digit)
             delete_files(f"{ANNO_PATH}/{obj_ref}.txt")
+
             return JsonResponse({"message": "Annotations were re-indexed."})
 
         except Exception as e:
@@ -199,7 +200,7 @@ def delete_send_anno(request, anno_ref):
 
     return JsonResponse(
         {
-            "response": f"Images were deleted and annotations were relaunched for Digit #{digit}"
+            "response": f"Images were deleted and annotations were relaunched for Annotation #{anno.id}"
         },
         safe=False,
     )
@@ -209,10 +210,7 @@ def delete_send_anno(request, anno_ref):
 def receive_anno(request, digit_ref):
     passed, digit = check_ref(digit_ref)
     if not passed:
-        # In this case, digit is an error message dict
-        digit["source"] = "[receive_anno]"
-        digit["request"] = request
-        return log(digit)
+        return JsonResponse(digit)
 
     if request.method == "POST":
         annotation_file = request.FILES["annotation_file"]

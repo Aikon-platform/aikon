@@ -119,21 +119,19 @@ def unindex_anno(anno_id, remove_from_anno_ids=False):
 
 
 def delete_annos(anno: Annotation):
-    # TODO HERE CHECK IF IT WORKS !!!
     index_manifest_in_sas(anno.gen_manifest_url(version=MANIFEST_V2))
-    anno_id = 0
+    sas_anno_id = 0
     try:
-        for anno in get_manifest_annos(anno):
-            anno_id = anno.split("/")[-1]
-            unindex_anno(anno_id)
+        for sas_anno in get_manifest_annos(anno):
+            sas_anno_id = sas_anno.split("/")[-1]
+            unindex_anno(sas_anno_id)
     except Exception as e:
-        log(f"[delete_annos] Failed to unindex annotation #{anno_id}", e)
+        log(f"[delete_annos] Failed to unindex annotation #{sas_anno_id}", e)
         return False
 
     try:
         # Delete the annotation record in the database
         anno.delete()
-        anno.save()
     except Exception as e:
         log(f"[delete_annos] Failed to delete annotation record #{anno.id}", e)
         return False
@@ -553,7 +551,7 @@ def check_indexation_annos(anno: Annotation, reindex=False):
 
                 if nb_annos != 0:
                     indexed_annos += nb_annos
-                    anno_ids.extend(
+                    sas_anno_ids.extend(
                         [get_id_from_anno(sas_anno) for sas_anno in sas_annos]
                     )
                 else:
@@ -571,8 +569,8 @@ def check_indexation_annos(anno: Annotation, reindex=False):
         )
 
     if generated_annos != indexed_annos:
-        for anno_id in anno_ids:
-            unindex_anno(anno_id)
+        for sas_anno_id in sas_anno_ids:
+            unindex_anno(sas_anno_id)
         if reindex:
             if index_annotations(anno):
                 log(f"[check_indexation_annos] Annotation #{anno.id} was reindexed")
