@@ -27,6 +27,7 @@ class Role(models.Model):
     content = models.ForeignKey(
         Content,
         verbose_name=get_name("Content"),
+        related_name="roles",
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
@@ -51,3 +52,9 @@ class Role(models.Model):
         max_length=150,
         blank=True,
     )
+
+    def get_role(self):
+        return dict(ROLES).get(self.role)
+
+    def get_role_abbr(self):
+        return self.role

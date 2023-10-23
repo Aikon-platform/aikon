@@ -124,7 +124,7 @@ class Content(models.Model):
 
     def get_roles(self):
         # Django automatically creates a reverse relationship from Content to Role
-        return self.role_set.all()
+        return self.roles.all()
 
     def clean(self):
         super().clean()
