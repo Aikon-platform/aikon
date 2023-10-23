@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 import PyPDF2
 import requests
 from PIL import Image
+from django.core.exceptions import ValidationError
 
 from django.utils.html import format_html
 from django.http import HttpResponse
@@ -21,6 +22,7 @@ from urllib.request import (
     install_opener,
 )
 from app.config.settings import APP_NAME, APP_LANG, CANTALOUPE_APP_URL
+from app.webapp.models.utils.constants import DATE_ERROR
 from app.webapp.utils.paths import (
     BASE_DIR,
     MEDIA_DIR,
@@ -367,3 +369,9 @@ def delete_files(filenames, directory=IMG_PATH):
         else:
             print(f"[delete_files] File not found: {file_path}")
     return True
+
+
+def validate_dates(date_min, date_max):
+    # TODO: needs improvement
+    if date_min and date_max and date_min > date_max:
+        raise ValidationError(DATE_ERROR)

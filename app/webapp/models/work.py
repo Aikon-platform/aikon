@@ -1,10 +1,13 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from app.webapp.models.place import Place
 from app.webapp.models.person import Person
 from app.webapp.models.tag import Tag
+from app.webapp.models.utils.constants import DATE_ERROR
 
 from app.webapp.models.utils.functions import get_fieldname
+from app.webapp.utils.functions import validate_dates
 
 
 def get_name(fieldname, plural=False):
@@ -58,3 +61,7 @@ class Work(models.Model):
         verbose_name=get_name("Tag"),
         blank=True,
     )
+
+    def clean(self):
+        super().clean()
+        validate_dates(self.date_min, self.date_max)
