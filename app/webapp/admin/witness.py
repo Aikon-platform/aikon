@@ -152,6 +152,10 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             "<br>".join(digit.manifest_link() for digit in obj.get_digits())
         )
 
+    @admin.display(description=get_name("Work"))
+    def get_works(self, obj):
+        return obj.get_work_titles()
+
     @admin.display(
         description=get_name("Person", plural=True),
         # ordering= TODO find something to order the column
@@ -166,6 +170,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     # list of fields that are displayed in the witnesses list view
     list_display = (
         "id",
+        "get_works",
         "id_nb",
         "place",
         "authors",
@@ -255,6 +260,6 @@ class WitnessInline(nested_admin.NestedStackedInline):
     # verbose_name_plural = ""  # No title in the blue banner on top of the inline form
     extra = 0  # 1
     # classes = ("collapse",)
-    fields = [("id_nb", "place"), "volume"]
+    fields = [("id_nb", "place")]
     inlines = [ContentWorkInline]
     autocomplete_fields = ("place", "volume")
