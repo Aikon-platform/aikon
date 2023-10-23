@@ -130,12 +130,12 @@ class Annotation(models.Model):
             )
         )
 
-    def view_anno(self, obj: Digitization):
-        # TODO here multiple button for multiple annotation
-        if obj.id and obj.has_images():
-            action = "final" if obj.is_validated else "edit"
-            if not obj.has_annotations():
-                action = "no_anno"
-            # todo loop on linked annotations.
-            # return gen_btn(obj.id, action, MANIFEST_V2, obj.get_wit_type())
-        return "-"
+    # def view_anno(self, obj: Digitization):
+    #     # TODO here multiple button for multiple annotation
+    #     if obj.id and obj.has_images():
+    #         action = "final" if obj.is_validated else "edit"
+    #         if not obj.has_annotations():
+    #             action = "no_anno"
+    #         # todo loop on linked annotations.
+    #         # return gen_btn(obj.id, action, MANIFEST_V2, obj.get_wit_type())
+    #     return "-"

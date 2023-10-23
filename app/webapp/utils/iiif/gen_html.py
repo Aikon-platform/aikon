@@ -59,22 +59,27 @@ def gen_btn(obj: Annotation | Digitization, action="view"):
     if action == "no_manifest" or action == "no_anno":
         return mark_safe(anno_btn(obj, action))
 
+    is_anno = True
     if cls(obj) == Annotation:
         download_url = f"{SAS_APP_URL}/search-api/{obj.get_ref()}/search/"
         anno_type = "JSON"
         version = MANIFEST_V2
     elif cls(obj) == Digitization:
-        download_url = f"{APP_NAME}/iiif/digit-annotation/{obj.id}"
+        download_url = f"{APP_URL}/{APP_NAME}/iiif/digit-annotation/{obj.id}"
         anno_type = "TXT"
         version = None
+        is_anno = obj.has_annotations()
     else:
-        return mark_safe(
-            "PROUT"
-        )  # TODO change that even though it is not supposed to occur
+        return mark_safe("NOT SUPPOSED TO OCCUR")
+
+    download = (
+        f'<a href="{download_url}" target="_blank">{get_icon("download")} {get_action("download")} annotations ({anno_type})</a>'
+        if is_anno
+        else ""
+    )
 
     return mark_safe(
-        f"{get_link_manifest(obj, version)}<br>{anno_btn(obj, action)}"
-        f'<a href="{download_url}" target="_blank">{get_icon("download")} {get_action("download")} annotations ({anno_type})</a>'
+        f"{get_link_manifest(obj, version)}<br>{anno_btn(obj, action)}<br>{download}"
     )
 
 
