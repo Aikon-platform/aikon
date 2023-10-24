@@ -209,7 +209,7 @@ class Witness(models.Model):
         return self.contents.values_list("roles__person", flat=True).distinct()
 
     def get_person_names(self):
-        return "<br>".join([role.__str__() for role in self.get_roles()])
+        return format_html("<br>".join([role.__str__() for role in self.get_roles()]))
 
     def get_authors(self):
         return [role.person for role in self.get_roles() if role.role == AUTHOR]
