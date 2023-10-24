@@ -611,14 +611,11 @@ def get_full_images(witness, wit_type):
 
     try:
         for canvas_nb, img_file in get_canvas_list(witness, wit_type):
-            c_annos = get_indexed_canvas_annos(canvas_nb, witness.id, wit_type)
-
-            if bool(c_annos):
-                canvas_imgs = [
-                    f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/full/full/0/default.jpg"
-                ]
-                imgs.extend(canvas_imgs)
+            canvas_imgs = [
+                f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/full/full/0/default.jpg"
+            ]
+            imgs.extend(canvas_imgs)
     except ValueError as e:
-        log(f"[get_anno_images] Error when retrieving annotations: {e}")
+        log(f"[get_full_images] Error when retrieving images: {e}")
 
     return imgs
