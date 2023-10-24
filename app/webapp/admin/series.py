@@ -5,16 +5,21 @@ from app.webapp.admin import RoleInline
 from app.webapp.admin.witness import WitnessInline
 from app.webapp.models.series import Series
 from app.webapp.models.edition import get_name
+from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import format_start_end
 
 
 @admin.register(Series)
 class SeriesAdmin(nested_admin.NestedModelAdmin):
+    ordering = ("id",)
+    list_per_page = 100
     search_fields = ("edition_name",)
     # TODO: "manifest_link", "is_annotated"
     list_display = (
         "id",
         "edition",
+        "get_works",
+        "get_authors",
         "get_publisher",
         "get_place",
         "get_date",
@@ -33,6 +38,17 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
     fields = ["edition", ("date_min", "date_max"), "notes", "is_public"]
 
     inlines = [RoleInline, WitnessInline]
+
+    @admin.display(description=get_name("Work"))
+    def get_works(self, obj):
+        return obj.get_work_titles()
+
+    @admin.display(
+        description=get_name("Person", plural=True),
+        # ordering= TODO find something to order the column
+    )
+    def get_authors(self, obj: Witness):
+        return obj.get_person_names()
 
     @admin.display(description=get_name("publisher"))
     def get_publisher(self, obj):

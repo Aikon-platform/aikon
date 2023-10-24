@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.utils.html import format_html
 
 from app.webapp.models.edition import Edition
 from app.webapp.models.utils.functions import get_fieldname
@@ -39,6 +40,26 @@ class Series(models.Model):
 
     def get_witnesses(self):
         return self.witness_set.all()
+
+    def get_works(self):
+        return [
+            content.work
+            for witness in self.get_witnesses()
+            for content in witness.get_contents()
+            if content.work is not None
+        ]
+
+    def get_work_titles(self):
+        works = self.get_works()
+        return format_html(
+            "<br>".join([work.__str__() for work in works]) if len(works) else "-"
+        )
+
+    def get_roles(self):
+        return self.roles.all()
+
+    def get_person_names(self):
+        return format_html("<br>".join([role.__str__() for role in self.get_roles()]))
 
     def clean(self):
         super().clean()

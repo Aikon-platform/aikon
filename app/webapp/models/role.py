@@ -34,6 +34,7 @@ class Role(models.Model):
     )
     series = models.ForeignKey(
         Series,
+        related_name="roles",
         verbose_name=get_name("Series"),
         on_delete=models.SET_NULL,
         blank=True,
