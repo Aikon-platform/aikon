@@ -184,16 +184,23 @@ class Witness(models.Model):
         return any(digit.has_annotations() for digit in self.get_digits())
 
     def get_works(self):
-        return [content.work for content in self.get_contents()]
+        return [
+            content.work for content in self.get_contents() if content.work is not None
+        ]
 
     def get_work_titles(self):
-        return "\n".join([work.__str__() for work in self.get_works()])
+        works = self.get_works()
+        return "\n".join([work.__str__() for work in works]) if len(works) else "-"
 
     def get_places(self):
-        return [content.place for content in self.get_contents()]
+        return [
+            content.place
+            for content in self.get_contents()
+            if content.place is not None
+        ]
 
     def get_place_names(self):
-        return "\n".join([place.__str__() for place in self.get_places()])
+        return "\n".join([place.__str__() for place in self.get_places()]) or "-"
 
     def get_roles(self):
         return flatten([content.get_roles() for content in self.get_contents()])

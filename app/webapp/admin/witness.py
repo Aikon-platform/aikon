@@ -170,9 +170,9 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     # list of fields that are displayed in the witnesses list view
     list_display = (
         "id",
-        "get_works",
         "id_nb",
         "place",
+        "get_works",
         "authors",
         "manifest_link",
         "is_annotated",

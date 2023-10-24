@@ -9,7 +9,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.decorators.csrf import csrf_exempt
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 
 from app.webapp.models.annotation import Annotation, check_version
 from app.webapp.models.digitization import Digitization
@@ -40,9 +40,12 @@ from app.webapp.utils.iiif.annotation import (
     process_anno,
     delete_annos,
 )
-import requests
 
 from app.webapp.utils.paths import ANNO_PATH
+
+
+def is_superuser(user):
+    return user.is_superuser
 
 
 def admin_app(request):
@@ -107,6 +110,7 @@ def manifest_annotation(request, version, anno_ref):
     return JsonResponse(anno.gen_manifest_json(version=check_version(version)))
 
 
+@user_passes_test(is_superuser)
 def send_anno(request, digit_ref):
     """
     To relaunch annotations in case the automatic annotation failed
@@ -130,6 +134,7 @@ def send_anno(request, digit_ref):
     return JsonResponse(error, safe=False)
 
 
+@user_passes_test(is_superuser)
 def reindex_anno(request, obj_ref):
     """
     To reindex annotations from a text file named after <obj_ref>

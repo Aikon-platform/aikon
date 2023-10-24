@@ -41,8 +41,10 @@ def anno_request(digit: Digitization):
         url=f"{API_GPU_URL}/run_detect",
         headers={"X-API-Key": API_KEY},
         data={
-            "manifest_url": digit.gen_manifest_url()
-        },  # TODO see what additional data is needed for the API
+            "manifest_url": digit.gen_manifest_url(),
+            "model": "yolo_last_sved_vhs_sullivan.pt",
+            "callback": f"{APP_URL}/annotate",  # URL to which the annotations must be sent back
+        },
     )
 
 
