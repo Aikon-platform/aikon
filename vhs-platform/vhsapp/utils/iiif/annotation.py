@@ -603,3 +603,19 @@ def get_anno_images(witness, wit_type):
         log(f"[get_anno_images] Error when retrieving annotations: {e}")
 
     return imgs
+
+
+def get_full_images(witness, wit_type):
+    # Used to export entire annotated images
+    imgs = []
+
+    try:
+        for canvas_nb, img_file in get_canvas_list(witness, wit_type):
+            canvas_imgs = [
+                f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/full/full/0/default.jpg"
+            ]
+            imgs.extend(canvas_imgs)
+    except ValueError as e:
+        log(f"[get_full_images] Error when retrieving images: {e}")
+
+    return imgs
