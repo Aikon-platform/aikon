@@ -63,23 +63,25 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
     @admin.display(description=get_name("view_digit"))
     def view_digit(self, obj: Digitization):
-        # here access to Mirador without annotation
-        if obj.id:
-            action = "view" if obj.has_images() else "no_manifest"
-            return gen_btn(Digitization.objects.filter(pk=obj.id).first(), action)
+        if obj.id and obj.has_images():
+            if not obj.has_annotations():
+                return gen_btn(Digitization.objects.filter(pk=obj.id).first(), "view")
+
+            digit_btn = []
+            for anno in obj.get_annotations():
+                digit_btn.append(gen_btn(anno, "view"))
+            return mark_safe("<br>".join(digit_btn))
+
         return "-"  # todo do not display field
 
     @admin.display(description=get_name("view_anno"))
     def view_anno(self, obj: Digitization):
-        if obj.id and obj.has_images():
-            action = "final" if obj.is_validated else "edit"
-            if not obj.has_annotations():
-                return gen_btn(obj, action)
-
+        if obj.id and obj.has_images() and obj.has_annotations():
             anno_btn = []
             for anno in obj.get_annotations():
+                action = "final" if anno.is_validated else "edit"
                 anno_btn.append(gen_btn(anno, action))
-            return "<br>".join(anno_btn)
+            return mark_safe("<br>".join(anno_btn))
         return "-"
 
     # def has_view_or_change_permission(self, request, obj=None):
@@ -87,7 +89,6 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     #     return False
 
     def get_fields(self, request, obj: Digitization = None):
-        # TODO if obj + has_manifest: add manifest links
         fields = list(super(DigitizationInline, self).get_fields(request, obj))
 
         # if request.method == "POST" and self.wit_type() == VOL: # NOTE old version

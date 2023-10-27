@@ -3,7 +3,7 @@
 {% load static %} <!-- NOTE: is it necessary if the parent template load statics as well -->
 <!-- TODO remove webapp sub-folder -->
 
-{% block title %}Annotations {{ wit_type }} #{{ wit_obj.id }}{% endblock %}
+{% block title %}{{ anno }}{% endblock %}
 
 {% block extrahead %}
     {{ block.super }}
@@ -158,7 +158,7 @@
 {% block header %}
     <div class="fixed-div">
         <div class="title">
-            <b>{{ wit_type|title }} #{{ wit_obj.id }}</b> : {{ wit_obj }} {# TODO REMOVE THAT #}
+            <b>{{ anno }}</b>
         </div>
 
         <button id="select_anno" class="select-button">

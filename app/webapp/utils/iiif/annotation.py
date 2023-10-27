@@ -455,6 +455,34 @@ def get_id_from_anno(sas_anno):
         return ""
 
 
+def create_empty_anno(digit: Digitization):
+    imgs = digit.get_imgs()
+    if len(imgs) == 0:
+        return False
+
+    try:
+        anno = Annotation(digitization=digit, model="CHANGE THIS VALUE")
+        anno.save()
+    except Exception as e:
+        log(
+            f"[create_empty_anno] unable to create new Annotation for digit #{digit.id} in the database",
+            e,
+        )
+        return False
+
+    try:
+        with open(f"{ANNO_PATH}/{anno.get_ref()}.txt", "w") as anno_file:
+            for i, img_name in enumerate(imgs, 1):
+                anno_file.write(f"{i} {img_name}\n")
+    except Exception as e:
+        log(
+            f"[create_empty_anno] unable to create new annotation file for digit #{digit.id}",
+            e,
+        )
+
+    return anno
+
+
 def formatted_annotations(anno: Annotation):
     canvas_annos = []
     anno_ids = []
@@ -541,7 +569,7 @@ def check_indexation_annos(anno: Annotation, reindex=False):
     generated_annos = 0
     indexed_annos = 0
 
-    anno_ids = []
+    sas_anno_ids = []
     try:
         for line in lines:
             len_line = len(line.split())

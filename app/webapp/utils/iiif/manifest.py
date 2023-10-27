@@ -80,6 +80,8 @@ def gen_manifest_json(obj: Digitization | Annotation, version=None):
     manifest.description = APP_DESCRIPTION
     manifest.viewingHint = "individuals"
 
+    # TODO add explicit licence
+
     try:
         # And walk through the pages
         seq = manifest.sequence(ident="normal", label="Normal Order")

@@ -22,12 +22,12 @@ def anno_btn(obj: Annotation | Digitization, action="view"):
         icon = get_icon("eye")
         # The link redirects to Mirador with no annotations (Digitization) or automatic annotations (Annotation)
         link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V1)}"
-        btn = f"{action} SOURCE"
+        btn = "VIEW SOURCE"
     elif action == "edit":
         color = "#008CBA"
         icon = get_icon("pen-to-square")
         # The link redirects to the edit annotation page (show_annotations() view)
-        link = f"{APP_URL}/{APP_NAME}/show/{obj.id}"
+        link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show/"
     elif action == "final":
         color = "#4CAF50"
         icon = get_icon("check")
@@ -42,7 +42,7 @@ def anno_btn(obj: Annotation | Digitization, action="view"):
         disabled = "disabled"
 
     return (
-        f"<a href='{link}' class='btn btn-md active annotate-manifest' role='button' aria-pressed='true' "
+        f"<a href='{link}' class='btn btn-md active annotate-manifest' role='button' aria-pressed='true' target='_blank'"
         f"{disabled} style='background-color:{color};'>{icon} {btn}</a>"
     )
 

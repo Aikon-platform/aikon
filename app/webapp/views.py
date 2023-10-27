@@ -39,6 +39,7 @@ from app.webapp.utils.iiif.annotation import (
     anno_request,
     process_anno,
     delete_annos,
+    create_empty_anno,
 )
 
 from app.webapp.utils.paths import ANNO_PATH
@@ -172,6 +173,8 @@ def reindex_anno(request, obj_ref):
             return JsonResponse(
                 {"error": f"Failed to index annotations for digit #{digit.id}: {e}"}
             )
+    else:
+        create_empty_anno(digit)
 
     return JsonResponse({"error": f"No annotation file for reference #{obj_ref}."})
 
@@ -292,7 +295,8 @@ def witness_sas_annotations(request, anno_id):
 def show_annotations(request, anno_ref):
     passed, anno = check_ref(anno_ref, "Annotation")
     if not passed:
-        # TODO create new annotation from scratch
+        # if cls(anno) == Digitization:
+        #     create_empty_anno(anno)
         return JsonResponse(anno)
 
     if not ENV("DEBUG"):
@@ -312,8 +316,7 @@ def show_annotations(request, anno_ref):
         request,
         "webapp/show.html",
         context={
-            # "wit_type": wit_type,
-            # "wit_obj": witness,
+            "anno": anno,
             "page_annos": page_annos,
             "bboxes": json.dumps(bboxes),
             "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2),
