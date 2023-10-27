@@ -3,6 +3,7 @@ from django.core.files.base import ContentFile
 from app.config.settings import APP_LANG
 from app.webapp.admin import DigitizationInline, ContentInline, ContentWorkInline
 from app.webapp.models.digitization import Digitization
+from app.webapp.models.utils.constants import PDF_ABBR
 from app.webapp.models.witness import Witness, get_name
 from app.webapp.utils.constants import MAX_ITEMS
 
@@ -99,17 +100,19 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     # MARKER SAVING METHODS
 
-    def save_file(self, request, obj):
-        # instantiated by inheritance (following code is fake) TODO check utility
-        files = request.FILES.getlist("imagewitness_set-0-image")
-        for file in files[:-1]:
-            obj.imagewitness_set.create(image=file)
+    # def save_file(self, request, obj):
+    #     # instantiated by inheritance (following code is fake) TODO check utility
+    #     files = request.FILES.getlist("imagewitness_set-0-image")
+    #     for file in files[:-1]:
+    #         obj.imagewitness_set.create(image=file)
 
     def save_model(self, request, obj, form, change):
         # called on submission of form
         if not obj.user:
             obj.user = request.user
         obj.save()
+
+        flash_msg = ""
 
         # it can't have more than 5 digits per witness, each digit can have only one image field
         for nb in range(0, 4):
@@ -119,7 +122,14 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                 continue
             digit_type = request.POST.get(f"digitizations-{nb}-digit_type", None)
             files = request.FILES.getlist(f"digitizations-{nb}-images")
-            if len(files):
+
+            flash_msg = (
+                "The image conversion and annotation process is underway. Please wait a few moments."
+                if APP_LANG == "en"
+                else "Le processus de téléchargement et d'annotation est en cours. Veuillez patienter quelques instants."
+            )
+
+            if len(files):  # if images were uploaded
                 for i, file in enumerate(files):
                     filename, ext = get_file_ext(file.name)
                     with open(
@@ -127,12 +137,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                     ) as saved_file:
                         saved_file.write(file.read())
 
-        messages.warning(
-            request,
-            "Le processus de conversion de.s fichier.s PDF en images et/ou d'extraction des images à partir de "
-            "manifeste.s externe.s est en cours. Veuillez patienter quelques instants pour corriger "
-            "les annotations automatiques.",  # TODO bilingual
-        )
+        messages.warning(request, flash_msg)
         self.save_file(request, obj)
 
     # # # # # # # # # # # #
