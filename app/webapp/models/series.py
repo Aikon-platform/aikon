@@ -1,5 +1,4 @@
 from django.db import models
-from django.core.exceptions import ValidationError
 from django.utils.html import format_html
 
 from app.webapp.models.edition import Edition
