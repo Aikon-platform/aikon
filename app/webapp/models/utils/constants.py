@@ -169,5 +169,5 @@ CONS_PLA_MSG = (
     if APP_LANG == "en"
     else "Lieu de conservation inconnu"
 )
-
+IMG_MSG = "Manage images" if APP_LANG == "en" else "Gérer les images"
 WIT_CHANGE = f"Modify {WIT}" if APP_LANG == "en" else f"Modifier le {WIT}"

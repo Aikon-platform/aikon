@@ -5,7 +5,7 @@ from django.utils.safestring import mark_safe
 from app.config.settings import APP_NAME, WEBAPP_NAME, APP_LANG
 from app.webapp.admin import UnregisteredAdmin
 from app.webapp.models.digitization import Digitization, get_name
-from app.webapp.models.utils.constants import IMG
+from app.webapp.models.utils.constants import IMG, IMG_MSG
 from app.webapp.utils.functions import gen_thumbnail, cls
 from app.webapp.utils.iiif import gen_iiif_url, IIIF_ICON
 from app.webapp.utils.iiif.gen_html import gen_btn
@@ -56,9 +56,8 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
     @admin.display(description=get_name("Digitization"))
     def digit_preview(self, obj: Digitization):
-        txt = "Manage images" if APP_LANG == "en" else "Gérer les images"
         return mark_safe(
-            f'<a href="{self.digit_url()}/?q={obj.id}" target="_blank">{IIIF_ICON} {txt}</a>'
+            f'<a href="{self.digit_url()}/?q={obj.id}" target="_blank">{IIIF_ICON} {IMG_MSG}</a>'
         )
 
     @admin.display(description=get_name("view_digit"))
@@ -99,4 +98,4 @@ class DigitizationInline(nested_admin.NestedStackedInline):
             if obj.has_annotations():
                 fields.append("view_anno")
 
-        return list(set(fields))
+        return fields  # list(set(fields))
