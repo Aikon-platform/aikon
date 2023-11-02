@@ -258,7 +258,7 @@ def zip_img(request, img_list, file_type="img", file_name=None):
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as z:
         for img_path in img_list:
-            img_name = f"{url_to_name(img_path)}.jpg"
+            img_name = f"{url_to_name(img_path).replace('_full', '')}.jpg"
             if file_type == "img":
                 if urlparse(img_path).scheme == "":
                     z.write(img_path, img_name)
