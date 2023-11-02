@@ -4,7 +4,6 @@ from app.webapp.models.annotation import Annotation
 from app.webapp.models.digitization import Digitization
 from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2
 from app.webapp.utils.functions import get_icon, get_action, cls
-from app.webapp.models.utils.constants import VOL
 from app.config.settings import (
     SAS_APP_URL,
     APP_URL,
@@ -60,17 +59,18 @@ def gen_btn(obj: Annotation | Digitization, action="view"):
         return mark_safe(anno_btn(obj, action))
 
     is_anno = True
-    if cls(obj) == Annotation:
+    if action == "view":
+        digit_id = obj.id if cls(obj) == Digitization else obj.get_digit().id
+        download_url = f"{APP_URL}/{APP_NAME}/iiif/digit-annotation/{digit_id}"
+        anno_type = "TXT"
+        version = None if cls(obj) == Digitization else MANIFEST_V1
+        is_anno = obj.has_annotations() if cls(obj) == Digitization else True
+    else:
         download_url = f"{SAS_APP_URL}/search-api/{obj.get_ref()}/search/"
         anno_type = "JSON"
         version = MANIFEST_V2
-    elif cls(obj) == Digitization:
-        download_url = f"{APP_URL}/{APP_NAME}/iiif/digit-annotation/{obj.id}"
-        anno_type = "TXT"
-        version = None
-        is_anno = obj.has_annotations()
-    else:
-        return mark_safe("NOT SUPPOSED TO OCCUR")
+    # else:
+    #     return mark_safe("NOT SUPPOSED TO OCCUR")
 
     download = (
         f'<a href="{download_url}" target="_blank">{get_icon("download")} {get_action("download")} annotations ({anno_type})</a>'
