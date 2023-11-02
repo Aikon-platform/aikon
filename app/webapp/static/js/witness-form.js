@@ -1,68 +1,79 @@
 $(function() {
-    /**
-     * TOGGLE FIELDS FOR DIGIT TYPE
-     */
-
     function hide(div) {
         div.find("input").first().val(null);
         div.hide();
     }
 
-    function getFields(digitType, selectNb = "0"){
-        // TODO enforce order of fields, in order to have type select always at first
-        const manifestDiv = $(`#digitizations-${selectNb} .field-manifest`).first();
-        const pdfDiv = $(`#digitizations-${selectNb} .field-pdf`).first();
-        const imageDiv = $(`#digitizations-${selectNb} .field-images`).first();
-
+    /**
+     * TOGGLE FIELDS IN DIGIT BLOCK
+     */
+    let lastDigitNb = 0;
+    function getFields(digitType, fields){
+        const [manifestDiv, pdfDiv, imageDiv, viewDigit, viewAnno] = fields
         switch (digitType) {
             case MAN_ABBR:
-                return [manifestDiv, [pdfDiv, imageDiv]]
+                return [manifestDiv, [pdfDiv, imageDiv, viewDigit, viewAnno]]
             case PDF_ABBR:
-                return [pdfDiv, [manifestDiv, imageDiv]]
+                return [pdfDiv, [manifestDiv, imageDiv, viewDigit, viewAnno]]
             case IMG_ABBR:
-                return [imageDiv, [manifestDiv, pdfDiv]]
+                return [imageDiv, [manifestDiv, pdfDiv, viewDigit, viewAnno]]
             default:
-                return [null, [manifestDiv, pdfDiv, imageDiv]]
+                return [null, [manifestDiv, pdfDiv, imageDiv, viewDigit, viewAnno]]
         }
     }
 
-    function showDigitField(digitSelect, selectNb = null){
-        if (selectNb !== null){
-            digitSelect = $(`#id_digitizations-${selectNb}-digit_type`);
-            digitSelect.change(function () {
-                showDigitField(this);
-            })
+    function toggleDigitFields(digitSelect, fields) {
+        const [divToShow, divsToHide] = getFields($(digitSelect).val(), fields);
+        divsToHide.map(divToHide => hide(divToHide));
+        if (divToShow){
+            divToShow.show();
+        }
+    }
+
+    function setDigitBlock(digitNb) {
+        lastDigitNb = digitNb > lastDigitNb ? digitNb : lastDigitNb
+
+        const viewDigit = $(`#digitizations-${digitNb} .field-view_digit`).first();
+        const viewAnno = $(`#digitizations-${digitNb} .field-view_anno`).first();
+
+        const manifestDiv = $(`#digitizations-${digitNb} .field-manifest`).first();
+        const pdfDiv = $(`#digitizations-${digitNb} .field-pdf`).first();
+        const imageDiv = $(`#digitizations-${digitNb} .field-images`).first();
+
+        const fields = [manifestDiv, pdfDiv, imageDiv, viewDigit, viewAnno]
+
+        if (viewDigit.find('p').first().text() !== "-"){
+            // if a digitization has already been uploaded
+            // hide fields to upload new digit
+            const digitTypeDiv =$(`#digitizations-${digitNb} .field-digit_type`).first();
+            [digitTypeDiv, manifestDiv, pdfDiv, imageDiv].map(divToHide => divToHide.hide());
         } else {
-            selectNb = $(digitSelect).attr('id').match(/\d+/);
-            if (selectNb) { selectNb = parseInt(selectNb[0]) }
+            // if not, show only field related to upload
+            const digitSelect = $(`#id_digitizations-${digitNb}-digit_type`);
+            digitSelect.change(function () { toggleDigitFields(digitSelect, fields); });
+            toggleDigitFields(digitSelect, fields);
         }
-        const digitType = $(digitSelect).val()
-        if (selectNb !== null){
-            lastDigitSelect = selectNb > lastDigitSelect ? selectNb : lastDigitSelect;
-            const [divToShow, divsToHide] = getFields(digitType, String(selectNb));
-            divsToHide.map(divToHide => hide(divToHide));
-            if (divToShow){
-                divToShow.show();
-            }
-        }
-    }
 
-    const digitSelects = $('[id^="id_digitizations-"][id$="-digit_type"]');
-    let lastDigitSelect = 0;
-    digitSelects.each(function() {
-        showDigitField(this);
-    });
-    digitSelects.change(function () {
-        showDigitField(this);
-    });
+        const digitType = $(this).find(`.field-digit_type`).first();
+        digitType.detach().prependTo($(this).find("fieldset.djn-module"))
+    }
 
     const addDigit = $(`.djn-model-${WEBAPP_NAME}-digitization.add-handler`);
     addDigit.click(function () {
         setTimeout(function () {
-            showDigitField(null, lastDigitSelect + 1);
+            setDigitBlock(lastDigitNb + 1);
         }, 100);
     })
 
+    const digitBlocks = $('#digitizations-group [id^="digitizations-"]');
+
+    digitBlocks.each(function() {
+        const digitNb = parseInt($(this).attr('id').split('-')[1]);
+        if (isNaN(digitNb)){
+            return
+        }
+        setDigitBlock(digitNb);
+    });
 
     /**
      * TOGGLE FIELDS FOR WITNESS TYPE
