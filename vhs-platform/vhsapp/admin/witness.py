@@ -225,7 +225,6 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             "export_annotated_imgs",
             "export_training_anno",
             "export_training_imgs",
-            "export_training_data",
         ]
         if self.wit_type() == VOL:
             self.actions += ["detect_similarity"]
@@ -301,7 +300,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         )
         self.save_file(request, obj)
 
-    @admin.action(description="Exporter les images IIIF sélectionnées")
+    @admin.action(description="Export a list of diagram images")
     def export_selected_iiif_images(self, request, queryset):
         results = queryset.values_list("id")
         img_urls = []
@@ -311,7 +310,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
         # img_list = [gen_iiif_url(img) for img in self.get_img_list(queryset)]
         return list_to_txt(img_urls, f"IIIF_images")
 
-    @admin.action(description="Exporter les annotations au format texte")
+    @admin.action(description="Export annotations in a text file")
     def export_selected_annotations(self, request, queryset):
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
@@ -352,7 +351,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             img_urls.extend(get_anno_images(witness, MS))
         return zip_img(request, img_urls)
 
-    @admin.action(description="Exporter les annotations pour l'entraînement")
+    @admin.action(description="Export annotation files for training")
     def export_training_anno(self, request, queryset):
         try:
             zip_buffer = io.BytesIO()
@@ -387,7 +386,7 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
                 f"Les annotations n'ont pas pu être exportées : {e}.",
             )
 
-    @admin.action(description="Exporter les images pour l'entraînement")
+    @admin.action(description="Export images for training")
     def export_training_imgs(self, request, queryset):
         results = queryset.values_list("id")
 
