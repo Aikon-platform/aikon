@@ -102,9 +102,9 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     # def save_file(self, request, obj):
     #     # instantiated by inheritance (following code is fake) TODO check utility
-    #     files = request.FILES.getlist("imagewitness_set-0-image")
-    #     for file in files[:-1]:
-    #         obj.imagewitness_set.create(image=file)
+    #     # files = request.FILES.getlist("imagewitness_set-0-image")
+    #     # for file in files[:-1]:
+    #     #     obj.imagewitness_set.create(image=file)
 
     def save_model(self, request, obj, form, change):
         # called on submission of form
@@ -138,7 +138,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                         saved_file.write(file.read())
 
         messages.warning(request, flash_msg)
-        self.save_file(request, obj)
+        # self.save_file(request, obj)
 
     # # # # # # # # # # # #
     # MARKER WITNESS LIST #

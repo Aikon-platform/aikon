@@ -1,7 +1,9 @@
 $(function() {
     function hide(div) {
-        div.find("input").first().val(null);
-        div.hide();
+        if (div){
+            div.find("input").first().val(null);
+            div.hide();
+        }
     }
 
     /**
@@ -35,14 +37,15 @@ $(function() {
 
         const viewDigit = $(`#digitizations-${digitNb} .field-view_digit`).first();
         const viewAnno = $(`#digitizations-${digitNb} .field-view_anno`).first();
+        const hasDigit = viewDigit.length !== 0
 
         const manifestDiv = $(`#digitizations-${digitNb} .field-manifest`).first();
         const pdfDiv = $(`#digitizations-${digitNb} .field-pdf`).first();
         const imageDiv = $(`#digitizations-${digitNb} .field-images`).first();
 
-        const fields = [manifestDiv, pdfDiv, imageDiv, viewDigit, viewAnno]
+        let fields = [manifestDiv, pdfDiv, imageDiv, viewDigit, viewAnno]
 
-        if (viewDigit.find('p').first().text() !== "-"){
+        if (hasDigit && viewDigit.find('p').first().text() !== "-"){
             // if a digitization has already been uploaded
             // hide fields to upload new digit
             const digitTypeDiv =$(`#digitizations-${digitNb} .field-digit_type`).first();
