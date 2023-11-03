@@ -71,7 +71,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
                 digit_btn.append(gen_btn(anno, "view"))
             return mark_safe("<br>".join(digit_btn))
 
-        return "-"  # todo do not display field
+        return "-"
 
     @admin.display(description=get_name("view_anno"))
     def view_anno(self, obj: Digitization):
@@ -90,12 +90,9 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     def get_fields(self, request, obj: Digitization = None):
         fields = list(super(DigitizationInline, self).get_fields(request, obj))
 
-        # if request.method == "POST" and self.wit_type() == VOL: # NOTE old version
-        #     fields.append("image") # check what was the purpose
-
         if obj and obj.has_images():
             fields.append("view_digit")
             if obj.has_annotations():
                 fields.append("view_anno")
 
-        return fields  # list(set(fields))
+        return fields

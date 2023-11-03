@@ -102,7 +102,7 @@ class Annotation(models.Model):
 
     def has_annotations(self):
         # if there is an annotation file named after the current Annotation
-        if len(glob(f"{BASE_DIR}/{ANNO_PATH}/{self.get_ref()}.txt")):
+        if len(glob(f"{ANNO_PATH}/{self.get_ref()}.txt")):
             return True
         return False
 

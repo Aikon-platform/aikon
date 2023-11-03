@@ -239,7 +239,22 @@ class Digitization(models.Model):
 
         return gen_manifest_btn(self, self.has_images())
 
+    def is_valid_digit(self):
+        # check if a digit type is defined but no associated file or manifest
+        if self.get_digit_abbr() == PDF_ABBR and self.pdf:
+            return True
+        elif self.get_digit_abbr() == IMG_ABBR and self.images:
+            return True
+        elif self.get_digit_abbr() == MAN_ABBR and self.manifest:
+            return True
+
+        # if not, don't bother saving the digitization
+        return False
+
     def save(self, *args, **kwargs):
+        if not self.is_valid_digit():
+            return
+
         if not self.id:
             # TODO check to not relaunch anno if the digit didn't change
             # If the instance is being saved for the first time, save it in order to have an id

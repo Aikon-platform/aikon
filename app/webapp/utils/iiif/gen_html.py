@@ -79,6 +79,7 @@ def gen_btn(obj: Annotation | Digitization, action="view"):
     )
 
     return mark_safe(
+        # todo: do a method of Annotation and Digitization instead?
         f"{get_link_manifest(obj, version)}<br>{anno_btn(obj, action)}<br>{download}"
     )
 

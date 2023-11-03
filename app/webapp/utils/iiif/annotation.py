@@ -476,7 +476,7 @@ def create_empty_anno(digit: Digitization):
                 anno_file.write(f"{i} {img_name}\n")
     except Exception as e:
         log(
-            f"[create_empty_anno] unable to create new annotation file for digit #{digit.id}",
+            f"[create_empty_anno] unable to create new Annotation file for digit #{digit.id}",
             e,
         )
 
