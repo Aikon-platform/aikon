@@ -23,7 +23,8 @@ class Work(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        return self.title
+        author = f"{self.author or 'Unknown author'}"
+        return f"{author} | {self.title}"
 
     title = models.CharField(
         verbose_name=get_name("title"), max_length=600, unique=True

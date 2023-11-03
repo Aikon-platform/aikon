@@ -248,11 +248,11 @@ class Digitization(models.Model):
         elif self.get_digit_abbr() == MAN_ABBR and self.manifest:
             return True
 
-        # if not, don't bother saving the digitization
         return False
 
     def save(self, *args, **kwargs):
         if not self.is_valid_digit():
+            # if not, don't bother saving the digitization
             return
 
         if not self.id:

@@ -180,27 +180,43 @@ class Witness(models.Model):
     def has_images(self):
         return any(digit.has_images() for digit in self.get_digits())
 
+    def get_imgs(self, is_abs=False, temp=False):
+        imgs = []
+        for digit in self.get_digits():
+            imgs.extend(digit.get_imgs(is_abs, temp))
+        return imgs
+
     def has_annotations(self):
         return any(digit.has_annotations() for digit in self.get_digits())
 
     def get_works(self):
-        return [
-            content.work for content in self.get_contents() if content.work is not None
-        ]
+        return list(
+            set(
+                [
+                    content.work
+                    for content in self.get_contents()
+                    if content.work is not None
+                ]
+            )
+        )
 
     def get_work_titles(self):
         works = self.get_works()
-        return "\n".join([work.__str__() for work in works]) if len(works) else "-"
+        return "<br>".join([work.__str__() for work in works]) if len(works) else "-"
 
     def get_places(self):
-        return [
-            content.place
-            for content in self.get_contents()
-            if content.place is not None
-        ]
+        return list(
+            set(
+                [
+                    content.place
+                    for content in self.get_contents()
+                    if content.place is not None
+                ]
+            )
+        )
 
     def get_place_names(self):
-        return "\n".join([place.__str__() for place in self.get_places()]) or "-"
+        return "<br>".join([place.__str__() for place in self.get_places()]) or "-"
 
     def get_roles(self):
         return flatten([content.get_roles() for content in self.get_contents()])
@@ -216,7 +232,7 @@ class Witness(models.Model):
 
     def get_author_names(self):
         # TODO add something when no author defined
-        return "\n".join([author.__str__() for author in self.get_authors()])
+        return "<br>".join([author.__str__() for author in self.get_authors()])
 
     def add_roles(self, metadata):
         for role in self.get_roles():

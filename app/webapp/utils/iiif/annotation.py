@@ -449,7 +449,7 @@ def get_coord_from_anno(sas_anno):
 def get_id_from_anno(sas_anno):
     try:
         # anno_id => "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}_c{canvas_nb}_{uuid4().hex[:8]}"
-        return sas_anno["@id"].split("/")[-1]  # todo check if it is still the case
+        return sas_anno["@id"].split("/")[-1]
     except Exception as e:
         log(f"[get_id_from_anno] Could not retrieve id from anno", e)
         return ""

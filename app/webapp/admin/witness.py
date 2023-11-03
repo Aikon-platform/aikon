@@ -3,7 +3,7 @@ from django.core.files.base import ContentFile
 from app.config.settings import APP_LANG
 from app.webapp.admin import DigitizationInline, ContentInline, ContentWorkInline
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.utils.constants import PDF_ABBR
+from app.webapp.models.utils.constants import PDF_ABBR, WIT
 from app.webapp.models.witness import Witness, get_name
 from app.webapp.utils.constants import MAX_ITEMS
 
@@ -14,7 +14,8 @@ from django.contrib import admin, messages
 from django.utils.safestring import mark_safe
 
 from app.webapp.utils.iiif import gen_iiif_url
-from app.webapp.utils.functions import list_to_txt, zip_img, get_file_ext
+from app.webapp.utils.functions import list_to_txt, zip_img, get_file_ext, flatten
+from app.webapp.utils.iiif.annotation import get_anno_images
 from app.webapp.utils.logger import log
 from app.webapp.utils.paths import IMG_PATH
 
@@ -32,6 +33,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             "export_selected_manifests",
             "export_selected_iiif_images",
             "export_selected_images",
+            "export_annotated_imgs"
             # TODO add export annotations as training data
         ]
 
@@ -159,18 +161,14 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     @admin.display(description=get_name("Work"))
     def get_works(self, obj):
-        return obj.get_work_titles()
+        return mark_safe(obj.get_work_titles())
 
     @admin.display(
         description=get_name("Person", plural=True),
-        # ordering= TODO find something to order the column
+        # ordering="contents__roles__person__name"
     )
     def authors(self, obj: Witness):
         return obj.get_person_names()
-
-    # # or TODO authors.admin_order_field = (
-    #     "-author__name"  # By what value to order this column in the admin list view
-    # )
 
     # list of fields that are displayed in the witnesses list view
     list_display = (
@@ -187,40 +185,17 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     # MARKER LIST ACTIONS
 
-    def get_img_list(self, queryset, with_img=True, with_pdf=True):
-        results = queryset.exclude()
-        result_list = []
-        # TODO redo this method, probably by creating a Witness method to retrieve witness images
-        # wit_type = self.wit_type()
-        #
-        # if with_img:
-        #     field_tag = (
-        #         f"{wit_type}__image{wit_type}__image"
-        #         if wit_type == VOL.lower()
-        #         else f"image{wit_type}__image"
-        #     )
-        #     img_list = results.values_list(field_tag, flat=True)
-        #     img_list = [img.split("/")[-1] for img in img_list if img is not None]
-        #     result_list = result_list + img_list
-        #
-        # if with_pdf:
-        #     field_tag = (
-        #         f"{wit_type}__pdf{wit_type}__pdf"
-        #         if wit_type == VOL.lower()
-        #         else f"pdf{wit_type}__pdf"
-        #     )
-        #     pdf_list = results.values_list(field_tag, flat=True)
-        #     pdf_list = [pdf.split("/")[-1] for pdf in pdf_list if pdf is not None]
-        #     result_list = result_list + get_pdf_imgs(pdf_list, wit_type)
-
-        return result_list
-
     @admin.action(
-        description="Exporter les images IIIF sélectionnées"
-    )  # TODO bilingual
+        description=f"Export IIIF images of selected {WIT}s"
+        if APP_LANG == "en"
+        else f"Exporter les images IIIF des {WIT}s sélectionnés"
+    )
     def export_selected_iiif_images(self, request, queryset):
-        img_list = [gen_iiif_url(img) for img in self.get_img_list(queryset)]
-        return list_to_txt(img_list, f"IIIF_images")
+        img_names = []
+        for witness in queryset.exclude():
+            img_names.extend(witness.get_imgs())
+        img_list = [gen_iiif_url(img) for img in img_names]
+        return list_to_txt(img_list, "IIIF_images")
 
     def check_selection(self, queryset, request):
         if len(queryset) > MAX_ITEMS:
@@ -233,15 +208,17 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         return False
 
     @admin.action(
-        description="Exporter les manifests IIIF sélectionnés"
-    )  # TODO bilingual
+        description=f"Export IIIF manifests of selected {WIT}es"
+        if APP_LANG == "en"
+        else f"Exporter les manifestes IIIF des {WIT}s sélectionnés"
+    )
     def export_selected_manifests(self, request, queryset):
-        # results = queryset.exclude(volume__isnull=True).values_list("volume__id")
-        results = queryset.values_list(  # TODO : here change for digit
-            "id", "manifestmanuscript__manifest"
-        )
-        manifests = [digit.gen_manifest_url() for digit in results]
-        return list_to_txt(manifests, "Manifest_IIIF")
+        manifests = []
+        for witness in queryset.exclude():
+            manifests.extend(
+                [digit.gen_manifest_url() for digit in witness.get_digits()]
+            )
+        return list_to_txt(manifests, "IIIF_manifests")
 
     @admin.action(description="Export diagram images in selected sources")
     def export_annotated_imgs(self, request, queryset):
@@ -249,12 +226,12 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             messages.warning(request, "You can select up to 5 manuscripts for export.")
             return
 
-        results = queryset.values_list("id")
-
         img_urls = []
-        for wit_id in results:
-            witness = Witness.objects.get(pk=wit_id[0])
-            # img_urls.extend(get_anno_images(anno)) TODO : here change for anno
+        for witness in queryset.exclude():
+            anno_wit = []
+            for anno in witness.get_annotations():
+                anno_wit.extend(get_anno_images(anno))
+            img_urls.extend(anno_wit)
 
         return zip_img(img_urls)
 

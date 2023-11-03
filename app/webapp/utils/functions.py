@@ -246,21 +246,20 @@ def url_to_name(iiif_img_url):
     )
 
 
-def zip_img(img_list, file_type="img", file_name=f"{APP_NAME}_export"):
+def zip_img(img_list, file_name=f"{APP_NAME}_export"):
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as z:
         for img_path in img_list:
             img_name = f"{url_to_name(img_path)}.jpg"
-            if file_type == "img":
-                if urlparse(img_path).scheme == "":
-                    z.write(img_path, img_name)
+            if urlparse(img_path).scheme == "":
+                z.write(img_path, img_name)
+            else:
+                response = requests.get(img_path)
+                if response.status_code == 200:
+                    z.writestr(img_name, response.content)
                 else:
-                    response = requests.get(img_path)
-                    if response.status_code == 200:
-                        z.writestr(img_name, response.content)
-                    else:
-                        log(f"[zip_img] Fail to download img: {img_path}")
-                        pass
+                    log(f"[zip_img] Fail to download img: {img_path}")
+                    pass
 
     response = HttpResponse(
         buffer.getvalue(), content_type="application/x-zip-compressed"
