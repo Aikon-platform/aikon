@@ -370,12 +370,13 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
                         img = cv2.imread(f"{BASE_DIR}/{IMG_PATH}/{img_file}")
                         height, width = int(img.shape[0]), int(img.shape[1])
                         if bool(annos):
-                            annotations = [img_file]
-
+                            annotations = []
                             for anno in annos:
-                                x, y, w, h = get_coord_from_anno(anno).split(",")
+                                x, y, w, h = [
+                                    int(n) for n in get_coord_from_anno(anno).split(",")
+                                ]
                                 annotations.append(
-                                    f"0 {int(x)/width} {int(y)/height} {int(w)/width} {int(h)/height}"
+                                    f"0 {((x+x+w)/2)/width} {((y+y+h)/2)/height} {w/width} {h/height}"
                                 )
 
                             txt_filename = f"{img_file}".replace(".jpg", ".txt")
