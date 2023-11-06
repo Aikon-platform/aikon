@@ -1,6 +1,7 @@
 import glob
 import zipfile
 import io
+import cv2
 
 import nested_admin
 from admin_extra_buttons.decorators import button
@@ -28,6 +29,8 @@ from vhsapp.utils.iiif.annotation import (
 )
 
 from vhsapp.models.constants import MS, VOL, WIT, MS_ABBR, VOL_ABBR, WIT_ABBR
+from vhsapp.utils.paths import BASE_DIR, IMG_PATH
+
 
 from vhsapp.admin.digitization import (
     PdfManuscriptInline,
@@ -364,12 +367,16 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
 
                     for canvas_nb, img_file in img_urls:
                         annos = get_indexed_canvas_annos(canvas_nb, witness.id, MS)
+                        img = cv2.imread(f"{BASE_DIR}/{IMG_PATH}/{img_file}")
+                        height, width = int(img.shape[0]), int(img.shape[1])
                         if bool(annos):
                             annotations = [img_file]
 
                             for anno in annos:
-                                coord = get_coord_from_anno(anno).replace(",", " ")
-                                annotations.append(f"0 {coord}")
+                                x, y, w, h = get_coord_from_anno(anno).split(",")
+                                annotations.append(
+                                    f"0 {int(x)/width} {int(y)/height} {int(w)/width} {int(h)/height}"
+                                )
 
                             txt_filename = f"{img_file}".replace(".jpg", ".txt")
                             txt_content = "\n".join(annotations)
