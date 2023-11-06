@@ -19,7 +19,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         "id",
         "edition",
         "get_works",
-        "get_authors",
+        "get_roles",
         "get_publisher",
         "get_place",
         "get_date",
@@ -47,7 +47,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         description=get_name("Person", plural=True),
         # ordering= TODO find something to order the column
     )
-    def get_authors(self, obj: Witness):
+    def get_roles(self, obj: Series):
         return obj.get_person_names()
 
     @admin.display(description=get_name("publisher"))

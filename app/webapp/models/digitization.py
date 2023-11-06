@@ -1,6 +1,7 @@
 import os
 from glob import glob
 
+from django.utils.safestring import mark_safe
 from iiif_prezi.factory import StructuralError
 
 from app.config.settings import APP_URL, APP_NAME
@@ -28,6 +29,7 @@ from app.webapp.models.utils.constants import (
     IMG_ABBR,
     MAN_ABBR,
     PDF_ABBR,
+    DIG,
 )
 from app.webapp.utils.functions import (
     pdf_to_img,
@@ -234,10 +236,22 @@ class Digitization(models.Model):
         # To display a button in the list of witnesses to know if they were annotated or not
         return "<br>".join(anno.view_btn() for anno in self.get_annotations())
 
-    def manifest_link(self):
+    def digit_btn(self):
+        from app.webapp.utils.iiif.gen_html import anno_btn
+
+        return mark_safe(anno_btn(self, "view")) if self.has_images() else ""
+
+    def view_btn(self):
+        iiif_link = f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"
+        annos = self.get_annotations()
+        if len(annos) == 0:
+            return f"{iiif_link}<br>{self.digit_btn()}"
+        return f"{iiif_link}<br>{self.anno_btn()}"
+
+    def manifest_link(self, inline=False):
         from app.webapp.utils.iiif.gen_html import gen_manifest_btn
 
-        return gen_manifest_btn(self, self.has_images())
+        return gen_manifest_btn(self, self.has_images(), inline)
 
     def is_valid_digit(self):
         # check if a digit type is defined but no associated file or manifest

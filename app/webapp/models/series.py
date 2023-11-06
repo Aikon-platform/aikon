@@ -58,7 +58,10 @@ class Series(models.Model):
         return self.roles.all()
 
     def get_person_names(self):
-        return format_html("<br>".join([role.__str__() for role in self.get_roles()]))
+        roles = self.get_roles()
+        if len(roles) == 0:
+            return "-"
+        return format_html("<br>".join([role.__str__() for role in roles]))
 
     def clean(self):
         super().clean()

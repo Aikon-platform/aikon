@@ -209,6 +209,8 @@ def get_action(action, formatting=None):
     actions = {
         "view": {"en": "visualize", "fr": "visualiser la"},
         "no_manifest": {"en": "no manifest", "fr": "pas de manifest"},
+        "no_digit": {"en": "no digitization", "fr": "pas de numérisation"},
+        "no_img": {"en": "no image", "fr": "pas d'image"},
         "no_anno": {"en": "no annotation yet", "fr": "non annoté"},
         "download": {"en": "download", "fr": "télécharger les"},
         "edit": {"en": "edit", "fr": "modifier les"},

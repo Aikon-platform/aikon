@@ -55,7 +55,7 @@ def gen_btn(obj: Annotation | Digitization, action="view"):
     """
     Used to create button in the witness form
     """
-    if action == "no_manifest" or action == "no_anno":
+    if action == "no_manifest" or action == "no_anno" or action == "no_digit":
         return mark_safe(anno_btn(obj, action))
 
     is_anno = True
@@ -84,11 +84,13 @@ def gen_btn(obj: Annotation | Digitization, action="view"):
     )
 
 
-def gen_manifest_btn(digit: Digitization, has_manifest=True):
+def gen_manifest_btn(digit: Digitization, has_manifest=True, inline=False):
     manifest = digit.gen_manifest_url()
     mf = (
         f"<a href='{manifest}' target='_blank'>{IIIF_ICON}</a>"
         if has_manifest
         else "<span class='faded'>No manifest</span>"
     )
+    if inline:
+        return mark_safe(mf)
     return mark_safe(f"<div class='iiif-icon'>{mf}</div>")

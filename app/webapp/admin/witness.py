@@ -3,7 +3,7 @@ from django.core.files.base import ContentFile
 from app.config.settings import APP_LANG
 from app.webapp.admin import DigitizationInline, ContentInline, ContentWorkInline
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.utils.constants import PDF_ABBR, WIT
+from app.webapp.models.utils.constants import PDF_ABBR, WIT, ANNO, DIG
 from app.webapp.models.witness import Witness, get_name
 from app.webapp.utils.constants import MAX_ITEMS
 
@@ -45,8 +45,8 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         "id_nb",
         "place__name",
         "type",
-        "contents__roles__person__name",  # todo check if it works
-        "contents__work__name",
+        "contents__roles__person__name",
+        "contents__work__title",
     )
     # Filters options in the sidebar
     list_filter = ("id_nb", "place")  # list_filter = (AuthorFilter, WorkFilter)
@@ -147,10 +147,13 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     # # # # # # # # # # # #
 
     # MARKER LIST COLUMNS
-    @admin.display(description="Annotation")
-    def is_annotated(self, obj: Witness):
+    @admin.display(description=f"{DIG} & {ANNO}")
+    def digit_anno_btn(self, obj: Witness):
+        digits = obj.get_digits()
+        if len(digits) == 0:
+            return "-"
         # To display a button in the list of witnesses to know if they were annotated or not
-        return mark_safe("<br>".join(digit.anno_btn() for digit in obj.get_digits()))
+        return mark_safe("<br><br>".join(digit.view_btn() for digit in digits))
 
     @admin.display(description="IIIF manifest")
     def manifest_link(self, obj):
@@ -167,7 +170,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         description=get_name("Person", plural=True),
         # ordering="contents__roles__person__name"
     )
-    def authors(self, obj: Witness):
+    def get_roles(self, obj: Witness):
         return obj.get_person_names()
 
     # list of fields that are displayed in the witnesses list view
@@ -176,9 +179,8 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         "id_nb",
         "place",
         "get_works",
-        "authors",
-        "manifest_link",
-        "is_annotated",
+        "get_roles",
+        "digit_anno_btn",
         # TODO ADD WORK + DATES
     )
     list_display_links = ("id_nb",)
