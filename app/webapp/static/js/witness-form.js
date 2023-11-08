@@ -32,27 +32,27 @@ $(function() {
         }
     }
 
-    function setDigitBlock(digitNb) {
+    function setDigitBlock(digitNb, prefix="") {
         lastDigitNb = digitNb > lastDigitNb ? digitNb : lastDigitNb
 
-        const viewDigit = $(`#digitizations-${digitNb} .field-view_digit`).first();
-        const viewAnno = $(`#digitizations-${digitNb} .field-view_anno`).first();
+        const viewDigit = $(`#${prefix}digitizations-${digitNb} .field-view_digit`).first();
+        const viewAnno = $(`#${prefix}digitizations-${digitNb} .field-view_anno`).first();
         const hasDigit = viewDigit.length !== 0
 
-        const manifestDiv = $(`#digitizations-${digitNb} .field-manifest`).first();
-        const pdfDiv = $(`#digitizations-${digitNb} .field-pdf`).first();
-        const imageDiv = $(`#digitizations-${digitNb} .field-images`).first();
+        const manifestDiv = $(`#${prefix}digitizations-${digitNb} .field-manifest`).first();
+        const pdfDiv = $(`#${prefix}digitizations-${digitNb} .field-pdf`).first();
+        const imageDiv = $(`#${prefix}digitizations-${digitNb} .field-images`).first();
 
         let fields = [manifestDiv, pdfDiv, imageDiv, viewDigit, viewAnno]
 
         if (hasDigit && viewDigit.find('p').first().text() !== "-"){
             // if a digitization has already been uploaded
             // hide fields to upload new digit
-            const digitTypeDiv =$(`#digitizations-${digitNb} .field-digit_type`).first();
+            const digitTypeDiv =$(`#${prefix}digitizations-${digitNb} .field-digit_type`).first();
             [digitTypeDiv, manifestDiv, pdfDiv, imageDiv].map(divToHide => divToHide.hide());
         } else {
             // if not, show only field related to upload
-            const digitSelect = $(`#id_digitizations-${digitNb}-digit_type`);
+            const digitSelect = $(`#${prefix}id_digitizations-${digitNb}-digit_type`);
             digitSelect.change(function () { toggleDigitFields(digitSelect, fields); });
             toggleDigitFields(digitSelect, fields);
         }
