@@ -201,7 +201,6 @@ class Digitization(models.Model):
 
         if manifest := self.manifest:
             metadata["Source manifest"] = str(manifest)
-            metadata["Is annotated"] = self.has_annotations()
 
         return metadata
 

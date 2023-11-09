@@ -9,6 +9,11 @@ def get_name(fieldname, plural=False):
     fields = {
         "name": {"en": CONS_PLA, "fr": CONS_PLA},
         "city": {"en": "city", "fr": "ville"},
+        "licence": {"en": "licence", "fr": "licence"},
+        "licence_info": {
+            "en": "URL mentioning reproduction rights",
+            "fr": "URL précisant les droits de reproduction",
+        },
     }
     return get_fieldname(fieldname, fields, plural)
 
@@ -32,3 +37,14 @@ class ConservationPlace(models.Model):
         on_delete=models.SET_NULL,
         null=True,
     )
+    licence = models.URLField(
+        verbose_name=get_name("licence"),
+        blank=True,
+        null=True,
+        # TODO add licence_info inside the form
+    )
+
+    def get_licence(self):
+        return (
+            self.licence or "Do not reuse"
+        )  # TODO create page to redirect to in order to explicit what is "no reuse"

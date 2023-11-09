@@ -133,13 +133,16 @@ class Witness(models.Model):
         # todo finish defining manifest metadata (type, id, etc)
 
         metadata = {
-            "Place of conservation": self.place.__str__(),
             "Reference number": self.id_nb,
             "Work(s)": self.get_work_titles(),
             "Place(s) of production": self.get_place_names(),
         }
         if note := self.notes:
             metadata["Notes"] = note
+
+        if library := self.place:
+            metadata["Place of conservation"] = library.__str__()
+            metadata["Licence"] = library.get_licence()
 
         if self.get_persons():
             metadata = self.add_roles(metadata)
