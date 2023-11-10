@@ -161,6 +161,16 @@ class Witness(models.Model):
 
         return metadata
 
+    def get_dates(self):
+        cont_dates = [cont.get_dates() for cont in self.get_contents()]
+        wit_dates = [
+            d
+            for dates in cont_dates
+            if any(d is not None for d in dates)
+            for d in dates
+        ]
+        return (min(wit_dates), max(wit_dates)) if wit_dates else (None, None)
+
     def get_contents(self):
         # Django automatically creates a reverse relationship from Witness to Content
         return self.contents.all()

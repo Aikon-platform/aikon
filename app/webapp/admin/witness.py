@@ -1,8 +1,5 @@
-from django.core.files.base import ContentFile
-
 from app.config.settings import APP_LANG
 from app.webapp.admin import DigitizationInline, ContentInline, ContentWorkInline
-from app.webapp.models.digitization import Digitization
 from app.webapp.models.utils.constants import PDF_ABBR, WIT, ANNO, DIG
 from app.webapp.models.witness import Witness, get_name
 from app.webapp.utils.constants import MAX_ITEMS
@@ -14,9 +11,14 @@ from django.contrib import admin, messages
 from django.utils.safestring import mark_safe
 
 from app.webapp.utils.iiif import gen_iiif_url
-from app.webapp.utils.functions import list_to_txt, zip_img, get_file_ext, flatten
-from app.webapp.utils.iiif.annotation import get_anno_images
-from app.webapp.utils.logger import log
+from app.webapp.utils.functions import (
+    list_to_txt,
+    zip_img,
+    get_file_ext,
+    flatten,
+    zip_files,
+)
+from app.webapp.utils.iiif.annotation import get_anno_images, get_training_anno
 from app.webapp.utils.paths import IMG_PATH
 
 
@@ -33,8 +35,9 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             "export_selected_manifests",
             "export_selected_iiif_images",
             "export_selected_images",
-            "export_annotated_imgs"
-            # TODO add export annotations as training data
+            "export_annotated_imgs",
+            "export_training_imgs",
+            "export_training_anno",
         ]
 
     ordering = ("id", "place__name")
@@ -102,12 +105,6 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     # MARKER SAVING METHODS
 
-    # def save_file(self, request, obj):
-    #     # instantiated by inheritance (following code is fake) TODO check utility
-    #     # files = request.FILES.getlist("imagewitness_set-0-image")
-    #     # for file in files[:-1]:
-    #     #     obj.imagewitness_set.create(image=file)
-
     def save_model(self, request, obj, form, change):
         # called on submission of form
         if not obj.user:
@@ -140,7 +137,6 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                         saved_file.write(file.read())
 
         messages.warning(request, flash_msg)
-        # self.save_file(request, obj)
 
     # # # # # # # # # # # #
     # MARKER WITNESS LIST #
@@ -173,19 +169,42 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     def get_roles(self, obj: Witness):
         return obj.get_person_names()
 
+    @admin.display(
+        description="Dates",
+    )
+    def get_dates(self, obj: Witness):
+        min_date, max_date = obj.get_dates()
+        if min_date == max_date:
+            return min_date or "-"
+        else:
+            if min_date is None or max_date is None:
+                year = max_date if min_date is None else min_date
+                return f"c. {year}"
+            return f"{min_date}-{max_date}"
+
     # list of fields that are displayed in the witnesses list view
     list_display = (
         "id",
         "id_nb",
         "place",
+        "get_dates",
         "get_works",
         "get_roles",
         "digit_anno_btn",
-        # TODO ADD WORK + DATES
     )
     list_display_links = ("id_nb",)
 
     # MARKER LIST ACTIONS
+
+    def check_selection(self, queryset, request):
+        if len(queryset) > MAX_ITEMS:
+            self.message_user(
+                request,
+                f"Actions can be performed on up to {MAX_ITEMS} elements only.",
+                messages.WARNING,
+            )
+            return True
+        return False
 
     @admin.action(
         description=f"Export IIIF images of selected {WIT}s"
@@ -198,16 +217,6 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             img_names.extend(witness.get_imgs())
         img_list = [gen_iiif_url(img) for img in img_names]
         return list_to_txt(img_list, "IIIF_images")
-
-    def check_selection(self, queryset, request):
-        if len(queryset) > MAX_ITEMS:
-            self.message_user(
-                request,
-                f"Actions can be performed on up to {MAX_ITEMS} elements only.",
-                messages.WARNING,
-            )
-            return True
-        return False
 
     @admin.action(
         description=f"Export IIIF manifests of selected {WIT}es"
@@ -222,7 +231,11 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             )
         return list_to_txt(manifests, "IIIF_manifests")
 
-    @admin.action(description="Export diagram images in selected sources")
+    @admin.action(
+        description=f"Download annotated diagram images in selected selected {WIT}es"
+        if APP_LANG == "en"
+        else f"Télécharger les images de diagrammes annotés des {WIT}s sélectionnés"
+    )
     def export_annotated_imgs(self, request, queryset):
         if queryset.count() > 5:
             messages.warning(request, "You can select up to 5 manuscripts for export.")
@@ -236,6 +249,29 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             img_urls.extend(anno_wit)
 
         return zip_img(img_urls)
+
+    @admin.action(
+        description="Export annotations for segmentation model training"
+        if APP_LANG == "en"
+        else f"Exporter les annotations pour l'entraînement du modèle de segmentation"
+    )
+    def export_training_anno(self, request, queryset):
+        filenames_contents = []
+        for anno in flatten([wit.get_annotations() for wit in queryset.exclude()]):
+            filenames_contents.extend(get_training_anno(anno))
+
+        return zip_files(flatten(filenames_contents))  # TODO fix error
+
+    @admin.action(
+        description=f"Download {DIG}s images in selected selected {WIT}es"
+        if APP_LANG == "en"
+        else f"Télécharger les images des {DIG}s des {WIT}s sélectionnés"
+    )
+    def export_training_imgs(self, request, queryset):
+        img_urls = []
+        for witness in queryset.exclude():
+            img_urls.extend(witness.get_imgs(is_abs=False))
+        return zip_img(request, img_urls)  # TODO fix error
 
 
 class WitnessInline(nested_admin.NestedStackedInline):

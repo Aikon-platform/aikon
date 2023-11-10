@@ -5,11 +5,12 @@ from urllib.parse import urlencode
 from urllib.request import urlopen
 
 import requests
+from PIL import Image
 
 from app.webapp.models.annotation import Annotation
 from app.webapp.models.digitization import Digitization
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
-from app.webapp.utils.paths import BASE_DIR, ANNO_PATH
+from app.webapp.utils.paths import BASE_DIR, ANNO_PATH, IMG_PATH
 from app.config.settings import (
     CANTALOUPE_APP_URL,
     SAS_APP_URL,
@@ -411,6 +412,34 @@ def get_canvas_list(anno: Annotation, all_img=False):
                 canvases.append((canvas_nb, img_file))
 
     return canvases
+
+
+def get_canvas_lists(digit: Digitization, all_img=False):
+    canvases = []
+    for anno in digit.get_annotations():
+        canvases.extend(get_canvas_list(anno, all_img))
+    return canvases
+
+
+def get_training_anno(anno: Annotation):
+    # Returns a list of tuples [(file_name, file_content), (...)]
+    filenames_contents = []
+    for canvas_nb, img_file in get_canvas_list(anno):
+        sas_annos = get_indexed_canvas_annos(anno, canvas_nb)
+        img = Image.open(f"{IMG_PATH}/{img_file}")
+        width, height = img.size
+        if bool(sas_annos):
+            train_annos = []
+            for sas_anno in sas_annos:
+                x, y, w, h = [int(n) for n in get_coord_from_anno(sas_anno).split(",")]
+                train_annos.append(
+                    f"0 {((x + x + w) / 2) / width} {((y + y + h) / 2) / height} {w / width} {h / height}"
+                )
+
+            filenames_contents.append(
+                (f"{img_file}".replace(".jpg", ".txt"), "\n".join(train_annos))
+            )
+    return filenames_contents
 
 
 def get_indexed_annos(anno: Annotation):

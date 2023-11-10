@@ -248,7 +248,7 @@ def url_to_name(iiif_img_url):
     )
 
 
-def zip_img(img_list, file_name=f"{APP_NAME}_export"):
+def zip_img(img_list, zip_name=f"{APP_NAME}_export"):
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as z:
         for img_path in img_list:
@@ -266,7 +266,20 @@ def zip_img(img_list, file_name=f"{APP_NAME}_export"):
     response = HttpResponse(
         buffer.getvalue(), content_type="application/x-zip-compressed"
     )
-    response["Content-Disposition"] = f"attachment; filename={file_name}.zip"
+    response["Content-Disposition"] = f"attachment; filename={zip_name}.zip"
+    return response
+
+
+def zip_files(filenames_contents, zip_name=f"{APP_NAME}_export"):
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as z:
+        for filename, content in filenames_contents:
+            z.write(content, filename)
+
+    response = HttpResponse(
+        buffer.getvalue(), content_type="application/x-zip-compressed"
+    )
+    response["Content-Disposition"] = f"attachment; filename={zip_name}.zip"
     return response
 
 

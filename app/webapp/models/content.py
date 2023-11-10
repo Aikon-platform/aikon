@@ -129,3 +129,6 @@ class Content(models.Model):
     def clean(self):
         super().clean()
         validate_dates(self.date_min, self.date_max)
+
+    def get_dates(self):
+        return self.date_min or None, self.date_max or None
