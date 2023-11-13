@@ -279,9 +279,14 @@ WantedBy=multi-user.target
 Run server
 ```shell
 # FIX DUE TO SPECIFIC PROJECT STRUCTURE
-
 python app/manage.py runserver localhost:8000
 ```
+
+or to launch everything (Django, Cantaloupe and SimpleAnnotationServer) at once (stop with `kill 0`:
+```shell
+bash run.sh
+```
+
 
 You can now visit the app at [http://localhost:8000](http://localhost:8000) and connect with the credentials you created
 
