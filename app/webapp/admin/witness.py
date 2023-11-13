@@ -17,9 +17,31 @@ from app.webapp.utils.functions import (
     get_file_ext,
     flatten,
     zip_files,
+    zip_dirs,
 )
 from app.webapp.utils.iiif.annotation import get_anno_images, get_training_anno
 from app.webapp.utils.paths import IMG_PATH
+
+
+def no_anno_message(request):
+    messages.warning(
+        request,
+        f"Please select at least one {WIT} with annotations."
+        if APP_LANG == "en"
+        else f"Merci de sélectionner au moins un {WIT} avec des annotations.",
+    )
+
+
+def check_selection(queryset, request):
+    if len(queryset) > MAX_ITEMS:
+        messages.warning(
+            request,
+            f"You can select up to 5 {WIT}es."
+            if APP_LANG == "en"
+            else f"Vous pouvez sélectionner jusqu'à 5 {WIT}s.",
+        )
+        return False
+    return True
 
 
 @admin.register(Witness)
@@ -84,24 +106,12 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     # MARKER SUB-FORMS existing within the Witness form
     inlines = [DigitizationInline, ContentInline]
 
-    def get_inline_instances(self, request, obj=None):
-        # TODO to delete?
-        # called every time the form is rendered without need of refreshing the page
-        inline_instances = super().get_inline_instances(request, obj)
-
-        # Exclude Volume if the type is "manuscript"
-        # if obj and obj.type == "manuscript":
-        #     inline_instances = [
-        #         inline
-        #         for inline in inline_instances
-        #         if not isinstance(inline, VolumeInline)
-        #     ]
-
-        return inline_instances
-
-    # MARKER ADDITIONAL FIELDS
-
-    # TODO add a field to access to direct annotation int the list view
+    # def get_inline_instances(self, request, obj=None):
+    #     # TODO to delete?
+    #     # called every time the form is rendered without need of refreshing the page
+    #     inline_instances = super().get_inline_instances(request, obj)
+    #
+    #     return inline_instances
 
     # MARKER SAVING METHODS
 
@@ -196,18 +206,8 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     # MARKER LIST ACTIONS
 
-    def check_selection(self, queryset, request):
-        if len(queryset) > MAX_ITEMS:
-            self.message_user(
-                request,
-                f"Actions can be performed on up to {MAX_ITEMS} elements only.",
-                messages.WARNING,
-            )
-            return True
-        return False
-
     @admin.action(
-        description=f"Export IIIF images of selected {WIT}s"
+        description=f"Export IIIF images of selected {WIT}es"
         if APP_LANG == "en"
         else f"Exporter les images IIIF des {WIT}s sélectionnés"
     )
@@ -237,16 +237,21 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         else f"Télécharger les images de diagrammes annotés des {WIT}s sélectionnés"
     )
     def export_annotated_imgs(self, request, queryset):
-        if queryset.count() > 5:
-            messages.warning(request, "You can select up to 5 manuscripts for export.")
+        if not check_selection(queryset, request):
             return
 
         img_urls = []
+        has_annotation = False
         for witness in queryset.exclude():
             anno_wit = []
             for anno in witness.get_annotations():
+                has_annotation = True
                 anno_wit.extend(get_anno_images(anno))
             img_urls.extend(anno_wit)
+
+        if not has_annotation:
+            no_anno_message(request)
+            return
 
         return zip_img(img_urls)
 
@@ -256,22 +261,36 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         else f"Exporter les annotations pour l'entraînement du modèle de segmentation"
     )
     def export_training_anno(self, request, queryset):
-        filenames_contents = []
-        for anno in flatten([wit.get_annotations() for wit in queryset.exclude()]):
-            filenames_contents.extend(get_training_anno(anno))
+        if not check_selection(queryset, request):
+            return
 
-        return zip_files(flatten(filenames_contents))  # TODO fix error
+        dirnames_contents = {}
+        has_annotation = False
+        for wit in queryset.exclude():
+            dirnames_contents[wit.get_ref()] = []
+            for anno in wit.get_annotations():
+                dirnames_contents[wit.get_ref()].extend(get_training_anno(anno))
+                has_annotation = True
+
+        if not has_annotation:
+            no_anno_message(request)
+            return
+
+        return zip_dirs(dirnames_contents)
 
     @admin.action(
-        description=f"Download {DIG}s images in selected selected {WIT}es"
+        description=f"Download full {DIG}s images in selected selected {WIT}es"
         if APP_LANG == "en"
-        else f"Télécharger les images des {DIG}s des {WIT}s sélectionnés"
+        else f"Télécharger les images scans des {WIT}s sélectionnés"
     )
     def export_training_imgs(self, request, queryset):
         img_urls = []
+        # dirnames_contents = {}
+        # for wit in queryset.exclude():
+        #     dirnames_contents[wit.get_ref()] = wit.get_imgs(is_abs=False)
         for witness in queryset.exclude():
             img_urls.extend(witness.get_imgs(is_abs=False))
-        return zip_img(request, img_urls)  # TODO fix error
+        return zip_img(img_urls)
 
 
 class WitnessInline(nested_admin.NestedStackedInline):

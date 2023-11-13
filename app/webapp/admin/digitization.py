@@ -81,6 +81,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
                 action = "final" if anno.is_validated else "edit"
                 anno_btn.append(gen_btn(anno, action))
             return mark_safe("<br>".join(anno_btn))
+        # TODO maybe add a btn to create a manual annotation (utils.iiif.annotation.create_empty_annotation())
         return "-"
 
     # def has_view_or_change_permission(self, request, obj=None):

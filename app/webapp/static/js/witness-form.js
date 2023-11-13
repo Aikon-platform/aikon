@@ -48,8 +48,13 @@ $(function() {
         if (hasDigit && viewDigit.find('p').first().text() !== "-"){
             // if a digitization has already been uploaded
             // hide fields to upload new digit
-            const digitTypeDiv =$(`#${prefix}digitizations-${digitNb} .field-digit_type`).first();
-            [digitTypeDiv, manifestDiv, pdfDiv, imageDiv].map(divToHide => divToHide.hide());
+            const digitTypeDiv = $(`#${prefix}digitizations-${digitNb} .field-digit_type`).first();
+            let divsToHide = [digitTypeDiv, manifestDiv, pdfDiv, imageDiv];
+            // if no annotations were yet generated
+            if (viewAnno.find('p').first().text() === "-"){
+                divsToHide.push(viewAnno)
+            }
+            divsToHide.map(divToHide => divToHide.hide());
         } else {
             // if not, show only field related to upload
             const digitSelect = $(`#${prefix}id_digitizations-${digitNb}-digit_type`);

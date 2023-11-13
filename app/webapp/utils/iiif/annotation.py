@@ -490,7 +490,7 @@ def create_empty_anno(digit: Digitization):
         return False
 
     try:
-        anno = Annotation(digitization=digit, model="CHANGE THIS VALUE")
+        anno = Annotation(digitization=digit, model="Manual")
         anno.save()
     except Exception as e:
         log(

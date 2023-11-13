@@ -254,7 +254,7 @@ def zip_img(img_list, zip_name=f"{APP_NAME}_export"):
         for img_path in img_list:
             img_name = f"{url_to_name(img_path)}.jpg"
             if urlparse(img_path).scheme == "":
-                z.write(img_path, img_name)
+                z.write(f"{IMG_PATH}/{img_name}", img_name)
             else:
                 response = requests.get(img_path)
                 if response.status_code == 200:
@@ -271,10 +271,35 @@ def zip_img(img_list, zip_name=f"{APP_NAME}_export"):
 
 
 def zip_files(filenames_contents, zip_name=f"{APP_NAME}_export"):
+    # filenames_contents = [(filename1, content1), (filename2, content2), ...]
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as z:
-        for filename, content in filenames_contents:
-            z.write(content, filename)
+        for filename_content in filenames_contents:
+            filename, content = filename_content
+            z.writestr(filename, content)
+
+    response = HttpResponse(
+        buffer.getvalue(), content_type="application/x-zip-compressed"
+    )
+    response["Content-Disposition"] = f"attachment; filename={zip_name}.zip"
+    return response
+
+
+def zip_dirs(dirnames_contents, zip_name=f"{APP_NAME}_export"):
+    # dirnames_contents = {
+    #   dir1: [(filename1, content1), (filename2, content2), ...],
+    #   dir2: [(filename1, content1), (filename2, content2), ...]
+    #   dir3: ...
+    # }
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as z:
+        for dirname, filename_contents in dirnames_contents.items():
+            z.writestr(f"{dirname}/", "")
+
+            for filename_content in filename_contents:
+                filename, content = filename_content
+                if type(content) == str:
+                    z.writestr(f"{dirname}/{filename}", content)
 
     response = HttpResponse(
         buffer.getvalue(), content_type="application/x-zip-compressed"
