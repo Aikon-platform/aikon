@@ -97,6 +97,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                     ("page_type", "nb_pages"),  # same
                     "notes",
                     ("title", "volume"),
+                    "link",
                     "is_public",
                 ]
             },
