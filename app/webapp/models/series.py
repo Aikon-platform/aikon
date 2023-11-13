@@ -3,7 +3,7 @@ from django.utils.html import format_html
 
 from app.webapp.models.edition import Edition
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.models.utils.constants import PUBLISHED_INFO, DATE_ERROR, DATE_INFO
+from app.webapp.models.utils.constants import PUBLISHED_INFO, DATE_INFO
 from app.webapp.utils.functions import validate_dates
 
 

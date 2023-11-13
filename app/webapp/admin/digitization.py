@@ -84,10 +84,6 @@ class DigitizationInline(nested_admin.NestedStackedInline):
         # TODO maybe add a btn to create a manual annotation (utils.iiif.annotation.create_empty_annotation())
         return "-"
 
-    # def has_view_or_change_permission(self, request, obj=None):
-    #     # TODO check what does it do
-    #     return False
-
     def get_fields(self, request, obj: Digitization = None):
         fields = list(super(DigitizationInline, self).get_fields(request, obj))
 

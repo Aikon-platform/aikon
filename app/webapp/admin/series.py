@@ -1,11 +1,10 @@
 import nested_admin
 from django.contrib import admin
 
-from app.webapp.admin import RoleInline
+from app.webapp.admin.role import RoleInline
 from app.webapp.admin.witness import WitnessInline
 from app.webapp.models.series import Series
 from app.webapp.models.edition import get_name
-from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import format_start_end
 
 
@@ -14,7 +13,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
     ordering = ("id",)
     list_per_page = 100
     search_fields = ("edition_name",)
-    # TODO: "manifest_link", "is_annotated"
+    # TODO: digit_anno_btn
     list_display = (
         "id",
         "edition",

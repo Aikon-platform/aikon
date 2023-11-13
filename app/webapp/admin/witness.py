@@ -1,6 +1,9 @@
 from app.config.settings import APP_LANG
-from app.webapp.admin import DigitizationInline, ContentInline, ContentWorkInline
-from app.webapp.models.utils.constants import PDF_ABBR, WIT, ANNO, DIG
+from app.webapp.admin.digitization import DigitizationInline
+from app.webapp.admin.content import ContentInline, ContentWorkInline
+
+# from app.webapp.admin.volume import VolumeInline
+from app.webapp.models.utils.constants import WIT, ANNO, DIG
 from app.webapp.models.witness import Witness, get_name
 from app.webapp.utils.constants import MAX_ITEMS
 
@@ -15,8 +18,6 @@ from app.webapp.utils.functions import (
     list_to_txt,
     zip_img,
     get_file_ext,
-    flatten,
-    zip_files,
     zip_dirs,
 )
 from app.webapp.utils.iiif.annotation import get_anno_images, get_training_anno
