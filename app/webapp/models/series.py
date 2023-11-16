@@ -4,6 +4,7 @@ from django.utils.html import format_html
 from app.webapp.models.edition import Edition
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.utils.constants import PUBLISHED_INFO, DATE_INFO
+from app.webapp.models.work import Work
 from app.webapp.utils.functions import validate_dates
 
 
@@ -18,6 +19,7 @@ class Series(models.Model):
         app_label = "webapp"
 
     def __str__(self):
+
         return self.edition.name  # TODO find a name
 
     notes = models.TextField(verbose_name=get_name("notes"), max_length=500, blank=True)
@@ -33,6 +35,12 @@ class Series(models.Model):
     edition = models.ForeignKey(
         Edition,
         verbose_name=get_name("Edition"),
+        on_delete=models.SET_NULL,
+        null=True,
+    )
+    work = models.ForeignKey(
+        Work,
+        verbose_name=get_name("Work"),
         on_delete=models.SET_NULL,
         null=True,
     )

@@ -32,10 +32,9 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
 
     class Media:
         css = {"all": ("css/form.css", "css/series-form.css")}
-        js = ("js/witness-form.js",)
+        js = ("js/form.js",)
 
-    fields = ["edition", ("date_min", "date_max"), "notes", "is_public"]
-
+    fields = ["work", "edition", ("date_min", "date_max"), "notes", "is_public"]
     inlines = [RoleInline, WitnessInline]
 
     @admin.display(description=get_name("Work"))

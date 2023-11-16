@@ -14,4 +14,5 @@ class VolumeFilter(AutocompleteFilter):
 class VolumeAdmin(UnregisteredAdmin):
     search_fields = ("number",)
     list_filter = ("number",)
+    # fields = [("title", "number")]
     autocomplete_fields = ("edition",)

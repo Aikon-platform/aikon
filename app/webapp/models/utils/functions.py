@@ -13,8 +13,15 @@ common_fields = {
 }
 
 
+def no_info(field):
+    if APP_LANG == "en":
+        return f"unknown {field}"
+    if APP_LANG == "fr":
+        return f"{field} inconnu"
+    return "???"
+
+
 def get_fieldname(field, fields, plural=False, capitalize=False):
-    # TODO add try / except
     # TODO add pluralize method
 
     if field in fields:
@@ -25,5 +32,10 @@ def get_fieldname(field, fields, plural=False, capitalize=False):
 
     if field in common_fields:
         return common_fields[field][APP_LANG].capitalize()
+
+    if field.startswith("no_"):
+        field = field[3:]
+        if field in fields:
+            return no_info(fields[field][APP_LANG]).capitalize()
 
     return "???"

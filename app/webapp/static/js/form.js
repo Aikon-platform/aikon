@@ -93,10 +93,10 @@ $(function() {
     function showPrintFields(witType) {
         // TODO deactivate pour le series form
         switch (witType) {
-            case "tpr": case "wpr": // TODO use variables defined in model constants
+            case TPR: case WPR: // TODO use variables defined in model constants
                 [titleDiv, volumeDiv].map(div => div.show())
                 break
-            case "ms": default:
+            case MS: default:
                 [titleDiv, volumeDiv].map(div => hide(div))
                 break
         }

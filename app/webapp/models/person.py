@@ -1,7 +1,7 @@
 from django.db import models
 
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.utils.functions import validate_dates
+from app.webapp.utils.functions import validate_dates, format_dates
 
 
 def get_name(fieldname, plural=False):
@@ -15,7 +15,8 @@ class Person(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        return self.name
+        dates = format_dates(self.date_min, self.date_max)
+        return f"{self.name}{f' ({dates})' if dates != '-' else ''}"
 
     name = models.CharField(verbose_name=get_name("name"), max_length=200, unique=True)
     date_min = models.IntegerField(

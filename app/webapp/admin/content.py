@@ -35,6 +35,7 @@ class ContentInline(nested_admin.NestedStackedInline):
 
 
 class ContentWorkInline(nested_admin.NestedStackedInline):
+    # INLINE FORM ACCESSIBLE IN THE FORM SERIES
     model = Content
     # verbose_name_plural = ""
     extra = 1

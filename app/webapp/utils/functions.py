@@ -185,8 +185,18 @@ def gen_link(url, text):
 
 def gen_thumbnail(url, img_url):
     return gen_link(
-        url, f"<img src='{img_url}' width='30' style='border-radius:50%;'>)"
+        url, f"<img src='{img_url}' width='30' style='border-radius:10%;'>)"
     )
+
+
+def format_dates(min_date=None, max_date=None):
+    if min_date == max_date:
+        return min_date or "-"
+    else:
+        if min_date is None or max_date is None:
+            year = max_date if min_date is None else min_date
+            return f"c. {year}"
+        return f"{min_date}-{max_date}"
 
 
 def get_icon(icon, color=None):

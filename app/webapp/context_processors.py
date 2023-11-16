@@ -18,6 +18,8 @@ from app.webapp.models.utils.constants import (
     PDF_ABBR,
     MAN_ABBR,
     WIT_CHANGE,
+    TPR,
+    WPR,
 )
 
 
@@ -44,4 +46,6 @@ def global_variables(request):
         "PDF_ABBR": PDF_ABBR,
         "MAN_ABBR": MAN_ABBR,
         "WIT_CHANGE": WIT_CHANGE,
+        "TPR": TPR,
+        "WPR": WPR,
     }

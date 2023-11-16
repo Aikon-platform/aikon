@@ -23,7 +23,7 @@ class Work(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        author = f"{self.author or 'Unknown author'}"
+        author = f"{self.author.name if self.author else 'Unknown author'}"
         return f"{author} | {self.title}"
 
     title = models.CharField(

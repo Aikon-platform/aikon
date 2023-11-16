@@ -19,6 +19,7 @@ from app.webapp.utils.functions import (
     zip_img,
     get_file_ext,
     zip_dirs,
+    format_dates,
 )
 from app.webapp.utils.iiif.annotation import get_anno_images, get_training_anno
 from app.webapp.utils.paths import IMG_PATH
@@ -50,7 +51,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     # DEFINITION OF THE MAIN FORM => Add Witness
     class Media:
         css = {"all": ("css/form.css",)}
-        js = ("js/witness-form.js",)
+        js = ("js/form.js",)
 
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
@@ -97,7 +98,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                     ("id_nb", "place"),  # place and id_nb appear on the same line
                     ("page_type", "nb_pages"),  # same
                     "notes",
-                    ("title", "volume"),
+                    "volume",
                     "link",
                     "is_public",
                 ]
@@ -186,13 +187,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     )
     def get_dates(self, obj: Witness):
         min_date, max_date = obj.get_dates()
-        if min_date == max_date:
-            return min_date or "-"
-        else:
-            if min_date is None or max_date is None:
-                year = max_date if min_date is None else min_date
-                return f"c. {year}"
-            return f"{min_date}-{max_date}"
+        return format_dates(min_date, max_date)
 
     # list of fields that are displayed in the witnesses list view
     list_display = (
@@ -302,6 +297,4 @@ class WitnessInline(nested_admin.NestedStackedInline):
     extra = 0  # 1
     # classes = ("collapse",)
     ordering = ("id",)
-    fields = [("id_nb", "place")]
-    inlines = [ContentWorkInline]
-    autocomplete_fields = ("place", "volume")
+    fields = [("id_nb", "place")]  # "volume"

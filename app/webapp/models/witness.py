@@ -99,7 +99,6 @@ class Witness(models.Model):
     slug = models.SlugField(max_length=600)  # TODO check if necessary
 
     # FIELDS USED ONLY FOR PRINTS
-    title = models.CharField(verbose_name=get_name("title"), max_length=600, blank=True)
     volume = models.ForeignKey(
         Volume,
         verbose_name=get_name("Volume"),
