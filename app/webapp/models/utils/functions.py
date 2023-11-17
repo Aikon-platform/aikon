@@ -8,7 +8,7 @@ common_fields = {
     "name": {"en": "name", "fr": "nom"},
     "title": {"en": "title", "fr": "titre"},
     "type": {"en": "type", "fr": "type"},
-    "notes": {"en": "additional notes", "fr": "notes complémentaires"},
+    "notes": {"en": "additional notes", "fr": "Éléments descriptifs du contenu"},
     "is_public": {"en": "Make it public", "fr": "Rendre public"},
 }
 
@@ -28,7 +28,7 @@ def get_fieldname(field, fields, plural=False, capitalize=False):
         return fields[field][APP_LANG].capitalize()
 
     if field[0].isupper():
-        return MODEL_NAMES[field][APP_LANG].capitalize()
+        return f"{MODEL_NAMES[field][APP_LANG].capitalize()}{'s' if plural else ''}"
 
     if field in common_fields:
         return common_fields[field][APP_LANG].capitalize()
