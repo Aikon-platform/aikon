@@ -32,7 +32,7 @@ $(function() {
         }
     }
 
-    function setDigitBlock(digitNb, prefix="") {
+    function setDigitBlock(digitNb, prefix) {
         lastDigitNb = digitNb > lastDigitNb ? digitNb : lastDigitNb
 
         const viewDigit = $(`#${prefix}digitizations-${digitNb} .field-view_digit`).first();
@@ -57,7 +57,7 @@ $(function() {
             divsToHide.map(divToHide => divToHide.hide());
         } else {
             // if not, show only field related to upload
-            const digitSelect = $(`#${prefix}id_digitizations-${digitNb}-digit_type`);
+            const digitSelect = $(`#id_${prefix}digitizations-${digitNb}-digit_type`);
             digitSelect.change(function () { toggleDigitFields(digitSelect, fields); });
             toggleDigitFields(digitSelect, fields);
         }
@@ -69,18 +69,21 @@ $(function() {
     const addDigit = $(`.djn-model-${WEBAPP_NAME}-digitization.add-handler`);
     addDigit.click(function () {
         setTimeout(function () {
-            setDigitBlock(lastDigitNb + 1);
+            setDigitBlock(lastDigitNb + 1, prefix);
         }, 100);
     })
 
-    const digitBlocks = $('#digitizations-group [id^="digitizations-"]');
+    // const digitBlocks = $('#digitizations-group [id^="digitizations-"]');
+    const digitBlocks = $('[id$="digitizations-group"] [id^="digitizations-"], [id$="digitizations-group"] [id^="witness_set-"]');
 
     digitBlocks.each(function() {
-        const digitNb = parseInt($(this).attr('id').split('-')[1]);
+        // const digitNb = parseInt($(this).attr('id').split('-')[1]);
+        const digitNb = $(this).attr('id').split('-').pop();
+        prefix = $(this).attr('id').split('digitizations')[0];
         if (isNaN(digitNb)){
             return
         }
-        setDigitBlock(digitNb);
+        setDigitBlock(digitNb, prefix);
     });
 
     /**

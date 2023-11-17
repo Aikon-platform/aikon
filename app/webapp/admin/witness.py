@@ -298,3 +298,4 @@ class WitnessInline(nested_admin.NestedStackedInline):
     # classes = ("collapse",)
     ordering = ("id",)
     fields = [("id_nb", "place")]  # "volume"
+    inlines = [DigitizationInline]
