@@ -20,6 +20,8 @@ from app.webapp.models.utils.constants import (
     WIT_CHANGE,
     TPR,
     WPR,
+    TPR_ABBR,
+    WPR_ABBR,
 )
 
 
@@ -48,4 +50,6 @@ def global_variables(request):
         "WIT_CHANGE": WIT_CHANGE,
         "TPR": TPR,
         "WPR": WPR,
+        "TPR_ABBR": TPR_ABBR,
+        "WPR_ABBR": WPR_ABBR,
     }

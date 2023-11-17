@@ -65,7 +65,9 @@ AUT_ABBR = "aut"
 ILL_ABBR = "ill"
 SEL_ABBR = "sel"
 
-TPR = f"letterpress {PR}" if APP_LANG == "en" else "typographie"
+TPR = (
+    f"letterpress {PR}" if APP_LANG == "en" else "typographie"
+)  # "composition typographique"?
 WPR = f"woodblock {PR}" if APP_LANG == "en" else "bois gravés"
 
 PAGE = "page" if APP_LANG == "en" else "paginé"

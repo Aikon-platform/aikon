@@ -51,7 +51,9 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     # DEFINITION OF THE MAIN FORM => Add Witness
     class Media:
         css = {"all": ("css/form.css",)}
-        js = ("js/form.js",)
+        js = ("js/witness-form.js",)
+
+    change_form_template = "admin/form.html"
 
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)

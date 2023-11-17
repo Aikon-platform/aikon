@@ -25,6 +25,9 @@
         const TPR = "{{ TPR }}";
         const WPR = "{{ WPR }}";
 
+        const TPR_ABBR = "{{ TPR_ABBR }}";
+        const WPR_ABBR = "{{ WPR_ABBR }}";
+
         const MS_ABBR = "{{ MS_ABBR }}";
         const VOL_ABBR = "{{ VOL_ABBR }}";
 
@@ -44,6 +47,11 @@
 
 {% block footer %}
     <div id="footer">
-        {{ APP_NAME_UPPER }} &copy; {% now "Y" %} <!-- All rights reserved. Tous droits réservés. -->
+    {% if APP_LANG == "en" %}
+        All rights reserved
+    {% else %}
+        Tous droits réservés
+    {% endif %}
+        {{ APP_NAME_UPPER }} &copy; {% now "Y" %}
     </div>
 {% endblock %}

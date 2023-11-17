@@ -2,6 +2,10 @@ function getUrl() {
     return window.location.href;
 }
 
+function capitalize(s) {
+    return s[0].toUpperCase() + s.slice(1);
+}
+
 function getWitType() {
     // TODO change to accept all type included in the application (tpr, wpr, ms)
     const currentUrl = getUrl();

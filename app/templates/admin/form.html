@@ -1,0 +1,10 @@
+{% extends "admin/change_form.html" %}
+
+{# TEMPLATE THAT CAN BE USE TO CHANGE DEFAULT TEMPLATE FOR FORMS #}
+
+{% load static %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <script src="{% static 'js/form.js' %}"></script>
+{% endblock %}

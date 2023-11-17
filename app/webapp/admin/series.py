@@ -32,7 +32,10 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
 
     class Media:
         css = {"all": ("css/form.css", "css/series-form.css")}
-        js = ("js/form.js",)
+        js = ("js/series-form.js",)
+
+    # NOTE: attribute to use to change to template of witness (template at: templates/admin/form.html)
+    change_form_template = "admin/form.html"
 
     fields = ["work", "edition", ("date_min", "date_max"), "notes", "is_public"]
     inlines = [RoleInline, WitnessInline]
@@ -59,6 +62,3 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
     @admin.display(description="Date")
     def get_date(self, obj):
         return format_start_end(obj.date_min, obj.date_max)
-
-    # NOTE: attribute to use to change to template of witness (template at: templates/admin/series_form.html)
-    # change_form_template = "admin/series_form.html"
