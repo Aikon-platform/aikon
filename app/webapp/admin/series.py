@@ -62,3 +62,13 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
     @admin.display(description="Date")
     def get_date(self, obj):
         return format_start_end(obj.date_min, obj.date_max)
+
+
+# class SeriesInline(nested_admin.NestedStackedInline):
+#     # FORM contained in the Series form
+#     model = Series
+#     # verbose_name_plural = ""  # No title in the blue banner on top of the inline form
+#     extra = 0  # 1
+#     # classes = ("collapse",)
+#     ordering = ("id",)
+#     fields = ["edition"]

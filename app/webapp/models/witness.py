@@ -5,7 +5,9 @@ from django.utils.html import format_html
 from django.urls import reverse
 
 from app.webapp.models.conservation_place import ConservationPlace
-from app.webapp.models.volume import Volume
+from app.webapp.models.edition import Edition
+
+# from app.webapp.models.volume import Volume
 from app.webapp.models.series import Series
 from app.webapp.models.utils.constants import (
     VOL,
@@ -40,6 +42,11 @@ def get_name(fieldname, plural=False):
         "series": {"en": SER, "fr": SER},
         "title": {"en": "title of the volume", "fr": "titre du volume"},
         "is_public": {"en": "make it public", "fr": "rendre public"},
+        "number": {"en": "volume number", "fr": "numéro de tome"},
+        "number_info": {
+            "en": "number useful for classifying the different volumes of an edition, but not necessarily of historical value",
+            "fr": "numéro utile pour classer les différents tomes d'une édition, mais qui n'a pas nécessairement de valeur historique",
+        },
     }
 
     return get_fieldname(fieldname, fields, plural)
@@ -99,16 +106,28 @@ class Witness(models.Model):
     slug = models.SlugField(max_length=600)  # TODO check if necessary
 
     # FIELDS USED ONLY FOR PRINTS
-    volume = models.ForeignKey(
-        Volume,
-        verbose_name=get_name("Volume"),
+    edition = models.ForeignKey(
+        Edition,
+        verbose_name=get_name("Edition"),
         on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
+    volume_title = models.CharField(
+        verbose_name=get_name("title"),
+        max_length=500,
+        blank=True,
+        null=True,
+    )
+    volume_nb = models.IntegerField(
+        verbose_name=get_name("number"),
+        help_text=get_name("number_info"),
         blank=True,
         null=True,
     )
     series = models.ForeignKey(
         Series,
-        verbose_name=get_name("Series"),
+        verbose_name=get_name("series"),
         on_delete=models.SET_NULL,
         blank=True,
         null=True,

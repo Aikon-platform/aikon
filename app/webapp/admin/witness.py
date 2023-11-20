@@ -48,6 +48,7 @@ def check_selection(queryset, request):
 
 @admin.register(Witness)
 class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
+
     # DEFINITION OF THE MAIN FORM => Add Witness
     class Media:
         css = {"all": ("css/form.css",)}
@@ -100,7 +101,8 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                     ("id_nb", "place"),  # place and id_nb appear on the same line
                     ("page_type", "nb_pages"),  # same
                     "notes",
-                    "volume",
+                    "edition",
+                    ("volume_nb", "volume_title"),
                     "link",
                     "is_public",
                 ]
@@ -299,5 +301,5 @@ class WitnessInline(nested_admin.NestedStackedInline):
     extra = 0  # 1
     # classes = ("collapse",)
     ordering = ("id",)
-    fields = [("id_nb", "place")]  # "volume"
+    fields = [("id_nb", "place"), ("volume_nb", "volume_title")]
     inlines = [DigitizationInline]

@@ -2,17 +2,18 @@ $(function() {
     /**
      * TOGGLE FIELDS FOR WITNESS TYPE
      */
-    const titleDiv = $(".field-title").first();
-    const volumeDiv = $(".field-volume").first();
+    const titleDiv = $(".field-volume_nb").first();
+    const volumeDiv = $(".field-volume_title").first();
+    const editionDiv = $(".field-edition").first();
     const witTypeSelect = $("#id_type");
 
     function showPrintFields(witType) {
         switch (witType) {
             case TPR_ABBR: case WPR_ABBR:
-                [titleDiv, volumeDiv].map(div => div.show())
+                [titleDiv, volumeDiv, editionDiv].map(div => div.show())
                 break
             case MS_ABBR: default:
-                [titleDiv, volumeDiv].map(div => hide(div))
+                [titleDiv, volumeDiv, editionDiv].map(div => hide(div))
                 break
         }
     }

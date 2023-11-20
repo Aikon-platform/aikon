@@ -9,6 +9,5 @@ from app.webapp.admin.place import *
 from app.webapp.admin.role import *
 from app.webapp.admin.series import *
 from app.webapp.admin.tag import *
-from app.webapp.admin.volume import *
 from app.webapp.admin.witness import *
 from app.webapp.admin.work import *
