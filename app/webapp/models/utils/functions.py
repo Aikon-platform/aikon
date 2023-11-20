@@ -1,6 +1,6 @@
 from app.config.settings import APP_LANG
 from app.webapp.models.utils.constants import MODEL_NAMES
-
+from app.webapp.utils.functions import pluralize
 
 common_fields = {
     "date_min": {"en": "Minimum date", "fr": "Date minimale"},
@@ -22,16 +22,17 @@ def no_info(field):
 
 
 def get_fieldname(field, fields, plural=False, capitalize=False):
-    # TODO add pluralize method
-
     if field in fields:
-        return fields[field][APP_LANG].capitalize()
+        f = fields[field][APP_LANG].capitalize()
+        return pluralize(f) if plural else f
 
     if field[0].isupper():
-        return f"{MODEL_NAMES[field][APP_LANG].capitalize()}{'s' if plural else ''}"
+        model = f"{MODEL_NAMES[field][APP_LANG].capitalize()}"
+        return pluralize(model) if plural else model
 
     if field in common_fields:
-        return common_fields[field][APP_LANG].capitalize()
+        f = common_fields[field][APP_LANG].capitalize()
+        return pluralize(f) if plural else f
 
     if field.startswith("no_"):
         field = field[3:]

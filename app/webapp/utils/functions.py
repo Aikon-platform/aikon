@@ -47,6 +47,19 @@ def extract_nb(string):
     return int(digits) if digits else None
 
 
+def pluralize(word):
+    if APP_LANG == "fr":
+        return f"{word}s"
+
+    if re.search("[sxz]$", word) or re.search("[^aeioudgkprt]h$", word):
+        return re.sub("$", "es", word)
+
+    elif re.search("[aeiou]y$", word):
+        return re.sub("y$", "ies", word)
+
+    return f"{word}s"
+
+
 def get_last_file(path, prefix):
     pattern = re.compile(r"^{}(\d+)\.\w+$".format(prefix))
     last_number = 0
