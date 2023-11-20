@@ -115,6 +115,13 @@ ROLES = (
     (SEL_ABBR, SELLER),
 )
 
+LANGUAGES = [
+    ("ar", "Arabic"),
+    ("el", "Greek"),
+    ("he", "Hebrew"),
+    ("la", "Latin"),
+]
+
 #############################
 #        HELP TEXTS         #
 #############################
