@@ -9,7 +9,10 @@ from app.webapp.utils.functions import validate_dates
 
 
 def get_name(fieldname, plural=False):
-    return get_fieldname(fieldname, {}, plural)
+    fields = {
+        "notes": {"en": "additional notes", "fr": "Elements descriptifs du contenu"},
+    }
+    return get_fieldname(fieldname, fields, plural)
 
 
 class Series(models.Model):
