@@ -3,6 +3,7 @@ from django.db import models
 from app.webapp.models.place import Place
 from app.webapp.models.person import Person
 from app.webapp.models.tag import Tag
+from app.webapp.models.utils.constants import AUTHOR_MSG
 
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.functions import validate_dates
@@ -23,7 +24,7 @@ class Work(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        author = f"{self.author.name if self.author else 'Unknown author'}"
+        author = f"{self.author.name if self.author else AUTHOR_MSG}"
         return f"{author} | {self.title}"
 
     title = models.CharField(
