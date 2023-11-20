@@ -31,5 +31,5 @@
 }
 
 /*[id^="witness_set-"][id$="-digitizations-group"] h2 {
-    display: none;
+    display: none; // TODO find something better like so
 }*/

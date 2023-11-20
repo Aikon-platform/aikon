@@ -78,6 +78,7 @@ function setFormBlocks(blockContainerId, callback){
     $(blockSelector).each(function() {
         const blockId = $(this).attr('id')
         // const blockNb = parseInt(blockId.split('-')[1]);
+        // TODO select the correct nb
         const blockNb = parseInt(blockId.split('-').pop());
         // console.log("blockNb", blockNb, blockId);
         if (isNaN(blockNb)) {
@@ -87,11 +88,11 @@ function setFormBlocks(blockContainerId, callback){
     });
 
     const addBlock = $(`#${blockContainerId} a.add-handler`).last();
-    console.log(addBlock);
     addBlock.click(function () {
         setTimeout(function () {
             const addedBlock = $(blockSelector).filter(":visible").last();
             const addedBlockId = addedBlock.attr('id');
+            // TODO select the correct nb
             const addedBlockNb = parseInt(addedBlockId.split('-').pop());
 
             // console.log("addedBlockNb", addedBlockNb, addedBlockId);
