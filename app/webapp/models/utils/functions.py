@@ -3,13 +3,12 @@ from app.webapp.models.utils.constants import MODEL_NAMES
 
 
 common_fields = {
-    "date_min": {"en": "Minimum date", "fr": "date minimale"},
-    "date_max": {"en": "Maximum date", "fr": "date maximale"},
+    "date_min": {"en": "Minimum date", "fr": "Date minimale"},
+    "date_max": {"en": "Maximum date", "fr": "Date maximale"},
     "name": {"en": "name", "fr": "nom"},
     "title": {"en": "title", "fr": "titre"},
     "type": {"en": "type", "fr": "type"},
-    "notes": {"en": "additional notes", "fr": "éléments descriptifs du contenu"},
-    "languages": {"en": "language", "fr": "langue"},
+    "notes": {"en": "additional notes", "fr": "Éléments descriptifs du contenu"},
     "is_public": {"en": "Make it public", "fr": "Rendre public"},
 }
 

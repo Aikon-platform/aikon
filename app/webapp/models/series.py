@@ -2,6 +2,7 @@ from django.db import models
 from django.utils.html import format_html
 
 from app.webapp.models.edition import Edition
+from app.webapp.models.tag import Tag
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.utils.constants import PUBLISHED_INFO, DATE_INFO
 from app.webapp.models.work import Work
@@ -43,6 +44,11 @@ class Series(models.Model):
         verbose_name=get_name("Work"),
         on_delete=models.SET_NULL,
         null=True,
+    )
+    tags = models.ManyToManyField(
+        Tag,
+        verbose_name=get_name("Tag"),
+        blank=True,
     )
 
     def get_witnesses(self):
