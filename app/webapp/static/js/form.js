@@ -37,8 +37,8 @@ function toggleDigitFields(digitSelect, fields) {
 }
 
 function setDigitBlock(digitNb = 0, digitBlockId= "") {
+    console.log("setdigitiblock");
     const prefix = digitBlockId.split('digitizations')[0];
-    // lastDigitNb = digitNb > lastDigitNb ? digitNb : lastDigitNb + 1;
 
     const viewDigit = $(`#${prefix}digitizations-${digitNb} .field-view_digit`).first();
     const viewAnno = $(`#${prefix}digitizations-${digitNb} .field-view_anno`).first();
@@ -77,10 +77,7 @@ function setFormBlocks(blockContainerId, callback){
 
     $(blockSelector).each(function() {
         const blockId = $(this).attr('id')
-        // const blockNb = parseInt(blockId.split('-')[1]);
-        // TODO select the correct nb
-        const blockNb = parseInt(blockId.split('-').pop());
-        // console.log("blockNb", blockNb, blockId);
+        const blockNb = parseInt(blockId.replace(`${idPrefix}-`, "").split("-")[0]);
         if (isNaN(blockNb)) {
             return
         }
@@ -92,10 +89,7 @@ function setFormBlocks(blockContainerId, callback){
         setTimeout(function () {
             const addedBlock = $(blockSelector).filter(":visible").last();
             const addedBlockId = addedBlock.attr('id');
-            // TODO select the correct nb
-            const addedBlockNb = parseInt(addedBlockId.split('-').pop());
-
-            // console.log("addedBlockNb", addedBlockNb, addedBlockId);
+            const addedBlockNb = parseInt(addedBlockId.replace(`${idPrefix}-`, "").split("-")[0]);
 
             if (isNaN(addedBlockNb)) {
                 return
