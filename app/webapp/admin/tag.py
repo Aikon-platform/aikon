@@ -1,7 +1,6 @@
 from django.contrib import admin
 from admin_searchable_dropdown.filters import AutocompleteFilter
 
-from app.webapp.admin.admin import UnregisteredAdmin
 from app.webapp.models.tag import Tag, get_name
 
 
@@ -11,6 +10,13 @@ class TagFilter(AutocompleteFilter):
 
 
 @admin.register(Tag)
-class TagAdmin(UnregisteredAdmin):
+class TagAdmin(admin.ModelAdmin):
     search_fields = ("label",)
     list_filter = ("label",)
+
+    def has_module_permission(self, request):
+        """
+        Check if the user has permission to view the module
+        In this case, return True only if the user is an admin
+        """
+        return request.user.is_superuser
