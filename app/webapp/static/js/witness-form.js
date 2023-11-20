@@ -1,5 +1,3 @@
-isSeriesForm = false;
-
 $(function() {
     /**
      * TOGGLE FIELDS FOR WITNESS TYPE
@@ -26,7 +24,7 @@ $(function() {
 
     // TODO if folio is selected, allow "r" or "v" at the end of the page fields
 
-    lastDigitNb = 0;
+    // lastDigitNb = 0;
     setFormBlocks("digitizations-group", setDigitBlock);
 
 });

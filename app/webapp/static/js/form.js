@@ -36,9 +36,9 @@ function toggleDigitFields(digitSelect, fields) {
     }
 }
 
-function setDigitBlock(digitNb = null, digitBlockId= "") {
+function setDigitBlock(digitNb = 0, digitBlockId= "") {
     const prefix = digitBlockId.split('digitizations')[0];
-    lastDigitNb = digitNb > lastDigitNb ? digitNb : lastDigitNb + 1;
+    // lastDigitNb = digitNb > lastDigitNb ? digitNb : lastDigitNb + 1;
 
     const viewDigit = $(`#${prefix}digitizations-${digitNb} .field-view_digit`).first();
     const viewAnno = $(`#${prefix}digitizations-${digitNb} .field-view_anno`).first();
@@ -78,7 +78,8 @@ function setFormBlocks(blockContainerId, callback){
     $(blockSelector).each(function() {
         const blockId = $(this).attr('id')
         // const blockNb = parseInt(blockId.split('-')[1]);
-        const blockNb = blockId.split('-').pop();
+        const blockNb = parseInt(blockId.split('-').pop());
+        // console.log("blockNb", blockNb, blockId);
         if (isNaN(blockNb)) {
             return
         }
@@ -86,11 +87,14 @@ function setFormBlocks(blockContainerId, callback){
     });
 
     const addBlock = $(`#${blockContainerId} a.add-handler`).last();
+    console.log(addBlock);
     addBlock.click(function () {
         setTimeout(function () {
             const addedBlock = $(blockSelector).filter(":visible").last();
             const addedBlockId = addedBlock.attr('id');
-            const addedBlockNb = addedBlockId.split('-').pop();
+            const addedBlockNb = parseInt(addedBlockId.split('-').pop());
+
+            // console.log("addedBlockNb", addedBlockNb, addedBlockId);
 
             if (isNaN(addedBlockNb)) {
                 return

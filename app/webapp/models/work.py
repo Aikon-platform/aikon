@@ -56,6 +56,9 @@ class Work(models.Model):
         blank=True,
         null=True,
     )
+    lang = models.CharField(
+        verbose_name=get_name("languages"), max_length=100, blank=True
+    )
     tags = models.ManyToManyField(
         Tag,
         verbose_name=get_name("Tag"),
