@@ -19,6 +19,7 @@ SITE_INDEX_TITLE = (
     if APP_LANG == "en"
     else "Bienvenue sur le site d'administration"
 )
+COPYRIGHT = "All rights reserved" if APP_LANG == "en" else "Tous droits réservés"
 
 # Manifest versions
 MANIFEST_V1 = "auto"  # Used for the manifest with automatic annotation

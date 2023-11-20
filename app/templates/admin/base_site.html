@@ -15,6 +15,7 @@
 
         const APP_URL = "{{ APP_URL }}";
         const WEBAPP_NAME = "{{ WEBAPP_NAME }}";
+        const COPYRIGHT = "{{ COPYRIGHT }}";
         const SAS_APP_URL = "{{ SAS_APP_URL }}";
         const CANTALOUPE_APP_URL = "{{ CANTALOUPE_APP_URL }}";
 
@@ -47,11 +48,6 @@
 
 {% block footer %}
     <div id="footer">
-    {% if APP_LANG == "en" %}
-        All rights reserved
-    {% else %}
-        Tous droits réservés
-    {% endif %}
-        {{ APP_NAME_UPPER }} &copy; {% now "Y" %}
+        {{COPYRIGHT}} {{ APP_NAME_UPPER }} &copy; {% now "Y" %}
     </div>
 {% endblock %}
