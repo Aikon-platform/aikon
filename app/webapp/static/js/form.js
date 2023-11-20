@@ -37,7 +37,6 @@ function toggleDigitFields(digitSelect, fields) {
 }
 
 function setDigitBlock(digitNb = 0, digitBlockId= "") {
-    console.log("setdigitiblock");
     const prefix = digitBlockId.split('digitizations')[0];
 
     const viewDigit = $(`#${prefix}digitizations-${digitNb} .field-view_digit`).first();
