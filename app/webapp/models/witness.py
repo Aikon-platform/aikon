@@ -22,6 +22,7 @@ from app.webapp.models.utils.constants import (
     WIT_CHANGE,
 )
 from app.webapp.models.utils.functions import get_fieldname
+from app.webapp.models.work import Work
 from app.webapp.utils.functions import get_icon, flatten
 
 
@@ -277,6 +278,17 @@ class Witness(models.Model):
             else:
                 metadata[key] = value
         return metadata
+
+    def set_edition(self, edition: Edition):
+        self.edition = edition
+
+    def add_content(self, work: Work):
+        from app.webapp.models.content import Content
+
+        content = Content()
+        content.work = work
+        content.witness = self
+        content.save()
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.__str__())

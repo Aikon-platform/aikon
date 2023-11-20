@@ -5,6 +5,7 @@ from app.webapp.admin.role import RoleInline
 from app.webapp.admin.witness import WitnessInline
 from app.webapp.models.series import Series
 from app.webapp.models.edition import get_name
+from app.webapp.models.utils.constants import TPR, TPR_ABBR
 from app.webapp.utils.functions import format_start_end
 
 
@@ -63,12 +64,17 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
     def get_date(self, obj):
         return format_start_end(obj.date_min, obj.date_max)
 
+    def save_related(self, request, form, formset, change):
+        super(SeriesAdmin, self).save_related(request, form, formset, change)
 
-# class SeriesInline(nested_admin.NestedStackedInline):
-#     # FORM contained in the Series form
-#     model = Series
-#     # verbose_name_plural = ""  # No title in the blue banner on top of the inline form
-#     extra = 0  # 1
-#     # classes = ("collapse",)
-#     ordering = ("id",)
-#     fields = ["edition"]
+        for witness in form.instance.witness_set.all():
+            witness.type = TPR_ABBR
+            witness.set_edition(form.instance.edition)
+            witness.add_content(form.instance.work)
+            witness.save()
+
+    def save_model(self, request, obj, form, change):
+        # called on submission of form
+        if not obj.user:
+            obj.user = request.user
+        obj.save()

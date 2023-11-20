@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.db import models
 from django.utils.html import format_html
 
@@ -23,9 +24,9 @@ class Series(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-
         return self.edition.name  # TODO find a name
 
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     notes = models.TextField(verbose_name=get_name("notes"), max_length=500, blank=True)
     date_min = models.IntegerField(
         verbose_name=get_name("date_min"), null=True, blank=True, help_text=DATE_INFO
