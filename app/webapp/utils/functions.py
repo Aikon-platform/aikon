@@ -51,6 +51,9 @@ def pluralize(word):
     if APP_LANG == "fr":
         return f"{word}s"
 
+    if re.search("es$", word):
+        return word
+
     if re.search("[sxz]$", word) or re.search("[^aeioudgkprt]h$", word):
         return re.sub("$", "es", word)
 
