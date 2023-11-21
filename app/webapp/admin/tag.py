@@ -17,6 +17,12 @@ class TagAdmin(admin.ModelAdmin):
     def has_module_permission(self, request):
         """
         Check if the user has permission to view the module
-        In this case, return True only if the user is an admin
+        In this case, return True only if the user is a superadmin
+        """
+        return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        """
+        Deny add permission if not a superadmin
         """
         return request.user.is_superuser

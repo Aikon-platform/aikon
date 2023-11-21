@@ -12,7 +12,7 @@ from app.webapp.utils.functions import validate_dates
 
 def get_name(fieldname, plural=False):
     fields = {
-        "notes": {"en": "additional notes", "fr": "Elements descriptifs du contenu"},
+        "notes": {"en": "additional notes", "fr": "éléments descriptifs du contenu"},
     }
     return get_fieldname(fieldname, fields, plural)
 
