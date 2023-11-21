@@ -51,7 +51,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     # DEFINITION OF THE MAIN FORM => Add Witness
     class Media:
-        css = {"all": ("css/form.css",)}
+        css = {"all": ("css/witness-form.css",)}
         js = ("js/witness-form.js",)
 
     change_form_template = "admin/form.html"
@@ -297,9 +297,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 class WitnessInline(nested_admin.NestedStackedInline):
     # FORM contained in the Series form
     model = Witness
-    # verbose_name_plural = ""  # No title in the blue banner on top of the inline form
     extra = 0  # 1
-    # classes = ("collapse",)
     ordering = ("id",)
     fields = [("id_nb", "place"), ("volume_nb", "volume_title")]
     inlines = [DigitizationInline]

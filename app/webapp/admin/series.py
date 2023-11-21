@@ -32,7 +32,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         verbose_name_plural = get_name("Series", True)
 
     class Media:
-        css = {"all": ("css/form.css", "css/series-form.css")}
+        css = {"all": ("css/series-form.css",)}
         js = ("js/series-form.js",)
 
     # NOTE: attribute to use to change to template of witness (template at: templates/admin/form.html)

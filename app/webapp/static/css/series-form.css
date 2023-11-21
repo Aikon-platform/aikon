@@ -1,4 +1,4 @@
-#roles-group h2 {
+#roles-group h2, #roles-group h3{
     display: none;
 }
 
@@ -29,7 +29,9 @@
 #witness_set-8-digitizations-group h2 {
     display: none;
 }
-
-/*[id^="witness_set-"][id$="-digitizations-group"] h2 {
-    display: none; // TODO find something better like so
-}*/
+#witness_set-9-digitizations-group h2 {
+    display: none;
+}
+#witness_set-10-digitizations-group h2 {
+    display: none;
+}

@@ -5,12 +5,6 @@ function hide(div) {
     }
 }
 
-// Remove all h2/h3 tags inside the selected div
-$("div[id$='-contents-group'] h2, div[id$='-contents-group'] h3").remove();
-
-// Select the anchor element, change the text, and set the target attribute
-$(".djn-drag-handler a").text(WIT_CHANGE).attr("target", "_blank");
-
 /**
  * TOGGLE FIELDS IN DIGIT BLOCK
  */

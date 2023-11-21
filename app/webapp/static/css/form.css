@@ -1,15 +1,8 @@
-#contents-0-role_set-group {
-    padding: 1em 2.5em 2em;
+.inline-related fieldset.module h3 {
+    background: var(--darkened-bg) !important;
+    color: var(--body-quiet-color) !important;
 }
 
-#contents-0-role_set-group h2 {
-    display: none;
-}
-
-[id^="digitizations-"][id*="-images-group"] h2 {
-    display: none;
-}
-
-[id^="digitizations-"][id*="-images-group"] h3 {
-    display: none;
+.djn-add-item {
+    margin-bottom: 1em !important;
 }
