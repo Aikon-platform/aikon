@@ -127,24 +127,6 @@ def rename_file(old_path, new_path):
     return True
 
 
-# def convert_to_jpeg(image):
-#     """
-#     Convert the image to JPEG format
-#     TODO check which performs better
-#     """
-#     filename, _ = get_file_ext(image.name)
-#     img = Image.open(image)
-#     if img.mode != "RGB":
-#         img = img.convert("RGB")
-#     # Create a BytesIO object
-#     obj_io = io.BytesIO()
-#     # Save image to BytesIO object
-#     img.save(obj_io, format="JPEG")
-#     # Create a File object
-#     img_jpg = File(obj_io, name=f"{filename}.jpg")
-#     return img_jpg
-
-
 def pdf_to_img(pdf_name, event=None, dpi=MAX_RES):
     """
     Convert the PDF file to JPEG images
@@ -193,6 +175,23 @@ def credentials(url, auth_user, auth_passwd):
     handler = HTTPBasicAuthHandler(passman)
     opener = build_opener(handler)
     install_opener(opener)
+
+
+def mono_val(val):
+    if type(val) in [str, int]:
+        return val
+    if type(val) == dict:
+        if len(val.keys()) == 1:
+            val = list(val.values())[0]
+    if type(val) == list and len(val) == 1:
+        val = val[0]
+    return val
+
+
+def extract_urls(input_string):
+    url_pattern = re.compile(r"https?://\S+")
+    unique_urls = set(re.findall(url_pattern, input_string))
+    return mono_val(list(unique_urls))
 
 
 def gen_link(url, text):

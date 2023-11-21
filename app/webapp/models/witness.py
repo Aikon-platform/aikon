@@ -20,10 +20,11 @@ from app.webapp.models.utils.constants import (
     PAGE,
     CONS_PLA_MSG,
     WIT_CHANGE,
+    MAP_WIT_TYPE,
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
-from app.webapp.utils.functions import get_icon, flatten
+from app.webapp.utils.functions import get_icon, flatten, format_dates
 
 
 def get_name(fieldname, plural=False):
@@ -138,23 +139,24 @@ class Witness(models.Model):
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
     def get_type(self):
-        # NOTE should be returning "tpr" (letterpress) / "wpr" (woodblock) / "ms" (manuscript)
-        return self.type
+        # NOTE should be returning "letterpress" (tpr) / "woodblock" (wpr) / "manuscript" (ms)
+        return MAP_WIT_TYPE[self.type]
 
     def get_ref(self):
-        return f"{self.get_type()}{self.id}"
+        return f"{self.type}{self.id}"
 
     def change_url(self):
         change_url = reverse("admin:webapp_witness_change", args=[self.id])
         return f"<a href='{change_url}' target='_blank'>{WIT_CHANGE} #{self.id}</a>"
 
     def get_metadata(self):
-        # todo finish defining manifest metadata (type, id, etc)
-
+        min_date, max_date = self.get_dates()
         metadata = {
             "Reference number": self.id_nb,
             "Work(s)": self.get_work_titles(),
             "Place(s) of production": self.get_place_names(),
+            "Dates": format_dates(min_date, max_date),
+            "Document type": self.get_type(),
         }
         if note := self.notes:
             metadata["Notes"] = note
@@ -165,18 +167,6 @@ class Witness(models.Model):
 
         if self.get_persons():
             metadata = self.add_roles(metadata)
-
-        # metadata = {
-        #             "Date": self.date,
-        #             "Publishers/booksellers": self.publishers_booksellers,
-        #             "Description of work": self.printed.description,
-        #         }
-        #         if descriptive_elements := self.printed.descriptive_elements:
-        #             metadata["Descriptive elements of the content"] = descriptive_elements
-        #         if illustrators := self.printed.illustrators:
-        #             metadata["Illustrator(s)"] = illustrators
-        #         if engravers := self.printed.engravers:
-        #             metadata["Engraver(s)"] = engravers
 
         return metadata
 

@@ -91,6 +91,11 @@ class Digitization(models.Model):
     digit_type = models.CharField(
         verbose_name=get_name("type"), choices=DIGIT_TYPE, max_length=150
     )
+    # holds licence information if it was contained in the source manifest
+    licence = models.URLField(
+        blank=True,
+        null=True,
+    )
     pdf = models.FileField(
         verbose_name=PDF,
         upload_to=PDF_DIR,
@@ -195,12 +200,14 @@ class Digitization(models.Model):
         return sorted(imgs)
 
     def get_metadata(self):
-        # todo finish defining manifest metadata (type, id, etc)
         metadata = self.get_witness().get_metadata() if self.get_witness() else {}
         metadata["@id"] = self.get_ref()
 
         if manifest := self.manifest:
             metadata["Source manifest"] = str(manifest)
+            if licence := self.licence:
+                # override licence if it was previously defined
+                metadata["Licence"] = licence
 
         return metadata
 
@@ -308,18 +315,16 @@ def digitization_post_save(sender, instance, created, **kwargs):
             t.start()
 
         elif digit_type == MAN_ABBR:
+
+            def set_licence(licence):
+                instance.licence = licence
+                instance.save(update_fields=["licence"])
+
             t = threading.Thread(
                 target=extract_images_from_iiif_manifest,
-                args=(instance.manifest, instance.get_ref(), event),
+                args=(instance.manifest, instance.get_ref(), event, set_licence),
             )
             t.start()
-
-        # elif digit_type == IMG_ABBR:
-        #     t = threading.Thread(
-        #         target=to_jpgs,
-        #         args=(instance.get_imgs(is_abs=True), event), # NOTE, here images are not yet renamed
-        #     )
-        #     t.start()
 
         anno_t = threading.Thread(
             target=send_anno_request,
@@ -334,21 +339,6 @@ def pre_delete_digit(sender, instance: Digitization, **kwargs):
     # Used to delete digit files and annotations
     other_media = instance.pdf.name if instance.digit_type == PDF_ABBR else None
     remove_digitization(instance, other_media)
-    # t = threading.Thread(
-    #     target=remove_digitization,
-    #     args=(instance, other_media),
-    # )
-    # t.start()
-
-    # NOTE: necessary?
-    # field = instance.pdf
-    # if instance.get_digit_abbr() == IMG_ABBR:
-    #     field = instance.images
-    # elif instance.get_digit_abbr() == MAN_ABBR:
-    #     field = instance.manifest
-    #
-    # # Pass False so ImageField doesn't save the model
-    # field.delete(False)
     return
 
 
@@ -358,7 +348,7 @@ def remove_digitization(digit: Digitization, other_media=None):
     for anno in digit.get_annotations():
         delete_annos(anno)
 
-    delete_files(digit.get_imgs(is_abs=True))  # TODO get_imgs() is returning nothing
+    delete_files(digit.get_imgs(is_abs=True))
     if other_media:
         delete_files(
             other_media, MEDIA_DIR

@@ -1,26 +1,48 @@
-import os
-
-from glob import glob
-from pathlib import Path
-
 from PIL import Image, UnidentifiedImageError
-from django.shortcuts import get_object_or_404
 from iiif_prezi.factory import ManifestFactory, StructuralError
 
-from app.webapp.models import get_wit_abbr
 from app.webapp.models.annotation import Annotation
 from app.webapp.models.digitization import Digitization
 from app.webapp.utils.constants import (
     APP_NAME_UPPER,
     APP_DESCRIPTION,
 )
-from app.webapp.utils.paths import IMG_PATH, BASE_DIR
+from app.webapp.utils.paths import IMG_PATH
 from app.config.settings import CANTALOUPE_APP_URL
 
 from app.webapp.utils.logger import console, log
 from app.webapp.utils.iiif.annotation import set_canvas
 
 # NOTE img name = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_{canvas_nb}.jpg"
+
+
+def get_meta(metadatum, meta_type="label"):
+    from app.webapp.utils.functions import mono_val
+
+    if meta_type not in metadatum:
+        return None
+    meta_label = metadatum[meta_type]
+    if type(meta_label) == str:
+        return meta_label
+    if type(meta_label) == list:
+        for lang_label in meta_label:
+            if "@language" in lang_label and lang_label["@language"] == "en":
+                return mono_val(lang_label["@value"])
+            if "language" in lang_label and lang_label["language"] == "en":
+                return mono_val(lang_label["value"])
+    if type(meta_label) == dict:
+        if len(meta_label.keys()) == 1:
+            return mono_val(meta_label.values()[0])
+        if "en" in meta_label:
+            return mono_val(meta_label["en"])
+    return None
+
+
+def get_meta_value(metadatum, label: str):
+    meta_label = get_meta(metadatum, "label")
+    if meta_label not in [label, label.capitalize(), f"@{label}"]:
+        return None
+    return get_meta(metadatum, "value")
 
 
 def process_images(obj: Digitization | Annotation, seq, version=None):
@@ -72,15 +94,13 @@ def gen_manifest_json(obj: Digitization | Annotation, version=None):
     # Build the manifest
     manifest = fac.manifest(ident="manifest", label=obj.__str__())
     metadata = obj.get_metadata()
-    # metadata["Is annotated"] = obj.has_annotations()
     manifest.set_metadata(metadata)
 
     # Set the manifest's attribution, description, and viewing hint
     manifest.attribution = f"{APP_NAME_UPPER} platform"
     manifest.description = APP_DESCRIPTION
-    manifest.viewingHint = "individuals"
-
-    # TODO add explicit licence value for reutilisation purposes
+    manifest.license = metadata.license
+    # manifest.viewingHint = "individuals"
 
     try:
         # And walk through the pages

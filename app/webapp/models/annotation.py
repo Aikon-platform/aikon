@@ -109,8 +109,6 @@ class Annotation(models.Model):
     def get_metadata(self):
         if digit := self.get_digit():
             metadata = digit.get_metadata()
-
-            # TODO FIND HOW TO MAKE {SAS_APP_URL}/search-api/{anno.get_ref()}/search use get_ref()
             # {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}
             metadata["@id"] = self.get_ref()
 

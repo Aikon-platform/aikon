@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 
 from app.webapp.models.content import Content
 from app.webapp.models.series import Series
@@ -22,7 +24,9 @@ class Role(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        return f"{self.person.name} ({dict(ROLES).get(self.role)})"  # self.role
+        name = self.person.name if self.person else get_name("unknown")
+        role = dict(ROLES).get(self.role) if self.role else get_name("no_role")
+        return f"{name} ({role})"
 
     content = models.ForeignKey(
         Content,
@@ -55,7 +59,14 @@ class Role(models.Model):
     )
 
     def get_role(self):
-        return dict(ROLES).get(self.role)
+        return dict(ROLES).get(self.role) if self.role else get_name("no_role")
 
     def get_role_abbr(self):
         return self.role
+
+
+@receiver(pre_save, sender=Role)
+def pre_save(sender, instance, **kwargs):
+    if instance.role is None and instance.person is None:
+        # delete role record if person and role are set to null
+        instance.delete()

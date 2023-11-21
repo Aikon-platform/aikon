@@ -12,12 +12,16 @@ from app.webapp.utils.logger import iiif_log, console, log
 from app.webapp.utils.iiif import get_height, get_width, get_id
 
 
-def extract_images_from_iiif_manifest(manifest_url, digit_ref, event):
+def extract_images_from_iiif_manifest(
+    manifest_url, digit_ref, event, set_licence_callback
+):
     """
     Extract all images from an IIIF manifest
     """
     downloader = IIIFDownloader(manifest_url, digit_ref)
     downloader.run()
+    if licence := downloader.original_licence:
+        set_licence_callback(licence)
     event.set()
 
 
@@ -44,11 +48,15 @@ class IIIFDownloader:
 
         # Gallica is not accepting more than 5 downloads of >1000px / min after
         self.sleep = 12 if "gallica" in self.manifest_url else sleep
+        # Save the licence given in the original manifest if possible
+        self.original_licence = ""
 
     def run(self):
         manifest = get_json(self.manifest_url)
         if manifest is not None:
             i = 1
+            self.get_licence(manifest)
+
             for rsrc in self.get_iiif_resources(manifest):
                 self.save_iiif_img(rsrc, i)
                 i += 1
@@ -60,6 +68,36 @@ class IIIFDownloader:
             #             f"{get_height(img_rsrc)} {get_width(img_rsrc)} {get_id(img_rsrc)}\n"
             #         )
             #     f.close()
+
+    def get_licence(self, manifest):
+        from app.webapp.utils.iiif.manifest import get_meta_value
+
+        if "license" in manifest:
+            self.original_licence = manifest["license"]
+            return
+
+        labels = [
+            "license",
+            "licence",
+            "lizenz",
+            "rights",
+            "droits",
+            "access",
+            "copyright",
+            "rechteinformationen",
+            "conditions",
+        ]
+        if "metadata" not in manifest:
+            return
+        for label in labels:
+            for metadatum in manifest["metadata"]:
+                if value := get_meta_value(metadatum, label):
+                    self.original_licence = value
+                    return
+
+        if "attribution" in manifest:
+            self.original_licence = manifest["attribution"]
+        return
 
     def save_iiif_img(self, img_rsrc, i, size=None, re_download=False):
         img_name = f"{self.manifest_id}_{i:04d}.jpg"

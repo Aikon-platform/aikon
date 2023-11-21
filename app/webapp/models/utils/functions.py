@@ -10,7 +10,8 @@ common_fields = {
     "type": {"en": "type", "fr": "type"},
     "notes": {"en": "additional notes", "fr": "notes complémentaires"},
     "languages": {"en": "language", "fr": "langue"},
-    "is_public": {"en": "Make it public", "fr": "Rendre public"},
+    "is_public": {"en": "make it public", "fr": "rendre public"},
+    "unknown": {"en": "unknown", "fr": "inconnu"},
 }
 
 
