@@ -3,6 +3,7 @@ from django.contrib import admin
 
 from app.webapp.admin.role import RoleInline
 from app.webapp.admin.admin import UnregisteredAdmin
+from app.webapp.forms import LanguageForm
 from app.webapp.models.content import Content, get_name
 
 
@@ -20,6 +21,7 @@ class ContentAdmin(UnregisteredAdmin):
 
 
 class ContentInline(nested_admin.NestedStackedInline):
+    form = LanguageForm
     model = Content
     extra = 1  # Display only one empty form in the parent form
 
@@ -27,7 +29,8 @@ class ContentInline(nested_admin.NestedStackedInline):
         "work",
         ("page_min", "page_max"),
         ("date_min", "date_max"),
-        ("place", "lang"),
+        "place",
+        "lang",
     ]
 
     autocomplete_fields = ("work", "place")
