@@ -3,6 +3,7 @@ import re
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from app.webapp.models.tag import Tag
 from app.webapp.models.witness import Witness
 from app.webapp.models.work import Work
 from app.webapp.models.place import Place
@@ -101,6 +102,11 @@ class Content(models.Model):
         blank=True,
         max_length=15,
         validators=[validate_page],
+    )
+    tags = models.ManyToManyField(
+        Tag,
+        verbose_name=get_name("Tag"),
+        blank=True,
     )
 
     def get_witness(self) -> Witness | None:

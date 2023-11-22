@@ -38,7 +38,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
     # NOTE: attribute to use to change to template of witness (template at: templates/admin/form.html)
     change_form_template = "admin/form.html"
 
-    fields = ["work", "edition", ("date_min", "date_max"), "notes", "is_public"]
+    fields = ["work", "edition", ("date_min", "date_max"), "notes", "tags", "is_public"]
     inlines = [RoleInline, WitnessInline]
 
     @admin.display(description=get_name("Work"))

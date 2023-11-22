@@ -31,6 +31,7 @@ class ContentInline(nested_admin.NestedStackedInline):
         ("date_min", "date_max"),
         "place",
         "lang",
+        "tags",
     ]
 
     autocomplete_fields = ("work", "place")
