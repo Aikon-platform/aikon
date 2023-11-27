@@ -1,4 +1,5 @@
 import glob
+import os
 import zipfile
 import io
 import cv2
@@ -31,6 +32,7 @@ from vhsapp.utils.iiif.annotation import (
 
 from vhsapp.models.constants import MS, VOL, WIT, MS_ABBR, VOL_ABBR, WIT_ABBR
 from vhsapp.utils.paths import BASE_DIR, IMG_PATH
+from vhsapp.utils.constants import APP_NAME
 
 
 from vhsapp.admin.digitization import (
@@ -68,7 +70,6 @@ from vhsapp.utils.functions import (
     get_pdf_imgs,
     get_icon,
     anno_btn,
-    zip_img,
 )
 from vhsapp.utils.logger import console, log
 
@@ -400,13 +401,24 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
             )
 
     @admin.action(description="Export images for training")
-    def export_training_imgs(self, request, queryset):
+    def export_training_imgs(self, request, queryset, zip_name=f"{APP_NAME}_export"):
+        img_urls = []
         results = queryset.values_list("id", flat=True)
 
-        img_urls = []
-        for wit_id in results:
-            img_urls.extend(get_full_images(wit_id, MS))
-        return zip_img(request, img_urls)
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as z:
+
+            for wit_id in results:
+                for img_name in os.listdir(BASE_DIR / IMG_PATH):
+                    if img_name.startswith(f"ms{wit_id}_"):
+                        z.write(f"{BASE_DIR}/{IMG_PATH}/{img_name}", img_name)
+
+        # return print(f)
+        response = HttpResponse(
+            buffer.getvalue(), content_type="application/x-zip-compressed"
+        )
+        response["Content-Disposition"] = f"attachment; filename={zip_name}.zip"
+        return response
 
 
 @admin.register(Printed)
