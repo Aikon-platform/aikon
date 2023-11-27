@@ -64,9 +64,9 @@ class Role(models.Model):
     def get_role_abbr(self):
         return self.role
 
-
-@receiver(pre_save, sender=Role)
-def pre_save(sender, instance, **kwargs):
-    if instance.role == "" and instance.person is None:
-        # delete role record if person and role are set to null
-        instance.delete()
+    def save(self, *args, **kwargs):
+        if self.role == "" and self.person is None:
+            # delete role record if person and role are set to null
+            self.delete()
+        else:
+            super().save(*args, **kwargs)
