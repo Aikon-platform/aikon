@@ -80,16 +80,6 @@ python app/manage.py createsuperuser
 python app/manage.py collectstatic
 ```
 
-Create exception for port 8000
-```shell
-sudo ufw allow 8000
-```
-
-Change app name in `app/platform/utils/constants.py` to fit your project name
-```python
-APP_NAME = "<your-project-name>"
-```
-
 ### Image servers
 
 Create a .ENV file for cantaloupe
@@ -115,7 +105,7 @@ Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with
 
 Create a service for cantaloupe
 ```bash
-vi /etc/systemd/system/cantaloupe.service
+sudo vi /etc/systemd/system/cantaloupe.service
 ```
 
 ```bash
@@ -125,9 +115,9 @@ After=network.target
 After=nginx.service
 
 [Service]
-WorkingDirectory=/<absolute/path/to>/config/
-ExecStart=/<absolute/path/to>/config/cantaloupe/start.sh
-StandardError=append:/<absolute/path/to>/config/cantaloupe/log
+WorkingDirectory=/<absolute/path/to>/vhs/
+ExecStart=/<absolute/path/to>/vhs/cantaloupe/start.sh
+StandardError=append:/<absolute/path/to>/vhs/cantaloupe/log
 
 [Install]
 WantedBy=multi-user.target

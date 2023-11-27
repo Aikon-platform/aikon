@@ -3,14 +3,15 @@ from django.db import models
 from app.webapp.models.place import Place
 from app.webapp.models.utils.constants import CONS_PLA
 from app.webapp.models.utils.functions import get_fieldname
+from app.webapp.utils.iiif import NO_LICENSE
 
 
 def get_name(fieldname, plural=False):
     fields = {
         "name": {"en": CONS_PLA, "fr": CONS_PLA},
         "city": {"en": "city", "fr": "ville"},
-        "licence": {"en": "licence", "fr": "licence"},
-        "licence_info": {
+        "license": {"en": "license", "fr": "licence"},
+        "license_info": {
             "en": "URL mentioning reproduction rights",
             "fr": "URL précisant les droits de reproduction",
         },
@@ -37,14 +38,14 @@ class ConservationPlace(models.Model):
         on_delete=models.SET_NULL,
         null=True,
     )
-    licence = models.URLField(
-        verbose_name=get_name("licence"),
+    license = models.URLField(
+        verbose_name=get_name("license"),
         blank=True,
         null=True,
-        # TODO add licence_info inside the form
+        # TODO add license_info inside the form
     )
 
-    def get_licence(self):
+    def get_license(self):
         return (
-            self.licence or "Do not reuse"
+            self.license or NO_LICENSE
         )  # TODO create page to redirect to in order to explicit what is "no reuse"

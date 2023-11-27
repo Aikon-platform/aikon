@@ -8,7 +8,7 @@
 {% block extrahead %}
     {{ block.super }}
     <style>
-        .fixed-div {
+        .toolbar {
             position: fixed;
             top: 0;
             left: 0;
@@ -25,17 +25,17 @@
             padding: 0.2em;
         }
 
-        .fixed-div h3 {
+        .toolbar h3 {
             margin: 0;
             font-size: 1.5rem;
             font-weight: bold;
         }
 
-        .fixed-div label {
+        .toolbar label {
             margin-right: 10px;
         }
 
-        .fixed-div input {
+        .toolbar input {
             margin-right: 10px;
             padding: 5px;
             border-radius: 5px;
@@ -46,7 +46,7 @@
             display: inline-block;
         }
 
-        .fixed-div button {
+        .toolbar button {
             padding: 5px 10px;
             border-radius: 5px;
             border: none;
@@ -156,9 +156,9 @@
 {% endblock %}
 
 {% block header %}
-    <div class="fixed-div">
+    <div class="toolbar">
         <div class="title">
-            <b>{{ anno }}</b>
+            <b>{{ anno|capfirst }}</b>
         </div>
 
         <button id="select_anno" class="select-button">
@@ -166,7 +166,7 @@
             {% if APP_LANG == "en" %}Select all{% else %}Sélectionner toutes les{% endif %} annotations
         </button>
 
-        <button class="reload-button" onclick="location.reload()" title="{% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}">
+        <button class="reload-button" onclick="location.reload()" title="{% if APP_LANG == 'en' %}Reload{% else %}Actualiser{% endif %}">
             <i class="fa-solid fa-arrows-rotate"></i>
             {% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}
         </button>

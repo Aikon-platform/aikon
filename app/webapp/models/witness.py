@@ -163,7 +163,7 @@ class Witness(models.Model):
 
         if library := self.place:
             metadata["Place of conservation"] = library.__str__()
-            metadata["Licence"] = library.get_licence()
+            metadata["License"] = library.get_license()
 
         if self.get_persons():
             metadata = self.add_roles(metadata)

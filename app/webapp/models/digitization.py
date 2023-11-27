@@ -91,8 +91,8 @@ class Digitization(models.Model):
     digit_type = models.CharField(
         verbose_name=get_name("type"), choices=DIGIT_TYPE, max_length=150
     )
-    # holds licence information if it was contained in the source manifest
-    licence = models.URLField(
+    # holds license information if it was contained in the source manifest
+    license = models.URLField(
         blank=True,
         null=True,
     )
@@ -205,9 +205,9 @@ class Digitization(models.Model):
 
         if manifest := self.manifest:
             metadata["Source manifest"] = str(manifest)
-            if licence := self.licence:
-                # override licence if it was previously defined
-                metadata["Licence"] = licence
+            if license_url := self.license:
+                # override license if it was previously defined
+                metadata["License"] = license_url
 
         return metadata
 
@@ -316,13 +316,13 @@ def digitization_post_save(sender, instance, created, **kwargs):
 
         elif digit_type == MAN_ABBR:
 
-            def set_licence(licence):
-                instance.licence = licence
-                instance.save(update_fields=["licence"])
+            def set_license(license_url):
+                instance.license = license_url
+                instance.save(update_fields=["license"])
 
             t = threading.Thread(
                 target=extract_images_from_iiif_manifest,
-                args=(instance.manifest, instance.get_ref(), event, set_licence),
+                args=(instance.manifest, instance.get_ref(), event, set_license),
             )
             t.start()
 

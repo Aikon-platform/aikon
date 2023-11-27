@@ -24,11 +24,13 @@ from app.webapp.views import (
     reindex_anno,
     delete_send_anno,
     retrieve_place_info,
+    rgpd,
 )
 
 
 urlpatterns = [
     path("", admin_app, name="admin-config"),
+    path(f"{APP_NAME}/rgpd", rgpd),
     path(f"{APP_NAME}-admin/", admin.site.urls),
     path(
         f"{APP_NAME}/<str:anno_ref>/show/",

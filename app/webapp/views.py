@@ -316,7 +316,7 @@ def show_annotations(request, anno_ref):
 
     return render(
         request,
-        "webapp/show.html",
+        "show.html",
         context={
             "anno": anno,
             "page_annos": page_annos,
@@ -401,6 +401,10 @@ def retrieve_place_info(request):
 def search_similarity(request, experiment_id):
     # Call search_similarity task
     pass
+
+
+def rgpd(request):
+    return render(request, "rgpd.html")
 
 
 # TODO: create test to find integrity of a manuscript:

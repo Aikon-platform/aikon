@@ -13,15 +13,15 @@ from app.webapp.utils.iiif import get_height, get_width, get_id
 
 
 def extract_images_from_iiif_manifest(
-    manifest_url, digit_ref, event, set_licence_callback
+    manifest_url, digit_ref, event, set_license_callback
 ):
     """
     Extract all images from an IIIF manifest
     """
     downloader = IIIFDownloader(manifest_url, digit_ref)
     downloader.run()
-    if licence := downloader.original_licence:
-        set_licence_callback(licence)
+    if license := downloader.original_license:
+        set_license_callback(license)
     event.set()
 
 
@@ -48,14 +48,14 @@ class IIIFDownloader:
 
         # Gallica is not accepting more than 5 downloads of >1000px / min after
         self.sleep = 12 if "gallica" in self.manifest_url else sleep
-        # Save the licence given in the original manifest if possible
-        self.original_licence = ""
+        # Save the license given in the original manifest if possible
+        self.original_license = ""
 
     def run(self):
         manifest = get_json(self.manifest_url)
         if manifest is not None:
             i = 1
-            self.get_licence(manifest)
+            self.get_license(manifest)
 
             for rsrc in self.get_iiif_resources(manifest):
                 self.save_iiif_img(rsrc, i)
@@ -69,16 +69,16 @@ class IIIFDownloader:
             #         )
             #     f.close()
 
-    def get_licence(self, manifest):
+    def get_license(self, manifest):
         from app.webapp.utils.iiif.manifest import get_meta_value
 
         if "license" in manifest:
-            self.original_licence = manifest["license"]
+            self.original_license = manifest["license"]
             return
 
         labels = [
             "license",
-            "licence",
+            "license",
             "lizenz",
             "rights",
             "droits",
@@ -92,11 +92,11 @@ class IIIFDownloader:
         for label in labels:
             for metadatum in manifest["metadata"]:
                 if value := get_meta_value(metadatum, label):
-                    self.original_licence = value
+                    self.original_license = value
                     return
 
         if "attribution" in manifest:
-            self.original_licence = manifest["attribution"]
+            self.original_license = manifest["attribution"]
         return
 
     def save_iiif_img(self, img_rsrc, i, size=None, re_download=False):

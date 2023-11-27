@@ -7,6 +7,7 @@ from app.webapp.utils.constants import (
     APP_NAME_UPPER,
     APP_DESCRIPTION,
 )
+from app.webapp.utils.iiif import NO_LICENSE
 from app.webapp.utils.paths import IMG_PATH
 from app.config.settings import CANTALOUPE_APP_URL
 
@@ -99,7 +100,7 @@ def gen_manifest_json(obj: Digitization | Annotation, version=None):
     # Set the manifest's attribution, description, and viewing hint
     manifest.attribution = f"{APP_NAME_UPPER} platform"
     manifest.description = APP_DESCRIPTION
-    manifest.license = metadata.license
+    manifest.license = metadata["License"] if "License" in metadata else NO_LICENSE
     # manifest.viewingHint = "individuals"
 
     try:

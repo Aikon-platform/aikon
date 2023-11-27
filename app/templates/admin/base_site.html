@@ -46,8 +46,11 @@
     <script src="{% static 'js/eventListeners.js' %}"></script>
 {% endblock %}
 
+{% include 'includes/navbar.html' %}
+
 {% block footer %}
     <div id="footer">
         {{COPYRIGHT}} {{ APP_NAME_UPPER }} &copy; {% now "Y" %}
+        <br><a href="{{ APP_URL }}/{{ APP_NAME }}/rgpd">RGPD and licensing</a>
     </div>
 {% endblock %}
