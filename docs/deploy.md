@@ -20,8 +20,8 @@ sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql 
 
 Clone repository and checkout to branch
 ```bash
-git clone git@github.com:faouinti/config.git
-cd config && git checkout config-prod
+git clone git@github.com:faouinti/vhs.git
+cd vhs && git checkout <your-branch>-prod
 ```
 
 Set up virtual environment
