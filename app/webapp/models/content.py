@@ -81,7 +81,10 @@ class Content(models.Model):
         null=True,
     )"""
     lang = models.CharField(
-        verbose_name=get_name("languages"), max_length=100, blank=True
+        verbose_name=get_name("languages"),
+        max_length=100,
+        blank=True,
+        null=True,
     )
     date_min = models.IntegerField(
         verbose_name=get_name("date_min"), null=True, blank=True
