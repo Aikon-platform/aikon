@@ -47,7 +47,7 @@ class Annotation(models.Model):
     # anno_ids = ArrayField(models.CharField(max_length=150), blank=True, null=True)
     is_validated = models.BooleanField(default=False)
 
-    def get_digit(self) -> Digitization | None:
+    def get_digit(self):
         try:
             return self.digitization
         except AttributeError:
