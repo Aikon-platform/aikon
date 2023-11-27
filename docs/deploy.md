@@ -39,7 +39,7 @@ postgres=# CREATE USER <username> WITH PASSWORD '<password>';
 postgres=# ALTER ROLE <username> SET client_encoding TO 'utf8';
 postgres=# ALTER ROLE <username> SET default_transaction_isolation TO 'read committed';
 postgres=# ALTER ROLE <username> SET timezone TO 'UTC';
-postgres=# GRANT ALL PRIVILEGES ON DATABASE config TO <username>;
+postgres=# GRANT ALL PRIVILEGES ON DATABASE <database-name> TO <username>;
 postgres=# \q
 ```
 

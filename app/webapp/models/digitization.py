@@ -116,7 +116,7 @@ class Digitization(models.Model):
         blank=True,
     )
 
-    def get_witness(self) -> Witness | None:
+    def get_witness(self):
         try:
             return self.witness
         except AttributeError:
