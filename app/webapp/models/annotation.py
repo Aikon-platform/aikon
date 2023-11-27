@@ -53,7 +53,7 @@ class Annotation(models.Model):
         except AttributeError:
             return None
 
-    def get_witness(self) -> Witness | None:
+    def get_witness(self):
         if digit := self.digitization:
             return digit.get_witness()
         return None
