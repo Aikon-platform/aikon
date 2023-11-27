@@ -21,14 +21,14 @@ sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql 
 Clone repository and checkout to branch
 ```bash
 git clone git@github.com:faouinti/vhs.git
-cd vhs && git checkout vhs-prod
+cd vhs && git checkout <your-branch>-prod
 ```
 
 Set up virtual environment
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-pip install -r vhs-platform/requirements-prod.txt
+pip install -r app/requirements-prod.txt
 ```
 
 Create prostgres database
@@ -39,16 +39,16 @@ postgres=# CREATE USER <username> WITH PASSWORD '<password>';
 postgres=# ALTER ROLE <username> SET client_encoding TO 'utf8';
 postgres=# ALTER ROLE <username> SET default_transaction_isolation TO 'read committed';
 postgres=# ALTER ROLE <username> SET timezone TO 'UTC';
-postgres=# GRANT ALL PRIVILEGES ON DATABASE vhs TO <username>;
+postgres=# GRANT ALL PRIVILEGES ON DATABASE <database-name> TO <username>;
 postgres=# \q
 ```
 
 Configure project variables
 ```bash
-cp vhs-platform/vhs/.env{.template,}
+cp app/config/.env{.template,}
 ```
 
-Change variables in the generated file `vhs-platform/vhs/.env` to corresponds to your project
+Change variables in the generated file `app/config/.env` to corresponds to your project
 ```bash
 ALLOWED_HOSTS="localhost,127.0.0.1,145.238.203.8"  # add the domain name used on prod, e.g. "eida.obspm.fr"
 SECRET_KEY="<secret-key>"            # random string of characters
@@ -67,23 +67,17 @@ PROD_URL="<url-used-for-prod>"       # e.g. "https://eida.obspm.fr"
 APP_NAME="<app-name-lowercase>"      # name of the application, e.g. "eida"
 GEONAMES_USER="<geonames-username>"  # same username as the one defined on local
 APP_LANG="<fr-or-en>"                # lang to be used in the app: work either for french (fr) or english (en)
+EXAPI="<gpu-api-address>"            # e.g. "https://dishas-ia.obspm.fr"
+API_KEY="<api-key>"
+REDIS_PASSWORD="<redis-password>"
+MEDIA_DIR="<media-dir>"              # absolute path to media files directory
 ```
 
 Update database schema, create super user and collect static files
 ```bash
-./venv/bin/python vhs-platform/manage.py migrate
-./venv/bin/python vhs-platform/manage.py createsuperuser
-./venv/bin/python vhs-platform/manage.py collectstatic
-```
-
-Create exception for port 8000
-```shell
-sudo ufw allow 8000
-```
-
-Change app name in `vhs-platform/vhsapp/utils/constants.py` to fit your project name
-```python
-APP_NAME = "<your-project-name>"
+python app/manage.py migrate
+python app/manage.py createsuperuser
+python app/manage.py collectstatic
 ```
 
 ### Image servers
@@ -95,10 +89,10 @@ sudo chmod +x <path/to>/cantaloupe/init.sh && cp <path/to>/cantaloupe/.env{.temp
 
 Modify the variables in order to fit your project:
 - `BASE_URI` example: https://eida.obspm.fr
-- `FILE_SYSTEM_SOURCE` on prod: `./vhs-platform/mediafiles/img/`
+- `FILE_SYSTEM_SOURCE` on prod: `./app/mediafiles/img/`
 ```bash
 BASE_URI=<url-used-for-prod-or-blank>
-FILE_SYSTEM_SOURCE=./vhs-platform/mediafiles/img/
+FILE_SYSTEM_SOURCE=./app/mediafiles/img/
 HTTP_PORT=8182
 HTTPS_PORT=8183
 LOG_PATH=/path/to/logs
@@ -111,7 +105,7 @@ Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with
 
 Create a service for cantaloupe
 ```bash
-vi /etc/systemd/system/cantaloupe.service
+sudo vi /etc/systemd/system/cantaloupe.service
 ```
 
 ```bash
@@ -134,11 +128,47 @@ Launch SAS
 cd sas && mvn jetty:run
 ```
 
+The Simple Annotation Server project does not currently contain authentication although it is possible to secure the SAS web application with a single username and password using Nginx forwarding.
+
+Create the password file using the OpenSSL utilities and add a username to the file
+```bash
+sudo sh -c "echo -n '<username>:' >> /etc/nginx/.htpasswd"
+```
+
+Next, add an encrypted password entry for the username
+```bash
+sudo sh -c "openssl passwd <password> >> /etc/nginx/.htpasswd"
+```
+
+You can repeat this process for additional usernames.
+
+To configure Nginx password authentication, open up the server block configuration file and set up authentication
+```bash
+sudo vi /etc/nginx/sites-enabled/vhs
+```
+
+```bash
+server {
+	server_name <project-domain-name>;
+	...
+	location /sas/ {
+	...
+	auth_basic              "Restricted Content";
+	auth_basic_user_file    /etc/nginx/.htpasswd;
+	}
+}
+```
+
+Restart Nginx to implement your password policy
+```bash
+sudo systemctl restart nginx
+```
+
 ### Gunicorn
 
 Make sure you can serve app with Gunicorn then quit with Ctrl+C
 ```bash
-gunicorn --bind 0.0.0.0:8000 vhs.wsgi
+gunicorn --bind 0.0.0.0:8000 config.wsgi
 ```
 
 Create sockets [following this procedure](https://www.digitalocean.com/community/tutorials/how-to-set-up-django-with-postgres-nginx-and-gunicorn-on-ubuntu-22-04#creating-systemd-socket-and-service-files-for-gunicorn).
@@ -153,12 +183,12 @@ After=network.target
 [Service]
 User=<production-server-username>
 Group=<production-server-group>
-WorkingDirectory=<path/to>/vhs/vhs-platform
-ExecStart=<path/to>/vhs/venv/bin/gunicorn \
+WorkingDirectory=<path/to>/config/app
+ExecStart=<path/to>/config/venv/bin/gunicorn \
           --access-logfile - \
           --workers 3 \
           --bind unix:/run/gunicorn.sock \
-          vhs.wsgi:application
+          config.wsgi:application
 
 [Install]
 WantedBy=multi-user.target
@@ -193,12 +223,12 @@ server {
 
     location /static/ {
         autoindex off;
-        alias </path/to>/vhs/vhs-platform/staticfiles;           # CHANGE HERE
+        alias </path/to>/app/staticfiles;           # CHANGE HERE
     }
 
     location /media/ {
         autoindex off;
-        alias </path/to>/vhs/vhs-platform/mediafiles/;           # CHANGE HERE
+        alias </path/to>/app/mediafiles/;           # CHANGE HERE
     }
 
     location / {
@@ -219,6 +249,47 @@ server {
 }
 ```
 
+### Enabling authentication for Redis instance
+Open the Redis configuration file
+```
+vi /etc/redis/redis.conf
+```
+Uncomment and set a password
+```
+requirepass <your_password>
+```
+Restart Redis
+```
+sudo systemctl restart redis-server
+```
+Test the password
+```
+redis-cli -a <your_password>
+```
+
+### Celery
+Create a service for Celery
+```bash
+vi /etc/systemd/system/celery.service
+```
+
+```bash
+[Unit]
+Description=Celery Service
+After=network.target
+
+[Service]
+User=<production-server-username>
+Group=<production-server-group>
+WorkingDirectory=<path/to>/app
+ExecStart=<path/to>/venv/bin/celery -A <celery_app> worker --loglevel=info -P threads
+StandardOutput=file:<path/to>/celery/log
+StandardError=file:<path/to>/celery/log
+
+[Install]
+WantedBy=multi-user.target
+```
+
 Reload the `systemd` manager configuration
 ```shell
 sudo systemctl daemon-reload
@@ -237,10 +308,10 @@ sudo systemctl restart gunicorn.socket
 ```
 
 On modification of the static files, you will need to restart nginx
-then copy static files into `vhs-platform/staticfiles` in order to be served but nginx
+then copy static files into `app/staticfiles` in order to be served but nginx
 ```shell
 sudo systemctl restart nginx
-./venv/bin/python vhs-platform/manage.py collectstatic
+python app/manage.py collectstatic
 ```
 
 To make a command alias, copy that at the end of `~/.bashrc`:
@@ -252,18 +323,18 @@ alias djupdate="sudo systemctl restart gunicorn.socket && sudo systemctl restart
 If the data model was changed, you will first need to check that the new data model do not cause any error in the application.
 Once the tests performed, a migration file can be generated locally by running:
 ```shell
-./venv/bin/python vhs-platform/manage.py makemigrations
+python app/manage.py makemigrations
 ```
 
 It will create a file that tells Django how to modify the Postgres database structure to fit the new model definition.
 To apply those modifications, run locally:
 ```shell
-./venv/bin/python vhs-platform/manage.py migrate
+python app/manage.py migrate
 ```
 
 If everything is set, update the remote database by running on the production server, once the code has been retrieve from origin:
 ```shell
-./venv/bin/python vhs-platform/manage.py migrate
+python app/manage.py migrate
 ```
 
 # Debug
@@ -280,18 +351,18 @@ source ~/.bashrc   # to activate aliases
 
 To activate DEBUG in prod in order to see Django errors (instead of 500 errors)
 ```shell
-# install vhs/platform/requirements-dev.txt
-vi vhs-platform/vhs/.env           # set DEBUG=True
-vi vhs-platform/vhs/settings.py    # l.87 `if not DEBUG:` => `if DEBUG:`
+# install config/webapp/requirements-dev.txt
+vi app/config/.env           # set DEBUG=True
+vi app/config/settings.py    # l.87 `if not DEBUG:` => `if DEBUG:`
 ```
 Don't forget to roll back those modifications afterward
 
 ## App errors
-See `vhs-platform/logs`
+See `app/logs`
 
 ```bash
-alias djlog="cat vhs-platform/logs/<appname>.log"
-alias empty_djlog="sudo truncate -s 0 vhs-platform/logs/<appname>.log"
+alias djlog="cat app/logs/<appname>.log"
+alias empty_djlog="sudo truncate -s 0 app/logs/<appname>.log"
 ```
 
 ## Nginx error logs
@@ -324,4 +395,12 @@ See `sas/log`
 ```bash
 alias slog="cat sas/log"
 alias empty_slog="sudo truncate -s 0 sas/log"
+```
+
+## Celery error logs
+See `celery/log`
+
+```bash
+alias celog="cat celery/log"
+alias empty_celog="sudo truncate -s 0 celery/log"
 ```

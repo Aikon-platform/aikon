@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# HOW TO USE
+# in the script directory
+# sh annotate.sh filename.txt
+# filename.txt -> each line is a manifest URL from eida
+
+# function to print colored output
+colorEcho () {
+    Color_Off="\033[0m"
+    Red="\033[1;91m"        # Red
+    Green="\033[1;92m"      # Green
+    Yellow="\033[1;93m"     # Yellow
+    Blue="\033[1;94m"       # Blue
+    Purple="\033[1;95m"     # Purple
+    Cyan="\033[1;96m"       # Cyan
+
+    echo ""
+    echo ""
+
+    case "$1" in
+        "success") echo "$Green$2$Color_Off";;
+        "error") echo "$Red$2$Color_Off";;
+        "info") echo "$Blue$2$Color_Off";;
+        "warning") echo "$Purple$2$Color_Off";;
+        "message") echo "$Cyan$2$Color_Off";;
+        *) echo "$2";;
+    esac
+
+    echo ""
+}
+
+if test "$#" -ne 1; then
+    colorEcho "error" "Usage: $0 <input-file-path>"
+fi
+
+input_file=$1
+file_name=$(basename -- "${input_file%.*}")
+
+# TODO: add --rerun + --model param
+
+echo "$(figlet ANNOTATOR)"
+
+colorEcho "info" "Copying $input_file to dishas-ia ..."
+scp "$input_file" dishas-ia:yolov5/manifests/ || colorEcho "error" "Failed to copy file to dishas-ia"
+
+colorEcho "info" "Launching detection..."
+ssh -t dishas-ia "cd yolov5 && vhs/bin/python detect_vhs.py -f manifests/$file_name.txt" || colorEcho "error" "Failed to run detection"
+
+colorEcho "info" "Content of the output directory:"
+ssh dishas-ia "ls yolov5/output/"
+
+colorEcho "info" "Copying output files to eida server..."
+scp dishas-ia:yolov5/output/* eida:vhs/app/mediafiles/annotation/ || colorEcho "error" "Failed to copy output files to eida server"
+scp dishas-ia:yolov5/output/* ../app/mediafiles/annotation/ || colorEcho "error" "Failed to copy output files to local app"
+
+colorEcho "log" "\nContent of the annotation directory:"
+ssh eida "ls vhs/app/mediafiles/annotation/"

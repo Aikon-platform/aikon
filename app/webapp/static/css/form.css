@@ -1,0 +1,8 @@
+.inline-related fieldset.module h3 {
+    background: var(--darkened-bg) !important;
+    color: var(--body-quiet-color) !important;
+}
+
+.djn-add-item {
+    margin-bottom: 1em !important;
+}
