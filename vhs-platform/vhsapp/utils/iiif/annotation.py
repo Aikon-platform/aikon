@@ -1,12 +1,19 @@
 import json
 import re
+import os
 from datetime import datetime
 from glob import glob
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
 import requests
-from vhsapp.utils.paths import MEDIA_PATH, BASE_DIR, VOL_ANNO_PATH, MS_ANNO_PATH
+from vhsapp.utils.paths import (
+    MEDIA_PATH,
+    BASE_DIR,
+    VOL_ANNO_PATH,
+    MS_ANNO_PATH,
+    IMG_PATH,
+)
 from vhsapp.models import get_wit_abbr, get_wit_type
 from vhsapp.models.constants import MS, VOL, MS_ABBR, VOL_ABBR
 from vhs.settings import (
@@ -605,16 +612,17 @@ def get_anno_images(witness, wit_type):
     return imgs
 
 
-def get_full_images(witness, wit_type):
+def get_full_images(wit_id, wit_type):
     # Used to export entire annotated images
     imgs = []
 
     try:
-        for canvas_nb, img_file in get_canvas_list(witness, wit_type):
-            canvas_imgs = [
-                f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/full/full/0/default.jpg"
-            ]
-            imgs.extend(canvas_imgs)
+        for img_file in os.listdir(BASE_DIR / IMG_PATH):
+            if img_file.startswith(f"ms{wit_id}_"):
+                full_imgs = [
+                    f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/full/full/0/default.jpg"
+                ]
+                imgs.extend(full_imgs)
     except ValueError as e:
         log(f"[get_full_images] Error when retrieving images: {e}")
 
