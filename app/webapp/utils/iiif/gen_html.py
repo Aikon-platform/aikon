@@ -12,7 +12,10 @@ from app.config.settings import (
 from app.webapp.utils.iiif import IIIF_ICON
 
 
-def anno_btn(obj: Annotation | Digitization, action="view"):
+def anno_btn(obj, action="view"):
+    """
+    obj: Annotation | Digitization
+    """
     disabled = ""
     btn = f"{get_action(action, 'upper')} ANNOTATIONS"
 
@@ -46,14 +49,17 @@ def anno_btn(obj: Annotation | Digitization, action="view"):
     )
 
 
-def get_link_manifest(obj: Annotation | Digitization, version=None):
+def get_link_manifest(obj, version=None):
+    """
+    obj: Annotation | Digitization
+    """
     manifest_url = obj.gen_manifest_url(version=version)
     return f"<a id='{obj.get_ref()}' href='{manifest_url}' target='_blank'>{manifest_url} {IIIF_ICON}</a>"
 
 
-def gen_btn(obj: Annotation | Digitization, action="view"):
+def gen_btn(obj, action="view"):
     """
-    Used to create button in the witness form
+    obj: Annotation | Digitization
     """
     if action == "no_manifest" or action == "no_anno" or action == "no_digit":
         return mark_safe(anno_btn(obj, action))
