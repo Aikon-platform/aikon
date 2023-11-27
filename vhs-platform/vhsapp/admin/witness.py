@@ -2,6 +2,7 @@ import glob
 import zipfile
 import io
 import cv2
+from PIL import Image
 
 import nested_admin
 from admin_extra_buttons.decorators import button
@@ -367,21 +368,25 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
 
                     for canvas_nb, img_file in img_urls:
                         annos = get_indexed_canvas_annos(canvas_nb, witness.id, MS)
-                        img = cv2.imread(f"{BASE_DIR}/{IMG_PATH}/{img_file}")
-                        height, width = int(img.shape[0]), int(img.shape[1])
-                        if bool(annos):
-                            annotations = []
-                            for anno in annos:
-                                x, y, w, h = [
-                                    int(n) for n in get_coord_from_anno(anno).split(",")
-                                ]
-                                annotations.append(
-                                    f"0 {((x+x+w)/2)/width} {((y+y+h)/2)/height} {w/width} {h/height}"
-                                )
+                        img_path = f"{BASE_DIR}/{IMG_PATH}/{img_file}"
 
-                            txt_filename = f"{img_file}".replace(".jpg", ".txt")
-                            txt_content = "\n".join(annotations)
-                            zip_file.writestr(txt_filename, txt_content)
+                        with Image.open(img_path) as img:
+                            width, height = img.size
+
+                            if bool(annos):
+                                annotations = []
+                                for anno in annos:
+                                    x, y, w, h = [
+                                        int(n)
+                                        for n in get_coord_from_anno(anno).split(",")
+                                    ]
+                                    annotations.append(
+                                        f"0 {((x+x+w)/2)/width} {((y+y+h)/2)/height} {w/width} {h/height}"
+                                    )
+
+                                txt_filename = f"{img_file}".replace(".jpg", ".txt")
+                                txt_content = "\n".join(annotations)
+                                zip_file.writestr(txt_filename, txt_content)
 
             zip_buffer.seek(0)
             response = HttpResponse(zip_buffer, content_type="application/zip")
@@ -396,12 +401,11 @@ class WitnessAdmin(ExtraButtonsMixin, admin.ModelAdmin):
 
     @admin.action(description="Export images for training")
     def export_training_imgs(self, request, queryset):
-        results = queryset.values_list("id")
+        results = queryset.values_list("id", flat=True)
 
         img_urls = []
         for wit_id in results:
-            witness = Manuscript.objects.get(pk=wit_id[0])
-            img_urls.extend(get_full_images(witness, MS))
+            img_urls.extend(get_full_images(wit_id, MS))
         return zip_img(request, img_urls)
 
 
