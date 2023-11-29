@@ -7,8 +7,9 @@
 > - **Java**: 11
 > - **Git**: with [SSH access to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
 
+Set environment variables of the application and cantaloupe in their respective `.env` files
 ```bash
-chmod +x script/env.sh && ./env.sh
+chmod +x script/* && ./env.sh
 ```
 
 Download dependencies
@@ -67,7 +68,7 @@ SAS_PASSWORD="<sas-password>"
 GPU_REMOTE_HOST="<gpu-host>"
 GPU_USERNAME="<gpu-username>"
 GPU_PASSWORD="<gpu-password>"
-PROD_URL="<url-used-for-prod>"       # e.g. "https://eida.obspm.fr"
+PROD_URL="<url-used-for-prod>"       # e.g. "eida.obspm.fr"
 APP_NAME="<app-name-lowercase>"      # name of the application, e.g. "eida"
 GEONAMES_USER="<geonames-username>"  # same username as the one defined on local
 APP_LANG="<fr-or-en>"                # lang to be used in the app: work either for french (fr) or english (en)

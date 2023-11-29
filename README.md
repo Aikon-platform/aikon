@@ -83,7 +83,7 @@ DB_HOST="<database-host>"            # localhost
 DB_PORT="<database-port>"            # 5432
 SAS_USERNAME="<sas-username>"
 SAS_PASSWORD="<sas-password>"
-PROD_URL="<url-used-for-prod>"       # e.g. "https://eida.obspm.fr"
+PROD_URL="<url-used-for-prod>"       # e.g. "eida.obspm.fr"
 APP_NAME="<app-name-lowercase>"      # name of the application, e.g. "eida"
 GEONAMES_USER="<geonames-username>"
 APP_LANG="<fr-or-en>"                # lang to be used in the app: work either for french (fr) or english (en)
@@ -95,7 +95,7 @@ MEDIA_DIR="<media-dir>"              # absolute path to media files directory (e
 
 Create a [Geonames](https://www.geonames.org/login) account, activate it and change `<geonames-username>` in the `.env` file
 
-Add an `APP_NAME` and an `PROD_URL` with the scheme and domain used in production (e.g. "https://eida.obspm.fr")
+Add an `APP_NAME` and an `PROD_URL` with the scheme and domain used in production (e.g. "eida.obspm.fr")
 
 Provide as well an `APP_LANG`: only "fr" or "en" values are supported for now
 
