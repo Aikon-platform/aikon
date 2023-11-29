@@ -193,7 +193,7 @@ def delete_send_anno(request, anno_ref):
     # try:
     #     requests.post(
     #         url=f"{API_GPU_URL}/delete_detect",
-    #         headers={"X-API-Key": API_KEY},
+    #         headers={"X-API-Key": EXAPI_KEY},
     #         data={"manifest_url": manifest_url},
     #     )
     # except Exception as e:

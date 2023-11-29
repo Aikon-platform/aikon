@@ -7,6 +7,10 @@
 > - **Java**: 11
 > - **Git**: with [SSH access to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
 
+```bash
+chmod +x script/env.sh && ./env.sh
+```
+
 Download dependencies
 ```bash
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
@@ -67,8 +71,8 @@ PROD_URL="<url-used-for-prod>"       # e.g. "https://eida.obspm.fr"
 APP_NAME="<app-name-lowercase>"      # name of the application, e.g. "eida"
 GEONAMES_USER="<geonames-username>"  # same username as the one defined on local
 APP_LANG="<fr-or-en>"                # lang to be used in the app: work either for french (fr) or english (en)
-EXAPI="<gpu-api-address>"            # e.g. "https://dishas-ia.obspm.fr"
-API_KEY="<api-key>"
+EXAPI_URL="<gpu-api-address>"        # e.g. "https://dishas-ia.obspm.fr"
+EXAPI_KEY="<api-key>"
 REDIS_PASSWORD="<redis-password>"
 MEDIA_DIR="<media-dir>"              # absolute path to media files directory
 ```
@@ -128,7 +132,8 @@ Launch SAS
 cd sas && mvn jetty:run
 ```
 
-The Simple Annotation Server project does not currently contain authentication although it is possible to secure the SAS web application with a single username and password using Nginx forwarding.
+The Simple Annotation Server project does not currently contain authentication,
+although it is possible to secure the SAS web application with a single username and password using Nginx forwarding.
 
 Create the password file using the OpenSSL utilities and add a username to the file
 ```bash
