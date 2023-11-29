@@ -2,9 +2,10 @@
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"
+ENV_FILE="$APP_ROOT"/app/config/.env
 
-# Deploy Script for VHS App
-. "$APP_ROOT"/app/config/.env
+# Load environment variables
+. "$ENV_FILE"
 
 # Requirements
 sudo apt update
@@ -16,59 +17,112 @@ python3 -m venv venv
 source "$APP_ROOT"/venv/bin/activate
 pip install -r "$APP_ROOT"/app/requirements-prod.txt
 
-# Create PostgreSQL database
-sudo -u postgres psql
-# PostgreSQL commands: CREATE DATABASE, CREATE USER, ALTER ROLE, GRANT PRIVILEGES
-# \q to exit
+create_db() {
+    user_exists=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USERNAME'")
+    if [ "$user_exists" != "1" ]; then
+        sudo -u postgres psql -c "CREATE USER $DB_USERNAME WITH PASSWORD '$DB_PASSWORD';"
+        sudo -u postgres psql -c "ALTER ROLE $DB_USERNAME SET client_encoding TO 'utf8';"
+        sudo -u postgres psql -c "ALTER ROLE $DB_USERNAME SET default_transaction_isolation TO 'read committed';"
+        sudo -u postgres psql -c "ALTER ROLE $DB_USERNAME SET timezone TO 'UTC';"
+    fi
+    sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;"
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USERNAME;"
+}
 
-# Configure project variables
-cp "$APP_ROOT"/app/config/.env{.template,}
-# Modify "$APP_ROOT"/app/config/.env file with project variables
+check_dbname() {
+    db_name=$1
+    count=2
+    while psql -lqt | cut -d \| -f 1 | grep -qw "$db_name"; do
+        db_name="${1}_$count"
+        ((count++))
+    done
+    sed -i "s~^DB_NAME=.*~DB_NAME=\"$db_name\"~" "$ENV_FILE"
+    echo "$db_name"
+}
 
-# Update database schema, create superuser, and collect static files
+DB_NAME=$(check_dbname "$DB_NAME")
+create_db "$DB_NAME"
+
+python "$APP_ROOT"/app/manage.py makemigrations
 python "$APP_ROOT"/app/manage.py migrate
 python "$APP_ROOT"/app/manage.py createsuperuser
 python "$APP_ROOT"/app/manage.py collectstatic
 
-# Image servers - Cantaloupe
-chmod +x "$APP_ROOT"/cantaloupe/init.sh
-cp "$APP_ROOT"/cantaloupe/.env{.template,}
-nano "$APP_ROOT"/cantaloupe/.env
-# Modify Cantaloupe .env file with project variables
-$APP_ROOT/cantaloupe/init.sh
+create_service() {
+    SERVICE_NAME="$APP_NAME-$1"
+    SERVICE_DIR="$APP_ROOT/$1"
+    WORKING_DIR="${$2:-$SERVICE_DIR}"
+    SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME.service"
 
-# Create service for Cantaloupe
-sudo vi /etc/systemd/system/cantaloupe.service
-# Add Cantaloupe service configuration
-# Save and exit
+    if [ -e "$SERVICE_PATH" ]; then
+        echo "Service file '$SERVICE_PATH' already exists."
+    else
+        echo "# $SERVICE_PATH
+              [Unit]
+              Description=$APP_NAME $1 service
+              After=network.target
+              After=nginx.service
 
-# Launch SAS
-cd "$APP_ROOT"/sas && mvn jetty:run
+              [Service]
+              User=$APP_NAME
+              Group=$APP_NAME
+              WorkingDirectory=$WORKING_DIR
+              ExecStart=$SERVICE_DIR/start.sh
+              StandardOutput=file:$SERVICE_DIR/stdout
+              StandardError=append:$SERVICE_DIR/log
+              Restart=always
 
-# Set up Nginx password authentication
-sudo sh -c "echo -n '<username>:' >> /etc/nginx/.htpasswd"
-sudo sh -c "openssl passwd <password> >> /etc/nginx/.htpasswd"
+              [Install]
+              WantedBy=multi-user.target"
 
-# Configure Nginx server block
-sudo vi /etc/nginx/sites-enabled/vhs
-# Add Nginx server block configuration
-# Save and exit
+        echo "Service file '$SERVICE_NAME' created."
+    fi
 
-# Restart Nginx
-sudo systemctl restart nginx
+    sudo systemctl daemon-reload
+    sudo systemctl start "$SERVICE_NAME.service"
+    sudo systemctl enable "$SERVICE_NAME.service"
+    sudo systemctl status "$SERVICE_NAME.service"
+}
 
-# Create service for Celery
-vi /etc/systemd/system/celery.service
-# Add Celery service configuration
-# Save and exit
+# NGINX & GUNICORN SET UP
+chmod +x "$APP_ROOT"/gunicorn/init.sh
+"$APP_ROOT"/gunicorn/init.sh
 
-# Reload systemd manager configuration
-sudo systemctl daemon-reload
+# CANTALOUPE SET UP
+chmod +x "$APP_ROOT"/cantaloupe/init.sh && chmod +x "$APP_ROOT"/cantaloupe/start.sh
+"$APP_ROOT"/cantaloupe/init.sh
+create_service cantaloupe
 
-# Enable authentication for Redis instance
+# SAS SET UP
+chmod +x "$APP_ROOT"/sas/start.sh
+create_service sas
+
+# TODO add authentication for SAS
+# sudo sh -c "echo -n '$SAS_USERNAME:$SAS_PASSWORD' >> /etc/nginx/.htpasswd"
+# + Uncomment 2 "auth_basic" lines in gunicorn/ssl.template
+
+# REDIS & CELERY SETUP
 vi /etc/redis/redis.conf
-# Uncomment and set a password
-# Save and exit
-sudo systemctl restart redis-server
+redis-cli -a "$REDIS_PASSWORD"
 
-echo "Deployment completed successfully."
+create_service celery "$APP_ROOT/app"
+
+#
+## Restart Nginx
+#sudo systemctl restart nginx
+#
+## Create service for Celery
+#vi /etc/systemd/system/celery.service
+## Add Celery service configuration
+## Save and exit
+#
+## Reload systemd manager configuration
+#sudo systemctl daemon-reload
+#
+## Enable authentication for Redis instance
+#vi /etc/redis/redis.conf
+## Uncomment and set a password
+## Save and exit
+#sudo systemctl restart redis-server
+#
+#echo "Deployment completed successfully."
