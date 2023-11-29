@@ -49,7 +49,7 @@ def send_anno_request(event, wit_id, wit_abbr=MS_ABBR, version=MANIFEST_AUTO):
         requests.post(
             url=f"{API_GPU_URL}/run_detect",
             headers={"X-API-Key": API_KEY},
-            data={"manifest_url": manifest_url, "wit_abbr": wit_abbr},
+            data={"manifest_url": manifest_url, "callback": f"{VHS_APP_URL}/annotate"},
         )
     except Exception as e:
         log(f"[send_anno_request] Failed to send request for {wit_type} #{wit_id}: {e}")

@@ -142,7 +142,7 @@ def delete_send_anno(request, wit_id, wit_type):
         requests.post(
             url=f"{API_GPU_URL}/delete_detect",
             headers={"X-API-Key": API_KEY},
-            data={"manifest_url": manifest_url},
+            data={"manifest_url": manifest_url, "callback": f"{VHS_APP_URL}/annotate"},
         )
     except Exception as e:
         log(
