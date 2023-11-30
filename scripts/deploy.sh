@@ -11,6 +11,7 @@ ENV_FILE="$APP_ROOT"/app/config/.env
 sudo apt update
 sudo apt-get install -y wget ca-certificates
 sudo apt-get install -y python3-venv python3-dev libpq-dev nginx curl maven postgresql git build-essential poppler-utils redis-server ghostscript
+pip install --upgrade pip
 
 # Set up virtual environment
 python3 -m venv venv
@@ -51,29 +52,29 @@ python "$APP_ROOT"/app/manage.py collectstatic
 create_service() {
     SERVICE_NAME="$APP_NAME-$1"
     SERVICE_DIR="$APP_ROOT/$1"
-    WORKING_DIR="${$2:-$SERVICE_DIR}"
+    WORKING_DIR="${2:-$SERVICE_DIR}"
     SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME.service"
 
     if [ -e "$SERVICE_PATH" ]; then
         echo "Service file '$SERVICE_PATH' already exists."
     else
         echo "# $SERVICE_PATH
-              [Unit]
-              Description=$APP_NAME $1 service
-              After=network.target
-              After=nginx.service
+            [Unit]
+            Description=$APP_NAME $1 service
+            After=network.target
+            After=nginx.service
 
-              [Service]
-              User=$APP_NAME
-              Group=$APP_NAME
-              WorkingDirectory=$WORKING_DIR
-              ExecStart=$SERVICE_DIR/start.sh
-              StandardOutput=file:$SERVICE_DIR/stdout
-              StandardError=append:$SERVICE_DIR/log
-              Restart=always
+            [Service]
+            User=$APP_NAME
+            Group=$APP_NAME
+            WorkingDirectory=$WORKING_DIR
+            ExecStart=$SERVICE_DIR/start.sh
+            StandardError=append:$SERVICE_DIR/log
+            Restart=always
 
-              [Install]
-              WantedBy=multi-user.target"
+            [Install]
+            WantedBy=multi-user.target" | sudo tee "$SERVICE_PATH" > /dev/null
+            # StandardOutput=file:$SERVICE_DIR/stdout
 
         echo "Service file '$SERVICE_NAME' created."
     fi
@@ -102,27 +103,12 @@ create_service sas
 # + Uncomment 2 "auth_basic" lines in gunicorn/ssl.template
 
 # REDIS & CELERY SETUP
-vi /etc/redis/redis.conf
-redis-cli -a "$REDIS_PASSWORD"
+chmod +x "$APP_ROOT"/celery/start.sh
+sudo sed -i 's/^supervised no/supervised systemd/' /etc/redis/redis.conf
+#redis-cli -a "$REDIS_PASSWORD"
+sudo systemctl restart redis-server
+sudo systemctl status redis
 
 create_service celery "$APP_ROOT/app"
 
-#
-## Restart Nginx
-#sudo systemctl restart nginx
-#
-## Create service for Celery
-#vi /etc/systemd/system/celery.service
-## Add Celery service configuration
-## Save and exit
-#
-## Reload systemd manager configuration
-#sudo systemctl daemon-reload
-#
-## Enable authentication for Redis instance
-#vi /etc/redis/redis.conf
-## Uncomment and set a password
-## Save and exit
-#sudo systemctl restart redis-server
-#
-#echo "Deployment completed successfully."
+# echo "Deployment completed successfully."

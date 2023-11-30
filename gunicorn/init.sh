@@ -30,7 +30,7 @@ create_service() {
     if [ -e "$SERVICE_PATH" ]; then
         echo "Service file '$SERVICE_PATH' already exists."
     else
-        echo "# $SERVICE_PATH
+        sudo echo "# $SERVICE_PATH
               [Unit]
               Description=gunicorn daemon for $APP_NAME
               Requires=gunicorn.socket
@@ -49,15 +49,18 @@ create_service() {
                         config.wsgi:application
 
               [Install]
-              WantedBy=multi-user.target"
+              WantedBy=multi-user.target" | sudo tee "$SERVICE_PATH" > /dev/null
 
         echo "Service file '$SERVICE_NAME' created."
     fi
 
     sudo systemctl daemon-reload
+    sudo systemctl start "$SERVICE_NAME.socket"
+    sudo systemctl enable "$SERVICE_NAME.socket"
     sudo systemctl start "$SERVICE_NAME.service"
     sudo systemctl enable "$SERVICE_NAME.service"
     sudo systemctl status "$SERVICE_NAME.service"
+    sudo systemctl status "$SERVICE_NAME.socket"
 }
 
 create_socket() {
@@ -75,16 +78,10 @@ create_socket() {
               ListenStream=/run/$SOCKET_NAME.sock
 
               [Install]
-              WantedBy=sockets.target"
+              WantedBy=sockets.target" | sudo tee "$SOCKET_PATH" > /dev/null
 
         echo "Service file '$SOCKET_NAME' created."
     fi
-
-    sudo systemctl daemon-reload
-    sudo systemctl start "$SOCKET_NAME.socket"
-    sudo systemctl enable "$SOCKET_NAME.socket"
-    sudo systemctl status "$SOCKET_NAME.socket"
-
     # Troubleshooting: https://www.digitalocean.com/community/tutorials/how-to-set-up-django-with-postgres-nginx-and-gunicorn-on-ubuntu-22-04#checking-for-the-gunicorn-socket-file
 }
 

@@ -1,4 +1,6 @@
-## 🚀 Deploy
+# 🚀 Deploy
+
+## Set up
 
 ### Requirements
 
@@ -7,11 +9,25 @@
 > - **Java**: 11
 > - **Git**: with [SSH access to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
 
-Set environment variables of the application and cantaloupe in their respective `.env` files
+Clone repository and checkout to branch
 ```bash
-chmod +x script/* && ./env.sh
+git clone git@github.com:faouinti/vhs.git
+cd vhs && git checkout <your-branch>-prod
 ```
 
+## Scripted installation
+
+Set environment variables of the application and cantaloupe in their respective `.env` files
+```bash
+chmod +x scripts/* && scripts/env.sh
+```
+
+Install app, create service, etc.
+```bash
+scripts/deploy.sh
+```
+
+## Manual installation
 Download dependencies
 ```bash
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
@@ -20,7 +36,6 @@ sudo apt update
 sudo apt-get install wget ca-certificates
 sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql git build-essential poppler-utils redis-server ghostscript
 ```
-
 ### Set up
 
 Clone repository and checkout to branch
