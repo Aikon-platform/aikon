@@ -1,0 +1,354 @@
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/logging/config.py", line 565, in configure
+    handler = self.configure_handler(handlers[name])
+  File "/usr/lib/python3.10/logging/config.py", line 746, in configure_handler
+    result = factory(**kwargs)
+  File "/usr/lib/python3.10/logging/__init__.py", line 1169, in __init__
+    StreamHandler.__init__(self, self._open())
+  File "/usr/lib/python3.10/logging/__init__.py", line 1201, in _open
+    return open_func(self.baseFilename, self.mode,
+PermissionError: [Errno 13] Permission denied: '/home/salbouy/vhs/app/logs/app_log.log'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/salbouy/vhs/venv/bin/celery", line 8, in <module>
+    sys.exit(main())
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/__main__.py", line 15, in main
+    sys.exit(_main())
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/celery.py", line 235, in main
+    return celery(auto_envvar_prefix="CELERY")
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1157, in __call__
+    return self.main(*args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1078, in main
+    rv = self.invoke(ctx)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1688, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1434, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 783, in invoke
+    return __callback(*args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/decorators.py", line 33, in new_func
+    return f(get_current_context(), *args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/base.py", line 134, in caller
+    return f(ctx, *args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/worker.py", line 348, in worker
+    worker = app.Worker(
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/worker/worker.py", line 93, in __init__
+    self.app.loader.init_worker()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/loaders/base.py", line 110, in init_worker
+    self.import_default_modules()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/loaders/base.py", line 104, in import_default_modules
+    raise response
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/utils/dispatch/signal.py", line 276, in send
+    response = receiver(signal=self, sender=sender, **named)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 97, in on_import_modules
+    self.worker_fixup.validate_models()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 135, in validate_models
+    self.django_setup()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 131, in django_setup
+    django.setup()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/django/__init__.py", line 19, in setup
+    configure_logging(settings.LOGGING_CONFIG, settings.LOGGING)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/django/utils/log.py", line 76, in configure_logging
+    logging_config_func(logging_settings)
+  File "/usr/lib/python3.10/logging/config.py", line 811, in dictConfig
+    dictConfigClass(config).configure()
+  File "/usr/lib/python3.10/logging/config.py", line 572, in configure
+    raise ValueError('Unable to configure handler '
+ValueError: Unable to configure handler 'file'
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/logging/config.py", line 565, in configure
+    handler = self.configure_handler(handlers[name])
+  File "/usr/lib/python3.10/logging/config.py", line 746, in configure_handler
+    result = factory(**kwargs)
+  File "/usr/lib/python3.10/logging/__init__.py", line 1169, in __init__
+    StreamHandler.__init__(self, self._open())
+  File "/usr/lib/python3.10/logging/__init__.py", line 1201, in _open
+    return open_func(self.baseFilename, self.mode,
+PermissionError: [Errno 13] Permission denied: '/home/salbouy/vhs/app/logs/app_log.log'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/salbouy/vhs/venv/bin/celery", line 8, in <module>
+    sys.exit(main())
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/__main__.py", line 15, in main
+    sys.exit(_main())
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/celery.py", line 235, in main
+    return celery(auto_envvar_prefix="CELERY")
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1157, in __call__
+    return self.main(*args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1078, in main
+    rv = self.invoke(ctx)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1688, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1434, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 783, in invoke
+    return __callback(*args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/decorators.py", line 33, in new_func
+    return f(get_current_context(), *args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/base.py", line 134, in caller
+    return f(ctx, *args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/worker.py", line 348, in worker
+    worker = app.Worker(
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/worker/worker.py", line 93, in __init__
+    self.app.loader.init_worker()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/loaders/base.py", line 110, in init_worker
+    self.import_default_modules()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/loaders/base.py", line 104, in import_default_modules
+    raise response
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/utils/dispatch/signal.py", line 276, in send
+    response = receiver(signal=self, sender=sender, **named)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 97, in on_import_modules
+    self.worker_fixup.validate_models()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 135, in validate_models
+    self.django_setup()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 131, in django_setup
+    django.setup()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/django/__init__.py", line 19, in setup
+    configure_logging(settings.LOGGING_CONFIG, settings.LOGGING)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/django/utils/log.py", line 76, in configure_logging
+    logging_config_func(logging_settings)
+  File "/usr/lib/python3.10/logging/config.py", line 811, in dictConfig
+    dictConfigClass(config).configure()
+  File "/usr/lib/python3.10/logging/config.py", line 572, in configure
+    raise ValueError('Unable to configure handler '
+ValueError: Unable to configure handler 'file'
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/logging/config.py", line 565, in configure
+    handler = self.configure_handler(handlers[name])
+  File "/usr/lib/python3.10/logging/config.py", line 746, in configure_handler
+    result = factory(**kwargs)
+  File "/usr/lib/python3.10/logging/__init__.py", line 1169, in __init__
+    StreamHandler.__init__(self, self._open())
+  File "/usr/lib/python3.10/logging/__init__.py", line 1201, in _open
+    return open_func(self.baseFilename, self.mode,
+PermissionError: [Errno 13] Permission denied: '/home/salbouy/vhs/app/logs/app_log.log'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/salbouy/vhs/venv/bin/celery", line 8, in <module>
+    sys.exit(main())
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/__main__.py", line 15, in main
+    sys.exit(_main())
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/celery.py", line 235, in main
+    return celery(auto_envvar_prefix="CELERY")
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1157, in __call__
+    return self.main(*args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1078, in main
+    rv = self.invoke(ctx)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1688, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1434, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 783, in invoke
+    return __callback(*args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/decorators.py", line 33, in new_func
+    return f(get_current_context(), *args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/base.py", line 134, in caller
+    return f(ctx, *args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/worker.py", line 348, in worker
+    worker = app.Worker(
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/worker/worker.py", line 93, in __init__
+    self.app.loader.init_worker()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/loaders/base.py", line 110, in init_worker
+    self.import_default_modules()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/loaders/base.py", line 104, in import_default_modules
+    raise response
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/utils/dispatch/signal.py", line 276, in send
+    response = receiver(signal=self, sender=sender, **named)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 97, in on_import_modules
+    self.worker_fixup.validate_models()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 135, in validate_models
+    self.django_setup()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 131, in django_setup
+    django.setup()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/django/__init__.py", line 19, in setup
+    configure_logging(settings.LOGGING_CONFIG, settings.LOGGING)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/django/utils/log.py", line 76, in configure_logging
+    logging_config_func(logging_settings)
+  File "/usr/lib/python3.10/logging/config.py", line 811, in dictConfig
+    dictConfigClass(config).configure()
+  File "/usr/lib/python3.10/logging/config.py", line 572, in configure
+    raise ValueError('Unable to configure handler '
+ValueError: Unable to configure handler 'file'
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/logging/config.py", line 565, in configure
+    handler = self.configure_handler(handlers[name])
+  File "/usr/lib/python3.10/logging/config.py", line 746, in configure_handler
+    result = factory(**kwargs)
+  File "/usr/lib/python3.10/logging/__init__.py", line 1169, in __init__
+    StreamHandler.__init__(self, self._open())
+  File "/usr/lib/python3.10/logging/__init__.py", line 1201, in _open
+    return open_func(self.baseFilename, self.mode,
+PermissionError: [Errno 13] Permission denied: '/home/salbouy/vhs/app/logs/app_log.log'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/salbouy/vhs/venv/bin/celery", line 8, in <module>
+    sys.exit(main())
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/__main__.py", line 15, in main
+    sys.exit(_main())
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/celery.py", line 235, in main
+    return celery(auto_envvar_prefix="CELERY")
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1157, in __call__
+    return self.main(*args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1078, in main
+    rv = self.invoke(ctx)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1688, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1434, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 783, in invoke
+    return __callback(*args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/decorators.py", line 33, in new_func
+    return f(get_current_context(), *args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/base.py", line 134, in caller
+    return f(ctx, *args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/worker.py", line 348, in worker
+    worker = app.Worker(
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/worker/worker.py", line 93, in __init__
+    self.app.loader.init_worker()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/loaders/base.py", line 110, in init_worker
+    self.import_default_modules()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/loaders/base.py", line 104, in import_default_modules
+    raise response
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/utils/dispatch/signal.py", line 276, in send
+    response = receiver(signal=self, sender=sender, **named)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 97, in on_import_modules
+    self.worker_fixup.validate_models()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 135, in validate_models
+    self.django_setup()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 131, in django_setup
+    django.setup()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/django/__init__.py", line 19, in setup
+    configure_logging(settings.LOGGING_CONFIG, settings.LOGGING)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/django/utils/log.py", line 76, in configure_logging
+    logging_config_func(logging_settings)
+  File "/usr/lib/python3.10/logging/config.py", line 811, in dictConfig
+    dictConfigClass(config).configure()
+  File "/usr/lib/python3.10/logging/config.py", line 572, in configure
+    raise ValueError('Unable to configure handler '
+ValueError: Unable to configure handler 'file'
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/logging/config.py", line 565, in configure
+    handler = self.configure_handler(handlers[name])
+  File "/usr/lib/python3.10/logging/config.py", line 746, in configure_handler
+    result = factory(**kwargs)
+  File "/usr/lib/python3.10/logging/__init__.py", line 1169, in __init__
+    StreamHandler.__init__(self, self._open())
+  File "/usr/lib/python3.10/logging/__init__.py", line 1201, in _open
+    return open_func(self.baseFilename, self.mode,
+PermissionError: [Errno 13] Permission denied: '/home/salbouy/vhs/app/logs/app_log.log'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/salbouy/vhs/venv/bin/celery", line 8, in <module>
+    sys.exit(main())
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/__main__.py", line 15, in main
+    sys.exit(_main())
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/celery.py", line 235, in main
+    return celery(auto_envvar_prefix="CELERY")
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1157, in __call__
+    return self.main(*args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1078, in main
+    rv = self.invoke(ctx)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1688, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1434, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 783, in invoke
+    return __callback(*args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/decorators.py", line 33, in new_func
+    return f(get_current_context(), *args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/base.py", line 134, in caller
+    return f(ctx, *args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/worker.py", line 348, in worker
+    worker = app.Worker(
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/worker/worker.py", line 93, in __init__
+    self.app.loader.init_worker()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/loaders/base.py", line 110, in init_worker
+    self.import_default_modules()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/loaders/base.py", line 104, in import_default_modules
+    raise response
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/utils/dispatch/signal.py", line 276, in send
+    response = receiver(signal=self, sender=sender, **named)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 97, in on_import_modules
+    self.worker_fixup.validate_models()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 135, in validate_models
+    self.django_setup()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 131, in django_setup
+    django.setup()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/django/__init__.py", line 19, in setup
+    configure_logging(settings.LOGGING_CONFIG, settings.LOGGING)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/django/utils/log.py", line 76, in configure_logging
+    logging_config_func(logging_settings)
+  File "/usr/lib/python3.10/logging/config.py", line 811, in dictConfig
+    dictConfigClass(config).configure()
+  File "/usr/lib/python3.10/logging/config.py", line 572, in configure
+    raise ValueError('Unable to configure handler '
+ValueError: Unable to configure handler 'file'
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/logging/config.py", line 565, in configure
+    handler = self.configure_handler(handlers[name])
+  File "/usr/lib/python3.10/logging/config.py", line 746, in configure_handler
+    result = factory(**kwargs)
+  File "/usr/lib/python3.10/logging/__init__.py", line 1169, in __init__
+    StreamHandler.__init__(self, self._open())
+  File "/usr/lib/python3.10/logging/__init__.py", line 1201, in _open
+    return open_func(self.baseFilename, self.mode,
+PermissionError: [Errno 13] Permission denied: '/home/salbouy/vhs/app/logs/app_log.log'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/salbouy/vhs/venv/bin/celery", line 8, in <module>
+    sys.exit(main())
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/__main__.py", line 15, in main
+    sys.exit(_main())
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/celery.py", line 235, in main
+    return celery(auto_envvar_prefix="CELERY")
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1157, in __call__
+    return self.main(*args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1078, in main
+    rv = self.invoke(ctx)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1688, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 1434, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/core.py", line 783, in invoke
+    return __callback(*args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/click/decorators.py", line 33, in new_func
+    return f(get_current_context(), *args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/base.py", line 134, in caller
+    return f(ctx, *args, **kwargs)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/bin/worker.py", line 348, in worker
+    worker = app.Worker(
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/worker/worker.py", line 93, in __init__
+    self.app.loader.init_worker()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/loaders/base.py", line 110, in init_worker
+    self.import_default_modules()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/loaders/base.py", line 104, in import_default_modules
+    raise response
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/utils/dispatch/signal.py", line 276, in send
+    response = receiver(signal=self, sender=sender, **named)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 97, in on_import_modules
+    self.worker_fixup.validate_models()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 135, in validate_models
+    self.django_setup()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/celery/fixups/django.py", line 131, in django_setup
+    django.setup()
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/django/__init__.py", line 19, in setup
+    configure_logging(settings.LOGGING_CONFIG, settings.LOGGING)
+  File "/home/salbouy/vhs/venv/lib/python3.10/site-packages/django/utils/log.py", line 76, in configure_logging
+    logging_config_func(logging_settings)
+  File "/usr/lib/python3.10/logging/config.py", line 811, in dictConfig
+    dictConfigClass(config).configure()
+  File "/usr/lib/python3.10/logging/config.py", line 572, in configure
+    raise ValueError('Unable to configure handler '
+ValueError: Unable to configure handler 'file'

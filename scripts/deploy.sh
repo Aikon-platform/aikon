@@ -18,6 +18,51 @@ python3 -m venv venv
 source "$APP_ROOT"/venv/bin/activate
 pip install -r "$APP_ROOT"/app/requirements-prod.txt
 
+set_app_user() {
+    USER=$1
+    GROUP=${2:-$USER}
+    SUDO_FILE="/etc/sudoers.d/$USER"
+
+    if ! id "$USER" &>/dev/null; then
+        sudo adduser "$USER"
+        sudo usermod -aG sudo "$USER"
+    fi
+
+    if ! getent group "$GROUP" &>/dev/null; then
+        sudo addgroup "$GROUP"
+    fi
+
+    if ! groups "$USER" | grep -q "\<$GROUP\>"; then
+        sudo adduser "$USER" --ingroup "$GROUP"
+    fi
+
+    if ! [ -e "$SUDO_FILE" ]; then
+        sudo touch $SUDO_FILE
+    fi
+
+    sudo chmod 0440 $SUDO_FILE
+
+    COMMAND="$USER ALL=(ALL) NOPASSWD: /usr/bin/java"
+    if ! sudo visudo -c -q -f $SUDO_FILE; then
+        echo "Syntax error in sudoers file. Aborting."
+        return
+    fi
+
+    if sudo grep -Fxq "$COMMAND" "$SUDO_FILE"; then
+        echo "Command '$COMMAND' is already present in '$SUDO_FILE'. Aborting."
+        return
+    fi
+
+    echo "$COMMAND" | sudo tee -a $SUDO_FILE > /dev/null
+
+    if ! sudo visudo -c -q -f $SUDO_FILE; then
+        echo "Syntax error in sudoers file after modification. Rolling back changes."
+        sudo sed -i '$d' $SUDO_FILE
+    fi
+}
+
+set_app_user "$APP_NAME"
+
 create_db() {
     user_exists=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USERNAME'")
     if [ "$user_exists" != "1" ]; then
@@ -49,14 +94,25 @@ python "$APP_ROOT"/app/manage.py migrate
 python "$APP_ROOT"/app/manage.py createsuperuser
 python "$APP_ROOT"/app/manage.py collectstatic
 
+chmod u+w "$APP_ROOT/app/logs/app_log.log"
+
 create_service() {
     SERVICE_NAME="$APP_NAME-$1"
     SERVICE_DIR="$APP_ROOT/$1"
     WORKING_DIR="${2:-$SERVICE_DIR}"
     SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME.service"
 
+    LOGS="$SERVICE_DIR/log"
+    SDTOUT="$SERVICE_DIR/stdout"
+    > $LOGS || touch "$LOGS"
+    > $SDTOUT || touch "$SDTOUT"
+
+    chmod +x "$SERVICE_DIR"/start.sh
+    chmod u+w "$SERVICE_DIR"/log
+
     if [ -e "$SERVICE_PATH" ]; then
         echo "Service file '$SERVICE_PATH' already exists."
+        sudo systemctl stop "$SERVICE_NAME.service"
     else
         echo "# $SERVICE_PATH
             [Unit]
@@ -90,12 +146,13 @@ chmod +x "$APP_ROOT"/gunicorn/init.sh
 "$APP_ROOT"/gunicorn/init.sh
 
 # CANTALOUPE SET UP
-chmod +x "$APP_ROOT"/cantaloupe/init.sh && chmod +x "$APP_ROOT"/cantaloupe/start.sh
+chmod +x "$APP_ROOT"/cantaloupe/init.sh
 "$APP_ROOT"/cantaloupe/init.sh
 create_service cantaloupe
 
 # SAS SET UP
-chmod +x "$APP_ROOT"/sas/start.sh
+sudo chmod a+rw "$APP_ROOT"/sas/target/*
+#sudo chown "$APP_NAME:$APP_NAME" "$APP_ROOT"/sas/target/*
 create_service sas
 
 # TODO add authentication for SAS
@@ -103,12 +160,11 @@ create_service sas
 # + Uncomment 2 "auth_basic" lines in gunicorn/ssl.template
 
 # REDIS & CELERY SETUP
-chmod +x "$APP_ROOT"/celery/start.sh
 sudo sed -i 's/^supervised no/supervised systemd/' /etc/redis/redis.conf
 #redis-cli -a "$REDIS_PASSWORD"
 sudo systemctl restart redis-server
 sudo systemctl status redis
 
-create_service celery "$APP_ROOT/app"
+create_service celery "$APP_ROOT"
 
 # echo "Deployment completed successfully."

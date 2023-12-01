@@ -10,43 +10,55 @@ GUNICORN="gunicorn"
 GUNIAPP="$APP_NAME-$GUNICORN"
 
 configure_nginx() {
-    SSL_FILE=/etc/nginx/sites-available/"$APP_NAME_$GUNICORN"
-    cp "$SCRIPT_DIR"/ssl.template "$SSL_FILE"
+    SSL_FILE=/etc/nginx/sites-available/"$APP_NAME"_"$GUNICORN"
+    sudo cp "$SCRIPT_DIR"/ssl.template "$SSL_FILE"
 
-    sed -i "s|PROD_URL|$PROD_URL|g" "$SSL_FILE"
-    sed -i "s|DB_NAME|$DB_NAME|g" "$SSL_FILE"
-    sed -i "s/SAS_PORT/$SAS_PORT/g" "$SSL_FILE"
-    sed -i "s/CANTALOUPE_PORT/$CANTALOUPE_PORT/g" "$SSL_FILE"
-    sed -i "s|APP_ROOT|$APP_ROOT|g" "$SSL_FILE"
-    sed -i "s/MEDIA_DIR/$MEDIA_DIR/g" "$SSL_FILE"
-    sed -i "s/GUNIAPP/$GUNIAPP/g" "$SSL_FILE"
+    sudo sed -i "s|PROD_URL|$PROD_URL|g" "$SSL_FILE"
+    sudo sed -i "s|DB_NAME|$DB_NAME|g" "$SSL_FILE"
+    sudo sed -i "s/SAS_PORT/$SAS_PORT/g" "$SSL_FILE"
+    sudo sed -i "s/CANTALOUPE_PORT/$CANTALOUPE_PORT/g" "$SSL_FILE"
+    sudo sed -i "s|APP_ROOT|$APP_ROOT|g" "$SSL_FILE"
+    sudo sed -i "s|MEDIA_DIR|$MEDIA_DIR|g" "$SSL_FILE"
+    sudo sed -i "s/GUNIAPP/$GUNIAPP/g" "$SSL_FILE"
+
+    ln -s "$SSL_FILE" /etc/nginx/sites-enabled/q
+    sudo systemctl reload nginx.service
+    sudo systemctl enable nginx.service
+    # https://docs.ansible.com/ansible/latest/collections/cisco/ise/renew_certificate_module.html
+    # TODO add $USER to role renew_certif ansible + add file web group to /etc/ansible/hosts
 }
+
+configure_nginx
 
 create_service() {
     SERVICE_NAME=$GUNIAPP
     SERVICE_DIR="$APP_ROOT/$1"
     SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME.service"
 
+    LOGS="$SERVICE_DIR/log"
+    SDTOUT="$SERVICE_DIR/stdout"
+    # TODO check if log and sdtout exist or empty them
+    > $LOGS || touch "$LOGS"
+    > $SDTOUT || touch "$SDTOUT"
+
+    sudo chmod a+rw "$LOGS" "$STDOUT"
+    sudo chmod +x "$SERVICE_DIR"/start.sh
+
     if [ -e "$SERVICE_PATH" ]; then
         echo "Service file '$SERVICE_PATH' already exists."
+        sudo systemctl stop "$SERVICE_NAME.service"
     else
         sudo echo "# $SERVICE_PATH
               [Unit]
               Description=gunicorn daemon for $APP_NAME
-              Requires=gunicorn.socket
+              Requires=$SERVICE_NAME.socket
               After=network.target
 
               [Service]
               User=$APP_NAME
               Group=$APP_NAME
-              WorkingDirectory=$APP_ROOT/app
-              ExecStart=$APP_ROOT/venv/bin/gunicorn \
-                        --access-logfile $SERVICE_DIR/stdout  \
-                        --error-logfile $SERVICE_DIR/log  \
-                        --workers 3 \
-                        --bind unix:/run/$SERVICE_NAME.sock \
-                        --timeout 150 \
-                        config.wsgi:application
+              WorkingDirectory=$APP_ROOT
+              ExecStart=$SERVICE_DIR/start.sh
 
               [Install]
               WantedBy=multi-user.target" | sudo tee "$SERVICE_PATH" > /dev/null
@@ -55,10 +67,12 @@ create_service() {
     fi
 
     sudo systemctl daemon-reload
+
     sudo systemctl start "$SERVICE_NAME.socket"
     sudo systemctl enable "$SERVICE_NAME.socket"
     sudo systemctl start "$SERVICE_NAME.service"
     sudo systemctl enable "$SERVICE_NAME.service"
+
     sudo systemctl status "$SERVICE_NAME.service"
     sudo systemctl status "$SERVICE_NAME.socket"
 }
@@ -69,10 +83,11 @@ create_socket() {
 
     if [ -e "$SOCKET_PATH" ]; then
         echo "Socket file '$SOCKET_PATH' already exists."
+        sudo systemctl stop "$SOCKET_NAME.socket"
     else
         echo "# $SOCKET_PATH
               [Unit]
-              Description=gunicorn socket for $APP_NAME
+              Description=Gunicorn socket for $APP_NAME
 
               [Socket]
               ListenStream=/run/$SOCKET_NAME.sock

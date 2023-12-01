@@ -16,7 +16,6 @@ cd vhs && git checkout <your-branch>-prod
 ```
 
 ## Scripted installation
-
 Set environment variables of the application and cantaloupe in their respective `.env` files
 ```bash
 chmod +x scripts/* && scripts/env.sh
@@ -28,6 +27,9 @@ scripts/deploy.sh
 ```
 
 ## Manual installation
+
+### Dependencies
+
 Download dependencies
 ```bash
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
@@ -35,13 +37,6 @@ sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)
 sudo apt update
 sudo apt-get install wget ca-certificates
 sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql git build-essential poppler-utils redis-server ghostscript
-```
-### Set up
-
-Clone repository and checkout to branch
-```bash
-git clone git@github.com:faouinti/vhs.git
-cd vhs && git checkout <your-branch>-prod
 ```
 
 Set up virtual environment
@@ -51,6 +46,7 @@ source venv/bin/activate
 pip install -r app/requirements-prod.txt
 ```
 
+### Application
 Create prostgres database
 ```bash
 sudo -u postgres psql
