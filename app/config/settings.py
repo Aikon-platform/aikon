@@ -21,6 +21,8 @@ ALLOWED_HOSTS = ENV.list("ALLOWED_HOSTS")
 
 APP_LANG = ENV("APP_LANG")
 
+CONTACT_MAIL = ENV("CONTACT_MAIL")
+
 
 # Application definition
 
