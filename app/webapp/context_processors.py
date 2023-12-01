@@ -5,6 +5,7 @@ from app.config.settings import (
     CANTALOUPE_APP_URL,
     APP_NAME,
     WEBAPP_NAME,
+    CONTACT_MAIL,
 )
 from app.webapp.utils.constants import APP_NAME_UPPER, COPYRIGHT
 from app.webapp.models.utils.constants import (
@@ -33,6 +34,7 @@ def global_variables(request):
         "APP_NAME": APP_NAME,
         "APP_LANG": APP_LANG,
         "APP_NAME_UPPER": APP_NAME_UPPER,
+        "CONTACT_MAIL": CONTACT_MAIL,
         "WEBAPP_NAME": WEBAPP_NAME,
         "COPYRIGHT": COPYRIGHT,
         "SAS_APP_URL": SAS_APP_URL,

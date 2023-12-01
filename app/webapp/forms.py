@@ -1,11 +1,8 @@
 from django import forms
-import ast
 
+from app.webapp.models.language import Language
 from app.webapp.models.place import Place
 from dal import autocomplete
-
-from app.webapp.models.utils.constants import LANGUAGES
-from app.webapp.models.work import get_name
 
 
 class PlaceForm(forms.ModelForm):
@@ -37,14 +34,18 @@ class PlaceForm(forms.ModelForm):
 
 
 class LanguageForm(forms.ModelForm):
-    lang = forms.MultipleChoiceField(
-        choices=LANGUAGES,
-        widget=forms.CheckboxSelectMultiple,
-        required=False,
-        label=get_name("languages"),
-    )
+    class Meta:
+        model = Language
+        fields = "__all__"
+        widgets = {
+            "lang": autocomplete.ModelSelect2Multiple(
+                url="language-autocomplete",
+                attrs={
+                    "data-placeholder": "Start typing to search...",
+                },
+            ),
+        }
 
     def __init__(self, *args, **kwargs):
         super(LanguageForm, self).__init__(*args, **kwargs)
-        if self.instance and self.instance.lang:
-            self.initial["lang"] = ast.literal_eval(self.instance.lang)
+        self.fields["lang"].help_text = None  # Set help_text to None to remove it

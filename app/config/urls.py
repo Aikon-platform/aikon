@@ -25,6 +25,7 @@ from app.webapp.views import (
     delete_send_anno,
     retrieve_place_info,
     rgpd,
+    LanguageAutocomplete,
 )
 
 
@@ -93,6 +94,11 @@ urlpatterns = [
         f"{APP_NAME}/autocomplete/place/",
         PlaceAutocomplete.as_view(),
         name="place-autocomplete",
+    ),
+    path(
+        f"{APP_NAME}/autocomplete/language/",
+        LanguageAutocomplete.as_view(),
+        name="language-autocomplete",
     ),
     path("retrieve_place_info/", retrieve_place_info, name="retrieve-place-info"),
     path(

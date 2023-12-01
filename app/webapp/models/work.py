@@ -1,5 +1,6 @@
 from django.db import models
 
+from app.webapp.models.language import Language
 from app.webapp.models.place import Place
 from app.webapp.models.person import Person
 from app.webapp.models.tag import Tag
@@ -56,11 +57,10 @@ class Work(models.Model):
         blank=True,
         null=True,
     )
-    lang = models.CharField(
-        verbose_name=get_name("languages"),
-        max_length=100,
+    lang = models.ManyToManyField(
+        Language,
+        verbose_name=get_name("Language"),
         blank=True,
-        null=True,
     )
     tags = models.ManyToManyField(
         Tag,
