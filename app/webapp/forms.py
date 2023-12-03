@@ -4,6 +4,8 @@ from app.webapp.models.language import Language
 from app.webapp.models.place import Place
 from dal import autocomplete
 
+from app.webapp.models.utils.constants import SEARCH_LANG
+
 
 class PlaceForm(forms.ModelForm):
     class Meta:
@@ -13,7 +15,7 @@ class PlaceForm(forms.ModelForm):
             "name": autocomplete.ListSelect2(
                 url="place-autocomplete",
                 attrs={
-                    "data-placeholder": "Start typing to search...",
+                    "data-placeholder": SEARCH_LANG,
                 },
                 forward=["name"],
             ),
@@ -41,7 +43,7 @@ class LanguageForm(forms.ModelForm):
             "lang": autocomplete.ModelSelect2Multiple(
                 url="language-autocomplete",
                 attrs={
-                    "data-placeholder": "Start typing to search...",
+                    "data-placeholder": SEARCH_LANG,
                 },
             ),
         }
