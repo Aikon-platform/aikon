@@ -60,13 +60,11 @@ create_service() {
               WorkingDirectory=$APP_ROOT
               ExecStart=$SERVICE_DIR/start.sh
               StandardError=append:$LOGS
-              StandardOutput=file:$SDTOUT
               Restart=always
 
               [Install]
               WantedBy=multi-user.target" | sudo tee "$SERVICE_PATH" > /dev/null
               # StandardOutput=file:$SDTOUT
-              # ExecStart=$SERVICE_DIR/start.sh
               # User=$APP_NAME
               # Group=$APP_NAME
 

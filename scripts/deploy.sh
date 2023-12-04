@@ -94,7 +94,7 @@ python "$APP_ROOT"/app/manage.py migrate
 python "$APP_ROOT"/app/manage.py createsuperuser
 python "$APP_ROOT"/app/manage.py collectstatic
 
-sudo chmod 777 "$APP_ROOT/app/logs/app_log.log"
+sudo chmod 755 "$APP_ROOT/app/logs/app_log.log"
 
 create_service() {
     SERVICE_NAME="$APP_NAME-$1"
@@ -125,7 +125,6 @@ create_service() {
             [Service]
             WorkingDirectory=$WORKING_DIR
             ExecStart=$SERVICE_DIR/start.sh
-            StandardOutput=file:$SDTOUT
             StandardError=append:$LOGS
             Restart=always
 
