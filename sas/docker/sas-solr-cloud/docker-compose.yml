@@ -1,8 +1,8 @@
 version: '3'
 services:
   web:
-    container_name: simpleannotationserver_web_1 
-    build: 
+    container_name: simpleannotationserver_web_1
+    build:
         context: .
         dockerfile: docker/sas-solr-cloud/Dockerfile
     networks:
@@ -21,7 +21,7 @@ services:
       - solr
     depends_on:
       - zoo1
-  
+
   create-collection:
     image: solr:8.3
     container_name: create-collection
@@ -51,6 +51,6 @@ services:
       ZOO_4LW_COMMANDS_WHITELIST: "*"
     networks:
       - solr
-  
+
 networks:
   solr:

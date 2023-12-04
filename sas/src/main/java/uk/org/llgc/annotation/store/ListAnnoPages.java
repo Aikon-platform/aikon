@@ -25,7 +25,7 @@ import uk.org.llgc.annotation.store.data.PageAnnoCount;
 import uk.org.llgc.annotation.store.adapters.StoreAdapter;
 
 public class ListAnnoPages extends HttpServlet {
-	protected static Logger _logger = LogManager.getLogger(ListAnnoPages.class.getName()); 
+	protected static Logger _logger = LogManager.getLogger(ListAnnoPages.class.getName());
 	protected AnnotationUtils _annotationUtils = null;
 	protected StoreAdapter _store = null;
 

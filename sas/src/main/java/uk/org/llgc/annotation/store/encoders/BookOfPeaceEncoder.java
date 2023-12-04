@@ -25,7 +25,7 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.core.JsonLdError;
 
 public class BookOfPeaceEncoder implements Encoder {
-	protected static Logger _logger = LogManager.getLogger(BookOfPeaceEncoder.class.getName()); 
+	protected static Logger _logger = LogManager.getLogger(BookOfPeaceEncoder.class.getName());
 
 	protected Map<String,String> _props = null;
 	protected Map<String,Object> _context = null;
@@ -102,9 +102,9 @@ public class BookOfPeaceEncoder implements Encoder {
 			tBody = (Map<String,Object>)((List)tBodyThing).get(0);
 		} else {
 			tBody = (Map<String,Object>)tBodyThing;
-		}	
+		}
 		String tChars = "<root>" + ((String)tBody.get("chars")).replaceAll("\\\\\"","\"").replaceAll("\\&[a-zA-Z0-9]*;","") + "</root>";
-		// Need to parse into XML 
+		// Need to parse into XML
 		SAXBuilder tBuilder = new SAXBuilder();
 		try {
 			_logger.debug("Chars" + tChars);
@@ -125,7 +125,7 @@ public class BookOfPeaceEncoder implements Encoder {
 				tBody.put("@context", _context);
 				tBody.put("@type","oa:SemanticTag");
 				tBody.put("foaf:primaryTopic", tPerson);
-			}	
+			}
 			String tHeadingValue = this.getField(tContent, "//span[@property='ns:heading']");
 			if (tHeadingValue != null) {
 				Map<String,Object> tHeading = new HashMap<String,Object>();
@@ -152,7 +152,7 @@ public class BookOfPeaceEncoder implements Encoder {
 			_logger.error("Couldn't parseInput:");
 			_logger.error(tChars);
 			tExcpt.printStackTrace();
-		} catch (IOException tExcpt) {	
+		} catch (IOException tExcpt) {
 			_logger.error("Couldn't parseInput:");
 			_logger.error(tChars);
 			tExcpt.printStackTrace();
@@ -189,8 +189,8 @@ public class BookOfPeaceEncoder implements Encoder {
 	 */
 	public void decode(final Map<String, Object> pModel) {
 		/*try {
-	 _logger.debug(com.github.jsonldjava.utils.JsonUtils.toPrettyString(pModel));	
-	 } catch (Exception tExcpt) { 
+	 _logger.debug(com.github.jsonldjava.utils.JsonUtils.toPrettyString(pModel));
+	 } catch (Exception tExcpt) {
 	 	_logger.error("Couldn't print json " + tExcpt);
 	 }*/
 
@@ -289,14 +289,14 @@ public class BookOfPeaceEncoder implements Encoder {
 				}
 
 
-			}	
+			}
 			tBody.remove("foaf:primaryTopic");
 			tBody.put("@type","dctypes:Text");
 			tBody.put("format","text/html");
 			tHTML.append("</p>");
 			tBody.put("chars",tHTML.toString());
-		}	
-	}	
+		}
+	}
 
 	protected String getContent(Object pContent) {
 		if (pContent == null) {
@@ -310,11 +310,11 @@ public class BookOfPeaceEncoder implements Encoder {
 
 	protected String getContent(Map<String, Object> pContent) {
 		return (String)pContent.get("@value");
-	}	
+	}
 
 	protected String getContent(List<Map<String, Object>> pContent) {
 		StringBuffer tContentStr = new StringBuffer();
-		// join list of ranks together 
+		// join list of ranks together
 		for (Map<String,Object> tContentItem: pContent) {
 			tContentStr.append((String)tContentItem.get("@value") + " ");
 		}

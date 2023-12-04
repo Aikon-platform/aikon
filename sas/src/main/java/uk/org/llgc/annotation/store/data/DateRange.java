@@ -15,7 +15,7 @@ public class DateRange {
 		_start = tFormat.parse(tDateStr[0]);
 		_end = tFormat.parse(tDateStr[1]);
 	}
-	
+
 	/**
 	 * Get start.
 	 *
@@ -24,7 +24,7 @@ public class DateRange {
 	public Date getStart() {
 	    return _start;
 	}
-	
+
 	/**
 	 * Set start.
 	 *
@@ -33,7 +33,7 @@ public class DateRange {
 	public void setStart(final Date pStart) {
 	     _start = pStart;
 	}
-	
+
 	/**
 	 * Get end.
 	 *
@@ -42,7 +42,7 @@ public class DateRange {
 	public Date getEnd() {
 	    return _end;
 	}
-	
+
 	/**
 	 * Set end.
 	 *

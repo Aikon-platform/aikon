@@ -26,7 +26,7 @@ import uk.org.llgc.annotation.store.adapters.StoreAdapter;
 import uk.org.llgc.annotation.store.data.AnnotationList;
 
 public class ListAnnotations extends HttpServlet {
-	protected static Logger _logger = LogManager.getLogger(ListAnnotations.class.getName()); 
+	protected static Logger _logger = LogManager.getLogger(ListAnnotations.class.getName());
 	protected StoreAdapter _store = null;
 
 	public void init(final ServletConfig pConfig) throws ServletException {

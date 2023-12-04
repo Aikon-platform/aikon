@@ -3,7 +3,7 @@
   "@id":"http://example.com/manifest/annotation/within",
   "@type" : "oa:Annotation",
   "motivation" : [ "oa:commenting" ],
-  
+
   "resource" : {
     "@type" : "dctypes:Text",
     "format" : "text/html",

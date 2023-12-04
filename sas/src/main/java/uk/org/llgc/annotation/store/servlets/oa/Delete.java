@@ -20,7 +20,7 @@ import uk.org.llgc.annotation.store.AnnotationUtils;
 import uk.org.llgc.annotation.store.StoreConfig;
 
 public class Delete extends HttpServlet {
-	protected static Logger _logger = LogManager.getLogger(Delete.class.getName()); 
+	protected static Logger _logger = LogManager.getLogger(Delete.class.getName());
 	protected StoreAdapter _store = null;
 
 	public void init(final ServletConfig pConfig) throws ServletException {

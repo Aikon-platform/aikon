@@ -55,7 +55,7 @@ public abstract class AbstractStoreAdapter implements StoreAdapter {
 			return this.addAnnotation(pAnno);
 		} else {
             this.addWithins(pAnno);
-			
+
 			return addAnnotationSafe(pAnno);
 		}
 	}
@@ -195,4 +195,3 @@ public abstract class AbstractStoreAdapter implements StoreAdapter {
 	protected void end() {
 	}
 }
-

@@ -78,7 +78,7 @@ Studio Community 2015.
 5. Build `kdu_expand`
     1. Open `apps\apps_2015`
     2. Retarget the `kdu_expand` solution to the 8.1 platform version
-    3. Build with Release configuration & x64 platform    
+    3. Build with Release configuration & x64 platform
 
 The resulting files are in `..\..\bin_x64`:
   * `kdu_v7AR.dll`

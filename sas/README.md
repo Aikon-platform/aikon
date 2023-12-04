@@ -16,7 +16,7 @@ To verify you have the correct package installed, you can run the following comm
 ```
 $ java -version
 # java version "1.11.0_102"
-``` 
+```
 You should see version `1.11.x`. :
 
 ### Step 1: Download
@@ -25,7 +25,7 @@ Download the pre-built SimpleAnnotationStore by going to the Releases page:
 
  * https://github.com/glenrobson/SimpleAnnotationServer/releases
 
-Download the latest `sas.zip` which might be hidden under the **Assets** drop down.  
+Download the latest `sas.zip` which might be hidden under the **Assets** drop down.
 
 ### Step 2: Extract Zip file
 
@@ -48,7 +48,7 @@ You should now see Mirador with the default example objects. You can choose any 
 
 ## Further guides
 
-SimpleAnnotationServer or SAS aims to fulfil two main use cases; an easy to install and get going annotation server and also a production quality annotation server. The guides below detail different operations you can undertake with SAS. In the next section it discusses how to develop with SAS and looks at some of the more complicated deployment options. 
+SimpleAnnotationServer or SAS aims to fulfil two main use cases; an easy to install and get going annotation server and also a production quality annotation server. The guides below detail different operations you can undertake with SAS. In the next section it discusses how to develop with SAS and looks at some of the more complicated deployment options.
 
 ### User guides
 
@@ -58,7 +58,7 @@ SimpleAnnotationServer or SAS aims to fulfil two main use cases; an easy to inst
  * [Using the IIIF Search API with SAS](doc/IIIFSearch.md)
  * [Downloading annotations and linking to static Manifests](doc/DownloadAnnotations.md)
 
-## Local Development 
+## Local Development
 **Requires:**
  * Java 11 with JDK (Java Development Kit, not just the Runtime)
  * [maven](https://maven.apache.org/)
@@ -100,7 +100,7 @@ which will use this Dockerfile [docker/sas-tomcat/Dockerfile](docker/sas-tomcat/
  * [Connecting Fuseki with Jena to view triple store](doc/FusekiJena.md)
  * [SAS Endpoints](doc/Endpoints.md)
  * [Deploying to tomcat](doc/tomcat.md)
- * [Using the Sesame RDF store](doc/Sesame.md) 
+ * [Using the Sesame RDF store](doc/Sesame.md)
   * **DEPERICATED**
  * [Remote Annotation Store](doc/RemoteStore.md)
  * [Migrating annotations from one backend to another.](doc/MigratingData.md)
@@ -112,7 +112,7 @@ Note this project doesn't currently contain Authentication although it is possib
  * Add ElasticSearch as a backend.
  * Easy Deployment on AWS with ElasticSearch
  * Web annotations
- * Removing support for Sesame 
+ * Removing support for Sesame
  * Support for Mirador 3
  * Authentication – Shibboleth, Facebook/Google
  * Annotation versioning

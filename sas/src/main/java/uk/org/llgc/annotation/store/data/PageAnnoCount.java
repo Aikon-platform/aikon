@@ -25,7 +25,7 @@ public class PageAnnoCount {
         _manifest = pManifest;
     }
 
-	
+
 	/**
 	 * Get count.
 	 *
@@ -34,7 +34,7 @@ public class PageAnnoCount {
 	public int getCount() {
 	    return _count;
 	}
-	
+
 	/**
 	 * Set count.
 	 *
@@ -43,7 +43,7 @@ public class PageAnnoCount {
 	public void setCount(final int pCount) {
 	     _count = pCount;
 	}
-	
+
     /**
      * Get canvas.
      *
@@ -52,7 +52,7 @@ public class PageAnnoCount {
     public Canvas getCanvas() {
         return _canvas;
     }
-    
+
     /**
      * Set canvas.
      *

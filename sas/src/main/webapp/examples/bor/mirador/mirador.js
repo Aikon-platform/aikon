@@ -304,8 +304,8 @@ var __module2__ = (function(__dependency1__, __dependency2__) {
         } else {
           for(var key in context) {
             if(context.hasOwnProperty(key)) {
-              if(data) { 
-                data.key = key; 
+              if(data) {
+                data.key = key;
                 data.index = i;
                 data.first = (i === 0);
               }
@@ -814,9 +814,9 @@ var __module9__ = (function() {
 
   var $0 = $$.length - 1;
   switch (yystate) {
-  case 1: return new yy.ProgramNode($$[$0-1], this._$); 
+  case 1: return new yy.ProgramNode($$[$0-1], this._$);
   break;
-  case 2: return new yy.ProgramNode([], this._$); 
+  case 2: return new yy.ProgramNode([], this._$);
   break;
   case 3:this.$ = new yy.ProgramNode([], $$[$0-1], $$[$0], this._$);
   break;
@@ -832,7 +832,7 @@ var __module9__ = (function() {
   break;
   case 9:this.$ = [$$[$0]];
   break;
-  case 10: $$[$0-1].push($$[$0]); this.$ = $$[$0-1]; 
+  case 10: $$[$0-1].push($$[$0]); this.$ = $$[$0-1];
   break;
   case 11:this.$ = new yy.BlockNode($$[$0-2], $$[$0-1].inverse, $$[$0-1], $$[$0], this._$);
   break;
@@ -890,7 +890,7 @@ var __module9__ = (function() {
   break;
   case 38:this.$ = new yy.IdNode($$[$0], this._$);
   break;
-  case 39: $$[$0-2].push({part: $$[$0], separator: $$[$0-1]}); this.$ = $$[$0-2]; 
+  case 39: $$[$0-2].push({part: $$[$0], separator: $$[$0-1]}); this.$ = $$[$0-2];
   break;
   case 40:this.$ = [{part: $$[$0]}];
   break;
@@ -1212,14 +1212,14 @@ var __module9__ = (function() {
                                        this.begin("mu");
                                      }
                                      if(yy_.yytext) return 14;
-                                   
+
   break;
   case 1:return 14;
   break;
   case 2:
                                      this.popState();
                                      return 14;
-                                   
+
   break;
   case 3:strip(0,4); this.popState(); return 15;
   break;
@@ -2970,7 +2970,7 @@ var Isfahan = function(configObject) {
     divisor;
     // if not already set, divide equally.
     group.forEach(function(item) {
-      if (!item[dimension] === undefined) { 
+      if (!item[dimension] === undefined) {
         old = true;
       }
     });
@@ -2982,7 +2982,7 @@ var Isfahan = function(configObject) {
         return previousValue[dimension] + currentValue[dimension];
       });
       console.log('sum: ' + sum);
-      
+
       divisor = (node[dimension]/sum)*total;
       console.log("divisor: "+divisor);
       return divisor;
@@ -3014,7 +3014,7 @@ var Isfahan = function(configObject) {
     });
 
     return nodes;
-  } 
+  }
 
   isfahan.size = function(x) {
     if (!arguments.length) return containerSize;
@@ -3071,7 +3071,7 @@ var Isfahan = function(configObject) {
     if (dy < 0) { y += dy / 2; dy = 0; }
     return {x: x, y: y, dx: dx, dy: dy};
   }
-  
+
   function merge(target, source) {
 
     /* Merges two (or more) objects,
@@ -3124,7 +3124,7 @@ window.Mirador = window.Mirador || function(config) {
 
   config = Mirador.saveController.currentConfig;
 
-  // initialise application 
+  // initialise application
   Mirador.viewer = new Mirador.Viewer(config);
 };
 
@@ -3162,7 +3162,7 @@ window.Mirador = window.Mirador || function(config) {
 
     'layout': '1x1',
 
-    'openManifestsPage' : false, //defaults to false, whether or not Mirador should display the manifests page, 
+    'openManifestsPage' : false, //defaults to false, whether or not Mirador should display the manifests page,
                                 //only valid if no windowObjects have been initialized
                                 //if there are multiple slots, it will be bound to the first slot and the selected manifest will open in that slot
 
@@ -3188,7 +3188,7 @@ window.Mirador = window.Mirador || function(config) {
        *   "overlay" : [_true_, false] whether or not to make the overlay available/visible in this window
        *
        *   "annotationLayer" : [_true_, false] whether or not to make annotation layer available in this window
-       *   "annotationCreation" : [_true_, false] whether or not to make annotation creation available in this window, 
+       *   "annotationCreation" : [_true_, false] whether or not to make annotation creation available in this window,
        *                          only valid if annotationLayer is set to True and an annotationEndpoint is defined.
        *                          This setting does NOT affect whether or not a user can edit an individual annotation that has already been created.
        *   "annotationState" : [_'annoOff'_, 'annoOnCreateOff', 'annoOnCreateOn'] whether or not to turn on the annotation layer on window load
@@ -3221,7 +3221,7 @@ window.Mirador = window.Mirador || function(config) {
     'availableAnnotationDrawingTools': [
 
     ],
-    
+
     'availableCanvasTools': [
 
     ],
@@ -3234,7 +3234,7 @@ window.Mirador = window.Mirador || function(config) {
         'bookmark' : true,
         'layout' : true,
         'options' : false,
-        'fullScreenViewer': true 
+        'fullScreenViewer': true
       }
       //'height': 25,
       //'width': '100%'
@@ -3243,7 +3243,7 @@ window.Mirador = window.Mirador || function(config) {
     'workspacePanelSettings': {
       'maxRows': 5,
       'maxColumns': 5,
-      'preserveWindows': true 
+      'preserveWindows': true
     },
 
     //true or false.  controls display of "Add new object from URL" on manifest listing page
@@ -3266,7 +3266,7 @@ window.Mirador = window.Mirador || function(config) {
      *  {
      *  name: 'backend name',
      *  module: 'NameEndpoint',
-     *  options: 
+     *  options:
      *  { 'url': '',
      *    'storeId': 123,
      *    'APIKey': '23983hf98j3f9283jf2983fj'
@@ -3345,8 +3345,8 @@ window.Mirador = window.Mirador || function(config) {
       this.element.css('background-color', '#333').css('background-image','url('+backgroundImage+')').css('background-position','left top')
       .css('background-repeat','repeat').css('position','fixed');
 
-      //initialize i18next  
-      i18n.init({debug: false, getAsync: false, resGetPath: _this.buildPath + _this.i18nPath+'__lng__/__ns__.json'}); 
+      //initialize i18next
+      i18n.init({debug: false, getAsync: false, resGetPath: _this.buildPath + _this.i18nPath+'__lng__/__ns__.json'});
 
       //register Handlebars helper
       Handlebars.registerHelper('t', function(i18n_key) {
@@ -3355,7 +3355,7 @@ window.Mirador = window.Mirador || function(config) {
       });
 
       //initialize i18next
-      i18n.init({debug: false, getAsync: false, resGetPath: 'mirador/locales/__lng__/__ns__.json'}); 
+      i18n.init({debug: false, getAsync: false, resGetPath: 'mirador/locales/__lng__/__ns__.json'});
 
       //register Handlebars helper
       Handlebars.registerHelper('t', function(i18n_key) {
@@ -3403,7 +3403,7 @@ window.Mirador = window.Mirador || function(config) {
         preserveWindows: this.workspacePanelSettings.preserveWindows,
         workspace: this.workspace
       });
-     
+
       this.manifestsPanel = new $.ManifestsPanel({ parent: this, appendTo: this.element.find('.mirador-viewer') });
       this.bookmarkPanel = new $.BookmarkPanel({ parent: this, appendTo: this.element.find('.mirador-viewer'), jsonStorageEndpoint: this.jsonStorageEndpoint });
 
@@ -3476,7 +3476,7 @@ window.Mirador = window.Mirador || function(config) {
     toggleBookmarkPanel: function() {
       this.toggleOverlay('bookmarkPanelVisible');
     },
-    
+
     enterFullscreen: function() {
       var el = this.element[0];
       if (el.requestFullscreen) {
@@ -3646,7 +3646,7 @@ window.Mirador = window.Mirador || function(config) {
         containerId: _this.element.attr('id'),
         layoutDescription: _this.layoutDescription,
         configuration: null,
-        padding: 3 
+        padding: 3
       });
 
       var data = layout.filter( function(d) {
@@ -3686,7 +3686,7 @@ window.Mirador = window.Mirador || function(config) {
       // Exit
       divs.exit()
       .remove("div")
-      .each(function(d) { 
+      .each(function(d) {
         var slotMap = _this.slots.reduce(function(map, temp_slot) {
           if (d.id === temp_slot.slotID) {
             map[d.id] = temp_slot;
@@ -3736,7 +3736,7 @@ window.Mirador = window.Mirador || function(config) {
       }
 
       function mutateAndAdd(node, indexDifference) {
-        // Locally mutate the tree to accomodate a 
+        // Locally mutate the tree to accomodate a
         // sibling of another kind, transforming
         // both the target node and its parent.
         var newParent = _this.newNode(node.type, node.parent);
@@ -3766,17 +3766,17 @@ window.Mirador = window.Mirador || function(config) {
 
       if (node.type === 'column') {
         // Since it is a column:
-        // 
+        //
         // If adding to a side, simply
         // add a sibling.
         // Left means before, right means after.
         if (direction === 'r' || direction === 'l') {
           indexDifference = direction === 'r' ? 1 : 0;
           addSibling(node, indexDifference);
-        } 
+        }
         // If adding above or below, the
         // operation must be changed to mutating
-        // the structure. 
+        // the structure.
         // Up means before, Down means after.
         else {
           indexDifference = direction === 'd' ? 1 : 0;
@@ -3785,16 +3785,16 @@ window.Mirador = window.Mirador || function(config) {
       } else {
         // Since it is a row:
         //
-        // If adding to a side, mutate the 
+        // If adding to a side, mutate the
         // structure.
         // Left means before, right means after.
         if (direction === 'r' || direction === 'l') {
           indexDifference = direction === 'r' ? 1 : 0;
           mutateAndAdd(node, indexDifference);
-        } 
+        }
         // If adding above or below, the
         // operations must be switched to adding
-        // a sibling. 
+        // a sibling.
         // Up means before, Down means after.
         else {
           indexDifference = direction === 'd' ? 1 : 0;
@@ -3804,9 +3804,9 @@ window.Mirador = window.Mirador || function(config) {
 
       // Recalculate the layout.
       // The original hierarchical structure is
-      // accessible from the root node. Passing 
-      // it back through the layout code will 
-      // recalculate everything else needed for 
+      // accessible from the root node. Passing
+      // it back through the layout code will
+      // recalculate everything else needed for
       // the redraw.
       var root = jQuery.grep(_this.layout, function(node) { return !node.parent;})[0];
       _this.layoutDescription = root;
@@ -3845,7 +3845,7 @@ window.Mirador = window.Mirador || function(config) {
 
       if (node.parent.children.length === 2) {
         // de-mutate the tree without destroying
-        // the children of the remaining node, 
+        // the children of the remaining node,
         // which in this case means changing their
         // IDs.
         node.parent.children.splice(nodeIndex,1);
@@ -3853,10 +3853,10 @@ window.Mirador = window.Mirador || function(config) {
 
         remainingNode.parent.id = remainingNode.id;
         delete node.parent;
-      } else if (node.parent.children.length === 1) { 
-      } else { 
+      } else if (node.parent.children.length === 1) {
+      } else {
         // If the node is one of more than 2 siblings,
-        // simply splice it out of the parent's children 
+        // simply splice it out of the parent's children
         // array.
         node.parent.children.splice(nodeIndex, 1);
       }
@@ -3895,15 +3895,15 @@ window.Mirador = window.Mirador || function(config) {
 
     placeWindows: function() {
       // take the windows array and place
-      // as many windows into places as can 
+      // as many windows into places as can
       // fit.
       var _this = this,
       deletedWindows;
 
       if (_this.windows.length > _this.slots.length) {
-        // splice modifies the original array and 
-        // returns the deleted items, 
-        // so we can just perform a forEach on the 
+        // splice modifies the original array and
+        // returns the deleted items,
+        // so we can just perform a forEach on the
         // return value, and have the saveController
         // remove these windows in response to the event
         // (which otherwise it would not do).
@@ -3915,14 +3915,14 @@ window.Mirador = window.Mirador || function(config) {
           jQuery.publish('windowRemoved', removedWindow.id);
         });
       }
-      
+
       _this.windows.forEach(function(window) {
         var slot = _this.getAvailableSlot();
         slot.window = window;
 
         window.update({
-          id: window.id, 
-          slotAddress: slot.layoutAddress, 
+          id: window.id,
+          slotAddress: slot.layoutAddress,
           parent: slot,
           appendTo: slot.element,
           currentCanvasID: window.currentCanvasID,
@@ -3978,7 +3978,7 @@ window.Mirador = window.Mirador || function(config) {
     },
 
     clearSlot: function(slotId) {
-      if (this.slots[slodId].windowElement) { 
+      if (this.slots[slodId].windowElement) {
         this.slots[slotId].windowElement.remove();
       }
       this.slots[slotId].window = null;
@@ -4207,10 +4207,10 @@ window.Mirador = window.Mirador || function(config) {
         bindEvents: function() {
             var _this = this;
             //change 'change-layout' to mouseover events rather than click?
-            this.element.find('.change-layout').on('click', function() { 
-              _this.parent.toggleWorkspacePanel(); 
+            this.element.find('.change-layout').on('click', function() {
+              _this.parent.toggleWorkspacePanel();
             });
-            this.element.find('.bookmark-workspace').on('click', function() { _this.parent.toggleBookmarkPanel(); 
+            this.element.find('.bookmark-workspace').on('click', function() { _this.parent.toggleBookmarkPanel();
             });
             // when options are implemented, this will need to do something
             this.element.find('.window-options').on('click', function() { });
@@ -4790,7 +4790,7 @@ window.Mirador = window.Mirador || function(config) {
 
         var _this = this;
         _this.init();
-        
+
     };
 
     $.ManifestsPanel.prototype = {
@@ -4800,7 +4800,7 @@ window.Mirador = window.Mirador || function(config) {
                 showURLBox : this.parent.showAddFromURLBox
             })).appendTo(this.appendTo);
             this.manifestListElement = this.element.find('ul');
-            
+
             //this code gives us the max width of the results area, used to determine how many preview images to show
             //cloning the element and adjusting the display and visibility means it won't break the normal flow
             var clone = this.element.clone().css("visibility","hidden").css("display", "block").appendTo(this.appendTo);
@@ -4809,7 +4809,7 @@ window.Mirador = window.Mirador || function(config) {
             this.paddingListElement = this.controlsHeight;
             this.manifestListElement.css("padding-bottom", this.paddingListElement);
             clone.remove();
-            
+
             // this.manifestLoadStatusIndicator = new $.ManifestLoadStatusIndicator({
             //   manifests: this.parent.manifests,
             //   appendTo: this.element.find('.select-results')
@@ -4864,7 +4864,7 @@ window.Mirador = window.Mirador || function(config) {
               jQuery.publish("manifestPanelWidthChanged", _this.resultsWidth);
             }, 50, true));
         },
-        
+
         hide: function() {
             var _this = this;
             jQuery(this.element).hide({effect: "fade", duration: 160, easing: "easeOutCubic"});
@@ -4959,7 +4959,7 @@ window.Mirador = window.Mirador || function(config) {
         var gridString = jQuery(this).data('gridstring');
         _this.onHover(gridString);
       });
-      
+
       _this.element.find('.select-grid').on('mouseout', function() {
         _this.element.find('.grid-item').removeClass('hovered');
         _this.element.find('.grid-instructions').show();
@@ -5376,7 +5376,7 @@ window.Mirador = window.Mirador || function(config) {
     init: function() {
       this.catchOptions = {
         user: {
-          id: this.userid, 
+          id: this.userid,
           name: this.username
         },
         permissions: {
@@ -5418,7 +5418,7 @@ window.Mirador = window.Mirador || function(config) {
           contextId: _this.context_id,
           collectionId: _this.collection_id,
           media: options.media ? options.media : "image",
-          limit: options.limit ? options.limit : -1 
+          limit: options.limit ? options.limit : -1
         },
 
         contentType: "application/json; charset=utf-8",
@@ -5445,9 +5445,9 @@ window.Mirador = window.Mirador || function(config) {
 
       });
     },
-    
+
     deleteAnnotation: function(annotationID, successCallback, errorCallback) {
-      var _this = this;        
+      var _this = this;
       jQuery.ajax({
        url: this.prefix+"/destroy/"+annotationID,
        type: 'DELETE',
@@ -5470,12 +5470,12 @@ window.Mirador = window.Mirador || function(config) {
 
     });
     },
-    
+
     update: function(oaAnnotation, successCallback, errorCallback) {
       var annotation = this.getAnnotationInEndpoint(oaAnnotation),
       _this = this,
       annotationID = annotation.id;
-      
+
       jQuery.ajax({
         url: this.prefix+"/update/"+annotationID,
         type: 'POST',
@@ -5508,7 +5508,7 @@ window.Mirador = window.Mirador || function(config) {
 
     createCatchAnnotation: function(catchAnnotation, successCallback, errorCallback) {
       var _this = this;
-      
+
       jQuery.ajax({
         url: this.prefix+"/create",
         type: 'POST',
@@ -5534,7 +5534,7 @@ window.Mirador = window.Mirador || function(config) {
 
     userAuthorize: function(action, annotation) {
       var token, tokens, _i, _len;
-      //if this is an instructor, they have access to student annotations      
+      //if this is an instructor, they have access to student annotations
       if (this.roles && (this.roles.indexOf('Instructor') !== -1 || this.roles.indexOf('Administrator') !== -1)){
           return true;
       }
@@ -5560,7 +5560,7 @@ window.Mirador = window.Mirador || function(config) {
 
     //Convert Endpoint annotation to OA
     getAnnotationInOA: function(annotation) {
-      var id, 
+      var id,
       motivation = [],
       resource = [],
       on,
@@ -5572,7 +5572,7 @@ window.Mirador = window.Mirador || function(config) {
       if (annotation.tags.length > 0) {
         motivation.push("oa:tagging");
         jQuery.each(annotation.tags, function(index, value) {
-          resource.push({      
+          resource.push({
             "@type":"oa:Tag",
             "chars":value
           });
@@ -5627,7 +5627,7 @@ window.Mirador = window.Mirador || function(config) {
       var annotation = {},
       tags = [],
       text;
-      
+
       if (oaAnnotation["@id"]) {
         annotation.id = oaAnnotation["@id"];
       }
@@ -5635,7 +5635,7 @@ window.Mirador = window.Mirador || function(config) {
       annotation.media = "image";
       jQuery.each(oaAnnotation.resource, function(index, value) {
         if (value['@type'] === 'oa:Tag') {
-          tags.push(value.chars); 
+          tags.push(value.chars);
         } else if (value['@type'] === 'dctypes:Text') {
           text = value.chars;
         }
@@ -5660,8 +5660,8 @@ window.Mirador = window.Mirador || function(config) {
       // annotation.bounds = {"x":regionArray[0], "y":regionArray[1], "width":regionArray[2], "height":regionArray[3]};
 
       annotation.updated = new Date().toISOString();
-      if (oaAnnotation.annotatedAt) { 
-        annotation.created = oaAnnotation.annotatedAt; 
+      if (oaAnnotation.annotatedAt) {
+        annotation.created = oaAnnotation.annotatedAt;
       } else {
         annotation.created = annotation.updated;
       }
@@ -5715,7 +5715,7 @@ window.Mirador = window.Mirador || function(config) {
 
   $.Endpoint.prototype = {
     init: function() {
-      //whatever initialization your endpoint needs       
+      //whatever initialization your endpoint needs
     },
 
     //Search endpoint for all annotations with a given URI in options
@@ -5748,10 +5748,10 @@ window.Mirador = window.Mirador || function(config) {
         }
       });
     },
-    
+
     //Delete an annotation by endpoint identifier
     deleteAnnotation: function(annotationID, successCallback, errorCallback) {
-      var _this = this;        
+      var _this = this;
       jQuery.ajax({
         url: '',
         type: 'DELETE',
@@ -5770,12 +5770,12 @@ window.Mirador = window.Mirador || function(config) {
         }
       });
     },
-    
+
     //Update an annotation given the OA version
     update: function(oaAnnotation, successCallback, errorCallback) {
       var annotation = this.getAnnotationInEndpoint(oaAnnotation),
       _this = this;
-      
+
       jQuery.ajax({
         url: '',
         type: 'POST',
@@ -5800,7 +5800,7 @@ window.Mirador = window.Mirador || function(config) {
     //if successful, MUST return the OA rendering of the annotation
     create: function(oaAnnotation, successCallback, errorCallback) {
       var _this = this;
-      
+
       jQuery.ajax({
         url: '',
         type: 'POST',
@@ -5909,7 +5909,7 @@ window.Mirador = window.Mirador || function(config) {
       //this still doesn't take into account the actual appending of the overlays to the DOM
       //so not quite there yet
       jQuery.when.apply(jQuery, deferreds).done(function() {
-        jQuery.publish('overlaysRendered.' + _this.parent.windowId);        
+        jQuery.publish('overlaysRendered.' + _this.parent.windowId);
       });
 
       this.tooltips = jQuery(this.osdViewer.element).qtip({
@@ -5947,7 +5947,7 @@ window.Mirador = window.Mirador || function(config) {
              },
              events: {
                show: function(event, api) {
-                 _this.setTooltipContent(event, api);               
+                 _this.setTooltipContent(event, api);
                },
                visible: function(event, api) {
                  _this.removeAnnotationEvents(event, api);
@@ -6121,7 +6121,7 @@ window.Mirador = window.Mirador || function(config) {
     bindEvents: function() {
       var _this = this;
 
-      jQuery(this.osdViewer.canvas).parent().on('mousemove', $.throttle(function(event) { 
+      jQuery(this.osdViewer.canvas).parent().on('mousemove', $.throttle(function(event) {
         if (!_this.inEditOrCreateMode) {
           _this.showTooltipsFromMousePosition(event);
         }
@@ -6202,7 +6202,7 @@ window.Mirador = window.Mirador || function(config) {
 						},
                   setup : function(editor) {
                     editor.on('init', function(args) {
-                      tinymce.execCommand('mceFocus', false, args.target.id); //make sure tinymce focuses on the editor after initialization                    
+                      tinymce.execCommand('mceFocus', false, args.target.id); //make sure tinymce focuses on the editor after initialization
                     });
                   }
                 });
@@ -6249,7 +6249,7 @@ window.Mirador = window.Mirador || function(config) {
         id = display.attr('data-anno-id');
         //oaAnno = _this.getAnnoFromRegion(id)[0];
         jQuery.publish('annotationDeleted.'+_this.parent.windowId, [id]);
-        
+
         //hide tooltip so event handlers don't get messed up
         api.hide();
         display.remove(); //remove this annotation display from dom
@@ -6270,7 +6270,7 @@ window.Mirador = window.Mirador || function(config) {
       var _this = this,
       annoTooltip = new $.AnnotationTooltip({"windowId" : _this.parent.windowId}),
       selector = '#annotation-editor-'+_this.parent.windowId;
-      
+
       jQuery(selector).on("submit", function(event) {
         event.preventDefault();
         jQuery(selector+' a.save').click();
@@ -6301,10 +6301,10 @@ window.Mirador = window.Mirador || function(config) {
         //bounds is giving negative values?
         //update scope
         // oaAnno.on.scope.value = "xywh="+Math.round(scope.x)+","+Math.round(scope.y)+","+Math.round(scope.width)+","+Math.round(scope.height); //osd bounds
-                  
+
         var motivation = [],
         resource = [];
-                  
+
         //remove all tag-related content in annotation
         oaAnno.motivation = jQuery.grep(oaAnno.motivation, function(value) {
             return value !== "oa:tagging";
@@ -6332,7 +6332,7 @@ window.Mirador = window.Mirador || function(config) {
 
         _this.unFreezeQtip(api, oaAnno, annoTooltip);
         });
-        
+
         jQuery(selector+' a.cancel').on("click", function(event) {
           event.preventDefault();
           var display = jQuery(this).parents('.annotation-tooltip'),
@@ -6430,14 +6430,14 @@ window.Mirador = window.Mirador || function(config) {
     startRectangle: function(event) {
       var _this = this.userData.recttool; //osd userData
       if (!_this.dragging) {
-        _this.dragging = true; 
+        _this.dragging = true;
         var currentMouse = _this.osdViewer.viewport.pointFromPixel(event.position);
         if (_this.isMouseInImage(currentMouse)) {
           _this.mouseStart = currentMouse;
           _this.createRectangle(_this.mouseStart);
           _this.onDrawStart();
         }
-      } else { 
+      } else {
         var mouseNow = _this.osdViewer.viewport.pointFromPixel(event.position);
         if (_this.isMouseInImage(mouseNow)) {
           if (_this.mouseStart) {
@@ -6456,11 +6456,11 @@ window.Mirador = window.Mirador || function(config) {
       var _this = this.userData.recttool; //osd userData
       if (!_this.rectangleDrawn && !_this.disableRectTool) {
         if (!_this.dragging) {
-          _this.dragging = true; 
+          _this.dragging = true;
           _this.mouseStart = _this.getMousePositionInImage(_this.osdViewer.viewport.pointFromPixel(event.position));
           _this.createRectangle(_this.mouseStart);
           _this.onDrawStart();
-        } else { 
+        } else {
           var mouseNow = _this.getMousePositionInImage(_this.osdViewer.viewport.pointFromPixel(event.position));
           _this.updateRectangle(_this.mouseStart, mouseNow);
           _this.onDraw();
@@ -6551,7 +6551,7 @@ window.Mirador = window.Mirador || function(config) {
       }
       return true;
     },
-    
+
     //Currently the rect is
     // kept in openSeaDragon format until it is returned on "onDrawFinish".
     // The intent here is to update the annotation continuously rather than
@@ -6633,7 +6633,7 @@ window.Mirador = window.Mirador || function(config) {
                   },
                   setup : function(editor) {
                     editor.on('init', function(args) {
-                      tinymce.execCommand('mceFocus', false, args.target.id); //make sure tinymce focuses on the editor after initialization                    
+                      tinymce.execCommand('mceFocus', false, args.target.id); //make sure tinymce focuses on the editor after initialization
                     });
                   }
                 });
@@ -6642,13 +6642,13 @@ window.Mirador = window.Mirador || function(config) {
                   event.preventDefault();
                   jQuery(selector+' a.save').click();
                 });
-              
+
                 jQuery(selector+' a.cancel').on("click", function(event) {
                   event.preventDefault();
                   //add check so that dialog box only pops up if there is stuff in the editor
                   var content = tinymce.activeEditor.getContent();
                   if (content) {
-                    if (!window.confirm("Do you want to cancel this annotation?")) { 
+                    if (!window.confirm("Do you want to cancel this annotation?")) {
                       return false;
                     }
                   }
@@ -6658,9 +6658,9 @@ window.Mirador = window.Mirador || function(config) {
                   //reenable viewer tooltips
                   jQuery.publish('enableTooltips.'+parent.windowId);
                   _this.osdViewer.zoomPerClick = 2;
-                  _this.osdViewer.zoomPerScroll = 1.2;                  
+                  _this.osdViewer.zoomPerScroll = 1.2;
                 });
-                
+
                 jQuery(selector+' a.save').on("click", function(event) {
                   event.preventDefault();
                   var tagText = jQuery(this).parents('.annotation-editor').find('.tags-editor').val(),
@@ -6726,7 +6726,7 @@ window.Mirador = window.Mirador || function(config) {
                 //reenable viewer tooltips
                 jQuery.publish('enableTooltips.'+parent.windowId);
                 _this.osdViewer.zoomPerClick = 2;
-                _this.osdViewer.zoomPerScroll = 1.2;                  
+                _this.osdViewer.zoomPerScroll = 1.2;
                 });
               }
             }
@@ -6751,40 +6751,40 @@ window.Mirador = window.Mirador || function(config) {
     }
 
     // MIGHT BE NICE IF...:
-    // 
-    // If the user is mid-drag and hits the side of the 
-    // canvas, the canvas auto-pans and auto-zooms out 
+    //
+    // If the user is mid-drag and hits the side of the
+    // canvas, the canvas auto-pans and auto-zooms out
     // to accomodate the rectangle.
-    // 
+    //
     // The size of the rectangle just before colliding with
-    // the canvas is auto-saved, so that the canvas can shrink 
-    // back down again if the user starts shrinking it in 
-    // mid-drag, allowing the auto-shrinking to stop when 
+    // the canvas is auto-saved, so that the canvas can shrink
+    // back down again if the user starts shrinking it in
+    // mid-drag, allowing the auto-shrinking to stop when
     // the original size of the rectangle is reached again.
     //
     // The existing rectangles should also be moveable by
-    // shift-clicking and dragging them, showing the 
+    // shift-clicking and dragging them, showing the
     // cross-hair cursor type.
 
 //     osdRegionRectTool = {
 //       enterEditMode: enterEditMode,
 //       exitEditMode: exitEditMode
 //     };
-// 
+//
 //     return osdRegionRectTool;
 
   };
 }(Mirador));
 
 /*
- * Edited version of https://github.com/IIIF/mirador/blob/9e3c6bbb894e044d01ad51aae1b70309939de5a9/js/src/annotations/catchEndpoint.js 
+ * Edited version of https://github.com/IIIF/mirador/blob/9e3c6bbb894e044d01ad51aae1b70309939de5a9/js/src/annotations/catchEndpoint.js
  * This module tries to store the annotation as is in a RDF store but some fiddeling is required. Fidles are:
- * 
+ *
  * - delete annotation fails if id has a / in it so have to send sanatised ids to mirador
  * - mirador requires an endpoint variable in the annotation pointing to this class.
- * 
+ *
  * Note: this endpoint doesn't currently support authentication, just returns allow all
- * 
+ *
  * All Endpoints need to have at least the following:
  * annotationsList - current list of OA Annotations
  * dfd - Deferred Object
@@ -6794,7 +6794,7 @@ window.Mirador = window.Mirador || function(config) {
  * update(oaAnnotation, returnSuccess, returnError)
  * deleteAnnotation(annotationID, returnSuccess, returnError) (delete is a reserved word)
  * TODO:
- * There is a bug in that if you create an annotation and then delete it (without moving pages) then click either the write annotation button 
+ * There is a bug in that if you create an annotation and then delete it (without moving pages) then click either the write annotation button
  * or try to create a new annotation the deleted annotation re-appears. Changing pages fixes the issue as the annoation is delete from the annotation store
  *
  */
@@ -6820,7 +6820,7 @@ window.Mirador = window.Mirador || function(config) {
     init: function() {
       this.catchOptions = {
         user: {
-          id: this.userid, 
+          id: this.userid,
           name: this.username
         },
         permissions: {
@@ -7013,7 +7013,7 @@ window.Mirador = window.Mirador || function(config) {
     init: function () {
       this.element = jQuery(this.template({
         workspaceSlotCls: this.workspaceSlotCls,
-        slotID: this.slotId 
+        slotID: this.slotId
       }));
       this.element.appendTo(this.appendTo);
 
@@ -7607,7 +7607,7 @@ window.Mirador = window.Mirador || function(config) {
         this.sidePanel.update('annotations', annotationsTabAvailable);
       }
     },
- 
+
     get: function(prop, parent) {
       if (parent) {
         return this[parent][prop];
@@ -8129,12 +8129,12 @@ window.Mirador = window.Mirador || function(config) {
       });
       this.modeSwitch();
     },
-    
+
     updateRenderer: function() {
       this.renderer.list = this.annotationsList;
       this.modeSwitch();
     },
-    
+
     modeSwitch: function() {
       //console.log(this.mode);
       if (this.mode === 'displayAnnotations') { this.enterDisplayAnnotations(); }
@@ -8159,7 +8159,7 @@ window.Mirador = window.Mirador || function(config) {
         this.rectTool = new $.OsdRegionRectTool({
           osd: OpenSeadragon,
           osdViewer: _this.viewer,
-          rectType: 'oa', // does not do anything yet. 
+          rectType: 'oa', // does not do anything yet.
           parent: _this
         });
       } else {
@@ -8458,19 +8458,19 @@ window.Mirador = window.Mirador || function(config) {
       var _this = this;
       this.osdOptions.osdBounds = this.osd.viewport.getBounds(true);
       jQuery.publish("imageBoundsUpdated", {
-        id: _this.parent.id, 
+        id: _this.parent.id,
           osdBounds: {
-            x: _this.osdOptions.osdBounds.x, 
-            y: _this.osdOptions.osdBounds.y, 
-            width: _this.osdOptions.osdBounds.width, 
+            x: _this.osdOptions.osdBounds.x,
+            y: _this.osdOptions.osdBounds.y,
+            width: _this.osdOptions.osdBounds.width,
             height: _this.osdOptions.osdBounds.height
           }
       });
     },
 
     toggle: function(stateValue) {
-      if (stateValue) { 
-        this.show(); 
+      if (stateValue) {
+        this.show();
       } else {
         this.hide();
       }
@@ -8506,7 +8506,7 @@ window.Mirador = window.Mirador || function(config) {
       this.currentImg = this.imagesList[this.currentImgIndex];
       var newList = this.getStitchList();
       var is_same = this.stitchList.length == newList.length && this.stitchList.every(function(element, index) {
-        return element === newList[index]; 
+        return element === newList[index];
       });
       if (!is_same) {
         this.stitchList = newList;
@@ -8730,7 +8730,7 @@ window.Mirador = window.Mirador || function(config) {
 
   $.ContextControls.prototype = {
 
-    init: function() {    
+    init: function() {
       this.element = jQuery(this.template({
         showEdit : this.annotationCreationAvailable
       })).appendTo(this.container);
@@ -8752,13 +8752,13 @@ window.Mirador = window.Mirador || function(config) {
       this.container.find('.mirador-osd-close').on('click', function() {
         _this.parent.annoState.displayOff();
       });
-      
+
       this.container.find('.mirador-osd-back').on('click', function() {
         _this.element.remove();
         _this.element = jQuery(_this.template()).appendTo(_this.container);
         _this.bindEvents();
       });
-      
+
       this.container.find('.mirador-osd-edit-mode').on('click', function() {
         if (_this.parent.annoState.current === 'annoOnCreateOff') {
           _this.parent.annoState.createOn();
@@ -8770,7 +8770,7 @@ window.Mirador = window.Mirador || function(config) {
         //update annotation list from endpoint
         jQuery.publish('updateAnnotationList.'+_this.windowId);
       });
-      
+
     },
 
     template: Handlebars.compile([
@@ -8837,11 +8837,11 @@ window.Mirador = window.Mirador || function(config) {
 
   $.Hud.prototype = {
 
-    init: function() {   
+    init: function() {
       this.createStateMachine();
 
       this.element = jQuery(this.template({
-        showNextPrev : this.parent.imagesList.length !== 1, 
+        showNextPrev : this.parent.imagesList.length !== 1,
         showBottomPanel : typeof this.bottomPanelAvailable === 'undefined' ? true : this.bottomPanelAvailable,
         showAnno : this.annotationLayerAvailable,
         showFullScreen : this.fullScreenAvailable
@@ -8992,9 +8992,9 @@ window.Mirador = window.Mirador || function(config) {
         events: [
           { name: 'startup',  from: 'none',  to: 'annoOff' },
           { name: 'displayOn',  from: 'annoOff',  to: 'annoOnCreateOff' },
-          { name: 'refreshCreateOff',  from: 'annoOnCreateOff',  to: 'annoOnCreateOff' },          
+          { name: 'refreshCreateOff',  from: 'annoOnCreateOff',  to: 'annoOnCreateOff' },
           { name: 'createOn', from: ['annoOff','annoOnCreateOff'], to: 'annoOnCreateOn' },
-          { name: 'refreshCreateOn',  from: 'annoOnCreateOn',  to: 'annoOnCreateOn' },          
+          { name: 'refreshCreateOn',  from: 'annoOnCreateOn',  to: 'annoOnCreateOn' },
           { name: 'createOff',  from: 'annoOnCreateOn',    to: 'annoOnCreateOff' },
           { name: 'displayOff', from: ['annoOnCreateOn','annoOnCreateOff'], to: 'annoOff' }
         ],
@@ -9005,11 +9005,11 @@ window.Mirador = window.Mirador || function(config) {
               annotationState: to
             });
           },
-          ondisplayOn: function(event, from, to) { 
+          ondisplayOn: function(event, from, to) {
             if (_this.annoEndpointAvailable) {
-              _this.parent.element.find('.mirador-osd-annotations-layer').fadeOut(duration, function() {      
+              _this.parent.element.find('.mirador-osd-annotations-layer').fadeOut(duration, function() {
                 _this.contextControls.show();
-              });              
+              });
             } else {
               _this.parent.element.find('.mirador-osd-annotations-layer').addClass("selected");
             }
@@ -9033,7 +9033,7 @@ window.Mirador = window.Mirador || function(config) {
             }
             if (_this.annoEndpointAvailable) {
               if (from === "annoOff") {
-                _this.parent.element.find('.mirador-osd-annotations-layer').fadeOut(duration, function() {      
+                _this.parent.element.find('.mirador-osd-annotations-layer').fadeOut(duration, function() {
                   _this.contextControls.show();
                   enableEditingAnnotations();
                 });
@@ -9053,7 +9053,7 @@ window.Mirador = window.Mirador || function(config) {
               annotationState: to
             });
           },
-          oncreateOff: function(event, from, to) { 
+          oncreateOff: function(event, from, to) {
             _this.parent.element.find('.mirador-osd-edit-mode').removeClass("selected");
             jQuery.publish('modeChange.' + _this.windowId, 'displayAnnotations');
             jQuery.publish(('windowUpdated'), {
@@ -9061,7 +9061,7 @@ window.Mirador = window.Mirador || function(config) {
               annotationState: to
             });
           },
-          ondisplayOff: function(event, from, to) { 
+          ondisplayOff: function(event, from, to) {
             if (_this.annoEndpointAvailable) {
               _this.parent.element.find('.mirador-osd-edit-mode').removeClass("selected");
               _this.contextControls.hide(function() {
@@ -9188,7 +9188,7 @@ window.Mirador = window.Mirador || function(config) {
       elemAnno:         null,
       annoCls:          'annotation-canvas',
       annotationLayerAvailable: null,
-      annotationsLayer: null 
+      annotationsLayer: null
     }, options);
 
     this.init();
@@ -9196,8 +9196,8 @@ window.Mirador = window.Mirador || function(config) {
 
   $.ImageView.prototype = {
 
-    init: function() {    
-      // check (for thumbnail view) if the canvasID is set. 
+    init: function() {
+      // check (for thumbnail view) if the canvasID is set.
       // If not, make it page/item 1.
       if (this.canvasID !== null) {
         this.currentImgIndex = $.getImageIndexById(this.imagesList, this.canvasID);
@@ -9215,8 +9215,8 @@ window.Mirador = window.Mirador || function(config) {
       .addClass(this.annoCls)
       .appendTo(this.element);
       this.createOpenSeadragonInstance($.Iiif.getImageUrl(this.currentImg));
-      this.parent.updateFocusImages([this.canvasID]); 
-      // The hud controls are consistent 
+      this.parent.updateFocusImages([this.canvasID]);
+      // The hud controls are consistent
       // throughout any updates to the osd canvas.
       this.hud = new $.Hud({
         parent: this,
@@ -9250,11 +9250,11 @@ window.Mirador = window.Mirador || function(config) {
       var _this = this;
       this.osdOptions.osdBounds = this.osd.viewport.getBounds(true);
       jQuery.publish("imageBoundsUpdated", {
-        id: _this.parent.id, 
+        id: _this.parent.id,
           osdBounds: {
-            x: _this.osdOptions.osdBounds.x, 
-            y: _this.osdOptions.osdBounds.y, 
-            width: _this.osdOptions.osdBounds.width, 
+            x: _this.osdOptions.osdBounds.x,
+            y: _this.osdOptions.osdBounds.y,
+            width: _this.osdOptions.osdBounds.width,
             height: _this.osdOptions.osdBounds.height
           }
       });
@@ -9271,8 +9271,8 @@ window.Mirador = window.Mirador || function(config) {
     },
 
     toggle: function(stateValue) {
-      if (stateValue) { 
-        this.show(); 
+      if (stateValue) {
+        this.show();
       } else {
         this.hide();
       }
@@ -9335,7 +9335,7 @@ window.Mirador = window.Mirador || function(config) {
           }
 
           _this.addAnnotationsLayer(_this.elemAnno);
-            
+
           // if current annoState is 'none' that means it has been initialized but not used
           // use annotationState to choose event
           if (_this.hud.annoState.current === 'none') {
@@ -9355,7 +9355,7 @@ window.Mirador = window.Mirador || function(config) {
             }
           }
 
-          // A hack. Pop the osd overlays layer after the canvas so 
+          // A hack. Pop the osd overlays layer after the canvas so
           // that annotations appear.
           jQuery(_this.osd.canvas).children().first().remove().appendTo(_this.osd.canvas);
 
@@ -9440,7 +9440,7 @@ window.Mirador = window.Mirador || function(config) {
           tplData = {
             metadataListingCls: this.metadataListingCls
           };
-          
+
       _this.manifest = _this.manifest.jsonLd;
       this.metadataTypes = {};
 
@@ -9523,7 +9523,7 @@ window.Mirador = window.Mirador || function(config) {
     var _this = this,
         str,
         next,
-        label, 
+        label,
         format;
     if (obj instanceof Array) {
       str = '';
@@ -9560,10 +9560,10 @@ window.Mirador = window.Mirador || function(config) {
             // {@value: ..., @language: ...}
             if (item['@language'] == "en") {
               value += item['@value'];
-              value += "<br/>";                  
+              value += "<br/>";
             }
           }
-        });        
+        });
         mdList.description = value;
       }
 
@@ -9590,11 +9590,11 @@ window.Mirador = window.Mirador || function(config) {
                 value = what['@value'];
               }
             });
-          } 
+          }
         mdList[label] = value;
         });
       }
- 
+
       return mdList;
     },
 
@@ -9631,27 +9631,27 @@ window.Mirador = window.Mirador || function(config) {
     },
 
     toggle: function(stateValue) {
-        if (stateValue) { 
-            this.show(); 
+        if (stateValue) {
+            this.show();
         } else {
             this.hide();
         }
     },
-    
+
     show: function() {
         var element = jQuery(this.element);
         if (this.panel) {
             element = element.parent();
         }
-        element.show({effect: "slide", direction: "right", duration: 300, easing: "swing"});    
+        element.show({effect: "slide", direction: "right", duration: 300, easing: "swing"});
     },
-    
+
     hide: function() {
         var element = jQuery(this.element);
         if (this.panel) {
             element = element.parent();
         }
-        element.hide({effect: "slide", direction: "right", duration: 300, easing: "swing"});    
+        element.hide({effect: "slide", direction: "right", duration: 300, easing: "swing"});
     },
 
     addLinksToUris: function(text) {
@@ -9672,7 +9672,7 @@ window.Mirador = window.Mirador || function(config) {
 
       return textWithLinks;
     },
-    
+
     template: Handlebars.compile([
     '<div class="sub-title">{{t "details"}}:</div>',
         '<div class="{{metadataListingCls}}">',
@@ -9747,11 +9747,11 @@ window.Mirador = window.Mirador || function(config) {
       panel:                false,
       lazyLoadingFactor:    1.5  //should be >= 1
     }, options);
-    
+
     jQuery.extend($.ScrollView.prototype, $.ThumbnailsView.prototype);
     this.init();
   };
-  
+
 }(Mirador));
 
 (function($) {
@@ -9784,7 +9784,7 @@ window.Mirador = window.Mirador || function(config) {
                     name : 'toc',
                     options : {
                         available: _this.tocTabAvailable,
-                        id:'tocTab', 
+                        id:'tocTab',
                         label:'Index'
                     }
                 },
@@ -9792,7 +9792,7 @@ window.Mirador = window.Mirador || function(config) {
                     name : 'annotations',
                     options : {
                         available: _this.annotationsTabAvailable,
-                        id:'annotationsTab', 
+                        id:'annotationsTab',
                         label:'Annotations'
                     }
                 },*/
@@ -9800,7 +9800,7 @@ window.Mirador = window.Mirador || function(config) {
                     name : 'layers',
                     options : {
                         available: _this.layersTabAvailable,
-                        id:'layersTab', 
+                        id:'layersTab',
                         label:'Layers'
                     }
                 },
@@ -9808,7 +9808,7 @@ window.Mirador = window.Mirador || function(config) {
                     name : 'tools',
                     options : {
                         available: _this.toolsTabAvailable,
-                        id:'toolsTab', 
+                        id:'toolsTab',
                         label:'Tools'
                     }
                 }*/
@@ -9821,7 +9821,7 @@ window.Mirador = window.Mirador || function(config) {
             this.render(this.state());
 
             this.loadSidePanelComponents();
-        },  
+        },
 
         loadSidePanelComponents: function() {
             var _this = this;
@@ -9953,7 +9953,7 @@ window.Mirador = window.Mirador || function(config) {
             } else {
                 jQuery(this.appendTo).show({effect: "fade", duration: 300, easing: "easeInCubic"});
                 this.parent.element.find('.view-container').removeClass('focus-max-width');
-                this.parent.element.find('.mirador-icon-toc').show();                
+                this.parent.element.find('.mirador-icon-toc').show();
             }
         }
     };
@@ -10056,15 +10056,15 @@ window.Mirador = window.Mirador || function(config) {
                     return value.options.available;
                 });
                 renderingData.tabs = tabs;
-                if(renderingData.tabs.length === 1){                    
+                if(renderingData.tabs.length === 1){
                     // TODO: temporary logic to minimize side panel if only tab is toc and toc is empty
                     if (renderingData.tabs[0].name === 'toc' && !_this.parent.hasStructures) {
                         jQuery.publish("sidePanelVisibilityByTab." + _this.windowId, false);
                     }
 
                     // don't show button if only one tab
-                    renderingData.tabs = []; 
-                } 
+                    renderingData.tabs = [];
+                }
                 //TODO: add text if there is one label or no content within this tab
                 this.element = jQuery(_this.template(renderingData)).prependTo(_this.appendTo);
                 return;
@@ -10209,8 +10209,8 @@ window.Mirador = window.Mirador || function(config) {
     },
 
     toggle: function(stateValue) {
-      if (stateValue) { 
-        this.show(); 
+      if (stateValue) {
+        this.show();
       } else {
         this.hide();
       }
@@ -10837,8 +10837,8 @@ jQuery.fn.scrollStop = function(callback) {
 
 	var path = JSONBLOB_API_ENDPOINT;
 
-        // If the body is a string, this is a blob GET operation, 
-	// otherwise it's a POST	
+        // If the body is a string, this is a blob GET operation,
+	// otherwise it's a POST
         if ( typeof body === 'string' || body instanceof String ){
 		path += '/' + body;
 	}
@@ -10904,7 +10904,7 @@ jQuery.fn.scrollStop = function(callback) {
 }(Mirador));
 
 
-(function($) { 
+(function($) {
 
   $.OaAnnotation = function(options) {
 
@@ -10922,12 +10922,12 @@ jQuery.fn.scrollStop = function(callback) {
 
   $.OaAnnotation.prototype = {
 
-    init: function() {    
+    init: function() {
       this.oaAnnotation = {}; // stub text of valid oa annotation (as
                    // it would appear in an oa:annotationList)
-                   // to go here. Properties will be queried and 
+                   // to go here. Properties will be queried and
                    // twiddled by the get/set methods for each
-                   // property below (as the annotation is 
+                   // property below (as the annotation is
                    // passed through the annotation creation process).
     },
 
@@ -10981,7 +10981,7 @@ jQuery.fn.scrollStop = function(callback) {
       }, options)
 
     );
-    
+
     return osd;
 
   };
@@ -10995,7 +10995,7 @@ jQuery.fn.scrollStop = function(callback) {
     jQuery.extend(true, this, {
       currentConfig: null,
       originalConfig: null, // Don't know if we really need this.
-      shareEndpoint: null, // the place where POST requests for new saved sessions will go 
+      shareEndpoint: null, // the place where POST requests for new saved sessions will go
       historySize: null, // wishful thinking for later.
       sessionID: null
     });
@@ -11008,13 +11008,13 @@ jQuery.fn.scrollStop = function(callback) {
 
     init: function(config) {
       var _this = this;
-      
+
       // Don't want to save session, therefore don't set up save controller
       if (config.saveSession === false) {
         this.currentConfig = config;
         return false;
       }
-      
+
       saveModule = config.jsonStorageEndpoint.module,
       saveOptions = config.jsonStorageEndpoint.options;
       _this.storageModule = new $[saveModule](saveOptions);
@@ -11084,8 +11084,8 @@ jQuery.fn.scrollStop = function(callback) {
 
     bindEvents: function() {
       var _this = this;
-      // listen to existing events and use the 
-      // available data to update the appropriate 
+      // listen to existing events and use the
+      // available data to update the appropriate
       // field in the stored config.
 
       jQuery.subscribe('windowUpdated', function(event, options) {
@@ -11102,19 +11102,19 @@ jQuery.fn.scrollStop = function(callback) {
         _this.set("windowObjects", windowObjects, {parent: "currentConfig"} );
       });
 
-      jQuery.subscribe("imageBoundsUpdated", function(event, options) {   
-        var windowObjects = _this.currentConfig.windowObjects;   
-        if (windowObjects && windowObjects.length > 0) {   
-          jQuery.each(windowObjects, function(index, window){    
-            if (window.id === options.id) {    
-              if (!windowObjects[index].windowOptions) {   
-                windowObjects[index].windowOptions = {};   
-              }    
-              windowObjects[index].windowOptions.osdBounds = options.osdBounds;    
-            }    
-          });    
-        }    
-        _this.set("windowObjects", windowObjects, {parent: "currentConfig"} );   
+      jQuery.subscribe("imageBoundsUpdated", function(event, options) {
+        var windowObjects = _this.currentConfig.windowObjects;
+        if (windowObjects && windowObjects.length > 0) {
+          jQuery.each(windowObjects, function(index, window){
+            if (window.id === options.id) {
+              if (!windowObjects[index].windowOptions) {
+                windowObjects[index].windowOptions = {};
+              }
+              windowObjects[index].windowOptions.osdBounds = options.osdBounds;
+            }
+          });
+        }
+        _this.set("windowObjects", windowObjects, {parent: "currentConfig"} );
       });
 
       jQuery.subscribe('windowSlotAddressUpdated', function(event, options) {
@@ -11182,8 +11182,8 @@ jQuery.fn.scrollStop = function(callback) {
       });
 
       jQuery.subscribe('etc...', function(junk) {
-        // handle adding the property in the appropriate place 
-        // in this.currentConfig by passing to the _this.set(), 
+        // handle adding the property in the appropriate place
+        // in this.currentConfig by passing to the _this.set(),
         // which "saves" to localstore as a side effect.
 
       });
@@ -11192,21 +11192,21 @@ jQuery.fn.scrollStop = function(callback) {
       // would have been emitted by objects when their models were
       // updated and sent the results to a parser function that
       // would extract the calling object's properties in the config
-      // and updated them if they were different, but we can't 
-      // currently do that the way the app is written, since we 
-      // didn't actually follow that patttern almost anywhere. 
-      // 
+      // and updated them if they were different, but we can't
+      // currently do that the way the app is written, since we
+      // didn't actually follow that patttern almost anywhere.
+      //
       // jQuery.subscribe('set', function(junk) {
       //  // 1.) send the junk to a parser function
       //  // 2.) use this.set(parsedJunk) to update
       //  // this.currentConfig, with the side effect of
-      //  // saving to localStorage. 
+      //  // saving to localStorage.
       //
       // });
 
       // you may need to bind another event here that responds to the
-      // user navigating history, for the purpose of popping the 
-      // history entry back off. 
+      // user navigating history, for the purpose of popping the
+      // history entry back off.
 
     },
 
@@ -11290,7 +11290,7 @@ jQuery.fn.scrollStop = function(callback) {
     return metadata.details.label || '';
   };
 
-  /* 
+  /*
      miscellaneous utilities
      */
 
@@ -11446,17 +11446,17 @@ jQuery.fn.scrollStop = function(callback) {
     // Javascript does not have range expansions quite yet,
     // long live the humble for loop.
     // Use a closure to contain the column and row variables.
-    for (var i = 0, c = columns; i < c; i++) { 
+    for (var i = 0, c = columns; i < c; i++) {
       var column = { type: 'column'};
 
       if (rowsPerColumn > 1) {
         column.children = [];
-        for (var j = 0, r = rowsPerColumn; j < r; j++) { 
+        for (var j = 0, r = rowsPerColumn; j < r; j++) {
           column.children.push({
             type: 'row'
           });
         }
-      } 
+      }
 
       layoutDescription.children.push(column);
     }

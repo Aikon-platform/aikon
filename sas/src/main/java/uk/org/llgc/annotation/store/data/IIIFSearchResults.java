@@ -49,7 +49,7 @@ public class IIIFSearchResults extends AnnotationList {
     public AnnoListNav getNav() {
         return _nav;
     }
-    
+
     /**
      * Set nav.
      *
@@ -58,7 +58,7 @@ public class IIIFSearchResults extends AnnotationList {
     public void setNav(final AnnoListNav pNav) {
          _nav = pNav;
     }
-    
+
     /**
      * Get startIndex.
      *
@@ -67,7 +67,7 @@ public class IIIFSearchResults extends AnnotationList {
     public int getStartIndex() {
         return _startIndex;
     }
-    
+
     /**
      * Set startIndex.
      *
@@ -76,7 +76,7 @@ public class IIIFSearchResults extends AnnotationList {
     public void setStartIndex(final int pStartIndex) {
          _startIndex = pStartIndex;
     }
-    
+
     /**
      * Get next.
      *
@@ -85,7 +85,7 @@ public class IIIFSearchResults extends AnnotationList {
     public String getNext() {
         return _next;
     }
-    
+
     /**
      * Set next.
      *

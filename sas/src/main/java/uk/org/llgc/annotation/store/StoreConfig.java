@@ -72,7 +72,7 @@ public class StoreConfig extends HttpServlet {
 		}
 		this.overloadConfigFromEnviroment(tProps);
         _annotationUtils = new AnnotationUtils(this.getRealPath("/contexts"), getEncoder());
-        
+
 		initConfig(this);
 	}
 
@@ -105,7 +105,7 @@ public class StoreConfig extends HttpServlet {
 			if (System.getProperty("SAS_" + tKey) != null) {
 				_logger.debug("Overloading " + tKey + " with value " + System.getProperty("SAS_" + tKey) + " from System.getProperty");
 				_props.put(tKey, System.getProperty("SAS_" + tKey));
-            } else if (System.getenv("SAS_" + tKey) != null) {    
+            } else if (System.getenv("SAS_" + tKey) != null) {
 				_logger.debug("Overloading " + tKey + " with value " + System.getenv("SAS_" + tKey) + " from System.getenv");
 				_props.put(tKey, System.getenv("SAS_" + tKey));
 			} else {

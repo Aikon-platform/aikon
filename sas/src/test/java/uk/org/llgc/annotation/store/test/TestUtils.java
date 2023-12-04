@@ -170,7 +170,7 @@ public class TestUtils {
                 URI tConectionString = new URI((String)_props.get("elastic_connection"));
                 RestHighLevelClient tClient = ElasticStore.buildClient(tConectionString);
                 String tIndex = tConectionString.getPath().replace("/","");
-                
+
                 tClient.indices().delete(new DeleteIndexRequest(tIndex), RequestOptions.DEFAULT);
             } catch (URISyntaxException tExcpt) {
 				tExcpt.printStackTrace();

@@ -37,8 +37,8 @@
     "queryAnalyzer":
     {
         "tokenizer":
-        { 
-           "class":"solr.StandardTokenizerFactory" 
+        {
+           "class":"solr.StandardTokenizerFactory"
         },
         "filters":[
          {
@@ -52,10 +52,10 @@
             "ignoreCase":"true",
             "words":"lang/stopwords_en.txt"
          },
-         {  
+         {
             "class":"solr.LowerCaseFilterFactory"
          },
-         {  
+         {
             "class":"solr.EnglishPossessiveFilterFactory"
          },
          {
@@ -69,7 +69,7 @@
      }
   },
 "add-field":
-  { 
+  {
      "name":"creator",
      "type":"date",
      "stored":true,
@@ -77,7 +77,7 @@
      "multiValued":false
   },
   "add-field":
-  { 
+  {
      "name":"created",
      "type":"date",
      "stored":true,
@@ -85,7 +85,7 @@
      "multiValued":false
   },
   "add-field":
-  { 
+  {
      "name":"modified",
      "type":"date",
      "stored":true,
@@ -93,7 +93,7 @@
      "multiValued":false
   },
   "add-field":
-  { 
+  {
      "name":"type",
      "type":"string",
      "stored":true,
@@ -101,7 +101,7 @@
      "multiValued":true
   },
   "add-field":
-  { 
+  {
      "name":"motivation",
      "type":"string",
      "stored":true,
@@ -109,7 +109,7 @@
      "multiValued":true
   },
   "add-field":
-  { 
+  {
      "name":"body",
      "type":"string",
      "stored":true,
@@ -117,7 +117,7 @@
      "multiValued":true
   },
   "add-field":
-  { 
+  {
      "name":"target",
      "type":"string",
      "stored":true,
@@ -125,7 +125,7 @@
      "multiValued":false
   },
   "add-field":
-  { 
+  {
      "name":"selector",
      "type":"string",
      "stored":true,
@@ -133,7 +133,7 @@
      "multiValued":false
   },
   "add-field":
-  { 
+  {
      "name":"text",
      "type":"stripHTML_en",
      "stored":true,
@@ -141,7 +141,7 @@
      "multiValued":true
   },
    "add-field":
-  { 
+  {
      "name":"within",
      "type":"string",
      "stored":true,
@@ -149,12 +149,12 @@
      "multiValued":true
   },
   "add-copy-field":
-  { 
+  {
      "source":"body",
 	  "dest":[ "text" ]
-  }, 
+  },
   "add-field":
-  { 
+  {
      "name":"canvas",
      "type":"string",
      "stored":true,
@@ -162,7 +162,7 @@
      "multiValued":true
   },
   "add-field":
-  { 
+  {
      "name":"short_id",
      "type":"string",
      "stored":true,
@@ -170,14 +170,14 @@
      "multiValued":false
   },
   "add-field":
-  { 
+  {
      "name":"data",
      "type":"string",
      "stored":true,
      "indexed":false,
      "multiValued":false
   },"add-field":
-  { 
+  {
      "name":"label",
      "type":"string",
      "stored":true,

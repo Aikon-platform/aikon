@@ -106,7 +106,7 @@ public class TestStats extends TestUtils {
                 tToDo = tModel.getData().get(tKey).intValue();
             }
         }
-        
+
         assertEquals("Expected done to be 1 page.", tDone, 1);
         assertEquals("Expected to be done to be 1 page.", tToDo, 1);
         assertEquals("Expected to be done and done to add up to the number of canvases", tToDo + tDone, tManifest.getCanvases().size());

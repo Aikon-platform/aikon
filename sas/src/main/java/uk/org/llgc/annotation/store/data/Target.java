@@ -34,9 +34,9 @@ public class Target {
         }
     }
 
-    /** 
+    /**
      * Returns null if no region
-     */ 
+     */
     public String getRegion() {
         String tRegion = null;
         if (_json.get("@type") != null && _json.get("@type").equals("oa:SpecificResource") && _json.get("selector") != null) {

@@ -73,13 +73,13 @@ public class StatsService {
         PieChartModel tModel = new PieChartModel();
         try {
             Manifest tManifest = this.getManifestFromId(pShortId);
-     
+
             int tTranscribedTotal = this.getManifestAnnoCount(tManifest).size();
             int tCanvasTotal = tManifest.getCanvases().size();
             int tToDoTotal = tCanvasTotal - tTranscribedTotal;
             tModel.set("Canvases with annotations: " + (int)(((double)tTranscribedTotal / tCanvasTotal) * 100) + "%", tTranscribedTotal);
             tModel.set("Canvases without annotations: " + (int)(((double)tToDoTotal / tCanvasTotal) * 100) + "%", tToDoTotal);
-     
+
             tModel.setTitle("Amount left to do");
             tModel.setLegendPosition("w");
             tModel.setShadow(true);
@@ -96,7 +96,7 @@ public class StatsService {
 
             // Get list of all annotations
             List<PageAnnoCount> tPageCounts = this.getManifestAnnoCount(tManifest);
-     
+
             ChartSeries annoCounts = new ChartSeries();
             annoCounts.setLabel("Number of annotations");
             int tMax = 0;
@@ -114,7 +114,7 @@ public class StatsService {
                         tKey = tOriginalKey + "-" + i++;
                     }
                 }
-                annoCounts.set(tKey, tCount.getCount()); 
+                annoCounts.set(tKey, tCount.getCount());
                 if (tCount.getCount() > tMax) {
                     tMax = tCount.getCount();
                 }

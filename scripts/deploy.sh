@@ -44,7 +44,7 @@ set_app_user() {
 
     COMMAND="$USER ALL=(ALL) NOPASSWD: /usr/bin/java"
     if ! sudo visudo -c -q -f $SUDO_FILE; then
-        echo "Syntax error in sudoers file. Aborting."
+        echo "Syntax error in sudoers file."
         return
     fi
 
@@ -94,7 +94,7 @@ python "$APP_ROOT"/app/manage.py migrate
 python "$APP_ROOT"/app/manage.py createsuperuser
 python "$APP_ROOT"/app/manage.py collectstatic
 
-chmod u+w "$APP_ROOT/app/logs/app_log.log"
+sudo chmod 777 "$APP_ROOT/app/logs/app_log.log"
 
 create_service() {
     SERVICE_NAME="$APP_NAME-$1"
@@ -102,13 +102,15 @@ create_service() {
     WORKING_DIR="${2:-$SERVICE_DIR}"
     SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME.service"
 
-    LOGS="$SERVICE_DIR/log"
-    SDTOUT="$SERVICE_DIR/stdout"
+    sudo chmod -R 755 "$SERVICE_DIR"
+
+    LOGS="$SERVICE_DIR/error.log"
+    SDTOUT="$SERVICE_DIR/stdout.log"
     > $LOGS || touch "$LOGS"
     > $SDTOUT || touch "$SDTOUT"
 
     chmod +x "$SERVICE_DIR"/start.sh
-    chmod u+w "$SERVICE_DIR"/log
+    chmod u+w $LOGS && chmod u+w $SDTOUT
 
     if [ -e "$SERVICE_PATH" ]; then
         echo "Service file '$SERVICE_PATH' already exists."
@@ -121,16 +123,17 @@ create_service() {
             After=nginx.service
 
             [Service]
-            User=$APP_NAME
-            Group=$APP_NAME
             WorkingDirectory=$WORKING_DIR
             ExecStart=$SERVICE_DIR/start.sh
-            StandardError=append:$SERVICE_DIR/log
+            StandardOutput=file:$SDTOUT
+            StandardError=append:$LOGS
             Restart=always
 
             [Install]
             WantedBy=multi-user.target" | sudo tee "$SERVICE_PATH" > /dev/null
-            # StandardOutput=file:$SERVICE_DIR/stdout
+            # User=$APP_NAME
+            # Group=$APP_NAME
+            # StandardOutput=file:$SDTOUT
 
         echo "Service file '$SERVICE_NAME' created."
     fi
@@ -152,19 +155,16 @@ create_service cantaloupe
 
 # SAS SET UP
 sudo chmod a+rw "$APP_ROOT"/sas/target/*
-#sudo chown "$APP_NAME:$APP_NAME" "$APP_ROOT"/sas/target/*
 create_service sas
-
-# TODO add authentication for SAS
-# sudo sh -c "echo -n '$SAS_USERNAME:$SAS_PASSWORD' >> /etc/nginx/.htpasswd"
-# + Uncomment 2 "auth_basic" lines in gunicorn/ssl.template
+sudo sh -c "echo -n '$SAS_USERNAME:$SAS_PASSWORD' >> /etc/nginx/.htpasswd"
 
 # REDIS & CELERY SETUP
+# Allow systemd to manage redis
 sudo sed -i 's/^supervised no/supervised systemd/' /etc/redis/redis.conf
+sudo sed -i "s/# requirepass foobared/requirepass $REDIS_PASSWORD/" /etc/redis/redis.conf
+
 #redis-cli -a "$REDIS_PASSWORD"
 sudo systemctl restart redis-server
 sudo systemctl status redis
 
 create_service celery "$APP_ROOT"
-
-# echo "Deployment completed successfully."

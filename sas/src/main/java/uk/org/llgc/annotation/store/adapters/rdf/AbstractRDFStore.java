@@ -155,8 +155,8 @@ public abstract class AbstractRDFStore extends AbstractStoreAdapter {
                                   "OPTIONAL {GRAPH ?manifestId {" +
                                   "  ?manifestId <http://purl.org/dc/elements/1.1/identifier> ?shortId ." +
                                   "  }}" +
-                                  " FILTER (!bound(?shortId)) " + 
-                                "} group by ?manifestId ?manifestLabel"; 
+                                  " FILTER (!bound(?shortId)) " +
+                                "} group by ?manifestId ?manifestLabel";
 		QueryExecution tExec = this.getQueryExe(tQueryString);
         this.begin(ReadWrite.READ);
 		ResultSet results = tExec.execSelect(); // Requires Java 1.7
@@ -172,7 +172,7 @@ public abstract class AbstractRDFStore extends AbstractStoreAdapter {
                 tManifest.setURI(tManifestURI.getURI());
                 if (soln.getLiteral("label") != null) {
                     tManifest.setLabel(soln.getLiteral("label").getString());
-                }    
+                }
 
 				tManifests.add(tManifest);
 			}
@@ -436,7 +436,7 @@ public abstract class AbstractRDFStore extends AbstractStoreAdapter {
                                   "	 ?canvas <http://purl.org/dc/elements/1.1/identifier> ?canvasShortId ." +
                                   "	 ?canvas <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://iiif.io/api/presentation/2#Canvas> " +
                                   "  }}" +
-                                "}group by ?pageId ?manifestId ?manifestLabel ?shortId ?canvasLabel ?canvasShortId order by ?pageId"; 
+                                "}group by ?pageId ?manifestId ?manifestLabel ?shortId ?canvasLabel ?canvasShortId order by ?pageId";
 		QueryExecution tExec = this.getQueryExe(tQueryString);
         return listAnnoPagesQuery(tExec, null);
     }
@@ -455,7 +455,7 @@ public abstract class AbstractRDFStore extends AbstractStoreAdapter {
                                   "	 ?canvas <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://iiif.io/api/presentation/2#Canvas> " +
                                   "  }}" +
                                 "}group by ?pageId ?canvasLabel ?canvasShortId order by ?pageId";
-        
+
 		QueryExecution tExec = this.getQueryExe(tQueryString);
         return listAnnoPagesQuery(tExec, pManifest);
     }
@@ -524,7 +524,7 @@ public abstract class AbstractRDFStore extends AbstractStoreAdapter {
 										"select ?manifest ?label where {" +
 										"   GRAPH ?graph { " +
 										"	 ?manifest sc:hasSequences ?seqence ." +
-                                        "    optional { ?manifest <rdfs:label> ?label }." + 
+                                        "    optional { ?manifest <rdfs:label> ?label }." +
 										"	 ?seqence ?sequenceCount ?seqenceId ." +
 										"	 ?seqenceId rdf:type sc:Sequence ." +
 										"	 ?seqenceId sc:hasCanvases ?canvasList ." +
@@ -546,7 +546,7 @@ public abstract class AbstractRDFStore extends AbstractStoreAdapter {
             tManifest.setURI(tManifestURI.getURI());
             if (tLabel != null) {
                 tManifest.setLabel(tLabel.toString());
-            } 
+            }
 		}
         return tManifest;
     }

@@ -18,7 +18,7 @@
                         <!-- Skeleton Manifest -->
                         <c:set var="tCanvases" value="#{storeService.listAnnoPages(param['uri'])}" scope="request" />
                         <c:set var="tManifest" value="#{storeService.getManifestFromAnnotations(tCanvases)}" scope="request" />
-                        
+
                         <c:if test="#{empty tManifest.label}">
                             <h1>Annotations for <h:outputText value="#{tManifest.URI}"/></h1>
                         </c:if>
@@ -88,4 +88,3 @@
         </ui:define>
     </ui:composition>
 </html>
-

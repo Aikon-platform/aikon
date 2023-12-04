@@ -78,14 +78,14 @@ public class SolrManifestStore {
 		tDoc.addField("label", pManifest.getLabel());
 		tDoc.addField("type", pManifest.getType());
 
-        for (Canvas tCanvas : pManifest.getCanvases()) { 
+        for (Canvas tCanvas : pManifest.getCanvases()) {
             tDoc.addField("canvas", tCanvas.getId());
             tDoc.addField("canvas", tCanvas.getLabel());
         }
 
 		_utils.addDoc(tDoc, true);
     }
-    
+
 	public List<Manifest> getManifests() throws IOException {
         SolrQuery tQuery = this.getManifestQuery();
 		tQuery.set("q", "type:sc\\:Manifest");

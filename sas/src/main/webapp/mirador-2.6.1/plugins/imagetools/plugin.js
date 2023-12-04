@@ -1922,7 +1922,7 @@ var imagetools = (function () {
       default:
         return ir;
       }
-      
+
     };
     var notJpeg = function () {
       return ir;

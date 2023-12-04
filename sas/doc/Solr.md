@@ -13,7 +13,7 @@ Start solr:
 ```
 solr-6.2.1 gmr$ cd solr_dir
 solr-6.2.1 gmr$ ./bin/solr start
-Waiting up to 30 seconds to see Solr running on port 8983 [-]  
+Waiting up to 30 seconds to see Solr running on port 8983 [-]
 Started Solr server on port 8983 (pid=26908). Happy searching!
 ```
 
@@ -82,4 +82,3 @@ curl -X POST -d @/tmp/full_formmatted.xml -H "Content-Type: application/xml" htt
 ```
 
 Note content type is very important.
-

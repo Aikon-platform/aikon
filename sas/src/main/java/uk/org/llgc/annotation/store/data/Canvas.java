@@ -41,7 +41,7 @@ public class Canvas {
         }
         return tJson;
     }
-    
+
     /**
      * Get uri.
      *
@@ -50,7 +50,7 @@ public class Canvas {
     public String getId() {
         return _id;
     }
-    
+
     /**
      * Set uri.
      *
@@ -59,7 +59,7 @@ public class Canvas {
     public void setId(final String pURI) {
          _id = pURI;
     }
-    
+
     /**
      * Get label.
      *
@@ -68,7 +68,7 @@ public class Canvas {
     public String getLabel() {
         return _label;
     }
-    
+
     /**
      * Set label.
      *
@@ -77,7 +77,7 @@ public class Canvas {
     public void setLabel(final String pLabel) {
          _label = pLabel;
     }
-    
+
     protected static Map<String,String> _canvasIdMap = new HashMap<String, String>();
     /**
      * Get shortId.
@@ -102,7 +102,7 @@ public class Canvas {
         }
         return _shortId;
     }
-    
+
     /**
      * Set shortId.
      *
@@ -113,10 +113,10 @@ public class Canvas {
     }
 
     public String toString() {
-        return "Canvas:\n\tid: " + _id + "\n\tShort id: " + _shortId + "\n\tLabel: " + _label; 
+        return "Canvas:\n\tid: " + _id + "\n\tShort id: " + _shortId + "\n\tLabel: " + _label;
     }
 
-    public boolean equals(final Object pOther) {  
+    public boolean equals(final Object pOther) {
         return _id.equals(((Canvas)pOther).getId());
     }
 }

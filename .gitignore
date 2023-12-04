@@ -1,6 +1,8 @@
 # .gitignore for Django 4 app
 */stdout
 */log
+*/error.log
+*/stdout.log
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

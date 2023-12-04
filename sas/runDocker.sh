@@ -5,7 +5,7 @@ if [ $# -eq 0 ]; then
     read backend
 else
     backend="$1"
-fi    
+fi
 
 if [[ "$backend" =~ ^[Jj]ena$ ]]; then
     echo "Running SAS with Jena on http://0.0.0.0:8888/sas/"

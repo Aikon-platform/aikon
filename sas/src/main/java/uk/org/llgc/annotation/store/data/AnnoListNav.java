@@ -1,5 +1,5 @@
 package uk.org.llgc.annotation.store.data;
- 
+
 import java.util.Map;
 import java.util.HashMap;
 
@@ -10,7 +10,7 @@ public class AnnoListNav {
 
     public AnnoListNav() {
     }
-    
+
     /**
      * Get results.
      *
@@ -19,7 +19,7 @@ public class AnnoListNav {
     public int getResults() {
         return _results;
     }
-    
+
     /**
      * Set results.
      *
@@ -28,7 +28,7 @@ public class AnnoListNav {
     public void setResults(final int pResults) {
          _results = pResults;
     }
-    
+
     /**
      * Get first.
      *
@@ -37,7 +37,7 @@ public class AnnoListNav {
     public String getFirst() {
         return _first;
     }
-    
+
     /**
      * Set first.
      *
@@ -46,7 +46,7 @@ public class AnnoListNav {
     public void setFirst(final String pFirst) {
          _first = pFirst;
     }
-    
+
     /**
      * Get last.
      *
@@ -55,7 +55,7 @@ public class AnnoListNav {
     public String getLast() {
         return _last;
     }
-    
+
     /**
      * Set last.
      *
