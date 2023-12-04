@@ -6,3 +6,27 @@
 .djn-add-item {
     margin-bottom: 1em !important;
 }
+
+.select2-dropdown {
+    background: var(--darkened-bg) !important;
+    color: var(--body-quiet-color) !important;
+}
+
+.select2-selection {
+    background: var(--darkened-bg) !important;
+    color: var(--body-quiet-color) !important;
+}
+
+.select2-search__choice {
+    background: var(--darkened-bg) !important;
+    color: var(--body-quiet-color) !important;
+}
+
+.select2-selection__choice {
+    background: var(--darkened-bg) !important;
+    color: var(--body-quiet-color) !important;
+}
+
+.select2-search__field {
+    color: var(--body-quiet-color) !important;
+}
