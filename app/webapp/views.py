@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from os.path import exists
 
@@ -43,7 +44,7 @@ from app.webapp.utils.iiif.annotation import (
     create_empty_anno,
 )
 
-from app.webapp.utils.paths import ANNO_PATH
+from app.webapp.utils.paths import ANNO_PATH, MEDIA_DIR
 
 
 def is_superuser(user):
@@ -416,6 +417,13 @@ def search_similarity(request, experiment_id):
 
 def rgpd(request):
     return render(request, "rgpd.html")
+
+
+def legacy_manifest(request, old_id):
+    if not os.path.isfile(f"{MEDIA_DIR}/manifest/{old_id}.json"):
+        return JsonResponse({})
+    with open(f"{MEDIA_DIR}/manifest/{old_id}.json", "r") as manifest:
+        return JsonResponse(json.loads(manifest.read()))
 
 
 # TODO: create test to find integrity of a manuscript:
