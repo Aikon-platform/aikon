@@ -91,7 +91,7 @@ public class TestModel extends TestUtils {
         assertEquals("Indexed manifest shortId doesn't match the original", tShortId, tManifest.getShortId());
         assertEquals("Unexpected amount of canvases", 2, tManifest.getCanvases().size());
         assertEquals("Wrong label for first Canvas", "Image 1", tManifest.getCanvases().get(0).getLabel());
-    }    
+    }
 
     @Test
 	public void testJsonManifest() throws IOException, IDConflictException, MalformedAnnotation {
@@ -105,7 +105,7 @@ public class TestModel extends TestUtils {
         assertEquals("Indexed manifest shortId doesn't match the original", tShortId, tManifest.getShortId());
         assertEquals("Unexpected amount of canvases", 2, tManifest.getCanvases().size());
         assertEquals("Wrong label for first Canvas", "Image 1", tManifest.getCanvases().get(0).getLabel());
-    } 
+    }
 
     @Test
     public void testSkeletonManifests() throws IOException, IDConflictException, MalformedAnnotation {

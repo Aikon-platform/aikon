@@ -73,18 +73,10 @@ class Content(models.Model):
         blank=True,
         null=True,
     )
-    """lang = models.ForeignKey(
+    lang = models.ManyToManyField(
         Language,
         verbose_name=get_name("Language"),
-        on_delete=models.SET_NULL,
         blank=True,
-        null=True,
-    )"""
-    lang = models.CharField(
-        verbose_name=get_name("languages"),
-        max_length=100,
-        blank=True,
-        null=True,
     )
     date_min = models.IntegerField(
         verbose_name=get_name("date_min"), null=True, blank=True

@@ -401,14 +401,14 @@ public class SolrStore extends AbstractStoreAdapter implements StoreAdapter {
                 }
                 Canvas tCanvas = new Canvas(tFacetValue.getName(), tLabel);
                 this.storeCanvas(tCanvas);
-                tAnnoPageCount.add(new PageAnnoCount(tCanvas, (int)tFacetValue.getCount(), pManifest)); 
+                tAnnoPageCount.add(new PageAnnoCount(tCanvas, (int)tFacetValue.getCount(), pManifest));
             }
             return tAnnoPageCount;
         } catch (SolrServerException tExcept) {
             tExcept.printStackTrace();
             throw new IOException("Failed to run page count query due to " + tExcept.getMessage());
         }
-    }    
+    }
 
 	public List<PageAnnoCount> listAnnoPages() throws IOException {
         SolrQuery tQuery = new SolrQuery();
@@ -425,7 +425,7 @@ public class SolrStore extends AbstractStoreAdapter implements StoreAdapter {
             List<PageAnnoCount> tAnnoPageCount = new ArrayList<PageAnnoCount>();
             for (FacetField.Count tFacetValue : tFacetCounts.getValues()) {
                 Canvas tCanvas = new Canvas(tFacetValue.getName(), "");// TODO add manifest and canvas label
-                tAnnoPageCount.add(new PageAnnoCount(tCanvas, (int)tFacetValue.getCount(), null)); 
+                tAnnoPageCount.add(new PageAnnoCount(tCanvas, (int)tFacetValue.getCount(), null));
             }
             return tAnnoPageCount;
         } catch (SolrServerException tExcept) {

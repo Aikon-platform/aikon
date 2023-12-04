@@ -61,10 +61,10 @@ public class RDFManifest extends Manifest {
                         "        ?sequence <http://iiif.io/api/presentation/2#hasCanvases> ?canvases ." +
                         "        ?canvases rdf:rest*/rdf:first ?canvas ." +
                         "        ?canvas <http://www.w3.org/2000/01/rdf-schema#label> ?label " +
-                        "}"; 
+                        "}";
 
         QueryExecution tExec = QueryExecutionFactory.create(tQuery, _manifest);
-		ResultSet results = tExec.execSelect(); 
+		ResultSet results = tExec.execSelect();
         _canvases = new ArrayList<Canvas>();
 		if (results != null) {
 			while (results.hasNext()) {

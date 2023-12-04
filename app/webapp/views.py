@@ -19,6 +19,7 @@ from app.config.settings import (
     ENV,
     GEONAMES_USER,
 )
+from app.webapp.models.language import Language
 from app.webapp.models.place import Place
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, MAX_ROWS
@@ -193,7 +194,7 @@ def delete_send_anno(request, anno_ref):
     # try:
     #     requests.post(
     #         url=f"{API_GPU_URL}/delete_detect",
-    #         headers={"X-API-Key": API_KEY},
+    #         headers={"X-API-Key": EXAPI_KEY},
     #         data={"manifest_url": manifest_url},
     #     )
     # except Exception as e:
@@ -396,6 +397,16 @@ def retrieve_place_info(request):
         )
 
     return JsonResponse({"country": "", "latitude": "", "longitude": ""})
+
+
+class LanguageAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        qs = Language.objects.all()
+
+        if self.q:
+            qs = qs.filter(lang__icontains=self.q)
+
+        return qs
 
 
 def search_similarity(request, experiment_id):

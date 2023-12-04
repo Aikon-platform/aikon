@@ -42,19 +42,19 @@ public class SearchQuery {
 		}
 		if (tParams.get("q") != null) {
 			this.setQuery(tParams.get("q"));
-		} 
+		}
 		if (tParams.get("motivation") != null) {
 			this.setQuery(tParams.get("motivation"));
-		} 
+		}
 		if (tParams.get("date") != null) {
 			this.setDateRanges(tParams.get("date"));
-		} 
+		}
 		if (tParams.get("user") != null) {
 			this.setUsers(tParams.get("user"));
-		} 
+		}
 		if (tParams.get("page") != null) {
 			this.setPage(Integer.parseInt(tParams.get("page")));
-		} 
+		}
 	}
 
 	protected String convertListToString(final String pKey, final List pList) {
@@ -87,15 +87,15 @@ public class SearchQuery {
             if (_dates != null) {
                 tBuff.append("&");
                 tBuff.append(this.convertListToString("date", _dates));
-            }	
+            }
             if (_users != null) {
                 tBuff.append("&");
                 tBuff.append(URLEncoder.encode(this.convertListToString("user", _users), "UTF-8"));
-            }	
+            }
             if (_page != 0) {
                 tBuff.append("&");
                 tBuff.append("page=" + _page);
-            }	
+            }
         } catch (UnsupportedEncodingException tExcpt) {
             // shouldn't happen as UTF-8 should be supported.
             tExcpt.printStackTrace();
@@ -126,7 +126,7 @@ public class SearchQuery {
 	public String getScope() {
 		return _scope;
 	}
-		
+
 	public void setQuery(final String pQuery) {
 		_query = pQuery;
 	}

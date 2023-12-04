@@ -12,7 +12,7 @@ import java.util.ArrayList;
 
 import uk.org.llgc.annotation.store.data.Canvas;
 import uk.org.llgc.annotation.store.AnnotationUtils;
-       
+
 public class Manifest {
 	protected String _URI = "";
 	protected String _shortId = "";
@@ -95,8 +95,8 @@ public class Manifest {
             this.setJson((Map<String,Object>)JsonUtils.fromInputStream(new URL(_URI).openStream()));
         }
         return _json;
-    }    
-	
+    }
+
 	/**
 	 * Get URI.
 	 *
@@ -105,7 +105,7 @@ public class Manifest {
 	public String getURI() {
 	    return _URI;
 	}
-	
+
 	/**
 	 * Set URI.
 	 *
@@ -114,7 +114,7 @@ public class Manifest {
 	public void setURI(final String pURI) {
 	     _URI = pURI;
 	}
-	
+
 	/**
 	 * Get shortId.
 	 *
@@ -135,7 +135,7 @@ public class Manifest {
         }
 	    return _shortId;
 	}
-	
+
 	/**
 	 * Set shortId.
 	 *
@@ -144,7 +144,7 @@ public class Manifest {
 	public void setShortId(final String pShortId) {
 	     _shortId = pShortId;
 	}
-	
+
 	/**
 	 * Get label.
 	 *
@@ -153,7 +153,7 @@ public class Manifest {
 	public String getLabel() {
 	    return _label;
 	}
-	
+
 	/**
 	 * Set label.
 	 *
@@ -163,7 +163,7 @@ public class Manifest {
 	     _label = pLabel;
 	}
 
-    
+
     public List<Canvas> getCanvases() {
         return _canvases;
     }

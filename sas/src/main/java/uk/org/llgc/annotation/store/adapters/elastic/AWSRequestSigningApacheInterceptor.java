@@ -185,4 +185,3 @@ public class AWSRequestSigningApacheInterceptor implements HttpRequestIntercepto
         return headers;
     }
 }
-

@@ -16,7 +16,7 @@ public class CorsFilter implements Filter {
 	}
 
 	public void doFilter(final ServletRequest pReq, final ServletResponse pRes, final FilterChain pChain) throws IOException, ServletException {
-        // Never seems to returng from doFilter so setting CORS headers early. 
+        // Never seems to returng from doFilter so setting CORS headers early.
         ((HttpServletResponse)pRes).addHeader("Access-Control-Allow-Origin", "*");
         ((HttpServletResponse)pRes).addHeader("Access-Control-Allow-Headers", "X-Requested-With,Content-Type");
         ((HttpServletResponse)pRes).addHeader("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");

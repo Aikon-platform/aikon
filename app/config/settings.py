@@ -21,6 +21,8 @@ ALLOWED_HOSTS = ENV.list("ALLOWED_HOSTS")
 
 APP_LANG = ENV("APP_LANG")
 
+CONTACT_MAIL = ENV("CONTACT_MAIL")
+
 
 # Application definition
 
@@ -81,18 +83,17 @@ if DEBUG:
 # Define the default values for application URLs in development mode
 # APP, CANTALOUPE, SAS
 APP_PORT = 8000
-CANTALOUPE_PORT = 8182
-SAS_PORT = 8888
+CANTALOUPE_PORT = ENV("CANTALOUPE_PORT")
+SAS_PORT = ENV("SAS_PORT")
 GPU_PORT = 5000
-API_KEY = ENV("API_KEY")
+EXAPI_KEY = ENV("EXAPI_KEY")
 
 APP_URL = f"http://localhost:{APP_PORT}"
-# CANTALOUPE_APP_URL = f"http://localhost:{APP_PORT}"
 CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
 SAS_APP_URL = f"http://localhost:{SAS_PORT}"
-API_GPU_URL = f"{ENV('EXAPI')}:{GPU_PORT}"
+API_GPU_URL = f"{ENV('EXAPI_URL')}:{GPU_PORT}"
 
-PROD_URL = ENV("PROD_URL")
+PROD_URL = f"https://{ENV('PROD_URL')}"
 
 # Override the default values in production mode
 if not DEBUG:

@@ -108,7 +108,7 @@ public class TestPublish extends TestUtils {
         assertEquals("Body type wrong", "dctypes:Text",((Map<String,Object>)((List)tAfterJson.get("resource")).get(0)).get("@type"));
         assertEquals("Body format wrong", "text/html",((Map<String,Object>)((List)tAfterJson.get("resource")).get(0)).get("format"));
         assertEquals("Body chars wrong", "<p>Bob Smith</p>",((Map<String,Object>)((List)tAfterJson.get("resource")).get(0)).get("chars"));
-        
+
         assertTrue("Target (on) should be a Map", tAfterJson.get("on") instanceof Map);
         assertEquals("target type wrong", "oa:SpecificResource",((Map<String,Object>)tAfterJson.get("on")).get("@type"));
         assertEquals("target canvas wrong", "http://dev.llgc.org.uk/iiif/examples/photos/canvas/3891216.json",((Map<String,Object>)tAfterJson.get("on")).get("full"));

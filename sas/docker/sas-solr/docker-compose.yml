@@ -1,8 +1,8 @@
 version: '3'
 services:
   web:
-    container_name: simpleannotationserver_solr_1 
-    build: 
+    container_name: simpleannotationserver_solr_1
+    build:
         context: .
         dockerfile: docker/sas-solr/Dockerfile
     ports:
@@ -11,7 +11,7 @@ services:
     container_name: sas_solr
     image: "solr:latest"
     ports:
-      - "8983:8983" 
+      - "8983:8983"
     volumes:
       - "./src/main/resources/solr:/tmp/config:ro"
     entrypoint:

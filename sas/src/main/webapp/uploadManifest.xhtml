@@ -25,19 +25,19 @@
                             <p><b>URL to Manifest:</b> <input type="text" name="uri" id="uri" size="100"/></p>
                             <br/>
                             <button type="button" id="indexButton" class="btn btn-primary mb-2" onclick="sendURL();return false;">Index</button>
-                        </form>    
+                        </form>
                     </div>
                 </main>
 
-                <script> 
+                <script>
                     var getJSON = function(url, callback) {
                         var xhr = new XMLHttpRequest();
                         xhr.open('GET', url, true);
                         xhr.responseType = 'json';
                         xhr.onload = function() {
                             if (xhr.readyState === 4 &amp;&amp; xhr.status === 200) {
-                               /* 
-                                 Can't do this because all of the annotations won't match the id of the manifest...       
+                               /*
+                                 Can't do this because all of the annotations won't match the id of the manifest...
                                  if (url !== xhr.response["@id"]) {
                                     // If location of Manifest doesn't match id of manifest
                                     // update manifest
@@ -90,7 +90,7 @@
                         var messages = document.getElementById('messages');
                         messages.style.display = 'none';
                         var uri = document.getElementById('uri');
-                        getJSON(uri.value, sendJson);  
+                        getJSON(uri.value, sendJson);
                     }
                 </script>
             </p:panel>

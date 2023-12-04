@@ -124,7 +124,7 @@ public class ElasticStore extends AbstractStoreAdapter implements StoreAdapter {
             return new RestHighLevelClient(RestClient.builder(new HttpHost(pConnectionURL.getHost(), pConnectionURL.getPort(), pConnectionURL.getScheme())).setHttpClientConfigCallback(hacb -> hacb.addInterceptorLast(interceptor)));
         } else {
             RestClientBuilder builder = RestClient.builder(new HttpHost(pConnectionURL.getHost(), pConnectionURL.getPort(), pConnectionURL.getScheme()));
-         
+
             RestHighLevelClient tClient = new RestHighLevelClient(builder);
 
             return tClient ;
@@ -227,7 +227,7 @@ public class ElasticStore extends AbstractStoreAdapter implements StoreAdapter {
 
         tIndex.source(anno2json(pAnno));
         tIndex.setRefreshPolicy(_policy);
-	
+
         _client.index(tIndex, RequestOptions.DEFAULT);
 
         for (Target tTarget : pAnno.getTargets()) {
@@ -249,7 +249,7 @@ public class ElasticStore extends AbstractStoreAdapter implements StoreAdapter {
         }
         tJson.put("body", tBodies);
 
-        
+
         List<Map<String,Object>> tCanvases = new ArrayList<Map<String,Object>>();
         for (Target tTarget : pAnno.getTargets()) {
             Map<String, Object> tCanvasJson = new HashMap<String, Object>();
@@ -363,7 +363,7 @@ public class ElasticStore extends AbstractStoreAdapter implements StoreAdapter {
         IndexRequest tIndex = new IndexRequest(_index);
         tIndex.id(pShortId);
         tIndex.source(manifest2Json(pManifest));
-	
+
         tIndex.setRefreshPolicy(_policy);
         _client.index(tIndex, RequestOptions.DEFAULT);
 
@@ -380,7 +380,7 @@ public class ElasticStore extends AbstractStoreAdapter implements StoreAdapter {
             return tManifest.getURI();
         } else {
             return null;
-        } 
+        }
 	}
 
 	public Manifest getManifest(final String pShortId) throws IOException {
@@ -451,7 +451,7 @@ public class ElasticStore extends AbstractStoreAdapter implements StoreAdapter {
         Map<String, Object> tJson = pCanvas.toJson();
         tJson.put("short_id", tJson.remove("http://purl.org/dc/terms/identifier"));
         tIndex.source(tJson);
-	
+
         tIndex.setRefreshPolicy(_policy);
         _client.index(tIndex, RequestOptions.DEFAULT);
     }
@@ -498,7 +498,7 @@ public class ElasticStore extends AbstractStoreAdapter implements StoreAdapter {
         BoolQueryBuilder tBuilder = QueryBuilders.boolQuery();
 		if (pQuery.getMotivations() != null && !pQuery.getMotivations().isEmpty()) {
             tBuilder.must(QueryBuilders.termsQuery("motivation", pQuery.getMotivations()));
-        }    
+        }
         tBuilder.must(QueryBuilders.termQuery("target.within.id", pQuery.getScope()));
         if (pQuery.getQuery() != null && !pQuery.getQuery().isEmpty()) {
             tBuilder.must(QueryBuilders.matchQuery("body", pQuery.getQuery()).operator(Operator.AND));
@@ -513,7 +513,7 @@ public class ElasticStore extends AbstractStoreAdapter implements StoreAdapter {
         searchRequest.source(searchSourceBuilder);
         SearchResponse tResponse = _client.search(searchRequest, RequestOptions.DEFAULT);
         SearchHits hits = tResponse.getHits();
-            
+
         try {
             IIIFSearchResults tAnnoList = new IIIFSearchResults();
             tAnnoList.setId(pQuery.toURI().toString());
@@ -524,13 +524,13 @@ public class ElasticStore extends AbstractStoreAdapter implements StoreAdapter {
                 Annotation tAnno = new Annotation((Map<String,Object>)hit.getSourceAsMap().get("json"));
                 HighlightField tField = hit.getHighlightFields().get("body");
                 if (tField != null) {
-                    StringBuffer tLabel = new StringBuffer(); 
+                    StringBuffer tLabel = new StringBuffer();
                     for (Text tText : tField.getFragments()) {
                         tLabel.append(tText.string() + " ");
                     }
                     tAnno.setLabel(tLabel.toString());
                 } else {
-                    StringBuffer tLabel = new StringBuffer(); 
+                    StringBuffer tLabel = new StringBuffer();
                     for (Body tBody : tAnno.getBodies()) {
                         tLabel.append(tBody.getIndexableContent() + " ");
                     }
@@ -587,7 +587,7 @@ public class ElasticStore extends AbstractStoreAdapter implements StoreAdapter {
         }
 
         return tAnnoPageCount;
-    }    
+    }
 
 	public List<PageAnnoCount> listAnnoPages() throws IOException {
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();

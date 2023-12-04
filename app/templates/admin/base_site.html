@@ -12,6 +12,7 @@
     <script>
         const APP_NAME = "{{ APP_NAME }}";
         const APP_LANG = "{{ APP_LANG }}";
+        const CONTACT_MAIL = "{{ CONTACT_MAIL }}";
 
         const APP_URL = "{{ APP_URL }}";
         const WEBAPP_NAME = "{{ WEBAPP_NAME }}";
@@ -50,7 +51,7 @@
 
 {% block footer %}
     <div id="footer">
-        {{COPYRIGHT}} {{ APP_NAME_UPPER }} &copy; {% now "Y" %}
+        {{COPYRIGHT}} <a href="mailto:{{ CONTACT_MAIL }}">{{ APP_NAME_UPPER }}</a> &copy; {% now "Y" %}
         <br><a href="{{ APP_URL }}/{{ APP_NAME }}/rgpd">RGPD and licensing</a>
     </div>
 {% endblock %}

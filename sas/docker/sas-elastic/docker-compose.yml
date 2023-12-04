@@ -1,8 +1,8 @@
 version: '3'
 services:
   web:
-    container_name: sas 
-    build: 
+    container_name: sas
+    build:
         context: .
         dockerfile: docker/sas-elastic/Dockerfile
     ports:

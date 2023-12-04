@@ -3,7 +3,7 @@
 function waitForPort {
     echo "Waiting $1 to launch on $2 ..."
 
-    while ! nc -z localhost $2; do   
+    while ! nc -z localhost $2; do
       sleep 0.1 # wait for 1/10 of the second before check again
     done
 
@@ -21,7 +21,7 @@ mvn test
 if [ $? -ne 0 ]; then
     failures="${failures} Failed Jena tests\n"
     failed=1
-fi    
+fi
 
 echo "Testing solr:"
 
@@ -35,14 +35,14 @@ mvn test
 if [ $? -ne 0 ]; then
     failures="${failures} Failed SOLR tests\n"
     failed=1
-fi    
+fi
 
-docker-compose -f docker/sas-solr/docker-compose.yml --project-directory . down 
+docker-compose -f docker/sas-solr/docker-compose.yml --project-directory . down
 
 
 echo "Running solr-cloud test"
 
-docker-compose -f docker/sas-solr-cloud/docker-compose.yml --project-directory . up -d 
+docker-compose -f docker/sas-solr-cloud/docker-compose.yml --project-directory . up -d
 running=2
 
 # figure some way of waiting until SOLR is up and running..
@@ -58,9 +58,9 @@ docker exec --workdir /usr/src/sas simpleannotationserver_web_1 /usr/bin/mvn tes
 if [ $? -ne 0 ]; then
     failures="${failures} Failed SOLR Cloud tests\n"
     failed=1
-fi 
+fi
 
-docker-compose -f docker/sas-solr-cloud/docker-compose.yml --project-directory . down 
+docker-compose -f docker/sas-solr-cloud/docker-compose.yml --project-directory . down
 
 echo "Testing ElasticSearch:"
 
@@ -68,7 +68,7 @@ echo "Starting ElasticSearch:"
 docker-compose -f docker/sas-elastic/docker-compose.yml --project-directory . up -d elastic
 http_code=100
 while [ "$http_code" != "200" ]
-do 
+do
     sleep 5
     http_code=`curl --write-out %{http_code} --silent --output /dev/null "http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=50s"`
     echo "$http_code";
@@ -80,7 +80,7 @@ mvn test
 if [ $? -ne 0 ]; then
     failures="${failures} Failed Elastic tests\n"
     failed=1
-fi    
+fi
 
 echo "$failures"
 exit $failed

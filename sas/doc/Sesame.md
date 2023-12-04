@@ -1,6 +1,6 @@
 ## Storing annotations in Sesame rather than Jena
 
-**Deprecation Warning**: Sesame support will be removed in a future version. See [this issue](https://github.com/glenrobson/SimpleAnnotationServer/issues/73) for a discussion on the reasons why. 
+**Deprecation Warning**: Sesame support will be removed in a future version. See [this issue](https://github.com/glenrobson/SimpleAnnotationServer/issues/73) for a discussion on the reasons why.
 
 Accessing annotations in Jena can be a bit difficult as the database is embedded and located in the data directory (location configured in the [sas.properties](../src/main/webapp/WEB-INF/sas.properties). Jena also doesn't allow two Java processes to access the same data directory so you have to stop the web server before looking at the Jena database (or extend the servlet functionality to give access to the DB).
 

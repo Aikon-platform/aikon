@@ -83,22 +83,19 @@ DB_HOST="<database-host>"            # localhost
 DB_PORT="<database-port>"            # 5432
 SAS_USERNAME="<sas-username>"
 SAS_PASSWORD="<sas-password>"
-GPU_REMOTE_HOST="<gpu-host>"
-GPU_USERNAME="<gpu-username>"
-GPU_PASSWORD="<gpu-password>"
-PROD_URL="<url-used-for-prod>"       # e.g. "https://eida.obspm.fr"
+PROD_URL="<url-used-for-prod>"       # e.g. "eida.obspm.fr"
 APP_NAME="<app-name-lowercase>"      # name of the application, e.g. "eida"
 GEONAMES_USER="<geonames-username>"
 APP_LANG="<fr-or-en>"                # lang to be used in the app: work either for french (fr) or english (en)
-EXAPI="<gpu-api-address>"            # e.g. "https://dishas-ia.obspm.fr"
-API_KEY="<api-key>"
+EXAPI_URL="<gpu-api-address>"        # e.g. "https://dishas-ia.obspm.fr"
+EXAPI_KEY="<api-key>"
 REDIS_PASSWORD="<redis-password>"
 MEDIA_DIR="<media-dir>"              # absolute path to media files directory (e.g. "/home/<path>/<to>/vhs/app/mediafiles")
 ```
 
 Create a [Geonames](https://www.geonames.org/login) account, activate it and change `<geonames-username>` in the `.env` file
 
-Add an `APP_NAME` and an `PROD_URL` with the scheme and domain used in production (e.g. "https://eida.obspm.fr")
+Add an `APP_NAME` and an `PROD_URL` with the scheme and domain used in production (e.g. "eida.obspm.fr")
 
 Provide as well an `APP_LANG`: only "fr" or "en" values are supported for now
 

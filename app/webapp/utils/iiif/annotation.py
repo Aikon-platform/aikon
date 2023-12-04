@@ -16,7 +16,7 @@ from app.config.settings import (
     SAS_APP_URL,
     APP_NAME,
     API_GPU_URL,
-    API_KEY,
+    EXAPI_KEY,
     APP_URL,
 )
 from app.webapp.utils.functions import log
@@ -40,7 +40,7 @@ def send_anno_request(digit: Digitization, event):
 def anno_request(digit: Digitization):
     requests.post(
         url=f"{API_GPU_URL}/run_detect",
-        headers={"X-API-Key": API_KEY},
+        headers={"X-API-Key": EXAPI_KEY},
         data={
             "manifest_url": digit.gen_manifest_url(),
             "model": "yolo_last_sved_vhs_sullivan.pt",

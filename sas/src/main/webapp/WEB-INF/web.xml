@@ -16,7 +16,7 @@
         <filter-name>CorsFilter</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
-    <!-- Define the JSF servlet (manages the request processing life cycle 
+    <!-- Define the JSF servlet (manages the request processing life cycle
     for JavaServer Faces) -->
     <servlet>
         <servlet-name>faces-servlet</servlet-name>
@@ -29,7 +29,7 @@
         <servlet-name>faces-servlet</servlet-name>
         <url-pattern>*.xhtml</url-pattern>
         </servlet-mapping>
-   
+
 	<servlet>
 		<servlet-name>InitServer</servlet-name>
 		<servlet-class>uk.org.llgc.annotation.store.StoreConfig</servlet-class>

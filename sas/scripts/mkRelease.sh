@@ -12,7 +12,7 @@ if [ -d "$build_dir" ]; then
 else
     echo "Creating $build_dir"
     mkdir -p $build_dir
-fi    
+fi
 
 cd $build_dir
 

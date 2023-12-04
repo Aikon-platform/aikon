@@ -4,7 +4,7 @@ Sometimes it can be helpful to publish your annotations as static files to allow
 
 http://localhost:8888/manifests.xhtml
 
-This will take you to a list of Manifests that have been annotated. Some are Indexed which means you followed the [upload Manifest]() instructions. Others have been annotated without indexing the manifest. For this second type you can only download the annotations. For indexed manifests you can use the [IIIF Search API]() and view Stats on progress. 
+This will take you to a list of Manifests that have been annotated. Some are Indexed which means you followed the [upload Manifest]() instructions. Others have been annotated without indexing the manifest. For this second type you can only download the annotations. For indexed manifests you can use the [IIIF Search API]() and view Stats on progress.
 
 ![Manifest list page](images/manifest_list.png)
 
@@ -12,7 +12,7 @@ To download the annotation for an indexed manifest select the manifest and this 
 
 ![Manifest Screen](images/view_manifest.png)
 
-On this screen select 'Download annotations'. This will take you to the list of canvases for that Manifest. 
+On this screen select 'Download annotations'. This will take you to the list of canvases for that Manifest.
 
 ![Canvas list screen](images/view_canvas.png)
 

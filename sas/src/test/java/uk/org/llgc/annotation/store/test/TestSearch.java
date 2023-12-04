@@ -90,7 +90,7 @@ public class TestSearch extends TestUtils {
 	public void testPassedWithin() throws IOException, IDConflictException, MalformedAnnotation {
 		Map<String, Object> tAnnotationJSON = _annotationUtils.readAnnotaion(new FileInputStream(getClass().getResource("/jsonld/testManifestWithin.json").getFile()), StoreConfig.getConfig().getBaseURI(null));
 		Annotation tAnnotation = _store.addAnnotation(new Annotation(tAnnotationJSON));
-        
+
 		List<Manifest> tWithin = this.getWithin(tAnnotation);
         Manifest testManifest = new Manifest();
         testManifest.setURI("http://example.com/manfiest/test/manifest.json");
@@ -177,7 +177,7 @@ public class TestSearch extends TestUtils {
 
     @Test
 	public void testUTF8() throws IOException, IDConflictException, MalformedAnnotation {
-        Map<String, Object> tAnnotationJSON = _annotationUtils.readAnnotaion(new FileInputStream(getClass().getResource("/jsonld/testUTF8Annotation.json").getFile()), StoreConfig.getConfig().getBaseURI(null));        
+        Map<String, Object> tAnnotationJSON = _annotationUtils.readAnnotaion(new FileInputStream(getClass().getResource("/jsonld/testUTF8Annotation.json").getFile()), StoreConfig.getConfig().getBaseURI(null));
 
         // Load annotation
         Annotation tAnno = _store.addAnnotation(new Annotation(tAnnotationJSON));
@@ -195,7 +195,7 @@ public class TestSearch extends TestUtils {
 
      @Test
 	public void testAnnoWithTag() throws IOException, IDConflictException, MalformedAnnotation {
-        Map<String, Object> tAnnotationJSON = _annotationUtils.readAnnotaion(new FileInputStream(getClass().getResource("/jsonld/mirador-2.1.4.json").getFile()), StoreConfig.getConfig().getBaseURI(null));        
+        Map<String, Object> tAnnotationJSON = _annotationUtils.readAnnotaion(new FileInputStream(getClass().getResource("/jsonld/mirador-2.1.4.json").getFile()), StoreConfig.getConfig().getBaseURI(null));
 
         // Load annotation
         Annotation tAnno = _store.addAnnotation(new Annotation(tAnnotationJSON));

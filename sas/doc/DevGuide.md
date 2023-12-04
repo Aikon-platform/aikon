@@ -84,4 +84,3 @@ This will generated a zip file containing the jetty-runner jar and SAS jar and y
 ```
 java -jar dependency/jetty-runner.jar --port 8888 simpleAnnotationStore.war
 ```
-

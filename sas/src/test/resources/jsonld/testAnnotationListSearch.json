@@ -8,7 +8,7 @@
             "motivation": "sc:painting",
             "on": {
                 "@id":"http://example.com/image1#xywh=0,132,102,10",
-                
+
                 "within": {
                     "@id":"http://example.com/manfiest/test/manifest.json",
                     "@type":"sc:Manifest"
@@ -26,7 +26,7 @@
             "within":"http://example.com/manfiest/test/manifest.json",
             "on": {
                 "@id":"http://example.com/image1#xywh=0,132,102,10",
-                
+
                 "within": {
                     "@id":"http://example.com/manfiest/test/manifest.json",
                     "@type":"sc:Manifest"
@@ -45,7 +45,7 @@
             "within":"http://example.com/manfiest/test/manifest.json",
             "on": {
                 "@id":"http://example.com/image1#xywh=0,132,102,10",
-                
+
                 "within": {
                     "@id":"http://example.com/manfiest/test/manifest.json",
                     "@type":"sc:Manifest"
@@ -63,7 +63,7 @@
             "within":"http://example.com/manfiest/test/manifest.json",
             "on": {
                 "@id":"http://example.com/image1#xywh=0,132,102,10",
-                
+
                 "within": {
                     "@id":"http://example.com/manfiest/test/manifest.json",
                     "@type":"sc:Manifest"
@@ -81,7 +81,7 @@
             "within":"http://example.com/manfiest/test/manifest.json",
             "on": {
                 "@id":"http://example.com/image1#xywh=0,132,102,10",
-                
+
                 "within": {
                     "@id":"http://example.com/manfiest/test/manifest.json",
                     "@type":"sc:Manifest"
@@ -99,7 +99,7 @@
             "within":"http://example.com/manfiest/test/manifest.json",
             "on": {
                 "@id":"http://example.com/image1#xywh=0,132,102,10",
-                
+
                 "within": {
                     "@id":"http://example.com/manfiest/test/manifest.json",
                     "@type":"sc:Manifest"
@@ -117,7 +117,7 @@
             "within":"http://example.com/manfiest/test/manifest.json",
             "on": {
                 "@id":"http://example.com/image1#xywh=0,132,102,10",
-                
+
                 "within": {
                     "@id":"http://example.com/manfiest/test/manifest.json",
                     "@type":"sc:Manifest"
@@ -135,7 +135,7 @@
             "within":"http://example.com/manfiest/test/manifest.json",
             "on": {
                 "@id":"http://example.com/image1#xywh=0,132,102,10",
-                
+
                 "within": {
                     "@id":"http://example.com/manfiest/test/manifest.json",
                     "@type":"sc:Manifest"
@@ -153,7 +153,7 @@
             "within":"http://example.com/manfiest/test/manifest.json",
             "on": {
                 "@id":"http://example.com/image1#xywh=0,132,102,10",
-                
+
                 "within": {
                     "@id":"http://example.com/manfiest/test/manifest.json",
                     "@type":"sc:Manifest"
@@ -171,7 +171,7 @@
             "within":"http://example.com/manfiest/test/manifest.json",
             "on": {
                 "@id":"http://example.com/image1#xywh=0,132,102,10",
-                
+
                 "within": {
                     "@id":"http://example.com/manfiest/test/manifest.json",
                     "@type":"sc:Manifest"
@@ -189,7 +189,7 @@
             "within":"http://example.com/manfiest/test/manifest.json",
             "on": {
                 "@id":"http://example.com/image1#xywh=0,132,102,10",
-                
+
                 "within": {
                     "@id":"http://example.com/manfiest/test/manifest.json",
                     "@type":"sc:Manifest"

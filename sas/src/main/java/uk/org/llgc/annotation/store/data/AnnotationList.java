@@ -33,7 +33,7 @@ public class AnnotationList {
             _annotations.add(new Annotation(tUtils.frameAnnotation(tModel, pCompact)));
         }
     }
-    
+
     /**
      * Get id.
      *
@@ -42,7 +42,7 @@ public class AnnotationList {
     public String getId() {
         return _id;
     }
-    
+
     /**
      * Set id.
      *
@@ -55,7 +55,7 @@ public class AnnotationList {
     public void add(final Annotation pAnno) {
         _annotations.add(pAnno);
     }
-    
+
     public Annotation get(final String pAnnoId) {
         for (Annotation tAnno : _annotations) {
             if (tAnno.getId().equals(pAnnoId)) {
@@ -72,7 +72,7 @@ public class AnnotationList {
     public List<Annotation> getAnnotations() {
         return _annotations;
     }
-    
+
     public void setAnnotations(final List<Annotation> pAnnos) {
         _annotations = pAnnos;
     }
@@ -92,5 +92,5 @@ public class AnnotationList {
 
         return tJson;
     }
-    
+
 }

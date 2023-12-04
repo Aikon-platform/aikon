@@ -64,7 +64,7 @@ import com.github.jsonldjava.utils.JsonUtils;
 import java.nio.charset.Charset;
 
 public class SesameStore extends AbstractRDFStore implements StoreAdapter {
-	protected static Logger _logger = LogManager.getLogger(SesameStore.class.getName()); 
+	protected static Logger _logger = LogManager.getLogger(SesameStore.class.getName());
 
 	protected Repository _repo = null;
 
@@ -86,13 +86,13 @@ public class SesameStore extends AbstractRDFStore implements StoreAdapter {
 			URL tContextURL = new URL(pJson.get("@context").toString());
 			Map<String,Object> tJsonContext = (Map<String,Object>)JsonUtils.fromInputStream(tContextURL.openStream());
 			pJson.put("@context",tJsonContext.get("@context"));//"http://localhost:8080/bor/contexts/iiif-2.0.json"); // must have a remote context for a remote repo
-		}	
+		}
 		if (pJson.get("on") instanceof Map) {
 			Map<String,Object> tOn = (Map<String,Object>)pJson.get("on");
 			if (tOn.get("scope") != null) {
 				tOn.remove("scope");
-			}	
-		}	
+			}
+		}
 		String tJson = JsonUtils.toString(pJson);
 
 		RepositoryConnection tConn = null;
@@ -114,7 +114,7 @@ public class SesameStore extends AbstractRDFStore implements StoreAdapter {
 			try {
 				if (tConn != null) {
 					tConn.close();
-				}	
+				}
 			} catch (RepositoryException tExcpt) {
 				_logger.error("Problem closing the connecting to Sesame " + tExcpt.getMessage());
 				tExcpt.printStackTrace();
@@ -124,7 +124,7 @@ public class SesameStore extends AbstractRDFStore implements StoreAdapter {
 			}
 			if (tInput != null) {
 				tInput.close();
-			}	
+			}
 		}
 
 		return this.getModelFromContext(tContext);
@@ -159,7 +159,7 @@ public class SesameStore extends AbstractRDFStore implements StoreAdapter {
 			try {
 				if (tConn != null) {
 					tConn.close();
-				}	
+				}
 			} catch (RepositoryException tExcpt) {
 				_logger.error("Problem closing the connecting to Sesame " + tExcpt.getMessage());
 				tExcpt.printStackTrace();
@@ -189,7 +189,7 @@ public class SesameStore extends AbstractRDFStore implements StoreAdapter {
 			try {
 				if (tConn != null) {
 					tConn.close();
-				}	
+				}
 			} catch (RepositoryException tExcpt) {
 				_logger.error("Problem closing the connecting to Sesame " + tExcpt.getMessage());
 				tExcpt.printStackTrace();
@@ -207,7 +207,7 @@ public class SesameStore extends AbstractRDFStore implements StoreAdapter {
 		Resource tContext = _repo.getValueFactory().createIRI((String)pManifest.get("@id"));
 
 		String tJson = JsonUtils.toString(pManifest);
-		
+
 		RepositoryConnection tConn = null;
 		InputStream tInput = null;
 		try {
@@ -232,7 +232,7 @@ public class SesameStore extends AbstractRDFStore implements StoreAdapter {
 			try {
 				if (tConn != null) {
 					tConn.close();
-				}	
+				}
 			} catch (RepositoryException tExcpt) {
 				_logger.error("Problem closing the connecting to Sesame " + tExcpt.getMessage());
 				tExcpt.printStackTrace();
@@ -242,8 +242,8 @@ public class SesameStore extends AbstractRDFStore implements StoreAdapter {
 			}
 			if (tInput != null) {
 				tInput.close();
-			}	
-		} 
+			}
+		}
 
 		return pShortId;
 	}

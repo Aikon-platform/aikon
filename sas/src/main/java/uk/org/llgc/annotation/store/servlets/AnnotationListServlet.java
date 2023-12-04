@@ -20,7 +20,7 @@ import uk.org.llgc.annotation.store.data.Canvas;
 import uk.org.llgc.annotation.store.data.AnnotationList;
 
 public class AnnotationListServlet extends HttpServlet {
-	protected static Logger _logger = LogManager.getLogger(AnnotationList.class.getName()); 
+	protected static Logger _logger = LogManager.getLogger(AnnotationList.class.getName());
 	protected StoreAdapter _store = null;
 
 	public void init(final ServletConfig pConfig) throws ServletException {

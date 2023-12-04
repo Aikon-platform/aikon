@@ -8,7 +8,7 @@ html,body {
 }
 
 .ui-widget-content a {
-    color: #428bca !important; 
+    color: #428bca !important;
     text-decoration: none !important;
 }
 
@@ -64,7 +64,7 @@ ul.nav a.vote {
 
 @keyframes spinner-border {
     to { transform: rotate(360deg); }
-} 
+}
 .spinner-border{
     display: inline-block;
     width: 2rem;

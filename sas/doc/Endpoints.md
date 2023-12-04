@@ -21,14 +21,14 @@ https://github.com/glenrobson/SimpleAnnotationServer/blob/114f1024af86b03acc20cd
 Returns annotations for a canvas:
 
 ```
-/annotation/search?uri= 
+/annotation/search?uri=
 ```
 
 Parameters are:
  * `uri` is the canvas URI
 
 # Create annotation (POST)
-Creates an annotation which is posted to the URL. 
+Creates an annotation which is posted to the URL.
 
 ```
 /annotation/create
@@ -49,7 +49,7 @@ The posted annotation should have an `@id` which exists in the store
 /annotation/destroy?uri=
 ```
 
-The `uri` parameter is the ID of the annotation to delete. 
+The `uri` parameter is the ID of the annotation to delete.
 
 # Import a AnnotationList into the Annotation store (POST)
 
