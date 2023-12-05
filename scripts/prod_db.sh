@@ -21,7 +21,7 @@ db_file=$(date +%Y-%m-%d)_dump.sql
 current_dir=$(pwd)
 
 ssh -t eida "sh dump_db.sh" || error "Failed dump database"
-scp eida:backup/$db_file $current_dir || error "Failed to download database dump file"
+scp eida:backup/"$db_file" "$current_dir" || error "Failed to download database dump file"
 
 # Load environment variables from .env file
 . ../app/config/.env
@@ -37,8 +37,8 @@ sudo -i -u postgres psql -c "CREATE DATABASE $dbname;"
 sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $dbname TO $username;"
 
 # import production data to local database
-psql -h localhost -d $dbname -U $username -f $db_file || error "Failed to import production data"
-rm $db_file
+psql -h localhost -d "$dbname" -U "$username" -f "$db_file" || error "Failed to import production data"
+rm "$db_file"
 
 # Set variables in .env file
 sed -i "s/DB_NAME=.*/DB_NAME=$dbname/" ../app/config/.env

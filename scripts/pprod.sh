@@ -9,59 +9,12 @@ ENV_FILE="$APP_ROOT"/app/config/.env
 
 # Requirements
 sudo apt update
-sudo apt-get install -y wget ca-certificates
-sudo apt-get install -y python3-venv python3-dev libpq-dev nginx curl maven postgresql git build-essential poppler-utils redis-server ghostscript
 pip install --upgrade pip
 
 # Set up virtual environment
 python3 -m venv venv
 source "$APP_ROOT"/venv/bin/activate
 pip install -r "$APP_ROOT"/app/requirements-prod.txt
-
-set_app_user() {
-    USER=$1
-    GROUP=${2:-$USER}
-    SUDO_FILE="/etc/sudoers.d/$USER"
-
-    if ! id "$USER" &>/dev/null; then
-        sudo adduser "$USER"
-        sudo usermod -aG sudo "$USER"
-    fi
-
-    if ! getent group "$GROUP" &>/dev/null; then
-        sudo addgroup "$GROUP"
-    fi
-
-    if ! groups "$USER" | grep -q "\<$GROUP\>"; then
-        sudo adduser "$USER" --ingroup "$GROUP"
-    fi
-
-    if ! [ -e "$SUDO_FILE" ]; then
-        sudo touch $SUDO_FILE
-    fi
-
-    sudo chmod 0440 $SUDO_FILE
-
-    COMMAND="$USER ALL=(ALL) NOPASSWD: /usr/bin/java"
-    if ! sudo visudo -c -q -f $SUDO_FILE; then
-        echo "Syntax error in sudoers file."
-        return
-    fi
-
-    if sudo grep -Fxq "$COMMAND" "$SUDO_FILE"; then
-        echo "Command '$COMMAND' is already present in '$SUDO_FILE'. Aborting."
-        return
-    fi
-
-    echo "$COMMAND" | sudo tee -a $SUDO_FILE > /dev/null
-
-    if ! sudo visudo -c -q -f $SUDO_FILE; then
-        echo "Syntax error in sudoers file after modification. Rolling back changes."
-        sudo sed -i '$d' $SUDO_FILE
-    fi
-}
-
-set_app_user "$APP_NAME"
 
 create_db() {
     user_exists=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USERNAME'")
@@ -96,6 +49,28 @@ python "$APP_ROOT"/app/manage.py collectstatic
 
 sudo chmod 755 "$APP_ROOT/app/logs/app_log.log"
 setfacl -m group:"$APP_NAME":rwx "$APP_ROOT/app/logs/app_log.log"
+
+GUNICORN="gunicorn"
+GUNIAPP="$APP_NAME-$GUNICORN"
+
+configure_nginx() {
+    SSL_FILE=/etc/nginx/sites-available/"$APP_NAME"_"$GUNICORN"
+    sudo cp "$APP_ROOT"/gunicorn/ssl.template "$SSL_FILE"
+
+    sudo sed -i "s|PROD_URL|$PROD_URL|g" "$SSL_FILE"
+    sudo sed -i "s|DB_NAME|$DB_NAME|g" "$SSL_FILE"
+    sudo sed -i "s/SAS_PORT/$SAS_PORT/g" "$SSL_FILE"
+    sudo sed -i "s/CANTALOUPE_PORT/$CANTALOUPE_PORT/g" "$SSL_FILE"
+    sudo sed -i "s|APP_ROOT|$APP_ROOT|g" "$SSL_FILE"
+    sudo sed -i "s|MEDIA_DIR|$MEDIA_DIR|g" "$SSL_FILE"
+    sudo sed -i "s/GUNIAPP/$GUNICORN/g" "$SSL_FILE"
+
+    ln -s "$SSL_FILE" /etc/nginx/sites-enabled/
+    sudo systemctl reload nginx.service
+    sudo systemctl enable nginx.service
+    # https://docs.ansible.com/ansible/latest/collections/cisco/ise/renew_certificate_module.html
+    # TODO add $USER to role renew_certif ansible + add file web group to /etc/ansible/hosts
+}
 
 create_service() {
     SERVICE_NAME="$APP_NAME-$1"
@@ -143,20 +118,6 @@ create_service() {
     sudo systemctl enable "$SERVICE_NAME.service"
     sudo systemctl status "$SERVICE_NAME.service"
 }
-
-# NGINX & GUNICORN SET UP
-chmod +x "$APP_ROOT"/gunicorn/init.sh
-"$APP_ROOT"/gunicorn/init.sh
-
-# CANTALOUPE SET UP
-chmod +x "$APP_ROOT"/cantaloupe/init.sh
-"$APP_ROOT"/cantaloupe/init.sh
-create_service cantaloupe
-
-# SAS SET UP
-sudo chmod a+rw "$APP_ROOT"/sas/target/*
-create_service sas
-sudo sh -c "echo -n '$SAS_USERNAME:$SAS_PASSWORD' >> /etc/nginx/.htpasswd"
 
 # REDIS & CELERY SETUP
 # Allow systemd to manage redis

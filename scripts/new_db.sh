@@ -32,4 +32,4 @@ find ../app/webapp/migrations -type f ! -name '__init__.py' ! -name 'init.py' -d
 ../venv/bin/python ../app/manage.py migrate
 
 # create superuser
-../venv/bin/python ../app/manage.py createsuperuser --username=$username --email=
+../venv/bin/python ../app/manage.py createsuperuser --username="$username" --email=
