@@ -72,6 +72,24 @@ configure_nginx() {
     # TODO add $USER to role renew_certif ansible + add file web group to /etc/ansible/hosts
 }
 
+create_logs() {
+    SERVICE_DIR="$1"
+    LOGS="$SERVICE_DIR/error.log"
+    SDTOUT="$SERVICE_DIR/stdout.log"
+    > $LOGS || touch "$LOGS"
+    > $SDTOUT || touch "$SDTOUT"
+
+    chmod u+w $LOGS && chmod u+w $SDTOUT
+}
+
+reload_service() {
+    SERVICE_NAME="$1"
+    sudo systemctl daemon-reload
+    sudo systemctl start "$SERVICE_NAME.service"
+    sudo systemctl enable "$SERVICE_NAME.service"
+    sudo systemctl status "$SERVICE_NAME.service"
+}
+
 create_service() {
     SERVICE_NAME="$APP_NAME-$1"
     SERVICE_DIR="$APP_ROOT/$1"
@@ -80,13 +98,9 @@ create_service() {
 
     sudo chmod -R 755 "$SERVICE_DIR"
 
-    LOGS="$SERVICE_DIR/error.log"
-    SDTOUT="$SERVICE_DIR/stdout.log"
-    > $LOGS || touch "$LOGS"
-    > $SDTOUT || touch "$SDTOUT"
+    create_logs "$SERVICE_DIR"
 
     chmod +x "$SERVICE_DIR"/start.sh
-    chmod u+w $LOGS && chmod u+w $SDTOUT
 
     if [ -e "$SERVICE_PATH" ]; then
         echo "Service file '$SERVICE_PATH' already exists."
@@ -94,6 +108,8 @@ create_service() {
     else
         echo "# $SERVICE_PATH
             [Unit]
+            User=$APP_NAME
+            Group=$APP_NAME
             Description=$APP_NAME $1 service
             After=network.target
             After=nginx.service
@@ -106,17 +122,11 @@ create_service() {
 
             [Install]
             WantedBy=multi-user.target" | sudo tee "$SERVICE_PATH" > /dev/null
-            # User=$APP_NAME
-            # Group=$APP_NAME
-            # StandardOutput=file:$SDTOUT
 
         echo "Service file '$SERVICE_NAME' created."
     fi
 
-    sudo systemctl daemon-reload
-    sudo systemctl start "$SERVICE_NAME.service"
-    sudo systemctl enable "$SERVICE_NAME.service"
-    sudo systemctl status "$SERVICE_NAME.service"
+    reload_service "$SERVICE_NAME"
 }
 
 # REDIS & CELERY SETUP
