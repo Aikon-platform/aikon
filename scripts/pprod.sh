@@ -51,7 +51,6 @@ sudo chmod 755 "$APP_ROOT/app/logs/app_log.log"
 setfacl -m group:"$APP_NAME":rwx "$APP_ROOT/app/logs/app_log.log"
 
 GUNICORN="gunicorn"
-GUNIAPP="$APP_NAME-$GUNICORN"
 
 configure_nginx() {
     SSL_FILE=/etc/nginx/sites-available/"$APP_NAME"_"$GUNICORN"
