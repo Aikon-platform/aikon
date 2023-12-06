@@ -49,7 +49,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     max_num = 5
     readonly_fields = ("digit_preview", "view_digit", "view_anno")
 
-    fields = ["digit_type", "pdf", "manifest", "images"]
+    fields = ["digit_type", "pdf", "manifest", "images", "is_open", "source"]
 
     def digit_url(self):
         return f"/{APP_NAME}-admin/{WEBAPP_NAME}/digitization"

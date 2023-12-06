@@ -30,7 +30,7 @@ class ConservationPlace(models.Model):
             return f"{self.city} | {self.name}"
         return self.name
 
-    name = models.CharField(verbose_name=get_name("name"), max_length=200, unique=True)
+    name = models.CharField(verbose_name=get_name("name"), max_length=200)
     city = models.ForeignKey(
         Place,
         verbose_name=get_name("city"),

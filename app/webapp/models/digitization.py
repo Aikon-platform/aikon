@@ -57,7 +57,6 @@ ALLOWED_EXT = ["jpg", "jpeg", "png", "tif"]
 
 def get_name(fieldname, plural=False):
     fields = {
-        "source": {"en": "digitization source", "fr": "source de la numérisation"},
         "view_digit": {"en": "visualize", "fr": "visualiser"},
         "view_anno": {"en": "annotations", "fr": "annotations"},
         "is_validated": {"en": "validate annotations", "fr": "valider les annotations"},
@@ -65,6 +64,12 @@ def get_name(fieldname, plural=False):
             "en": "annotations will no longer be editable",
             "fr": "les annotations ne seront plus modifiables",
         },
+        "is_open": {"en": "free to use", "fr": "libre d'utilisation"},
+        "is_open_info": {
+            "en": "are the digitized images copyright-free?",
+            "fr": "les images numérisées sont-elles libres de droits ?",
+        },
+        "source": {"en": "digitization source", "fr": "source de la numérisation"},
     }
     return get_fieldname(fieldname, fields, plural)
 
@@ -114,6 +119,17 @@ class Digitization(models.Model):
         validators=[FileExtensionValidator(allowed_extensions=ALLOWED_EXT)],
         help_text=IMG_INFO,
         blank=True,
+    )
+    is_open = models.BooleanField(
+        verbose_name=get_name("is_open"),
+        default=False,
+        help_text=get_name("is_open_info"),
+    )
+    source = models.CharField(
+        verbose_name=get_name("source"),
+        max_length=500,
+        blank=True,
+        null=True,
     )
 
     def get_witness(self):
