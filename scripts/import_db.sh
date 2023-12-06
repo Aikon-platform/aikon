@@ -27,7 +27,7 @@ db_file=$1
 username=${DB_USERNAME:-admin}
 
 # check if the database $DB_NAME already exists, if so, drop it
-sudo -i -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" | grep -q 1 && sudo -u postgres psql -c "DROP DATABASE $DB_NAME"
+sudo -u postgres psql -c "DROP DATABASE $DB_NAME"
 
 # create database
 sudo -i -u postgres psql -c "CREATE DATABASE $DB_NAME;"
@@ -37,11 +37,13 @@ sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $usern
 psql -h localhost -d "$DB_NAME" -U "$username" -f "$db_file" || error "Failed to import production data"
 
 # Empty migration directory and create new migrations
-find ../app/webapp/migrations -type f ! -name '__init__.py' ! -name 'init.py' -delete
-../venv/bin/python ../app/manage.py makemigrations || error "Failed to create new migrations"
+#find ../app/webapp/migrations -type f ! -name '__init__.py' ! -name 'init.py' -delete
+#../venv/bin/python ../app/manage.py makemigrations || error "Failed to create new migrations"
 
 # Update database schema with new migrations
-../venv/bin/python ../app/manage.py migrate || error "Failed to apply new model to database"
+#../venv/bin/python ../app/manage.py migrate || error "Failed to apply new model to database"
 
 # create superuser
 #../venv/bin/python ../app/manage.py createsuperuser --username="$username" --email="$CONTACT_MAIL"
+
+#../venv/bin/python ../app/manage.py runserver localhost:8000

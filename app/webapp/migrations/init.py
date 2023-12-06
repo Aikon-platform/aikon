@@ -197,41 +197,37 @@ def populate_languages(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
-    initial = True
-
-    dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-    ]
-
+    # dependencies = [
+    #     migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    # ]
     operations = [
-        migrations.CreateModel(
-            name="Language",
-            fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
-                (
-                    "lang",
-                    models.CharField(
-                        max_length=200, unique=True, verbose_name="Language"
-                    ),
-                ),
-                (
-                    "code",
-                    models.CharField(max_length=200, unique=True, verbose_name="Code"),
-                ),
-            ],
-            options={
-                "verbose_name": "Language",
-                "verbose_name_plural": "Language",
-            },
-        ),
+        # migrations.CreateModel(
+        #     name="Language",
+        #     fields=[
+        #         (
+        #             "id",
+        #             models.BigAutoField(
+        #                 auto_created=True,
+        #                 primary_key=True,
+        #                 serialize=False,
+        #                 verbose_name="ID",
+        #             ),
+        #         ),
+        #         (
+        #             "lang",
+        #             models.CharField(
+        #                 max_length=200, unique=True, verbose_name="Language"
+        #             ),
+        #         ),
+        #         (
+        #             "code",
+        #             models.CharField(max_length=200, unique=True, verbose_name="Code"),
+        #         ),
+        #     ],
+        #     options={
+        #         "verbose_name": "Language",
+        #         "verbose_name_plural": "Language",
+        #     },
+        # ),
         migrations.RunPython(populate_languages),
     ]
