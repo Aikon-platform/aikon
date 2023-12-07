@@ -27,7 +27,7 @@ db_file=$1
 username=${DB_USERNAME:-admin}
 
 # check if the database $DB_NAME already exists, if so, drop it
-sudo -u postgres psql -c "DROP DATABASE $DB_NAME"
+#sudo -u postgres psql -c "DROP DATABASE $DB_NAME"
 
 # create database
 sudo -i -u postgres psql -c "CREATE DATABASE $DB_NAME;"

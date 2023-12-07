@@ -16,35 +16,35 @@ python3 -m venv venv
 source "$APP_ROOT"/venv/bin/activate
 pip install -r "$APP_ROOT"/app/requirements-prod.txt
 
-create_db() {
-    user_exists=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USERNAME'")
-    if [ "$user_exists" != "1" ]; then
-        sudo -u postgres psql -c "CREATE USER $DB_USERNAME WITH PASSWORD '$DB_PASSWORD';"
-        sudo -u postgres psql -c "ALTER ROLE $DB_USERNAME SET client_encoding TO 'utf8';"
-        sudo -u postgres psql -c "ALTER ROLE $DB_USERNAME SET default_transaction_isolation TO 'read committed';"
-        sudo -u postgres psql -c "ALTER ROLE $DB_USERNAME SET timezone TO 'UTC';"
-    fi
-    sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;"
-    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USERNAME;"
-}
+#create_db() {
+#    user_exists=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USERNAME'")
+#    if [ "$user_exists" != "1" ]; then
+#        sudo -u postgres psql -c "CREATE USER $DB_USERNAME WITH PASSWORD '$DB_PASSWORD';"
+#        sudo -u postgres psql -c "ALTER ROLE $DB_USERNAME SET client_encoding TO 'utf8';"
+#        sudo -u postgres psql -c "ALTER ROLE $DB_USERNAME SET default_transaction_isolation TO 'read committed';"
+#        sudo -u postgres psql -c "ALTER ROLE $DB_USERNAME SET timezone TO 'UTC';"
+#    fi
+#    sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;"
+#    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USERNAME;"
+#}
+#
+#check_dbname() {
+#    db_name=$1
+#    count=2
+#    while psql -lqt | cut -d \| -f 1 | grep -qw "$db_name"; do
+#        db_name="${1}_$count"
+#        ((count++))
+#    done
+#    sed -i "s~^DB_NAME=.*~DB_NAME=\"$db_name\"~" "$ENV_FILE"
+#    echo "$db_name"
+#}
+#
+#DB_NAME=$(check_dbname "$DB_NAME")
+#create_db "$DB_NAME"
 
-check_dbname() {
-    db_name=$1
-    count=2
-    while psql -lqt | cut -d \| -f 1 | grep -qw "$db_name"; do
-        db_name="${1}_$count"
-        ((count++))
-    done
-    sed -i "s~^DB_NAME=.*~DB_NAME=\"$db_name\"~" "$ENV_FILE"
-    echo "$db_name"
-}
-
-DB_NAME=$(check_dbname "$DB_NAME")
-create_db "$DB_NAME"
-
-python "$APP_ROOT"/app/manage.py makemigrations
-python "$APP_ROOT"/app/manage.py migrate
-python "$APP_ROOT"/app/manage.py createsuperuser
+#python "$APP_ROOT"/app/manage.py makemigrations
+#python "$APP_ROOT"/app/manage.py migrate
+#python "$APP_ROOT"/app/manage.py createsuperuser
 python "$APP_ROOT"/app/manage.py collectstatic
 
 sudo chmod 755 "$APP_ROOT/app/logs/app_log.log"
@@ -64,9 +64,9 @@ configure_nginx() {
     sudo sed -i "s|MEDIA_DIR|$MEDIA_DIR|g" "$SSL_FILE"
     sudo sed -i "s/GUNIAPP/$GUNICORN/g" "$SSL_FILE"
 
-    ln -s "$SSL_FILE" /etc/nginx/sites-enabled/
-    sudo systemctl reload nginx.service
-    sudo systemctl enable nginx.service
+#    ln -s "$SSL_FILE" /etc/nginx/sites-enabled/
+#    sudo systemctl reload nginx.service
+#    sudo systemctl enable nginx.service
     # https://docs.ansible.com/ansible/latest/collections/cisco/ise/renew_certificate_module.html
     # TODO add $USER to role renew_certif ansible + add file web group to /etc/ansible/hosts
 }
