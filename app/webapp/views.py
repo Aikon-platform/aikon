@@ -143,7 +143,7 @@ def reindex_anno(request, obj_ref):
     """
     To reindex annotations from a text file named after <obj_ref>
     either to create an Annotation obj from an annotation txt file if obj_ref is a digit_ref
-    or to delete then create a new annotation if obj_ref is a anno_ref
+    or to delete then create a new annotation if obj_ref is an anno_ref
     """
     passed, obj = check_ref(obj_ref, "Annotation")
     if not passed:
@@ -180,6 +180,40 @@ def reindex_anno(request, obj_ref):
         create_empty_anno(digit)
 
     return JsonResponse({"error": f"No annotation file for reference #{obj_ref}."})
+
+
+def index_anno(request, anno_ref=None):
+    """
+    Index the content of a txt file named after the anno_ref into SAS
+    without creating an annotation record if one is already existing
+    If no anno_ref is provided all anno files for mediafiles/annotation are indexed
+    """
+    anno_files = os.listdir(ANNO_PATH) if not anno_ref else [anno_ref]
+
+    for file in anno_files:
+        ref = parse_ref(file.replace(".txt", ""))
+        if not ref or not ref["anno"]:
+            # if there is no anno_id in the ref, pass
+            continue
+        anno_id = ref["anno"][1]
+        anno = Annotation.objects.filter(pk=anno_id).first()
+        if not anno:
+            digit = Digitization.objects.filter(pk=ref["digit"][1]).first()
+            if not digit:
+                # if there is no digit corresponding to the ref, pass
+                continue
+            anno = Annotation(id=anno_id, digitization=digit, model="CHANGE THIS VALUE")
+            anno.save()
+
+        try:
+            index_annotations(anno)
+        except Exception as e:
+            log(
+                f"[index_anno] Failed to index annotations for ref #{file.replace('.txt', '')}",
+                e,
+            )
+
+    return JsonResponse({"Success": f"Indexation is done"})
 
 
 def delete_send_anno(request, anno_ref):
