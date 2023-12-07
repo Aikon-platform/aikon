@@ -593,7 +593,7 @@ def get_manifest_annos(anno: Annotation):
 def check_indexation_annos(anno: Annotation, reindex=False):
     lines = get_txt_annos(anno)
     if not lines:
-        return
+        return False
 
     generated_annos = 0
     indexed_annos = 0
@@ -617,7 +617,7 @@ def check_indexation_annos(anno: Annotation, reindex=False):
                     if not index_manifest_in_sas(
                         anno.gen_manifest_url(version=MANIFEST_V2)
                     ):
-                        return
+                        return False
             elif len_line == 4:
                 # if line = "x y w h"
                 generated_annos += 1
@@ -626,6 +626,7 @@ def check_indexation_annos(anno: Annotation, reindex=False):
             f"[check_indexation_annos] Failed to check indexation for anno #{anno.id}",
             e,
         )
+        return False
 
     if generated_annos != indexed_annos:
         for sas_anno_id in sas_anno_ids:
@@ -633,6 +634,8 @@ def check_indexation_annos(anno: Annotation, reindex=False):
         if reindex:
             if index_annotations(anno):
                 log(f"[check_indexation_annos] Annotation #{anno.id} was reindexed")
+                return True
+    return True
 
 
 def get_anno_images(anno: Annotation):

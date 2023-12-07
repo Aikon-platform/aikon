@@ -42,6 +42,8 @@ from app.webapp.utils.iiif.annotation import (
     process_anno,
     delete_annos,
     create_empty_anno,
+    get_manifest_annos,
+    check_indexation_annos,
 )
 
 from app.webapp.utils.paths import ANNO_PATH, MEDIA_DIR
@@ -191,10 +193,15 @@ def index_anno(request, anno_ref=None):
     """
     anno_files = os.listdir(ANNO_PATH) if not anno_ref else [anno_ref]
 
+    indexed_anno = []
+    not_indexed_anno = []
+
     for file in anno_files:
-        ref = parse_ref(file.replace(".txt", ""))
+        a_ref = file.replace(".txt", "")
+        ref = parse_ref(a_ref)
         if not ref or not ref["anno"]:
             # if there is no anno_id in the ref, pass
+            not_indexed_anno.append(a_ref)
             continue
         anno_id = ref["anno"][1]
         anno = Annotation.objects.filter(pk=anno_id).first()
@@ -202,19 +209,23 @@ def index_anno(request, anno_ref=None):
             digit = Digitization.objects.filter(pk=ref["digit"][1]).first()
             if not digit:
                 # if there is no digit corresponding to the ref, pass
+                not_indexed_anno.append(a_ref)
                 continue
             anno = Annotation(id=anno_id, digitization=digit, model="CHANGE THIS VALUE")
             anno.save()
 
         try:
-            index_annotations(anno)
+            if check_indexation_annos(anno, True):
+                indexed_anno.append(a_ref)
+            else:
+                not_indexed_anno.append(a_ref)
         except Exception as e:
-            log(
-                f"[index_anno] Failed to index annotations for ref #{file.replace('.txt', '')}",
-                e,
-            )
+            not_indexed_anno.append(a_ref)
+            log(f"[index_anno] Failed to index annotations for ref #{a_ref}", e)
 
-    return JsonResponse({"Success": f"Indexation is done"})
+    return JsonResponse(
+        {"All": anno_files, "Indexed": indexed_anno, "Not indexed": not_indexed_anno}
+    )
 
 
 def delete_send_anno(request, anno_ref):
