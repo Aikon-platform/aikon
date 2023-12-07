@@ -12,7 +12,7 @@ MODEL_NAMES = {
     "ConservationPlace": {"en": "conservation place", "fr": "lieu de conservation"},
     "Manifest": {"en": "manifest", "fr": "manifest"},
     "Manuscript": {"en": "manuscript", "fr": "manuscrit"},
-    "Volume": {"en": "volume", "fr": "tome"},
+    "Volume": {"en": "volume", "fr": "volume"},
     "Print": {"en": "print", "fr": "imprimé"},
     "Person": {"en": "historical actor", "fr": "acteur historique"},
     "Series": {"en": "series", "fr": "série"},
