@@ -27,6 +27,7 @@ from app.webapp.views import (
     rgpd,
     LanguageAutocomplete,
     legacy_manifest,
+    index_anno,
 )
 
 
@@ -116,6 +117,16 @@ urlpatterns = [
         f"{APP_NAME}/reindex-annotation/<str:obj_ref>",
         reindex_anno,
         name="reindex-annotations",
+    ),
+    path(
+        f"{APP_NAME}/index-annotation/<str:anno_ref>",
+        index_anno,
+        name="index-annotations",
+    ),
+    path(
+        f"{APP_NAME}/index-annotation",
+        index_anno,
+        name="index-annotations",
     ),
     path(
         f"{APP_NAME}/delete-run-annotation/<str:anno_ref>",
