@@ -25,6 +25,7 @@ from app.webapp.models.utils.constants import (
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
 from app.webapp.utils.functions import get_icon, flatten, format_dates
+from app.webapp.utils.logger import log
 
 
 def get_name(fieldname, plural=False):
@@ -63,7 +64,11 @@ class Witness(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        cons_place = self.place.name if self.place else CONS_PLA_MSG
+        try:
+            cons_place = self.place.name if self.place else CONS_PLA_MSG
+        except Exception as e:
+            log("[Witness.__str__] no place?", e)
+            cons_place = CONS_PLA_MSG
         return format_html(f"{cons_place} | {self.id_nb}")
 
     def get_absolute_url(self):
