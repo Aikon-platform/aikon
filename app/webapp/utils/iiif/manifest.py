@@ -46,8 +46,9 @@ def get_meta_value(metadatum, label: str):
     return get_meta(metadatum, "value")
 
 
-def process_images(obj: Digitization | Annotation, seq, version=None):
+def process_images(obj, seq, version=None):
     """
+    obj: Digitization | Annotation
     Process the images of a witness and add them to a sequence
     """
     class_name = obj.__class__.__name__
@@ -72,8 +73,9 @@ def process_images(obj: Digitization | Annotation, seq, version=None):
     return True
 
 
-def gen_manifest_json(obj: Digitization | Annotation, version=None):
+def gen_manifest_json(obj, version=None):
     """
+    obj: Digitization | Annotation
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
