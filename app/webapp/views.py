@@ -185,6 +185,7 @@ def reindex_anno(request, obj_ref):
     return JsonResponse({"error": f"No annotation file for reference #{obj_ref}."})
 
 
+@user_passes_test(is_superuser)
 def index_anno(request, anno_ref=None):
     """
     Index the content of a txt file named after the anno_ref into SAS
