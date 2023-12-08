@@ -14,6 +14,7 @@ configure_nginx() {
     sudo cp "$SCRIPT_DIR"/ssl.template "$SSL_FILE"
 
     sudo sed -i "s|PROD_URL|$PROD_URL|g" "$SSL_FILE"
+    sudo sed -i "s|APP_NAME|$APP_NAME|g" "$SSL_FILE"
     sudo sed -i "s|DB_NAME|$DB_NAME|g" "$SSL_FILE"
     sudo sed -i "s/SAS_PORT/$SAS_PORT/g" "$SSL_FILE"
     sudo sed -i "s/CANTALOUPE_PORT/$CANTALOUPE_PORT/g" "$SSL_FILE"
@@ -58,15 +59,18 @@ create_service() {
 
               [Service]
               WorkingDirectory=$APP_ROOT
-              ExecStart=$SERVICE_DIR/start.sh
+              ExecStart=$APP_ROOT/venv/bin/gunicorn \
+                        --access-logfile $SERVICE_DIR/stdout.log  \
+                        --error-logfile $SERVICE_DIR/error.log  \
+                        --workers 3 \
+                        --bind unix:/run/gunicorn.sock \
+                        --timeout 150 \
+                        app.config.wsgi:application
               StandardError=append:$LOGS
               Restart=always
 
               [Install]
               WantedBy=multi-user.target" | sudo tee "$SERVICE_PATH" > /dev/null
-              # StandardOutput=file:$SDTOUT
-              # User=$APP_NAME
-              # Group=$APP_NAME
 
         echo "Service file '$SERVICE_NAME' created."
     fi
