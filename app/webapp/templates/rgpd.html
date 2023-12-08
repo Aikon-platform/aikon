@@ -2,6 +2,12 @@
 
 {% load static %}
 
+{% block branding %}
+    <h1 id="site-name">
+        <a href="{% url 'admin:index' %}">{{ APP_NAME_UPPER }} administration</a>
+    </h1>
+{% endblock %}
+
 {% block title %}RGPD compliance{% endblock %}
 
 {% block extrahead %}
@@ -26,7 +32,7 @@
 <p>The data is accessible to:</p>
 <ul>
     <li>Webmasters, site administrators of the {{ APP_NAME_UPPER }}' project</li>
-    <li>Authenticated administrators of {{ APP_URL }} website</li>
+    <li>Authenticated administrators of <a href="{{ APP_URL }}">{{ APP_URL }}</a> website</li>
 </ul>
 
 <p>No data transfer outside the European Union is carried out.</p>
