@@ -17,7 +17,9 @@ SECRET_KEY = ENV("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = ENV.bool("DEBUG")
 
-ALLOWED_HOSTS = ENV.list("ALLOWED_HOSTS")
+hosts = ENV.list("ALLOWED_HOSTS")
+hosts.append(ENV("PROD_URL"))
+ALLOWED_HOSTS = hosts
 
 APP_LANG = ENV("APP_LANG")
 
