@@ -13,6 +13,9 @@ class TagFilter(AutocompleteFilter):
 class TagAdmin(admin.ModelAdmin):
     search_fields = ("label",)
     list_filter = ("label",)
+    list_display = ("id", "label")
+    list_display_links = ("label",)
+    ordering = ("id",)
 
     def has_module_permission(self, request):
         """
