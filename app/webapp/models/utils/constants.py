@@ -147,7 +147,6 @@ IMG_INFO = (
     if APP_LANG == "en"
     else "Envoyez des images jusqu'à 2 Go."
 )
-
 MANIFEST_DESC = (
     "A manifest allow to describe and share scans with their metadata based on the IIIF standard."
     if APP_LANG == "en"
@@ -159,6 +158,7 @@ MANIFEST_INFO = f"""<div class='tooltip'>
              </div>
              E.g.: <a href='https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json' target='_blank'>
              https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json</a>"""
+SOURCE_INFO = "Example: Gallica." if APP_LANG == "en" else "Exemple : Gallica."
 
 ###################################
 #        VALIDATION ERRORS        #

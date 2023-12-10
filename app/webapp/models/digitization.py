@@ -6,6 +6,7 @@ from iiif_prezi.factory import StructuralError
 
 from app.config.settings import APP_URL, APP_NAME
 from app.webapp.models import get_wit_abbr, get_wit_type
+from app.webapp.models.digitization_source import DigitizationSource
 from app.webapp.models.utils.functions import get_fieldname
 
 import threading
@@ -30,6 +31,7 @@ from app.webapp.models.utils.constants import (
     MAN_ABBR,
     PDF_ABBR,
     DIG,
+    SOURCE_INFO,
 )
 from app.webapp.utils.functions import (
     pdf_to_img,
@@ -125,11 +127,19 @@ class Digitization(models.Model):
         default=False,
         help_text=get_name("is_open_info"),
     )
-    source = models.CharField(
+    """source = models.CharField(
         verbose_name=get_name("source"),
         max_length=500,
         blank=True,
         null=True,
+    )"""
+    source = models.ForeignKey(
+        DigitizationSource,
+        verbose_name=get_name("source"),
+        blank=True,
+        null=True,
+        help_text=SOURCE_INFO,
+        on_delete=models.SET_NULL,
     )
 
     def get_witness(self):
