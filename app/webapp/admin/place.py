@@ -15,6 +15,9 @@ class PlaceFilter(AutocompleteFilter):
 
 @admin.register(Place)
 class PlaceAdmin(UnregisteredAdmin):
+    class Media:
+        css = {"all": ("css/witness-form.css",)}
+
     form = PlaceForm
     search_fields = ("name",)
     list_filter = ("name",)
