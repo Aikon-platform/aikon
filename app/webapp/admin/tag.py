@@ -11,6 +11,9 @@ class TagFilter(AutocompleteFilter):
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
+    class Media:
+        css = {"all": ("css/witness-form.css",)}
+
     search_fields = ("label",)
     list_filter = ("label",)
     list_display = ("id", "label")

@@ -1,5 +1,6 @@
 from app.webapp.admin.admin import *
 from app.webapp.admin.digitization import *
+from app.webapp.admin.digitization_source import *
 from app.webapp.admin.conservation_place import *
 from app.webapp.admin.content import *
 from app.webapp.admin.edition import *

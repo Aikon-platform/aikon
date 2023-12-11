@@ -20,11 +20,11 @@ DEBUG = ENV.bool("DEBUG")
 hosts = ENV.list("ALLOWED_HOSTS")
 hosts.append(ENV("PROD_URL"))
 ALLOWED_HOSTS = hosts
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 APP_LANG = ENV("APP_LANG")
 
 CONTACT_MAIL = ENV("CONTACT_MAIL")
-
 
 # Application definition
 

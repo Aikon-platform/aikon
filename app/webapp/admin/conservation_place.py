@@ -8,6 +8,7 @@ from app.webapp.models.conservation_place import ConservationPlace, get_name
 class ConservationPlaceFilter(AutocompleteFilter):
     title = get_name("ConservationPlace")
     field_name = "place"  # name of field in Witness
+    ordering = ("name",)
 
 
 @admin.register(ConservationPlace)
