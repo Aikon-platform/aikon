@@ -89,7 +89,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
             if not witness.place:
                 witness.set_conservation_place(form.instance.place)
             if len(witness.get_contents()) == 0:
-                witness.add_content(form.instance.work)
+                witness.add_content(form.instance.work, True)
             witness.save()
 
     def save_model(self, request, obj, form, change):

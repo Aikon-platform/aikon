@@ -184,12 +184,19 @@ class Witness(models.Model):
 
     def get_dates(self):
         cont_dates = [cont.get_dates() for cont in self.get_contents()]
-        wit_dates = [
-            d
-            for dates in cont_dates
-            if any(d is not None for d in dates)
-            for d in dates
-        ]
+        wit_dates = list(
+            filter(
+                None,
+                [
+                    d
+                    for dates in cont_dates
+                    if any(d is not None for d in dates)
+                    for d in dates
+                ],
+            )
+        )
+        if len(wit_dates) == 1:
+            return None, wit_dates[0]
         return (min(wit_dates), max(wit_dates)) if wit_dates else (None, None)
 
     def get_contents(self):
@@ -290,11 +297,12 @@ class Witness(models.Model):
     def set_edition(self, edition: Edition):
         self.edition = edition
 
-    def add_content(self, work: Work):
+    def add_content(self, work: Work, is_complete=False):
         from app.webapp.models.content import Content
 
         content = Content()
         content.work = work
+        content.whole_witness = is_complete
         content.witness = self
         content.save()
 

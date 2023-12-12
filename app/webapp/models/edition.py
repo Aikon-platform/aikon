@@ -12,6 +12,7 @@ def get_name(fieldname, plural=False):
         "publisher": {"en": "publisher", "fr": "éditeur"},
         "no_publisher": {"en": "no publisher", "fr": "pas d'éditeur"},
         # "no_pub_place": {"en": "unknown publication place", "fr": "lieu de publication inconnu"},
+        "name": {"en": "title", "fr": "titre"},
         "name_info": {
             "en": "name without historical value, useful to distinguish several editions sharing date and place of publication",
             "fr": "nom sans valeur historique, utile pour distinguer plusieurs éditions partageant date et lieu de publication",
