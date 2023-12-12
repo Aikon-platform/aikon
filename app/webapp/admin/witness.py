@@ -299,5 +299,5 @@ class WitnessInline(nested_admin.NestedStackedInline):
     model = Witness
     extra = 0  # 1
     ordering = ("id",)
-    fields = [("id_nb", "place"), ("volume_nb", "volume_title")]
+    fields = [("volume_nb", "volume_title")]
     inlines = [DigitizationInline]

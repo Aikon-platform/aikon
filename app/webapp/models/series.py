@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils.html import format_html
 
+from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.edition import Edition
 from app.webapp.models.tag import Tag
 from app.webapp.models.utils.functions import get_fieldname
@@ -13,6 +14,11 @@ from app.webapp.utils.functions import validate_dates
 def get_name(fieldname, plural=False):
     fields = {
         "notes": {"en": "additional notes", "fr": "éléments descriptifs du contenu"},
+        "vol_nb": {"en": "volume n°", "fr": "volume n°"},
+        "no_vol_nb": {
+            "en": "No volume number provided",
+            "fr": "Pas de numéro de volume renseigné",
+        },
     }
     return get_fieldname(fieldname, fields, plural)
 
@@ -47,6 +53,13 @@ class Series(models.Model):
         Work,
         verbose_name=get_name("Work"),
         on_delete=models.SET_NULL,
+        null=True,
+    )
+    place = models.ForeignKey(
+        ConservationPlace,
+        verbose_name=get_name("ConservationPlace"),
+        on_delete=models.SET_NULL,
+        blank=True,
         null=True,
     )
     tags = models.ManyToManyField(

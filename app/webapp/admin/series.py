@@ -3,8 +3,8 @@ from django.contrib import admin
 
 from app.webapp.admin.role import RoleInline
 from app.webapp.admin.witness import WitnessInline
-from app.webapp.models.series import Series
-from app.webapp.models.edition import get_name
+from app.webapp.models.series import Series, get_name
+from app.webapp.models.edition import get_name as ed_get_name
 from app.webapp.models.utils.constants import TPR, TPR_ABBR
 from app.webapp.utils.functions import format_start_end
 
@@ -38,7 +38,14 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
     # NOTE: attribute to use to change to template of witness (template at: templates/admin/form.html)
     change_form_template = "admin/form.html"
 
-    fields = ["work", "edition", ("date_min", "date_max"), "notes", "tags", "is_public"]
+    fields = [
+        ("work", "edition"),
+        ("date_min", "date_max"),
+        "place",
+        "notes",
+        "tags",
+        "is_public",
+    ]
     inlines = [RoleInline, WitnessInline]
 
     @admin.display(description=get_name("Work"))
@@ -52,11 +59,11 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
     def get_roles(self, obj: Series):
         return obj.get_person_names()
 
-    @admin.display(description=get_name("publisher"))
+    @admin.display(description=ed_get_name("publisher"))
     def get_publisher(self, obj):
         return obj.edition.publisher
 
-    @admin.display(description=get_name("pub_place"))
+    @admin.display(description=ed_get_name("pub_place"))
     def get_place(self, obj):
         return obj.edition.place
 
@@ -68,9 +75,21 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         super(SeriesAdmin, self).save_related(request, form, formset, change)
 
         for witness in form.instance.witness_set.all():
-            witness.type = TPR_ABBR
-            witness.set_edition(form.instance.edition)
-            witness.add_content(form.instance.work)
+            if not witness.type:
+                witness.type = TPR_ABBR
+            if not witness.edition:
+                witness.set_edition(form.instance.edition)
+            if not witness.id_nb:
+                vol_nb = (
+                    f"{get_name('vol_nb')}{witness.volume_nb}"
+                    if witness.volume_nb
+                    else get_name("no_vol_nb")
+                )
+                witness.set_id_nb(vol_nb)
+            if not witness.place:
+                witness.set_conservation_place(form.instance.place)
+            if len(witness.get_contents()) == 0:
+                witness.add_content(form.instance.work)
             witness.save()
 
     def save_model(self, request, obj, form, change):
