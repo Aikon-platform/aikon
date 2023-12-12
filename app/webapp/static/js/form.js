@@ -9,24 +9,24 @@ function hide(div) {
  * TOGGLE FIELDS IN DIGIT BLOCK
  */
 function getFields(digitType, fields){
-    const [manifestDiv, pdfDiv, imageDiv, viewDigit, viewAnno] = fields
+    const [manifestDiv, pdfDiv, imageDiv, viewDigit, viewAnno, sourceDiv, freeDiv] = fields
     switch (digitType) {
         case MAN_ABBR:
-            return [manifestDiv, [pdfDiv, imageDiv, viewDigit, viewAnno]]
+            return [[manifestDiv], [pdfDiv, imageDiv, viewDigit, viewAnno, sourceDiv, freeDiv]]
         case PDF_ABBR:
-            return [pdfDiv, [manifestDiv, imageDiv, viewDigit, viewAnno]]
+            return [[pdfDiv, freeDiv, sourceDiv], [manifestDiv, imageDiv, viewDigit, viewAnno]]
         case IMG_ABBR:
-            return [imageDiv, [manifestDiv, pdfDiv, viewDigit, viewAnno]]
+            return [[imageDiv, freeDiv, sourceDiv], [manifestDiv, pdfDiv, viewDigit, viewAnno]]
         default:
-            return [null, [manifestDiv, pdfDiv, imageDiv, viewDigit, viewAnno]]
+            return [null, [manifestDiv, pdfDiv, imageDiv, viewDigit, viewAnno, sourceDiv, freeDiv]]
     }
 }
 
 function toggleDigitFields(digitSelect, fields) {
-    const [divToShow, divsToHide] = getFields($(digitSelect).val(), fields);
+    const [divsToShow, divsToHide] = getFields($(digitSelect).val(), fields);
     divsToHide.map(divToHide => hide(divToHide));
-    if (divToShow){
-        divToShow.show();
+    if (divsToShow){
+        divsToShow.map(divToShow => divToShow.show());
     }
 }
 
@@ -41,13 +41,16 @@ function setDigitBlock(digitNb = 0, digitBlockId= "") {
     const pdfDiv = $(`#${prefix}digitizations-${digitNb} .field-pdf`).first();
     const imageDiv = $(`#${prefix}digitizations-${digitNb} .field-images`).first();
 
-    let fields = [manifestDiv, pdfDiv, imageDiv, viewDigit, viewAnno]
+    const sourceDiv = $(`#${prefix}digitizations-${digitNb} .field-source`).first();
+    const freeDiv = $(`#${prefix}digitizations-${digitNb} .field-is_open`).first();
+
+    let fields = [manifestDiv, pdfDiv, imageDiv, viewDigit, viewAnno, sourceDiv, freeDiv]
 
     if (hasDigit && viewDigit.find('p').first().text() !== "-"){
         // if a digitization has already been uploaded
         // hide fields to upload new digit
         const digitTypeDiv = $(`#${prefix}digitizations-${digitNb} .field-digit_type`).first();
-        let divsToHide = [digitTypeDiv, manifestDiv, pdfDiv, imageDiv];
+        let divsToHide = [digitTypeDiv, manifestDiv, pdfDiv, imageDiv, sourceDiv];
         // if no annotations were yet generated
         if (viewAnno.find('p').first().text() === "-"){
             divsToHide.push(viewAnno)

@@ -6,7 +6,7 @@ from app.webapp.admin.witness import WitnessInline
 from app.webapp.models.series import Series, get_name
 from app.webapp.models.edition import get_name as ed_get_name
 from app.webapp.models.utils.constants import TPR, TPR_ABBR
-from app.webapp.utils.functions import format_start_end
+from app.webapp.utils.functions import format_start_end, format_dates
 
 
 @admin.register(Series)
@@ -69,7 +69,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
 
     @admin.display(description="Date")
     def get_date(self, obj):
-        return format_start_end(obj.date_min, obj.date_max)
+        return format_dates(obj.date_min, obj.date_max)
 
     def save_related(self, request, form, formset, change):
         super(SeriesAdmin, self).save_related(request, form, formset, change)

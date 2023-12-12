@@ -77,6 +77,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         "type",
         "contents__roles__person__name",
         "contents__work__title",
+        "notes",
     )
     # Filters options in the sidebar
     list_filter = ("id_nb", "place")  # list_filter = (AuthorFilter, WorkFilter)
