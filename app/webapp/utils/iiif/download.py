@@ -13,15 +13,16 @@ from app.webapp.utils.iiif import get_height, get_width, get_id
 
 
 def extract_images_from_iiif_manifest(
-    manifest_url, digit_ref, event, set_license_callback
+    manifest_url, digit_ref, event, add_info_callback
 ):
     """
     Extract all images from an IIIF manifest
     """
     downloader = IIIFDownloader(manifest_url, digit_ref)
     downloader.run()
-    if license := downloader.original_license:
-        set_license_callback(license)
+    if lic := downloader.original_license:
+        attribution = downloader.attribution or "Unknown attribution"
+        add_info_callback(lic, attribution)
     event.set()
 
 
@@ -50,12 +51,14 @@ class IIIFDownloader:
         self.sleep = 12 if "gallica" in self.manifest_url else sleep
         # Save the license given in the original manifest if possible
         self.original_license = ""
+        self.attribution = ""
 
     def run(self):
         manifest = get_json(self.manifest_url)
         if manifest is not None:
             i = 1
             self.get_license(manifest)
+            self.get_attribution(manifest)
 
             for rsrc in self.get_iiif_resources(manifest):
                 self.save_iiif_img(rsrc, i)
@@ -97,6 +100,11 @@ class IIIFDownloader:
 
         if "attribution" in manifest:
             self.original_license = manifest["attribution"]
+        return
+
+    def get_attribution(self, manifest):
+        if "attribution" in manifest:
+            self.attribution = manifest["attribution"]
         return
 
     def save_iiif_img(self, img_rsrc, i, size=None, re_download=False):

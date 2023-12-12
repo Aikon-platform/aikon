@@ -9,7 +9,7 @@ from app.webapp.models.work import Work
 from app.webapp.models.place import Place
 from app.webapp.models.language import Language
 
-from app.webapp.models.utils.constants import TAG, PAG_ABBR, PAGE_ERROR
+from app.webapp.models.utils.constants import TAG, WIT, WORK, PAG_ABBR, PAGE_ERROR
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.functions import format_start_end, extract_nb, validate_dates
 from app.webapp.utils.logger import log
@@ -21,6 +21,11 @@ def get_name(fieldname, plural=False):
         "page_max": {"en": "To page/folio", "fr": "Jusqu'à la page/folio"},
         "tags": {"en": f"{TAG}s", "fr": f"{TAG}s"},
         "place": {"en": "creation place", "fr": "lieu de création"},
+        "whole_wit": {"en": f"complete {WIT}", "fr": f"intégralité du {WIT}"},
+        "whole_wit_info": {
+            "en": f"does the {WIT} contain only this {WORK}?",
+            "fr": f"le {WIT} ne contient-t-il que ce {WORK} ?",
+        },
     }
     return get_fieldname(fieldname, fields, plural)
 
@@ -97,6 +102,11 @@ class Content(models.Model):
         blank=True,
         max_length=15,
         validators=[validate_page],
+    )
+    whole_witness = models.BooleanField(
+        verbose_name=get_name("whole_wit"),
+        default=False,
+        help_text=get_name("whole_wit_info"),
     )
     tags = models.ManyToManyField(
         Tag,

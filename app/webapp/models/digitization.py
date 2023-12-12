@@ -273,6 +273,14 @@ class Digitization(models.Model):
 
         return mark_safe(anno_btn(self, "view")) if self.has_images() else ""
 
+    def add_source(self, source):
+        from app.webapp.models.digitization_source import DigitizationSource
+
+        digit_source = DigitizationSource()
+        digit_source.source = source
+        digit_source.save()
+        self.source = digit_source
+
     def view_btn(self):
         iiif_link = f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"
         annos = self.get_annotations()
@@ -342,13 +350,14 @@ def digitization_post_save(sender, instance, created, **kwargs):
 
         elif digit_type == MAN_ABBR:
 
-            def set_license(license_url):
+            def add_info(license_url, source):
                 instance.license = license_url
-                instance.save(update_fields=["license"])
+                instance.add_source(source)
+                instance.save(update_fields=["license", "source"])
 
             t = threading.Thread(
                 target=extract_images_from_iiif_manifest,
-                args=(instance.manifest, instance.get_ref(), event, set_license),
+                args=(instance.manifest, instance.get_ref(), event, add_info),
             )
             t.start()
 

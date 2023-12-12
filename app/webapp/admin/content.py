@@ -26,7 +26,7 @@ class ContentInline(nested_admin.NestedStackedInline):
     extra = 1  # Display only one empty form in the parent form
 
     fields = [
-        "work",
+        ("work", "whole_witness"),
         ("page_min", "page_max"),
         ("date_min", "date_max"),
         "place",
