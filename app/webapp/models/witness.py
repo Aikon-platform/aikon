@@ -45,7 +45,7 @@ def get_name(fieldname, plural=False):
         "series": {"en": SER, "fr": SER},
         "title": {"en": "title of the volume", "fr": "titre du volume"},
         "is_public": {"en": "make it public", "fr": "rendre public"},
-        "number": {"en": "volume number", "fr": "numéro de tome"},
+        "number": {"en": "volume number", "fr": "numéro de volume"},
         "number_info": {
             "en": "number useful for classifying the different volumes of an edition, but not necessarily of historical value",
             "fr": "numéro utile pour classer les différents tomes d'une édition, mais qui n'a pas nécessairement de valeur historique",
@@ -59,7 +59,7 @@ class Witness(models.Model):
     class Meta:
         verbose_name = get_name("Witness")
         verbose_name_plural = get_name("Witness", True)
-        unique_together = ("id_nb", "place")
+        # unique_together = ("id_nb", "place")
         ordering = ["-place"]
         app_label = "webapp"
 
@@ -78,7 +78,12 @@ class Witness(models.Model):
     type = models.CharField(
         verbose_name=get_name("type"), choices=WIT_TYPE, max_length=150
     )
-    id_nb = models.CharField(verbose_name=get_name("id_nb"), max_length=150)
+    id_nb = models.CharField(
+        verbose_name=get_name("id_nb"),
+        max_length=150,
+        blank=True,
+        null=True,
+    )
     place = models.ForeignKey(
         ConservationPlace,
         verbose_name=get_name("ConservationPlace"),
@@ -232,6 +237,12 @@ class Witness(models.Model):
     def get_work_titles(self):
         works = self.get_works()
         return "<br>".join([work.__str__() for work in works]) if len(works) else "-"
+
+    def set_conservation_place(self, place: ConservationPlace):
+        self.place = place
+
+    def set_id_nb(self, id_nb):
+        self.id_nb = id_nb
 
     def get_places(self):
         return list(

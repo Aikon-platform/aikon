@@ -272,9 +272,10 @@ def receive_anno(request, digit_ref):
 
     if request.method == "POST":
         annotation_file = request.FILES["annotation_file"]
+        model = request.form.get("model") or "Unknown model"
         file_content = annotation_file.read()
 
-        if process_anno(file_content, digit):
+        if process_anno(file_content, digit, model):
             # process file and create Annotation record
             return JsonResponse({"response": "OK"}, status=200)
     else:
