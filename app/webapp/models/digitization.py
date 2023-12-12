@@ -274,12 +274,13 @@ class Digitization(models.Model):
         return mark_safe(anno_btn(self, "view")) if self.has_images() else ""
 
     def add_source(self, source):
-        from app.webapp.models.digitization_source import DigitizationSource
-
-        digit_source = DigitizationSource()
-        digit_source.source = source
-        digit_source.save()
-        self.source = digit_source
+        # from app.webapp.models.digitization_source import DigitizationSource
+        #
+        # digit_source = DigitizationSource()
+        # digit_source.source = source
+        # digit_source.save()
+        # self.source = digit_source
+        self.source = source
 
     def view_btn(self):
         iiif_link = f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"
