@@ -202,6 +202,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         "get_works",
         "get_roles",
         "digit_anno_btn",
+        "user",
     )
     list_display_links = ("id_nb",)
 
