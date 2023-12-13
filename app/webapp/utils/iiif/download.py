@@ -20,6 +20,7 @@ def extract_images_from_iiif_manifest(
     """
     downloader = IIIFDownloader(manifest_url, digit_ref)
     downloader.run()
+    log("coucou")
     if lic := downloader.original_license:
         attribution = downloader.attribution or "Unknown attribution"
         add_info_callback(lic, attribution)
@@ -196,6 +197,8 @@ class IIIFDownloader:
         if self.max_dim is None:
             return "full"
         h, w = get_height(img_rsrc), get_width(img_rsrc)
+        if h is None or w is None:
+            return self.get_formatted_size(str(self.max_dim), "")
         if h > w:
             max_h = self.max_dim if self.max_dim < h else h
             return self.get_formatted_size("", str(max_h))
