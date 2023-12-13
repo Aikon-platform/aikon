@@ -124,3 +124,5 @@ logs/*
 !logs/.gitkeep
 
 scripts/*.txt
+scripts/*.sql
+scripts/.pgpass
