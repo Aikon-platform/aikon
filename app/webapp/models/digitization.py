@@ -99,10 +99,7 @@ class Digitization(models.Model):
         verbose_name=get_name("type"), choices=DIGIT_TYPE, max_length=150
     )
     # holds license information if it was contained in the source manifest
-    license = models.URLField(
-        blank=True,
-        null=True,
-    )
+    license = models.CharField(blank=True, null=True, max_length=500)
     pdf = models.FileField(
         verbose_name=PDF,
         upload_to=PDF_DIR,
