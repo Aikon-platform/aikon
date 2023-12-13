@@ -20,7 +20,6 @@ def extract_images_from_iiif_manifest(
     """
     downloader = IIIFDownloader(manifest_url, digit_ref)
     downloader.run()
-    log("coucou")
     if lic := downloader.original_license:
         attribution = downloader.attribution or "Unknown attribution"
         add_info_callback(lic, attribution)
