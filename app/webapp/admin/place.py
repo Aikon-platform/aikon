@@ -19,7 +19,7 @@ class PlaceAdmin(UnregisteredAdmin):
         css = {"all": ("css/witness-form.css",)}
 
     form = PlaceForm
-    search_fields = ("name",)
+    search_fields = ("name", "country")
     list_filter = ("name",)
     list_per_page = 5
 
