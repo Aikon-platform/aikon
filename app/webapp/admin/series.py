@@ -26,6 +26,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         "is_public",
     )
     list_display_links = ("edition",)
+    autocomplete_fields = ("work", "edition", "place")
 
     class Meta:
         verbose_name = get_name("Series")
