@@ -12,5 +12,6 @@ class EditionFilter(AutocompleteFilter):
 
 @admin.register(Edition)
 class EditionAdmin(UnregisteredAdmin):
-    search_fields = ("publisher_name", "place_name")
+    search_fields = ("publisher__name", "place_name")
+    autocomplete_fields = ("publisher", "place")
     # TODO create list of fields that are displayed in list view
