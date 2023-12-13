@@ -7,11 +7,11 @@ from app.webapp.models.conservation_place import ConservationPlace, get_name
 
 class ConservationPlaceFilter(AutocompleteFilter):
     title = get_name("ConservationPlace")
-    field_name = ["place__name", "place__city__name"]
+    field_name = "place__name"
     ordering = ("place__city__name",)
 
 
 @admin.register(ConservationPlace)
 class ConservationPlaceAdmin(UnregisteredAdmin):
-    search_fields = ("name", "city")
-    list_filter = ("name", "city")
+    search_fields = ("name", "city__name")
+    list_filter = ("name", "city__name")
