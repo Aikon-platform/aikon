@@ -125,3 +125,4 @@ logs/*
 
 scripts/*.txt
 scripts/*.sql
+scripts/.pgpass

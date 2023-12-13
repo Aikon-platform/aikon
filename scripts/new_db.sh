@@ -6,12 +6,14 @@
 # You will be asked to enter password twice
 # Restart Django to see effects
 
+SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
+APP_ROOT="$(dirname "$SCRIPT_DIR")"
+
 # Load environment variables from .env file
-. ../app/config/.env
+. "$APP_ROOT"/app/config/.env
 
 dbname=${1:-${DB_NAME}_2}
 username=${DB_USERNAME:-admin}
-password=${DB_PASSWORD}
 
 # check if the database $dbname already exists, if so, drop it
 sudo -i -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname='$dbname'" | grep -q 1 && sudo -u postgres psql -c "DROP DATABASE $dbname"
@@ -22,14 +24,14 @@ sudo -i -u postgres psql -c "CREATE DATABASE $dbname;"
 sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $dbname TO $username;"
 
 # Set variables in .env file
-sed -i "s/DB_NAME=.*/DB_NAME=$dbname/" ../app/config/.env
+sed -i "s/DB_NAME=.*/DB_NAME=$dbname/" "$APP_ROOT"/app/config/.env
 
 # Empty migration directory and create new migrations
-find ../app/webapp/migrations -type f ! -name '__init__.py' ! -name 'init.py' -delete
-../venv/bin/python ../app/manage.py makemigrations
+# find "$APP_ROOT"/app/webapp/migrations -type f ! -name '__init__.py' ! -name 'init.py' -delete
+"$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py makemigrations
 
 # Update database schema with new migrations
-../venv/bin/python ../app/manage.py migrate
+"$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py migrate
 
 # create superuser
-../venv/bin/python ../app/manage.py createsuperuser --username="$username" --email=
+"$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py createsuperuser --username=$username --email="$CONTACT_MAIL"
