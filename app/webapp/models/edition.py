@@ -9,7 +9,7 @@ from app.webapp.models.utils.functions import get_fieldname
 def get_name(fieldname, plural=False):
     fields = {
         "pub_place": {"en": "publication place", "fr": "lieu de publication"},
-        "publisher": {"en": "publisher", "fr": "éditeur"},
+        "publisher": {"en": "publisher", "fr": "éditeur/libraire"},
         "no_publisher": {"en": "no publisher", "fr": "pas d'éditeur"},
         # "no_pub_place": {"en": "unknown publication place", "fr": "lieu de publication inconnu"},
         "name": {"en": "title", "fr": "titre"},
