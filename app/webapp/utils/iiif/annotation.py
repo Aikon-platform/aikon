@@ -553,6 +553,8 @@ def check_anno_file(file_content):
     # Either contains a number then an img.jpg / Or a series of 4 numbers
     pattern = re.compile(r"^\d+\s+\S+\.jpg$|^\d+\s\d+\s\d+\s\d+$")
     for line in file_content.split("\n"):
+        if line == "":
+            continue
         if not pattern.match(line):
             log(f"[check_anno_file] incorrect line {line}")
             return False
