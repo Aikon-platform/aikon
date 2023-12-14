@@ -73,12 +73,12 @@ def process_anno(anno_file_content, digit, model="Unknown model"):
             index_annotations(anno)
         except Exception as e:
             log(f"[receive_anno] Failed to index annotations for digit #{digit.id}", e)
-            log(anno_file_content)
             return False
     else:
         log(
             f"[receive_anno] Annotation file content for #{digit.id} did not pass the check"
         )
+        log(anno_file_content)
         return False
 
     return True
