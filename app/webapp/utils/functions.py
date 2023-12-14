@@ -47,6 +47,18 @@ def extract_nb(string):
     return int(digits) if digits else None
 
 
+def normalize_str(string):
+    string = string.lower().strip().replace("-", "")
+    return string
+
+
+def substrs_in_str(string, substrings):
+    for substr in substrings:
+        if substr in string:
+            return True
+    return False
+
+
 def pluralize(word):
     if APP_LANG == "fr":
         return f"{word}s"
