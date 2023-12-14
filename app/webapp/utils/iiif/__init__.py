@@ -1,5 +1,9 @@
 import re
 
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
+
+from app.webapp.utils.functions import normalize_str, substrs_in_str
 from app.webapp.utils.logger import iiif_log, console, log
 from app.config.settings import CANTALOUPE_APP_URL, APP_URL, APP_NAME
 
@@ -96,3 +100,39 @@ def parse_ref(record_ref):
             "anno": None,
         }
     return None
+
+
+def get_version_nb(lic):
+    version = re.findall(r"\d\.\d", lic)
+    if len(version):
+        return version[0]
+    nb = re.findall(r"\d", lic)
+    if len(nb):
+        return f"{nb[0]}.0"
+    return "1.0"
+
+
+def get_license_url(lic):
+    # TODO improve
+    validator = URLValidator()
+    try:
+        validator(lic)
+    except ValidationError as e:
+        lic = normalize_str(lic).replace(" ", "")
+        version = get_version_nb(lic)
+        if substrs_in_str(lic, ["publicdomain", "cc0", "pdm"]):
+            return "https://creativecommons.org/publicdomain/mark/1.0/"
+        if substrs_in_str(lic, ["byncsa", "noncommercialsharealike"]):
+            return f"https://creativecommons.org/licenses/by-nc-sa/{version}/"
+        if substrs_in_str(lic, ["byncnd", "noncommercialnoderiv"]):
+            return f"https://creativecommons.org/licenses/by-nc-nd/{version}/"
+        if substrs_in_str(lic, ["bysa", "sharealike"]):
+            return f"https://creativecommons.org/licenses/by-sa/{version}/"
+        if substrs_in_str(lic, ["bync", "noncommercial"]):
+            return f"https://creativecommons.org/licenses/by-nc/{version}/"
+        if substrs_in_str(lic, ["bynd", "noderiv"]):
+            return f"https://creativecommons.org/licenses/by-nd/{version}/"
+        if substrs_in_str(lic, ["by"]):
+            return f"https://creativecommons.org/licenses/by/{version}/"
+        return NO_LICENSE
+    return lic

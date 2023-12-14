@@ -1,18 +1,13 @@
 import re
 
 from PIL import Image, UnidentifiedImageError
-from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator
 from iiif_prezi.factory import ManifestFactory, StructuralError
 
-from app.webapp.models.annotation import Annotation
-from app.webapp.models.digitization import Digitization
 from app.webapp.utils.constants import (
     APP_NAME_UPPER,
     APP_DESCRIPTION,
 )
-from app.webapp.utils.functions import normalize_str, substrs_in_str
-from app.webapp.utils.iiif import NO_LICENSE
+from app.webapp.utils.iiif import NO_LICENSE, get_license_url
 from app.webapp.utils.paths import IMG_PATH
 from app.config.settings import CANTALOUPE_APP_URL
 
@@ -76,42 +71,6 @@ def process_images(obj, seq, version=None):
         log(f"[process_images] Couldn't retrieve image for {class_name} n°{obj.id}", e)
         return False
     return True
-
-
-def get_version_nb(lic):
-    version = re.findall(r"\d\.\d", lic)
-    if len(version):
-        return version[0]
-    nb = re.findall(r"\d", lic)
-    if len(nb):
-        return f"{nb[0]}.0"
-    return "1.0"
-
-
-def get_license_url(lic):
-    # TODO improve
-    validator = URLValidator()
-    try:
-        validator(lic)
-    except ValidationError as e:
-        lic = normalize_str(lic).replace(" ", "")
-        version = get_version_nb(lic)
-        if substrs_in_str(lic, ["publicdomain", "cc0", "pdm"]):
-            return "https://creativecommons.org/publicdomain/mark/1.0/"
-        if substrs_in_str(lic, ["byncsa", "noncommercialsharealike"]):
-            return f"https://creativecommons.org/licenses/by-nc-sa/{version}/"
-        if substrs_in_str(lic, ["byncnd", "noncommercialnoderiv"]):
-            return f"https://creativecommons.org/licenses/by-nc-nd/{version}/"
-        if substrs_in_str(lic, ["bysa", "sharealike"]):
-            return f"https://creativecommons.org/licenses/by-sa/{version}/"
-        if substrs_in_str(lic, ["bync", "noncommercial"]):
-            return f"https://creativecommons.org/licenses/by-nc/{version}/"
-        if substrs_in_str(lic, ["bynd", "noderiv"]):
-            return f"https://creativecommons.org/licenses/by-nd/{version}/"
-        if substrs_in_str(lic, ["by"]):
-            return f"https://creativecommons.org/licenses/by/{version}/"
-        return NO_LICENSE
-    return lic
 
 
 def gen_manifest_json(obj, version=None):
