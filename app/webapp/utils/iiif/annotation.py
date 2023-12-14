@@ -44,12 +44,12 @@ def anno_request(digit: Digitization):
         data={
             "manifest_url": digit.gen_manifest_url(),
             "model": "yolo_last_sved_vhs_sullivan.pt",
-            "callback": f"{APP_URL}/annotate",  # URL to which the annotations must be sent back
+            "callback": f"{APP_URL}/{APP_NAME}/annotate",  # URL to which the annotations must be sent back
         },
     )
 
 
-def process_anno(anno_file_content, digit, model):
+def process_anno(anno_file_content, digit, model="Unknown model"):
     if check_anno_file(anno_file_content):
         try:
             # TODO add step to check if an annotation wasn't generated before for the same model

@@ -272,7 +272,13 @@ def receive_anno(request, digit_ref):
 
     if request.method == "POST":
         annotation_file = request.FILES["annotation_file"]
-        model = request.form.get("model") or "Unknown model"
+        try:
+            request_data = json.loads(request.body.decode("utf-8"))
+            model = request_data.get("model", "Unknown model")
+        except Exception as e:
+            log("[receive_anno] Unable to retrieve model param", e)
+            log(request)
+            model = "Unknown model"
         file_content = annotation_file.read()
 
         if process_anno(file_content, digit, model):
