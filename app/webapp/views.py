@@ -266,6 +266,7 @@ def delete_send_anno(request, anno_ref):
 
 @csrf_exempt
 def receive_anno(request, digit_ref):
+    log(digit_ref)
     passed, digit = check_ref(digit_ref)
     if not passed:
         return JsonResponse(digit)
