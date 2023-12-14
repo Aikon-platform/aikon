@@ -1,7 +1,5 @@
-import re
-
 from PIL import Image, UnidentifiedImageError
-from iiif_prezi.factory import ManifestFactory, StructuralError
+from iiif_prezi.factory import ManifestFactory
 
 from app.webapp.utils.constants import (
     APP_NAME_UPPER,
