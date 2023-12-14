@@ -271,9 +271,14 @@ def receive_anno(request, digit_ref):
         return JsonResponse(digit)
 
     if request.method == "POST":
-        annotation_file = request.FILES["annotation_file"]
         try:
-            model = request.form.get("model")
+            annotation_file = request.FILES["annotation_file"]
+        except Exception as e:
+            log("[receive_anno] No annotation file received for", e)
+            return JsonResponse({"message": "No annotation file"}, status=400)
+
+        try:
+            model = request.POST.get("model", "Unknown model")
         except Exception as e:
             log("[receive_anno] Unable to retrieve model param", e)
             model = "Unknown model"
