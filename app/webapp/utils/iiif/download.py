@@ -9,7 +9,7 @@ from app.webapp.utils.functions import get_json, save_img, sanitize_url
 from app.webapp.utils.constants import MAX_SIZE
 from app.webapp.utils.paths import MEDIA_DIR, IMG_PATH, BASE_DIR
 from app.webapp.utils.logger import iiif_log, console, log
-from app.webapp.utils.iiif import get_height, get_width, get_id
+from app.webapp.utils.iiif import get_height, get_width, get_id, get_license_url
 
 
 def extract_images_from_iiif_manifest(
@@ -21,8 +21,9 @@ def extract_images_from_iiif_manifest(
     downloader = IIIFDownloader(manifest_url, digit_ref)
     downloader.run()
     if lic := downloader.original_license:
+        license_url = get_license_url(lic)
         attribution = downloader.attribution or "Unknown attribution"
-        add_info_callback(lic, attribution)
+        add_info_callback(license_url, attribution)
     event.set()
 
 

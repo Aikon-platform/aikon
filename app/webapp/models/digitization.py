@@ -17,6 +17,7 @@ from django.db import models
 from django.db.models.signals import pre_delete, post_save
 from django.dispatch.dispatcher import receiver
 
+from app.webapp.utils.iiif import NO_LICENSE
 from app.webapp.utils.logger import log, console
 
 from app.webapp.models.utils.constants import (
@@ -351,7 +352,9 @@ def digitization_post_save(sender, instance, created, **kwargs):
             def add_info(license_url, source):
                 instance.license = license_url
                 instance.add_source(source)
-                instance.save(update_fields=["license", "source"])
+                if license_url != NO_LICENSE:
+                    instance.is_open = True
+                instance.save(update_fields=["license", "source", "is_open"])
 
             t = threading.Thread(
                 target=extract_images_from_iiif_manifest,
