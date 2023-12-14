@@ -43,7 +43,7 @@ def anno_request(digit: Digitization):
         headers={"X-API-Key": EXAPI_KEY},
         data={
             "manifest_url": digit.gen_manifest_url(),
-            "model": "yolo_last_sved_vhs_sullivan.pt",
+            # "model": "yolo_last_sved_vhs_sullivan.pt", # Use only if specific model is desire
             "callback": f"{APP_URL}/{APP_NAME}/annotate",  # URL to which the annotations must be sent back
         },
     )
