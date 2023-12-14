@@ -550,21 +550,11 @@ def formatted_annotations(anno: Annotation):
 
 
 def check_anno_file(file_content):
-    # TODO check file content (if it contains the correct info)
-    # textchars = (
-    #     bytearray([7, 8, 9, 10, 12, 13, 27])
-    #     + bytearray(range(0x20, 0x7F))
-    #     + bytearray(range(0x80, 0x100))
-    # )
-    # is_binary_string = lambda bytes: bool(bytes.translate(None, textchars))
-    #
-    # if not is_binary_string(file_content[:1024]):
-    #     return True
-    # else:
-    #     return False
-
+    # Either contains a number then an img.jpg / Or a series of 4 numbers
+    pattern = re.compile(r"^\d+\s+\S+\.jpg$|^\d+\s\d+\s\d+\s\d+$")
     for line in file_content.split("\n"):
-        if not re.match(r"(\d+\s\d+\s\d+\s\d+|\d+\s\w+\.jpg)", line):
+        if not pattern.match(line):
+            log(f"[check_anno_file] incorrect line {line}")
             return False
     return True
 

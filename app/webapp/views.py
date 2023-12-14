@@ -288,6 +288,9 @@ def receive_anno(request, digit_ref):
         if process_anno(file_content, digit, model):
             # process file and create Annotation record
             return JsonResponse({"response": "OK"}, status=200)
+        return JsonResponse(
+            {"message": "Could not process annotation file"}, status=400
+        )
     else:
         return JsonResponse({"message": "Invalid request"}, status=400)
 
