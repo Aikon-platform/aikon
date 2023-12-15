@@ -191,6 +191,8 @@ def index_anno(request, anno_ref=None):
     without creating an annotation record if one is already existing
     If no anno_ref is provided all anno files for mediafiles/annotation are indexed
     """
+    from app.webapp.tasks import reindex_from_file
+
     anno_files = os.listdir(ANNO_PATH) if not anno_ref else [anno_ref]
 
     indexed_anno = []
@@ -214,15 +216,16 @@ def index_anno(request, anno_ref=None):
             anno = Annotation(id=anno_id, digitization=digit, model="CHANGE THIS VALUE")
             anno.save()
 
-        # TODO here add celery => check_indexation_annos.delay(anno, True)
-        try:
-            if check_indexation_annos(anno, True):
-                indexed_anno.append(a_ref)
-            else:
-                not_indexed_anno.append(a_ref)
-        except Exception as e:
-            not_indexed_anno.append(a_ref)
-            log(f"[index_anno] Failed to index annotations for ref #{a_ref}", e)
+        reindex_from_file.delay(anno, True)
+        indexed_anno.append(a_ref)
+        # try:
+        #     if check_indexation_annos(anno, True):
+        #         indexed_anno.append(a_ref)
+        #     else:
+        #         not_indexed_anno.append(a_ref)
+        # except Exception as e:
+        #     not_indexed_anno.append(a_ref)
+        #     log(f"[index_anno] Failed to index annotations for ref #{a_ref}", e)
 
     return JsonResponse(
         {"All": anno_files, "Indexed": indexed_anno, "Not indexed": not_indexed_anno}
