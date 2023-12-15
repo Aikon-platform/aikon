@@ -1,6 +1,6 @@
 from celery import shared_task
 
-from app.webapp.utils.iiif.annotation import process_anno
+from app.webapp.utils.iiif.annotation import process_anno, check_indexation_annos
 
 
 @shared_task
@@ -24,3 +24,8 @@ def search_similarity(exp_path, work):
 @shared_task
 def process_anno_file(file_content, digit, model):
     return process_anno(file_content, digit, model)
+
+
+@shared_task
+def reindex_from_file(annotation):
+    return check_indexation_annos(annotation, True)
