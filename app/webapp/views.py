@@ -219,16 +219,17 @@ def index_anno(request, anno_ref=None):
         from celery import current_app
 
         log(f"Using broker URL: {current_app.conf.broker_url}")
-        reindex_from_file.delay(anno_id)
-        indexed_anno.append(a_ref)
-        # try:
-        #     if check_indexation_annos(anno, True):
-        #         indexed_anno.append(a_ref)
-        #     else:
-        #         not_indexed_anno.append(a_ref)
-        # except Exception as e:
-        #     not_indexed_anno.append(a_ref)
-        #     log(f"[index_anno] Failed to index annotations for ref #{a_ref}", e)
+        # reindex_from_file.delay(anno_id)
+        # indexed_anno.append(a_ref)
+
+        try:
+            if check_indexation_annos(anno, True):
+                indexed_anno.append(a_ref)
+            else:
+                not_indexed_anno.append(a_ref)
+        except Exception as e:
+            not_indexed_anno.append(a_ref)
+            log(f"[index_anno] Failed to index annotations for ref #{a_ref}", e)
 
     return JsonResponse(
         {"All": anno_files, "Indexed": indexed_anno, "Not indexed": not_indexed_anno}
@@ -294,9 +295,10 @@ def receive_anno(request, digit_ref):
         file_content = file_content.decode("utf-8")
 
         if check_anno_file(file_content):
-            # process file and create Annotation record asynchronously with celery
-            process_anno_file.delay(file_content, digit.id, model)
-            return JsonResponse({"response": "OK"}, status=200)
+            # process_anno_file.delay(file_content, digit.id, model)
+            # return JsonResponse({"response": "OK"}, status=200)
+            if process_anno(file_content, digit, model):
+                return JsonResponse({"response": "OK"}, status=200)
         return JsonResponse(
             {"message": "Could not process annotation file"}, status=400
         )
