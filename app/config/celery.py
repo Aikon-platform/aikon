@@ -1,6 +1,7 @@
 import os
 import sys
 
+import django
 import environ
 from celery import Celery
 
@@ -13,6 +14,7 @@ ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.config.settings")
+django.setup()
 
 app = Celery("config")
 
