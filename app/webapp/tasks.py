@@ -1,5 +1,7 @@
 from celery import shared_task
 
+from app.webapp.utils.iiif.annotation import process_anno
+
 
 @shared_task
 def convert_pdf_to_imgs(pdf_path, img_path):
@@ -17,3 +19,8 @@ def extract_imgs_from_manifest(url, img_path, work):
 def search_similarity(exp_path, work):
     # TODO: similarity_search
     pass
+
+
+@shared_task
+def process_anno_file(file_content, digit, model):
+    return process_anno(file_content, digit, model)

@@ -50,35 +50,28 @@ def anno_request(digit: Digitization):
 
 
 def process_anno(anno_file_content, digit, model="Unknown model"):
-    if check_anno_file(anno_file_content):
-        try:
-            # TODO add step to check if an annotation wasn't generated before for the same model
-            anno = Annotation(digitization=digit, model=model)
-            anno.save()
-        except Exception as e:
-            log(f"[receive_anno] Create annotation record for digit #{digit.id}", e)
-            return False
+    try:
+        # TODO add step to check if an annotation wasn't generated before for the same model
+        anno = Annotation(digitization=digit, model=model)
+        anno.save()
+    except Exception as e:
+        log(f"[receive_anno] Create annotation record for digit #{digit.id}", e)
+        return False
 
-        try:
-            with open(f"{ANNO_PATH}/{anno.get_ref()}.txt", "w+b") as f:
-                f.write(anno_file_content.encode("utf-8"))
-        except Exception as e:
-            log(
-                f"[receive_anno] Failed to save received annotations for digit #{digit.id}",
-                e,
-            )
-            return False
-
-        try:
-            index_annotations(anno)
-        except Exception as e:
-            log(f"[receive_anno] Failed to index annotations for digit #{digit.id}", e)
-            return False
-    else:
+    try:
+        with open(f"{ANNO_PATH}/{anno.get_ref()}.txt", "w+b") as f:
+            f.write(anno_file_content.encode("utf-8"))
+    except Exception as e:
         log(
-            f"[receive_anno] Annotation file content for #{digit.id} did not pass the check"
+            f"[receive_anno] Failed to save received annotations for digit #{digit.id}",
+            e,
         )
-        log(anno_file_content)
+        return False
+
+    try:
+        index_annotations(anno)
+    except Exception as e:
+        log(f"[receive_anno] Failed to index annotations for digit #{digit.id}", e)
         return False
 
     return True
@@ -563,7 +556,6 @@ def check_anno_file(file_content):
 
 def get_manifest_annos(anno: Annotation):
     try:
-        # TODO: check which ref is used
         response = requests.get(f"{SAS_APP_URL}/search-api/{anno.get_ref()}/search")
         annos = response.json()
 

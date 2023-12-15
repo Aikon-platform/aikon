@@ -21,7 +21,6 @@ from app.config.settings import (
     GEONAMES_USER,
 )
 from app.webapp.models.language import Language
-from app.webapp.models.place import Place
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, MAX_ROWS
 from app.webapp.utils.functions import (
@@ -42,8 +41,8 @@ from app.webapp.utils.iiif.annotation import (
     process_anno,
     delete_annos,
     create_empty_anno,
-    get_manifest_annos,
     check_indexation_annos,
+    check_anno_file,
 )
 
 from app.webapp.utils.paths import ANNO_PATH, MEDIA_DIR
@@ -215,6 +214,7 @@ def index_anno(request, anno_ref=None):
             anno = Annotation(id=anno_id, digitization=digit, model="CHANGE THIS VALUE")
             anno.save()
 
+        # TODO here add celery => check_indexation_annos.delay(anno, True)
         try:
             if check_indexation_annos(anno, True):
                 indexed_anno.append(a_ref)
@@ -266,6 +266,8 @@ def delete_send_anno(request, anno_ref):
 
 @csrf_exempt
 def receive_anno(request, digit_ref):
+    from app.webapp.tasks import process_anno_file
+
     passed, digit = check_ref(digit_ref)
     if not passed:
         return JsonResponse(digit)
@@ -285,8 +287,9 @@ def receive_anno(request, digit_ref):
         file_content = annotation_file.read()
         file_content = file_content.decode("utf-8")
 
-        if process_anno(file_content, digit, model):
-            # process file and create Annotation record
+        if check_anno_file(file_content):
+            # process file and create Annotation record asynchronously with celery
+            process_anno_file.delay(file_content, digit, model)
             return JsonResponse({"response": "OK"}, status=200)
         return JsonResponse(
             {"message": "Could not process annotation file"}, status=400
