@@ -22,10 +22,16 @@ def search_similarity(exp_path, work):
 
 
 @shared_task
-def process_anno_file(file_content, digit, model):
-    return process_anno(file_content, digit, model)
+def process_anno_file(file_content, digit_id, model):
+    from app.webapp.models.annotation import Digitization
+
+    digitization = Digitization.objects.filter(pk=digit_id).first()
+    return process_anno(file_content, digitization, model)
 
 
 @shared_task
-def reindex_from_file(annotation):
+def reindex_from_file(anno_id):
+    from app.webapp.models.annotation import Annotation
+
+    annotation = Annotation.objects.filter(pk=anno_id).first()
     return check_indexation_annos(annotation, True)
