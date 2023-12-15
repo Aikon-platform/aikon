@@ -42,4 +42,4 @@ def reindex_from_file(anno_id):
 def test(log_msg):
     from app.webapp.utils.logger import log
 
-    log(log_msg)
+    log(log_msg or ".dlrow olleH")

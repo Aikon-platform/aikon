@@ -45,7 +45,12 @@ urlpatterns = [
         name="witness-annotations",
     ),
     path(
-        f"{APP_NAME}/<str:wit_type>/<int:wit_id>/test/",
+        f"{APP_NAME}/test/<str:wit_ref>",
+        test,
+        name="test",
+    ),
+    path(
+        f"{APP_NAME}/test",
         test,
         name="test",
     ),
