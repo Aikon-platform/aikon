@@ -19,14 +19,22 @@ app = Celery("config")
 # Load Celery configuration from Django settings
 app.config_from_object("django.conf:settings", namespace="CELERY")
 
-app.conf.broker_url = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
-
+# TODO: set REDIS again
+# app.conf.broker_url = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
+# app.conf.update(
+#     CELERY_RESULT_BACKEND=f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0",
+#     CELERY_ACCEPT_CONTENT=["json"],
+#     CELERY_TASK_SERIALIZER="json",
+#     CELERY_RESULT_SERIALIZER="json",
+# )
+app.conf.broker_url = f"redis://redis://localhost:6379/0"
 app.conf.update(
-    CELERY_RESULT_BACKEND=f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0",
+    CELERY_RESULT_BACKEND=f"redis://redis://localhost:6379/0",
     CELERY_ACCEPT_CONTENT=["json"],
     CELERY_TASK_SERIALIZER="json",
     CELERY_RESULT_SERIALIZER="json",
 )
+
 
 # Discover and register tasks automatically in Django applications
 app.autodiscover_tasks()
