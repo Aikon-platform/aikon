@@ -399,7 +399,7 @@ def show_annotations(request, anno_ref):
     )
 
 
-def test(request, wit_id, wit_type):
+def test(request, wit_ref=None):
     from app.webapp.tasks import test
 
     test.delay("Hello world.")
