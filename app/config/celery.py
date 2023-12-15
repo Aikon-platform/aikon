@@ -27,9 +27,9 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 #     CELERY_TASK_SERIALIZER="json",
 #     CELERY_RESULT_SERIALIZER="json",
 # )
-app.conf.broker_url = f"redis://redis://localhost:6379/0"
+app.conf.broker_url = "redis://localhost:6379/0"
 app.conf.update(
-    CELERY_RESULT_BACKEND=f"redis://redis://localhost:6379/0",
+    CELERY_RESULT_BACKEND="redis://localhost:6379/0",
     CELERY_ACCEPT_CONTENT=["json"],
     CELERY_TASK_SERIALIZER="json",
     CELERY_RESULT_SERIALIZER="json",
