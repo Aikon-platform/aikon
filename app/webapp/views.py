@@ -191,7 +191,6 @@ def index_anno(request, anno_ref=None):
     without creating an annotation record if one is already existing
     If no anno_ref is provided all anno files for mediafiles/annotation are indexed
     """
-    from app.webapp.tasks import reindex_from_file
 
     anno_files = os.listdir(ANNO_PATH) if not anno_ref else [anno_ref]
 
@@ -216,9 +215,10 @@ def index_anno(request, anno_ref=None):
             anno = Annotation(id=anno_id, digitization=digit, model="CHANGE THIS VALUE")
             anno.save()
 
-        from celery import current_app
-
-        log(f"Using broker URL: {current_app.conf.broker_url}")
+        # from celery import current_app
+        #
+        # log(f"Using broker URL: {current_app.conf.broker_url}")
+        # from app.webapp.tasks import reindex_from_file
         # reindex_from_file.delay(anno_id)
         # indexed_anno.append(a_ref)
 
@@ -273,7 +273,6 @@ def delete_send_anno(request, anno_ref):
 
 @csrf_exempt
 def receive_anno(request, digit_ref):
-    from app.webapp.tasks import process_anno_file
 
     passed, digit = check_ref(digit_ref)
     if not passed:
@@ -295,6 +294,7 @@ def receive_anno(request, digit_ref):
         file_content = file_content.decode("utf-8")
 
         if check_anno_file(file_content):
+            # from app.webapp.tasks import process_anno_file
             # process_anno_file.delay(file_content, digit.id, model)
             # return JsonResponse({"response": "OK"}, status=200)
             if process_anno(file_content, digit, model):
