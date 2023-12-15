@@ -216,7 +216,7 @@ def index_anno(request, anno_ref=None):
             anno = Annotation(id=anno_id, digitization=digit, model="CHANGE THIS VALUE")
             anno.save()
 
-        reindex_from_file.delay(anno)
+        reindex_from_file.delay(anno_id)
         indexed_anno.append(a_ref)
         # try:
         #     if check_indexation_annos(anno, True):
@@ -292,7 +292,7 @@ def receive_anno(request, digit_ref):
 
         if check_anno_file(file_content):
             # process file and create Annotation record asynchronously with celery
-            process_anno_file.delay(file_content, digit, model)
+            process_anno_file.delay(file_content, digit.id, model)
             return JsonResponse({"response": "OK"}, status=200)
         return JsonResponse(
             {"message": "Could not process annotation file"}, status=400
