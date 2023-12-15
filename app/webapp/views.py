@@ -216,7 +216,7 @@ def index_anno(request, anno_ref=None):
             anno = Annotation(id=anno_id, digitization=digit, model="CHANGE THIS VALUE")
             anno.save()
 
-        reindex_from_file.delay(anno, True)
+        reindex_from_file.delay(anno)
         indexed_anno.append(a_ref)
         # try:
         #     if check_indexation_annos(anno, True):
