@@ -19,7 +19,7 @@ app = Celery("config")
 # Load Celery configuration from Django settings
 app.config_from_object("django.conf:settings", namespace="CELERY")
 
-# TODO: set REDIS again
+# TODO: set REDIS_PASSWORD again
 # app.conf.broker_url = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
 # app.conf.update(
 #     CELERY_RESULT_BACKEND=f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0",

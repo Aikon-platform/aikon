@@ -216,6 +216,9 @@ def index_anno(request, anno_ref=None):
             anno = Annotation(id=anno_id, digitization=digit, model="CHANGE THIS VALUE")
             anno.save()
 
+        from celery import current_app
+
+        log(f"Using broker URL: {current_app.conf.broker_url}")
         reindex_from_file.delay(anno_id)
         indexed_anno.append(a_ref)
         # try:
