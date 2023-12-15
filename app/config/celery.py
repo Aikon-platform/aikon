@@ -13,10 +13,12 @@ environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.config.settings")
 
-app = Celery("config")
+celery_app = Celery(
+    "config", broker="redis://localhost:6379/0", backend="redis://localhost:6379/0"
+)
 
 # Load Celery configuration from Django settings
-app.config_from_object("django.conf:settings", namespace="CELERY")
+celery_app.config_from_object("django.conf:settings", namespace="CELERY")
 
 # TODO: set REDIS_PASSWORD again
 # app.conf.broker_url = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
@@ -26,14 +28,11 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 #     CELERY_TASK_SERIALIZER="json",
 #     CELERY_RESULT_SERIALIZER="json",
 # )
-app.conf.broker_url = "redis://localhost:6379/0"
-app.conf.update(
-    CELERY_RESULT_BACKEND="redis://localhost:6379/0",
+celery_app.conf.update(
     CELERY_ACCEPT_CONTENT=["json"],
     CELERY_TASK_SERIALIZER="json",
     CELERY_RESULT_SERIALIZER="json",
 )
 
-
 # Discover and register tasks automatically in Django applications
-app.autodiscover_tasks()
+celery_app.autodiscover_tasks()

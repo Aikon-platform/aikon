@@ -400,8 +400,13 @@ def show_annotations(request, anno_ref):
 
 
 def test(request, wit_id, wit_type):
-    start = get_time()
-    model = Annotation
+    from app.webapp.tasks import test
+
+    test.delay("Hello world.")
+    return JsonResponse({"response": "OK"}, status=200)
+
+    # start = get_time()
+    # model = Annotation
     # try:
     #     wit_id = int(wit_id)
     #     if int(wit_id) == 0:
@@ -426,10 +431,10 @@ def test(request, wit_id, wit_type):
     # #         thread.start()
     # #         threads.append(thread)
 
-    return JsonResponse(
-        {"response": f"Execution time: {start} > {get_time()}"},
-        safe=False,
-    )
+    # return JsonResponse(
+    #     {"response": f"Execution time: {start} > {get_time()}"},
+    #     safe=False,
+    # )
 
 
 class PlaceAutocomplete(autocomplete.Select2ListView):
