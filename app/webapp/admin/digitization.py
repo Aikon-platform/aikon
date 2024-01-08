@@ -69,7 +69,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
             digit_btn = []
             for anno in obj.get_annotations():
-                digit_btn.append(gen_btn(anno, "view"))
+                digit_btn.append(gen_btn(anno, "auto-view"))
             return mark_safe("<br>".join(digit_btn))
 
         return "-"

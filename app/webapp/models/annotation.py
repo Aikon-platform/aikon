@@ -31,7 +31,8 @@ class Annotation(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        return f"{self.get_digit()} | Annotation #{self.id}"
+        witness = self.get_witness()
+        return f"Witness #{witness.id}: {witness}"
 
     digitization = models.ForeignKey(
         Digitization,
