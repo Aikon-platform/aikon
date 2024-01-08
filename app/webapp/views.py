@@ -215,12 +215,10 @@ def index_anno(request, anno_ref=None):
             anno = Annotation(id=anno_id, digitization=digit, model="CHANGE THIS VALUE")
             anno.save()
 
-        # from celery import current_app
-        #
-        # log(f"Using broker URL: {current_app.conf.broker_url}")
-        # from app.webapp.tasks import reindex_from_file
-        # reindex_from_file.delay(anno_id)
-        # indexed_anno.append(a_ref)
+        from app.webapp.tasks import reindex_from_file
+
+        reindex_from_file.delay(anno_id)
+        indexed_anno.append(a_ref)
 
         try:
             if check_indexation_annos(anno, True):
@@ -294,11 +292,12 @@ def receive_anno(request, digit_ref):
         file_content = file_content.decode("utf-8")
 
         if check_anno_file(file_content):
-            # from app.webapp.tasks import process_anno_file
-            # process_anno_file.delay(file_content, digit.id, model)
-            # return JsonResponse({"response": "OK"}, status=200)
-            if process_anno(file_content, digit, model):
-                return JsonResponse({"response": "OK"}, status=200)
+            from app.webapp.tasks import process_anno_file
+
+            process_anno_file.delay(file_content, digit.id, model)
+            return JsonResponse({"response": "OK"}, status=200)
+            # if process_anno(file_content, digit, model):
+            #     return JsonResponse({"response": "OK"}, status=200)
         return JsonResponse(
             {"message": "Could not process annotation file"}, status=400
         )
