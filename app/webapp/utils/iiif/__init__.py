@@ -63,7 +63,7 @@ def parse_ref(record_ref):
     # digit_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}
     # anno_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}
 
-    wit_pattern = r"(?P<wit_abbr>[a-zA-Z]+)(?P<wit_id>\d+)"
+    wit_pattern = r"(?P<wit_abbr>[a-zA-Z]+)(?P<wit_id>\d+)"  # TODO: remplacer par wit
     digit_pattern = r"(?P<digit_abbr>[a-zA-Z]+)(?P<digit_id>\d+)"
     anno_pattern = r"anno(?P<anno_id>\d+)"
 

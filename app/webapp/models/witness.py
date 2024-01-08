@@ -155,6 +155,7 @@ class Witness(models.Model):
         return MAP_WIT_TYPE[self.type]
 
     def get_ref(self):
+        # TODO: remplacer par wit
         return f"{self.type}{self.id}"
 
     def change_url(self):
