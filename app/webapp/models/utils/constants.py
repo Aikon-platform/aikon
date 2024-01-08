@@ -64,6 +64,7 @@ PUB_ABBR = "pub"
 AUT_ABBR = "aut"
 ILL_ABBR = "ill"
 SEL_ABBR = "sel"
+COP_ABBR = "cop"
 
 TPR = (
     f"letterpress {PR}" if APP_LANG == "en" else "typographie"
@@ -78,6 +79,7 @@ PUBLI = "publisher" if APP_LANG == "en" else "éditeur/diffuseur"
 AUTHOR = "author" if APP_LANG == "en" else "auteur"
 ILLUM = "illuminator" if APP_LANG == "en" else "enlumineur"
 SELLER = "bookseller" if APP_LANG == "en" else "libraire"
+COPYIST = "copyist" if APP_LANG == "en" else "copiste"
 
 WIT_TYPE = (
     (MS_ABBR, MS.capitalize()),
@@ -119,6 +121,7 @@ ROLES = (
     (AUT_ABBR, AUTHOR),
     (ILL_ABBR, ILLUM),
     (SEL_ABBR, SELLER),
+    (COP_ABBR, COPYIST),
 )
 
 LANGUAGES = [

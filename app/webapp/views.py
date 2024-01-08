@@ -45,7 +45,7 @@ from app.webapp.utils.iiif.annotation import (
     check_anno_file,
 )
 
-from app.webapp.utils.paths import ANNO_PATH
+from app.webapp.utils.paths import ANNO_PATH, MEDIA_DIR
 
 
 def is_superuser(user):
@@ -58,6 +58,7 @@ def admin_app(request):
 
 def check_ref(obj_ref, obj="Digitization"):
     ref = parse_ref(obj_ref)
+    # TODO: remplacer par wit
     ref_format = (
         "{witness_abbr}{witness_id}_{digit_abbr}{digit_id}"
         if obj == "Digitization"
@@ -215,17 +216,19 @@ def index_anno(request, anno_ref=None):
             anno = Annotation(id=anno_id, digitization=digit, model="CHANGE THIS VALUE")
             anno.save()
 
-        # from app.webapp.tasks import reindex_from_file
-        # reindex_from_file.delay(anno_id)
-        # indexed_anno.append(a_ref)
-        try:
-            if check_indexation_annos(anno, True):
-                indexed_anno.append(a_ref)
-            else:
-                not_indexed_anno.append(a_ref)
-        except Exception as e:
-            not_indexed_anno.append(a_ref)
-            log(f"[index_anno] Failed to index annotations for ref #{a_ref}", e)
+        from app.webapp.tasks import reindex_from_file
+
+        reindex_from_file.delay(anno_id)
+        indexed_anno.append(a_ref)
+
+        # try:
+        #     if check_indexation_annos(anno, True):
+        #         indexed_anno.append(a_ref)
+        #     else:
+        #         not_indexed_anno.append(a_ref)
+        # except Exception as e:
+        #     not_indexed_anno.append(a_ref)
+        #     log(f"[index_anno] Failed to index annotations for ref #{a_ref}", e)
 
     return JsonResponse(
         {"All": anno_files, "Indexed": indexed_anno, "Not indexed": not_indexed_anno}
@@ -290,11 +293,12 @@ def receive_anno(request, digit_ref):
         file_content = file_content.decode("utf-8")
 
         if check_anno_file(file_content):
-            # from app.webapp.tasks import process_anno_file
-            # process_anno_file.delay(file_content, digit.id, model)
-            # return JsonResponse({"response": "OK"}, status=200)
-            if process_anno(file_content, digit, model):
-                return JsonResponse({"response": "OK"}, status=200)
+            from app.webapp.tasks import process_anno_file
+
+            process_anno_file.delay(file_content, digit.id, model)
+            return JsonResponse({"response": "OK"}, status=200)
+            # if process_anno(file_content, digit, model):
+            #     return JsonResponse({"response": "OK"}, status=200)
         return JsonResponse(
             {"message": "Could not process annotation file"}, status=400
         )
@@ -489,6 +493,13 @@ def search_similarity(request, experiment_id):
 
 def rgpd(request):
     return render(request, "rgpd.html")
+
+
+def legacy_manifest(request, old_id):
+    if not os.path.isfile(f"{MEDIA_DIR}/manifest/{old_id}.json"):
+        return JsonResponse({})
+    with open(f"{MEDIA_DIR}/manifest/{old_id}.json", "r") as manifest:
+        return JsonResponse(json.loads(manifest.read()))
 
 
 # TODO: create test to find integrity of a manuscript:

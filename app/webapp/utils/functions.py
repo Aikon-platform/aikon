@@ -244,14 +244,18 @@ def format_start_end(start=None, end=None, no_info="?-?", separator="-"):
 
 def get_action(action, formatting=None):
     actions = {
-        "view": {"en": "visualize", "fr": "visualiser la"},
+        "view": {"en": "visualize source", "fr": "visualiser la source"},
+        "auto-view": {
+            "en": "visualize automatic annotations",
+            "fr": "voir les annotations automatiques",
+        },
         "no_manifest": {"en": "no manifest", "fr": "pas de manifest"},
         "no_digit": {"en": "no digitization", "fr": "pas de numérisation"},
         "no_img": {"en": "no image", "fr": "pas d'image"},
         "no_anno": {"en": "no annotation yet", "fr": "non annoté"},
-        "download": {"en": "download", "fr": "télécharger les"},
-        "edit": {"en": "edit", "fr": "modifier les"},
-        "final": {"en": "final", "fr": "modifier les"},
+        "download": {"en": "download annotations", "fr": "télécharger les annotations"},
+        "edit": {"en": "edit annotations", "fr": "modifier les annotations"},
+        "final": {"en": "final annotations", "fr": "modifier les annotations"},
     }
     action = actions[action][APP_LANG]
     if formatting == "upper":  # => ACTION

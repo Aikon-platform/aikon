@@ -95,6 +95,7 @@ python "$APP_ROOT"/app/manage.py createsuperuser
 python "$APP_ROOT"/app/manage.py collectstatic
 
 sudo chmod 755 "$APP_ROOT/app/logs/app_log.log"
+setfacl -m group:"$APP_NAME":rwx "$APP_ROOT/app/logs/app_log.log"
 
 create_service() {
     SERVICE_NAME="$APP_NAME-$1"

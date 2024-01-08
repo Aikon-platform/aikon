@@ -26,6 +26,7 @@ from app.webapp.views import (
     retrieve_place_info,
     rgpd,
     LanguageAutocomplete,
+    legacy_manifest,
     index_anno,
 )
 
@@ -142,6 +143,7 @@ urlpatterns = [
         search_similarity,
         name="search-similarity",
     ),
+    path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
 ]
 
 if DEBUG:

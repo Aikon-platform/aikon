@@ -17,14 +17,18 @@ def anno_btn(obj, action="view"):
     obj: Annotation | Digitization
     """
     disabled = ""
-    btn = f"{get_action(action, 'upper')} ANNOTATIONS"
+    btn = f"{get_action(action, 'upper')}"
 
     if action == "view":
         color = "#EFB80B"
         icon = get_icon("eye")
         # The link redirects to Mirador with no annotations (Digitization) or automatic annotations (Annotation)
         link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V1)}"
-        btn = "VIEW SOURCE"
+    elif action == "auto-view":
+        color = "#EFB80B"
+        icon = get_icon("eye")
+        # The link redirects to Mirador with no annotations (Digitization) or automatic annotations (Annotation)
+        link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V1)}"
     elif action == "edit":
         color = "#008CBA"
         icon = get_icon("pen-to-square")
