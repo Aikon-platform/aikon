@@ -9,7 +9,14 @@ from app.webapp.models.work import Work
 from app.webapp.models.place import Place
 from app.webapp.models.language import Language
 
-from app.webapp.models.utils.constants import TAG, WIT, WORK, PAG_ABBR, PAGE_ERROR
+from app.webapp.models.utils.constants import (
+    TAG,
+    WIT,
+    WORK,
+    PAG_ABBR,
+    PAGE_ERROR,
+    DATE_INFO,
+)
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.functions import format_start_end, extract_nb, validate_dates
 from app.webapp.utils.logger import log
@@ -84,7 +91,7 @@ class Content(models.Model):
         blank=True,
     )
     date_min = models.IntegerField(
-        verbose_name=get_name("date_min"), null=True, blank=True
+        verbose_name=get_name("date_min"), null=True, blank=True, help_text=DATE_INFO
     )
     date_max = models.IntegerField(
         verbose_name=get_name("date_max"), null=True, blank=True

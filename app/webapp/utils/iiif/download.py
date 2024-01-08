@@ -1,13 +1,14 @@
 import glob
 import os
 import time
+import shutil
 
 import requests
 from PIL import Image, UnidentifiedImageError
 
 from app.webapp.utils.functions import get_json, save_img, sanitize_url
 from app.webapp.utils.constants import MAX_SIZE
-from app.webapp.utils.paths import MEDIA_DIR, IMG_PATH, BASE_DIR
+from app.webapp.utils.paths import MEDIA_DIR, IMG_PATH, BASE_DIR, DOWNLOAD_LOG_PATH
 from app.webapp.utils.logger import iiif_log, console, log
 from app.webapp.utils.iiif import get_height, get_width, get_id, get_license_url
 
@@ -139,6 +140,11 @@ class IIIFDownloader:
                         self.save_iiif_img(img_rsrc, i, self.get_formatted_size(size))
                         return
                     else:
+                        shutil.copyfile(
+                            f"{BASE_DIR}/webapp/static/img/placeholder.jpg",
+                            f"{IMG_PATH}/{img_name}",
+                        )
+                        # TODO : add urls to a log file
                         log(f"[save_iiif_img] {iiif_url} is not a valid img file", e)
                         return
                 except (IOError, OSError) as e:
