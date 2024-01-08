@@ -220,14 +220,14 @@ def index_anno(request, anno_ref=None):
         reindex_from_file.delay(anno_id)
         indexed_anno.append(a_ref)
 
-        try:
-            if check_indexation_annos(anno, True):
-                indexed_anno.append(a_ref)
-            else:
-                not_indexed_anno.append(a_ref)
-        except Exception as e:
-            not_indexed_anno.append(a_ref)
-            log(f"[index_anno] Failed to index annotations for ref #{a_ref}", e)
+        # try:
+        #     if check_indexation_annos(anno, True):
+        #         indexed_anno.append(a_ref)
+        #     else:
+        #         not_indexed_anno.append(a_ref)
+        # except Exception as e:
+        #     not_indexed_anno.append(a_ref)
+        #     log(f"[index_anno] Failed to index annotations for ref #{a_ref}", e)
 
     return JsonResponse(
         {"All": anno_files, "Indexed": indexed_anno, "Not indexed": not_indexed_anno}
