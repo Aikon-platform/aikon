@@ -4,7 +4,7 @@ import os
 import time
 
 from django.utils.html import strip_tags
-from app.webapp.utils.paths import LOG_PATH, IIIF_LOG_PATH
+from app.webapp.utils.paths import LOG_PATH, IIIF_LOG_PATH, DOWNLOAD_LOG_PATH
 from app.config.settings import DEBUG
 
 
@@ -94,3 +94,12 @@ def iiif_log(img_url):
 
     with open(IIIF_LOG_PATH, "a") as f:
         f.write(f"{img_url}\n")
+
+
+def download_log(img_name, img_url):
+    if not os.path.isfile(DOWNLOAD_LOG_PATH):
+        f = open(DOWNLOAD_LOG_PATH, "x")
+        f.close()
+
+    with open(DOWNLOAD_LOG_PATH, "a") as f:
+        f.write(f"{img_name}\n{img_url}\n")
