@@ -43,6 +43,7 @@ from app.webapp.utils.iiif.annotation import (
     create_empty_anno,
     check_indexation_annos,
     check_anno_file,
+    delete_anno_request,
 )
 
 from app.webapp.utils.paths import ANNO_PATH, MEDIA_DIR
@@ -235,39 +236,31 @@ def index_anno(request, anno_ref=None):
     )
 
 
-def delete_send_anno(request, anno_ref):
+@user_passes_test(is_superuser)
+def delete_send_anno(request, digit_ref):
     """
     To delete images on the GPU and relaunch annotations
     """
-    passed, anno = check_ref(anno_ref, "Annotation")
+    passed, digit = check_ref(digit_ref, "Annotation")
     if not passed:
-        return JsonResponse(anno)
-    # TODO redo entirely
-    # manifest_url = f"{VHS_APP_URL}/{APP_NAME}/iiif/{MANIFEST_AUTO}/{wit_type}/{wit_id}/manifest.json"
-    # try:
-    #     requests.post(
-    #         url=f"{API_GPU_URL}/delete_detect",
-    #         headers={"X-API-Key": EXAPI_KEY},
-    #         data={"manifest_url": manifest_url},
-    #     )
-    # except Exception as e:
-    #     log(
-    #         f"[delete_send_anno] Failed to send deletion and annotation request for {wit_type} #{wit_id}: {e}"
-    #     )
-    #     return JsonResponse(
-    #         {
-    #             "response": f"Failed to send deletion and annotation request for {wit_type} #{wit_id}",
-    #             "cause": e,
-    #         },
-    #         safe=False,
-    #     )
+        return JsonResponse(digit)
 
-    return JsonResponse(
-        {
-            "response": f"Images were deleted and annotations were relaunched for Annotation #{anno.id}"
-        },
-        safe=False,
-    )
+    error = {
+        "response": f"Failed to send deletion and retry request for annotations #{digit.id}"
+    }
+
+    try:
+        status = delete_anno_request(digit)
+    except Exception as e:
+        error["cause"] = e
+        return JsonResponse(error, safe=False)
+
+    if status:
+        return JsonResponse(
+            {"response": f"Annotations were relaunched for digit #{digit.id}"},
+            safe=False,
+        )
+    return JsonResponse(error, safe=False)
 
 
 @csrf_exempt

@@ -134,7 +134,7 @@ urlpatterns = [
         name="index-annotations",
     ),
     path(
-        f"{APP_NAME}/delete-run-annotation/<str:anno_ref>",
+        f"{APP_NAME}/delete-run-annotation/<str:digit_ref>",
         delete_send_anno,
         name="delete-run-annotations",
     ),
