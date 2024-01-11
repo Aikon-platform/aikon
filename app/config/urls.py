@@ -28,6 +28,7 @@ from app.webapp.views import (
     LanguageAutocomplete,
     legacy_manifest,
     index_anno,
+    delete_annotation,
 )
 
 
@@ -137,6 +138,11 @@ urlpatterns = [
         f"{APP_NAME}/delete-run-annotation/<str:digit_ref>",
         delete_send_anno,
         name="delete-run-annotations",
+    ),
+    path(
+        f"{APP_NAME}/delete-annotation/<str:obj_ref>",
+        delete_annotation,
+        name="delete-annotation",
     ),
     path(
         f"{APP_NAME}/search-similarity/<str:experiment_id>/",

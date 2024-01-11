@@ -262,6 +262,24 @@ def delete_send_anno(request, digit_ref):
     return JsonResponse(error, safe=False)
 
 
+@user_passes_test(is_superuser)
+def delete_annotation(request, obj_ref):
+    passed, obj = check_ref(obj_ref, "Annotation")
+    if not passed:
+        return JsonResponse(obj)
+
+    anno = obj if cls(obj) == Annotation else None
+    if anno:
+        try:
+            delete_annos(anno)
+        except Exception as e:
+            return JsonResponse(
+                {"error": f"Failed to delete annotation #{anno.id}: {e}"}
+            )
+
+    return JsonResponse({"error": f"No annotation file for reference #{obj_ref}."})
+
+
 @csrf_exempt
 def receive_anno(request, digit_ref):
 
