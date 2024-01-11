@@ -59,7 +59,6 @@ def admin_app(request):
 
 def check_ref(obj_ref, obj="Digitization"):
     ref = parse_ref(obj_ref)
-    # TODO: remplacer par wit
     ref_format = (
         "{witness_abbr}{witness_id}_{digit_abbr}{digit_id}"
         if obj == "Digitization"
