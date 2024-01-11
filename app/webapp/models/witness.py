@@ -155,8 +155,7 @@ class Witness(models.Model):
         return MAP_WIT_TYPE[self.type]
 
     def get_ref(self):
-        # TODO: remplacer par wit
-        return f"{self.type}{self.id}"
+        return f"wit{self.id}"
 
     def change_url(self):
         change_url = reverse("admin:webapp_witness_change", args=[self.id])
