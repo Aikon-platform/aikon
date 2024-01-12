@@ -144,7 +144,7 @@ class IIIFDownloader:
                             f"{BASE_DIR}/webapp/static/img/placeholder.jpg",
                             f"{IMG_PATH}/{img_name}",
                         )
-                        download_log(img_name, img_url)
+                        download_log(img_url)
                         log(f"[save_iiif_img] {iiif_url} is not a valid img file", e)
                         return
                 except (IOError, OSError) as e:
