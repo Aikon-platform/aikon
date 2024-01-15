@@ -9,7 +9,7 @@ ENV_FILE="$APP_ROOT"/app/config/.env
 MEDIA_DIR="$APP_ROOT/app/mediafiles"
 
 generate_random_string() {
-    echo "$(openssl rand -base64 32 | tr -d '\n')"
+    echo "$(openssl rand -base64 32 | tr -d '/\n')"
 }
 
 colorEcho() {
@@ -101,7 +101,8 @@ update_env() {
         esac
 
         new_value=$(prompt_user "$param" "$default_val" "$current_val")
-        sed -i "s~^$param=.*~$param=\"$new_value\"~" "$ENV_FILE"
+        # sed -i "s~^$param=.*~$param=\"$new_value\"~" "$ENV_FILE"
+        sed -i '' -e "s~^$param=.*~$param=\"$new_value\"~" "$ENV_FILE"
     done
 }
 
@@ -135,7 +136,8 @@ update_cantaloupe_env() {
         esac
 
         new_value=$(prompt_user "$param" "$default_val" "$current_val")
-        sed -i "s~^$param=.*~$param=\"$new_value\"~" "$CANTALOUPE_ENV_FILE"
+        # sed -i "s~^$param=.*~$param=\"$new_value\"~" "$CANTALOUPE_ENV_FILE"
+        sed -i '' -e "s~^$param=.*~$param=\"$new_value\"~" "$CANTALOUPE_ENV_FILE"
     done
 }
 

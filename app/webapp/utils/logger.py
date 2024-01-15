@@ -102,4 +102,4 @@ def download_log(img_name, img_url):
         f.close()
 
     with open(DOWNLOAD_LOG_PATH, "a") as f:
-        f.write(f"{img_name}\n{img_url}\n")
+        f.write(f"{img_name} {img_url}\n")

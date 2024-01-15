@@ -28,6 +28,27 @@ def extract_images_from_iiif_manifest(
     event.set()
 
 
+def save_failed_img(image):
+    img_name = image.split(" ")[0]
+    img_url = image.split(" ")[1]
+    iiif_url = sanitize_url(f"{img_url}/full/full/0/default.jpg")
+    time.sleep(20)
+
+    try:
+        with requests.get(iiif_url, stream=True) as response:
+            response.raw.decode_content = True
+            img = Image.open(response.raw)
+            save_img(img, img_name)
+
+    except requests.exceptions.RequestException as e:
+        shutil.copyfile(
+            f"{BASE_DIR}/webapp/static/img/placeholder.jpg",
+            f"{IMG_PATH}/{img_name}",
+        )
+        download_log(img_name, img_url)
+        log(f"[save_iiif_img] {iiif_url} is not a valid img file", e)
+
+
 class IIIFDownloader:
     """Download all image resources from a list of manifest urls."""
 
@@ -65,6 +86,14 @@ class IIIFDownloader:
             for rsrc in self.get_iiif_resources(manifest):
                 self.save_iiif_img(rsrc, i)
                 i += 1
+
+            with open(DOWNLOAD_LOG_PATH, "r") as f:
+                images = f.read().splitlines()
+            images = list(filter(None, images))
+            open(DOWNLOAD_LOG_PATH, "w").close()
+
+            for image in images:
+                save_failed_img(image)
 
             # NOTE to create manifests out of images URL
             # with open(BASE_DIR / IMG_PATH / f"{self.manifest_id}.txt", "a") as f:

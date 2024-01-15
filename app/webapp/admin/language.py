@@ -20,16 +20,3 @@ class LanguageAdmin(admin.ModelAdmin):
     list_display = ("id", "lang")
     list_display_links = ("lang",)
     ordering = ("id",)
-
-    def has_module_permission(self, request):
-        """
-        Check if the user has permission to view the module
-        In this case, return True only if the user is a superadmin
-        """
-        return request.user.is_superuser
-
-    def has_add_permission(self, request):
-        """
-        Deny add permission if not a superadmin
-        """
-        return request.user.is_superuser

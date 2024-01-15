@@ -24,7 +24,7 @@ sudo -i -u postgres psql -c "CREATE DATABASE $dbname;"
 sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $dbname TO $username;"
 
 # Set variables in .env file
-sed -i "s/DB_NAME=.*/DB_NAME=$dbname/" "$APP_ROOT"/app/config/.env
+sed -i '' -e "s/DB_NAME=.*/DB_NAME=$dbname/" "$APP_ROOT"/app/config/.env
 
 # Empty migration directory and create new migrations
 # find "$APP_ROOT"/app/webapp/migrations -type f ! -name '__init__.py' ! -name 'init.py' -delete
