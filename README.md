@@ -64,40 +64,48 @@ pre-commit install
 
 ### Project settings
 
-Copy the content of the settings template file
+Create a [Geonames](https://www.geonames.org/login) account and activate it.
 
-```bash
-cp app/config/.env{.template,}
+Fill the various `.env` files of the project with:
+```shell
+sh scripts/env.sh
 ```
 
-Change variables in the generated file `app/config/.env` to corresponds to your database and username
-
-```bash
-ALLOWED_HOSTS="localhost,127.0.0.1,145.238.203.8"
-SECRET_KEY="<secret-key>"            # random string of characters
-DEBUG=True                           # leave to True on local
-DB_NAME="<database-name>"            # database name you defined
-DB_USERNAME="<database-username>"    # database username you defined
-DB_PASSWORD="<database-password>"    # database password you defined
-DB_HOST="<database-host>"            # localhost
-DB_PORT="<database-port>"            # 5432
-SAS_USERNAME="<sas-username>"
-SAS_PASSWORD="<sas-password>"
-PROD_URL="<url-used-for-prod>"       # e.g. "eida.obspm.fr"
-APP_NAME="<app-name-lowercase>"      # name of the application, e.g. "eida"
-GEONAMES_USER="<geonames-username>"
-APP_LANG="<fr-or-en>"                # lang to be used in the app: work either for french (fr) or english (en)
-EXAPI_URL="<gpu-api-address>"        # e.g. "https://dishas-ia.obspm.fr"
-EXAPI_KEY="<api-key>"
-REDIS_PASSWORD="<redis-password>"
-MEDIA_DIR="<media-dir>"              # absolute path to media files directory (e.g. "/home/<path>/<to>/vhs/app/mediafiles")
-```
-
-Create a [Geonames](https://www.geonames.org/login) account, activate it and change `<geonames-username>` in the `.env` file
-
-Add an `APP_NAME` and an `PROD_URL` with the scheme and domain used in production (e.g. "eida.obspm.fr")
-
-Provide as well an `APP_LANG`: only "fr" or "en" values are supported for now
+> #### Instructions done by the script
+> Copy the content of the settings template file
+>
+> ```bash
+> cp app/config/.env{.template,}
+> ```
+>
+> Change variables in the generated file `app/config/.env` to corresponds to your database and username
+>
+> ```bash
+> ALLOWED_HOSTS="localhost,127.0.0.1,145.238.203.8"
+> SECRET_KEY="<secret-key>"            # random string of characters
+> DEBUG=True                           # leave to True on local
+> DB_NAME="<database-name>"            # database name you defined
+> DB_USERNAME="<database-username>"    # database username you defined
+> DB_PASSWORD="<database-password>"    # database password you defined
+> DB_HOST="<database-host>"            # localhost
+> DB_PORT="<database-port>"            # 5432
+> SAS_USERNAME="<sas-username>"
+> SAS_PASSWORD="<sas-password>"
+> PROD_URL="<url-used-for-prod>"       # e.g. "eida.obspm.fr"
+> APP_NAME="<app-name-lowercase>"      # name of the application, e.g. "eida"
+> GEONAMES_USER="<geonames-username>"
+> APP_LANG="<fr-or-en>"                # lang to be used in the app: work either for french (fr) or english (en)
+> EXAPI_URL="<gpu-api-address>"        # e.g. "https://dishas-ia.obspm.fr"
+> EXAPI_KEY="<api-key>"
+> REDIS_PASSWORD="<redis-password>"    # random string of characters without "/"
+> MEDIA_DIR="<media-dir>"              # absolute path to media files directory (e.g. "/home/<path>/<to>/vhs/app/mediafiles")
+> ```
+>
+> Create a [Geonames](https://www.geonames.org/login) account, activate it and change `<geonames-username>` in the `.env` file
+>
+> Add an `APP_NAME` and an `PROD_URL` with the scheme and domain used in production (e.g. "eida.obspm.fr")
+>
+> Provide as well an `APP_LANG`: only "fr" or "en" values are supported for now
 
 ### Database
 
@@ -158,26 +166,28 @@ sudo ufw allow 8000
 
 #### Cantaloupe
 
-Create a .ENV file for cantaloupe
-```bash
-sudo chmod +x cantaloupe/init.sh && cp cantaloupe/.env{.template,} && nano cantaloupe/.env
-```
+Skip these steps if you used `scripts/env.sh`
 
-Change variables in the generated file `cantaloupe/.env`:
-- `BASE_URI`: leave it blank on local
-- `FILE_SYSTEM_SOURCE` depends on the folder in which you run cantaloupe (inside cantaloupe/ folder: `../app/mediafiles/img/`)
-```bash
-BASE_URI=
-FILE_SYSTEM_SOURCE=./app/mediafiles/img/  # inside the project directory
-HTTP_PORT=8182
-HTTPS_PORT=8183
-LOG_PATH=/path/to/logs
-```
-
-Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with your variables):
-```shell
-cantaloupe/init.sh
-```
+> Create a .ENV file for cantaloupe
+> ```bash
+> sudo chmod +x cantaloupe/init.sh && cp cantaloupe/.env{.template,} && nano cantaloupe/.env
+> ```
+>
+> Change variables in the generated file `cantaloupe/.env`:
+> - `BASE_URI`: leave it blank on local
+> - `FILE_SYSTEM_SOURCE` depends on the folder in which you run cantaloupe (inside cantaloupe/ folder: `../app/mediafiles/img/`)
+> ```bash
+> BASE_URI=
+> FILE_SYSTEM_SOURCE=./app/mediafiles/img/  # inside the project directory
+> HTTP_PORT=8182
+> HTTPS_PORT=8183
+> LOG_PATH=/path/to/logs
+> ```
+>
+> Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with your variables):
+> ```shell
+> cantaloupe/init.sh
+> ```
 
 Run [Cantaloupe](https://cantaloupe-project.github.io/)
 ```shell
@@ -217,9 +227,9 @@ server {
 	server_name <project-domain-name>;
 	...
 	location /sas/ {
-	...
-	auth_basic              "Restricted Content";
-	auth_basic_user_file    /etc/nginx/.htpasswd;
+      ...
+      auth_basic              "Restricted Content";
+      auth_basic_user_file    /etc/nginx/.htpasswd;
 	}
 }
 ```
@@ -231,44 +241,35 @@ sudo systemctl restart nginx
 
 ### Celery with Redis setup
 #### Enabling authentication for Redis instance
-Open the Redis configuration file
+
+Find the path of Redis configuration file
+
+```bash
+redis-cli INFO | grep config_file
 ```
-vi /etc/redis/redis.conf
+
+Add your `REDIS_PASSWORD` (inside `app/config/.env`) to Redis config file
+
+```bash
+sed -i '' -e "s/# requirepass foobared/requirepass <REDIS_PASSWORD>/" <REDIS_CONFIG_FILE>
 ```
-Uncomment and set a password
-```
-requirepass <your_password>
-```
+
+[//]: # (Open the Redis configuration file)
+[//]: # (```)
+[//]: # (vi /etc/redis/redis.conf)
+[//]: # (```)
+[//]: # (Uncomment and set a password)
+[//]: # (```)
+[//]: # (requirepass <your_password>)
+[//]: # (```)
+
 Restart Redis
 ```
 sudo systemctl restart redis-server
 ```
 Test the password
 ```
-redis-cli -a <your_password>
-```
-
-#### Celery
-Create a service for Celery
-```bash
-vi /etc/systemd/system/celery.service
-```
-
-```bash
-[Unit]
-Description=Celery Service
-After=network.target
-
-[Service]
-User=<production-server-username>
-Group=<production-server-group>
-WorkingDirectory=<path/to>/app
-ExecStart=<path/to>/venv/bin/celery -A <celery_app> worker --loglevel=info -P threads
-StandardOutput=file:<path/to>/celery/log
-StandardError=file:<path/to>/celery/log
-
-[Install]
-WantedBy=multi-user.target
+redis-cli -a <REDIS_PASSWORD>
 ```
 
 ## Launch app
@@ -279,7 +280,7 @@ Run server
 python app/manage.py runserver localhost:8000
 ```
 
-or to launch everything (Django, Cantaloupe and SimpleAnnotationServer) at once (stop with `kill 0`:
+or to launch everything (Django, Cantaloupe and SimpleAnnotationServer) at once (stop with `kill 0`):
 ```shell
 bash run.sh
 ```
