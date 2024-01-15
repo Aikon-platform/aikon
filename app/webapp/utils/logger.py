@@ -96,10 +96,10 @@ def iiif_log(img_url):
         f.write(f"{img_url}\n")
 
 
-def download_log(img_url):
+def download_log(img_name, img_url):
     if not os.path.isfile(DOWNLOAD_LOG_PATH):
         f = open(DOWNLOAD_LOG_PATH, "x")
         f.close()
 
     with open(DOWNLOAD_LOG_PATH, "a") as f:
-        f.write(f"{img_url}\n")
+        f.write(f"{img_name} {img_url}\n")
