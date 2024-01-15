@@ -29,6 +29,7 @@ from app.webapp.views import (
     legacy_manifest,
     index_anno,
     delete_annotation,
+    get_annos_img_list,
 )
 
 
@@ -40,6 +41,11 @@ urlpatterns = [
         f"{APP_NAME}/<str:anno_ref>/show/",
         show_annotations,
         name="show-annotations",
+    ),
+    path(
+        f"{APP_NAME}/<str:anno_ref>/list/",
+        get_annos_img_list,
+        name="annotation-list",
     ),
     path(
         f"{APP_NAME}/annotations/<int:anno_id>",

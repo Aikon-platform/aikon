@@ -29,8 +29,9 @@ from app.webapp.utils.functions import (
     get_json,
     cls,
     delete_files,
+    flatten,
 )
-from app.webapp.utils.iiif import parse_ref
+from app.webapp.utils.iiif import parse_ref, gen_iiif_url
 from app.webapp.utils.logger import console, log, get_time
 from app.webapp.utils.iiif.annotation import (
     format_canvas_annos,
@@ -407,6 +408,23 @@ def show_annotations(request, anno_ref):
             "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2),
         },
     )
+
+
+def get_annos_img_list(request, anno_ref):
+    passed, anno = check_ref(anno_ref, "Annotation")
+    if not passed:
+        return JsonResponse(anno)
+
+    anno_list = []
+
+    _, canvas_annos = formatted_annotations(anno)
+    for canvas_nb, annos, img_name in canvas_annos:
+        if len(annos):
+            anno_list.append(
+                [gen_iiif_url(img_name, 2, f"{a[0]}/full/0") for a in annos]
+            )
+
+    return JsonResponse(flatten(anno_list), status=200, safe=False)
 
 
 def test(request, wit_ref=None):
