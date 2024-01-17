@@ -255,7 +255,7 @@ def get_action(action, formatting=None):
         "no_anno": {"en": "no annotation yet", "fr": "non annoté"},
         "download": {"en": "download annotations", "fr": "télécharger les annotations"},
         "edit": {"en": "edit annotations", "fr": "modifier les annotations"},
-        "final": {"en": "final annotations", "fr": "modifier les annotations"},
+        "final": {"en": "final annotations", "fr": "annotations finales"},
     }
     action = actions[action][APP_LANG]
     if formatting == "upper":  # => ACTION
