@@ -24,12 +24,12 @@ class PlaceForm(forms.ModelForm):
             "longitude": forms.TextInput(attrs={"readonly": "readonly"}),
         }
 
-    """def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(PlaceForm, self).__init__(*args, **kwargs)
         if self.instance and self.instance.name:
             self.fields["name"].widget.choices = [
                 (self.instance.name, self.instance.name)
-            ]"""
+            ]
 
     class Media:
         js = ("js/place-autocomplete.js",)
