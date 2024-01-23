@@ -17,7 +17,7 @@ class PlaceForm(forms.ModelForm):
                 attrs={
                     "data-placeholder": SEARCH_MSG,
                 },
-                forward=["name"],
+                # forward=["name"],
             ),
             "country": forms.TextInput(attrs={"readonly": "readonly"}),
             "latitude": forms.TextInput(attrs={"readonly": "readonly"}),

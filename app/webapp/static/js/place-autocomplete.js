@@ -3,10 +3,10 @@ $(function() {
      * Update the "country", "latitude" and "longitude" fields with the retrieved data
      */
     document.querySelector("#id_name").onchange=function() {
-        const selectedName = $(this).find("option:selected").text();
+        const [name, countryCode] = $(this).find("option:selected").text().split(" | ");
         $.ajax({
             url: "/retrieve_place_info/",
-            data: { "name": selectedName },
+            data: { "name": name, "countryCode": countryCode},
             dataType: "json",
             success: function(data) {
                 $("#id_country").val(data.country);

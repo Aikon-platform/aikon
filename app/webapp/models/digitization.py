@@ -125,20 +125,20 @@ class Digitization(models.Model):
         default=False,
         help_text=get_name("is_open_info"),
     )
-    source = models.CharField(
+    """source = models.CharField(
         verbose_name=get_name("source"),
         max_length=500,
         blank=True,
         null=True,
+    )"""
+    source = models.ForeignKey(
+        DigitizationSource,
+        verbose_name=get_name("source"),
+        blank=True,
+        null=True,
+        help_text=SOURCE_INFO,
+        on_delete=models.SET_NULL,
     )
-    # source = models.ForeignKey(
-    #     DigitizationSource,
-    #     verbose_name=get_name("source"),
-    #     blank=True,
-    #     null=True,
-    #     help_text=SOURCE_INFO,
-    #     on_delete=models.SET_NULL,
-    # )
 
     def get_witness(self):
         try:

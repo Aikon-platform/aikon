@@ -124,13 +124,6 @@ ROLES = (
     (COP_ABBR, COPYIST),
 )
 
-LANGUAGES = [
-    ("ar", "Arabic"),
-    ("el", "Greek"),
-    ("he", "Hebrew"),
-    ("la", "Latin"),
-]
-
 #############################
 #        HELP TEXTS         #
 #############################
