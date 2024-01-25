@@ -33,7 +33,7 @@ class Series(models.Model):
         return self.edition.name  # TODO find a name
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    notes = models.TextField(verbose_name=get_name("notes"), max_length=500, blank=True)
+    notes = models.TextField(verbose_name=get_name("notes"), max_length=600, blank=True)
     date_min = models.IntegerField(
         verbose_name=get_name("date_min"), null=True, blank=True, help_text=DATE_INFO
     )
