@@ -28,9 +28,7 @@ class Work(models.Model):
         author = f"{self.author.name if self.author else AUTHOR_MSG}"
         return f"{author} | {self.title}"
 
-    title = models.CharField(
-        verbose_name=get_name("title"), max_length=600, unique=True
-    )
+    title = models.CharField(verbose_name=get_name("title"), max_length=600)
     date_min = models.IntegerField(
         verbose_name=get_name("date_min"), null=True, blank=True
     )
