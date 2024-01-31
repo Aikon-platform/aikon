@@ -20,7 +20,7 @@ class WorkAdmin(UnregisteredAdmin):
         "title",
         "author",
         ("date_min", "date_max"),
-        "place",
+        # "place",
         "notes",
         "lang",
         "tags",

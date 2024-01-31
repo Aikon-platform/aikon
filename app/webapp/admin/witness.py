@@ -80,7 +80,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         "notes",
     )
     # Filters options in the sidebar
-    list_filter = ("id_nb", "place")  # list_filter = (AuthorFilter, WorkFilter)
+    # list_filter = ("id_nb", "place")  # list_filter = (AuthorFilter, WorkFilter)
     # Attributes to be excluded from the form fields
     exclude = ("slug", "created_at", "updated_at")
     # Dropdown fields
