@@ -52,7 +52,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
 
     @admin.display(description=get_name("Edition"))
     def get_edition(self, obj):
-        return truncate_words(str(obj.edition), TRUNCATEWORDS)
+        return truncate_words(obj.edition.__str__(), TRUNCATEWORDS)
 
     @admin.display(description=get_name("Work"))
     def get_works(self, obj):
