@@ -8,7 +8,8 @@ from app.webapp.models.tag import Tag
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.utils.constants import PUBLISHED_INFO, DATE_INFO
 from app.webapp.models.work import Work
-from app.webapp.utils.functions import validate_dates
+from app.webapp.utils.constants import TRUNCATEWORDS
+from app.webapp.utils.functions import validate_dates, truncate_words
 
 
 def get_name(fieldname, plural=False):
@@ -82,7 +83,11 @@ class Series(models.Model):
     def get_work_titles(self):
         works = self.get_works()
         return format_html(
-            "<br>".join([work.__str__() for work in works]) if len(works) else "-"
+            "<br>".join(
+                [truncate_words(work.__str__(), TRUNCATEWORDS) for work in works]
+            )
+            if len(works)
+            else "-"
         )
 
     def get_roles(self):
