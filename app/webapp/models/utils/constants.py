@@ -65,6 +65,8 @@ AUT_ABBR = "aut"
 ILL_ABBR = "ill"
 SEL_ABBR = "sel"
 COP_ABBR = "cop"
+DRA_ABBR = "dra"
+ENG_ABBR = "eng"
 
 TPR = (
     f"letterpress {PR}" if APP_LANG == "en" else "typographie"
@@ -80,6 +82,8 @@ AUTHOR = "author" if APP_LANG == "en" else "auteur"
 ILLUM = "illuminator" if APP_LANG == "en" else "enlumineur"
 SELLER = "bookseller" if APP_LANG == "en" else "libraire"
 COPYIST = "copyist" if APP_LANG == "en" else "copiste"
+DRAWER = "drawer" if APP_LANG == "en" else "dessinateur"
+ENGRAVER = "engraver" if APP_LANG == "en" else "graveur"
 
 WIT_TYPE = (
     (MS_ABBR, MS.capitalize()),
@@ -122,6 +126,8 @@ ROLES = (
     (ILL_ABBR, ILLUM),
     (SEL_ABBR, SELLER),
     (COP_ABBR, COPYIST),
+    (DRA_ABBR, DRAWER),
+    (ENG_ABBR, ENGRAVER),
 )
 
 #############################
