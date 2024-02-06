@@ -84,7 +84,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     # Attributes to be excluded from the form fields
     exclude = ("slug", "created_at", "updated_at")
     # Dropdown fields
-    autocomplete_fields = ("place", "volume")
+    autocomplete_fields = ("place", "volume", "edition")
 
     # MARKER FORM FIELDS
     # info on fieldsets: https://docs.djangoproject.com/en/4.2/ref/contrib/admin/#django.contrib.admin.ModelAdmin.fieldsets
