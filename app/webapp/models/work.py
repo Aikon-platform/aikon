@@ -4,7 +4,7 @@ from app.webapp.models.language import Language
 from app.webapp.models.place import Place
 from app.webapp.models.person import Person
 from app.webapp.models.tag import Tag
-from app.webapp.models.utils.constants import AUTHOR_MSG
+from app.webapp.models.utils.constants import AUTHOR_MSG, DATE_INFO
 
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.functions import validate_dates
@@ -30,7 +30,7 @@ class Work(models.Model):
 
     title = models.CharField(verbose_name=get_name("title"), max_length=600)
     date_min = models.IntegerField(
-        verbose_name=get_name("date_min"), null=True, blank=True
+        verbose_name=get_name("date_min"), null=True, blank=True, help_text=DATE_INFO
     )
     date_max = models.IntegerField(
         verbose_name=get_name("date_max"), null=True, blank=True
