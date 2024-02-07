@@ -15,16 +15,17 @@ from app.config.settings import (
     CANTALOUPE_APP_URL,
     SAS_APP_URL,
     APP_NAME,
-    API_GPU_URL,
+    EXAPI_URL,
     EXAPI_KEY,
-    APP_URL, EXTRACTOR_MODEL,
+    APP_URL,
+    EXTRACTOR_MODEL,
 )
 from app.webapp.utils.functions import log
 
 
 def send_anno_request(digit: Digitization, event):
     event.wait()
-    if not API_GPU_URL.startswith("http"):
+    if not EXAPI_URL.startswith("http"):
         # on local to prevent bugs
         return True
 
@@ -40,7 +41,7 @@ def send_anno_request(digit: Digitization, event):
 def anno_request(digit: Digitization):
     try:
         requests.post(
-            url=f"{API_GPU_URL}/run_detect",
+            url=f"{EXAPI_URL}/run_detect",
             headers={"X-API-Key": EXAPI_KEY},
             data={
                 "manifest_url": digit.gen_manifest_url(),
@@ -56,7 +57,7 @@ def anno_request(digit: Digitization):
 def delete_anno_request(digit: Digitization):
     try:
         requests.post(
-            url=f"{API_GPU_URL}/delete_detect",
+            url=f"{EXAPI_URL}/delete_detect",
             headers={"X-API-Key": EXAPI_KEY},
             data={
                 "manifest_url": digit.gen_manifest_url(),
