@@ -8,7 +8,8 @@ from app.webapp.models.tag import Tag
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.utils.constants import PUBLISHED_INFO, DATE_INFO
 from app.webapp.models.work import Work
-from app.webapp.utils.functions import validate_dates
+from app.webapp.utils.constants import TRUNCATEWORDS
+from app.webapp.utils.functions import validate_dates, truncate_words
 
 
 def get_name(fieldname, plural=False):
@@ -33,7 +34,7 @@ class Series(models.Model):
         return self.edition.name  # TODO find a name
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    notes = models.TextField(verbose_name=get_name("notes"), max_length=500, blank=True)
+    notes = models.TextField(verbose_name=get_name("notes"), max_length=600, blank=True)
     date_min = models.IntegerField(
         verbose_name=get_name("date_min"), null=True, blank=True, help_text=DATE_INFO
     )
@@ -82,7 +83,11 @@ class Series(models.Model):
     def get_work_titles(self):
         works = self.get_works()
         return format_html(
-            "<br>".join([work.__str__() for work in works]) if len(works) else "-"
+            "<br>".join(
+                [truncate_words(work.__str__(), TRUNCATEWORDS) for work in works]
+            )
+            if len(works)
+            else "-"
         )
 
     def get_roles(self):

@@ -455,3 +455,10 @@ def validate_dates(date_min, date_max):
     # TODO: needs improvement
     if date_min and date_max and date_min > date_max:
         raise ValidationError(DATE_ERROR)
+
+
+def truncate_words(text, max_length):
+    words = text.split()
+    if len(text) > 2 * max_length:  # Check if the text is longer than 2*TRUNCATEWORDS
+        return " ".join(words[:max_length] + ["..."] + words[-max_length:])
+    return text
