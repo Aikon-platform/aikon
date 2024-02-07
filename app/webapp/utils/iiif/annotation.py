@@ -17,7 +17,7 @@ from app.config.settings import (
     APP_NAME,
     API_GPU_URL,
     EXAPI_KEY,
-    APP_URL,
+    APP_URL, EXTRACTOR_MODEL,
 )
 from app.webapp.utils.functions import log
 
@@ -44,7 +44,7 @@ def anno_request(digit: Digitization):
             headers={"X-API-Key": EXAPI_KEY},
             data={
                 "manifest_url": digit.gen_manifest_url(),
-                # "model": "yolo_last_sved_vhs_sullivan.pt", # Use only if specific model is desire
+                "model": f"{EXTRACTOR_MODEL}",  # Use only if specific model is desire
                 "callback": f"{APP_URL}/{APP_NAME}/annotate",  # URL to which the annotations must be sent back
             },
         )
