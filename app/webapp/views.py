@@ -475,7 +475,9 @@ class PlaceAutocomplete(autocomplete.Select2ListView):
         # TODO use try/except to avoid bug if geonames key doesn't exist
         suggestions = []
         for suggestion in data["geonames"]:
-            suggestions.append(suggestion["name"])
+            suggestions.append(
+                f"{suggestion['name']} | {suggestion.get('countryCode', '')}"
+            )
 
         return suggestions
 
@@ -485,9 +487,10 @@ def retrieve_place_info(request):
     Extract the relevant information (country, latitude, longitude) from the Geonames API response
     """
     name = request.GET.get("name")
+    countryCode = request.GET.get("countryCode")
     if name:
         data = get_json(
-            f"http://api.geonames.org/searchJSON?q={name}&maxRows={MAX_ROWS}&username={GEONAMES_USER}"
+            f"http://api.geonames.org/searchJSON?q={name}&country={countryCode}&maxRows={MAX_ROWS}&username={GEONAMES_USER}"
         )
         country = data["geonames"][0].get("countryName")
         latitude = data["geonames"][0].get("lat")

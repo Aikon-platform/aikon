@@ -6,7 +6,8 @@ from app.webapp.admin.witness import WitnessInline
 from app.webapp.models.series import Series, get_name
 from app.webapp.models.edition import get_name as ed_get_name
 from app.webapp.models.utils.constants import TPR, TPR_ABBR
-from app.webapp.utils.functions import format_start_end, format_dates
+from app.webapp.utils.constants import TRUNCATEWORDS
+from app.webapp.utils.functions import format_start_end, format_dates, truncate_words
 
 
 @admin.register(Series)
@@ -17,7 +18,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
     # TODO: digit_anno_btn
     list_display = (
         "id",
-        "edition",
+        "get_edition",  # "edition",
         "get_works",
         "get_roles",
         "get_publisher",
@@ -25,7 +26,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         "get_date",
         "is_public",
     )
-    list_display_links = ("edition",)
+    list_display_links = ("get_edition",)  # ("edition",)
     autocomplete_fields = ("work", "edition", "place")
 
     class Meta:
@@ -48,6 +49,10 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         "is_public",
     ]
     inlines = [RoleInline, WitnessInline]
+
+    @admin.display(description=get_name("Edition"))
+    def get_edition(self, obj):
+        return truncate_words(obj.edition.__str__(), TRUNCATEWORDS)
 
     @admin.display(description=get_name("Work"))
     def get_works(self, obj):

@@ -87,13 +87,15 @@ if DEBUG:
 APP_PORT = 8000
 CANTALOUPE_PORT = ENV("CANTALOUPE_PORT")
 SAS_PORT = ENV("SAS_PORT")
-GPU_PORT = 5000
 EXAPI_KEY = ENV("EXAPI_KEY")
 
 APP_URL = f"http://localhost:{APP_PORT}"
 CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
 SAS_APP_URL = f"http://localhost:{SAS_PORT}"
-API_GPU_URL = f"{ENV('EXAPI_URL')}:{GPU_PORT}"
+
+EXAPI_URL = ENV("EXAPI_URL")
+EXTRACTOR_MODEL = ENV("EXTRACTOR_MODEL")
+GEONAMES_USER = ENV("GEONAMES_USER")
 
 PROD_URL = f"https://{ENV('PROD_URL')}"
 
@@ -215,8 +217,6 @@ LOGGING = {
         "verbose": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
     },
 }
-
-GEONAMES_USER = ENV("GEONAMES_USER")
 
 # # Celery settings
 # CELERY_BROKER_URL = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"

@@ -36,7 +36,6 @@ class Edition(models.Model):
         verbose_name=get_name("name"),
         max_length=500,
         help_text=get_name("name_info"),
-        unique=True,
     )
     place = models.ForeignKey(
         Place,
