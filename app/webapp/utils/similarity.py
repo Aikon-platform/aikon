@@ -18,7 +18,7 @@ def gen_img_ref(img, coord):
     return f"{img.split('.')[0]}_{coord}"
 
 
-def get_annotation_imgs(anno: Annotation):
+def get_annotation_urls(anno: Annotation):
     """
     {
         "wit1_man191_0009_166,1325,578,516": ""https://eida.obspm.fr/iiif/2/wit1_man191_0009.jpg/166,1325,578,516/full/0/default.jpg"",
