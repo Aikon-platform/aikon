@@ -73,12 +73,14 @@ class Series(models.Model):
         return self.witness_set.all()
 
     def get_works(self):
-        return [
-            content.work
-            for witness in self.get_witnesses()
-            for content in witness.get_contents()
-            if content.work is not None
-        ]
+        return list(
+            {
+                content.work
+                for witness in self.get_witnesses()
+                for content in witness.get_contents()
+                if content.work is not None
+            }
+        )
 
     def get_work_titles(self):
         works = self.get_works()

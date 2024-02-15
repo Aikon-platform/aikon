@@ -48,6 +48,7 @@ from app.webapp.utils.iiif.annotation import (
 )
 
 from app.webapp.utils.paths import ANNO_PATH, MEDIA_DIR
+from app.webapp.utils.similarity import get_annotation_urls
 
 
 def is_superuser(user):
@@ -415,16 +416,14 @@ def get_annos_img_list(request, anno_ref):
     if not passed:
         return JsonResponse(anno)
 
-    anno_list = []
+    try:
+        anno_dict = get_annotation_urls(anno)
+    except Exception as e:
+        error = f"[get_annos_img_list] Couldn't generate list of annotation images for {anno_ref}"
+        log(error, e)
+        return JsonResponse({"response": error, "reason": e}, safe=False)
 
-    _, canvas_annos = formatted_annotations(anno)
-    for canvas_nb, annos, img_name in canvas_annos:
-        if len(annos):
-            anno_list.append(
-                [gen_iiif_url(img_name, 2, f"{a[0]}/full/0") for a in annos]
-            )
-
-    return JsonResponse(flatten(anno_list), status=200, safe=False)
+    return JsonResponse(anno_dict, status=200, safe=False)
 
 
 def test(request, wit_ref=None):

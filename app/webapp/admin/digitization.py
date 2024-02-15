@@ -64,6 +64,8 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     @admin.display(description=get_name("view_digit"))
     def view_digit(self, obj: Digitization):
         if obj.id and obj.has_images():
+            # # TODO Always display digitization without automatic annotation
+            # return gen_btn(Digitization.objects.filter(pk=obj.id).first(), "view")
             if not obj.has_annotations():
                 return gen_btn(Digitization.objects.filter(pk=obj.id).first(), "view")
 
