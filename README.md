@@ -43,10 +43,10 @@ sudo apt-get install wget ca-certificates
 sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql poppler-utils redis-server ghostscript
 ```
 
-Mac
-```bash
-brew install wget ca-certificates postgresql maven nginx libpq poppler redis ghostscript
-```
+[//]: # (Mac OS)
+[//]: # (```bash)
+[//]: # (brew install wget ca-certificates postgresql maven nginx libpq poppler redis ghostscript)
+[//]: # (```)
 
 ### Python environment
 
@@ -68,7 +68,7 @@ Create a [Geonames](https://www.geonames.org/login) account and activate it.
 
 Fill the various `.env` files of the project with:
 ```shell
-sh scripts/env.sh
+bash scripts/env.sh
 ```
 
 > #### Instructions done by the script
@@ -99,6 +99,7 @@ sh scripts/env.sh
 > EXAPI_KEY="<api-key>"
 > REDIS_PASSWORD="<redis-password>"    # random string of characters without "/"
 > MEDIA_DIR="<media-dir>"              # absolute path to media files directory (e.g. "/home/<path>/<to>/vhs/app/mediafiles")
+> EXTRACTOR_MODEL="<media-dir>"        # model used for annotation extraction
 > ```
 >
 > Create a [Geonames](https://www.geonames.org/login) account, activate it and change `<geonames-username>` in the `.env` file
@@ -112,10 +113,10 @@ sh scripts/env.sh
 In a terminal inside the `scripts/` directory, run:
 
 ```shell
-sh new_db.sh <database-name>
+bash new_db.sh <database-name>
 ```
 
-You will be asked to type the password used for the superuser twice.
+You will be asked to type your sudo password, then the password for the Django superuser (same name as `$DB_USERNAME`) twice.
 
 > #### Instructions done by the script
 > Open Postgres command prompt, create a database (`<database>`) and a user
@@ -124,7 +125,7 @@ You will be asked to type the password used for the superuser twice.
 > [//]: # (psql -U postgres)
 >
 > ```bash
-> sudo -u postgres psql
+> sudo -i -u postgres psql
 > postgres=# CREATE DATABASE <database>;
 > postgres=# CREATE USER <username> WITH PASSWORD '<password>';
 > postgres=# ALTER ROLE <username> SET client_encoding TO 'utf8';
@@ -135,22 +136,12 @@ You will be asked to type the password used for the superuser twice.
 > postgres=# \q
 > ```
 >
-> [//]: # (#### [pgAdmin]&#40;https://www.pgadmin.org&#41; &#40;GUI for PostgreSQL&#41;)
-> [//]: # ()
-> [//]: # (Provide email address and password. You should now access the interface )
->
->
 > ### Django
 >
 > Update database schema with models that are stored inside `app/webapp/migrations`
 > ```bash
 > python app/manage.py migrate
 > ```
->
-> [//]: # (Download static files to be stored in `app/staticfiles`)
-> [//]: # (```bash)
-> [//]: # (python app/manage.py collectstatic)
-> [//]: # (```)
 >
 > Create a super user
 > ```shell
@@ -254,19 +245,15 @@ Add your `REDIS_PASSWORD` (inside `app/config/.env`) to Redis config file
 sed -i '' -e "s/# requirepass foobared/requirepass <REDIS_PASSWORD>/" <REDIS_CONFIG_FILE>
 ```
 
-[//]: # (Open the Redis configuration file)
-[//]: # (```)
-[//]: # (vi /etc/redis/redis.conf)
-[//]: # (```)
-[//]: # (Uncomment and set a password)
-[//]: # (```)
-[//]: # (requirepass <your_password>)
-[//]: # (```)
-
 Restart Redis
 ```
 sudo systemctl restart redis-server
 ```
+[//]: # (Mac OS)
+[//]: # (```bash)
+[//]: # (brew services restart redis)
+[//]: # (```)
+
 Test the password
 ```
 redis-cli -a <REDIS_PASSWORD>

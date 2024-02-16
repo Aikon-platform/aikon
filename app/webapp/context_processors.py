@@ -7,7 +7,12 @@ from app.config.settings import (
     WEBAPP_NAME,
     CONTACT_MAIL,
 )
-from app.webapp.utils.constants import APP_NAME_UPPER, COPYRIGHT
+from app.webapp.utils.constants import (
+    APP_NAME_UPPER,
+    COPYRIGHT,
+    MANIFEST_V1,
+    MANIFEST_V2,
+)
 from app.webapp.models.utils.constants import (
     MS,
     VOL,
@@ -55,4 +60,6 @@ def global_variables(request):
         "WPR": WPR,
         "TPR_ABBR": TPR_ABBR,
         "WPR_ABBR": WPR_ABBR,
+        "MANIFEST_V1": MANIFEST_V1,
+        "MANIFEST_V2": MANIFEST_V2,
     }

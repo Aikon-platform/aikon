@@ -10,7 +10,7 @@ from PIL import Image
 from app.webapp.models.annotation import Annotation
 from app.webapp.models.digitization import Digitization
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
-from app.webapp.utils.paths import BASE_DIR, ANNO_PATH, IMG_PATH
+from app.webapp.utils.paths import ANNO_PATH, IMG_PATH
 from app.config.settings import (
     CANTALOUPE_APP_URL,
     SAS_APP_URL,
@@ -40,7 +40,7 @@ def send_anno_request(digit: Digitization, event):
 
 def anno_request(digit: Digitization):
     try:
-        requests.post(
+        response = requests.post(
             url=f"{EXAPI_URL}/run_detect",
             headers={"X-API-Key": EXAPI_KEY},
             data={
@@ -49,8 +49,15 @@ def anno_request(digit: Digitization):
                 "callback": f"{APP_URL}/{APP_NAME}/annotate",  # URL to which the annotations must be sent back
             },
         )
-        return True
+        if response.status_code == 200:
+            return True
+        else:
+            log(
+                f"[anno_request] Annotation request for {digit.get_ref()} with status code: {response.status_code}"
+            )
+            return False
     except Exception as e:
+        log(f"[anno_request] Annotation request for {digit.get_ref()} failed", e)
         return False
 
 

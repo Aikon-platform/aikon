@@ -20,10 +20,12 @@ VOL_DIR = "volumes"
 LOG_DIR = "logs"
 PDF_DIR = "pdf"
 ANNO_DIR = "annotation"
+SCORE_DIR = "similarity"
 
 # Media file paths
 IMG_PATH = f"{MEDIA_DIR}/{IMG_DIR}"
 ANNO_PATH = f"{MEDIA_DIR}/{ANNO_DIR}"
+SCORES_PATH = f"{MEDIA_DIR}/{SCORE_DIR}"
 LOG_PATH = f"{BASE_DIR}/{LOG_DIR}/app_log.log"
 IIIF_LOG_PATH = f"{BASE_DIR}/{LOG_DIR}/iiif.log"
 DOWNLOAD_LOG_PATH = f"{BASE_DIR}/{LOG_DIR}/download.log"
