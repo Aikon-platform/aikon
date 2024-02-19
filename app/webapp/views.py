@@ -402,11 +402,6 @@ def receive_similarity(request):
     return JsonResponse({"message": "Invalid request"}, status=400)
 
 
-# TODO page to view annotations
-# TODO btn to ask for annotation
-# TODO check annotation workflow
-
-
 def similarity_status(request, task_id):
     task = AsyncResult(task_id)
     if task.ready():

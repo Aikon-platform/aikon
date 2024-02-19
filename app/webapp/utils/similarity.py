@@ -1,4 +1,5 @@
 import hashlib
+import os
 from itertools import combinations_with_replacement
 import numpy as np
 
@@ -83,7 +84,9 @@ def check_score_files(file_names):
 
 def load_similarity(pair):
     try:
-        pair_scores = np.load(SCORES_PATH / f"{hash_pair(pair)}.npy", allow_pickle=True)
+        pair_scores = np.load(
+            SCORES_PATH / f"{'-'.join(sorted(pair))}.npy", allow_pickle=True
+        )
         return pair, pair_scores
     except FileNotFoundError as e:
         log(f"[load_similarity] no score file for {pair}", e)
@@ -97,8 +100,9 @@ def compute_total_similarity(annos: List[Annotation], anno_refs: List[str] = Non
 
     for pair in doc_pairs(anno_refs):
         try:
+            # previous naming convention hash_pair(pair)
             pair_scores = np.load(
-                f"{SCORES_PATH}/{hash_pair(pair)}.npy", allow_pickle=True
+                f"{SCORES_PATH}/{'-'.join(sorted(pair))}.npy", allow_pickle=True
             )
         except FileNotFoundError as e:
             # TODO: trigger similarity request?

@@ -22,7 +22,7 @@ function checkStatus(taskId) {
 
 function refToIIIF(imgRef){
     imgRef = imgRef.split("_");
-    const imgCoord = imgRef.pop();
+    const imgCoord = imgRef.pop().replace(".jpg", "");
     const imgName = imgRef.join("_");
     return `${CANTALOUPE_APP_URL}/iiif/2/${imgName}.jpg/${imgCoord}/full/0/default.jpg`;
 }
@@ -32,7 +32,7 @@ function refToMirador(imgRef){
     const digitRef = `${imgRef[0]}_${imgRef[1]}`;
     const annoRef = annoRefs.map(ref => ref.startsWith(digitRef))[0]
     const manifest = `${APP_URL}/${APP_NAME}/iiif/${MANIFEST_V2}/${annoRef}/manifest.json`
-    return `${SAS_APP_URL}/index.html?iiif-content=${manifest}&canvas=${parseInt(imgRef[3])}`
+    return `${SAS_APP_URL}/index.html?iiif-content=${manifest}&canvas=${parseInt(imgRef[2])}`
 }
 
 function displayScores(scores) {
@@ -42,19 +42,20 @@ function displayScores(scores) {
     if (queryImgs.length > 0) {
         queryImgs.map(qImg => {
             const similarities = scores[qImg];
+            qImg = qImg.replace("wit205_pdf216_", "wit1_man1_0")
             const row = table.insertRow();
-            const qCell = row.insertCell(0);
-
-            qCell.innerHTML = `
-                <img class="similarity-img" src='${refToIIIF(qImg)}' alt="Annotation ${qImg}"><br>
-                <h3><a href="${refToMirador(qImg)}" target="_blank">${qImg}</a></h3>`;
+            row.innerHTML = `<th>
+                <img class="anno-img" src='${refToIIIF(qImg)}' alt="Annotation ${qImg}"><br>
+                <h3><a href="${refToMirador(qImg)}" target="_blank">${qImg}</a></h3>
+            </th>`;
 
             if (similarities && similarities.length){
                 similarities.map(similarity => {
-                    const [score, sImg] = similarity;
+                    let [score, sImg] = similarity;
+                    sImg = sImg.replace("wit205_pdf216_", "wit1_man1_0")
                     const sCell = row.insertCell();
                     sCell.innerHTML = `
-                        <img class="similarity-img" src='${refToIIIF(sImg)}' alt="Annotation ${sImg}"><br>
+                        <img class="anno-img" src='${refToIIIF(sImg)}' alt="Annotation ${sImg}"><br>
                         <h4><a href="${refToMirador(sImg)}" target="_blank">${sImg}</a><br><b>${score}</b></h4>`;
                     });
             }

@@ -1,3 +1,4 @@
+import os
 from glob import glob
 from uuid import uuid4
 
@@ -11,7 +12,7 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
-from app.webapp.utils.paths import BASE_DIR, ANNO_PATH
+from app.webapp.utils.paths import BASE_DIR, ANNO_PATH, SCORES_PATH
 
 
 def get_name(fieldname, plural=False):
@@ -107,6 +108,14 @@ class Annotation(models.Model):
             return True
         return False
 
+    def get_computed_pairs(self):
+        sim_files = [
+            npy_file
+            for npy_file in os.listdir(SCORES_PATH)
+            if self.get_ref() in npy_file
+        ]
+        return sim_files
+
     def get_metadata(self):
         if digit := self.get_digit():
             metadata = digit.get_metadata()
@@ -125,19 +134,9 @@ class Annotation(models.Model):
         from app.webapp.utils.iiif.gen_html import anno_btn
 
         action = "final" if self.is_validated else "edit"
-        return mark_safe(
-            anno_btn(
-                self,
-                action if self.has_annotations() else "no_anno",
-            )
-        )
+        btn = anno_btn(self, action if self.has_annotations() else "no_anno")
 
-    # def view_anno(self, obj: Digitization):
-    #     # TODO here multiple button for multiple annotation
-    #     if obj.id and obj.has_images():
-    #         action = "final" if obj.is_validated else "edit"
-    #         if not obj.has_annotations():
-    #             action = "no_anno"
-    #         # todo loop on linked annotations.
-    #         # return gen_btn(obj.id, action, MANIFEST_V2, obj.get_wit_type())
-    #     return "-"
+        if len(self.get_computed_pairs()) != 0:
+            btn += anno_btn(self, "similarity")
+
+        return mark_safe(btn)

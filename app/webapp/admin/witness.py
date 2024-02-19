@@ -66,6 +66,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             "export_annotated_imgs",
             "export_training_imgs",
             "export_training_anno",
+            "compute_similarity",
         ]
 
     ordering = ("id", "place__name")
@@ -114,13 +115,6 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     # MARKER SUB-FORMS existing within the Witness form
     inlines = [DigitizationInline, ContentInline]
-
-    # def get_inline_instances(self, request, obj=None):
-    #     # TODO to delete?
-    #     # called every time the form is rendered without need of refreshing the page
-    #     inline_instances = super().get_inline_instances(request, obj)
-    #
-    #     return inline_instances
 
     # MARKER SAVING METHODS
 
@@ -235,26 +229,6 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             no_anno_message(request)
 
         similarity_request(flatten(annos))
-        return messages.info(
-            request,
-            "Similarity request was sent to the API"
-            if APP_LANG == "en"
-            else "La requête de similarité a été transmise à l'API",
-        )
-
-    @admin.action(
-        description=f"Visualise similarity for {ANNO}s of selected {WIT}es"
-        if APP_LANG == "en"
-        else f"Visualiser la similarité des annotations des {WIT}s sélectionnés"
-    )
-    def compute_similarity(self, request, queryset):
-        anno_refs = []
-        for witness in queryset.exclude():
-            for anno in witness.get_annotations():
-                anno_refs.append(anno.get_ref())
-        if len(anno_refs) == 0:
-            no_anno_message(request)
-
         return messages.info(
             request,
             "Similarity request was sent to the API"

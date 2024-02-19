@@ -125,7 +125,7 @@ td {
 }
 .anno {
     margin: 5px;
-    border: 1px solid #b0aaaa;
+    border: 1px solid var(--border-color);
     max-height: 450px;
     max-width: 150px;
 }
@@ -147,9 +147,9 @@ td {
     overflow-x: auto;
 }
 
-tr:nth-child(odd) td {
-    background: #eeeeee;
+tr:nth-child(odd) th {
+    background: var(--body-bg);
 }
-tr:nth-child(even) td {
-    background: #dcdcdc;
+tr:nth-child(even) th {
+    background: var(--darkened-bg);
 }
