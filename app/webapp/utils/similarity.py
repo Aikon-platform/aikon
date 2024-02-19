@@ -15,6 +15,16 @@ from app.webapp.utils.logger import log
 from app.webapp.utils.paths import SCORES_PATH
 
 
+def check_computed_pairs(anno_refs):
+    sim_files = os.listdir(SCORES_PATH)
+    anno_to_send = []
+    for pair in doc_pairs(anno_refs):
+        if f"{'-'.join(sorted(pair))}.npy" not in sim_files:
+            anno_to_send.extend(pair)
+    # return list of unique anno_ref involved in one of the pairs that are not already computed
+    return list(set(anno_to_send))
+
+
 def gen_img_ref(img, coord):
     return f"{img.split('.')[0]}_{coord}"
 
@@ -144,23 +154,29 @@ def best_matches(scores, q_img, doc_pair):
     return [(float(pair[0]), pair[s_idx]) for pair in img_pairs]
 
 
-def hash_str(string):
-    hash_object = hashlib.sha256()
-    hash_object.update(string.encode("utf-8"))
-    return hash_object.hexdigest()
-
-
-def hash_pair(pair: tuple):
-    if (
-        isinstance(pair, tuple)
-        and len(pair) == 2
-        and all(isinstance(s, str) for s in pair)
-    ):
-        return hash_str("".join(sorted(pair)))
-    raise ValueError("Not a correct pair of document id")
+# def hash_str(string):
+#     hash_object = hashlib.sha256()
+#     hash_object.update(string.encode("utf-8"))
+#     return hash_object.hexdigest()
+#
+#
+# def hash_pair(pair: tuple):
+#     if (
+#         isinstance(pair, tuple)
+#         and len(pair) == 2
+#         and all(isinstance(s, str) for s in pair)
+#     ):
+#         return hash_str("".join(sorted(pair)))
+#     raise ValueError("Not a correct pair of document id")
 
 
 def doc_pairs(doc_ids: list):
     if isinstance(doc_ids, list) and len(doc_ids) > 0:
         return list(combinations_with_replacement(doc_ids, 2))
     raise ValueError("Input must be a non-empty list of ids.")
+
+
+def reset_similarity(anno_ref):
+    # TODO function to delete all similarity files concerning the anno_ref
+    # TODO send request to delete features and scores concerning the anno ref as well
+    pass

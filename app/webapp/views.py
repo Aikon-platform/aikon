@@ -51,6 +51,7 @@ from app.webapp.utils.similarity import (
     get_annotation_urls,
     check_score_files,
     compute_total_similarity,
+    check_computed_pairs,
 )
 from app.webapp.tasks import compute_similarity_scores
 
@@ -362,6 +363,13 @@ def send_similarity(request, anno_refs):
             },
             safe=False,
         )
+
+    if len(check_computed_pairs(anno_refs)) == 0:
+        return JsonResponse(
+            {"response": f"All similarity pairs were computed for {anno_refs}"},
+            safe=False,
+        )
+
     try:
         if similarity_request(annos):
             return JsonResponse(

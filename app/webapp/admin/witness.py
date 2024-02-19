@@ -24,7 +24,7 @@ from app.webapp.utils.functions import (
 )
 from app.webapp.utils.iiif.annotation import get_anno_images, get_training_anno
 from app.webapp.utils.paths import IMG_PATH
-from app.webapp.utils.similarity import similarity_request
+from app.webapp.utils.similarity import similarity_request, check_computed_pairs
 
 
 def no_anno_message(request):
@@ -224,11 +224,18 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     def compute_similarity(self, request, queryset):
         annos = []
         for witness in queryset.exclude():
-            annos.append(witness.get_annotations())
+            annos.extend(witness.get_annotations())
         if len(annos) == 0:
-            no_anno_message(request)
+            return no_anno_message(request)
+        if len(check_computed_pairs([anno.get_ref() for anno in annos])) == 0:
+            return messages.warning(
+                request,
+                f"Similarity was already computed for all the selected {WIT}es"
+                if APP_LANG == "en"
+                else f"La similarité a déjà été calculée pour tous les {WIT}s sélectionnés",
+            )
 
-        similarity_request(flatten(annos))
+        similarity_request(annos)
         return messages.info(
             request,
             "Similarity request was sent to the API"
