@@ -68,7 +68,6 @@ configure_nginx() {
 #    sudo systemctl reload nginx.service
 #    sudo systemctl enable nginx.service
     # https://docs.ansible.com/ansible/latest/collections/cisco/ise/renew_certificate_module.html
-    # TODO add $USER to role renew_certif ansible + add file web group to /etc/ansible/hosts
 }
 
 create_logs() {

@@ -45,7 +45,6 @@ def global_variables(request):
         "SAS_APP_URL": SAS_APP_URL,
         "APP_URL": APP_URL,
         "CANTALOUPE_APP_URL": CANTALOUPE_APP_URL,
-        # TODO: add model names and abbreviation
         "MS": MS,
         "VOL": VOL,
         "WIT": WIT,
