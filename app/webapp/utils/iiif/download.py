@@ -21,10 +21,10 @@ def extract_images_from_iiif_manifest(
     """
     downloader = IIIFDownloader(manifest_url, digit_ref)
     downloader.run()
-    if lic := downloader.original_license:
-        license_url = get_license_url(lic)
-        attribution = downloader.attribution or "Unknown attribution"
-        add_info_callback(license_url, attribution)
+    # if lic := downloader.original_license:
+    #     license_url = get_license_url(lic)
+    #     attribution = downloader.attribution or "Unknown attribution"
+    #     add_info_callback(license_url, attribution)
     event.set()
 
 
