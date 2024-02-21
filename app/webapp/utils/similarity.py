@@ -1,4 +1,5 @@
 import hashlib
+import os
 from itertools import combinations_with_replacement
 import numpy as np
 
@@ -14,11 +15,21 @@ from app.webapp.utils.logger import log
 from app.webapp.utils.paths import SCORES_PATH
 
 
+def check_computed_pairs(anno_refs):
+    sim_files = os.listdir(SCORES_PATH)
+    anno_to_send = []
+    for pair in doc_pairs(anno_refs):
+        if f"{'-'.join(sorted(pair))}.npy" not in sim_files:
+            anno_to_send.extend(pair)
+    # return list of unique anno_ref involved in one of the pairs that are not already computed
+    return list(set(anno_to_send))
+
+
 def gen_img_ref(img, coord):
     return f"{img.split('.')[0]}_{coord}"
 
 
-def get_annotation_imgs(anno: Annotation):
+def get_annotation_urls(anno: Annotation):
     """
     {
         "wit1_man191_0009_166,1325,578,516": ""https://eida.obspm.fr/iiif/2/wit1_man191_0009.jpg/166,1325,578,516/full/0/default.jpg"",
@@ -74,28 +85,50 @@ def similarity_request(annos: List[Annotation]):
     return False
 
 
-def process_similarity():
-    """
-    Handle response of the API sending back similarity files
-    """
-    # TODO
-    return
+def check_score_files(file_names):
+    from app.webapp.tasks import check_similarity_files
+
+    # TODO check similarity file content inside a celery task
+    check_similarity_files.delay(file_names)
 
 
-def compute_total_similarity(annos: List[Annotation]):
+def load_similarity(pair):
+    try:
+        pair_scores = np.load(
+            SCORES_PATH / f"{'-'.join(sorted(pair))}.npy", allow_pickle=True
+        )
+        return pair, pair_scores
+    except FileNotFoundError as e:
+        log(f"[load_similarity] no score file for {pair}", e)
+        return pair, None
+
+
+def compute_total_similarity(annos: List[Annotation], anno_refs: List[str] = None):
     total_scores = {}
-    anno_refs = [anno.get_ref() for anno in annos]
+    if anno_refs is None:
+        anno_refs = [anno.get_ref() for anno in annos]
 
     for pair in doc_pairs(anno_refs):
-        pair_scores = np.load(SCORES_PATH / f"{hash_pair(pair)}.npy", allow_pickle=True)
-        for img_name, img_url in flatten_dict(
-            [get_annotation_imgs(anno) for anno in annos]
+        try:
+            # previous naming convention hash_pair(pair)
+            pair_scores = np.load(
+                f"{SCORES_PATH}/{'-'.join(sorted(pair))}.npy", allow_pickle=True
+            )
+        except FileNotFoundError as e:
+            # TODO: trigger similarity request?
+            log(f"[compute_total_similarity] no score file for {pair}", e)
+            continue
+
+        # for img_name, img_url in [get_annotation_urls(anno).items() for anno in annos]:
+        for img_name in np.unique(
+            np.concatenate((pair_scores[:, 1], pair_scores[:, 2]))
         ):
             if img_name not in total_scores:
                 total_scores[img_name] = []
-            total_scores[img_name].extend(
-                best_matches(pair_scores, f"{img_name}.jpg", pair)
-            )
+            total_scores[img_name].extend(best_matches(pair_scores, img_name, pair))
+            # total_scores[img_name].extend(
+            #     best_matches(pair_scores, f"{img_name}.jpg", pair)
+            # )
 
     return {
         q_img: sorted(sim, key=lambda x: x[0], reverse=True)
@@ -117,26 +150,33 @@ def best_matches(scores, q_img, doc_pair):
     # Get pairs concerning the given query image q_img
     img_pairs = scores[scores[:, q_idx] == q_img]
 
+    # [(score, similar_image)]
     return [(float(pair[0]), pair[s_idx]) for pair in img_pairs]
 
 
-def hash_str(string):
-    hash_object = hashlib.sha256()
-    hash_object.update(string.encode("utf-8"))
-    return hash_object.hexdigest()
-
-
-def hash_pair(pair: tuple):
-    if (
-        isinstance(pair, tuple)
-        and len(pair) == 2
-        and all(isinstance(s, str) for s in pair)
-    ):
-        return hash_str("".join(sorted(pair)))
-    raise ValueError("Not a correct pair of document id")
+# def hash_str(string):
+#     hash_object = hashlib.sha256()
+#     hash_object.update(string.encode("utf-8"))
+#     return hash_object.hexdigest()
+#
+#
+# def hash_pair(pair: tuple):
+#     if (
+#         isinstance(pair, tuple)
+#         and len(pair) == 2
+#         and all(isinstance(s, str) for s in pair)
+#     ):
+#         return hash_str("".join(sorted(pair)))
+#     raise ValueError("Not a correct pair of document id")
 
 
 def doc_pairs(doc_ids: list):
     if isinstance(doc_ids, list) and len(doc_ids) > 0:
         return list(combinations_with_replacement(doc_ids, 2))
     raise ValueError("Input must be a non-empty list of ids.")
+
+
+def reset_similarity(anno_ref):
+    # TODO function to delete all similarity files concerning the anno_ref
+    # TODO send request to delete features and scores concerning the anno ref as well
+    pass

@@ -256,6 +256,7 @@ def get_action(action, formatting=None):
             "en": "visualize automatic annotations",
             "fr": "voir les annotations automatiques",
         },
+        "similarity": {"en": "compare annotations", "fr": "comparer les annotations"},
         "no_manifest": {"en": "no manifest", "fr": "pas de manifest"},
         "no_digit": {"en": "no digitization", "fr": "pas de numérisation"},
         "no_img": {"en": "no image", "fr": "pas d'image"},

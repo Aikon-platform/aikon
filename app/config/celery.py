@@ -13,6 +13,10 @@ environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.config.settings")
 
+"""
+DEBUG WITH venv/bin/celery -A app.config worker --loglevel=info
+"""
+
 celery_app = Celery(
     "config",
     broker=f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0",

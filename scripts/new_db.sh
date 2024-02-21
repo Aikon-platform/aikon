@@ -2,7 +2,7 @@
 
 # HOW TO USE
 # Inside the scripts/ directory, run:
-# sh new_db.sh dbName
+# bash new_db.sh dbName
 # You will be asked to enter password twice
 # Restart Django to see effects
 
