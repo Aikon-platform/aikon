@@ -64,7 +64,7 @@ def similarity_request(annos: List[Annotation]):
 
     try:
         response = requests.post(
-            url=f"{EXAPI_URL}/run_detect",
+            url=f"{EXAPI_URL}/run_similarity",
             headers={"X-API-Key": EXAPI_KEY},
             json={
                 "document": documents,
@@ -80,13 +80,12 @@ def similarity_request(annos: List[Annotation]):
                 "error_message": f"Request failed for {list(documents.keys())} with status code: {response.status_code}",
                 "request_info": {
                     "method": "POST",
-                    "url": f"{EXAPI_URL}/run_detect",
-                    "headers": {"X-API-Key": EXAPI_KEY},
+                    "url": f"{EXAPI_URL}/run_similarity",
                     "payload": {"document": documents, "callback": f"{APP_URL}/{APP_NAME}/similarity"}
                 },
                 "response_info": {
                     "status_code": response.status_code,
-                    "json_response": response.json() if response.text else None
+                    "text": response.text or ""
                 }
             }
 
