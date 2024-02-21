@@ -67,7 +67,7 @@ def similarity_request(annos: List[Annotation]):
             url=f"{EXAPI_URL}/run_similarity",
             headers={"X-API-Key": EXAPI_KEY},
             json={
-                "document": documents,
+                "documents": documents,
                 # "model": f"{FEAT_BACKBONE}",
                 "callback": f"{APP_URL}/{APP_NAME}/similarity",
             },
@@ -81,7 +81,7 @@ def similarity_request(annos: List[Annotation]):
                 "request_info": {
                     "method": "POST",
                     "url": f"{EXAPI_URL}/run_similarity",
-                    "payload": {"document": documents, "callback": f"{APP_URL}/{APP_NAME}/similarity"}
+                    "payload": {"documents": documents, "callback": f"{APP_URL}/{APP_NAME}/similarity"}
                 },
                 "response_info": {
                     "status_code": response.status_code,
