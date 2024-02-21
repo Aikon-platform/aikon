@@ -22,7 +22,7 @@
     - `sudo apt install git`
     - Having configured [SSH access to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
 
-[//]: # (&#40;Mac: https://www.oracle.com/java/technologies/downloads/#java11-mac&#41;)
+[//]: # (https://www.oracle.com/java/technologies/javase/jdk11-archive-downloads.html)
 
 ## App set up
 
