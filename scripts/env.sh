@@ -128,7 +128,7 @@ update_cantaloupe_env() {
                 default_val=$(get_env_value "CANTALOUPE_PORT_HTTPS")
                 ;;
             "LOG_PATH")
-                default_val="$APP_ROOT"/cantaloupe/error.log
+                default_val="$APP_ROOT"/cantaloupe
                 ;;
             *)
                 default_val="$current_val"

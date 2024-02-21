@@ -20,9 +20,11 @@ from app.webapp.utils.functions import (
     get_file_ext,
     zip_dirs,
     format_dates,
+    flatten,
 )
 from app.webapp.utils.iiif.annotation import get_anno_images, get_training_anno
 from app.webapp.utils.paths import IMG_PATH
+from app.webapp.utils.similarity import similarity_request, check_computed_pairs
 
 
 def no_anno_message(request):
@@ -48,7 +50,6 @@ def check_selection(queryset, request):
 
 @admin.register(Witness)
 class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
-
     # DEFINITION OF THE MAIN FORM => Add Witness
     class Media:
         css = {"all": ("css/witness-form.css",)}
@@ -65,6 +66,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             "export_annotated_imgs",
             "export_training_imgs",
             "export_training_anno",
+            "compute_similarity",
         ]
 
     ordering = ("id", "place__name")
@@ -113,13 +115,6 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     # MARKER SUB-FORMS existing within the Witness form
     inlines = [DigitizationInline, ContentInline]
-
-    # def get_inline_instances(self, request, obj=None):
-    #     # TODO to delete?
-    #     # called every time the form is rendered without need of refreshing the page
-    #     inline_instances = super().get_inline_instances(request, obj)
-    #
-    #     return inline_instances
 
     # MARKER SAVING METHODS
 
@@ -220,6 +215,33 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             img_names.extend(witness.get_imgs())
         img_list = [gen_iiif_url(img) for img in img_names]
         return list_to_txt(img_list, "IIIF_images")
+
+    @admin.action(
+        description=f"Compute similarity for {ANNO}s of selected {WIT}es"
+        if APP_LANG == "en"
+        else f"Calculer la similarité des annotations des {WIT}s sélectionnés"
+    )
+    def compute_similarity(self, request, queryset):
+        annos = []
+        for witness in queryset.exclude():
+            annos.extend(witness.get_annotations())
+        if len(annos) == 0:
+            return no_anno_message(request)
+        if len(check_computed_pairs([anno.get_ref() for anno in annos])) == 0:
+            return messages.warning(
+                request,
+                f"Similarity was already computed for all the selected {WIT}es"
+                if APP_LANG == "en"
+                else f"La similarité a déjà été calculée pour tous les {WIT}s sélectionnés",
+            )
+
+        similarity_request(annos)
+        return messages.info(
+            request,
+            "Similarity request was sent to the API"
+            if APP_LANG == "en"
+            else "La requête de similarité a été transmise à l'API",
+        )
 
     @admin.action(
         description=f"Export IIIF manifests of selected {WIT}es"

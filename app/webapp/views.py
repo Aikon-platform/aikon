@@ -1,8 +1,8 @@
 import json
 import os
-import re
 from os.path import exists
 
+from celery.result import AsyncResult
 from dal import autocomplete
 
 from django.http import HttpResponse, JsonResponse
@@ -29,10 +29,9 @@ from app.webapp.utils.functions import (
     get_json,
     cls,
     delete_files,
-    flatten,
 )
-from app.webapp.utils.iiif import parse_ref, gen_iiif_url
-from app.webapp.utils.logger import console, log, get_time
+from app.webapp.utils.iiif import parse_ref
+from app.webapp.utils.logger import log
 from app.webapp.utils.iiif.annotation import (
     format_canvas_annos,
     index_annotations,
@@ -42,13 +41,19 @@ from app.webapp.utils.iiif.annotation import (
     process_anno,
     delete_annos,
     create_empty_anno,
-    check_indexation_annos,
     check_anno_file,
     delete_anno_request,
 )
 
-from app.webapp.utils.paths import ANNO_PATH, MEDIA_DIR
-from app.webapp.utils.similarity import get_annotation_urls
+from app.webapp.utils.paths import ANNO_PATH, MEDIA_DIR, SCORES_PATH
+from app.webapp.utils.similarity import (
+    similarity_request,
+    get_annotation_urls,
+    check_score_files,
+    compute_total_similarity,
+    check_computed_pairs,
+)
+from app.webapp.tasks import compute_similarity_scores
 
 
 def is_superuser(user):
@@ -190,7 +195,7 @@ def reindex_anno(request, obj_ref):
 @user_passes_test(is_superuser)
 def index_anno(request, anno_ref=None):
     """
-    Index the content of a txt file named after the anno_ref into SAS
+    Index the content of a txt file named after the anno_ref (wit<id>_<digit><id>_anno<id>.txt) into SAS
     without creating an annotation record if one is already existing
     If no anno_ref is provided all anno files for mediafiles/annotation are indexed
     """
@@ -222,15 +227,6 @@ def index_anno(request, anno_ref=None):
 
         reindex_from_file.delay(anno_id)
         indexed_anno.append(a_ref)
-
-        # try:
-        #     if check_indexation_annos(anno, True):
-        #         indexed_anno.append(a_ref)
-        #     else:
-        #         not_indexed_anno.append(a_ref)
-        # except Exception as e:
-        #     not_indexed_anno.append(a_ref)
-        #     log(f"[index_anno] Failed to index annotations for ref #{a_ref}", e)
 
     return JsonResponse(
         {"All": anno_files, "Indexed": indexed_anno, "Not indexed": not_indexed_anno}
@@ -266,6 +262,9 @@ def delete_send_anno(request, digit_ref):
 
 @user_passes_test(is_superuser)
 def delete_annotation(request, obj_ref):
+    """
+    Unindex SAS annotations + delete Annotation record from the database
+    """
     passed, obj = check_ref(obj_ref, "Annotation")
     if not passed:
         return JsonResponse(obj)
@@ -284,7 +283,9 @@ def delete_annotation(request, obj_ref):
 
 @csrf_exempt
 def receive_anno(request, digit_ref):
-
+    """
+    Process the result of the API containing digitation annotations
+    """
     passed, digit = check_ref(digit_ref)
     if not passed:
         return JsonResponse(digit)
@@ -316,6 +317,146 @@ def receive_anno(request, digit_ref):
         )
     else:
         return JsonResponse({"message": "Invalid request"}, status=400)
+
+
+def get_annos_img_list(request, anno_ref):
+    """
+    return something like that
+    {
+        "wit1_man191_0009_166,1325,578,516": ""https://eida.obspm.fr/iiif/2/wit1_man191_0009.jpg/166,1325,578,516/full/0/default.jpg"",
+        "wit1_man191_0027_1143,2063,269,245": "https://eida.obspm.fr/iiif/2/wit1_man191_0027.jpg/1143,2063,269,245/full/0/default.jpg",
+        "wit1_man191_0031_857,2013,543,341": "https://eida.obspm.fr/iiif/2/wit1_man191_0031.jpg/857,2013,543,341/full/0/default.jpg",
+        "img_name": "..."
+    }
+    """
+
+    passed, anno = check_ref(anno_ref, "Annotation")
+    if not passed:
+        return JsonResponse(anno)
+
+    try:
+        anno_dict = get_annotation_urls(anno)
+    except Exception as e:
+        error = f"[get_annos_img_list] Couldn't generate list of annotation images for {anno_ref}"
+        log(error, e)
+        return JsonResponse({"response": error, "reason": e}, safe=False)
+
+    return JsonResponse(anno_dict, status=200, safe=False)
+
+
+@user_passes_test(is_superuser)
+def send_similarity(request, anno_refs):
+    """
+    To relaunch similarity request in case the automatic process has failed
+    """
+
+    annos = [
+        anno
+        for (passed, anno) in [check_ref(ref, "Annotation") for ref in anno_refs]
+        if passed
+    ]
+
+    if not len(annos):
+        return JsonResponse(
+            {
+                "response": f"No corresponding annotation in the database for {anno_refs}"
+            },
+            safe=False,
+        )
+
+    if len(check_computed_pairs(anno_refs)) == 0:
+        return JsonResponse(
+            {"response": f"All similarity pairs were computed for {anno_refs}"},
+            safe=False,
+        )
+
+    try:
+        if similarity_request(annos):
+            return JsonResponse(
+                {"response": f"Successful similarity request for {anno_refs}"},
+                safe=False,
+            )
+        return JsonResponse(
+            {"response": f"Failed to send similarity request for {anno_refs}"},
+            safe=False,
+        )
+
+    except Exception as e:
+        error = f"[send_similarity] Couldn't send request for {anno_refs}"
+        log(error, e)
+
+        return JsonResponse({"response": error, "reason": e}, safe=False)
+
+
+@csrf_exempt
+def receive_similarity(request):
+    """
+    Handle response of the API sending back similarity files
+    """
+    if request.method == "POST":
+        filenames = []
+        try:
+            for anno_refs, file in request.FILES.items():
+                with open(f"{SCORES_PATH}/{anno_refs}.npy", "wb") as destination:
+                    filenames.append(anno_refs)
+                    for chunk in file.chunks():
+                        destination.write(chunk)
+
+            check_score_files(filenames)
+            return JsonResponse({"message": "Score files received successfully"})
+        except Exception as e:
+            log("[receive_similarity] Error saving score files", e)
+            return JsonResponse({"message": "Error saving score files"}, status=500)
+    return JsonResponse({"message": "Invalid request"}, status=400)
+
+
+def similarity_status(request, task_id):
+    task = AsyncResult(task_id)
+    if task.ready():
+        result = task.result
+        return JsonResponse({"status": "success", "result": json.dumps(result)})
+    return JsonResponse({"status": "running"})
+
+
+@login_required(login_url=f"/{APP_NAME}-admin/login/")
+def show_similarity(request, anno_refs):
+    # WITH CELERY
+    scores_task = compute_similarity_scores.delay(anno_refs)
+    return render(
+        request,
+        "similarity.html",
+        context={
+            "title": f"Similarity scores for {anno_refs}",
+            "task_id": scores_task.id,
+            "anno_refs": json.dumps(anno_refs),
+        },
+    )
+
+    # # WITHOUT CELERY
+    # annos = [anno for (passed, anno) in [check_ref(ref, "Annotation") for ref in anno_refs] if passed]
+    # if not len(annos):
+    #     return JsonResponse(
+    #         {"response": f"No corresponding annotation in the database for {anno_refs}"},
+    #         safe=False
+    #     )
+    # total_scores = compute_total_similarity(annos, anno_refs)
+    # paginator = Paginator(total_scores, 50)
+    # try:
+    #     page_scores = paginator.page(request.GET.get("page"))
+    # except PageNotAnInteger:
+    #     page_scores = paginator.page(1)
+    # except EmptyPage:
+    #     page_scores = paginator.page(paginator.num_pages)
+    #
+    # return render(
+    #     request,
+    #     "similarity.html",
+    #     context={
+    #         "title": f"Similarity scores for {anno_refs}",
+    #         "scores": page_scores,
+    #         "anno_refs": anno_refs
+    #     },
+    # )
 
 
 def export_anno_img(request, anno_id):
@@ -411,57 +552,11 @@ def show_annotations(request, anno_ref):
     )
 
 
-def get_annos_img_list(request, anno_ref):
-    passed, anno = check_ref(anno_ref, "Annotation")
-    if not passed:
-        return JsonResponse(anno)
-
-    try:
-        anno_dict = get_annotation_urls(anno)
-    except Exception as e:
-        error = f"[get_annos_img_list] Couldn't generate list of annotation images for {anno_ref}"
-        log(error, e)
-        return JsonResponse({"response": error, "reason": e}, safe=False)
-
-    return JsonResponse(anno_dict, status=200, safe=False)
-
-
 def test(request, wit_ref=None):
     from app.webapp.tasks import test
 
     test.delay("Hello world.")
     return JsonResponse({"response": "OK"}, status=200)
-
-    # start = get_time()
-    # model = Annotation
-    # try:
-    #     wit_id = int(wit_id)
-    #     if int(wit_id) == 0:
-    #         annos = model.objects.all()
-    #     else:
-    #         annos = [get_object_or_404(model, pk=anno_id)]
-    # except ValueError as e:
-    #     console(f"[test] wit_id is not an integer: {e}")
-    #     return JsonResponse(
-    #         {"response": f"wit_id is not an integer: {wit_id}", e},
-    #         safe=False,
-    #     )
-    #
-    # threads = []
-    # wit_ids = []
-    # # for witness in witnesses:
-    # #     if not witness.manifest_final:
-    # #         wit_ids.append(witness.id)
-    # #         thread = threading.Thread(
-    # #             target=check_indexation_annos, args=(digit, True)
-    # #         )
-    # #         thread.start()
-    # #         threads.append(thread)
-
-    # return JsonResponse(
-    #     {"response": f"Execution time: {start} > {get_time()}"},
-    #     safe=False,
-    # )
 
 
 class PlaceAutocomplete(autocomplete.Select2ListView):
@@ -516,11 +611,6 @@ class LanguageAutocomplete(autocomplete.Select2QuerySetView):
         return qs
 
 
-def search_similarity(request, experiment_id):
-    # Call search_similarity task
-    pass
-
-
 def rgpd(request):
     return render(request, "rgpd.html")
 
@@ -530,8 +620,3 @@ def legacy_manifest(request, old_id):
         return JsonResponse({})
     with open(f"{MEDIA_DIR}/manifest/{old_id}.json", "r") as manifest:
         return JsonResponse(json.loads(manifest.read()))
-
-
-# TODO: create test to find integrity of a manuscript:
-#  if it has the correct number of images, if all its images are img files
-#  if annotations were correctly defined (same img name in file that images on server)
