@@ -122,7 +122,6 @@ def compute_total_similarity(annos: List[Annotation], anno_refs: List[str] = Non
 
     for pair in doc_pairs(anno_refs):
         try:
-            # previous naming convention hash_pair(pair)
             pair_scores = np.load(
                 f"{SCORES_PATH}/{'-'.join(sorted(pair))}.npy", allow_pickle=True
             )
@@ -131,16 +130,12 @@ def compute_total_similarity(annos: List[Annotation], anno_refs: List[str] = Non
             log(f"[compute_total_similarity] no score file for {pair}", e)
             continue
 
-        # for img_name, img_url in [get_annotation_urls(anno).items() for anno in annos]:
         for img_name in np.unique(
             np.concatenate((pair_scores[:, 1], pair_scores[:, 2]))
         ):
             if img_name not in total_scores:
                 total_scores[img_name] = []
             total_scores[img_name].extend(best_matches(pair_scores, img_name, pair))
-            # total_scores[img_name].extend(
-            #     best_matches(pair_scores, f"{img_name}.jpg", pair)
-            # )
 
     return {
         q_img: sorted(sim, key=lambda x: x[0], reverse=True)
