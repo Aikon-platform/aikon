@@ -46,6 +46,8 @@ sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql 
 [//]: # (Mac OS)
 [//]: # (```bash)
 [//]: # (brew install wget ca-certificates postgresql maven nginx libpq poppler redis ghostscript)
+[//]: # (brew services start postgresql)
+[//]: # (brew services start redis)
 [//]: # (```)
 
 ### Python environment
@@ -121,8 +123,7 @@ You will be asked to type your sudo password, then the password for the Django s
 > #### Instructions done by the script
 > Open Postgres command prompt, create a database (`<database>`) and a user
 >
-> [//]: # (createuser -s postgres)
-> [//]: # (psql -U postgres)
+> [//]: # (psql postgres)
 >
 > ```bash
 > sudo -i -u postgres psql
@@ -143,7 +144,7 @@ You will be asked to type your sudo password, then the password for the Django s
 > python app/manage.py migrate
 > ```
 >
-> Create a super user
+> Create a superuser
 > ```shell
 > python app/manage.py createsuperuser
 > ```
@@ -169,20 +170,20 @@ Skip these steps if you used `scripts/env.sh`
 > - `FILE_SYSTEM_SOURCE` depends on the folder in which you run cantaloupe (inside cantaloupe/ folder: `../app/mediafiles/img/`)
 > ```bash
 > BASE_URI=
-> FILE_SYSTEM_SOURCE=./app/mediafiles/img/  # inside the project directory
+> FILE_SYSTEM_SOURCE=absolute/path/to/app/mediafiles/img/  # inside the project directory
 > HTTP_PORT=8182
 > HTTPS_PORT=8183
-> LOG_PATH=/path/to/logs
+> LOG_PATH=/dir/where/cantaloupe/logs/are/stored
 > ```
->
-> Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with your variables):
-> ```shell
-> cantaloupe/init.sh
-> ```
+
+Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with your variables):
+```shell
+bash cantaloupe/init.sh
+```
 
 Run [Cantaloupe](https://cantaloupe-project.github.io/)
 ```shell
-cantaloupe/start.sh
+bash cantaloupe/start.sh
 ```
 
 #### Simple Annotation Server
@@ -233,30 +234,27 @@ sudo systemctl restart nginx
 ### Celery with Redis setup
 #### Enabling authentication for Redis instance
 
-Find the path of Redis configuration file
-
+Get the redis config file and the redis password in the environment variables
 ```bash
-redis-cli INFO | grep config_file
+REDIS_CONF=$(redis-cli INFO | grep config_file | awk -F: '{print $2}' | tr -d '[:space:]')
+source app/config/.env
 ```
 
-Add your `REDIS_PASSWORD` (inside `app/config/.env`) to Redis config file
+Add your `REDIS_PASSWORD` (from `app/config/.env`) to Redis config file
 
 ```bash
-sed -i '' -e "s/# requirepass foobared/requirepass <REDIS_PASSWORD>/" <REDIS_CONFIG_FILE>
+sudo sed -i -e "s/^requirepass [^ ]*/requirepass $REDIS_PASSWORD/" "$REDIS_CONF"
+sudo sed -i -e "s/# requirepass [^ ]*/requirepass $REDIS_PASSWORD/" "$REDIS_CONF"
 ```
 
 Restart Redis
+```bash
+sudo systemctl restart redis-server # brew services restart redis
 ```
-sudo systemctl restart redis-server
-```
-[//]: # (Mac OS)
-[//]: # (```bash)
-[//]: # (brew services restart redis)
-[//]: # (```)
 
 Test the password
 ```
-redis-cli -a <REDIS_PASSWORD>
+redis-cli -a $REDIS_PASSWORD
 ```
 
 ## Launch app
