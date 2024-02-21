@@ -52,9 +52,25 @@ def anno_request(digit: Digitization):
         if response.status_code == 200:
             return True
         else:
-            log(
-                f"[anno_request] Annotation request for {digit.get_ref()} with status code: {response.status_code}"
-            )
+            error = {
+                "source": "[anno_request]",
+                "error_message": f"Annotation request for {digit.get_ref()} with status code: {response.status_code}",
+                "request_info": {
+                    "method": "POST",
+                    "url": f"{EXAPI_URL}/run_detect",
+                    "data": {
+                        "manifest_url": digit.gen_manifest_url(),
+                        "model": f"{EXTRACTOR_MODEL}",
+                        "callback": f"{APP_URL}/{APP_NAME}/annotate",
+                    }
+                },
+                "response_info": {
+                    "status_code": response.status_code,
+                    "text": response.text or ""
+                }
+            }
+
+            log(error)
             return False
     except Exception as e:
         log(f"[anno_request] Annotation request for {digit.get_ref()} failed", e)
