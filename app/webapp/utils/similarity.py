@@ -73,6 +73,7 @@ def similarity_request(annos: List[Annotation]):
             },
         )
         if response.status_code == 200:
+            log(f"[similarity_request] Similarity request send: {response.text or ''}")
             return True
         else:
             error = {
