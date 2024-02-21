@@ -50,10 +50,8 @@ from app.webapp.utils.similarity import (
     similarity_request,
     get_annotation_urls,
     check_score_files,
-    compute_total_similarity,
     check_computed_pairs,
 )
-from app.webapp.tasks import compute_similarity_scores
 
 
 def is_superuser(user):
@@ -413,13 +411,19 @@ def receive_similarity(request):
 def similarity_status(request, task_id):
     task = AsyncResult(task_id)
     if task.ready():
-        result = task.result
-        return JsonResponse({"status": "success", "result": json.dumps(result)})
+        try:
+            result = json.dumps(task.result)
+        except TypeError as e:
+            log(task.result)
+            log(f"[similarity_status] Could not parse result for {task_id}", e)
+            return JsonResponse({"status": "failed", "result": ""})
+        return JsonResponse({"status": "success", "result": result})
     return JsonResponse({"status": "running"})
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def show_similarity(request, anno_refs):
+    from app.webapp.tasks import compute_similarity_scores
     # WITH CELERY
     scores_task = compute_similarity_scores.delay(anno_refs)
     return render(
