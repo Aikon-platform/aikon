@@ -75,9 +75,22 @@ def similarity_request(annos: List[Annotation]):
         if response.status_code == 200:
             return True
         else:
-            log(
-                f"[similarity_request] Request failed for {list(documents.keys())} with status code: {response.status_code}"
-            )
+            error = {
+                "source": "[similarity_request]",
+                "error_message": f"Request failed for {list(documents.keys())} with status code: {response.status_code}",
+                "request_info": {
+                    "method": "POST",
+                    "url": f"{EXAPI_URL}/run_detect",
+                    "headers": {"X-API-Key": EXAPI_KEY},
+                    "payload": {"document": documents, "callback": f"{APP_URL}/{APP_NAME}/similarity"}
+                },
+                "response_info": {
+                    "status_code": response.status_code,
+                    "json_response": response.json() if response.text else None
+                }
+            }
+
+            log(error)
             return False
     except Exception as e:
         log(f"[similarity_request] Request failed for {list(documents.keys())}", e)
