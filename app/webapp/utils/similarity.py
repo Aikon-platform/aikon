@@ -151,7 +151,7 @@ def compute_total_similarity(annos: List[Annotation], anno_refs: List[str] = Non
             total_scores[img_name].extend(best_matches(pair_scores, img_name, pair))
 
     return {
-        q_img: sorted(sim, key=lambda x: x[0], reverse=True)
+        q_img: sorted(sim, key=lambda x: x[0], reverse=True)[:10]
         for q_img, sim in total_scores.items()
     }
 
