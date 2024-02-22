@@ -43,7 +43,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
     fields = [
         ("work", "edition"),
         ("date_min", "date_max"),
-        # "place",
+        "place",
         "notes",
         "tags",
         "is_public",
