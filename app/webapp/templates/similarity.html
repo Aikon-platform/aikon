@@ -52,6 +52,7 @@
             <b>{{ title|capfirst }}</b>
         </div>
         <h4>The most similar annotations to the image on the left</h4>
+        <div class="pairs"></div>
     </div>
 {% endblock %}
 
@@ -59,40 +60,6 @@
     <div class="row">
         <div class="column similarity-container">
             <table id="similarity" class="similarity-table"></table>
-            <!--{# <table id="similarity" class="similarity-table">
-                {% for q_img, similarities in scores %}
-                    <tr class="similarity-row">
-                        <td class="query-img">
-                            <img class="anno-img" src='{{ q_img|ref_to_iiif }}' alt="Annotation {{ q_img }}">
-                            <br>
-                            <h3>
-                                <a href="{{ anno_refs|ref_to_mirador:q_img }}" target="_blank">{{ q_img }}</a>
-                            </h3>
-                        </td>
-                        {% for score, sim_img in similarities %}
-                            <td class="sim-img">
-                                <img class="anno-img" src='{{ sim_img|ref_to_iiif }}' alt="Annotation {{ sim_img }}">
-                                <br>
-                                <h4>
-                                    <a href="{{ anno_refs|ref_to_mirador:sim_img }}" target="_blank">{{ sim_img }}</a>
-                                    <br><b>{{ score }}</b>
-                                </h4>
-                            </td>
-                        {% endfor %}
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td style="width: 100%">
-                            {% if APP_LANG == "en" %}
-                                Similarity scores were not computed for those {{ WIT }}es
-                            {% else %}
-                                Les scores de similarité n'ont pas été calculé pour ces {{ WIT }}s
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </table>
-            {% include 'includes/pagination.html' with current_page=scores %} #}-->
         </div>
     </div>
 {% endblock %}

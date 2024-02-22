@@ -30,7 +30,7 @@ function refToIIIF(imgRef){
 function refToMirador(imgRef){
     imgRef = imgRef.split("_");
     const digitRef = `${imgRef[0]}_${imgRef[1]}`;
-    const annoRef = annoRefs.map(ref => ref.startsWith(digitRef))[0]
+    const annoRef = annoRefs.filter(ref => ref.startsWith(digitRef))[0]
     const manifest = `${APP_URL}/${APP_NAME}/iiif/${MANIFEST_V2}/${annoRef}/manifest.json`
     return `${SAS_APP_URL}/index.html?iiif-content=${manifest}&canvas=${parseInt(imgRef[2])}`
 }

@@ -50,7 +50,7 @@ from app.webapp.utils.similarity import (
     similarity_request,
     get_annotation_urls,
     check_score_files,
-    check_computed_pairs,
+    check_computed_pairs, get_computed_pairs,
 )
 
 
@@ -424,7 +424,9 @@ def similarity_status(request, task_id):
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def show_similarity(request, anno_refs):
     from app.webapp.tasks import compute_similarity_scores
-    # WITH CELERY
+    if len(anno_refs) == 1:
+        anno_refs = get_computed_pairs(anno_refs[0])
+
     scores_task = compute_similarity_scores.delay(anno_refs)
     return render(
         request,
@@ -435,32 +437,6 @@ def show_similarity(request, anno_refs):
             "anno_refs": json.dumps(anno_refs),
         },
     )
-
-    # # WITHOUT CELERY
-    # annos = [anno for (passed, anno) in [check_ref(ref, "Annotation") for ref in anno_refs] if passed]
-    # if not len(annos):
-    #     return JsonResponse(
-    #         {"response": f"No corresponding annotation in the database for {anno_refs}"},
-    #         safe=False
-    #     )
-    # total_scores = compute_total_similarity(annos, anno_refs)
-    # paginator = Paginator(total_scores, 50)
-    # try:
-    #     page_scores = paginator.page(request.GET.get("page"))
-    # except PageNotAnInteger:
-    #     page_scores = paginator.page(1)
-    # except EmptyPage:
-    #     page_scores = paginator.page(paginator.num_pages)
-    #
-    # return render(
-    #     request,
-    #     "similarity.html",
-    #     context={
-    #         "title": f"Similarity scores for {anno_refs}",
-    #         "scores": page_scores,
-    #         "anno_refs": anno_refs
-    #     },
-    # )
 
 
 def export_anno_img(request, anno_id):

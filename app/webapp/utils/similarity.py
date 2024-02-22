@@ -25,6 +25,10 @@ def check_computed_pairs(anno_refs):
     return list(set(anno_to_send))
 
 
+def get_computed_pairs(anno_ref):
+    return [pair_file.replace(".npy", "") for pair_file in os.listdir(SCORES_PATH) if anno_ref in pair_file]
+
+
 def gen_img_ref(img, coord):
     return f"{img.split('.')[0]}_{coord}"
 
