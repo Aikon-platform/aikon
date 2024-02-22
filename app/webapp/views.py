@@ -50,7 +50,8 @@ from app.webapp.utils.similarity import (
     similarity_request,
     get_annotation_urls,
     check_score_files,
-    check_computed_pairs, get_computed_pairs,
+    check_computed_pairs,
+    get_compared_annos,
 )
 
 
@@ -282,7 +283,7 @@ def delete_annotation(request, obj_ref):
 @csrf_exempt
 def receive_anno(request, digit_ref):
     """
-    Process the result of the API containing digitation annotations
+    Process the result of the API containing digitization annotations
     """
     passed, digit = check_ref(digit_ref)
     if not passed:
@@ -408,33 +409,54 @@ def receive_similarity(request):
     return JsonResponse({"message": "Invalid request"}, status=400)
 
 
-def similarity_status(request, task_id):
+def task_status(request, task_id):
     task = AsyncResult(task_id)
     if task.ready():
         try:
             result = json.dumps(task.result)
         except TypeError as e:
             log(task.result)
-            log(f"[similarity_status] Could not parse result for {task_id}", e)
+            log(f"[task_status] Could not parse result for {task_id}", e)
             return JsonResponse({"status": "failed", "result": ""})
         return JsonResponse({"status": "success", "result": result})
     return JsonResponse({"status": "running"})
 
 
+def compute_score(request):
+    from app.webapp.tasks import compute_similarity_scores
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            anno_refs = data.get('annoRefs', [])
+            if len(anno_refs) == 0:
+                JsonResponse({"error": "No anno_ref to retrieve score"}, status=400)
+            scores_task = compute_similarity_scores.delay(anno_refs)
+
+            return JsonResponse({"taskId": scores_task.id})
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON data"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=400)
+
+
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def show_similarity(request, anno_refs):
-    from app.webapp.tasks import compute_similarity_scores
-    if len(anno_refs) == 1:
-        anno_refs = get_computed_pairs(anno_refs[0])
+    refs = get_compared_annos(anno_refs[0]) if len(anno_refs) == 1 else anno_refs
+    annos = {
+        anno.get_ref(): anno.__str__()
+        for (passed, anno) in [check_ref(ref, "Annotation") for ref in refs]
+        if passed
+    }
 
-    scores_task = compute_similarity_scores.delay(anno_refs)
     return render(
         request,
         "similarity.html",
         context={
-            "title": f"Similarity scores for {anno_refs}",
-            "task_id": scores_task.id,
-            "anno_refs": json.dumps(anno_refs),
+            "title": f"Similarity scores",
+            "annos": dict(sorted(annos.items())),
+            "checked_refs": anno_refs,
+            "anno_refs": json.dumps(refs),
         },
     )
 

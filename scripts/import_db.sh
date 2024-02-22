@@ -2,7 +2,7 @@
 
 # HOW TO USE
 # Inside the scripts/ directory, run:
-# sh import_db.sh database.sql
+# bash import_db.sh database.sql
 # You will be asked to enter password twice
 # Restart Django to see effects
 

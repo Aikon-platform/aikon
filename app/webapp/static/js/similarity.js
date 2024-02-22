@@ -1,25 +1,3 @@
-const csrfToken = $("input[name=csrfmiddlewaretoken]").val();
-function checkStatus(taskId) {
-    $.ajax({
-        url: `${APP_URL}/${APP_NAME}/similarity-status/${taskId}/`,
-        type: "GET",
-        headers: { "X-CSRFToken": csrfToken },
-        dataType: "json",
-        success: function (data) {
-            if (data.status === "running") {
-                setTimeout(function () {
-                    checkStatus(taskId);
-                }, 1000); // Check every 1 second
-            } else if (data.status === "success") {
-                displayScores(JSON.parse(data.result));
-            }
-        },
-        error: function (xhr, status, error) {
-            console.error("Error checking similarity status:", xhr, status, error);
-        }
-    });
-}
-
 function refToIIIF(imgRef){
     imgRef = imgRef.split("_");
     const imgCoord = imgRef.pop().replace(".jpg", "");
@@ -35,14 +13,25 @@ function refToMirador(imgRef){
     return `${SAS_APP_URL}/index.html?iiif-content=${manifest}&canvas=${parseInt(imgRef[2])}`
 }
 
-function displayScores(scores) {
+function getCheckedRefs() {
+    let checkedAnnoRefs = [];
+    const checkboxes = document.querySelectorAll('#check-pairs input[type="checkbox"]:checked');
+
+    checkboxes.forEach(function(checkbox) {
+        checkedAnnoRefs.push(checkbox.id);
+    });
+
+    return checkedAnnoRefs;
+}
+
+const displayScores = (scores) => {
     const table = document.getElementById("similarity");
+    table.innerHTML = "";
     const queryImgs = Object.keys(scores);
 
     if (queryImgs.length > 0) {
         queryImgs.map(qImg => {
             const similarities = scores[qImg];
-            qImg = qImg.replace("wit205_pdf216_", "wit1_man1_0")
             const row = table.insertRow();
             row.innerHTML = `<th>
                 <img class="anno-img" src='${refToIIIF(qImg)}' alt="Annotation ${qImg}"><br>
@@ -52,7 +41,6 @@ function displayScores(scores) {
             if (similarities && similarities.length){
                 similarities.map(similarity => {
                     let [score, sImg] = similarity;
-                    sImg = sImg.replace("wit205_pdf216_", "wit1_man1_0")
                     const sCell = row.insertCell();
                     sCell.innerHTML = `
                         <img class="anno-img" src='${refToIIIF(sImg)}' alt="Annotation ${sImg}"><br>
@@ -67,3 +55,42 @@ function displayScores(scores) {
             `Les scores de similarité n'ont pas été calculés pour ces ${WIT}s`;
     }
 }
+
+function sendScoreRequest(annoRefs) {
+    fetch(`${APP_URL}/${APP_NAME}/compute-score`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            "X-CSRFToken": CSRF_TOKEN
+        },
+        body: JSON.stringify({ annoRefs: annoRefs }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data && data.taskId) {
+            checkStatus(data.taskId, displayScores);
+        } else {
+            console.error('Invalid server response. Missing taskId.');
+        }
+    })
+    .catch(error => {
+        // Handle errors, log them, or display user-friendly messages
+        console.error('Error sending data to the server:', error);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('#check-pairs input[type="checkbox"]');
+
+    checkboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            sendScoreRequest(getCheckedRefs());
+        });
+    });
+    checkboxes[0].dispatchEvent(new Event('change'));
+});
