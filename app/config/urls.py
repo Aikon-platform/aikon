@@ -32,7 +32,7 @@ from app.webapp.views import (
     send_similarity,
     receive_similarity,
     show_similarity,
-    similarity_status,
+    task_status, compute_score,
 )
 
 
@@ -147,9 +147,14 @@ urlpatterns = [
         name="show-similarity",
     ),
     path(
-        f"{APP_NAME}/similarity-status/<str:task_id>/",
-        similarity_status,
-        name="similarity-status",
+        f"{APP_NAME}/task-status/<str:task_id>/",
+        task_status,
+        name="task-status",
+    ),
+    path(
+        f"{APP_NAME}/compute-score",
+        compute_score,
+        name="compute-score",
     ),
     path(
         f"{APP_NAME}/annotate/<str:digit_ref>",

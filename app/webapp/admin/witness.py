@@ -56,6 +56,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         js = ("js/witness-form.js",)
 
     change_form_template = "admin/form.html"
+    list_per_page = 50  # 100
 
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
@@ -70,7 +71,6 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         ]
 
     ordering = ("id", "place__name")
-    list_per_page = 100
 
     # Fields that are taken into account by the search bar
     search_fields = (
