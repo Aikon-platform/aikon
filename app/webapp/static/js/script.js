@@ -8,7 +8,7 @@ function checkStatus(taskId, callback) {
         success: function (data) {
             if (data.status === "running") {
                 setTimeout(function () {
-                    checkStatus(taskId);
+                    checkStatus(taskId, callback);
                 }, 1000); // Check every 1 second
             } else if (data.status === "success") {
                 callback(JSON.parse(data.result));
