@@ -82,7 +82,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         "notes",
     )
     # Filters options in the sidebar
-    # list_filter = ("id_nb", "place")  # Don't display it
+    list_filter = ("type", "is_public", "contents__tags__label")
     # Attributes to be excluded from the form fields
     exclude = ("slug", "created_at", "updated_at")
     # Dropdown fields
@@ -259,7 +259,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     @admin.action(
         description=f"Download annotated diagram images in selected selected {WIT}es"
         if APP_LANG == "en"
-        else f"Télécharger les images de diagrammes annotés des {WIT}s sélectionnés"
+        else f"Télécharger les images d'illustrations annotées des {WIT}s sélectionnés"
     )
     def export_annotated_imgs(self, request, queryset):
         if not check_selection(queryset, request):
