@@ -4,7 +4,10 @@ from app.webapp.models.utils.functions import get_fieldname
 
 
 def get_name(fieldname, plural=False):
-    return get_fieldname(fieldname, {}, plural)
+    fields = {
+        "label": {"en": "label", "fr": "label"},
+    }
+    return get_fieldname(fieldname, fields, plural)
 
 
 class Tag(models.Model):
@@ -16,7 +19,7 @@ class Tag(models.Model):
     def __str__(self):
         return self.label
 
-    label = models.CharField(max_length=50)
+    label = models.CharField(verbose_name=get_name("label"), max_length=50)
 
 
 """
