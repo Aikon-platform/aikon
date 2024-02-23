@@ -79,7 +79,6 @@ function sendScoreRequest(annoRefs) {
         }
     })
     .catch(error => {
-        // Handle errors, log them, or display user-friendly messages
         console.error('Error sending data to the server:', error);
     });
 }
