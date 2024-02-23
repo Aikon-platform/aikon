@@ -25,6 +25,18 @@ def check_computed_pairs(anno_refs):
     return list(set(anno_to_send))
 
 
+def get_computed_pairs(anno_ref):
+    return [pair_file.replace(".npy", "") for pair_file in os.listdir(SCORES_PATH) if anno_ref in pair_file]
+
+
+def get_anno_ref_in_pairs(pairs):
+    return list(set([ref for pair in pairs for ref in pair.split('-')]))
+
+
+def get_compared_annos(anno_ref):
+    return get_anno_ref_in_pairs(get_computed_pairs(anno_ref))
+
+
 def gen_img_ref(img, coord):
     return f"{img.split('.')[0]}_{coord}"
 
@@ -73,6 +85,7 @@ def similarity_request(annos: List[Annotation]):
             },
         )
         if response.status_code == 200:
+            log(f"[similarity_request] Similarity request send: {response.text or ''}")
             return True
         else:
             error = {
@@ -138,7 +151,7 @@ def compute_total_similarity(annos: List[Annotation], anno_refs: List[str] = Non
             total_scores[img_name].extend(best_matches(pair_scores, img_name, pair))
 
     return {
-        q_img: sorted(sim, key=lambda x: x[0], reverse=True)
+        q_img: sorted(sim, key=lambda x: x[0], reverse=True)[:10]
         for q_img, sim in total_scores.items()
     }
 

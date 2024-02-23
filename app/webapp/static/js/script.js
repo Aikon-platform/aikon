@@ -1,3 +1,25 @@
+// const csrfToken = $("input[name=csrfmiddlewaretoken]").val();
+function checkStatus(taskId, callback) {
+    $.ajax({
+        url: `${APP_URL}/${APP_NAME}/task-status/${taskId}/`,
+        type: "GET",
+        headers: { "X-CSRFToken": CSRF_TOKEN },
+        dataType: "json",
+        success: function (data) {
+            if (data.status === "running") {
+                setTimeout(function () {
+                    checkStatus(taskId);
+                }, 1000); // Check every 1 second
+            } else if (data.status === "success") {
+                callback(JSON.parse(data.result));
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("Error checking similarity status:", xhr, status, error);
+        }
+    });
+}
+
 function getUrl() {
     return window.location.href;
 }
