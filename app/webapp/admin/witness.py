@@ -235,7 +235,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         return list_to_txt(manifests, "IIIF_manifests")
 
     @admin.action(
-        description=f"Download annotated diagram images in selected selected {WIT}es"
+        description=f"Download annotated diagram images in selected {WIT}es"
         if APP_LANG == "en"
         else f"Télécharger les images d'illustrations annotées des {WIT}s sélectionnés"
     )
@@ -282,7 +282,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         return zip_dirs(dirnames_contents)
 
     @admin.action(
-        description=f"Download full {DIG}s images in selected selected {WIT}es"
+        description=f"Download full {DIG}s images in selected {WIT}es"
         if APP_LANG == "en"
         else f"Télécharger les images scans des {WIT}s sélectionnés"
     )
