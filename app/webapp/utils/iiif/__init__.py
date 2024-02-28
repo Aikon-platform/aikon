@@ -7,7 +7,7 @@ from app.webapp.utils.functions import normalize_str, substrs_in_str
 from app.webapp.utils.logger import iiif_log, console, log
 from app.config.settings import CANTALOUPE_APP_URL, APP_URL, APP_NAME
 
-IIIF_ICON = "<img alt='IIIF' src='https://iiif.io/assets/images/logos/logo-sm.png' height='15'/>"
+IIIF_ICON = "<img alt='IIIF' src='/static/img/iiif-logo.png' height='15'/>"
 NO_LICENSE = f"{APP_URL}/{APP_NAME}/rgpd#license"
 
 
