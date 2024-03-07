@@ -1,6 +1,6 @@
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, register_converter
 
 from app.config.settings import APP_NAME, MEDIA_URL, MEDIA_ROOT, DEBUG
 
@@ -20,7 +20,6 @@ from app.webapp.views import (
     send_anno,
     export_wit_img,
     export_digit_img,
-    search_similarity,
     reindex_anno,
     delete_send_anno,
     retrieve_place_info,
@@ -30,7 +29,24 @@ from app.webapp.views import (
     index_anno,
     delete_annotation,
     get_annos_img_list,
+    send_similarity,
+    receive_similarity,
+    show_similarity,
+    task_status, compute_score,
 )
+
+
+class ListConverter:
+    regex = r"[^/]+(?:\+[^/]+)*"
+
+    def to_python(self, value):
+        return value.split("+")
+
+    def to_url(self, value):
+        return "+".join(value)
+
+
+register_converter(ListConverter, "list")
 
 
 urlpatterns = [
@@ -116,6 +132,31 @@ urlpatterns = [
     ),
     path("retrieve_place_info/", retrieve_place_info, name="retrieve-place-info"),
     path(
+        f"{APP_NAME}/similarity",
+        receive_similarity,
+        name="receive-similarity",
+    ),
+    path(
+        f"{APP_NAME}/run-similarity/<list:anno_refs>",  # anno_refs = anno_ref+anno_ref+anno_ref
+        send_similarity,
+        name="send-similarity",
+    ),
+    path(
+        f"{APP_NAME}/<list:anno_refs>/compare",  # anno_refs = anno_ref+anno_ref+anno_ref
+        show_similarity,
+        name="show-similarity",
+    ),
+    path(
+        f"{APP_NAME}/task-status/<str:task_id>/",
+        task_status,
+        name="task-status",
+    ),
+    path(
+        f"{APP_NAME}/compute-score",
+        compute_score,
+        name="compute-score",
+    ),
+    path(
         f"{APP_NAME}/annotate/<str:digit_ref>",
         receive_anno,
         name="receive-annotations",
@@ -149,11 +190,6 @@ urlpatterns = [
         f"{APP_NAME}/delete-annotation/<str:obj_ref>",
         delete_annotation,
         name="delete-annotation",
-    ),
-    path(
-        f"{APP_NAME}/search-similarity/<str:experiment_id>/",
-        search_similarity,
-        name="search-similarity",
     ),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
 ]

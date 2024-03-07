@@ -39,6 +39,10 @@ def anno_btn(obj, action="view"):
         icon = get_icon("check")
         # The link redirects to Mirador with corrected annotations (Annotation)
         link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V2)}"
+    elif action == "similarity":
+        color = "#24d1b7"
+        icon = get_icon("code-compare")
+        link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/compare"
     else:
         # When the button is not supposed to redirects to anything
         link = "#"

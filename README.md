@@ -22,7 +22,7 @@
     - `sudo apt install git`
     - Having configured [SSH access to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
 
-[//]: # (&#40;Mac: https://www.oracle.com/java/technologies/downloads/#java11-mac&#41;)
+[//]: # (https://www.oracle.com/java/technologies/javase/jdk11-archive-downloads.html)
 
 ## App set up
 
@@ -43,10 +43,12 @@ sudo apt-get install wget ca-certificates
 sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql poppler-utils redis-server ghostscript
 ```
 
-Mac
-```bash
-brew install wget ca-certificates postgresql maven nginx libpq poppler redis ghostscript
-```
+[//]: # (Mac OS)
+[//]: # (```bash)
+[//]: # (brew install wget ca-certificates postgresql maven nginx libpq poppler redis ghostscript)
+[//]: # (brew services start postgresql)
+[//]: # (brew services start redis)
+[//]: # (```)
 
 ### Python environment
 
@@ -68,7 +70,7 @@ Create a [Geonames](https://www.geonames.org/login) account and activate it.
 
 Fill the various `.env` files of the project with:
 ```shell
-sh scripts/env.sh
+bash scripts/env.sh
 ```
 
 > #### Instructions done by the script
@@ -99,6 +101,7 @@ sh scripts/env.sh
 > EXAPI_KEY="<api-key>"
 > REDIS_PASSWORD="<redis-password>"    # random string of characters without "/"
 > MEDIA_DIR="<media-dir>"              # absolute path to media files directory (e.g. "/home/<path>/<to>/vhs/app/mediafiles")
+> EXTRACTOR_MODEL="<media-dir>"        # model used for annotation extraction
 > ```
 >
 > Create a [Geonames](https://www.geonames.org/login) account, activate it and change `<geonames-username>` in the `.env` file
@@ -112,19 +115,18 @@ sh scripts/env.sh
 In a terminal inside the `scripts/` directory, run:
 
 ```shell
-sh new_db.sh <database-name>
+bash new_db.sh <database-name>
 ```
 
-You will be asked to type the password used for the superuser twice.
+You will be asked to type your sudo password, then the password for the Django superuser (same name as `$DB_USERNAME`) twice.
 
 > #### Instructions done by the script
 > Open Postgres command prompt, create a database (`<database>`) and a user
 >
-> [//]: # (createuser -s postgres)
-> [//]: # (psql -U postgres)
+> [//]: # (psql postgres)
 >
 > ```bash
-> sudo -u postgres psql
+> sudo -i -u postgres psql
 > postgres=# CREATE DATABASE <database>;
 > postgres=# CREATE USER <username> WITH PASSWORD '<password>';
 > postgres=# ALTER ROLE <username> SET client_encoding TO 'utf8';
@@ -135,11 +137,6 @@ You will be asked to type the password used for the superuser twice.
 > postgres=# \q
 > ```
 >
-> [//]: # (#### [pgAdmin]&#40;https://www.pgadmin.org&#41; &#40;GUI for PostgreSQL&#41;)
-> [//]: # ()
-> [//]: # (Provide email address and password. You should now access the interface )
->
->
 > ### Django
 >
 > Update database schema with models that are stored inside `app/webapp/migrations`
@@ -147,12 +144,7 @@ You will be asked to type the password used for the superuser twice.
 > python app/manage.py migrate
 > ```
 >
-> [//]: # (Download static files to be stored in `app/staticfiles`)
-> [//]: # (```bash)
-> [//]: # (python app/manage.py collectstatic)
-> [//]: # (```)
->
-> Create a super user
+> Create a superuser
 > ```shell
 > python app/manage.py createsuperuser
 > ```
@@ -178,20 +170,20 @@ Skip these steps if you used `scripts/env.sh`
 > - `FILE_SYSTEM_SOURCE` depends on the folder in which you run cantaloupe (inside cantaloupe/ folder: `../app/mediafiles/img/`)
 > ```bash
 > BASE_URI=
-> FILE_SYSTEM_SOURCE=./app/mediafiles/img/  # inside the project directory
+> FILE_SYSTEM_SOURCE=absolute/path/to/app/mediafiles/img/  # inside the project directory
 > HTTP_PORT=8182
 > HTTPS_PORT=8183
-> LOG_PATH=/path/to/logs
+> LOG_PATH=/dir/where/cantaloupe/logs/are/stored
 > ```
->
-> Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with your variables):
-> ```shell
-> cantaloupe/init.sh
-> ```
+
+Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with your variables):
+```shell
+bash cantaloupe/init.sh
+```
 
 Run [Cantaloupe](https://cantaloupe-project.github.io/)
 ```shell
-cantaloupe/start.sh
+bash cantaloupe/start.sh
 ```
 
 #### Simple Annotation Server
@@ -242,49 +234,40 @@ sudo systemctl restart nginx
 ### Celery with Redis setup
 #### Enabling authentication for Redis instance
 
-Find the path of Redis configuration file
-
+Get the redis config file and the redis password in the environment variables
 ```bash
-redis-cli INFO | grep config_file
+REDIS_CONF=$(redis-cli INFO | grep config_file | awk -F: '{print $2}' | tr -d '[:space:]')
+source app/config/.env
 ```
 
-Add your `REDIS_PASSWORD` (inside `app/config/.env`) to Redis config file
+Add your `REDIS_PASSWORD` (from `app/config/.env`) to Redis config file
 
 ```bash
-sed -i '' -e "s/# requirepass foobared/requirepass <REDIS_PASSWORD>/" <REDIS_CONFIG_FILE>
+sudo sed -i -e "s/^requirepass [^ ]*/requirepass $REDIS_PASSWORD/" "$REDIS_CONF"
+sudo sed -i -e "s/# requirepass [^ ]*/requirepass $REDIS_PASSWORD/" "$REDIS_CONF"
 ```
-
-[//]: # (Open the Redis configuration file)
-[//]: # (```)
-[//]: # (vi /etc/redis/redis.conf)
-[//]: # (```)
-[//]: # (Uncomment and set a password)
-[//]: # (```)
-[//]: # (requirepass <your_password>)
-[//]: # (```)
 
 Restart Redis
+```bash
+sudo systemctl restart redis-server # brew services restart redis
 ```
-sudo systemctl restart redis-server
-```
+
 Test the password
 ```
-redis-cli -a <REDIS_PASSWORD>
+redis-cli -a $REDIS_PASSWORD
 ```
 
 ## Launch app
 
 Run server
 ```shell
-# FIX DUE TO SPECIFIC PROJECT STRUCTURE
-python app/manage.py runserver localhost:8000
+venv/bin/celery -A app.app.celery worker -B -c 1 --loglevel=info -P threads && venv/bin/python app/manage.py runserver localhost:8000
 ```
 
 or to launch everything (Django, Cantaloupe and SimpleAnnotationServer) at once (stop with `kill 0`):
 ```shell
 bash run.sh
 ```
-
 
 You can now visit the app at [http://localhost:8000](http://localhost:8000) and connect with the credentials you created
 

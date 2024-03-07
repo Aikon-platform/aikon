@@ -129,7 +129,6 @@ class Content(models.Model):
 
     def get_pages(self):
         if self.page_min == "" and self.page_max == "":
-            # TODO allow to use "-" to tell that a content takes all witness
             return ""
 
         return format_start_end(self.page_min, self.page_max)

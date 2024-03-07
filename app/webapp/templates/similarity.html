@@ -1,0 +1,71 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}{{ anno }}{% endblock %}
+
+{% load static %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'css/tools.css' %}">
+    <style>
+        {# TODO improve CSS #}
+        .similarity-container {
+            width: 90%;
+            overflow-x: auto;
+            margin: 20px auto;
+        }
+
+        .similarity-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        tr {
+            width: 100%;
+        }
+        td, th {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            position: sticky;
+            left: 0;
+            z-index: 10;
+        }
+        .anno-img {
+            max-height: 200px;
+            max-width: 250px;
+        }
+    </style>
+    <script src="{% static 'js/similarity.js' %}"></script>
+    <script>
+        var taskId = '{{ task_id|safe }}';
+        var annoRefs = JSON.parse('{{ anno_refs|safe }}');
+        {#checkStatus(taskId, displayScores);#}
+    </script>
+{% endblock %}
+
+{% block header %}
+    <div class="toolbar">
+        <div class="title">
+            <b>{{ title|capfirst }}</b>
+        </div>
+        <h4>The most similar annotations to the image on the left</h4>
+        <div id="check-pairs">
+            {% for anno_ref, title in annos.items %}
+                <label for="{{ anno_ref }}">
+                    <input id="{{ anno_ref }}" type="checkbox" {% if anno_ref in checked_refs %}checked{% endif %}>
+                    {{ title }}
+                </label>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="column similarity-container">
+            <table id="similarity" class="similarity-table"></table>
+        </div>
+    </div>
+{% endblock %}

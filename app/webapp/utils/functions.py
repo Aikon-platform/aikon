@@ -41,6 +41,13 @@ def flatten(l):
     return [item for sublist in l for item in sublist]
 
 
+def flatten_dict(list_of_dicts):
+    # list_of_dicts = [ {"key1": "value1", "key2": "value2"}, {"key4": "value4", "key5": "value5"} ]
+    # flatten_dict = { "key1": "value1", "key2": "value2", "key4": "value4", "key5": "value5" }
+    # same key names results in override
+    return dict(**{k: v for d in list_of_dicts for k, v in d.items()})
+
+
 def extract_nb(string):
     matches = re.compile(r"\d+").findall(string)
     digits = "".join(matches)
@@ -249,6 +256,7 @@ def get_action(action, formatting=None):
             "en": "visualize automatic annotations",
             "fr": "voir les annotations automatiques",
         },
+        "similarity": {"en": "compare annotations", "fr": "comparer les annotations"},
         "no_manifest": {"en": "no manifest", "fr": "pas de manifest"},
         "no_digit": {"en": "no digitization", "fr": "pas de numérisation"},
         "no_img": {"en": "no image", "fr": "pas d'image"},
