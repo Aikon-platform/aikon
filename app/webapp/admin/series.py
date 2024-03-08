@@ -13,7 +13,7 @@ from app.webapp.utils.functions import format_start_end, format_dates, truncate_
 @admin.register(Series)
 class SeriesAdmin(nested_admin.NestedModelAdmin):
     ordering = ("id",)
-    list_per_page = 50  # 100
+    list_per_page = 100
     search_fields = ("edition__name",)
     # TODO: digit_anno_btn
     list_display = (
