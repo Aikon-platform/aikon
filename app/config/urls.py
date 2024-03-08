@@ -32,7 +32,8 @@ from app.webapp.views import (
     send_similarity,
     receive_similarity,
     show_similarity,
-    task_status, compute_score,
+    task_status,
+    compute_score,
 )
 
 

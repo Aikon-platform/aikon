@@ -26,11 +26,15 @@ def check_computed_pairs(anno_refs):
 
 
 def get_computed_pairs(anno_ref):
-    return [pair_file.replace(".npy", "") for pair_file in os.listdir(SCORES_PATH) if anno_ref in pair_file]
+    return [
+        pair_file.replace(".npy", "")
+        for pair_file in os.listdir(SCORES_PATH)
+        if anno_ref in pair_file
+    ]
 
 
 def get_anno_ref_in_pairs(pairs):
-    return list(set([ref for pair in pairs for ref in pair.split('-')]))
+    return list(set([ref for pair in pairs for ref in pair.split("-")]))
 
 
 def get_compared_annos(anno_ref):
@@ -94,12 +98,15 @@ def similarity_request(annos: List[Annotation]):
                 "request_info": {
                     "method": "POST",
                     "url": f"{EXAPI_URL}/run_similarity",
-                    "payload": {"documents": documents, "callback": f"{APP_URL}/{APP_NAME}/similarity"}
+                    "payload": {
+                        "documents": documents,
+                        "callback": f"{APP_URL}/{APP_NAME}/similarity",
+                    },
                 },
                 "response_info": {
                     "status_code": response.status_code,
-                    "text": response.text or ""
-                }
+                    "text": response.text or "",
+                },
             }
 
             log(error)

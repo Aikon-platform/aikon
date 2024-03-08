@@ -325,13 +325,16 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         from django.db.models import Q
 
         queryset, use_distinct = super(WitnessAdmin, self).get_search_results(
-            request, queryset, search_term)
-        search_titles = search_term.split('||')
+            request, queryset, search_term
+        )
+        search_titles = search_term.split("||")
         if search_titles:
             for title in search_titles:
                 if title:
-                    q_objects = [Q(**{field + "__icontains": title.strip()})
-                                 for field in self.search_fields]
+                    q_objects = [
+                        Q(**{field + "__icontains": title.strip()})
+                        for field in self.search_fields
+                    ]
                     queryset |= self.model.objects.filter(reduce(or_, q_objects))
 
         return queryset, use_distinct

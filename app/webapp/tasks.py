@@ -37,6 +37,7 @@ def compute_similarity_scores(anno_refs: List[str] = None):
 
     if not len(annos):
         from app.webapp.utils.logger import log
+
         log(f"[compute_similarity_scores] No annotation corresponding to {anno_refs}")
         return {}
     return compute_total_similarity(annos, anno_refs)

@@ -424,10 +424,11 @@ def task_status(request, task_id):
 
 def compute_score(request):
     from app.webapp.tasks import compute_similarity_scores
-    if request.method == 'POST':
+
+    if request.method == "POST":
         try:
-            data = json.loads(request.body.decode('utf-8'))
-            anno_refs = data.get('annoRefs', [])
+            data = json.loads(request.body.decode("utf-8"))
+            anno_refs = data.get("annoRefs", [])
             if len(anno_refs) == 0:
                 JsonResponse({"error": "No anno_ref to retrieve score"}, status=400)
             scores_task = compute_similarity_scores.delay(anno_refs)
