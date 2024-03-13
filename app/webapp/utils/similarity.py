@@ -161,9 +161,10 @@ def compute_total_similarity(
         for img_name in np.unique(
             np.concatenate((pair_scores[:, 1], pair_scores[:, 2]))
         ):
-            if img_name not in total_scores:
-                total_scores[img_name] = []
-            total_scores[img_name].extend(best_matches(pair_scores, img_name, pair))
+            if img_name.startswith(prefix_key):
+                if img_name not in total_scores:
+                    total_scores[img_name] = []
+                total_scores[img_name].extend(best_matches(pair_scores, img_name, pair))
 
     ######
     if not show_checked_ref:
@@ -216,10 +217,24 @@ def best_matches(scores, q_img, doc_pair):
     img_pairs_2 = scores[scores[:, 2] == q_img]
 
     # [(score, similar_image)]
-    result1 = [(float(pair[0]), pair[2]) for pair in img_pairs_1]
-    result2 = [(float(pair[0]), pair[1]) for pair in img_pairs_2]
-    result1.extend(result2)
-    return result1
+    result = [(float(pair[0]), pair[2]) for pair in img_pairs_1]
+    result.extend([(float(pair[0]), pair[1]) for pair in img_pairs_2])
+
+    unique_dict = {str(item): item for item in result}
+    distinct_array = list(unique_dict.values())
+    max_score = {}
+    filtered_array = []
+    for score, img in distinct_array:
+        if img not in max_score or score > max_score[img]:
+            max_score[img] = score
+            for i, (existing_score, existing_img) in enumerate(filtered_array):
+                if existing_img == img:
+                    filtered_array[i] = [score, img]
+                    break
+            else:
+                filtered_array.append([score, img])
+
+    return filtered_array
 
 
 # def hash_str(string):
