@@ -13,12 +13,13 @@ function refToMirador(imgRef){
     return `${SAS_APP_URL}/index.html?iiif-content=${manifest}&canvas=${parseInt(imgRef[2])}`
 }
 
-function getCheckedRefs() {
+function getCheckedRefs(checked_ref) {
     let checkedAnnoRefs = [];
-    const checkboxes = document.querySelectorAll('#check-pairs input[type="checkbox"]:checked');
+    checkedAnnoRefs.push(checked_ref)
+    const options = document.querySelectorAll('#multi-select option:checked');
 
-    checkboxes.forEach(function(checkbox) {
-        checkedAnnoRefs.push(checkbox.id);
+    options.forEach(function(option) {
+        checkedAnnoRefs.push(option.id);
     });
 
     return checkedAnnoRefs;
@@ -34,8 +35,10 @@ const displayScores = (scores) => {
             const similarities = scores[qImg];
             const row = table.insertRow();
             row.innerHTML = `<th>
-                <img class="anno-img" src='${refToIIIF(qImg)}' alt="Annotation ${qImg}"><br>
-                <h3><a href="${refToMirador(qImg)}" target="_blank">${qImg}</a></h3>
+                <a href="${refToMirador(qImg)}" target="_blank">
+                    <img class="anno-img" src='${refToIIIF(qImg)}' alt="Annotation ${qImg}" title="${qImg}">
+                    <h3>${qImg}</h3>
+                </a>
             </th>`;
 
             if (similarities && similarities.length){
@@ -43,8 +46,10 @@ const displayScores = (scores) => {
                     let [score, sImg] = similarity;
                     const sCell = row.insertCell();
                     sCell.innerHTML = `
-                        <img class="anno-img" src='${refToIIIF(sImg)}' alt="Annotation ${sImg}"><br>
-                        <h4><a href="${refToMirador(sImg)}" target="_blank">${sImg}</a><br><b>${score}</b></h4>`;
+                        <a href="${refToMirador(sImg)}" target="_blank">
+                            <img class="anno-img" src='${refToIIIF(sImg)}' alt="Annotation ${sImg}" title="${sImg}">
+                            <h4>${sImg}</h4>
+                        </a>`;
                     });
             }
         })
@@ -56,40 +61,20 @@ const displayScores = (scores) => {
     }
 }
 
-function sendScoreRequest(annoRefs) {
+function sendScoreRequest(annoRefs, maxRows=20, showCheckedRef=false) {
     fetch(`${APP_URL}/${APP_NAME}/compute-score`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             "X-CSRFToken": CSRF_TOKEN
         },
-        body: JSON.stringify({ annoRefs: annoRefs }),
+        body: JSON.stringify({ annoRefs: annoRefs, maxRows: maxRows, showCheckedRef: showCheckedRef }),
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data && data.taskId) {
-            checkStatus(data.taskId, displayScores);
-        } else {
-            console.error('Invalid server response. Missing taskId.');
-        }
+    .then(response => response.json()) // This line is needed to parse the response as JSON
+    .then(score => {
+        displayScores(score);
     })
     .catch(error => {
         console.error('Error sending data to the server:', error);
     });
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-    const checkboxes = document.querySelectorAll('#check-pairs input[type="checkbox"]');
-
-    checkboxes.forEach(function(checkbox) {
-        checkbox.addEventListener('change', function() {
-            sendScoreRequest(getCheckedRefs());
-        });
-    });
-    checkboxes[0].dispatchEvent(new Event('change'));
-});

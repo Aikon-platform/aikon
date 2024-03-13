@@ -25,9 +25,13 @@ def check_similarity_files(file_names):
     pass
 
 
-@celery_app.task
-def compute_similarity_scores(anno_refs: List[str] = None):
+# @celery_app.task
+def compute_similarity_scores(
+    anno_refs: List[str] = None, max_rows: int = 50, show_checked_ref: bool = True
+):
     from app.webapp.views import check_ref
+
+    checked_anno = anno_refs[0]
 
     annos = [
         anno
@@ -40,7 +44,9 @@ def compute_similarity_scores(anno_refs: List[str] = None):
 
         log(f"[compute_similarity_scores] No annotation corresponding to {anno_refs}")
         return {}
-    return compute_total_similarity(annos, anno_refs)
+    return compute_total_similarity(
+        annos, checked_anno, anno_refs, max_rows, show_checked_ref
+    )
 
 
 @celery_app.task

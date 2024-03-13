@@ -135,16 +135,24 @@ def load_similarity(pair):
         return pair, None
 
 
-def compute_total_similarity(annos: List[Annotation], anno_refs: List[str] = None):
+def compute_total_similarity(
+    annos: List[Annotation],
+    checked_anno: str,
+    anno_refs: List[str] = None,
+    max_rows: int = 50,
+    show_checked_ref: bool = True,
+):
     total_scores = {}
+    prefix_key = "_".join(checked_anno.split("_")[:2])
+
     if anno_refs is None:
         anno_refs = [anno.get_ref() for anno in annos]
-
     for pair in doc_pairs(anno_refs):
         try:
-            pair_scores = np.load(
-                f"{SCORES_PATH}/{'-'.join(sorted(pair))}.npy", allow_pickle=True
-            )
+            score_path_pair = f"{SCORES_PATH}/{'-'.join(sorted(pair))}.npy"
+            if prefix_key not in score_path_pair:
+                continue
+            pair_scores = np.load(score_path_pair, allow_pickle=True)
         except FileNotFoundError as e:
             # TODO: trigger similarity request?
             log(f"[compute_total_similarity] no score file for {pair}", e)
@@ -157,10 +165,39 @@ def compute_total_similarity(annos: List[Annotation], anno_refs: List[str] = Non
                 total_scores[img_name] = []
             total_scores[img_name].extend(best_matches(pair_scores, img_name, pair))
 
-    return {
+    ######
+    if not show_checked_ref:
+        filtered_data = {
+            q_img: [item for item in sim if not item[1].startswith(prefix_key)]
+            for q_img, sim in total_scores.items()
+        }
+        total_scores = filtered_data
+    #######
+
+    score_dict = {
         q_img: sorted(sim, key=lambda x: x[0], reverse=True)[:10]
         for q_img, sim in total_scores.items()
     }
+
+    ######
+    score_sorted = {}
+    for key, value in score_dict.items():
+        if len(value):
+            score_sorted[key] = value[0][0]
+    score_sorted = sorted(score_sorted.items(), key=lambda x: x[1], reverse=True)
+
+    score_dict_sorted = {}
+    counter = 1
+    for key, score in score_sorted:
+        if counter > max_rows:
+            break
+
+        if prefix_key in key:
+            score_dict_sorted[key] = score_dict[key]
+            counter += 1
+
+    return score_dict_sorted
+    #######
 
 
 def best_matches(scores, q_img, doc_pair):
@@ -171,14 +208,18 @@ def best_matches(scores, q_img, doc_pair):
     q_img = "wit1_man191_0009_166,1325,578,516.jpg"
     doc_pair = (wit1_man191, wit205_pdf216)
     """
-    q_doc = "_".join(q_img.split("_")[:1])
-    q_idx, s_idx = (1, 2) if q_doc == doc_pair[0] else (2, 1)
+    # q_doc = "_".join(q_img.split("_")[:1])
+    # q_idx, s_idx = (1, 2) if doc_pair[0].startswith(q_doc) else (2, 1)
 
     # Get pairs concerning the given query image q_img
-    img_pairs = scores[scores[:, q_idx] == q_img]
+    img_pairs_1 = scores[scores[:, 1] == q_img]
+    img_pairs_2 = scores[scores[:, 2] == q_img]
 
     # [(score, similar_image)]
-    return [(float(pair[0]), pair[s_idx]) for pair in img_pairs]
+    result1 = [(float(pair[0]), pair[2]) for pair in img_pairs_1]
+    result2 = [(float(pair[0]), pair[1]) for pair in img_pairs_2]
+    result1.extend(result2)
+    return result1
 
 
 # def hash_str(string):

@@ -77,12 +77,12 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     # Fields that are taken into account by the search bar
     search_fields = (
-        "id_nb",
-        "place__name",
-        "type",
-        "contents__roles__person__name",
+        # "id_nb",
+        # "place__name",
+        # "type",
+        # "contents__roles__person__name",
         "contents__work__title",
-        "notes",
+        # "notes",
     )
     # Filters options in the sidebar
     list_filter = ("type", "digitizations__is_open", "contents__tags__label")
