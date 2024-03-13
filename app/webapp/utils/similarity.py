@@ -135,6 +135,44 @@ def load_similarity(pair):
         return pair, None
 
 
+def get_best_matches(img_scores, topk=10):
+    sorted_scores = sorted(img_scores, key=lambda x: x[0], reverse=True)
+    seen_images = set()
+    for i in range(topk):
+        score, image = sorted_scores[i]
+        if image in seen_images:
+            # Remove the tuple with the lowest score
+            sorted_scores.pop(i)
+            break
+        seen_images.add(image)
+
+    # Check for duplicates again until all topk tuples have unique images
+    while len(set(image for _, image in sorted_scores[:topk])) != topk:
+        for i in range(topk):
+            score, image = sorted_scores[i]
+            if image in seen_images:
+                # If duplicate, remove the tuple with the lowest score
+                sorted_scores.pop(i)
+                break
+            seen_images.add(image)
+
+    # import heapq
+    # heap = []
+    #
+    # seen_images = set()
+    #
+    # for score, image in img_scores:
+    #     if image not in seen_images:
+    #         heapq.heappush(heap, (score, image))
+    #         seen_images.add(image)
+    #     if len(heap) > topk:
+    #         _, removed_image = heapq.heappop(heap)
+    #         seen_images.remove(removed_image)
+    #
+    # sorted_scores = sorted(heap, key=lambda x: x[0], reverse=True)
+    return sorted_scores[:topk]
+
+
 def compute_total_similarity(
     annos: List[Annotation],
     checked_anno: str,
@@ -165,6 +203,7 @@ def compute_total_similarity(
                 total_scores[img_name] = []
             total_scores[img_name].extend(best_matches(pair_scores, img_name, pair))
 
+
     ######
     if not show_checked_ref:
         filtered_data = {
@@ -174,14 +213,14 @@ def compute_total_similarity(
         total_scores = filtered_data
     #######
 
-    score_dict = {
-        q_img: sorted(sim, key=lambda x: x[0], reverse=True)[:10]
-        for q_img, sim in total_scores.items()
-    }
+    # score_dict = {
+    #     q_img: sorted(sim, key=lambda x: x[0], reverse=True)
+    #     for q_img, sim in total_scores.items()
+    # }
 
     ######
     score_sorted = {}
-    for key, value in score_dict.items():
+    for key, value in total_scores.items():
         if len(value):
             score_sorted[key] = value[0][0]
     score_sorted = sorted(score_sorted.items(), key=lambda x: x[1], reverse=True)
@@ -193,7 +232,8 @@ def compute_total_similarity(
             break
 
         if prefix_key in key:
-            score_dict_sorted[key] = score_dict[key]
+            score_dict_sorted[key] = get_best_matches(total_scores[key])
+            #print(score_dict_sorted[key], total_scores[key][:10])
             counter += 1
 
     return score_dict_sorted

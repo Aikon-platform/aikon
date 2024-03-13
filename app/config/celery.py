@@ -10,13 +10,16 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
+DEBUG = ENV.bool("DEBUG")
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.config.settings")
 
+redis_prefix = "redis://" if DEBUG else f"redis://:{ENV('REDIS_PASSWORD')}@"
+
 celery_app = Celery(
     "config",
-    broker=f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0",
-    backend=f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0",
+    broker=f"{redis_prefix}localhost:6379/0",
+    backend=f"{redis_prefix}localhost:6379/0",
     imports=("app.webapp.tasks",),
 )
 

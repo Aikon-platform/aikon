@@ -92,7 +92,6 @@
         var maxRows = 50;
         var showCheckedRef = false;
 
-
         function refresh_rows() {
             showCheckedRef = document.getElementById('show_checked_ref').selected;
             sendScoreRequest(getCheckedRefs("{{ checked_ref }}"), maxRows, showCheckedRef);
@@ -107,7 +106,6 @@
             });
 
             sendScoreRequest(getCheckedRefs("{{ checked_ref }}"), maxRows, showCheckedRef);
-
         });
     </script>
 
