@@ -61,7 +61,7 @@ const displayScores = (scores) => {
     }
 }
 
-function sendScoreRequest(annoRefs, maxRows=20, showCheckedRef=false) {
+function sendScoreRequest(annoRefs, maxRows, showCheckedRef) {
     fetch(`${APP_URL}/${APP_NAME}/compute-score`, {
         method: 'POST',
         headers: {
