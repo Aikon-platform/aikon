@@ -2,12 +2,14 @@
 
 {% block title %}{{ checked_ref_title }}{% endblock %}
 
+{% load i18n %}
+
 {% load static %}
 
 {% block extrahead %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'css/tools.css' %}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" />
     <style>
         {# TODO improve CSS #}
         .similarity-container {
@@ -59,7 +61,18 @@
 {% endblock %}
 
 {% block branding %}
-    <h1 id="site-name"><a href="{% url 'admin:index' %}">Administration de {{ APP_NAME_UPPER }}</a></h1>
+    <h1 id="site-name"><a href="{% url 'admin:index' %}">{% if APP_LANG == "en" %}{{ APP_NAME_UPPER }}administration{% else %}Administration de {{ APP_NAME_UPPER }}{% endif %}</a></h1>
+{% endblock %}
+
+{% block nav-global %}
+    <div id="user-tools">
+        {% if user.is_active and user.is_staff %}
+            {% trans 'Welcome,' %} <strong>{{ user.first_name }}</strong>.
+            <a href="{% url 'admin-config' %}">{% trans 'View site' %}</a> /
+            <a href="{% url 'admin:password_change' %}">{% trans 'Change password' %}</a> /
+            <a href="{% url 'admin:logout' %}">{% trans 'Log out' %}</a>
+        {% endif %}
+    </div>
 {% endblock %}
 
 {% block content %}
