@@ -103,8 +103,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
                     content.date_min = form.instance.date_min
                 if not content.date_max:
                     content.date_max = form.instance.date_max
-                content_tags = content.tags.all()
-                if not content_tags:
+                if not content.tags.all():
                     # Get series tags and create content tags
                     series_tags = form.instance.tags.all()
                     for series_tag in series_tags:
