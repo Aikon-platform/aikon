@@ -96,6 +96,19 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
                 witness.set_conservation_place(form.instance.place)
             if len(witness.get_contents()) == 0:
                 witness.add_content(form.instance.work, True)
+            if not witness.user:
+                witness.user = request.user
+            for content in witness.get_contents():
+                if not content.date_min:
+                    content.date_min = form.instance.date_min
+                if not content.date_max:
+                    content.date_max = form.instance.date_max
+                if not content.tags.all():
+                    # Get series tags and create content tags
+                    series_tags = form.instance.tags.all()
+                    for series_tag in series_tags:
+                        content.tags.add(series_tag)
+                content.save()
             witness.save()
 
     def save_model(self, request, obj, form, change):
