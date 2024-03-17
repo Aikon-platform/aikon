@@ -9,7 +9,7 @@
 {% block extrahead %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'css/tools.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css">
     <style>
         {# TODO improve CSS #}
         .similarity-container {
@@ -55,6 +55,12 @@
             white-space: nowrap;
             vertical-align: middle;
             margin-left: 10px;
+        }
+        /* Dark mode style */
+        @media (prefers-color-scheme: dark) {
+            .select2-container--default {
+                color: black;
+            }
         }
     </style>
     <script src="{% static 'js/similarity.js' %}"></script>
@@ -105,11 +111,11 @@
         var maxRows = 50;
         var showCheckedRef = false;
 
-
         function refresh_rows() {
             showCheckedRef = document.getElementById('show_checked_ref').selected;
             sendScoreRequest(getCheckedRefs("{{ checked_ref }}"), maxRows, showCheckedRef);
         }
+
         $(document).ready(function() {
 
             $('.witness-multiple').select2({
