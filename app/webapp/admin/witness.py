@@ -1,3 +1,6 @@
+from functools import reduce
+
+
 from app.config.settings import APP_LANG
 from app.webapp.admin.digitization import DigitizationInline
 from app.webapp.admin.content import ContentInline, ContentWorkInline
@@ -56,7 +59,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         js = ("js/witness-form.js",)
 
     change_form_template = "admin/form.html"
-    list_per_page = 50  # 100
+    list_per_page = 100
 
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
@@ -74,15 +77,15 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     # Fields that are taken into account by the search bar
     search_fields = (
-        "id_nb",
-        "place__name",
-        "type",
-        "contents__roles__person__name",
+        # "id_nb",
+        # "place__name",
+        # "type",
+        # "contents__roles__person__name",
         "contents__work__title",
-        "notes",
+        # "notes",
     )
     # Filters options in the sidebar
-    # list_filter = ("id_nb", "place")  # Don't display it
+    list_filter = ("type", "digitizations__is_open", "contents__tags__label")
     # Attributes to be excluded from the form fields
     exclude = ("slug", "created_at", "updated_at")
     # Dropdown fields
@@ -257,9 +260,9 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         return list_to_txt(manifests, "IIIF_manifests")
 
     @admin.action(
-        description=f"Download annotated diagram images in selected selected {WIT}es"
+        description=f"Download annotated diagram images in selected {WIT}es"
         if APP_LANG == "en"
-        else f"Télécharger les images de diagrammes annotés des {WIT}s sélectionnés"
+        else f"Télécharger les images d'illustrations annotées des {WIT}s sélectionnés"
     )
     def export_annotated_imgs(self, request, queryset):
         if not check_selection(queryset, request):
@@ -304,7 +307,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         return zip_dirs(dirnames_contents)
 
     @admin.action(
-        description=f"Download full {DIG}s images in selected selected {WIT}es"
+        description=f"Download full {DIG}s images in selected {WIT}es"
         if APP_LANG == "en"
         else f"Télécharger les images scans des {WIT}s sélectionnés"
     )
@@ -316,6 +319,25 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         for witness in queryset.exclude():
             img_urls.extend(witness.get_imgs(is_abs=False))
         return zip_img(img_urls)
+
+    def get_search_results(self, request, queryset, search_term):
+        from operator import or_
+        from django.db.models import Q
+
+        queryset, use_distinct = super(WitnessAdmin, self).get_search_results(
+            request, queryset, search_term
+        )
+        search_titles = search_term.split("||")
+        if search_titles:
+            for title in search_titles:
+                if title:
+                    q_objects = [
+                        Q(**{field + "__icontains": title.strip()})
+                        for field in self.search_fields
+                    ]
+                    queryset |= self.model.objects.filter(reduce(or_, q_objects))
+
+        return queryset, use_distinct
 
 
 class WitnessInline(nested_admin.NestedStackedInline):

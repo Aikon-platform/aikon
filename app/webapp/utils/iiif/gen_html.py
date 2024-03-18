@@ -42,7 +42,7 @@ def anno_btn(obj, action="view"):
     elif action == "similarity":
         color = "#24d1b7"
         icon = get_icon("code-compare")
-        link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/compare"
+        link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-similarity"
     else:
         # When the button is not supposed to redirects to anything
         link = "#"
@@ -87,7 +87,7 @@ def gen_btn(obj, action="view"):
     #     return mark_safe("NOT SUPPOSED TO OCCUR")
 
     download = (
-        f'<a href="{download_url}" target="_blank">{get_icon("download")} {get_action("download")} annotations ({anno_type})</a>'
+        f'<a href="{download_url}" target="_blank">{get_icon("download")} {get_action("download")} ({anno_type})</a>'
         if is_anno
         else ""
     )

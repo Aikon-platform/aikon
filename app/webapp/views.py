@@ -19,6 +19,7 @@ from app.config.settings import (
     APP_NAME,
     ENV,
     GEONAMES_USER,
+    APP_LANG,
 )
 from app.webapp.models.language import Language
 from app.webapp.models.witness import Witness
@@ -424,16 +425,21 @@ def task_status(request, task_id):
 
 def compute_score(request):
     from app.webapp.tasks import compute_similarity_scores
-    if request.method == 'POST':
+
+    if request.method == "POST":
         try:
-            data = json.loads(request.body.decode('utf-8'))
-            anno_refs = data.get('annoRefs', [])
+            data = json.loads(request.body.decode("utf-8"))
+            anno_refs = data.get("annoRefs", [])
+            max_rows = int(data.get("maxRows", 50))
+            show_checked_ref = data.get("showCheckedRef", True)
             if len(anno_refs) == 0:
-                JsonResponse({"error": "No anno_ref to retrieve score"}, status=400)
-            scores_task = compute_similarity_scores.delay(anno_refs)
-
-            return JsonResponse({"taskId": scores_task.id})
-
+                return JsonResponse(
+                    {"error": "No anno_ref to retrieve score"}, status=400
+                )
+            return JsonResponse(
+                compute_similarity_scores(anno_refs, max_rows, show_checked_ref),
+                status=200,
+            )
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON data"}, status=400)
 
@@ -441,8 +447,8 @@ def compute_score(request):
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
-def show_similarity(request, anno_refs):
-    refs = get_compared_annos(anno_refs[0]) if len(anno_refs) == 1 else anno_refs
+def show_similarity(request, anno_ref):
+    refs = get_compared_annos(anno_ref)
     annos = {
         anno.get_ref(): anno.__str__()
         for (passed, anno) in [check_ref(ref, "Annotation") for ref in refs]
@@ -451,11 +457,14 @@ def show_similarity(request, anno_refs):
 
     return render(
         request,
-        "similarity.html",
+        "show_similarity.html",
         context={
-            "title": f"Similarity scores",
+            "title": "Similarity search result"
+            if APP_LANG == "en"
+            else "Résultat de recherche de similarité",
             "annos": dict(sorted(annos.items())),
-            "checked_refs": anno_refs,
+            "checked_ref": anno_ref,
+            "checked_ref_title": annos[anno_ref],
             "anno_refs": json.dumps(refs),
         },
     )

@@ -209,8 +209,9 @@ class Digitization(models.Model):
 
     def has_images(self):
         # if there is at least one image file named after the current digitization
-        if len(glob(f"{IMG_PATH}/{self.get_ref()}_*.jpg")):
-            return True
+        for i in range(1, 5):
+            if os.path.exists(f"{IMG_PATH}/{self.get_ref()}_{'1'.zfill(i)}.jpg"):
+                return True
         return False
 
     def get_imgs(self, is_abs=False, temp=False):

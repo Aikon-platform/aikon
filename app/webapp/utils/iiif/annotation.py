@@ -62,12 +62,12 @@ def anno_request(digit: Digitization):
                         "manifest_url": digit.gen_manifest_url(),
                         "model": f"{EXTRACTOR_MODEL}",
                         "callback": f"{APP_URL}/{APP_NAME}/annotate",
-                    }
+                    },
                 },
                 "response_info": {
                     "status_code": response.status_code,
-                    "text": response.text or ""
-                }
+                    "text": response.text or "",
+                },
             }
 
             log(error)

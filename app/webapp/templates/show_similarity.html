@@ -1,0 +1,132 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}{{ checked_ref_title }}{% endblock %}
+
+{% load i18n %}
+
+{% load static %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'css/tools.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css">
+    <style>
+        {# TODO improve CSS #}
+        .similarity-container {
+            width: 90%;
+            overflow-x: auto;
+            margin: 20px auto;
+        }
+        .similarity-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        tr {
+            width: 100%;
+        }
+        td, th {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            position: sticky;
+            left: 0;
+            z-index: 10;
+        }
+        .anno-img {
+            max-height: 200px;
+            max-width: 250px;
+        }
+        #multi-select {
+            width: 800px;
+        }
+        button {
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: none;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-block;
+            font-size: 14px;
+            line-height: 1.42857143;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+        /* Dark mode style */
+        @media (prefers-color-scheme: dark) {
+            .select2-container--default {
+                color: black;
+            }
+        }
+    </style>
+    <script src="{% static 'js/similarity.js' %}"></script>
+{% endblock %}
+
+{% block branding %}
+    <h1 id="site-name"><a href="{% url 'admin:index' %}">{% if APP_LANG == "en" %}{{ APP_NAME_UPPER }}administration{% else %}Administration de {{ APP_NAME_UPPER }}{% endif %}</a></h1>
+{% endblock %}
+
+{% block nav-global %}
+    <div id="user-tools">
+        {% if user.is_active and user.is_staff %}
+            {% trans 'Welcome,' %} <strong>{{ user.first_name }}</strong>.
+            <a href="{% url 'admin-config' %}">{% trans 'View site' %}</a> /
+            <a href="{% url 'admin:password_change' %}">{% trans 'Change password' %}</a> /
+            <a href="{% url 'admin:logout' %}">{% trans 'Log out' %}</a>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block content %}
+    <h3>{{ checked_ref_title }}</h3>
+    <div id="check-pairs">
+        <select id="multi-select" class="witness-multiple" multiple="multiple">
+            <option id="show_checked_ref" onchange="showCheckedRef = this.selected" value="{{ checked_ref }}">{{ checked_ref_title }}</option>
+            {% for anno_ref, title in annos.items %}
+                {% if anno_ref != checked_ref %}
+                   <option id="{{ anno_ref }}" value="{{ anno_ref }}" selected>{{ title }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        <input id="maxRows" type="number" value="50" onchange="maxRows = this.value">
+        <button class="reload-button" onclick="refresh_rows()" title="{% if APP_LANG == 'en' %}Reload{% else %}Actualiser{% endif %}">
+            <i class="fa-solid fa-arrows-rotate"></i>
+            {% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}
+        </button>
+    </div>
+
+    <div class="row">
+        <div class="column similarity-container">
+            <table id="similarity" class="similarity-table"></table>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    <script>
+        var annoRefs = JSON.parse('{{ anno_refs|safe }}');
+        var maxRows = 50;
+        var showCheckedRef = false;
+
+        function refresh_rows() {
+            showCheckedRef = document.getElementById('show_checked_ref').selected;
+            sendScoreRequest(getCheckedRefs("{{ checked_ref }}"), maxRows, showCheckedRef);
+        }
+
+        $(document).ready(function() {
+
+            $('.witness-multiple').select2({
+                placeholder: "{% if APP_LANG == 'en' %}Select witnesses...{% else %}Sélectionner témoins...{% endif %}",
+                tags: true,
+                tokenSeparators: [',', ' '],
+                allowClear: true
+            });
+
+            sendScoreRequest(getCheckedRefs("{{ checked_ref }}"), maxRows, showCheckedRef);
+        });
+    </script>
+
+{% endblock %}

@@ -32,7 +32,8 @@ from app.webapp.views import (
     send_similarity,
     receive_similarity,
     show_similarity,
-    task_status, compute_score,
+    task_status,
+    compute_score,
 )
 
 
@@ -142,7 +143,7 @@ urlpatterns = [
         name="send-similarity",
     ),
     path(
-        f"{APP_NAME}/<list:anno_refs>/compare",  # anno_refs = anno_ref+anno_ref+anno_ref
+        f"{APP_NAME}/<str:anno_ref>/show-similarity",  # anno_refs = anno_ref+anno_ref+anno_ref
         show_similarity,
         name="show-similarity",
     ),
