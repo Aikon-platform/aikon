@@ -151,6 +151,8 @@ def get_best_matches(img_scores, topk=10):
     # Check for duplicates again until all topk tuples have unique images
     while len(set(image for _, image in sorted_scores[:topk])) != topk:
         for i in range(topk):
+            if not i < len(sorted_scores):
+                break
             score, image = sorted_scores[i]
             if image in seen_images:
                 # If duplicate, remove the tuple with the lowest score
