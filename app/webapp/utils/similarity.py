@@ -139,6 +139,8 @@ def get_best_matches(img_scores, topk=10):
     sorted_scores = sorted(img_scores, key=lambda x: x[0], reverse=True)
     seen_images = set()
     for i in range(topk):
+        if not i < len(sorted_scores):
+            break
         score, image = sorted_scores[i]
         if image in seen_images:
             # Remove the tuple with the lowest score
@@ -275,22 +277,6 @@ def best_matches(scores, q_img, doc_pair):
                 filtered_array.append([score, img])
 
     return filtered_array
-
-
-# def hash_str(string):
-#     hash_object = hashlib.sha256()
-#     hash_object.update(string.encode("utf-8"))
-#     return hash_object.hexdigest()
-#
-#
-# def hash_pair(pair: tuple):
-#     if (
-#         isinstance(pair, tuple)
-#         and len(pair) == 2
-#         and all(isinstance(s, str) for s in pair)
-#     ):
-#         return hash_str("".join(sorted(pair)))
-#     raise ValueError("Not a correct pair of document id")
 
 
 def doc_pairs(doc_ids: list):
