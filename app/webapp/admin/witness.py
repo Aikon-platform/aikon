@@ -85,7 +85,12 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         # "notes",
     )
     # Filters options in the sidebar
-    list_filter = ("type", "digitizations__is_open", "contents__tags__label")
+    list_filter = (
+        "type",
+        "digitizations__is_open",
+        "contents__tags__label",
+        "digitizations__annotations__is_validated",
+    )
     # Attributes to be excluded from the form fields
     exclude = ("slug", "created_at", "updated_at")
     # Dropdown fields
