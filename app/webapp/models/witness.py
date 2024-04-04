@@ -21,6 +21,7 @@ from app.webapp.models.utils.constants import (
     CONS_PLA_MSG,
     WIT_CHANGE,
     MAP_WIT_TYPE,
+    MS_ABBR,
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
@@ -64,12 +65,10 @@ class Witness(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        try:
+        if self.type == MS_ABBR:
             cons_place = self.place.name if self.place else CONS_PLA_MSG
-        except Exception as e:
-            log("[Witness.__str__] no place?", e)
-            cons_place = CONS_PLA_MSG
-        return format_html(f"{cons_place} | {self.id_nb}")
+            return format_html(f"{cons_place} | {self.id_nb}")
+        return format_html(f"{self.volume_title}, vol. {self.volume_nb}")
 
     def get_absolute_url(self):
         return reverse("admin:webapp_witness_change", args=[self.id])

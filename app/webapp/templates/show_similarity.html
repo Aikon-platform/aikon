@@ -67,7 +67,7 @@
 {% endblock %}
 
 {% block branding %}
-    <h1 id="site-name"><a href="{% url 'admin:index' %}">{% if APP_LANG == "en" %}{{ APP_NAME_UPPER }}administration{% else %}Administration de {{ APP_NAME_UPPER }}{% endif %}</a></h1>
+    <h1 id="site-name"><a href="{% url 'admin:index' %}">{% if APP_LANG == "en" %}{{ APP_NAME_UPPER }} administration{% else %}Administration de {{ APP_NAME_UPPER }}{% endif %}</a></h1>
 {% endblock %}
 
 {% block nav-global %}
