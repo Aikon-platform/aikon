@@ -91,7 +91,7 @@ class Witness(models.Model):
         null=True,
     )
     notes = models.TextField(
-        verbose_name=get_name("notes"), max_length=1000, blank=True
+        verbose_name=get_name("notes"), max_length=3000, blank=True
     )
     nb_pages = models.IntegerField(
         verbose_name=get_name("nb_pages"),
