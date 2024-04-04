@@ -124,7 +124,7 @@ def manifest_annotation(request, version, anno_ref):
     return JsonResponse(anno.gen_manifest_json(version=check_version(version)))
 
 
-@user_passes_test(is_superuser)
+# @user_passes_test(is_superuser)
 def send_anno(request, digit_ref):
     """
     To relaunch annotations in case the automatic annotation failed
