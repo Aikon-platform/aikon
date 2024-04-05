@@ -34,6 +34,7 @@ from app.webapp.views import (
     show_similarity,
     task_status,
     compute_score,
+    show_all_annotations
 )
 
 
@@ -193,6 +194,10 @@ urlpatterns = [
         name="delete-annotation",
     ),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
+    path(f"{APP_NAME}/show-all-annotations/<str:anno_ref>",
+        show_all_annotations,
+        name="show-all-annotations"
+    ),
 ]
 
 if DEBUG:

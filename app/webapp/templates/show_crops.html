@@ -1,0 +1,54 @@
+{% extends "admin/base_site.html" %}
+
+{% load static %}
+
+{% block title %}{{ anno }}{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'css/tools.css' %}">
+    <script>
+        let allAnnos = JSON.parse('{{ bboxes|safe }}');
+    </script>
+    <!--?????????????? à quoi servait ce js ?-->
+{% endblock %}
+
+{% block header %}
+    <div class="toolbar">
+        <div class="title">
+            <b>{{ anno|capfirst }}</b>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+            {% for crop in all_crops %}
+                <a href="{{ crop }}" target="_blank">
+                    {% with region=coord|add:'/,150/0' %}
+                    <img class="anno" src="{{ crop:region }}" alt="crop preview">
+                    {% endwith %}
+                </a>
+            
+                <br>
+                <h3><a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ canvas_nb }}" target="_blank">Page {{ canvas_nb }}</a></h3>
+            {% endfor %}    
+            </div>
+{% endblock %}
+
+<div class="btn-group btn-group-sm"></div>
+    <a href="{% url 'zip_img' img_list=all_crops %}">
+        <button class="btn btn-info" type="submit">
+            <i class="bi bi-box-arrow-up">
+            {% if APP_LANG == "en" %}
+                Export all 
+            {% else %}
+                Exporter toutes les
+            {% endif %} annotations</i>
+        </button>
+    </a>
+</div>
+
+</div>
+{% endblock %}

@@ -149,6 +149,7 @@ def send_anno(request, digit_ref):
 
 
 @user_passes_test(is_superuser)
+@csrf_exempt
 def reindex_anno(request, obj_ref):
     """
     To reindex annotations from a text file named after <obj_ref>
@@ -558,6 +559,28 @@ def show_annotations(request, anno_ref):
             "anno": anno,
             "page_annos": page_annos,
             "bboxes": json.dumps(bboxes),
+            "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2),
+        },
+    )
+
+
+@login_required(login_url=f"/{APP_NAME}-admin/login/")
+def show_all_annotations(request, anno_ref):
+    passed, anno = check_ref(anno_ref, "Annotation")
+    if not passed:
+        return JsonResponse(anno)
+
+    if not ENV("DEBUG"):
+        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+
+    all_crops = get_anno_images(anno)
+
+    return render(
+        request,
+        "show_crop.html",
+        context={
+            "anno": anno,
+            "all_crops" : all_crops,
             "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2),
         },
     )
