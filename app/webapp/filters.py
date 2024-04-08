@@ -1,6 +1,6 @@
 from django.template import Library
 from app.config.settings import CANTALOUPE_APP_URL, SAS_APP_URL, APP_URL, APP_NAME
-from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2
+from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2, TRUNCATEWORDS_SIM
 
 register = Library()
 
@@ -73,3 +73,11 @@ def exclude_item_from_list(lst, item):
     Exclude a specific item from a list and return the remaining items
     """
     return [i for i in lst if i != item]
+
+
+@register.filter
+def truncate_words(text, max_length=TRUNCATEWORDS_SIM):
+    words = text.split()
+    if len(words) > 2 * max_length:  # Check if the text is longer than 2*TRUNCATEWORDS
+        return " ".join(words[:max_length] + ["..."] + words[-max_length:])
+    return text

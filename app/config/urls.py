@@ -34,6 +34,8 @@ from app.webapp.views import (
     show_similarity,
     task_status,
     compute_score,
+    retrieve_category,
+    save_category,
 )
 
 
@@ -192,6 +194,8 @@ urlpatterns = [
         delete_annotation,
         name="delete-annotation",
     ),
+    path(f"{APP_NAME}/retrieve-category/", retrieve_category, name="retrieve-category"),
+    path(f"{APP_NAME}/save-category/", save_category, name="save-category"),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
 ]
 

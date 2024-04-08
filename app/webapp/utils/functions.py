@@ -467,6 +467,10 @@ def validate_dates(date_min, date_max):
 
 def truncate_words(text, max_length):
     words = text.split()
-    if len(text) > 2 * max_length:  # Check if the text is longer than 2*TRUNCATEWORDS
+    if len(words) > 2 * max_length:  # Check if the text is longer than 2*TRUNCATEWORDS
         return " ".join(words[:max_length] + ["..."] + words[-max_length:])
     return text
+
+
+def sort_key(s):
+    return [int(part) if part.isdigit() else part for part in re.split("(\d+)", s)]

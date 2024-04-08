@@ -1,3 +1,8 @@
+function getAnnoRef(imgRef) {
+    imgRef = imgRef.split("_");
+    const digitRef = `${imgRef[0]}_${imgRef[1]}`;
+    return annoRefs.filter(ref => ref.startsWith(digitRef))[0];
+}
 function refToIIIF(imgRef){
     imgRef = imgRef.split("_");
     const imgCoord = imgRef.pop().replace(".jpg", "");
@@ -6,11 +11,26 @@ function refToIIIF(imgRef){
 }
 
 function refToMirador(imgRef){
+    /* TODO: Factorize using getAnnoRef function */
     imgRef = imgRef.split("_");
     const digitRef = `${imgRef[0]}_${imgRef[1]}`;
-    const annoRef = annoRefs.filter(ref => ref.startsWith(digitRef))[0]
-    const manifest = `${APP_URL}/${APP_NAME}/iiif/${MANIFEST_V2}/${annoRef}/manifest.json`
-    return `${SAS_APP_URL}/index.html?iiif-content=${manifest}&canvas=${parseInt(imgRef[2])}`
+    const annoRef = annoRefs.filter(ref => ref.startsWith(digitRef))[0];
+    const manifest = `${APP_URL}/${APP_NAME}/iiif/${MANIFEST_V2}/${annoRef}/manifest.json`;
+    return `${SAS_APP_URL}/index.html?iiif-content=${manifest}&canvas=${parseInt(imgRef[2])}`;
+}
+
+function refToChange(imgRef){
+    const witNumber = imgRef.match(/wit(\d+)_/)[1];
+    return `/vhs-admin/webapp/witness/${witNumber}/change/`;
+}
+
+function getImageInfo(imgRef) {
+    const imgInfo = {};
+    imgInfo.witNumber = imgRef.match(/wit(\d+)_/)[1];
+    imgInfo.canvasNumber = parseInt(imgRef.match(/_(\d+)_/)[1], 10) ;
+    imgInfo.coordinates = imgRef.match(/_(\d+,\d+,\d+,\d+)\.jpg$/)[1];
+    imgInfo.annoRef = getAnnoRef(imgRef);
+    return imgInfo;
 }
 
 function getCheckedRefs(checked_ref) {
@@ -35,9 +55,23 @@ const displayScores = (scores) => {
             const similarities = scores[qImg];
             const row = table.insertRow();
             row.innerHTML = `<th>
-                <a href="${refToMirador(qImg)}" target="_blank">
-                    <img class="anno-img" src='${refToIIIF(qImg)}' alt="Annotation ${qImg}" title="${qImg}">
-                    <h3>${qImg}</h3>
+                <p>
+                    <a href="${refToChange(qImg)}" target="_blank">
+                        ${WIT} #${getImageInfo(qImg).witNumber}
+                    </a>
+                    (<a href="${refToMirador(qImg)}" target="_blank">vue ${getImageInfo(qImg).canvasNumber}</a>)
+                </p>
+                <a href="${refToIIIF(qImg)}" target="_blank">
+                    <div class="img-wrap">
+                        <img class="anno-img" src='${refToIIIF(qImg)}' alt="Annotation ${qImg}">
+                        <div class="img-description-layer">
+                            <p class="img-description">
+                                <span>${WIT} #${getImageInfo(qImg).witNumber}</span><br>
+                                <span>View ${getImageInfo(qImg).canvasNumber}</span><br>
+                                <span>xywh : ${getImageInfo(qImg).coordinates}</span>
+                            </p>
+                        </div>
+                    </div>
                 </a>
             </th>`;
 
@@ -46,10 +80,44 @@ const displayScores = (scores) => {
                     let [score, sImg] = similarity;
                     const sCell = row.insertCell();
                     sCell.innerHTML = `
-                        <a href="${refToMirador(sImg)}" target="_blank">
-                            <img class="anno-img" src='${refToIIIF(sImg)}' alt="Annotation ${sImg}" title="${sImg}">
-                            <h4>${sImg}</h4>
-                        </a>`;
+                        <p>
+                            <a href="${refToChange(sImg)}" target="_blank">
+                                ${WIT} #${getImageInfo(sImg).witNumber}
+                            </a>
+                            (<a href="${refToMirador(sImg)}" target="_blank">vue ${getImageInfo(sImg).canvasNumber}</a>)
+                        </p>
+                        <a href="${refToIIIF(sImg)}" target="_blank">
+                            <div class="img-wrap">
+                                <img class="anno-img" src='${refToIIIF(sImg)}' alt="Annotation ${sImg}">
+                                <div class="img-description-layer">
+                                    <p class="img-description">
+                                        <span>${WIT} #${getImageInfo(sImg).witNumber}</span><br>
+                                        <span>Vue ${getImageInfo(sImg).canvasNumber}</span><br>
+                                        <span>xywh : ${getImageInfo(sImg).coordinates}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </a>
+                        <div class="form-container">
+                            <form class="category-form">
+                                <input type="hidden" class="img_1" value="${qImg}">
+                                <input type="hidden" class="img_2" value="${sImg}">
+                                <input type="hidden" class="anno_ref_1" value="${getImageInfo(qImg).annoRef}">
+                                <input type="hidden" class="anno_ref_2" value="${getImageInfo(sImg).annoRef}">
+                                <input type="hidden" class="user" value="${USER_ID}">
+                                <label for="">1</label>
+                                <input id="category1" type="checkbox" name="category" value="1">
+                                <label for="" class="hspace">2</label>
+                                <input id="category2" type="checkbox" name="category" value="2">
+                                <label for="" class="hspace">3</label>
+                                <input id="category3" type="checkbox" name="category" value="3">
+                                <label for="" class="hspace">4</label>
+                                <input id="category4" type="checkbox" name="category" value="4">
+                                <label for="" class="hspace">5</label>
+                                <input id="category5" type="checkbox" name="category" value="5">
+                            </form>
+                        </div>
+                        `;
                     });
             }
         })
@@ -59,6 +127,63 @@ const displayScores = (scores) => {
         cell.innerHTML = APP_LANG === "en" ? `Similarity scores were not computed for these ${WIT}es` :
             `Les scores de similarité n'ont pas été calculés pour ces ${WIT}s`;
     }
+
+    document.querySelectorAll('.category-form').forEach((form) => {
+        let img_1 = form.querySelector('.img_1').value;
+        let img_2 = form.querySelector('.img_2').value;
+        fetch(`/${APP_NAME}/retrieve-category/?img_1=${img_1}&img_2=${img_2}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': CSRF_TOKEN
+            },
+        }).then(response => response.json())
+        .then(data => {
+            let categories = data.categories;
+            categories.forEach(category => {
+                form.querySelector(`#category${category}`).checked = true;
+            });
+        });
+
+        form.addEventListener('change', (event) => {
+            if (event.target.name === 'category' && event.target.id !== 'category5') {
+                form.querySelectorAll('input[name="category"]:not(#category5):checked').forEach((checkbox) => {
+                    if (checkbox !== event.target) checkbox.checked = false;
+                });
+            }
+            let categories = Array.from(form.querySelectorAll('input[name="category"]:checked')).map(input => input.value);
+            let img_1 = form.querySelector('.img_1').value;
+            let img_2 = form.querySelector('.img_2').value;
+            let anno_ref_1 = form.querySelector('.anno_ref_1').value;
+            let anno_ref_2 = form.querySelector('.anno_ref_2').value;
+            let user_id = form.querySelector('.user').value;
+            form.querySelectorAll('input[name="category"]').forEach((checkbox) => {
+                checkbox.disabled = true;
+            });
+            let data = {
+                'categories': categories,
+                'img_1': img_1,
+                'img_2': img_2,
+                'anno_ref_1': anno_ref_1,
+                'anno_ref_2': anno_ref_2,
+                'user_id': user_id
+            };
+            fetch(`/${APP_NAME}/save-category/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN
+                },
+                body: JSON.stringify(data)
+            }).then(response => response.json())
+            .then(data => {
+				console.log(data);
+				form.querySelectorAll('input[name="category"]').forEach((checkbox) => {
+					checkbox.disabled = false;
+				});
+			});
+        });
+    });
 }
 
 function sendScoreRequest(annoRefs, maxRows, showCheckedRef) {
@@ -66,7 +191,7 @@ function sendScoreRequest(annoRefs, maxRows, showCheckedRef) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            "X-CSRFToken": CSRF_TOKEN
+            'X-CSRFToken': CSRF_TOKEN
         },
         body: JSON.stringify({ annoRefs: annoRefs, maxRows: maxRows, showCheckedRef: showCheckedRef }),
     })

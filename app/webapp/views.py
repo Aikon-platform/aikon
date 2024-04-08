@@ -4,6 +4,7 @@ from os.path import exists
 
 from celery.result import AsyncResult
 from dal import autocomplete
+from django.contrib.auth.models import User
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -11,6 +12,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_GET
 
 from app.webapp.models.annotation import Annotation, check_version
 from app.webapp.models.digitization import Digitization
@@ -22,6 +24,7 @@ from app.config.settings import (
     APP_LANG,
 )
 from app.webapp.models.language import Language
+from app.webapp.models.region_pair import RegionPair
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, MAX_ROWS
 from app.webapp.utils.functions import (
@@ -30,6 +33,7 @@ from app.webapp.utils.functions import (
     get_json,
     cls,
     delete_files,
+    sort_key,
 )
 from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.logger import log
@@ -620,6 +624,53 @@ class LanguageAutocomplete(autocomplete.Select2QuerySetView):
             qs = qs.filter(lang__icontains=self.q)
 
         return qs
+
+
+@require_GET
+def retrieve_category(request):
+    img_1, img_2 = sorted(
+        [request.GET.get("img_1"), request.GET.get("img_2")], key=sort_key
+    )
+
+    try:
+        region_pair = RegionPair.objects.get(img_1=img_1, img_2=img_2)
+        categories = region_pair.categories
+    except RegionPair.DoesNotExist:
+        categories = []
+
+    return JsonResponse({"categories": categories})
+
+
+@csrf_exempt
+def save_category(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
+        anno_ref_1, anno_ref_2 = sorted(
+            [data.get("anno_ref_1"), data.get("anno_ref_2")], key=sort_key
+        )
+        categories = data.get("categories")
+        user_id = data.get("user_id")
+        user = User.objects.get(id=user_id)
+
+        region_pair, created = RegionPair.objects.update_or_create(
+            img_1=img_1,
+            img_2=img_2,
+            defaults={
+                "anno_ref_1": anno_ref_1,
+                "anno_ref_2": anno_ref_2,
+                "categories": categories,
+                "user": user,
+            },
+        )
+
+        if created:
+            return JsonResponse(
+                {"status": "success", "message": "New region pair created"}, status=200
+            )
+        return JsonResponse(
+            {"status": "success", "message": "Existing region pair updated"}, status=200
+        )
 
 
 def rgpd(request):

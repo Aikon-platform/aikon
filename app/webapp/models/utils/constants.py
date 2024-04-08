@@ -158,12 +158,25 @@ MANIFEST_DESC = (
     else "Un manifeste permet de décrire et de partager des numérisations avec leurs métadonnées selon la norme IIIF."
 )
 MANIFEST_INFO = f"""<div class='tooltip'>
-                 <i class='fa-solid fa-circle-info' title='Manifest'></i>
-                 <span class='tooltiptext'>{MANIFEST_DESC}</span>
-             </div>
-             E.g.: <a href='https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json' target='_blank'>
-             https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json</a>"""
+                        <i class='fa-solid fa-circle-info'></i>
+                        <span class='tooltiptext'>{MANIFEST_DESC}</span>
+                    </div>
+                    E.g.: <a href='https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json' target='_blank'>
+                    https://gallica.bnf.fr/iiif/ark:/12148/btv1b60004321/manifest.json</a>"""
 SOURCE_INFO = "Example: Gallica." if APP_LANG == "en" else "Exemple : Gallica."
+CATEGORY_INFO = f"""<div class='tooltip'>
+                        <i class='fa-solid fa-circle-info'></i>
+                        <div class='tooltiptext'>
+                            {"Annotation categories:" if APP_LANG == "en" else "Catégories d'annotation :"}
+                                <ol>
+                                    <li>{'Overall visual match' if APP_LANG == 'en' else 'Correspondance visuelle globale'}</li>
+                                    <li>{"Visual match on part of the image" if APP_LANG == "en" else "Correspondance visuelle sur une partie de l'image"}</li>
+                                    <li>{'Semantic and non visual match' if APP_LANG == 'en' else 'Correspondance sémantique et non visuelle'}</li>
+                                    <li>{'None of the above' if APP_LANG == 'en' else 'Aucune de ces catégories'}</li>
+                                    <li>{'X category' if APP_LANG == 'en' else 'Catégorie X'}</li>
+                                </ol>
+                        </div>
+                    </div>"""
 
 ###################################
 #        VALIDATION ERRORS        #

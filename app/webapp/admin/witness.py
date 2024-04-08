@@ -43,9 +43,9 @@ def check_selection(queryset, request):
     if len(queryset) > MAX_ITEMS:
         messages.warning(
             request,
-            f"You can select up to 5 {WIT}es."
+            f"You can select up to {MAX_ITEMS} {WIT}es."
             if APP_LANG == "en"
-            else f"Vous pouvez sélectionner jusqu'à 5 {WIT}s.",
+            else f"Vous pouvez sélectionner jusqu'à {MAX_ITEMS} {WIT}s.",
         )
         return False
     return True
