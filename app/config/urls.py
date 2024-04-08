@@ -34,9 +34,10 @@ from app.webapp.views import (
     show_similarity,
     task_status,
     compute_score,
-    show_all_annotations
+    show_all_annotations, 
 )
 
+from app.webapp.utils.functions import zip_img
 
 class ListConverter:
     regex = r"[^/]+(?:\+[^/]+)*"
@@ -194,9 +195,14 @@ urlpatterns = [
         name="delete-annotation",
     ),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
-    path(f"{APP_NAME}/show-all-annotations/<str:anno_ref>",
+    path(f"{APP_NAME}/<str:anno_ref>/show-all-annotations",
         show_all_annotations,
         name="show-all-annotations"
+    ),
+    path(
+        f"{APP_NAME}/zip-img/<str:img_list>",
+        zip_img,
+        name="zip-img",
     ),
 ]
 

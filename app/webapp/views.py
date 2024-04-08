@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from os.path import exists
 
 from celery.result import AsyncResult
@@ -573,15 +574,17 @@ def show_all_annotations(request, anno_ref):
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    all_crops = get_anno_images(anno)
-
+    _, all_annos = formatted_annotations(anno)
+    all_crops = [(canvas_nb, coord, img_file) for canvas_nb, coord, img_file in all_annos if coord]
+    #print(all_crops)
+    
     return render(
         request,
-        "show_crop.html",
+        "show_crops.html",
         context={
             "anno": anno,
             "all_crops" : all_crops,
-            "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2),
+            "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2)
         },
     )
 

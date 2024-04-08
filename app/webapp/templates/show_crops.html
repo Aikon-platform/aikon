@@ -24,31 +24,37 @@
 {% block content %}
 <div class="row">
     <div class="col-md-4">
-            {% for crop in all_crops %}
-                <a href="{{ crop }}" target="_blank">
-                    {% with region=coord|add:'/,150/0' %}
-                    <img class="anno" src="{{ crop:region }}" alt="crop preview">
-                    {% endwith %}
+        {% for canvas_nb, coord, img_file in all_crops %}
+
+        {%for coords, id in coord%}
+        <div id="ill_" class="anno-div">
+            {% with small=coords|add:'/full/0' %}
+            <a href="{{ img_file|img_to_iiif:small}}" target="_blank">
+                <img class="anno" src="{{ img_file|img_to_iiif:small}}" alt="scan preview">
                 </a>
+            {%endwith%}
+        {%endfor%}
+                </div>
             
                 <br>
                 <h3><a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ canvas_nb }}" target="_blank">Page {{ canvas_nb }}</a></h3>
-            {% endfor %}    
-            </div>
-{% endblock %}
 
-<div class="btn-group btn-group-sm"></div>
-    <a href="{% url 'zip_img' img_list=all_crops %}">
-        <button class="btn btn-info" type="submit">
-            <i class="bi bi-box-arrow-up">
-            {% if APP_LANG == "en" %}
-                Export all 
-            {% else %}
-                Exporter toutes les
-            {% endif %} annotations</i>
-        </button>
-    </a>
-</div>
+        {% endfor %}
+            </div>
+
+
+{# <div class="btn-group btn-group-sm"></div> #}
+{#    <a href="{% url 'zip_img' img_list=all_crops %}"> #}
+    {#        <button class="btn btn-info" type="submit"> #}
+        {#      <i class="bi bi-box-arrow-up"> #}
+            {#      {% if APP_LANG == "en" %} #}
+            {# Export all  #}
+                {#      {% else %} #}
+                {#        Exporter toutes les #}
+                {#    {% endif %} annotations</i> #}
+                {#   </button> #}
+                {# </a> #}
+                {#</div> #}
 
 </div>
 {% endblock %}
