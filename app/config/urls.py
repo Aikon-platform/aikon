@@ -200,9 +200,9 @@ urlpatterns = [
         name="show-all-annotations"
     ),
     path(
-        f"{APP_NAME}/zip-img/<str:img_list>",
+        f"{APP_NAME}/zip-images/<str:img_list>",
         zip_img,
-        name="zip-img",
+        name="zip-images",
     ),
 ]
 

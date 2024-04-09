@@ -7,10 +7,8 @@
 {% block extrahead %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'css/tools.css' %}">
-    <script>
-        let allAnnos = JSON.parse('{{ bboxes|safe }}');
-    </script>
-    <!--?????????????? à quoi servait ce js ?-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css" rel="stylesheet">
+
 {% endblock %}
 
 {% block header %}
@@ -22,39 +20,66 @@
 {% endblock %}
 
 {% block content %}
+
+<div class="container">
 <div class="row">
-    <div class="col-md-4">
-        {% for canvas_nb, coord, img_file in all_crops %}
-
-        {%for coords, id in coord%}
-        <div id="ill_" class="anno-div">
-            {% with small=coords|add:'/full/0' %}
-            <a href="{{ img_file|img_to_iiif:small}}" target="_blank">
-                <img class="anno" src="{{ img_file|img_to_iiif:small}}" alt="scan preview">
-                </a>
-            {%endwith%}
-        {%endfor%}
-                </div>
-            
-                <br>
-                <h3><a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ canvas_nb }}" target="_blank">Page {{ canvas_nb }}</a></h3>
-
-        {% endfor %}
-            </div>
-
-
-{# <div class="btn-group btn-group-sm"></div> #}
-{#    <a href="{% url 'zip_img' img_list=all_crops %}"> #}
-    {#        <button class="btn btn-info" type="submit"> #}
-        {#      <i class="bi bi-box-arrow-up"> #}
-            {#      {% if APP_LANG == "en" %} #}
-            {# Export all  #}
-                {#      {% else %} #}
-                {#        Exporter toutes les #}
-                {#    {% endif %} annotations</i> #}
-                {#   </button> #}
-                {# </a> #}
-                {#</div> #}
-
+    <div class="column">
+        <table class="anno-table">
+            {% for canvas_nb, coord, img_file in all_crops %}
+                <tr class="anno-row">
+                    <td class="anno-td">
+                        <h3><a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ canvas_nb }}" target="_blank">Page {{ canvas_nb }}</a></h3>
+                    </td>
+                    <td class="anno-td anno-col">
+                        {% for coords, id in coord %}
+                        <div id="ill_" class="anno-div">
+                            {% with small=coords|add:'/full/0' %}
+                                <a href="{{ img_file|img_to_iiif:small }}" target="_blank">
+                                    <img class="anno" src="{{ img_file|img_to_iiif:small }}" alt="scan preview">
+                                </a>
+                            {% endwith %}
+                        </div>
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
 </div>
+
+<div>
+    {#<a href="{% url 'zip-images' img_list=urls_list %}">#}
+    <div>
+        <button class="reload-button" type="submit">
+            <i class="bi bi-box-arrow-up">
+                {% if APP_LANG == "en" %}
+                    Export all
+                {% else %}
+                    Exporter toutes les
+                {% endif %}
+                annotations
+            </i>
+        </button>
+        {#</a>#}
+    </div>
+
+    <div>
+        <a href="{% url 'show-annotations' anno_ref=anno_ref %}">
+            <button class="reload-button" type="submit">
+                <i class="bi bi-pencil"></i>
+                    {% if APP_LANG == "en" %}
+                        Edit
+                    {% else %}
+                        Éditer les
+                    {% endif %}
+                    annotations
+                </i>
+            </button>
+        </a>
+    </div>
+</div>
+
+        
+
+
 {% endblock %}

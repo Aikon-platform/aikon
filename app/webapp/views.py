@@ -32,7 +32,7 @@ from app.webapp.utils.functions import (
     cls,
     delete_files,
 )
-from app.webapp.utils.iiif import parse_ref
+from app.webapp.utils.iiif import parse_ref, gen_iiif_url
 from app.webapp.utils.logger import log
 from app.webapp.utils.iiif.annotation import (
     format_canvas_annos,
@@ -54,6 +54,7 @@ from app.webapp.utils.similarity import (
     check_score_files,
     check_computed_pairs,
     get_compared_annos,
+    gen_img_ref
 )
 
 
@@ -574,17 +575,24 @@ def show_all_annotations(request, anno_ref):
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
+    urls_list = []
+
     _, all_annos = formatted_annotations(anno)
     all_crops = [(canvas_nb, coord, img_file) for canvas_nb, coord, img_file in all_annos if coord]
-    #print(all_crops)
-    
+
+    #for canvas_nb, coord, img_file in all_crops:
+        #urls_list.extend(gen_iiif_url(img_file, 2, f"{c[0]}/full/0") for c in coord)
+    #print(urls_list)
+  
     return render(
         request,
         "show_crops.html",
         context={
             "anno": anno,
             "all_crops" : all_crops,
-            "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2)
+            "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2), 
+            "urls_list": urls_list, 
+            "anno_ref": anno_ref
         },
     )
 
