@@ -34,10 +34,10 @@ from app.webapp.views import (
     show_similarity,
     task_status,
     compute_score,
-    show_all_annotations, 
+    show_all_annotations,
+    export_all_crops
 )
 
-from app.webapp.utils.functions import zip_img
 
 class ListConverter:
     regex = r"[^/]+(?:\+[^/]+)*"
@@ -200,9 +200,9 @@ urlpatterns = [
         name="show-all-annotations"
     ),
     path(
-        f"{APP_NAME}/zip-images/<str:img_list>",
-        zip_img,
-        name="zip-images",
+        f"{APP_NAME}/export-crops/<str:anno_ref>",
+        export_all_crops,
+        name="export-crops",
     ),
 ]
 

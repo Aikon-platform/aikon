@@ -31,6 +31,7 @@ from app.webapp.utils.functions import (
     get_json,
     cls,
     delete_files,
+    zip_img
 )
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url
 from app.webapp.utils.logger import log
@@ -575,14 +576,8 @@ def show_all_annotations(request, anno_ref):
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    urls_list = []
-
     _, all_annos = formatted_annotations(anno)
     all_crops = [(canvas_nb, coord, img_file) for canvas_nb, coord, img_file in all_annos if coord]
-
-    #for canvas_nb, coord, img_file in all_crops:
-        #urls_list.extend(gen_iiif_url(img_file, 2, f"{c[0]}/full/0") for c in coord)
-    #print(urls_list)
   
     return render(
         request,
@@ -590,12 +585,29 @@ def show_all_annotations(request, anno_ref):
         context={
             "anno": anno,
             "all_crops" : all_crops,
-            "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2), 
-            "urls_list": urls_list, 
+            "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2),  
             "anno_ref": anno_ref
         },
     )
 
+@login_required(login_url=f"/{APP_NAME}-admin/login/")
+def export_all_crops(request, anno_ref):
+    passed, anno = check_ref(anno_ref, "Annotation")
+    if not passed:
+        return JsonResponse(anno)
+
+    if not ENV("DEBUG"):
+        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+
+    urls_list = []
+
+    _, all_annos = formatted_annotations(anno)
+    all_crops = [(canvas_nb, coord, img_file) for canvas_nb, coord, img_file in all_annos if coord]
+
+    for canvas_nb, coord, img_file in all_crops:
+        urls_list.extend(gen_iiif_url(img_file, 2, f"{c[0]}/full/0") for c in coord)
+  
+    return zip_img(urls_list)
 
 def test(request, wit_ref=None):
     from app.webapp.tasks import test
