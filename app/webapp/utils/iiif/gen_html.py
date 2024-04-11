@@ -43,6 +43,10 @@ def anno_btn(obj, action="view"):
         color = "#24d1b7"
         icon = get_icon("code-compare")
         link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-similarity"
+    elif action == "crops":
+        color = "rgb(157, 157, 224)"
+        icon = get_icon("eye")
+        link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-all-annotations"
     else:
         # When the button is not supposed to redirects to anything
         link = "#"
@@ -73,6 +77,9 @@ def gen_btn(obj, action="view"):
         return mark_safe(anno_btn(obj, action))
 
     is_anno = True
+    if action == "crops" :
+        return mark_safe(f'<br>{anno_btn(obj, action)}')
+
     if action == "view":
         digit_id = obj.id if cls(obj) == Digitization else obj.get_digit().id
         download_url = f"{APP_URL}/{APP_NAME}/iiif/digit-annotation/{digit_id}"
@@ -108,12 +115,3 @@ def gen_manifest_btn(digit: Digitization, has_manifest=True, inline=False):
     if inline:
         return mark_safe(mf)
     return mark_safe(f"<div class='iiif-icon'>{mf}</div>")
-
-
-
-#def gen_view_all_crops_button(anno_ref: Annotation, has_annotations=True, inline=False):
-    #view = (
-        #f"<a href='{APP_URL}/{APP_NAME}/{anno_ref}/show-all-annotations' target='_blank'></a>"
-        #if has_annotations
-        #else ""
-    #)
