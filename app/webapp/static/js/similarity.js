@@ -33,6 +33,17 @@ function getImageInfo(imgRef) {
     return imgInfo;
 }
 
+function getWitnessTitle(number) {
+    let prefix = `${WIT_CAP} #${number}${APP_LANG === "en" ? ": " : " : "}`;
+    let options = document.getElementsByTagName('option');
+    for (let i = 0; i < options.length; i++) {
+        if (options[i].text.startsWith(prefix)) {
+            return options[i].text.replace(prefix, '');
+        }
+    }
+    return null;
+}
+
 function getCheckedRefs(checked_ref) {
     let checkedAnnoRefs = [];
     checkedAnnoRefs.push(checked_ref)
@@ -57,7 +68,7 @@ const displayScores = (scores) => {
             row.innerHTML = `<th>
                 <p>
                     <a href="${refToChange(qImg)}" target="_blank">
-                        ${WIT} #${getImageInfo(qImg).witNumber}
+                        ${WIT_CAP} #${getImageInfo(qImg).witNumber}
                     </a>
                     (<a href="${refToMirador(qImg)}" target="_blank">vue ${getImageInfo(qImg).canvasNumber}</a>)
                 </p>
@@ -66,9 +77,7 @@ const displayScores = (scores) => {
                         <img class="anno-img" src='${refToIIIF(qImg)}' alt="Annotation ${qImg}">
                         <div class="img-description-layer">
                             <p class="img-description">
-                                <span>${WIT} #${getImageInfo(qImg).witNumber}</span><br>
-                                <span>View ${getImageInfo(qImg).canvasNumber}</span><br>
-                                <span>xywh : ${getImageInfo(qImg).coordinates}</span>
+                                <span>${getWitnessTitle(getImageInfo(qImg).witNumber)}</span>
                             </p>
                         </div>
                     </div>
@@ -82,7 +91,7 @@ const displayScores = (scores) => {
                     sCell.innerHTML = `
                         <p>
                             <a href="${refToChange(sImg)}" target="_blank">
-                                ${WIT} #${getImageInfo(sImg).witNumber}
+                                ${WIT_CAP} #${getImageInfo(sImg).witNumber}
                             </a>
                             (<a href="${refToMirador(sImg)}" target="_blank">vue ${getImageInfo(sImg).canvasNumber}</a>)
                         </p>
@@ -91,9 +100,7 @@ const displayScores = (scores) => {
                                 <img class="anno-img" src='${refToIIIF(sImg)}' alt="Annotation ${sImg}">
                                 <div class="img-description-layer">
                                     <p class="img-description">
-                                        <span>${WIT} #${getImageInfo(sImg).witNumber}</span><br>
-                                        <span>Vue ${getImageInfo(sImg).canvasNumber}</span><br>
-                                        <span>xywh : ${getImageInfo(sImg).coordinates}</span>
+                                        <span>${getWitnessTitle(getImageInfo(sImg).witNumber)}</span>
                                     </p>
                                 </div>
                             </div>
@@ -104,7 +111,6 @@ const displayScores = (scores) => {
                                 <input type="hidden" class="img_2" value="${sImg}">
                                 <input type="hidden" class="anno_ref_1" value="${getImageInfo(qImg).annoRef}">
                                 <input type="hidden" class="anno_ref_2" value="${getImageInfo(sImg).annoRef}">
-                                <input type="hidden" class="user" value="${USER_ID}">
                                 <label for="">1</label>
                                 <input id="category1" type="checkbox" name="category" value="1">
                                 <label for="" class="hspace">2</label>
@@ -139,10 +145,14 @@ const displayScores = (scores) => {
             },
         }).then(response => response.json())
         .then(data => {
-            let categories = data.categories;
-            categories.forEach(category => {
+            let category = data.category;
+            let category_x = data.category_x;
+            if (category) {
                 form.querySelector(`#category${category}`).checked = true;
-            });
+            }
+            if (category_x.includes(Number(USER_ID))) {
+                form.querySelector('#category5').checked = true;
+            }
         });
 
         form.addEventListener('change', (event) => {
@@ -151,22 +161,22 @@ const displayScores = (scores) => {
                     if (checkbox !== event.target) checkbox.checked = false;
                 });
             }
-            let categories = Array.from(form.querySelectorAll('input[name="category"]:checked')).map(input => input.value);
             let img_1 = form.querySelector('.img_1').value;
             let img_2 = form.querySelector('.img_2').value;
             let anno_ref_1 = form.querySelector('.anno_ref_1').value;
             let anno_ref_2 = form.querySelector('.anno_ref_2').value;
-            let user_id = form.querySelector('.user').value;
+            let category = form.querySelector('input[name="category"]:not(#category5):checked');
+            let category_x = form.querySelector('#category5:checked');
             form.querySelectorAll('input[name="category"]').forEach((checkbox) => {
                 checkbox.disabled = true;
             });
             let data = {
-                'categories': categories,
                 'img_1': img_1,
                 'img_2': img_2,
                 'anno_ref_1': anno_ref_1,
                 'anno_ref_2': anno_ref_2,
-                'user_id': user_id
+                'category': category ? category.value : null,
+                'category_x': category_x ? category_x.value : null,
             };
             fetch(`/${APP_NAME}/save-category/`, {
                 method: 'POST',
@@ -177,7 +187,6 @@ const displayScores = (scores) => {
                 body: JSON.stringify(data)
             }).then(response => response.json())
             .then(data => {
-				console.log(data);
 				form.querySelectorAll('input[name="category"]').forEach((checkbox) => {
 					checkbox.disabled = false;
 				});

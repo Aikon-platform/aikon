@@ -634,11 +634,13 @@ def retrieve_category(request):
 
     try:
         region_pair = RegionPair.objects.get(img_1=img_1, img_2=img_2)
-        categories = region_pair.categories
+        category = region_pair.category
+        category_x = region_pair.category_x
     except RegionPair.DoesNotExist:
-        categories = []
+        category = None
+        category_x = []
 
-    return JsonResponse({"categories": categories})
+    return JsonResponse({"category": category, "category_x": category_x})
 
 
 @csrf_exempt
@@ -649,20 +651,31 @@ def save_category(request):
         anno_ref_1, anno_ref_2 = sorted(
             [data.get("anno_ref_1"), data.get("anno_ref_2")], key=sort_key
         )
-        categories = data.get("categories")
-        user_id = data.get("user_id")
-        user = User.objects.get(id=user_id)
+        category = data.get("category")
+        category_x = data.get("category_x")
+        user_id = request.user.id
 
-        region_pair, created = RegionPair.objects.update_or_create(
+        region_pair, created = RegionPair.objects.get_or_create(
             img_1=img_1,
             img_2=img_2,
             defaults={
                 "anno_ref_1": anno_ref_1,
                 "anno_ref_2": anno_ref_2,
-                "categories": categories,
-                "user": user,
             },
         )
+
+        region_pair.category = int(category) if category else None
+
+        # If the user's id doesn't exist in category_x, append it
+        if category_x is not None:
+            if user_id not in region_pair.category_x:
+                region_pair.category_x.append(user_id)
+            region_pair.category_x = sorted(region_pair.category_x)
+        else:  # If category_x is None, remove the user's id if it exists
+            if user_id in region_pair.category_x:
+                region_pair.category_x.remove(user_id)
+
+        region_pair.save()
 
         if created:
             return JsonResponse(

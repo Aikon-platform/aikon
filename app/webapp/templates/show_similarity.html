@@ -36,14 +36,13 @@
 {% block content %}
     <h3>
         {{ checked_ref_title|truncate_words }}
-        {{ CATEGORY_INFO|safe }}
     </h3>
     <div id="check-pairs">
         <select id="multi-select" class="witness-multiple" multiple="multiple">
-            <option id="show_checked_ref" onchange="showCheckedRef = this.selected" value="{{ checked_ref }}">{{ checked_ref_title|truncate_words }}</option>
+            <option id="show_checked_ref" onchange="showCheckedRef = this.selected" title="{{ checked_ref_title }}" value="{{ checked_ref }}">{{ checked_ref_title|truncate_words }}</option>
             {% for anno_ref, title in annos.items %}
                 {% if anno_ref != checked_ref %}
-                   <option id="{{ anno_ref }}" value="{{ anno_ref }}" title="{{ title }}" selected>{{ title|truncate_words }}</option>
+                   <option id="{{ anno_ref }}" title="{{ title }}" value="{{ anno_ref }}" selected>{{ title|truncate_words }}</option>
                 {% endif %}
             {% endfor %}
         </select>
@@ -53,6 +52,7 @@
             {% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}
         </button>
     </div>
+    {{ CATEGORY_INFO|safe }}
     <div class="row">
         <div class="column similarity-container">
             <table id="similarity" class="similarity-table"></table>
@@ -70,7 +70,7 @@
 
         $(document).ready(function() {
             $('.witness-multiple').select2({
-                placeholder: "{% if APP_LANG == 'en' %}Select witnesses...{% else %}Sélectionner témoins...{% endif %}",
+                placeholder: `${APP_LANG === "en" ? `Select ${WIT}es` : `Sélectionner ${WIT}s`}...`,
                 tags: true,
                 tokenSeparators: [',', ' '],
                 allowClear: true

@@ -26,14 +26,11 @@ class RegionPair(models.Model):
     def __str__(self):
         return f"{self.img_1} | {self.img_2}"
 
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    # users = ArrayField(models.IntegerField(), blank=True, default=list)
     img_1 = models.CharField(max_length=150)
     img_2 = models.CharField(max_length=150)
-    anno_ref_1 = models.CharField(max_length=150)  # Foreign key to Annotation ?
-    anno_ref_2 = models.CharField(max_length=150)  # Foreign key to Annotation ?
-    # category = models.IntegerField()
-    categories = ArrayField(models.IntegerField(), blank=True, default=list)
-    # user = models.IntegerField()
+    anno_ref_1 = models.CharField(max_length=150)
+    anno_ref_2 = models.CharField(max_length=150)
+    category = models.IntegerField(null=True)
+    category_x = ArrayField(models.IntegerField(), default=list)
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)

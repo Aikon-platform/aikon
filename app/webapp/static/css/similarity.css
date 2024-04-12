@@ -1,7 +1,7 @@
 .similarity-container {
     width: 90%;
     overflow-x: auto;
-    margin: 20px auto;
+    margin: 10px auto;
 }
 
 .similarity-table {
@@ -90,8 +90,8 @@
     opacity: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
-    transition: opacity .2s, visibility .2s; /* transition effect. not necessary */
+    padding: 5px 10px;
+    transition: opacity .2s, visibility .2s;
 }
 
 .img-wrap:hover .img-description-layer {
@@ -102,23 +102,17 @@
 .img-description {
     transition: .2s;
     transform: translateY(1em);
-    text-align: center;
 }
 
 .img-wrap:hover .img-description {
     transform: translateY(0);
 }
 
-.tooltip .tooltiptext {
-    width: 350px;
-    text-align: left;
-    padding: 5px 10px;
-    bottom: 125%;
-    margin-left: -165px;
-}
-
-.tooltip .tooltiptext::after {
-    margin-left: -25px;
+.category-info {
+	padding: 0 15px;
+	margin-top: 15px;
+	border: 1px solid var(--border-color);
+	background-color: #ddffff;
 }
 
 .hspace {
