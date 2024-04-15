@@ -35,7 +35,8 @@ from app.webapp.views import (
     task_status,
     compute_score,
     show_all_annotations,
-    export_all_crops
+    export_all_crops,
+    export_selected_crops
 )
 
 
@@ -203,6 +204,11 @@ urlpatterns = [
         f"{APP_NAME}/export-crops/<str:anno_ref>",
         export_all_crops,
         name="export-crops",
+    ),
+    path(
+        f"{APP_NAME}/export-selected-crops",
+        export_selected_crops,
+        name="export-selected-crops",
     ),
 ]
 

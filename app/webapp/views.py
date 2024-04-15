@@ -606,8 +606,15 @@ def export_all_crops(request, anno_ref):
 
     for canvas_nb, coord, img_file in all_crops:
         urls_list.extend(gen_iiif_url(img_file, 2, f"{c[0]}/full/0") for c in coord)
+
   
     return zip_img(urls_list)
+
+@login_required(login_url=f"/{APP_NAME}-admin/login/")
+def export_selected_crops(request):
+    urls_list = json.loads(request.POST.get('listeURL'))
+    return zip_img(urls_list)
+
 
 def test(request, wit_ref=None):
     from app.webapp.tasks import test

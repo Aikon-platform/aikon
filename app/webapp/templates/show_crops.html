@@ -53,6 +53,30 @@
     background-color: darkblue;
 }
 
+/*.img-overlay-wrap {
+    position: relative;
+    display: inline-block; /* container -> taille de l'image 
+    transition: transform 150ms ease-in-out;
+  }
+  
+  .img-overlay-wrap img { pour que ce soit responsive
+     display: block;
+     max-width: 100%;
+     height: auto;
+  }
+  
+  .img-overlay-wrap svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }*/
+
+  .rectangle {
+    position: absolute;
+    border: 2px solid red; /* Couleur et épaisseur de la bordure du rectangle */
+    background-color: rgba(255, 0, 0, 0.2); /* Couleur de fond semi-transparente du rectangle */
+}
+
     </style>
 
 {% endblock %}
@@ -62,43 +86,57 @@
         <div class="title">
             <b>{{ anno|capfirst }}</b>
         </div>
+        <div style="display: flex; flex-direction: row;">
+            
+            <a href="{% url 'export-crops' anno_ref=anno_ref %}">
+                <button class="btn-change" type="submit">
+                    <i class="bi bi-box-arrow-up"></i>
+                    {% if APP_LANG == "en" %}
+                        Export all
+                    {% else %}
+                        Exporter toutes les
+                    {% endif %}
+                    annotations
+                </button>
+            </a>
+            
+            <form id="export" action="{% url 'export-selected-crops' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="listeURL" name="listeURL" value="">
+                <button class="btn-change" type="submit">
+                    <i class="bi bi-box-arrow-up"></i>
+                    {% if APP_LANG == "en" %}
+                        Export selected annotations
+                    {% else %}
+                        Exporter les annotations sélectionnées
+                    {% endif %}</button>
+            </form>
+
+            <a href="{% url 'show-annotations' anno_ref=anno_ref %}" target="_blank">
+                <button class="btn-change" type="submit">
+                    <i class="bi bi-pencil"></i>
+                    {% if APP_LANG == "en" %}
+                        Edit
+                    {% else %}
+                        Éditer les
+                    {% endif %}
+                    annotations
+                </button>
+            </a>
+        
+        
+            </div>
     </div>
 {% endblock %}
 
 {% block content %}
 
-<div class="row" style="margin-top: 3%; display: flex; flex-direction: row; justify-content: space-between;">
+<div class="row" style="margin-top: 3%;">
     <button id="toggleBtn" class="btn-change">{% if APP_LANG == "en" %}
         Change view
     {% else %}
         Changer de vue
     {% endif %}</button>
-
-    <div>
-    <a href="{% url 'export-crops' anno_ref=anno_ref %}">
-        <button class="btn-change" type="submit">
-            <i class="bi bi-box-arrow-up"></i>
-            {% if APP_LANG == "en" %}
-                Export all
-            {% else %}
-                Exporter toutes les
-            {% endif %}
-            annotations
-        </button>
-    </a>
-
-    <a href="{% url 'show-annotations' anno_ref=anno_ref %}">
-        <button class="btn-change" type="submit">
-            <i class="bi bi-pencil"></i>
-            {% if APP_LANG == "en" %}
-                Edit
-            {% else %}
-                Éditer les
-            {% endif %}
-            annotations
-        </button>
-    </a>
-    </div>
 </div>
 
 
@@ -111,17 +149,20 @@
                 <tr class="anno-row">
                     <td class="anno-td">
                         <h3><a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ canvas_nb }}" target="_blank">Page {{ canvas_nb }}</a></h3>
+                        <div class="img-container">
                         <a href="{{ img_file|img_to_iiif}}" target="_blank">
                         <img class="page-preview" src="{{ img_file|img_to_iiif:"full/300,/0" }}" alt="Max" style="height: 300px;">
                         </a>
+                    </div>
                     </td>
                     <td class="anno-td anno-col">
                         {% for coords, id in coord %}
-                        <div id="ill_" class="anno-div" style="height: 300px; width: auto;">
+                        <div id="ill_{{id}}" class="anno-div" style="height: 300px; width: auto;">
                             {% with small=coords|add:'/full/0' %}
                                 <a href="{{ img_file|img_to_iiif:small }}" target="_blank">
                                     <img src="{{ img_file|img_to_iiif:small }}" alt="scan preview" style="height: 100%; width: auto;">
                                 </a>
+                                <input type="checkbox" name="crop_checkbox" value="{{ img_file|img_to_iiif:small }}" onchange="updateSelectedImageURLs()">
                             {% endwith %}
                         </div>
                         {% endfor %}
@@ -149,6 +190,41 @@
 
 
 <script>
+
+
+var checkboxes = document.querySelectorAll('input[name="crop_checkbox"]');
+var selectedImageURLs = [];
+// Fonction pour mettre à jour la liste des URL sélectionnées
+function updateSelectedImageURLs() {
+    // Réinitialiser la liste des URL sélectionnées
+    selectedImageURLs = [];
+
+    // Parcourir toutes les cases à cocher
+    checkboxes.forEach(function(checkbox) {
+        // Vérifier si la case est cochée
+        if (checkbox.checked) {
+            // Récupérez l'URL de l'image à partir de la value de la case cochée
+            var imageURL = checkbox.value;
+            // Ajouter l'URL de l'image à la liste des URL sélectionnées
+            selectedImageURLs.push(imageURL);
+            }
+        }
+    );
+    // Afficher la liste des URLs sélectionnées
+    console.log(selectedImageURLs);
+    var jsonString = JSON.stringify(selectedImageURLs);
+
+    // liste => hidden input
+    document.getElementById("listeURL").value = jsonString;
+    // Vérifier si la valeur du champ de saisie caché est correcte
+    console.log(document.getElementById("listeURL").value);
+}
+
+// liste => hidden input
+//document.getElementById("listeURL").value = selectedImageURLs;
+
+//switch views
+
 document.addEventListener("DOMContentLoaded", function() {
     const toggleBtn = document.getElementById('toggleBtn');
     const view1 = document.getElementById('view1');
@@ -167,7 +243,10 @@ document.addEventListener("DOMContentLoaded", function() {
             view2.classList.add('hidden');
         }
     });
+
+
 });
+
 
 
 </script>
