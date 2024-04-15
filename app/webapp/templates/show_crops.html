@@ -157,11 +157,12 @@
                     </td>
                     <td class="anno-td anno-col">
                         {% for coords, id in coord %}
-                        <div id="ill_{{id}}" class="anno-div" style="height: 300px; width: auto;">
+                        <div id="ill_{{id}}" class="anno-div" style="height: 300px; width: auto; text-align: center;">
                             {% with small=coords|add:'/full/0' %}
                                 <a href="{{ img_file|img_to_iiif:small }}" target="_blank">
                                     <img src="{{ img_file|img_to_iiif:small }}" alt="scan preview" style="height: 100%; width: auto;">
                                 </a>
+                                <br>
                                 <input type="checkbox" name="crop_checkbox" value="{{ img_file|img_to_iiif:small }}" onchange="updateSelectedImageURLs()">
                             {% endwith %}
                         </div>
@@ -180,7 +181,11 @@
             {% for coords, id in coord %}
                 {% with small=coords|add:'/full/0' %}
                     <div class="grid-item">
-                        <img src="{{ img_file|img_to_iiif:small }}" class="img-fluid" alt="{{ img_file }}">
+                        <a href="{{ img_file|img_to_iiif:small }}" target="_blank"></a>
+                            <img src="{{ img_file|img_to_iiif:small }}" class="img-fluid" alt="{{ img_file }}">
+                        </a>
+                        <br>
+                        <input type="checkbox" name="crop_checkbox" value="{{ img_file|img_to_iiif:small }}" onchange="updateSelectedImageURLs()">
                     </div>
                 {% endwith %}
             {% endfor %}
@@ -216,21 +221,28 @@ function updateSelectedImageURLs() {
 
     // liste => hidden input
     document.getElementById("listeURL").value = jsonString;
-    // Vérifier si la valeur du champ de saisie caché est correcte
+    // Vérifier si la valeur du champ est correcte
     console.log(document.getElementById("listeURL").value);
-}
-
-// liste => hidden input
-//document.getElementById("listeURL").value = selectedImageURLs;
+};
 
 //switch views
 
 document.addEventListener("DOMContentLoaded", function() {
+
     const toggleBtn = document.getElementById('toggleBtn');
     const view1 = document.getElementById('view1');
     const view2 = document.getElementById('view2');
 
     toggleBtn.addEventListener('click', function() {
+
+        // Réinitialiser la liste des URL sélectionnées lorsque la vue est changée
+        selectedImageURLs = [];
+
+        // Décocher toutes les cases à cocher
+        checkboxes.forEach(function(checkbox) {
+        checkbox.checked = false;
+        });
+
         // Vérifie si la première vue est visible
         const isView1Visible = !view1.classList.contains('hidden');
         
@@ -246,8 +258,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 });
-
-
 
 </script>
         
