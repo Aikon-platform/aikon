@@ -160,14 +160,14 @@ urlpatterns = [
         name="compute-score",
     ),
     path(
-        f"{APP_NAME}/annotate/<str:digit_ref>",
-        receive_anno,
-        name="receive-annotations",
-    ),
-    path(
         f"{APP_NAME}/run-annotation/<str:digit_ref>",
         send_anno,
         name="send-annotations",
+    ),
+    path(
+        f"{APP_NAME}/annotate/<str:digit_ref>",
+        receive_anno,
+        name="receive-annotations",
     ),
     path(
         f"{APP_NAME}/reindex-annotation/<str:obj_ref>",
