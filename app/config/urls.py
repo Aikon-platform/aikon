@@ -34,6 +34,9 @@ from app.webapp.views import (
     show_similarity,
     task_status,
     compute_score,
+    show_all_annotations,
+    export_all_crops,
+    export_selected_crops
     retrieve_category,
     save_category,
 )
@@ -197,6 +200,20 @@ urlpatterns = [
     path(f"{APP_NAME}/retrieve-category/", retrieve_category, name="retrieve-category"),
     path(f"{APP_NAME}/save-category/", save_category, name="save-category"),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
+    path(f"{APP_NAME}/<str:anno_ref>/show-all-annotations",
+        show_all_annotations,
+        name="show-all-annotations"
+    ),
+    path(
+        f"{APP_NAME}/export-crops/<str:anno_ref>",
+        export_all_crops,
+        name="export-crops",
+    ),
+    path(
+        f"{APP_NAME}/export-selected-crops",
+        export_selected_crops,
+        name="export-selected-crops",
+    ),
 ]
 
 if DEBUG:

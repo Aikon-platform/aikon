@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from os.path import exists
 
 from celery.result import AsyncResult
@@ -33,9 +34,11 @@ from app.webapp.utils.functions import (
     get_json,
     cls,
     delete_files,
+    zip_img
     sort_key,
 )
-from app.webapp.utils.iiif import parse_ref
+
+from app.webapp.utils.iiif import parse_ref, gen_iiif_url
 from app.webapp.utils.logger import log
 from app.webapp.utils.iiif.annotation import (
     format_canvas_annos,
@@ -57,6 +60,7 @@ from app.webapp.utils.similarity import (
     check_score_files,
     check_computed_pairs,
     get_compared_annos,
+    gen_img_ref
 )
 
 
@@ -153,6 +157,7 @@ def send_anno(request, digit_ref):
 
 
 @user_passes_test(is_superuser)
+@csrf_exempt
 def reindex_anno(request, obj_ref):
     """
     To reindex annotations from a text file named after <obj_ref>
@@ -565,6 +570,55 @@ def show_annotations(request, anno_ref):
             "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2),
         },
     )
+
+
+@login_required(login_url=f"/{APP_NAME}-admin/login/")
+def show_all_annotations(request, anno_ref):
+    passed, anno = check_ref(anno_ref, "Annotation")
+    if not passed:
+        return JsonResponse(anno)
+
+    if not ENV("DEBUG"):
+        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+
+    _, all_annos = formatted_annotations(anno)
+    all_crops = [(canvas_nb, coord, img_file) for canvas_nb, coord, img_file in all_annos if coord]
+  
+    return render(
+        request,
+        "show_crops.html",
+        context={
+            "anno": anno,
+            "all_crops" : all_crops,
+            "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2),  
+            "anno_ref": anno_ref
+        },
+    )
+
+@login_required(login_url=f"/{APP_NAME}-admin/login/")
+def export_all_crops(request, anno_ref):
+    passed, anno = check_ref(anno_ref, "Annotation")
+    if not passed:
+        return JsonResponse(anno)
+
+    if not ENV("DEBUG"):
+        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+
+    urls_list = []
+
+    _, all_annos = formatted_annotations(anno)
+    all_crops = [(canvas_nb, coord, img_file) for canvas_nb, coord, img_file in all_annos if coord]
+
+    for canvas_nb, coord, img_file in all_crops:
+        urls_list.extend(gen_iiif_url(img_file, 2, f"{c[0]}/full/0") for c in coord)
+
+  
+    return zip_img(urls_list)
+
+@login_required(login_url=f"/{APP_NAME}-admin/login/")
+def export_selected_crops(request):
+    urls_list = json.loads(request.POST.get('listeURL'))
+    return zip_img(urls_list)
 
 
 def test(request, wit_ref=None):
