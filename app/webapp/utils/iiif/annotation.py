@@ -41,8 +41,7 @@ def send_anno_request(digit: Digitization, event):
 def anno_request(digit: Digitization):
     try:
         response = requests.post(
-            url=f"{EXAPI_URL}/run_detect",
-            headers={"X-API-Key": EXAPI_KEY},
+            url=f"{EXAPI_URL}/extraction/start",
             data={
                 "manifest_url": digit.gen_manifest_url(),
                 "model": f"{EXTRACTOR_MODEL}",  # Use only if specific model is desire
@@ -57,7 +56,7 @@ def anno_request(digit: Digitization):
                 "error_message": f"Annotation request for {digit.get_ref()} with status code: {response.status_code}",
                 "request_info": {
                     "method": "POST",
-                    "url": f"{EXAPI_URL}/run_detect",
+                    "url": f"{EXAPI_URL}/extraction/start",
                     "data": {
                         "manifest_url": digit.gen_manifest_url(),
                         "model": f"{EXTRACTOR_MODEL}",
@@ -80,11 +79,10 @@ def anno_request(digit: Digitization):
 def delete_anno_request(digit: Digitization):
     try:
         requests.post(
-            url=f"{EXAPI_URL}/delete_detect",
-            headers={"X-API-Key": EXAPI_KEY},
+            url=f"{EXAPI_URL}/extraction/restart",
             data={
                 "manifest_url": digit.gen_manifest_url(),
-                # "model": "yolo_last_sved_vhs_sullivan.pt", # Use only if specific model is desire
+                # "model": "yolo_last_sved_vhs_sullivan.pt", # Use only if specific model is desired
                 "callback": f"{APP_URL}/{APP_NAME}/annotate",  # URL to which the annotations must be sent back
             },
         )

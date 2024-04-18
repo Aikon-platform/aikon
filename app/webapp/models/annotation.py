@@ -7,8 +7,9 @@ from django.utils.safestring import mark_safe
 from django.db import models
 from iiif_prezi.factory import StructuralError
 
-from app.config.settings import APP_URL, APP_NAME
+from app.config.settings import APP_URL, APP_NAME, APP_LANG
 from app.webapp.models.digitization import Digitization
+from app.webapp.models.utils.constants import WIT
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
@@ -33,7 +34,8 @@ class Annotation(models.Model):
 
     def __str__(self):
         witness = self.get_witness()
-        return f"Witness #{witness.id}: {witness}"
+        space = "" if APP_LANG == "en" else " "
+        return f"{WIT.capitalize()} #{witness.id}{space}: {witness}"
 
     digitization = models.ForeignKey(
         Digitization,

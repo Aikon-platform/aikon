@@ -27,6 +27,7 @@ MANIFEST_V2 = "v2"  # Used for the manifest with corrected annotations
 
 # Maximum number of words to be kept in the truncated string
 TRUNCATEWORDS = 3
+TRUNCATEWORDS_SIM = 7
 
 # Maximum number of selected items for action application
 MAX_ITEMS = 5

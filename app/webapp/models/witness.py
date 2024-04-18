@@ -66,8 +66,9 @@ class Witness(models.Model):
 
     def __str__(self):
         if self.type == MS_ABBR:
-            cons_place = self.place.name if self.place else CONS_PLA_MSG
-            return format_html(f"{cons_place} | {self.id_nb}")
+            return format_html(
+                f"{self.place.name if self.place else CONS_PLA_MSG} | {self.id_nb}"
+            )
         return format_html(f"{self.volume_title}, vol. {self.volume_nb}")
 
     def get_absolute_url(self):
@@ -91,7 +92,7 @@ class Witness(models.Model):
         null=True,
     )
     notes = models.TextField(
-        verbose_name=get_name("notes"), max_length=1000, blank=True
+        verbose_name=get_name("notes"), max_length=3000, blank=True
     )
     nb_pages = models.IntegerField(
         verbose_name=get_name("nb_pages"),

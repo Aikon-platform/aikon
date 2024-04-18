@@ -5,6 +5,7 @@ from os.path import exists
 
 from celery.result import AsyncResult
 from dal import autocomplete
+from django.contrib.auth.models import User
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -12,6 +13,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_GET
 
 from app.webapp.models.annotation import Annotation, check_version
 from app.webapp.models.digitization import Digitization
@@ -23,6 +25,7 @@ from app.config.settings import (
     APP_LANG,
 )
 from app.webapp.models.language import Language
+from app.webapp.models.region_pair import RegionPair
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, MAX_ROWS
 from app.webapp.utils.functions import (
@@ -32,7 +35,9 @@ from app.webapp.utils.functions import (
     cls,
     delete_files,
     zip_img
+    sort_key,
 )
+
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url
 from app.webapp.utils.logger import log
 from app.webapp.utils.iiif.annotation import (
@@ -127,7 +132,7 @@ def manifest_annotation(request, version, anno_ref):
     return JsonResponse(anno.gen_manifest_json(version=check_version(version)))
 
 
-@user_passes_test(is_superuser)
+# @user_passes_test(is_superuser)
 def send_anno(request, digit_ref):
     """
     To relaunch annotations in case the automatic annotation failed
@@ -673,6 +678,66 @@ class LanguageAutocomplete(autocomplete.Select2QuerySetView):
             qs = qs.filter(lang__icontains=self.q)
 
         return qs
+
+
+@require_GET
+def retrieve_category(request):
+    img_1, img_2 = sorted(
+        [request.GET.get("img_1"), request.GET.get("img_2")], key=sort_key
+    )
+
+    try:
+        region_pair = RegionPair.objects.get(img_1=img_1, img_2=img_2)
+        category = region_pair.category
+        category_x = region_pair.category_x
+    except RegionPair.DoesNotExist:
+        category = None
+        category_x = []
+
+    return JsonResponse({"category": category, "category_x": category_x})
+
+
+@csrf_exempt
+def save_category(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
+        anno_ref_1, anno_ref_2 = sorted(
+            [data.get("anno_ref_1"), data.get("anno_ref_2")], key=sort_key
+        )
+        category = data.get("category")
+        category_x = data.get("category_x")
+        user_id = request.user.id
+
+        region_pair, created = RegionPair.objects.get_or_create(
+            img_1=img_1,
+            img_2=img_2,
+            defaults={
+                "anno_ref_1": anno_ref_1,
+                "anno_ref_2": anno_ref_2,
+            },
+        )
+
+        region_pair.category = int(category) if category else None
+
+        # If the user's id doesn't exist in category_x, append it
+        if category_x is not None:
+            if user_id not in region_pair.category_x:
+                region_pair.category_x.append(user_id)
+            region_pair.category_x = sorted(region_pair.category_x)
+        else:  # If category_x is None, remove the user's id if it exists
+            if user_id in region_pair.category_x:
+                region_pair.category_x.remove(user_id)
+
+        region_pair.save()
+
+        if created:
+            return JsonResponse(
+                {"status": "success", "message": "New region pair created"}, status=200
+            )
+        return JsonResponse(
+            {"status": "success", "message": "Existing region pair updated"}, status=200
+        )
 
 
 def rgpd(request):

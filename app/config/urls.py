@@ -37,6 +37,8 @@ from app.webapp.views import (
     show_all_annotations,
     export_all_crops,
     export_selected_crops
+    retrieve_category,
+    save_category,
 )
 
 
@@ -161,14 +163,14 @@ urlpatterns = [
         name="compute-score",
     ),
     path(
-        f"{APP_NAME}/annotate/<str:digit_ref>",
-        receive_anno,
-        name="receive-annotations",
-    ),
-    path(
         f"{APP_NAME}/run-annotation/<str:digit_ref>",
         send_anno,
         name="send-annotations",
+    ),
+    path(
+        f"{APP_NAME}/annotate/<str:digit_ref>",
+        receive_anno,
+        name="receive-annotations",
     ),
     path(
         f"{APP_NAME}/reindex-annotation/<str:obj_ref>",
@@ -195,6 +197,8 @@ urlpatterns = [
         delete_annotation,
         name="delete-annotation",
     ),
+    path(f"{APP_NAME}/retrieve-category/", retrieve_category, name="retrieve-category"),
+    path(f"{APP_NAME}/save-category/", save_category, name="save-category"),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
     path(f"{APP_NAME}/<str:anno_ref>/show-all-annotations",
         show_all_annotations,
