@@ -80,7 +80,7 @@ def similarity_request(annos: List[Annotation]):
 
     try:
         response = requests.post(
-            url=f"{EXAPI_URL}/run_similarity",
+            url=f"{EXAPI_URL}/similarity/start",
             headers={"X-API-Key": EXAPI_KEY},
             json={
                 "documents": documents,
@@ -97,7 +97,7 @@ def similarity_request(annos: List[Annotation]):
                 "error_message": f"Request failed for {list(documents.keys())} with status code: {response.status_code}",
                 "request_info": {
                     "method": "POST",
-                    "url": f"{EXAPI_URL}/run_similarity",
+                    "url": f"{EXAPI_URL}/similarity/start",
                     "payload": {
                         "documents": documents,
                         "callback": f"{APP_URL}/{APP_NAME}/similarity",
@@ -208,7 +208,6 @@ def compute_total_similarity(
                     total_scores[img_name] = []
                 total_scores[img_name].extend(best_matches(pair_scores, img_name, pair))
 
-
     ######
     if not show_checked_ref:
         filtered_data = {
@@ -238,7 +237,7 @@ def compute_total_similarity(
 
         if prefix_key in key:
             score_dict_sorted[key] = get_best_matches(total_scores[key])
-            #print(score_dict_sorted[key], total_scores[key][:10])
+            # print(score_dict_sorted[key], total_scores[key][:10])
             counter += 1
 
     return score_dict_sorted
