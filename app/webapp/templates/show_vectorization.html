@@ -95,7 +95,7 @@
         {% for canvas_nb, coord, img_file in all_crops %}
             {% for coords, id in coord %}
                 <div class="grid-item">
-                    <img src="{% get_media_prefix %}/svg/{{ img_file|jpg_to_none }}_{{ coords }}.svg" class="img-fluid" alt="{{ img_file|jpg_to_none }}_{{ coords }}.svg">
+                    <img src="{% get_media_prefix %}svg/{{ img_file|jpg_to_none }}_{{ coords }}.svg" class="img-fluid" alt="{{ img_file|jpg_to_none }}_{{ coords }}.svg">
                 </div>
             {% endfor %}
         {% endfor %}
