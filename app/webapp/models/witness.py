@@ -266,7 +266,7 @@ class Witness(models.Model):
         return "<br>".join([place.__str__() for place in self.get_places()]) or "-"
 
     def get_roles(self):
-        return flatten([content.get_roles() for content in self.get_contents()])
+        return list(set(flatten([content.get_roles() for content in self.get_contents()])))
 
     def get_persons(self):
         return self.contents.values_list("roles__person", flat=True).distinct()
