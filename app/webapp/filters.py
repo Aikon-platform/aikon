@@ -81,3 +81,8 @@ def truncate_words(text, max_length=TRUNCATEWORDS_SIM):
     if len(words) > 2 * max_length:  # Check if the text is longer than 2*TRUNCATEWORDS
         return " ".join(words[:max_length] + ["..."] + words[-max_length:])
     return text
+
+
+@register.filter
+def jpg_to_none(img_file):
+    return img_file.replace(".jpg", "")

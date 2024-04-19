@@ -29,10 +29,10 @@
 
 .btn-change {
     background-color: rgb(157, 157, 224);
-    color: white; 
+    color: white;
     display: inline-block;
     font-weight: 400;
-    font-size: 20px;
+    font-size: 16px;
     text-align: center;
     white-space: nowrap;
     vertical-align: middle;
@@ -49,21 +49,21 @@
 }
 
 .btn-change:hover {
-    background-color: darkblue;
+    background-color: rgb(41, 36, 89);
 }
 
 /*.img-overlay-wrap {
     position: relative;
-    display: inline-block; /* container -> taille de l'image 
+    display: inline-block; /* container -> taille de l'image
     transition: transform 150ms ease-in-out;
   }
-  
+
   .img-overlay-wrap img { pour que ce soit responsive
      display: block;
      max-width: 100%;
      height: auto;
   }
-  
+
   .img-overlay-wrap svg {
     position: absolute;
     top: 0;
@@ -86,7 +86,7 @@
             <b>{{ anno|capfirst }}</b>
         </div>
         <div style="display: flex; flex-direction: row;">
-            
+
             <a href="{% url 'export-crops' anno_ref=anno_ref %}">
                 <button class="btn-change" type="submit">
                     <i class="bi bi-box-arrow-up"></i>
@@ -98,7 +98,7 @@
                     annotations
                 </button>
             </a>
-            
+
             <form id="export" action="{% url 'export-selected-crops' %}" method="post">
                 {% csrf_token %}
                 <input type="hidden" id="listeURL" name="listeURL" value="">
@@ -122,8 +122,8 @@
                     annotations
                 </button>
             </a>
-        
-        
+
+
             </div>
     </div>
 {% endblock %}
@@ -137,8 +137,6 @@
         Changer de vue
     {% endif %}</button>
 </div>
-
-
 
 <div class="" id="view1">
 <div class="row">
@@ -194,8 +192,6 @@
 
 
 <script>
-
-
 var checkboxes = document.querySelectorAll('input[name="crop_checkbox"]');
 var selectedImageURLs = [];
 // Fonction pour mettre à jour la liste des URL sélectionnées
@@ -244,7 +240,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // Vérifie si la première vue est visible
         const isView1Visible = !view1.classList.contains('hidden');
-        
+
         // Si la première vue est visible, la cache et affiche la deuxième vue
         if (isView1Visible) {
             view1.classList.add('hidden');
@@ -254,12 +250,7 @@ document.addEventListener("DOMContentLoaded", function() {
             view2.classList.add('hidden');
         }
     });
-
-
 });
-
 </script>
-        
-
 
 {% endblock %}
