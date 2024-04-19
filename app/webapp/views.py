@@ -601,6 +601,33 @@ def show_all_annotations(request, anno_ref):
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
+def show_vectorization(request, anno_ref):
+    passed, anno = check_ref(anno_ref, "Annotation")
+    if not passed:
+        return JsonResponse(anno)
+
+    if not ENV("DEBUG"):
+        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+
+    _, all_annos = formatted_annotations(anno)
+    all_crops = [
+        (canvas_nb, coord, img_file)
+        for canvas_nb, coord, img_file in all_annos
+        if coord
+    ]
+
+    return render(
+        request,
+        "show_vectorization.html",
+        context={
+            "anno": anno,
+            "all_crops": all_crops,
+            "anno_ref": anno_ref,
+        },
+    )
+
+
+@login_required(login_url=f"/{APP_NAME}-admin/login/")
 def export_all_crops(request, anno_ref):
     passed, anno = check_ref(anno_ref, "Annotation")
     if not passed:

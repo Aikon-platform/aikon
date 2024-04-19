@@ -39,6 +39,7 @@ from app.webapp.views import (
     export_selected_crops,
     retrieve_category,
     save_category,
+    show_vectorization,
 )
 
 
@@ -215,13 +216,17 @@ urlpatterns = [
         export_selected_crops,
         name="export-selected-crops",
     ),
+    path(
+        f"{APP_NAME}/<str:anno_ref>/show-vectorization",
+        show_vectorization,
+        name="show-vectorization",
+    ),
 ]
 
-if DEBUG:
-    urlpatterns += static(MEDIA_URL, document_root=MEDIA_ROOT)
+urlpatterns += static(MEDIA_URL, document_root=MEDIA_ROOT)
 
-    import debug_toolbar
+import debug_toolbar
 
-    urlpatterns += [
-        path("__debug__/", include(debug_toolbar.urls)),
-    ]
+urlpatterns += [
+    path("__debug__/", include(debug_toolbar.urls)),
+]

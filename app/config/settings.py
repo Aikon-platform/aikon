@@ -179,7 +179,7 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / STATIC_DIR
 
-MEDIA_URL = "media/"
+MEDIA_URL = "/mediafiles/"
 MEDIA_ROOT = MEDIA_DIR  # BASE_DIR / MEDIA_DIR todo CHECK IF CORRECT
 
 # Default primary key field type
