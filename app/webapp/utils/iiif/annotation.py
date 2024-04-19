@@ -49,6 +49,7 @@ def anno_request(digit: Digitization):
             },
         )
         if response.status_code == 200:
+            log(f"[annotation_request] Annotation request send: {response.text or ''}")
             return True
         else:
             error = {
