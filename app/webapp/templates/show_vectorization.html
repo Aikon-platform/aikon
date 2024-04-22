@@ -19,7 +19,7 @@
 
 .grid-item img {
     width: auto;
-    height: 200px;
+    max-height: 300px;
     display: block;
 }
 
@@ -87,22 +87,11 @@
         <div style="display: flex; flex-direction: row;">
             <a href="{% url 'show-all-annotations' anno_ref=anno_ref %}" target="_blank">
                 <button class="btn-change" type="submit">
-                    <i class="bi bi-pencil"></i>
+                    <i class="bi bi-eye"></i>
                     {% if APP_LANG == "en" %}
-                        Vizualise all
+                        Visualize all
                     {% else %}
                         Voir toutes les
-                    {% endif %}
-                    annotations
-                </button>
-            </a>
-            <a href="{% url 'show-annotations' anno_ref=anno_ref %}" target="_blank">
-                <button class="btn-change" type="submit">
-                    <i class="bi bi-pencil"></i>
-                    {% if APP_LANG == "en" %}
-                        Edit
-                    {% else %}
-                        Éditer les
                     {% endif %}
                     annotations
                 </button>
@@ -119,12 +108,12 @@
             {% for coords, id in coord %}
                 <div class="grid-item">
                     <div style="display: flex; flex-direction: row;">
-                    {% with small=coords|add:'/full/0' %}
-                        <a href="{{ img_file|img_to_iiif:small }}" target="_blank"></a>
-                            <img src="{{ img_file|img_to_iiif:small }}" class="img-fluid" alt="{{ img_file }}" style="margin-right: 10px;">
-                        </a>
-                    {% endwith %}
-                    <img src="{% get_media_prefix %}svg/{{ img_file|jpg_to_none }}_{{ coords }}.svg" class="img-fluid" alt="{{ img_file|jpg_to_none }}_{{ coords }}.svg">
+                        {% with small=coords|add:'/full/0' %}
+                            <a href="{{ img_file|img_to_iiif:small }}" target="_blank"></a>
+                                <img src="{{ img_file|img_to_iiif:small }}" class="img-fluid" alt="{{ img_file }}" style="margin-right: 10px;">
+                            </a>
+                        {% endwith %}
+                        <img src="{% get_media_prefix %}svg/{{ img_file|jpg_to_none }}_{{ coords }}.svg" class="img-fluid" alt="{{ img_file|jpg_to_none }}_{{ coords }}.svg">
                     </div>
                 </div>
             {% endfor %}
