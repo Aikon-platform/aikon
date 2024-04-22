@@ -21,7 +21,7 @@ function refToMirador(imgRef){
 
 function refToChange(imgRef){
     const witNumber = imgRef.match(/wit(\d+)_/)[1];
-    return `/vhs-admin/webapp/witness/${witNumber}/change/`;
+    return `/${APP_NAME}-admin/webapp/witness/${witNumber}/change/`;
 }
 
 function getImageInfo(imgRef) {
