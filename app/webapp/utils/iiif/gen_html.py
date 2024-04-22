@@ -44,9 +44,13 @@ def anno_btn(obj, action="view"):
         icon = get_icon("code-compare")
         link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-similarity"
     elif action == "crops":
-        color = "rgb(157, 157, 224)"
+        color = "#008CBA"
         icon = get_icon("eye")
         link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-all-annotations"
+    elif action == "vectors":
+        color = "#4CAF50"
+        icon = get_icon("arrows")
+        link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-vectorization"
     else:
         # When the button is not supposed to redirects to anything
         link = "#"
@@ -77,8 +81,8 @@ def gen_btn(obj, action="view"):
         return mark_safe(anno_btn(obj, action))
 
     is_anno = True
-    if action == "crops" :
-        return mark_safe(f'<br>{anno_btn(obj, action)}')
+    if action == "crops" or action == "vectors":
+        return mark_safe(f"<br>{anno_btn(obj, action)}")
 
     if action == "view":
         digit_id = obj.id if cls(obj) == Digitization else obj.get_digit().id

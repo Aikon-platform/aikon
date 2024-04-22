@@ -264,7 +264,11 @@ def get_action(action, formatting=None):
         "download": {"en": "download annotations", "fr": "télécharger les annotations"},
         "edit": {"en": "edit annotations", "fr": "modifier les annotations"},
         "final": {"en": "final annotations", "fr": "annotations finales"},
-        "crops":{"en": "view all annotations", "fr": "visualiser toutes les annotations"}
+        "crops": {
+            "en": "view all annotations",
+            "fr": "visualiser toutes les annotations",
+        },
+        "vectors": {"en": "view vectorization", "fr": "visualiser les vectorisations"},
     }
     action = actions[action][APP_LANG]
     if formatting == "upper":  # => ACTION
