@@ -68,7 +68,7 @@
 
 /* Dark mode style */
 @media (prefers-color-scheme: dark) {
-    .select2-container--default {
+    .select2-container--default, .category-info,  .category-info h3 {
         color: black;
     }
 }
@@ -112,7 +112,7 @@
 	padding: 0 15px;
 	margin-top: 15px;
 	border: 1px solid var(--border-color);
-	background-color: #5fffff54;
+	background-color: #ddffff;
 }
 
 .hspace {

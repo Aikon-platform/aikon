@@ -10,62 +10,9 @@
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'css/tools.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css">
+    <link rel="stylesheet" href="{% static 'css/similarity.css' %}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
-    <style>
-        /* TODO improve CSS */
-        .similarity-container {
-            width: 90%;
-            overflow-x: auto;
-            margin: 20px auto;
-        }
-        .similarity-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        tr {
-            width: 100%;
-        }
-        td, th {
-            border: 1px solid var(--border-color);
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            position: sticky;
-            left: 0;
-            z-index: 10;
-        }
-        .anno-img {
-            max-height: 200px;
-            max-width: 250px;
-        }
-        #multi-select {
-            width: 800px;
-        }
-        button {
-            padding: 5px 10px;
-            border-radius: 5px;
-            border: none;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            display: inline-block;
-            font-size: 14px;
-            line-height: 1.42857143;
-            text-align: center;
-            white-space: nowrap;
-            vertical-align: middle;
-            margin-left: 10px;
-        }
-        /* Dark mode style */
-        @media (prefers-color-scheme: dark) {
-            .select2-container--default {
-                color: black;
-            }
-        }
-    </style>
-
-
+    <script src="https://cdn.jsdelivr.net/npm/lozad@1.14.0/dist/lozad.min.js"></script>
     <script src="{% static 'js/similarity.js' %}"></script>
     <script type="text/javascript">
         const USER_ID = "{{ user.id }}";
@@ -122,7 +69,7 @@
             sendScoreRequest(getCheckedRefs("{{ checked_ref }}"), maxRows, showCheckedRef);
         }
 
-        $(document).ready(function() {
+        $(function() {
             $('.witness-multiple').select2({
                 placeholder: `${APP_LANG === "en" ? `Select ${WIT}es` : `Sélectionner ${WIT}s`}...`,
                 tags: true,
