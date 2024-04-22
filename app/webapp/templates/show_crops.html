@@ -86,7 +86,6 @@
             <b>{{ anno|capfirst }}</b>
         </div>
         <div style="display: flex; flex-direction: row;">
-
             <a href="{% url 'export-crops' anno_ref=anno_ref %}">
                 <button class="btn-change" type="submit">
                     <i class="bi bi-box-arrow-up"></i>
@@ -122,9 +121,7 @@
                     annotations
                 </button>
             </a>
-
-
-            </div>
+        </div>
     </div>
 {% endblock %}
 
@@ -139,37 +136,37 @@
 </div>
 
 <div class="" id="view1">
-<div class="row">
-    <div class="column">
-        <table class="anno-table">
-            {% for canvas_nb, coord, img_file in all_crops %}
-                <tr class="anno-row">
-                    <td class="anno-td">
-                        <h3><a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ canvas_nb }}" target="_blank">Page {{ canvas_nb }}</a></h3>
-                        <div class="img-container">
-                        <a href="{{ img_file|img_to_iiif}}" target="_blank">
-                        <img class="page-preview" src="{{ img_file|img_to_iiif:"full/300,/0" }}" alt="Max" style="height: 300px;">
-                        </a>
-                    </div>
-                    </td>
-                    <td class="anno-td anno-col">
-                        {% for coords, id in coord %}
-                        <div id="ill_{{id}}" class="anno-div" style="height: 300px; width: auto; text-align: center;">
-                            {% with small=coords|add:'/full/0' %}
-                                <a href="{{ img_file|img_to_iiif:small }}" target="_blank">
-                                    <img src="{{ img_file|img_to_iiif:small }}" alt="scan preview" style="height: 100%; width: auto;">
-                                </a>
-                                <br>
-                                <input type="checkbox" name="crop_checkbox" value="{{ img_file|img_to_iiif:small }}" onchange="updateSelectedImageURLs()">
-                            {% endwith %}
+    <div class="row">
+        <div class="column">
+            <table class="anno-table">
+                {% for canvas_nb, coord, img_file in all_crops %}
+                    <tr class="anno-row">
+                        <td class="anno-td">
+                            <h3><a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ canvas_nb }}" target="_blank">Page {{ canvas_nb }}</a></h3>
+                            <div class="img-container">
+                            <a href="{{ img_file|img_to_iiif}}" target="_blank">
+                            <img class="page-preview" src="{{ img_file|img_to_iiif:"full/300,/0" }}" alt="Max" style="height: 300px;">
+                            </a>
                         </div>
-                        {% endfor %}
-                    </td>
-                </tr>
-            {% endfor %}
-        </table>
+                        </td>
+                        <td class="anno-td anno-col">
+                            {% for coords, id in coord %}
+                            <div id="ill_{{id}}" class="anno-div" style="height: 300px; width: auto; text-align: center;">
+                                {% with small=coords|add:'/full/0' %}
+                                    <a href="{{ img_file|img_to_iiif:small }}" target="_blank">
+                                        <img src="{{ img_file|img_to_iiif:small }}" alt="scan preview" style="height: 100%; width: auto;">
+                                    </a>
+                                    <br>
+                                    <input type="checkbox" name="crop_checkbox" value="{{ img_file|img_to_iiif:small }}" onchange="updateSelectedImageURLs()">
+                                {% endwith %}
+                            </div>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
     </div>
-</div>
 </div>
 
 <div class="hidden" id="view2" style="margin-top: 3%;">

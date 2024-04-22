@@ -48,7 +48,7 @@ def anno_btn(obj, action="view"):
         icon = get_icon("eye")
         link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-all-annotations"
     elif action == "vectors":
-        color = "#4CAF50"
+        color = "#EFB80B"
         icon = get_icon("arrows")
         link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-vectorization"
     else:

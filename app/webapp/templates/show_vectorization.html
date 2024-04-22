@@ -75,7 +75,6 @@
     border: 2px solid red; /* Couleur et épaisseur de la bordure du rectangle */
     background-color: rgba(255, 0, 0, 0.2); /* Couleur de fond semi-transparente du rectangle */
 }
-
     </style>
 
 {% endblock %}
@@ -84,6 +83,30 @@
     <div class="toolbar">
         <div class="title">
             <b>{{ anno|capfirst }}</b>
+        </div>
+        <div style="display: flex; flex-direction: row;">
+            <a href="{% url 'show-all-annotations' anno_ref=anno_ref %}" target="_blank">
+                <button class="btn-change" type="submit">
+                    <i class="bi bi-pencil"></i>
+                    {% if APP_LANG == "en" %}
+                        Vizualise all
+                    {% else %}
+                        Voir toutes les
+                    {% endif %}
+                    annotations
+                </button>
+            </a>
+            <a href="{% url 'show-annotations' anno_ref=anno_ref %}" target="_blank">
+                <button class="btn-change" type="submit">
+                    <i class="bi bi-pencil"></i>
+                    {% if APP_LANG == "en" %}
+                        Edit
+                    {% else %}
+                        Éditer les
+                    {% endif %}
+                    annotations
+                </button>
+            </a>
         </div>
     </div>
 {% endblock %}
@@ -95,7 +118,14 @@
         {% for canvas_nb, coord, img_file in all_crops %}
             {% for coords, id in coord %}
                 <div class="grid-item">
+                    <div style="display: flex; flex-direction: row;">
+                    {% with small=coords|add:'/full/0' %}
+                        <a href="{{ img_file|img_to_iiif:small }}" target="_blank"></a>
+                            <img src="{{ img_file|img_to_iiif:small }}" class="img-fluid" alt="{{ img_file }}" style="margin-right: 10px;">
+                        </a>
+                    {% endwith %}
                     <img src="{% get_media_prefix %}svg/{{ img_file|jpg_to_none }}_{{ coords }}.svg" class="img-fluid" alt="{{ img_file|jpg_to_none }}_{{ coords }}.svg">
+                    </div>
                 </div>
             {% endfor %}
         {% endfor %}

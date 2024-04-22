@@ -268,7 +268,10 @@ def get_action(action, formatting=None):
             "en": "view all annotations",
             "fr": "visualiser toutes les annotations",
         },
-        "vectors": {"en": "view vectorization", "fr": "visualiser les vectorisations"},
+        "vectors": {
+            "en": "visualize automatic vectorizations",
+            "fr": "voir les vectorisations automatiques",
+        },
     }
     action = actions[action][APP_LANG]
     if formatting == "upper":  # => ACTION
