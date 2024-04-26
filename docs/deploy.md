@@ -9,21 +9,10 @@
 > - **Java**: 11
 > - **Git**: with [SSH access to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
 
-Clone repository and checkout to branch
+Clone repository and checkout to production branch
 ```bash
 git clone git@github.com:faouinti/vhs.git
 cd vhs && git checkout <your-branch>-prod
-```
-
-## Scripted installation
-Set environment variables of the application and cantaloupe in their respective `.env` files
-```bash
-chmod +x scripts/* && scripts/env.sh
-```
-
-Install app, create service, etc.
-```bash
-scripts/deploy.sh
 ```
 
 ## Manual installation
@@ -47,7 +36,8 @@ pip install -r app/requirements-prod.txt
 ```
 
 ### Application
-Create prostgres database
+
+Create postgres database
 ```bash
 sudo -u postgres psql
 postgres=# CREATE DATABASE <database-name>;
@@ -65,29 +55,6 @@ cp app/config/.env{.template,}
 ```
 
 Change variables in the generated file `app/config/.env` to corresponds to your project
-```bash
-ALLOWED_HOSTS="localhost,127.0.0.1,145.238.203.8"  # add the domain name used on prod, e.g. "eida.obspm.fr"
-SECRET_KEY="<secret-key>"            # random string of characters
-DEBUG=True                           # set to False on prod
-DB_NAME="<database-name>"            # database name you defined
-DB_USERNAME="<database-username>"    # database username you defined
-DB_PASSWORD="<database-password>"    # database password you defined
-DB_HOST="<database-host>"            # localhost
-DB_PORT="<database-port>"            # 5432
-SAS_USERNAME="<sas-username>"
-SAS_PASSWORD="<sas-password>"
-GPU_REMOTE_HOST="<gpu-host>"
-GPU_USERNAME="<gpu-username>"
-GPU_PASSWORD="<gpu-password>"
-PROD_URL="<url-used-for-prod>"       # e.g. "eida.obspm.fr"
-APP_NAME="<app-name-lowercase>"      # name of the application, e.g. "eida"
-GEONAMES_USER="<geonames-username>"  # same username as the one defined on local
-APP_LANG="<fr-or-en>"                # lang to be used in the app: work either for french (fr) or english (en)
-EXAPI_URL="<gpu-api-address>"        # e.g. "https://dishas-ia.obspm.fr"
-EXAPI_KEY="<api-key>"
-REDIS_PASSWORD="<redis-password>"
-MEDIA_DIR="<media-dir>"              # absolute path to media files directory
-```
 
 Update database schema, create super user and collect static files
 ```bash
@@ -96,92 +63,7 @@ python app/manage.py createsuperuser
 python app/manage.py collectstatic
 ```
 
-### Image servers
-
-Create a .ENV file for cantaloupe
-```bash
-sudo chmod +x <path/to>/cantaloupe/init.sh && cp <path/to>/cantaloupe/.env{.template,} && nano <path/to>/cantaloupe/.env
-```
-
-Modify the variables in order to fit your project:
-- `BASE_URI` example: https://eida.obspm.fr
-- `FILE_SYSTEM_SOURCE` on prod: `./app/mediafiles/img/`
-```bash
-BASE_URI=<url-used-for-prod-or-blank>
-FILE_SYSTEM_SOURCE=./app/mediafiles/img/
-HTTP_PORT=8182
-HTTPS_PORT=8183
-LOG_PATH=/path/to/logs
-```
-
-Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with your variables):
-```shell
-<path/to>/cantaloupe/init.sh
-```
-
-Create a service for cantaloupe
-```bash
-sudo vi /etc/systemd/system/cantaloupe.service
-```
-
-```bash
-[Unit]
-Description=start cantaloupe
-After=network.target
-After=nginx.service
-
-[Service]
-WorkingDirectory=/<absolute/path/to>/vhs/
-ExecStart=/<absolute/path/to>/vhs/cantaloupe/start.sh
-StandardError=append:/<absolute/path/to>/vhs/cantaloupe/log
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Launch SAS
-```bash
-cd sas && mvn jetty:run
-```
-
-The Simple Annotation Server project does not currently contain authentication,
-although it is possible to secure the SAS web application with a single username and password using Nginx forwarding.
-
-Create the password file using the OpenSSL utilities and add a username to the file
-```bash
-sudo sh -c "echo -n '<username>:' >> /etc/nginx/.htpasswd"
-```
-
-Next, add an encrypted password entry for the username
-```bash
-sudo sh -c "openssl passwd <password> >> /etc/nginx/.htpasswd"
-```
-
-You can repeat this process for additional usernames.
-
-To configure Nginx password authentication, open up the server block configuration file and set up authentication
-```bash
-sudo vi /etc/nginx/sites-enabled/vhs
-```
-
-```bash
-server {
-	server_name <project-domain-name>;
-	...
-	location /sas/ {
-	...
-	auth_basic              "Restricted Content";
-	auth_basic_user_file    /etc/nginx/.htpasswd;
-	}
-}
-```
-
-Restart Nginx to implement your password policy
-```bash
-sudo systemctl restart nginx
-```
-
-### Gunicorn
+### Web server: Gunicorn & Nginx
 
 Make sure you can serve app with Gunicorn then quit with Ctrl+C
 ```bash
@@ -230,8 +112,6 @@ server {
         proxy_set_header        Upgrade             $http_upgrade;
         proxy_pass_header       Set-Cookie;
         proxy_pass              http://0.0.0.0:8888/;
-        auth_basic              "Restricted Content";
-        auth_basic_user_file    /etc/nginx/.htpasswd;
     }
 
     location /javax.faces.resource/ {
@@ -266,67 +146,184 @@ server {
 }
 ```
 
-### Enabling authentication for Redis instance
-Open the Redis configuration file
-```
-vi /etc/redis/redis.conf
-```
-Uncomment and set a password
-```
-requirepass <your_password>
-```
-Restart Redis
-```
-sudo systemctl restart redis-server
-```
-Test the password
-```
-redis-cli -a <your_password>
+### IIIF image server: Cantaloupe service
+
+Create a .ENV file for cantaloupe
+```bash
+sudo chmod +x <path/to>/cantaloupe/init.sh && cp <path/to>/cantaloupe/.env{.template,} && nano <path/to>/cantaloupe/.env
 ```
 
-### Celery
-Create a service for Celery
+Modify the variables in order to fit your project:
+- `BASE_URI` example: https://eida.obspm.fr
+- `FILE_SYSTEM_SOURCE` on prod: `./app/mediafiles/img/`
+
+Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with your variables):
 ```bash
-vi /etc/systemd/system/celery.service
+<path/to>/cantaloupe/init.sh
 ```
 
+Create a service for cantaloupe
 ```bash
+sudo vi /etc/systemd/system/cantaloupe.service
+```
+
+```
 [Unit]
-Description=Celery Service
+Description=start cantaloupe
 After=network.target
+After=nginx.service
 
 [Service]
-User=<production-server-username>
-Group=<production-server-group>
-WorkingDirectory=<path/to>/app
-ExecStart=<path/to>/venv/bin/celery -A <celery_app> worker --loglevel=info -P threads
-StandardOutput=file:<path/to>/celery/log
-StandardError=file:<path/to>/celery/log
+WorkingDirectory=/<absolute/path/to>/vhs/
+ExecStart=/<absolute/path/to>/vhs/cantaloupe/start.sh
+StandardError=append:/<absolute/path/to>/vhs/cantaloupe/log
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-Reload the `systemd` manager configuration
-```shell
+Enable service
+```bash
 sudo systemctl daemon-reload
+sudo systemctl enable cantaloupe.service
+sudo systemctl start cantaloupe.service
+```
+
+
+### Annotation server: Simple Annotation Server service
+
+Create a service for cantaloupe
+```bash
+sudo vi /etc/systemd/system/sas.service
+```
+```
+[Unit]
+Description=sas service 
+After=network.target
+After=nginx.service
+
+[Service]
+User=eida
+Group=eida
+WorkingDirectory=/<absolute/path/to>/vhs/sas/
+ExecStart=/<absolute/path/to>/vhs/sas/start.sh 
+StandardError=append:/<absolute/path/to>/vhs/sas/error.log 
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable service
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable sas.service
+sudo systemctl start sas.service
+```
+
+#### Securing SAS
+
+If you wish to secure access to the annotation server, follow the steps below.
+
+The Simple Annotation Server project does not currently contain authentication,
+although it is possible to secure the SAS web application with a single username and password using Nginx forwarding.
+
+Create the password file using the OpenSSL utilities and add a username to the file (corresponding to the one defined in `.env`)
+```bash
+sudo sh -c "echo -n '<SAS_USERNAME>:' >> /etc/nginx/.htpasswd"
+```
+
+Next, add an encrypted password entry for the username
+```bash
+sudo sh -c "openssl passwd <SAS_PASSWORD> >> /etc/nginx/.htpasswd"
+```
+
+You can repeat this process for additional usernames.
+
+To configure Nginx password authentication, open up the server block configuration file and set up authentication
+```bash
+sudo vi /etc/nginx/sites-enabled/<vhs>
+```
+
+```bash
+server {
+	server_name <project-domain-name>;
+	...
+	location /sas/ {
+        ...
+        auth_basic              "Restricted Content";
+        auth_basic_user_file    /etc/nginx/.htpasswd;
+	}
+}
+```
+
+Restart Nginx to implement your password policy
+```bash
+sudo systemctl restart nginx
+```
+
+### Celery and Redis
+
+#### Celery
+Create a service for Celery
+```bash
+vi /etc/systemd/system/celery.service
+```
+
+```
+[Unit]
+Description=Celery service
+After=network.target
+After=nginx.service
+
+[Service]
+WorkingDirectory=/<absolute/path/to>/vhs
+ExecStart=/<absolute/path/to>/vhs/celery/start.sh
+StandardError=append:/<absolute/path/to>/vhs/celery/error.log
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable service
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable celery.service
+sudo systemctl start celery.service
+```
+
+#### Add authentication for Redis
+Open the Redis configuration file
+```bash
+REDIS_CONF=$(redis-cli INFO | grep config_file | awk -F: '{print $2}' | tr -d '[:space:]')
+vi $REDIS_CONF
+```
+Uncomment and set a password (must match the one defined in `.env`)
+```
+requirepass <REDIS_PASSWORD>
+```
+Restart Redis
+```bash
+sudo systemctl restart redis-server
+```
+Test the password
+```bash
+redis-cli -a <REDIS_PASSWORD>
 ```
 
 - [Install VHS on Observatoire servers](https://syrte-int.obspm.fr/dokuwiki/wiki/informatique/prive/eida/installspe#cantaloupe_sas_et_vhs)
-
-> (coming) Docker image
 
 # Once the app is deployed...
 
 ## Code and files update
 On update of the code, you will need to restart gunicorn
-```shell
+```bash
 sudo systemctl restart gunicorn.socket
 ```
 
 On modification of the static files, you will need to restart nginx
 then copy static files into `app/staticfiles` in order to be served but nginx
-```shell
+```bash
 sudo systemctl restart nginx
 python app/manage.py collectstatic
 ```
@@ -339,35 +336,37 @@ alias djupdate="sudo systemctl restart gunicorn.socket && sudo systemctl restart
 ## Data model update
 If the data model was changed, you will first need to check that the new data model do not cause any error in the application.
 Once the tests performed, a migration file can be generated locally by running:
-```shell
+```bash
 python app/manage.py makemigrations
 ```
 
 It will create a file that tells Django how to modify the Postgres database structure to fit the new model definition.
 To apply those modifications, run locally:
-```shell
+```bash
+# on local
 python app/manage.py migrate
 ```
 
 If everything is set, update the remote database by running on the production server, once the code has been retrieve from origin:
-```shell
+```bash
+# on production
 python app/manage.py migrate
 ```
 
 # Debug
 
 Empty log file by running
-```shell
+```bash
 sudo truncate -s 0 /path/to/logfile.log
 ```
 To add aliases to your `.bashrc` config
-```shell
+```bash
 vi ~/.bashrc       # paste aliases at the end
 source ~/.bashrc   # to activate aliases
 ```
 
 To activate DEBUG in prod in order to see Django errors (instead of 500 errors)
-```shell
+```bash
 # install config/webapp/requirements-dev.txt
 vi app/config/.env           # set DEBUG=True
 vi app/config/settings.py    # l.87 `if not DEBUG:` => `if DEBUG:`
