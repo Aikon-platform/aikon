@@ -113,7 +113,7 @@ update_env() {
             esac
 
             new_value=$(prompt_user "$param" "$default_val" "$current_val" "$desc")
-            sed -i "" -e "s~^$param=.*~$param=\"$new_value\"~" "$env_file"
+            sed -i "" -e "s~^$param=.*~$param=$new_value~" "$env_file"
         fi
         prev_line="$line"
     done
@@ -224,7 +224,7 @@ update_cantaloupe_env() {
         esac
 
         new_value=$(prompt_user "$param" "$default_val" "$current_val")
-        sed -i "" -e "s~^$param=.*~$param=\"$new_value\"~" "$CANTALOUPE_ENV_FILE"
+        sed -i "" -e "s~^$param=.*~$param=$new_value~" "$CANTALOUPE_ENV_FILE"
     done
 }
 
@@ -251,7 +251,7 @@ answer=$(printf "%s\n" "${options[@]}" | fzy)
 case $answer in
     "yes")
         echoTitle "DATABASE GENERATION"
-        colorEcho yellow "\n⚠️The script will create a app user named $db_user: at the end, you will be prompted twice to enter a password"
+        colorEcho yellow "\n⚠️The script will create a app user named $db_user: at the end, you will be prompted twice to enter a password for this user"
         ok=("ok")
         printf "%s\n" "${ok[@]}" | fzy
         bash "$SCRIPT_DIR"/new_db.sh "$db_name"
@@ -325,4 +325,4 @@ END
 
 echoTitle "🎉 ALL SET UP! 🎉"
 colorEcho blue "\nYou can now run the server with: "
-colorEcho cyan "bash run.sh"
+colorEcho cyan "              bash run.sh"

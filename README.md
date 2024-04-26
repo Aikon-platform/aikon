@@ -222,7 +222,7 @@ Run server
 venv/bin/celery -A app.app.celery worker -B -c 1 --loglevel=info -P threads && venv/bin/python app/manage.py runserver localhost:8000
 ```
 
-or to launch everything (Django, Cantaloupe and SimpleAnnotationServer) at once (stop with `kill 0`):
+or to launch everything (Django, Cantaloupe and SimpleAnnotationServer) at once (stop with `Ctrl+C`):
 ```shell
 bash run.sh
 ```
