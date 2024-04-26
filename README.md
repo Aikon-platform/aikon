@@ -21,10 +21,18 @@
 - **Git**:
     - `sudo apt install git`
     - Having configured [SSH access to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
-
-[//]: # (https://www.oracle.com/java/technologies/javase/jdk11-archive-downloads.html)
+- **Geonames**:
+    - Create an account on [Geonames](https://www.geonames.org/login) and activate it
 
 ## App set up
+
+If you are using a Linux or Mac distribution, you can install the app with the following script:
+
+```bash
+bash scripts/setup.sh
+```
+
+Otherwise, follow the instructions below.
 
 ### Repository
 
@@ -42,13 +50,6 @@ sudo apt update
 sudo apt-get install wget ca-certificates
 sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql poppler-utils redis-server ghostscript
 ```
-
-[//]: # (Mac OS)
-[//]: # (```bash)
-[//]: # (brew install wget ca-certificates postgresql maven nginx libpq poppler redis ghostscript)
-[//]: # (brew services start postgresql)
-[//]: # (brew services start redis)
-[//]: # (```)
 
 ### Python environment
 
@@ -68,9 +69,9 @@ pre-commit install
 
 Create a [Geonames](https://www.geonames.org/login) account and activate it.
 
-Fill the various `.env` files of the project with:
-```shell
-bash scripts/env.sh
+Copy the content of the settings template file
+```bash
+cp app/config/.env{.template,}
 ```
 
 > #### Instructions done by the script
@@ -117,71 +118,56 @@ bash scripts/env.sh
 >
 > Provide as well an `APP_LANG`: only "fr" or "en" values are supported for now
 
+Change variables in the generated file `app/config/.env` to corresponds to your database and username
+Create a [Geonames](https://www.geonames.org/login) account, activate it and change `<geonames-username>` in the `.env` file
+
+
 ### Database
 
-In a terminal inside the `scripts/` directory, run:
-
-```shell
-bash new_db.sh <database-name>
+Open Postgres command prompt, create a database (`<database>`) and a user
+```bash
+sudo -i -u postgres psql # psql postgres on a Mac
+postgres=# CREATE DATABASE <database>;
+postgres=# CREATE USER <username> WITH PASSWORD '<password>';
+postgres=# ALTER ROLE <username> SET client_encoding TO 'utf8';
+postgres=# ALTER DATABASE <database> OWNER TO <username>;
+postgres=# ALTER ROLE <username> SET default_transaction_isolation TO 'read committed';
+postgres=# ALTER ROLE <username> SET timezone TO 'UTC';
+postgres=# GRANT ALL PRIVILEGES ON DATABASE <database> TO <username>;
+postgres=# \q
 ```
 
-You will be asked to type your sudo password, then the password for the Django superuser (same name as `$DB_USERNAME`) twice.
+### Django
 
-> #### Instructions done by the script
-> Open Postgres command prompt, create a database (`<database>`) and a user
->
-> [//]: # (psql postgres)
->
-> ```bash
-> sudo -i -u postgres psql
-> postgres=# CREATE DATABASE <database>;
-> postgres=# CREATE USER <username> WITH PASSWORD '<password>';
-> postgres=# ALTER ROLE <username> SET client_encoding TO 'utf8';
-> postgres=# ALTER DATABASE <database> OWNER TO <username>;
-> postgres=# ALTER ROLE <username> SET default_transaction_isolation TO 'read committed';
-> postgres=# ALTER ROLE <username> SET timezone TO 'UTC';
-> postgres=# GRANT ALL PRIVILEGES ON DATABASE <database> TO <username>;
-> postgres=# \q
-> ```
->
-> ### Django
->
-> Update database schema with models that are stored inside `app/webapp/migrations`
-> ```bash
-> python app/manage.py migrate
-> ```
->
-> Create a superuser
-> ```shell
-> python app/manage.py createsuperuser
-> ```
+Update database schema with models that are stored inside `app/webapp/migrations`
+```bash
+python app/manage.py migrate
+```
 
-Create exception for port 8000
+Create a superuser
 ```shell
-sudo ufw allow 8000
+python app/manage.py createsuperuser
 ```
 
 ### IIIF Image server
 
 #### Cantaloupe
 
-Skip these steps if you used `scripts/env.sh`
+Create a .ENV file for cantaloupe
+```bash
+sudo chmod +x cantaloupe/init.sh && cp cantaloupe/.env{.template,} && nano cantaloupe/.env
+```
 
-> Create a .ENV file for cantaloupe
-> ```bash
-> sudo chmod +x cantaloupe/init.sh && cp cantaloupe/.env{.template,} && nano cantaloupe/.env
-> ```
->
-> Change variables in the generated file `cantaloupe/.env`:
-> - `BASE_URI`: leave it blank on local
-> - `FILE_SYSTEM_SOURCE` depends on the folder in which you run cantaloupe (inside cantaloupe/ folder: `../app/mediafiles/img/`)
-> ```bash
-> BASE_URI=
-> FILE_SYSTEM_SOURCE=absolute/path/to/app/mediafiles/img/  # inside the project directory
-> HTTP_PORT=8182
-> HTTPS_PORT=8183
-> LOG_PATH=/dir/where/cantaloupe/logs/are/stored
-> ```
+Change variables in the generated file `cantaloupe/.env`:
+- `BASE_URI`: leave it blank on local
+- `FILE_SYSTEM_SOURCE` depends on the folder in which you run cantaloupe (inside cantaloupe/ folder: `../app/mediafiles/img/`)
+```bash
+BASE_URI=
+FILE_SYSTEM_SOURCE=absolute/path/to/app/mediafiles/img/  # inside the project directory
+HTTP_PORT=8182
+HTTPS_PORT=8183
+LOG_PATH=/dir/where/cantaloupe/logs/will/be/stored
+```
 
 Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with your variables):
 ```shell
@@ -194,6 +180,7 @@ bash cantaloupe/start.sh
 ```
 
 #### Simple Annotation Server
+
 Run [Simple Annotation Server](https://github.com/glenrobson/SimpleAnnotationServer)
 ```shell
 cd sas && mvn jetty:run
@@ -202,44 +189,8 @@ cd sas && mvn jetty:run
 Navigate to [http://localhost:8888/index.html](http://localhost:8888/index.html) to start annotating:
 You should now see Mirador with default example manifests.
 
-The Simple Annotation Server project does not currently contain authentication although it is possible to secure the SAS web application with a single username and password using Nginx forwarding.
-
-Create the password file using the OpenSSL utilities and add a username to the file
-```bash
-sudo sh -c "echo -n '<username>:' >> /etc/nginx/.htpasswd"
-```
-
-Next, add an encrypted password entry for the username
-```bash
-sudo sh -c "openssl passwd <password> >> /etc/nginx/.htpasswd"
-```
-
-You can repeat this process for additional usernames.
-
-To configure Nginx password authentication, open up the server block configuration file and set up authentication
-```bash
-sudo vi /etc/nginx/sites-enabled/vhs
-```
-
-```bash
-server {
-	server_name <project-domain-name>;
-	...
-	location /sas/ {
-      ...
-      auth_basic              "Restricted Content";
-      auth_basic_user_file    /etc/nginx/.htpasswd;
-	}
-}
-```
-
-Restart Nginx to implement your password policy
-```bash
-sudo systemctl restart nginx
-```
-
 ### Celery with Redis setup
-#### Enabling authentication for Redis instance
+#### Enabling authentication for Redis instance (optional)
 
 Get the redis config file and the redis password in the environment variables
 ```bash
@@ -278,4 +229,4 @@ bash run.sh
 
 You can now visit the app at [http://localhost:8000](http://localhost:8000) and connect with the credentials you created
 
-> For more documentation, see [docs folder](https://github.com/faouinti/vhs/tree/main/docs)
+> For more documentation, see [docs folder](docs/)
