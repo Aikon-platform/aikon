@@ -24,7 +24,16 @@
 - **Geonames**:
     - Create an account on [Geonames](https://www.geonames.org/login) and activate it
 
-## App set up
+## Installation
+
+### Repository
+
+```bash
+git clone git@github.com:faouinti/vhs.git
+cd vhs
+```
+
+### Scripted install 🐆
 
 If you are using a Linux or Mac distribution, you can install the app with the following script:
 
@@ -34,6 +43,7 @@ bash scripts/setup.sh
 
 Otherwise, follow the instructions below.
 
+<<<<<<< HEAD
 ### Repository
 
 ```bash
@@ -214,19 +224,149 @@ Test the password
 ```
 redis-cli -a $REDIS_PASSWORD
 ```
+=======
+> ### Manual install 🐢
+> #### Dependencies
+>
+> ```bash
+> wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+> sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+> sudo apt update
+> sudo apt-get install wget ca-certificates
+> sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql poppler-utils redis-server ghostscript
+> ```
+>
+> #### Python environment
+>
+> ```bash
+> python3.10 -m venv venv
+> source venv/bin/activate
+> pip install -r app/requirements-dev.txt
+> ```
+>
+> Enable `pre-commit` hooks (auto-test and formatting)
+>
+> ```bash
+> pre-commit install
+> ```
+>
+> #### Project settings
+>
+> Create a [Geonames](https://www.geonames.org/login) account and activate it.
+>
+> Copy the content of the settings template file
+> ```bash
+> cp app/config/.env{.template,}
+> ```
+> Change variables in the generated file `app/config/.env` to corresponds to your database and username
+> Create a [Geonames](https://www.geonames.org/login) account, activate it and change `<geonames-username>` in the `.env` file
+>
+> #### Database
+>
+> Open Postgres command prompt, create a database (`<database>`) and a user
+> ```bash
+> sudo -i -u postgres psql # Mac: psql postgres
+> postgres=# CREATE DATABASE <database>;
+> postgres=# CREATE USER <username> WITH PASSWORD '<password>';
+> postgres=# ALTER ROLE <username> SET client_encoding TO 'utf8';
+> postgres=# ALTER DATABASE <database> OWNER TO <username>;
+> postgres=# ALTER ROLE <username> SET default_transaction_isolation TO 'read committed';
+> postgres=# ALTER ROLE <username> SET timezone TO 'UTC';
+> postgres=# GRANT ALL PRIVILEGES ON DATABASE <database> TO <username>;
+> postgres=# \q
+> ```
+>
+> Update database schema with models that are stored inside `app/webapp/migrations`
+> ```bash
+> python app/manage.py migrate
+> ```
+>
+> Create a superuser
+> ```bash
+> python app/manage.py createsuperuser
+> ```
+>
+> #### Cantaloupe
+>
+> Create a .ENV file for cantaloupe
+> ```bash
+> sudo chmod +x cantaloupe/init.sh && cp cantaloupe/.env{.template,} && nano cantaloupe/.env
+> ```
+>
+> Change variables in the generated file `cantaloupe/.env`:
+> - `BASE_URI`: leave it blank on local
+> - `FILE_SYSTEM_SOURCE` depends on the folder in which you run cantaloupe (inside cantaloupe/ folder: `../app/mediafiles/img/`)
+> ```bash
+> BASE_URI=
+> FILE_SYSTEM_SOURCE=absolute/path/to/app/mediafiles/img/  # inside the project directory
+> HTTP_PORT=8182
+> HTTPS_PORT=8183
+> LOG_PATH=/dir/where/cantaloupe/logs/will/be/stored
+> ```
+>
+> Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with your variables):
+> ```bash
+> bash cantaloupe/init.sh
+> ```
+>
+> Run [Cantaloupe](https://cantaloupe-project.github.io/)
+> ```bash
+> bash cantaloupe/start.sh
+> ```
+>
+> #### Simple Annotation Server
+>
+> Run [Simple Annotation Server](https://github.com/glenrobson/SimpleAnnotationServer)
+> ```bash
+> cd sas && mvn jetty:run
+> ```
+>
+> Navigate to [http://localhost:8888/index.html](http://localhost:8888/index.html) to start annotating:
+> You should now see Mirador with default example manifests.
+>
+> #### Enabling authentication for Redis instance (optional)
+>
+> Get the redis config file and the redis password in the environment variables
+> ```bash
+> REDIS_CONF=$(redis-cli INFO | grep config_file | awk -F: '{print $2}' | tr -d '[:space:]')
+> source app/config/.env
+> ```
+>
+> Add your `REDIS_PASSWORD` (from `app/config/.env`) to Redis config file
+>
+> ```bash
+> sudo sed -i -e "s/^requirepass [^ ]*/requirepass $REDIS_PASSWORD/" "$REDIS_CONF"
+> sudo sed -i -e "s/# requirepass [^ ]*/requirepass $REDIS_PASSWORD/" "$REDIS_CONF"
+> ```
+>
+> Restart Redis
+> ```bash
+> sudo systemctl restart redis-server # Mac: brew services restart redis
+> ```
+>
+> Test the password
+> ```
+> redis-cli -a $REDIS_PASSWORD
+> ```
+>>>>>>> ad0c783 ([DOCS] readme formatting)
 
 ## Launch app
 
-Run server
-```shell
-venv/bin/celery -A app.app.celery worker -B -c 1 --loglevel=info -P threads && venv/bin/python app/manage.py runserver localhost:8000
-```
-
-or to launch everything (Django, Cantaloupe and SimpleAnnotationServer) at once (stop with `Ctrl+C`):
-```shell
+Launch everything (Django, Celery, Cantaloupe and SimpleAnnotationServer) at once (stop with `Ctrl+C`):
+```bash
 bash run.sh
 ```
 
+> Or launch each process separately:
+> ```bash
+> # Celery & Django
+> venv/bin/celery -A app.app.celery worker -B -c 1 --loglevel=info -P threads && venv/bin/python app/manage.py runserver localhost:8000
+> # Cantaloupe
+> sudo -S java -Dcantaloupe.config=cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe-4.1.11.war
+> # Simple Annotation Server
+> cd sas/ && mvn jetty:run
+> ```
+
 You can now visit the app at [http://localhost:8000](http://localhost:8000) and connect with the credentials you created
 
-> For more documentation, see [docs folder](docs/)
+### *For more documentation, see [docs folder](docs/)*
