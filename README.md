@@ -83,25 +83,32 @@ bash scripts/env.sh
 > Change variables in the generated file `app/config/.env` to corresponds to your database and username
 >
 > ```bash
-> ALLOWED_HOSTS="localhost,127.0.0.1,145.238.203.8"
-> SECRET_KEY="<secret-key>"            # random string of characters
-> DEBUG=True                           # leave to True on local
-> DB_NAME="<database-name>"            # database name you defined
-> DB_USERNAME="<database-username>"    # database username you defined
-> DB_PASSWORD="<database-password>"    # database password you defined
-> DB_HOST="<database-host>"            # localhost
-> DB_PORT="<database-port>"            # 5432
-> SAS_USERNAME="<sas-username>"
-> SAS_PASSWORD="<sas-password>"
-> PROD_URL="<url-used-for-prod>"       # e.g. "eida.obspm.fr"
-> APP_NAME="<app-name-lowercase>"      # name of the application, e.g. "eida"
-> GEONAMES_USER="<geonames-username>"
-> APP_LANG="<fr-or-en>"                # lang to be used in the app: work either for french (fr) or english (en)
-> EXAPI_URL="<gpu-api-address>"        # e.g. "https://dishas-ia.obspm.fr"
-> EXAPI_KEY="<api-key>"
-> REDIS_PASSWORD="<redis-password>"    # random string of characters without "/"
-> MEDIA_DIR="<media-dir>"              # absolute path to media files directory (e.g. "/home/<path>/<to>/vhs/app/mediafiles")
-> EXTRACTOR_MODEL="<media-dir>"        # model used for annotation extraction
+> APP_NAME="Lower case name of the application"
+> CONTACT_MAIL="Email address for support and inquiries"
+> DB_NAME="Database name"
+> DB_USERNAME="Database admin name"
+> DB_PASSWORD="Database password"
+> ALLOWED_HOSTS="List of allowed host separated by a comma"
+> SECRET_KEY="Random string of characters"
+> DEBUG="True or False"
+> DB_HOST="Database host"
+> DB_PORT="Database port"
+> SAS_USERNAME="SimpleAnnotationServer username"
+> SAS_PASSWORD="SimpleAnnotationServer password"
+> SAS_PORT="SimpleAnnotationServer port"
+> CANTALOUPE_PORT="Cantaloupe port"
+> CANTALOUPE_PORT_HTTPS="Cantaloupe port used on production"
+> PROD_URL="URL used in production without 'https://'"
+> GEONAMES_USER="Geonames username"
+> APP_LANG="fr or en"
+> EXAPI_URL="API URL to which send requests for image analysis"
+> EXAPI_KEY="API secret key to allow requests for image analysis"
+> EXTRACTOR_MODEL="Pre-trained model used for image analysis"
+> REDIS_PASSWORD="Redis password"
+> MEDIA_DIR="Absolute path to media files directory"
+> EMAIL_HOST="SMTP server domain"
+> EMAIL_HOST_USER="Email address to send alert emails"
+> EMAIL_HOST_PASSWORD="App password for email address"
 > ```
 >
 > Create a [Geonames](https://www.geonames.org/login) account, activate it and change `<geonames-username>` in the `.env` file
