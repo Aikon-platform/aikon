@@ -6,7 +6,7 @@ import numpy as np
 import requests
 from typing import List
 
-from app.config.settings import EXAPI_URL, EXAPI_KEY, APP_URL, APP_NAME
+from app.config.settings import EXAPI_URL, APP_URL, APP_NAME
 from app.webapp.models.annotation import Annotation
 from app.webapp.utils.functions import flatten_dict
 from app.webapp.utils.iiif import gen_iiif_url
@@ -81,7 +81,6 @@ def similarity_request(annos: List[Annotation]):
     try:
         response = requests.post(
             url=f"{EXAPI_URL}/similarity/start",
-            headers={"X-API-Key": EXAPI_KEY},
             json={
                 "documents": documents,
                 # "model": f"{FEAT_BACKBONE}",

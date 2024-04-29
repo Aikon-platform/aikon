@@ -16,7 +16,6 @@ from app.config.settings import (
     SAS_APP_URL,
     APP_NAME,
     EXAPI_URL,
-    EXAPI_KEY,
     APP_URL,
     EXTRACTOR_MODEL,
 )
