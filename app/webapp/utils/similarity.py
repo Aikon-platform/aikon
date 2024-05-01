@@ -1,5 +1,5 @@
-import hashlib
 import os
+from collections import defaultdict
 from itertools import combinations_with_replacement
 import numpy as np
 
@@ -13,6 +13,20 @@ from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.utils.iiif.annotation import formatted_annotations
 from app.webapp.utils.logger import log
 from app.webapp.utils.paths import SCORES_PATH
+
+
+def load_npy_file(score_path_pair):
+    try:
+        return np.load(score_path_pair, allow_pickle=True)
+    except FileNotFoundError as e:
+        log(f"[load_npy_file] no score file for {score_path_pair}", e)
+        return None
+
+
+def doc_pairs(doc_ids: list):
+    if isinstance(doc_ids, list) and len(doc_ids) > 0:
+        return list(combinations_with_replacement(doc_ids, 2))
+    raise ValueError("Input must be a non-empty list of ids.")
 
 
 def check_computed_pairs(anno_refs):
@@ -135,155 +149,68 @@ def load_similarity(pair):
         return pair, None
 
 
-def get_best_matches(img_scores, topk=10):
-    sorted_scores = sorted(img_scores, key=lambda x: x[0], reverse=True)
-    seen_images = set()
-    for i in range(topk):
-        if not i < len(sorted_scores):
-            break
-        score, image = sorted_scores[i]
-        if image in seen_images:
-            # Remove the tuple with the lowest score
-            sorted_scores.pop(i)
-            break
-        seen_images.add(image)
-
-    # Check for duplicates again until all topk tuples have unique images
-    while len(set(image for _, image in sorted_scores[:topk])) != topk:
-        for i in range(topk):
-            if not i < len(sorted_scores):
-                break
-            score, image = sorted_scores[i]
-            if image in seen_images:
-                # If duplicate, remove the tuple with the lowest score
-                sorted_scores.pop(i)
-                break
-            seen_images.add(image)
-
-    # import heapq
-    # heap = []
-    #
-    # seen_images = set()
-    #
-    # for score, image in img_scores:
-    #     if image not in seen_images:
-    #         heapq.heappush(heap, (score, image))
-    #         seen_images.add(image)
-    #     if len(heap) > topk:
-    #         _, removed_image = heapq.heappop(heap)
-    #         seen_images.remove(removed_image)
-    #
-    # sorted_scores = sorted(heap, key=lambda x: x[0], reverse=True)
-    return sorted_scores[:topk]
-
-
 def compute_total_similarity(
     annos: List[Annotation],
-    checked_anno: str,
+    checked_anno_ref: str,
     anno_refs: List[str] = None,
     max_rows: int = 50,
-    show_checked_ref: bool = True,
+    show_checked_ref: bool = False,
 ):
-    total_scores = {}
-    prefix_key = "_".join(checked_anno.split("_")[:2])
+    total_scores = defaultdict(list)
+    prefix_key = "_".join(checked_anno_ref.split("_")[:2])
+    topk = 10
 
     if anno_refs is None:
         anno_refs = [anno.get_ref() for anno in annos]
+
     for pair in doc_pairs(anno_refs):
         try:
             score_path_pair = f"{SCORES_PATH}/{'-'.join(sorted(pair))}.npy"
             if prefix_key not in score_path_pair:
                 continue
-            pair_scores = np.load(score_path_pair, allow_pickle=True)
+            pair_scores = load_npy_file(score_path_pair)
         except FileNotFoundError as e:
             # TODO: trigger similarity request?
             log(f"[compute_total_similarity] no score file for {pair}", e)
             continue
 
-        for img_name in np.unique(
-            np.concatenate((pair_scores[:, 1], pair_scores[:, 2]))
-        ):
+        # Create a dictionary with image names as keys and scores as values
+        img_scores = defaultdict(list)
+        for score, img1, img2 in pair_scores:
+            img_scores[img1].append((float(score), img2))
+            img_scores[img2].append((float(score), img1))
+
+        # Update total scores
+        for img_name, scores in img_scores.items():
             if img_name.startswith(prefix_key):
-                if img_name not in total_scores:
-                    total_scores[img_name] = []
-                total_scores[img_name].extend(best_matches(pair_scores, img_name, pair))
+                total_scores[img_name].extend(scores)
 
-    ######
+    # Filter out items starting with prefix key
     if not show_checked_ref:
-        filtered_data = {
-            q_img: [item for item in sim if not item[1].startswith(prefix_key)]
-            for q_img, sim in total_scores.items()
-        }
-        total_scores = filtered_data
-    #######
+        for q_img in total_scores:
+            total_scores[q_img] = [
+                item
+                for item in total_scores[q_img]
+                if not item[1].startswith(prefix_key)
+            ]
 
-    # score_dict = {
-    #     q_img: sorted(sim, key=lambda x: x[0], reverse=True)
-    #     for q_img, sim in total_scores.items()
-    # }
+    # Sort scores for each query image in descending order and keep top 10
+    total_scores = {
+        q_img: sorted(scores, key=lambda x: x[0], reverse=True)[:topk]
+        for q_img, scores in total_scores.items()
+    }
 
-    ######
-    score_sorted = {}
-    for key, value in total_scores.items():
-        if len(value):
-            score_sorted[key] = value[0][0]
-    score_sorted = sorted(score_sorted.items(), key=lambda x: x[1], reverse=True)
+    # Sort rows based on the first score of image
+    sorted_total_scores = dict(
+        sorted(total_scores.items(), key=lambda x: x[1], reverse=True)
+    )
 
-    score_dict_sorted = {}
-    counter = 1
-    for key, score in score_sorted:
-        if counter > max_rows:
-            break
+    # Limit number of rows to max_rows
+    sorted_total_scores = {
+        k: sorted_total_scores[k] for k in list(sorted_total_scores)[:max_rows]
+    }
 
-        if prefix_key in key:
-            score_dict_sorted[key] = get_best_matches(total_scores[key])
-            # print(score_dict_sorted[key], total_scores[key][:10])
-            counter += 1
-
-    return score_dict_sorted
-    #######
-
-
-def best_matches(scores, q_img, doc_pair):
-    """
-    scores = [[score, wit1_man191_0009_166,1325,578,516.jpg,  wit205_pdf216_021_65,701,504,520.jpg]
-              [score, wit1_man191_0027_1143,2063,269,245.jpg, wit205_pdf216_025_42,755,534,440.jpg]
-              ...]
-    q_img = "wit1_man191_0009_166,1325,578,516.jpg"
-    doc_pair = (wit1_man191, wit205_pdf216)
-    """
-    # q_doc = "_".join(q_img.split("_")[:1])
-    # q_idx, s_idx = (1, 2) if doc_pair[0].startswith(q_doc) else (2, 1)
-
-    # Get pairs concerning the given query image q_img
-    img_pairs_1 = scores[scores[:, 1] == q_img]
-    img_pairs_2 = scores[scores[:, 2] == q_img]
-
-    # [(score, similar_image)]
-    result = [(float(pair[0]), pair[2]) for pair in img_pairs_1]
-    result.extend([(float(pair[0]), pair[1]) for pair in img_pairs_2])
-
-    unique_dict = {str(item): item for item in result}
-    distinct_array = list(unique_dict.values())
-    max_score = {}
-    filtered_array = []
-    for score, img in distinct_array:
-        if img not in max_score or score > max_score[img]:
-            max_score[img] = score
-            for i, (existing_score, existing_img) in enumerate(filtered_array):
-                if existing_img == img:
-                    filtered_array[i] = [score, img]
-                    break
-            else:
-                filtered_array.append([score, img])
-
-    return filtered_array
-
-
-def doc_pairs(doc_ids: list):
-    if isinstance(doc_ids, list) and len(doc_ids) > 0:
-        return list(combinations_with_replacement(doc_ids, 2))
-    raise ValueError("Input must be a non-empty list of ids.")
+    return sorted_total_scores
 
 
 def reset_similarity(anno_ref):

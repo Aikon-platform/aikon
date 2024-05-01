@@ -27,7 +27,7 @@ def check_similarity_files(file_names):
 
 # @celery_app.task
 def compute_similarity_scores(
-    anno_refs: List[str] = None, max_rows: int = 50, show_checked_ref: bool = True
+    anno_refs: List[str] = None, max_rows: int = 50, show_checked_ref: bool = False
 ):
     from app.webapp.views import check_ref
 
