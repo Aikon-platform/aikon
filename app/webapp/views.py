@@ -132,7 +132,7 @@ def manifest_annotation(request, version, anno_ref):
     return JsonResponse(anno.gen_manifest_json(version=check_version(version)))
 
 
-# @user_passes_test(is_superuser)
+@user_passes_test(is_superuser)
 def send_anno(request, digit_ref):
     """
     To relaunch annotations in case the automatic annotation failed
@@ -319,8 +319,6 @@ def receive_anno(request, digit_ref):
 
             process_anno_file.delay(file_content, digit.id, model)
             return JsonResponse({"response": "OK"}, status=200)
-            # if process_anno(file_content, digit, model):
-            #     return JsonResponse({"response": "OK"}, status=200)
         return JsonResponse(
             {"message": "Could not process annotation file"}, status=400
         )
@@ -588,11 +586,20 @@ def show_all_annotations(request, anno_ref):
         if coord
     ]
 
+    paginator = Paginator(all_crops, 50)
+    try:
+        page_annos = paginator.page(request.GET.get("page"))
+    except PageNotAnInteger:
+        page_annos = paginator.page(1)
+    except EmptyPage:
+        page_annos = paginator.page(paginator.num_pages)
+
     return render(
         request,
         "show_crops.html",
         context={
             "anno": anno,
+            "page_annos": page_annos,
             "all_crops": all_crops,
             "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2),
             "anno_ref": anno_ref,
