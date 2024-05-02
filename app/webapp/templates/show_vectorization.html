@@ -7,34 +7,6 @@
 {% block extrahead %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'css/tools.css' %}">
-
-    <style>
-    .btn-change {
-        background-color: rgb(157, 157, 224);
-        color: white;
-        display: inline-block;
-        font-weight: 400;
-        font-size: 16px;
-        text-align: center;
-        white-space: nowrap;
-        vertical-align: middle;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-        border: 1px solid transparent;
-        padding: .3rem .7rem;
-        margin: 5px 5px;
-        line-height: 1.5;
-        border-radius: .25rem;
-        transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
-    }
-
-    .btn-change:hover {
-        background-color: rgb(41, 36, 89);
-    }
-    </style>
-
 {% endblock %}
 
 {% block header %}
