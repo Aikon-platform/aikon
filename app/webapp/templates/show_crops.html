@@ -61,14 +61,15 @@
         <div class="title">
             <b>{{ anno|capfirst }}</b>
         </div>
+
         <div style="display: flex; flex-direction: row;">
             <a href="{% url 'export-crops' anno_ref=anno_ref %}">
-                <button class="btn-change" type="submit">
-                    <i class="bi bi-box-arrow-up"></i>
+                <button class="export-button" type="submit">
+                    <i class="fa-regular fa-file-zipper"></i>&nbsp;
                     {% if APP_LANG == "en" %}
-                        Export all
+                        Download all
                     {% else %}
-                        Exporter toutes les
+                        Télécharger toutes les
                     {% endif %}
                     annotations
                 </button>
@@ -77,153 +78,174 @@
             <form id="export" action="{% url 'export-selected-crops' %}" method="post">
                 {% csrf_token %}
                 <input type="hidden" id="listeURL" name="listeURL" value="">
-                <button class="btn-change" type="submit">
-                    <i class="bi bi-box-arrow-up"></i>
+                <button class="export-button" type="submit">
+                    <i class="fa-regular fa-file-zipper"></i>&nbsp;
                     {% if APP_LANG == "en" %}
-                        Export selected annotations
+                        Download selected annotations
                     {% else %}
-                        Exporter les annotations sélectionnées
-                    {% endif %}</button>
+                        Télécharger les annotations sélectionnées
+                    {% endif %}
+                </button>
             </form>
 
-            <a href="{% url 'show-annotations' anno_ref=anno_ref %}" target="_blank">
-                <button class="btn-change" type="submit">
-                    <i class="bi bi-pencil"></i>
-                    {% if APP_LANG == "en" %}
-                        Edit
-                    {% else %}
-                        Éditer les
-                    {% endif %}
-                    annotations
-                </button>
-            </a>
+            {% if anno.is_validated %}
+                <a href="{% url 'show-annotations' anno_ref=anno_ref %}" target="_blank">
+                    <button class="edit-button" type="submit">
+                        <i class="fa fa-pencil"></i>&nbsp;
+                        {% if APP_LANG == "en" %}
+                            Edit
+                        {% else %}
+                            Éditer les
+                        {% endif %}
+                        annotations
+                    </button>
+                </a>
+            {% endif %}
         </div>
     </div>
 {% endblock %}
 
 {% block content %}
 
-<div class="row" style="margin-top: 3%;">
-    <button id="toggleBtn" class="btn-change">{% if APP_LANG == "en" %}
-        Change view
-    {% else %}
-        Changer de vue
-    {% endif %}</button>
-</div>
-
-<div class="" id="view1">
+<div class="tabs-crops">
     <div class="row">
-        <div class="column">
-            <table class="anno-table">
+        <div class="tab-buttons">
+            <button class="btn-change active-tab">{% if APP_LANG == "en" %}
+                Page view
+            {% else %}
+                Vue page
+            {% endif %}
+            </button>
+            <button class="btn-change">{% if APP_LANG == "en" %}
+                Dump view
+            {% else %}
+                Vue générale
+            {% endif %}
+            </button>
+        </div>
+    </div>
+
+    <div class="tab-bodies">
+        <div class="row" style="display:block;">
+            <div class="column">
+                <table class="anno-table" style="margin-top: 0em;">
+                    {% for canvas_nb, coord, img_file in page_annos %}
+                        <tr class="anno-row">
+                            <td class="anno-td page-col">
+                                <a href="{{ img_file|img_to_iiif}}" target="_blank">
+                                    <img class="page-preview" src="{{ img_file|img_to_iiif:"full/350,/0" }}" alt="Click to see real size image">
+                                </a>
+                                <h3><a href="{{ img_file|img_to_iiif }}" target="_blank">Page {{ canvas_nb }}</a></h3>
+                            </td>
+                            <td class="anno-td anno-col">
+                                {% for coords, id in coord %}
+                                    <div id="ill_{{ id }}" class="anno-div">
+                                        {% with region_full=coords|add:'/full/0' region=coords|add:'/,200/0' %}
+                                            <a href="{{ img_file|img_to_iiif:region_full }}" target="_blank">
+                                                <img src="{{ img_file|img_to_iiif:region }}" alt="scan preview">
+                                            </a>
+                                            <br>
+                                            <input id="bbox_{{ id }}" type="checkbox" name="crop_checkbox" value="{{ img_file|img_to_iiif:region_full }}" onchange="updateSelectedImageURLs()">
+                                            <label for="bbox_{{ id }}">
+                                                {% if APP_LANG == "en" %}Select{% else %}Sélectionner{% endif %}
+                                            </label>
+                                        {% endwith %}
+                                    </div>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </table>
+                {% include 'includes/pagination.html' with current_page=page_annos %}
+            </div>
+        </div>
+
+        <div style="display:none;">
+            <div class="grid-container" style="margin-top: .5em;">
                 {% for canvas_nb, coord, img_file in all_crops %}
-                    <tr class="anno-row">
-                        <td class="anno-td">
-                            <h3><a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ canvas_nb }}" target="_blank">Page {{ canvas_nb }}</a></h3>
-                            <div class="img-container">
-                            <a href="{{ img_file|img_to_iiif}}" target="_blank">
-                            <img class="page-preview" src="{{ img_file|img_to_iiif:"full/300,/0" }}" alt="Max" style="height: 300px;">
-                            </a>
-                        </div>
-                        </td>
-                        <td class="anno-td anno-col">
-                            {% for coords, id in coord %}
-                            <div id="ill_{{id}}" class="anno-div" style="height: 300px; width: auto; text-align: center;">
-                                {% with small=coords|add:'/full/0' %}
-                                    <a href="{{ img_file|img_to_iiif:small }}" target="_blank">
-                                        <img src="{{ img_file|img_to_iiif:small }}" alt="scan preview" style="height: 100%; width: auto;">
-                                    </a>
-                                    <br>
-                                    <input type="checkbox" name="crop_checkbox" value="{{ img_file|img_to_iiif:small }}" onchange="updateSelectedImageURLs()">
-                                {% endwith %}
+                    {% for coords, id in coord %}
+                        {% with region_full=coords|add:'/full/0' region=coords|add:'/,250/0' %}
+                            <div class="grid-item">
+                                <a href="{{ img_file|img_to_iiif:region_full }}" target="_blank">
+                                    <img src="{{ img_file|img_to_iiif:region }}" alt="scan preview">
+                                </a>
+                                <h3><a href="{{ img_file|img_to_iiif }}" target="_blank">Page {{ canvas_nb }}</a></h3>
+                                <input id="bbox_{{ id }}" type="checkbox" name="crop_checkbox" value="{{ img_file|img_to_iiif:region_full }}" onchange="updateSelectedImageURLs()">
+                                <label for="bbox_{{ id }}">
+                                    {% if APP_LANG == "en" %}Select{% else %}Sélectionner{% endif %}
+                                </label>
                             </div>
-                            {% endfor %}
-                        </td>
-                    </tr>
+                        {% endwith %}
+                    {% endfor %}
                 {% endfor %}
-            </table>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="hidden" id="view2" style="margin-top: 3%;">
-    <div class="grid-container">
-        {% for canvas_nb, coord, img_file in all_crops %}
-            {% for coords, id in coord %}
-                {% with small=coords|add:'/full/0' %}
-                    <div class="grid-item">
-                        <a href="{{ img_file|img_to_iiif:small }}" target="_blank"></a>
-                            <img src="{{ img_file|img_to_iiif:small }}" class="img-fluid" alt="{{ img_file }}">
-                        </a>
-                        <br>
-                        <input type="checkbox" name="crop_checkbox" value="{{ img_file|img_to_iiif:small }}" onchange="updateSelectedImageURLs()">
-                    </div>
-                {% endwith %}
-            {% endfor %}
-        {% endfor %}
-    </div>
-</div>
-
-
 <script>
-var checkboxes = document.querySelectorAll('input[name="crop_checkbox"]');
-var selectedImageURLs = [];
-// Fonction pour mettre à jour la liste des URL sélectionnées
-function updateSelectedImageURLs() {
-    // Réinitialiser la liste des URL sélectionnées
-    selectedImageURLs = [];
-
-    // Parcourir toutes les cases à cocher
-    checkboxes.forEach(function(checkbox) {
-        // Vérifier si la case est cochée
-        if (checkbox.checked) {
-            // Récupérez l'URL de l'image à partir de la value de la case cochée
-            var imageURL = checkbox.value;
-            // Ajouter l'URL de l'image à la liste des URL sélectionnées
-            selectedImageURLs.push(imageURL);
-            }
-        }
-    );
-    // Afficher la liste des URLs sélectionnées
-    console.log(selectedImageURLs);
-    var jsonString = JSON.stringify(selectedImageURLs);
-
-    // liste => hidden input
-    document.getElementById("listeURL").value = jsonString;
-    // Vérifier si la valeur du champ est correcte
-    console.log(document.getElementById("listeURL").value);
-};
-
-//switch views
-
-document.addEventListener("DOMContentLoaded", function() {
-
-    const toggleBtn = document.getElementById('toggleBtn');
-    const view1 = document.getElementById('view1');
-    const view2 = document.getElementById('view2');
-
-    toggleBtn.addEventListener('click', function() {
-
-        // Réinitialiser la liste des URL sélectionnées lorsque la vue est changée
+    var checkboxes = document.querySelectorAll('input[name="crop_checkbox"]');
+    var selectedImageURLs = [];
+    // Fonction pour mettre à jour la liste des URL sélectionnées
+    function updateSelectedImageURLs() {
+        // Réinitialiser la liste des URL sélectionnées
         selectedImageURLs = [];
 
-        // Décocher toutes les cases à cocher
+        // Parcourir toutes les cases à cocher
+        checkboxes.forEach(function(checkbox) {
+            // Vérifier si la case est cochée
+            if (checkbox.checked) {
+                // Récupérez l'URL de l'image à partir de la value de la case cochée
+                var imageURL = checkbox.value;
+                // Ajouter l'URL de l'image à la liste des URL sélectionnées
+                selectedImageURLs.push(imageURL);
+                }
+            }
+        );
+        // Afficher la liste des URLs sélectionnées
+        console.log(selectedImageURLs);
+        var jsonString = JSON.stringify(selectedImageURLs);
+
+        // liste => hidden input
+        document.getElementById("listeURL").value = jsonString;
+        // Vérifier si la valeur du champ est correcte
+        console.log(document.getElementById("listeURL").value);
+    };
+
+    Array.from(document.querySelectorAll('.tabs-crops')).forEach((tab_container, TabID) => {
+        const registers = tab_container.querySelector('.tab-buttons');
+        const bodies = tab_container.querySelector('.tab-bodies');
+
+        Array.from(registers.children).forEach((el, i) => {
+          el.setAttribute('aria-controls', `${TabID}_${i}`)
+          bodies.children[i]?.setAttribute('id', `${TabID}_${i}`)
+
+          el.addEventListener('click', (ev) => {
+            let activeRegister = registers.querySelector('.active-tab');
+            activeRegister.classList.remove('active-tab')
+            activeRegister = el;
+            activeRegister.classList.add('active-tab')
+            changeBody(registers, bodies, activeRegister)
+          })
+      })
+    })
+
+    function changeBody(registers, bodies, activeRegister) {
+        selectedImageURLs = [];
+
         checkboxes.forEach(function(checkbox) {
         checkbox.checked = false;
         });
 
-        // Vérifie si la première vue est visible
-        const isView1Visible = !view1.classList.contains('hidden');
+        Array.from(registers.children).forEach((el, i) => {
 
-        // Si la première vue est visible, la cache et affiche la deuxième vue
-        if (isView1Visible) {
-            view1.classList.add('hidden');
-            view2.classList.remove('hidden');
-        } else { // Sinon, affiche la première vue et cache la deuxième vue
-            view1.classList.remove('hidden');
-            view2.classList.add('hidden');
-        }
-    });
-});
+            if (bodies.children[i]) {
+                bodies.children[i].style.display = el == activeRegister ? 'block' : 'none'
+            }
+
+            el.setAttribute('aria-expanded', el == activeRegister ? 'true' : 'false')
+        })
+    }
 </script>
 
 {% endblock %}
