@@ -25,6 +25,7 @@ celery_app = Celery(
 
 # Load Celery configuration from Django settings
 celery_app.config_from_object("django.conf:settings", namespace="CELERY")
+celery_app.conf.broker_connection_retry_on_startup = True
 
 celery_app.conf.update(
     CELERY_ACCEPT_CONTENT=["json"],

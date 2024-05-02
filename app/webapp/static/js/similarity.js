@@ -21,7 +21,7 @@ function refToMirador(imgRef){
 
 function refToChange(imgRef){
     const witNumber = imgRef.match(/wit(\d+)_/)[1];
-    return `/vhs-admin/webapp/witness/${witNumber}/change/`;
+    return `/${APP_NAME}-admin/webapp/witness/${witNumber}/change/`;
 }
 
 function getImageInfo(imgRef) {
@@ -50,7 +50,7 @@ function getCheckedRefs(checked_ref) {
     const options = document.querySelectorAll('#multi-select option:checked');
 
     options.forEach(function(option) {
-        checkedAnnoRefs.push(option.id);
+        checkedAnnoRefs.push(option.value);
     });
 
     return checkedAnnoRefs;
@@ -70,7 +70,7 @@ const displayScores = (scores) => {
                     <a href="${refToChange(qImg)}" target="_blank">
                         ${WIT_CAP} #${getImageInfo(qImg).witNumber}
                     </a>
-                    (<a href="${refToMirador(qImg)}" target="_blank">vue ${getImageInfo(qImg).canvasNumber}</a>)
+                    (<a href="${refToMirador(qImg)}" target="_blank">${APP_LANG === "en" ? "view" : "vue"} ${getImageInfo(qImg).canvasNumber}</a>)
                 </p>
                 <a href="${refToIIIF(qImg)}" target="_blank">
                     <div class="img-wrap">
@@ -93,7 +93,7 @@ const displayScores = (scores) => {
                             <a href="${refToChange(sImg)}" target="_blank">
                                 ${WIT_CAP} #${getImageInfo(sImg).witNumber}
                             </a>
-                            (<a href="${refToMirador(sImg)}" target="_blank">vue ${getImageInfo(sImg).canvasNumber}</a>)
+                            (<a href="${refToMirador(sImg)}" target="_blank">${APP_LANG === "en" ? "view" : "vue"} ${getImageInfo(sImg).canvasNumber}</a>)
                         </p>
                         <a href="${refToIIIF(sImg)}" target="_blank">
                             <div class="img-wrap">

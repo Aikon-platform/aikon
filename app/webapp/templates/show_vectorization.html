@@ -7,26 +7,8 @@
 {% block extrahead %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'css/tools.css' %}">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css" rel="stylesheet">
 
     <style>
-    .grid-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, 650px);
-        grid-gap: 20px;
-    }
-
-    .grid-item img {
-        max-width: 50%;
-        max-height: 270px;
-        display: block;
-    }
-
-    .hidden {
-        display: none;
-    }
-
     .btn-change {
         background-color: rgb(157, 157, 224);
         color: white;
@@ -51,30 +33,6 @@
     .btn-change:hover {
         background-color: rgb(41, 36, 89);
     }
-
-    /*.img-overlay-wrap {
-        position: relative;
-        display: inline-block; /* container -> taille de l'image
-        transition: transform 150ms ease-in-out;
-      }
-
-      .img-overlay-wrap img { pour que ce soit responsive
-         display: block;
-         max-width: 100%;
-         height: auto;
-      }
-
-      .img-overlay-wrap svg {
-        position: absolute;
-        top: 0;
-        left: 0;
-      }*/
-
-      .rectangle {
-        position: absolute;
-        border: 2px solid red; /* Couleur et épaisseur de la bordure du rectangle */
-        background-color: rgba(255, 0, 0, 0.2); /* Couleur de fond semi-transparente du rectangle */
-    }
     </style>
 
 {% endblock %}
@@ -86,8 +44,8 @@
         </div>
         <div style="display: flex; flex-direction: row;">
             <a href="{% url 'show-all-annotations' anno_ref=anno_ref %}" target="_blank">
-                <button class="btn-change" type="submit">
-                    <i class="bi bi-eye"></i>
+                <button class="export-button" type="submit">
+                    <i class="fa-solid fa-eye"></i>
                     {% if APP_LANG == "en" %}
                         Visualize all
                     {% else %}
@@ -109,12 +67,13 @@
                 <div class="grid-item">
                     <div style="display: flex; flex-direction: row;">
                         {% with small=coords|add:'/full/0' %}
-                            <a href="{{ img_file|img_to_iiif:small }}" target="_blank"></a>
+                            <a href="{{ img_file|img_to_iiif:small }}" target="_blank">
                                 <img src="{{ img_file|img_to_iiif:small }}" class="img-fluid" alt="{{ img_file }}" style="margin-right: 10px;">
                             </a>
                         {% endwith %}
                         <img src="{% get_media_prefix %}svg/{{ img_file|jpg_to_none }}_{{ coords }}.svg" class="img-fluid" alt="{{ img_file|jpg_to_none }}_{{ coords }}.svg">
                     </div>
+                    <h3><a href="{{ img_file|img_to_iiif }}" target="_blank">Page {{ canvas_nb }}</a></h3>
                 </div>
             {% endfor %}
         {% endfor %}

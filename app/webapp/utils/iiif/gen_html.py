@@ -84,7 +84,7 @@ def gen_btn(obj, action="view"):
     if action == "crops" or action == "vectors":
         return mark_safe(f"<br>{anno_btn(obj, action)}")
 
-    if action == "view":
+    if action == "auto-view":
         digit_id = obj.id if cls(obj) == Digitization else obj.get_digit().id
         download_url = f"{APP_URL}/{APP_NAME}/iiif/digit-annotation/{digit_id}"
         anno_type = "TXT"

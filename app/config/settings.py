@@ -87,7 +87,6 @@ if DEBUG:
 APP_PORT = 8000
 CANTALOUPE_PORT = ENV("CANTALOUPE_PORT")
 SAS_PORT = ENV("SAS_PORT")
-EXAPI_KEY = ENV("EXAPI_KEY")
 
 APP_URL = f"http://localhost:{APP_PORT}"
 CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
@@ -180,7 +179,7 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / STATIC_DIR
 
 MEDIA_URL = "media/"
-MEDIA_ROOT = MEDIA_DIR  # BASE_DIR / MEDIA_DIR todo CHECK IF CORRECT
+MEDIA_ROOT = MEDIA_DIR
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -224,3 +223,10 @@ LOGGING = {
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = ENV("EMAIL_HOST")
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = ENV("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = ENV("EMAIL_HOST_PASSWORD")
