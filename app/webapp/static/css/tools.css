@@ -92,6 +92,42 @@
     background-color: rgb(35, 115, 128);
 }
 
+.export-button {
+    background-color: #5aa926;
+}
+
+.export-button:hover {
+    background-color: #44851a;
+}
+
+.edit-button {
+    background-color: #008CBA;
+}
+
+.edit-button:hover {
+    background-color: #006687;
+}
+
+.btn-change {
+    background-color: var(--body-bg);
+    display: inline-block;
+    font-size: 16px;
+    text-align: center;
+    border: 1px solid var(--body-quiet-color);
+    padding: .6rem .8rem;
+    margin: 3em -.6em -.4em .3em;
+    color: var(--body-quiet-color);
+}
+
+.btn-change:hover {
+    cursor: pointer;
+}
+
+.btn-change.active-tab {
+    background-color: var(--body-quiet-color);
+    color: var(--body-bg);
+}
+
 .anno-table {
     background: #F8F8F8;
     margin-top: 3em;
@@ -152,4 +188,20 @@ tr:nth-child(odd) th {
 }
 tr:nth-child(even) th {
     background: var(--darkened-bg);
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    grid-gap: 20px;
+}
+
+.grid-item img {
+    max-height: 250px;
+    max-width: 250px;
+    display: block;
+}
+
+.hidden {
+    display: none;
 }
