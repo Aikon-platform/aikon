@@ -196,7 +196,7 @@ const displayScores = (scores) => {
 }
 
 function sendScoreRequest(annoRefs, maxRows, showCheckedRef) {
-    fetch(`${APP_URL}/${APP_NAME}/compute-score`, {
+    return fetch(`${APP_URL}/${APP_NAME}/compute-score`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
