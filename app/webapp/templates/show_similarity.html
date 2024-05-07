@@ -35,6 +35,7 @@
 {% endblock %}
 
 {% block content %}
+    <div id="overlay"></div>
     <h3>
         {{ checked_ref_title|truncate_words }}
     </h3>
@@ -48,7 +49,7 @@
             {% endfor %}
         </select>
         <input id="maxRows" type="number" value="50" onchange="maxRows = this.value">
-        <button class="reload-button" onclick="refresh_rows()" title="{% if APP_LANG == 'en' %}Reload{% else %}Actualiser{% endif %}">
+        <button id="reload-btn" class="reload-button" title="{% if APP_LANG == 'en' %}Reload{% else %}Actualiser{% endif %}">
             <i class="fa-solid fa-arrows-rotate"></i>
             {% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}
         </button>
@@ -64,9 +65,44 @@
         var maxRows = 50;
         var showCheckedRef = false;
 
+        document.getElementById('reload-btn').addEventListener('click', refresh_rows);
+
         function refresh_rows() {
+            let btn = document.getElementById('reload-btn');
+
+            // If the button is disabled, return immediately
+            if (btn.disabled) {
+                return;
+            }
+
+            // Disable the button and change its text and opacity
+            btn.disabled = true;
+            btn.style.opacity = 0.5;
+            btn.innerHTML = `<i class="fa fa-spinner fa-spin fa-pulse fa-1x"></i> ${APP_LANG === "en" ? "Loading..." : "Chargement..."}`;
+
+            // Disable pointer events and change the cursor for all elements
+            document.querySelectorAll('*').forEach(function(node) {
+                node.style.pointerEvents = 'none';
+                node.style.cursor = 'not-allowed';
+            });
+
+            // Clear the contents of the table
+            document.getElementById('similarity').innerHTML = '';
+
             showCheckedRef = document.getElementById('show_checked_ref').selected;
-            sendScoreRequest(getCheckedRefs("{{ checked_ref }}"), maxRows, showCheckedRef);
+            sendScoreRequest(getCheckedRefs("{{ checked_ref }}"), maxRows, showCheckedRef)
+            .then(() => {
+                // Re-enable the button and restore its original text and opacity once the request is done
+                btn.disabled = false;
+                btn.style.opacity = 1;
+                btn.innerHTML = `<i class="fa-solid fa-arrows-rotate"></i> ${APP_LANG === "en" ? "Reload" : "Actualiser"}`;
+
+                // Enable pointer events and change the cursor back to default for all elements
+                document.querySelectorAll('*').forEach(function(node) {
+                    node.style.pointerEvents = 'auto';
+                    node.style.cursor = '';
+                });
+            });
         }
 
         $(function() {
@@ -76,7 +112,10 @@
                 tokenSeparators: [',', ' '],
                 allowClear: true
             });
-            sendScoreRequest(getCheckedRefs("{{ checked_ref }}"), maxRows, showCheckedRef);
+            sendScoreRequest(getCheckedRefs("{{ checked_ref }}"), maxRows, showCheckedRef)
+            .then(() => {
+                document.getElementById('overlay').style.display = 'none';
+            });
         });
     </script>
 {% endblock %}
