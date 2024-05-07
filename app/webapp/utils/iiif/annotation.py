@@ -88,11 +88,11 @@ def anno_request(digit: Digitization, user):
                 },
             }
 
-            task.error_task()
+            task.error_task(error)
             log(error)
             return False
     except Exception as e:
-        task.error_task()
+        task.error_task(e)
         log(f"[anno_request] Annotation request for {digit.get_ref()} failed", e)
         return False
 
@@ -112,7 +112,7 @@ def process_anno(anno_file_content, digit, experiment_id, model="Unknown model")
         with open(f"{ANNO_PATH}/{anno.get_ref()}.txt", "w+b") as f:
             f.write(anno_file_content.encode("utf-8"))
     except Exception as e:
-        task.error_task()
+        task.error_task(e)
         log(
             f"[receive_anno] Failed to save received annotations for digit #{digit.id}",
             e,
@@ -122,11 +122,11 @@ def process_anno(anno_file_content, digit, experiment_id, model="Unknown model")
     try:
         index_annotations(anno)
     except Exception as e:
-        task.error_task()
+        task.error_task(e)
         log(f"[receive_anno] Failed to index annotations for digit #{digit.id}", e)
         return False
 
-    task.complete_task()
+    task.complete_task(anno.get_ref())
     return True
 
 
