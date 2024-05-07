@@ -220,9 +220,8 @@ class Digitization(models.Model):
 
     def has_vectorization(self):
         # if there is at least one SVG file named after the current digitization
-        for i in range(1, 5):
-            if os.path.exists(f"{SVG_PATH}/{self.get_ref()}_*.svg"):
-                return True
+        if len(glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")):
+            return True
         return False
 
     def get_imgs(self, is_abs=False, temp=False):
@@ -374,9 +373,18 @@ def digitization_post_save(sender, instance, created, **kwargs):
             )
             t.start()
 
+        import inspect
+
+        for frame_record in inspect.stack():
+            if frame_record[3] == "get_response":
+                request = frame_record[0].f_locals["request"]
+                break
+        else:
+            request = None
+
         anno_t = threading.Thread(
             target=send_anno_request,
-            args=(instance, event),
+            args=(instance, event, request.user),
         )
         anno_t.start()
 
