@@ -4,11 +4,19 @@
 import uuid
 
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
 from django.db import models
 
-from app.config.settings import APP_LANG
+from app.config.settings import (
+    APP_LANG,
+    EMAIL_HOST_USER,
+    APP_URL,
+    APP_NAME,
+    CONTACT_MAIL,
+)
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.utils.functions import get_fieldname
+from app.webapp.utils.logger import log
 
 
 def get_name(fieldname, plural=False):
@@ -62,10 +70,42 @@ class APITask(models.Model):
         self.status = "running"
         self.save(update_fields=["status"])
 
-    def complete_task(self):
+    def complete_task(self, anno_ref):
         self.status = "completed"
         self.save(update_fields=["status"])
+        self.completion_mail(anno_ref)
 
-    def error_task(self):
+    def error_task(self, error_msg):
         self.status = "error"
         self.save(update_fields=["status"])
+        self.error_mail(error_msg)
+
+    def task_mail(self, message):
+        try:
+            send_mail(
+                subject=f"[{APP_NAME} {self.task_type}] Your {self.task_type} task was completed!",
+                message=message,
+                from_email=EMAIL_HOST_USER,
+                recipient_list=[self.user.email],
+            )
+        except Exception as e:
+            log(
+                f"[task_email] Unable to send confirmation email for {self.user.email}",
+                e,
+            )
+
+    def completion_mail(self, anno_ref):
+        if self.task_type == "extraction":
+            message = f"Dear {APP_NAME} user,\n\nThe {self.task_type} task you requested for {self.get_digit()} was completed and your results were sent to the platform.\n\nSee the automatic results at: {APP_URL}/{APP_NAME}/{anno_ref}/show/"
+        elif self.task_type == "similarity":
+            message = (
+                f"Dear {APP_NAME} user,\n\nThe {self.task_type} task you requested for {self.get_digit()} was completed and your results were sent to the platform.\n\nSee the automatic results at: {APP_URL}/{APP_NAME}/{anno_ref}/show-similarity/",
+            )
+        else:
+            message = f"Dear {APP_NAME} user,\n\nThe {self.task_type} task you requested for {self.get_digit()} was completed and your results were sent to the platform."
+
+        self.task_mail(message)
+
+    def error_mail(self, error_msg):
+        message = f"Dear {APP_NAME} user,\n\nThe {self.task_type} task you requested for {self.get_digit()} could not be completed due to the following error: {error_msg}.\n\nYou can contact the administrator at {CONTACT_MAIL}."
+        self.task_mail(message)
