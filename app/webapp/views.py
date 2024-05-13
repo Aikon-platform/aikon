@@ -16,6 +16,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_GET
 
 from app.webapp.models.annotation import Annotation, check_version
+from app.webapp.models.treatment import Treatment
 from app.webapp.models.digitization import Digitization
 from app.config.settings import (
     SAS_APP_URL,
@@ -142,7 +143,7 @@ def send_anno(request, digit_ref):
 
     error = {"response": f"Failed to send annotation request for digit #{digit.id}"}
     try:
-        status = anno_request(digit, request.user.id)
+        status = anno_request(digit, treatment_type="manual", user_id=request.user.id)
     except Exception as e:
         error["cause"] = e
         return JsonResponse(error, safe=False)
@@ -255,7 +256,7 @@ def delete_send_anno(request, digit_ref):
     }
 
     try:
-        status = anno_request(digit, request.user.id)
+        status = anno_request(digit, treatment_type="manual", user_id=request.user.id)
     except Exception as e:
         error["cause"] = e
         return JsonResponse(error, safe=False)
@@ -301,7 +302,7 @@ def receive_anno(request, digit_ref):
     if request.method == "POST":
         try:
             annotation_file = request.FILES["annotation_file"]
-            experiment_id = request.POST.get("experiment_id")
+            treatment_id = request.POST.get("experiment_id")
         except Exception as e:
             log("[receive_anno] No annotation file received for", e)
             return JsonResponse({"message": "No annotation file"}, status=400)
@@ -317,7 +318,7 @@ def receive_anno(request, digit_ref):
         if check_anno_file(file_content):
             from app.webapp.tasks import process_anno_file
 
-            process_anno_file.delay(file_content, digit.id, experiment_id, model)
+            process_anno_file.delay(file_content, digit.id, treatment_id, model)
             return JsonResponse({"response": "OK"}, status=200)
         return JsonResponse(
             {"message": "Could not process annotation file"}, status=400
