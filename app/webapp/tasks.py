@@ -50,11 +50,11 @@ def compute_similarity_scores(
 
 
 @celery_app.task
-def process_anno_file(file_content, digit_id, experiment_id, model):
+def process_anno_file(file_content, digit_id, treatment_id, model):
     from app.webapp.models.annotation import Digitization
 
     digitization = Digitization.objects.filter(pk=digit_id).first()
-    return process_anno(file_content, digitization, experiment_id, model)
+    return process_anno(file_content, digitization, treatment_id, model)
 
 
 @celery_app.task

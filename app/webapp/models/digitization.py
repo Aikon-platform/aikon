@@ -173,8 +173,8 @@ class Digitization(models.Model):
     def get_annotations(self):
         return self.annotations.all()
 
-    def get_api_tasks(self):
-        return self.api_tasks.all()
+    def get_treatments(self):
+        return self.treatments.all()
 
     def get_ref(self):
         # digit_ref = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}"
