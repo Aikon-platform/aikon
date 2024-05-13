@@ -142,7 +142,7 @@ class Witness(models.Model):
     series = models.ForeignKey(
         Series,
         verbose_name=get_name("series"),
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         blank=True,
         null=True,
     )
@@ -266,7 +266,9 @@ class Witness(models.Model):
         return "<br>".join([place.__str__() for place in self.get_places()]) or "-"
 
     def get_roles(self):
-        return list(set(flatten([content.get_roles() for content in self.get_contents()])))
+        return list(
+            set(flatten([content.get_roles() for content in self.get_contents()]))
+        )
 
     def get_persons(self):
         return self.contents.values_list("roles__person", flat=True).distinct()
