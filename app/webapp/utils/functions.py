@@ -22,7 +22,7 @@ from urllib.request import (
     install_opener,
 )
 from app.config.settings import APP_NAME, APP_LANG, CANTALOUPE_APP_URL
-from app.webapp.models.utils.constants import DATE_ERROR
+from app.webapp.models.utils.constants import DATE_ERROR, IMG
 from app.webapp.utils.paths import (
     BASE_DIR,
     MEDIA_DIR,
@@ -144,6 +144,23 @@ def rename_file(old_path, new_path):
         log(f"[rename_file] {old_path} > {new_path}", e)
         return False
     return True
+
+
+def temp_to_img(digit, event=None):
+    try:
+        delete_files(f"{IMG_PATH}/to_delete.txt")
+
+        i = 0
+        for i, img_path in enumerate(digit.get_imgs(is_abs=True, temp=True)):
+            to_jpg(img_path, digit.get_file_path(i=i + 1))
+            print(img_path)
+            delete_files(img_path)
+        # TODO change to have list of image name
+        digit.images.name = f"{i + 1} {IMG} uploaded.jpg"
+        if event:
+            event.set()
+    except Exception as e:
+        log(f"[process_images] Failed to process images:\n{e} ({e.__class__.__name__})")
 
 
 def pdf_to_img(pdf_name, event=None, dpi=MAX_RES):
