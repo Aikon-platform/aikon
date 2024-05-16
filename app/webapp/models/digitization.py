@@ -330,17 +330,8 @@ class Digitization(models.Model):
             self.pdf.name = self.get_file_path(is_abs=False)
 
         elif self.get_digit_abbr() == IMG_ABBR:
-            delete_files(f"{IMG_PATH}/to_delete.txt")
-
-            i = 0
-            for i, img_path in enumerate(self.get_imgs(is_abs=True, temp=True)):
-                to_jpg(img_path, self.get_file_path(i=i + 1))
-                print(img_path)
-                delete_files(img_path)
             # TODO change to have list of image name
-            self.images.name = f"{i + 1} {IMG} uploaded.jpg"
-
-        #     delete_files(f"{IMG_PATH}/to_delete.txt")
+            self.images.name = f"{IMG} uploaded.jpg"
 
         super().save(*args, **kwargs)
 
@@ -362,11 +353,9 @@ def digitization_post_save(sender, instance, created, **kwargs):
             )
             t.start()
 
-        # elif digit_type == IMG_ABBR:
-        #     t = threading.Thread(
-        #         target=temp_to_img, args=(instance, event)
-        #     )
-        #     t.start()
+        elif digit_type == IMG_ABBR:
+            t = threading.Thread(target=temp_to_img, args=(instance, event))
+            t.start()
 
         elif digit_type == MAN_ABBR:
 
