@@ -150,10 +150,13 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             )
 
             if len(files):  # if images were uploaded
-                for i, file in enumerate(files):
+                sorted_files = sorted(files, key=lambda f: f.name)
+
+                for i, file in enumerate(sorted_files):
                     filename, ext = get_file_ext(file.name)
                     with open(
-                        f"{IMG_PATH}/temp_{obj.get_ref()}_{digit_type}_{i}.{ext}", "wb"
+                        f"{IMG_PATH}/temp_{obj.get_ref()}_{digit_type}_{str(i).zfill(4)}.{ext}",
+                        "wb",
                     ) as saved_file:
                         saved_file.write(file.read())
 
