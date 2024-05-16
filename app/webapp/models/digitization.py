@@ -39,6 +39,7 @@ from app.webapp.utils.functions import (
     delete_files,
     rename_file,
     to_jpg,
+    temp_to_img,
 )
 from app.webapp.utils.paths import (
     BASE_DIR,
@@ -329,14 +330,8 @@ class Digitization(models.Model):
             self.pdf.name = self.get_file_path(is_abs=False)
 
         elif self.get_digit_abbr() == IMG_ABBR:
-            delete_files(f"{IMG_PATH}/to_delete.txt")
-            i = 0
-            for i, img_path in enumerate(self.get_imgs(is_abs=True, temp=True)):
-                # TODO: check need of threading to do that
-                to_jpg(img_path, self.get_file_path(i=i + 1))
-                delete_files(img_path)
             # TODO change to have list of image name
-            self.images.name = f"{i+1} {IMG} uploaded.jpg"
+            self.images.name = f"{IMG} uploaded.jpg"
 
         super().save(*args, **kwargs)
 
@@ -356,6 +351,10 @@ def digitization_post_save(sender, instance, created, **kwargs):
             t = threading.Thread(
                 target=pdf_to_img, args=(instance.get_file_path(is_abs=False), event)
             )
+            t.start()
+
+        elif digit_type == IMG_ABBR:
+            t = threading.Thread(target=temp_to_img, args=(instance, event))
             t.start()
 
         elif digit_type == MAN_ABBR:
