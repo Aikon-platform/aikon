@@ -156,6 +156,7 @@ def compute_total_similarity(
     show_checked_ref: bool = False,
 ):
     total_scores = defaultdict(list)
+    img_names = defaultdict(set)
     prefix_key = "_".join(checked_anno_ref.split("_")[:2])
     topk = 10
 
@@ -174,10 +175,14 @@ def compute_total_similarity(
             continue
 
         # Create a dictionary with image names as keys and scores as values
-        img_scores = defaultdict(list)
+        img_scores = defaultdict(set)
         for score, img1, img2 in pair_scores:
-            img_scores[img1].append((float(score), img2))
-            img_scores[img2].append((float(score), img1))
+            if img2 not in img_names[img1]:
+                img_scores[img1].add((float(score), img2))
+                img_names[img1].add(img2)
+            if img1 not in img_names[img2]:
+                img_scores[img2].add((float(score), img1))
+                img_names[img2].add(img1)
 
         # Update total scores
         for img_name, scores in img_scores.items():
