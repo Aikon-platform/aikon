@@ -28,6 +28,7 @@ from app.webapp.utils.functions import (
 from app.webapp.utils.iiif.annotation import get_anno_images, get_training_anno
 from app.webapp.utils.paths import IMG_PATH
 from app.webapp.utils.similarity import similarity_request, check_computed_pairs
+from app.webapp.utils.vectorization import vectorization_request
 
 
 def no_anno_message(request):
@@ -242,14 +243,6 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                 if APP_LANG == "en"
                 else f"La similarité a déjà été calculée pour tous les {WIT}s sélectionnés",
             )
-
-        similarity_request(annos)
-        return messages.info(
-            request,
-            "Similarity request was sent to the API"
-            if APP_LANG == "en"
-            else "La requête de similarité a été transmise à l'API",
-        )
 
     @admin.action(
         description=f"Export IIIF manifests of selected {WIT}es"
