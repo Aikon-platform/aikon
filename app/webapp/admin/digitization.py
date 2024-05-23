@@ -86,11 +86,12 @@ class DigitizationInline(nested_admin.NestedStackedInline):
                 if obj.has_vectorization():
                     return mark_safe(
                         "<br>".join(anno_btn)
+                        + gen_btn(anno, "vectorization")
                         + gen_btn(anno, "crops")
                         + gen_btn(anno, "vectors")
                     )
                 else:
-                    return mark_safe("<br>".join(anno_btn) + gen_btn(anno, "crops"))
+                    return mark_safe("<br>".join(anno_btn) + gen_btn(anno, "crops") + gen_btn(anno, "vectorization"))
         # TODO maybe add a btn to create a manual annotation (utils.iiif.annotation.create_empty_annotation())
         return "-"
 
