@@ -40,6 +40,7 @@ from app.webapp.views import (
     retrieve_category,
     save_category,
     show_vectorization,
+    receive_vecto
 )
 
 
@@ -220,6 +221,11 @@ urlpatterns = [
         f"{APP_NAME}/<str:anno_ref>/show-vectorization",
         show_vectorization,
         name="show-vectorization",
+    ),
+    path(
+        f"{APP_NAME}/receive-vecto",
+        receive_vecto,
+        name="receive-vecto",
     ),
 ]
 

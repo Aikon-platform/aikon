@@ -1,11 +1,13 @@
 import json
 import os
 import re
+import zipfile
 from os.path import exists
 
 from celery.result import AsyncResult
 from dal import autocomplete
 from django.contrib.auth.models import User
+from django.core.files.storage import default_storage
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -53,7 +55,7 @@ from app.webapp.utils.iiif.annotation import (
     check_anno_file,
 )
 
-from app.webapp.utils.paths import ANNO_PATH, MEDIA_DIR, SCORES_PATH
+from app.webapp.utils.paths import ANNO_PATH, MEDIA_DIR, SCORES_PATH, SVG_PATH
 from app.webapp.utils.similarity import (
     similarity_request,
     get_annotation_urls,
@@ -793,3 +795,67 @@ def legacy_manifest(request, old_id):
         return JsonResponse({})
     with open(f"{MEDIA_DIR}/manifest/{old_id}.json", "r") as manifest:
         return JsonResponse(json.loads(manifest.read()))
+
+
+import os
+import zipfile
+from django.conf import settings
+
+#SVG_PATH = os.path.join(settings.MEDIA_ROOT, 'svg')
+
+def save_svg_files(zip_file):
+    """
+    Dézippe un fichier ZIP contenant des fichiers SVG et les enregistre dans le répertoire de médiafiles.
+
+    :param zip_file: Fichier ZIP reçu de l'API
+    """
+    # Vérifie si le répertoire SVG_PATH existe, sinon le crée
+    if not os.path.exists(SVG_PATH):
+        os.makedirs(SVG_PATH)
+
+    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+        for file_info in zip_ref.infolist():
+            # Vérifie si le fichier est un fichier SVG
+            if file_info.filename.endswith('.svg'):
+                file_path = os.path.join(SVG_PATH, os.path.basename(file_info.filename))
+                
+                # Supprime le fichier existant s'il y en a un
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                
+                # Extrait le fichier SVG et l'écrit dans le répertoire spécifié
+                with zip_ref.open(file_info) as svg_file:
+                    with open(file_path, 'wb') as output_file:
+                        output_file.write(svg_file.read())
+
+
+@csrf_exempt
+def receive_vecto(request):
+    """
+    Vue pour recevoir un fichier ZIP via une requête POST.
+    """
+    if 'file' not in request.FILES:
+        return JsonResponse({"error": "aucun fichier reçu"}, status=400)
+
+    file = request.FILES['file']
+
+    if file.name == '':
+        return JsonResponse({"error": "No selected file"}, status=400)
+
+    if file and file.name.endswith('.zip'):
+        try:
+            # Sauvegarde temporairement le fichier ZIP reçu
+            temp_zip_path = default_storage.save('temp.zip', file)
+            temp_zip_file = default_storage.path(temp_zip_path)
+
+            # Dézippe et enregistre les fichiers SVG
+            save_svg_files(temp_zip_file)
+
+            # Supprime le fichier ZIP temporaire
+            default_storage.delete(temp_zip_path)
+
+            return JsonResponse({"message": "Files successfully uploaded and extracted"}, status=200)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+    else:
+        return JsonResponse({"error": "Unsupported file type"}, status=400)

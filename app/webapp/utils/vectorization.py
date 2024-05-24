@@ -7,7 +7,7 @@ import numpy as np
 import requests
 from typing import List
 
-from app.config.settings import EXAPI_URL, EXAPI_KEY, APP_URL, APP_NAME, VECTO_MODEL_EPOCH
+from app.config.settings import EXAPI_URL, APP_URL, APP_NAME, VECTO_MODEL_EPOCH
 from app.webapp.models.annotation import Annotation
 from app.webapp.utils.functions import flatten_dict
 from app.webapp.utils.iiif import gen_iiif_url

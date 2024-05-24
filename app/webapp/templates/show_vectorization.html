@@ -44,7 +44,7 @@
                             </a>
                         {% endwith %}
                         <img src="{% get_media_prefix %}svg/{{ img_file|jpg_to_none }}_{{ coords }}.svg" class="img-fluid" alt="{{ img_file|jpg_to_none }}_{{ coords }}.svg">
-                        <a href="{% url 'view-vectorization' img_file=img_file %}">
+                        {#<a href="{% url 'view-vectorization' img_file=img_file %}">#}
                             <button class="btn-change" type="submit">
                                 <i class="bi bi-box-arrow-up"></i>
                                 {% if APP_LANG == "en" %}
