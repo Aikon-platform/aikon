@@ -9,6 +9,7 @@ from PIL import Image
 
 from app.webapp.models.annotation import Annotation
 from app.webapp.models.digitization import Digitization
+from app.webapp.models.treatment import Treatment
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.webapp.utils.paths import ANNO_PATH, IMG_PATH
 from app.config.settings import (
@@ -22,14 +23,33 @@ from app.config.settings import (
 from app.webapp.utils.functions import log
 
 
-def send_anno_request(digit: Digitization, event):
+def create_treatment(treatment_type, task_type, user_id, treated_object):
+    try:
+        treatment = Treatment(
+            treatment_type=treatment_type,
+            task_type=task_type,
+            user_id=user_id,
+            treated_object=treated_object,
+        )
+        treatment.save()
+
+        return treatment
+    except Exception as e:
+        log(
+            f"[create_treatment] Failed to create treatment requested by user {user_id} for digit #{treated_object.id}",
+            e,
+        )
+        return False
+
+
+def send_anno_request(digit: Digitization, event, user_id):
     event.wait()
     if not EXAPI_URL.startswith("http"):
         # on local to prevent bugs
         return True
 
     try:
-        anno_request(digit)
+        anno_request(digit, user_id)
     except Exception as e:
         log(f"[send_anno_request] Failed to send request for digit #{digit.id}", e)
         return False
@@ -37,17 +57,26 @@ def send_anno_request(digit: Digitization, event):
     return True
 
 
-def anno_request(digit: Digitization):
+def anno_request(digit: Digitization, user_id, treatment_type="auto"):
+    treatment = create_treatment(
+        treatment_type=treatment_type,
+        task_type="extraction",
+        user_id=user_id,
+        treated_object=digit,
+    )
+
     try:
         response = requests.post(
             url=f"{EXAPI_URL}/extraction/start",
             data={
+                "experiment_id": treatment.id,
                 "manifest_url": digit.gen_manifest_url(),
                 "model": f"{EXTRACTOR_MODEL}",  # Use only if specific model is desire
                 "callback": f"{APP_URL}/{APP_NAME}/annotate",  # URL to which the annotations must be sent back
             },
         )
         if response.status_code == 200:
+            treatment.update_treatment()
             log(f"[annotation_request] Annotation request send: {response.text or ''}")
             return True
         else:
@@ -69,29 +98,18 @@ def anno_request(digit: Digitization):
                 },
             }
 
+            treatment.error_treatment(error)
             log(error)
             return False
     except Exception as e:
+        treatment.error_treatment(e)
         log(f"[anno_request] Annotation request for {digit.get_ref()} failed", e)
         return False
 
 
-def delete_anno_request(digit: Digitization):
-    try:
-        requests.post(
-            url=f"{EXAPI_URL}/extraction/restart",
-            data={
-                "manifest_url": digit.gen_manifest_url(),
-                # "model": "yolo_last_sved_vhs_sullivan.pt", # Use only if specific model is desired
-                "callback": f"{APP_URL}/{APP_NAME}/annotate",  # URL to which the annotations must be sent back
-            },
-        )
-        return True
-    except Exception as e:
-        return False
+def process_anno(anno_file_content, digit, treatment_id, model="Unknown model"):
+    treatment = Treatment.objects.filter(pk=treatment_id).first()
 
-
-def process_anno(anno_file_content, digit, model="Unknown model"):
     try:
         # TODO add step to check if an annotation wasn't generated before for the same model
         anno = Annotation(digitization=digit, model=model)
@@ -104,6 +122,7 @@ def process_anno(anno_file_content, digit, model="Unknown model"):
         with open(f"{ANNO_PATH}/{anno.get_ref()}.txt", "w+b") as f:
             f.write(anno_file_content.encode("utf-8"))
     except Exception as e:
+        treatment.error_treatment(e)
         log(
             f"[receive_anno] Failed to save received annotations for digit #{digit.id}",
             e,
@@ -113,9 +132,11 @@ def process_anno(anno_file_content, digit, model="Unknown model"):
     try:
         index_annotations(anno)
     except Exception as e:
+        treatment.error_treatment(e)
         log(f"[receive_anno] Failed to index annotations for digit #{digit.id}", e)
         return False
 
+    treatment.complete_treatment(anno.get_ref())
     return True
 
 

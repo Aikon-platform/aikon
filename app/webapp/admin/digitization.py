@@ -83,7 +83,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
             for anno in obj.get_annotations():
                 action = "final" if anno.is_validated else "edit"
                 anno_btn.append(gen_btn(anno, action))
-                if obj.is_open and anno.is_validated:
+                if obj.has_vectorization():
                     return mark_safe(
                         "<br>".join(anno_btn)
                         + gen_btn(anno, "crops")
