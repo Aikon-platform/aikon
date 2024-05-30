@@ -1,0 +1,81 @@
+{% extends "admin/base_site.html" %}
+
+{% load static %}
+
+{% block title %}{{ anno }}{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'css/tools.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        .image-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .base-image {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .overlay-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Ensure the SVG doesn't interfere with user interactions */
+        }
+    </style>
+{% endblock %}
+
+{% block header %}
+    <div class="toolbar">
+        <div class="title">
+            <b>{{ anno|capfirst }}</b>
+        </div>
+        <div style="display: flex; flex-direction: row;">
+            <a href="{% url 'export-crops' anno_ref=anno_ref %}">
+                <button class="export-button" type="submit">
+                    <i class="fa-regular fa-file-zipper"></i>&nbsp;
+                    {% if APP_LANG == "en" %}
+                        Download all
+                    {% else %}
+                        Télécharger toutes les
+                    {% endif %}
+                    annotations
+                </button>
+            </a>
+            <form id="export" action="{% url 'export-selected-crops' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="listeURL" name="listeURL" value="">
+                <button class="export-button" type="submit">
+                    <i class="fa-regular fa-file-zipper"></i>&nbsp;
+                    {% if APP_LANG == "en" %}
+                        Download selected annotations
+                    {% else %}
+                        Télécharger les annotations sélectionnées
+                    {% endif %}
+                </button>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="image-container">
+    {% with small=coords|add:'/full/0' %}
+        <a href="{{ img_file|img_to_iiif:small }}" target="_blank">
+            <img src="{{ img_file|img_to_iiif:small }}" class="img-fluid" alt="{{ img_file }}" style="margin-right: 10px;">
+        </a>
+    {% endwith %}
+    <svg class="overlay-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+        {{ svg_content|safe }}
+    </svg>
+</div>
+{% endblock %}

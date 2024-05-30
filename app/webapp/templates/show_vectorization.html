@@ -43,18 +43,18 @@
                                 <img src="{{ img_file|img_to_iiif:small }}" class="img-fluid" alt="{{ img_file }}" style="margin-right: 10px;">
                             </a>
                         {% endwith %}
-                        <img src="{% get_media_prefix %}svg/{{ img_file|jpg_to_none }}_{{ coords }}.svg" class="img-fluid" alt="{{ img_file|jpg_to_none }}_{{ coords }}.svg">
-                        {#<a href="{% url 'view-vectorization' img_file=img_file %}">#}
-                            <button class="btn-change" type="submit">
-                                <i class="bi bi-box-arrow-up"></i>
-                                {% if APP_LANG == "en" %}
-                                    View
-                                {% else %}
-                                    Voir
+                        {% with img_file|jpg_to_none as img %}
+                            {% with img|add:"_"|add:coords|add:".svg" as svg %}
+                                {% if svg|file_exists %}
+                                    <img src="{{ image_path }}" class="img-fluid" alt="{{ img_file|jpg_to_none }}_{{ coords }}.svg">
+                                    <a href="{ % url 'img-and-svg' img_name=img_file coords=coord %}" target="_blank">Visualize</a>
                                 {% endif %}
-                            </button>
+                            {%endwith%}
+                        {%endwith%}
                         </a>
-                        <input type="checkbox" name="vecto_checkbox" value="{{ img_file|img_to_iiif:small }}" onchange="updateSelectedImageURLs()">
+                        {#<input type="checkbox" name="vecto_checkbox" value="{{ img_file|img_to_iiif:small }}" onchange="updateSelectedImageURLs()">#}
+                        <input type="checkbox" name="vecto_checkbox" value="{{ img_file|img_to_iiif }}" onchange="updateSelectedImageURLs()">
+
                     </div>
                     <h3><a href="{{ img_file|img_to_iiif }}" target="_blank">Page {{ canvas_nb }}</a></h3>
                 </div>

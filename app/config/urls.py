@@ -40,7 +40,8 @@ from app.webapp.views import (
     retrieve_category,
     save_category,
     show_vectorization,
-    receive_vecto
+    receive_vecto,
+    show_crop_vecto,
 )
 
 
@@ -226,6 +227,11 @@ urlpatterns = [
         f"{APP_NAME}/receive-vecto",
         receive_vecto,
         name="receive-vecto",
+    ),
+    path(
+        f"{APP_NAME}/<str:img_name>/img-and-svg",
+        show_crop_vecto,
+        name="img-and-svg",
     ),
 ]
 

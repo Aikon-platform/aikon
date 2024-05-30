@@ -85,7 +85,7 @@ def gen_btn(obj, action="view"):
         return mark_safe(anno_btn(obj, action))
 
     is_anno = True
-    if action == "crops" or action == "vectors":
+    if action == "crops" or action == "vectors" or action == "vectorization":
         return mark_safe(f"<br>{anno_btn(obj, action)}")
 
     if action == "auto-view":

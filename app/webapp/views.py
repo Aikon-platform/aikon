@@ -859,3 +859,29 @@ def receive_vecto(request):
             return JsonResponse({"error": str(e)}, status=500)
     else:
         return JsonResponse({"error": "Unsupported file type"}, status=400)
+    
+from webapp.filters import jpg_to_none
+
+@login_required(login_url=f"/{APP_NAME}-admin/login/")
+def show_crop_vecto(request, img_file, coords):
+    #passed, img = check_ref(anno_ref, "Annotation") écrire une fonction de vérification que l'image existe et a un SVG correspondant. 
+    #if not passed:
+        #return f'VECTORISATION NOT FOUND'
+
+    if not ENV("DEBUG"):
+        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+
+        svg_filename = f"{jpg_to_none(img_file)}_{coords}.svg"
+        svg_path = os.path.join(SVG_PATH, svg_filename)
+
+        with open(svg_path, 'r', encoding='utf-8') as file:
+            svg_content = file.read()
+
+    return render(
+        request,
+        "crop_vecto.html",
+        context={
+            "img_ref" : img_file,
+            "svg_content" : svg_content
+        },
+    )

@@ -1,6 +1,7 @@
 from django.template import Library
 from app.config.settings import CANTALOUPE_APP_URL, SAS_APP_URL, APP_URL, APP_NAME
 from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2, TRUNCATEWORDS_SIM
+import os
 
 register = Library()
 
@@ -86,3 +87,7 @@ def truncate_words(text, max_length=TRUNCATEWORDS_SIM):
 @register.filter
 def jpg_to_none(img_file):
     return img_file.replace(".jpg", "")
+
+@register.filter
+def file_exists(filepath):
+    return os.path.isfile(filepath)
