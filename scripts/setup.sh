@@ -251,7 +251,7 @@ answer=$(printf "%s\n" "${options[@]}" | fzy)
 case $answer in
     "yes")
         echoTitle "DATABASE GENERATION"
-        colorEcho yellow "\n⚠️The script will create a app user named $db_user: at the end, you will be prompted twice to enter a password for this user"
+        colorEcho yellow "\n⚠️ The script will create a app user named $db_user: at the end, you will be prompted twice to enter a password for this user"
         ok=("ok")
         printf "%s\n" "${ok[@]}" | fzy
         bash "$SCRIPT_DIR"/new_db.sh "$db_name"
