@@ -1,12 +1,11 @@
-{% extends "admin/base_site.html" %}
-
-{# TEMPLATE EXTENSION FOR THE DEFAULT ADMIN INTERFACE #}
-{% load static %}
-
-{% block extrahead %}
-    {{ block.super }}
+{% load static shared_tags %}
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     {# TITLE IS DEFINED IN THE SETTINGS #}
-    {# <title>{% block title %}{{ APP_NAME_UPPER }} platform{% endblock %}</title> #}
+    <title>{{ title }}{% block title %}{% endblock %} | {{ APP_NAME|upper }}</title>
 
     <link rel="icon" type="image/x-icon" href="{% static 'img/favicon-'|add:APP_NAME|add:'.png' %}">
     <script>
@@ -45,19 +44,36 @@
         const MANIFEST_V1 = "{{ MANIFEST_V1 }}";
         const MANIFEST_V2 = "{{ MANIFEST_V2 }}";
     </script>
-    <script src="{% static 'js/jquery-3.6.1.js' %}"></script>
-    <script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css">
+    <link rel="stylesheet" href="{% static "css/style.css" %}?v1.1">
 
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="{% static 'js/jquery-3.6.1.js' %}"></script>
     <script src="{% static 'js/script.js' %}"></script>
     <script src="{% static 'js/eventListeners.js' %}"></script>
-{% endblock %}
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
 
 {% include 'includes/navbar.html' %}
 
-{% block footer %}
-    <div id="footer">
-        {{COPYRIGHT}} <a href="mailto:{{ CONTACT_MAIL }}">{{ APP_NAME_UPPER }}</a> &copy; {% now "Y" %}
-        <br><a href="{{ APP_URL }}/{{ APP_NAME }}/rgpd">RGPD and licensing</a>
+<div class="wrapper container">
+    <div class="content p-5" style="min-height: 80vh; max-width: 90vw">
+        {% if messages %}
+            <div class="centerwrap">
+                <ul class="messages">
+                    {% for message in messages %}
+                        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|urlize }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
     </div>
-{% endblock %}
+</div>
+
+{% include 'includes/footer.html' %}
+
+<script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

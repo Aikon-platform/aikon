@@ -1,0 +1,36 @@
+{% load shared_tags %}
+
+<div class="row columns">
+    <div class="column task-ref is-10 p">
+        {{ record }}
+    </div>
+{#    <div class="column task-ref is-10 p">#}
+{#        <h2 class="task-ref">#}
+{#            <a href="{{ task.get_absolute_url }}">#}
+{#                <span class="id-main">{{ record.name }}</span>#}
+{#                <span class="id-suffix">{{ record.id }}</span>#}
+{#            </a>#}
+{#        </h2>#}
+{#        {% if not filter and record.dataset %}#}
+{#            <p>└ dataset#}
+{#                <a href="{% url app_name|add:':list_perdataset' record.dataset.pk %}">#}
+{#                    <span class="id-main">{{ record.dataset.name }}</span>#}
+{#                    <span class="id-suffix">{{ record.dataset.id }}</span>#}
+{#                </a>#}
+{#            </p>#}
+{#        {% endif %}#}
+{#        {% for saved_record in record.record.all %}#}
+{#            <p>└ manual clustering#}
+{#                <a href="{{ record.get_absolute_url }}">#}
+{#                    <span class="id-main">{{ record.name }}</span>#}
+{#                    <span class="id-suffix">{{ record.id }}</span>#}
+{#                </a>#}
+{#            </p>#}
+{#        {% endfor %}#}
+{#    </div>#}
+{#    <div class="column is-2 p-0 is-left is-top">#}
+{#        <span class="tag status status-{{ record.status }}">{{ record.status }}</span>#}
+{#    </div>#}
+{#    <p class="user"><span class="iconify" data-icon="mdi:account"></span> {{ record.requested_by.username }}</p>#}
+{#    <p class="date">{{ record.requested_on|date:"Y-m-d H:i" }}</p>#}
+</div>

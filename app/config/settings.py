@@ -1,12 +1,11 @@
 import environ
 from app.webapp.utils.paths import BASE_DIR, LOG_PATH, MEDIA_DIR, STATIC_DIR
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-
 ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
+
 APP_NAME = ENV("APP_NAME")
-WEBAPP_NAME = "webapp"  # TODO change name of the app
+WEBAPP_NAME = "webapp"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
@@ -17,16 +16,10 @@ SECRET_KEY = ENV("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = ENV.bool("DEBUG")
 
-hosts = ENV.list("ALLOWED_HOSTS")
-hosts.append(ENV("PROD_URL"))
-ALLOWED_HOSTS = hosts
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-APP_LANG = ENV("APP_LANG")
-
-CONTACT_MAIL = ENV("CONTACT_MAIL")
-
-# Application definition
+# Enabled modules
+ADDITIONAL_MODULES = [
+    # "similarity",
+]
 
 INSTALLED_APPS = [
     "dal",
@@ -37,13 +30,23 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    f"{WEBAPP_NAME}",
     "nested_admin",
     "fontawesomefree",
     "admin_searchable_dropdown",
     "corsheaders",
     "admin_extra_buttons",
+    f"{WEBAPP_NAME}",
 ]
+INSTALLED_APPS += ADDITIONAL_MODULES
+
+hosts = ENV.list("ALLOWED_HOSTS")
+hosts.append(ENV("PROD_URL"))
+ALLOWED_HOSTS = hosts
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+APP_LANG = ENV("APP_LANG")
+
+CONTACT_MAIL = ENV("CONTACT_MAIL")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -109,7 +112,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [BASE_DIR / "webapp" / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

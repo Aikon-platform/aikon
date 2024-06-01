@@ -1,0 +1,30 @@
+{% extends "admin/base_site.html" %}
+{% load shared_tags %}
+
+{% block title %}List of {{ record_name }}{% endblock %}
+
+{% block content %}
+<div class="centerwrap">
+    {% if filter %}
+        {% include "includes/breadcrumbs.html" %}
+        <h1 class="is-title is-size-2 py-3">{{ filter }}</h1>
+    {% else %}
+        <h1 class="is-title is-size-2 py-3">All {{ record_name }}</h1>
+    {% endif %}
+
+    {% include "includes/pagination.html" %}
+
+    <div class="record-list">
+        <p class="columns">
+            {# SEARCH SECTION? #}
+        </p>
+
+        {% for record in object_list %}
+            {% include "includes/record-block.html" %}
+        {% endfor %}
+    </div>
+
+    {% include "includes/pagination.html" %}
+
+</div>
+{% endblock %}
