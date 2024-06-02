@@ -1,0 +1,28 @@
+{% load static %}
+{% load i18n %}
+
+<div class="left">
+    <img src="{% static 'img/logo-vhs.png' %}" alt="Logo" class="logo">
+    <h6>{{ APP_NAME_UPPER }}</h6>
+</div>
+<div class="input-group center" style="width: 50%; margin: auto;">
+    <select class="form-select">
+        <option selected>TOUT</option>
+        <option>TÉMOIN</option>
+        <option>ÉDITION</option>
+        <option>ŒUVRE</option>
+        <option>LANGUE</option>
+        <option>TAG</option>
+    </select>
+    <input type="text" class="form-control" placeholder="Rechercher...">
+    <button class="btn btn-outline-secondary" type="button">
+        <i class="fa-solid fa-magnifying-glass"></i>
+    </button>
+</div>
+<div class="right">
+    {% if user.is_active and user.is_staff %}
+        <h6>
+            {{ user.first_name }} <i class="fa-solid fa-user"></i> | <a href="{% url 'admin:logout' %}">{% trans 'Log out' %}</a>
+        </h6>
+    {% endif %}
+</div>

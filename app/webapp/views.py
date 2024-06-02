@@ -1,11 +1,9 @@
 import json
 import os
-import re
 from os.path import exists
 
 from celery.result import AsyncResult
 from dal import autocomplete
-from django.contrib.auth.models import User
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -15,8 +13,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_GET
 
+from app.webapp.filters import WitnessFilter
 from app.webapp.models.annotation import Annotation, check_version
-from app.webapp.models.treatment import Treatment
 from app.webapp.models.digitization import Digitization
 from app.config.settings import (
     SAS_APP_URL,
@@ -25,6 +23,7 @@ from app.config.settings import (
     GEONAMES_USER,
     APP_LANG,
 )
+from app.webapp.models.edition import Edition
 from app.webapp.models.language import Language
 from app.webapp.models.region_pair import RegionPair
 from app.webapp.models.witness import Witness
@@ -716,6 +715,10 @@ def retrieve_place_info(request):
 
 class LanguageAutocomplete(autocomplete.Select2QuerySetView):
     def get_queryset(self):
+        # Ensure the user is authenticated
+        if not self.request.user.is_authenticated:
+            return Language.objects.none()
+
         qs = Language.objects.all()
 
         if self.q:
@@ -793,3 +796,35 @@ def legacy_manifest(request, old_id):
         return JsonResponse({})
     with open(f"{MEDIA_DIR}/manifest/{old_id}.json", "r") as manifest:
         return JsonResponse(json.loads(manifest.read()))
+
+
+@login_required(login_url=f"/{APP_NAME}-admin/login/")
+def advanced_search(request):
+    witness_list = Witness.objects.order_by("id")
+    witness_filter = WitnessFilter(request.GET, queryset=witness_list)
+
+    paginator = Paginator(witness_filter.qs, 3)  # 3 items per page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "title": "Advanced search" if APP_LANG == "en" else "Recherche avancée",
+        "witness_filter": witness_filter,
+        "result_count": witness_filter.qs.count(),
+        "page_obj": page_obj,
+    }
+    return render(request, "advanced_search.html", context)
+
+
+class EditionAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        # Ensure the user is authenticated
+        if not self.request.user.is_authenticated:
+            return Edition.objects.none()
+
+        qs = Edition.objects.all()
+
+        if self.q:
+            qs = qs.filter(name__icontains=self.q)
+
+        return qs

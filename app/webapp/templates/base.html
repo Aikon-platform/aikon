@@ -1,0 +1,45 @@
+{% load static %}
+{% load i18n %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/advanced-search.css' %}">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="icon" type="image/x-icon" href="{% static 'img/favicon-'|add:APP_NAME|add:'.png' %}">
+    <script src="{% static 'js/jquery-3.6.1.js' %}"></script>
+    <script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
+    <script src="{% static 'js/advanced-search.js' %}"></script>
+    <link href="{% static 'admin/css/vendor/select2/select2.css' %}" media="screen" rel="stylesheet" type="text/css">
+    <script src="{% static 'admin/js/vendor/select2/select2.full.js' %}"></script>
+    <script src="{% static 'autocomplete_light/autocomplete_light.js' %}"></script>
+    <script src="{% static 'autocomplete_light/select2.js' %}"></script>
+    <script src="{% static 'autocomplete_light/i18n/fr.js' %}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <header class="header">
+        {% block header %}
+        {% endblock %}
+    </header>
+
+    <nav class="nav">
+        {% block nav %}
+        {% endblock %}
+    </nav>
+
+    <main class="main">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer class="footer">
+        {% block footer %}
+        {% endblock %}
+    </footer>
+
+    <!-- <script src="{% static '' %}"></script> -->
+</body>
+</html>

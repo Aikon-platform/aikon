@@ -1,0 +1,30 @@
+{% load static %}
+{% load i18n %}
+
+<div class="footer-content">
+    <div class="footer-section">
+        <h3>À propos</h3>
+        <ul>
+            <li><a href="#">Qui sommes-nous ?</a></li>
+            <li><a href="#">Équipe</a></li>
+            <li><a href="#">Nous contacter</a></li>
+        </ul>
+    </div>
+    <div class="footer-section">
+        <h3>Resources</h3>
+        <ul>
+            <li><a href="#">Lien 1</a></li>
+            <li><a href="#">Lien 2</a></li>
+            <li><a href="#">Lien 3</a></li>
+        </ul>
+    </div>
+    <div class="footer-section">
+        <h3>Partenaires</h3>
+        <img class="footer-image" src="{% static 'img/logo-su.png' %}" alt="Logo Sorbonne Université">
+        <img class="footer-image" src="{% static 'img/logo-ponts.png' %}" alt="Logo École des Ponts ParisTech">
+        <img class="footer-image" src="{% static 'img/logo-cnrs.svg' %}" alt="Logo CNRS">
+    </div>
+</div>
+<div class="footer-copyright">
+    Tous droits réservés {{ APP_NAME_UPPER }} © 2024
+</div>
