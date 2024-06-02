@@ -6,18 +6,18 @@ from app.webapp.models.utils.functions import get_fieldname
 
 def get_name(fieldname, plural=False):
     fields = {
-        "DocumentCart": {
-            "en": "document cart",
+        "DocumentSet": {
+            "en": "document set",
             "fr": "panier de documents",
         },
     }
     return get_fieldname(fieldname, fields, plural)
 
 
-class DocumentCart(models.Model):
+class DocumentSet(models.Model):
     class Meta:
-        verbose_name = get_name("DocumentCart")
-        verbose_name_plural = get_name("DocumentCart", True)
+        verbose_name = get_name("DocumentSet")
+        verbose_name_plural = get_name("DocumentSet", True)
         app_label = "webapp"
 
     def __str__(self):
