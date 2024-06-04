@@ -42,6 +42,8 @@ from app.webapp.views import (
     show_vectorization,
     receive_vecto,
     show_crop_vecto,
+    export_selected_imgs_and_svgs,
+    export_all_images_and_svgs,
 )
 
 
@@ -232,6 +234,16 @@ urlpatterns = [
         f"{APP_NAME}/<str:img_name>/img-and-svg",
         show_crop_vecto,
         name="img-and-svg",
+    ),
+    path(
+        f"{APP_NAME}/export-img-and-svg",
+        export_selected_imgs_and_svgs,
+        name="export-img-and-svg",
+    ),
+    path(
+        "{APP_NAME}/export-all-imgs-and-svgs/<str:anno_ref>",
+        export_all_images_and_svgs,
+        name="export-all-imgs-and-svgs",
     ),
 ]
 

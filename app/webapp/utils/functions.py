@@ -28,6 +28,7 @@ from app.webapp.utils.paths import (
     MEDIA_DIR,
     IMG_PATH,
     PDF_DIR,
+    SVG_PATH,
 )
 from app.webapp.utils.constants import MAX_SIZE, MAX_RES
 from app.webapp.utils.logger import log, console
@@ -289,9 +290,9 @@ def get_action(action, formatting=None):
             "en": "visualize automatic vectorizations",
             "fr": "voir les vectorisations automatiques",
         },
-        "vectorization":{
-            "en":"perform vectorization",
-            "fr":"vectorisation automatique"
+        "vectorization": {
+            "en": "perform vectorization",
+            "fr": "vectorisation automatique",
         },
     }
     action = actions[action][APP_LANG]
@@ -361,6 +362,54 @@ def zip_files(filenames_contents, zip_name=f"{APP_NAME}_export"):
     )
     response["Content-Disposition"] = f"attachment; filename={zip_name}.zip"
     return response
+
+
+def zip_images_and_files(img_list, file_list, zip_name=f"{APP_NAME}_export"):
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as z:
+        # Ajouter des images à partir des URLs ou du répertoire local
+        for img_path in img_list:
+            img_name = f"{url_to_name(img_path)}.jpg"
+            if urlparse(img_path).scheme == "":
+                try:
+                    z.write(f"{SVG_PATH}/{img_name}", img_name)
+                except FileNotFoundError:
+                    log(f"[zip_images_and_files] Local image not found: {img_path}")
+            else:
+                response = requests.get(img_path)
+                if response.status_code == 200:
+                    z.writestr(img_name, response.content)
+                else:
+                    log(f"[zip_images_and_files] Fail to download image: {img_path}")
+
+        # Ajouter des fichiers à partir du répertoire mediafiles
+        for file_path in file_list:
+            try:
+                with open(f"{SVG_PATH}/{file_path}", "rb") as f:
+                    z.writestr(file_path, f.read())
+            except FileNotFoundError:
+                log(f"[zip_images_and_files] Local file not found: {file_path}")
+
+    response = HttpResponse(
+        buffer.getvalue(), content_type="application/x-zip-compressed"
+    )
+    response["Content-Disposition"] = f"attachment; filename={zip_name}.zip"
+    return response
+
+
+def is_url(chaine):
+    """
+    Vérifie si une chaîne est une URL.
+
+    Args:
+      chaine: string à tester.
+
+    Returns:
+      True si la chaîne est une URL, False sinon.
+    """
+
+    regex = r"^(http|https)://.*"
+    return re.search(regex, chaine) is not None
 
 
 def zip_dirs(dirnames_contents, zip_name=f"{APP_NAME}_export"):

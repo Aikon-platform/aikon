@@ -21,12 +21,11 @@ def vectorization_request(anno):
     try:
         response = requests.post(
             url=f"{EXAPI_URL}/vectorization/start",
-            headers={"X-API-Key": EXAPI_KEY},
             json={
                 "doc_id": anno.get_ref(),
                 "model": f"{VECTO_MODEL_EPOCH}",
                 "images": get_annotation_urls(anno),
-                "callback": f"{APP_URL}/{APP_NAME}/vectorization",
+                "callback": f"{APP_URL}/{APP_NAME}/receive-vecto",
             },
         )
 
@@ -35,7 +34,9 @@ def vectorization_request(anno):
         print("Response text:", response.text)
 
         if response.status_code == 200:
-            log(f"[vectorization_request] Vectorization request send: {response.text or ''}")
+            log(
+                f"[vectorization_request] Vectorization request send: {response.text or ''}"
+            )
             return True
         else:
             error = {
@@ -61,4 +62,3 @@ def vectorization_request(anno):
         log(f"[vectorization_request] Request failed for {anno}", e)
 
     return False
-
