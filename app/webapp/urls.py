@@ -168,6 +168,12 @@ urlpatterns = [
         show_vectorization,
         name="show-vectorization",
     ),
+    path(f"{APP_NAME}/advanced-search/", advanced_search, name="advanced-search"),
+    path(
+        f"{APP_NAME}/autocomplete/edition/",
+        EditionAutocomplete.as_view(),
+        name="edition-autocomplete",
+    ),
 ]
 
 urlpatterns += [

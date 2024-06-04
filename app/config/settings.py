@@ -22,6 +22,7 @@ ADDITIONAL_MODULES = [
 ]
 
 INSTALLED_APPS = [
+    f"{WEBAPP_NAME}",
     "dal",
     "dal_select2",
     "django.contrib.admin",
@@ -35,7 +36,8 @@ INSTALLED_APPS = [
     "admin_searchable_dropdown",
     "corsheaders",
     "admin_extra_buttons",
-    f"{WEBAPP_NAME}",
+    "django_filters",
+    "crispy_forms",
 ]
 INSTALLED_APPS += ADDITIONAL_MODULES
 
@@ -233,3 +235,5 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = ENV("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = ENV("EMAIL_HOST_PASSWORD")
+
+CRISPY_TEMPLATE_PACK = "bootstrap4"
