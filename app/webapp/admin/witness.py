@@ -72,6 +72,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             "export_training_imgs",
             "export_training_anno",
             "compute_similarity",
+            "compute_vectorization",
         ]
 
     ordering = ("id", "place__name")
@@ -246,6 +247,43 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                 if APP_LANG == "en"
                 else f"La similarité a déjà été calculée pour tous les {WIT}s sélectionnés",
             )
+
+        similarity_request(annos)
+        return messages.info(
+            request,
+            "Similarity request was sent to the API"
+            if APP_LANG == "en"
+            else "La requête de similarité a été transmise à l'API",
+        )
+
+    ######################ClaraCode
+
+    @admin.action(
+        description=f"Compute vectorization for {ANNO}s of selected {WIT}es"
+        if APP_LANG == "en"
+        else f"Vectoriser les annotations des {WIT}s sélectionnés"
+    )
+    def compute_vectorization(self, request, queryset):
+        annos = []
+        for witness in queryset.exclude():
+            annos.extend(witness.get_annotations())
+            if witness.has_vectorization():
+                return messages.warning(
+                    request,
+                    f"Vectorization was already computed for {witness}"
+                    if APP_LANG == "en"
+                    else f"La vectorisation a déjà été lancée pour {witness}",
+                )
+        if len(annos) == 0:
+            return no_anno_message(request)
+
+        vectorization_request(annos)
+        return messages.info(
+            request,
+            "Vectorization request was sent to the API"
+            if APP_LANG == "en"
+            else "La requête de vectorisation a été transmise à l'API",
+        )
 
     @admin.action(
         description=f"Export IIIF manifests of selected {WIT}es"

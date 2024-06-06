@@ -14,13 +14,14 @@
         .image-container {
             position: relative;
             width: 100%;
-            max-width: 800px;
+            max-width: 500px;
         }
 
         .base-image {
             display: block;
             width: 100%;
             height: auto;
+            transition: opacity 0.5s ease;
         }
 
         .overlay-svg {
@@ -31,38 +32,76 @@
             height: 100%;
             pointer-events: none; /* Ensure the SVG doesn't interfere with user interactions */
         }
+
+         /* The switch - the box around the slider */
+        .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+        }
+
+        /* Hide default HTML checkbox */
+        .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        }
+
+        /* The slider */
+        .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        -webkit-transition: .4s;
+        transition: .4s;
+        }
+
+        .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        -webkit-transition: .4s;
+        transition: .4s;
+        }
+
+        input:checked + .slider {
+        background-color: #2196F3;
+        }
+
+        input:focus + .slider {
+        box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked + .slider:before {
+        -webkit-transform: translateX(26px);
+        -ms-transform: translateX(26px);
+        transform: translateX(26px);
+        }
+
+        /* Rounded sliders */
+        .slider.round {
+        border-radius: 34px;
+        }
+
+        .slider.round:before {
+        border-radius: 50%;
+        }
     </style>
 {% endblock %}
 
 {% block header %}
     <div class="toolbar">
         <div class="title">
-            <b>{{ anno|capfirst }}</b>
-        </div>
-        <div style="display: flex; flex-direction: row;">
-            <a href="{% url 'export-crops' anno_ref=anno_ref %}">
-                <button class="export-button" type="submit">
-                    <i class="fa-regular fa-file-zipper"></i>&nbsp;
-                    {% if APP_LANG == "en" %}
-                        Download all
-                    {% else %}
-                        Télécharger toutes les
-                    {% endif %}
-                    annotations
-                </button>
-            </a>
-            <form id="export" action="{% url 'export-selected-crops' %}" method="post">
-                {% csrf_token %}
-                <input type="hidden" id="listeURL" name="listeURL" value="">
-                <button class="export-button" type="submit">
-                    <i class="fa-regular fa-file-zipper"></i>&nbsp;
-                    {% if APP_LANG == "en" %}
-                        Download selected annotations
-                    {% else %}
-                        Télécharger les annotations sélectionnées
-                    {% endif %}
-                </button>
-            </form>
+            <b>{{ img_file }}</b>
         </div>
     </div>
 {% endblock %}
@@ -71,11 +110,109 @@
 <div class="image-container">
     {% with small=coords|add:'/full/0' %}
         <a href="{{ img_file|img_to_iiif:small }}" target="_blank">
-            <img src="{{ img_file|img_to_iiif:small }}" class="img-fluid" alt="{{ img_file }}" style="margin-right: 10px;">
+            <img src="{{ img_file|img_to_iiif:small }}" class="img-fluid base-image" alt="{{ img_file }}" style="margin-right: 10px;" id="image">
         </a>
     {% endwith %}
-    <svg class="overlay-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+
         {{ svg_content|safe }}
-    </svg>
+
 </div>
+
+<div>
+    <label class="switch">
+    <input type="checkbox" id="change-stroke-color">
+    <span class="slider round"></span>
+</label>
+
+<label for="change-stroke-color">Change Stroke to Black</label>
+</div>
+
+<div>
+    <input type="range" min="0" max="1" step="0.01" value="1" id="opacityRange">
+</div>
+
+
+
+
+<script>
+    // ajout de la classe au SVG pour la superposition
+    document.addEventListener('DOMContentLoaded', function() {
+      const svgElement = document.querySelector('svg'); // Sélectionner l'élément SVG
+      svgElement.classList.add('overlay-svg'); // Ajouter la classe
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+    const svgElement = document.querySelector('.overlay-svg');
+    function setViewBoxFromHeightWidth(svgElement) {
+    // Chercher les valeurs de width et height
+    const height = svgElement.getAttribute('height');
+    const width = svgElement.getAttribute('width');
+
+    // les retirer
+    svgElement.removeAttribute('height');
+    svgElement.removeAttribute('width');
+
+    // créer la viewbox avec les valeurs de width et height
+    svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    }
+
+    // appeler la fonction
+    setViewBoxFromHeightWidth(svgElement);
+});
+
+    //changer la couleur des traits
+    // Récupère le toggle switch
+    var toggleSwitch = document.getElementById('change-stroke-color');
+
+    // Récupère tous les éléments sur lesquels nous voulons changer la couleur du trait
+    var elementsWithStroke = document.querySelectorAll('[stroke]');
+
+    // Stocke les couleurs d'origine des traits
+    var originalStrokeColors = [];
+
+    // Enregistre les couleurs d'origine des traits
+    elementsWithStroke.forEach(function(element) {
+        originalStrokeColors.push(element.getAttribute('stroke'));
+    });
+
+    // Fonction pour changer la couleur du trait en noir
+    function changeStrokeColorToBlack() {
+        elementsWithStroke.forEach(function(element) {
+            element.setAttribute('stroke', 'black');
+        });
+    }
+
+    // Fonction pour restaurer les couleurs d'origine des traits
+    function restoreOriginalStrokeColors() {
+        elementsWithStroke.forEach(function(element, index) {
+            element.setAttribute('stroke', originalStrokeColors[index]);
+        });
+    }
+
+    // Au toggle switch la couleur
+    toggleSwitch.addEventListener('change', function() {
+        if (this.checked) {
+            changeStrokeColorToBlack();
+        } else {
+            restoreOriginalStrokeColors();
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", function() {
+    const opacityRange = document.getElementById("opacityRange");
+    const image = document.getElementById("image");
+
+    opacityRange.addEventListener("input", function() {
+        const opacityValue = this.value;
+        image.style.opacity = opacityValue;
+    });
+
+
+});
+
+
+
+</script>
+
+
 {% endblock %}
