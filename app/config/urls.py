@@ -40,6 +40,8 @@ from app.webapp.views import (
     retrieve_category,
     save_category,
     show_vectorization,
+    advanced_search,
+    EditionAutocomplete,
 )
 
 
@@ -220,6 +222,12 @@ urlpatterns = [
         f"{APP_NAME}/<str:regions_ref>/show-vectorization",
         show_vectorization,
         name="show-vectorization",
+    ),
+    path(f"{APP_NAME}/advanced-search/", advanced_search, name="advanced-search"),
+    path(
+        f"{APP_NAME}/autocomplete/edition/",
+        EditionAutocomplete.as_view(),
+        name="edition-autocomplete",
     ),
 ]
 

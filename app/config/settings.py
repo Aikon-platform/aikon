@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     "admin_searchable_dropdown",
     "corsheaders",
     "admin_extra_buttons",
+    "django_filters",
+    "crispy_forms",
 ]
 
 MIDDLEWARE = [
@@ -230,3 +232,5 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = ENV("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = ENV("EMAIL_HOST_PASSWORD")
+
+CRISPY_TEMPLATE_PACK = "bootstrap4"
