@@ -13,7 +13,7 @@ class PlaceForm(forms.ModelForm):
         fields = "__all__"
         widgets = {
             "name": autocomplete.ListSelect2(
-                url="place-autocomplete",
+                url="webapp:place-autocomplete",
                 attrs={
                     "data-placeholder": SEARCH_MSG,
                 },
@@ -41,7 +41,7 @@ class LanguageForm(forms.ModelForm):
         fields = "__all__"
         widgets = {
             "lang": autocomplete.ModelSelect2Multiple(
-                url="language-autocomplete",
+                url="webapp:language-autocomplete",
                 attrs={
                     "data-placeholder": SEARCH_MSG,
                 },

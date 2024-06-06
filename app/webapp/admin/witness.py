@@ -1,6 +1,5 @@
 from functools import reduce
 
-
 from app.config.settings import APP_LANG
 from app.webapp.admin.digitization import DigitizationInline
 from app.webapp.admin.content import ContentInline, ContentWorkInline
@@ -106,21 +105,20 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         if APP_LANG == "en"
         else f"Identification du {get_name('Witness')}"
     )
+    fields = [
+        "type",
+        ("id_nb", "place"),  # place and id_nb appear on the same line
+        ("page_type", "nb_pages"),  # same
+        "notes",
+        "edition",
+        ("volume_nb", "volume_title"),
+        "link",
+        "is_public",
+    ]
     fieldsets = (
         (
             banner.capitalize(),
-            {
-                "fields": [
-                    "type",
-                    ("id_nb", "place"),  # place and id_nb appear on the same line
-                    ("page_type", "nb_pages"),  # same
-                    "notes",
-                    "edition",
-                    ("volume_nb", "volume_title"),
-                    "link",
-                    "is_public",
-                ]
-            },
+            {"fields": fields},
         ),
     )
 

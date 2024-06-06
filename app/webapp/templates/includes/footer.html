@@ -1,30 +1,26 @@
 {% load static %}
-{% load i18n %}
 
-<div class="footer-content">
-    <div class="footer-section">
-        <h3>À propos</h3>
-        <ul>
-            <li><a href="#">Qui sommes-nous ?</a></li>
-            <li><a href="#">Équipe</a></li>
-            <li><a href="#">Nous contacter</a></li>
-        </ul>
+<footer id="footer" class="footer mt-6 pb-5 pt-5" data-theme="light">
+    <div class="columns is-centered" style="padding: 0 20vw">
+        <a class="column is-2" href=""></a>
+        <a class="column is-2" href="">
+            <figure class="image is-96x96 is-center mt-2">
+                <img src="{% static 'img/anr.png' %}" alt="Agence Nationale pour la Recherche logo">
+            </figure>
+        </a>
+        <a class="column is-2" href="">
+            <figure class="image is-96x96 is-center p-2">
+                <img src="{% static 'img/cnrs.png' %}" alt="CNRS logo">
+            </figure>
+        </a>
+        <a class="column is-2" href=""></a>
     </div>
-    <div class="footer-section">
-        <h3>Resources</h3>
-        <ul>
-            <li><a href="#">Lien 1</a></li>
-            <li><a href="#">Lien 2</a></li>
-            <li><a href="#">Lien 3</a></li>
-        </ul>
+
+    <div class="columns is-centered">
+        <div class="column is-8 has-text-centered">
+            <hr class="mt-2">
+            {{ COPYRIGHT }} <a href="mailto:{{ CONTACT_MAIL }}">{{ APP_NAME_UPPER }}</a> &copy; {% now "Y" %}
+            <br><a href="{{ APP_URL }}/{{ APP_NAME }}/rgpd">RGPD and licensing</a>
+        </div>
     </div>
-    <div class="footer-section">
-        <h3>Partenaires</h3>
-        <img class="footer-image" src="{% static 'img/logo-su.png' %}" alt="Logo Sorbonne Université">
-        <img class="footer-image" src="{% static 'img/logo-ponts.png' %}" alt="Logo École des Ponts ParisTech">
-        <img class="footer-image" src="{% static 'img/logo-cnrs.svg' %}" alt="Logo CNRS">
-    </div>
-</div>
-<div class="footer-copyright">
-    Tous droits réservés {{ APP_NAME_UPPER }} © 2024
-</div>
+</footer>

@@ -27,7 +27,7 @@
     <div id="user-tools">
         {% if user.is_active and user.is_staff %}
             {% trans 'Welcome,' %} <strong>{{ user.first_name }}</strong>.
-            <a href="{% url 'admin-config' %}">{% trans 'View site' %}</a> /
+            <a href="{% url 'home' %}">{% trans 'View site' %}</a> /
             <a href="{% url 'admin:password_change' %}">{% trans 'Change password' %}</a> /
             <a href="{% url 'admin:logout' %}">{% trans 'Log out' %}</a>
         {% endif %}

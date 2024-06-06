@@ -1,0 +1,23 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+    <div class="centerwrap container p-5" id="demo-list">
+        <div class="columns is-vcentered">
+            <section class="is-6 column is-large">
+                <h1 class="is-title is-size-2 py-3 is-link">{{ APP_NAME|upper }} admin panel</h1>
+                <p class="notification is-light">
+                    Bla bla bla
+                </p>
+            </section>
+        </div>
+        <div class="columns is-vcentered">
+            {#{% if app_list %}#}
+                {#{% for app in app_list %}#}
+                    {#{% include "includes/card.html" with app=app.name app_title="Similarity retrieval" app_subtitle="Find most similar images" %}#}
+                {#{% endfor %}#}
+            {#{% endif %}#}
+            {% include "includes/card.html" with record="witness" record_title="Witnesses" record_subtitle="See all records" %}
+        </div>
+    </div>
+{% endblock %}

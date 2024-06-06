@@ -1,0 +1,9 @@
+{% load static shared_tags %}
+
+{% if request.user.is_authenticated %}
+    <p class="breadcrumbs">
+        <a class="button is-text" href="{% url "webapp:"|add:record_type|add:'_list' %}">
+            All {{ record_name }}
+        </a>
+    </p>
+{% endif %}
