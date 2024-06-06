@@ -19,6 +19,8 @@ app/mediafiles/img/*
 !app/mediafiles/img/.gitkeep
 app/mediafiles/annotation/*
 !app/mediafiles/annotation/.gitkeep
+app/mediafiles/regions/*
+!app/mediafiles/regions/.gitkeep
 app/mediafiles/similarity/*
 !app/mediafiles/similarity/.gitkeep
 app/mediafiles/pdf/*

@@ -2,7 +2,6 @@ import os
 from glob import glob
 from uuid import uuid4
 
-from django.contrib.postgres.fields import ArrayField
 from django.utils.safestring import mark_safe
 from django.db import models
 from iiif_prezi.factory import StructuralError
@@ -11,9 +10,8 @@ from app.config.settings import APP_URL, APP_NAME, APP_LANG
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.utils.constants import WIT
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
-from app.webapp.utils.paths import BASE_DIR, ANNO_PATH, SCORES_PATH
+from app.webapp.utils.paths import REGIONS_PATH, SCORES_PATH
 
 
 def get_name(fieldname, plural=False):
@@ -26,10 +24,10 @@ def check_version(version):
     return version
 
 
-class Annotation(models.Model):
+class Regions(models.Model):
     class Meta:
-        verbose_name = get_name("Annotation")
-        verbose_name_plural = get_name("Annotation", True)
+        verbose_name = get_name("Regions")
+        verbose_name_plural = get_name("Regions")
         app_label = "webapp"
 
     def __str__(self):
@@ -39,7 +37,7 @@ class Annotation(models.Model):
 
     digitization = models.ForeignKey(
         Digitization,
-        related_name="annotations",  # to access the all annotations from Digitization
+        related_name="regions",  # to access the all regions from Digitization
         verbose_name=get_name("Digitization"),
         on_delete=models.SET_NULL,
         blank=True,
@@ -48,7 +46,7 @@ class Annotation(models.Model):
     # NOTE machine learning model used to generate annotations
     model = models.CharField(max_length=150)
     # # TODO check if useful
-    # anno_ids = ArrayField(models.CharField(max_length=150), blank=True, null=True)
+    # region_ids = ArrayField(models.CharField(max_length=150), blank=True, null=True)
     is_validated = models.BooleanField(default=False)
 
     def get_digit(self):
@@ -87,26 +85,26 @@ class Annotation(models.Model):
 
     def get_ref(self):
         if digit := self.get_digit():
-            # anno_prefix = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}"
+            # regions_prefix = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}"
             return f"{digit.get_ref()}_anno{self.id}"
         return None
 
     def get_filename(self):
         return f"{self.get_ref()}.txt"
 
-    def gen_anno_id(self, canvas_nb, save_id=False):
-        # anno_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}_c{canvas_nb}_{uuid4().hex[:8]}"
-        anno_id = f"{self.get_ref()}_c{canvas_nb}_{uuid4().hex}"
+    def gen_annotation_id(self, canvas_nb, save_id=False):
+        # annotation_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}"
+        annotation_id = f"{self.get_ref()}_c{canvas_nb}_{uuid4().hex}"
 
         # # TODO check if it is necessary
         # if save_id:
-        #     self.anno_ids.append(anno_id)
+        #     self.annotation_ids.append(annotation_id)
         #     self.save()
-        return anno_id
+        return annotation_id
 
-    def has_annotations(self):
-        # if there is an annotation file named after the current Annotation
-        if len(glob(f"{ANNO_PATH}/{self.get_ref()}.txt")):
+    def has_regions(self):
+        # if there is a regions file named after the current Regions
+        if len(glob(f"{REGIONS_PATH}/{self.get_ref()}.txt")):
             return True
         return False
 
@@ -121,7 +119,7 @@ class Annotation(models.Model):
     def get_metadata(self):
         if digit := self.get_digit():
             metadata = digit.get_metadata()
-            # {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}
+            # {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}
             metadata["@id"] = self.get_ref()
 
             return metadata
@@ -133,12 +131,12 @@ class Annotation(models.Model):
         return []
 
     def view_btn(self):
-        from app.webapp.utils.iiif.gen_html import anno_btn
+        from app.webapp.utils.iiif.gen_html import regions_btn
 
         action = "final" if self.is_validated else "edit"
-        btn = anno_btn(self, action if self.has_annotations() else "no_anno")
+        btn = regions_btn(self, action if self.has_regions() else "no_regions")
 
         if len(self.get_computed_pairs()) != 0:
-            btn += anno_btn(self, "similarity")
+            btn += regions_btn(self, "similarity")
 
         return mark_safe(btn)

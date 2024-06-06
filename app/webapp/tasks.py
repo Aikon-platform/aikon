@@ -3,7 +3,7 @@ from typing import List
 from celery import shared_task
 
 from app.config.celery import celery_app
-from app.webapp.utils.iiif.annotation import process_anno, check_indexation_annos
+from app.webapp.utils.iiif.annotation import check_indexation, process_regions
 from app.webapp.utils.similarity import compute_total_similarity
 
 
@@ -27,42 +27,44 @@ def check_similarity_files(file_names):
 
 # @celery_app.task
 def compute_similarity_scores(
-    anno_refs: List[str] = None, max_rows: int = 50, show_checked_ref: bool = False
+    regions_refs: List[str] = None, max_rows: int = 50, show_checked_ref: bool = False
 ):
     from app.webapp.views import check_ref
 
-    checked_anno = anno_refs[0]
+    checked_regions = regions_refs[0]
 
-    annos = [
-        anno
-        for (passed, anno) in [check_ref(ref, "Annotation") for ref in anno_refs]
+    regions = [
+        region
+        for (passed, region) in [check_ref(ref, "Regions") for ref in regions_refs]
         if passed
     ]
 
-    if not len(annos):
+    if not len(regions):
         from app.webapp.utils.logger import log
 
-        log(f"[compute_similarity_scores] No annotation corresponding to {anno_refs}")
+        log(
+            f"[compute_similarity_scores] No annotation corresponding to {regions_refs}"
+        )
         return {}
     return compute_total_similarity(
-        annos, checked_anno, anno_refs, max_rows, show_checked_ref
+        regions, checked_regions, regions_refs, max_rows, show_checked_ref
     )
 
 
 @celery_app.task
-def process_anno_file(file_content, digit_id, treatment_id, model):
-    from app.webapp.models.annotation import Digitization
+def process_regions_file(file_content, digit_id, treatment_id, model):
+    from app.webapp.models.regions import Digitization
 
     digitization = Digitization.objects.filter(pk=digit_id).first()
-    return process_anno(file_content, digitization, treatment_id, model)
+    return process_regions(file_content, digitization, treatment_id, model)
 
 
 @celery_app.task
-def reindex_from_file(anno_id):
-    from app.webapp.models.annotation import Annotation
+def reindex_from_file(regions_id):
+    from app.webapp.models.regions import Regions
 
-    annotation = Annotation.objects.filter(pk=anno_id).first()
-    return check_indexation_annos(annotation, True)
+    annotation = Regions.objects.filter(pk=regions_id).first()
+    return check_indexation(annotation, True)
 
 
 @celery_app.task

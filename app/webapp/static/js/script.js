@@ -39,7 +39,7 @@ function getWitType() {
     return null;
 }
 
-function getAnnoRef() {
+function getRegionsRef() {
     const currentUrl = getUrl();
     if (currentUrl.includes("show")){
         const parts = currentUrl.split("/show")[0].split("/");
@@ -91,69 +91,69 @@ function clearLoading(idButton, innerHtml) {
     button.disabled = false;
 }
 
-function deleteAnnotation(annoId) {
+function deleteRegion(regionId) {
     const HTTP_SAS = SAS_APP_URL.replace("https", "http");
-    const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${HTTP_SAS}/annotation/${annoId}`;
+    const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${HTTP_SAS}/annotation/${regionId}`;
 
     fetch(urlDelete, {
         method: "DELETE"
     }).then(response => {
         if (response.status === 204) {
-            const annoDiv = $(`#ill_${annoId}`).closest("div");
-            annoDiv.fadeOut(function() {
-                annoDiv.remove()
+            const regionDiv = $(`#ill_${regionId}`).closest("div");
+            regionDiv.fadeOut(function() {
+                regionDiv.remove()
             });
         } else {
-            showMessage(`Failed to delete ${urlDelete} due to ${response.status}: '${response.statusText}'`, `message_${annoId}`);
+            showMessage(`Failed to delete ${urlDelete} due to ${response.status}: '${response.statusText}'`, `message_${regionId}`);
         }
     }).catch(error => {
-        showMessage(`Failed to delete ${urlDelete}: ${error.message}`, `message_${annoId}`);
+        showMessage(`Failed to delete ${urlDelete}: ${error.message}`, `message_${regionId}`);
     });
 }
 
-function deleteAnnotations(annoIds) {
-    if (annoIds.length > 0) {
-        if (confirm(APP_LANG === "en" ? "Are you sure you want to delete corresponding annotations?" :
-                "Êtes-vous sûr de vouloir supprimer les annotations sélectionnées ?")) {
-            for (let i = 0; i < annoIds.length; i++) {
-                deleteAnnotation(annoIds[i]);
+function deleteRegions(regionsIds) {
+    if (regionsIds.length > 0) {
+        if (confirm(APP_LANG === "en" ? "Are you sure you want to delete corresponding regions?" :
+                "Êtes-vous sûr de vouloir supprimer les régions sélectionnées ?")) {
+            for (let i = 0; i < regionsIds.length; i++) {
+                deleteRegion(regionsIds[i]);
             }
             return true;
         }
         return false;
     }
-    alert(APP_LANG === "en" ? "Please select at least one annotation to delete" : "Veuillez sélectionner au moins une image à supprimer.");
+    alert(APP_LANG === "en" ? "Please select at least one region to delete" : "Veuillez sélectionner au moins une image à supprimer.");
     return false;
 }
 
-function deleteAllAnnotations(allAnnos) {
-    if (confirm(APP_LANG === "en" ? "Are you sure you want to delete all annotations?" :
-            "Êtes-vous sûr de vouloir supprimer toutes les annotations ?")) {
-        for (let i = allAnnos.length - 1; i >= 0; i--) {
-            deleteAnnotation(allAnnos[i]);
+function deleteAllRegions(allRegions) {
+    if (confirm(APP_LANG === "en" ? "Are you sure you want to delete all regions?" :
+            "Êtes-vous sûr de vouloir supprimer toutes les régions ?")) {
+        for (let i = allRegions.length - 1; i >= 0; i--) {
+            deleteRegion(allRegions[i]);
         }
     }
 }
 
-function validateAnnotations(anno_ref = null) {
-    if (!anno_ref) {
-        anno_ref = getAnnoRef();
-        if (!anno_ref) {
-            console.log("No annotation reference")
+function validateRegions(regions_ref = null) {
+    if (!regions_ref) {
+        regions_ref = getRegionsRef();
+        if (!regions_ref) {
+            console.log("No region reference")
             return
         }
     }
 
-    if (confirm(APP_LANG === "en" ? `Once validated, the annotations cannot be modified. Continue?` :
-            `Une fois validées, les annotations ne pourront plus être modifiées. Continuer ?`)) {
-        fetch(`${APP_URL}/${APP_NAME}/iiif/validate/${anno_ref}`)
+    if (confirm(APP_LANG === "en" ? `Once validated, the regions cannot be modified. Continue?` :
+            `Une fois validées, les régions ne pourront plus être modifiées. Continuer ?`)) {
+        fetch(`${APP_URL}/${APP_NAME}/iiif/validate/${regions_ref}`)
             .then(response => {
             if (response.status === 200) {
                 // window.replace(`${SAS_APP_URL}/indexView.html?iiif-content=${toManifest(witId, witType, "v2")}`);
                 try { window.replace(`${APP_URL}/${APP_NAME}-admin/${WEBAPP_NAME}/witness`); }
                 catch(e) { window.location = `${APP_URL}/${APP_NAME}-admin/${WEBAPP_NAME}/witness`; }
             } else {
-                throw new Error(`Could not validate annotations #${anno_ref}.`);
+                throw new Error(`Could not validate regions #${regions_ref}.`);
             }
         }).catch(error => {
             showMessage(`Error: ${error.message}`);

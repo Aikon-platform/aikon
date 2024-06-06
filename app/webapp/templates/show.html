@@ -3,25 +3,25 @@
 {% load static %}
 <!-- TODO remove webapp sub-folder -->
 
-{% block title %}{{ anno }}{% endblock %}
+{% block title %}{{ regions }}{% endblock %}
 
 {% block extrahead %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'css/tools.css' %}">
     <script>
-        let allAnnos = JSON.parse('{{ bboxes|safe }}');
+        let allRegions = JSON.parse('{{ bboxes|safe }}');
     </script>
 {% endblock %}
 
 {% block header %}
     <div class="toolbar">
         <div class="title">
-            <b>{{ anno|capfirst }}</b>
+            <b>{{ regions|capfirst }}</b>
         </div>
 
         <button id="select_anno" class="select-button">
             <i class="fa-regular fa-square-check"></i>&nbsp;
-            {% if APP_LANG == "en" %}Select all{% else %}Sélectionner toutes les{% endif %} annotations
+            {% if APP_LANG == "en" %}Select all regions{% else %}Sélectionner toutes les régions{% endif %}
         </button>
 
         <button class="reload-button" onclick="location.reload()" title="{% if APP_LANG == 'en' %}Reload{% else %}Actualiser{% endif %}">
@@ -29,19 +29,19 @@
             {% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}
         </button>
 
-        <button id="delete_anno" class="delete-button">
+        <button id="delete_regions" class="delete-button">
             <i class="fa-solid fa-trash"></i>
-            {% if APP_LANG == "en" %}Delete{% else %}Supprimer les{% endif %} annotations
+            {% if APP_LANG == "en" %}Delete regions{% else %}Supprimer les régions{% endif %}
         </button>
 
-        <button id="validate_anno" class="validate-button">
+        <button id="validate_regions" class="validate-button">
             <i class="fa-solid fa-check"></i>
-            Valid{% if APP_LANG == "en" %}ate{% else %}er les{% endif %} annotations
+            Valid{% if APP_LANG == "en" %}ate regions{% else %}er les régions{% endif %}
         </button>
 
         <!-- <button id="delete_all" class="delete-all-button">
             <i class="fa-solid fa-trash"></i>
-            {% if APP_LANG == "en" %}Delete all the{% else %}Supprimer toutes les{% endif %} annotations
+            {% if APP_LANG == "en" %}Delete all regions{% else %}Supprimer toutes les régions{% endif %}
         </button> -->
     </div>
 {% endblock %}
@@ -49,27 +49,27 @@
 {% block content %}
     <div class="row">
         <div class="column">
-            <table class="anno-table">
-                {% for canvas_nb, annos, img_file in page_annos %}
-                    <tr class="anno-row">
-                        <td class="anno-td page-col">
-                            <div class="anno-info">
+            <table class="region-table">
+                {% for canvas_nb, annotations, img_file in page_regions %}
+                    <tr class="region-row">
+                        <td class="region-td page-col">
+                            <div class="region-info">
                                 <i class="fa-solid fa-pen-to-square"></i>
                                 {% if APP_LANG == "en" %}
-                                    Click on image to correct annotation
+                                    Click on image to correct region
                                 {% else %}
-                                    Clicker sur l'image pour corriger l'annotation
+                                    Clicker sur l'image pour corriger la région
                                 {% endif %}
                             </div>
-                            <a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ canvas_nb }}" target="_blank" title="Correct annotation">
-                                <img class="page-preview" src="{{ img_file|img_to_iiif:"full/400,/0" }}" alt="Click to correct the annotations">
+                            <a href="{{ SAS_APP_URL }}/index.html?iiif-content={{ url_manifest }}&canvas={{ canvas_nb }}" target="_blank" title="Correct region">
+                                <img class="page-preview" src="{{ img_file|img_to_iiif:"full/400,/0" }}" alt="Click to correct the regions">
                             </a>
                             <br>
                             <h3><a href="{{ img_file|img_to_iiif }}" target="_blank">Page {{ canvas_nb }}</a></h3>
                         </td>
-                        <td class="anno-td anno-col">
-                            {% for coord, bbox in annos %}
-                                <div id="ill_{{ bbox }}" class="anno-div">
+                        <td class="region-td region-col">
+                            {% for coord, bbox in annotations %}
+                                <div id="ill_{{ bbox }}" class="region-div">
                                     {% with region_full=coord|add:'/full/0' region=coord|add:'/,150/0' %}
                                         <a href="{{ img_file|img_to_iiif:region_full }}" target="_blank">
                                             <img class="anno" src="{{ img_file|img_to_iiif:region }}" alt="scan preview">
@@ -85,13 +85,13 @@
                             {% endfor %}
                         </td>
                     </tr>
-                    {% empty %} {# if there is no annotations #}
+                    {% empty %} {# if there is no regions #}
                     <tr>
-                        <td style="width: 100%">{% if APP_LANG == "en" %}No{% else %}Aucune{% endif %} annotation</td>
+                        <td style="width: 100%">{% if APP_LANG == "en" %}No region{% else %}Aucune région{% endif %}</td>
                     </tr>
                 {% endfor %}
             </table>
-            {% include 'includes/pagination.html' with current_page=page_annos %}
+            {% include 'includes/pagination.html' with current_page=page_regions %}
         </div>
     </div>
 {% endblock %}

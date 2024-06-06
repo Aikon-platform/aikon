@@ -53,13 +53,13 @@
     padding: 5px;
 }
 
-.anno-table {
+.region-table {
     border-spacing: 5px;
     width: 100%;
     border: 1px solid #ddd;
 }
 
-.anno-td {
+.region-td {
     text-align: left;
     padding: 10px;
     vertical-align: bottom;

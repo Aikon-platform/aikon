@@ -206,11 +206,11 @@ class Witness(models.Model):
     def get_digits(self):
         return self.digitizations.all()
 
-    def get_annotations(self):
-        annos = []
+    def get_regions(self):
+        regions = []
         for digit in self.get_digits():
-            annos.extend(digit.get_annotations())
-        return annos
+            regions.extend(digit.get_regions())
+        return regions
 
     def is_validated(self):
         for digit in self.get_digits():
@@ -227,8 +227,8 @@ class Witness(models.Model):
             imgs.extend(digit.get_imgs(is_abs, temp))
         return imgs
 
-    def has_annotations(self):
-        return any(digit.has_annotations() for digit in self.get_digits())
+    def has_regions(self):
+        return any(digit.has_regions() for digit in self.get_digits())
 
     def get_works(self):
         return list(
