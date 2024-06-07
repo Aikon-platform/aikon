@@ -11,72 +11,72 @@
 
 {% block content %}
     <form method="get">
-        <div class="block">
-            <div class="header-line">
-                <h4>
+        <div class="columns">
+            <div class="panel is-link column p-0 mx-4 my-3">
+                <div class="panel-heading">
                     Par témoin
                     <i class="fa-solid fa-circle-info" data-toggle="tooltip" data-original-title="Témoin..."></i>
-                </h4>
-            </div>
-            <div class="form-row">
-                <div class="form-group col-md-4">
-                    {{ witness_filter.form.type|as_crispy_field }}
                 </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    {{ witness_filter.form.id_nb__icontains|as_crispy_field }}
+                <div class="panel-block columns">
+                    <div class="column is-4">{{ witness_filter.form.type|as_crispy_field }}</div>
+                    <div class="column">{{ witness_filter.form.id_nb__icontains|as_crispy_field }}</div>
                 </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group col-md-8">
+                <div class="panel-block py-1">
                     {{ witness_filter.form.place|as_crispy_field }}
                 </div>
             </div>
-        </div>
-        <div class="block">
-            <div class="header-line">
-                <h4>
+            <div class="panel is-link column p-0 mx-4 my-3">
+                <div class="panel-heading">
                     Par édition
                     <i class="fa-solid fa-circle-info" data-toggle="tooltip" data-original-title="Édition..."></i>
-                </h4>
+                </div>
+                <div class="panel-block columns">
+                    <div class="column">{{ witness_filter.form.edition__place|as_crispy_field }}</div>
+                    <div class="column">{{ witness_filter.form.edition__publisher|as_crispy_field }}</div>
+                </div>
+                <div class="panel-block">
+                    {{ witness_filter.form.edition|as_crispy_field }}
+                </div>
+                <div class="panel-block">
+                    {{ witness_filter.form.edition__name|as_crispy_field }}
+                </div>
             </div>
-            {{ witness_filter.form.edition|as_crispy_field }}
-            {{ witness_filter.form.edition__name|as_crispy_field }}
-            {{ witness_filter.form.edition__place|as_crispy_field }}
-            {{ witness_filter.form.edition__publisher|as_crispy_field }}
         </div>
-        <div class="block">
-            <div class="header-line">
-                <h4>
+        <div class="columns">
+            <div class="panel is-link column p-0 mx-4 my-3">
+                <div class="panel-heading">
                     Par œuvre
                     <i class="fa-solid fa-circle-info" data-toggle="tooltip" data-original-title="Œuvre..."></i>
-                </h4>
-            </div>
-            {{ witness_filter.form.contents__work|as_crispy_field }}
-            {{ witness_filter.form.contents__work__title|as_crispy_field }}
-            {{ witness_filter.form.contents__work__author|as_crispy_field }}
-            <div class="form-row">
-                <div class="form-group col-md-4">
-                    {{ witness_filter.form.contents__date_min|as_crispy_field }}
                 </div>
-                <div class="form-group col-md-4 ml-4">
-                    {{ witness_filter.form.contents__date_max|as_crispy_field }}
+                <div class="panel-block">
+                    {{ witness_filter.form.contents__work|as_crispy_field }}
+                </div>
+                <div class="panel-block columns">
+                    <div class="column">{{ witness_filter.form.contents__work__title|as_crispy_field }}</div>
+                    <div class="column">{{ witness_filter.form.contents__work__author|as_crispy_field }}</div>
+                </div>
+                <div class="panel-block columns">
+                    <div class="column">{{ witness_filter.form.contents__date_min|as_crispy_field }}</div>
+                    <div class="column">{{ witness_filter.form.contents__date_max|as_crispy_field }}</div>
                 </div>
             </div>
-        </div>
-        <div class="block">
-            <div class="header-line">
-                <h4>
+            <div class="panel is-link column p-0 mx-4 my-3">
+                <div class="panel-heading">
                     Par langue & tag
                     <i class="fa-solid fa-circle-info" data-toggle="tooltip" data-original-title="Langue & tag..."></i>
-                </h4>
+                </div>
+                <div class="panel-block">
+                    {{ witness_filter.form.contents__lang|as_crispy_field }}
+                </div>
+                <div class="panel-block">
+                    {{ witness_filter.form.contents__tags|as_crispy_field }}
+                </div>
             </div>
-            {{ witness_filter.form.contents__lang|as_crispy_field }}
-            {{ witness_filter.form.contents__tags|as_crispy_field }}
         </div>
-        <div class="button-container_">
-            <button type="submit" class="btn btn-primary">
+
+
+        <div class="panel-block columns">
+            <button type="submit" class="button is-link is-outlined is-fullwidth">
                 <i class="fa-solid fa-magnifying-glass"></i>
                 Lancer la recherche
             </button>
@@ -84,7 +84,7 @@
     </form>
 
     <div class="button-container">
-        <button onclick="viewCart()">
+        <button onclick="viewCart()" class="js-modal-trigger" data-target="cart-modal">
             <i class="fa-solid fa-cart-shopping"></i>
             (<span id="cart-count">0</span>) Panier
         </button>
@@ -114,7 +114,7 @@
                                     <p class="witness-roles"><strong>Acteurs historiques :</strong> {{ witness.get_roles.0 }}</p>
                                 </div>
                                 <div class="form-group col-md-4">
-                                    <button class="btn btn-success" id="cart-button-{{ witness.id }}" onclick="toggleCart('{{ witness.id }}')">
+                                    <button class="button" id="cart-button-{{ witness.id }}" onclick="toggleCart('{{ witness.id }}')">
                                         <i class="fa-solid fa-cart-plus"></i> Ajouter au Panier
                                     </button>
                                 </div>
@@ -146,28 +146,30 @@
         </div>
     </div>
 
-    <div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="cartModalLabel"><i class="fa-solid fa-cart-shopping"></i> Mon Panier</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <ul id="cart-items" class="list-group">
-                        <!-- Cart items will be injected here by JavaScript -->
-                    </ul>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
-                    <button type="button" class="btn btn-primary" onclick="checkout()">
+    <div id="cart-modal" class="modal fade" tabindex="-1" aria-labelledby="cart-modal-label" aria-hidden="true">
+        <div class="modal-background"></div>
+        <div class="modal-content">
+            <header class="modal-card-head">
+                <p class="modal-card-title">
+                    <i class="fa-solid fa-cart-shopping"></i> Mon Panier
+                </p>
+                <button class="delete" aria-label="close"></button>
+            </header>
+            <section class="modal-card-body">
+                <ul id="cart-items" class="list-group">
+                    <!-- Cart items will be injected here by JavaScript -->
+                </ul>
+            </section>
+            <footer class="modal-card-foot">
+                <div class="buttons">
+                    <button class="button is-link is-light">Fermer</button>
+                    <button class="button is-link" onclick="checkout()">
                         <i class="fa-solid fa-floppy-disk"></i>
                         Enregistrer le Panier
                     </button>
                 </div>
-            </div>
+            </footer>
+            <button class="modal-close is-large" aria-label="close"></button>
         </div>
     </div>
 {% endblock %}

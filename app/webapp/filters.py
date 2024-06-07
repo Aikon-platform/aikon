@@ -96,11 +96,11 @@ def jpg_to_none(img_file):
 class WitnessFilter(django_filters.FilterSet):
     edition = django_filters.ModelChoiceFilter(
         queryset=Edition.objects.all(),
-        widget=autocomplete.ModelSelect2(url="edition-autocomplete"),
+        widget=autocomplete.ModelSelect2(url="webapp:edition-autocomplete"),
     )
     contents__lang = django_filters.ModelChoiceFilter(
         queryset=Language.objects.all(),
-        widget=autocomplete.ModelSelect2Multiple(url="language-autocomplete"),
+        widget=autocomplete.ModelSelect2Multiple(url="webapp:language-autocomplete"),
     )
     contents__date_min = django_filters.RangeFilter(
         field_name="contents__date_min", label="Date minimale"

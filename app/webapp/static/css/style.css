@@ -2,6 +2,14 @@
     margin: 30px 10px;
 }
 
+body {
+    background-color: #F5F5F5;
+}
+
+#footer {
+    background-color: #efefef;
+}
+
 .tooltip {
     position: relative;
     display: inline-block;
@@ -119,6 +127,10 @@
 .is-left {
     display: flex;
     justify-content: flex-end;
+}
+
+.svg-inline--fa {
+    padding-right: 10px !important;
 }
 
 .wrapper {
