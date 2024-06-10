@@ -48,7 +48,12 @@
                 {% endif %}
             {% endfor %}
         </select>
+
         <input id="maxRows" type="number" value="50" onchange="maxRows = this.value">
+        <label for="viewOrder" style="padding: 0 1%">
+            Order by page number
+            <input id="viewOrder" type="checkbox" checked onchange="viewOrder = this.checked">
+        </label>
         <button id="reload-btn" class="reload-button" title="{% if APP_LANG == 'en' %}Reload{% else %}Actualiser{% endif %}">
             <i class="fa-solid fa-arrows-rotate"></i>
             {% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}
@@ -63,6 +68,7 @@
     <script>
         var annoRefs = JSON.parse('{{ anno_refs|safe }}');
         var maxRows = 50;
+        var viewOrder = true;
         var showCheckedRef = false;
 
         document.getElementById('reload-btn').addEventListener('click', refresh_rows);
