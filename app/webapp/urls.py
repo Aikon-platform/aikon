@@ -1,11 +1,13 @@
 from django.urls import path
 from app.config.settings import APP_NAME
 from app.webapp.views import *
+from app.webapp.views.users import *
 
 app_name = "webapp"
 
 urlpatterns = [
     path("", admin_app, name="home"),
+    path(f"{APP_NAME}/logout", logout_view, name="logout"),
     path(f"{APP_NAME}/rgpd", rgpd),
     path(
         f"{APP_NAME}/<str:regions_ref>/show/",
