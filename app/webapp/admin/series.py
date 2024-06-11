@@ -15,7 +15,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
     ordering = ("id",)
     list_per_page = 100
     search_fields = ("edition__name",)
-    # TODO: digit_anno_btn
+    # TODO: digit_regions_btn
     list_display = (
         "id",
         "get_edition",  # "edition",

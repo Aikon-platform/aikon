@@ -1,3 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+:root {
+    --bulma-body-family: "Fira Sans", sans-serif;
+    --default-color: hsl(229, 68%, 46%);
+    --accent-grey: hsl(0, 0%, 14%);
+}
+
+@media (prefers-color-scheme: dark) {}
+@media (prefers-color-scheme: light) {}
+
+html,
+.navbar,
+.footer {
+  transition: 0.3s;
+}
+
+.is-off {
+    filter: grayscale(1);
+    transition: 0.3s;
+}
+
+.button:hover .is-off {
+    filter: grayscale(0.6);
+}
+
 .djn-group .djn-group-nested {
     margin: 30px 10px;
 }
@@ -61,13 +87,13 @@ body {
     padding: 5px;
 }
 
-.anno-table {
+.region-table {
     border-spacing: 5px;
     width: 100%;
     border: 1px solid #ddd;
 }
 
-.anno-td {
+.region-td {
     text-align: left;
     padding: 10px;
     vertical-align: bottom;
@@ -134,6 +160,7 @@ body {
 }
 
 .wrapper {
+    margin-top: 57px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -145,9 +172,14 @@ body {
     object-fit: contain; /* or object-fit: cover; */
 }
 
-#nav-title {
-    font-family: monospace;
-    font-size: larger;
+.navbar {
+    border-bottom: 1px solid hsl(var(--bulma-navbar-h),var(--bulma-navbar-s),calc(var(--bulma-navbar-dropdown-border-l) - 10%));
+}
+
+.navbar-item:hover,
+.navbar-link:hover {
+    background-color: inherit;
+    color: var(--default-color);
 }
 
 .content {

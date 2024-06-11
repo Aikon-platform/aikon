@@ -22,7 +22,6 @@ ADDITIONAL_MODULES = [
 ]
 
 INSTALLED_APPS = [
-    f"{WEBAPP_NAME}",
     "dal",
     "dal_select2",
     "django.contrib.admin",
@@ -38,6 +37,7 @@ INSTALLED_APPS = [
     "admin_extra_buttons",
     "django_filters",
     "crispy_forms",
+    f"{WEBAPP_NAME}",
 ]
 INSTALLED_APPS += ADDITIONAL_MODULES
 

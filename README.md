@@ -199,7 +199,7 @@ bash run.sh
 > Or launch each process separately:
 > ```bash
 > # Celery & Django
-> venv/bin/celery -A app.app.celery worker -B -c 1 --loglevel=info -P threads && venv/bin/python app/manage.py runserver localhost:8000
+> venv/bin/celery -A app.config.celery worker -B -c 1 --loglevel=info -P threads && venv/bin/python app/manage.py runserver localhost:8000
 > # Cantaloupe
 > sudo -S java -Dcantaloupe.config=cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe-4.1.11.war
 > # Simple Annotation Server

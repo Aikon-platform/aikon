@@ -7,221 +7,85 @@ from urllib.request import urlopen
 import requests
 from PIL import Image
 
-from app.webapp.models.annotation import Annotation
+from app.webapp.models.regions import Regions
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.treatment import Treatment
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
-from app.webapp.utils.paths import ANNO_PATH, IMG_PATH
 from app.config.settings import (
     CANTALOUPE_APP_URL,
     SAS_APP_URL,
     APP_NAME,
-    EXAPI_URL,
     APP_URL,
-    EXTRACTOR_MODEL,
 )
 from app.webapp.utils.functions import log
+from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
+from app.webapp.utils.regions import get_txt_regions
 
 
-def create_treatment(treatment_type, task_type, user_id, treated_object):
-    try:
-        treatment = Treatment(
-            treatment_type=treatment_type,
-            task_type=task_type,
-            user_id=user_id,
-            treated_object=treated_object,
-        )
-        treatment.save()
+def index_regions(regions: Regions):
 
-        return treatment
-    except Exception as e:
-        log(
-            f"[create_treatment] Failed to create treatment requested by user {user_id} for digit #{treated_object.id}",
-            e,
-        )
-        return False
-
-
-def send_anno_request(digit: Digitization, event, user_id):
-    event.wait()
-    if not EXAPI_URL.startswith("http"):
-        # on local to prevent bugs
-        return True
-
-    try:
-        anno_request(digit, user_id)
-    except Exception as e:
-        log(f"[send_anno_request] Failed to send request for digit #{digit.id}", e)
-        return False
-
-    return True
-
-
-def anno_request(digit: Digitization, user_id, treatment_type="auto"):
-    treatment = create_treatment(
-        treatment_type=treatment_type,
-        task_type="extraction",
-        user_id=user_id,
-        treated_object=digit,
-    )
-
-    try:
-        response = requests.post(
-            url=f"{EXAPI_URL}/extraction/start",
-            data={
-                "experiment_id": treatment.id,
-                "manifest_url": digit.gen_manifest_url(),
-                "model": f"{EXTRACTOR_MODEL}",  # Use only if specific model is desire
-                "callback": f"{APP_URL}/{APP_NAME}/annotate",  # URL to which the annotations must be sent back
-            },
-        )
-        if response.status_code == 200:
-            treatment.update_treatment()
-            log(f"[annotation_request] Annotation request send: {response.text or ''}")
-            return True
-        else:
-            error = {
-                "source": "[anno_request]",
-                "error_message": f"Annotation request for {digit.get_ref()} with status code: {response.status_code}",
-                "request_info": {
-                    "method": "POST",
-                    "url": f"{EXAPI_URL}/extraction/start",
-                    "data": {
-                        "manifest_url": digit.gen_manifest_url(),
-                        "model": f"{EXTRACTOR_MODEL}",
-                        "callback": f"{APP_URL}/{APP_NAME}/annotate",
-                    },
-                },
-                "response_info": {
-                    "status_code": response.status_code,
-                    "text": response.text or "",
-                },
-            }
-
-            treatment.error_treatment(error)
-            log(error)
-            return False
-    except Exception as e:
-        treatment.error_treatment(e)
-        log(f"[anno_request] Annotation request for {digit.get_ref()} failed", e)
-        return False
-
-
-def process_anno(anno_file_content, digit, treatment_id, model="Unknown model"):
-    treatment = Treatment.objects.filter(pk=treatment_id).first()
-
-    try:
-        # TODO add step to check if an annotation wasn't generated before for the same model
-        anno = Annotation(digitization=digit, model=model)
-        anno.save()
-    except Exception as e:
-        log(f"[receive_anno] Create annotation record for digit #{digit.id}", e)
-        return False
-
-    try:
-        with open(f"{ANNO_PATH}/{anno.get_ref()}.txt", "w+b") as f:
-            f.write(anno_file_content.encode("utf-8"))
-    except Exception as e:
-        treatment.error_treatment(e)
-        log(
-            f"[receive_anno] Failed to save received annotations for digit #{digit.id}",
-            e,
-        )
-        return False
-
-    try:
-        index_annotations(anno)
-    except Exception as e:
-        treatment.error_treatment(e)
-        log(f"[receive_anno] Failed to index annotations for digit #{digit.id}", e)
-        return False
-
-    treatment.complete_treatment(anno.get_ref())
-    return True
-
-
-def index_annotations(anno: Annotation):
-    if not index_manifest_in_sas(anno.gen_manifest_url(version=MANIFEST_V2), True):
+    if not index_manifest_in_sas(regions.gen_manifest_url(version=MANIFEST_V2), True):
         return
 
-    canvases_to_annotate = get_annos_per_canvas(anno)
+    canvases_to_annotate = get_annotations_per_canvas(regions)
     if not bool(canvases_to_annotate):
         # if the annotation file is empty
         return True
 
     for c in canvases_to_annotate:
         try:
-            index_annos_on_canvas(anno, c)
+            index_annotations_on_canvas(regions, c)
         except Exception as e:
             log(
-                f"[index_annotations]: Problem indexing annotation #{anno.id} (canvas {c})",
+                f"[index_regions] Problem indexing region #{regions.id} (canvas {c})",
                 e,
             )
 
     return True
 
 
-def unindex_anno(anno_id, remove_from_anno_ids=False):
+def unindex_annotation(annotation_id, remove_from_annotation_ids=False):
     http_sas = SAS_APP_URL.replace("https", "http")
 
-    # if remove_from_anno_ids:
-    #     id_annotation = re.search(r"_anno(\d+)", anno_id).group(1)
-    #     # TODO remove from anno.anno_ids when it is only one anno that is deleted
+    # if remove_from_annotation_ids:
+    #     id_annotation = re.search(r"_anno(\d+)", annotation_id).group(1)
+    #     # TODO remove from annotation.annotation_ids when it is only one annotation that is deleted
 
-    # anno_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}_c{canvas_nb}_{uuid4().hex[:8]}
-    delete_url = f"{SAS_APP_URL}/annotation/destroy?uri={http_sas}/annotation/{anno_id}"
+    # annotation_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}
+    delete_url = (
+        f"{SAS_APP_URL}/annotation/destroy?uri={http_sas}/annotation/{annotation_id}"
+    )
     try:
         response = requests.delete(delete_url)
         if response.status_code == 204:
             return True
         else:
             log(
-                f"[unindex_anno] Delete anno request failed with status code: {response.status_code}"
+                f"[unindex_annotation] Unindex annotation request failed with status code: {response.status_code}"
             )
     except requests.exceptions.RequestException as e:
-        log(f"[unindex_anno] Delete anno request failed", e)
+        log(f"[unindex_annotation] Unindex annotation request failed", e)
     return False
 
 
-def delete_annos(anno: Annotation):
-    index_manifest_in_sas(anno.gen_manifest_url(version=MANIFEST_V2))
-    sas_anno_id = 0
-    try:
-        for sas_anno in get_manifest_annos(anno):
-            sas_anno_id = sas_anno.split("/")[-1]
-            unindex_anno(sas_anno_id)
-    except Exception as e:
-        log(f"[delete_annos] Failed to unindex annotation #{sas_anno_id}", e)
-        return False
-
-    try:
-        # Delete the annotation record in the database
-        anno.delete()
-    except Exception as e:
-        log(f"[delete_annos] Failed to delete annotation record #{anno.id}", e)
-        return False
-
-    return True
-
-
-def index_annos_on_canvas(anno: Annotation, canvas_nb):
-    # this url (view canvas_annotations()) is calling format_canvas_annos(), thus returning formatted annos for each canvas
-    formatted_annos = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{anno.get_ref()}/list/anno-{canvas_nb}.json"
+def index_annotations_on_canvas(regions: Regions, canvas_nb):
+    # this url (view canvas_annotations()) is calling format_canvas_annotations(), thus returning formatted annotations for each canvas
+    formatted_annotations = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions.get_ref()}/list/anno-{canvas_nb}.json"
     # POST request that index the annotations
     response = urlopen(
         f"{SAS_APP_URL}/annotation/populate",
-        urlencode({"uri": formatted_annos}).encode("ascii"),
+        urlencode({"uri": formatted_annotations}).encode("ascii"),
     )
 
     if response.status != 201:
         log(
-            f"[index_annos_on_canvas] Failed to index annotations. Status: {response.status_code}",
+            f"[index_annotations_on_canvas] Failed to index annotations. Status: {response.status_code}",
             response.text,
         )
         return
 
 
-def get_annos_per_canvas(anno: Annotation, last_canvas=0, specific_canvas=""):
+def get_annotations_per_canvas(region: Regions, last_canvas=0, specific_canvas=""):
     """
     Returns a dict with the text annotation file info:
     { "canvas1": [ coord1, coord2 ], "canvas2": [], "canvas3": [ coord1 ] }
@@ -230,9 +94,9 @@ def get_annos_per_canvas(anno: Annotation, last_canvas=0, specific_canvas=""):
 
     coord = (x, y, width, height)
     """
-    lines = get_txt_annos(anno)
+    lines = get_txt_regions(region)
     if lines is None:
-        log(f"[get_annos_per_canvas] no annotation file for Annotation #{anno.id}")
+        log(f"[get_annotations_per_canvas] No annotation file for Regions #{region.id}")
         return {}
 
     annotated_canvases = {}
@@ -264,60 +128,36 @@ def get_annos_per_canvas(anno: Annotation, last_canvas=0, specific_canvas=""):
     return annotated_canvases
 
 
-def get_txt_annos(anno: Annotation):
-    try:
-        with open(f"{ANNO_PATH}/{anno.get_ref()}.txt") as f:
-            return [line.strip() for line in f.readlines()]
-    except FileNotFoundError:
-        return None
-
-
-def get_anno_img(anno: Annotation):
-    lines = get_txt_annos(anno)
-    if lines is None:
-        return []
-
-    imgs = []
-    img_name = f"{anno.get_ref()}_0000.jpg"
-    for line in lines:
-        if len(line.split()) == 2:
-            img_name = line.split()[1]
-        else:
-            x, y, w, h = line.split()
-            imgs.append(
-                f"{CANTALOUPE_APP_URL}/iiif/2/{img_name}/{x},{y},{w},{h}/full/0/default.jpg"
-            )
-    return imgs
-
-
-def format_canvas_annos(anno: Annotation, canvas_nb):
-    canvas_annos = get_annos_per_canvas(anno, specific_canvas=str(canvas_nb))
-    if len(canvas_annos) == 0:
+def format_canvas_annotations(regions: Regions, canvas_nb):
+    canvas_annotations = get_annotations_per_canvas(
+        regions, specific_canvas=str(canvas_nb)
+    )
+    if len(canvas_annotations) == 0:
         return {"@type": "sc:AnnotationList", "resources": []}
 
     return {
         "@type": "sc:AnnotationList",
         "resources": [
             format_annotation(
-                anno,
+                regions,
                 canvas_nb,
-                canvas_annos[anno_num],
+                canvas_annotations[annotation_num],
             )
-            for anno_num in range(len(canvas_annos))
+            for annotation_num in range(len(canvas_annotations))
         ],
     }
 
 
-def format_annotation(anno: Annotation, canvas_nb, xywh):
-    base_url = anno.gen_manifest_url(only_base=True, version=MANIFEST_V2)
+def format_annotation(regions: Regions, canvas_nb, xywh):
+    base_url = regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)
     x, y, w, h = xywh
 
     width = w // 2
     height = h // 2
 
-    anno_id = anno.gen_anno_id(canvas_nb)
+    annotation_id = regions.gen_annotation_id(canvas_nb)
     d = f"M{x} {y} h {width} v 0 h {width} v {height} v {height} h -{width} h -{width} v -{height}Z"
-    r_id = f"rectangle_{anno_id}"
+    r_id = f"rectangle_{annotation_id}"
     d_paper = "{&quot;strokeWidth&quot;:1,&quot;rotation&quot;:0,&quot;annotation&quot;:null,&quot;nonHoverStrokeColor&quot;:[&quot;Color&quot;,0,1,0],&quot;editable&quot;:true,&quot;deleteIcon&quot;:null,&quot;rotationIcon&quot;:null,&quot;group&quot;:null}"
 
     path = f"""<path xmlns='http://www.w3.org/2000/svg'
@@ -337,7 +177,7 @@ def format_annotation(anno: Annotation, canvas_nb, xywh):
     path = re.sub(r"\s+", " ", path).strip()
 
     return {
-        "@id": f"{SAS_APP_URL.replace('https', 'http')}/annotation/{anno_id}",
+        "@id": f"{SAS_APP_URL.replace('https', 'http')}/annotation/{annotation_id}",
         "@type": "oa:Annotation",
         "dcterms:created": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "dcterms:modified": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
@@ -391,22 +231,22 @@ def set_canvas(seq, canvas_nb, img_name, img, version=None):
     canvas.set_hw(h, w)
 
     # Build the image annotation
-    anno = canvas.annotation(ident=f"a{canvas_nb}")
+    annotation = canvas.annotation(ident=f"a{canvas_nb}")
     if re.match(r"https?://(.*?)/", img_name):
         # to build hybrid manifest referencing images from other IIIF repositories
-        img = anno.image(img_name, iiif=False)
+        img = annotation.image(img_name, iiif=False)
         setattr(img, "format", "image/jpeg")
     else:
-        img = anno.image(ident=img_name, iiif=True)
+        img = annotation.image(ident=img_name, iiif=True)
 
     img.set_hw(h, w)
     # In case we do not really index "automatic" annotations but keep them as "otherContents"
     if version == MANIFEST_V1:
         # is calling f"{APP_NAME}/iiif/{version}/{anno.get_ref()}/list/anno-{canvas_nb}.json"
-        # (canvas_annotations() view) that returns formatted annotations format_canvas_annos()
-        anno_list = canvas.annotationList(ident=f"anno-{canvas_nb}")
-        anno = anno_list.annotation(ident=f"a-list-{canvas_nb}")
-        anno.text("Annotation")
+        # (canvas_annotations() view) that returns formatted annotations format_canvas_annotations()
+        annotation_list = canvas.annotationList(ident=f"anno-{canvas_nb}")
+        annotation = annotation_list.annotation(ident=f"a-list-{canvas_nb}")
+        annotation.text("Annotation")
 
 
 def get_indexed_manifests():
@@ -450,17 +290,17 @@ def index_manifest_in_sas(manifest_url, reindex=False):
     return True
 
 
-def get_canvas_list(anno: Annotation, all_img=False):
-    imgs = anno.get_imgs()
+def get_canvas_list(regions: Regions, all_img=False):
+    imgs = regions.get_imgs()
     if all_img:
-        # Display all images associated to the digitization, even though they were not annotated
+        # Display all images associated to the digitization, even if no regions were extracted
         return [(int(img.split("_")[-1].split(".")[0]), img) for img in imgs]
 
-    lines = get_txt_annos(anno)
+    lines = get_txt_regions(regions)
     if not lines:
-        log(f"[get_canvas_list] no annotation file for annotation #{anno.id}")
+        log(f"[get_canvas_list] No regions file for regions #{regions.id}")
         return {
-            "error": "the annotations were not yet generated"
+            "error": "the regions file was not yet generated"
         }  # TODO find a way to display error msg
 
     canvases = []
@@ -478,234 +318,262 @@ def get_canvas_list(anno: Annotation, all_img=False):
 
 def get_canvas_lists(digit: Digitization, all_img=False):
     canvases = []
-    for anno in digit.get_annotations():
-        canvases.extend(get_canvas_list(anno, all_img))
+    for regions in digit.get_regions():
+        canvases.extend(get_canvas_list(regions, all_img))
     return canvases
 
 
-def get_training_anno(anno: Annotation):
-    # Returns a list of tuples [(file_name, file_content), (...)]
-    filenames_contents = []
-    for canvas_nb, img_file in get_canvas_list(anno):
-        sas_annos = get_indexed_canvas_annos(anno, canvas_nb)
-        img = Image.open(f"{IMG_PATH}/{img_file}")
-        width, height = img.size
-        if bool(sas_annos):
-            train_annos = []
-            for sas_anno in sas_annos:
-                x, y, w, h = [int(n) for n in get_coord_from_anno(sas_anno).split(",")]
-                train_annos.append(
-                    f"0 {((x + x + w) / 2) / width} {((y + y + h) / 2) / height} {w / width} {h / height}"
-                )
-
-            filenames_contents.append(
-                (f"{img_file}".replace(".jpg", ".txt"), "\n".join(train_annos))
-            )
-    return filenames_contents
-
-
-def get_indexed_annos(anno: Annotation):
+def get_indexed_annotations(regions: Regions):
     # not used
-    annos = {}
-    for canvas_nb, _ in get_canvas_list(anno):
-        annos[canvas_nb] = get_indexed_canvas_annos(anno, canvas_nb)
-    return annos
+    annotations = {}
+    for canvas_nb, _ in get_canvas_list(regions):
+        annotations[canvas_nb] = get_indexed_canvas_annotations(regions, canvas_nb)
+    return annotations
 
 
-def get_indexed_canvas_annos(anno: Annotation, canvas_nb):
+def get_indexed_canvas_annotations(regions: Regions, canvas_nb):
     try:
         response = urlopen(
-            f"{SAS_APP_URL}/annotation/search?uri={anno.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
+            f"{SAS_APP_URL}/annotation/search?uri={regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
         )
         return json.loads(response.read())
     except Exception as e:
         log(
-            f"[get_indexed_canvas_annos] Could not retrieve anno for annotation #{anno.id}",
+            f"[get_indexed_canvas_annotations] Could not retrieve annotation for regions #{regions.id}",
             e,
         )
         return []
 
 
-def get_coord_from_anno(sas_anno):
+def get_coord_from_annotation(sas_annotation):
     try:
         # coord => "x,y,w,h"
-        coord = (sas_anno["on"][0]["selector"]["default"]["value"]).split("=")[1]
+        coord = (sas_annotation["on"][0]["selector"]["default"]["value"]).split("=")[1]
         # remove negative values if some of the coordinates exceed the image boundaries
         return ",".join(["0" if int(num) < 0 else num for num in coord.split(",")])
     except Exception as e:
-        log(f"[get_coord_from_anno] Could not retrieve coord from anno", e)
+        log(
+            f"[get_coord_from_annotation] Could not retrieve coord from SAS annotation",
+            e,
+        )
         return "0,0,0,0"
 
 
-def get_id_from_anno(sas_anno):
+def get_id_from_annotation(sas_annotation):
     try:
-        # anno_id => "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}_c{canvas_nb}_{uuid4().hex[:8]}"
-        return sas_anno["@id"].split("/")[-1]
+        # annotation_id => "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}"
+        return sas_annotation["@id"].split("/")[-1]
     except Exception as e:
-        log(f"[get_id_from_anno] Could not retrieve id from anno", e)
+        log(f"[get_id_from_annotation] Could not retrieve id from SAS annotation", e)
         return ""
 
 
-def create_empty_anno(digit: Digitization):
-    imgs = digit.get_imgs()
-    if len(imgs) == 0:
-        return False
+def formatted_annotations(regions: Regions):
+    canvas_annotations = []
+    annotation_ids = []
+
+    # TODO: here allow to display images that are not present in the regions file
 
     try:
-        anno = Annotation(digitization=digit, model="Manual")
-        anno.save()
-    except Exception as e:
-        log(
-            f"[create_empty_anno] unable to create new Annotation for digit #{digit.id} in the database",
-            e,
-        )
-        return False
+        for canvas_nb, img_file in get_canvas_list(regions):
+            c_annotations = get_indexed_canvas_annotations(regions, canvas_nb)
+            coord_annotations = []
 
-    try:
-        with open(f"{ANNO_PATH}/{anno.get_ref()}.txt", "w") as anno_file:
-            for i, img_name in enumerate(imgs, 1):
-                anno_file.write(f"{i} {img_name}\n")
-    except Exception as e:
-        log(
-            f"[create_empty_anno] unable to create new Annotation file for digit #{digit.id}",
-            e,
-        )
-
-    return anno
-
-
-def formatted_annotations(anno: Annotation):
-    canvas_annos = []
-    anno_ids = []
-
-    # TODO: here allow to display images that are not present in the annotation file
-
-    try:
-        for canvas_nb, img_file in get_canvas_list(anno):
-            c_annos = get_indexed_canvas_annos(anno, canvas_nb)
-            coord_annos = []
-
-            if bool(c_annos):
-                coord_annos = [
+            if bool(c_annotations):
+                coord_annotations = [
                     (
-                        get_coord_from_anno(sas_anno),
-                        get_id_from_anno(sas_anno),
+                        get_coord_from_annotation(sas_anno),
+                        get_id_from_annotation(sas_anno),
                     )
-                    for sas_anno in c_annos
+                    for sas_anno in c_annotations
                 ]
-                anno_ids.extend(anno_id for _, anno_id in coord_annos)
+                annotation_ids.extend(
+                    annotation_id for _, annotation_id in coord_annotations
+                )
 
-            canvas_annos.append((canvas_nb, coord_annos, img_file))
+            canvas_annotations.append((canvas_nb, coord_annotations, img_file))
     except ValueError as e:
         log(
-            f"[formatted_annotations] Error when generating auto annotation list (probably no annotation file)",
+            f"[formatted_annotations] Error when generating automatic annotation list (probably no annotation file)",
             e,
         )
 
-    return anno_ids, canvas_annos
+    return annotation_ids, canvas_annotations
 
 
-def check_anno_file(file_content):
-    # Either contains a number then an img.jpg / Or a series of 4 numbers
-    pattern = re.compile(r"^\d+\s+\S+\.jpg$|^\d+\s\d+\s\d+\s\d+$")
-    for line in file_content.split("\n"):
-        if line == "":
-            continue
-        if not pattern.match(line):
-            log(f"[check_anno_file] incorrect line {line}")
-            return False
-    return True
-
-
-def get_manifest_annos(anno: Annotation):
+def get_manifest_annotations(regions: Regions):
     try:
-        response = requests.get(f"{SAS_APP_URL}/search-api/{anno.get_ref()}/search")
-        annos = response.json()
+        response = requests.get(f"{SAS_APP_URL}/search-api/{regions.get_ref()}/search")
+        annotations = response.json()
 
         if response.status_code != 200:
             log(
-                f"[get_manifest_annos] Failed to get annos from SAS: {response.status_code}"
+                f"[get_manifest_annotations] Failed to get annotations from SAS: {response.status_code}"
             )
             return []
     except requests.exceptions.RequestException as e:
-        log(f"[get_manifest_annos] Failed to retrieve annotations", e)
+        log(f"[get_manifest_annotations] Failed to retrieve annotations", e)
         return []
 
-    if "resources" not in annos or len(annos["resources"]) == 0:
+    if "resources" not in annotations or len(annotations["resources"]) == 0:
         return []
 
     try:
-        manifest_annos = [anno["@id"] for anno in annos["resources"]]
+        manifest_annotations = [
+            annotation["@id"] for annotation in annotations["resources"]
+        ]
     except Exception as e:
-        log(f"[get_manifest_annos] Failed to parse annotations", e)
+        log(f"[get_manifest_annotations] Failed to parse annotations", e)
         return []
 
-    return manifest_annos
+    return manifest_annotations
 
 
-def check_indexation_annos(anno: Annotation, reindex=False):
-    lines = get_txt_annos(anno)
+def check_indexation(regions: Regions, reindex=False):
+    lines = get_txt_regions(regions)
     if not lines:
         return False
 
-    generated_annos = 0
-    indexed_annos = 0
+    generated_annotations = 0
+    indexed_annotations = 0
 
-    sas_anno_ids = []
+    sas_annotations_ids = []
     try:
         for line in lines:
             len_line = len(line.split())
             if len_line == 2:
                 # if line = "canvas_nb img_name"
                 canvas_nb = line.split()[0]
-                sas_annos = get_indexed_canvas_annos(anno, canvas_nb)
-                nb_annos = len(sas_annos)
+                sas_annotations = get_indexed_canvas_annotations(regions, canvas_nb)
+                nb_annotations = len(sas_annotations)
 
-                if nb_annos != 0:
-                    indexed_annos += nb_annos
-                    sas_anno_ids.extend(
-                        [get_id_from_anno(sas_anno) for sas_anno in sas_annos]
+                if nb_annotations != 0:
+                    indexed_annotations += nb_annotations
+                    sas_annotations_ids.extend(
+                        [
+                            get_id_from_annotation(sas_annotation)
+                            for sas_annotation in sas_annotations
+                        ]
                     )
                 else:
                     if not index_manifest_in_sas(
-                        anno.gen_manifest_url(version=MANIFEST_V2)
+                        regions.gen_manifest_url(version=MANIFEST_V2)
                     ):
                         return False
             elif len_line == 4:
                 # if line = "x y w h"
-                generated_annos += 1
+                generated_annotations += 1
     except Exception as e:
         log(
-            f"[check_indexation_annos] Failed to check indexation for anno #{anno.id}",
+            f"[check_indexation] Failed to check indexation for regions #{regions.id}",
             e,
         )
         return False
 
-    if generated_annos != indexed_annos:
-        for sas_anno_id in sas_anno_ids:
-            unindex_anno(sas_anno_id)
+    if generated_annotations != indexed_annotations:
+        for sas_annotation_id in sas_annotations_ids:
+            unindex_annotation(sas_annotation_id)
         if reindex:
-            if index_annotations(anno):
-                log(f"[check_indexation_annos] Annotation #{anno.id} was reindexed")
+            if index_regions(regions):
+                log(f"[check_indexation] Regions #{regions.id} were reindexed")
                 return True
     return True
 
 
-def get_anno_images(anno: Annotation):
+def get_images_annotations(regions: Regions):
     # Used to export images annotations
     imgs = []
 
     try:
-        for canvas_nb, img_file in get_canvas_list(anno):
-            c_annos = get_indexed_canvas_annos(anno, canvas_nb)
+        for canvas_nb, img_file in get_canvas_list(regions):
+            c_annotations = get_indexed_canvas_annotations(regions, canvas_nb)
 
-            if bool(c_annos):
+            if bool(c_annotations):
                 canvas_imgs = [
-                    f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/{get_coord_from_anno(sas_anno)}/full/0/default.jpg"
-                    for sas_anno in c_annos
+                    f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/{get_coord_from_annotation(sas_annotation)}/full/0/default.jpg"
+                    for sas_annotation in c_annotations
                 ]
                 imgs.extend(canvas_imgs)
     except ValueError as e:
-        log(f"[get_anno_images] Error when retrieving annotations", e)
+        log(f"[get_images_annotations] Error when retrieving SAS annotations", e)
 
     return imgs
+
+
+def delete_regions(regions: Regions):
+    index_manifest_in_sas(regions.gen_manifest_url(version=MANIFEST_V2))
+    sas_annotation_id = 0
+    try:
+        for sas_annotation in get_manifest_annotations(regions):
+            sas_annotation_id = sas_annotation.split("/")[-1]
+            unindex_annotation(sas_annotation_id)
+    except Exception as e:
+        log(
+            f"[delete_regions] Failed to unindex SAS annotation #{sas_annotation_id}", e
+        )
+        return False
+
+    try:
+        # Delete the regions record in the database
+        regions.delete()
+    except Exception as e:
+        log(f"[delete_regions] Failed to delete regions record #{regions.id}", e)
+        return False
+
+    return True
+
+
+def get_training_regions(regions: Regions):
+    # Returns a list of tuples [(file_name, file_content), (...)]
+    filenames_contents = []
+    for canvas_nb, img_file in get_canvas_list(regions):
+        sas_annotations = get_indexed_canvas_annotations(regions, canvas_nb)
+        img = Image.open(f"{IMG_PATH}/{img_file}")
+        width, height = img.size
+        if bool(sas_annotations):
+            train_regions = []
+            for sas_annotation in sas_annotations:
+                x, y, w, h = [
+                    int(n) for n in get_coord_from_annotation(sas_annotation).split(",")
+                ]
+                train_regions.append(
+                    f"0 {((x + x + w) / 2) / width} {((y + y + h) / 2) / height} {w / width} {h / height}"
+                )
+
+            filenames_contents.append(
+                (f"{img_file}".replace(".jpg", ".txt"), "\n".join(train_regions))
+            )
+    return filenames_contents
+
+
+def process_regions(regions_file_content, digit, treatment_id, model="Unknown model"):
+    treatment = Treatment.objects.filter(pk=treatment_id).first()
+
+    try:
+        # TODO add step to check if regions weren't generated before for the same model
+        regions = Regions(digitization=digit, model=model)
+        regions.save()
+    except Exception as e:
+        log(f"[process_regions] Create regions record for digit #{digit.id}", e)
+        return False
+
+    try:
+        with open(f"{REGIONS_PATH}/{regions.get_ref()}.txt", "w+b") as f:
+            f.write(regions_file_content.encode("utf-8"))
+    except Exception as e:
+        treatment.error_treatment(e)
+        log(
+            f"[process_regions] Failed to save received regions file for digit #{digit.id}",
+            e,
+        )
+        return False
+
+    try:
+        index_regions(regions)
+    except Exception as e:
+        treatment.error_treatment(e)
+        log(f"[process_regions] Failed to index regions for digit #{digit.id}", e)
+        return False
+
+    treatment.complete_treatment(regions.get_ref())
+    return True

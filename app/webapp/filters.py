@@ -53,13 +53,13 @@ def ref_to_iiif(img_ref):
 
 
 @register.filter
-def ref_to_mirador(anno_refs, img_ref):
+def ref_to_mirador(regions_refs, img_ref):
     # img_ref = {img_name}_{coord} / e.g. "wit205_pdf216_021_667,1853,783,412"
     img_ref = img_ref.split("_")
     digit_ref = "_".join(img_ref[0:1])
 
-    anno_ref = [ref for ref in anno_refs if ref.startswith(digit_ref)][0]
-    manifest = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{anno_ref}/manifest.json"
+    regions_ref = [ref for ref in regions_refs if ref.startswith(digit_ref)][0]
+    manifest = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions_ref}/manifest.json"
 
     return f"{SAS_APP_URL}/index.html?iiif-content={manifest}&canvas={int(img_ref[-2])}"
 

@@ -24,7 +24,7 @@ MODEL_NAMES = {
     "Role": {"en": "role", "fr": "rôle"},
     "Image": {"en": "image", "fr": "image"},
     "Pdf": {"en": "PDF", "fr": "PDF"},
-    "Annotation": {"en": "annotation", "fr": "annotation"},
+    "Regions": {"en": "regions", "fr": "régions"},
 }
 
 MANIFEST = MODEL_NAMES["Manifest"][APP_LANG]
@@ -45,7 +45,7 @@ PERS = MODEL_NAMES["Person"][APP_LANG]
 ROLE = MODEL_NAMES["Role"][APP_LANG]
 IMG = MODEL_NAMES["Image"][APP_LANG]
 PDF = MODEL_NAMES["Pdf"][APP_LANG]
-ANNO = MODEL_NAMES["Annotation"][APP_LANG]
+REG = MODEL_NAMES["Regions"][APP_LANG]
 
 
 # ABBREVIATION
@@ -99,7 +99,7 @@ MAP_WIT_TYPE = {
     WPR_ABBR: WPR.capitalize(),
 }
 
-ANNO_VERSION = (
+REGIONS_VERSION = (
     (MANIFEST_V1, "automatic"),
     (MANIFEST_V2, "corrected"),
 )

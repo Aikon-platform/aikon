@@ -1,8 +1,8 @@
 {% load static shared_tags %}
 
-<nav class="navbar" role="navigation" aria-label="main navigation" data-theme="dark">
-    <div class="navbar-brand ml-3">
-        <a class="navbar-item" href="/{# {% url 'home' %} #}">
+<nav class="navbar is-fixed-top" role="navigation" aria-label="main navigation">
+    <div class="navbar-brand ml-5">
+        <a class="navbar-item" href="/{% url 'webapp:home' %}">
             <img id="nav-icon" src="{% static 'img/favicon-'|add:APP_NAME|add:'.png' %}" alt="Icon">
         </a>
 
@@ -16,53 +16,49 @@
 
     <div id="navbar-content" class="navbar-menu">
         <div class="navbar-start">
-            <a id="nav-title" href="{% url 'webapp:home' %}" class="navbar-item nav-link px-2">
+            <a id="nav-title" href="{% url 'webapp:home' %}" class="navbar-item nav-link px-0 is-size-4">
                 {{ APP_NAME|upper }}
             </a>
 
             {% is_superuser request.user as is_admin %}
             {% if is_admin %}
-                <a href="{% url 'admin:auth_user_changelist' %}" title="Admin stuff" class="navbar-item">
-                    <span class="iconify mr-1" data-icon="mdi:shield"></span> <span>Manage users</span>
+                <a href="{% url 'admin:auth_user_changelist' %}" title="Admin stuff" class="navbar-item ml-5">
+                    <span class="iconify mr-1" data-icon="mdi:shield"></span> <span>{% if APP_LANG == "en" %}Manage users{% else %}Gérer les utilisateurs{% endif %}</span>
                 </a>
             {% endif %}
 
             <div class="navbar-item has-dropdown is-hoverable">
                 <a class="navbar-link">
-                    Manage documents
+                    {% if APP_LANG == "en" %}Manage documents{% else %}Gérer les documents{% endif %}
                 </a>
 
                 <div class="navbar-dropdown">
-                    <a href="{% url 'admin:webapp_witness_changelist' %}" class="navbar-item">{{ WIT }}</a>
-                    <a href="{% url 'admin:webapp_series_changelist' %}" class="navbar-item">Series</a>
+                    <a href="{% url 'admin:webapp_witness_changelist' %}" class="navbar-item is-capitalized">{{ WIT }}</a>
+                    <a href="{% url 'admin:webapp_series_changelist' %}" class="navbar-item is-capitalized">{{ SER }}</a>
                 </div>
             </div>
         </div>
 
-{#<div class="input-group center" style="width: 50%; margin: auto;">#}
-{#    <select class="form-select">#}
-{#        <option selected>TOUT</option>#}
-{#        <option>TÉMOIN</option>#}
-{#        <option>ÉDITION</option>#}
-{#        <option>ŒUVRE</option>#}
-{#        <option>LANGUE</option>#}
-{#        <option>TAG</option>#}
-{#    </select>#}
-{#    <input type="text" class="form-control" placeholder="Rechercher...">#}
-{#    <button class="button is-link" type="button">#}
-{#        <i class="fa-solid fa-magnifying-glass"></i>#}
-{#    </button>#}
-{#</div>#}
-
-        <div class="navbar-end mr-3">
+        <div class="navbar-end mr-6">
             <div class="navbar-item">
+            <div class="button mr-4">
+                <button id="moon" class="icon">
+                    <i class="fa-solid fa-moon fa-lg has-text-info"></i>
+                </button>
+                <button id="sun" class="icon">
+                    <i class="fa-solid fa-sun fa-lg has-text-warning"></i>
+                </button>
+                    <button id="auto" class="icon">
+                    <i class="fa-solid fa-adjust fa-lg has-text-primary"></i>
+                </button>
+            </div>
                 {% if request.user.is_authenticated %}
                     <div class="buttons">
-                        <a class="button is-link" href="{# {% url 'account' %} #}" title="Profile">
-                            {{ user.username }}
-                        </a>
-                        <a class="button is-link is-outlined" href="{# {% url 'logout' %} #}" title="Log out">
-                            Log out
+                        <div class="has-text-grey pr-3">
+                            {% if APP_LANG == "en" %}Logged in as{% else %}Connecté.e en tant que{% endif %} <span class="has-text-link">{{ user.first_name }} {{ user.last_name }}</span>
+                        </div>
+                        <a class="button is-link is-outlined" href="{% url 'webapp:logout' %}" title="Log out">
+                            {% if APP_LANG == "en" %}Log out{% else %}Déconnexion{% endif %}
                         </a>
                     </div>
                 {% else %}

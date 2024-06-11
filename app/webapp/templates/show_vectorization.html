@@ -2,7 +2,7 @@
 
 {% load static %}
 
-{% block title %}{{ anno }}{% endblock %}
+{% block title %}{{ regions }}{% endblock %}
 
 {% block extrahead %}
     {{ block.super }}
@@ -12,18 +12,17 @@
 {% block header %}
     <div class="toolbar">
         <div class="title">
-            <b>{{ anno|capfirst }}</b>
+            <b>{{ regions|capfirst }}</b>
         </div>
         <div style="display: flex; flex-direction: row;">
-            <a href="{% url 'show-all-annotations' anno_ref=anno_ref %}" target="_blank">
+            <a href="{% url 'show-all-annotations' regions_ref=regions_ref %}" target="_blank">
                 <button class="export-button" type="submit">
                     <i class="fa-solid fa-eye"></i>
                     {% if APP_LANG == "en" %}
-                        Visualize all
+                        Visualize all regions
                     {% else %}
-                        Voir toutes les
+                        Voir toutes les régions
                     {% endif %}
-                    annotations
                 </button>
             </a>
         </div>

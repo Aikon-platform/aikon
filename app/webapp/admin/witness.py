@@ -5,7 +5,7 @@ from app.webapp.admin.digitization import DigitizationInline
 from app.webapp.admin.content import ContentInline, ContentWorkInline
 
 # from app.webapp.admin.volume import VolumeInline
-from app.webapp.models.utils.constants import WIT, ANNO, DIG
+from app.webapp.models.utils.constants import WIT, REG, DIG
 from app.webapp.models.witness import Witness, get_name
 from app.webapp.utils.constants import MAX_ITEMS
 
@@ -24,17 +24,20 @@ from app.webapp.utils.functions import (
     format_dates,
     flatten,
 )
-from app.webapp.utils.iiif.annotation import get_anno_images, get_training_anno
+from app.webapp.utils.iiif.annotation import (
+    get_images_annotations,
+    get_training_regions,
+)
 from app.webapp.utils.paths import IMG_PATH
 from app.webapp.utils.similarity import similarity_request, check_computed_pairs
 
 
-def no_anno_message(request):
+def no_regions_message(request):
     messages.warning(
         request,
-        f"Please select at least one {WIT} with annotations."
+        f"Please select at least one {WIT} with regions."
         if APP_LANG == "en"
-        else f"Merci de sélectionner au moins un {WIT} avec des annotations.",
+        else f"Merci de sélectionner au moins un {WIT} avec des régions.",
     )
 
 
@@ -66,9 +69,9 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             "export_selected_manifests",
             "export_selected_iiif_images",
             "export_selected_images",
-            "export_annotated_imgs",
+            "export_imgs_regions",
             "export_training_imgs",
-            "export_training_anno",
+            "export_training_regions_files",
             "compute_similarity",
         ]
 
@@ -88,7 +91,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         "type",
         "digitizations__is_open",
         "contents__tags__label",
-        "digitizations__annotations__is_validated",
+        "digitizations__regions__is_validated",
     )
     # Attributes to be excluded from the form fields
     exclude = ("slug", "created_at", "updated_at")
@@ -142,9 +145,9 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             files = request.FILES.getlist(f"digitizations-{nb}-images")
 
             flash_msg = (
-                "The image conversion and annotation process is underway. Please wait a few moments."
+                "The image conversion process is underway. Please wait a few moments."
                 if APP_LANG == "en"
-                else "Le processus de téléchargement et d'annotation est en cours. Veuillez patienter quelques instants."
+                else "Le processus de téléchargement est en cours. Veuillez patienter quelques instants."
             )
 
             if len(files):  # if images were uploaded
@@ -165,12 +168,12 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     # # # # # # # # # # # #
 
     # MARKER LIST COLUMNS
-    @admin.display(description=f"{DIG} & {ANNO}")
-    def digit_anno_btn(self, obj: Witness):
+    @admin.display(description=f"{DIG} & {REG}")
+    def digit_regions_btn(self, obj: Witness):
         digits = obj.get_digits()
         if len(digits) == 0:
             return "-"
-        # To display a button in the list of witnesses to know if they were annotated or not
+        # To display a button in the list of witnesses to know if regions were extracted or not
         return mark_safe("<br><br>".join(digit.view_btn() for digit in digits))
 
     @admin.display(description="IIIF manifest")
@@ -206,7 +209,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         "get_dates",
         "get_works",
         "get_roles",
-        "digit_anno_btn",
+        "digit_regions_btn",
         "user",
     )
     list_display_links = ("id_nb",)
@@ -226,17 +229,17 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         return list_to_txt(img_list, "IIIF_images")
 
     @admin.action(
-        description=f"Compute similarity for {ANNO}s of selected {WIT}es"
+        description=f"Compute similarity for {REG} of selected {WIT}es"
         if APP_LANG == "en"
         else f"Calculer la similarité des annotations des {WIT}s sélectionnés"
     )
     def compute_similarity(self, request, queryset):
-        annos = []
+        regions = []
         for witness in queryset.exclude():
-            annos.extend(witness.get_annotations())
-        if len(annos) == 0:
-            return no_anno_message(request)
-        if len(check_computed_pairs([anno.get_ref() for anno in annos])) == 0:
+            regions.extend(witness.get_regions())
+        if len(regions) == 0:
+            return no_regions_message(request)
+        if len(check_computed_pairs([region.get_ref() for region in regions])) == 0:
             return messages.warning(
                 request,
                 f"Similarity was already computed for all the selected {WIT}es"
@@ -244,7 +247,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                 else f"La similarité a déjà été calculée pour tous les {WIT}s sélectionnés",
             )
 
-        similarity_request(annos)
+        similarity_request(regions)
         return messages.info(
             request,
             "Similarity request was sent to the API"
@@ -266,48 +269,48 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         return list_to_txt(manifests, "IIIF_manifests")
 
     @admin.action(
-        description=f"Download annotated diagram images in selected {WIT}es"
+        description=f"Download extracted images in selected {WIT}es"
         if APP_LANG == "en"
-        else f"Télécharger les images d'illustrations annotées des {WIT}s sélectionnés"
+        else f"Télécharger les images extraites des {WIT}s sélectionnés"
     )
-    def export_annotated_imgs(self, request, queryset):
+    def export_imgs_regions(self, request, queryset):
         if not check_selection(queryset, request):
             return
 
         img_urls = []
-        has_annotation = False
+        has_regions = False
         for witness in queryset.exclude():
-            anno_wit = []
-            for anno in witness.get_annotations():
-                has_annotation = True
-                anno_wit.extend(get_anno_images(anno))
-            img_urls.extend(anno_wit)
+            regions_wit = []
+            for regions in witness.get_regions():
+                has_regions = True
+                regions_wit.extend(get_images_annotations(regions))
+            img_urls.extend(regions_wit)
 
-        if not has_annotation:
-            no_anno_message(request)
+        if not has_regions:
+            no_regions_message(request)
             return
 
         return zip_img(img_urls)
 
     @admin.action(
-        description="Export annotations for segmentation model training"
+        description="Export regions for object extraction model training"
         if APP_LANG == "en"
-        else f"Exporter les annotations pour l'entraînement du modèle de segmentation"
+        else f"Exporter les régions pour l'entraînement du modèle d'extraction d'objets"
     )
-    def export_training_anno(self, request, queryset):
+    def export_training_regions_files(self, request, queryset):
         if not check_selection(queryset, request):
             return
 
         dirnames_contents = {}
-        has_annotation = False
+        has_regions = False
         for wit in queryset.exclude():
             dirnames_contents[wit.get_ref()] = []
-            for anno in wit.get_annotations():
-                dirnames_contents[wit.get_ref()].extend(get_training_anno(anno))
-                has_annotation = True
+            for regions in wit.get_regions():
+                dirnames_contents[wit.get_ref()].extend(get_training_regions(regions))
+                has_regions = True
 
-        if not has_annotation:
-            no_anno_message(request)
+        if not has_regions:
+            no_regions_message(request)
             return
 
         return zip_dirs(dirnames_contents)

@@ -1,24 +1,26 @@
 from django.urls import path
 from app.config.settings import APP_NAME
 from app.webapp.views import *
+from app.webapp.views.users import *
 
 app_name = "webapp"
 
 urlpatterns = [
     path("", admin_app, name="home"),
+    path(f"{APP_NAME}/logout", logout_view, name="logout"),
     path(f"{APP_NAME}/rgpd", rgpd),
     path(
-        f"{APP_NAME}/<str:anno_ref>/show/",
-        show_annotations,
-        name="show-annotations",
+        f"{APP_NAME}/<str:regions_ref>/show/",
+        show_regions,
+        name="show-regions",
     ),
     path(
-        f"{APP_NAME}/<str:anno_ref>/list/",
-        get_annos_img_list,
-        name="annotation-list",
+        f"{APP_NAME}/<str:regions_ref>/list/",
+        get_regions_img_list,
+        name="regions-list",
     ),
     path(
-        f"{APP_NAME}/annotations/<int:anno_id>",
+        f"{APP_NAME}/annotations/<int:regions_id>",
         witness_sas_annotations,
         name="witness-annotations",
     ),
@@ -39,33 +41,33 @@ urlpatterns = [
         name="manifest-digitization",
     ),
     path(
-        # anno_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}
-        f"{APP_NAME}/iiif/<str:version>/<str:anno_ref>/manifest.json",
-        manifest_annotation,
-        name="manifest-annotation",
+        # regions_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}
+        f"{APP_NAME}/iiif/<str:version>/<str:regions_ref>/manifest.json",
+        manifest_regions,
+        name="manifest-regions",
     ),
     path(
-        f"{APP_NAME}/iiif/populate/<int:anno_id>",
+        f"{APP_NAME}/iiif/populate/<int:regions_id>",
         populate_annotation,
         name="populate-annotation",
     ),
     path(
-        f"{APP_NAME}/iiif/validate/<str:anno_ref>",
-        validate_annotation,
-        name="validate-annotation",
+        f"{APP_NAME}/iiif/validate/<str:regions_ref>",
+        validate_regions,
+        name="validate-regions",
     ),
     path(
-        f"{APP_NAME}/iiif/<str:version>/<str:anno_ref>/list/anno-<int:canvas_nb>.json",
+        f"{APP_NAME}/iiif/<str:version>/<str:regions_ref>/list/anno-<int:canvas_nb>.json",
         canvas_annotations,
         name="canvas-annotations",
     ),
     path(
-        f"{APP_NAME}/iiif/annotation/<int:anno_id>",
-        export_anno_img,
-        name="annotation-imgs",
+        f"{APP_NAME}/iiif/regions/<int:regions_id>",
+        export_regions_img,
+        name="regions-imgs",
     ),
     path(
-        f"{APP_NAME}/iiif/digit-annotation/<int:digit_id>",
+        f"{APP_NAME}/iiif/digit-regions/<int:digit_id>",
         export_digit_img,
         name="digitization-imgs",
     ),
@@ -91,12 +93,12 @@ urlpatterns = [
         name="receive-similarity",
     ),
     path(
-        f"{APP_NAME}/run-similarity/<list:anno_refs>",  # anno_refs = anno_ref+anno_ref+anno_ref
+        f"{APP_NAME}/run-similarity/<list:regions_refs>",  # regions_refs = regions_ref+regions_ref+regions_ref
         send_similarity,
         name="send-similarity",
     ),
     path(
-        f"{APP_NAME}/<str:anno_ref>/show-similarity",  # anno_refs = anno_ref+anno_ref+anno_ref
+        f"{APP_NAME}/<str:regions_ref>/show-similarity",  # regions_refs = regions_ref+regions_ref+regions_ref
         show_similarity,
         name="show-similarity",
     ),
@@ -111,50 +113,50 @@ urlpatterns = [
         name="compute-score",
     ),
     path(
-        f"{APP_NAME}/run-annotation/<str:digit_ref>",
-        send_anno,
-        name="send-annotations",
+        f"{APP_NAME}/extract-regions/<str:digit_ref>",
+        send_regions_extraction,
+        name="send-regions-extraction",
     ),
     path(
-        f"{APP_NAME}/annotate/<str:digit_ref>",
-        receive_anno,
-        name="receive-annotations",
+        f"{APP_NAME}/get-regions/<str:digit_ref>",
+        receive_regions_file,
+        name="receive-regions-file",
     ),
     path(
-        f"{APP_NAME}/reindex-annotation/<str:obj_ref>",
-        reindex_anno,
-        name="reindex-annotations",
+        f"{APP_NAME}/reindex-regions/<str:obj_ref>",
+        reindex_regions,
+        name="reindex-regions",
     ),
     path(
-        f"{APP_NAME}/index-annotation/<str:anno_ref>",
-        index_anno,
-        name="index-annotations",
+        f"{APP_NAME}/index-regions/<str:regions_ref>",
+        index_regions,
+        name="index-regions",
     ),
     path(
-        f"{APP_NAME}/index-annotation",
-        index_anno,
-        name="index-annotations",
+        f"{APP_NAME}/index-regions",
+        index_regions,
+        name="index-regions",
     ),
     path(
-        f"{APP_NAME}/delete-run-annotation/<str:digit_ref>",
-        delete_send_anno,
-        name="delete-run-annotations",
+        f"{APP_NAME}/regions-deletion-extraction/<str:digit_ref>",
+        regions_deletion_extraction,
+        name="regions-deletion-extraction",
     ),
     path(
-        f"{APP_NAME}/delete-annotation/<str:obj_ref>",
-        delete_annotation,
-        name="delete-annotation",
+        f"{APP_NAME}/delete-annotations-regions/<str:obj_ref>",
+        delete_annotations_regions,
+        name="delete-annotations-regions",
     ),
     path(f"{APP_NAME}/retrieve-category/", retrieve_category, name="retrieve-category"),
     path(f"{APP_NAME}/save-category/", save_category, name="save-category"),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
     path(
-        f"{APP_NAME}/<str:anno_ref>/show-all-annotations",
-        show_all_annotations,
-        name="show-all-annotations",
+        f"{APP_NAME}/<str:regions_ref>/show-all-regions",
+        show_all_regions,
+        name="show-all-regions",
     ),
     path(
-        f"{APP_NAME}/export-crops/<str:anno_ref>",
+        f"{APP_NAME}/export-crops/<str:regions_ref>",
         export_all_crops,
         name="export-crops",
     ),
@@ -164,7 +166,7 @@ urlpatterns = [
         name="export-selected-crops",
     ),
     path(
-        f"{APP_NAME}/<str:anno_ref>/show-vectorization",
+        f"{APP_NAME}/<str:regions_ref>/show-vectorization",
         show_vectorization,
         name="show-vectorization",
     ),

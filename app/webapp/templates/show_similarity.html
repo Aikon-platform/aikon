@@ -42,9 +42,9 @@
     <div id="check-pairs">
         <select id="multi-select" class="witness-multiple" multiple="multiple">
             <option id="show_checked_ref" onchange="showCheckedRef = this.selected" title="{{ checked_ref_title }}" value="{{ checked_ref }}">{{ checked_ref_title|truncate_words }}</option>
-            {% for anno_ref, title in annos.items %}
-                {% if anno_ref != checked_ref %}
-                   <option id="{{ anno_ref }}" title="{{ title }}" value="{{ anno_ref }}" selected>{{ title|truncate_words }}</option>
+            {% for regions_ref, title in regions.items %}
+                {% if regions_ref != checked_ref %}
+                   <option id="{{ regions_ref }}" title="{{ title }}" value="{{ regions_ref }}" selected>{{ title|truncate_words }}</option>
                 {% endif %}
             {% endfor %}
         </select>
@@ -66,7 +66,7 @@
         </div>
     </div>
     <script>
-        var annoRefs = JSON.parse('{{ anno_refs|safe }}');
+        var regionsRefs = JSON.parse('{{ regions_refs|safe }}');
         var maxRows = 50;
         var viewOrder = true;
         var showCheckedRef = false;

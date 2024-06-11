@@ -27,8 +27,8 @@ class RegionPair(models.Model):
 
     img_1 = models.CharField(max_length=150)
     img_2 = models.CharField(max_length=150)
-    anno_ref_1 = models.CharField(max_length=150)
-    anno_ref_2 = models.CharField(max_length=150)
+    regions_ref_1 = models.CharField(max_length=150)
+    regions_ref_2 = models.CharField(max_length=150)
     category = models.IntegerField(null=True)
     category_x = ArrayField(models.IntegerField(), default=list)
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)

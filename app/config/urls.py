@@ -1,6 +1,5 @@
 from django.urls import path, include, register_converter
 from django.conf.urls.static import static
-from django.urls import path, include
 
 from app.config.settings import (
     MEDIA_URL,

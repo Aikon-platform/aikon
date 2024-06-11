@@ -4,6 +4,7 @@ from os.path import exists
 
 from celery.result import AsyncResult
 from dal import autocomplete
+from django.contrib.auth.models import User
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -13,8 +14,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_GET
 
+from app.webapp.models.regions import Regions, check_version
+from app.webapp.models.treatment import Treatment
 from app.webapp.filters import WitnessFilter
-from app.webapp.models.annotation import Annotation, check_version
 from app.webapp.models.digitization import Digitization
 from app.config.settings import (
     SAS_APP_URL,
@@ -41,24 +43,26 @@ from app.webapp.utils.functions import (
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url
 from app.webapp.utils.logger import log
 from app.webapp.utils.iiif.annotation import (
-    format_canvas_annos,
-    index_annotations,
-    get_anno_img,
+    format_canvas_annotations,
+    index_regions,
+    delete_regions,
+    process_regions,
     formatted_annotations,
-    anno_request,
-    process_anno,
-    delete_annos,
-    create_empty_anno,
-    check_anno_file,
+)
+from app.webapp.utils.regions import (
+    get_regions_img,
+    regions_request,
+    create_empty_regions,
+    check_regions_file,
 )
 
-from app.webapp.utils.paths import ANNO_PATH, MEDIA_DIR, SCORES_PATH
+from app.webapp.utils.paths import REGIONS_PATH, MEDIA_DIR, SCORES_PATH
 from app.webapp.utils.similarity import (
     similarity_request,
-    get_annotation_urls,
+    get_regions_urls,
     check_score_files,
     check_computed_pairs,
-    get_compared_annos,
+    get_compared_regions,
     gen_img_ref,
 )
 
@@ -76,7 +80,7 @@ def check_ref(obj_ref, obj="Digitization"):
     ref_format = (
         "{witness_abbr}{witness_id}_{digit_abbr}{digit_id}"
         if obj == "Digitization"
-        else "{witness_abbr}{witness_id}_{digit_abbr}{digit_id}_anno{anno_id}"
+        else "{witness_abbr}{witness_id}_{digit_abbr}{digit_id}_anno{regions_id}"
     )
     if not ref:
         return False, {
@@ -89,7 +93,7 @@ def check_ref(obj_ref, obj="Digitization"):
     if not digit:
         return False, {"response": f"No digitization matching the id #{digit_id}"}
 
-    if obj == "Digitization" or ref["anno"] is None:
+    if obj == "Digitization" or ref["regions"] is None:
         if obj_ref != digit.get_ref():
             return False, {
                 "response": f"Wrong info given in reference for digitization #{digit_id}",
@@ -97,18 +101,18 @@ def check_ref(obj_ref, obj="Digitization"):
             }
         return True, digit
 
-    anno_id = ref["anno"][1]
-    anno = Annotation.objects.filter(pk=anno_id).first()
-    if not anno:
-        return False, {"response": f"No annotation matching the id #{anno_id}"}
+    regions_id = ref["regions"][1]
+    regions = Regions.objects.filter(pk=regions_id).first()
+    if not regions:
+        return False, {"response": f"No regions matching the id #{regions_id}"}
 
-    if obj == "Annotation":
-        if obj_ref != anno.get_ref():
+    if obj == "Regions":
+        if obj_ref != regions.get_ref():
             return False, {
-                "response": f"Wrong info given in reference for annotation #{anno_id}",
+                "response": f"Wrong info given in reference for regions #{regions_id}",
                 "reason": f"Reference must follow this format: {ref_format}",
             }
-        return True, anno
+        return True, regions
 
     return False, {"response": f"Nothing to retrieve for {obj} #{obj_ref}"}
 
@@ -122,34 +126,38 @@ def manifest_digitization(request, digit_ref):
     return JsonResponse(digit.gen_manifest_json())
 
 
-def manifest_annotation(request, version, anno_ref):
+def manifest_regions(request, version, regions_ref):
     # TODO make difference if witness is not public
-    passed, anno = check_ref(anno_ref, "Annotation")
+    passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
-        return JsonResponse(anno, safe=False)
+        return JsonResponse(regions, safe=False)
 
-    return JsonResponse(anno.gen_manifest_json(version=check_version(version)))
+    return JsonResponse(regions.gen_manifest_json(version=check_version(version)))
 
 
 @user_passes_test(is_superuser)
-def send_anno(request, digit_ref):
+def send_regions_extraction(request, digit_ref):
     """
-    To relaunch annotations in case the automatic annotation failed
+    To relaunch regions extraction in case the automatic extraction failed
     """
     passed, digit = check_ref(digit_ref)
     if not passed:
         return JsonResponse(digit, safe=False)
 
-    error = {"response": f"Failed to send annotation request for digit #{digit.id}"}
+    error = {
+        "response": f"Failed to send regions extraction request for digit #{digit.id}"
+    }
     try:
-        status = anno_request(digit, treatment_type="manual", user_id=request.user.id)
+        status = regions_request(
+            digit, treatment_type="manual", user_id=User.objects.get(id=request.user.id)
+        )
     except Exception as e:
         error["cause"] = e
         return JsonResponse(error, safe=False)
 
     if status:
         return JsonResponse(
-            {"response": f"Annotations were relaunched for digit #{digit.id}"},
+            {"response": f"Regions extraction was relaunched for digit #{digit.id}"},
             safe=False,
         )
     return JsonResponse(error, safe=False)
@@ -157,142 +165,152 @@ def send_anno(request, digit_ref):
 
 @user_passes_test(is_superuser)
 @csrf_exempt
-def reindex_anno(request, obj_ref):
+def reindex_regions(request, obj_ref):
     """
-    To reindex annotations from a text file named after <obj_ref>
-    either to create an Annotation obj from an annotation txt file if obj_ref is a digit_ref
-    or to delete then create a new annotation if obj_ref is an anno_ref
+    To reindex regions from a text file named after <obj_ref>
+    either to create a Regions obj from a regions txt file if obj_ref is a digit_ref
+    or to delete then create a new regions file if obj_ref is a regions_ref
     """
-    passed, obj = check_ref(obj_ref, "Annotation")
+    passed, obj = check_ref(obj_ref, "Regions")
     if not passed:
         return JsonResponse(obj)
 
-    anno = obj if cls(obj) == Annotation else None
-    if anno:
+    regions = obj if cls(obj) == Regions else None
+    if regions:
         try:
-            delete_annos(anno)
+            delete_regions(regions)
         except Exception as e:
             return JsonResponse(
-                {"error": f"Failed to delete annotation #{anno.id}: {e}"}
+                {"error": f"Failed to delete regions #{regions.id}: {e}"}
             )
 
-    digit = anno.get_digit() if anno else obj
+    digit = regions.get_digit() if regions else obj
     if not digit:
         return JsonResponse(
-            {"error": f"Failed to retrieve digitization for annotation #{obj_ref}"}
+            {"error": f"Failed to retrieve digitization for regions #{obj_ref}"}
         )
 
-    if exists(f"{ANNO_PATH}/{obj_ref}.txt"):
+    if exists(f"{REGIONS_PATH}/{obj_ref}.txt"):
         try:
-            with open(f"{ANNO_PATH}/{obj_ref}.txt", "r") as file:
-                process_anno(file.read(), digit)
-            delete_files(f"{ANNO_PATH}/{obj_ref}.txt")
+            with open(f"{REGIONS_PATH}/{obj_ref}.txt", "r") as file:
+                process_regions(file.read(), digit)
+            delete_files(f"{REGIONS_PATH}/{obj_ref}.txt")
 
-            return JsonResponse({"message": "Annotations were re-indexed."})
+            return JsonResponse({"message": "Regions were re-indexed."})
 
         except Exception as e:
             return JsonResponse(
-                {"error": f"Failed to index annotations for digit #{digit.id}: {e}"}
+                {"error": f"Failed to index regions for digit #{digit.id}: {e}"}
             )
     else:
-        create_empty_anno(digit)
+        create_empty_regions(digit)
 
-    return JsonResponse({"error": f"No annotation file for reference #{obj_ref}."})
+    return JsonResponse({"error": f"No regions file for reference #{obj_ref}."})
 
 
 @user_passes_test(is_superuser)
-def index_anno(request, anno_ref=None):
+def index_regions(request, regions_ref=None):
     """
-    Index the content of a txt file named after the anno_ref (wit<id>_<digit><id>_anno<id>.txt) into SAS
+    Index the content of a regions txt file named after the regions_ref (wit<id>_<digit><id>_anno<id>.txt) into SAS
     without creating an annotation record if one is already existing
-    If no anno_ref is provided all anno files for mediafiles/annotation are indexed
+    If no regions_ref is provided all regions files for mediafiles/regions are indexed
     """
 
-    anno_files = os.listdir(ANNO_PATH) if not anno_ref else [anno_ref]
+    regions_file = os.listdir(REGIONS_PATH) if not regions_ref else [regions_ref]
 
-    indexed_anno = []
-    not_indexed_anno = []
+    indexed_regions = []
+    not_indexed_regions = []
 
-    for file in anno_files:
+    for file in regions_file:
         a_ref = file.replace(".txt", "")
         ref = parse_ref(a_ref)
-        if not ref or not ref["anno"]:
-            # if there is no anno_id in the ref, pass
-            not_indexed_anno.append(a_ref)
+        if not ref or not ref["regions"]:
+            # if there is no regions_id in the ref, pass
+            not_indexed_regions.append(a_ref)
             continue
-        anno_id = ref["anno"][1]
-        anno = Annotation.objects.filter(pk=anno_id).first()
-        if not anno:
+        regions_id = ref["regions"][1]
+        regions = Regions.objects.filter(pk=regions_id).first()
+        if not regions:
             digit = Digitization.objects.filter(pk=ref["digit"][1]).first()
             if not digit:
                 # if there is no digit corresponding to the ref, pass
-                not_indexed_anno.append(a_ref)
+                not_indexed_regions.append(a_ref)
                 continue
-            anno = Annotation(id=anno_id, digitization=digit, model="CHANGE THIS VALUE")
-            anno.save()
+            regions = Regions(
+                id=regions_id, digitization=digit, model="CHANGE THIS VALUE"
+            )
+            regions.save()
 
         from app.webapp.tasks import reindex_from_file
 
-        reindex_from_file.delay(anno_id)
-        indexed_anno.append(a_ref)
+        reindex_from_file.delay(regions_id)
+        indexed_regions.append(a_ref)
 
     return JsonResponse(
-        {"All": anno_files, "Indexed": indexed_anno, "Not indexed": not_indexed_anno}
+        {
+            "All": regions_file,
+            "Indexed": indexed_regions,
+            "Not indexed": not_indexed_regions,
+        }
     )
 
 
 @user_passes_test(is_superuser)
-def delete_send_anno(request, digit_ref):
+def regions_deletion_extraction(request, digit_ref):
     """
-    To delete images on the GPU and relaunch annotations
+    To delete witness digitization on the GPU and relaunch regions extraction from scratch
     """
-    passed, digit = check_ref(digit_ref, "Annotation")
+    passed, digit = check_ref(digit_ref, "Regions")
     if not passed:
         return JsonResponse(digit)
 
     error = {
-        "response": f"Failed to send deletion and retry request for annotations #{digit.id}"
+        "response": f"Failed to send deletion and regions extraction request for digitization #{digit.id}"
     }
 
     try:
-        status = anno_request(digit, treatment_type="manual", user_id=request.user.id)
+        status = regions_request(
+            digit, treatment_type="manual", user_id=request.user.id
+        )
     except Exception as e:
         error["cause"] = e
         return JsonResponse(error, safe=False)
 
     if status:
         return JsonResponse(
-            {"response": f"Annotations were relaunched for digit #{digit.id}"},
+            {"response": f"Regions extraction was relaunched for digit #{digit.id}"},
             safe=False,
         )
     return JsonResponse(error, safe=False)
 
 
 @user_passes_test(is_superuser)
-def delete_annotation(request, obj_ref):
+def delete_annotations_regions(request, obj_ref):
     """
-    Unindex SAS annotations + delete Annotation record from the database
+    Unindex SAS annotations + delete Regions record from the database
     """
-    passed, obj = check_ref(obj_ref, "Annotation")
+    passed, obj = check_ref(obj_ref, "Regions")
     if not passed:
         return JsonResponse(obj)
 
-    anno = obj if cls(obj) == Annotation else None
-    if anno:
+    regions = obj if cls(obj) == Regions else None
+    if regions:
         try:
-            delete_annos(anno)
+            delete_regions(regions)
         except Exception as e:
             return JsonResponse(
-                {"error": f"Failed to delete annotation #{anno.id}: {e}"}
+                {
+                    "error": f"Failed to delete regions file and annotations for reference #{regions.id}: {e}"
+                }
             )
 
-    return JsonResponse({"error": f"No annotation file for reference #{obj_ref}."})
+    return JsonResponse({"error": f"No regions file for reference #{obj_ref}."})
 
 
 @csrf_exempt
-def receive_anno(request, digit_ref):
+def receive_regions_file(request, digit_ref):
     """
-    Process the result of the API containing digitization annotations
+    Process the result of the API containing regions extracted from a digitization
     """
     passed, digit = check_ref(digit_ref)
     if not passed:
@@ -300,33 +318,31 @@ def receive_anno(request, digit_ref):
 
     if request.method == "POST":
         try:
-            annotation_file = request.FILES["annotation_file"]
+            regions_file = request.FILES["annotation_file"]
             treatment_id = request.POST.get("experiment_id")
         except Exception as e:
-            log("[receive_anno] No annotation file received for", e)
-            return JsonResponse({"message": "No annotation file"}, status=400)
+            log("[receive_regions_file] No regions file received for", e)
+            return JsonResponse({"message": "No regions file"}, status=400)
 
         try:
             model = request.POST.get("model", "Unknown model")
         except Exception as e:
-            log("[receive_anno] Unable to retrieve model param", e)
+            log("[receive_regions_file] Unable to retrieve model param", e)
             model = "Unknown model"
-        file_content = annotation_file.read()
+        file_content = regions_file.read()
         file_content = file_content.decode("utf-8")
 
-        if check_anno_file(file_content):
-            from app.webapp.tasks import process_anno_file
+        if check_regions_file(file_content):
+            from app.webapp.tasks import process_regions_file
 
-            process_anno_file.delay(file_content, digit.id, treatment_id, model)
+            process_regions_file.delay(file_content, digit.id, treatment_id, model)
             return JsonResponse({"response": "OK"}, status=200)
-        return JsonResponse(
-            {"message": "Could not process annotation file"}, status=400
-        )
+        return JsonResponse({"message": "Could not process regions file"}, status=400)
     else:
         return JsonResponse({"message": "Invalid request"}, status=400)
 
 
-def get_annos_img_list(request, anno_ref):
+def get_regions_img_list(request, regions_ref):
     """
     return something like that
     {
@@ -337,59 +353,59 @@ def get_annos_img_list(request, anno_ref):
     }
     """
 
-    passed, anno = check_ref(anno_ref, "Annotation")
+    passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
-        return JsonResponse(anno)
+        return JsonResponse(regions)
 
     try:
-        anno_dict = get_annotation_urls(anno)
+        regions_dict = get_regions_urls(regions)
     except Exception as e:
-        error = f"[get_annos_img_list] Couldn't generate list of annotation images for {anno_ref}"
+        error = f"[get_regions_img_list] Couldn't generate list of regions images for {regions_ref}"
         log(error, e)
         return JsonResponse({"response": error, "reason": e}, safe=False)
 
-    return JsonResponse(anno_dict, status=200, safe=False)
+    return JsonResponse(regions_dict, status=200, safe=False)
 
 
 @user_passes_test(is_superuser)
-def send_similarity(request, anno_refs):
+def send_similarity(request, regions_refs):
     """
     To relaunch similarity request in case the automatic process has failed
     """
 
-    annos = [
-        anno
-        for (passed, anno) in [check_ref(ref, "Annotation") for ref in anno_refs]
+    regions = [
+        region
+        for (passed, region) in [check_ref(ref, "Regions") for ref in regions_refs]
         if passed
     ]
 
-    if not len(annos):
+    if not len(regions):
         return JsonResponse(
             {
-                "response": f"No corresponding annotation in the database for {anno_refs}"
+                "response": f"No corresponding regions in the database for {regions_refs}"
             },
             safe=False,
         )
 
-    if len(check_computed_pairs(anno_refs)) == 0:
+    if len(check_computed_pairs(regions_refs)) == 0:
         return JsonResponse(
-            {"response": f"All similarity pairs were computed for {anno_refs}"},
+            {"response": f"All similarity pairs were computed for {regions_refs}"},
             safe=False,
         )
 
     try:
-        if similarity_request(annos):
+        if similarity_request(regions):
             return JsonResponse(
-                {"response": f"Successful similarity request for {anno_refs}"},
+                {"response": f"Successful similarity request for {regions_refs}"},
                 safe=False,
             )
         return JsonResponse(
-            {"response": f"Failed to send similarity request for {anno_refs}"},
+            {"response": f"Failed to send similarity request for {regions_refs}"},
             safe=False,
         )
 
     except Exception as e:
-        error = f"[send_similarity] Couldn't send request for {anno_refs}"
+        error = f"[send_similarity] Couldn't send request for {regions_refs}"
         log(error, e)
 
         return JsonResponse({"response": error, "reason": e}, safe=False)
@@ -403,9 +419,9 @@ def receive_similarity(request):
     if request.method == "POST":
         filenames = []
         try:
-            for anno_refs, file in request.FILES.items():
-                with open(f"{SCORES_PATH}/{anno_refs}.npy", "wb") as destination:
-                    filenames.append(anno_refs)
+            for regions_refs, file in request.FILES.items():
+                with open(f"{SCORES_PATH}/{regions_refs}.npy", "wb") as destination:
+                    filenames.append(regions_refs)
                     for chunk in file.chunks():
                         destination.write(chunk)
 
@@ -436,15 +452,15 @@ def compute_score(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body.decode("utf-8"))
-            anno_refs = data.get("annoRefs", [])
+            regions_refs = data.get("regionsRefs", [])
             max_rows = int(data.get("maxRows", 50))
             show_checked_ref = data.get("showCheckedRef", True)
-            if len(anno_refs) == 0:
+            if len(regions_refs) == 0:
                 return JsonResponse(
-                    {"error": "No anno_ref to retrieve score"}, status=400
+                    {"error": "No regions_ref to retrieve score"}, status=400
                 )
             return JsonResponse(
-                compute_similarity_scores(anno_refs, max_rows, show_checked_ref),
+                compute_similarity_scores(regions_refs, max_rows, show_checked_ref),
                 status=200,
             )
         except json.JSONDecodeError:
@@ -454,11 +470,11 @@ def compute_score(request):
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
-def show_similarity(request, anno_ref):
-    refs = get_compared_annos(anno_ref)
-    annos = {
-        anno.get_ref(): anno.__str__()
-        for (passed, anno) in [check_ref(ref, "Annotation") for ref in refs]
+def show_similarity(request, regions_ref):
+    refs = get_compared_regions(regions_ref)
+    regions = {
+        region.get_ref(): region.__str__()
+        for (passed, region) in [check_ref(ref, "Regions") for ref in refs]
         if passed
     }
 
@@ -469,157 +485,157 @@ def show_similarity(request, anno_ref):
             "title": "Similarity search result"
             if APP_LANG == "en"
             else "Résultat de recherche de similarité",
-            "annos": dict(sorted(annos.items())),
-            "checked_ref": anno_ref,
-            "checked_ref_title": annos[anno_ref],
-            "anno_refs": json.dumps(refs),
+            "regions": dict(sorted(regions.items())),
+            "checked_ref": regions_ref,
+            "checked_ref_title": regions[regions_ref],
+            "regions_refs": json.dumps(refs),
         },
     )
 
 
-def export_anno_img(request, anno_id):
-    anno = get_object_or_404(Annotation, pk=anno_id)
-    annotations = get_anno_img(anno)
-    return list_to_txt(annotations, anno.get_ref())
+def export_regions_img(request, regions_id):
+    regions = get_object_or_404(Regions, pk=regions_id)
+    images = get_regions_img(regions)
+    return list_to_txt(images, regions.get_ref())
 
 
 def export_digit_img(request, digit_id):
     digit = get_object_or_404(Digitization, pk=digit_id)
-    annotations = []
-    for anno in digit.get_annotations():
-        annotations.extend(get_anno_img(anno))
-    return list_to_txt(annotations, digit.get_ref())
+    regions = []
+    for region in digit.get_regions():
+        regions.extend(get_regions_img(region))
+    return list_to_txt(regions, digit.get_ref())
 
 
 def export_wit_img(request, wit_id):
     wit = get_object_or_404(Witness, pk=wit_id)
-    annotations = []
-    for anno in wit.get_annotations():
-        annotations.extend(get_anno_img(anno))
-    return list_to_txt(annotations, wit.get_ref())
+    regions = []
+    for region in wit.get_regions():
+        regions.extend(get_regions_img(region))
+    return list_to_txt(regions, wit.get_ref())
 
 
-def canvas_annotations(request, version, anno_ref, canvas_nb):
-    anno_id = anno_ref.split("_")[-1].replace("anno", "")
-    anno = get_object_or_404(Annotation, pk=anno_id)
-    return JsonResponse(format_canvas_annos(anno, canvas_nb))
+def canvas_annotations(request, version, regions_ref, canvas_nb):
+    regions_id = regions_ref.split("_")[-1].replace("anno", "")
+    regions = get_object_or_404(Regions, pk=regions_id)
+    return JsonResponse(format_canvas_annotations(regions, canvas_nb))
 
 
-def populate_annotation(request, anno_id):
+def populate_annotation(request, regions_id):
     """
     Populate annotation store from IIIF Annotation List
     """
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    anno = get_object_or_404(Annotation, pk=anno_id)
-    return HttpResponse(status=200 if index_annotations(anno) else 500)
+    regions = get_object_or_404(Regions, pk=regions_id)
+    return HttpResponse(status=200 if index_regions(regions) else 500)
 
 
-def validate_annotation(request, anno_ref):
+def validate_regions(request, regions_ref):
     """
-    Validate the manually corrected annotations
+    Validate the manually corrected regions
     """
     try:
-        passed, anno = check_ref(anno_ref, "Annotation")
+        passed, regions = check_ref(regions_ref, "Regions")
         if not passed:
-            return HttpResponse(anno, status=500)
-        anno.is_validated = True
-        anno.save()
+            return HttpResponse(regions, status=500)
+        regions.is_validated = True
+        regions.save()
         return HttpResponse(status=200)
     except Exception as e:
         return HttpResponse(f"An error occurred: {e}", status=500)
 
 
-def witness_sas_annotations(request, anno_id):
-    anno = get_object_or_404(Annotation, pk=anno_id)
-    _, canvas_annos = formatted_annotations(anno)
-    return JsonResponse(canvas_annos, safe=False)
+def witness_sas_annotations(request, regions_id):
+    regions = get_object_or_404(Regions, pk=regions_id)
+    _, canvas_annotations = formatted_annotations(regions)
+    return JsonResponse(canvas_annotations, safe=False)
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
-def show_annotations(request, anno_ref):
-    passed, anno = check_ref(anno_ref, "Annotation")
+def show_regions(request, regions_ref):
+    passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
-        # if cls(anno) == Digitization:
-        #     create_empty_anno(anno)
-        return JsonResponse(anno)
+        # if cls(regions) == Digitization:
+        #     create_empty_regions(regions)
+        return JsonResponse(regions)
 
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    bboxes, canvas_annos = formatted_annotations(anno)
+    bboxes, canvas_annotations = formatted_annotations(regions)
 
-    paginator = Paginator(canvas_annos, 50)
+    paginator = Paginator(canvas_annotations, 50)
     try:
-        page_annos = paginator.page(request.GET.get("page"))
+        page_regions = paginator.page(request.GET.get("page"))
     except PageNotAnInteger:
-        page_annos = paginator.page(1)
+        page_regions = paginator.page(1)
     except EmptyPage:
-        page_annos = paginator.page(paginator.num_pages)
+        page_regions = paginator.page(paginator.num_pages)
 
     return render(
         request,
         "show.html",
         context={
-            "anno": anno,
-            "page_annos": page_annos,
+            "regions": regions,
+            "page_regions": page_regions,
             "bboxes": json.dumps(bboxes),
-            "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2),
+            "url_manifest": regions.gen_manifest_url(version=MANIFEST_V2),
         },
     )
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
-def show_all_annotations(request, anno_ref):
-    passed, anno = check_ref(anno_ref, "Annotation")
+def show_all_regions(request, regions_ref):
+    passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
-        return JsonResponse(anno)
+        return JsonResponse(regions)
 
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    _, all_annos = formatted_annotations(anno)
+    _, all_annotations = formatted_annotations(regions)
     all_crops = [
         (canvas_nb, coord, img_file)
-        for canvas_nb, coord, img_file in all_annos
+        for canvas_nb, coord, img_file in all_annotations
         if coord
     ]
 
     paginator = Paginator(all_crops, 50)
     try:
-        page_annos = paginator.page(request.GET.get("page"))
+        page_regions = paginator.page(request.GET.get("page"))
     except PageNotAnInteger:
-        page_annos = paginator.page(1)
+        page_regions = paginator.page(1)
     except EmptyPage:
-        page_annos = paginator.page(paginator.num_pages)
+        page_regions = paginator.page(paginator.num_pages)
 
     return render(
         request,
         "show_crops.html",
         context={
-            "anno": anno,
-            "page_annos": page_annos,
+            "regions": regions,
+            "page_obj": page_regions,
             "all_crops": all_crops,
-            "url_manifest": anno.gen_manifest_url(version=MANIFEST_V2),
-            "anno_ref": anno_ref,
+            "url_manifest": regions.gen_manifest_url(version=MANIFEST_V2),
+            "regions_ref": regions_ref,
         },
     )
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
-def show_vectorization(request, anno_ref):
-    passed, anno = check_ref(anno_ref, "Annotation")
+def show_vectorization(request, regions_ref):
+    passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
-        return JsonResponse(anno)
+        return JsonResponse(regions)
 
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    _, all_annos = formatted_annotations(anno)
+    _, all_annotations = formatted_annotations(regions)
     all_crops = [
         (canvas_nb, coord, img_file)
-        for canvas_nb, coord, img_file in all_annos
+        for canvas_nb, coord, img_file in all_annotations
         if coord
     ]
 
@@ -627,28 +643,28 @@ def show_vectorization(request, anno_ref):
         request,
         "show_vectorization.html",
         context={
-            "anno": anno,
+            "regions": regions,
             "all_crops": all_crops,
-            "anno_ref": anno_ref,
+            "regions_ref": regions_ref,
         },
     )
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
-def export_all_crops(request, anno_ref):
-    passed, anno = check_ref(anno_ref, "Annotation")
+def export_all_crops(request, regions_ref):
+    passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
-        return JsonResponse(anno)
+        return JsonResponse(regions)
 
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
     urls_list = []
 
-    _, all_annos = formatted_annotations(anno)
+    _, all_annotations = formatted_annotations(regions)
     all_crops = [
         (canvas_nb, coord, img_file)
-        for canvas_nb, coord, img_file in all_annos
+        for canvas_nb, coord, img_file in all_annotations
         if coord
     ]
 
@@ -678,14 +694,20 @@ class PlaceAutocomplete(autocomplete.Select2ListView):
         data = get_json(
             f"http://api.geonames.org/searchJSON?q={query}&maxRows={MAX_ROWS}&username={GEONAMES_USER}"
         )
-        # TODO use try/except to avoid bug if geonames key doesn't exist
-        suggestions = []
-        for suggestion in data["geonames"]:
-            suggestions.append(
-                f"{suggestion['name']} | {suggestion.get('countryCode', '')}"
-            )
 
-        return suggestions
+        suggestions = []
+        try:
+            for suggestion in data["geonames"]:
+                suggestions.append(
+                    f"{suggestion['name']} | {suggestion.get('countryCode', '')}"
+                )
+
+            return suggestions
+        except Exception as e:
+            log("[place_autocomplete] Error fetching Geonames data.", e)
+            suggestions.append("Error fetching geographical data.")
+
+            return suggestions
 
 
 def retrieve_place_info(request):
@@ -749,8 +771,8 @@ def save_category(request):
     if request.method == "POST":
         data = json.loads(request.body)
         img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
-        anno_ref_1, anno_ref_2 = sorted(
-            [data.get("anno_ref_1"), data.get("anno_ref_2")], key=sort_key
+        regions_ref_1, regions_ref_2 = sorted(
+            [data.get("regions_ref_1"), data.get("regions_ref_2")], key=sort_key
         )
         category = data.get("category")
         category_x = data.get("category_x")
@@ -760,8 +782,8 @@ def save_category(request):
             img_1=img_1,
             img_2=img_2,
             defaults={
-                "anno_ref_1": anno_ref_1,
-                "anno_ref_2": anno_ref_2,
+                "regions_ref_1": regions_ref_1,
+                "regions_ref_2": regions_ref_2,
             },
         )
 

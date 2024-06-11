@@ -29,6 +29,7 @@ from app.webapp.models.utils.constants import (
     TPR_ABBR,
     WPR_ABBR,
     CATEGORY_INFO,
+    SER,
 )
 
 
@@ -48,6 +49,7 @@ def global_variables(request):
         "CANTALOUPE_APP_URL": CANTALOUPE_APP_URL,
         "MS": MS,
         "VOL": VOL,
+        "SER": SER,
         "WIT": WIT,
         "MS_ABBR": MS_ABBR,
         "VOL_ABBR": VOL_ABBR,
