@@ -12,6 +12,43 @@
 
     function addToCart() {
         cart = [...cart, record];
+        function toggleCart(itemId) {
+            const item = document.getElementById(`witness-${itemId}`);
+            const itemDetails = {
+                id: itemId,
+                works: item.querySelector('.witness-works').innerText,
+                idText: item.querySelector('.witness-id').innerText.replace('ID :', '').trim(),
+                type: item.querySelector('.witness-type').innerText.replace('Type :', '').trim(),
+                cote: item.querySelector('.witness-id_nb').innerText.replace('Cote :', '').trim(),
+                place: item.querySelector('.witness-place').innerText.replace('Lieu de conservation :', '').trim(),
+                dates: item.querySelector('.witness-dates').innerText.replace('Dates :', '').trim(),
+                actors: item.querySelector('.witness-roles').innerText.replace('Acteurs historiques :', '').trim(),
+            };
+
+            const index = cart.findIndex(cartItem => cartItem.id === itemId);
+            const button = document.getElementById(`cart-button-${itemId}`);
+            const cartButton = document.querySelector('.button-container button');
+
+            if (index === -1) {
+                cart.push(itemDetails);
+                button.innerHTML = '<i class="fa-solid fa-cart-arrow-down"></i> Retirer du Panier';
+                button.classList.remove('btn-success');
+                button.classList.add('btn-danger');
+                cartButton.classList.add('animate-bounce');
+                setTimeout(() => cartButton.classList.remove('animate-bounce'), 500);
+            } else {
+                cart.splice(index, 1);
+                button.innerHTML = '<i class="fa-solid fa-cart-plus"></i> Ajouter au Panier';
+                button.classList.remove('btn-danger');
+                button.classList.add('btn-success');
+                cartButton.classList.add('animate-shake');
+                setTimeout(() => cartButton.classList.remove('animate-shake'), 500);
+            }
+
+            saveCart();
+            updateCartCount();
+        }
+
         console.log(cartNb);
     }
 
@@ -76,7 +113,7 @@
 
                         </div>
                         <div class="media-right">
-                            <button class="button" id="cart-button-{record.id}" onclick="toggleCart('{record.id}')" on:click={addToCart}>
+                            <button class="button" id="cart-button-{record.id}" onclick="toggleCart(record.id)" on:click={addToCart}>
                                 <i class="fa-solid fa-cart-plus"></i> {appLang === 'en' ? 'Add to cart' : 'Ajouter au Panier'}
                             </button>
                         </div>

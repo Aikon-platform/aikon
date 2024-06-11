@@ -143,6 +143,27 @@ Otherwise, follow the instructions below.
 > Navigate to [http://localhost:8888/index.html](http://localhost:8888/index.html) to start annotating:
 > You should now see Mirador with default example manifests.
 >
+> #### Svelte development
+>
+> Install Node.js and Webpack
+> ```bash
+> curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+> nvm install node
+> npm install -g webpack webpack-cli
+> ```
+>
+> Initialize npm in the webpack folder, and install all required packages:
+> ```bash
+> cd app/webpack
+> npm init
+> ```
+>
+> To compile the Svelte components, run:
+> ```bash
+> # in app/webpack
+> npm run build
+> ```
+>
 > #### Enabling authentication for Redis instance (optional)
 >
 > Get the redis config file and the redis password in the environment variables

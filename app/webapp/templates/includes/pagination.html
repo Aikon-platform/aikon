@@ -1,69 +1,19 @@
-{% block extrahead %}
-    <style>
-        .pagination {
-            display: inline-block;
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-
-        .pagination ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .pagination li {
-            display: inline-block;
-            margin-right: 5px;
-            border: 1px solid #ddd;
-            padding: 5px 10px;
-        }
-
-        .pagination li.active {
-            background-color: #337ab7;
-            color: #fff;
-            border-color: #337ab7;
-        }
-
-        .pagination li a {
-            color: #337ab7;
-        }
-
-        .pagination li.disabled {
-            color: #ddd;
-            border-color: #ddd;
-            cursor: not-allowed;
-        }
-
-        .pagination li:first-child a,
-        .pagination li:last-child a {
-            padding: 5px 7px;
-        }
-
-        .pagination li:first-child {
-            border-radius: 4px 0 0 4px;
-        }
-
-        .pagination li:last-child {
-            border-radius: 0 4px 4px 0;
-        }
-    </style>
-{% endblock %}
-
-<div class="pagination">
-    <ul>
-        {% if current_page.has_previous %}
-            <li><a href="?page=1">&laquo;</a></li>
-            <li><a href="?page={{ current_page.previous_page_number }}">&lsaquo;</a></li>
+<nav class="pagination is-centered" role="navigation" aria-label="pagination">
+    <ul class="pagination-list">
+        {% if page_obj.has_previous %}
+            <li><a class="pagination-link" href="?page=1">1</a></li>
+            {% if page_obj.previous_page_number > 1 %}
+                <li><span class="pagination-ellipsis">&hellip;</span></li>
+                <li><a class="pagination-link" href="?page={{ page_obj.previous_page_number }}">{{ page_obj.previous_page_number }}</a></li>
+            {% endif %}
         {% endif %}
-
-        {% for num in current_page.paginator.page_range %}
-            <li{% if current_page.number == num %} class="active"{% endif %}><a href="?page={{ num }}">{{ num }}</a></li>
-        {% endfor %}
-
-        {% if current_page.has_next %}
-            <li><a href="?page={{ current_page.next_page_number }}">&rsaquo;</a></li>
-            <li><a href="?page={{ current_page.paginator.num_pages }}">&raquo;</a></li>
+        <li><a class="pagination-link is-current">{{ page_obj.number }}</a></li>
+        {% if page_obj.has_next %}
+            {% if page_obj.next_page_number < page_obj.paginator.num_pages %}
+                <li><a class="pagination-link" href="?page={{ page_obj.next_page_number }}">{{ page_obj.next_page_number }}</a></li>
+                <li><span class="pagination-ellipsis">&hellip;</span></li>
+            {% endif %}
+            <li><a class="pagination-link" href="?page={{ page_obj.paginator.num_pages }}">{{ page_obj.paginator.num_pages }}</a></li>
         {% endif %}
     </ul>
-</div>
+</nav>

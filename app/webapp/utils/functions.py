@@ -65,7 +65,7 @@ class DateTimeEncoder(json.JSONEncoder):
         if isinstance(obj, datetime.datetime):
             if is_naive(obj):
                 obj = make_aware(obj)
-            return obj.isoformat()
+            return obj.strftime("%Y-%m-%d %H:%M")
         return super().default(obj)
 
 
