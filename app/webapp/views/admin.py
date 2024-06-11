@@ -1,9 +1,12 @@
+import json
+
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.views.generic import CreateView, DetailView, View, ListView, UpdateView
 from django.urls import reverse
 
 from app.webapp.forms import *
 from app.webapp.models.witness import Witness
+from app.webapp.utils.functions import DateTimeEncoder
 
 
 class AbstractView(LoginRequiredMixin):
@@ -71,6 +74,14 @@ class AbstractRecordList(AbstractView, ListView):
 
     def get_view_title(self):
         return f"List of {self.model._meta.verbose_name}"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["json_object_list"] = json.dumps(
+            [obj.to_json() for obj in context["object_list"]], cls=DateTimeEncoder
+        )
+
+        return context
 
 
 class WitnessView(AbstractRecordView):

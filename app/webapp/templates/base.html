@@ -59,10 +59,11 @@
     <script src="{% static 'autocomplete_light/i18n/fr.js' %}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
 
+    {% define "css" as context %}
     {% block extrahead %}{% endblock %}
+
 </head>
 <body>
-
 {% include 'includes/navbar.html' %}
 
 <div class="wrapper container">
@@ -76,13 +77,19 @@
                 </ul>
             </div>
         {% endif %}
+
+        {% define "html" as context %}
         {% block content %}{% endblock %}
+
     </div>
 </div>
 
 {% include 'includes/footer.html' %}
 
 <script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
+
+{% define "js" as context %}
 {% block extra_js %}{% endblock %}
+
 </body>
 </html>

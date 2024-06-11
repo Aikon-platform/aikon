@@ -14,6 +14,7 @@ from django.core.exceptions import ValidationError
 
 from django.utils.html import format_html
 from django.http import HttpResponse
+from django.utils.timezone import is_naive, make_aware
 from django.utils.safestring import mark_safe
 from urllib.request import (
     HTTPPasswordMgrWithDefaultRealm,
@@ -57,6 +58,15 @@ def extract_nb(string):
 def normalize_str(string):
     string = string.lower().strip().replace("-", "")
     return string
+
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            if is_naive(obj):
+                obj = make_aware(obj)
+            return obj.isoformat()
+        return super().default(obj)
 
 
 def substrs_in_str(string, substrings):

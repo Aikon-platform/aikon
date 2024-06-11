@@ -1,10 +1,13 @@
 {% extends "admin/base_site.html" %}
-{% load shared_tags %}
+{% load shared_tags static %}
 
 {% block title %}List of {{ record_name }}{% endblock %}
 
+{% block extrahead %}
+    <link rel="stylesheet" href="{% static 'svelte/recordList.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="centerwrap">
     {% if filter %}
         {% include "includes/breadcrumbs.html" %}
         <h1 class="is-title is-size-2 py-3">{{ filter }}</h1>
@@ -14,17 +17,31 @@
 
     {% include "includes/pagination.html" %}
 
-    <div class="record-list">
-        <p class="columns">
-            {# SEARCH SECTION? #}
-        </p>
+    {# SEARCH SECTION #}
 
-        {% for record in object_list %}
-            {% include "includes/record-block.html" %}
-        {% endfor %}
+    <div class="record-list">
+        <div id="record-list"></div>
     </div>
 
-    {% include "includes/pagination.html" %}
+    {% if cl.result_count %}
+        <div class="paginator">
+            {{ cl.paginator.number }} of {{ cl.paginator.num_pages }} pages
+        </div>
+{#        {% block result_list %}#}
+{#              {% if action_form and actions_on_top and cl.show_admin_actions %}{% admin_actions %}{% endif %}#}
+{#                    {% result_list cl %}#}
+{#              {% if action_form and actions_on_bottom and cl.show_admin_actions %}{% admin_actions %}{% endif %}#}
+{#        {% endblock %}#}
+{#    {% else %}#}
+{#        <p>No entries found.</p>#}
+    {% endif %}
 
-</div>
+    {% include "includes/pagination.html" %}
+{% endblock %}
+
+{% block extra_js %}
+    <script type="application/json" id="record-data">
+        {{ json_object_list|safe }}
+    </script>
+    <script src="{% static 'svelte/recordList.js' %}"></script>
 {% endblock %}

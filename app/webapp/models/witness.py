@@ -1,3 +1,5 @@
+import json
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
@@ -22,6 +24,8 @@ from app.webapp.models.utils.constants import (
     WIT_CHANGE,
     MAP_WIT_TYPE,
     MS_ABBR,
+    WPR_ABBR,
+    FOL_ABBR,
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
@@ -37,6 +41,8 @@ def get_name(fieldname, plural=False):
             "en": "external link (online catalog, etc.)",
             "fr": "lien externe (catalogue en ligne, etc.)",
         },
+        "place_name": {"en": "creation place", "fr": "lieu de création"},
+        "page_nb": {"en": "page number", "fr": "nombre de page"},
         "page_type": {"en": "pagination type", "fr": "type de pagination"},
         "page_type_info": {
             "en": "is the witness paginated, folioed, or other (scroll, etc.)?",
@@ -65,11 +71,12 @@ class Witness(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        if self.type == MS_ABBR:
-            return format_html(
-                f"{self.place.name if self.place else CONS_PLA_MSG} | {self.id_nb}"
-            )
-        return format_html(f"{self.volume_title}, vol. {self.volume_nb}")
+        if self.volume_title:
+            vol = f", vol. {self.volume_nb}" if self.volume_nb else f" | {self.id_nb}"
+            return format_html(f"{self.volume_title}{vol}")
+        return format_html(
+            f"{self.place.name if self.place else CONS_PLA_MSG} | {self.id_nb}"
+        )
 
     def get_absolute_url(self):
         return reverse("admin:webapp_witness_change", args=[self.id])
@@ -150,12 +157,39 @@ class Witness(models.Model):
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
+    def to_json(self):
+        return {
+            "id": self.id,
+            "title": self.__str__(),
+            "img": self.get_img(),
+            "user": self.user.__str__(),
+            "url": self.get_absolute_url(),
+            "updated_at": self.updated_at,
+            "is_public": self.is_public,
+            "metadata": {
+                get_name("id_nb"): self.id_nb or "-",
+                get_name("Work"): self.get_work_titles(),
+                get_name("place_name"): self.get_place_names(),
+                get_name("dates"): format_dates(*self.get_dates()),
+                get_name("page_nb"): self.get_page(),
+                get_name("Language"): self.get_lang_names(),
+            }
+            # TODO add to_json() to other models
+        }
+
     def get_type(self):
         # NOTE should be returning "letterpress" (tpr) / "woodblock" (wpr) / "manuscript" (ms)
         return MAP_WIT_TYPE[self.type]
 
     def get_ref(self):
         return f"wit{self.id}"
+
+    def get_page(self):
+        return (
+            f"{self.nb_pages} {'ff' if self.page_type == FOL_ABBR else 'pp'}."
+            if self.nb_pages
+            else "-"
+        )
 
     def change_url(self):
         change_url = reverse("admin:webapp_witness_change", args=[self.id])
@@ -221,6 +255,11 @@ class Witness(models.Model):
     def has_images(self):
         return any(digit.has_images() for digit in self.get_digits())
 
+    def get_img(self, is_abs=False):
+        for digit in self.get_digits():
+            return digit.get_img(is_abs)
+        return None
+
     def get_imgs(self, is_abs=False, temp=False):
         imgs = []
         for digit in self.get_digits():
@@ -244,6 +283,15 @@ class Witness(models.Model):
     def get_work_titles(self):
         works = self.get_works()
         return "<br>".join([work.__str__() for work in works]) if len(works) else "-"
+
+    def get_languages(self):
+        return list(
+            set(flatten([content.get_langs() for content in self.get_contents()]))
+        )
+
+    def get_lang_names(self):
+        langs = self.get_languages()
+        return "<br>".join([lang.__str__() for lang in langs]) if len(langs) else "-"
 
     def set_conservation_place(self, place: ConservationPlace):
         self.place = place

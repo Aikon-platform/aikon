@@ -260,6 +260,7 @@ case $answer in
         ;;
 esac
 
+# TODO add setup for svelte
 
 redis_psw=$(get_env_value "REDIS_PASSWORD" "$APP_ENV")
 if [ -n "$redis_psw" ]; then
