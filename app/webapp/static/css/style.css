@@ -28,12 +28,11 @@ html,
     margin: 30px 10px;
 }
 
-body {
-    background-color: #F5F5F5;
+.form-row:not(:last-child) {
+  margin-bottom: 0.5rem;
 }
-
-#footer {
-    background-color: #efefef;
+fieldset:not(:last-child) {
+  margin-bottom: 1.5rem;
 }
 
 .tooltip {
