@@ -67,6 +67,11 @@ from app.webapp.utils.similarity import (
     gen_img_ref,
 )
 
+from app.webapp.utils.vectorization import (
+    vectorization_request,
+    vectorization_request_for_one,
+)
+
 
 def is_superuser(user):
     return user.is_superuser
@@ -395,6 +400,38 @@ def send_similarity(request, anno_refs):
 
     except Exception as e:
         error = f"[send_similarity] Couldn't send request for {anno_refs}"
+        log(error, e)
+
+        return JsonResponse({"response": error, "reason": e}, safe=False)
+
+
+@login_required(login_url=f"/{APP_NAME}-admin/login/")
+def send_vectorization(request, anno_ref):
+    """
+    Send vectorization request from the witness info template
+    """
+
+    passed, anno = check_ref(anno_ref, "Annotation")
+    print(anno)
+    if not anno:
+        return JsonResponse(
+            {"response": f"No corresponding annotation in the database for {anno_ref}"},
+            safe=False,
+        )
+
+    try:
+        if vectorization_request_for_one(anno):
+            return JsonResponse(
+                {"response": f"Successful vectorization request for {anno_ref}"},
+                safe=False,
+            )
+        return JsonResponse(
+            {"response": f"Failed to send vectorization request for {anno_ref}"},
+            safe=False,
+        )
+
+    except Exception as e:
+        error = f"[send_vectorization] Couldn't send request for {anno_ref}"
         log(error, e)
 
         return JsonResponse({"response": error, "reason": e}, safe=False)

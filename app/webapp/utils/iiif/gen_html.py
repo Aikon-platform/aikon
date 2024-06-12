@@ -54,7 +54,7 @@ def anno_btn(obj, action="view"):
     elif action == "vectorization":
         color = "#EFB80B"
         icon = get_icon("pen-to-square")
-        link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-all-annotations" # TODO changer pour la bonne url. 
+        link = f"{APP_URL}/{APP_NAME}/run-vectorization/{obj.get_ref()}"
     else:
         # When the button is not supposed to redirects to anything
         link = "#"
