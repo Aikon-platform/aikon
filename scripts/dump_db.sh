@@ -2,7 +2,7 @@
 
 # HOW TO USE
 # in the script directory
-# sh dump_db.sh
+# bash dump_db.sh
 
 SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"

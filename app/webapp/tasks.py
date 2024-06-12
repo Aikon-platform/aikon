@@ -53,7 +53,7 @@ def compute_similarity_scores(
 
 @celery_app.task
 def process_regions_file(file_content, digit_id, treatment_id, model):
-    from app.webapp.models.regions import Digitization
+    from app.webapp.models.digitization import Digitization
 
     digitization = Digitization.objects.filter(pk=digit_id).first()
     return process_regions(file_content, digitization, treatment_id, model)
