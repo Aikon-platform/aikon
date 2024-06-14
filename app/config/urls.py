@@ -232,7 +232,7 @@ urlpatterns = [
         name="receive-vecto",
     ),
     path(
-        f"{APP_NAME}/img-and-svg/<str:img_file>/<str:coords>",
+        f"{APP_NAME}/img-and-svg/<str:img_file>/<str:coords>/<str:anno>/<int:canvas_nb>",
         show_crop_vecto,
         name="img-and-svg",
     ),

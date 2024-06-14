@@ -114,12 +114,11 @@
                                             <img src="{{ img_file|img_to_iiif:region }}" alt="scan preview">
                                         </a>
                                         <img src="{% get_media_prefix %}svg/{{ img_file|jpg_to_none }}_{{ coords }}.svg" class="img-fluid" alt="{{ img_file|jpg_to_none }}_{{ coords }}.svg">
-                                        <a href="{% url 'img-and-svg' img_file=img_file coords=coords %}" target="_blank">{% if APP_LANG == "en" %}Visualize{% else %}Visualiser{% endif %}</a>
+                                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px;">
+                                        <a href="{% url 'img-and-svg' img_file=img_file coords=coords anno=anno canvas_nb=canvas_nb %}" target="_blank">{% if APP_LANG == "en" %}Visualize{% else %}Visualiser{% endif %}</a>
                                         <br>
                                         <input type="checkbox" name="vecto_checkbox" value='["{{ img_file|jpg_to_none }}_{{ coords }}.svg", "{{ img_file|img_to_iiif:region }}"]' onchange="updateSelectedImageURLs()">
-                                        <label for="checkbox">
-                                            {% if APP_LANG == "en" %}Select{% else %}Sélectionner{% endif %}
-                                        </label>
+                                        </div>
                                     {% endwith %}
                                 </div>
                             {% endfor %}
@@ -137,15 +136,20 @@
                 {% for canvas_nb, coord, img_file in all_crops %}
                     {% for coords, id in coord %}
                         <div class="grid-item">
-                            <div style="display: flex; flex-direction: row;">
-                                {% with small=coords|add:'/full/0' %}
+                            <div style="display: flex; flex-direction: column;">
+                                <div style="display: flex; flex-direction: row;">{% with small=coords|add:'/full/0' %}
                                     <a href="{{ img_file|img_to_iiif:small }}" target="_blank">
                                         <img src="{{ img_file|img_to_iiif:small }}" class="img-fluid" alt="{{ img_file }}" style="margin-right: 10px;">
                                     </a>
                                             <img src="{% get_media_prefix %}svg/{{ img_file|jpg_to_none }}_{{ coords }}.svg" class="img-fluid" alt="{{ img_file|jpg_to_none }}_{{ coords }}.svg">
-                                            <a href="{ % url 'img-and-svg' img_file=img_file coords=coords %}" target="_blank">{% if APP_LANG == "en" %}Visualize{% else %}Visualiser{% endif %}</a>
-                                </a>
-                                <input type="checkbox" name="vecto_checkbox" value='["{{ img_file|jpg_to_none }}_{{ coords }}.svg", "{{ img_file|img_to_iiif:small }}"]' onchange="updateSelectedImageURLs()">
+
+                                </a></div>
+                                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px;">
+                                    <a href="{% url 'img-and-svg' img_file=img_file coords=coords anno=anno canvas_nb=canvas_nb %}" target="_blank">
+                                        {% if APP_LANG == "en" %}Visualize{% else %}Visualiser{% endif %}
+                                    </a>
+                                    <input type="checkbox" name="vecto_checkbox" value='["{{ img_file|jpg_to_none }}_{{ coords }}.svg", "{{ img_file|img_to_iiif:small }}"]' onchange="updateSelectedImageURLs()">
+                                </div>
                                 {% endwith %}
                             </div>
                             <h3><a href="{{ img_file|img_to_iiif }}" target="_blank">Page {{ canvas_nb }}</a></h3>
@@ -154,7 +158,8 @@
                 {% endfor %}
             </div>
         </div>
-    =</div>
+    </div>
+
 
 </div>
 </div>

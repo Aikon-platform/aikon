@@ -11,26 +11,39 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css" rel="stylesheet">
 
     <style>
+        .container {
+            display: flex;
+            flex-direction: row;
+            margin: 5%;
+        }
+
+        .sidebar {
+            width: 400px;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+
+        .sidebar > div {
+            padding: 2%;
+        }
+
         .image-container {
-            position: relative;
-            width: 100%;
-            max-width: 500px;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
         }
 
-        .base-image {
-            display: block;
-            width: 100%;
-            height: auto;
-            transition: opacity 0.5s ease;
+        .switch-container {
+            display: flex;
+            align-items: center;
         }
 
-        .overlay-svg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; /* Ensure the SVG doesn't interfere with user interactions */
+        .switch-container label {
+            margin-right: 10px; /* Facultatif : pour ajouter un espace entre le switch et le label */
         }
 
          /* The switch - the box around the slider */
@@ -95,124 +108,167 @@
         .slider.round:before {
         border-radius: 50%;
         }
+
+        circle:hover{
+            stroke-width:6;
+        }
+
+        path:hover{
+            stroke-width:6
+        }
+
+
     </style>
 {% endblock %}
 
 {% block header %}
     <div class="toolbar">
         <div class="title">
-            <b>{{ img_file }}</b>
+            <b>{{ anno|capfirst }} | page {{ canvas_nb }}</b>
         </div>
     </div>
 {% endblock %}
 
 {% block content %}
-<div class="image-container">
-    {% with small=coords|add:'/full/0' %}
-        <a href="{{ img_file|img_to_iiif:small }}" target="_blank">
-            <img src="{{ img_file|img_to_iiif:small }}" class="img-fluid base-image" alt="{{ img_file }}" style="margin-right: 10px;" id="image">
-        </a>
-    {% endwith %}
+<div class="container">
+    <div class="sidebar">
+        <div class="switch-container">
+            <label class="switch">
+                <input type="checkbox" id="change-stroke-color">
+                <span class="slider round"></span>
+            </label>
+            <label for="change-stroke-color">{% if APP_LANG == "en" %}All lines in black{% else %}Noir et blanc{% endif %}</label>
+        </div>
 
+        <div>
+            <input type="range" min="0" max="1" step="0.01" value="1" id="opacityRange">
+            <label for="opacityRange">{% if APP_LANG == "en" %}Toggle Image Opacity{% else %}Moduler l'opacité de l'image{% endif %}</label>
+        </div>
+
+        <div>
+            <a id="downloadLink" href="#" download="image.jpg">Télécharger l'image</a>
+        </div>
+    </div>
+
+    <div class="image-container">
         {{ svg_content|safe }}
-
+    </div>
 </div>
-
-<div>
-    <label class="switch">
-    <input type="checkbox" id="change-stroke-color">
-    <span class="slider round"></span>
-</label>
-
-<label for="change-stroke-color">Change Stroke to Black</label>
-</div>
-
-<div>
-    <input type="range" min="0" max="1" step="0.01" value="1" id="opacityRange">
-</div>
-
 
 
 
 <script>
-    // ajout de la classe au SVG pour la superposition
     document.addEventListener('DOMContentLoaded', function() {
-      const svgElement = document.querySelector('svg'); // Sélectionner l'élément SVG
-      svgElement.classList.add('overlay-svg'); // Ajouter la classe
-    });
 
-    document.addEventListener('DOMContentLoaded', function() {
-    const svgElement = document.querySelector('.overlay-svg');
-    function setViewBoxFromHeightWidth(svgElement) {
-    // Chercher les valeurs de width et height
-    const height = svgElement.getAttribute('height');
-    const width = svgElement.getAttribute('width');
+        const svgElement = document.querySelector('svg'); // Sélectionner l'élément SVG
+        const imageElement = document.querySelector('svg image');
 
-    // les retirer
-    svgElement.removeAttribute('height');
-    svgElement.removeAttribute('width');
-
-    // créer la viewbox avec les valeurs de width et height
-    svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
-    }
-
-    // appeler la fonction
-    setViewBoxFromHeightWidth(svgElement);
-});
-
-    //changer la couleur des traits
-    // Récupère le toggle switch
-    var toggleSwitch = document.getElementById('change-stroke-color');
-
-    // Récupère tous les éléments sur lesquels nous voulons changer la couleur du trait
-    var elementsWithStroke = document.querySelectorAll('[stroke]');
-
-    // Stocke les couleurs d'origine des traits
-    var originalStrokeColors = [];
-
-    // Enregistre les couleurs d'origine des traits
-    elementsWithStroke.forEach(function(element) {
-        originalStrokeColors.push(element.getAttribute('stroke'));
-    });
-
-    // Fonction pour changer la couleur du trait en noir
-    function changeStrokeColorToBlack() {
-        elementsWithStroke.forEach(function(element) {
-            element.setAttribute('stroke', 'black');
-        });
-    }
-
-    // Fonction pour restaurer les couleurs d'origine des traits
-    function restoreOriginalStrokeColors() {
-        elementsWithStroke.forEach(function(element, index) {
-            element.setAttribute('stroke', originalStrokeColors[index]);
-        });
-    }
-
-    // Au toggle switch la couleur
-    toggleSwitch.addEventListener('change', function() {
-        if (this.checked) {
-            changeStrokeColorToBlack();
-        } else {
-            restoreOriginalStrokeColors();
+        // Fonction pour changer l'image de fond
+        function fond() {
+            {% with small=coords|add:'/full/0' %}
+            const backgroundImage = "{{ img_file|img_to_iiif:small }}";
+            {% endwith %}
+            imageElement.setAttribute('xlink:href', backgroundImage);
         }
+        fond();
+
+        // Changer la couleur des traits
+        var toggleSwitch = document.getElementById('change-stroke-color');
+        var elementsWithStroke = document.querySelectorAll('[stroke]');
+        var originalStrokeColors = [];
+
+        elementsWithStroke.forEach(function(element) {
+            originalStrokeColors.push(element.getAttribute('stroke'));
+        });
+
+        function changeStrokeColorToBlack() {
+            elementsWithStroke.forEach(function(element) {
+                element.setAttribute('stroke', 'black');
+            });
+        }
+
+        function restoreOriginalStrokeColors() {
+            elementsWithStroke.forEach(function(element, index) {
+                element.setAttribute('stroke', originalStrokeColors[index]);
+            });
+        }
+
+        toggleSwitch.addEventListener('change', function() {
+            if (this.checked) {
+                changeStrokeColorToBlack();
+            } else {
+                restoreOriginalStrokeColors();
+            }
+        });
+
+        // Modifier l'opacité de l'image
+        const opacityRange = document.getElementById("opacityRange");
+        opacityRange.addEventListener("input", function() {
+            const opacityValue = this.value;
+            imageElement.style.opacity = opacityValue;
+        });
+
+        // Faire disparaître les éléments au onclick
+        function removeElementOnClick(event) {
+            event.target.remove();
+        }
+
+        const circles = document.querySelectorAll('svg circle');
+        const paths = document.querySelectorAll('svg path');
+
+        circles.forEach(circle => {
+            circle.addEventListener('click', removeElementOnClick);
+        });
+
+        paths.forEach(path => {
+            path.addEventListener('click', removeElementOnClick);
+        });
+
+    // Fonction pour convertir le SVG modifié en image (PNG ou JPEG)
+    function convertModifiedSVGToImage(format, quality) {
+        // Sérialiser le SVG modifié
+        const svgString = new XMLSerializer().serializeToString(svgElement);
+
+        // Créer un canvas pour dessiner l'image
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+
+        // Charger l'image de fond dans le canvas
+        const image = new Image();
+        image.setAttribute('crossOrigin', 'anonymous');
+        image.onload = function() {
+            canvas.width = image.width;
+            canvas.height = image.height;
+            context.drawImage(image, 0, 0);
+
+            // Dessiner le SVG modifié sur le canvas
+            const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+            const DOMURL = window.URL || window.webkitURL || window;
+            const svgUrl = DOMURL.createObjectURL(svgBlob);
+
+            const svgImage = new Image();
+            svgImage.onload = function() {
+                context.drawImage(svgImage, 0, 0);
+
+                // Télécharger l'image convertie au format spécifié
+                const dataUrl = canvas.toDataURL(`image/${format}`, quality);
+                const downloadLink = document.getElementById('downloadLink');
+                downloadLink.href = dataUrl;
+                downloadLink.setAttribute('download', `image.${format}`);
+            };
+            svgImage.src = svgUrl;
+        };
+        image.src = imageElement.getAttribute('xlink:href');
+    }
+
+    // Lien pour télécharger en JPEG
+    const downloadLink = document.getElementById('downloadLink');
+    downloadLink.addEventListener('click', function() {
+        convertModifiedSVGToImage('jpeg', 0.8);
     });
 
-    document.addEventListener("DOMContentLoaded", function() {
-    const opacityRange = document.getElementById("opacityRange");
-    const image = document.getElementById("image");
-
-    opacityRange.addEventListener("input", function() {
-        const opacityValue = this.value;
-        image.style.opacity = opacityValue;
     });
-
-
-});
-
-
-
-</script>
+    </script>
 
 
 {% endblock %}

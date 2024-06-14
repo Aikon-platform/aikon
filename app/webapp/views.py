@@ -958,7 +958,7 @@ from webapp.filters import jpg_to_none
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
-def show_crop_vecto(request, img_file, coords):
+def show_crop_vecto(request, img_file, coords, anno, canvas_nb):
 
     # TODO trouver comment passer plus de métadata
     svg_filename = f"{jpg_to_none(img_file)}_{coords}.svg"
@@ -970,13 +970,14 @@ def show_crop_vecto(request, img_file, coords):
     with open(svg_path, "r", encoding="utf-8") as file:
         svg_content = file.read()
 
-    print(img_file)
-    print(coords)
-    print(svg_filename)
-    print(svg_path)
-
     return render(
         request,
         "crop_vecto.html",
-        context={"img_file": img_file, "coords": coords, "svg_content": svg_content},
+        context={
+            "img_file": img_file,
+            "coords": coords,
+            "svg_content": svg_content,
+            "anno": anno,
+            "canvas_nb": canvas_nb,
+        },
     )
