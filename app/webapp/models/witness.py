@@ -160,6 +160,8 @@ class Witness(models.Model):
     def to_json(self):
         return {
             "id": self.id,
+            "class": self.__class__.__name__,
+            "type": get_name("Witness"),
             "title": self.__str__(),
             "img": self.get_img(),
             "user": self.user.__str__(),

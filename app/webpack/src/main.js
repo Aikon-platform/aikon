@@ -1,9 +1,9 @@
-import RecordComponent from './RecordList.svelte';
+import RecordComponent from './list/List.svelte';
 
 const records = JSON.parse(document.getElementById('record-data').textContent);
 
 const app = new RecordComponent({
-    target: document.getElementById('record-list'),
+    target: document.getElementById('block-list'),
     props: {
         records: records
     }

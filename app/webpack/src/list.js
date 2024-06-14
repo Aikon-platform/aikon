@@ -1,13 +1,13 @@
-import RecordList from './RecordList.svelte';
+import BlockList from './list/List.svelte';
 
 const records = JSON.parse(document.getElementById('record-data').textContent);
 
 const appLang = APP_LANG;
 
-const app = new RecordList({
-    target: document.getElementById('record-list'),
+const app = new BlockList({
+    target: document.getElementById('block-list'),
     props: {
-        records: records
+        blocks: records
     }
 });
 

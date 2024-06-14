@@ -4,7 +4,7 @@
 {% block title %}List of {{ record_name }}{% endblock %}
 
 {% block extrahead %}
-    <link rel="stylesheet" href="{% static 'svelte/recordList.css' %}">
+    <link rel="stylesheet" href="{% static 'svelte/blockList.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -20,7 +20,7 @@
     {# SEARCH SECTION #}
 
     <div class="record-list">
-        <div id="record-list"></div>
+        <div id="block-list"></div>
     </div>
 
     {% include "includes/pagination.html" %}
@@ -30,5 +30,5 @@
     <script type="application/json" id="record-data">
         {{ json_object_list|safe }}
     </script>
-    <script src="{% static 'svelte/recordList.js' %}"></script>
+    <script src="{% static 'svelte/blockList.js' %}"></script>
 {% endblock %}

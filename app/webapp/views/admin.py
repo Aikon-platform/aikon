@@ -46,8 +46,14 @@ class AbstractRecordView(AbstractView, CreateView):
     def get_success_url(self):
         return reverse(f"{self.model._meta.name}_list")
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if "id" in self.kwargs:
+            kwargs["instance"] = self.model.objects.get(pk=self.kwargs["id"])
+        return kwargs
 
-class AbstractRecordCreate(AbstractView, CreateView):
+
+class AbstractRecordCreate(AbstractRecordView, CreateView):
     template_name = "webapp/form.html"
 
     def get_view_title(self):
@@ -57,15 +63,11 @@ class AbstractRecordCreate(AbstractView, CreateView):
         return reverse(f"{self.model._meta.name}_list")
 
 
-class AbstractRecordUpdate(AbstractView, UpdateView):
+class AbstractRecordUpdate(AbstractRecordView, UpdateView):
     template_name = "webapp/form.html"
-    pk_url_kwarg = "id"
 
     def get_view_title(self):
         return f"Change {self.model._meta.verbose_name}"
-
-    def get_success_url(self):
-        return reverse(f"{self.model._meta.name}_list")
 
 
 class AbstractRecordList(AbstractView, ListView):
@@ -86,6 +88,7 @@ class AbstractRecordList(AbstractView, ListView):
 
 class WitnessView(AbstractRecordView):
     model = Witness
+    form_class = WitnessForm
 
 
 class WitnessCreate(AbstractRecordCreate):

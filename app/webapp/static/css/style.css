@@ -156,6 +156,9 @@ fieldset:not(:last-child) {
 
 .svg-inline--fa {
     padding-right: 10px !important;
+    height: 1em;
+    overflow: visible;
+    vertical-align: -.125em;
 }
 
 .wrapper {

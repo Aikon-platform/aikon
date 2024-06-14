@@ -1,4 +1,6 @@
 from django import forms
+
+# from app.webapp.admin import DigitizationInline, ContentInline
 from app.webapp.models.witness import Witness
 
 
@@ -18,3 +20,5 @@ class WitnessForm(forms.ModelForm):
             "link",
             "is_public",
         ]
+
+    # inlines = [DigitizationInline, ContentInline]

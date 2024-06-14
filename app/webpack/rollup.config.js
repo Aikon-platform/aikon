@@ -62,8 +62,8 @@ export default [
         output: {
             sourcemap: true,
             format: 'iife',
-            name: 'recordList',
-            file: '../webapp/static/svelte/recordList.js'
+            name: 'blockList',
+            file: '../webapp/static/svelte/blockList.js'
         },
         plugins: [
             svelte({
@@ -71,7 +71,7 @@ export default [
                     dev: !production
                 }
             }),
-            css({ output: 'recordList.css' }),
+            css({ output: 'blockList.css' }),
             resolve({
                 browser: true,
                 dedupe: ['svelte']
