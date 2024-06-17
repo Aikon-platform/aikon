@@ -13,14 +13,10 @@ from app.webapp.utils.logger import iiif_log, console, log, download_log
 from app.webapp.utils.iiif import get_height, get_width, get_id, get_license_url
 
 
-def iiif_to_img(manifest_url, digit_ref, digit_id):
+def iiif_to_img(manifest_url, digit_ref, digit):
     """
     Extract all images from an IIIF manifest
     """
-    from app.webapp.models.digitization import Digitization
-
-    digit = Digitization.objects.filter(pk=digit_id).first()
-
     downloader = IIIFDownloader(manifest_url, digit_ref)
     downloader.run()
 

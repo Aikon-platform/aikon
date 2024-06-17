@@ -50,6 +50,7 @@ from app.webapp.tasks import (
     convert_pdf_to_img,
     convert_temp_to_img,
     extract_images_from_iiif_manifest,
+    send_regions_request,
 )
 
 from app.webapp.utils.iiif.validation import validate_manifest
@@ -349,7 +350,6 @@ class Digitization(models.Model):
 @receiver(post_save, sender=Digitization)
 def digitization_post_save(sender, instance, created, **kwargs):
     # TODO use Celery instead of threading
-    from app.webapp.utils.regions import send_regions_request
 
     if created:
         event = threading.Event()
@@ -359,27 +359,23 @@ def digitization_post_save(sender, instance, created, **kwargs):
             convert_pdf_to_img.delay(instance.get_file_path(is_abs=False))
 
         elif digit_type == IMG_ABBR:
-            convert_temp_to_img.delay(instance.id)
+            convert_temp_to_img.delay(instance)
 
         elif digit_type == MAN_ABBR:
             extract_images_from_iiif_manifest.delay(
-                instance.manifest, instance.get_ref(), instance.id
+                instance.manifest, instance.get_ref(), instance
             )
 
-        import inspect
+        # import inspect
+        #
+        # for frame_record in inspect.stack():
+        #     if frame_record[3] == "get_response":
+        #         request = frame_record[0].f_locals["request"]
+        #         break
+        # else:
+        #     request = None
 
-        for frame_record in inspect.stack():
-            if frame_record[3] == "get_response":
-                request = frame_record[0].f_locals["request"]
-                break
-        else:
-            request = None
-
-        regions_t = threading.Thread(
-            target=send_regions_request,
-            args=(instance, event, request.user),
-        )
-        regions_t.start()
+        # send_regions_request.delay(instance, request.user)
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance

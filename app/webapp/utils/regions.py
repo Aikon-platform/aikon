@@ -36,25 +36,7 @@ def create_treatment(treatment_type, task_type, user_id, treated_object):
         return False
 
 
-def send_regions_request(digit: Digitization, event, user_id):
-    event.wait()
-    if not EXAPI_URL.startswith("http"):
-        # on local to prevent bugs
-        return True
-
-    try:
-        regions_request(digit, user_id)
-    except Exception as e:
-        log(
-            f"[send_regions_request] Failed to send regions extraction request for digit #{digit.id}",
-            e,
-        )
-        return False
-
-    return True
-
-
-def regions_request(digit: Digitization, user_id: User, treatment_type="auto"):
+def regions_request(digit: Digitization, user_id, treatment_type="auto"):
     treatment = create_treatment(
         treatment_type=treatment_type,
         task_type="regions",

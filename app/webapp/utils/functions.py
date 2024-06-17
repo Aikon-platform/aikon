@@ -146,11 +146,7 @@ def rename_file(old_path, new_path):
     return True
 
 
-def temp_to_img(digit_id):
-    from app.webapp.models.digitization import Digitization
-
-    digit = Digitization.objects.filter(pk=digit_id).first()
-
+def temp_to_img(digit):
     try:
         delete_files(f"{IMG_PATH}/to_delete.txt")
 

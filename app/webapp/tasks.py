@@ -9,7 +9,6 @@ from app.config.settings import EXAPI_URL
 from app.webapp.utils.constants import MAX_RES
 
 from app.webapp.utils.functions import pdf_to_img, temp_to_img
-from app.webapp.utils.iiif import NO_LICENSE
 from app.webapp.utils.iiif.download import iiif_to_img
 
 
@@ -19,13 +18,13 @@ def convert_pdf_to_img(pdf_name, dpi=MAX_RES):
 
 
 @celery_app.task
-def convert_temp_to_img(digit_id):
-    return temp_to_img(digit_id)
+def convert_temp_to_img(digit):
+    return temp_to_img(digit)
 
 
 @celery_app.task
-def extract_images_from_iiif_manifest(manifest_url, digit_ref, digit_id):
-    return iiif_to_img(manifest_url, digit_ref, digit_id)
+def extract_images_from_iiif_manifest(manifest_url, digit_ref, digit):
+    return iiif_to_img(manifest_url, digit_ref, digit)
 
 
 @celery_app.task
@@ -70,22 +69,25 @@ def process_regions_file(file_content, digit_id, treatment_id, model):
     return process_regions(file_content, digitization, treatment_id, model)
 
 
-# @celery_app.task
-# def send_regions_request(digit: Digitization, event, user_id):
-#     if not EXAPI_URL.startswith("http"):
-#         # on local to prevent bugs
-#         return True
-#
-#     try:
-#         regions_request(digit, user_id)
-#     except Exception as e:
-#         log(
-#             f"[send_regions_request] Failed to send regions extraction request for digit #{digit.id}",
-#             e,
-#         )
-#         return False
-#
-#     return True
+@celery_app.task
+def send_regions_request(digit, user_id):
+    from app.webapp.utils.logger import log
+    from app.webapp.utils.regions import regions_request
+
+    if not EXAPI_URL.startswith("http"):
+        # on local to prevent bugs
+        return True
+
+    try:
+        regions_request(digit, user_id)
+    except Exception as e:
+        log(
+            f"[send_regions_request] Failed to send regions extraction request for digit #{digit.id}",
+            e,
+        )
+        return False
+
+    return True
 
 
 @celery_app.task
