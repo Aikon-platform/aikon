@@ -163,7 +163,7 @@
         const svgElement = document.querySelector('svg'); // Sélectionner l'élément SVG
         const imageElement = document.querySelector('svg image');
 
-        // Fonction pour changer l'image de fond
+        // Fonction pour charger l'image de fond
         function fond() {
             {% with small=coords|add:'/full/0' %}
             const backgroundImage = "{{ img_file|img_to_iiif:small }}";
@@ -239,7 +239,18 @@
         image.onload = function() {
             canvas.width = image.width;
             canvas.height = image.height;
+            // Remplir le canvas avec un fond blanc
+            context.fillStyle = 'white';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Appliquer l'opacité de l'image de fond
+            const imageOpacity = parseFloat(window.getComputedStyle(imageElement).opacity);
+            context.globalAlpha = isNaN(imageOpacity) ? 1.0 : imageOpacity;
             context.drawImage(image, 0, 0);
+
+            // Réinitialiser l'opacité pour tracer le SVG
+            context.globalAlpha = 1.0;
+
 
             // Dessiner le SVG modifié sur le canvas
             const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
