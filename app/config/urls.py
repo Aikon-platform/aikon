@@ -8,6 +8,7 @@ from app.config.settings import (
     DEBUG,
     APP_NAME,
 )
+
 from django.contrib.admin import site as admin_site
 
 

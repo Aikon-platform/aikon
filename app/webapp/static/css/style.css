@@ -28,6 +28,13 @@ html,
     margin: 30px 10px;
 }
 
+.form-row:not(:last-child) {
+  margin-bottom: 0.5rem;
+}
+fieldset:not(:last-child) {
+  margin-bottom: 1.5rem;
+}
+
 .tooltip {
     position: relative;
     display: inline-block;
@@ -145,6 +152,13 @@ html,
 .is-left {
     display: flex;
     justify-content: flex-end;
+}
+
+.svg-inline--fa {
+    padding-right: 10px !important;
+    height: 1em;
+    overflow: visible;
+    vertical-align: -.125em;
 }
 
 .wrapper {

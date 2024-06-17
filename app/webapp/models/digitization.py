@@ -219,6 +219,12 @@ class Digitization(models.Model):
             return True
         return False
 
+    def get_img(self, is_abs=False):
+        path = f"{IMG_PATH}/" if is_abs else ""
+        for filename in os.listdir(IMG_PATH):
+            if filename.startswith(self.get_ref()):
+                return f"{path}{filename}"
+
     def get_imgs(self, is_abs=False, temp=False):
         imgs = []
         path = f"{IMG_PATH}/" if is_abs else ""

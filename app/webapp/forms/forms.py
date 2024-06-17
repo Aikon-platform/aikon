@@ -1,10 +1,11 @@
 from django import forms
 
+from app.config.settings import APP_LANG
 from app.webapp.models.language import Language
 from app.webapp.models.place import Place
 from dal import autocomplete
 
-from app.webapp.models.utils.constants import SEARCH_MSG
+SEARCH_MSG = "Search..." if APP_LANG == "en" else "Rechercher..."
 
 
 class PlaceForm(forms.ModelForm):

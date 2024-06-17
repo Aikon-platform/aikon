@@ -615,7 +615,7 @@ def show_all_regions(request, regions_ref):
         "show_crops.html",
         context={
             "regions": regions,
-            "page_regions": page_regions,
+            "page_obj": page_regions,
             "all_crops": all_crops,
             "url_manifest": regions.gen_manifest_url(version=MANIFEST_V2),
             "regions_ref": regions_ref,
@@ -835,7 +835,7 @@ def advanced_search(request):
         "result_count": witness_filter.qs.count(),
         "page_obj": page_obj,
     }
-    return render(request, "advanced_search.html", context)
+    return render(request, "webapp/search.html", context)
 
 
 class EditionAutocomplete(autocomplete.Select2QuerySetView):

@@ -62,13 +62,15 @@
 <div class="tabs-crops">
     <div class="row">
         <div class="tab-buttons">
-            <button class="btn-change active-tab">{% if APP_LANG == "en" %}
+            <button class="button btn-change active-tab">
+            {% if APP_LANG == "en" %}
                 Page view
             {% else %}
                 Vue page
             {% endif %}
             </button>
-            <button class="btn-change">{% if APP_LANG == "en" %}
+            <button class="button btn-change">
+            {% if APP_LANG == "en" %}
                 Dump view
             {% else %}
                 Vue générale
@@ -108,7 +110,7 @@
                         </tr>
                     {% endfor %}
                 </table>
-                {% include 'includes/pagination.html' with current_page=page_regions %}
+                {% include 'includes/pagination.html' %}
             </div>
         </div>
 

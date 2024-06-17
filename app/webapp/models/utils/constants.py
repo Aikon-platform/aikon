@@ -208,4 +208,3 @@ CONS_PLA_MSG = (
 AUTHOR_MSG = "Unknown author" if APP_LANG == "en" else "Auteur inconnu"
 IMG_MSG = "Manage images" if APP_LANG == "en" else "Gérer les images"
 WIT_CHANGE = f"Modify {WIT}" if APP_LANG == "en" else f"Modifier le {WIT}"
-SEARCH_MSG = "Search..." if APP_LANG == "en" else "Rechercher..."

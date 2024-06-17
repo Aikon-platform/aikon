@@ -19,20 +19,20 @@
     </script>
 {% endblock %}
 
-{% block branding %}
-    <h1 id="site-name"><a href="{% url 'admin:index' %}">{% if APP_LANG == "en" %}{{ APP_NAME_UPPER }} administration{% else %}Administration de {{ APP_NAME_UPPER }}{% endif %}</a></h1>
-{% endblock %}
-
-{% block nav-global %}
-    <div id="user-tools">
-        {% if user.is_active and user.is_staff %}
-            {% trans 'Welcome,' %} <strong>{{ user.first_name }}</strong>.
-            <a href="{% url 'home' %}">{% trans 'View site' %}</a> /
-            <a href="{% url 'admin:password_change' %}">{% trans 'Change password' %}</a> /
-            <a href="{% url 'admin:logout' %}">{% trans 'Log out' %}</a>
-        {% endif %}
-    </div>
-{% endblock %}
+{#{% block branding %}#}
+{#    <h1 id="site-name"><a href="{% url 'admin:index' %}">{% if APP_LANG == "en" %}{{ APP_NAME_UPPER }} administration{% else %}Administration de {{ APP_NAME_UPPER }}{% endif %}</a></h1>#}
+{#{% endblock %}#}
+{##}
+{#{% block nav-global %}#}
+{#    <div id="user-tools">#}
+{#        {% if user.is_active and user.is_staff %}#}
+{#            {% trans 'Welcome,' %} <strong>{{ user.first_name }}</strong>.#}
+{#            <a href="{% url 'home' %}">{% trans 'View site' %}</a> /#}
+{#            <a href="{% url 'admin:password_change' %}">{% trans 'Change password' %}</a> /#}
+{#            <a href="{% url 'admin:logout' %}">{% trans 'Log out' %}</a>#}
+{#        {% endif %}#}
+{#    </div>#}
+{#{% endblock %}#}
 
 {% block content %}
     <div id="overlay"></div>
@@ -48,7 +48,12 @@
                 {% endif %}
             {% endfor %}
         </select>
+
         <input id="maxRows" type="number" value="50" onchange="maxRows = this.value">
+        <label for="viewOrder" style="padding: 0 1%">
+            Order by page number
+            <input id="viewOrder" type="checkbox" checked onchange="viewOrder = this.checked">
+        </label>
         <button id="reload-btn" class="reload-button" title="{% if APP_LANG == 'en' %}Reload{% else %}Actualiser{% endif %}">
             <i class="fa-solid fa-arrows-rotate"></i>
             {% if APP_LANG == "en" %}Reload{% else %}Actualiser{% endif %}
@@ -63,6 +68,7 @@
     <script>
         var regionsRefs = JSON.parse('{{ regions_refs|safe }}');
         var maxRows = 50;
+        var viewOrder = true;
         var showCheckedRef = false;
 
         document.getElementById('reload-btn').addEventListener('click', refresh_rows);

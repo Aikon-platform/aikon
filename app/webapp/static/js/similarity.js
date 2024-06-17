@@ -1,3 +1,5 @@
+let scores = null;
+
 function getRegionsRef(imgRef) {
     imgRef = imgRef.split("_");
     const digitRef = `${imgRef[0]}_${imgRef[1]}`;
@@ -59,7 +61,7 @@ function getCheckedRefs(checked_ref) {
 const displayScores = (scores) => {
     const table = document.getElementById("similarity");
     table.innerHTML = "";
-    const queryImgs = Object.keys(scores);
+    const queryImgs = viewOrder ? Object.keys(scores).sort() : Object.keys(scores);
 
     if (queryImgs.length > 0) {
         queryImgs.map(qImg => {
@@ -206,9 +208,14 @@ function sendScoreRequest(regionsRefs, maxRows, showCheckedRef) {
     })
     .then(response => response.json()) // This line is needed to parse the response as JSON
     .then(score => {
+        scores = score
         displayScores(score);
     })
     .catch(error => {
         console.error('Error sending data to the server:', error);
     });
 }
+
+$(document).on('change', "#viewOrder", function() {
+    displayScores(scores);
+});

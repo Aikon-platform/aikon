@@ -146,6 +146,9 @@ class Content(models.Model):
         # Django automatically creates a reverse relationship from Content to Role
         return self.roles.all()
 
+    def get_langs(self):
+        return self.lang.all()
+
     def clean(self):
         super().clean()
         validate_dates(self.date_min, self.date_max)
