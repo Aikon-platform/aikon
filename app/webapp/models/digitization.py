@@ -338,6 +338,13 @@ class Digitization(models.Model):
     def delete(self, using=None, keep_parents=False):
         super().delete()
 
+    def add_info(self, license_url, source):
+        self.license = license_url
+        # self.add_source(source)
+        if license_url != NO_LICENSE:
+            self.is_open = True
+        self.save(update_fields=["license", "source", "is_open"])
+
 
 @receiver(post_save, sender=Digitization)
 def digitization_post_save(sender, instance, created, **kwargs):
@@ -355,14 +362,6 @@ def digitization_post_save(sender, instance, created, **kwargs):
             convert_temp_to_img.delay(instance.id)
 
         elif digit_type == MAN_ABBR:
-
-            # def add_info(license_url, source):
-            #     instance.license = license_url
-            #     instance.add_source(source)
-            #     if license_url != NO_LICENSE:
-            #         instance.is_open = True
-            #     instance.save(update_fields=["license", "source", "is_open"])
-
             extract_images_from_iiif_manifest.delay(
                 instance.manifest, instance.get_ref(), instance.id
             )

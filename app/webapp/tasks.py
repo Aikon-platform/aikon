@@ -25,17 +25,7 @@ def convert_temp_to_img(digit_id):
 
 @celery_app.task
 def extract_images_from_iiif_manifest(manifest_url, digit_ref, digit_id):
-    from app.webapp.models.digitization import Digitization
-
-    digit = Digitization.objects.filter(pk=digit_id).first()
-
-    def add_info(license_url):
-        digit.license = license_url
-        if license_url != NO_LICENSE:
-            digit.is_open = True
-        digit.save(update_fields=["license", "is_open"])
-
-    return iiif_to_img(manifest_url, digit_ref, digit_id, add_info)
+    return iiif_to_img(manifest_url, digit_ref, digit_id)
 
 
 @celery_app.task
