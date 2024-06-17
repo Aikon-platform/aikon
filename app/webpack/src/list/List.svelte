@@ -10,7 +10,7 @@
     //     alert('Do you wish to save your selection?')
     // }
 
-    let isBlockSelected = (block) => selection.hasOwnProperty(block.id);
+    $: isBlockSelected = (block) => selection.hasOwnProperty(block.id);
 
     function saveSelection() {
         // api call to save set in database

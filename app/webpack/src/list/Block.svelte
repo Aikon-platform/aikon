@@ -11,7 +11,6 @@
 
     function toggleSelection(block) {
         dispatch('toggleSelection', { block });
-        isSelected = !isSelected
     }
 </script>
 
