@@ -5,7 +5,6 @@ from celery import shared_task
 
 from app.config.celery import celery_app
 
-from app.config.settings import EXAPI_URL
 from app.webapp.utils.constants import MAX_RES
 
 from app.webapp.utils.functions import pdf_to_img, temp_to_img
@@ -67,27 +66,6 @@ def process_regions_file(file_content, digit_id, treatment_id, model):
 
     digitization = Digitization.objects.filter(pk=digit_id).first()
     return process_regions(file_content, digitization, treatment_id, model)
-
-
-@celery_app.task
-def send_regions_request(digit, user_id):
-    from app.webapp.utils.logger import log
-    from app.webapp.utils.regions import regions_request
-
-    if not EXAPI_URL.startswith("http"):
-        # on local to prevent bugs
-        return True
-
-    try:
-        regions_request(digit, user_id)
-    except Exception as e:
-        log(
-            f"[send_regions_request] Failed to send regions extraction request for digit #{digit.id}",
-            e,
-        )
-        return False
-
-    return True
 
 
 @celery_app.task

@@ -1,6 +1,5 @@
 import re
 import requests
-from django.contrib.auth.models import User
 
 from app.config.settings import (
     EXAPI_URL,
@@ -89,6 +88,23 @@ def regions_request(digit: Digitization, user_id, treatment_type="auto"):
             e,
         )
         return False
+
+
+def send_regions_request(digits, user_id):
+    if not EXAPI_URL.startswith("http"):
+        # on local to prevent bugs
+        return True
+
+    for digit in digits:
+        try:
+            regions_request(digit, user_id)
+        except Exception as e:
+            log(
+                f"[send_regions_request] Failed to send regions extraction request for digit #{digit.id}",
+                e,
+            )
+            return False
+    return True
 
 
 def get_txt_regions(regions: Regions):

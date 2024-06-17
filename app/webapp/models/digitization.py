@@ -50,7 +50,6 @@ from app.webapp.tasks import (
     convert_pdf_to_img,
     convert_temp_to_img,
     extract_images_from_iiif_manifest,
-    send_regions_request,
 )
 
 from app.webapp.utils.iiif.validation import validate_manifest
@@ -365,17 +364,6 @@ def digitization_post_save(sender, instance, created, **kwargs):
             extract_images_from_iiif_manifest.delay(
                 instance.manifest, instance.get_ref(), instance
             )
-
-        # import inspect
-        #
-        # for frame_record in inspect.stack():
-        #     if frame_record[3] == "get_response":
-        #         request = frame_record[0].f_locals["request"]
-        #         break
-        # else:
-        #     request = None
-
-        # send_regions_request.delay(instance, request.user)
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance

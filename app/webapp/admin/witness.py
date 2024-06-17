@@ -30,6 +30,7 @@ from app.webapp.utils.iiif.annotation import (
     get_training_regions,
 )
 from app.webapp.utils.paths import IMG_PATH
+from app.webapp.utils.regions import send_regions_request
 from app.webapp.utils.similarity import similarity_request, check_computed_pairs
 
 
@@ -39,6 +40,15 @@ def no_regions_message(request):
         f"Please select at least one {WIT} with regions."
         if APP_LANG == "en"
         else f"Merci de sélectionner au moins un {WIT} avec des régions.",
+    )
+
+
+def no_digit_message(request):
+    messages.warning(
+        request,
+        f"Please select at least one {WIT} with a digitization."
+        if APP_LANG == "en"
+        else f"Merci de sélectionner au moins un {WIT} avec une numérisation.",
     )
 
 
@@ -73,6 +83,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             "export_imgs_regions",
             "export_training_imgs",
             "export_training_regions_files",
+            "request_regions",
             "compute_similarity",
         ]
 
@@ -233,7 +244,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     @admin.action(
         description=f"Compute similarity for {REG} of selected {WIT}es"
         if APP_LANG == "en"
-        else f"Calculer la similarité des annotations des {WIT}s sélectionnés"
+        else f"Calculer la similarité des régions des {WIT}s sélectionnés"
     )
     def compute_similarity(self, request, queryset):
         regions = []
@@ -255,6 +266,44 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             "Similarity request was sent to the API"
             if APP_LANG == "en"
             else "La requête de similarité a été transmise à l'API",
+        )
+
+    @admin.action(
+        description=f"Request object extraction for selected {WIT}es"
+        if APP_LANG == "en"
+        else f"Demander l'extraction des illustrations des {WIT}s sélectionnés"
+    )
+    def request_regions(self, request, queryset):
+        digits = []
+        for witness in queryset:
+            digits.extend(witness.get_digits())
+
+            if witness.has_regions():
+                return messages.warning(
+                    request,
+                    f"Regions were already extracted for {WIT} #{witness.id}"
+                    if APP_LANG == "en"
+                    else f"Les régions ont déjà été extraites pour le {WIT} #{witness.id}",
+                )
+
+        if len(digits) == 0:
+            return no_digit_message(request)
+
+        import inspect
+
+        for frame_record in inspect.stack():
+            if frame_record[3] == "get_response":
+                request = frame_record[0].f_locals["request"]
+                break
+        else:
+            request = None
+
+        send_regions_request(digits, request.user)
+        return messages.info(
+            request,
+            "Regions extraction request was sent to the API"
+            if APP_LANG == "en"
+            else "La requête d'extraction des régions a été transmise à l'API",
         )
 
     @admin.action(
