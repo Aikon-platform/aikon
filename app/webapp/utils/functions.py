@@ -146,7 +146,11 @@ def rename_file(old_path, new_path):
     return True
 
 
-def temp_to_img(digit, event=None):
+def temp_to_img(digit_id):
+    from app.webapp.models.digitization import Digitization
+
+    digit = Digitization.objects.filter(pk=digit_id).first()
+
     try:
         delete_files(f"{IMG_PATH}/to_delete.txt")
 
@@ -157,13 +161,12 @@ def temp_to_img(digit, event=None):
             delete_files(img_path)
         # TODO change to have list of image name
         digit.images.name = f"{i + 1} {IMG} uploaded.jpg"
-        if event:
-            event.set()
+
     except Exception as e:
         log(f"[process_images] Failed to process images:\n{e} ({e.__class__.__name__})")
 
 
-def pdf_to_img(pdf_name, event=None, dpi=MAX_RES):
+def pdf_to_img(pdf_name, dpi=MAX_RES):
     """
     Convert the PDF file to JPEG images
     """
@@ -174,8 +177,7 @@ def pdf_to_img(pdf_name, event=None, dpi=MAX_RES):
     try:
         command = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
         subprocess.run(command, shell=True, check=True)
-        if event:
-            event.set()
+
     except Exception as e:
         log(
             f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e} ({e.__class__.__name__})"

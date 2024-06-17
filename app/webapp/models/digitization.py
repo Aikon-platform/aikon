@@ -35,14 +35,10 @@ from app.webapp.models.utils.constants import (
     SOURCE_INFO,
 )
 from app.webapp.utils.functions import (
-    pdf_to_img,
     delete_files,
     rename_file,
-    to_jpg,
-    temp_to_img,
 )
 from app.webapp.utils.paths import (
-    BASE_DIR,
     IMG_PATH,
     MEDIA_DIR,
     IMG_DIR,
@@ -50,9 +46,13 @@ from app.webapp.utils.paths import (
     PDF_DIR,
     SVG_PATH,
 )
+from app.webapp.tasks import (
+    convert_pdf_to_img,
+    convert_temp_to_img,
+    extract_images_from_iiif_manifest,
+)
 
 from app.webapp.utils.iiif.validation import validate_manifest
-from app.webapp.utils.iiif.download import extract_images_from_iiif_manifest
 
 from app.webapp.models.witness import Witness
 
@@ -283,14 +283,14 @@ class Digitization(models.Model):
 
         return mark_safe(regions_btn(self, "view")) if self.has_images() else ""
 
-    def add_source(self, source):
-        # from app.webapp.models.digitization_source import DigitizationSource
-        #
-        # digit_source = DigitizationSource()
-        # digit_source.source = source
-        # digit_source.save()
-        # self.source = digit_source
-        self.source = source
+    # def add_source(self, source):
+    #     # from app.webapp.models.digitization_source import DigitizationSource
+    #     #
+    #     # digit_source = DigitizationSource()
+    #     # digit_source.source = source
+    #     # digit_source.save()
+    #     # self.source = digit_source
+    #     self.source = source
 
     def view_btn(self):
         iiif_link = f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"
@@ -349,29 +349,23 @@ def digitization_post_save(sender, instance, created, **kwargs):
 
         digit_type = instance.get_digit_abbr()
         if digit_type == PDF_ABBR:
-            t = threading.Thread(
-                target=pdf_to_img, args=(instance.get_file_path(is_abs=False), event)
-            )
-            t.start()
+            convert_pdf_to_img.delay(instance.get_file_path(is_abs=False))
 
         elif digit_type == IMG_ABBR:
-            t = threading.Thread(target=temp_to_img, args=(instance, event))
-            t.start()
+            convert_temp_to_img.delay(instance.id)
 
         elif digit_type == MAN_ABBR:
 
-            def add_info(license_url, source):
-                instance.license = license_url
-                instance.add_source(source)
-                if license_url != NO_LICENSE:
-                    instance.is_open = True
-                instance.save(update_fields=["license", "source", "is_open"])
+            # def add_info(license_url, source):
+            #     instance.license = license_url
+            #     instance.add_source(source)
+            #     if license_url != NO_LICENSE:
+            #         instance.is_open = True
+            #     instance.save(update_fields=["license", "source", "is_open"])
 
-            t = threading.Thread(
-                target=extract_images_from_iiif_manifest,
-                args=(instance.manifest, instance.get_ref(), event, add_info),
+            extract_images_from_iiif_manifest.delay(
+                instance.manifest, instance.get_ref(), instance.id
             )
-            t.start()
 
         import inspect
 

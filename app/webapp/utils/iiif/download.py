@@ -13,19 +13,17 @@ from app.webapp.utils.logger import iiif_log, console, log, download_log
 from app.webapp.utils.iiif import get_height, get_width, get_id, get_license_url
 
 
-def extract_images_from_iiif_manifest(
-    manifest_url, digit_ref, event, add_info_callback
-):
+def iiif_to_img(manifest_url, digit_ref, digit_id, add_info_callback):
     """
     Extract all images from an IIIF manifest
     """
     downloader = IIIFDownloader(manifest_url, digit_ref)
     downloader.run()
+
     # if lic := downloader.original_license:
     #     license_url = get_license_url(lic)
     #     attribution = downloader.attribution or "Unknown attribution"
     #     add_info_callback(license_url, attribution)
-    event.set()
 
 
 def save_failed_img(image):
