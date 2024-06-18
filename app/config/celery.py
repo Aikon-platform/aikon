@@ -28,9 +28,9 @@ celery_app.config_from_object("django.conf:settings", namespace="CELERY")
 celery_app.conf.broker_connection_retry_on_startup = True
 
 celery_app.conf.update(
-    CELERY_ACCEPT_CONTENT=["json"],
-    CELERY_TASK_SERIALIZER="json",
-    CELERY_RESULT_SERIALIZER="json",
+    CELERY_ACCEPT_CONTENT=["json", "pickle"],
+    CELERY_TASK_SERIALIZER="pickle",
+    CELERY_RESULT_SERIALIZER="pickle",
 )
 
 # Discover and register tasks automatically in Django applications
