@@ -2,22 +2,113 @@
 {% load static %}
 
 {% block content %}
-    <div class="centerwrap container p-5" id="demo-list">
-        <div class="columns is-vcentered">
-            <section class="is-6 column is-large">
-                <h1 class="is-title is-size-2 py-3 is-link">{{ APP_NAME|upper }} admin panel</h1>
-                <p class="notification is-light">
-                    Bla bla bla
-                </p>
-            </section>
+
+<div style="margin-bottom: 2%; margin-top: 2%;">
+<p class="is-size-1 has-text-weight-light">{{ APP_NAME|upper }} Admin Home</p>
+</div>
+
+        <div class="columns is-fluid">
+            <!-- Sidebar -->
+            <div class="column is-2">
+                <aside class="menu">
+                    <p class="menu-label">actions</p>
+                    <ul class="menu-list">
+                        <a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add Witness</span></a>
+                        <a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add Serie</span></a>
+                        <a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add Machin</span></a>
+                    </ul>
+                </aside>
+            </div>
+
+            <!-- Main content -->
+            <div class="column is-5">
+
+
+                    <div class="block">
+                    <p class="box notification is-light mgt-medium">
+                        Welcome {{user}} to the administrative interface !
+                    </p>
+                </div>
+
+                <div class="block box mg-medium p-5 has-background-link-light">
+                    <div class="box" style="width: 100%; overflow-x: auto;">
+                    <table class="table" style="width:100%" id="main_entities">
+                        <thead>
+                          <tr class="table-header">
+                            <th colspan="3">Main Entities</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>Witnesses</td>
+                            <td><a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add</span></a></td>
+                            <td><a><span class="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>List</span></a></td>
+                          </tr>
+                          <tr>
+                            <td>Series</td>
+                            <td><a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add</span></a></td>
+                            <td><a><span class="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>List</span></a></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                </div>
+
+                <div class="block box mgt-medium p-5 has-background-link-light">
+                    <div class="box" style="width: 100%; overflow-x: auto;">
+                    <table class="table" style="width:100%">
+                        <thead>
+                          <tr class="table-header">
+                            <th colspan="3">Superuser Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>Users</td>
+                            <td><a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add</span></a></td>
+                            <td><a><span clas="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>List</span></a></td>
+                          </tr>
+                          <tr>
+                            <td>Groups</td>
+                            <td><a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add</span></a></td>
+                            <td><a><span clas="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>List</span></a></td>
+                          </tr>
+                          <tr>
+                            <td>Languages</td>
+                            <td><a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add</span></a></td>
+                            <td><a><span clas="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>List</span></a></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                </div>
+
+
+            </div>
+
+
+            <div class="column is-5">
+
+                <div class="box" style="margin-left: 2%;">
+                    <p class="is-size-4 has-text-weight-light">Personnal Space</p>
+                    <p>
+                        <a><span clas="icon-text"><span class="icon"><i class="far fa-user"></i></span>Access</span></a>
+                    </p>
+                </div>
+                <div class="box" style="margin-left: 2%;">
+                    <p class="is-size-4 has-text-weight-light">Dear EiDA User</p>
+                    <p>
+                        This version of the website is still a work in progress.  Don't hesitate to contact us if it is broken.
+                    </p>
+                    <p>
+                        Enjoy testing EiDA !
+                    </p>
+                    <p style="text-align: right;">
+                        DH Team
+                    </p>
+                </div>
+
+            </div>
         </div>
-        <div class="columns is-vcentered">
-            {#{% if app_list %}#}
-                {#{% for app in app_list %}#}
-                    {#{% include "includes/card.html" with app=app.name app_title="Similarity retrieval" app_subtitle="Find most similar images" %}#}
-                {#{% endfor %}#}
-            {#{% endif %}#}
-            {% include "includes/card.html" with record="witness" record_title="Witnesses" record_subtitle="See all records" %}
-        </div>
-    </div>
+
 {% endblock %}
