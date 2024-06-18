@@ -2,14 +2,17 @@ import json
 
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.views.generic import CreateView, DetailView, View, ListView, UpdateView
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 
 from app.webapp.forms import *
+from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import DateTimeEncoder
+from app.webapp.utils.iiif.annotation import get_regions_annotations
 
 
-class AbstractView(LoginRequiredMixin):
+class AbstractView(LoginRequiredMixin, View):
     model = None
     template_name = None
 
@@ -46,10 +49,13 @@ class AbstractRecordView(AbstractView, CreateView):
     def get_success_url(self):
         return reverse(f"{self.model._meta.name}_list")
 
+    def get_record(self):
+        return get_object_or_404(Witness, pk=self.kwargs.get(self.pk_url_kwarg))
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         if "id" in self.kwargs:
-            kwargs["instance"] = self.model.objects.get(pk=self.kwargs["id"])
+            kwargs["instance"] = self.get_record()
         return kwargs
 
 
@@ -103,3 +109,34 @@ class WitnessUpdate(AbstractRecordUpdate):
 
 class WitnessList(AbstractRecordList):
     model = Witness
+
+
+class WitnessRegionsView(AbstractRecordView):
+    # f"witness/<int:wid>/regions/"
+    # display only all Regions objects for a given Witness
+    model = Witness
+    template_name = "webapp/list.html"
+    pk_url_kwarg = "id"
+    fields = []
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        anno_regions = []
+        for regions in self.get_record().get_regions():
+            anno_regions.append(get_regions_annotations(regions))
+        context["json_object_list"] = json.dumps(anno_regions)
+        return context
+
+
+class RegionsView(AbstractRecordView):
+    # f"witness/<int:wid>/regions/<int:rid>/"
+    # display only one Regions object
+    model = Regions
+    template_name = "webapp/regions.html"
+    fields = []
+    pk_url_kwarg = "rid"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["witness_id"] = self.kwargs["wid"]
+        return context

@@ -6,6 +6,7 @@ from django.utils.text import slugify
 from django.utils.html import format_html
 from django.urls import reverse
 
+from app.config.settings import ADDITIONAL_MODULES
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.edition import Edition
 
@@ -79,7 +80,8 @@ class Witness(models.Model):
         )
 
     def get_absolute_url(self):
-        return reverse("admin:webapp_witness_change", args=[self.id])
+        # return reverse("admin:webapp_witness_change", args=[self.id])
+        return reverse("webapp:witness_view", args=[self.id])
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
@@ -158,6 +160,12 @@ class Witness(models.Model):
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
     def to_json(self):
+        buttons = [
+            "regions",
+        ]
+        if "similarity" in ADDITIONAL_MODULES:
+            buttons += ["similarity"]
+
         return {
             "id": self.id,
             "class": self.__class__.__name__,
@@ -175,7 +183,8 @@ class Witness(models.Model):
                 get_name("dates"): format_dates(*self.get_dates()),
                 get_name("page_nb"): self.get_page(),
                 get_name("Language"): self.get_lang_names(),
-            }
+            },
+            "buttons": buttons
             # TODO add to_json() to other models
         }
 
@@ -258,6 +267,7 @@ class Witness(models.Model):
         return any(digit.has_images() for digit in self.get_digits())
 
     def get_img(self, is_abs=False):
+        # to get only one image of the witness
         for digit in self.get_digits():
             return digit.get_img(is_abs)
         return None

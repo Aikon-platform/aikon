@@ -27,5 +27,6 @@ class DocumentSet(models.Model):
     name = models.CharField(max_length=50, unique=True)
     title = models.CharField(max_length=150)
     wit_ids = ArrayField(models.IntegerField(), default=list)
+    is_public = models.BooleanField(default=False)
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)

@@ -58,7 +58,7 @@ export default [
     //     }
     // },
     {
-        input: 'src/list.js',
+        input: 'src/list/list.js',
         output: {
             sourcemap: true,
             format: 'iife',

@@ -1,43 +1,55 @@
 <script>
     import Block from './Block.svelte';
 
+    // todo handle ordering (pass all blocks to view?)
+
     export let blocks = [];
     export let appLang = 'en';
+    let addAnimation = false;
+    let removeAnimation = false;
 
     let selection = JSON.parse(localStorage.getItem('documentSet')) ?? {};
     $: selectionLength = Object.keys(selection).length;
-    // $: if (selectionLength >= 10) {
-    //     alert('Do you wish to save your selection?')
-    // }
 
     $: isBlockSelected = (block) => selection.hasOwnProperty(block.id);
 
     function saveSelection() {
+        console.log(selection);
         // api call to save set in database
+        // receive id of saved
+    }
+
+    function clearSelection() {
+        selection = {};
+        commitSelection();
     }
 
     function commitSelection() {
+        // todo make difference between regions blocks and record blocks
         localStorage.setItem('documentSet', JSON.stringify(selection));
     }
 
     function removeFromSelection(blockId) {
         const { [blockId]: _, ...rest } = selection;
         selection = rest;
-        // TODO make block aware that is not selected anymore
-        const setBtn = document.getElementById('set-btn')
-        setBtn.classList.add('remove-animation');
-        setTimeout(() => setBtn.classList.remove('remove-animation'), 500);
+        removeAnimation = true;
+        setTimeout(() => removeAnimation = false, 300);
         commitSelection();
     }
 
 
     function addToSelection(block) {
+        // todo add only id and title to selection?
         selection = { ...selection, [block.id]: block };
-        const setBtn = document.getElementById('set-btn')
-        setBtn.classList.add('add-animation');
-        setTimeout(() => setBtn.classList.remove('add-animation'), 500);
+        addAnimation = true;
+        setTimeout(() => addAnimation = false, 300);
         commitSelection();
     }
+
+    $: {
+        console.log(blocks);
+    }
+
 
     function handleToggleSelection(event) {
         const { block } = event.detail;
@@ -49,19 +61,7 @@
         }
     }
 
-    function checkout() {
-        alert('Checkout not implemented yet.');
-    }
-
 </script>
-
-<!--{#await promise}
-    <p>...waiting</p>
-{:then number}
-    <p>promise has resolved to {number}</p>
-{:catch error}
-	<p>{error}</p>
-{/await}-->
 
 <style>
     .set-container {
@@ -78,36 +78,43 @@
     }
     @keyframes addAnimation {
         0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-25px); }
+        25% { transform: translateY(-7px); }
+        75% { transform: translateY(7px); }
     }
 
     @keyframes removeAnimation {
         0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-25px); }
-        75% { transform: translateX(25px); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
     }
 
-    .add-animation {
-        animation: addAnimation 0.5s ease-in-out;
+    .add-animation span {
+        animation: addAnimation 0.3s ease-in-out;
     }
 
-    .remove-animation {
-        animation: removeAnimation 0.5s ease-in-out;
+    .remove-animation span {
+        animation: removeAnimation 0.3s ease-in-out;
     }
 </style>
 
 <div class="set-container">
-    <button id="set-btn" class="button px-5 py-4 is-link js-modal-trigger" data-target="selection-modal">
-        <i class="fa-solid fa-book-bookmark"></i>
-        {appLang === 'en' ? 'Selection' : 'Sélection'}
-        (<span id="selection-count">{selectionLength}</span>)
+    <button id="set-btn"
+            class="button px-5 py-4 is-link js-modal-trigger"
+            data-target="selection-modal"
+            class:add-animation={addAnimation}
+            class:remove-animation={removeAnimation}>
+        <span>
+            <i class="fa-solid fa-book-bookmark"></i>
+            {appLang === 'en' ? 'Selection' : 'Sélection'}
+            (<span id="selection-count">{selectionLength}</span>)
+        </span>
+
     </button>
 </div>
 
 <div>
     {#each blocks as block (block.id)}
         <Block {block} {appLang} on:toggleSelection={handleToggleSelection} isSelected={isBlockSelected(block)}/>
-        <!--bind:isSelected={block.isSelected}-->
     {/each}
 </div>
 
@@ -118,6 +125,7 @@
             <div class="title is-4 mb-0 media-content">
                 <i class="fa-solid fa-book-bookmark"></i>
                 {appLang === 'en' ? 'Selected documents' : 'Documents sélectionnés'}
+                (<span id="selection-count">{selectionLength}</span>)
             </div>
             <button class="delete media-left" aria-label="close"></button>
         </div>
@@ -130,7 +138,7 @@
                             <span class="tag px-2 py-1 mb-1 is-dark is-rounded">#{id}</span>
                         </th>
                         <td>
-                            <a href="/{meta.class.toLowerCase()}/{id}" target="_blank">{meta.title}</a>
+                            <a href="/{meta.url}" target="_blank">{meta.title}</a>
                         </td>
                         <td class="is-narrow">
                             <button class="delete" aria-label="close" on:click={() => removeFromSelection(id)}></button>
@@ -146,15 +154,16 @@
                 </tbody>
             </table>
         </section>
-        <!--        <footer class="modal-card-foot">-->
-        <!--            <div class="buttons">-->
-        <!--                <button class="button is-link is-light">Fermer</button>-->
-        <!--                <button class="button is-link" onclick="checkout()">-->
-        <!--                    <i class="fa-solid fa-floppy-disk"></i>-->
-        <!--                    Enregistrer le Panier-->
-        <!--                </button>-->
-        <!--            </div>-->
-        <!--        </footer>-->
-        <button class="modal-close is-large" aria-label="close"></button>
+        <footer class="modal-card-foot is-centered">
+            <div class="buttons">
+                <button class="button is-link is-light" on:click={clearSelection}>
+                    {appLang === 'en' ? 'Clear selection' : 'Vider la sélection'}
+                </button>
+                <button class="button is-link" on:click={saveSelection}>
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    {appLang === 'en' ? 'Save selection' : 'Sauvegarder la sélection'}
+                </button>
+            </div>
+        </footer>
     </div>
 </div>

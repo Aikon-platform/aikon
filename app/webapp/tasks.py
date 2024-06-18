@@ -63,8 +63,8 @@ def process_regions_file(file_content, digit_id, treatment_id, model):
 def reindex_from_file(regions_id):
     from app.webapp.models.regions import Regions
 
-    annotation = Regions.objects.filter(pk=regions_id).first()
-    return check_indexation(annotation, True)
+    regions = Regions.objects.filter(pk=regions_id).first()
+    return check_indexation(regions, True)
 
 
 @celery_app.task

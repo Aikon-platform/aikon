@@ -1,4 +1,5 @@
 import datetime
+import fnmatch
 import io
 import json
 import os
@@ -74,6 +75,35 @@ def substrs_in_str(string, substrings):
         if substr in string:
             return True
     return False
+
+
+def get_files_with_prefix(path, prefix, filepath="", only_one=False):
+    files = []
+    with os.scandir(path) as entries:
+        for file in entries:
+            if file.is_file() and file.name.startswith(prefix):
+                if only_one:
+                    return file.name
+                files.append(f"{filepath}{file.name}")
+    return None if only_one else sorted(files)
+
+
+def get_nb_of_files(path, prefix):
+    return len(get_files_with_prefix(path, prefix))
+
+
+def get_first_img(img_ref):
+    for i in range(0, 5):
+        if os.path.exists(f"{IMG_PATH}/{img_ref}_{'1'.zfill(i)}.jpg"):
+            return f"{img_ref}_{'1'.zfill(i)}.jpg"
+    return None
+
+
+def get_img_nb_len(img_ref):
+    img_name = get_first_img(img_ref)
+    if img_name:
+        return len(img_name.split("_")[-1].split(".")[0])
+    return 0
 
 
 def pluralize(word):

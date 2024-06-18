@@ -46,7 +46,7 @@
                         </figure>
                     </div>
                     <div class="media-content">
-                        <a href="/{block.class.toLowerCase()}/{block.id}" class="title is-4 hoverable pt-2">
+                        <a href="{block.url}" class="title is-4 hoverable pt-2">
                             <span class="tag px-2 py-1 mb-1 is-dark is-rounded">{block.type} #{block.id}</span>
                             {block.title}
                             {#if block.is_public}
@@ -61,6 +61,31 @@
                             {block.user}
                             <span class="tag p-1 mb-1">{block.updated_at}</span>
                         </p>
+
+                        {#if block.buttons.length !== 0}
+                            <p class="subtitle is-6 mb-0 ml-2 pt-2">
+                                <!--{#each block.buttons as button}-->
+                                <!--    <a href="{block.url}{button}/" class="button is-small is-rounded is-link px-2"-->
+                                <!--       title="{appLang === 'en' ? 'Show extracted regions' : 'Afficher les zones d\'images'}">-->
+                                <!--        <span class="iconify" data-icon="entypo:documents"></span>-->
+                                <!--    </a>-->
+                                <!--{/each}-->
+                                {#if block.buttons.includes("regions")}
+                                    <a href="{block.url}regions/" class="button is-small is-rounded is-link px-2"
+                                       title="{appLang === 'en' ? 'Show extracted regions' : 'Afficher les zones d\'images'}">
+                                        <span class="iconify" data-icon="entypo:documents"/>
+                                    </a>
+                                {/if}
+
+                                {#if block.buttons.includes("similarity")}
+                                    <a href="{block.url}similarity/" class="button is-small is-rounded is-link px-2"
+                                       title="{appLang === 'en' ? 'Show similarity' : 'Afficher les similarités'}">
+                                        <span class="iconify" data-icon="octicon:mirror-16"></span>
+                                    </a>
+                                {/if}
+
+                            </p>
+                        {/if}
                     </div>
                     <div class="media-right">
                         <button class="button {isSelected ? 'is-inverted' : ''}" on:click={() => toggleSelection(block)}>

@@ -24,6 +24,12 @@ html,
     filter: grayscale(0.6);
 }
 
+.deletelink-box {
+    background-color: var(--bulma-danger-l);
+    padding: 0.5em 1em;
+    border-radius: var(--bulma-radius);
+}
+
 .djn-group .djn-group-nested {
     margin: 30px 10px;
 }
