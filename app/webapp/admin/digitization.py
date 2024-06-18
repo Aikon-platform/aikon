@@ -86,12 +86,12 @@ class DigitizationInline(nested_admin.NestedStackedInline):
                 if obj.has_vectorization():
                     return mark_safe(
                         "<br>".join(regions_btn)
-                        + gen_btn(regions, "crops")
+                        + gen_btn(regions, "regions")
                         + gen_btn(regions, "vectors")
                     )
                 else:
                     return mark_safe(
-                        "<br>".join(regions_btn) + gen_btn(regions, "crops")
+                        "<br>".join(regions_btn) + gen_btn(regions, "regions")
                     )
         # TODO maybe add a btn to create a manual region (utils.regions.create_empty_regions())
         return "-"

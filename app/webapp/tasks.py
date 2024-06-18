@@ -60,15 +60,6 @@ def compute_similarity_scores(
 
 
 @celery_app.task
-def process_regions_file(file_content, digit_id, treatment_id, model):
-    from app.webapp.models.regions import Digitization
-    from app.webapp.utils.iiif.annotation import process_regions
-
-    digitization = Digitization.objects.filter(pk=digit_id).first()
-    return process_regions(file_content, digitization, treatment_id, model)
-
-
-@celery_app.task
 def reindex_from_file(regions_id):
     from app.webapp.models.regions import Regions
     from app.webapp.utils.iiif.annotation import check_indexation

@@ -4,7 +4,6 @@ from os.path import exists
 
 from celery.result import AsyncResult
 from dal import autocomplete
-from django.contrib.auth.models import User
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -15,7 +14,6 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_GET
 
 from app.webapp.models.regions import Regions, check_version
-from app.webapp.models.treatment import Treatment
 from app.webapp.filters import WitnessFilter
 from app.webapp.models.digitization import Digitization
 from app.config.settings import (
@@ -51,9 +49,7 @@ from app.webapp.utils.iiif.annotation import (
 )
 from app.webapp.utils.regions import (
     get_regions_img,
-    regions_request,
     create_empty_regions,
-    check_regions_file,
 )
 
 from app.webapp.utils.paths import REGIONS_PATH, MEDIA_DIR, SCORES_PATH
@@ -63,7 +59,6 @@ from app.webapp.utils.similarity import (
     check_score_files,
     check_computed_pairs,
     get_compared_regions,
-    gen_img_ref,
 )
 
 
@@ -133,34 +128,6 @@ def manifest_regions(request, version, regions_ref):
         return JsonResponse(regions, safe=False)
 
     return JsonResponse(regions.gen_manifest_json(version=check_version(version)))
-
-
-@user_passes_test(is_superuser)
-def send_regions_extraction(request, digit_ref):
-    """
-    To relaunch regions extraction in case the automatic extraction failed
-    """
-    passed, digit = check_ref(digit_ref)
-    if not passed:
-        return JsonResponse(digit, safe=False)
-
-    error = {
-        "response": f"Failed to send regions extraction request for digit #{digit.id}"
-    }
-    try:
-        status = regions_request(
-            digit, treatment_type="manual", user_id=User.objects.get(id=request.user.id)
-        )
-    except Exception as e:
-        error["cause"] = e
-        return JsonResponse(error, safe=False)
-
-    if status:
-        return JsonResponse(
-            {"response": f"Regions extraction was relaunched for digit #{digit.id}"},
-            safe=False,
-        )
-    return JsonResponse(error, safe=False)
 
 
 @user_passes_test(is_superuser)
@@ -256,35 +223,6 @@ def index_regions(request, regions_ref=None):
 
 
 @user_passes_test(is_superuser)
-def regions_deletion_extraction(request, digit_ref):
-    """
-    To delete witness digitization on the GPU and relaunch regions extraction from scratch
-    """
-    passed, digit = check_ref(digit_ref, "Regions")
-    if not passed:
-        return JsonResponse(digit)
-
-    error = {
-        "response": f"Failed to send deletion and regions extraction request for digitization #{digit.id}"
-    }
-
-    try:
-        status = regions_request(
-            digit, treatment_type="manual", user_id=request.user.id
-        )
-    except Exception as e:
-        error["cause"] = e
-        return JsonResponse(error, safe=False)
-
-    if status:
-        return JsonResponse(
-            {"response": f"Regions extraction was relaunched for digit #{digit.id}"},
-            safe=False,
-        )
-    return JsonResponse(error, safe=False)
-
-
-@user_passes_test(is_superuser)
 def delete_annotations_regions(request, obj_ref):
     """
     Unindex SAS annotations + delete Regions record from the database
@@ -305,41 +243,6 @@ def delete_annotations_regions(request, obj_ref):
             )
 
     return JsonResponse({"error": f"No regions file for reference #{obj_ref}."})
-
-
-@csrf_exempt
-def receive_regions_file(request, digit_ref):
-    """
-    Process the result of the API containing regions extracted from a digitization
-    """
-    passed, digit = check_ref(digit_ref)
-    if not passed:
-        return JsonResponse(digit)
-
-    if request.method == "POST":
-        try:
-            regions_file = request.FILES["annotation_file"]
-            treatment_id = request.POST.get("experiment_id")
-        except Exception as e:
-            log("[receive_regions_file] No regions file received for", e)
-            return JsonResponse({"message": "No regions file"}, status=400)
-
-        try:
-            model = request.POST.get("model", "Unknown model")
-        except Exception as e:
-            log("[receive_regions_file] Unable to retrieve model param", e)
-            model = "Unknown model"
-        file_content = regions_file.read()
-        file_content = file_content.decode("utf-8")
-
-        if check_regions_file(file_content):
-            from app.webapp.tasks import process_regions_file
-
-            process_regions_file.delay(file_content, digit.id, treatment_id, model)
-            return JsonResponse({"response": "OK"}, status=200)
-        return JsonResponse({"message": "Could not process regions file"}, status=400)
-    else:
-        return JsonResponse({"message": "Invalid request"}, status=400)
 
 
 def get_regions_img_list(request, regions_ref):
@@ -596,13 +499,13 @@ def show_all_regions(request, regions_ref):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
     _, all_annotations = formatted_annotations(regions)
-    all_crops = [
+    all_regions = [
         (canvas_nb, coord, img_file)
         for canvas_nb, coord, img_file in all_annotations
         if coord
     ]
 
-    paginator = Paginator(all_crops, 50)
+    paginator = Paginator(all_regions, 50)
     try:
         page_regions = paginator.page(request.GET.get("page"))
     except PageNotAnInteger:
@@ -612,11 +515,11 @@ def show_all_regions(request, regions_ref):
 
     return render(
         request,
-        "show_crops.html",
+        "show_regions.html",
         context={
             "regions": regions,
             "page_regions": page_regions,
-            "all_crops": all_crops,
+            "all_regions": all_regions,
             "url_manifest": regions.gen_manifest_url(version=MANIFEST_V2),
             "regions_ref": regions_ref,
         },
@@ -633,7 +536,7 @@ def show_vectorization(request, regions_ref):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
     _, all_annotations = formatted_annotations(regions)
-    all_crops = [
+    all_regions = [
         (canvas_nb, coord, img_file)
         for canvas_nb, coord, img_file in all_annotations
         if coord
@@ -644,14 +547,14 @@ def show_vectorization(request, regions_ref):
         "show_vectorization.html",
         context={
             "regions": regions,
-            "all_crops": all_crops,
+            "all_regions": all_regions,
             "regions_ref": regions_ref,
         },
     )
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
-def export_all_crops(request, regions_ref):
+def export_all_regions(request, regions_ref):
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
         return JsonResponse(regions)
@@ -662,20 +565,20 @@ def export_all_crops(request, regions_ref):
     urls_list = []
 
     _, all_annotations = formatted_annotations(regions)
-    all_crops = [
+    all_regions = [
         (canvas_nb, coord, img_file)
         for canvas_nb, coord, img_file in all_annotations
         if coord
     ]
 
-    for canvas_nb, coord, img_file in all_crops:
+    for canvas_nb, coord, img_file in all_regions:
         urls_list.extend(gen_iiif_url(img_file, 2, f"{c[0]}/full/0") for c in coord)
 
     return zip_img(urls_list)
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
-def export_selected_crops(request):
+def export_selected_regions(request):
     urls_list = json.loads(request.POST.get("listeURL"))
     return zip_img(urls_list)
 

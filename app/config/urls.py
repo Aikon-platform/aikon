@@ -2,7 +2,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include, register_converter
 
-from app.config.settings import APP_NAME, MEDIA_URL, MEDIA_ROOT, DEBUG
+from app.config.settings import APP_NAME, MEDIA_URL, MEDIA_ROOT, ADDITIONAL_MODULES
 
 from app.webapp.views import (
     show_regions,
@@ -16,12 +16,9 @@ from app.webapp.views import (
     witness_sas_annotations,
     test,
     validate_regions,
-    receive_regions_file,
-    send_regions_extraction,
     export_wit_img,
     export_digit_img,
     reindex_regions,
-    regions_deletion_extraction,
     retrieve_place_info,
     rgpd,
     LanguageAutocomplete,
@@ -35,8 +32,8 @@ from app.webapp.views import (
     task_status,
     compute_score,
     show_all_regions,
-    export_all_crops,
-    export_selected_crops,
+    export_all_regions,
+    export_selected_regions,
     retrieve_category,
     save_category,
     show_vectorization,
@@ -166,16 +163,6 @@ urlpatterns = [
         name="compute-score",
     ),
     path(
-        f"{APP_NAME}/extract-regions/<str:digit_ref>",
-        send_regions_extraction,
-        name="send-regions-extraction",
-    ),
-    path(
-        f"{APP_NAME}/get-regions/<str:digit_ref>",
-        receive_regions_file,
-        name="receive-regions-file",
-    ),
-    path(
         f"{APP_NAME}/reindex-regions/<str:obj_ref>",
         reindex_regions,
         name="reindex-regions",
@@ -191,11 +178,6 @@ urlpatterns = [
         name="index-regions",
     ),
     path(
-        f"{APP_NAME}/regions-deletion-extraction/<str:digit_ref>",
-        regions_deletion_extraction,
-        name="regions-deletion-extraction",
-    ),
-    path(
         f"{APP_NAME}/delete-annotations-regions/<str:obj_ref>",
         delete_annotations_regions,
         name="delete-annotations-regions",
@@ -209,14 +191,14 @@ urlpatterns = [
         name="show-all-regions",
     ),
     path(
-        f"{APP_NAME}/export-crops/<str:regions_ref>",
-        export_all_crops,
-        name="export-crops",
+        f"{APP_NAME}/export-regions/<str:regions_ref>",
+        export_all_regions,
+        name="export-regions",
     ),
     path(
-        f"{APP_NAME}/export-selected-crops",
-        export_selected_crops,
-        name="export-selected-crops",
+        f"{APP_NAME}/export-selected-regions",
+        export_selected_regions,
+        name="export-selected-regions",
     ),
     path(
         f"{APP_NAME}/<str:regions_ref>/show-vectorization",
@@ -232,6 +214,9 @@ urlpatterns = [
 ]
 
 urlpatterns += static(MEDIA_URL, document_root=MEDIA_ROOT)
+
+for module in ADDITIONAL_MODULES:
+    urlpatterns += [path(f"", include(f"{module}.urls"))]
 
 import debug_toolbar
 

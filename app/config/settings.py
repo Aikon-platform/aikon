@@ -7,6 +7,7 @@ ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
 APP_NAME = ENV("APP_NAME")
 WEBAPP_NAME = "webapp"  # TODO change name of the app
+ADDITIONAL_MODULES = ENV.list("ADDITIONAL_MODULES")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
@@ -45,7 +46,7 @@ INSTALLED_APPS = [
     "admin_extra_buttons",
     "django_filters",
     "crispy_forms",
-]
+] + ADDITIONAL_MODULES
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -94,8 +95,7 @@ APP_URL = f"http://localhost:{APP_PORT}"
 CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
 SAS_APP_URL = f"http://localhost:{SAS_PORT}"
 
-EXAPI_URL = ENV("EXAPI_URL")
-EXTRACTOR_MODEL = ENV("EXTRACTOR_MODEL")
+CV_API_URL = ENV("CV_API_URL")
 GEONAMES_USER = ENV("GEONAMES_USER")
 
 PROD_URL = f"https://{ENV('PROD_URL')}"

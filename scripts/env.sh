@@ -52,7 +52,7 @@ get_env_value() {
 }
 
 update_env() {
-    ordered_params=("APP_NAME" "CONTACT_MAIL" "DB_NAME" "DB_USERNAME" "DB_PASSWORD" "ALLOWED_HOSTS" "SECRET_KEY" "MEDIA_DIR" "DEBUG" "DB_HOST" "DB_PORT" "SAS_USERNAME" "SAS_PASSWORD" "SAS_PORT" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "PROD_URL" "GEONAMES_USER" "APP_LANG" "EXAPI_URL" "REDIS_PASSWORD")
+    ordered_params=("APP_NAME" "CONTACT_MAIL" "DB_NAME" "DB_USERNAME" "DB_PASSWORD" "ALLOWED_HOSTS" "SECRET_KEY" "MEDIA_DIR" "DEBUG" "DB_HOST" "DB_PORT" "SAS_USERNAME" "SAS_PASSWORD" "SAS_PORT" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "PROD_URL" "GEONAMES_USER" "APP_LANG" "CV_API_URL" "ADDITIONAL_MODULES" "REDIS_PASSWORD")
     for param in "${ordered_params[@]}"; do
         current_val=$(grep -oP "(?<=^$param=\")[^\"]*" "$ENV_FILE")
         case $param in
@@ -94,6 +94,9 @@ update_env() {
                 ;;
             "MEDIA_DIR")
                 default_val=$MEDIA_DIR
+                ;;
+            "ADDITIONAL_MODULES")
+                default_val="regions"
                 ;;
             *)
                 default_val="$current_val"

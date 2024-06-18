@@ -279,7 +279,7 @@ def get_action(action, formatting=None):
         "download": {"en": "download regions", "fr": "télécharger les régions"},
         "edit": {"en": "edit regions", "fr": "modifier les régions"},
         "final": {"en": "visualize final regions", "fr": "voir les régions finales"},
-        "crops": {
+        "regions": {
             "en": "all regions",
             "fr": "toutes les régions",
         },

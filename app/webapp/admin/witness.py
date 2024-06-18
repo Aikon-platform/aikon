@@ -1,7 +1,8 @@
+import importlib
 from functools import reduce
 
 
-from app.config.settings import APP_LANG
+from app.config.settings import APP_LANG, ADDITIONAL_MODULES
 from app.webapp.admin.digitization import DigitizationInline
 from app.webapp.admin.content import ContentInline, ContentWorkInline
 
@@ -30,7 +31,6 @@ from app.webapp.utils.iiif.annotation import (
     get_training_regions,
 )
 from app.webapp.utils.paths import IMG_PATH
-from app.webapp.utils.regions import send_regions_request
 from app.webapp.utils.similarity import similarity_request, check_computed_pairs
 
 
@@ -83,9 +83,11 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             "export_imgs_regions",
             "export_training_imgs",
             "export_training_regions_files",
-            "request_regions",
             "compute_similarity",
         ]
+
+        for module in ADDITIONAL_MODULES:
+            self.actions += [f"compute_{module}"]
 
     ordering = ("id", "place__name")
 
@@ -273,7 +275,9 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         if APP_LANG == "en"
         else f"Demander l'extraction des illustrations des {WIT}s sélectionnés"
     )
-    def request_regions(self, request, queryset):
+    def compute_regions(self, request, queryset):
+        from app.regions.utils import send_regions_request
+
         digits = []
         for witness in queryset:
             digits.extend(witness.get_digits())
