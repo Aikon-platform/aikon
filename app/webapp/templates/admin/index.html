@@ -12,9 +12,9 @@
             <div class="column is-2">
                 <aside class="menu">
                     <p class="menu-label">actions</p>
-                    <ul class="menu-list">
-                        <a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add Witness</span></a>
-                        <a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add Serie</span></a>
+                    <ul class="menu-list is-capitalized">
+                        <a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add {{ WIT }}</span></a>
+                        <a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add {{ SER }}</span></a>
                         <a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add Machin</span></a>
                     </ul>
                 </aside>
@@ -22,17 +22,15 @@
 
             <!-- Main content -->
             <div class="column is-5">
-
-
                     <div class="block">
                     <p class="box notification is-light mgt-medium">
-                        Welcome {{user}} to the administrative interface !
+                        Welcome {{ user.first_name }} {{ user.last_name }} to the administrative interface !
                     </p>
                 </div>
 
                 <div class="block box mg-medium p-5 has-background-link-light">
                     <div class="box" style="width: 100%; overflow-x: auto;">
-                    <table class="table" style="width:100%" id="main_entities">
+                    <table class="table is-capitalized" style="width:100%" id="main_entities">
                         <thead>
                           <tr class="table-header">
                             <th colspan="3">Main Entities</th>
@@ -40,12 +38,12 @@
                         </thead>
                         <tbody>
                           <tr>
-                            <td>Witnesses</td>
+                            <td>{{ WIT }}</td>
                             <td><a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add</span></a></td>
                             <td><a><span class="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>List</span></a></td>
                           </tr>
                           <tr>
-                            <td>Series</td>
+                            <td>{{ SER }}</td>
                             <td><a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add</span></a></td>
                             <td><a><span class="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>List</span></a></td>
                           </tr>
@@ -56,7 +54,7 @@
 
                 <div class="block box mgt-medium p-5 has-background-link-light">
                     <div class="box" style="width: 100%; overflow-x: auto;">
-                    <table class="table" style="width:100%">
+                    <table class="table is-capitalized" style="width:100%">
                         <thead>
                           <tr class="table-header">
                             <th colspan="3">Superuser Actions</th>
@@ -74,7 +72,7 @@
                             <td><a><span clas="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>List</span></a></td>
                           </tr>
                           <tr>
-                            <td>Languages</td>
+                            <td>{{ LANG }}s</td>
                             <td><a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add</span></a></td>
                             <td><a><span clas="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>List</span></a></td>
                           </tr>
@@ -82,13 +80,10 @@
                       </table>
                     </div>
                 </div>
-
-
             </div>
 
 
             <div class="column is-5">
-
                 <div class="box" style="margin-left: 2%;">
                     <p class="is-size-4 has-text-weight-light">Personnal Space</p>
                     <p>
@@ -107,7 +102,6 @@
                         DH Team
                     </p>
                 </div>
-
             </div>
         </div>
 
