@@ -1,5 +1,6 @@
 <script>
-    import Block from './Block.svelte';
+    import Region from './Region.svelte';
+    import Record from "./Record.svelte";
 
     // todo handle ordering (pass all blocks to view?)
 
@@ -9,9 +10,9 @@
     let removeAnimation = false;
 
     let selection = JSON.parse(localStorage.getItem('documentSet')) ?? {};
-    $: selectionLength = Object.keys(selection).length;
+    $: selectionLength = Object.values(selection).reduce((count, selectedBlocks) => count + Object.keys(selectedBlocks).length, 0)
+    $: isBlockSelected = (block) => selection.hasOwnProperty(block.type) ? selection[block.type].hasOwnProperty(block.id) : false;
 
-    $: isBlockSelected = (block) => selection.hasOwnProperty(block.id);
 
     function saveSelection() {
         console.log(selection);
@@ -29,9 +30,9 @@
         localStorage.setItem('documentSet', JSON.stringify(selection));
     }
 
-    function removeFromSelection(blockId) {
-        const { [blockId]: _, ...rest } = selection;
-        selection = rest;
+    function removeFromSelection(blockId, blockType) {
+        const { [blockId]: _, ...rest } = selection[blockType];
+        selection[blockType] = rest;
         removeAnimation = true;
         setTimeout(() => removeAnimation = false, 300);
         commitSelection();
@@ -40,16 +41,12 @@
 
     function addToSelection(block) {
         // todo add only id and title to selection?
-        selection = { ...selection, [block.id]: block };
+        if (!selection.hasOwnProperty(block.type)) {selection[block.type] = []}
+        selection[block.type] = { ...selection[block.type], [block.id]: block };
         addAnimation = true;
         setTimeout(() => addAnimation = false, 300);
         commitSelection();
     }
-
-    $: {
-        console.log(blocks);
-    }
-
 
     function handleToggleSelection(event) {
         const { block } = event.detail;
@@ -57,7 +54,7 @@
         if (!isBlockSelected(block)) {
             addToSelection(block);
         } else {
-            removeFromSelection(block.id);
+            removeFromSelection(block.id, block.type);
         }
     }
 
@@ -114,7 +111,11 @@
 
 <div>
     {#each blocks as block (block.id)}
-        <Block {block} {appLang} on:toggleSelection={handleToggleSelection} isSelected={isBlockSelected(block)}/>
+        {#if /^\d+$/.test(block.id)} <!-- if block is a record, its id with be a int -->
+            <Record {block} appLang={appLang} isSelected={isBlockSelected(block)} on:toggleSelection={handleToggleSelection} />
+        {:else} <!-- if block is a region (img), its id with be formatted like wit<id>_<digit><id>_x,y,h,w -->
+            <Region {block} appLang={appLang} isSelected={isBlockSelected(block)} on:toggleSelection={handleToggleSelection} />
+        {/if}
     {/each}
 </div>
 
@@ -130,9 +131,11 @@
             <button class="delete media-left" aria-label="close"></button>
         </div>
         <section class="modal-card-body">
+            {#each Object.entries(selection) as [type, selectedBlocks]}
+            <h2>{type}</h2>
             <table class="table pl-2 is-fullwidth">
                 <tbody>
-                {#each Object.entries(selection) as [id, meta]}
+                {#each Object.entries(selectedBlocks) as [id, meta]}
                     <tr>
                         <th class="is-narrow is-3">
                             <span class="tag px-2 py-1 mb-1 is-dark is-rounded">#{id}</span>
@@ -141,7 +144,7 @@
                             <a href="/{meta.url}" target="_blank">{meta.title}</a>
                         </td>
                         <td class="is-narrow">
-                            <button class="delete" aria-label="close" on:click={() => removeFromSelection(id)}></button>
+                            <button class="delete" aria-label="close" on:click={() => removeFromSelection(id, type)}></button>
                         </td>
                     </tr>
                 {:else}
@@ -153,6 +156,7 @@
                 {/each}
                 </tbody>
             </table>
+            {/each}
         </section>
         <footer class="modal-card-foot is-centered">
             <div class="buttons">

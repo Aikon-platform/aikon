@@ -123,7 +123,7 @@ class WitnessRegionsView(AbstractRecordView):
         context = super().get_context_data(**kwargs)
         anno_regions = []
         for regions in self.get_record().get_regions():
-            anno_regions.append(get_regions_annotations(regions))
+            anno_regions.append(get_regions_annotations(regions, as_json=True))
         context["json_object_list"] = json.dumps(anno_regions)
         return context
 

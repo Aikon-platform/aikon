@@ -1,3 +1,4 @@
+{% if page_obj %}
 <nav class="pagination is-centered" role="navigation" aria-label="pagination">
     <ul class="pagination-list">
         {% if page_obj.has_previous %}
@@ -17,3 +18,4 @@
         {% endif %}
     </ul>
 </nav>
+{% endif %}

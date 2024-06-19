@@ -211,11 +211,8 @@ class Digitization(models.Model):
 
     def has_images(self):
         # if there is at least one image file named after the current digitization
+        # NOTE: might result in returning None even though there are images (but not the first one)
         return bool(get_first_img(self.get_ref()))
-        # for i in range(1, 5):
-        #     if os.path.exists(f"{IMG_PATH}/{self.get_ref()}_{'1'.zfill(i)}.jpg"):
-        #         return True
-        # return False
 
     def img_nb(self):
         # get the number of images for a digitization
@@ -227,11 +224,13 @@ class Digitization(models.Model):
             return True
         return False
 
-    def get_img(self, is_abs=False):
+    def get_img(self, is_abs=False, only_first=False):
+        if only_first:
+            return get_first_img(self.get_ref())
         return self.get_imgs(is_abs, only_one=True)
 
     def get_imgs(self, is_abs=False, temp=False, only_one=False):
-        prefix = self.get_ref() if not temp else f"temp_{self.get_wit_ref()}"
+        prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
         path = f"{IMG_PATH}/" if is_abs else ""
         return get_files_with_prefix(IMG_PATH, prefix, path, only_one)
 

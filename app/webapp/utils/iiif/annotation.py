@@ -18,12 +18,12 @@ from app.config.settings import (
     APP_URL,
 )
 from app.webapp.utils.functions import log, get_img_nb_len
-from app.webapp.utils.iiif import parse_ref
+from app.webapp.utils.iiif import parse_ref, gen_iiif_url
 from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.regions import get_txt_regions
 
 
-IIIF_CONTEXT = "http://iiif.io/api/presentation/3/context.json"
+IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
 
 
 def index_regions(regions: Regions):
@@ -47,7 +47,7 @@ def index_regions(regions: Regions):
     return True
 
 
-def get_regions_annotations(regions: Regions):
+def get_regions_annotations(regions: Regions, as_json=False):
     try:
         r = requests.get(f"{SAS_APP_URL}/search-api/{regions.get_ref()}/search")
         annos = r.json()["resources"]
@@ -66,7 +66,22 @@ def get_regions_annotations(regions: Regions):
         try:
             canvas = anno["on"].split("/canvas/c")[1].split(".json")[0]
             xyhw = anno["on"].split("xywh=")[1].split(",")
-            r_annos.append((canvas, xyhw, f"{img_name}_{canvas.zfill(nb_len)}"))
+            if as_json:
+                img = f"{img_name}_{canvas.zfill(nb_len)}"
+                r_annos.append(
+                    {
+                        "id": f"{img}_{xyhw}",
+                        "class": "Region",
+                        "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
+                        "metadata": {
+                            "canvas": canvas,
+                            "xyhw": xyhw,
+                            "img": img,
+                        },
+                    }
+                )
+            else:
+                r_annos.append((canvas, xyhw, f"{img_name}_{canvas.zfill(nb_len)}"))
         except Exception as e:
             log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
             continue
@@ -484,18 +499,13 @@ def get_manifest_annotations(regions: Regions):
 
 
 def check_indexation(regions: Regions, reindex=False):
-    log(regions.__str__())
-
     lines = get_txt_regions(regions)
-    log(lines)
 
     if not lines:
         return False
 
     if not index_manifest_in_sas(regions.gen_manifest_url(version=MANIFEST_V2)):
         return False
-
-    exit()
 
     generated_annotations = 0
     indexed_annotations = 0

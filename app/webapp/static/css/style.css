@@ -12,7 +12,7 @@
 html,
 .navbar,
 .footer {
-  transition: 0.3s;
+    transition: 0.3s;
 }
 
 .is-off {
@@ -35,10 +35,10 @@ html,
 }
 
 .form-row:not(:last-child) {
-  margin-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
 }
 fieldset:not(:last-child) {
-  margin-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
 .tooltip {
@@ -212,4 +212,17 @@ pre {
     border: 2px solid #ccc;
     padding: 1em;
     text-indent: 0;
+}
+
+.disabled {
+    filter: grayscale(100%);
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.logo {
+    width: 100%;
+    max-height: 1rem;
+    max-width: 2.2rem;
+    background-color: transparent;
 }

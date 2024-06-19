@@ -30,7 +30,7 @@ from app.webapp.models.utils.constants import (
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
-from app.webapp.utils.functions import get_icon, flatten, format_dates
+from app.webapp.utils.functions import get_icon, flatten, format_dates, get_first_img
 from app.webapp.utils.logger import log
 
 
@@ -170,8 +170,9 @@ class Witness(models.Model):
             "id": self.id,
             "class": self.__class__.__name__,
             "type": get_name("Witness"),
+            "iiif": [digit.manifest_link(inline=True) for digit in self.get_digits()],
             "title": self.__str__(),
-            "img": self.get_img(),
+            "img": self.get_img(only_first=True),
             "user": self.user.__str__(),
             "url": self.get_absolute_url(),
             "updated_at": self.updated_at,
@@ -266,10 +267,12 @@ class Witness(models.Model):
     def has_images(self):
         return any(digit.has_images() for digit in self.get_digits())
 
-    def get_img(self, is_abs=False):
+    def get_img(self, is_abs=False, only_first=False):
         # to get only one image of the witness
         for digit in self.get_digits():
-            return digit.get_img(is_abs)
+            if img := digit.get_img(is_abs, only_first):
+                return img
+
         return None
 
     def get_imgs(self, is_abs=False, temp=False):
