@@ -4,7 +4,10 @@
 
     // todo handle ordering (pass all blocks to view?)
 
-    export let blocks = [];
+    // export let blocks = [];
+    export let regions = [];
+    export let records = [];
+
     export let appLang = 'en';
     let addAnimation = false;
     let removeAnimation = false;
@@ -109,15 +112,23 @@
     </button>
 </div>
 
-<div>
-    {#each blocks as block (block.id)}
-        {#if /^\d+$/.test(block.id)} <!-- if block is a record, its id with be a int -->
+{#if regions.length !== 0}
+    <div class="fixed-grid has-auto-count">
+        <div class="grid is-gap-2">
+            {#each regions as block (block.id)}
+                <Region {block} appLang={appLang} isSelected={isBlockSelected(block)} on:toggleSelection={handleToggleSelection} />
+            {/each}
+        </div>
+    </div>
+{/if}
+
+{#if records.length !== 0}
+    <div>
+        {#each records as block (block.id)}
             <Record {block} appLang={appLang} isSelected={isBlockSelected(block)} on:toggleSelection={handleToggleSelection} />
-        {:else} <!-- if block is a region (img), its id with be formatted like wit<id>_<digit><id>_x,y,h,w -->
-            <Region {block} appLang={appLang} isSelected={isBlockSelected(block)} on:toggleSelection={handleToggleSelection} />
-        {/if}
-    {/each}
-</div>
+        {/each}
+    </div>
+{/if}
 
 <div id="selection-modal" class="modal fade" tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
     <div class="modal-background"></div>
@@ -141,7 +152,7 @@
                             <span class="tag px-2 py-1 mb-1 is-dark is-rounded">#{id}</span>
                         </th>
                         <td>
-                            <a href="/{meta.url}" target="_blank">{meta.title}</a>
+                            <a href="{meta.url}" target="_blank">{meta.title}</a>
                         </td>
                         <td class="is-narrow">
                             <button class="delete" aria-label="close" on:click={() => removeFromSelection(id, type)}></button>

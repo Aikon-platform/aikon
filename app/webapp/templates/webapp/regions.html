@@ -1,0 +1,29 @@
+{% extends "admin/base_site.html" %}
+{% load shared_tags static %}
+
+{% block title %}
+    {{ view_title }}
+{% endblock %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="{% static 'svelte/blockList.css' %}">
+{% endblock %}
+
+{% block content %}
+    <h1 class="is-title is-size-2 py-3">{{ view_title }}</h1>
+
+    {% include "includes/pagination.html" %}
+
+    <div class="regions-list">
+        <div id="block-list"></div>
+    </div>
+
+    {% include "includes/pagination.html" %}
+{% endblock %}
+
+{% block extra_js %}
+    <script type="application/json" id="regions-data">
+        {{ regions_list|safe }}
+    </script>
+    <script src="{% static 'svelte/blockList.js' %}"></script>
+{% endblock %}

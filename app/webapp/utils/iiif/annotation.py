@@ -7,7 +7,7 @@ from urllib.request import urlopen
 import requests
 from PIL import Image
 
-from app.webapp.models.regions import Regions
+from app.webapp.models.regions import Regions, get_name
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.treatment import Treatment
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
@@ -18,7 +18,7 @@ from app.config.settings import (
     APP_URL,
 )
 from app.webapp.utils.functions import log, get_img_nb_len
-from app.webapp.utils.iiif import parse_ref, gen_iiif_url
+from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
 from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.regions import get_txt_regions
 
@@ -72,6 +72,8 @@ def get_regions_annotations(regions: Regions, as_json=False):
                     {
                         "id": f"{img}_{xyhw}",
                         "class": "Region",
+                        "type": get_name("Regions"),
+                        "title": region_title(canvas, xyhw),
                         "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
                         "metadata": {
                             "canvas": canvas,

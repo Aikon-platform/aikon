@@ -46,6 +46,11 @@ def get_width(img_rsrc):
     return int(img_width)
 
 
+def region_title(canvas_nb, xywh):
+    # x, y, w, h = xywh.split(",")
+    return f"Canvas {canvas_nb} – {xywh}"
+
+
 def gen_iiif_url(
     img,
     vers=2,

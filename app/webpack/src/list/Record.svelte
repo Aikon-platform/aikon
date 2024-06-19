@@ -85,6 +85,13 @@
                                 </a>
                             {/if}
 
+                            {#if block.buttons.includes("vectorization")}
+                                <a href="{block.url}vectorization/" class="button is-small is-rounded is-link px-2"
+                                   title="{appLang === 'en' ? 'Show vectorizations' : 'Afficher les vectorisations'}">
+                                    <span class="iconify" data-icon="arcticons:geogebra-geometry"></span>
+                                </a>
+                            {/if}
+
                         </p>
                     {/if}
                 </div>

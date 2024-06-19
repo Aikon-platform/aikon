@@ -8,7 +8,7 @@ from django.urls import reverse
 from app.webapp.forms import *
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
-from app.webapp.utils.functions import DateTimeEncoder
+from app.webapp.utils.functions import DateTimeEncoder, flatten
 from app.webapp.utils.iiif.annotation import get_regions_annotations
 
 
@@ -115,7 +115,7 @@ class WitnessRegionsView(AbstractRecordView):
     # f"witness/<int:wid>/regions/"
     # display only all Regions objects for a given Witness
     model = Witness
-    template_name = "webapp/list.html"
+    template_name = "webapp/regions.html"
     pk_url_kwarg = "id"
     fields = []
 
@@ -124,7 +124,7 @@ class WitnessRegionsView(AbstractRecordView):
         anno_regions = []
         for regions in self.get_record().get_regions():
             anno_regions.append(get_regions_annotations(regions, as_json=True))
-        context["json_object_list"] = json.dumps(anno_regions)
+        context["regions_list"] = json.dumps(flatten(anno_regions))
         return context
 
 
