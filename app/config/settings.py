@@ -6,6 +6,7 @@ environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
 
 APP_NAME = ENV("APP_NAME")
 WEBAPP_NAME = "webapp"
+ADDITIONAL_MODULES = ENV.list("ADDITIONAL_MODULES")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
@@ -15,11 +16,6 @@ SECRET_KEY = ENV("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = ENV.bool("DEBUG")
-
-# Enabled modules
-ADDITIONAL_MODULES = [
-    # "similarity",
-]
 
 INSTALLED_APPS = [
     "dal",
@@ -38,8 +34,7 @@ INSTALLED_APPS = [
     "django_filters",
     "crispy_forms",
     f"{WEBAPP_NAME}",
-]
-INSTALLED_APPS += ADDITIONAL_MODULES
+] + ADDITIONAL_MODULES
 
 hosts = ENV.list("ALLOWED_HOSTS")
 hosts.append(ENV("PROD_URL"))
@@ -97,8 +92,7 @@ APP_URL = f"http://localhost:{APP_PORT}"
 CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
 SAS_APP_URL = f"http://localhost:{SAS_PORT}"
 
-EXAPI_URL = ENV("EXAPI_URL")
-EXTRACTOR_MODEL = ENV("EXTRACTOR_MODEL")
+CV_API_URL = ENV("CV_API_URL")
 GEONAMES_USER = ENV("GEONAMES_USER")
 
 PROD_URL = f"https://{ENV('PROD_URL')}"
@@ -225,9 +219,9 @@ LOGGING = {
 # # Celery settings
 # CELERY_BROKER_URL = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
 # CELERY_RESULT_BACKEND = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
+CELERY_ACCEPT_CONTENT = ["json", "pickle"]
+CELERY_TASK_SERIALIZER = "pickle"
+CELERY_RESULT_SERIALIZER = "pickle"
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = ENV("EMAIL_HOST")

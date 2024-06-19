@@ -1,6 +1,6 @@
 {% load static shared_tags %}
 <!doctype html>
-<html lang="en" data-theme="auto">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -46,6 +46,8 @@
     </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css">
     <link rel="stylesheet" href="{% static "css/style.css" %}?v1.1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 
     <script src="{% static 'js/jquery-3.6.1.js' %}"></script>
     <script src="{% static 'js/script.js' %}"></script>
@@ -68,7 +70,7 @@
 <body>
 {% include 'includes/navbar.html' %}
 
-<div class="wrapper container">
+<div class="wrapper container is-fluid">
     <div class="content p-5" style="min-height: 80vh; max-width: 90vw">
         {% if messages %}
             <div class="centerwrap">
