@@ -21,7 +21,7 @@ class DigitizationAdmin(UnregisteredAdmin):
         "thumbnail",
         "witness",
         "get_nb_pages",
-        # todo btn to open mirador + nb of annotations + is validated or not
+        # todo btn to open mirador + nb of regions + is validated or not
     )
 
     def __init__(self, model, admin_site):
@@ -47,7 +47,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     model = Digitization
     extra = 1  # Display only one empty form in the parent form
     max_num = 5
-    readonly_fields = ("digit_preview", "view_digit", "view_anno")
+    readonly_fields = ("digit_preview", "view_digit", "view_regions")
 
     fields = ["digit_type", "pdf", "manifest", "images", ("is_open", "source")]
     # autocomplete_fields = ("source",)
@@ -64,30 +64,30 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     @admin.display(description=get_name("view_digit"))
     def view_digit(self, obj: Digitization):
         if obj.id and obj.has_images():
-            # # TODO Always display digitization without automatic annotation
+            # # TODO Always display digitization without automatic regions
             # return gen_btn(Digitization.objects.filter(pk=obj.id).first(), "view")
-            if not obj.has_annotations():
+            if not obj.has_regions():
                 return gen_btn(Digitization.objects.filter(pk=obj.id).first(), "view")
 
             digit_btn = []
-            for anno in obj.get_annotations():
-                digit_btn.append(gen_btn(anno, "auto-view"))
+            for regions in obj.get_regions():
+                digit_btn.append(gen_btn(regions, "auto-view"))
             return mark_safe("<br>".join(digit_btn))
 
         return "-"
 
-    @admin.display(description=get_name("view_anno"))
-    def view_anno(self, obj: Digitization):
-        if obj.id and obj.has_images() and obj.has_annotations():
-            anno_btn = []
-            for anno in obj.get_annotations():
-                action = "final" if anno.is_validated else "edit"
-                anno_btn.append(gen_btn(anno, action))
-                if obj.has_all_vectorization():
+    @admin.display(description=get_name("view_regions"))
+    def view_regions(self, obj: Digitization):
+        if obj.id and obj.has_images() and obj.has_regions():
+            regions_btn = []
+            for regions in obj.get_regions():
+                action = "final" if regions.is_validated else "edit"
+                regions_btn.append(gen_btn(regions, action))
+                if obj.has_vectorization():
                     return mark_safe(
-                        "<br>".join(anno_btn)
-                        + gen_btn(anno, "crops")
-                        + gen_btn(anno, "vectors")
+                        "<br>".join(regions_btn)
+                        + gen_btn(regions, "crops")
+                        + gen_btn(regions, "vectors")
                     )
                 elif obj.has_vectorization():
                     return mark_safe(
@@ -110,7 +110,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
         if obj and obj.has_images():
             fields.append("view_digit")
-            if obj.has_annotations():
-                fields.append("view_anno")
+            if obj.has_regions():
+                fields.append("view_regions")
 
         return fields

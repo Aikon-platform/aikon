@@ -61,24 +61,26 @@ def gen_iiif_url(
 def parse_ref(record_ref):
     # wit_ref = {wit_abbr}{wit_id}
     # digit_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}
-    # anno_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{anno_id}
+    # regions_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}
 
     wit_pattern = r"wit(?P<wit_id>\d+)"
     digit_pattern = r"(?P<digit_abbr>[a-z]+)(?P<digit_id>\d+)"
-    anno_pattern = r"anno(?P<anno_id>\d+)"
+    regions_pattern = r"anno(?P<regions_id>\d+)"
 
     wit_match = re.match(f"{wit_pattern}", record_ref)
     digit_match = re.match(f"{wit_pattern}_{digit_pattern}", record_ref)
-    anno_match = re.match(f"{wit_pattern}_{digit_pattern}_{anno_pattern}", record_ref)
+    regions_match = re.match(
+        f"{wit_pattern}_{digit_pattern}_{regions_pattern}", record_ref
+    )
 
-    if anno_match:
+    if regions_match:
         return {
             "wit": ("wit", int(wit_match.group("wit_id"))),
             "digit": (
                 digit_match.group("digit_abbr"),
                 int(digit_match.group("digit_id")),
             ),
-            "anno": ("anno", int(anno_match.group("anno_id"))),
+            "regions": ("anno", int(regions_match.group("regions_id"))),
         }
     elif digit_match:
         return {
@@ -87,13 +89,13 @@ def parse_ref(record_ref):
                 digit_match.group("digit_abbr"),
                 int(digit_match.group("digit_id")),
             ),
-            "anno": None,
+            "regions": None,
         }
     elif wit_match:
         return {
             "wit": ("wit", int(wit_match.group("wit_id"))),
             "digit": None,
-            "anno": None,
+            "regions": None,
         }
     return None
 

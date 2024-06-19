@@ -19,6 +19,8 @@ django-admin-searchable-dropdown==1.2
 django-autocomplete-light==3.9.1
 django-classy-tags==3.0.1
 django-cors-headers==3.13.0
+django-crispy-forms==1.14.0
+django-filter==23.5
 django-js-asset==2.0.0
 django-native-tags==0.5.3
 django-nested-admin==3.4.0
@@ -62,5 +64,3 @@ Unidecode==1.1.2
 urllib3==1.26.9
 wcwidth==0.2.5
 webencodings==0.5.1
-django-debug-toolbar==3.8.1
-django-livereload-server==0.4

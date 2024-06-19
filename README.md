@@ -26,8 +26,6 @@
 
 ## Installation
 
-### Repository
-
 ```bash
 git clone git@github.com:faouinti/vhs.git
 cd vhs
@@ -51,16 +49,15 @@ git clone git@github.com:faouinti/vhs.git
 cd vhs
 ```
 
-### Dependencies
+### Scripted install 🐆
+
+If you are using a Linux or Mac distribution, you can install the app with the following script:
 
 ```bash
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-sudo apt update
-sudo apt-get install wget ca-certificates
-sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql poppler-utils redis-server ghostscript
+bash scripts/setup.sh
 ```
 
+<<<<<<< HEAD
 ### Python environment
 
 ```bash
@@ -86,12 +83,45 @@ cp app/config/.env{.template,}
 
 > #### Instructions done by the script
 > Copy the content of the settings template file
+=======
+Otherwise, follow the instructions below.
+
+> ### Manual install 🐢
+> #### Dependencies
+>>>>>>> eida-dev
 >
+> ```bash
+> wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+> sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+> sudo apt update
+> sudo apt-get install wget ca-certificates
+> sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql poppler-utils redis-server ghostscript
+> ```
+>
+> #### Python environment
+>
+> ```bash
+> python3.10 -m venv venv
+> source venv/bin/activate
+> pip install -r app/requirements-dev.txt
+> ```
+>
+> Enable `pre-commit` hooks (auto-test and formatting)
+>
+> ```bash
+> pre-commit install
+> ```
+>
+> #### Project settings
+>
+> Create a [Geonames](https://www.geonames.org/login) account and activate it.
+>
+> Copy the content of the settings template file
 > ```bash
 > cp app/config/.env{.template,}
 > ```
->
 > Change variables in the generated file `app/config/.env` to corresponds to your database and username
+<<<<<<< HEAD
 >
 > ```bash
 > APP_NAME="Lower case name of the application"
@@ -122,10 +152,14 @@ cp app/config/.env{.template,}
 > EMAIL_HOST_PASSWORD="App password for email address"
 > ```
 >
+=======
+
+>>>>>>> eida-dev
 > Create a [Geonames](https://www.geonames.org/login) account, activate it and change `<geonames-username>` in the `.env` file
 >
-> Add an `APP_NAME` and an `PROD_URL` with the scheme and domain used in production (e.g. "eida.obspm.fr")
+> #### Database
 >
+<<<<<<< HEAD
 > Provide as well an `APP_LANG`: only "fr" or "en" values are supported for now
 
 Change variables in the generated file `app/config/.env` to corresponds to your database and username
@@ -263,6 +297,8 @@ redis-cli -a $REDIS_PASSWORD
 >
 > #### Database
 >
+=======
+>>>>>>> eida-dev
 > Open Postgres command prompt, create a database (`<database>`) and a user
 > ```bash
 > sudo -i -u postgres psql # Mac: psql postgres
@@ -324,6 +360,30 @@ redis-cli -a $REDIS_PASSWORD
 > Navigate to [http://localhost:8888/index.html](http://localhost:8888/index.html) to start annotating:
 > You should now see Mirador with default example manifests.
 >
+<<<<<<< HEAD
+=======
+> #### Svelte development
+>
+> Install Node.js and Webpack
+> ```bash
+> curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+> nvm install node
+> npm install -g webpack webpack-cli
+> ```
+>
+> Initialize npm in the webpack folder, and install all required packages:
+> ```bash
+> cd app/webpack
+> npm init
+> ```
+>
+> To compile the Svelte components, run:
+> ```bash
+> # in app/webpack
+> npm run build
+> ```
+>
+>>>>>>> eida-dev
 > #### Enabling authentication for Redis instance (optional)
 >
 > Get the redis config file and the redis password in the environment variables
@@ -348,7 +408,10 @@ redis-cli -a $REDIS_PASSWORD
 > ```
 > redis-cli -a $REDIS_PASSWORD
 > ```
+<<<<<<< HEAD
 >>>>>>> ad0c783 ([DOCS] readme formatting)
+=======
+>>>>>>> eida-dev
 
 ## Launch app
 
@@ -360,7 +423,11 @@ bash run.sh
 > Or launch each process separately:
 > ```bash
 > # Celery & Django
+<<<<<<< HEAD
 > venv/bin/celery -A app.app.celery worker -B -c 1 --loglevel=info -P threads && venv/bin/python app/manage.py runserver localhost:8000
+=======
+> venv/bin/celery -A app.config.celery worker -B -c 1 --loglevel=info -P threads && venv/bin/python app/manage.py runserver localhost:8000
+>>>>>>> eida-dev
 > # Cantaloupe
 > sudo -S java -Dcantaloupe.config=cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe-4.1.11.war
 > # Simple Annotation Server

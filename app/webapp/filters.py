@@ -1,7 +1,11 @@
+import django_filters
+from dal import autocomplete
 from django.template import Library
 from app.config.settings import CANTALOUPE_APP_URL, SAS_APP_URL, APP_URL, APP_NAME
-from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2, TRUNCATEWORDS_SIM
-import os
+from app.webapp.models.edition import Edition
+from app.webapp.models.language import Language
+from app.webapp.models.witness import Witness
+from app.webapp.utils.constants import MANIFEST_V2, TRUNCATEWORDS_SIM
 
 register = Library()
 
@@ -49,13 +53,13 @@ def ref_to_iiif(img_ref):
 
 
 @register.filter
-def ref_to_mirador(anno_refs, img_ref):
+def ref_to_mirador(regions_refs, img_ref):
     # img_ref = {img_name}_{coord} / e.g. "wit205_pdf216_021_667,1853,783,412"
     img_ref = img_ref.split("_")
     digit_ref = "_".join(img_ref[0:1])
 
-    anno_ref = [ref for ref in anno_refs if ref.startswith(digit_ref)][0]
-    manifest = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{anno_ref}/manifest.json"
+    regions_ref = [ref for ref in regions_refs if ref.startswith(digit_ref)][0]
+    manifest = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions_ref}/manifest.json"
 
     return f"{SAS_APP_URL}/index.html?iiif-content={manifest}&canvas={int(img_ref[-2])}"
 
@@ -88,6 +92,36 @@ def truncate_words(text, max_length=TRUNCATEWORDS_SIM):
 def jpg_to_none(img_file):
     return img_file.replace(".jpg", "")
 
-@register.filter
-def file_exists(filepath):
-    return os.path.isfile(filepath)
+
+class WitnessFilter(django_filters.FilterSet):
+    edition = django_filters.ModelChoiceFilter(
+        queryset=Edition.objects.all(),
+        widget=autocomplete.ModelSelect2(url="webapp:edition-autocomplete"),
+    )
+    contents__lang = django_filters.ModelChoiceFilter(
+        queryset=Language.objects.all(),
+        widget=autocomplete.ModelSelect2Multiple(url="webapp:language-autocomplete"),
+    )
+    contents__date_min = django_filters.RangeFilter(
+        field_name="contents__date_min", label="Date minimale"
+    )  # , widget=django_filters.widgets.RangeWidget(attrs={"class": "range"}))
+    contents__date_max = django_filters.RangeFilter(
+        field_name="contents__date_max", label="Date maximale"
+    )
+
+    class Meta:
+        model = Witness
+        fields = {
+            "type": ["exact"],
+            "id_nb": ["icontains"],
+            "place": ["exact"],
+            "edition": ["exact"],
+            "edition__name": ["exact"],
+            "edition__place": ["exact"],
+            "edition__publisher": ["exact"],
+            "contents__work": ["exact"],
+            "contents__work__title": ["exact"],
+            "contents__work__author": ["exact"],
+            "contents__lang": ["exact"],
+            "contents__tags": ["exact"],
+        }

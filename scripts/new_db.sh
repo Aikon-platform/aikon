@@ -2,7 +2,7 @@
 
 # HOW TO USE
 # Inside the scripts/ directory, run:
-# bash new_db.sh dbName
+# bash new_db.sh <dbName> <?sql_script>
 # You will be asked to enter password twice
 # Restart Django to see effects
 
@@ -39,6 +39,7 @@ APP_ROOT="$(dirname "$SCRIPT_DIR")"
 . "$APP_ROOT"/app/config/.env
 
 db_name=${1:-${DB_NAME}_2}
+db_sql_file=$2
 db_user=${DB_USERNAME:-admin}
 db_psw=${DB_PASSWORD:-dummy_password}
 
@@ -70,14 +71,17 @@ $command -c "ALTER DATABASE $db_name OWNER TO $db_user;"
 # Set variables in .env file
 sed -i '' -e "s/DB_NAME=.*/DB_NAME=$db_name/" "$APP_ROOT"/app/config/.env
 
-# Empty migration directory and create new migrations
-# find "$APP_ROOT"/app/webapp/migrations -type f ! -name '__init__.py' ! -name 'init.py' -delete
-"$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py makemigrations
+if [ -z "$db_sql_file" ]; then
+    # Empty migration directory and create new migrations
+    # find "$APP_ROOT"/app/webapp/migrations -type f ! -name '__init__.py' ! -name 'init.py' -delete
+    "$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py makemigrations
 
-# Update database schema with new migrations
-"$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py migrate
+    # Update database schema with new migrations
+    "$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py migrate
 
-# create superuser
-"$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py createsuperuser --username="$db_user" --email="$CONTACT_MAIL"
-#echo "from django.contrib.auth.models import User; User.objects.create_superuser('$db_user', '$CONTACT_MAIL', '$DB_PASSWORD')" | "$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py shell
-
+    # create superuser
+    "$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py createsuperuser --username="$db_user" --email="$CONTACT_MAIL"
+    #echo "from django.contrib.auth.models import User; User.objects.create_superuser('$db_user', '$CONTACT_MAIL', '$DB_PASSWORD')" | "$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py shell
+else
+    psql -h localhost -d "$db_name" -U "$db_user" -f "$db_sql_file" || echo "‼️ Failed to import SQL data ‼️"
+fi

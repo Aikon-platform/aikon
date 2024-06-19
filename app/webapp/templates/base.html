@@ -1,0 +1,97 @@
+{% load static shared_tags %}
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {# TITLE IS DEFINED IN THE SETTINGS #}
+    <title>{{ title }}{% block title %}{% endblock %} | {{ APP_NAME|upper }}</title>
+
+    <link rel="icon" type="image/x-icon" href="{% static 'img/favicon-'|add:APP_NAME|add:'.png' %}">
+    <script>
+        const CSRF_TOKEN = "{{ csrf_token }}";
+
+        const APP_NAME = "{{ APP_NAME }}";
+        const APP_LANG = "{{ APP_LANG }}";
+        const CONTACT_MAIL = "{{ CONTACT_MAIL }}";
+
+        const APP_URL = "{{ APP_URL }}";
+        const WEBAPP_NAME = "{{ WEBAPP_NAME }}";
+        const COPYRIGHT = "{{ COPYRIGHT }}";
+        const SAS_APP_URL = "{{ SAS_APP_URL }}";
+        const CANTALOUPE_APP_URL = "{{ CANTALOUPE_APP_URL }}";
+
+        const MS = "{{ MS }}";
+        const VOL = "{{ VOL }}";
+        const WIT = "{{ WIT }}";
+        const WIT_CAP = "{{ WIT|capfirst }}";
+
+        const TPR = "{{ TPR }}";
+        const WPR = "{{ WPR }}";
+
+        const TPR_ABBR = "{{ TPR_ABBR }}";
+        const WPR_ABBR = "{{ WPR_ABBR }}";
+
+        const MS_ABBR = "{{ MS_ABBR }}";
+        const VOL_ABBR = "{{ VOL_ABBR }}";
+
+        const IMG_ABBR = "{{ IMG_ABBR }}";
+        const PDF_ABBR = "{{ PDF_ABBR }}";
+        const MAN_ABBR = "{{ MAN_ABBR }}";
+
+        const WIT_CHANGE = "{{ WIT_CHANGE }}";
+
+        const MANIFEST_V1 = "{{ MANIFEST_V1 }}";
+        const MANIFEST_V2 = "{{ MANIFEST_V2 }}";
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css">
+    <link rel="stylesheet" href="{% static "css/style.css" %}?v1.1">
+
+    <script src="{% static 'js/jquery-3.6.1.js' %}"></script>
+    <script src="{% static 'js/script.js' %}"></script>
+    <script src="{% static 'js/eventListeners.js' %}"></script>
+    <script src="{% static 'js/modal.js' %}"></script>
+
+    <link href="{% static 'admin/css/vendor/select2/select2.css' %}" media="screen" rel="stylesheet" type="text/css">
+    <script src="{% static 'admin/js/vendor/select2/select2.full.js' %}"></script>
+    <script src="{% static 'autocomplete_light/autocomplete_light.js' %}"></script>
+    <script src="{% static 'autocomplete_light/select2.js' %}"></script>
+    <script src="{% static 'autocomplete_light/i18n/fr.js' %}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+
+    {% block extrahead %}{% endblock %}
+
+    {% define "css" as context %}
+    {% block extrastyle %}{% endblock %}
+
+</head>
+<body>
+{% include 'includes/navbar.html' %}
+
+<div class="wrapper container">
+    <div class="content p-5" style="min-height: 80vh; max-width: 90vw">
+        {% if messages %}
+            <div class="centerwrap">
+                <ul class="messages">
+                    {% for message in messages %}
+                        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|urlize }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {% define "html" as context %}
+        {% block content %}{% endblock %}
+
+    </div>
+</div>
+
+{% include 'includes/footer.html' %}
+
+<script src="{% static 'fontawesomefree/js/all.min.js' %}"></script>
+
+{% define "js" as context %}
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

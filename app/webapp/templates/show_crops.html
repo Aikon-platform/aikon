@@ -2,76 +2,29 @@
 
 {% load static %}
 
-{% block title %}{{ anno }}{% endblock %}
+{% block title %}{{ regions }}{% endblock %}
 
 {% block extrahead %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'css/tools.css' %}">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css" rel="stylesheet">
-
-    <style>
-.grid-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-    grid-gap: 20px;
-}
-
-.grid-item img {
-    width: auto;
-    height: 200px;
-    display: block;
-}
-
-.hidden {
-    display: none;
-}
-
-.btn-change {
-    background-color: rgb(157, 157, 224);
-    color: white;
-    display: inline-block;
-    font-weight: 400;
-    font-size: 16px;
-    text-align: center;
-    white-space: nowrap;
-    vertical-align: middle;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    border: 1px solid transparent;
-    padding: .3rem .7rem;
-    margin: 5px 5px;
-    line-height: 1.5;
-    border-radius: .25rem;
-    transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
-}
-
-.btn-change:hover {
-    background-color: rgb(41, 36, 89);
-}
-
-    </style>
 
 {% endblock %}
 
 {% block header %}
     <div class="toolbar">
         <div class="title">
-            <b>{{ anno|capfirst }}</b>
+            <b>{{ regions|capfirst }}</b>
         </div>
 
         <div style="display: flex; flex-direction: row;">
-            <a href="{% url 'export-crops' anno_ref=anno_ref %}">
+            <a href="{% url 'export-crops' regions_ref=regions_ref %}">
                 <button class="export-button" type="submit">
                     <i class="fa-regular fa-file-zipper"></i>&nbsp;
                     {% if APP_LANG == "en" %}
-                        Download all
+                        Download all regions
                     {% else %}
-                        Télécharger toutes les
+                        Télécharger toutes les régions
                     {% endif %}
-                    annotations
                 </button>
             </a>
 
@@ -81,23 +34,22 @@
                 <button class="export-button" type="submit">
                     <i class="fa-regular fa-file-zipper"></i>&nbsp;
                     {% if APP_LANG == "en" %}
-                        Download selected annotations
+                        Download selected regions
                     {% else %}
-                        Télécharger les annotations sélectionnées
+                        Télécharger les régions sélectionnées
                     {% endif %}
                 </button>
             </form>
 
-            {% if anno.is_validated %}
-                <a href="{% url 'show-annotations' anno_ref=anno_ref %}" target="_blank">
+            {% if not regions.is_validated %}
+                <a href="{% url 'show-regions' regions_ref=regions_ref %}" target="_blank">
                     <button class="edit-button" type="submit">
                         <i class="fa fa-pencil"></i>&nbsp;
                         {% if APP_LANG == "en" %}
-                            Edit
+                            Edit regions
                         {% else %}
-                            Éditer les
+                            Éditer les régions
                         {% endif %}
-                        annotations
                     </button>
                 </a>
             {% endif %}
@@ -110,13 +62,15 @@
 <div class="tabs-crops">
     <div class="row">
         <div class="tab-buttons">
-            <button class="btn-change active-tab">{% if APP_LANG == "en" %}
+            <button class="button btn-change active-tab">
+            {% if APP_LANG == "en" %}
                 Page view
             {% else %}
                 Vue page
             {% endif %}
             </button>
-            <button class="btn-change">{% if APP_LANG == "en" %}
+            <button class="button btn-change">
+            {% if APP_LANG == "en" %}
                 Dump view
             {% else %}
                 Vue générale
@@ -128,18 +82,18 @@
     <div class="tab-bodies">
         <div class="row" style="display:block;">
             <div class="column">
-                <table class="anno-table" style="margin-top: 0em;">
-                    {% for canvas_nb, coord, img_file in page_annos %}
-                        <tr class="anno-row">
-                            <td class="anno-td page-col">
+                <table class="region-table" style="margin-top: 0em;">
+                    {% for canvas_nb, coord, img_file in page_regions %}
+                        <tr class="region-row">
+                            <td class="region-td page-col">
                                 <a href="{{ img_file|img_to_iiif}}" target="_blank">
                                     <img class="page-preview" src="{{ img_file|img_to_iiif:"full/350,/0" }}" alt="Click to see real size image">
                                 </a>
                                 <h3><a href="{{ img_file|img_to_iiif }}" target="_blank">Page {{ canvas_nb }}</a></h3>
                             </td>
-                            <td class="anno-td anno-col">
+                            <td class="region-td region-col">
                                 {% for coords, id in coord %}
-                                    <div id="ill_{{ id }}" class="anno-div">
+                                    <div id="ill_{{ id }}" class="region-div">
                                         {% with region_full=coords|add:'/full/0' region=coords|add:'/,200/0' %}
                                             <a href="{{ img_file|img_to_iiif:region_full }}" target="_blank">
                                                 <img src="{{ img_file|img_to_iiif:region }}" alt="scan preview">
@@ -156,7 +110,7 @@
                         </tr>
                     {% endfor %}
                 </table>
-                {% include 'includes/pagination.html' with current_page=page_annos %}
+                {% include 'includes/pagination.html' %}
             </div>
         </div>
 

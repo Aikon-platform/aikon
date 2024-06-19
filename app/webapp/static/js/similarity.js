@@ -1,7 +1,9 @@
-function getAnnoRef(imgRef) {
+let scores = null;
+
+function getRegionsRef(imgRef) {
     imgRef = imgRef.split("_");
     const digitRef = `${imgRef[0]}_${imgRef[1]}`;
-    return annoRefs.filter(ref => ref.startsWith(digitRef))[0];
+    return regionsRefs.filter(ref => ref.startsWith(digitRef))[0];
 }
 function refToIIIF(imgRef){
     imgRef = imgRef.split("_");
@@ -11,11 +13,11 @@ function refToIIIF(imgRef){
 }
 
 function refToMirador(imgRef){
-    /* TODO: Factorize using getAnnoRef function */
+    /* TODO: Factorize using getRegionsRef function */
     imgRef = imgRef.split("_");
     const digitRef = `${imgRef[0]}_${imgRef[1]}`;
-    const annoRef = annoRefs.filter(ref => ref.startsWith(digitRef))[0];
-    const manifest = `${APP_URL}/${APP_NAME}/iiif/${MANIFEST_V2}/${annoRef}/manifest.json`;
+    const regionsRef = regionsRefs.filter(ref => ref.startsWith(digitRef))[0];
+    const manifest = `${APP_URL}/${APP_NAME}/iiif/${MANIFEST_V2}/${regionsRef}/manifest.json`;
     return `${SAS_APP_URL}/index.html?iiif-content=${manifest}&canvas=${parseInt(imgRef[2])}`;
 }
 
@@ -29,7 +31,7 @@ function getImageInfo(imgRef) {
     imgInfo.witNumber = imgRef.match(/wit(\d+)_/)[1];
     imgInfo.canvasNumber = parseInt(imgRef.match(/_(\d+)_/)[1], 10) ;
     imgInfo.coordinates = imgRef.match(/_(\d+,\d+,\d+,\d+)\.jpg$/)[1];
-    imgInfo.annoRef = getAnnoRef(imgRef);
+    imgInfo.regionsRef = getRegionsRef(imgRef);
     return imgInfo;
 }
 
@@ -45,21 +47,21 @@ function getWitnessTitle(number) {
 }
 
 function getCheckedRefs(checked_ref) {
-    let checkedAnnoRefs = [];
-    checkedAnnoRefs.push(checked_ref)
+    let checkedRegionsRefs = [];
+    checkedRegionsRefs.push(checked_ref)
     const options = document.querySelectorAll('#multi-select option:checked');
 
     options.forEach(function(option) {
-        checkedAnnoRefs.push(option.value);
+        checkedRegionsRefs.push(option.value);
     });
 
-    return checkedAnnoRefs;
+    return checkedRegionsRefs;
 }
 
 const displayScores = (scores) => {
     const table = document.getElementById("similarity");
     table.innerHTML = "";
-    const queryImgs = Object.keys(scores);
+    const queryImgs = viewOrder ? Object.keys(scores).sort() : Object.keys(scores);
 
     if (queryImgs.length > 0) {
         queryImgs.map(qImg => {
@@ -74,7 +76,7 @@ const displayScores = (scores) => {
                 </p>
                 <a href="${refToIIIF(qImg)}" target="_blank">
                     <div class="img-wrap">
-                        <img class="anno-img" src='${refToIIIF(qImg)}' alt="Annotation ${qImg}">
+                        <img class="region-img" src='${refToIIIF(qImg)}' alt="Region ${qImg}">
                         <div class="img-description-layer">
                             <p class="img-description">
                                 <span>${getWitnessTitle(getImageInfo(qImg).witNumber)}</span>
@@ -97,7 +99,7 @@ const displayScores = (scores) => {
                         </p>
                         <a href="${refToIIIF(sImg)}" target="_blank">
                             <div class="img-wrap">
-                                <img class="anno-img" src='${refToIIIF(sImg)}' alt="Annotation ${sImg}">
+                                <img class="region-img" src='${refToIIIF(sImg)}' alt="Region ${sImg}">
                                 <div class="img-description-layer">
                                     <p class="img-description">
                                         <span>${getWitnessTitle(getImageInfo(sImg).witNumber)}</span>
@@ -109,8 +111,8 @@ const displayScores = (scores) => {
                             <form class="category-form">
                                 <input type="hidden" class="img_1" value="${qImg}">
                                 <input type="hidden" class="img_2" value="${sImg}">
-                                <input type="hidden" class="anno_ref_1" value="${getImageInfo(qImg).annoRef}">
-                                <input type="hidden" class="anno_ref_2" value="${getImageInfo(sImg).annoRef}">
+                                <input type="hidden" class="regions_ref_1" value="${getImageInfo(qImg).regionsRef}">
+                                <input type="hidden" class="regions_ref_2" value="${getImageInfo(sImg).regionsRef}">
                                 <label for="">1</label>
                                 <input id="category1" type="checkbox" name="category" value="1">
                                 <label for="" class="hspace">2</label>
@@ -163,8 +165,8 @@ const displayScores = (scores) => {
             }
             let img_1 = form.querySelector('.img_1').value;
             let img_2 = form.querySelector('.img_2').value;
-            let anno_ref_1 = form.querySelector('.anno_ref_1').value;
-            let anno_ref_2 = form.querySelector('.anno_ref_2').value;
+            let regions_ref_1 = form.querySelector('.regions_ref_1').value;
+            let regions_ref_2 = form.querySelector('.regions_ref_2').value;
             let category = form.querySelector('input[name="category"]:not(#category5):checked');
             let category_x = form.querySelector('#category5:checked');
             form.querySelectorAll('input[name="category"]').forEach((checkbox) => {
@@ -173,8 +175,8 @@ const displayScores = (scores) => {
             let data = {
                 'img_1': img_1,
                 'img_2': img_2,
-                'anno_ref_1': anno_ref_1,
-                'anno_ref_2': anno_ref_2,
+                'regions_ref_1': regions_ref_1,
+                'regions_ref_2': regions_ref_2,
                 'category': category ? category.value : null,
                 'category_x': category_x ? category_x.value : null,
             };
@@ -195,20 +197,25 @@ const displayScores = (scores) => {
     });
 }
 
-function sendScoreRequest(annoRefs, maxRows, showCheckedRef) {
+function sendScoreRequest(regionsRefs, maxRows, showCheckedRef) {
     return fetch(`${APP_URL}/${APP_NAME}/compute-score`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': CSRF_TOKEN
         },
-        body: JSON.stringify({ annoRefs: annoRefs, maxRows: maxRows, showCheckedRef: showCheckedRef }),
+        body: JSON.stringify({ regionsRefs: regionsRefs, maxRows: maxRows, showCheckedRef: showCheckedRef }),
     })
     .then(response => response.json()) // This line is needed to parse the response as JSON
     .then(score => {
+        scores = score
         displayScores(score);
     })
     .catch(error => {
         console.error('Error sending data to the server:', error);
     });
 }
+
+$(document).on('change', "#viewOrder", function() {
+    displayScores(scores);
+});

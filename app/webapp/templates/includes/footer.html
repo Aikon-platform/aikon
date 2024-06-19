@@ -1,0 +1,34 @@
+{% load static %}
+
+<footer id="footer" class="footer mt-6 pb-5 pt-5">
+    <div class="columns is-centered" style="padding: 0 20vw">
+        <a class="column is-2" href="">
+            <figure class="image is-96x96 is-center mt-2">
+                <img src="{% static 'img/logo-anr.png' %}" alt="Agence Nationale pour la Recherche logo">
+            </figure>
+        </a>
+        <a class="column is-2" href="">
+            <figure class="image is-96x96 is-center p-2">
+                <img src="{% static 'img/logo-cnrs.png' %}" alt="CNRS logo">
+            </figure>
+        </a>
+        <a class="column is-2" href="">
+            <figure class="image is-96x96 is-center p-2">
+                <img src="{% static 'img/logo-ponts.png' %}" alt="École des ponts logo">
+            </figure>
+        </a>
+        <a class="column is-3" href="">
+            <figure class="image is-center p-2">
+                <img src="{% static 'img/logo-obspm.png' %}" alt="Observatoire de Paris logo">
+            </figure>
+        </a>
+    </div>
+
+    <div class="columns is-centered">
+        <div class="column is-8 has-text-centered">
+            <hr class="mt-2" style="background-color: hsl(0deg 0% 0% / 5%);">
+            {{ COPYRIGHT }} <a href="mailto:{{ CONTACT_MAIL }}">{{ APP_NAME_UPPER }}</a> &copy; {% now "Y" %}
+            <br><a href="{{ APP_URL }}/{{ APP_NAME }}/rgpd">RGPD and licensing</a>
+        </div>
+    </div>
+</footer>

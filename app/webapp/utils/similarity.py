@@ -7,7 +7,7 @@ import requests
 from typing import List
 
 from app.config.settings import EXAPI_URL, APP_URL, APP_NAME
-from app.webapp.models.annotation import Annotation
+from app.webapp.models.regions import Regions
 from app.webapp.utils.functions import flatten_dict
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.utils.iiif.annotation import formatted_annotations
@@ -29,37 +29,37 @@ def doc_pairs(doc_ids: list):
     raise ValueError("Input must be a non-empty list of ids.")
 
 
-def check_computed_pairs(anno_refs):
+def check_computed_pairs(regions_refs):
     sim_files = os.listdir(SCORES_PATH)
-    anno_to_send = []
-    for pair in doc_pairs(anno_refs):
+    regions_to_send = []
+    for pair in doc_pairs(regions_refs):
         if f"{'-'.join(sorted(pair))}.npy" not in sim_files:
-            anno_to_send.extend(pair)
-    # return list of unique anno_ref involved in one of the pairs that are not already computed
-    return list(set(anno_to_send))
+            regions_to_send.extend(pair)
+    # return list of unique regions_ref involved in one of the pairs that are not already computed
+    return list(set(regions_to_send))
 
 
-def get_computed_pairs(anno_ref):
+def get_computed_pairs(regions_ref):
     return [
         pair_file.replace(".npy", "")
         for pair_file in os.listdir(SCORES_PATH)
-        if anno_ref in pair_file
+        if regions_ref in pair_file
     ]
 
 
-def get_anno_ref_in_pairs(pairs):
+def get_regions_ref_in_pairs(pairs):
     return list(set([ref for pair in pairs for ref in pair.split("-")]))
 
 
-def get_compared_annos(anno_ref):
-    return get_anno_ref_in_pairs(get_computed_pairs(anno_ref))
+def get_compared_regions(regions_ref):
+    return get_regions_ref_in_pairs(get_computed_pairs(regions_ref))
 
 
 def gen_img_ref(img, coord):
     return f"{img.split('.')[0]}_{coord}"
 
 
-def get_annotation_urls(anno: Annotation):
+def get_regions_urls(regions: Regions):
     """
     {
         "wit1_man191_0009_166,1325,578,516": ""https://eida.obspm.fr/iiif/2/wit1_man191_0009.jpg/166,1325,578,516/full/0/default.jpg"",
@@ -68,29 +68,31 @@ def get_annotation_urls(anno: Annotation):
         "img_name": "..."
     }
     """
-    folio_anno = []
+    folio_regions = []
 
-    _, canvas_annos = formatted_annotations(anno)
-    for canvas_nb, annos, img_name in canvas_annos:
-        if len(annos):
-            folio_anno.append(
+    _, canvas_annotations = formatted_annotations(regions)
+    for canvas_nb, annotations, img_name in canvas_annotations:
+        if len(annotations):
+            folio_regions.append(
                 {
                     gen_img_ref(img_name, a[0]): gen_iiif_url(
                         img_name, 2, f"{a[0]}/full/0"
                     )
-                    for a in annos
+                    for a in annotations
                 }
             )
 
-    return flatten_dict(folio_anno)
+    return flatten_dict(folio_regions)
 
 
-def gen_list_url(anno_ref):
-    return f"{APP_URL}/{APP_NAME}/{anno_ref}/list"
+def gen_list_url(regions_ref):
+    return f"{APP_URL}/{APP_NAME}/{regions_ref}/list"
 
 
-def similarity_request(annos: List[Annotation]):
-    documents = {ref: gen_list_url(ref) for ref in [anno.get_ref() for anno in annos]}
+def similarity_request(regions: List[Regions]):
+    documents = {
+        ref: gen_list_url(ref) for ref in [region.get_ref() for region in regions]
+    }
 
     try:
         response = requests.post(
@@ -149,21 +151,21 @@ def load_similarity(pair):
 
 
 def compute_total_similarity(
-    annos: List[Annotation],
-    checked_anno_ref: str,
-    anno_refs: List[str] = None,
+    regions: List[Regions],
+    checked_regions_ref: str,
+    regions_refs: List[str] = None,
     max_rows: int = 50,
     show_checked_ref: bool = False,
 ):
     total_scores = defaultdict(list)
     img_names = defaultdict(set)
-    prefix_key = "_".join(checked_anno_ref.split("_")[:2])
+    prefix_key = "_".join(checked_regions_ref.split("_")[:2])
     topk = 10
 
-    if anno_refs is None:
-        anno_refs = [anno.get_ref() for anno in annos]
+    if regions_refs is None:
+        regions_refs = [region.get_ref() for region in regions]
 
-    for pair in doc_pairs(anno_refs):
+    for pair in doc_pairs(regions_refs):
         try:
             score_path_pair = f"{SCORES_PATH}/{'-'.join(sorted(pair))}.npy"
             if prefix_key not in score_path_pair:
@@ -217,7 +219,7 @@ def compute_total_similarity(
     return sorted_total_scores
 
 
-def reset_similarity(anno_ref):
-    # TODO function to delete all similarity files concerning the anno_ref
+def reset_similarity(regions_ref):
+    # TODO function to delete all similarity files concerning the regions_ref
     # TODO send request to delete features and scores concerning the anno ref as well
     pass

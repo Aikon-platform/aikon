@@ -14,6 +14,7 @@ from django.core.exceptions import ValidationError
 
 from django.utils.html import format_html
 from django.http import HttpResponse
+from django.utils.timezone import is_naive, make_aware
 from django.utils.safestring import mark_safe
 from urllib.request import (
     HTTPPasswordMgrWithDefaultRealm,
@@ -58,6 +59,15 @@ def extract_nb(string):
 def normalize_str(string):
     string = string.lower().strip().replace("-", "")
     return string
+
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            if is_naive(obj):
+                obj = make_aware(obj)
+            return obj.strftime("%Y-%m-%d %H:%M")
+        return super().default(obj)
 
 
 def substrs_in_str(string, substrings):
@@ -271,20 +281,20 @@ def get_action(action, formatting=None):
     actions = {
         "view": {"en": "visualize source", "fr": "visualiser la source"},
         "auto-view": {
-            "en": "visualize automatic annotations",
-            "fr": "voir les annotations automatiques",
+            "en": "visualize automatic regions",
+            "fr": "voir les régions automatiques",
         },
-        "similarity": {"en": "compare annotations", "fr": "comparer les annotations"},
+        "similarity": {"en": "compare regions", "fr": "comparer les régions"},
         "no_manifest": {"en": "no manifest", "fr": "pas de manifest"},
         "no_digit": {"en": "no digitization", "fr": "pas de numérisation"},
         "no_img": {"en": "no image", "fr": "pas d'image"},
-        "no_anno": {"en": "no annotation yet", "fr": "non annoté"},
-        "download": {"en": "download annotations", "fr": "télécharger les annotations"},
-        "edit": {"en": "edit annotations", "fr": "modifier les annotations"},
-        "final": {"en": "final annotations", "fr": "annotations finales"},
+        "no_regions": {"en": "no regions yet", "fr": "pas de régions"},
+        "download": {"en": "download regions", "fr": "télécharger les régions"},
+        "edit": {"en": "edit regions", "fr": "modifier les régions"},
+        "final": {"en": "visualize final regions", "fr": "voir les régions finales"},
         "crops": {
-            "en": "view all annotations",
-            "fr": "visualiser toutes les annotations",
+            "en": "all regions",
+            "fr": "toutes les régions",
         },
         "vectors": {
             "en": "visualize automatic vectorizations",

@@ -19,6 +19,8 @@ app/mediafiles/img/*
 !app/mediafiles/img/.gitkeep
 app/mediafiles/annotation/*
 !app/mediafiles/annotation/.gitkeep
+app/mediafiles/regions/*
+!app/mediafiles/regions/.gitkeep
 app/mediafiles/similarity/*
 !app/mediafiles/similarity/.gitkeep
 app/mediafiles/pdf/*
@@ -28,7 +30,7 @@ app/mediafiles/svg/*
 !app/mediafiles/svg/.gitkeep
 
 # Django migration files (to be generated on prod - even if this is bad)
-app/webapp/migrations/0*
+#app/webapp/migrations/0*
 cantaloupe/temp/*
 cantaloupe/cantaloupe.properties
 !cantaloupe/temp/.gitkeep

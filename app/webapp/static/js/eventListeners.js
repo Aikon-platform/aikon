@@ -29,30 +29,30 @@ $(function() {
     //     $("#id_volume_set-__prefix__-manifest_final").replaceWith("<i class='fa-solid fa-circle-xmark' style='color:red'></i>");
     // });
 
-    $("#delete_anno").click(function() {
-        const checkedAnno = $("[id^=bbox_]:checked");
-        let annoIds = [];
-        checkedAnno.each(function() {
-            annoIds.push($(this).attr("id").replace("bbox_", ""));
+    $("#delete_regions").click(function() {
+        const checkedRegions = $("[id^=bbox_]:checked");
+        let regionsIds = [];
+        checkedRegions.each(function() {
+            regionsIds.push($(this).attr("id").replace("bbox_", ""));
         });
-        if (!deleteAnnotations(annoIds)) {
-            // if the user decided to not delete the selected annotations
-            checkedAnno.prop("checked", false);
+        if (!deleteRegions(regionsIds)) {
+            // if the user decided to not delete the selected regions
+            checkedRegions.prop("checked", false);
         }
     });
 
-    $("#select_anno").click(function() {
-        const checkedAnno = $("[id^=bbox_]");
-        checkedAnno.each(function() {
+    $("#select_regions").click(function() {
+        const checkedRegions = $("[id^=bbox_]");
+        checkedRegions.each(function() {
             $(this).prop("checked", true);
         });
     });
 
     $("#delete_all").click(function() {
-        deleteAllAnnotations(allAnnos ?? []);
+        deleteAllRegions(allRegions ?? []);
     });
 
-    $("#validate_anno").click(function() {
-        validateAnnotations();
+    $("#validate_regions").click(function() {
+        validateRegions();
     });
 });

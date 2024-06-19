@@ -5,7 +5,6 @@ from django.utils.safestring import mark_safe
 from iiif_prezi.factory import StructuralError
 
 from app.config.settings import APP_URL, APP_NAME
-from app.webapp.models import get_wit_abbr, get_wit_type
 from app.webapp.models.digitization_source import DigitizationSource
 from app.webapp.models.utils.functions import get_fieldname
 
@@ -46,8 +45,9 @@ from app.webapp.utils.paths import (
     IMG_PATH,
     MEDIA_DIR,
     IMG_DIR,
-    ANNO_PATH,
+    REGIONS_PATH,
     PDF_DIR,
+    SVG_PATH,
 )
 
 from app.vectorization.const import SVG_PATH
@@ -64,11 +64,11 @@ ALLOWED_EXT = ["jpg", "jpeg", "png", "tif"]
 def get_name(fieldname, plural=False):
     fields = {
         "view_digit": {"en": "visualize", "fr": "visualiser"},
-        "view_anno": {"en": "annotations", "fr": "annotations"},
-        "is_validated": {"en": "validate annotations", "fr": "valider les annotations"},
+        "view_regions": {"en": "regions", "fr": "régions"},
+        "is_validated": {"en": "validate regions", "fr": "valider les régions"},
         "is_validated_info": {
-            "en": "annotations will no longer be editable",
-            "fr": "les annotations ne seront plus modifiables",
+            "en": "regions will no longer be editable",
+            "fr": "les régions ne seront plus modifiables",
         },
         "is_open": {"en": "free to use", "fr": "libre d'utilisation"},
         "is_open_info": {
@@ -149,11 +149,6 @@ class Digitization(models.Model):
         except AttributeError:
             return None
 
-    def get_wit_type(self, abbr=False):
-        if witness := self.get_witness():
-            return witness.type if abbr else get_wit_type(witness.type)
-        return None
-
     def get_wit_ref(self):
         if witness := self.get_witness():
             return witness.get_ref()
@@ -172,8 +167,11 @@ class Digitization(models.Model):
         # Returns "img" / "pdf" / "man"
         return str(self.digit_type)
 
-    def get_annotations(self):
-        return self.annotations.all()
+    def get_regions(self):
+        return self.regions.all()
+
+    def get_treatments(self):
+        return self.treatments.all()
 
     def get_treatments(self):
         return self.treatments.all()
@@ -200,16 +198,16 @@ class Digitization(models.Model):
         nb = f"_{i:04d}" if i else ""
         return f"{path}/{self.get_ref()}{nb}.{ext or self.get_ext()}"
 
-    def get_anno_filenames(self):
-        anno_files = []
-        for anno in self.get_annotations():
-            anno_files.append(anno.get_ref())
-        return anno_files
+    def get_regions_filenames(self):
+        regions_files = []
+        for regions in self.get_regions():
+            regions_files.append(regions.get_ref())
+        return regions_files
 
-    def has_annotations(self):
-        # if there is at least one annotation file named after the current digitization
-        if len(glob(f"{ANNO_PATH}/{self.get_ref()}_*.txt")):
-            # TODO check self.get_annotations()
+    def has_regions(self):
+        # if there is at least one regions file named after the current digitization
+        if len(glob(f"{REGIONS_PATH}/{self.get_ref()}_*.txt")):
+            # TODO check self.get_regions()
             return True
         return False
 
@@ -234,6 +232,12 @@ class Digitization(models.Model):
             return True
         return False
 
+    def get_img(self, is_abs=False):
+        path = f"{IMG_PATH}/" if is_abs else ""
+        for filename in os.listdir(IMG_PATH):
+            if filename.startswith(self.get_ref()):
+                return f"{path}{filename}"
+
     def get_imgs(self, is_abs=False, temp=False):
         imgs = []
         path = f"{IMG_PATH}/" if is_abs else ""
@@ -257,7 +261,7 @@ class Digitization(models.Model):
         return metadata
 
     def gen_manifest_url(self, only_base=False, version=None):
-        # usage of version parameter to copy parameters of Annotation.gen_manifest_url()
+        # usage of version parameter to copy parameters of Regions.gen_manifest_url()
         base_url = f"{APP_URL}/{APP_NAME}/iiif/{self.get_ref()}"
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 
@@ -283,14 +287,14 @@ class Digitization(models.Model):
 
         # NOTE methods to be used inside list columns of witnesses
 
-    def anno_btn(self):
-        # To display a button in the list of witnesses to know if they were annotated or not
-        return "<br>".join(anno.view_btn() for anno in self.get_annotations())
+    def regions_btn(self):
+        # To display a button in the list of witnesses to know if regions were extracted or not
+        return "<br>".join(regions.view_btn() for regions in self.get_regions())
 
     def digit_btn(self):
-        from app.webapp.utils.iiif.gen_html import anno_btn
+        from app.webapp.utils.iiif.gen_html import regions_btn
 
-        return mark_safe(anno_btn(self, "view")) if self.has_images() else ""
+        return mark_safe(regions_btn(self, "view")) if self.has_images() else ""
 
     def add_source(self, source):
         # from app.webapp.models.digitization_source import DigitizationSource
@@ -303,10 +307,10 @@ class Digitization(models.Model):
 
     def view_btn(self):
         iiif_link = f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"
-        annos = self.get_annotations()
-        if len(annos) == 0:
+        regions = self.get_regions()
+        if len(regions) == 0:
             return f"{iiif_link}<br>{self.digit_btn()}"
-        return f"{iiif_link}<br>{self.anno_btn()}"
+        return f"{iiif_link}<br>{self.regions_btn()}"
 
     def manifest_link(self, inline=False):
         from app.webapp.utils.iiif.gen_html import gen_manifest_btn
@@ -330,7 +334,7 @@ class Digitization(models.Model):
             return
 
         if not self.id:
-            # TODO check to not relaunch anno if the digit didn't change
+            # TODO check to not relaunch regions if the digit didn't change
             # If the instance is being saved for the first time, save it in order to have an id
             super().save(*args, **kwargs)
 
@@ -350,7 +354,8 @@ class Digitization(models.Model):
 
 @receiver(post_save, sender=Digitization)
 def digitization_post_save(sender, instance, created, **kwargs):
-    from app.webapp.utils.iiif.annotation import send_anno_request
+    # TODO use Celery instead of threading
+    from app.webapp.utils.regions import send_regions_request
 
     if created:
         event = threading.Event()
@@ -390,27 +395,27 @@ def digitization_post_save(sender, instance, created, **kwargs):
         else:
             request = None
 
-        anno_t = threading.Thread(
-            target=send_anno_request,
+        regions_t = threading.Thread(
+            target=send_regions_request,
             args=(instance, event, request.user),
         )
-        anno_t.start()
+        regions_t.start()
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance
 @receiver(pre_delete, sender=Digitization)
 def pre_delete_digit(sender, instance: Digitization, **kwargs):
-    # Used to delete digit files and annotations
+    # Used to delete digit files and regions
     other_media = instance.pdf.name if instance.digit_type == PDF_ABBR else None
     remove_digitization(instance, other_media)
     return
 
 
 def remove_digitization(digit: Digitization, other_media=None):
-    from app.webapp.utils.iiif.annotation import delete_annos
+    from app.webapp.utils.iiif.annotation import delete_regions
 
-    for anno in digit.get_annotations():
-        delete_annos(anno)
+    for regions in digit.get_regions():
+        delete_regions(regions)
 
     delete_files(digit.get_imgs(is_abs=True))
     if other_media:

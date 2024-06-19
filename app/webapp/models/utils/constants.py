@@ -24,7 +24,7 @@ MODEL_NAMES = {
     "Role": {"en": "role", "fr": "rôle"},
     "Image": {"en": "image", "fr": "image"},
     "Pdf": {"en": "PDF", "fr": "PDF"},
-    "Annotation": {"en": "annotation", "fr": "annotation"},
+    "Regions": {"en": "regions", "fr": "régions"},
 }
 
 MANIFEST = MODEL_NAMES["Manifest"][APP_LANG]
@@ -45,7 +45,7 @@ PERS = MODEL_NAMES["Person"][APP_LANG]
 ROLE = MODEL_NAMES["Role"][APP_LANG]
 IMG = MODEL_NAMES["Image"][APP_LANG]
 PDF = MODEL_NAMES["Pdf"][APP_LANG]
-ANNO = MODEL_NAMES["Annotation"][APP_LANG]
+REG = MODEL_NAMES["Regions"][APP_LANG]
 
 
 # ABBREVIATION
@@ -99,7 +99,7 @@ MAP_WIT_TYPE = {
     WPR_ABBR: WPR.capitalize(),
 }
 
-ANNO_VERSION = (
+REGIONS_VERSION = (
     (MANIFEST_V1, "automatic"),
     (MANIFEST_V2, "corrected"),
 )
@@ -208,4 +208,3 @@ CONS_PLA_MSG = (
 AUTHOR_MSG = "Unknown author" if APP_LANG == "en" else "Auteur inconnu"
 IMG_MSG = "Manage images" if APP_LANG == "en" else "Gérer les images"
 WIT_CHANGE = f"Modify {WIT}" if APP_LANG == "en" else f"Modifier le {WIT}"
-SEARCH_MSG = "Search..." if APP_LANG == "en" else "Rechercher..."

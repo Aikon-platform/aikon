@@ -1,0 +1,34 @@
+{% extends "admin/base_site.html" %}
+{% load shared_tags static %}
+
+{% block title %}List of {{ record_name }}{% endblock %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="{% static 'svelte/blockList.css' %}">
+{% endblock %}
+
+{% block content %}
+    {% if filter %}
+        {% include "includes/breadcrumbs.html" %}
+        <h1 class="is-title is-size-2 py-3">{{ filter }}</h1>
+    {% else %}
+        <h1 class="is-title is-size-2 py-3">All {{ record_name }}</h1>
+    {% endif %}
+
+    {% include "includes/pagination.html" %}
+
+    {# SEARCH SECTION #}
+
+    <div class="record-list">
+        <div id="block-list"></div>
+    </div>
+
+    {% include "includes/pagination.html" %}
+{% endblock %}
+
+{% block extra_js %}
+    <script type="application/json" id="record-data">
+        {{ json_object_list|safe }}
+    </script>
+    <script src="{% static 'svelte/blockList.js' %}"></script>
+{% endblock %}

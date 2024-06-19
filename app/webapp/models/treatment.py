@@ -42,7 +42,7 @@ class Treatment(models.Model):
         blank=True,
         null=True,
         choices=[
-            ("extraction", "extraction"),
+            ("regions", "regions"),
             ("similarity", "similarity"),
             ("vectorization", "vectorization"),
         ],
@@ -81,10 +81,10 @@ class Treatment(models.Model):
         self.status = "running"
         self.save(update_fields=["status"])
 
-    def complete_treatment(self, anno_ref):
+    def complete_treatment(self, regions_ref):
         self.status = "completed"
         self.save(update_fields=["status"])
-        self.completion_mail(anno_ref)
+        self.completion_mail(regions_ref)
 
     def error_treatment(self, error_msg):
         self.status = "error"
@@ -105,12 +105,12 @@ class Treatment(models.Model):
                 e,
             )
 
-    def completion_mail(self, anno_ref):
-        if self.task_type == "extraction":
-            message = f"Dear {APP_NAME.upper()} user,\n\nThe {self.task_type} treatment you requested for {self.get_object()} was completed and your results were sent to the platform.\n\nSee the automatic results at: {APP_URL}/{APP_NAME}/{anno_ref}/show/"
+    def completion_mail(self, regions_ref):
+        if self.task_type == "regions":
+            message = f"Dear {APP_NAME.upper()} user,\n\nThe {self.task_type} treatment you requested for {self.get_object()} was completed and your results were sent to the platform.\n\nSee the automatic results at: {APP_URL}/{APP_NAME}/{regions_ref}/show/"
         elif self.task_type == "similarity":
             message = (
-                f"Dear {APP_NAME.upper()} user,\n\nThe {self.task_type} treatment you requested for {self.get_object()} was completed and your results were sent to the platform.\n\nSee the automatic results at: {APP_URL}/{APP_NAME}/{anno_ref}/show-similarity/",
+                f"Dear {APP_NAME.upper()} user,\n\nThe {self.task_type} treatment you requested for {self.get_object()} was completed and your results were sent to the platform.\n\nSee the automatic results at: {APP_URL}/{APP_NAME}/{regions_ref}/show-similarity/",
             )
         else:
             message = f"Dear {APP_NAME.upper()} user,\n\nThe {self.task_type} treatment you requested for {self.get_object()} was completed and your results were sent to the platform."
