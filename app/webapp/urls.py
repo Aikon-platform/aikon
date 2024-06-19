@@ -113,16 +113,6 @@ urlpatterns = [
         name="compute-score",
     ),
     path(
-        f"{APP_NAME}/extract-regions/<str:digit_ref>",
-        send_regions_extraction,
-        name="send-regions-extraction",
-    ),
-    path(
-        f"{APP_NAME}/get-regions/<str:digit_ref>",
-        receive_regions_file,
-        name="receive-regions-file",
-    ),
-    path(
         f"{APP_NAME}/reindex-regions/<str:obj_ref>",
         reindex_regions,
         name="reindex-regions",
@@ -138,11 +128,6 @@ urlpatterns = [
         name="index-regions",
     ),
     path(
-        f"{APP_NAME}/regions-deletion-extraction/<str:digit_ref>",
-        regions_deletion_extraction,
-        name="regions-deletion-extraction",
-    ),
-    path(
         f"{APP_NAME}/delete-annotations-regions/<str:obj_ref>",
         delete_annotations_regions,
         name="delete-annotations-regions",
@@ -156,14 +141,14 @@ urlpatterns = [
         name="show-all-regions",
     ),
     path(
-        f"{APP_NAME}/export-crops/<str:regions_ref>",
-        export_all_crops,
-        name="export-crops",
+        f"{APP_NAME}/export-regions/<str:regions_ref>",
+        export_all_regions,
+        name="export-regions",
     ),
     path(
-        f"{APP_NAME}/export-selected-crops",
-        export_selected_crops,
-        name="export-selected-crops",
+        f"{APP_NAME}/export-selected-regions",
+        export_selected_regions,
+        name="export-selected-regions",
     ),
     path(
         f"{APP_NAME}/<str:regions_ref>/show-vectorization",
