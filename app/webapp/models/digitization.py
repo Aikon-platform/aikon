@@ -225,6 +225,14 @@ class Digitization(models.Model):
             return True
         return False
 
+    def has_all_vectorization(self):
+        # if there is as muche svg files as there are images in the current digitization
+        if len(glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")) == len(
+            glob(f"{IMG_PATH}/{self.get_ref()}_*.jpg")
+        ):
+            return True
+        return False
+
     def get_imgs(self, is_abs=False, temp=False):
         imgs = []
         path = f"{IMG_PATH}/" if is_abs else ""

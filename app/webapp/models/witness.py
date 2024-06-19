@@ -224,6 +224,9 @@ class Witness(models.Model):
     def has_vectorization(self):
         return any(digit.has_vectorization() for digit in self.get_digits())
 
+    def has_all_vectorization(self):
+        return any(digit.has_all_vectorization() for digit in self.get_digits())
+
     def get_imgs(self, is_abs=False, temp=False):
         imgs = []
         for digit in self.get_digits():

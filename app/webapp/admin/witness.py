@@ -267,12 +267,12 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         annos = []
         for witness in queryset.exclude():
             annos.extend(witness.get_annotations())
-            if witness.has_vectorization():
+            if witness.has_all_vectorization():
                 return messages.warning(
                     request,
-                    f"Vectorization was already computed for {witness}"
+                    f"Vectorization was already computed for the entire {witness}"
                     if APP_LANG == "en"
-                    else f"La vectorisation a déjà été lancée pour {witness}",
+                    else f"La vectorisation a déjà été lancée pour l'intégralité du {witness}",
                 )
         if len(annos) == 0:
             return no_anno_message(request)

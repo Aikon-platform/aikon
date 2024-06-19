@@ -163,7 +163,7 @@
         const svgElement = document.querySelector('svg'); // Sélectionner l'élément SVG
         const imageElement = document.querySelector('svg image');
 
-        // Fonction pour charger l'image de fond
+        // Charger l'image de fond
         function fond() {
             {% with small=coords|add:'/full/0' %}
             const backgroundImage = "{{ img_file|img_to_iiif:small }}";
@@ -208,7 +208,7 @@
             imageElement.style.opacity = opacityValue;
         });
 
-        // Faire disparaître les éléments au onclick
+        // Faire disparaître les éléments onclick
         function removeElementOnClick(event) {
             event.target.remove();
         }
@@ -224,8 +224,8 @@
             path.addEventListener('click', removeElementOnClick);
         });
 
-    // Fonction pour convertir le SVG modifié en image (PNG ou JPEG)
-    function convertModifiedSVGToImage(format, quality) {
+    // Convertir le SVG modifié en image (PNG ou JPEG)
+    function convertModifiedSVGToImage(format, quality, callback) {
         // Sérialiser le SVG modifié
         const svgString = new XMLSerializer().serializeToString(svgElement);
 
@@ -237,8 +237,10 @@
         const image = new Image();
         image.setAttribute('crossOrigin', 'anonymous');
         image.onload = function() {
+            // Le canvas a la même taille que l'image
             canvas.width = image.width;
             canvas.height = image.height;
+
             // Remplir le canvas avec un fond blanc
             context.fillStyle = 'white';
             context.fillRect(0, 0, canvas.width, canvas.height);
@@ -246,11 +248,10 @@
             // Appliquer l'opacité de l'image de fond
             const imageOpacity = parseFloat(window.getComputedStyle(imageElement).opacity);
             context.globalAlpha = isNaN(imageOpacity) ? 1.0 : imageOpacity;
-            context.drawImage(image, 0, 0);
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
             // Réinitialiser l'opacité pour tracer le SVG
             context.globalAlpha = 1.0;
-
 
             // Dessiner le SVG modifié sur le canvas
             const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
@@ -259,23 +260,35 @@
 
             const svgImage = new Image();
             svgImage.onload = function() {
-                context.drawImage(svgImage, 0, 0);
+                // Dessiner le SVG à la bonne taille
+                context.drawImage(svgImage, 0, 0, canvas.width, canvas.height);
 
                 // Télécharger l'image convertie au format spécifié
                 const dataUrl = canvas.toDataURL(`image/${format}`, quality);
-                const downloadLink = document.getElementById('downloadLink');
-                downloadLink.href = dataUrl;
-                downloadLink.setAttribute('download', `image.${format}`);
+                callback(dataUrl); // Utiliser le callback pour manipuler le dataUrl
             };
             svgImage.src = svgUrl;
         };
         image.src = imageElement.getAttribute('xlink:href');
     }
 
+    // Fonction de téléchargement
+    function downloadImage(format, quality) {
+        convertModifiedSVGToImage(format, quality, function(dataUrl) {
+            const downloadLink = document.createElement('a');
+            downloadLink.href = dataUrl;
+            downloadLink.setAttribute('download', `image.${format}`);
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        });
+    }
+
     // Lien pour télécharger en JPEG
     const downloadLink = document.getElementById('downloadLink');
-    downloadLink.addEventListener('click', function() {
-        convertModifiedSVGToImage('jpeg', 0.8);
+    downloadLink.addEventListener('click', function(event) {
+        event.preventDefault();
+        downloadImage('jpeg', 0.8);
     });
 
     });

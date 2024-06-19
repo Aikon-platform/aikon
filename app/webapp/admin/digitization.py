@@ -83,7 +83,13 @@ class DigitizationInline(nested_admin.NestedStackedInline):
             for anno in obj.get_annotations():
                 action = "final" if anno.is_validated else "edit"
                 anno_btn.append(gen_btn(anno, action))
-                if obj.has_vectorization():
+                if obj.has_all_vectorization():
+                    return mark_safe(
+                        "<br>".join(anno_btn)
+                        + gen_btn(anno, "crops")
+                        + gen_btn(anno, "vectors")
+                    )
+                elif obj.has_vectorization():
                     return mark_safe(
                         "<br>".join(anno_btn)
                         + gen_btn(anno, "vectorization")
@@ -91,7 +97,11 @@ class DigitizationInline(nested_admin.NestedStackedInline):
                         + gen_btn(anno, "vectors")
                     )
                 else:
-                    return mark_safe("<br>".join(anno_btn) + gen_btn(anno, "crops") + gen_btn(anno, "vectorization"))
+                    return mark_safe(
+                        "<br>".join(anno_btn)
+                        + gen_btn(anno, "crops")
+                        + gen_btn(anno, "vectorization")
+                    )
         # TODO maybe add a btn to create a manual annotation (utils.iiif.annotation.create_empty_annotation())
         return "-"
 
