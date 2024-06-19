@@ -48,8 +48,9 @@ from app.webapp.utils.paths import (
     IMG_DIR,
     ANNO_PATH,
     PDF_DIR,
-    SVG_PATH,
 )
+
+from app.vectorization.const import SVG_PATH
 
 from app.webapp.utils.iiif.validation import validate_manifest
 from app.webapp.utils.iiif.download import extract_images_from_iiif_manifest

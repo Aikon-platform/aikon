@@ -28,8 +28,8 @@ from app.webapp.utils.paths import (
     MEDIA_DIR,
     IMG_PATH,
     PDF_DIR,
-    SVG_PATH,
 )
+from app.vectorization.const import SVG_PATH
 from app.webapp.utils.constants import MAX_SIZE, MAX_RES
 from app.webapp.utils.logger import log, console
 
