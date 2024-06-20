@@ -98,7 +98,7 @@
                                     <a href="{meta.url}" target="_blank">{meta.title}</a>
                                 </td>
                                 <td class="is-narrow">
-                                    <button class="delete" aria-label="close" on:click={() => removeFromSelection(id, type)}></button>
+                                    <button class="delete" aria-label="close" on:click={() => removeRecord(id, type)}></button>
                                 </td>
                             </tr>
                         {:else}

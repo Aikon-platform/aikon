@@ -97,7 +97,7 @@
                                 <a href="{meta.url}" target="_blank">{meta.title}</a>
                             </td>
                             <td class="is-narrow">
-                                <button class="delete" aria-label="close" on:click={() => removeFromSelection(id, regionsType)}></button>
+                                <button class="delete" aria-label="close" on:click={() => removeRegion(id)}></button>
                             </td>
                         </tr>
                     {/each}
