@@ -15,6 +15,10 @@
     $: selectionLength = selection.hasOwnProperty(regionsType) ? Object.keys(selection[regionsType]).length : 0;
     $: isBlockSelected = (block) => selection[regionsType]?.hasOwnProperty(block.id);
 
+    $: clipBoard = "";
+    navigator.clipboard.readText().then(text => text);
+    $: isBlockCopied = (block) => clipBoard === block.id;
+
     function handleCommitSelection(event) {
         const { updateType } = event.detail;
         if (updateType === 'clear') {
@@ -22,6 +26,11 @@
         } else if (updateType === 'save') {
             selection = saveSelection(selection);
         }
+    }
+    function handleCopyId(event) {
+        const { block } = event.detail;
+        navigator.clipboard.writeText(block.id);
+        clipBoard = block.id;
     }
 
     function removeRegion(blockId) {
@@ -53,7 +62,11 @@
     <div class="fixed-grid has-auto-count">
         <div class="grid is-gap-2">
             {#each regions as block (block.id)}
-                <Region {block} appLang={appLang} isSelected={isBlockSelected(block)} on:toggleSelection={handleToggleSelection} />
+                <Region {block} {appLang}
+                        isSelected={isBlockSelected(block)}
+                        isCopied={isBlockCopied(block)}
+                        on:toggleSelection={handleToggleSelection}
+                        on:copyId={handleCopyId}/>
             {:else}
                 <!--Create manual annotation btn-->
             {/each}

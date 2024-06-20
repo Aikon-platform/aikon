@@ -1,16 +1,15 @@
 <script>
     import {refToIIIF} from "../utils.js";
     import {createEventDispatcher} from "svelte";
-
-    const dispatch = createEventDispatcher();
-
-    function toggleSelection(block) {
-        dispatch('toggleSelection', { block });
-    }
-
     export let block;
     export let appLang;
     export let isSelected = false;
+
+    const dispatch = createEventDispatcher();
+
+    function toggleSelection() {
+        dispatch('toggleSelection', { block });
+    }
 </script>
 
 <style>
@@ -96,7 +95,7 @@
                     {/if}
                 </div>
                 <div class="media-right">
-                    <button class="button {isSelected ? 'is-inverted' : ''}" on:click={() => toggleSelection(block)}>
+                    <button class="button {isSelected ? 'is-inverted' : ''}" on:click={() => toggleSelection()}>
                         {#if appLang === 'en'}
                             {isSelected ? 'Remove from' : 'Add to'} set
                         {:else}
