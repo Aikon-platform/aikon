@@ -1,19 +1,16 @@
-<!--NOT USED ANYMORE-->
-
-import BlockList from './List.svelte';
+import RecordList from './RecordList.svelte';
 import {parseData} from "../utils.js";
 
-
 const records = parseData('record-data');
-const regions = parseData('regions-data');
+const regionsType = "Regions";
 
-const blocks = records.concat(regions);
 const appLang = APP_LANG;
 
-const app = new BlockList({
+const app = new RecordList({
     target: document.getElementById('record-list'),
     props: {
-        blocks: blocks,
+        records: records,
+        regionsType: regionsType,
     }
 });
 

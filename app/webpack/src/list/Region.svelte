@@ -15,10 +15,6 @@
 
     export let block;
     export let isSelected = false;
-
-    $: {
-        console.log(block);
-    }
 </script>
 
 <style>

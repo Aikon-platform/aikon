@@ -1,3 +1,5 @@
+<!--NOT USED ANYMORE-->
+
 <script>
     import Region from './Region.svelte';
     import Record from "./Record.svelte";
