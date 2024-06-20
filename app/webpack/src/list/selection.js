@@ -6,15 +6,17 @@ export function saveSelection(selection) {
     console.log(selection);
     // api call to save selection in database
     // receive id of saved
+    return selection
 }
 
 export function getSelection() {
     return JSON.parse(localStorage.getItem("documentSet"));
 }
 
-export function emptySelection() {
-    updateSelection({});
-    return {}
+export function emptySelection(selection, keysToRemove) {
+    keysToRemove.map(key => selection.hasOwnProperty(key) ? delete selection[key] : true)
+    updateSelection(selection);
+    return selection
 }
 
 export function removeFromSelection(selection, blockId, blockType) {

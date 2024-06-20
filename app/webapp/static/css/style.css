@@ -226,35 +226,3 @@ pre {
     max-width: 2.2rem;
     background-color: transparent;
 }
-
-.set-container {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        position: fixed;
-        bottom: 0;
-        right: 0;
-        z-index: 1;
-    }
-    #set-btn {
-        border-radius: 0;
-    }
-    @keyframes addAnimation {
-        0%, 100% { transform: translateY(0); }
-        25% { transform: translateY(-7px); }
-        75% { transform: translateY(7px); }
-    }
-
-    @keyframes removeAnimation {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-5px); }
-        75% { transform: translateX(5px); }
-    }
-
-    .add-animation span {
-        animation: addAnimation 0.3s ease-in-out;
-    }
-
-    .remove-animation span {
-        animation: removeAnimation 0.3s ease-in-out;
-    }

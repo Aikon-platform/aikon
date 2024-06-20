@@ -1,6 +1,8 @@
 <script>
     import Region from './Region.svelte';
     import {saveSelection, emptySelection, addToSelection, removeFromSelection} from "./selection.js";
+    import SelectionBtn from "./SelectionBtn.svelte";
+    import SelectionFooter from "./SelectionFooter.svelte";
 
     let addAnimation = false;
     let removeAnimation = false;
@@ -13,12 +15,13 @@
     $: selectionLength = selection.hasOwnProperty(regionsType) ? Object.keys(selection[regionsType]).length : 0;
     $: isBlockSelected = (block) => selection[regionsType]?.hasOwnProperty(block.id);
 
-    function commitSelection() {
-        saveSelection(selection);
-    }
-
-    function clearSelection() {
-        selection = emptySelection()
+    function handleCommitSelection(event) {
+        const { updateType } = event.detail;
+        if (updateType === 'clear') {
+            selection = emptySelection(selection, [regionsType]);
+        } else if (updateType === 'save') {
+            selection = saveSelection(selection);
+        }
     }
 
     function removeRegion(blockId) {
@@ -35,7 +38,6 @@
 
     function handleToggleSelection(event) {
         const { block } = event.detail;
-
         if (!isBlockSelected(block)) {
             addRegion(block);
         } else {
@@ -45,21 +47,7 @@
 
 </script>
 
-
-<div class="set-container">
-    <button id="set-btn"
-            class="button px-5 py-4 is-link js-modal-trigger"
-            data-target="selection-modal"
-            class:add-animation={addAnimation}
-            class:remove-animation={removeAnimation}>
-        <span>
-            <i class="fa-solid fa-book-bookmark"></i>
-            {appLang === 'en' ? 'Selection' : 'Sélection'}
-            (<span id="selection-count">{selectionLength}</span>)
-        </span>
-
-    </button>
-</div>
+<SelectionBtn {addAnimation} {removeAnimation} {selectionLength} {appLang} />
 
 {#if regions.length !== 0}
     <div class="fixed-grid has-auto-count">
@@ -111,16 +99,6 @@
                 </tbody>
             </table>
         </section>
-        <footer class="modal-card-foot is-centered">
-            <div class="buttons">
-                <button class="button is-link is-light" on:click={clearSelection}>
-                    {appLang === 'en' ? 'Clear selection' : 'Vider la sélection'}
-                </button>
-                <button class="button is-link" on:click={commitSelection}>
-                    <i class="fa-solid fa-floppy-disk"></i>
-                    {appLang === 'en' ? 'Save selection' : 'Sauvegarder la sélection'}
-                </button>
-            </div>
-        </footer>
+        <SelectionFooter {appLang} on:commitSelection={handleCommitSelection}/>
     </div>
 </div>
