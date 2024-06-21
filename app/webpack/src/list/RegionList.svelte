@@ -8,7 +8,7 @@
     let addAnimation = false;
     let removeAnimation = false;
     export const regionsType = "Regions"
-    export let regions = [];
+    export let regions = {};
     export let appLang = 'en';
     export let manifest = '';
 
@@ -83,20 +83,22 @@
     .edit-action {
         height: 2em;
     }
-    .actions {
+    .center-flex {
         display: flex;
         flex-direction: column;
         justify-content: center;
+    }
+    .actions {
         align-items: flex-end;
     }
-    .actions > div {
+    .center-flex > div {
         margin-bottom: 1em;
     }
 </style>
 
 <SelectionBtn {addAnimation} {removeAnimation} {selectionLength} {appLang} />
 
-<div class="is-left actions">
+<div class="is-left center-flex actions">
     <div>
         <button class="button {isEditMode ? 'is-success' : 'is-link'} mr-3" on:click={() => isEditMode = !isEditMode}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="pr-3">
@@ -154,7 +156,7 @@
 {#if selectedLayout === "all"}
     <div class="fixed-grid has-auto-count">
         <div class="grid is-gap-2">
-            {#each regions as block (block.id)}
+            {#each Object.values(regions).flat(1) as block (block.id)}
                 <Region {block} {appLang}
                         isSelected={isBlockSelected(block)}
                         isCopied={isBlockCopied(block)}
@@ -168,7 +170,41 @@
         </div>
     </div>
 {:else if selectedLayout === "page"}
-    <div>tout doux</div>
+    <table class="table">
+        <tbody>
+        <!--TODO add way to display all pages (not only pages with annotations)-->
+            {#each Object.entries(regions) as [canvasNb, blocks]}
+                <tr>
+                    <th class="is-3 is-dark center-flex">
+                        <img src="{refToIIIF(blocks[0].img, 'full', '250,')}" alt="Canvas {canvasNb}" class="mb-3">
+                        <div class="is-center mb-1">
+                            <a class="tag px-2 py-1 is-rounded" href="{manifestToMirador(manifest, canvasNb)}" target="_blank">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                                Page {canvasNb}
+                            </a>
+                        </div>
+                    </th>
+                    <td class="is-fullwidth">
+                        <div class="fixed-grid has-auto-count">
+                            <div class="grid is-gap-2">
+                                {#each blocks as block (block.id)}
+                                    <Region {block} {appLang}
+                                            isSelected={isBlockSelected(block)}
+                                            isCopied={isBlockCopied(block)}
+                                            on:toggleSelection={handleToggleSelection}
+                                            on:copyId={handleCopyId}/>
+                                {/each}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            {:else}
+                <tr>NO ANNOTATION</tr>
+                <!--TODO Create manual annotation btn-->
+                <!--TODO if extraction app installed, add btn for annotation request-->
+            {/each}
+        </tbody>
+    </table>
 {:else if selectedLayout === "similarity"}
     <div>tout doux</div>
 {/if}

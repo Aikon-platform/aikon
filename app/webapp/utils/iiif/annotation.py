@@ -47,9 +47,12 @@ def index_regions(regions: Regions):
     return True
 
 
-def get_regions_annotations(regions: Regions, as_json=False):
+def get_regions_annotations(regions: Regions, as_json=False, r_annos=None):
+    if not r_annos:
+        r_annos = {} if as_json else []
+
     region_ref = regions.get_ref()
-    # region_ref = "wit1_man191_anno188" # TODO to remove when SAS is fixed
+    # region_ref = "wit1_man191_anno188"  # TODO to remove when SAS is fixed
     try:
         r = requests.get(f"{SAS_APP_URL}/search-api/{region_ref}/search")
         # # TODO to remove when SAS is fixed
@@ -60,19 +63,20 @@ def get_regions_annotations(regions: Regions, as_json=False):
             f"[get_regions_annotations]: Failed to get annotations in SAS for Regions #{regions.id}",
             e,
         )
-        return []
+        return r_annos
 
     img_name = region_ref.split("_anno")[0]
     nb_len = get_img_nb_len(img_name)
 
-    r_annos = []
     for anno in annos:
         try:
             canvas = anno["on"].split("/canvas/c")[1].split(".json")[0]
             xyhw = anno["on"].split("xywh=")[1]
             if as_json:
+                if canvas not in r_annos:
+                    r_annos[canvas] = []
                 img = f"{img_name}_{canvas.zfill(nb_len)}"
-                r_annos.append(
+                r_annos[canvas].append(
                     {
                         "id": f"{img}_{xyhw}",
                         "class": "Region",
