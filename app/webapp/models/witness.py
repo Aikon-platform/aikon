@@ -164,6 +164,7 @@ class Witness(models.Model):
             "regions",
         ]
         if "similarity" in ADDITIONAL_MODULES:
+            # TODO add other modules
             buttons += ["similarity"]
 
         return {

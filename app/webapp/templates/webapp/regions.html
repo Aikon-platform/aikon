@@ -6,6 +6,7 @@
 {% endblock %}
 
 {% block extrahead %}
+    <link rel="stylesheet" href="{% static 'css/regions.css' %}">
     <link rel="stylesheet" href="{% static 'svelte/regionList.css' %}">
 {% endblock %}
 
@@ -22,6 +23,9 @@
 {% endblock %}
 
 {% block extra_js %}
+    <script>
+        const manifest = "{{ manifest }}";
+    </script>
     <script type="application/json" id="regions-data">
         {{ regions_list|safe }}
     </script>

@@ -17,24 +17,12 @@
 </script>
 
 <style>
-    svg {
-        height: 1em;
-        overflow: visible;
-        vertical-align: -.125em;
-    }
     svg > path {
         transition: fill 0.1s ease-out;
         fill: var(--bulma-link);
     }
-    .check-btn {
-        position: absolute;
-        top: -10px;
-        right: -10px;
-        z-index: 1;
-        padding: 0.5em;
-    }
-    .card {
-        overflow: hidden;
+    .overlay {
+        font-size: 75%;
     }
     figure {
         transition: outline 0.1s ease-out;
@@ -48,29 +36,6 @@
         cursor: pointer;
         position: relative;
     }
-    .overlay {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.7);
-        color: #fff;
-        opacity: 0;
-        display: flex;
-        align-items: center;
-        padding: 5px 10px;
-        transition: .2s;
-        font-size: 75%;
-    }
-    figure:hover .overlay {
-        opacity: 1;
-    }
-    .overlay-desc {
-        transition: .2s;
-        transform: translateY(1em);
-    }
-    figure:hover .overlay-desc {
-        transform: translateY(0);
-    }
     .tooltip {
         visibility: hidden;
         background-color: rgba(0, 0, 0, 0.7);
@@ -80,28 +45,27 @@
         padding: 5px;
         position: absolute;
         z-index: 1;
-        bottom: 125%; /* Position the tooltip above the button */
+        bottom: 125%;
         left: 50%;
         transform: translateX(-50%);
         opacity: 0;
         transition: opacity 0.3s;
     }
-
-    .check-btn:hover .tooltip {
+    .region-btn:hover .tooltip {
         visibility: visible;
         opacity: 1;
     }
 </style>
 
 <div class="region image is-96x96 {isSelected ? 'checked' : ''}">
-    <figure id="region-{block.id}" class="image is-96x96 card" tabindex="-1"
+    <figure class="image is-96x96 card" tabindex="-1"
             on:click={() => toggleSelection()} on:keyup={() => null}>
-        <img src="{refToIIIF(block.metadata.img, block.metadata.xyhw, '96,')}" alt="Extracted region"/>
+        <img src="{refToIIIF(block.img, block.xyhw, '96,')}" alt="Extracted region"/>
         <div class="overlay is-center">
             <span class="overlay-desc">{block.title}</span>
         </div>
     </figure>
-    <button class="button check-btn tag" on:click={() => copyId()}>
+    <button class="button region-btn tag" on:click={() => copyId()}>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
             {#if isCopied}
                 <path d="M208 0H332.1c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9V336c0 26.5-21.5 48-48 48H208c-26.5 0-48-21.5-48-48V48c0-26.5 21.5-48 48-48zM48 128h80v64H64V448H256V416h64v48c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V176c0-26.5 21.5-48 48-48z"/>

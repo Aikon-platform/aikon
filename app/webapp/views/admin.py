@@ -124,7 +124,17 @@ class WitnessRegionsView(AbstractRecordView):
         anno_regions = []
         for regions in self.get_record().get_regions():
             anno_regions.append(get_regions_annotations(regions, as_json=True))
+            # TODO handle multiple manifest for multiple regions
+            context["manifest"] = regions.gen_manifest_url()
+        if len(anno_regions) == 0:
+            # if no regions are found, create one?
+            pass
+            # # TODO to remove
+            # anno_regions = [get_regions_annotations("regions", as_json=True)]
+            # context["manifest"] = "https://eida.obspm.fr/eida/iiif/v2/wit1_man191_anno188/manifest.json"
+
         context["regions_list"] = json.dumps(flatten(anno_regions))
+
         return context
 
 
@@ -139,4 +149,7 @@ class RegionsView(AbstractRecordView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["witness_id"] = self.kwargs["wid"]
+        context["regions_list"] = json.dumps(
+            get_regions_annotations(self.get_record(), as_json=True)
+        )
         return context
