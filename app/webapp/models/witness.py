@@ -257,6 +257,12 @@ class Witness(models.Model):
     def has_images(self):
         return any(digit.has_images() for digit in self.get_digits())
 
+    def has_vectorization(self):
+        return any(digit.has_vectorization() for digit in self.get_digits())
+
+    def has_all_vectorization(self):
+        return any(digit.has_all_vectorization() for digit in self.get_digits())
+
     def get_img(self, is_abs=False):
         for digit in self.get_digits():
             return digit.get_img(is_abs)

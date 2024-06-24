@@ -224,3 +224,7 @@ pre {
 [data-theme="dark"] .table {
     background-color: #2e2d2d;
 }
+
+[data-theme="dark"] .box {
+    background-color: #2e2d2d;
+}

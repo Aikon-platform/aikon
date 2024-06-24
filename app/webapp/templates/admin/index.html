@@ -11,11 +11,13 @@
             <!-- Sidebar -->
             <div class="column is-2">
                 <aside class="menu">
-                    <p class="menu-label">actions</p>
+                    <p class="menu-label">Actions</p>
                     <ul class="menu-list is-capitalized">
-                        <a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add {{ WIT }}</span></a>
-                        <a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add {{ SER }}</span></a>
-                        <a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add Machin</span></a>
+                        <a href="{% url 'admin:webapp_witness_add' %}">
+                          <span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>{% if APP_LANG == "en" %}Add{% else %}Ajouter un{% endif %} {{ WIT }}</span></a>
+                        <a href="{% url 'admin:webapp_series_add' %}">
+                          <span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>{% if APP_LANG == "en" %}Add{% else %}Ajouter une{% endif %} {{ SER }}</span></a>
+                        <a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>{% if APP_LANG == "en" %}Add{% else %}Ajouter un{% endif %} Machin</span></a>
                     </ul>
                 </aside>
             </div>
@@ -24,7 +26,9 @@
             <div class="column is-5">
                     <div class="block">
                     <p class="box notification is-light mgt-medium">
-                        Welcome {{ user.first_name }} {{ user.last_name }} to the administrative interface !
+                      {% if APP_LANG == "en" %}Welcome {{ user.first_name }} {{ user.last_name }} to the administrative interface !
+                      {% else %}Bienvenue sur l'interface Admin {{ user.first_name }} {{ user.last_name }} !{% endif %}
+
                     </p>
                 </div>
 
@@ -33,19 +37,23 @@
                     <table class="table is-capitalized" style="width:100%" id="main_entities">
                         <thead>
                           <tr class="table-header">
-                            <th colspan="3">Main Entities</th>
+                            <th colspan="3">{% if APP_LANG == "en" %}Main Entities{% else %}Entités{% endif %}</th>
                           </tr>
                         </thead>
                         <tbody>
                           <tr>
                             <td>{{ WIT }}</td>
-                            <td><a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add</span></a></td>
-                            <td><a><span class="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>List</span></a></td>
+                            <td><a href="{% url 'admin:webapp_witness_add' %}">
+                              <span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>{% if APP_LANG == "en" %}Add{% else %}Ajouter{% endif %}</span></a></td>
+                            <td><a href="{% url 'webapp:witness_list' %}">
+                              <span class="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>{% if APP_LANG == "en" %}List{% else %}Lister{% endif %}</span></a></td>
                           </tr>
                           <tr>
                             <td>{{ SER }}</td>
-                            <td><a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add</span></a></td>
-                            <td><a><span class="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>List</span></a></td>
+                            <td><a href="{% url 'admin:webapp_series_add' %}">
+                              <span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>{% if APP_LANG == "en" %}Add{% else %}Ajouter{% endif %}</span></a></td>
+                            <td><a href="{% url 'admin:webapp_series_changelist' %}">
+                              <span class="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>{% if APP_LANG == "en" %}List{% else %}Lister{% endif %}</span></a></td>
                           </tr>
                         </tbody>
                       </table>
@@ -57,24 +65,31 @@
                     <table class="table is-capitalized" style="width:100%">
                         <thead>
                           <tr class="table-header">
-                            <th colspan="3">Superuser Actions</th>
+                            <th colspan="3">{% if APP_LANG == "en" %}Superuser Actions
+                              {% else %}Espace Superutilisateur{% endif %}</th>
                           </tr>
                         </thead>
                         <tbody>
                           <tr>
-                            <td>Users</td>
-                            <td><a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add</span></a></td>
-                            <td><a><span clas="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>List</span></a></td>
+                            <td>{% if APP_LANG == "en" %}Users{% else %}Utilisateurs{% endif %}</td>
+                            <td><a href="{% url 'admin:auth_user_add' %}">
+                              <span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>{% if APP_LANG == "en" %}Add{% else %}Ajouter{% endif %}</span></a></td>
+                            <td><a href="{% url 'admin:auth_user_changelist' %}">
+                              <span clas="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>{% if APP_LANG == "en" %}List{% else %}Lister{% endif %}</span></a></td>
                           </tr>
                           <tr>
-                            <td>Groups</td>
-                            <td><a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add</span></a></td>
-                            <td><a><span clas="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>List</span></a></td>
+                            <td>Group{% if APP_LANG == "en" %}s{% else %}es{% endif %}</td>
+                            <td><a href="{% url 'admin:auth_group_add' %}">
+                              <span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>{% if APP_LANG == "en" %}Add{% else %}Ajouter{% endif %}</span></a></td>
+                            <td><a href="{% url 'admin:auth_group_changelist' %}">
+                              <span clas="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>{% if APP_LANG == "en" %}List{% else %}Lister{% endif %}</span></a></td>
                           </tr>
                           <tr>
                             <td>{{ LANG }}s</td>
-                            <td><a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>Add</span></a></td>
-                            <td><a><span clas="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>List</span></a></td>
+                            <td><a href="{% url 'admin:webapp_language_add' %}">
+                              <span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>{% if APP_LANG == "en" %}Add{% else %}Ajouter{% endif %}</span></a></td>
+                            <td><a href="{% url 'admin:webapp_language_changelist' %}">
+                              <span clas="icon-text"><span class="icon"><i class="fas fa-list-ul"></i></span>{% if APP_LANG == "en" %}List{% else %}Lister{% endif %}</span></a></td>
                           </tr>
                         </tbody>
                       </table>
@@ -85,21 +100,25 @@
 
             <div class="column is-5">
                 <div class="box" style="margin-left: 2%;">
-                    <p class="is-size-4 has-text-weight-light">Personnal Space</p>
+                    <p class="is-size-4 has-text-weight-light">{% if APP_LANG == "en" %}Personnal Space{% else %}Espace Utilisateur{% endif %}</p>
                     <p>
-                        <a><span clas="icon-text"><span class="icon"><i class="far fa-user"></i></span>Access</span></a>
+                        <a><span clas="icon-text"><span class="icon"><i class="far fa-user"></i></span>{% if APP_LANG == "en" %}Access{% else %}Accéder{% endif %}</span></a>
                     </p>
                 </div>
                 <div class="box" style="margin-left: 2%;">
-                    <p class="is-size-4 has-text-weight-light">Dear EiDA User</p>
+                    <p class="is-size-4 has-text-weight-light">{% if APP_LANG == "en" %}Dear {{APP_NAME}} user,{% else %}Cher utilisateur,{% endif %}</p>
                     <p>
-                        This version of the website is still a work in progress.  Don't hesitate to contact us if it is broken.
+                        {% if APP_LANG == "en" %}This version of the website is still a work in progress.  Don't hesitate to contact us if it is broken.
+                        {% else %}Ce site est encore en cours de développement. N'hésitez pas à nous contacter en cas de problème.{% endif %}
+
                     </p>
                     <p>
-                        Enjoy testing EiDA !
+                        {% if APP_LANG == "en" %}Enjoy testing {{APP_NAME}} !
+                        {% else %}Bonne navigation !{% endif %}
+
                     </p>
                     <p style="text-align: right;">
-                        DH Team
+                      {% if APP_LANG == "fr" %}La {% endif %}DH Team
                     </p>
                 </div>
             </div>

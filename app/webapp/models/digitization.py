@@ -51,6 +51,8 @@ from app.webapp.tasks import (
     extract_images_from_iiif_manifest,
 )
 
+from app.vectorization.const import SVG_PATH
+
 from app.webapp.utils.iiif.validation import validate_manifest
 
 from app.webapp.models.witness import Witness
@@ -171,6 +173,9 @@ class Digitization(models.Model):
     def get_treatments(self):
         return self.treatments.all()
 
+    def get_treatments(self):
+        return self.treatments.all()
+
     def get_ref(self):
         # digit_ref = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}"
         try:
@@ -216,6 +221,14 @@ class Digitization(models.Model):
     def has_vectorization(self):
         # if there is at least one SVG file named after the current digitization
         if len(glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")):
+            return True
+        return False
+
+    def has_all_vectorization(self):
+        # if there is as muche svg files as there are images in the current digitization
+        if len(glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")) == len(
+            glob(f"{IMG_PATH}/{self.get_ref()}_*.jpg")
+        ):
             return True
         return False
 
