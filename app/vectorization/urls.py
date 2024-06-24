@@ -11,6 +11,7 @@ from app.vectorization.views import (
     export_selected_imgs_and_svgs,
     export_all_images_and_svgs,
     send_vectorization,
+    smash_and_relauch_vecto,
 )
 
 
@@ -57,6 +58,11 @@ urlpatterns = [
         f"{APP_NAME}/run-vectorization/<str:anno_ref>",
         send_vectorization,
         name="run-vectorization",
+    ),
+    path(
+        f"{APP_NAME}/smash-and-relaunch-vecto/<str:anno_ref>",
+        smash_and_relauch_vecto,
+        name="smash-and-relaunch-vecto",
     ),
 ]
 

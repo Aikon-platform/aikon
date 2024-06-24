@@ -14,7 +14,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_GET
 
-from app.webapp.models.annotation import Annotation, check_version
+from app.webapp.models.regions import Regions, check_version
 from app.webapp.models.treatment import Treatment
 from app.webapp.models.digitization import Digitization
 from app.config.settings import (
@@ -39,10 +39,10 @@ from app.webapp.utils.iiif.annotation import (
 
 from app.vectorization.const import SVG_PATH
 from app.vectorization.utils import (
-    vectorization_request,
     vectorization_request_for_one,
+    delete_and_relauch_request,
 )
-from app.webapp.views import check_ref
+from app.webapp.views import check_ref, is_superuser
 
 
 def save_svg_files(zip_file):
@@ -111,7 +111,6 @@ from webapp.filters import jpg_to_none
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def show_crop_vecto(request, img_file, coords, anno, canvas_nb):
 
-    # TODO trouver comment passer plus de métadata
     svg_filename = f"{jpg_to_none(img_file)}_{coords}.svg"
     svg_path = os.path.join(SVG_PATH, svg_filename)
 
@@ -134,6 +133,45 @@ def show_crop_vecto(request, img_file, coords, anno, canvas_nb):
     )
 
 
+@user_passes_test(is_superuser)
+def smash_and_relauch_vecto(request, anno_ref):
+    """
+    delete the imgs in the API from the repo corresponding to doc_id + relauch vectorization
+    """
+
+    passed, anno = check_ref(anno_ref, "Annotation")
+    if not passed:
+        return JsonResponse(anno)
+
+    print(anno)
+    if not anno:
+        return JsonResponse(
+            {"response": f"No corresponding annotation in the database for {anno_ref}"},
+            safe=False,
+        )
+
+    try:
+        if delete_and_relauch_request(anno):
+            return JsonResponse(
+                {
+                    "response": f"Successful smash + vectorization request for {anno_ref}"
+                },
+                safe=False,
+            )
+        return JsonResponse(
+            {
+                "response": f"Failed to send smash + vectorization request for {anno_ref}"
+            },
+            safe=False,
+        )
+
+    except Exception as e:
+        error = f"[send_vectorization] Couldn't send request for {anno_ref}"
+        log(error, e)
+
+        return JsonResponse({"response": error, "reason": e}, safe=False)
+
+
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def send_vectorization(request, anno_ref):
     """
@@ -141,6 +179,9 @@ def send_vectorization(request, anno_ref):
     """
 
     passed, anno = check_ref(anno_ref, "Annotation")
+    if not passed:
+        return JsonResponse(anno)
+
     print(anno)
     if not anno:
         return JsonResponse(
@@ -168,7 +209,8 @@ def send_vectorization(request, anno_ref):
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def show_vectorization(request, anno_ref):
-    passed, anno = check_ref(anno_ref, "Annotation")
+
+    passed, anno = check_ref(anno_ref, "Regions")
     if not passed:
         return JsonResponse(anno)
 

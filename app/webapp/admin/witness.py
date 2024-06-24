@@ -272,7 +272,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     ######################ClaraCode
 
     @admin.action(
-        description=f"Compute vectorization for {ANNO}s of selected {WIT}es"
+        description=f"Compute vectorization for {REG}s of selected {WIT}es"
         if APP_LANG == "en"
         else f"Vectoriser les annotations des {WIT}s sélectionnés"
     )
@@ -288,7 +288,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                     else f"La vectorisation a déjà été lancée pour l'intégralité du {witness}",
                 )
         if len(annos) == 0:
-            return no_anno_message(request)
+            return no_regions_message(request)
 
         vectorization_request(annos)
         return messages.info(

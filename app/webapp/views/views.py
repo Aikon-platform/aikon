@@ -530,31 +530,31 @@ def show_all_regions(request, regions_ref):
     )
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
-def show_vectorization(request, regions_ref):
-    passed, regions = check_ref(regions_ref, "Regions")
-    if not passed:
-        return JsonResponse(regions)
+# @login_required(login_url=f"/{APP_NAME}-admin/login/")
+# def show_vectorization(request, regions_ref):
+#     passed, regions = check_ref(regions_ref, "Regions")
+#     if not passed:
+#         return JsonResponse(regions)
 
-    if not ENV("DEBUG"):
-        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+#     if not ENV("DEBUG"):
+#         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    _, all_annotations = formatted_annotations(regions)
-    all_regions = [
-        (canvas_nb, coord, img_file)
-        for canvas_nb, coord, img_file in all_annotations
-        if coord
-    ]
+#     _, all_annotations = formatted_annotations(regions)
+#     all_regions = [
+#         (canvas_nb, coord, img_file)
+#         for canvas_nb, coord, img_file in all_annotations
+#         if coord
+#     ]
 
-    return render(
-        request,
-        "show_vectorization.html",
-        context={
-            "regions": regions,
-            "all_regions": all_regions,
-            "regions_ref": regions_ref,
-        },
-    )
+#     return render(
+#         request,
+#         "show_vectorization.html",
+#         context={
+#             "regions": regions,
+#             "all_regions": all_regions,
+#             "regions_ref": regions_ref,
+#         },
+#     )
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
