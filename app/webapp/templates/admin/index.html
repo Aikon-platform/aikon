@@ -106,14 +106,14 @@
                     </p>
                 </div>
                 <div class="box" style="margin-left: 2%;">
-                    <p class="is-size-4 has-text-weight-light">{% if APP_LANG == "en" %}Dear EiDA user,{% else %}Cher utilisateur,{% endif %}</p>
+                    <p class="is-size-4 has-text-weight-light">{% if APP_LANG == "en" %}Dear {{APP_NAME}} user,{% else %}Cher utilisateur,{% endif %}</p>
                     <p>
                         {% if APP_LANG == "en" %}This version of the website is still a work in progress.  Don't hesitate to contact us if it is broken.
                         {% else %}Ce site est encore en cours de développement. N'hésitez pas à nous contacter en cas de problème.{% endif %}
 
                     </p>
                     <p>
-                        {% if APP_LANG == "en" %}Enjoy testing EiDA !
+                        {% if APP_LANG == "en" %}Enjoy testing {{APP_NAME}} !
                         {% else %}Bonne navigation !{% endif %}
 
                     </p>
