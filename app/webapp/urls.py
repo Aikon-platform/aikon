@@ -113,6 +113,11 @@ urlpatterns = [
         name="compute-score",
     ),
     path(
+        f"{APP_NAME}/index-witness/<int:wit_id>",
+        index_witness_regions,
+        name="index-witness-regions",
+    ),
+    path(
         f"{APP_NAME}/reindex-regions/<str:obj_ref>",
         reindex_regions,
         name="reindex-regions",
@@ -171,5 +176,15 @@ urlpatterns += [
         f"witness/<int:id>/change/",
         WitnessUpdate.as_view(),
         name="witness_update",
+    ),
+    path(
+        f"witness/<int:wid>/regions/<int:rid>/",
+        RegionsView.as_view(),
+        name="regions_view",
+    ),
+    path(
+        f"witness/<int:id>/regions/",
+        WitnessRegionsView.as_view(),
+        name="witness_regions_view",
     ),
 ]

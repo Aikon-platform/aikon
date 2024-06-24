@@ -118,7 +118,8 @@ def gen_manifest_btn(digit: Digitization, has_manifest=True, inline=False):
     mf = (
         f"<a href='{manifest}' target='_blank'>{IIIF_ICON}</a>"
         if has_manifest
-        else "<span class='faded'>No manifest</span>"
+        else f"<a href='{manifest}' class='disabled' disabled>{IIIF_ICON}</a>"
+        # else f"<span class='faded'>{get_action('no_manifest')}</span>"
     )
     if inline:
         return mark_safe(mf)

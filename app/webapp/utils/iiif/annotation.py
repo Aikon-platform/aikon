@@ -7,7 +7,7 @@ from urllib.request import urlopen
 import requests
 from PIL import Image
 
-from app.webapp.models.regions import Regions
+from app.webapp.models.regions import Regions, get_name
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.treatment import Treatment
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
@@ -17,13 +17,16 @@ from app.config.settings import (
     APP_NAME,
     APP_URL,
 )
-from app.webapp.utils.functions import log
+from app.webapp.utils.functions import log, get_img_nb_len
+from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
 from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.regions import get_txt_regions
 
 
-def index_regions(regions: Regions):
+IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
 
+
+def index_regions(regions: Regions):
     if not index_manifest_in_sas(regions.gen_manifest_url(version=MANIFEST_V2), True):
         return
 
@@ -42,6 +45,76 @@ def index_regions(regions: Regions):
             )
 
     return True
+
+
+def get_regions_annotations(regions: Regions, as_json=False, r_annos=None):
+    if not r_annos:
+        r_annos = {} if as_json else []
+
+    region_ref = regions.get_ref()
+    try:
+        r = requests.get(f"{SAS_APP_URL}/search-api/{region_ref}/search")
+        annos = r.json()["resources"]
+    except Exception as e:
+        log(
+            f"[get_regions_annotations]: Failed to get annotations in SAS for Regions #{regions.id}",
+            e,
+        )
+        return r_annos
+
+    img_name = region_ref.split("_anno")[0]
+    nb_len = get_img_nb_len(img_name)
+
+    for anno in annos:
+        try:
+            canvas = anno["on"].split("/canvas/c")[1].split(".json")[0]
+            xyhw = anno["on"].split("xywh=")[1]
+            if as_json:
+                if canvas not in r_annos:
+                    r_annos[canvas] = []
+                img = f"{img_name}_{canvas.zfill(nb_len)}"
+                r_annos[canvas].append(
+                    {
+                        "id": f"{img}_{xyhw}",
+                        "class": "Region",
+                        "type": get_name("Regions"),
+                        "title": region_title(canvas, xyhw),
+                        "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
+                        "canvas": canvas,
+                        "xyhw": xyhw.split(","),
+                        "img": img,
+                    }
+                )
+            else:
+                r_annos.append((canvas, xyhw, f"{img_name}_{canvas.zfill(nb_len)}"))
+        except Exception as e:
+            log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
+            continue
+
+    return r_annos
+
+
+def reindex_file(filename):
+    a_ref = filename.replace(".txt", "")
+    ref = parse_ref(a_ref)
+    if not ref or not ref["regions"]:
+        # if there is no regions_id in the ref, pass
+        return False, a_ref
+    regions_id = ref["regions"][1]
+    regions = Regions.objects.filter(pk=regions_id).first()
+    if not regions:
+        digit = Digitization.objects.filter(pk=ref["digit"][1]).first()
+        if not digit:
+            # if there is no digit corresponding to the ref, pass
+            return False, a_ref
+        # create new Regions record if none existing
+        regions = Regions(id=regions_id, digitization=digit, model="CHANGE THIS VALUE")
+        regions.save()
+
+    from app.webapp.tasks import reindex_from_file
+
+    reindex_from_file.delay(regions_id)
+    return True, a_ref
 
 
 def unindex_annotation(annotation_id, remove_from_annotation_ids=False):
@@ -69,12 +142,13 @@ def unindex_annotation(annotation_id, remove_from_annotation_ids=False):
 
 
 def index_annotations_on_canvas(regions: Regions, canvas_nb):
-    # this url (view canvas_annotations()) is calling format_canvas_annotations(), thus returning formatted annotations for each canvas
-    formatted_annotations = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions.get_ref()}/list/anno-{canvas_nb}.json"
+    # this url (view canvas_annotations()) is calling format_canvas_annotations(),
+    # thus returning formatted annotations for each canvas
+    formatted_annos = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions.get_ref()}/list/anno-{canvas_nb}.json"
     # POST request that index the annotations
     response = urlopen(
         f"{SAS_APP_URL}/annotation/populate",
-        urlencode({"uri": formatted_annotations}).encode("ascii"),
+        urlencode({"uri": formatted_annos}).encode("ascii"),
     )
 
     if response.status != 201:
@@ -211,7 +285,7 @@ def format_annotation(regions: Regions, canvas_nb, xywh):
             }
         ],
         "motivation": ["oa:commenting", "oa:tagging"],
-        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@context": IIIF_CONTEXT,
     }
 
 
@@ -431,7 +505,11 @@ def get_manifest_annotations(regions: Regions):
 
 def check_indexation(regions: Regions, reindex=False):
     lines = get_txt_regions(regions)
+
     if not lines:
+        return False
+
+    if not index_manifest_in_sas(regions.gen_manifest_url(version=MANIFEST_V2)):
         return False
 
     generated_annotations = 0
@@ -440,10 +518,10 @@ def check_indexation(regions: Regions, reindex=False):
     sas_annotations_ids = []
     try:
         for line in lines:
-            len_line = len(line.split())
-            if len_line == 2:
+            line_el = line.split()
+            if len(line_el) == 2:
                 # if line = "canvas_nb img_name"
-                canvas_nb = line.split()[0]
+                canvas_nb = line_el[0]
                 sas_annotations = get_indexed_canvas_annotations(regions, canvas_nb)
                 nb_annotations = len(sas_annotations)
 
@@ -460,7 +538,7 @@ def check_indexation(regions: Regions, reindex=False):
                         regions.gen_manifest_url(version=MANIFEST_V2)
                     ):
                         return False
-            elif len_line == 4:
+            elif len(line_el) == 4:
                 # if line = "x y w h"
                 generated_annotations += 1
     except Exception as e:

@@ -36,6 +36,9 @@ from app.webapp.models.utils.constants import (
 from app.webapp.utils.functions import (
     delete_files,
     rename_file,
+    get_nb_of_files,
+    get_first_img,
+    get_files_with_prefix,
 )
 from app.webapp.utils.paths import (
     IMG_PATH,
@@ -213,10 +216,12 @@ class Digitization(models.Model):
 
     def has_images(self):
         # if there is at least one image file named after the current digitization
-        for i in range(1, 5):
-            if os.path.exists(f"{IMG_PATH}/{self.get_ref()}_{'1'.zfill(i)}.jpg"):
-                return True
-        return False
+        # NOTE: might result in returning None even though there are images (but not the first one)
+        return bool(get_first_img(self.get_ref()))
+
+    def img_nb(self):
+        # get the number of images for a digitization
+        return get_nb_of_files(self.get_ref(), IMG_PATH)
 
     def has_vectorization(self):
         # if there is at least one SVG file named after the current digitization
@@ -224,29 +229,23 @@ class Digitization(models.Model):
             return True
         return False
 
+    def get_img(self, is_abs=False, only_first=False):
+        if only_first:
+            return get_first_img(self.get_ref())
+        return self.get_imgs(is_abs, only_one=True)
+
     def has_all_vectorization(self):
-        # if there is as muche svg files as there are images in the current digitization
+        # if there is as much svg files as there are images in the current digitization
         if len(glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")) == len(
             glob(f"{IMG_PATH}/{self.get_ref()}_*.jpg")
         ):
             return True
         return False
 
-    def get_img(self, is_abs=False):
+    def get_imgs(self, is_abs=False, temp=False, only_one=False):
+        prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
         path = f"{IMG_PATH}/" if is_abs else ""
-        for filename in os.listdir(IMG_PATH):
-            if filename.startswith(self.get_ref()):
-                return f"{path}{filename}"
-
-    def get_imgs(self, is_abs=False, temp=False):
-        imgs = []
-        path = f"{IMG_PATH}/" if is_abs else ""
-        for filename in os.listdir(IMG_PATH):
-            if filename.startswith(
-                self.get_ref() if not temp else f"temp_{self.get_wit_ref()}"
-            ):
-                imgs.append(f"{path}{filename}")
-        return sorted(imgs)
+        return get_files_with_prefix(IMG_PATH, prefix, path, only_one)
 
     def get_metadata(self):
         metadata = self.get_witness().get_metadata() if self.get_witness() else {}

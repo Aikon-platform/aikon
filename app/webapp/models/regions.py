@@ -125,6 +125,11 @@ class Regions(models.Model):
             return metadata
         return {}
 
+    def get_annotations(self):
+        from app.webapp.utils.iiif.annotation import get_regions_annotations
+
+        return get_regions_annotations(self)
+
     def get_imgs(self):
         if digit := self.get_digit():
             return digit.get_imgs()

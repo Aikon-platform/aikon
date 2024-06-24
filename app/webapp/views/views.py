@@ -38,8 +38,7 @@ from app.webapp.utils.functions import (
     delete_files,
     zip_img,
     sort_key,
-    zip_images_and_files,
-    is_url,
+    get_files_with_prefix,
 )
 
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url
@@ -50,6 +49,8 @@ from app.webapp.utils.iiif.annotation import (
     delete_regions,
     process_regions,
     formatted_annotations,
+    get_regions_annotations,
+    reindex_file,
 )
 from app.webapp.utils.regions import (
     get_regions_img,
@@ -77,9 +78,9 @@ def admin_app(request):
 def check_ref(obj_ref, obj="Digitization"):
     ref = parse_ref(obj_ref)
     ref_format = (
-        "{witness_abbr}{witness_id}_{digit_abbr}{digit_id}"
+        "wit{witness_id}_{digit_abbr}{digit_id}"
         if obj == "Digitization"
-        else "{witness_abbr}{witness_id}_{digit_abbr}{digit_id}_anno{regions_id}"
+        else "wit{witness_id}_{digit_abbr}{digit_id}_anno{regions_id}"
     )
     if not ref:
         return False, {
@@ -179,6 +180,21 @@ def reindex_regions(request, obj_ref):
     return JsonResponse({"error": f"No regions file for reference #{obj_ref}."})
 
 
+def index_witness_regions(request, wit_id):
+    wit = get_object_or_404(Witness, pk=wit_id)
+    regions_files = get_files_with_prefix(REGIONS_PATH, f"{wit.get_ref()}_")
+    res = {
+        "All": regions_files,
+        "Indexed": [],
+        "Not indexed": [],
+    }
+    for file in regions_files:
+        passed, a_ref = reindex_file(file)
+        res["Indexed" if passed else "Not indexed"].append(a_ref)
+
+    return JsonResponse(res)
+
+
 @user_passes_test(is_superuser)
 def index_regions(request, regions_ref=None):
     """
@@ -186,44 +202,42 @@ def index_regions(request, regions_ref=None):
     without creating an annotation record if one is already existing
     If no regions_ref is provided all regions files for mediafiles/regions are indexed
     """
+    regions_files = os.listdir(REGIONS_PATH) if not regions_ref else [regions_ref]
 
-    regions_file = os.listdir(REGIONS_PATH) if not regions_ref else [regions_ref]
+    res = {
+        "All": regions_files,
+        "Indexed": [],
+        "Not indexed": [],
+    }
 
-    indexed_regions = []
-    not_indexed_regions = []
+    for file in regions_files:
+        # a_ref = file.replace(".txt", "")
+        # ref = parse_ref(a_ref)
+        # if not ref or not ref["regions"]:
+        #     # if there is no regions_id in the ref, pass
+        #     not_indexed_regions.append(a_ref)
+        #     continue
+        # regions_id = ref["regions"][1]
+        # regions = Regions.objects.filter(pk=regions_id).first()
+        # if not regions:
+        #     digit = Digitization.objects.filter(pk=ref["digit"][1]).first()
+        #     if not digit:
+        #         # if there is no digit corresponding to the ref, pass
+        #         not_indexed_regions.append(a_ref)
+        #         continue
+        #     regions = Regions(
+        #         id=regions_id, digitization=digit, model="CHANGE THIS VALUE"
+        #     )
+        #     regions.save()
+        #
+        # from app.webapp.tasks import reindex_from_file
+        #
+        # reindex_from_file.delay(regions_id)
+        # indexed_regions.append(a_ref)
+        passed, a_ref = reindex_file(file)
+        res["Indexed" if passed else "Not indexed"].append(a_ref)
 
-    for file in regions_file:
-        a_ref = file.replace(".txt", "")
-        ref = parse_ref(a_ref)
-        if not ref or not ref["regions"]:
-            # if there is no regions_id in the ref, pass
-            not_indexed_regions.append(a_ref)
-            continue
-        regions_id = ref["regions"][1]
-        regions = Regions.objects.filter(pk=regions_id).first()
-        if not regions:
-            digit = Digitization.objects.filter(pk=ref["digit"][1]).first()
-            if not digit:
-                # if there is no digit corresponding to the ref, pass
-                not_indexed_regions.append(a_ref)
-                continue
-            regions = Regions(
-                id=regions_id, digitization=digit, model="CHANGE THIS VALUE"
-            )
-            regions.save()
-
-        from app.webapp.tasks import reindex_from_file
-
-        reindex_from_file.delay(regions_id)
-        indexed_regions.append(a_ref)
-
-    return JsonResponse(
-        {
-            "All": regions_file,
-            "Indexed": indexed_regions,
-            "Not indexed": not_indexed_regions,
-        }
-    )
+    return JsonResponse(res)
 
 
 @user_passes_test(is_superuser)
@@ -259,7 +273,6 @@ def get_regions_img_list(request, regions_ref):
         "img_name": "..."
     }
     """
-
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
         return JsonResponse(regions)
@@ -502,12 +515,13 @@ def show_all_regions(request, regions_ref):
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    _, all_annotations = formatted_annotations(regions)
-    all_regions = [
-        (canvas_nb, coord, img_file)
-        for canvas_nb, coord, img_file in all_annotations
-        if coord
-    ]
+    # _, all_annotations = formatted_annotations(regions)
+    # all_regions = [
+    #     (canvas_nb, coord, img_file)
+    #     for canvas_nb, coord, img_file in all_annotations
+    #     if coord
+    # ]
+    all_regions = get_regions_annotations(regions)
 
     paginator = Paginator(all_regions, 50)
     try:

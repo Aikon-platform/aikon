@@ -6,6 +6,7 @@ from django.utils.text import slugify
 from django.utils.html import format_html
 from django.urls import reverse
 
+from app.config.settings import ADDITIONAL_MODULES
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.edition import Edition
 
@@ -29,7 +30,7 @@ from app.webapp.models.utils.constants import (
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
-from app.webapp.utils.functions import get_icon, flatten, format_dates
+from app.webapp.utils.functions import get_icon, flatten, format_dates, get_first_img
 from app.webapp.utils.logger import log
 
 
@@ -79,7 +80,8 @@ class Witness(models.Model):
         )
 
     def get_absolute_url(self):
-        return reverse("admin:webapp_witness_change", args=[self.id])
+        # return reverse("admin:webapp_witness_change", args=[self.id])
+        return reverse("webapp:witness_view", args=[self.id])
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
@@ -158,12 +160,20 @@ class Witness(models.Model):
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
     def to_json(self):
+        buttons = [
+            "regions",
+        ]
+        if "similarity" in ADDITIONAL_MODULES:
+            # TODO add other modules
+            buttons += ["similarity"]
+
         return {
             "id": self.id,
             "class": self.__class__.__name__,
             "type": get_name("Witness"),
+            "iiif": [digit.manifest_link(inline=True) for digit in self.get_digits()],
             "title": self.__str__(),
-            "img": self.get_img(),
+            "img": self.get_img(only_first=True),
             "user": self.user.__str__(),
             "url": self.get_absolute_url(),
             "updated_at": self.updated_at,
@@ -175,7 +185,8 @@ class Witness(models.Model):
                 get_name("dates"): format_dates(*self.get_dates()),
                 get_name("page_nb"): self.get_page(),
                 get_name("Language"): self.get_lang_names(),
-            }
+            },
+            "buttons": buttons
             # TODO add to_json() to other models
         }
 
@@ -263,9 +274,12 @@ class Witness(models.Model):
     def has_all_vectorization(self):
         return any(digit.has_all_vectorization() for digit in self.get_digits())
 
-    def get_img(self, is_abs=False):
+    def get_img(self, is_abs=False, only_first=False):
+        # to get only one image of the witness
         for digit in self.get_digits():
-            return digit.get_img(is_abs)
+            if img := digit.get_img(is_abs, only_first):
+                return img
+
         return None
 
     def get_imgs(self, is_abs=False, temp=False):

@@ -2,6 +2,10 @@ export function getCantaloupeUrl() {
     return CANTALOUPE_APP_URL ?? "http://localhost:8182";
 }
 
+export function getSasUrl() {
+    return SAS_APP_URL ?? "http://localhost:3000";
+}
+
 export async function getRecordList() {
     const res = await fetch('/api/records/');
 
@@ -25,4 +29,16 @@ export function refToIIIF(imgRef = null, coord= "full", size="full") {
     const imgName = imgRef.join("_").replace(".jpg", "");
 
     return `${getCantaloupeUrl()}/iiif/2/${imgName}.jpg/${imgCoord}/${size}/0/default.jpg`;
+}
+
+export function manifestToMirador(manifest = null, canvasNb = 1) {
+    return `${getSasUrl()}/index.html?iiif-content=${manifest}&canvas=${canvasNb}`;
+}
+
+
+export function parseData(elementId) {
+    if (!document.getElementById(elementId)) {
+        return [];
+    }
+    return JSON.parse(document.getElementById(elementId).textContent);
 }

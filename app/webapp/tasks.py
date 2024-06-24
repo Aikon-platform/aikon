@@ -64,8 +64,8 @@ def reindex_from_file(regions_id):
     from app.webapp.models.regions import Regions
     from app.webapp.utils.iiif.annotation import check_indexation
 
-    annotation = Regions.objects.filter(pk=regions_id).first()
-    return check_indexation(annotation, True)
+    regions = Regions.objects.filter(pk=regions_id).first()
+    return check_indexation(regions, True)
 
 
 @celery_app.task
