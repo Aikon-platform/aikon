@@ -83,11 +83,6 @@
     .edit-action {
         height: 2em;
     }
-    .center-flex {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
     .actions {
         align-items: flex-end;
     }
@@ -140,8 +135,6 @@
     </div>
 </div>
 
-
-
 <div class="tabs is-centered">
     <ul class="panel-tabs">
         {#each Object.entries(layouts) as [layout, meta]}
@@ -170,39 +163,42 @@
         </div>
     </div>
 {:else if selectedLayout === "page"}
-    <table class="table">
+    <table class="table is-fullwidth">
         <tbody>
         <!--TODO add way to display all pages (not only pages with annotations)-->
-            {#each Object.entries(regions) as [canvasNb, blocks]}
-                <tr>
-                    <th class="is-3 is-dark center-flex">
-                        <img src="{refToIIIF(blocks[0].img, 'full', '250,')}" alt="Canvas {canvasNb}" class="mb-3">
+        {#each Object.entries(regions) as [canvasNb, blocks]}
+            <tr>
+                <th class="is-3 center-flex is-narrow" style="width: 260px">
+                    <div class="content-wrapper py-5">
+                        <img src="{refToIIIF(blocks[0].img, 'full', '250,')}" alt="Canvas {canvasNb}" class="mb-3 card">
                         <div class="is-center mb-1">
                             <a class="tag px-2 py-1 is-rounded" href="{manifestToMirador(manifest, canvasNb)}" target="_blank">
                                 <i class="fa-solid fa-pen-to-square"></i>
                                 Page {canvasNb}
                             </a>
                         </div>
-                    </th>
-                    <td class="is-fullwidth">
-                        <div class="fixed-grid has-auto-count">
-                            <div class="grid is-gap-2">
-                                {#each blocks as block (block.id)}
-                                    <Region {block} {appLang}
-                                            isSelected={isBlockSelected(block)}
-                                            isCopied={isBlockCopied(block)}
-                                            on:toggleSelection={handleToggleSelection}
-                                            on:copyId={handleCopyId}/>
-                                {/each}
-                            </div>
+                    </div>
+
+                </th>
+                <td class="p-5 is-fullwidth">
+                    <div class="fixed-grid has-6-cols">
+                        <div class="grid is-gap-2">
+                            {#each blocks as block (block.id)}
+                                <Region {block} {appLang}
+                                        isSelected={isBlockSelected(block)}
+                                        isCopied={isBlockCopied(block)}
+                                        on:toggleSelection={handleToggleSelection}
+                                        on:copyId={handleCopyId}/>
+                            {/each}
                         </div>
-                    </td>
-                </tr>
-            {:else}
-                <tr>NO ANNOTATION</tr>
-                <!--TODO Create manual annotation btn-->
-                <!--TODO if extraction app installed, add btn for annotation request-->
-            {/each}
+                    </div>
+                </td>
+            </tr>
+        {:else}
+            <tr>NO ANNOTATION</tr>
+            <!--TODO Create manual annotation btn-->
+            <!--TODO if extraction app installed, add btn for annotation request-->
+        {/each}
         </tbody>
     </table>
 {:else if selectedLayout === "similarity"}

@@ -131,9 +131,6 @@ class WitnessRegionsView(AbstractRecordView):
         if len(anno_regions) == 0:
             # if no regions are found, create one?
             pass
-            # # TODO to remove
-            # anno_regions = get_regions_annotations("regions", as_json=True)
-            # context["manifest"] = "https://eida.obspm.fr/eida/iiif/v2/wit1_man191_anno188/manifest.json"
 
         context["regions_list"] = json.dumps(anno_regions)
         return context

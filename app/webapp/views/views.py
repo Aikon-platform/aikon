@@ -81,9 +81,9 @@ def admin_app(request):
 def check_ref(obj_ref, obj="Digitization"):
     ref = parse_ref(obj_ref)
     ref_format = (
-        "{witness_abbr}{witness_id}_{digit_abbr}{digit_id}"
+        "wit{witness_id}_{digit_abbr}{digit_id}"
         if obj == "Digitization"
-        else "{witness_abbr}{witness_id}_{digit_abbr}{digit_id}_anno{regions_id}"
+        else "wit{witness_id}_{digit_abbr}{digit_id}_anno{regions_id}"
     )
     if not ref:
         return False, {

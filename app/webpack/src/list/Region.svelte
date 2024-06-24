@@ -29,7 +29,7 @@
         outline: 0 solid var(--bulma-link);
     }
     .checked > figure {
-        outline: 3px solid var(--bulma-link);
+        outline: 4px solid var(--bulma-link);
         border-radius: var(--bulma-card-radius);
     }
     .region {

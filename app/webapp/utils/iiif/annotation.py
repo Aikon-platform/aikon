@@ -52,11 +52,8 @@ def get_regions_annotations(regions: Regions, as_json=False, r_annos=None):
         r_annos = {} if as_json else []
 
     region_ref = regions.get_ref()
-    # region_ref = "wit1_man191_anno188"  # TODO to remove when SAS is fixed
     try:
         r = requests.get(f"{SAS_APP_URL}/search-api/{region_ref}/search")
-        # # TODO to remove when SAS is fixed
-        # r = requests.get("https://eida.obspm.fr/sas/search-api/wit1_man191_anno188/search")
         annos = r.json()["resources"]
     except Exception as e:
         log(
