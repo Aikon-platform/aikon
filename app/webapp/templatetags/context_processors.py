@@ -30,6 +30,7 @@ from app.webapp.models.utils.constants import (
     WPR_ABBR,
     CATEGORY_INFO,
     SER,
+    LANG,
 )
 
 
@@ -65,4 +66,5 @@ def global_variables(request):
         "MANIFEST_V1": MANIFEST_V1,
         "MANIFEST_V2": MANIFEST_V2,
         "CATEGORY_INFO": CATEGORY_INFO,
+        "LANG": LANG,
     }

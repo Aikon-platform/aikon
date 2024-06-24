@@ -1,22 +1,29 @@
+from pathlib import Path
 from typing import List
 
 from celery import shared_task
 
 from app.config.celery import celery_app
-from app.webapp.utils.iiif.annotation import check_indexation, process_regions
-from app.webapp.utils.similarity import compute_total_similarity
+
+from app.webapp.utils.constants import MAX_RES
+
+from app.webapp.utils.functions import pdf_to_img, temp_to_img
+from app.webapp.utils.iiif.download import iiif_to_img
 
 
 @celery_app.task
-def convert_pdf_to_imgs(pdf_path, img_path):
-    # TODO: pdf_to_images_conversion
-    pass
+def convert_pdf_to_img(pdf_name, dpi=MAX_RES):
+    return pdf_to_img(pdf_name, dpi=dpi)
 
 
 @celery_app.task
-def extract_imgs_from_manifest(url, img_path, work):
-    # TODO: manifest_image_extraction
-    pass
+def convert_temp_to_img(digit):
+    return temp_to_img(digit)
+
+
+@celery_app.task
+def extract_images_from_iiif_manifest(manifest_url, digit_ref, digit):
+    return iiif_to_img(manifest_url, digit_ref, digit)
 
 
 @celery_app.task
@@ -30,6 +37,7 @@ def compute_similarity_scores(
     regions_refs: List[str] = None, max_rows: int = 50, show_checked_ref: bool = False
 ):
     from app.webapp.views import check_ref
+    from app.webapp.utils.similarity import compute_total_similarity
 
     checked_regions = regions_refs[0]
 
@@ -52,16 +60,9 @@ def compute_similarity_scores(
 
 
 @celery_app.task
-def process_regions_file(file_content, digit_id, treatment_id, model):
-    from app.webapp.models.digitization import Digitization
-
-    digitization = Digitization.objects.filter(pk=digit_id).first()
-    return process_regions(file_content, digitization, treatment_id, model)
-
-
-@celery_app.task
 def reindex_from_file(regions_id):
     from app.webapp.models.regions import Regions
+    from app.webapp.utils.iiif.annotation import check_indexation
 
     regions = Regions.objects.filter(pk=regions_id).first()
     return check_indexation(regions, True)

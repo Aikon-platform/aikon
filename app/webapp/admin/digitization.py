@@ -86,14 +86,21 @@ class DigitizationInline(nested_admin.NestedStackedInline):
                 if obj.has_vectorization():
                     return mark_safe(
                         "<br>".join(regions_btn)
-                        + gen_btn(regions, "crops")
+                        + gen_btn(regions, "regions")
                         + gen_btn(regions, "vectors")
+                    )
+                elif obj.has_vectorization():
+                    return mark_safe(
+                        "<br>".join(anno_btn)
+                        + gen_btn(anno, "vectorization")
+                        + gen_btn(anno, "crops")
+                        + gen_btn(anno, "vectors")
                     )
                 else:
                     return mark_safe(
-                        "<br>".join(regions_btn) + gen_btn(regions, "crops")
+                        "<br>".join(regions_btn) + gen_btn(regions, "regions")
                     )
-        # TODO maybe add a btn to create a manual region (utils.regions.create_empty_regions())
+        # TODO maybe add a btn to create a manual annotation (utils.iiif.annotation.create_empty_annotation())
         return "-"
 
     def get_fields(self, request, obj: Digitization = None):

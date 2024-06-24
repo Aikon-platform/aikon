@@ -17,7 +17,7 @@
         </div>
 
         <div style="display: flex; flex-direction: row;">
-            <a href="{% url 'export-crops' regions_ref=regions_ref %}">
+            <a href="{% url 'export-regions' regions_ref=regions_ref %}">
                 <button class="export-button" type="submit">
                     <i class="fa-regular fa-file-zipper"></i>&nbsp;
                     {% if APP_LANG == "en" %}
@@ -28,7 +28,7 @@
                 </button>
             </a>
 
-            <form id="export" action="{% url 'export-selected-crops' %}" method="post">
+            <form id="export" action="{% url 'export-selected-regions' %}" method="post">
                 {% csrf_token %}
                 <input type="hidden" id="listeURL" name="listeURL" value="">
                 <button class="export-button" type="submit">
@@ -59,7 +59,7 @@
 
 {% block content %}
 
-<div class="tabs-crops">
+<div class="tabs-regions">
     <div class="row">
         <div class="tab-buttons">
             <button class="button btn-change active-tab">
@@ -116,7 +116,7 @@
 
         <div style="display:none;">
             <div class="grid-container" style="margin-top: .5em;">
-                {% for canvas_nb, coord, img_file in all_crops %}
+                {% for canvas_nb, coord, img_file in all_regions %}
                     {% for coords, id in coord %}
                         {% with region_full=coords|add:'/full/0' region=coords|add:'/,250/0' %}
                             <div class="grid-item">
@@ -166,7 +166,7 @@
         console.log(document.getElementById("listeURL").value);
     };
 
-    Array.from(document.querySelectorAll('.tabs-crops')).forEach((tab_container, TabID) => {
+    Array.from(document.querySelectorAll('.tabs-regions')).forEach((tab_container, TabID) => {
         const registers = tab_container.querySelector('.tab-buttons');
         const bodies = tab_container.querySelector('.tab-bodies');
 

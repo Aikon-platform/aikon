@@ -6,7 +6,7 @@ import numpy as np
 import requests
 from typing import List
 
-from app.config.settings import EXAPI_URL, APP_URL, APP_NAME
+from app.config.settings import CV_API_URL, APP_URL, APP_NAME
 from app.webapp.models.regions import Regions
 from app.webapp.utils.functions import flatten_dict
 from app.webapp.utils.iiif import gen_iiif_url
@@ -96,7 +96,7 @@ def similarity_request(regions: List[Regions]):
 
     try:
         response = requests.post(
-            url=f"{EXAPI_URL}/similarity/start",
+            url=f"{CV_API_URL}/similarity/start",
             json={
                 "documents": documents,
                 # "model": f"{FEAT_BACKBONE}",
@@ -112,7 +112,7 @@ def similarity_request(regions: List[Regions]):
                 "error_message": f"Request failed for {list(documents.keys())} with status code: {response.status_code}",
                 "request_info": {
                     "method": "POST",
-                    "url": f"{EXAPI_URL}/similarity/start",
+                    "url": f"{CV_API_URL}/similarity/start",
                     "payload": {
                         "documents": documents,
                         "callback": f"{APP_URL}/{APP_NAME}/similarity",

@@ -43,7 +43,7 @@ def regions_btn(obj, action="view"):
         color = "#24d1b7"
         icon = get_icon("code-compare")
         link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-similarity"
-    elif action == "crops":
+    elif action == "regions":
         color = "#008CBA"
         icon = get_icon("eye")
         link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-all-regions"
@@ -51,6 +51,10 @@ def regions_btn(obj, action="view"):
         color = "#EFB80B"
         icon = get_icon("arrows")
         link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-vectorization"
+    elif action == "vectorization":
+        color = "#EFB80B"
+        icon = get_icon("pen-to-square")
+        link = f"{APP_URL}/{APP_NAME}/run-vectorization/{obj.get_ref()}"
     else:
         # When the button is not supposed to redirects to anything
         link = "#"
@@ -81,7 +85,7 @@ def gen_btn(obj, action="view"):
         return mark_safe(regions_btn(obj, action))
 
     is_regions = True
-    if action == "crops" or action == "vectors":
+    if action == "regions" or action == "vectors":
         return mark_safe(f"<br>{regions_btn(obj, action)}")
 
     if action == "auto-view":

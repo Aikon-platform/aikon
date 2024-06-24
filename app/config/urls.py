@@ -30,7 +30,7 @@ urlpatterns = [
 ]
 
 for module in ADDITIONAL_MODULES:
-    urlpatterns += [path(f"{module}/", include(f"{module}.urls"))]
+    urlpatterns += [path(f"", include(f"{module}.urls"))]
 
 if DEBUG:
     # Serve media files in development

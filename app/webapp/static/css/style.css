@@ -250,3 +250,24 @@ td.is-fullwidth {
 .table td, .table th, .content table td, .content table th {
     border-style: none;
 }
+
+.menu-list a:hover {
+    background-color: #ababcc93;
+}
+
+[data-theme="dark"] .menu-list a:hover {
+    background-color: #b9cab6e1;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .box {
+    background-color: #2e2d2d;
+}
+
+[data-theme="dark"] .table {
+    background-color: #2e2d2d;
+}
+
+[data-theme="dark"] .box {
+    background-color: #2e2d2d;
+}

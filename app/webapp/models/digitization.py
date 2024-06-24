@@ -34,17 +34,13 @@ from app.webapp.models.utils.constants import (
     SOURCE_INFO,
 )
 from app.webapp.utils.functions import (
-    pdf_to_img,
     delete_files,
     rename_file,
-    to_jpg,
-    temp_to_img,
     get_nb_of_files,
     get_first_img,
     get_files_with_prefix,
 )
 from app.webapp.utils.paths import (
-    BASE_DIR,
     IMG_PATH,
     MEDIA_DIR,
     IMG_DIR,
@@ -52,9 +48,15 @@ from app.webapp.utils.paths import (
     PDF_DIR,
     SVG_PATH,
 )
+from app.webapp.tasks import (
+    convert_pdf_to_img,
+    convert_temp_to_img,
+    extract_images_from_iiif_manifest,
+)
+
+from app.vectorization.const import SVG_PATH
 
 from app.webapp.utils.iiif.validation import validate_manifest
-from app.webapp.utils.iiif.download import extract_images_from_iiif_manifest
 
 from app.webapp.models.witness import Witness
 
@@ -174,6 +176,9 @@ class Digitization(models.Model):
     def get_treatments(self):
         return self.treatments.all()
 
+    def get_treatments(self):
+        return self.treatments.all()
+
     def get_ref(self):
         # digit_ref = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}"
         try:
@@ -229,6 +234,14 @@ class Digitization(models.Model):
             return get_first_img(self.get_ref())
         return self.get_imgs(is_abs, only_one=True)
 
+    def has_all_vectorization(self):
+        # if there is as much svg files as there are images in the current digitization
+        if len(glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")) == len(
+            glob(f"{IMG_PATH}/{self.get_ref()}_*.jpg")
+        ):
+            return True
+        return False
+
     def get_imgs(self, is_abs=False, temp=False, only_one=False):
         prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
         path = f"{IMG_PATH}/" if is_abs else ""
@@ -282,14 +295,14 @@ class Digitization(models.Model):
 
         return mark_safe(regions_btn(self, "view")) if self.has_images() else ""
 
-    def add_source(self, source):
-        # from app.webapp.models.digitization_source import DigitizationSource
-        #
-        # digit_source = DigitizationSource()
-        # digit_source.source = source
-        # digit_source.save()
-        # self.source = digit_source
-        self.source = source
+    # def add_source(self, source):
+    #     # from app.webapp.models.digitization_source import DigitizationSource
+    #     #
+    #     # digit_source = DigitizationSource()
+    #     # digit_source.source = source
+    #     # digit_source.save()
+    #     # self.source = digit_source
+    #     self.source = source
 
     def view_btn(self):
         iiif_link = f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"
@@ -337,55 +350,32 @@ class Digitization(models.Model):
     def delete(self, using=None, keep_parents=False):
         super().delete()
 
+    def add_info(self, license_url, source):
+        self.license = license_url
+        # self.add_source(source)
+        if license_url != NO_LICENSE:
+            self.is_open = True
+        self.save(update_fields=["license", "source", "is_open"])
+
 
 @receiver(post_save, sender=Digitization)
 def digitization_post_save(sender, instance, created, **kwargs):
     # TODO use Celery instead of threading
-    from app.webapp.utils.regions import send_regions_request
 
     if created:
         event = threading.Event()
 
         digit_type = instance.get_digit_abbr()
         if digit_type == PDF_ABBR:
-            t = threading.Thread(
-                target=pdf_to_img, args=(instance.get_file_path(is_abs=False), event)
-            )
-            t.start()
+            convert_pdf_to_img.delay(instance.get_file_path(is_abs=False))
 
         elif digit_type == IMG_ABBR:
-            t = threading.Thread(target=temp_to_img, args=(instance, event))
-            t.start()
+            convert_temp_to_img.delay(instance)
 
         elif digit_type == MAN_ABBR:
-
-            def add_info(license_url, source):
-                instance.license = license_url
-                instance.add_source(source)
-                if license_url != NO_LICENSE:
-                    instance.is_open = True
-                instance.save(update_fields=["license", "source", "is_open"])
-
-            t = threading.Thread(
-                target=extract_images_from_iiif_manifest,
-                args=(instance.manifest, instance.get_ref(), event, add_info),
+            extract_images_from_iiif_manifest.delay(
+                instance.manifest, instance.get_ref(), instance
             )
-            t.start()
-
-        import inspect
-
-        for frame_record in inspect.stack():
-            if frame_record[3] == "get_response":
-                request = frame_record[0].f_locals["request"]
-                break
-        else:
-            request = None
-
-        regions_t = threading.Thread(
-            target=send_regions_request,
-            args=(instance, event, request.user),
-        )
-        regions_t.start()
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance
