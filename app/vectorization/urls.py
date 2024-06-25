@@ -6,12 +6,12 @@ from app.config.settings import APP_NAME, MEDIA_URL, MEDIA_ROOT, DEBUG
 
 from app.vectorization.views import (
     show_vectorization,
-    receive_vecto,
-    show_crop_vecto,
+    receive_vectorization,
+    show_crop_vectorization,
     export_selected_imgs_and_svgs,
     export_all_images_and_svgs,
     send_vectorization,
-    smash_and_relauch_vecto,
+    smash_and_relauch_vectorization,
 )
 
 
@@ -30,18 +30,18 @@ register_converter(ListConverter, "list")
 
 urlpatterns = [
     path(
-        f"{APP_NAME}/<str:anno_ref>/show-vectorization",
+        f"{APP_NAME}/<str:regions_ref>/show-vectorization",
         show_vectorization,
         name="show-vectorization",
     ),
     path(
-        f"{APP_NAME}/receive-vecto",
-        receive_vecto,
-        name="receive-vecto",
+        f"{APP_NAME}/receive-vectorization",
+        receive_vectorization,
+        name="receive-vectorization",
     ),
     path(
-        f"{APP_NAME}/img-and-svg/<str:img_file>/<str:coords>/<str:anno>/<int:canvas_nb>",
-        show_crop_vecto,
+        f"{APP_NAME}/img-and-svg/<str:img_file>/<str:coords>/<str:regions>/<int:canvas_nb>",
+        show_crop_vectorization,
         name="img-and-svg",
     ),
     path(
@@ -50,19 +50,19 @@ urlpatterns = [
         name="export-img-and-svg",
     ),
     path(
-        f"{APP_NAME}/export-all-imgs-and-svgs/<str:anno_ref>",
+        f"{APP_NAME}/export-all-imgs-and-svgs/<str:regions_ref>",
         export_all_images_and_svgs,
         name="export-all-imgs-and-svgs",
     ),
     path(
-        f"{APP_NAME}/run-vectorization/<str:anno_ref>",
+        f"{APP_NAME}/run-vectorization/<str:regions_ref>",
         send_vectorization,
         name="run-vectorization",
     ),
     path(
-        f"{APP_NAME}/smash-and-relaunch-vecto/<str:anno_ref>",
-        smash_and_relauch_vecto,
-        name="smash-and-relaunch-vecto",
+        f"{APP_NAME}/smash-and-relaunch-vectorization/<str:regions_ref>",
+        smash_and_relauch_vectorization,
+        name="smash-and-relaunch-vectorization",
     ),
 ]
 
