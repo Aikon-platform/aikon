@@ -10,7 +10,8 @@ const app = new RegionList({
         regions: regions,
         regionsType: regionsType,
         appLang: APP_LANG,
-        manifest: manifest
+        manifest: manifest,
+        imgPrefix: img_prefix,
     }
 });
 

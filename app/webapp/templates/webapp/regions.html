@@ -25,6 +25,7 @@
 {% block extra_js %}
     <script>
         const manifest = "{{ manifest }}";
+        const img_prefix = "{{ img_prefix }}";
     </script>
     <script type="application/json" id="regions-data">
         {{ regions_list|safe }}
