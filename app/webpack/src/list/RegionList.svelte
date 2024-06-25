@@ -1,11 +1,13 @@
 <script>
     import {saveSelection, emptySelection, addToSelection, removeFromSelection} from "./selection.js";
-    import {manifestToMirador, refToIIIF} from "../utils.js";
+    import {manifestToMirador, refToIIIF, showMessage} from "../utils.js";
+
     import Region from './Region.svelte';
     import SelectionBtn from "./SelectionBtn.svelte";
     import SelectionFooter from "./SelectionFooter.svelte";
     import RegionsRow from "./RegionsRow.svelte";
     import Pagination from "./Pagination.svelte";
+    import Modal from "../Modal.svelte";
 
     let addAnimation = false;
     let removeAnimation = false;
@@ -31,18 +33,27 @@
     }
 
     async function deleteSelectedRegions() {
-        // TODO be careful to not delete regions that are not displayed in the current view
-        for (const regionId of Object.keys(selection)) {
+        const confirmed = await showMessage(
+            appLang === "en" ? "Are you sure you want to delete regions?" : "Voulez-vous vraiment supprimer les régions?",
+            appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
+            true
+        );
+
+        if (!confirmed) {
+            return; // User cancelled the deletion
+        }
+        for (const regionId of Object.keys(selection[regionsType])) {
             try {
                 if (!regions.hasOwnProperty(regionId)) {
+                    // only delete regions that are displayed
                     continue;
                 }
                 await deleteRegion(regionId);
                 delete regions[regionId];
-                delete selection[regionId];
+                delete selection[regionsType][regionId];
                 // delete page regions as well
             } catch (error) {
-                console.error(`Failed to delete region ${regionId}:`, error);
+                await showMessage(`Failed to delete region ${regionId}: ${error.message}`, "Error");
             }
         }
     }
@@ -55,7 +66,6 @@
         if (response.status !== 204) {
             throw new Error(`Failed to delete ${urlDelete} due to ${response.status}: '${response.statusText}'`);
         }
-        alert(`Region ${regionId} deleted successfully!`)
     }
 
     function removeRegion(blockId) {
@@ -95,11 +105,11 @@
         similarity: { text: appLang === 'en' ? 'Similarity' : 'Similarité' },
         vectorization: { text: appLang === 'en' ? 'Vectorization' : 'Vectorisation' }
     }
-    $: selectedLayout = "all"
+    $: currentLayout = "all"
     $: isEditMode = false; // get editmode from database
     $: baseUrl = `${window.location.origin}${window.location.pathname}`;
 
-    $: currentPage = parseInt(new URLSearchParams(window.location.search).get("p")) ?? 1;
+    $: currentPage = parseInt(new URLSearchParams(window.location.search).get("p") ?? 1);
     $: fetchPages = (async () => {
         const response = await fetch(`${baseUrl}canvas?p=${currentPage}`)
         return await response.json()
@@ -136,6 +146,8 @@
     }
 </style>
 
+<Modal {appLang}/>
+
 <SelectionBtn {addAnimation} {removeAnimation} {selectionLength} {appLang} />
 
 <div class="is-left center-flex actions">
@@ -166,7 +178,7 @@
 
     <div class="edit-action">
         {#if isEditMode}
-            <button class="tag is-link is-light is-rounded mr-3">
+            <button class="tag is-link is-light is-rounded mr-3" on:click={() => location.reload()}>
                 <i class="fa-solid fa-rotate-right"></i>
                 {appLang === 'en' ? 'Reload' : "Recharger"}
             </button>
@@ -186,18 +198,19 @@
     <ul class="panel-tabs">
         {#each Object.entries(layouts) as [layout, meta]}
             <!--TODO make active tab appear in url-->
-            <li class:is-active={layout === selectedLayout}
-                on:click={() => selectedLayout = layout} on:keyup={() => null}>
+            <li class:is-active={layout === currentLayout}
+                on:click={() => currentLayout = layout} on:keyup={() => null}>
                 <a href="{null}">{meta.text}</a>
             </li>
         {/each}
     </ul>
 </div>
 
-{#if selectedLayout === "all"}
+{#if currentLayout === "all"}
     <div class="fixed-grid has-auto-count">
         <div class="grid is-gap-2">
             {#each Object.values(regions) as block (block.id)}
+                <!--TODO dont sort object keys alphabetically-->
                 <Region {block} {appLang}
                         isSelected={isBlockSelected(block)}
                         isCopied={isBlockCopied(block)}
@@ -210,7 +223,7 @@
             {/each}
         </div>
     </div>
-{:else if selectedLayout === "page"}
+{:else if currentLayout === "page"}
     <Pagination pageNb={currentPage} maxPage={10} on:pageUpdate={handlePageUpdate}/>
     <table class="table is-fullwidth">
         <tbody>
@@ -244,14 +257,14 @@
 
         </tbody>
     </table>
-{:else if selectedLayout === "similarity"}
+{:else if currentLayout === "similarity"}
     <div>tout doux</div>
-{:else if selectedLayout === "vectorization"}
+{:else if currentLayout === "vectorization"}
     <div>tout doux</div>
 {/if}
 
 <div id="selection-modal" class="modal fade" tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
-    <div class="modal-background"></div>
+    <div class="modal-background"/>
     <div class="modal-content">
         <div class="modal-card-head media mb-0">
             <div class="title is-4 mb-0 media-content">
@@ -259,7 +272,7 @@
                 {appLang === 'en' ? 'Selected regions' : 'Regions sélectionnées'}
                 (<span id="selection-count">{selectionLength}</span>)
             </div>
-            <button class="delete media-left" aria-label="close"></button>
+            <button class="delete media-left" aria-label="close"/>
         </div>
         <section class="modal-card-body">
             {#if areSelectedRegions}
@@ -273,7 +286,7 @@
                                         <span class="overlay-desc">{meta.title}</span>
                                     </div>
                                 </figure>
-                                <button class="delete region-btn" aria-label="remove from selection" on:click={() => removeRegion(id)}></button>
+                                <button class="delete region-btn" aria-label="remove from selection" on:click={() => removeRegion(id)}/>
                             </div>
                         {/each}
                     </div>

@@ -8,7 +8,7 @@
     export let appLang = 'en';
 </script>
 
-<footer class="modal-card-foot is-centered">
+<footer class="modal-card-foot is-center">
     <div class="buttons">
         <button class="button is-link is-light" on:click={() => commitSelection('clear')}>
             {appLang === 'en' ? 'Clear selection' : 'Vider la sélection'}

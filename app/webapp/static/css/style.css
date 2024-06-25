@@ -149,6 +149,7 @@ fieldset:not(:last-child) {
 .is-center {
     margin: auto;
     text-align: center;
+    justify-content: center;
 }
 
 .is-top {
