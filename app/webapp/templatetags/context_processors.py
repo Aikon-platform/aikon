@@ -34,7 +34,7 @@ def global_variables(request):
     """
     Add global variables to the context of all rendered templates
     """
-    globals = {
+    constants = {
         "APP_NAME": APP_NAME,
         "APP_LANG": APP_LANG,
         "APP_NAME_UPPER": APP_NAME_UPPER,
@@ -59,4 +59,4 @@ def global_variables(request):
         "MANIFEST_V2": MANIFEST_V2,
         "CATEGORY_INFO": CATEGORY_INFO,
     }
-    return {**globals, **ENTITY_NAMES}
+    return {**constants, **ENTITY_NAMES}
