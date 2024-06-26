@@ -198,7 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (savedTheme) {
         applyTheme(savedTheme);
     } else {
-        applyTheme('light'); // Default theme
+        applyTheme('auto'); // Default theme
     }
 
     moonButton.addEventListener("click", () => {
