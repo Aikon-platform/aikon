@@ -1,4 +1,5 @@
 <script>
+    import { fade } from 'svelte/transition';
     import {refToIIIF} from "../utils.js";
     import {createEventDispatcher} from "svelte";
 
@@ -57,7 +58,7 @@
     }
 </style>
 
-<div id={block.id} class="region image is-96x96 {isSelected ? 'checked' : ''}">
+<div class="region image is-96x96 is-center {isSelected ? 'checked' : ''}" transition:fade={{ duration: 500 }}>
     <figure class="image is-96x96 card" tabindex="-1"
             on:click={() => toggleSelection()} on:keyup={() => null}>
         <img src="{refToIIIF(block.img, block.xyhw, '96,')}" alt="Extracted region"/>

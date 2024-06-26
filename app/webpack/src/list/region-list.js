@@ -11,8 +11,9 @@ const app = new RegionList({
         regionsType: regionsType,
         appLang: APP_LANG,
         manifest: manifest,
-        imgPrefix: img_prefix,
+        isValidated: isValidated,
+        imgPrefix: imgPrefix,
+        nbOfPages: nbOfPages
     }
 });
-
 export default app;

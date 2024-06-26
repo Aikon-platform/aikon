@@ -20,7 +20,7 @@
     <td class="p-5 is-fullwidth">
         <div class="fixed-grid has-6-cols">
             <div class="grid is-gap-2">
-                <slot></slot>
+                <slot/>
             </div>
         </div>
     </td>
