@@ -114,7 +114,7 @@ function deleteRegion(regionId) {
 function deleteRegions(regionsIds) {
     if (regionsIds.length > 0) {
         if (confirm(APP_LANG === "en" ? "Are you sure you want to delete corresponding regions?" :
-                "Êtes-vous sûr de vouloir supprimer les régions sélectionnées ?")) {
+            "Êtes-vous sûr de vouloir supprimer les régions sélectionnées ?")) {
             for (let i = 0; i < regionsIds.length; i++) {
                 deleteRegion(regionsIds[i]);
             }
@@ -128,7 +128,7 @@ function deleteRegions(regionsIds) {
 
 function deleteAllRegions(allRegions) {
     if (confirm(APP_LANG === "en" ? "Are you sure you want to delete all regions?" :
-            "Êtes-vous sûr de vouloir supprimer toutes les régions ?")) {
+        "Êtes-vous sûr de vouloir supprimer toutes les régions ?")) {
         for (let i = allRegions.length - 1; i >= 0; i--) {
             deleteRegion(allRegions[i]);
         }
@@ -145,17 +145,17 @@ function validateRegions(regions_ref = null) {
     }
 
     if (confirm(APP_LANG === "en" ? `Once validated, the regions cannot be modified. Continue?` :
-            `Une fois validées, les régions ne pourront plus être modifiées. Continuer ?`)) {
+        `Une fois validées, les régions ne pourront plus être modifiées. Continuer ?`)) {
         fetch(`${APP_URL}/${APP_NAME}/iiif/validate/${regions_ref}`)
             .then(response => {
-            if (response.status === 200) {
-                // window.replace(`${SAS_APP_URL}/indexView.html?iiif-content=${toManifest(witId, witType, "v2")}`);
-                try { window.replace(`${APP_URL}/${APP_NAME}-admin/${WEBAPP_NAME}/witness`); }
-                catch(e) { window.location = `${APP_URL}/${APP_NAME}-admin/${WEBAPP_NAME}/witness`; }
-            } else {
-                throw new Error(`Could not validate regions #${regions_ref}.`);
-            }
-        }).catch(error => {
+                if (response.status === 200) {
+                    // window.replace(`${SAS_APP_URL}/indexView.html?iiif-content=${toManifest(witId, witType, "v2")}`);
+                    try { window.replace(`${APP_URL}/${APP_NAME}-admin/${WEBAPP_NAME}/witness`); }
+                    catch(e) { window.location = `${APP_URL}/${APP_NAME}-admin/${WEBAPP_NAME}/witness`; }
+                } else {
+                    throw new Error(`Could not validate regions #${regions_ref}.`);
+                }
+            }).catch(error => {
             showMessage(`Error: ${error.message}`);
         });
     }

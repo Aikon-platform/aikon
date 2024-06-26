@@ -243,7 +243,7 @@ td.is-fullwidth {
     flex-direction: column;
     justify-content: center;
 }
-.table tr {
+.table tr:not(:last-child) {
     border-color: var(--bulma-table-cell-border-color);
     border-style: var(--bulma-table-cell-border-style);
     border-width: var(--bulma-table-cell-border-width);
@@ -253,7 +253,7 @@ td.is-fullwidth {
 }
 
 :root {
-  --contrasted: #f5f0f0; /* Default color */
+  --contrasted: #f5f0f0;
 }
 
 [data-theme="light"] {
@@ -265,6 +265,10 @@ td.is-fullwidth {
 }
 
 .is-contrasted {
+    background-color: var(--contrasted) !important;
+}
+
+.is-contrasted > * {
     background-color: var(--contrasted) !important;
 }
 

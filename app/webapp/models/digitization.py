@@ -25,7 +25,7 @@ from app.webapp.models.utils.constants import (
     DIGIT_TYPE,
     IMG,
     PDF,
-    MANIFEST,
+    MAN,
     DIGIT_ABBR,
     IMG_ABBR,
     MAN_ABBR,
@@ -114,7 +114,7 @@ class Digitization(models.Model):
         blank=True,
     )
     manifest = models.URLField(
-        verbose_name=MANIFEST,
+        verbose_name=MAN,
         help_text=MANIFEST_INFO,
         validators=[validate_manifest],
         blank=True,
