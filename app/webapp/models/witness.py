@@ -204,6 +204,12 @@ class Witness(models.Model):
             else "-"
         )
 
+    def is_validated(self):
+        for regions in self.get_regions():
+            if not regions.is_validated:
+                return False
+        return True
+
     def change_url(self):
         change_url = reverse("admin:webapp_witness_change", args=[self.id])
         return f"<a href='{change_url}' target='_blank'>{WIT_CHANGE} #{self.id}</a>"

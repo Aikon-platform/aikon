@@ -3,9 +3,6 @@
     import {saveSelection, emptySelection, addToSelection, removeFromSelection} from "./selection.js";
     import SelectionBtn from "./SelectionBtn.svelte";
     import SelectionFooter from "./SelectionFooter.svelte";
-
-    $: addAnimation = false;
-    $: removeAnimation = false;
     export const regionsType = "Regions";
     export let records = [];
 
@@ -28,14 +25,10 @@
 
     function removeRecord(blockId, blockType) {
         selection = removeFromSelection(selection, blockId, blockType);
-        removeAnimation = true;
-        setTimeout(() => removeAnimation = false, 300);
     }
 
     function addRecord(block) {
         selection = addToSelection(selection, block);
-        addAnimation = true;
-        setTimeout(() => addAnimation = false, 300);
     }
 
     function handleToggleSelection(event) {
@@ -50,7 +43,7 @@
 
 </script>
 
-<SelectionBtn {addAnimation} {removeAnimation} {selectionLength} {appLang} />
+<SelectionBtn {selectionLength} {appLang} />
 
 {#if records.length !== 0}
     <div>
@@ -69,7 +62,7 @@
             <div class="title is-4 mb-0 media-content">
                 <i class="fa-solid fa-book-bookmark"></i>
                 {appLang === 'en' ? 'Selected documents' : 'Documents sélectionnés'}
-                (<span id="selection-count">{selectionLength}</span>)
+                ({selectionLength})
             </div>
             <button class="delete media-left" aria-label="close"></button>
         </div>

@@ -42,3 +42,50 @@ export function parseData(elementId) {
     }
     return JSON.parse(document.getElementById(elementId).textContent);
 }
+
+export function showMessage(msg, title = null, confirm = false) {
+    return new Promise((resolve) => {
+        const msgModal = document.getElementById("msg-modal");
+        if (msgModal) {
+            if (confirm) {
+                document.getElementById("modal-footer").hidden = false;
+            }
+            if (title) {
+                document.getElementById("modal-title").textContent = title;
+            }
+            document.getElementById("modal-body").textContent = msg;
+            document.getElementById("hidden-msg-btn").click();
+
+            const cancelBtn = document.getElementById("cancel-btn");
+            const okBtn = document.getElementById("ok-btn");
+            const modalBkg = document.getElementById("modal-bkg");
+
+            const cleanup = () => {
+                cancelBtn.removeEventListener("click", handleCancel);
+                modalBkg.removeEventListener("click", handleCancel);
+                okBtn.removeEventListener("click", handleOk);
+                document.getElementById("modal-footer").hidden = true;
+            };
+
+            const handleCancel = () => {
+                cleanup();
+                resolve(false);
+            };
+
+            const handleOk = () => {
+                cleanup();
+                resolve(true);
+            };
+
+            cancelBtn.addEventListener("click", handleCancel);
+            okBtn.addEventListener("click", handleOk);
+        } else {
+            if (confirm) {
+                resolve(window.confirm(msg));
+            } else {
+                window.alert(msg);
+                resolve(undefined);
+            }
+        }
+    });
+}

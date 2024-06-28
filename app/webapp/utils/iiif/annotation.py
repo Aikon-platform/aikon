@@ -22,7 +22,6 @@ from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
 from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.regions import get_txt_regions
 
-
 IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
 
 
@@ -47,7 +46,9 @@ def index_regions(regions: Regions):
     return True
 
 
-def get_regions_annotations(regions: Regions, as_json=False, r_annos=None):
+def get_regions_annotations(
+    regions: Regions, as_json=False, r_annos=None, min_c: int = None, max_c: int = None
+):
     if not r_annos:
         r_annos = {} if as_json else []
 
@@ -69,27 +70,36 @@ def get_regions_annotations(regions: Regions, as_json=False, r_annos=None):
         try:
             canvas = anno["on"].split("/canvas/c")[1].split(".json")[0]
             xyhw = anno["on"].split("xywh=")[1]
+            if min_c is not None and (int(canvas) < min_c or int(canvas) > max_c):
+                continue
             if as_json:
                 if canvas not in r_annos:
-                    r_annos[canvas] = []
+                    r_annos[canvas] = {}
                 img = f"{img_name}_{canvas.zfill(nb_len)}"
-                r_annos[canvas].append(
-                    {
-                        "id": f"{img}_{xyhw}",
-                        "class": "Region",
-                        "type": get_name("Regions"),
-                        "title": region_title(canvas, xyhw),
-                        "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
-                        "canvas": canvas,
-                        "xyhw": xyhw.split(","),
-                        "img": img,
-                    }
-                )
+                aid = anno["@id"].split("/")[-1]
+                r_annos[canvas][aid] = {
+                    "id": aid,
+                    "ref": f"{img}_{xyhw}",
+                    "class": "Region",
+                    "type": get_name("Regions"),
+                    "title": region_title(canvas, xyhw),
+                    "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
+                    "canvas": canvas,
+                    "xyhw": xyhw.split(","),
+                    "img": img,
+                }
             else:
                 r_annos.append((canvas, xyhw, f"{img_name}_{canvas.zfill(nb_len)}"))
         except Exception as e:
             log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
             continue
+
+    # if min_c is not None:
+    #     min_c = min_c or 1
+    #     for canvas in range(min_c, max_c):
+    #         canvas = str(canvas)
+    #         if canvas not in r_annos:
+    #             r_annos[canvas] = {"empty": {"img": f"{img_name}_{canvas.zfill(nb_len)}"}}
 
     return r_annos
 
