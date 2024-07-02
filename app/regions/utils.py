@@ -2,50 +2,49 @@ import requests
 
 from app.config.settings import CV_API_URL, APP_URL, APP_NAME
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.treatment import Treatment
+
+# from app.webapp.models.treatment import Treatment
 from app.regions.const import EXTRACTOR_MODEL
 from app.webapp.utils.logger import log
 
 
-def create_treatment(treatment_type, task_type, user_id, treated_object):
-    try:
-        treatment = Treatment(
-            treatment_type=treatment_type,
-            task_type=task_type,
-            user_id=user_id,
-            treated_object=treated_object,
-        )
-        treatment.save()
+# def create_treatment(treatment_type, task_type, requested_by, treated_objects):
+#     try:
+#         treatment = Treatment(
+#             task_type=task_type,
+#             requested_by=user_id,
+#             treated_objects=treated_objects,
+#         )
+#         treatment.save()
+#
+#         return treatment
+#     except Exception as e:
+#         log(
+#             f"[create_treatment] Failed to create treatment requested by user {user_id} for digit #{treated_objects.id}",
+#             e,
+#         )
+#         return False
 
-        return treatment
-    except Exception as e:
-        log(
-            f"[create_treatment] Failed to create treatment requested by user {user_id} for digit #{treated_object.id}",
-            e,
-        )
-        return False
 
-
-def regions_request(digit: Digitization, user_id, treatment_type="auto"):
-    treatment = create_treatment(
-        treatment_type=treatment_type,
-        task_type="regions",
-        user_id=user_id,
-        treated_object=digit,
-    )
+def regions_request(digit: Digitization, user_id):
+    # treatment = create_treatment(
+    #     task_type="regions",
+    #     requested_by=user_id,
+    #     treated_object=digit,
+    # )
 
     try:
         response = requests.post(
             url=f"{CV_API_URL}/extraction/start",
             data={
-                "experiment_id": treatment.id,
+                # "experiment_id": treatment.id,
                 "manifest_url": digit.gen_manifest_url(),
                 "model": f"{EXTRACTOR_MODEL}",  # Use only if specific model is desire
                 "callback": f"{APP_URL}/{APP_NAME}/get-regions",  # URL to which the regions file must be sent back
             },
         )
         if response.status_code == 200:
-            treatment.update_treatment()
+            # treatment.start_task(api_tracking_id=response.json()["tracking_id"])
             log(
                 f"[regions_request] Regions extraction request send: {response.text or ''}"
             )
@@ -69,11 +68,11 @@ def regions_request(digit: Digitization, user_id, treatment_type="auto"):
                 },
             }
 
-            treatment.error_treatment(error)
+            # treatment.error_treatment(error)
             log(error)
             return False
     except Exception as e:
-        treatment.error_treatment(e)
+        # treatment.error_treatment(e)
         log(
             f"[regions_request] Regions extraction request for {digit.get_ref()} failed",
             e,

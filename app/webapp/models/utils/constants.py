@@ -27,6 +27,8 @@ MODEL_NAMES = {
     "Regions": {"en": "regions", "fr": "régions"},
     "User": {"en": "user", "fr": "utilisateur"},
     "Group": {"en": "group", "fr": "groupe"},
+    "Treatment": {"en": "treatment", "fr": "traitement"},
+    "DocumentSet": {"en": "document set", "fr": "sélection de documents"},
 }
 
 MAN = MODEL_NAMES["Manifest"][APP_LANG]

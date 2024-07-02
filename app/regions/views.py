@@ -25,9 +25,7 @@ def send_regions_extraction(request, digit_ref):
         "response": f"Failed to send regions extraction request for digit #{digit.id}"
     }
     try:
-        status = regions_request(
-            digit, treatment_type="manual", user_id=User.objects.get(id=request.user.id)
-        )
+        status = regions_request(digit, user_id=User.objects.get(id=request.user.id))
     except Exception as e:
         error["cause"] = e
         return JsonResponse(error, safe=False)
@@ -52,7 +50,7 @@ def receive_regions_file(request, digit_ref):
     if request.method == "POST":
         try:
             regions_file = request.FILES["annotation_file"]
-            treatment_id = request.POST.get("experiment_id")
+            # treatment_id = request.POST.get("experiment_id")
         except Exception as e:
             log("[receive_regions_file] No regions file received for", e)
             return JsonResponse({"message": "No regions file"}, status=400)
@@ -66,7 +64,7 @@ def receive_regions_file(request, digit_ref):
         file_content = file_content.decode("utf-8")
 
         if check_regions_file(file_content):
-            process_regions_file.delay(file_content, digit.id, treatment_id, model)
+            process_regions_file.delay(file_content, digit.id, model)
 
             return JsonResponse({"response": "OK"}, status=200)
 
@@ -89,9 +87,7 @@ def regions_deletion_extraction(request, digit_ref):
     }
 
     try:
-        status = regions_request(
-            digit, treatment_type="manual", user_id=request.user.id
-        )
+        status = regions_request(digit, user_id=request.user.id)
     except Exception as e:
         error["cause"] = e
         return JsonResponse(error, safe=False)

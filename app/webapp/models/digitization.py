@@ -173,8 +173,8 @@ class Digitization(models.Model):
     def get_regions(self):
         return self.regions.all()
 
-    def get_treatments(self):
-        return self.treatments.all()
+    # def get_treatments(self):
+    #     return self.treatments.all()
 
     def get_treatments(self):
         return self.treatments.all()

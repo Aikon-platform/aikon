@@ -1,5 +1,6 @@
 import uuid
 
+import requests
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.db import models
@@ -10,8 +11,10 @@ from app.config.settings import (
     APP_URL,
     APP_NAME,
     CONTACT_MAIL,
+    CV_API_URL,
 )
-from app.webapp.models.digitization import Digitization
+
+from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.logger import log
 
@@ -37,86 +40,129 @@ class Treatment(models.Model):
         return f"Treatment #{self.id}{space}: {self.id}"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    status = models.CharField(max_length=20, default="Pending", editable=False)
+    is_finished = models.BooleanField(default=False, editable=False)
+
+    requested_on = models.DateTimeField(auto_now_add=True, editable=False)
+    requested_by = models.ForeignKey(User, on_delete=models.SET_NULL, editable=False)
+    notify_email = models.BooleanField(
+        default=True,
+        verbose_name="Notify by email",
+        blank=True,
+        help_text="Send an email when the task is finished",
+    )
+
     task_type = models.CharField(
         max_length=50,
         blank=True,
         null=True,
-        choices=[
-            ("regions", "regions"),
+        choices=[  # TODO modifier pour peupler en fonction des apps installées
+            ("extraction", "extraction"),
             ("similarity", "similarity"),
             ("vectorization", "vectorization"),
         ],
     )
-    treatment_type = models.CharField(
-        max_length=10,
-        blank=True,
-        null=True,
-        choices=[("auto", "auto"), ("manual", "manual")],
-        default="auto",
-    )
-    status = models.CharField(max_length=50, blank=True, null=True, default="created")
-    user_id = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
-    treated_object = models.ForeignKey(
-        Digitization,
-        related_name="treatments",  # to access all the treatments from Digitization
-        verbose_name=get_name("Digitization"),
+
+    set_id = models.ForeignKey(
+        DocumentSet,
+        related_name="treatments",  # to access all the treatments from DocumentSet
+        verbose_name=get_name("DocumentSet"),
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
     )
+    treated_objects = models.JSONField(blank=True, null=True)
 
-    def get_object(self):
+    api_tracking_id = models.UUIDField(null=True, editable=False)
+    api_endpoint_prefix = task_type
+
+    def start_task(self, tracking_id):
+        """
+        Start the task
+        """
         try:
-            return self.treated_object
-        except AttributeError:
-            return None
+            self.api_tracking_id = tracking_id
+            self.status = "STARTED"
 
-    def get_user(self):
-        try:
-            return self.user_id
-        except AttributeError:
-            return None
-
-    def update_treatment(self):
-        self.status = "running"
-        self.save(update_fields=["status"])
-
-    def complete_treatment(self, regions_ref):
-        self.status = "completed"
-        self.save(update_fields=["status"])
-        self.completion_mail(regions_ref)
-
-    def error_treatment(self, error_msg):
-        self.status = "error"
-        self.save(update_fields=["status"])
-        self.error_mail(error_msg)
-
-    def treatment_mail(self, message):
-        try:
-            send_mail(
-                subject=f"[{APP_NAME.upper()} {self.task_type}] Your {self.task_type} treatment was completed!",
-                message=message,
-                from_email=EMAIL_HOST_USER,
-                recipient_list=[self.user_id.email],
-            )
         except Exception as e:
             log(
-                f"[treatment_email] Unable to send confirmation email for {self.user_id.email}",
+                f"[start_treatment] Request for task failed with an error",
                 e,
             )
+            self.status = "ERROR"
+            self.is_finished = True
 
-    def completion_mail(self, regions_ref):
-        if self.task_type == "regions":
-            message = f"Dear {APP_NAME.upper()} user,\n\nThe {self.task_type} treatment you requested for {self.get_object()} was completed and your results were sent to the platform.\n\nSee the automatic results at: {APP_URL}/{APP_NAME}/{regions_ref}/show/"
-        elif self.task_type == "similarity":
-            message = (
-                f"Dear {APP_NAME.upper()} user,\n\nThe {self.task_type} treatment you requested for {self.get_object()} was completed and your results were sent to the platform.\n\nSee the automatic results at: {APP_URL}/{APP_NAME}/{regions_ref}/show-similarity/",
+        self.save()
+
+    def on_task_success(self, data):
+        """
+        Handle the end of the task
+        """
+        self.terminate_task("SUCCESS")
+
+    def on_task_error(self, data):
+        """
+        Handle the end of the task
+        """
+        self.terminate_task("ERROR", data.get("error", "Unknown error"))
+
+    def terminate_task(self, status="SUCCESS", error=None, notify=True):
+        """
+        Called when the task is finished
+        """
+        self.status = status
+        if error:
+            log(f"[treatment] Error: {error}")
+        self.is_finished = True
+        self.save()
+
+        if notify and self.notify_email:
+            try:
+                send_mail(
+                    f"[{APP_NAME.upper()} {self.task_type}] Task {self.status}",
+                    f"Dear {APP_NAME.upper()} user,\n\nThe {self.task_type} task you requested was completed with the status {self.status}.\n\nYou can access the results on the platform: {APP_URL}/{APP_NAME}",
+                    EMAIL_HOST_USER,
+                    [self.requested_by.email],
+                    fail_silently=False,
+                )
+            except Exception as e:
+                log(
+                    f"[treatment_email] Unable to send confirmation email for {self.requested_by.email}",
+                    e,
+                )
+
+    def receive_notification(self, data: dict):
+        """
+        Called by the API when tasks events happen
+        """
+        event = data["event"]
+        if event == "STARTED":
+            self.status = "PROGRESS"
+            self.save()
+            return
+        elif event == "SUCCESS":
+            self.on_task_success(data)
+        elif event == "ERROR":
+            self.on_task_error(data)
+
+    def get_progress(self):
+        """
+        Queries the API to get the task progress
+        """
+        try:
+            api_query = requests.get(
+                f"{CV_API_URL}/{self.api_endpoint_prefix}/{self.api_tracking_id}/status",
             )
-        else:
-            message = f"Dear {APP_NAME.upper()} user,\n\nThe {self.task_type} treatment you requested for {self.get_object()} was completed and your results were sent to the platform."
+        except ConnectionError:
+            return {
+                "status": "UNKNOWN",
+                "error": "Connection error when getting task progress from the worker",
+            }
 
-        self.treatment_mail(message)
-
-    def error_mail(self, error_msg):
-        message = f"Dear {APP_NAME.upper()} user,\n\nThe {self.task_type} treatment you requested for {self.get_object()} could not be completed due to the following error: {error_msg}.\n\nYou can contact the administrator at {CONTACT_MAIL}."
-        self.treatment_mail(message)
+        try:
+            return {"status": self.status, **api_query.json()}
+        except:
+            log(f"[treatment] Error when reading task progress: {api_query.text}")
+            return {
+                "status": "UNKNOWN",
+            }

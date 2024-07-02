@@ -23,10 +23,23 @@ class DocumentSet(models.Model):
     def __str__(self):
         return self.name
 
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    user_id = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
     name = models.CharField(max_length=50, unique=True)
     title = models.CharField(max_length=150)
-    wit_ids = ArrayField(models.IntegerField(), default=list)
     is_public = models.BooleanField(default=False)
+
+    wit_ids = ArrayField(models.IntegerField(), default=list)
+    ser_ids = ArrayField(models.IntegerField(), default=list)
+    digit_ids = ArrayField(models.IntegerField(), default=list)
+    work_ids = ArrayField(models.IntegerField(), default=list)
+
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
+
+    def get_objects(self):
+        # TODO: return JSON to link to treatment
+        try:
+            return self.wit_ids
+        except AttributeError:
+            return None

@@ -9,7 +9,8 @@ from PIL import Image
 
 from app.webapp.models.regions import Regions, get_name
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.treatment import Treatment
+
+# from app.webapp.models.treatment import Treatment
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.config.settings import (
     CANTALOUPE_APP_URL,
@@ -634,8 +635,8 @@ def get_training_regions(regions: Regions):
     return filenames_contents
 
 
-def process_regions(regions_file_content, digit, treatment_id, model="Unknown model"):
-    treatment = Treatment.objects.filter(pk=treatment_id).first()
+def process_regions(regions_file_content, digit, model="Unknown model"):
+    # treatment = Treatment.objects.filter(pk=treatment_id).first()
 
     try:
         # TODO add step to check if regions weren't generated before for the same model
@@ -649,7 +650,7 @@ def process_regions(regions_file_content, digit, treatment_id, model="Unknown mo
         with open(f"{REGIONS_PATH}/{regions.get_ref()}.txt", "w+b") as f:
             f.write(regions_file_content.encode("utf-8"))
     except Exception as e:
-        treatment.error_treatment(e)
+        # treatment.error_treatment(e)
         log(
             f"[process_regions] Failed to save received regions file for digit #{digit.id}",
             e,
@@ -659,9 +660,9 @@ def process_regions(regions_file_content, digit, treatment_id, model="Unknown mo
     try:
         index_regions(regions)
     except Exception as e:
-        treatment.error_treatment(e)
+        # treatment.error_treatment(e)
         log(f"[process_regions] Failed to index regions for digit #{digit.id}", e)
         return False
 
-    treatment.complete_treatment(regions.get_ref())
+    # treatment.complete_treatment(regions.get_ref())
     return True
