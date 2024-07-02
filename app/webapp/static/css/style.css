@@ -149,6 +149,7 @@ fieldset:not(:last-child) {
 .is-center {
     margin: auto;
     text-align: center;
+    justify-content: center;
 }
 
 .is-top {
@@ -242,7 +243,7 @@ td.is-fullwidth {
     flex-direction: column;
     justify-content: center;
 }
-.table tr {
+.table tr:not(:last-child) {
     border-color: var(--bulma-table-cell-border-color);
     border-style: var(--bulma-table-cell-border-style);
     border-width: var(--bulma-table-cell-border-width);
@@ -251,23 +252,29 @@ td.is-fullwidth {
     border-style: none;
 }
 
+:root {
+    --contrasted: #f5f0f0;
+    --accent: hsl(0deg 0% 0% / 5%);
+}
+
+[data-theme="light"] {
+    --contrasted: #f3eff1;
+    --accent: hsl(0deg 0% 0% / 5%);
+}
+
+[data-theme="dark"] {
+    --contrasted: #252424;
+    --accent: hsla(0, 0%, 100%, 0.05);
+}
+
+.is-contrasted {
+    background-color: var(--contrasted) !important;
+}
+
+.is-contrasted > * {
+    background-color: var(--contrasted) !important;
+}
+
 .menu-list a:hover {
-    background-color: #ababcc93;
-}
-
-[data-theme="dark"] .menu-list a:hover {
-    background-color: #b9cab6e1;
-    color: #ffffff;
-}
-
-[data-theme="dark"] .box {
-    background-color: #2e2d2d;
-}
-
-[data-theme="dark"] .table {
-    background-color: #2e2d2d;
-}
-
-[data-theme="dark"] .box {
-    background-color: #2e2d2d;
+    background-color: var(--contrasted);
 }

@@ -61,6 +61,9 @@ class Regions(models.Model):
             return digit.get_witness()
         return None
 
+    def img_nb(self):
+        return self.get_digit().img_nb()
+
     def gen_manifest_url(self, only_base=False, version=MANIFEST_V1):
         witness = self.get_witness()
         digit = self.get_digit()

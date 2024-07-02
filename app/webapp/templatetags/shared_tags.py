@@ -3,6 +3,7 @@ import pprint
 
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
+from django.urls import NoReverseMatch, reverse
 
 register = template.Library()
 
@@ -40,3 +41,11 @@ def dump(obj):
 @register.filter
 def add_class(field, class_name):
     return field.as_widget(attrs={"class": class_name})
+
+
+@register.simple_tag
+def check_url(*args, **kwargs):
+    try:
+        return reverse(*args, **kwargs)
+    except NoReverseMatch:
+        return ""

@@ -25,9 +25,11 @@ MODEL_NAMES = {
     "Image": {"en": "image", "fr": "image"},
     "Pdf": {"en": "PDF", "fr": "PDF"},
     "Regions": {"en": "regions", "fr": "régions"},
+    "User": {"en": "user", "fr": "utilisateur"},
+    "Group": {"en": "group", "fr": "groupe"},
 }
 
-MANIFEST = MODEL_NAMES["Manifest"][APP_LANG]
+MAN = MODEL_NAMES["Manifest"][APP_LANG]
 MS = MODEL_NAMES["Manuscript"][APP_LANG]
 VOL = MODEL_NAMES["Volume"][APP_LANG]
 WIT = MODEL_NAMES["Witness"][APP_LANG]
@@ -46,7 +48,32 @@ ROLE = MODEL_NAMES["Role"][APP_LANG]
 IMG = MODEL_NAMES["Image"][APP_LANG]
 PDF = MODEL_NAMES["Pdf"][APP_LANG]
 REG = MODEL_NAMES["Regions"][APP_LANG]
+USR = MODEL_NAMES["User"][APP_LANG]
+GRP = MODEL_NAMES["Group"][APP_LANG]
 
+ENTITY_NAMES = {
+    "MAN": MAN,
+    "MS": MS,
+    "VOL": VOL,
+    "WIT": WIT,
+    "PR": PR,
+    "SER": SER,
+    "CONT": CONT,
+    "WORK": WORK,
+    "TAG": TAG,
+    "PLA": PLA,
+    "CONS_PLA": CONS_PLA,
+    "DIG": DIG,
+    "ED": ED,
+    "LANG": LANG,
+    "PERS": PERS,
+    "ROLE": ROLE,
+    "IMG": IMG,
+    "PDF": PDF,
+    "REG": REG,
+    "USR": USR,
+    "GRP": GRP,
+}
 
 # ABBREVIATION
 MS_ABBR = "ms"
@@ -107,13 +134,13 @@ REGIONS_VERSION = (
 DIGIT_TYPE = (
     (IMG_ABBR, IMG.capitalize()),
     (PDF_ABBR, PDF.capitalize()),
-    (MAN_ABBR, MANIFEST.capitalize()),
+    (MAN_ABBR, MAN.capitalize()),
 )
 
 DIGIT_ABBR = {
     IMG: IMG_ABBR,
     PDF: PDF_ABBR,
-    MANIFEST: MAN_ABBR,
+    MAN: MAN_ABBR,
 }
 
 PAGE_TYPE = (
@@ -179,7 +206,6 @@ CATEGORY_INFO = f"""<div class='category-info'>
                             </ol>
                         </p>
                     </div>"""
-
 
 ###################################
 #        VALIDATION ERRORS        #

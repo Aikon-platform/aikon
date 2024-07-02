@@ -11,7 +11,7 @@
 {% endblock %}
 
 {% block content %}
-    <h1 class="is-title is-size-2 py-3">{{ view_title }}</h1>
+    <h1 class="is-title is-size-2 py-3" style="z-index: 5">{{ view_title }}</h1>
 
     {% include "includes/pagination.html" %}
 
@@ -25,6 +25,9 @@
 {% block extra_js %}
     <script>
         const manifest = "{{ manifest }}";
+        const imgPrefix = "{{ img_prefix }}";
+        const isValidated = "{{ is_validated }}";
+        const nbOfPages = {{ img_nb }};
     </script>
     <script type="application/json" id="regions-data">
         {{ regions_list|safe }}
