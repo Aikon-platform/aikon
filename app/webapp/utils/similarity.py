@@ -174,6 +174,10 @@ def compute_total_similarity(
             log(f"[compute_total_similarity] no score file for {pair}", e)
             continue
 
+        if pair_scores is None:
+            log(f"[compute_total_similarity] no score for {pair}")
+            continue
+
         # Create a dictionary with image names as keys and scores as values
         img_scores = defaultdict(set)
         for score, img1, img2 in pair_scores:
