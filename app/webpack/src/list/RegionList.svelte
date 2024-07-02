@@ -1,5 +1,5 @@
 <script>
-    import {saveSelection, emptySelection, addToSelection, removeFromSelection} from "./selection.js";
+    import {saveSelection, emptySelection, addToSelection, removeFromSelection, selectAll, removeAll} from "./selection.js";
     import {manifestToMirador, refToIIIF, showMessage} from "../utils.js";
     import { writable } from 'svelte/store';
 
@@ -119,6 +119,35 @@
         }
     }
 
+    function areAllSelected() {
+        // TODO here when there is not only one document selected, this assertion is erroneous
+        return Object.keys(selection[regionsType] ?? {}).length === Object.keys(regions).length;
+    }
+
+    function getSelectBtnLabel(areAllRegionsSelected = null) {
+        if (areAllRegionsSelected === null){
+            areAllRegionsSelected = areAllSelected()
+        }
+        if (areAllRegionsSelected) {
+            return appLang === 'en' ? 'Unselect all' : 'Tout désélectionner';
+        } else {
+            return appLang === 'en' ? 'Select all' : 'Tout sélectionner';
+        }
+    }
+
+    function toggleAllSelection(){
+        if (areAllSelected()) {
+            const visibleSelectedRegions = Object.keys(selection[regionsType]).filter(regionId => regions.hasOwnProperty(regionId))
+            selection = removeAll(selection, visibleSelectedRegions, regionsType)
+
+            // selection = emptySelection(selection, [regionsType]);
+            document.getElementById("all-selection").innerText = getSelectBtnLabel(false);
+        } else {
+            selection = selectAll(selection, Object.values(regions));
+            document.getElementById("all-selection").innerText = getSelectBtnLabel(true);
+        }
+    }
+
     function removeRegion(blockId) {
         selection = removeFromSelection(selection, blockId, regionsType);
     }
@@ -199,10 +228,10 @@
                 </svg>
                 {#if isEditMode}{appLang === 'en' ? 'Validate' : 'Valider'}{:else}{appLang === 'en' ? 'Edit' : 'Modifier'}{/if}
             </button>
-            <button class="button is-link is-light mr-3" on:click={() => null}>
+            <button class="button is-link is-light mr-3" on:click={toggleAllSelection}>
                 <i class="fa-solid fa-square-check"></i>
                 <!--TODO toggle to unselect all if everything is selected-->
-                {appLang === 'en' ? 'Select all' : 'Tout sélectionner'}
+                <span id="all-selection">{getSelectBtnLabel()}</span>
             </button>
             <button class="button is-link is-light" on:click={() => null}>
                 <i class="fa-solid fa-download"></i>
@@ -234,7 +263,7 @@
                 <!--TODO make active tab appear in url-->
                 <li class:is-active={layout === currentLayout}
                     on:click={() => currentLayout = layout} on:keyup={() => null}>
-                    <a href="{null}">{meta.text}</a>
+                    <a href={null}>{meta.text}</a>
                 </li>
             {/each}
         </ul>

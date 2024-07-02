@@ -14,13 +14,36 @@ export function getSelection() {
 }
 
 export function emptySelection(selection, keysToRemove) {
-    keysToRemove.map(key => selection.hasOwnProperty(key) ? delete selection[key] : true)
+    keysToRemove.forEach(key => selection.hasOwnProperty(key) ? delete selection[key] : true)
     updateSelection(selection);
     return selection
 }
 
+export function selectAll(selection, blocks) {
+    blocks.forEach(block => {
+        if (!selection[block.type]) {
+            selection[block.type] = {};
+        }
+        selection[block.type][block.id] = block;
+    });
+
+    updateSelection(selection);
+    return selection;
+}
+
+export function removeAll(selection, blockIds, blockType) {
+    if (!selection[blockType]) {
+        return selection
+    }
+    blockIds.forEach(blockId => {
+        delete selection[blockType][blockId];
+    });
+
+    updateSelection(selection);
+    return selection;
+}
+
 export function removeFromSelection(selection, blockId, blockType) {
-    console.log("coucou");
     const { [blockId]: _, ...rest } = selection[blockType];
     selection[blockType] = rest;
     updateSelection(selection);
@@ -29,7 +52,7 @@ export function removeFromSelection(selection, blockId, blockType) {
 
  export function addToSelection(selection, block) {
     // todo add only id and title to selection?
-    if (!selection.hasOwnProperty(block.type)) {selection[block.type] = []}
+    if (!selection.hasOwnProperty(block.type)) {selection[block.type] = {}}
     selection[block.type] = { ...selection[block.type], [block.id]: block };
     updateSelection(selection);
     return selection;

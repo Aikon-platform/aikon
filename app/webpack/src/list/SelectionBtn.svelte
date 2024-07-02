@@ -12,7 +12,6 @@
             button.animate([
                 { transform: isIncreasing ? 'translateY(-7px)' : 'translateX(-5px)' },
                 { transform: isIncreasing ? 'translateY(7px)' : 'translateX(5px)' },
-                { transform: 'translate(0)' }
             ], {
                 duration: 300,
                 easing: 'cubic-bezier(0.65, 0, 0.35, 1)'
