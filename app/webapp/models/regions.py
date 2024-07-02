@@ -7,11 +7,12 @@ from django.db import models
 from iiif_prezi.factory import StructuralError
 
 from app.config.settings import APP_URL, APP_NAME, APP_LANG
+from app.similarity.const import SCORES_PATH
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.utils.constants import WIT
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
-from app.webapp.utils.paths import REGIONS_PATH, SCORES_PATH
+from app.webapp.utils.paths import REGIONS_PATH
 
 
 def get_name(fieldname, plural=False):
