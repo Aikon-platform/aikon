@@ -20,6 +20,7 @@ export function emptySelection(selection, keysToRemove) {
 }
 
 export function removeFromSelection(selection, blockId, blockType) {
+    console.log("coucou");
     const { [blockId]: _, ...rest } = selection[blockType];
     selection[blockType] = rest;
     updateSelection(selection);

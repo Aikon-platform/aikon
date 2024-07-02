@@ -141,6 +141,7 @@ urlpatterns = [
     ),
 ]
 
+# ADMIN VIEWS
 urlpatterns += [
     path(f"witness/", WitnessList.as_view(), name="witness_list"),
     path(f"witness/<int:id>/", WitnessView.as_view(), name="witness_view"),
@@ -159,5 +160,19 @@ urlpatterns += [
         f"witness/<int:id>/regions/",
         WitnessRegionsView.as_view(),
         name="witness_regions_view",
+    ),
+]
+
+# ENDPOINTS
+urlpatterns += [
+    path(
+        f"witness/<int:wid>/regions/<int:rid>/canvas",
+        get_canvas_regions,
+        name="canvas_regions",
+    ),
+    path(
+        f"witness/<int:wid>/regions/canvas",
+        get_canvas_witness_regions,
+        name="canvas_witness_regions",
     ),
 ]

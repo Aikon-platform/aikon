@@ -25,7 +25,7 @@ from app.webapp.models.utils.constants import (
     DIGIT_TYPE,
     IMG,
     PDF,
-    MANIFEST,
+    MAN,
     DIGIT_ABBR,
     IMG_ABBR,
     MAN_ABBR,
@@ -111,7 +111,7 @@ class Digitization(models.Model):
         blank=True,
     )
     manifest = models.URLField(
-        verbose_name=MANIFEST,
+        verbose_name=MAN,
         help_text=MANIFEST_INFO,
         validators=[validate_manifest],
         blank=True,
@@ -215,6 +215,10 @@ class Digitization(models.Model):
         # if there is at least one image file named after the current digitization
         # NOTE: might result in returning None even though there are images (but not the first one)
         return bool(get_first_img(self.get_ref()))
+
+    def img_nb(self):
+        # get the number of images for a digitization
+        return get_nb_of_files(IMG_PATH, self.get_ref())
 
     def has_vectorization(self):
         # TODO voir comment modulariser ?
