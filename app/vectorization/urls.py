@@ -1,8 +1,7 @@
 from django.conf.urls.static import static
-from django.contrib import admin
 from django.urls import path, include, register_converter
 
-from app.config.settings import APP_NAME, MEDIA_URL, MEDIA_ROOT, DEBUG
+from app.config.settings import APP_NAME, MEDIA_URL, MEDIA_ROOT
 
 from app.vectorization.views import (
     show_vectorization,
@@ -14,19 +13,7 @@ from app.vectorization.views import (
     smash_and_relauch_vectorization,
 )
 
-
-class ListConverter:
-    regex = r"[^/]+(?:\+[^/]+)*"
-
-    def to_python(self, value):
-        return value.split("+")
-
-    def to_url(self, value):
-        return "+".join(value)
-
-
-register_converter(ListConverter, "list")
-
+app_name = "vectorization"
 
 urlpatterns = [
     path(
@@ -64,12 +51,4 @@ urlpatterns = [
         smash_and_relauch_vectorization,
         name="smash-and-relaunch-vectorization",
     ),
-]
-
-urlpatterns += static(MEDIA_URL, document_root=MEDIA_ROOT)
-
-import debug_toolbar
-
-urlpatterns += [
-    path("__debug__/", include(debug_toolbar.urls)),
 ]

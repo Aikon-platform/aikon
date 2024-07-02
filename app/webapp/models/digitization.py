@@ -46,15 +46,12 @@ from app.webapp.utils.paths import (
     IMG_DIR,
     REGIONS_PATH,
     PDF_DIR,
-    SVG_PATH,
 )
 from app.webapp.tasks import (
     convert_pdf_to_img,
     convert_temp_to_img,
     extract_images_from_iiif_manifest,
 )
-
-from app.vectorization.const import SVG_PATH
 
 from app.webapp.utils.iiif.validation import validate_manifest
 
@@ -219,28 +216,33 @@ class Digitization(models.Model):
         # NOTE: might result in returning None even though there are images (but not the first one)
         return bool(get_first_img(self.get_ref()))
 
-    def img_nb(self):
-        # get the number of images for a digitization
-        return get_nb_of_files(self.get_ref(), IMG_PATH)
-
     def has_vectorization(self):
+        # TODO voir comment modulariser ?
+        from app.vectorization.const import SVG_PATH
+
         # if there is at least one SVG file named after the current digitization
         if len(glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")):
             return True
         return False
 
-    def get_img(self, is_abs=False, only_first=False):
-        if only_first:
-            return get_first_img(self.get_ref())
-        return self.get_imgs(is_abs, only_one=True)
-
     def has_all_vectorization(self):
+        from app.vectorization.const import SVG_PATH
+
         # if there is as much svg files as there are images in the current digitization
         if len(glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")) == len(
             glob(f"{IMG_PATH}/{self.get_ref()}_*.jpg")
         ):
             return True
         return False
+
+    def img_nb(self):
+        # get the number of images for a digitization
+        return get_nb_of_files(self.get_ref(), IMG_PATH)
+
+    def get_img(self, is_abs=False, only_first=False):
+        if only_first:
+            return get_first_img(self.get_ref())
+        return self.get_imgs(is_abs, only_one=True)
 
     def get_imgs(self, is_abs=False, temp=False, only_one=False):
         prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
