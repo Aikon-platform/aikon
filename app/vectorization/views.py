@@ -1,41 +1,31 @@
 import json
 import os
 import zipfile
-from os.path import exists
-
 
 from django.core.files.storage import default_storage
 
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.views.decorators.http import require_GET
 
-from app.webapp.models.regions import Regions, check_version
-from app.webapp.models.treatment import Treatment
-from app.webapp.models.digitization import Digitization
 from app.config.settings import (
     SAS_APP_URL,
     APP_NAME,
     ENV,
 )
-from app.webapp.models.language import Language
-from app.webapp.models.region_pair import RegionPair
-from app.webapp.models.witness import Witness
+from app.webapp.filters import jpg_to_none
+
 from app.webapp.utils.functions import (
     credentials,
     zip_images_and_files,
     is_url,
 )
-
-from app.webapp.utils.iiif import parse_ref, gen_iiif_url
+from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.utils.logger import log
-from app.webapp.utils.iiif.annotation import (
-    formatted_annotations,
-)
+from app.webapp.utils.iiif.annotation import formatted_annotations
 
 from app.vectorization.const import SVG_PATH
 from app.vectorization.utils import (
@@ -72,7 +62,7 @@ def save_svg_files(zip_file):
 
 
 @csrf_exempt
-def receive_vecto(request):
+def receive_vectorization(request):
     """
     Vue pour recevoir un fichier ZIP via une requête POST.
     """
@@ -105,12 +95,8 @@ def receive_vecto(request):
         return JsonResponse({"error": "Unsupported file type"}, status=400)
 
 
-from webapp.filters import jpg_to_none
-
-
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
-def show_crop_vecto(request, img_file, coords, anno, canvas_nb):
-
+def show_crop_vectorization(request, img_file, coords, regions, canvas_nb):
     svg_filename = f"{jpg_to_none(img_file)}_{coords}.svg"
     svg_path = os.path.join(SVG_PATH, svg_filename)
 
@@ -127,128 +113,128 @@ def show_crop_vecto(request, img_file, coords, anno, canvas_nb):
             "img_file": img_file,
             "coords": coords,
             "svg_content": svg_content,
-            "anno": anno,
+            "regions": regions,
             "canvas_nb": canvas_nb,
         },
     )
 
 
 @user_passes_test(is_superuser)
-def smash_and_relaunch_vecto(request, anno_ref):
+def smash_and_relaunch_vectorization(request, regions_ref):
     """
     delete the imgs in the API from the repo corresponding to doc_id + relauch vectorization
     """
 
-    passed, anno = check_ref(anno_ref, "Annotation")
+    passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
-        return JsonResponse(anno)
+        return JsonResponse(regions)
 
-    print(anno)
-    if not anno:
+    print(regions)
+    if not regions:
         return JsonResponse(
-            {"response": f"No corresponding annotation in the database for {anno_ref}"},
+            {"response": f"No corresponding regions in the database for {regions_ref}"},
             safe=False,
         )
 
     try:
-        if delete_and_relauch_request(anno):
+        if delete_and_relauch_request(regions):
             return JsonResponse(
                 {
-                    "response": f"Successful smash + vectorization request for {anno_ref}"
+                    "response": f"Successful smash + vectorization request for {regions_ref}"
                 },
                 safe=False,
             )
         return JsonResponse(
             {
-                "response": f"Failed to send smash + vectorization request for {anno_ref}"
+                "response": f"Failed to send smash + vectorization request for {regions_ref}"
             },
             safe=False,
         )
 
     except Exception as e:
-        error = f"[send_vectorization] Couldn't send request for {anno_ref}"
+        error = f"[send_vectorization] Couldn't send request for {regions_ref}"
         log(error, e)
 
         return JsonResponse({"response": error, "reason": e}, safe=False)
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
-def send_vectorization(request, anno_ref):
+def send_vectorization(request, regions_ref):
     """
     Send vectorization request from the witness info template
     """
 
-    passed, anno = check_ref(anno_ref, "Annotation")
+    passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
-        return JsonResponse(anno)
+        return JsonResponse(regions)
 
-    print(anno)
-    if not anno:
+    print(regions)
+    if not regions:
         return JsonResponse(
-            {"response": f"No corresponding annotation in the database for {anno_ref}"},
+            {"response": f"No corresponding regions in the database for {regions_ref}"},
             safe=False,
         )
 
     try:
-        if vectorization_request_for_one(anno):
+        if vectorization_request_for_one(regions):
             return JsonResponse(
-                {"response": f"Successful vectorization request for {anno_ref}"},
+                {"response": f"Successful vectorization request for {regions_ref}"},
                 safe=False,
             )
         return JsonResponse(
-            {"response": f"Failed to send vectorization request for {anno_ref}"},
+            {"response": f"Failed to send vectorization request for {regions_ref}"},
             safe=False,
         )
 
     except Exception as e:
-        error = f"[send_vectorization] Couldn't send request for {anno_ref}"
+        error = f"[send_vectorization] Couldn't send request for {regions_ref}"
         log(error, e)
 
         return JsonResponse({"response": error, "reason": e}, safe=False)
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
-def show_vectorization(request, anno_ref):
+def show_vectorization(request, regions_ref):
 
-    passed, anno = check_ref(anno_ref, "Regions")
+    passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
-        return JsonResponse(anno)
+        return JsonResponse(regions)
 
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    _, all_annos = formatted_annotations(anno)
+    _, all_regions = formatted_annotations(regions)
     all_crops = [
         (canvas_nb, coord, img_file)
-        for canvas_nb, coord, img_file in all_annos
+        for canvas_nb, coord, img_file in all_regions
         if coord
     ]
 
     paginator = Paginator(all_crops, 50)
     try:
-        page_annos = paginator.page(request.GET.get("page"))
+        page_regions = paginator.page(request.GET.get("page"))
     except PageNotAnInteger:
-        page_annos = paginator.page(1)
+        page_regions = paginator.page(1)
     except EmptyPage:
-        page_annos = paginator.page(paginator.num_pages)
+        page_regions = paginator.page(paginator.num_pages)
 
     return render(
         request,
         "show_vectorization.html",
         context={
-            "anno": anno,
-            "page_annos": page_annos,
+            "regions": regions,
+            "page_regions": page_regions,
             "all_crops": all_crops,
-            "anno_ref": anno_ref,
+            "regions_ref": regions_ref,
         },
     )
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
-def export_all_images_and_svgs(request, anno_ref):
-    passed, anno = check_ref(anno_ref, "Annotation")
+def export_all_images_and_svgs(request, regions_ref):
+    passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
-        return JsonResponse(anno)
+        return JsonResponse(regions)
 
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
@@ -256,10 +242,10 @@ def export_all_images_and_svgs(request, anno_ref):
     urls_list = []
     path_list = []
 
-    _, all_annos = formatted_annotations(anno)
+    _, all_regions = formatted_annotations(regions)
     all_crops = [
         (canvas_nb, coord, img_file)
-        for canvas_nb, coord, img_file in all_annos
+        for canvas_nb, coord, img_file in all_regions
         if coord
     ]
 

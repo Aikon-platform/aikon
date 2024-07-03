@@ -1,4 +1,5 @@
 let scores = null;
+const WIT_CAP = capitalize(WIT);
 
 function getRegionsRef(imgRef) {
     imgRef = imgRef.split("_");

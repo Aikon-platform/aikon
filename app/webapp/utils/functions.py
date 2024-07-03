@@ -590,3 +590,7 @@ def truncate_words(text, max_length):
 
 def sort_key(s):
     return [int(part) if part.isdigit() else part for part in re.split("(\d+)", s)]
+
+
+def gen_img_ref(img, coord):
+    return f"{img.split('.')[0]}_{coord}"

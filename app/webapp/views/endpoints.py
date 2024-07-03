@@ -2,6 +2,12 @@ import json
 
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.core.paginator import Paginator
+from django.shortcuts import get_object_or_404
+
+from app.webapp.models.regions import Regions
+from app.webapp.models.witness import Witness
+from app.webapp.utils.iiif.annotation import get_regions_annotations
 
 """
 VIEWS THAT SERVE AS ENDPOINTS
@@ -32,3 +38,34 @@ def save_document_set(request):
         except Exception as e:
             return JsonResponse({"message": "Error saving score files"}, status=500)
     return JsonResponse({"message": "Invalid request"}, status=400)
+
+
+def get_canvas_regions(request, wid, rid):
+    regions = get_object_or_404(Regions, id=rid)
+    p_nb = int(request.GET.get("p", 1))
+    p_len = 50
+    anno_regions = {}
+    max_c = p_nb * p_len  # TODO limit to not exceed number of canvases of the witness
+    min_c = max_c - p_len
+
+    return JsonResponse(
+        get_regions_annotations(
+            regions, as_json=True, r_annos=anno_regions, min_c=min_c, max_c=max_c
+        ),
+        safe=False,
+    )
+
+
+def get_canvas_witness_regions(request, wid):
+    witness = get_object_or_404(Witness, id=wid)
+    p_nb = int(request.GET.get("p", 1))
+    p_len = 50
+    anno_regions = {}
+    max_c = p_nb * p_len  # TODO limit to not exceed number of canvases of the witness
+    min_c = max_c - p_len
+    for regions in witness.get_regions():
+        anno_regions = get_regions_annotations(
+            regions, as_json=True, r_annos=anno_regions, min_c=min_c, max_c=max_c
+        )
+
+    return JsonResponse(anno_regions, safe=False)

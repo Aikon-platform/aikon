@@ -149,6 +149,7 @@ fieldset:not(:last-child) {
 .is-center {
     margin: auto;
     text-align: center;
+    justify-content: center;
 }
 
 .is-top {
@@ -242,7 +243,7 @@ td.is-fullwidth {
     flex-direction: column;
     justify-content: center;
 }
-.table tr {
+.table tr:not(:last-child) {
     border-color: var(--bulma-table-cell-border-color);
     border-style: var(--bulma-table-cell-border-style);
     border-width: var(--bulma-table-cell-border-width);
@@ -252,15 +253,20 @@ td.is-fullwidth {
 }
 
 :root {
-  --contrasted: #f5f0f0; /* Default color */
+
+    --contrasted: #f5f0f0;
+    --accent: hsl(0deg 0% 0% / 5%);
 }
 
 [data-theme="light"] {
-  --contrasted: #f5f0f0;
+    --contrasted: #f3eff1;
+    --accent: hsl(0deg 0% 0% / 5%);
 }
 
 [data-theme="dark"] {
-  --contrasted: #2e2d2d;
+    --contrasted: #252424;
+    --accent: hsla(0, 0%, 100%, 0.05);
+
 }
 
 .is-contrasted {

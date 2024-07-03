@@ -15,6 +15,21 @@ urlpatterns = [
         name="show-regions",
     ),
     path(
+        f"{APP_NAME}/<str:regions_ref>/show-all-regions",
+        show_all_regions,
+        name="show-all-regions",
+    ),
+    path(
+        f"{APP_NAME}/export-regions/<str:regions_ref>",
+        export_all_regions,
+        name="export-regions",
+    ),
+    path(
+        f"{APP_NAME}/export-selected-regions",
+        export_selected_regions,
+        name="export-selected-regions",
+    ),
+    path(
         f"{APP_NAME}/<str:regions_ref>/list/",
         get_regions_img_list,
         name="regions-list",
@@ -77,42 +92,6 @@ urlpatterns = [
         name="witness-imgs",
     ),
     path(
-        f"{APP_NAME}/autocomplete/place/",
-        PlaceAutocomplete.as_view(),
-        name="place-autocomplete",
-    ),
-    path(
-        f"{APP_NAME}/autocomplete/language/",
-        LanguageAutocomplete.as_view(),
-        name="language-autocomplete",
-    ),
-    path("retrieve_place_info/", retrieve_place_info, name="retrieve-place-info"),
-    path(
-        f"{APP_NAME}/similarity",
-        receive_similarity,
-        name="receive-similarity",
-    ),
-    path(
-        f"{APP_NAME}/run-similarity/<list:regions_refs>",  # regions_refs = regions_ref+regions_ref+regions_ref
-        send_similarity,
-        name="send-similarity",
-    ),
-    path(
-        f"{APP_NAME}/<str:regions_ref>/show-similarity",  # regions_refs = regions_ref+regions_ref+regions_ref
-        show_similarity,
-        name="show-similarity",
-    ),
-    path(
-        f"{APP_NAME}/task-status/<str:task_id>/",
-        task_status,
-        name="task-status",
-    ),
-    path(
-        f"{APP_NAME}/compute-score",
-        compute_score,
-        name="compute-score",
-    ),
-    path(
         f"{APP_NAME}/index-witness/<int:wit_id>",
         index_witness_regions,
         name="index-witness-regions",
@@ -137,29 +116,23 @@ urlpatterns = [
         delete_annotations_regions,
         name="delete-annotations-regions",
     ),
-    path(f"{APP_NAME}/retrieve-category/", retrieve_category, name="retrieve-category"),
-    path(f"{APP_NAME}/save-category/", save_category, name="save-category"),
+    path(
+        f"{APP_NAME}/autocomplete/place/",
+        PlaceAutocomplete.as_view(),
+        name="place-autocomplete",
+    ),
+    path(
+        f"{APP_NAME}/autocomplete/language/",
+        LanguageAutocomplete.as_view(),
+        name="language-autocomplete",
+    ),
+    path("retrieve_place_info/", retrieve_place_info, name="retrieve-place-info"),
+    path(
+        f"{APP_NAME}/task-status/<str:task_id>/",
+        task_status,
+        name="task-status",
+    ),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
-    path(
-        f"{APP_NAME}/<str:regions_ref>/show-all-regions",
-        show_all_regions,
-        name="show-all-regions",
-    ),
-    path(
-        f"{APP_NAME}/export-regions/<str:regions_ref>",
-        export_all_regions,
-        name="export-regions",
-    ),
-    path(
-        f"{APP_NAME}/export-selected-regions",
-        export_selected_regions,
-        name="export-selected-regions",
-    ),
-    # path(
-    #     f"{APP_NAME}/<str:regions_ref>/show-vectorization",
-    #     show_vectorization,
-    #     name="show-vectorization",
-    # ),
     path(f"{APP_NAME}/advanced-search/", advanced_search, name="advanced-search"),
     path(
         f"{APP_NAME}/autocomplete/edition/",
@@ -168,6 +141,7 @@ urlpatterns = [
     ),
 ]
 
+# ADMIN VIEWS
 urlpatterns += [
     path(f"witness/", WitnessList.as_view(), name="witness_list"),
     path(f"witness/<int:id>/", WitnessView.as_view(), name="witness_view"),
@@ -186,5 +160,19 @@ urlpatterns += [
         f"witness/<int:id>/regions/",
         WitnessRegionsView.as_view(),
         name="witness_regions_view",
+    ),
+]
+
+# ENDPOINTS
+urlpatterns += [
+    path(
+        f"witness/<int:wid>/regions/<int:rid>/canvas",
+        get_canvas_regions,
+        name="canvas_regions",
+    ),
+    path(
+        f"witness/<int:wid>/regions/canvas",
+        get_canvas_witness_regions,
+        name="canvas_witness_regions",
     ),
 ]

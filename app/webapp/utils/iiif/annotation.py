@@ -17,11 +17,10 @@ from app.config.settings import (
     APP_NAME,
     APP_URL,
 )
-from app.webapp.utils.functions import log, get_img_nb_len
+from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, flatten_dict
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
 from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.regions import get_txt_regions
-
 
 IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
 
@@ -47,7 +46,9 @@ def index_regions(regions: Regions):
     return True
 
 
-def get_regions_annotations(regions: Regions, as_json=False, r_annos=None):
+def get_regions_annotations(
+    regions: Regions, as_json=False, r_annos=None, min_c: int = None, max_c: int = None
+):
     if not r_annos:
         r_annos = {} if as_json else []
 
@@ -69,27 +70,36 @@ def get_regions_annotations(regions: Regions, as_json=False, r_annos=None):
         try:
             canvas = anno["on"].split("/canvas/c")[1].split(".json")[0]
             xyhw = anno["on"].split("xywh=")[1]
+            if min_c is not None and (int(canvas) < min_c or int(canvas) > max_c):
+                continue
             if as_json:
                 if canvas not in r_annos:
-                    r_annos[canvas] = []
+                    r_annos[canvas] = {}
                 img = f"{img_name}_{canvas.zfill(nb_len)}"
-                r_annos[canvas].append(
-                    {
-                        "id": f"{img}_{xyhw}",
-                        "class": "Region",
-                        "type": get_name("Regions"),
-                        "title": region_title(canvas, xyhw),
-                        "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
-                        "canvas": canvas,
-                        "xyhw": xyhw.split(","),
-                        "img": img,
-                    }
-                )
+                aid = anno["@id"].split("/")[-1]
+                r_annos[canvas][aid] = {
+                    "id": aid,
+                    "ref": f"{img}_{xyhw}",
+                    "class": "Region",
+                    "type": get_name("Regions"),
+                    "title": region_title(canvas, xyhw),
+                    "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
+                    "canvas": canvas,
+                    "xyhw": xyhw.split(","),
+                    "img": img,
+                }
             else:
                 r_annos.append((canvas, xyhw, f"{img_name}_{canvas.zfill(nb_len)}"))
         except Exception as e:
             log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
             continue
+
+    # if min_c is not None:
+    #     min_c = min_c or 1
+    #     for canvas in range(min_c, max_c):
+    #         canvas = str(canvas)
+    #         if canvas not in r_annos:
+    #             r_annos[canvas] = {"empty": {"img": f"{img_name}_{canvas.zfill(nb_len)}"}}
 
     return r_annos
 
@@ -655,3 +665,29 @@ def process_regions(regions_file_content, digit, treatment_id, model="Unknown mo
 
     treatment.complete_treatment(regions.get_ref())
     return True
+
+
+def get_regions_urls(regions: Regions):
+    """
+    {
+        "wit1_man191_0009_166,1325,578,516": ""https://eida.obspm.fr/iiif/2/wit1_man191_0009.jpg/166,1325,578,516/full/0/default.jpg"",
+        "wit1_man191_0027_1143,2063,269,245": "https://eida.obspm.fr/iiif/2/wit1_man191_0027.jpg/1143,2063,269,245/full/0/default.jpg",
+        "wit1_man191_0031_857,2013,543,341": "https://eida.obspm.fr/iiif/2/wit1_man191_0031.jpg/857,2013,543,341/full/0/default.jpg",
+        "img_name": "..."
+    }
+    """
+    folio_regions = []
+
+    _, canvas_annotations = formatted_annotations(regions)
+    for canvas_nb, annotations, img_name in canvas_annotations:
+        if len(annotations):
+            folio_regions.append(
+                {
+                    gen_img_ref(img_name, a[0]): gen_iiif_url(
+                        img_name, 2, f"{a[0]}/full/0"
+                    )
+                    for a in annotations
+                }
+            )
+
+    return flatten_dict(folio_regions)
