@@ -110,7 +110,7 @@ def delete_and_relauch_request(anno):
 
     try:
         response = requests.post(
-            url=f"{CV_API_URL}/vectorization/start",
+            url=f"{CV_API_URL}/vectorization/delete_and_relaunch",
             json={
                 "doc_id": anno.get_ref(),
                 "model": f"{VECTO_MODEL_EPOCH}",

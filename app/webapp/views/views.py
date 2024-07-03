@@ -96,7 +96,7 @@ def check_ref(obj_ref, obj="Digitization"):
     if obj == "Digitization" or ref["regions"] is None:
         if obj_ref != digit.get_ref():
             return False, {
-                "response": f"Wrong info given in reference for digitization #{digit_id}",
+                "response": f"Wrong info given in reference for digitization #{digit_id}: {obj_ref} instead of {digit.get_ref()}",
                 "reason": f"Reference must follow this format: {ref_format}",
             }
         return True, digit

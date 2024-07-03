@@ -134,7 +134,7 @@ def show_crop_vecto(request, img_file, coords, anno, canvas_nb):
 
 
 @user_passes_test(is_superuser)
-def smash_and_relauch_vecto(request, anno_ref):
+def smash_and_relaunch_vecto(request, anno_ref):
     """
     delete the imgs in the API from the repo corresponding to doc_id + relauch vectorization
     """
