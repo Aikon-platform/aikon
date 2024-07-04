@@ -1,31 +1,6 @@
-from django.conf.urls.static import static
-from django.contrib import admin
 from django.urls import path, include, register_converter
 
-from app.config.settings import APP_NAME, MEDIA_URL, MEDIA_ROOT, DEBUG
-
-from app.vectorization.views import (
-    show_vectorization,
-    receive_vecto,
-    show_crop_vecto,
-    export_selected_imgs_and_svgs,
-    export_all_images_and_svgs,
-    send_vectorization,
-    smash_and_relauch_vecto,
-)
-
-
-class ListConverter:
-    regex = r"[^/]+(?:\+[^/]+)*"
-
-    def to_python(self, value):
-        return value.split("+")
-
-    def to_url(self, value):
-        return "+".join(value)
-
-
-register_converter(ListConverter, "list")
+from app.vectorization.views import *
 
 
 urlpatterns = [
@@ -64,12 +39,4 @@ urlpatterns = [
         smash_and_relauch_vecto,
         name="smash-and-relaunch-vecto",
     ),
-]
-
-urlpatterns += static(MEDIA_URL, document_root=MEDIA_ROOT)
-
-import debug_toolbar
-
-urlpatterns += [
-    path("__debug__/", include(debug_toolbar.urls)),
 ]
