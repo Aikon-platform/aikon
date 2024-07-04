@@ -1,6 +1,7 @@
 <script>
-    import {saveSelection, emptySelection, addToSelection, removeFromSelection, selectAll, removeAll} from "./selection.js";
     import {manifestToMirador, refToIIIF, showMessage} from "../utils.js";
+    import { selectionStore } from './stores/selectionStore.js';
+    const { selected, nbSelected } = selectionStore;
     import { writable } from 'svelte/store';
 
     import Region from './Region.svelte';
@@ -19,10 +20,10 @@
     export let nbOfPages = 1;
     const zeros = (n, l) => n.toString().padStart(l, '0');
 
-    let selection = JSON.parse(localStorage.getItem("documentSet")) ?? {};
-    $: selectionLength = selection.hasOwnProperty(regionsType) ? Object.keys(selection[regionsType]).length : 0;
-    $: isBlockSelected = (block) => selection[regionsType]?.hasOwnProperty(block.id);
-    $: areSelectedRegions = Object.keys(selection[regionsType] ?? {}).length > 0;
+    $: selectedRegions = $selected(true);
+    $: selectionLength = Object.keys(selectedRegions).length;
+
+    $: areSelectedRegions = selectionLength > 0;
     $: isEditMode = !isValidated;
 
     function toImgName(canvasNb){
@@ -60,16 +61,6 @@
         // todo send validation status to backend
     }
 
-    function handleCommitSelection(event) {
-        const { updateType } = event.detail;
-        if (updateType === 'clear') {
-            selection = emptySelection(selection, [regionsType]);
-        } else if (updateType === 'save') {
-            selection = saveSelection(selection);
-        }
-        // todo add load selection
-    }
-
     async function deleteSelectedRegions() {
         const confirmed = await showMessage(
             appLang === "en" ? "Are you sure you want to delete regions?" : "Voulez-vous vraiment supprimer les régions?",
@@ -80,7 +71,8 @@
         if (!confirmed) {
             return; // User cancelled the deletion
         }
-        for (const regionId of Object.keys(selection[regionsType])) {
+
+        for (const regionId of Object.keys(selectedRegions)) {
             try {
                 if (!regions.hasOwnProperty(regionId)) {
                     // only delete regions that are displayed
@@ -100,7 +92,7 @@
                     }
                     return currentPageRegions;
                 });
-                selection = removeFromSelection(selection, regionId, regionsType);
+                selectionStore.remove(regionId, regionsType)
 
             } catch (error) {
                 success = false;
@@ -121,7 +113,7 @@
 
     function areAllSelected() {
         // TODO here when there is not only one document selected, this assertion is erroneous
-        return Object.keys(selection[regionsType] ?? {}).length === Object.keys(regions).length;
+        return selectionLength === Object.keys(regions).length;
     }
 
     function getSelectBtnLabel(areAllRegionsSelected = null) {
@@ -135,44 +127,22 @@
         }
     }
 
-    function toggleAllSelection(){
+    function toggleAllSelection() {
         if (areAllSelected()) {
-            const visibleSelectedRegions = Object.keys(selection[regionsType]).filter(regionId => regions.hasOwnProperty(regionId))
-            selection = removeAll(selection, visibleSelectedRegions, regionsType)
-
-            // selection = emptySelection(selection, [regionsType]);
-            document.getElementById("all-selection").innerText = getSelectBtnLabel(false);
+            selectionStore.removeAll(Object.keys(regions), 'Regions');
         } else {
-            selection = selectAll(selection, Object.values(regions));
-            document.getElementById("all-selection").innerText = getSelectBtnLabel(true);
-        }
-    }
-
-    function removeRegion(blockId) {
-        selection = removeFromSelection(selection, blockId, regionsType);
-    }
-
-    function addRegion(block) {
-        selection = addToSelection(selection, block);
-    }
-
-    function handleToggleSelection(event) {
-        const { block } = event.detail;
-        if (!isBlockSelected(block)) {
-            addRegion(block);
-        } else {
-            removeRegion(block.id);
+            selectionStore.addAll(Object.values(regions));
         }
     }
 
     $: clipBoard = "";
-    // TODO: isBlockCopied stays to true if user copied another string
-    $: isBlockCopied = (block) => clipBoard === block.ref;
+    // TODO: isItemCopied stays to true if user copied another string
+    $: isItemCopied = (item) => clipBoard === item.ref;
     function handleCopyRef(event) {
-        const { block } = event.detail;
-        const blockRef = isBlockCopied(block) ? "" : block.ref;
-        navigator.clipboard.writeText(blockRef);
-        clipBoard = blockRef;
+        const { item } = event.detail;
+        const itemRef = isItemCopied(item) ? "" : item.ref;
+        navigator.clipboard.writeText(itemRef);
+        clipBoard = itemRef;
     }
 </script>
 
@@ -273,12 +243,10 @@
 
 {#if currentLayout === "all"}
         <div class="grid is-gap-2">
-            {#each Object.values(regions) as block (block.id)}
+            {#each Object.values(regions) as item (item.id)}
                 <!--TODO dont sort object keys alphabetically-->
-                <Region {block} {appLang}
-                        isSelected={isBlockSelected(block)}
-                        isCopied={isBlockCopied(block)}
-                        on:toggleSelection={handleToggleSelection}
+                <Region {item} {appLang}
+                        isCopied={isItemCopied(item)}
                         on:copyRef={handleCopyRef}/>
             {:else}
                 <!--TODO Create manual annotation btn / import anno file-->
@@ -296,13 +264,11 @@
         {:then _}
             {#if Object.values($pageRegions).length > 0}
                 <!--TODO make empty canvases appear-->
-                {#each Object.entries($pageRegions) as [canvasNb, blocks]}
+                {#each Object.entries($pageRegions) as [canvasNb, items]}
                     <RegionsRow canvasImg={toImgName(canvasNb)} {canvasNb} {manifest}>
-                        {#each Object.values(blocks) as block (block.id)}
-                            <Region {block} {appLang}
-                                    isSelected={isBlockSelected(block)}
-                                    isCopied={isBlockCopied(block)}
-                                    on:toggleSelection={handleToggleSelection}
+                        {#each Object.values(items) as item (item.id)}
+                            <Region {item} {appLang}
+                                    isCopied={isItemCopied(item)}
                                     on:copyRef={handleCopyRef}/>
                         {/each}
                     </RegionsRow>
@@ -341,7 +307,7 @@
             {#if areSelectedRegions}
                 <div class="fixed-grid has-6-cols">
                     <div class="grid is-gap-2">
-                        {#each Object.entries(selection[regionsType]) as [id, meta]}
+                        {#each Object.entries(selectedRegions) as [id, meta]}
                             <div class="selection cell">
                                 <figure class="image is-64x64 card">
                                     <img src="{refToIIIF(meta.img, meta.xyhw, '96,')}" alt="Extracted region"/>
@@ -349,7 +315,8 @@
                                         <span class="overlay-desc">{meta.title}</span>
                                     </div>
                                 </figure>
-                                <button class="delete region-btn" aria-label="remove from selection" on:click={() => removeRegion(id)}/>
+                                <button class="delete region-btn" aria-label="remove from selection"
+                                        on:click={() => selectionStore.remove(id, regionsType)}/>
                             </div>
                         {/each}
                     </div>
@@ -360,6 +327,6 @@
                 </div>
             {/if}
         </section>
-        <SelectionFooter {appLang} on:commitSelection={handleCommitSelection}/>
+        <SelectionFooter {appLang} isRegion={true}/>
     </div>
 </div>

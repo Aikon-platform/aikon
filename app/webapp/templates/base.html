@@ -11,6 +11,8 @@
     <script>
         const CSRF_TOKEN = "{{ csrf_token }}";
 
+        const ADDITIONAL_MODULES = {{ ADDITIONAL_MODULES|safe }};
+
         const APP_NAME = "{{ APP_NAME }}";
         const APP_LANG = "{{ APP_LANG }}";
         const CONTACT_MAIL = "{{ CONTACT_MAIL }}";
@@ -24,6 +26,7 @@
         const MS = "{{ MS }}";
         const VOL = "{{ VOL }}";
         const WIT = "{{ WIT }}";
+        const REG = "{{ REG }}";
 
         const TPR = "{{ TPR }}";
         const WPR = "{{ WPR }}";

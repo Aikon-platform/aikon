@@ -10,6 +10,7 @@ const app = new RegionList({
         regions: regions,
         regionsType: regionsType,
         appLang: APP_LANG,
+        modules: ADDITIONAL_MODULES,
         manifest: manifest,
         isValidated: isValidated,
         imgPrefix: imgPrefix,
