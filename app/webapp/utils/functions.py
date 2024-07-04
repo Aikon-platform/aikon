@@ -90,7 +90,7 @@ def get_files_with_prefix(path, prefix, filepath="", only_one=False):
 
 
 def get_nb_of_files(path, prefix):
-    return len(get_files_with_prefix(path, prefix))
+    return len(get_files_with_prefix(path, prefix)) or 0
 
 
 def get_first_img(img_ref):

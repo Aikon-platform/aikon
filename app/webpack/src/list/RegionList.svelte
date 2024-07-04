@@ -10,6 +10,7 @@
     import RegionsRow from "./RegionsRow.svelte";
     import Pagination from "./Pagination.svelte";
     import Modal from "../Modal.svelte";
+    import ExtractionButtons from "./ExtractionButtons.svelte";
 
     export const regionsType = "Regions"
     export let regions = {};
@@ -18,6 +19,7 @@
     export let isValidated = false;
     export let imgPrefix = '';
     export let nbOfPages = 1;
+    export let modules = [];
     const zeros = (n, l) => n.toString().padStart(l, '0');
 
     $: selectedRegions = $selected(true);
@@ -33,12 +35,14 @@
     const layouts = {
         all: { text: appLang === 'en' ? 'All regions' : 'Toutes les régions' },
         page: { text: appLang === 'en' ? 'Per page' : 'Par page' },
-        similarity: { text: appLang === 'en' ? 'Similarity' : 'Similarité' },
-        vectorization: { text: appLang === 'en' ? 'Vectorization' : 'Vectorisation' }
     }
+    if (modules.includes("similarity")) layouts.similarity = { text: appLang === 'en' ? 'Similarity' : 'Similarité' }
+    if (modules.includes("vectorization")) layouts.vectorization = { text: appLang === 'en' ? 'Vectorization' : 'Vectorisation' }
+
     $: currentLayout = "all"
     $: baseUrl = `${window.location.origin}${window.location.pathname}`;
 
+    // todo handle paginated data with a store
     $: currentPage = parseInt(new URLSearchParams(window.location.search).get("p") ?? 1);
     const pageRegions = writable({});
     $: fetchPages = (async () => {
@@ -146,37 +150,6 @@
     }
 </script>
 
-<style>
-    .selection {
-        position: relative;
-        width: 64px;
-    }
-    .overlay {
-        font-size: 50%;
-    }
-    path {
-        fill: currentColor;
-    }
-    .edit-action {
-        height: 2em;
-    }
-    .actions {
-        align-items: flex-end;
-    }
-    .center-flex > div {
-        margin-bottom: 1em;
-    }
-    #nav-actions {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-        background-color: var(--bulma-body-background-color);
-        box-shadow: var(--bulma-body-background-color) 0 0 25px;
-        padding-top: 5em;
-        margin-top: -5em;
-    }
-</style>
-
 <Modal {appLang}/>
 
 <SelectionBtn {selectionLength} {appLang} />
@@ -200,12 +173,11 @@
             </button>
             <button class="button is-link is-light mr-3" on:click={toggleAllSelection}>
                 <i class="fa-solid fa-square-check"></i>
-                <!--TODO toggle to unselect all if everything is selected-->
                 <span id="all-selection">{getSelectBtnLabel()}</span>
             </button>
             <button class="button is-link is-light" on:click={() => null}>
                 <i class="fa-solid fa-download"></i>
-                {appLang === 'en' ? 'Download' : 'Télecharger'}
+                {appLang === 'en' ? 'Download' : 'Télécharger'}
             </button>
         </div>
 
@@ -242,18 +214,16 @@
 
 
 {#if currentLayout === "all"}
-        <div class="grid is-gap-2">
-            {#each Object.values(regions) as item (item.id)}
-                <!--TODO dont sort object keys alphabetically-->
-                <Region {item} {appLang}
-                        isCopied={isItemCopied(item)}
-                        on:copyRef={handleCopyRef}/>
-            {:else}
-                <!--TODO Create manual annotation btn / import anno file-->
-                <!--TODO if extraction app installed, add btn for annotation request-->
-                NO ANNOTATION
-            {/each}
-        </div>
+    <div class="grid is-gap-2">
+        {#each Object.values(regions) as item (item.id)}
+            <!--TODO dont sort object keys alphabetically-->
+            <Region {item} {appLang}
+                    isCopied={isItemCopied(item)}
+                    on:copyRef={handleCopyRef}/>
+        {:else}
+            <ExtractionButtons {appLang} {modules}/>
+        {/each}
+    </div>
 {:else if currentLayout === "page"}
     <!--TODO deduce max page from nbOfPages-->
     <Pagination pageNb={currentPage} maxPage={10} on:pageUpdate={handlePageUpdate}/>
@@ -275,9 +245,7 @@
                 {/each}
             {:else}
                 <tr>
-                    NO ANNOTATION
-                    <!--TODO Create manual annotation btn-->
-                    <!--TODO if extraction app installed, add btn for annotation request-->
+                    <ExtractionButtons {appLang} {modules}/>
                 </tr>
             {/if}
         {:catch error}
@@ -292,6 +260,7 @@
     <div>tout doux</div>
 {/if}
 
+<!--TODO create component with slot for regions-->
 <div id="selection-modal" class="modal fade" tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
     <div class="modal-background"/>
     <div class="modal-content">
@@ -330,3 +299,34 @@
         <SelectionFooter {appLang} isRegion={true}/>
     </div>
 </div>
+
+<style>
+    .selection {
+        position: relative;
+        width: 64px;
+    }
+    .overlay {
+        font-size: 50%;
+    }
+    path {
+        fill: currentColor;
+    }
+    .edit-action {
+        height: 2em;
+    }
+    .actions {
+        align-items: flex-end;
+    }
+    .center-flex > div {
+        margin-bottom: 1em;
+    }
+    #nav-actions {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background-color: var(--bulma-body-background-color);
+        box-shadow: var(--bulma-body-background-color) 0 0 25px;
+        padding-top: 5em;
+        margin-top: -5em;
+    }
+</style>

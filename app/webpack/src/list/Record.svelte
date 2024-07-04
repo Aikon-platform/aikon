@@ -27,7 +27,7 @@
 </style>
 
 <div class="item">
-    <div class="card">
+    <div class="card mb-3">
         <div class="card-content">
             <div class="media">
                 <div class="media-left">

@@ -26,8 +26,8 @@
     <script>
         const manifest = "{{ manifest }}";
         const imgPrefix = "{{ img_prefix }}";
-        const isValidated = "{{ is_validated }}";
-        const nbOfPages = {{ img_nb }};
+        const isValidated = {% if is_validated %}true{% else %}false{% endif %};
+        const nbOfPages = {% if img_nb %}{{img_nb}}{% else %}0{% endif %};
     </script>
     <script type="application/json" id="regions-data">
         {{ regions_list|safe }}

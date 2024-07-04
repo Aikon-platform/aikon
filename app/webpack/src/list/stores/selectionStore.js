@@ -6,24 +6,6 @@ function createSelectionStore() {
     const selection = writable(JSON.parse(localStorage.getItem("documentSet")) || {});
     const { subscribe, get, update } = selection;
 
-    const isSelected = derived(selection, $selection =>
-        item => $selection[item.type]?.hasOwnProperty(item.id) || false
-    );
-    const selected = derived(selection, $selection =>
-        isRegion => filter($selection, isRegion)
-    )
-    const nbSelected = derived(selection, $selection =>
-        isRegion => {
-            const selected = filter($selection, isRegion)
-            if (isRegion) {
-                return Object.keys(selected).length;
-            }
-            return selected.reduce(
-                (count, [_, selectedItems]) => count + Object.keys(selectedItems).length, 0
-            )
-        }
-    )
-
     function store(selection) {
         localStorage.setItem("documentSet", JSON.stringify(selection));
     }
@@ -112,9 +94,24 @@ function createSelectionStore() {
             //     return addAll(selection, items);
             // }
         }),
-        isSelected,
-        selected,
-        nbSelected
+        // REACTIVE STATEMENT
+        isSelected: derived(selection, $selection =>
+            item => $selection[item.type]?.hasOwnProperty(item.id) || false
+        ),
+        selected: derived(selection, $selection =>
+            isRegion => filter($selection, isRegion)
+        ),
+        nbSelected: derived(selection, $selection =>
+            isRegion => {
+                const selected = filter($selection, isRegion)
+                if (isRegion) {
+                    return Object.keys(selected).length;
+                }
+                return selected.reduce(
+                    (count, [_, selectedItems]) => count + Object.keys(selectedItems).length, 0
+                )
+            }
+        )
     };
 }
 export const selectionStore = createSelectionStore();

@@ -5,6 +5,8 @@
     export let pageNb;
     export let maxPage;
 
+    // todo paginatedData with store
+
     function pageUpdate(pageNb) {
         dispatch('pageUpdate', { pageNb });
     }

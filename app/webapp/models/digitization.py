@@ -221,7 +221,7 @@ class Digitization(models.Model):
 
     def img_nb(self):
         # get the number of images for a digitization
-        return get_nb_of_files(IMG_PATH, self.get_ref())
+        return get_nb_of_files(IMG_PATH, self.get_ref()) or 0
 
     def has_vectorization(self):
         # if there is at least one SVG file named after the current digitization
