@@ -202,4 +202,19 @@ urlpatterns += [
         get_canvas_witness_regions,
         name="canvas_witness_regions",
     ),
+    path(
+        f"witness/<int:wid>/regions/add",
+        create_manual_regions,
+        name="witness_manual_regions",
+    ),
+    path(
+        f"witness/<int:wid>/digitization/<int:did>/regions/add",
+        create_manual_regions,
+        name="digit_manual_regions",
+    ),
+    path(
+        f"witness/<int:wid>/regions/<int:rid>/add",
+        create_manual_regions,
+        name="regions_manual_regions",
+    ),
 ]

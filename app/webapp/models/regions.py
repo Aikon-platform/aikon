@@ -6,7 +6,7 @@ from django.utils.safestring import mark_safe
 from django.db import models
 from iiif_prezi.factory import StructuralError
 
-from app.config.settings import APP_URL, APP_NAME, APP_LANG
+from app.config.settings import APP_URL, APP_NAME, APP_LANG, SAS_APP_URL
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.utils.constants import WIT
 from app.webapp.models.utils.functions import get_fieldname
@@ -85,6 +85,9 @@ class Regions(models.Model):
                 error["reason"] = f"{e}"
                 return error
         return error
+
+    def gen_mirador_url(self):
+        return f"{SAS_APP_URL}/index.html?iiif-content={self.gen_manifest_url()}"
 
     def get_ref(self):
         if digit := self.get_digit():

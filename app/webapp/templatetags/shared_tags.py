@@ -1,3 +1,5 @@
+import json
+
 from django import template
 import pprint
 
@@ -41,6 +43,11 @@ def dump(obj):
 @register.filter
 def add_class(field, class_name):
     return field.as_widget(attrs={"class": class_name})
+
+
+@register.filter
+def js(obj):
+    return json.dumps(obj)
 
 
 @register.simple_tag

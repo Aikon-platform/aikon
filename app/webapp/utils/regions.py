@@ -39,6 +39,9 @@ def get_regions_img(regions: Regions):
 def create_empty_regions(digit: Digitization):
     imgs = digit.get_imgs()
     if len(imgs) == 0:
+        log(
+            f"[create_empty_regions] Digit #{digit.id} has no images",
+        )
         return False
 
     try:

@@ -5,9 +5,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 
+from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils.iiif.annotation import get_regions_annotations
+from app.webapp.utils.regions import create_empty_regions
 
 """
 VIEWS THAT SERVE AS ENDPOINTS
@@ -69,3 +71,40 @@ def get_canvas_witness_regions(request, wid):
         )
 
     return JsonResponse(anno_regions, safe=False)
+
+
+def create_manual_regions(request, wid, did=None, rid=None):
+    if request.method == "POST":
+        if rid:
+            regions = get_object_or_404(Regions, id=rid)
+            return JsonResponse(
+                {
+                    "regions_id": regions.id,
+                    "mirador_url": regions.gen_mirador_url(),
+                },
+                status=204,
+            )
+
+        witness = get_object_or_404(Witness, id=wid)
+        if did:
+            digit = get_object_or_404(Digitization, id=did)
+        else:
+            digit = witness.get_digits()
+            # todo check if has images
+
+        if not digit:
+            return JsonResponse(
+                {"error": "No digitization available for this witness"}, status=500
+            )
+
+        regions = create_empty_regions(digit)
+        if not regions:
+            return JsonResponse({"error": "Unable to create regions"}, status=500)
+        return JsonResponse(
+            {
+                "regions_id": regions.id,
+                "mirador_url": regions.gen_mirador_url(),
+            },
+            status=204,
+        )
+    return JsonResponse({"error": "Invalid request"}, status=400)

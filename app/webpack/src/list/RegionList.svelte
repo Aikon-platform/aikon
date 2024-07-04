@@ -20,6 +20,7 @@
     export let imgPrefix = '';
     export let nbOfPages = 1;
     export let modules = [];
+    export let witness = {};
     const zeros = (n, l) => n.toString().padStart(l, '0');
 
     $: selectedRegions = $selected(true);
@@ -177,6 +178,7 @@
             </button>
             <button class="button is-link is-light" on:click={() => null}>
                 <i class="fa-solid fa-download"></i>
+                <!-- TODO add download function -->
                 {appLang === 'en' ? 'Download' : 'Télécharger'}
             </button>
         </div>
@@ -221,7 +223,7 @@
                     isCopied={isItemCopied(item)}
                     on:copyRef={handleCopyRef}/>
         {:else}
-            <ExtractionButtons {appLang} {modules}/>
+            <ExtractionButtons {appLang} {modules} {witness}/>
         {/each}
     </div>
 {:else if currentLayout === "page"}
@@ -245,7 +247,7 @@
                 {/each}
             {:else}
                 <tr>
-                    <ExtractionButtons {appLang} {modules}/>
+                    <ExtractionButtons {appLang} {modules} {witness}/>
                 </tr>
             {/if}
         {:catch error}

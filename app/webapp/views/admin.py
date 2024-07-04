@@ -91,7 +91,7 @@ class AbstractRecordList(AbstractView, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["json_object_list"] = json.dumps(
-            [obj.to_json() for obj in context["object_list"]], cls=DateTimeEncoder
+            [obj.to_json() for obj in context["object_list"]]  # , cls=DateTimeEncoder
         )
 
         return context
@@ -130,7 +130,14 @@ class WitnessRegionsView(AbstractRecordView):
         context["regions_ids"] = []
         context["is_validated"] = True
         context["img_nb"] = None
-        for regions in self.get_record().get_regions():
+
+        witness = self.get_record()
+        context["witness"] = witness.to_json()
+        if len(witness.get_digits()) == 0:
+            # TODO handle case where no digitization is available
+            pass
+
+        for regions in witness.get_regions():
             anno_regions = get_regions_annotations(
                 regions, as_json=True, r_annos=anno_regions
             )
@@ -163,6 +170,7 @@ class RegionsView(AbstractRecordView):
         context["regions_id"] = self.kwargs["rid"]
 
         regions = self.get_record()
+        context["witness"] = regions.get_witness().to_json()
         context["is_validated"] = regions.is_validated
         context["manifest"] = regions.gen_manifest_url()
         anno_regions = get_regions_annotations(regions, as_json=True)

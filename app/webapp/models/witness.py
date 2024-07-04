@@ -176,7 +176,7 @@ class Witness(models.Model):
             "img": self.get_img(only_first=True),
             "user": self.user.__str__(),
             "url": self.get_absolute_url(),
-            "updated_at": self.updated_at,
+            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),
             "is_public": self.is_public,
             "metadata": {
                 get_name("id_nb"): self.id_nb or "-",
