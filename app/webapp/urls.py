@@ -217,4 +217,9 @@ urlpatterns += [
         create_manual_regions,
         name="regions_manual_regions",
     ),
+    path(
+        f"regions/<int:rid>/delete",
+        delete_regions,
+        name="delete_regions",
+    ),
 ]

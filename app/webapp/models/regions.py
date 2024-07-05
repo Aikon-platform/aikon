@@ -87,7 +87,7 @@ class Regions(models.Model):
         return error
 
     def gen_mirador_url(self):
-        return f"{SAS_APP_URL}/index.html?iiif-content={self.gen_manifest_url()}"
+        return f"{SAS_APP_URL}/index.html?iiif-content={self.gen_manifest_url(version=MANIFEST_V2)}"
 
     def get_ref(self):
         if digit := self.get_digit():

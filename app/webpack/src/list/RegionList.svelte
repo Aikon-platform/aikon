@@ -30,6 +30,9 @@
     $: selectionLength = Object.keys(selectedRegions).length;
     $: areSelectedRegions = selectionLength > 0;
 
+    const baseUrl = `${window.location.origin}${window.location.pathname}`;
+    const currentRegionId = parseInt(baseUrl.split('regions/')[1].replace("/", ""));
+
 
     function toImgName(canvasNb){
         return `${imgPrefix}_${zeros(canvasNb, String(nbOfPages).length + 1)}`;
@@ -43,7 +46,6 @@
     if (modules.includes("vectorization")) layouts.vectorization = { text: appLang === 'en' ? 'Vectorization' : 'Vectorisation' }
 
     $: currentLayout = "all"
-    $: baseUrl = `${window.location.origin}${window.location.pathname}`;
 
     $: clipBoard = "";
     // NOTE: isItemCopied stays to true if user copied another string
@@ -63,7 +65,7 @@
 <div id="nav-actions" class="mb-5">
     <div class="actions grid">
         <div class="cell is-right is-middle">
-            <RegionsBtn {appLang} {witness} {baseUrl}/>
+            <RegionsBtn {appLang} {witness} {baseUrl} {currentRegionId}/>
         </div>
         <div class="cell">
             <ActionButtons {appLang} {manifest} {isValidated} {regionsType}/>
@@ -97,7 +99,7 @@
                         isCopied={isItemCopied(item)}
                         on:copyRef={handleCopyRef}/>
             {:else}
-                <ExtractionButtons {appLang} {modules} {witness}/>
+                <ExtractionButtons {appLang} {modules} {witness} {currentRegionId}/>
             {/each}
         {:catch error}
             <tr>Error when retrieving regions: {error}</tr>

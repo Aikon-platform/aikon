@@ -2,13 +2,16 @@ import json
 
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
 
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
-from app.webapp.utils.iiif.annotation import get_regions_annotations
+from app.webapp.utils.iiif.annotation import (
+    get_regions_annotations,
+    delete_regions as del_regions,
+)
+from app.webapp.utils.logger import log
 from app.webapp.utils.regions import create_empty_regions
 
 """
@@ -97,7 +100,6 @@ def create_manual_regions(request, wid, did=None, rid=None):
                     "regions_id": regions.id,
                     "mirador_url": regions.gen_mirador_url(),
                 },
-                status=204,
             )
 
         witness = get_object_or_404(Witness, id=wid)
@@ -123,6 +125,17 @@ def create_manual_regions(request, wid, did=None, rid=None):
                 "regions_id": regions.id,
                 "mirador_url": regions.gen_mirador_url(),
             },
-            status=204,
         )
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+
+def delete_regions(request, rid):
+    if request.method == "DELETE":
+        regions = get_object_or_404(Regions, id=rid)
+        try:
+            del_regions(regions)
+            return JsonResponse({"message": "Regions deleted"}, status=204)
+        except Exception as e:
+            log(f"[delete_regions] Error deleting regions #{rid}", e)
+            return JsonResponse({"error": f"Error deleting regions: {e}"}, status=500)
     return JsonResponse({"error": "Invalid request"}, status=400)

@@ -2,31 +2,37 @@
     export let appLang = 'en';
     export let modules = [];
     export let witness = {};
+    export let currentRegionId;
 
     const baseUrl = `${window.location.origin}`
 
     async function newRegions() {
-        if (witness.regions.length === 1){
-
+        let url = `${baseUrl}/witness/${witness.id}/regions/add`;
+        if (witness.regions.length === 1 || currentRegionId){
+            const regionId = currentRegionId || witness.regions[0];
+            url = `${baseUrl}/witness/${witness.id}/regions/${regionId}/add`;
         }
 
-        // todo : allow "witness/<int:wid>/digitization/<int:did>/regions/add" and "witness/<int:wid>/regions/<int:rid>/add"
-        const response = await fetch(
-            `${baseUrl}/witness/${witness.id}/regions/add`,
-            {
-                method: "POST",
-                headers: { "X-CSRFToken": CSRF_TOKEN },
-            });
+        // todo : allow "witness/<int:wid>/digitization/<int:did>/regions/add"
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "X-CSRFToken": CSRF_TOKEN },
+        });
 
-        if (response.status !== 204) {
+        if (!response.ok) {
             throw new Error(`Failed to create regions: '${response.statusText}'`);
         }
-        // const res = await response.json();
-        response.json().then(data => {
-            if (data.mirador_url){
-                window.open(data.mirador_url);
-            }
-        });
+
+        let res;
+        try {
+            res = await response.json();
+        } catch (error) {
+            throw new Error('Failed to parse JSON response');
+        }
+
+        if (res.hasOwnProperty('mirador_url')) {
+            window.open(res.mirador_url);
+        }
     }
 </script>
 

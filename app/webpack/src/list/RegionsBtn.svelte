@@ -1,22 +1,29 @@
 <script>
     export let witness;
-    export let baseUrl;
     export let appLang = "en";
-    const currentRegionId = baseUrl.split('regions/')[1];
+    export let baseUrl = `${window.location.origin}${window.location.pathname}`;
+    // const currentRegionId = parseInt(baseUrl.split('regions/')[1].replace("/", ""));
+    export let currentRegionId;
 
     async function deleteRegions() {
-        // const regions = witness.regions.map(region => region.id);
-        // const url = `${baseUrl}/witness/${witness.id}/regions/delete`;
-        // fetch(url, {
-        //     method: "POST",
-        //     headers: { "X-CSRFToken": CSRF_TOKEN },
-        //     body: JSON.stringify({ regions }),
-        // }).then(response => {
-        //     if (response.status !== 204) {
-        //         throw new Error(`Failed to delete regions: '${response.statusText}'`);
-        //     }
-        //     window.location.reload();
-        // });
+        // todo add confirmation modal
+
+        if (typeof currentRegionId !== 'number') {
+            throw new Error('Invalid region ID');
+        }
+        const url = `${window.location.origin}/regions/${currentRegionId}/delete`;
+        try {
+            const response = await fetch(url, {
+                method: "DELETE",
+                headers: { "X-CSRFToken": CSRF_TOKEN },
+            });
+            if (response.status !== 204) {
+                throw new Error(`Failed to delete regions: '${response.statusText}'`);
+            }
+            window.location.href = `${baseUrl.split('regions/')[0]}regions/`;
+        } catch (error) {
+            console.error(error);
+        }
     }
 </script>
 
