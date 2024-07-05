@@ -1,9 +1,9 @@
 <script>
     import {manifestToMirador, refToIIIF, showMessage} from "../utils.js";
     import { selectionStore } from './stores/selectionStore.js';
-    const { selected, nbSelected } = selectionStore;
-    import { writable } from 'svelte/store';
-
+    const { selected } = selectionStore;
+    import { pageStore } from './stores/paginatedRegions.js';
+    const { pageRegions, fetchPages } = pageStore;
     import Region from './Region.svelte';
     import SelectionBtn from "./SelectionBtn.svelte";
     import SelectionFooter from "./SelectionFooter.svelte";
@@ -11,6 +11,8 @@
     import Pagination from "./Pagination.svelte";
     import Modal from "../Modal.svelte";
     import ExtractionButtons from "./ExtractionButtons.svelte";
+    import RegionsBtn from "./RegionsBtn.svelte";
+    import ActionButtons from "./ActionButtons.svelte";
 
     export const regionsType = "Regions"
     export let regions = {};
@@ -25,9 +27,8 @@
 
     $: selectedRegions = $selected(true);
     $: selectionLength = Object.keys(selectedRegions).length;
-
     $: areSelectedRegions = selectionLength > 0;
-    $: isEditMode = !isValidated;
+
 
     function toImgName(canvasNb){
         return `${imgPrefix}_${zeros(canvasNb, String(nbOfPages).length + 1)}`;
@@ -43,105 +44,8 @@
     $: currentLayout = "all"
     $: baseUrl = `${window.location.origin}${window.location.pathname}`;
 
-    // todo handle paginated data with a store
-    $: currentPage = parseInt(new URLSearchParams(window.location.search).get("p") ?? 1);
-    const pageRegions = writable({});
-    $: fetchPages = (async () => {
-        const response = await fetch(`${baseUrl}canvas?p=${currentPage}`);
-        const data = await response.json();
-        pageRegions.set(data);
-        return data;
-    })()
-
-    function handlePageUpdate(event) {
-        const { pageNb } = event.detail;
-        currentPage = pageNb;
-        const url = new URL(baseUrl);
-        url.searchParams.set("p", currentPage);
-        window.history.pushState({}, '', url);
-    }
-
-    function toggleEditMode() {
-        isEditMode = !isEditMode;
-        // todo send validation status to backend
-    }
-
-    async function deleteSelectedRegions() {
-        const confirmed = await showMessage(
-            appLang === "en" ? "Are you sure you want to delete regions?" : "Voulez-vous vraiment supprimer les régions?",
-            appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
-            true
-        );
-
-        if (!confirmed) {
-            return; // User cancelled the deletion
-        }
-
-        for (const regionId of Object.keys(selectedRegions)) {
-            try {
-                if (!regions.hasOwnProperty(regionId)) {
-                    // only delete regions that are displayed
-                    continue;
-                }
-                await deleteRegion(regionId);
-                delete regions[regionId];
-                regions = { ...regions }; // for reactivity
-
-                pageRegions.update(currentPageRegions => {
-                    for (const canvasNb in currentPageRegions) {
-                        if (currentPageRegions[canvasNb][regionId]) {
-                            const { [regionId]: _, ...rest } = currentPageRegions[canvasNb];
-                            currentPageRegions[canvasNb] = rest;
-                            return currentPageRegions;
-                        }
-                    }
-                    return currentPageRegions;
-                });
-                selectionStore.remove(regionId, regionsType)
-
-            } catch (error) {
-                success = false;
-                await showMessage(`Failed to delete region ${regionId}: ${error.message}`, "Error");
-            }
-        }
-    }
-    async function deleteRegion(regionId) {
-        const HTTP_SAS = SAS_APP_URL.replace("https", "http");
-        const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${HTTP_SAS}/annotation/${regionId}`;
-
-        const response = await fetch(urlDelete, { method: "DELETE"});
-
-        if (response.status !== 204) {
-            throw new Error(`Failed to delete ${urlDelete} due to ${response.status}: '${response.statusText}'`);
-        }
-    }
-
-    function areAllSelected() {
-        // TODO here when there is not only one document selected, this assertion is erroneous
-        return selectionLength === Object.keys(regions).length;
-    }
-
-    function getSelectBtnLabel(areAllRegionsSelected = null) {
-        if (areAllRegionsSelected === null){
-            areAllRegionsSelected = areAllSelected()
-        }
-        if (areAllRegionsSelected) {
-            return appLang === 'en' ? 'Unselect all' : 'Tout désélectionner';
-        } else {
-            return appLang === 'en' ? 'Select all' : 'Tout sélectionner';
-        }
-    }
-
-    function toggleAllSelection() {
-        if (areAllSelected()) {
-            selectionStore.removeAll(Object.keys(regions), 'Regions');
-        } else {
-            selectionStore.addAll(Object.values(regions));
-        }
-    }
-
     $: clipBoard = "";
-    // TODO: isItemCopied stays to true if user copied another string
+    // NOTE: isItemCopied stays to true if user copied another string
     $: isItemCopied = (item) => clipBoard === item.ref;
     function handleCopyRef(event) {
         const { item } = event.detail;
@@ -155,50 +59,11 @@
 
 <SelectionBtn {selectionLength} {appLang} />
 
-<!--TODO add link to annotations views / for annotation directly, add btn to delete annotation-->
-
 <div id="nav-actions" class="mb-5">
     <div class="center-flex actions">
-        <div class="is-left">
-            <button class="button {isEditMode ? 'is-success' : 'is-link'} mr-3" on:click={() => toggleEditMode()}>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="pr-3">
-                    {#if isEditMode}
-                        <!--Check icon-->
-                        <path d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/>
-                    {:else}
-                        <!--Edit icon-->
-                        <path d="M471.6 21.7c-21.9-21.9-57.3-21.9-79.2 0L362.3 51.7l97.9 97.9 30.1-30.1c21.9-21.9 21.9-57.3 0-79.2L471.6 21.7zm-299.2 220c-6.1 6.1-10.8 13.6-13.5 21.9l-29.6 88.8c-2.9 8.6-.6 18.1 5.8 24.6s15.9 8.7 24.6 5.8l88.8-29.6c8.2-2.7 15.7-7.4 21.9-13.5L437.7 172.3 339.7 74.3 172.4 241.7zM96 64C43 64 0 107 0 160V416c0 53 43 96 96 96H352c53 0 96-43 96-96V320c0-17.7-14.3-32-32-32s-32 14.3-32 32v96c0 17.7-14.3 32-32 32H96c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h96c17.7 0 32-14.3 32-32s-14.3-32-32-32H96z"/>
-                    {/if}
-                </svg>
-                {#if isEditMode}{appLang === 'en' ? 'Validate' : 'Valider'}{:else}{appLang === 'en' ? 'Edit' : 'Modifier'}{/if}
-            </button>
-            <button class="button is-link is-light mr-3" on:click={toggleAllSelection}>
-                <i class="fa-solid fa-square-check"></i>
-                <span id="all-selection">{getSelectBtnLabel()}</span>
-            </button>
-            <button class="button is-link is-light" on:click={() => null}>
-                <i class="fa-solid fa-download"></i>
-                <!-- TODO add download function -->
-                {appLang === 'en' ? 'Download' : 'Télécharger'}
-            </button>
-        </div>
+        <RegionsBtn {appLang} {witness} {baseUrl}/>
 
-        <div class="edit-action">
-            {#if isEditMode}
-                <button class="tag is-link is-light is-rounded mr-3" on:click={() => location.reload()}>
-                    <i class="fa-solid fa-rotate-right"></i>
-                    {appLang === 'en' ? 'Reload' : "Recharger"}
-                </button>
-                <a class="tag is-link is-rounded mr-3" href="{manifestToMirador(manifest)}" target="_blank">
-                    <i class="fa-solid fa-edit"></i>
-                    {appLang === 'en' ? 'Go to editor' : "Aller à l'éditeur"}
-                </a>
-                <button class="tag is-danger is-rounded" on:click={deleteSelectedRegions}>
-                    <i class="fa-solid fa-trash"></i>
-                    {appLang === 'en' ? 'Delete selected regions' : 'Supprimer les régions sélectionnées'}
-                </button>
-            {/if}
-        </div>
+        <ActionButtons {appLang} {manifest} {isValidated} {regions} {regionsType}/>
     </div>
 
     <div class="tabs is-centered">
@@ -228,10 +93,12 @@
     </div>
 {:else if currentLayout === "page"}
     <!--TODO deduce max page from nbOfPages-->
-    <Pagination pageNb={currentPage} maxPage={10} on:pageUpdate={handlePageUpdate}/>
+    <Pagination {nbOfPages}/>
+
     <table class="table is-fullwidth">
         <tbody>
-        {#await fetchPages}
+
+        {#await $fetchPages}
             <tr class="faded is-center">Retrieving paginated regions...</tr>
         {:then _}
             {#if Object.values($pageRegions).length > 0}
@@ -310,17 +177,8 @@
     .overlay {
         font-size: 50%;
     }
-    path {
-        fill: currentColor;
-    }
-    .edit-action {
-        height: 2em;
-    }
     .actions {
         align-items: flex-end;
-    }
-    .center-flex > div {
-        margin-bottom: 1em;
     }
     #nav-actions {
         position: sticky;

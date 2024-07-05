@@ -160,6 +160,10 @@ fieldset:not(:last-child) {
     display: flex;
     justify-content: flex-end;
 }
+.is-right {
+    display: flex;
+    justify-content: flex-start;
+}
 
 .svg-inline--fa {
     padding-right: 10px !important;

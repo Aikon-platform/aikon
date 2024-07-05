@@ -86,11 +86,14 @@ def create_manual_regions(request, wid, did=None, rid=None):
             )
 
         witness = get_object_or_404(Witness, id=wid)
+        digit = None
         if did:
             digit = get_object_or_404(Digitization, id=did)
         else:
-            digit = witness.get_digits()
-            # todo check if has images
+            for d in witness.get_digits():
+                if d.has_images():
+                    digit = d
+                    break
 
         if not digit:
             return JsonResponse(

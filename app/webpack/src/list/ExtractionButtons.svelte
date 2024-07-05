@@ -6,6 +6,10 @@
     const baseUrl = `${window.location.origin}`
 
     async function newRegions() {
+        if (witness.regions.length === 1){
+
+        }
+
         // todo : allow "witness/<int:wid>/digitization/<int:did>/regions/add" and "witness/<int:wid>/regions/<int:rid>/add"
         const response = await fetch(
             `${baseUrl}/witness/${witness.id}/regions/add`,

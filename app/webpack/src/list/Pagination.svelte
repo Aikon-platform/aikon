@@ -1,34 +1,28 @@
 <script>
-    import {createEventDispatcher} from "svelte";
+    import {pageStore} from "./stores/paginatedRegions.js";
+    const { currentPage } = pageStore;
 
-    const dispatch = createEventDispatcher();
-    export let pageNb;
-    export let maxPage;
-
-    // todo paginatedData with store
-
-    function pageUpdate(pageNb) {
-        dispatch('pageUpdate', { pageNb });
-    }
+    export let nbOfPages;
+    const maxPage = Math.ceil(nbOfPages / 50);
 </script>
 
 {#if maxPage > 1}
 <nav class="pagination is-centered" aria-label="pagination">
     <ul class="pagination-list">
-        {#if pageNb > 1}
-            <li><a class="pagination-link" on:click|preventDefault={() => pageUpdate(1)} href={null}>1</a></li>
-            {#if pageNb - 1 > 1}
+        {#if $currentPage > 1}
+            <li><a class="pagination-link" on:click|preventDefault={() => pageStore.handlePageUpdate(1)} href={null}>1</a></li>
+            {#if $currentPage - 1 > 1}
                 <li><span class="pagination-ellipsis">&hellip;</span></li>
-                <li><a class="pagination-link" on:click|preventDefault={() => pageUpdate(pageNb - 1)} href={null}>{pageNb - 1}</a></li>
+                <li><a class="pagination-link" on:click|preventDefault={() => pageStore.handlePageUpdate($currentPage - 1)} href={null}>{$currentPage - 1}</a></li>
             {/if}
         {/if}
-        <li><a class="pagination-link is-current" on:click|preventDefault={() => pageUpdate(pageNb)} href={null}>{pageNb}</a></li>
-        {#if pageNb < maxPage}
-            {#if pageNb + 1 < maxPage}
-                <li><a class="pagination-link" on:click|preventDefault={() => pageUpdate(pageNb + 1)} href={null}>{pageNb + 1}</a></li>
+        <li><a class="pagination-link is-current" on:click|preventDefault={() => pageStore.handlePageUpdate($currentPage)} href={null}>{$currentPage}</a></li>
+        {#if $currentPage < maxPage}
+            {#if $currentPage + 1 < maxPage}
+                <li><a class="pagination-link" on:click|preventDefault={() => pageStore.handlePageUpdate($currentPage + 1)} href={null}>{$currentPage + 1}</a></li>
                 <li><span class="pagination-ellipsis">&hellip;</span></li>
             {/if}
-            <li><a class="pagination-link" on:click|preventDefault={() => pageUpdate(maxPage)} href={null}>{maxPage}</a></li>
+            <li><a class="pagination-link" on:click|preventDefault={() => pageStore.handlePageUpdate(maxPage)} href={null}>{maxPage}</a></li>
         {/if}
     </ul>
 </nav>
