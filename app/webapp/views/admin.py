@@ -138,9 +138,9 @@ class WitnessRegionsView(AbstractRecordView):
             pass
 
         for regions in witness.get_regions():
-            anno_regions = get_regions_annotations(
-                regions, as_json=True, r_annos=anno_regions
-            )
+            # anno_regions = get_regions_annotations(
+            #     regions, as_json=True, r_annos=anno_regions
+            # )
             context["regions_ids"].append(regions.id)
             # TODO handle multiple manifest for multiple regions
             context["manifest"] = regions.gen_manifest_url()
@@ -150,9 +150,9 @@ class WitnessRegionsView(AbstractRecordView):
             if not regions.is_validated:
                 context["is_validated"] = False
 
-        context["regions_list"] = json.dumps(
-            {k: v for canvases in anno_regions.values() for k, v in canvases.items()}
-        )
+        # context["regions_list"] = json.dumps(
+        #     {k: v for canvases in anno_regions.values() for k, v in canvases.items()}
+        # )
         return context
 
 
@@ -173,10 +173,10 @@ class RegionsView(AbstractRecordView):
         context["witness"] = regions.get_witness().to_json()
         context["is_validated"] = regions.is_validated
         context["manifest"] = regions.gen_manifest_url()
-        anno_regions = get_regions_annotations(regions, as_json=True)
-        context["regions_list"] = json.dumps(
-            {k: v for canvases in anno_regions.values() for k, v in canvases.items()}
-        )
+        # anno_regions = get_regions_annotations(regions, as_json=True)
+        # context["regions_list"] = json.dumps(
+        #     {k: v for canvases in anno_regions.values() for k, v in canvases.items()}
+        # )
         context["img_prefix"] = regions.get_ref().split("_anno")[0]
         context["img_nb"] = regions.img_nb()
         return context

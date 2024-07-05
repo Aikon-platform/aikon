@@ -2,12 +2,12 @@
     import {manifestToMirador, showMessage} from "../utils.js";
     import {selectionStore} from "./stores/selectionStore.js";
     const { selected, nbSelected } = selectionStore;
-    import { pageStore } from './stores/paginatedRegions.js';
+    import { regionsStore } from './stores/regions.js';
+    const { allRegions } = regionsStore;
 
     export let appLang;
     export let manifest;
     export let isValidated;
-    export let regions;
     export let regionsType;
 
     $: selectionLength = $nbSelected(true);
@@ -21,11 +21,11 @@
 
     function areAllSelected() {
         // TODO here when there is not only one document selected, this assertion is erroneous
-        return selectionLength === Object.keys(regions).length;
+        return selectionLength === Object.keys($allRegions).length;
     }
 
-    function updateRegions(regionId) {
-        pageStore.updatePageRegions(currentPageRegions => {
+    function updateRegionsPage(regionId) {
+        regionsStore.updatePageRegions(currentPageRegions => {
             for (const canvasNb in currentPageRegions) {
                 if (currentPageRegions[canvasNb][regionId]) {
                     const { [regionId]: _, ...rest } = currentPageRegions[canvasNb];
@@ -50,14 +50,15 @@
 
         for (const regionId of Object.keys(selectedRegions)) {
             try {
-                if (!regions.hasOwnProperty(regionId)) {
+                if (!$allRegions.hasOwnProperty(regionId)) {
                     // only delete regions that are displayed
                     continue;
                 }
                 await deleteRegion(regionId);
-                delete regions[regionId];
-                regions = { ...regions }; // for reactivity
-                updateRegions(regionId);
+                regionsStore.remove(regionId);
+                // delete regions[regionId];
+                // regions = { ...regions }; // for reactivity
+                updateRegionsPage(regionId);
                 selectionStore.remove(regionId, regionsType)
 
             } catch (error) {
@@ -89,9 +90,9 @@
 
     function toggleAllSelection() {
         if (areAllSelected()) {
-            selectionStore.removeAll(Object.keys(regions), 'Regions');
+            selectionStore.removeAll(Object.keys($allRegions), 'Regions');
         } else {
-            selectionStore.addAll(Object.values(regions));
+            selectionStore.addAll(Object.values($allRegions));
         }
     }
 </script>
@@ -120,7 +121,7 @@
     </button>
 </div>
 
-<div class="edit-action">
+<div class="edit-action is-left">
     {#if isEditMode}
         <button class="tag is-link is-light is-rounded mr-3" on:click={() => location.reload()}>
             <i class="fa-solid fa-rotate-right"></i>

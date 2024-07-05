@@ -44,31 +44,46 @@ def save_document_set(request):
 
 def get_canvas_regions(request, wid, rid):
     regions = get_object_or_404(Regions, id=rid)
-    p_nb = int(request.GET.get("p", 1))
-    p_len = 50
-    anno_regions = {}
-    max_c = p_nb * p_len  # TODO limit to not exceed number of canvases of the witness
-    min_c = max_c - p_len
+    p_nb = int(request.GET.get("p", 0))
+    if p_nb > 0:
+        p_len = 50
+        max_c = (
+            p_nb * p_len
+        )  # TODO limit to not exceed number of canvases of the witness
+        min_c = max_c - p_len
+        return JsonResponse(
+            get_regions_annotations(
+                regions, as_json=True, r_annos={}, min_c=min_c, max_c=max_c
+            ),
+            safe=False,
+        )
 
     return JsonResponse(
-        get_regions_annotations(
-            regions, as_json=True, r_annos=anno_regions, min_c=min_c, max_c=max_c
-        ),
+        get_regions_annotations(regions, as_json=True),
         safe=False,
     )
 
 
 def get_canvas_witness_regions(request, wid):
     witness = get_object_or_404(Witness, id=wid)
-    p_nb = int(request.GET.get("p", 1))
-    p_len = 50
-    anno_regions = {}
-    max_c = p_nb * p_len  # TODO limit to not exceed number of canvases of the witness
-    min_c = max_c - p_len
-    for regions in witness.get_regions():
-        anno_regions = get_regions_annotations(
-            regions, as_json=True, r_annos=anno_regions, min_c=min_c, max_c=max_c
-        )
+    p_nb = int(request.GET.get("p", 0))
+    if p_nb > 0:
+        p_len = 50
+        anno_regions = {}
+        max_c = (
+            p_nb * p_len
+        )  # TODO limit to not exceed number of canvases of the witness
+        min_c = max_c - p_len
+        for regions in witness.get_regions():
+            anno_regions = get_regions_annotations(
+                regions, as_json=True, r_annos=anno_regions, min_c=min_c, max_c=max_c
+            )
+    else:
+        anno_regions = {}
+        for regions in witness.get_regions():
+            anno_regions = get_regions_annotations(
+                regions, as_json=True, r_annos=anno_regions
+            )
 
     return JsonResponse(anno_regions, safe=False)
 

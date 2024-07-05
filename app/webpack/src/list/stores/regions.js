@@ -1,7 +1,8 @@
 import { writable, derived } from 'svelte/store';
 
-function createPaginatedRegions() {
+function createRegionsStore() {
     const currentPage = writable(1);
+    const allRegions = writable({});
     const pageRegions = writable({});
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
 
@@ -12,13 +13,27 @@ function createPaginatedRegions() {
         }
     }
 
-    const fetchPages = derived(currentPage, ($currentPage, set) =>
+    const fetchAll = (async () => {
+        const response = await fetch(`${baseUrl}canvas`);
+        const data = await response.json();
+        let regions = {};
+        Object.values(data).forEach(canvases => {
+            Object.entries(canvases).forEach(([k, v]) => {
+                regions[k] = v;
+            })
+        })
+
+        allRegions.set(regions);
+        return data;
+    })();
+
+    const fetchPages = derived(currentPage, ($currentPage) =>
         (async () => {
             const response = await fetch(`${baseUrl}canvas?p=${$currentPage}`);
             const data = await response.json();
             pageRegions.set(data);
             return data;
-    })());
+        })());
 
     function handlePageUpdate(pageNb) {
         currentPage.set(pageNb);
@@ -33,13 +48,23 @@ function createPaginatedRegions() {
         pageRegions.update(updateFn);
     }
 
+    function removeRegion(regionId) {
+        allRegions.update(regions => {
+            delete regions[regionId];
+            return { ...regions };
+        });
+        // todo update paginated regions as well
+    }
+
     return {
         currentPage,
         pageRegions,
+        allRegions,
         fetchPages,
+        fetchAll,
         handlePageUpdate,
         updatePageRegions
     };
 }
 
-export const pageStore = createPaginatedRegions();
+export const regionsStore = createRegionsStore();

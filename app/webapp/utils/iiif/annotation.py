@@ -49,7 +49,7 @@ def index_regions(regions: Regions):
 def get_regions_annotations(
     regions: Regions, as_json=False, r_annos=None, min_c: int = None, max_c: int = None
 ):
-    if not r_annos:
+    if r_annos is None:
         r_annos = {} if as_json else []
 
     region_ref = regions.get_ref()

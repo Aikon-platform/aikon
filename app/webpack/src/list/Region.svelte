@@ -3,6 +3,8 @@
     import {refToIIIF} from "../utils.js";
     import { selectionStore } from './stores/selectionStore.js';
     const { isSelected } = selectionStore;
+    import {createEventDispatcher} from "svelte";
+    const dispatch = createEventDispatcher();
 
     export let item;
     export let isCopied = false;

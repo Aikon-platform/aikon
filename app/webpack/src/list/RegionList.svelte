@@ -1,9 +1,10 @@
 <script>
-    import {manifestToMirador, refToIIIF, showMessage} from "../utils.js";
+    import {refToIIIF} from "../utils.js";
     import { selectionStore } from './stores/selectionStore.js';
     const { selected } = selectionStore;
-    import { pageStore } from './stores/paginatedRegions.js';
-    const { pageRegions, fetchPages } = pageStore;
+    import { regionsStore } from './stores/regions.js';
+    const { allRegions, fetchAll, pageRegions, fetchPages } = regionsStore;
+
     import Region from './Region.svelte';
     import SelectionBtn from "./SelectionBtn.svelte";
     import SelectionFooter from "./SelectionFooter.svelte";
@@ -15,7 +16,7 @@
     import ActionButtons from "./ActionButtons.svelte";
 
     export const regionsType = "Regions"
-    export let regions = {};
+    // export let regions = {};
     export let appLang = 'en';
     export let manifest = '';
     export let isValidated = false;
@@ -60,10 +61,13 @@
 <SelectionBtn {selectionLength} {appLang} />
 
 <div id="nav-actions" class="mb-5">
-    <div class="center-flex actions">
-        <RegionsBtn {appLang} {witness} {baseUrl}/>
-
-        <ActionButtons {appLang} {manifest} {isValidated} {regions} {regionsType}/>
+    <div class="actions grid">
+        <div class="cell is-right is-middle">
+            <RegionsBtn {appLang} {witness} {baseUrl}/>
+        </div>
+        <div class="cell">
+            <ActionButtons {appLang} {manifest} {isValidated} {regionsType}/>
+        </div>
     </div>
 
     <div class="tabs is-centered">
@@ -82,14 +86,22 @@
 
 {#if currentLayout === "all"}
     <div class="grid is-gap-2">
-        {#each Object.values(regions) as item (item.id)}
-            <!--TODO dont sort object keys alphabetically-->
-            <Region {item} {appLang}
-                    isCopied={isItemCopied(item)}
-                    on:copyRef={handleCopyRef}/>
-        {:else}
-            <ExtractionButtons {appLang} {modules} {witness}/>
-        {/each}
+        {#await fetchAll}
+            <tr class="faded is-center">
+                {appLang === 'en' ? 'Retrieving regions...' : 'Récupération des régions...'}
+            </tr>
+        {:then _}
+            {#each Object.values($allRegions) as item (item.id)}
+                <!--TODO dont sort object keys alphabetically-->
+                <Region {item} {appLang}
+                        isCopied={isItemCopied(item)}
+                        on:copyRef={handleCopyRef}/>
+            {:else}
+                <ExtractionButtons {appLang} {modules} {witness}/>
+            {/each}
+        {:catch error}
+            <tr>Error when retrieving regions: {error}</tr>
+        {/await}
     </div>
 {:else if currentLayout === "page"}
     <!--TODO deduce max page from nbOfPages-->
@@ -99,7 +111,9 @@
         <tbody>
 
         {#await $fetchPages}
-            <tr class="faded is-center">Retrieving paginated regions...</tr>
+            <tr class="faded is-center">
+                {appLang === 'en' ? 'Retrieving paginated regions...' : 'Récupération des pages...'}
+            </tr>
         {:then _}
             {#if Object.values($pageRegions).length > 0}
                 <!--TODO make empty canvases appear-->
@@ -177,9 +191,9 @@
     .overlay {
         font-size: 50%;
     }
-    .actions {
-        align-items: flex-end;
-    }
+    /*.actions {*/
+    /*    align-items: flex-end;*/
+    /*}*/
     #nav-actions {
         position: sticky;
         top: 0;
