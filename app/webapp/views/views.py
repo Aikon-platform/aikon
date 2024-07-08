@@ -580,8 +580,6 @@ def export_all_regions(request, regions_ref):
     if not ENV("DEBUG"):
         credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
 
-    urls_list = []
-
     # _, all_annotations = formatted_annotations(regions)
     # all_regions = [
     #     (canvas_nb, coord, img_file)
@@ -590,6 +588,7 @@ def export_all_regions(request, regions_ref):
     # ]
     all_regions = get_regions_annotations(regions)
 
+    urls_list = []
     for canvas_nb, coord, img_file in all_regions:
         urls_list.extend(gen_iiif_url(img_file, 2, f"{c[0]}/full/0") for c in coord)
 

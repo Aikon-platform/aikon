@@ -7,6 +7,8 @@ from django.shortcuts import get_object_or_404
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
+from app.webapp.utils.functions import zip_img
+from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.utils.iiif.annotation import (
     get_regions_annotations,
     delete_regions as del_regions,
@@ -143,5 +145,17 @@ def delete_regions(request, rid):
 
 def export_regions(request):
     if request.method == "POST":
-        # retrieve post param regions_ref
         data = json.loads(request.body.decode("utf-8"))
+        regions_ref = data.get("regionsRef")
+
+        urls_list = []
+        for ref in regions_ref:
+            try:
+                wit, digit, canvas, coord = ref.split("_")
+                urls_list.append(
+                    gen_iiif_url(f"{wit}_{digit}_{canvas}.jpg", 2, f"{coord}/full/0")
+                )
+            except Exception as e:
+                log(f"[export_regions] Couldn't parse {ref} for export", e)
+
+        return zip_img(urls_list)

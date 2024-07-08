@@ -222,4 +222,9 @@ urlpatterns += [
         delete_regions,
         name="delete_regions",
     ),
+    path(
+        f"regions/export",
+        export_regions,
+        name="export_regions",
+    ),
 ]
