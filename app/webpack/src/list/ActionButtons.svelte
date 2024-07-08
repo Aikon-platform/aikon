@@ -13,15 +13,12 @@
     $: selectionLength = $nbSelected(true);
     $: isEditMode = !isValidated;
     $: selectedRegions = $selected(true);
+    // TODO here when there is not only one document selected, this assertion is erroneous
+    $: areAllSelected = selectionLength === Object.keys($allRegions).length;
 
     function toggleEditMode() {
         isEditMode = !isEditMode;
         // todo send validation status to backend
-    }
-
-    function areAllSelected() {
-        // TODO here when there is not only one document selected, this assertion is erroneous
-        return selectionLength === Object.keys($allRegions).length;
     }
 
     async function deleteSelectedRegions() {
@@ -61,26 +58,16 @@
         }
     }
 
-    function getSelectBtnLabel(areAllRegionsSelected = null) {
-        if (areAllRegionsSelected === null){
-            areAllRegionsSelected = areAllSelected()
-        }
-        if (areAllRegionsSelected) {
-            return appLang === 'en' ? 'Unselect all' : 'Tout désélectionner';
-        } else {
-            return appLang === 'en' ? 'Select all' : 'Tout sélectionner';
-        }
-    }
-
     function toggleAllSelection() {
-        if (areAllSelected()) {
-            selectionStore.removeAll(Object.keys($allRegions), 'Regions');
+        if (areAllSelected) {
+            selectionStore.removeAll(Object.keys($allRegions), regionsType);
         } else {
             selectionStore.addAll(Object.values($allRegions));
         }
     }
 
     async function downloadRegions(){
+        // download only displayed regions?
         const regionsRef = Object.values($selected(true)).map(r => r.ref);
         const response = await fetch(`${window.location.origin}/regions/export`, {
             method: "POST",
@@ -107,8 +94,15 @@
         {#if isEditMode}{appLang === 'en' ? 'Validate' : 'Valider'}{:else}{appLang === 'en' ? 'Edit' : 'Modifier'}{/if}
     </button>
     <button class="button is-link is-light mr-3" on:click={toggleAllSelection}>
+        {#if areAllSelected}
+            <!--Unchecked icon-->
+            <path d="M64 80c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16H384c8.8 0 16-7.2 16-16V96c0-8.8-7.2-16-16-16H64zM0 96C0 60.7 28.7 32 64 32H384c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L303 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>
+        {:else}
+            <!--Checked icon-->
+            <path d="M64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L303 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>
+        {/if}
         <i class="fa-solid fa-square-check"></i>
-        <span id="all-selection">{getSelectBtnLabel()}</span>
+        <span id="all-selection">{appLang === 'en' ? 'Select all' : 'Tout sélectionner'}</span>
     </button>
     <button class="button is-link is-light" on:click={downloadRegions}>
         <i class="fa-solid fa-download"></i>
