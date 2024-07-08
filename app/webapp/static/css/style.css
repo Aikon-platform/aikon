@@ -151,14 +151,21 @@ fieldset:not(:last-child) {
     text-align: center;
     justify-content: center;
 }
-
+.is-middle {
+    display: flex;
+    align-content: center;
+    align-items: center;
+}
 .is-top {
     z-index: 1000;
 }
-
 .is-left {
     display: flex;
     justify-content: flex-end;
+}
+.is-right {
+    display: flex;
+    justify-content: flex-start;
 }
 
 .svg-inline--fa {

@@ -1,19 +1,16 @@
 <script>
-    import {createEventDispatcher} from "svelte";
+    import { selectionStore } from "./stores/selectionStore.js";
 
-    const dispatch = createEventDispatcher();
-    function commitSelection(updateType="save") {
-        dispatch('commitSelection', { updateType });
-    }
     export let appLang = 'en';
+    export let isRegion = true;
 </script>
 
 <footer class="modal-card-foot is-center">
     <div class="buttons">
-        <button class="button is-link is-light" on:click={() => commitSelection('clear')}>
+        <button class="button is-link is-light" on:click={() => selectionStore.empty(isRegion)}>
             {appLang === 'en' ? 'Clear selection' : 'Vider la sélection'}
         </button>
-        <button class="button is-link" on:click={() => commitSelection('save')}>
+        <button class="button is-link" on:click={() => selectionStore.save()}>
             <i class="fa-solid fa-floppy-disk"></i>
             {appLang === 'en' ? 'Save selection' : 'Sauvegarder la sélection'}
         </button>

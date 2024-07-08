@@ -49,7 +49,7 @@ def index_regions(regions: Regions):
 def get_regions_annotations(
     regions: Regions, as_json=False, r_annos=None, min_c: int = None, max_c: int = None
 ):
-    if not r_annos:
+    if r_annos is None:
         r_annos = {} if as_json else []
 
     region_ref = regions.get_ref()
@@ -360,6 +360,7 @@ def index_manifest_in_sas(manifest_url, reindex=False):
     try:
         # Index the manifest into SAS
         r = requests.post(f"{SAS_APP_URL}/manifests", json=manifest_content)
+        print(r)
         if r.status_code != 200:
             log(
                 f"[index_manifest_in_sas] Failed to index manifest. Status code: {r.status_code}: {r.text}"
