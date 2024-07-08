@@ -139,3 +139,9 @@ def delete_regions(request, rid):
             log(f"[delete_regions] Error deleting regions #{rid}", e)
             return JsonResponse({"error": f"Error deleting regions: {e}"}, status=500)
     return JsonResponse({"error": "Invalid request"}, status=400)
+
+
+def export_regions(request):
+    if request.method == "POST":
+        # retrieve post param regions_ref
+        data = json.loads(request.body.decode("utf-8"))

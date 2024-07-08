@@ -44,16 +44,21 @@ function createRegionsStore() {
         }
     }
 
-    function updatePageRegions(updateFn) {
-        pageRegions.update(updateFn);
-    }
-
-    function removeRegion(regionId) {
+    function remove(regionId) {
         allRegions.update(regions => {
             delete regions[regionId];
             return { ...regions };
         });
-        // todo update paginated regions as well
+        pageRegions.update(currentPageRegions => {
+            for (const canvasNb in currentPageRegions) {
+                if (currentPageRegions[canvasNb][regionId]) {
+                    const { [regionId]: _, ...rest } = currentPageRegions[canvasNb];
+                    currentPageRegions[canvasNb] = rest;
+                    return currentPageRegions;
+                }
+            }
+            return currentPageRegions;
+        });
     }
 
     return {
@@ -63,7 +68,7 @@ function createRegionsStore() {
         fetchPages,
         fetchAll,
         handlePageUpdate,
-        updatePageRegions
+        remove,
     };
 }
 

@@ -24,19 +24,6 @@
         return selectionLength === Object.keys($allRegions).length;
     }
 
-    function updateRegionsPage(regionId) {
-        regionsStore.updatePageRegions(currentPageRegions => {
-            for (const canvasNb in currentPageRegions) {
-                if (currentPageRegions[canvasNb][regionId]) {
-                    const { [regionId]: _, ...rest } = currentPageRegions[canvasNb];
-                    currentPageRegions[canvasNb] = rest;
-                    return currentPageRegions;
-                }
-            }
-            return currentPageRegions;
-        });
-    }
-
     async function deleteSelectedRegions() {
         const confirmed = await showMessage(
             appLang === "en" ? "Are you sure you want to delete regions?" : "Voulez-vous vraiment supprimer les régions?",
@@ -56,9 +43,6 @@
                 }
                 await deleteRegion(regionId);
                 regionsStore.remove(regionId);
-                // delete regions[regionId];
-                // regions = { ...regions }; // for reactivity
-                updateRegionsPage(regionId);
                 selectionStore.remove(regionId, regionsType)
 
             } catch (error) {
@@ -95,6 +79,10 @@
             selectionStore.addAll(Object.values($allRegions));
         }
     }
+
+    function downloadRegions(){
+        console.log($selected(true));
+    }
 </script>
 
 <div class="is-left mb-3">
@@ -114,7 +102,7 @@
         <i class="fa-solid fa-square-check"></i>
         <span id="all-selection">{getSelectBtnLabel()}</span>
     </button>
-    <button class="button is-link is-light" on:click={() => null}>
+    <button class="button is-link is-light" on:click={downloadRegions}>
         <i class="fa-solid fa-download"></i>
         <!-- TODO add download function -->
         {appLang === 'en' ? 'Download' : 'Télécharger'}
@@ -123,6 +111,7 @@
 
 <div class="edit-action is-left">
     {#if isEditMode}
+        <!--TODO make reload fetch regions with api request-->
         <button class="tag is-link is-light is-rounded mr-3" on:click={() => location.reload()}>
             <i class="fa-solid fa-rotate-right"></i>
             {appLang === 'en' ? 'Reload' : "Recharger"}
