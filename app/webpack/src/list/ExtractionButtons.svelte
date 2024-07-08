@@ -33,6 +33,9 @@
         if (res.hasOwnProperty('mirador_url')) {
             window.open(res.mirador_url);
         }
+        if (res.hasOwnProperty('regions_id')) {
+            window.location.href = `${baseUrl.split('regions/')[0]}regions/${res.regions_id}`;
+        }
     }
 </script>
 

@@ -360,6 +360,7 @@ def index_manifest_in_sas(manifest_url, reindex=False):
     try:
         # Index the manifest into SAS
         r = requests.post(f"{SAS_APP_URL}/manifests", json=manifest_content)
+        print(r)
         if r.status_code != 200:
             log(
                 f"[index_manifest_in_sas] Failed to index manifest. Status code: {r.status_code}: {r.text}"
