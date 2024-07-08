@@ -1,0 +1,194 @@
+import json
+
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_GET
+
+from app.config.settings import APP_NAME, APP_LANG
+from app.similarity.const import SCORES_PATH
+from app.similarity.models.region_pair import RegionPair
+from app.webapp.utils.functions import sort_key
+from app.webapp.utils.logger import log
+from app.similarity.utils import (
+    similarity_request,
+    check_score_files,
+    check_computed_pairs,
+    get_compared_regions,
+)
+from app.webapp.views import is_superuser, check_ref
+
+
+@user_passes_test(is_superuser)
+def send_similarity(request, regions_refs):
+    """
+    To relaunch similarity request in case the automatic process has failed
+    """
+
+    regions = [
+        region
+        for (passed, region) in [check_ref(ref, "Regions") for ref in regions_refs]
+        if passed
+    ]
+
+    if not len(regions):
+        return JsonResponse(
+            {
+                "response": f"No corresponding regions in the database for {regions_refs}"
+            },
+            safe=False,
+        )
+
+    if len(check_computed_pairs(regions_refs)) == 0:
+        return JsonResponse(
+            {"response": f"All similarity pairs were computed for {regions_refs}"},
+            safe=False,
+        )
+
+    try:
+        if similarity_request(regions):
+            return JsonResponse(
+                {"response": f"Successful similarity request for {regions_refs}"},
+                safe=False,
+            )
+        return JsonResponse(
+            {"response": f"Failed to send similarity request for {regions_refs}"},
+            safe=False,
+        )
+
+    except Exception as e:
+        error = f"[send_similarity] Couldn't send request for {regions_refs}"
+        log(error, e)
+
+        return JsonResponse({"response": error, "reason": e}, safe=False)
+
+
+@csrf_exempt
+def receive_similarity(request):
+    """
+    Handle response of the API sending back similarity files
+    """
+    if request.method == "POST":
+        filenames = []
+        try:
+            for regions_refs, file in request.FILES.items():
+                with open(f"{SCORES_PATH}/{regions_refs}.npy", "wb") as destination:
+                    filenames.append(regions_refs)
+                    for chunk in file.chunks():
+                        destination.write(chunk)
+
+            check_score_files(filenames)
+            return JsonResponse({"message": "Score files received successfully"})
+        except Exception as e:
+            log("[receive_similarity] Error saving score files", e)
+            return JsonResponse({"message": "Error saving score files"}, status=500)
+    return JsonResponse({"message": "Invalid request"}, status=400)
+
+
+def compute_score(request):
+    from app.webapp.tasks import compute_similarity_scores
+
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+            regions_refs = data.get("regionsRefs", [])
+            max_rows = int(data.get("maxRows", 50))
+            show_checked_ref = data.get("showCheckedRef", True)
+            if len(regions_refs) == 0:
+                return JsonResponse(
+                    {"error": "No regions_ref to retrieve score"}, status=400
+                )
+            return JsonResponse(
+                compute_similarity_scores(regions_refs, max_rows, show_checked_ref),
+                status=200,
+            )
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON data"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=400)
+
+
+@login_required(login_url=f"/{APP_NAME}-admin/login/")
+def show_similarity(request, regions_ref):
+    refs = get_compared_regions(regions_ref)
+    regions = {
+        region.get_ref(): region.__str__()
+        for (passed, region) in [check_ref(ref, "Regions") for ref in refs]
+        if passed
+    }
+
+    return render(
+        request,
+        "show_similarity.html",
+        context={
+            "title": "Similarity search result"
+            if APP_LANG == "en"
+            else "Résultat de recherche de similarité",
+            "regions": dict(sorted(regions.items())),
+            "checked_ref": regions_ref,
+            "checked_ref_title": regions[regions_ref],
+            "regions_refs": json.dumps(refs),
+        },
+    )
+
+
+@require_GET
+def retrieve_category(request):
+    img_1, img_2 = sorted(
+        [request.GET.get("img_1"), request.GET.get("img_2")], key=sort_key
+    )
+
+    try:
+        region_pair = RegionPair.objects.get(img_1=img_1, img_2=img_2)
+        category = region_pair.category
+        category_x = region_pair.category_x
+    except RegionPair.DoesNotExist:
+        category = None
+        category_x = []
+
+    return JsonResponse({"category": category, "category_x": category_x})
+
+
+@csrf_exempt
+def save_category(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
+        regions_ref_1, regions_ref_2 = sorted(
+            [data.get("regions_ref_1"), data.get("regions_ref_2")], key=sort_key
+        )
+        category = data.get("category")
+        category_x = data.get("category_x")
+        user_id = request.user.id
+
+        region_pair, created = RegionPair.objects.get_or_create(
+            img_1=img_1,
+            img_2=img_2,
+            defaults={
+                "regions_ref_1": regions_ref_1,
+                "regions_ref_2": regions_ref_2,
+            },
+        )
+
+        region_pair.category = int(category) if category else None
+
+        # If the user's id doesn't exist in category_x, append it
+        if category_x is not None:
+            if user_id not in region_pair.category_x:
+                region_pair.category_x.append(user_id)
+            region_pair.category_x = sorted(region_pair.category_x)
+        else:  # If category_x is None, remove the user's id if it exists
+            if user_id in region_pair.category_x:
+                region_pair.category_x.remove(user_id)
+
+        region_pair.save()
+
+        if created:
+            return JsonResponse(
+                {"status": "success", "message": "New region pair created"}, status=200
+            )
+        return JsonResponse(
+            {"status": "success", "message": "Existing region pair updated"}, status=200
+        )

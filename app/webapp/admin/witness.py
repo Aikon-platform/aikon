@@ -2,9 +2,8 @@ from functools import reduce
 
 from app.config.settings import APP_LANG, ADDITIONAL_MODULES
 from app.webapp.admin.digitization import DigitizationInline
-from app.webapp.admin.content import ContentInline, ContentWorkInline
+from app.webapp.admin.content import ContentInline
 
-# from app.webapp.admin.volume import VolumeInline
 from app.webapp.models.utils.constants import WIT, REG, DIG
 from app.webapp.models.witness import Witness, get_name
 from app.webapp.utils.constants import MAX_ITEMS
@@ -22,15 +21,12 @@ from app.webapp.utils.functions import (
     get_file_ext,
     zip_dirs,
     format_dates,
-    flatten,
 )
 from app.webapp.utils.iiif.annotation import (
     get_images_annotations,
     get_training_regions,
 )
 from app.webapp.utils.paths import IMG_PATH
-from app.webapp.utils.similarity import similarity_request, check_computed_pairs
-from app.vectorization.utils import vectorization_request
 
 
 def no_regions_message(request):
@@ -82,8 +78,6 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             "export_imgs_regions",
             "export_training_imgs",
             "export_training_regions_files",
-            "compute_similarity",
-            "compute_vectorization",
         ]
 
         for module in ADDITIONAL_MODULES:
@@ -248,6 +242,8 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         else f"Calculer la similarité des régions des {WIT}s sélectionnés"
     )
     def compute_similarity(self, request, queryset):
+        from app.similarity.utils import similarity_request, check_computed_pairs
+
         regions = []
         for witness in queryset.exclude():
             regions.extend(witness.get_regions())
@@ -277,6 +273,8 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         else f"Vectoriser les annotations des {WIT}s sélectionnés"
     )
     def compute_vectorization(self, request, queryset):
+        from app.vectorization.utils import vectorization_request
+
         annos = []
         for witness in queryset.exclude():
             annos.extend(witness.get_annotations())

@@ -6,13 +6,10 @@ import numpy as np
 import requests
 from typing import List
 
+from app.similarity.const import SCORES_PATH
 from app.config.settings import CV_API_URL, APP_URL, APP_NAME
 from app.webapp.models.regions import Regions
-from app.webapp.utils.functions import flatten_dict
-from app.webapp.utils.iiif import gen_iiif_url
-from app.webapp.utils.iiif.annotation import formatted_annotations
 from app.webapp.utils.logger import log
-from app.webapp.utils.paths import SCORES_PATH
 
 
 def load_npy_file(score_path_pair):
@@ -53,36 +50,6 @@ def get_regions_ref_in_pairs(pairs):
 
 def get_compared_regions(regions_ref):
     return get_regions_ref_in_pairs(get_computed_pairs(regions_ref))
-
-
-def gen_img_ref(img, coord):
-    return f"{img.split('.')[0]}_{coord}"
-
-
-def get_regions_urls(regions: Regions):
-    """
-    {
-        "wit1_man191_0009_166,1325,578,516": ""https://eida.obspm.fr/iiif/2/wit1_man191_0009.jpg/166,1325,578,516/full/0/default.jpg"",
-        "wit1_man191_0027_1143,2063,269,245": "https://eida.obspm.fr/iiif/2/wit1_man191_0027.jpg/1143,2063,269,245/full/0/default.jpg",
-        "wit1_man191_0031_857,2013,543,341": "https://eida.obspm.fr/iiif/2/wit1_man191_0031.jpg/857,2013,543,341/full/0/default.jpg",
-        "img_name": "..."
-    }
-    """
-    folio_regions = []
-
-    _, canvas_annotations = formatted_annotations(regions)
-    for canvas_nb, annotations, img_name in canvas_annotations:
-        if len(annotations):
-            folio_regions.append(
-                {
-                    gen_img_ref(img_name, a[0]): gen_iiif_url(
-                        img_name, 2, f"{a[0]}/full/0"
-                    )
-                    for a in annotations
-                }
-            )
-
-    return flatten_dict(folio_regions)
 
 
 def gen_list_url(regions_ref):

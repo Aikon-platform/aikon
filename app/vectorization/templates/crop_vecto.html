@@ -2,7 +2,7 @@
 
 {% load static %}
 
-{% block title %}{{ anno }}{% endblock %}
+{% block title %}{{ regions }}{% endblock %}
 
 {% block extrahead %}
     {{ block.super }}
@@ -124,7 +124,7 @@
 {% block header %}
     <div class="toolbar">
         <div class="title">
-            <b>{{ anno|capfirst }} | page {{ canvas_nb }}</b>
+            <b>{{ regions|capfirst }} | page {{ canvas_nb }}</b>
         </div>
     </div>
 {% endblock %}
