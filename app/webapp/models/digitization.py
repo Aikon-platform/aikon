@@ -239,10 +239,6 @@ class Digitization(models.Model):
             return True
         return False
 
-    def img_nb(self):
-        # get the number of images for a digitization
-        return get_nb_of_files(self.get_ref(), IMG_PATH)
-
     def get_img(self, is_abs=False, only_first=False):
         if only_first:
             return get_first_img(self.get_ref())
