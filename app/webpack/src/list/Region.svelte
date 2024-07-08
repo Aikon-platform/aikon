@@ -1,19 +1,18 @@
 <script>
     import { fade } from 'svelte/transition';
     import {refToIIIF} from "../utils.js";
+    import { selectionStore } from './stores/selectionStore.js';
+    const { isSelected } = selectionStore;
     import {createEventDispatcher} from "svelte";
-
     const dispatch = createEventDispatcher();
-    export let block;
-    export let isSelected = false;
+
+    export let item;
     export let isCopied = false;
     export let appLang = 'en';
+    export let isSquare = true;
 
-    function toggleSelection() {
-        dispatch('toggleSelection', { block });
-    }
     function copyRef() {
-        dispatch('copyRef', { block });
+        dispatch('copyRef', { item });
     }
 </script>
 
@@ -45,7 +44,7 @@
         border-radius: 6px;
         padding: 5px;
         position: absolute;
-        z-index: 1;
+        z-index: 6;
         bottom: 125%;
         left: 50%;
         transform: translateX(-50%);
@@ -58,12 +57,12 @@
     }
 </style>
 
-<div class="region image is-96x96 is-center {isSelected ? 'checked' : ''}" transition:fade={{ duration: 500 }}>
-    <figure class="image is-96x96 card" tabindex="-1"
-            on:click={() => toggleSelection()} on:keyup={() => null}>
-        <img src="{refToIIIF(block.img, block.xyhw, '96,')}" alt="Extracted region"/>
+<div class="region image is-center {$isSelected(item) ? 'checked' : ''}" transition:fade={{ duration: 500 }}>
+    <figure class="image card {isSquare ? 'is-96x96' : ''}" tabindex="-1"
+            on:click={() => selectionStore.toggle(item)} on:keyup={() => null}>
+        <img src="{refToIIIF(item.img, item.xyhw, isSquare ? '96,' : '140,')}" alt="Extracted region"/>
         <div class="overlay is-center">
-            <span class="overlay-desc">{block.title}</span>
+            <span class="overlay-desc">{item.title}</span>
         </div>
     </figure>
     <button class="button region-btn tag" on:click={() => copyRef()}>

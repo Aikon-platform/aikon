@@ -5,6 +5,7 @@ from app.config.settings import (
 )
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
+from app.webapp.utils.constants import MANIFEST_V2
 
 from app.webapp.utils.logger import log
 from app.webapp.utils.paths import REGIONS_PATH
@@ -37,8 +38,13 @@ def get_regions_img(regions: Regions):
 
 
 def create_empty_regions(digit: Digitization):
+    from app.webapp.utils.iiif.annotation import index_manifest_in_sas
+
     imgs = digit.get_imgs()
     if len(imgs) == 0:
+        log(
+            f"[create_empty_regions] Digit #{digit.id} has no images",
+        )
         return False
 
     try:
@@ -60,6 +66,22 @@ def create_empty_regions(digit: Digitization):
             f"[create_empty_regions] unable to create new Regions file for digit #{digit.id}",
             e,
         )
+        return False
+
+    try:
+        # TODO do not work properly...
+        success = index_manifest_in_sas(regions.gen_manifest_url(version=MANIFEST_V2))
+        if not success:
+            log(
+                f"[create_empty_regions] unable to index manifest in SAS for Regions #{regions.id}",
+            )
+            return False
+    except Exception as e:
+        log(
+            f"[create_empty_regions] unable to index manifest in SAS for Regions #{regions.id}",
+            e,
+        )
+        return False
 
     return regions
 

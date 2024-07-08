@@ -167,16 +167,20 @@ class Witness(models.Model):
             # TODO add other modules
             buttons += ["similarity"]
 
+        digits = self.get_digits()
+
         return {
             "id": self.id,
             "class": self.__class__.__name__,
             "type": get_name("Witness"),
-            "iiif": [digit.manifest_link(inline=True) for digit in self.get_digits()],
+            "digits": [digit.id for digit in digits],
+            "regions": [region.id for region in self.get_regions()],
+            "iiif": [digit.manifest_link(inline=True) for digit in digits],
             "title": self.__str__(),
             "img": self.get_img(only_first=True),
             "user": self.user.__str__(),
             "url": self.get_absolute_url(),
-            "updated_at": self.updated_at,
+            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),
             "is_public": self.is_public,
             "metadata": {
                 get_name("id_nb"): self.id_nb or "-",

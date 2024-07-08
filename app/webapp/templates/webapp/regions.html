@@ -13,24 +13,31 @@
 {% block content %}
     <h1 class="is-title is-size-2 py-3" style="z-index: 5">{{ view_title }}</h1>
 
-    {% include "includes/pagination.html" %}
-
+    {# if there is at least one digitization for the current witness #}
+    {% if witness.img %}
     <div>
         <div id="region-list"></div>
     </div>
-
-    {% include "includes/pagination.html" %}
+    {% else %}
+    <div class="notification is-warning">
+        <p>
+            {% if APP_LANG == "en" %}
+                This witness has no digitization yet
+            {% else %}
+                Ce témoin ne dispose pas de numérisation
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
 {% endblock %}
 
 {% block extra_js %}
     <script>
+        const witness = {{ witness|js|safe }};
         const manifest = "{{ manifest }}";
         const imgPrefix = "{{ img_prefix }}";
-        const isValidated = "{{ is_validated }}";
-        const nbOfPages = {{ img_nb }};
-    </script>
-    <script type="application/json" id="regions-data">
-        {{ regions_list|safe }}
+        const isValidated = {% if is_validated %}true{% else %}false{% endif %};
+        const nbOfPages = {% if img_nb %}{{img_nb}}{% else %}0{% endif %};
     </script>
     <script src="{% static 'svelte/regionList.js' %}"></script>
 {% endblock %}
