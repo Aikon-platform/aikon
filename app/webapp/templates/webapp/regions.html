@@ -39,8 +39,5 @@
         const isValidated = {% if is_validated %}true{% else %}false{% endif %};
         const nbOfPages = {% if img_nb %}{{img_nb}}{% else %}0{% endif %};
     </script>
-{#    <script type="application/json" id="regions-data">#}
-{#        {{ regions_list|safe }}#}
-{#    </script>#}
     <script src="{% static 'svelte/regionList.js' %}"></script>
 {% endblock %}

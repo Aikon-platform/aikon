@@ -106,7 +106,6 @@
         {/await}
     </div>
 {:else if currentLayout === "page"}
-    <!--TODO deduce max page from nbOfPages-->
     <Pagination {nbOfPages}/>
 
     <table class="table is-fullwidth">
@@ -122,7 +121,7 @@
                 {#each Object.entries($pageRegions) as [canvasNb, items]}
                     <RegionsRow canvasImg={toImgName(canvasNb)} {canvasNb} {manifest}>
                         {#each Object.values(items) as item (item.id)}
-                            <Region {item} {appLang}
+                            <Region {item} {appLang} isSquare={false}
                                     isCopied={isItemCopied(item)}
                                     on:copyRef={handleCopyRef}/>
                         {/each}
@@ -145,7 +144,7 @@
     <div>tout doux</div>
 {/if}
 
-<!--TODO create component with slot for regions-->
+<!--TODO create component with slot for items-->
 <div id="selection-modal" class="modal fade" tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
     <div class="modal-background"/>
     <div class="modal-content">

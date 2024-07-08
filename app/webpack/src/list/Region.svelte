@@ -9,6 +9,7 @@
     export let item;
     export let isCopied = false;
     export let appLang = 'en';
+    export let isSquare = true;
 
     function copyRef() {
         dispatch('copyRef', { item });
@@ -56,10 +57,10 @@
     }
 </style>
 
-<div class="region image is-96x96 is-center {$isSelected(item) ? 'checked' : ''}" transition:fade={{ duration: 500 }}>
-    <figure class="image is-96x96 card" tabindex="-1"
+<div class="region image is-center {$isSelected(item) ? 'checked' : ''}" transition:fade={{ duration: 500 }}>
+    <figure class="image card {isSquare ? 'is-96x96' : ''}" tabindex="-1"
             on:click={() => selectionStore.toggle(item)} on:keyup={() => null}>
-        <img src="{refToIIIF(item.img, item.xyhw, '96,')}" alt="Extracted region"/>
+        <img src="{refToIIIF(item.img, item.xyhw, isSquare ? '96,' : '140,')}" alt="Extracted region"/>
         <div class="overlay is-center">
             <span class="overlay-desc">{item.title}</span>
         </div>

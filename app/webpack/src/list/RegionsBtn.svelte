@@ -34,7 +34,7 @@
         </button>
     {:else}
         {#each witness.regions as regionId}
-            <a href="{baseUrl}{regionId}" class="tag is-dark mr-3 is-rounded">#{regionId}</a>
+            <a href="{baseUrl}{regionId}" class="tag is-dark mr-3 is-rounded">Regions #{regionId}</a>
         {/each}
     {/if}
 </div>

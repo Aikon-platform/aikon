@@ -10,6 +10,7 @@
     <link rel="icon" type="image/x-icon" href="{% static 'img/favicon-'|add:APP_NAME|add:'.png' %}">
     <script>
         const CSRF_TOKEN = "{{ csrf_token }}";
+        const USER_ID = "{{ user.id }}";
 
         const ADDITIONAL_MODULES = {{ ADDITIONAL_MODULES|safe }};
 
