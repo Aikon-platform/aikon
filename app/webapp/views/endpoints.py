@@ -11,7 +11,6 @@ from app.webapp.utils.functions import zip_img
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.utils.iiif.annotation import (
     get_regions_annotations,
-    delete_regions as del_regions,
 )
 from app.webapp.utils.logger import log
 from app.webapp.utils.regions import create_empty_regions
@@ -128,19 +127,24 @@ def create_manual_regions(request, wid, did=None, rid=None):
                 "mirador_url": regions.gen_mirador_url(),
             },
         )
-    return JsonResponse({"error": "Invalid request"}, status=400)
+    return JsonResponse({"error": "Invalid request method"}, status=400)
 
 
 def delete_regions(request, rid):
+    from app.webapp.tasks import delete_regions_and_annotations
+
     if request.method == "DELETE":
-        regions = get_object_or_404(Regions, id=rid)
+        get_object_or_404(Regions, id=rid)
         try:
-            del_regions(regions)
-            return JsonResponse({"message": "Regions deleted"}, status=204)
+            delete_regions_and_annotations.delay(rid)
+            return JsonResponse({"message": "Regions deletion requested"}, status=204)
         except Exception as e:
-            log(f"[delete_regions] Error deleting regions #{rid}", e)
-            return JsonResponse({"error": f"Error deleting regions: {e}"}, status=500)
-    return JsonResponse({"error": "Invalid request"}, status=400)
+            log(f"[delete_regions] Error sending deletion task for regions #{rid}", e)
+            return JsonResponse(
+                {"error": f" Error sending deletion task for regions #{rid}: {e}"},
+                status=500,
+            )
+    return JsonResponse({"error": "Invalid request method"}, status=400)
 
 
 def export_regions(request):

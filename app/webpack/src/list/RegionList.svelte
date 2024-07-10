@@ -4,6 +4,8 @@
     const { selected } = selectionStore;
     import { regionsStore } from './stores/regions.js';
     const { allRegions, fetchAll, pageRegions, fetchPages } = regionsStore;
+    import { loading } from '../utils.js';
+    import Loading from '../Loading.svelte';
 
     import Region from './Region.svelte';
     import SelectionBtn from "./SelectionBtn.svelte";
@@ -58,6 +60,8 @@
     }
 </script>
 
+<Loading visible={$loading}/>
+
 <Modal {appLang}/>
 
 <SelectionBtn {selectionLength} {appLang} />
@@ -99,7 +103,7 @@
                         isCopied={isItemCopied(item)}
                         on:copyRef={handleCopyRef}/>
             {:else}
-                <ExtractionButtons {appLang} {modules} {witness} {currentRegionId}/>
+                <ExtractionButtons {appLang} {modules} {witness} {currentRegionId} {baseUrl}/>
             {/each}
         {:catch error}
             <tr>Error when retrieving regions: {error}</tr>

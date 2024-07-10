@@ -1,3 +1,16 @@
+import { writable } from 'svelte/store';
+
+export const loading = writable(false);
+
+export async function withLoading(asyncFunction) {
+    loading.set(true);
+    try {
+        return await asyncFunction();
+    } finally {
+        loading.set(false);
+    }
+}
+
 export function getCantaloupeUrl() {
     return CANTALOUPE_APP_URL ?? "http://localhost:8182";
 }
@@ -49,6 +62,8 @@ export function showMessage(msg, title = null, confirm = false) {
         if (msgModal) {
             if (confirm) {
                 document.getElementById("modal-footer").hidden = false;
+            } else {
+                resolve(undefined);
             }
             if (title) {
                 document.getElementById("modal-title").textContent = title;

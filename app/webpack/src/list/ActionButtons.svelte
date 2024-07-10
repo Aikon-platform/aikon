@@ -1,5 +1,5 @@
 <script>
-    import {manifestToMirador, showMessage, downloadBlob} from "../utils.js";
+    import {manifestToMirador, showMessage, downloadBlob, withLoading} from "../utils.js";
     import {selectionStore} from "./stores/selectionStore.js";
     const { selected, nbSelected } = selectionStore;
     import { regionsStore } from './stores/regions.js';
@@ -69,11 +69,11 @@
     async function downloadRegions(){
         // download only displayed regions?
         const regionsRef = Object.values($selected(true)).map(r => r.ref);
-        const response = await fetch(`${window.location.origin}/regions/export`, {
+        const response = await withLoading(() => fetch(`${window.location.origin}/regions/export`, {
             method: "POST",
             headers: { "X-CSRFToken": CSRF_TOKEN },
             body: JSON.stringify({regionsRef})
-        });
+        }));
         const blob = await response.blob();
         // TODO find better filename
         downloadBlob(blob, 'regions.zip');
