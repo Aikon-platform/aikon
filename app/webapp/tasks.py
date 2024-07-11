@@ -1,8 +1,3 @@
-from pathlib import Path
-from typing import List
-
-from celery import shared_task
-
 from app.config.celery import celery_app
 
 from app.webapp.utils.constants import MAX_RES
@@ -24,39 +19,6 @@ def convert_temp_to_img(digit):
 @celery_app.task
 def extract_images_from_iiif_manifest(manifest_url, digit_ref, digit):
     return iiif_to_img(manifest_url, digit_ref, digit)
-
-
-@celery_app.task
-def check_similarity_files(file_names):
-    # TODO: manifest_image_extraction
-    pass
-
-
-# @celery_app.task
-def compute_similarity_scores(
-    regions_refs: List[str] = None, max_rows: int = 50, show_checked_ref: bool = False
-):
-    from app.webapp.views import check_ref
-    from app.webapp.utils.similarity import compute_total_similarity
-
-    checked_regions = regions_refs[0]
-
-    regions = [
-        region
-        for (passed, region) in [check_ref(ref, "Regions") for ref in regions_refs]
-        if passed
-    ]
-
-    if not len(regions):
-        from app.webapp.utils.logger import log
-
-        log(
-            f"[compute_similarity_scores] No annotation corresponding to {regions_refs}"
-        )
-        return {}
-    return compute_total_similarity(
-        regions, checked_regions, regions_refs, max_rows, show_checked_ref
-    )
 
 
 @celery_app.task

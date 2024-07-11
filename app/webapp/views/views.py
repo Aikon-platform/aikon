@@ -131,6 +131,7 @@ def reindex_regions(request, obj_ref):
     To reindex regions from a text file named after <obj_ref>
     either to create a Regions obj from a regions txt file if obj_ref is a digit_ref
     or to delete then create a new regions file if obj_ref is a regions_ref
+    TODO differenciate clearly from index_regions
     """
     passed, obj = check_ref(obj_ref, "Regions")
     if not passed:
@@ -169,6 +170,7 @@ def reindex_regions(request, obj_ref):
     return JsonResponse({"error": f"No regions file for reference #{obj_ref}."})
 
 
+@user_passes_test(is_superuser)
 def index_witness_regions(request, wit_id):
     wit = get_object_or_404(Witness, pk=wit_id)
     regions_files = get_files_with_prefix(REGIONS_PATH, f"{wit.get_ref()}_")

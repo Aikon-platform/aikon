@@ -131,6 +131,15 @@ class Regions(models.Model):
             return metadata
         return {}
 
+    def to_json(self):
+        return {
+            "id": self.id,
+            "ref": self.get_ref(),
+            "class": self.__class__.__name__,
+            "type": get_name("Regions"),
+            "title": self.__str__(),
+        }
+
     def get_annotations(self):
         from app.webapp.utils.iiif.annotation import get_regions_annotations
 

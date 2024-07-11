@@ -1,22 +1,26 @@
 import json
 
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.views.decorators.http import require_GET
 
-from app.config.settings import APP_NAME, APP_LANG
+from app.config.settings import APP_LANG
 from app.similarity.const import SCORES_PATH
 from app.similarity.models.region_pair import RegionPair
+from app.webapp.models.regions import Regions
+from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import sort_key
 from app.webapp.utils.logger import log
 from app.similarity.utils import (
     similarity_request,
     check_score_files,
     check_computed_pairs,
-    get_compared_regions,
+    get_compared_regions_refs,
+    compute_page_scores,
+    get_imgs_in_score_files,
 )
 from app.webapp.views import is_superuser, check_ref
 
@@ -88,7 +92,8 @@ def receive_similarity(request):
 
 
 def compute_score(request):
-    from app.webapp.tasks import compute_similarity_scores
+    # NOTE could become irrelevant very soon
+    from app.similarity.tasks import compute_similarity_scores
 
     if request.method == "POST":
         try:
@@ -100,6 +105,7 @@ def compute_score(request):
                 return JsonResponse(
                     {"error": "No regions_ref to retrieve score"}, status=400
                 )
+            # TODO here does not use delayed task
             return JsonResponse(
                 compute_similarity_scores(regions_refs, max_rows, show_checked_ref),
                 status=200,
@@ -110,9 +116,101 @@ def compute_score(request):
     return JsonResponse({"error": "Invalid request method"}, status=400)
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+def get_similarity_page(request, wid, rid=None):
+    if request.method == "POST":
+        if rid is not None:
+            q_regions = [get_object_or_404(Regions, id=rid)]
+        else:
+            witness = get_object_or_404(Witness, id=wid)
+            q_regions = witness.get_regions()
+
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+            regions_ids = data.get("regionsIds", [])
+            page_imgs = data.get("pageImgs", [])
+
+            if len(regions_ids) == 0:
+                return JsonResponse(
+                    {"error": "No regions_ref to retrieve score"}, status=400
+                )
+
+            page_scores = {}
+            for q_r in q_regions:
+                include_q_doc = q_r.id in regions_ids
+                sim_regions = [
+                    Regions.objects.get(id=region_id) for region_id in regions_ids
+                ]
+                page_scores.update(
+                    compute_page_scores(
+                        q_r, sim_regions, include_q_doc, page_q_imgs=page_imgs
+                    )
+                )
+
+            return JsonResponse(page_scores)
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON data"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=400)
+
+
+def get_similar_regions(request, wid, rid=None):
+    """
+    Return the id and metadata of the Regions that have a score file of similarity
+    in common with the Regions whose id is passed in the URL
+    """
+    if rid is not None:
+        q_regions = [get_object_or_404(Regions, id=rid)]
+    else:
+        witness = get_object_or_404(Witness, id=wid)
+        q_regions = witness.get_regions()
+
+    try:
+        sim_regions = []
+        for q_r in q_regions:
+            q_ref = q_r.get_ref()
+            sim_refs = get_compared_regions_refs(q_ref)
+            sim_regions += [
+                region
+                for (passed, region) in [check_ref(ref, "Regions") for ref in sim_refs]
+                if passed
+            ]
+        return JsonResponse({r.get_ref(): r.to_json() for r in sim_regions})
+    except Exception as e:
+        return JsonResponse(
+            {"error": f"Couldn't retrieve compared regions: {e}"}, status=400
+        )
+
+
+def get_query_images(request, wid, rid=None):
+    if request.method == "POST":
+        if rid is not None:
+            q_regions = [get_object_or_404(Regions, id=rid)]
+        else:
+            witness = get_object_or_404(Witness, id=wid)
+            q_regions = witness.get_regions()
+
+        try:
+            q_imgs = []
+            for q_r in q_regions:
+                q_ref = q_r.get_ref()
+                data = json.loads(request.body.decode("utf-8"))
+                sim_refs = data.get("regionsRefs", [])
+                pairs = ["-".join(sorted((q_ref, sim_ref))) for sim_ref in sim_refs]
+                q_imgs += get_imgs_in_score_files(pairs, q_ref)
+            return JsonResponse(q_imgs, safe=False)
+        except Exception as e:
+            return JsonResponse(
+                {
+                    "error": f"Couldn't retrieve images of regions #{rid} in score files: {e}"
+                },
+                status=400,
+            )
+
+    return JsonResponse({"error": "Invalid request method"}, status=400)
+
+
 def show_similarity(request, regions_ref):
-    refs = get_compared_regions(regions_ref)
+    refs = get_compared_regions_refs(regions_ref)
     regions = {
         region.get_ref(): region.__str__()
         for (passed, region) in [check_ref(ref, "Regions") for ref in refs]

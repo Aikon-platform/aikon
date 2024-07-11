@@ -16,6 +16,8 @@
     import ExtractionButtons from "./ExtractionButtons.svelte";
     import RegionsBtn from "./RegionsBtn.svelte";
     import ActionButtons from "./ActionButtons.svelte";
+    import Similarity from "./similarity/Similarity.svelte";
+    import Table from "./Table.svelte";
 
     export const regionsType = "Regions"
     // export let regions = {};
@@ -93,9 +95,9 @@
 {#if currentLayout === "all"}
     <div class="grid is-gap-2">
         {#await fetchAll}
-            <tr class="faded is-center">
+            <div class="faded is-center">
                 {appLang === 'en' ? 'Retrieving regions...' : 'Récupération des régions...'}
-            </tr>
+            </div>
         {:then _}
             {#each Object.values($allRegions) as item (item.id)}
                 <!--TODO dont sort object keys alphabetically-->
@@ -106,15 +108,13 @@
                 <ExtractionButtons {appLang} {modules} {witness} {currentRegionId} {baseUrl}/>
             {/each}
         {:catch error}
-            <tr>Error when retrieving regions: {error}</tr>
+            <div>Error when retrieving regions: {error}</div>
         {/await}
     </div>
 {:else if currentLayout === "page"}
-    <Pagination {nbOfPages}/>
+    <Pagination store={regionsStore} {nbOfPages}/>
 
-    <table class="table is-fullwidth">
-        <tbody>
-
+    <Table>
         {#await $fetchPages}
             <tr class="faded is-center">
                 {appLang === 'en' ? 'Retrieving paginated regions...' : 'Récupération des pages...'}
@@ -139,11 +139,9 @@
         {:catch error}
             <tr>Error when retrieving paginated regions: {error}</tr>
         {/await}
-
-        </tbody>
-    </table>
+    </Table>
 {:else if currentLayout === "similarity"}
-    <div>tout doux</div>
+    <Similarity/>
 {:else if currentLayout === "vectorization"}
     <div>tout doux</div>
 {/if}
@@ -196,9 +194,6 @@
     .overlay {
         font-size: 50%;
     }
-    /*.actions {*/
-    /*    align-items: flex-end;*/
-    /*}*/
     #nav-actions {
         position: sticky;
         top: 0;

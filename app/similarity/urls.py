@@ -1,14 +1,7 @@
 from django.urls import path
 from app.config.settings import APP_NAME
 
-from app.similarity.views import (
-    receive_similarity,
-    send_similarity,
-    show_similarity,
-    compute_score,
-    retrieve_category,
-    save_category,
-)
+from app.similarity.views import *
 
 app_name = "similarity"
 
@@ -35,4 +28,38 @@ urlpatterns = [
     ),
     path(f"{APP_NAME}/retrieve-category/", retrieve_category, name="retrieve-category"),
     path(f"{APP_NAME}/save-category/", save_category, name="save-category"),
+]
+
+# ENDPOINTS
+urlpatterns += [
+    path(
+        f"witness/<int:wid>/regions/<int:rid>/similar-regions",
+        get_similar_regions,
+        name="similarity-regions",
+    ),
+    path(
+        f"witness/<int:wid>/regions/similar-regions",
+        get_similar_regions,
+        name="witness-similarity-regions",
+    ),
+    path(
+        f"witness/<int:wid>/regions/<int:rid>/query-images",
+        get_query_images,
+        name="query-images",
+    ),
+    path(
+        f"witness/<int:wid>/regions/query-images",
+        get_query_images,
+        name="witness-query-images",
+    ),
+    path(
+        f"witness/<int:wid>/regions/<int:rid>/similarity-page",
+        get_similarity_page,
+        name="similarity-page",
+    ),
+    path(
+        f"witness/<int:wid>/regions/similarity-page",
+        get_similarity_page,
+        name="witness-similarity-page",
+    ),
 ]

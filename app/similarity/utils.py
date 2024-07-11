@@ -1,23 +1,124 @@
 import os
-from collections import defaultdict
+import requests
+from collections import defaultdict, Counter
 from itertools import combinations_with_replacement
 import numpy as np
 
-import requests
 from typing import List
+from heapq import nlargest
+from functools import lru_cache
+from concurrent.futures import ThreadPoolExecutor
 
 from app.similarity.const import SCORES_PATH
 from app.config.settings import CV_API_URL, APP_URL, APP_NAME
 from app.webapp.models.regions import Regions
 from app.webapp.utils.logger import log
+from app.webapp.views import check_ref
 
 
+@lru_cache(maxsize=None)
 def load_npy_file(score_path_pair):
     try:
         return np.load(score_path_pair, allow_pickle=True)
     except FileNotFoundError as e:
         log(f"[load_npy_file] no score file for {score_path_pair}", e)
         return None
+
+
+def process_score_file(score_path_pair, q_prefix, page_imgs):
+    pair_scores = load_npy_file(score_path_pair)
+    if pair_scores is None:
+        return None
+
+    img_scores = defaultdict(Counter)
+    for score, img1, img2 in pair_scores:
+        if img1.startswith(q_prefix) and img1 in page_imgs:
+            img_scores[img1][img2] = max(img_scores[img1][img2], float(score))
+        elif img2.startswith(q_prefix) and img2 in page_imgs:
+            img_scores[img2][img1] = max(img_scores[img2][img1], float(score))
+
+    return img_scores
+
+
+def get_imgs_in_file(score_path_pair, q_prefix):
+    pair_scores = load_npy_file(score_path_pair)
+    if pair_scores is None:
+        return set()
+
+    q_imgs = set()
+    for _, img1, img2 in pair_scores:
+        if img1.startswith(q_prefix):
+            q_imgs.add(img1)
+        elif img2.startswith(q_prefix):
+            q_imgs.add(img2)
+
+    return q_imgs
+
+
+def get_imgs_in_score_files(pairs: List[str], q_prefix: str):
+    """
+    Get all images names beginning with q_prefix in the scores files for the given pairs,
+    Thus retrieving only image names from the same document
+    """
+    all_q_imgs = set()
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        for pair in pairs:
+            score_path_pair = f"{SCORES_PATH}/{pair}.npy"
+            futures.append(executor.submit(get_imgs_in_file, score_path_pair, q_prefix))
+
+        for future in futures:
+            all_q_imgs.update(future.result())
+    return sorted(all_q_imgs)
+
+
+def compute_page_scores(
+    q_regions: Regions,
+    sim_regions: List[Regions],
+    include_q_regions=False,
+    page_nb=1,
+    page_len=50,
+    page_q_imgs=None,
+    topk=10,
+):
+    q_prefix = q_regions.get_digit().get_ref()
+    q_ref = q_regions.get_ref()
+    sim_refs = [regions.get_ref() for regions in sim_regions]
+    if include_q_regions:
+        sim_refs += [q_ref]
+
+    pairs = ["-".join(sorted((q_ref, sim_ref))) for sim_ref in sim_refs]
+
+    if page_q_imgs is None:
+        all_q_imgs = get_imgs_in_score_files(pairs, q_prefix)
+        start_idx = (page_nb - 1) * page_len
+        end_idx = start_idx + page_len
+        page_q_imgs = set(all_q_imgs[start_idx:end_idx])
+
+    total_scores = defaultdict(Counter)
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        for pair in pairs:
+            score_path_pair = f"{SCORES_PATH}/{pair}.npy"
+            futures.append(
+                executor.submit(
+                    process_score_file, score_path_pair, q_prefix, page_q_imgs
+                )
+            )
+
+        for future in futures:
+            result = future.result()
+            if result:
+                for img_name, scores in result.items():
+                    total_scores[img_name].update(scores)
+
+    # Get top k scores for each query image
+    result = {
+        q_img: nlargest(topk, scores.items(), key=lambda x: x[1])
+        for q_img, scores in total_scores.items()
+    }
+
+    return dict(sorted(result.items(), key=lambda x: x[0]))
 
 
 def doc_pairs(doc_ids: list):
@@ -48,8 +149,17 @@ def get_regions_ref_in_pairs(pairs):
     return list(set([ref for pair in pairs for ref in pair.split("-")]))
 
 
-def get_compared_regions(regions_ref):
+def get_compared_regions_refs(regions_ref):
     return get_regions_ref_in_pairs(get_computed_pairs(regions_ref))
+
+
+def get_compared_regions(regions: Regions):
+    refs = get_compared_regions_refs(regions.get_ref())
+    return [
+        region
+        for (passed, region) in [check_ref(ref, "Regions") for ref in refs]
+        if passed
+    ]
 
 
 def gen_list_url(regions_ref):
@@ -100,9 +210,8 @@ def similarity_request(regions: List[Regions]):
 
 
 def check_score_files(file_names):
-    from app.webapp.tasks import check_similarity_files
+    from app.similarity.tasks import check_similarity_files
 
-    # TODO check similarity file content inside a celery task
     check_similarity_files.delay(file_names)
 
 
@@ -124,6 +233,7 @@ def compute_total_similarity(
     max_rows: int = 50,
     show_checked_ref: bool = False,
 ):
+    # Soon to be NOT USED
     total_scores = defaultdict(list)
     img_names = defaultdict(set)
     prefix_key = "_".join(checked_regions_ref.split("_")[:2])
@@ -183,11 +293,7 @@ def compute_total_similarity(
     )
 
     # Limit number of rows to max_rows
-    sorted_total_scores = {
-        k: sorted_total_scores[k] for k in list(sorted_total_scores)[:max_rows]
-    }
-
-    return sorted_total_scores
+    return {k: sorted_total_scores[k] for k in list(sorted_total_scores)[:max_rows]}
 
 
 def reset_similarity(regions_ref):
