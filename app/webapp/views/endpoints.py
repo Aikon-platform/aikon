@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
+from app.webapp.utils.constants import MANIFEST_V2
 from app.webapp.utils.functions import zip_img
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.utils.iiif.annotation import (
@@ -131,12 +132,23 @@ def create_manual_regions(request, wid, did=None, rid=None):
 
 
 def delete_regions(request, rid):
-    from app.webapp.tasks import delete_regions_and_annotations
+    from app.webapp.tasks import delete_annotations
 
     if request.method == "DELETE":
-        get_object_or_404(Regions, id=rid)
+        regions = get_object_or_404(Regions, id=rid)
         try:
-            delete_regions_and_annotations.delay(rid)
+            delete_annotations.delay(
+                regions.gen_manifest_url(version=MANIFEST_V2), regions.get_ref()
+            )
+            try:
+                # Delete the regions record in the database
+                regions.delete()
+            except Exception as e:
+                return JsonResponse(
+                    {"message": f"Failed to delete regions record #{rid}: {e}"},
+                    status=400,
+                )
+
             return JsonResponse({"message": "Regions deletion requested"}, status=204)
         except Exception as e:
             log(f"[delete_regions] Error sending deletion task for regions #{rid}", e)

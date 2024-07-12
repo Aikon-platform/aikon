@@ -40,6 +40,13 @@ def delete_regions_and_annotations(regions_id):
 
 
 @celery_app.task
+def delete_annotations(regions_ref, manifest_url):
+    from app.webapp.utils.iiif.annotation import unindex_regions
+
+    return unindex_regions(regions_ref, manifest_url)
+
+
+@celery_app.task
 def test(log_msg):
     from app.webapp.utils.logger import log
 
