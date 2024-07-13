@@ -1,10 +1,10 @@
 <script>
     export let store;
-    // import {regionsStore} from "./stores/regions.js";
     const { currentPage } = store;
 
-    export let nbOfPages;
-    const maxPage = Math.ceil(nbOfPages / 50);
+    export let nbOfItems;
+    export let pageLength = 50;
+    const maxPage = Math.ceil(nbOfItems / pageLength);
 </script>
 
 {#if maxPage > 1}

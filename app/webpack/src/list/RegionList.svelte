@@ -112,7 +112,7 @@
         {/await}
     </div>
 {:else if currentLayout === "page"}
-    <Pagination store={regionsStore} {nbOfPages}/>
+    <Pagination store={regionsStore} nbOfItems={nbOfPages}/>
 
     <Table>
         {#await $fetchPages}

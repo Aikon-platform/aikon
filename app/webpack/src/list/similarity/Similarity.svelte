@@ -1,10 +1,8 @@
 <script>
     import { similarityStore } from './similarityStore.js';
-    import Pagination from "../Pagination.svelte";
+    const { fetchSimilarity } = similarityStore;
     import Table from "../Table.svelte";
-    import SimilarityRow from "./SimilarityRow.svelte";
-    import SimilarRegion from "./SimilarRegion.svelte";
-    const { fetchSimilarity, fetchSimilarityPage, nbOfPages, pageQImgs, getSimilarImg } = similarityStore;
+    import SimilarityPage from "./SimilarityPage.svelte";
 
     export let appLang = 'en';
 </script>
@@ -20,8 +18,6 @@
 <!--TODO add button to indicate that this is no similar regions-->
 <!--TODO order similar witnesses according to a metric-->
 
-<Pagination store={similarityStore} {$nbOfPages}/>
-
 {#await fetchSimilarity}
     <Table>
         <tr class="faded is-center">
@@ -29,30 +25,11 @@
         </tr>
     </Table>
 {:then _}
-    <Table>
-        {#each Object.values($pageQImgs) as qImg (qImg.id)}
-            <SimilarityRow {qImg} {appLang}>
-                {#await fetchSimilarityPage}
-                    <tr class="faded is-center">
-                        {appLang === 'en' ? 'Retrieving similar regions...' : 'Récupération des régions similaires...'}
-                    </tr>
-                {:then _}
-                    {#each $getSimilarImg(qImg) as [sImg, score]}
-                        <SimilarRegion {sImg} {score} {appLang}/>
-                    {/each}
-                {:catch error}
-                    <tr>Error when retrieving similar regions: {error}</tr>
-                {/await}
-            </SimilarityRow>
-        {:else}
-            <tr class="faded is-center">
-                {appLang === 'en' ? 'No similarity' : 'Pas de similarités'}
-            </tr>
-            <!--TODO add button for launching new similarities-->
-        {/each}
-    </Table>
+    <SimilarityPage {appLang}/>
 {:catch error}
     <Table>
-        <tr>Error when retrieving similarities: {error}</tr>
+        <tr class="faded is-center">
+            Error when retrieving similarities: {error}
+        </tr>
     </Table>
 {/await}

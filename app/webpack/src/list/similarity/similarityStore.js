@@ -1,34 +1,28 @@
-import { writable, derived } from 'svelte/store';
+import {derived, get, writable} from 'svelte/store';
 
 function createSimilarityStore() {
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const pageLength = 50;
 
     const currentPage = writable(1);
-    const nbOfPage = writable(0);
     const comparedRegions = writable({});
     const qImgs = writable([]);
     /**
      * List of query images (i.e. current regions in first column) for the current page
-     * @type {Writable}
      */
     const pageQImgs = writable([]);
     /**
      * List of similar images (i.e. for compared regions) for the current page
-     * @type {Writable}
      */
     const pageSImgs = writable({});
+
+    // todo save/load selectedRegions in local storage
     const selectedRegions = writable({});
 
-    if (typeof window !== 'undefined') {
-        const urlPage = parseInt(new URLSearchParams(window.location.search).get("sp"));
-        if (!isNaN(urlPage)) {
-            currentPage.set(urlPage);
-        } else {
-            currentPage.set(1);
-        }
-    }
-
+    /**
+     * Fetches all query images and regions that were compared to current regions on load
+     * @type {Promise<any>}
+     */
     const fetchSimilarity = (async () => {
         const regions = await fetch(
             `${baseUrl}similar-regions`
@@ -52,23 +46,56 @@ function createSimilarityStore() {
             }
         ).then(response => response.json()
         ).then(data => {
+            if (data.length === 0 || !data) {
+                return null;
+            }
             qImgs.set(data);
-        });
+            return data;
+        }).catch(
+            error => console.error('Error:', error)
+        );
 
-        nbOfPage.set(Math.ceil(imgs.length / pageLength));
-
-        await fetchSimilarityPage();
+        // pageQImgs and pageSImgs are derived from currentPage update
+        handlePageUpdate(initCurrentPage());
         return imgs;
     })();
 
-    const fetchSimilarityPage = async () => {
+    const initCurrentPage = () => {
+        if (typeof window !== 'undefined') {
+            const urlPage = parseInt(new URLSearchParams(window.location.search).get("sp"));
+            if (!isNaN(urlPage)) {
+                currentPage.set(urlPage);
+                return urlPage;
+            }
+        }
+        currentPage.set(1);
+        return 1;
+    }
+
+    const setPageQImgs = derived(currentPage, ($currentPage) =>
+        (async () => updatePageQImgs($currentPage))()
+    );
+
+    const setPageSImgs = derived(pageQImgs, ($pageQImgs) =>
+        (async () => await fetchPageSImgs($pageQImgs))()
+    );
+
+    function updatePageQImgs(pageNb) {
+        const start = (pageNb - 1) * pageLength;
+        const end = start + pageLength;
+        const currentQImgs = get(qImgs).slice(start, end)
+        pageQImgs.set(currentQImgs);
+        return currentQImgs;
+    }
+
+    const fetchPageSImgs = async (currentQImgs) => {
         const response = await fetch(
             `${baseUrl}similarity-page`,
             {
                 method: "POST",
                 body: JSON.stringify({
                     regionsIds: Object.keys(get(selectedRegions)),
-                    pageImgs: get(pageQImgs),
+                    pageImgs: currentQImgs,
                 }),
                 headers: {
                     'Content-Type': 'application/json',
@@ -81,16 +108,9 @@ function createSimilarityStore() {
         return data;
     };
 
-    const fetchPage = derived(currentPage, ($currentPage) => async () => {
-        return await fetchSimilarityPage();
-    });
 
     function handlePageUpdate(pageNb) {
-        const start = (pageNb - 1) * pageLength;
-        const end = start + pageLength;
-        pageQImgs.set(get(qImgs).slice(start, end))
         currentPage.set(pageNb);
-
         if (typeof window !== 'undefined') {
             const url = new URL(window.location.href);
             url.searchParams.set("sp", pageNb);
@@ -111,8 +131,9 @@ function createSimilarityStore() {
         });
     }
 
-    function getSimilarImg(qImg) {
-        return get(pageSImgs)[qImg];
+    function getSimilarImgs(qImg) {
+        const currentSImgs = get(pageSImgs);
+        return currentSImgs.hasOwnProperty(qImg) ? currentSImgs[qImg] : [];
     }
 
     function getRegionsInfo(refs) {
@@ -122,15 +143,15 @@ function createSimilarityStore() {
 
     return {
         currentPage,
-        nbOfPage,
         comparedRegions,
         qImgs,
         pageQImgs,
         pageSImgs,
         selectedRegions,
-        fetchPage,
         fetchSimilarity,
-        getSimilarImg,
+        setPageQImgs,
+        setPageSImgs,
+        getSimilarImgs,
         getRegionsInfo,
         handlePageUpdate,
         unselect,

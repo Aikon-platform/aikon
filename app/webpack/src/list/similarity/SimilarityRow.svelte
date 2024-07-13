@@ -1,6 +1,6 @@
 <script>
     // import { similarityStore } from './similarityStore.js';
-    // import {refToIIIF} from "../../utils.js";
+    import {refToIIIF} from "../../utils.js";
     export let qImg;
     // export let appLang;
 </script>
@@ -8,8 +8,8 @@
 <tr>
     <th class="is-3 center-flex is-narrow" style="width: 260px">
         <div class="content-wrapper py-5">
-            <!--<img src="{refToIIIF(canvasImg, 'full', '250,')}" alt="Canvas {canvasNb}" class="mb-3 card">-->
-            {qImg}
+            <img src="{refToIIIF(qImg, 'full', '250,')}" alt="Query region" class="mb-3 card">
+            <!--TODO: add category button-->
         </div>
     </th>
     <td class="p-5 is-fullwidth">

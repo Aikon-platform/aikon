@@ -130,9 +130,8 @@ def get_similarity_page(request, wid, rid=None):
             page_imgs = data.get("pageImgs", [])
 
             if len(regions_ids) == 0:
-                return JsonResponse(
-                    {"error": "No regions_ref to retrieve score"}, status=400
-                )
+                # selection is empty
+                return JsonResponse({})
 
             page_scores = {}
             for q_r in q_regions:
@@ -190,14 +189,15 @@ def get_query_images(request, wid, rid=None):
             q_regions = witness.get_regions()
 
         try:
-            q_imgs = []
+            q_imgs = set()
             for q_r in q_regions:
                 q_ref = q_r.get_ref()
                 data = json.loads(request.body.decode("utf-8"))
                 sim_refs = data.get("regionsRefs", [])
                 pairs = ["-".join(sorted((q_ref, sim_ref))) for sim_ref in sim_refs]
-                q_imgs += get_imgs_in_score_files(pairs, q_ref)
-            return JsonResponse(q_imgs, safe=False)
+                q_prefix = "_".join(q_ref.split("_")[:2])
+                q_imgs.update(get_imgs_in_score_files(pairs, q_prefix))
+            return JsonResponse(sorted(list(q_imgs)), safe=False)
         except Exception as e:
             return JsonResponse(
                 {
