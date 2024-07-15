@@ -28,7 +28,7 @@
 
 <div class="region image is-center" transition:fade={{ duration: 500 }}>
     <figure class="image card" tabindex="-1">
-        <img src="{refToIIIF(img, coord, '140,')}" alt="Similar region"/>
+        <img src="{refToIIIF(img, coord, '160,')}" alt="Similar region"/>
         <div class="overlay is-center">
             <span class="overlay-desc">{similarityStore.getRegionsInfo(`${wit}_${digit}`).title}</span>
         </div>

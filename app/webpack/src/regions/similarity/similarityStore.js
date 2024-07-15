@@ -75,8 +75,8 @@ function createSimilarityStore() {
         (async () => updatePageQImgs($currentPage))()
     );
 
-    const setPageSImgs = derived(pageQImgs, ($pageQImgs) =>
-        (async () => await fetchPageSImgs($pageQImgs))()
+    const setPageSImgs = derived(selectedRegions, ($selectedRegions) =>
+        (async () => await fetchPageSImgs($selectedRegions))()
     );
 
     function updatePageQImgs(pageNb) {
@@ -87,14 +87,15 @@ function createSimilarityStore() {
         return currentQImgs;
     }
 
-    const fetchPageSImgs = async (currentQImgs) => {
+    const fetchPageSImgs = async (selectedRegions) => {
+        // const currentQImgs = get(pageQImgs);
         const response = await fetch(
             `${baseUrl}similarity-page`,
             {
                 method: "POST",
                 body: JSON.stringify({
-                    regionsIds: Object.values(get(selectedRegions)).map(r => r.id),
-                    pageImgs: currentQImgs,
+                    regionsIds: Object.values(selectedRegions).map(r => r.id),
+                    pageImgs: get(pageQImgs),
                 }),
                 headers: {
                     'Content-Type': 'application/json',

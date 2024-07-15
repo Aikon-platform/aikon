@@ -8,9 +8,7 @@
     export let appLang = 'en';
 </script>
 
-<!--TODO display all compared witnesses-->
 <!--TODO add field with autocomplete to ask for similarity for a new witness-->
-<!--TODO make tag witnesses toggle for selection-->
 <!--TODO toolbar -->
 <!--TODO add all regions paginated + input to add new region-->
 <!--TODO create category button for similarity-->
