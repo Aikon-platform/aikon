@@ -141,7 +141,7 @@
         {/await}
     </Table>
 {:else if currentLayout === "similarity"}
-    <Similarity/>
+    <Similarity {appLang} {imgPrefix}/>
 {:else if currentLayout === "vectorization"}
     <div>tout doux</div>
 {/if}

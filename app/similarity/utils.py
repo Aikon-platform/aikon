@@ -150,7 +150,9 @@ def get_regions_ref_in_pairs(pairs):
 
 
 def get_compared_regions_refs(regions_ref):
-    return get_regions_ref_in_pairs(get_computed_pairs(regions_ref))
+    refs = get_regions_ref_in_pairs(get_computed_pairs(regions_ref))
+    refs.remove(regions_ref)
+    return refs
 
 
 def get_compared_regions(regions: Regions):

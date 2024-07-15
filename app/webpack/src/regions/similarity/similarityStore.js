@@ -28,6 +28,7 @@ function createSimilarityStore() {
         ).then(response => response.json()
         ).then(data => {
             comparedRegions.set(data);
+            console.log(data);
             return data;
         }).catch(
             error => console.error('Error:', error)
@@ -147,9 +148,13 @@ function createSimilarityStore() {
         return currentSImgs.hasOwnProperty(qImg) ? currentSImgs[qImg] : [];
     }
 
-    function getRegionsInfo(refs) {
-        // todo: get info from comparedRegions
-        return `TODO: ${refs}`
+    function getRegionsInfo(ref) {
+        const displayedRegions = get(comparedRegions);
+        const regionRef = Object.keys(displayedRegions).filter(key => key.startsWith(ref));
+        if (regionRef.length !== 1) {
+            return {title: "Error"};
+        }
+        return displayedRegions[regionRef[0]]
     }
 
     return {

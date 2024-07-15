@@ -165,15 +165,18 @@ def get_similar_regions(request, wid, rid=None):
 
     try:
         sim_regions = []
+        compared_regions = {}
         for q_r in q_regions:
             q_ref = q_r.get_ref()
+            compared_regions[q_ref] = q_r.to_json()
             sim_refs = get_compared_regions_refs(q_ref)
             sim_regions += [
                 region
                 for (passed, region) in [check_ref(ref, "Regions") for ref in sim_refs]
                 if passed
             ]
-        return JsonResponse({r.get_ref(): r.to_json() for r in sim_regions})
+        compared_regions.update({r.get_ref(): r.to_json() for r in sim_regions})
+        return JsonResponse(compared_regions)
     except Exception as e:
         return JsonResponse(
             {"error": f"Couldn't retrieve compared regions: {e}"}, status=400

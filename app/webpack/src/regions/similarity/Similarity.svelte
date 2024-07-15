@@ -6,6 +6,7 @@
     import ComparedRegions from "./ComparedRegions.svelte";
 
     export let appLang = 'en';
+    export let imgPrefix = '';
 </script>
 
 <!--TODO add field with autocomplete to ask for similarity for a new witness-->
@@ -24,7 +25,7 @@
         </tr>
     </Table>
 {:then _}
-    <ComparedRegions {appLang}/>
+    <ComparedRegions {appLang} {imgPrefix}/>
     <SimilarityPage {appLang}/>
 {:catch error}
     <Table>
