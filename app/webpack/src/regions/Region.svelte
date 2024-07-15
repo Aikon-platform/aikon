@@ -61,6 +61,10 @@
     .region {
         cursor: pointer;
         position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
     }
     .tooltip {
         visibility: hidden;

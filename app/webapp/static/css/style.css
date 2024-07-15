@@ -286,3 +286,8 @@ td.is-fullwidth {
 .menu-list a:hover {
     background-color: var(--contrasted);
 }
+
+.is-256x256 {
+    width: 256px;
+    height: 256px;
+}

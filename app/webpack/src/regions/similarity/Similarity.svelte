@@ -11,7 +11,7 @@
 
 <!--TODO add field with autocomplete to ask for similarity for a new witness-->
 <!--TODO toolbar -->
-<!--TODO add all regions paginated + input to add new region-->
+<!--TODO add input to add new region-->
 <!--TODO create category button for similarity-->
 <!--TODO add button to add other similar region-->
 <!--TODO order similar regions by category then score-->

@@ -49,7 +49,14 @@
     if (modules.includes("similarity")) layouts.similarity = { text: appLang === 'en' ? 'Similarity' : 'Similarité' }
     if (modules.includes("vectorization")) layouts.vectorization = { text: appLang === 'en' ? 'Vectorization' : 'Vectorisation' }
 
-    $: currentLayout = "all"
+    $: currentLayout = new URLSearchParams(window.location.search).get("tab") ?? "all";
+
+    function changeLayout(layout) {
+        currentLayout = layout;
+        const url = new URL(window.location);
+        url.searchParams.set("tab", layout);
+        window.history.pushState({}, "", url);
+    }
 
     $: clipBoard = "";
     // NOTE: isItemCopied stays to true if user copied another string
@@ -83,7 +90,7 @@
             {#each Object.entries(layouts) as [layout, meta]}
                 <!--TODO make active tab appear in url-->
                 <li class:is-active={layout === currentLayout}
-                    on:click={() => currentLayout = layout} on:keyup={() => null}>
+                    on:click={() => changeLayout(layout)} on:keyup={() => null}>
                     <a href={null}>{meta.text}</a>
                 </li>
             {/each}

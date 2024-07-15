@@ -20,7 +20,7 @@
 
 <div class="field is-grouped is-grouped-multiline">
 {#each Object.entries($comparedRegions) as [regionId, region]}
-    <div class="tags has-addons mb-0" on:click={() => toggleSelection(region)} on:keyup={null}>
+    <div class="tags has-addons mb-0 is-hoverable" on:click={() => toggleSelection(region)} on:keyup={null}>
         {#if isSelf(regionId)}
             <span class="tag is-dark">current</span>
         {/if}

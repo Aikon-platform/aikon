@@ -28,7 +28,6 @@ function createSimilarityStore() {
         ).then(response => response.json()
         ).then(data => {
             comparedRegions.set(data);
-            console.log(data);
             return data;
         }).catch(
             error => console.error('Error:', error)
@@ -77,6 +76,7 @@ function createSimilarityStore() {
     );
 
     const setPageSImgs = derived(selectedRegions, ($selectedRegions) =>
+        // todo make setPageSImgs reactive on page change
         (async () => await fetchPageSImgs($selectedRegions))()
     );
 
@@ -157,6 +157,46 @@ function createSimilarityStore() {
         return displayedRegions[regionRef[0]]
     }
 
+    function addCategory(regionRef, category) {
+        /*
+        if (event.target.name === 'category' && event.target.id !== 'category5') {
+                form.querySelectorAll('input[name="category"]:not(#category5):checked').forEach((checkbox) => {
+                    if (checkbox !== event.target) checkbox.checked = false;
+                });
+            }
+            let img_1 = form.querySelector('.img_1').value;
+            let img_2 = form.querySelector('.img_2').value;
+            let regions_ref_1 = form.querySelector('.regions_ref_1').value;
+            let regions_ref_2 = form.querySelector('.regions_ref_2').value;
+            let category = form.querySelector('input[name="category"]:not(#category5):checked');
+            let category_x = form.querySelector('#category5:checked');
+            form.querySelectorAll('input[name="category"]').forEach((checkbox) => {
+                checkbox.disabled = true;
+            });
+            let data = {
+                'img_1': img_1,
+                'img_2': img_2,
+                'regions_ref_1': regions_ref_1,
+                'regions_ref_2': regions_ref_2,
+                'category': category ? category.value : null,
+                'category_x': category_x ? category_x.value : null,
+            };
+            fetch(`/${APP_NAME}/save-category/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': CSRF_TOKEN
+                },
+                body: JSON.stringify(data)
+            }).then(response => response.json())
+            .then(data => {
+				form.querySelectorAll('input[name="category"]').forEach((checkbox) => {
+					checkbox.disabled = false;
+				});
+			});
+        */
+    }
+
     return {
         currentPage,
         comparedRegions,
@@ -172,7 +212,8 @@ function createSimilarityStore() {
         handlePageUpdate,
         unselect,
         select,
-        isSelected
+        isSelected,
+        addCategory
     };
 }
 
