@@ -16,8 +16,7 @@ function createSimilarityStore() {
      */
     const pageSImgs = writable({});
 
-    // todo save/load selectedRegions in local storage
-    const selectedRegions = writable({});
+    const selectedRegions = writable(JSON.parse(localStorage.getItem("selectedRegions")) || {});
 
     /**
      * Fetches all query images and regions that were compared to current regions on load
@@ -94,7 +93,7 @@ function createSimilarityStore() {
             {
                 method: "POST",
                 body: JSON.stringify({
-                    regionsIds: Object.keys(get(selectedRegions)),
+                    regionsIds: Object.values(get(selectedRegions)).map(r => r.id),
                     pageImgs: currentQImgs,
                 }),
                 headers: {
@@ -118,18 +117,29 @@ function createSimilarityStore() {
         }
     }
 
-    function unselect(regionId) {
+    function store(selection) {
+        localStorage.setItem("selectedRegions", JSON.stringify(selection));
+    }
+
+    function unselect(regionRef) {
         selectedRegions.update(selection => {
-            delete selection[regionId];
-            return { ...selection };
+            const updatedSelection = { ...selection };
+            delete updatedSelection[regionRef];
+            store(updatedSelection)
+            return updatedSelection;
         });
     }
     function select(region) {
         selectedRegions.update(selection => {
-            selection[region.id] = region;
-            return region;
+            const updatedSelection = { ...selection, [region.ref]: region };
+            store(updatedSelection)
+            return updatedSelection;
         });
     }
+
+    const isSelected = derived(selectedRegions, ($selectedRegions) =>
+        regionRef => $selectedRegions.hasOwnProperty(regionRef)
+    );
 
     function getSimilarImgs(qImg) {
         const currentSImgs = get(pageSImgs);
@@ -155,7 +165,8 @@ function createSimilarityStore() {
         getRegionsInfo,
         handlePageUpdate,
         unselect,
-        select
+        select,
+        isSelected
     };
 }
 

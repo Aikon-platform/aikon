@@ -3,6 +3,7 @@
     const { fetchSimilarity } = similarityStore;
     import Table from "../Table.svelte";
     import SimilarityPage from "./SimilarityPage.svelte";
+    import ComparedRegions from "./ComparedRegions.svelte";
 
     export let appLang = 'en';
 </script>
@@ -25,6 +26,7 @@
         </tr>
     </Table>
 {:then _}
+    <ComparedRegions {appLang}/>
     <SimilarityPage {appLang}/>
 {:catch error}
     <Table>
