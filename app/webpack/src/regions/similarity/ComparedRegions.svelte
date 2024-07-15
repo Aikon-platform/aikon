@@ -1,10 +1,9 @@
 <script>
     import {similarityStore} from "./similarityStore.js";
     const { comparedRegions, isSelected } = similarityStore;
-    export let appLang = 'en';
+    // export let appLang = 'en';
 
     function toggleSelection(region) {
-        console.log(region);
         if ($isSelected(region.ref)) {
             similarityStore.unselect(region.ref);
         } else {

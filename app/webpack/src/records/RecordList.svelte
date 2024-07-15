@@ -1,10 +1,10 @@
 <script>
     import Record from "./Record.svelte";
-    import { selectionStore } from "./stores/selectionStore.js";
+    import { selectionStore } from "../selection/selectionStore.js";
     const { selected, nbSelected } = selectionStore;
-    import SelectionBtn from "./SelectionBtn.svelte";
-    import SelectionFooter from "./SelectionFooter.svelte";
-    export const regionsType = "Regions";
+    import SelectionBtn from "../selection/SelectionBtn.svelte";
+    import SelectionFooter from "../selection/SelectionFooter.svelte";
+    // export const regionsType = "Regions";
     export let records = [];
     export let appLang = 'en';
     $: selectedRecords = $selected(false);

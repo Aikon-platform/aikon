@@ -1,9 +1,9 @@
 <script>
     import {similarityStore} from "./similarityStore.js";
     const { qImgs, pageQImgs, setPageQImgs } = similarityStore;
-    import Pagination from "../Pagination.svelte";
+    import Pagination from "../../Pagination.svelte";
+    import Table from "../../Table.svelte";
     import SimilarityRow from "./SimilarityRow.svelte";
-    import Table from "../Table.svelte";
     import SimilarRegions from "./SimilarRegions.svelte";
     export let appLang = 'en';
 </script>

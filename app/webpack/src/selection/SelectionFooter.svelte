@@ -1,5 +1,5 @@
 <script>
-    import { selectionStore } from "./stores/selectionStore.js";
+    import { selectionStore } from "./selectionStore.js";
 
     export let appLang = 'en';
     export let isRegion = true;

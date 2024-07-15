@@ -58,7 +58,7 @@ export default [
     //     }
     // },
     {
-        input: 'src/list/region-list.js',
+        input: 'src/regions/region-list.js',
         output: {
             sourcemap: true,
             format: 'iife',
@@ -85,7 +85,7 @@ export default [
         }
     },
     {
-        input: 'src/list/record-list.js',
+        input: 'src/records/record-list.js',
         output: {
             sourcemap: true,
             format: 'iife',

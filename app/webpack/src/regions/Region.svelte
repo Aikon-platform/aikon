@@ -1,7 +1,7 @@
 <script>
     import { fade } from 'svelte/transition';
     import {refToIIIF} from "../utils.js";
-    import { selectionStore } from './stores/selectionStore.js';
+    import { selectionStore } from '../selection/selectionStore.js';
     const { isSelected } = selectionStore;
     import {createEventDispatcher} from "svelte";
     const dispatch = createEventDispatcher();

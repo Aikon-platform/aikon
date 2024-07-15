@@ -1,6 +1,4 @@
 import RegionList from './RegionList.svelte';
-import {parseData} from "../utils.js";
-
 
 const app = new RegionList({
     target: document.getElementById('region-list'),

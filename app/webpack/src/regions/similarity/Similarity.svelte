@@ -1,7 +1,7 @@
 <script>
     import { similarityStore } from './similarityStore.js';
     const { fetchSimilarity } = similarityStore;
-    import Table from "../Table.svelte";
+    import Table from "../../Table.svelte";
     import SimilarityPage from "./SimilarityPage.svelte";
     import ComparedRegions from "./ComparedRegions.svelte";
 

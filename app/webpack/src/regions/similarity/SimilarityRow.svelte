@@ -1,5 +1,4 @@
 <script>
-    // import { similarityStore } from './similarityStore.js';
     import {refToIIIF} from "../../utils.js";
     export let qImg;
     // export let appLang;

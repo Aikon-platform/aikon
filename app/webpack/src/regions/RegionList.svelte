@@ -1,23 +1,23 @@
 <script>
     import {refToIIIF} from "../utils.js";
-    import { selectionStore } from './stores/selectionStore.js';
+    import { selectionStore } from '../selection/selectionStore.js';
     const { selected } = selectionStore;
-    import { regionsStore } from './stores/regions.js';
+    import { regionsStore } from './stores/regionsStore.js';
     const { allRegions, fetchAll, pageRegions, fetchPages } = regionsStore;
     import { loading } from '../utils.js';
     import Loading from '../Loading.svelte';
 
     import Region from './Region.svelte';
-    import SelectionBtn from "./SelectionBtn.svelte";
-    import SelectionFooter from "./SelectionFooter.svelte";
+    import SelectionBtn from "../selection/SelectionBtn.svelte";
+    import SelectionFooter from "../selection/SelectionFooter.svelte";
     import RegionsRow from "./RegionsRow.svelte";
-    import Pagination from "./Pagination.svelte";
+    import Pagination from "../Pagination.svelte";
     import Modal from "../Modal.svelte";
     import ExtractionButtons from "./ExtractionButtons.svelte";
     import RegionsBtn from "./RegionsBtn.svelte";
     import ActionButtons from "./ActionButtons.svelte";
     import Similarity from "./similarity/Similarity.svelte";
-    import Table from "./Table.svelte";
+    import Table from "../Table.svelte";
 
     export const regionsType = "Regions"
     // export let regions = {};

@@ -1,8 +1,8 @@
 <script>
     import {manifestToMirador, showMessage, downloadBlob, withLoading} from "../utils.js";
-    import {selectionStore} from "./stores/selectionStore.js";
+    import {selectionStore} from "../selection/selectionStore.js";
     const { selected, nbSelected } = selectionStore;
-    import { regionsStore } from './stores/regions.js';
+    import { regionsStore } from './stores/regionsStore.js';
     const { allRegions } = regionsStore;
 
     export let appLang;

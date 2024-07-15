@@ -1,6 +1,6 @@
 <script>
     import {refToIIIF} from "../utils.js";
-    import { selectionStore } from './stores/selectionStore.js';
+    import { selectionStore } from '../selection/selectionStore.js';
     const { isSelected } = selectionStore;
     export let item;
     export let appLang;
