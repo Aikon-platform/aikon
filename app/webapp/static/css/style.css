@@ -114,7 +114,8 @@ fieldset:not(:last-child) {
 
 .faded {
     font-style: italic;
-    color: rgba(var(--body-fg), 0.75);
+    /*color: rgba(var(--body-fg), 0.75);*/
+    opacity: 0.75;
 }
 
 .btn {
