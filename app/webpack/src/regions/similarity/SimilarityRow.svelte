@@ -15,6 +15,7 @@
                 Page {parseInt(canvas)}
             </a>
             <!--TODO: add new anno button-->
+            <!--TODO add no anno button-->
         </div>
     </th>
     <td class="p-5 is-fullwidth">

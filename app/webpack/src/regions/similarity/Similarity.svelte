@@ -1,20 +1,21 @@
 <script>
+    import { appLang } from '../../constants';
     import { similarityStore } from './similarityStore.js';
     const { fetchSimilarity } = similarityStore;
     import Table from "../../Table.svelte";
     import SimilarityPage from "./SimilarityPage.svelte";
     import SimilarityBtn from "./SimilarityBtn.svelte";
-    import { appLang } from '../../constants';
+    import Toolbar from "./Toolbar.svelte";
 </script>
 
 <!--TODO add field with autocomplete to ask for similarity for a new witness-->
 <!--TODO toolbar -->
 <!--TODO add input to add new region-->
-<!--TODO create category button for similarity-->
-<!--TODO add button to add other similar region-->
 <!--TODO order similar regions by category then score-->
 <!--TODO add button to indicate that this is no similar regions-->
 <!--TODO order similar witnesses according to a metric-->
+
+<Toolbar/>
 
 {#await fetchSimilarity}
     <Table>

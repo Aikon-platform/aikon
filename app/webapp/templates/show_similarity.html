@@ -81,7 +81,7 @@
             // Disable the button and change its text and opacity
             btn.disabled = true;
             btn.style.opacity = 0.5;
-            btn.innerHTML = `<i class="fa fa-spinner fa-spin fa-pulse fa-1x"></i> ${APP_LANG === "en" ? "Loading..." : "Chargement..."}`;
+            btn.innerHTML = `<i class="fa fa-spinner fa-spin fa-pulse fa-1x"/> ${APP_LANG === "en" ? "Loading..." : "Chargement..."}`;
 
             // Disable pointer events and change the cursor for all elements
             document.querySelectorAll('*').forEach(function(node) {
