@@ -32,6 +32,8 @@
 </div>
 
 <!--TODO add selection for all other regions existing-->
+<!--TODO add button to toggle view for No-match similarities-->
+<!--TODO add button to change number of displayed similarities-->
 
 <style>
     span {

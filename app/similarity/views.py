@@ -128,6 +128,7 @@ def get_similarity_page(request, wid, rid=None):
             data = json.loads(request.body.decode("utf-8"))
             regions_ids = data.get("regionsIds", [])
             page_imgs = data.get("pageImgs", [])
+            topk = data.get("topk", 10)
 
             if len(regions_ids) == 0:
                 # selection is empty
@@ -141,7 +142,11 @@ def get_similarity_page(request, wid, rid=None):
                 ]
                 page_scores.update(
                     compute_page_scores(
-                        q_r, sim_regions, include_q_doc, page_q_imgs=page_imgs
+                        q_r,
+                        sim_regions,
+                        include_q_doc,
+                        page_q_imgs=page_imgs,
+                        topk=topk,
                     )
                 )
 
@@ -252,7 +257,26 @@ def retrieve_category(request):
     return JsonResponse({"category": category, "category_x": category_x})
 
 
-@csrf_exempt
+def get_categories(request):
+    data = json.loads(request.body)
+    img_pairs = data.get("img_pairs", [])
+
+    result = {}
+    for pair in img_pairs:
+        img_1, img_2 = sorted(pair.split("|"), key=sort_key)
+
+        try:
+            region_pair = RegionPair.objects.get(img_1=img_1, img_2=img_2)
+            result[pair] = {
+                "category": region_pair.category,
+                "category_x": region_pair.category_x,
+            }
+        except RegionPair.DoesNotExist:
+            result[pair] = {"category": None, "category_x": []}
+
+    return JsonResponse(result)
+
+
 def save_category(request):
     if request.method == "POST":
         data = json.loads(request.body)

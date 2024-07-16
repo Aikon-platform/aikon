@@ -5,7 +5,8 @@
     import Table from "../../Table.svelte";
     import SimilarityRow from "./SimilarityRow.svelte";
     import SimilarRegions from "./SimilarRegions.svelte";
-    export let appLang = 'en';
+    export let appLang = 'en'; // todo check if value is correctly passed
+    export let manifest = '';
 </script>
 
 <Pagination store={similarityStore} nbOfItems={$qImgs.length}/>
@@ -16,7 +17,7 @@
         </tr>
     {:then _}
         {#each $pageQImgs as qImg (qImg.id)}
-            <SimilarityRow {qImg} {appLang}>
+            <SimilarityRow {qImg} {appLang} {manifest}>
                 <SimilarRegions {qImg} {appLang}/>
             </SimilarityRow>
         {:else}
@@ -29,3 +30,4 @@
         <tr>Error when retrieving similar regions: {error}</tr>
     {/await}
 </Table>
+<Pagination store={similarityStore} nbOfItems={$qImgs.length}/>

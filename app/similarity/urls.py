@@ -62,4 +62,6 @@ urlpatterns += [
         get_similarity_page,
         name="witness-similarity-page",
     ),
+    path(f"save-category", save_category, name="save-category"),
+    path(f"get-categories", get_categories, name="get-categories"),
 ]

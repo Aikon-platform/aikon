@@ -10,14 +10,13 @@
     import Region from './Region.svelte';
     import SelectionBtn from "../selection/SelectionBtn.svelte";
     import SelectionFooter from "../selection/SelectionFooter.svelte";
-    import RegionsRow from "./RegionsRow.svelte";
-    import Pagination from "../Pagination.svelte";
     import Modal from "../Modal.svelte";
     import ExtractionButtons from "./ExtractionButtons.svelte";
     import RegionsBtn from "./RegionsBtn.svelte";
     import ActionButtons from "./ActionButtons.svelte";
     import Similarity from "./similarity/Similarity.svelte";
     import Table from "../Table.svelte";
+    import PageRegions from "./PageRegions.svelte";
 
     export const regionsType = "Regions"
     // export let regions = {};
@@ -28,7 +27,6 @@
     export let nbOfPages = 1;
     export let modules = [];
     export let witness = {};
-    const zeros = (n, l) => n.toString().padStart(l, '0');
 
     $: selectedRegions = $selected(true);
     $: selectionLength = Object.keys(selectedRegions).length;
@@ -36,11 +34,6 @@
 
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentRegionId = parseInt(baseUrl.split('regions/')[1].replace("/", ""));
-
-
-    function toImgName(canvasNb){
-        return `${imgPrefix}_${zeros(canvasNb, String(nbOfPages).length + 1)}`;
-    }
 
     const layouts = {
         all: { text: appLang === 'en' ? 'All regions' : 'Toutes les régions' },
@@ -119,36 +112,9 @@
         {/await}
     </div>
 {:else if currentLayout === "page"}
-    <Pagination store={regionsStore} nbOfItems={nbOfPages}/>
-
-    <Table>
-        {#await $fetchPages}
-            <tr class="faded is-center">
-                {appLang === 'en' ? 'Retrieving paginated regions...' : 'Récupération des pages...'}
-            </tr>
-        {:then _}
-            {#if Object.values($pageRegions).length > 0}
-                <!--TODO make empty canvases appear-->
-                {#each Object.entries($pageRegions) as [canvasNb, items]}
-                    <RegionsRow canvasImg={toImgName(canvasNb)} {canvasNb} {manifest}>
-                        {#each Object.values(items) as item (item.id)}
-                            <Region {item} {appLang} isSquare={false}
-                                    isCopied={isItemCopied(item)}
-                                    on:copyRef={handleCopyRef}/>
-                        {/each}
-                    </RegionsRow>
-                {/each}
-            {:else}
-                <tr>
-                    <ExtractionButtons {appLang} {modules} {witness}/>
-                </tr>
-            {/if}
-        {:catch error}
-            <tr>Error when retrieving paginated regions: {error}</tr>
-        {/await}
-    </Table>
+    <PageRegions {appLang} {manifest} {nbOfPages} {isItemCopied} {handleCopyRef} {modules} {witness}/>
 {:else if currentLayout === "similarity"}
-    <Similarity {appLang} {imgPrefix}/>
+    <Similarity {appLang} {imgPrefix} {manifest}/>
 {:else if currentLayout === "vectorization"}
     <div>tout doux</div>
 {/if}

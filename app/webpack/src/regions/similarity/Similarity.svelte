@@ -3,10 +3,11 @@
     const { fetchSimilarity } = similarityStore;
     import Table from "../../Table.svelte";
     import SimilarityPage from "./SimilarityPage.svelte";
-    import ComparedRegions from "./ComparedRegions.svelte";
+    import SimilarityBtn from "./SimilarityBtn.svelte";
 
     export let appLang = 'en';
     export let imgPrefix = '';
+    export let manifest = '';
 </script>
 
 <!--TODO add field with autocomplete to ask for similarity for a new witness-->
@@ -25,8 +26,8 @@
         </tr>
     </Table>
 {:then _}
-    <ComparedRegions {appLang} {imgPrefix}/>
-    <SimilarityPage {appLang}/>
+    <SimilarityBtn {appLang} {imgPrefix}/>
+    <SimilarityPage {appLang} {manifest}/>
 {:catch error}
     <Table>
         <tr class="faded is-center">
