@@ -1,4 +1,5 @@
-import {derived, get, writable} from 'svelte/store';
+import { csrfToken } from '../../constants';
+import { derived, get, writable } from 'svelte/store';
 
 function createSimilarityStore() {
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
@@ -6,6 +7,7 @@ function createSimilarityStore() {
 
     const currentPage = writable(1);
     const comparedRegions = writable({});
+    const selectedRegions = writable(JSON.parse(localStorage.getItem("selectedRegions")) || {});
     const qImgs = writable([]);
     /**
      * List of query images (i.e. current regions in first column) for the current page
@@ -15,8 +17,6 @@ function createSimilarityStore() {
      * List of similar images (i.e. for compared regions) for the current page
      */
     const pageSImgs = writable({});
-
-    const selectedRegions = writable(JSON.parse(localStorage.getItem("selectedRegions")) || {});
 
     /**
      * Fetches all query images and regions that were compared to current regions on load
@@ -39,7 +39,7 @@ function createSimilarityStore() {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': CSRF_TOKEN
+                    'X-CSRFToken': csrfToken
                 },
                 body: JSON.stringify({ regionsRefs: Object.keys(regions) })
             }
@@ -89,7 +89,6 @@ function createSimilarityStore() {
     }
 
     const fetchPageSImgs = async (selectedRegions) => {
-        // const currentQImgs = get(pageQImgs);
         const response = await fetch(
             `${baseUrl}similarity-page`,
             {
@@ -100,7 +99,7 @@ function createSimilarityStore() {
                 }),
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': CSRF_TOKEN
+                    'X-CSRFToken': csrfToken
                 },
             }
         );

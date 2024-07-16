@@ -1,14 +1,14 @@
 <script>
     import { fade } from 'svelte/transition';
-    import {refToIIIF} from "../utils.js";
+    import { refToIIIF } from "../utils.js";
     import { selectionStore } from '../selection/selectionStore.js';
     const { isSelected } = selectionStore;
-    import {createEventDispatcher} from "svelte";
+    import { createEventDispatcher } from "svelte";
     const dispatch = createEventDispatcher();
+    import { appLang } from '../constants';
 
     export let item;
     export let isCopied = false;
-    export let appLang = 'en';
     export let isSquare = true;
 
     function copyRef() {

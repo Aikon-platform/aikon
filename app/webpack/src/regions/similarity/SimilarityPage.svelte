@@ -1,15 +1,15 @@
 <script>
-    import {similarityStore} from "./similarityStore.js";
+    import { appLang } from '../../constants';
+    import { similarityStore } from "./similarityStore.js";
     const { qImgs, pageQImgs, setPageQImgs } = similarityStore;
     import Pagination from "../../Pagination.svelte";
     import Table from "../../Table.svelte";
     import SimilarityRow from "./SimilarityRow.svelte";
     import SimilarRegions from "./SimilarRegions.svelte";
-    export let appLang = 'en'; // todo check if value is correctly passed
-    export let manifest = '';
 </script>
 
 <Pagination store={similarityStore} nbOfItems={$qImgs.length}/>
+
 <Table>
     {#await $setPageQImgs}
         <tr class="faded is-center">
@@ -17,8 +17,8 @@
         </tr>
     {:then _}
         {#each $pageQImgs as qImg (qImg.id)}
-            <SimilarityRow {qImg} {appLang} {manifest}>
-                <SimilarRegions {qImg} {appLang}/>
+            <SimilarityRow {qImg}>
+                <SimilarRegions {qImg}/>
             </SimilarityRow>
         {:else}
             <tr class="faded is-center">
@@ -30,4 +30,5 @@
         <tr>Error when retrieving similar regions: {error}</tr>
     {/await}
 </Table>
+
 <Pagination store={similarityStore} nbOfItems={$qImgs.length}/>

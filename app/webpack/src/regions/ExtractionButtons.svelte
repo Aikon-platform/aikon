@@ -1,8 +1,8 @@
 <script>
-    import {showMessage, withLoading} from '../utils.js';
-    export let appLang = 'en';
-    export let modules = [];
-    export let witness = {};
+    import { showMessage, withLoading } from '../utils.js';
+    import { appLang, modules, csrfToken } from '../constants';
+    import { getContext } from 'svelte';
+    const witness = getContext('witness');
     export let currentRegionId;
     export let baseUrl;
 
@@ -17,7 +17,7 @@
         // todo : allow "witness/<int:wid>/digitization/<int:did>/regions/add"
         const response = await withLoading(() => fetch(url, {
             method: "POST",
-            headers: { "X-CSRFToken": CSRF_TOKEN },
+            headers: { "X-CSRFToken": csrfToken },
         }));
 
         if (!response.ok) {

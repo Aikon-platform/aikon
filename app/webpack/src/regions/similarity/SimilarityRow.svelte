@@ -1,9 +1,9 @@
 <script>
-    import {manifestToMirador, refToIIIF} from "../../utils.js";
+    import { getContext } from 'svelte';
+    import { manifestToMirador, refToIIIF } from "../../utils.js";
     export let qImg;
     const [wit, digit, canvas, xyhw] = qImg.split('.')[0].split('_');
-    export let manifest = '';
-    // export let appLang;
+    const manifest = getContext('manifest');
 </script>
 
 <tr>

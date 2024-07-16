@@ -1,12 +1,13 @@
 <script>
-    import {refToIIIF} from "../utils.js";
+    import { setContext } from 'svelte';
+    import { refToIIIF } from "../utils.js";
     import { selectionStore } from '../selection/selectionStore.js';
     const { selected } = selectionStore;
     import { regionsStore } from './stores/regionsStore.js';
-    const { allRegions, fetchAll, pageRegions, fetchPages } = regionsStore;
+    const { allRegions, fetchAll } = regionsStore;
     import { loading } from '../utils.js';
+    import { appLang, regionsType, modules } from '../constants';
     import Loading from '../Loading.svelte';
-
     import Region from './Region.svelte';
     import SelectionBtn from "../selection/SelectionBtn.svelte";
     import SelectionFooter from "../selection/SelectionFooter.svelte";
@@ -15,18 +16,19 @@
     import RegionsBtn from "./RegionsBtn.svelte";
     import ActionButtons from "./ActionButtons.svelte";
     import Similarity from "./similarity/Similarity.svelte";
-    import Table from "../Table.svelte";
     import PageRegions from "./PageRegions.svelte";
 
-    export const regionsType = "Regions"
-    // export let regions = {};
-    export let appLang = 'en';
     export let manifest = '';
     export let isValidated = false;
     export let imgPrefix = '';
     export let nbOfPages = 1;
-    export let modules = [];
     export let witness = {};
+
+    setContext('witness', witness);
+    setContext('nbOfPages', nbOfPages);
+    setContext('imgPrefix', imgPrefix);
+    setContext('manifest', manifest);
+    setContext('isValidated', isValidated);
 
     $: selectedRegions = $selected(true);
     $: selectionLength = Object.keys(selectedRegions).length;
@@ -64,17 +66,17 @@
 
 <Loading visible={$loading}/>
 
-<Modal {appLang}/>
+<Modal/>
 
-<SelectionBtn {selectionLength} {appLang} />
+<SelectionBtn {selectionLength}/>
 
 <div id="nav-actions" class="mb-5">
     <div class="actions grid">
         <div class="cell is-right is-middle">
-            <RegionsBtn {appLang} {witness} {baseUrl} {currentRegionId}/>
+            <RegionsBtn {baseUrl} {currentRegionId}/>
         </div>
         <div class="cell">
-            <ActionButtons {appLang} {manifest} {isValidated} {regionsType}/>
+            <ActionButtons/>
         </div>
     </div>
 
@@ -101,20 +103,19 @@
         {:then _}
             {#each Object.values($allRegions) as item (item.id)}
                 <!--TODO dont sort object keys alphabetically-->
-                <Region {item} {appLang}
-                        isCopied={isItemCopied(item)}
+                <Region {item} isCopied={isItemCopied(item)}
                         on:copyRef={handleCopyRef}/>
             {:else}
-                <ExtractionButtons {appLang} {modules} {witness} {currentRegionId} {baseUrl}/>
+                <ExtractionButtons {currentRegionId} {baseUrl}/>
             {/each}
         {:catch error}
             <div>Error when retrieving regions: {error}</div>
         {/await}
     </div>
 {:else if currentLayout === "page"}
-    <PageRegions {appLang} {manifest} {nbOfPages} {isItemCopied} {handleCopyRef} {modules} {witness}/>
+    <PageRegions {isItemCopied} {handleCopyRef}/>
 {:else if currentLayout === "similarity"}
-    <Similarity {appLang} {imgPrefix} {manifest}/>
+    <Similarity/>
 {:else if currentLayout === "vectorization"}
     <div>tout doux</div>
 {/if}
@@ -155,7 +156,7 @@
                 </div>
             {/if}
         </section>
-        <SelectionFooter {appLang} isRegion={true}/>
+        <SelectionFooter isRegion={true}/>
     </div>
 </div>
 

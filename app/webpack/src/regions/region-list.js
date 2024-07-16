@@ -4,9 +4,6 @@ const app = new RegionList({
     target: document.getElementById('region-list'),
     props: {
         witness,
-        regionsType: "Regions",
-        appLang: APP_LANG,
-        modules: ADDITIONAL_MODULES,
         manifest,
         isValidated,
         imgPrefix,

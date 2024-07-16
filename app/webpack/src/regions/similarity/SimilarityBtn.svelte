@@ -1,8 +1,9 @@
 <script>
-    import {similarityStore} from "./similarityStore.js";
+    import { getContext } from 'svelte';
+    import { similarityStore } from "./similarityStore.js";
     const { comparedRegions, isSelected } = similarityStore;
-    // export let appLang = 'en';
-    export let imgPrefix = '';
+
+    const imgPrefix = getContext('imgPrefix');
 
     function toggleSelection(region) {
         if ($isSelected(region.ref)) {

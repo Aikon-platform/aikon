@@ -4,10 +4,7 @@
     import Table from "../../Table.svelte";
     import SimilarityPage from "./SimilarityPage.svelte";
     import SimilarityBtn from "./SimilarityBtn.svelte";
-
-    export let appLang = 'en';
-    export let imgPrefix = '';
-    export let manifest = '';
+    import { appLang } from '../../constants';
 </script>
 
 <!--TODO add field with autocomplete to ask for similarity for a new witness-->
@@ -26,8 +23,8 @@
         </tr>
     </Table>
 {:then _}
-    <SimilarityBtn {appLang} {imgPrefix}/>
-    <SimilarityPage {appLang} {manifest}/>
+    <SimilarityBtn/>
+    <SimilarityPage/>
 {:catch error}
     <Table>
         <tr class="faded is-center">

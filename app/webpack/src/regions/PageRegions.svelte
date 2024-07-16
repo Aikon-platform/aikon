@@ -1,19 +1,18 @@
 <script>
-    import {regionsStore} from "./stores/regionsStore.js";
+    import { getContext } from 'svelte';
+    import { regionsStore } from "./stores/regionsStore.js";
     const { pageRegions, fetchPages } = regionsStore;
     import Region from "./Region.svelte";
     import Pagination from "../Pagination.svelte";
     import RegionsRow from "./RegionsRow.svelte";
     import Table from "../Table.svelte";
     import ExtractionButtons from "./ExtractionButtons.svelte";
+    import { appLang } from '../constants';
 
-    export let appLang = 'en';
-    export let manifest = '';
-    export let nbOfPages = 1;
-    export let modules = [];
-    export let witness = {};
     export let isItemCopied;
     export let handleCopyRef;
+
+    const nbOfPages = getContext('nbOfPages');
 
     const zeros = (n, l) => n.toString().padStart(l, '0');
     function toImgName(canvasNb){
@@ -32,9 +31,9 @@
         {#if Object.values($pageRegions).length > 0}
             <!--TODO make empty canvases appear-->
             {#each Object.entries($pageRegions) as [canvasNb, items]}
-                <RegionsRow canvasImg={toImgName(canvasNb)} {canvasNb} {manifest}>
+                <RegionsRow canvasImg={toImgName(canvasNb)} {canvasNb}>
                     {#each Object.values(items) as item (item.id)}
-                        <Region {item} {appLang} isSquare={false}
+                        <Region {item} isSquare={false}
                                 isCopied={isItemCopied(item)}
                                 on:copyRef={handleCopyRef}/>
                     {/each}
@@ -42,7 +41,7 @@
             {/each}
         {:else}
             <tr>
-                <ExtractionButtons {appLang} {modules} {witness}/>
+                <ExtractionButtons/>
             </tr>
         {/if}
     {:catch error}

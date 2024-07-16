@@ -1,8 +1,10 @@
 <script>
+    import { getContext } from 'svelte';
+    import { manifestToMirador, refToIIIF } from "../utils.js";
     export let canvasNb;
     export let canvasImg;
-    export let manifest;
-    import {manifestToMirador, refToIIIF} from "../utils.js";
+
+    const manifest = getContext('manifest');
 </script>
 
 <tr>

@@ -1,6 +1,6 @@
-import {derived, writable} from 'svelte/store';
+import { derived, writable } from 'svelte/store';
+import { regionsType } from '../constants';
 
-const regionsType = "Regions"
 
 function createSelectionStore() {
     const selection = writable(JSON.parse(localStorage.getItem("documentSet")) || {});

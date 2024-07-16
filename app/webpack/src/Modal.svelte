@@ -1,5 +1,5 @@
 <script>
-    export let appLang = 'en';
+    import { appLang } from './constants';
 </script>
 
 <button id="hidden-msg-btn" class="js-modal-trigger" data-target="msg-modal" hidden/>

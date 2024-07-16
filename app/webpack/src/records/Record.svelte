@@ -1,9 +1,9 @@
 <script>
-    import {refToIIIF} from "../utils.js";
+    import { refToIIIF } from "../utils.js";
     import { selectionStore } from '../selection/selectionStore.js';
     const { isSelected } = selectionStore;
+    import { appLang } from '../constants';
     export let item;
-    export let appLang;
     $: itemSelected = $isSelected(item);
 </script>
 

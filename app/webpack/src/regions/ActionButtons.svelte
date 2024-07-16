@@ -1,18 +1,19 @@
 <script>
-    import {manifestToMirador, showMessage, downloadBlob, withLoading} from "../utils.js";
-    import {selectionStore} from "../selection/selectionStore.js";
+    import { getContext } from 'svelte';
+    import { manifestToMirador, showMessage, downloadBlob, withLoading } from "../utils.js";
+    import { selectionStore } from "../selection/selectionStore.js";
     const { selected, nbSelected } = selectionStore;
     import { regionsStore } from './stores/regionsStore.js';
     const { allRegions } = regionsStore;
+    import { appLang, regionsType, csrfToken } from '../constants';
 
-    export let appLang;
-    export let manifest;
-    export let isValidated;
-    export let regionsType;
+    const manifest = getContext('manifest');
+    const isValidated = getContext('isValidated');
 
     $: selectionLength = $nbSelected(true);
     $: isEditMode = !isValidated;
     $: selectedRegions = $selected(true);
+
     // TODO here when there is not only one document selected, this assertion is erroneous
     $: areAllSelected = selectionLength >= Object.keys($allRegions).length;
 
@@ -71,7 +72,7 @@
         const regionsRef = Object.values($selected(true)).map(r => r.ref);
         const response = await withLoading(() => fetch(`${window.location.origin}/regions/export`, {
             method: "POST",
-            headers: { "X-CSRFToken": CSRF_TOKEN },
+            headers: { "X-CSRFToken": csrfToken },
             body: JSON.stringify({regionsRef})
         }));
         const blob = await response.blob();

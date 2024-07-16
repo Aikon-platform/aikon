@@ -1,8 +1,9 @@
 <script>
+    import { getContext } from 'svelte';
     import {showMessage, withLoading} from "../utils.js";
+    import { appLang, csrfToken } from '../constants';
 
-    export let witness;
-    export let appLang = "en";
+    const witness = getContext('witness');
     export let baseUrl = `${window.location.origin}${window.location.pathname}`;
     export let currentRegionId;
 
@@ -24,7 +25,7 @@
         try {
             const response = await withLoading(() => fetch(url, {
                 method: "DELETE",
-                headers: { "X-CSRFToken": CSRF_TOKEN },
+                headers: { "X-CSRFToken": csrfToken },
             }));
             if (response.status !== 204) {
                 throw new Error(`Failed to delete regions: '${response.statusText}'`);

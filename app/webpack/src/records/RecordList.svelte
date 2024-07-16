@@ -4,19 +4,19 @@
     const { selected, nbSelected } = selectionStore;
     import SelectionBtn from "../selection/SelectionBtn.svelte";
     import SelectionFooter from "../selection/SelectionFooter.svelte";
-    // export const regionsType = "Regions";
+    import { appLang } from '../constants';
     export let records = [];
-    export let appLang = 'en';
+
     $: selectedRecords = $selected(false);
     $: selectionLength = $nbSelected(false);
 </script>
 
-<SelectionBtn {selectionLength} {appLang} />
+<SelectionBtn {selectionLength}/>
 
 {#if records.length !== 0}
     <div>
         {#each records as item (item.id)}
-            <Record {item} {appLang}/>
+            <Record {item}/>
         {:else}
             <p>{appLang === 'en' ? 'No records found' : 'Aucun document trouvé'}</p>
         {/each}
@@ -69,6 +69,6 @@
                 </tr>
             {/each}
         </section>
-        <SelectionFooter {appLang} isRegion={false}/>
+        <SelectionFooter isRegion={false}/>
     </div>
 </div>

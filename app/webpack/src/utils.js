@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import { sasUrl, cantaloupeUrl } from './constants';
 
 export const loading = writable(false);
 
@@ -12,11 +13,11 @@ export async function withLoading(asyncFunction) {
 }
 
 export function getCantaloupeUrl() {
-    return CANTALOUPE_APP_URL ?? "http://localhost:8182";
+    return cantaloupeUrl ?? "http://localhost:8182";
 }
 
 export function getSasUrl() {
-    return SAS_APP_URL ?? "http://localhost:3000";
+    return sasUrl ?? "http://localhost:3000";
 }
 
 export async function getRecordList() {

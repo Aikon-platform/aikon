@@ -2,19 +2,17 @@
     import { fade } from 'svelte/transition';
     import { refToIIIF } from "../../utils.js";
     import { similarityStore } from './similarityStore.js';
-    import { userId } from '../../constants';
-
-    export let appLang = 'en';
-    export let qImg;
-    export let sImg;
-    export let score;
+    import { userId, appLang } from '../../constants';
 
     const baseUrl = window.location.origin;
 
+    export let qImg;
+    export let sImg;
+    export let score;
+    export let regionsCategory = null;
+
     const [wit, digit, canvas, xyhw] = sImg.split('.')[0].split('_');
     const img = `${wit}_${digit}_${canvas}`;
-
-    export let regionsCategory = null;
 
     $: selectedCategory = regionsCategory ? regionsCategory.category : null;
     $: isCategory5Selected = regionsCategory ? regionsCategory.category_x?.includes(Number(userId)) || false : false;
@@ -25,13 +23,6 @@
         } else {
             selectedCategory = selectedCategory === category ? null : category;
         }
-        // regionsCategory = {
-        //     ...regionsCategory,
-        //     category: selectedCategory,
-        //     category_x: isCategory5Selected
-        //         ? [...(regionsCategory.category_x || []), Number(userId)]
-        //         : (regionsCategory.category_x || []).filter(id => id !== Number(userId))
-        // };
     }
 
     async function categorize(category) {

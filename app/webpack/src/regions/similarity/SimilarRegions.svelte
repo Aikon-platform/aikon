@@ -1,10 +1,10 @@
 <script>
+    import { appLang } from '../../constants';
     import { similarityStore } from "./similarityStore.js";
     const { setPageSImgs } = similarityStore;
     import SimilarRegion from "./SimilarRegion.svelte";
-    export let appLang = 'en';
-    export let qImg;
 
+    export let qImg;
     const baseUrl = window.location.origin;
 
     async function fetchPageSimilarity(qImg) {
@@ -43,7 +43,7 @@
     </div>
 {:then { similarImgs, categories }}
     {#each similarImgs as [sImg, score]}
-        <SimilarRegion {qImg} {sImg} {score} {appLang} regionsCategory={categories[`${qImg}|${sImg}`]}/>
+        <SimilarRegion {qImg} {sImg} {score} regionsCategory={categories[`${qImg}|${sImg}`]}/>
     {/each}
 {:catch error}
     <div class="faded is-center">
