@@ -1,48 +1,62 @@
 <script>
-    import { appLang } from '../../constants';
+    import { appLang, csrfToken } from '../../constants';
     import { similarityStore } from "./similarityStore.js";
-    const { setPageSImgs } = similarityStore;
+    const { setPageSImgs, pageSImgs } = similarityStore;
     import SimilarRegion from "./SimilarRegion.svelte";
 
     export let qImg;
-    const baseUrl = window.location.origin;
+    // const baseUrl = window.location.origin;
 
-    async function fetchPageSimilarity(qImg) {
-        await $setPageSImgs;
-
-        const similarImgs = similarityStore.getSimilarImgs(qImg);
-        const imgPairs = similarImgs.map(([sImg, _]) => `${qImg}|${sImg}`);
-
-        const response = await fetch(`${baseUrl}/get-categories`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': CSRF_TOKEN
-            },
-            body: JSON.stringify({ img_pairs: imgPairs })
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch categories');
-        }
-
-        const categories = await response.json();
-
-        return {
-            similarImgs,
-            categories
-        };
-    }
-
-    let pageSimilarityPromise = fetchPageSimilarity(qImg);
+    // async function fetchPageSimilarity(qImg) {
+    //     await $setPageSImgs;
+    //
+    //     const similarImgs = similarityStore.getSimilarImgs(qImg);
+    //     const imgPairs = similarImgs.map(([sImg, _]) => `${qImg}|${sImg}`);
+    //
+    //     const response = await fetch(`${baseUrl}/get-categories`, {
+    //         method: 'POST',
+    //         headers: {
+    //             'Content-Type': 'application/json',
+    //             'X-CSRFToken': csrfToken
+    //         },
+    //         body: JSON.stringify({ img_pairs: imgPairs })
+    //     });
+    //
+    //     if (!response.ok) {
+    //         throw new Error('Failed to fetch categories');
+    //     }
+    //
+    //     const categories = await response.json();
+    //
+    //     return {
+    //         similarImgs,
+    //         categories
+    //     };
+    // }
+    //
+    // let pageSimilarityPromise = fetchPageSimilarity(qImg);
 </script>
 
-{#await pageSimilarityPromise}
+<!--{#await pageSimilarityPromise}-->
+<!--    <div class="faded is-center">-->
+<!--        {appLang === 'en' ? 'Retrieving similar regions...' : 'Récupération des régions similaires...'}-->
+<!--    </div>-->
+<!--{:then { similarImgs, categories }}-->
+<!--    {#each similarImgs as [sImg, score]}-->
+<!--        <SimilarRegion {qImg} {sImg} {score} regionsCategory={categories[`${qImg}|${sImg}`]}/>-->
+<!--    {/each}-->
+<!--{:catch error}-->
+<!--    <div class="faded is-center">-->
+<!--        Error when retrieving similar regions: {error}-->
+<!--    </div>-->
+<!--{/await}-->
+{#await $setPageSImgs}
     <div class="faded is-center">
         {appLang === 'en' ? 'Retrieving similar regions...' : 'Récupération des régions similaires...'}
     </div>
-{:then { similarImgs, categories }}
-    {#each similarImgs as [sImg, score]}
+{:then _}
+    <!--TODO update with new -->
+    {#each $pageSImgs as [sImg, score, categories, userCategory]}
         <SimilarRegion {qImg} {sImg} {score} regionsCategory={categories[`${qImg}|${sImg}`]}/>
     {/each}
 {:catch error}

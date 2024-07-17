@@ -1,32 +1,200 @@
 import os
 import requests
+
+from pathlib import Path
+from django.db import transaction
+from django.db.models import Q, F
+from typing import Tuple, Dict, Set, List
 from collections import defaultdict, Counter
 from itertools import combinations_with_replacement
 import numpy as np
 
-from typing import List
 from heapq import nlargest
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
 
 from app.similarity.const import SCORES_PATH
 from app.config.settings import CV_API_URL, APP_URL, APP_NAME
+from app.similarity.models.region_pair import RegionPair
 from app.webapp.models.regions import Regions
 from app.webapp.utils.logger import log
 from app.webapp.views import check_ref
 
 
 @lru_cache(maxsize=None)
-def load_npy_file(score_path_pair):
+def load_npy_file(score_path):
     try:
-        return np.load(score_path_pair, allow_pickle=True)
+        return np.load(score_path, allow_pickle=True)
     except FileNotFoundError as e:
-        log(f"[load_npy_file] no score file for {score_path_pair}", e)
+        log(f"[load_npy_file] no score file for {score_path}", e)
         return None
 
 
-def process_score_file(score_path_pair, q_prefix, page_imgs):
-    pair_scores = load_npy_file(score_path_pair)
+def score_file_to_db(score_path):
+    """
+    Load scores from a .npy file and add all of its pairs in the RegionPair table
+    If pair already exists, only score is updated
+    """
+    pair_scores = load_npy_file(score_path)
+    if pair_scores is None:
+        return False
+
+    # regions ref
+    ref_1, ref_2 = Path(score_path).stem.split("-")
+
+    pairs_to_update = []
+    try:
+        for score, img1, img2 in pair_scores:
+            pairs_to_update.append(
+                RegionPair(
+                    img_1=img1,
+                    img_2=img2,
+                    score=float(score),
+                    regions_id_1=ref_1.split("_anno")[1],
+                    regions_id_2=ref_2.split("_anno")[1],
+                    is_manual=False,
+                )
+            )
+    except ValueError as e:
+        log(f"[score_file_to_db] error while processing {score_path}", e)
+        return False
+
+    # Bulk update existing pairs
+    try:
+        with transaction.atomic():
+            RegionPair.objects.bulk_update_or_create(
+                pairs_to_update,
+                ["score", "regions_id_1", "regions_id_2", "is_manual"],
+                ["img_1", "img_2"],
+                "score",
+            )
+    except Exception as e:
+        log(f"[score_file_to_db] error while adding pairs to db {score_path}", e)
+        return False
+
+    log(f"Processed {len(pair_scores)} pairs from {score_path}")
+    return True
+
+
+def get_region_pairs_with(q_img, include_self=False):
+    """
+    Retrieve all RegionPair records containing the given query image name
+
+    :param q_img: str, the image name to look for
+    :param include_self: bool, if we consider comparisons of the region with itself
+    :return: list of RegionPair objects
+    """
+    query = Q(img_1=q_img) | Q(img_2=q_img)
+
+    if not include_self:
+        query &= ~Q(regions_id_1=F("regions_id_2"))
+
+    return list(RegionPair.objects.filter(query))
+
+
+def get_compared_regions_ids(regions_id, include_self=False):
+    """
+    Retrieve all unique region IDs that have been associated with the given region ID in RegionPair records.
+
+    :param regions_id: str, the region ID to look for
+    :param include_self: bool, if we consider comparisons of the region with itself
+    :return: list of unique region IDs
+    """
+    pairs = RegionPair.objects.filter(
+        Q(regions_id_1=regions_id) | Q(regions_id_2=regions_id)
+    )
+
+    associated_ids = set()
+    for pair in pairs:
+        associated_ids.add(
+            int(pair.regions_id_2)
+            if int(pair.regions_id_1) == regions_id
+            else int(pair.regions_id_1)
+        )
+
+    return list(associated_ids)
+    # return list(set(
+    #     RegionPair.objects.filter(
+    #         Q(regions_id_1=regions_id) | Q(regions_id_2=regions_id)
+    #     ).annotate(
+    #         other_id=Case(
+    #             When(
+    #                 regions_id_1=regions_id,
+    #                 then=F('regions_id_2')
+    #             ),
+    #             default=F('regions_id_1')
+    #         )
+    #     ).values_list('other_id', flat=True).distinct()
+    # ))
+
+
+def get_regions_q_imgs(regions_id: int):
+    """
+    Retrieve all images associated with a given regions_id from RegionPair records.
+
+    :param regions_id: int, the regions_id to look for
+    :return: list of image names associated with the regions_id
+    """
+    pairs = RegionPair.objects.filter(
+        Q(regions_id_1=regions_id) | Q(regions_id_2=regions_id)
+    )
+    result_imgs = []
+    for pair in pairs:
+        if int(pair.regions_id_1) == regions_id:
+            result_imgs.append(pair.img_1)
+        elif int(pair.regions_id_2) == regions_id:
+            result_imgs.append(pair.img_2)
+
+    return list(set(result_imgs))
+
+
+def get_best_pairs(
+    q_img: str,
+    region_pairs: List[RegionPair],
+    excluded_categories: List[int],
+    topk: int,
+) -> Dict[str, Set[Tuple[str, float, int, List[int]]]]:
+    """
+    Process RegionPair objects and return a structured dictionary.
+
+    :param region_pairs: List of RegionPair objects
+    :param q_img: Query image name
+    :param excluded_categories: List of category numbers to exclude
+    :param topk: Number of top scoring pairs to include
+    :return: Dictionary with structured data
+    """
+    result = {q_img: []}
+    manual_pairs = []
+    pairs = []
+
+    # TODO add user category (add user_id in param)
+
+    for pair in region_pairs:
+        s_img = pair.img_2 if pair.img_1 == q_img else pair.img_1
+        category = pair.category
+
+        pair_data = (s_img, pair.score, category, pair.category_x)
+
+        if pair.is_manual:
+            manual_pairs.append(pair_data)
+        elif len(pair.category_x) > 0:
+            manual_pairs.append(pair_data)
+        elif category not in excluded_categories:
+            pairs.append(pair_data)
+
+    # All manual pairs are added
+    result[q_img].append(manual_pairs)
+
+    # Sort pairs by score in descending order and add top k
+    pairs.sort(key=lambda x: x[1], reverse=True)
+    result[q_img].append(pairs[:topk])
+
+    return result
+
+
+def process_score_file(score_path, q_prefix, page_imgs):
+    # SOON TO BE NOT USED
+    pair_scores = load_npy_file(score_path)
     if pair_scores is None:
         return None
 
@@ -40,8 +208,9 @@ def process_score_file(score_path_pair, q_prefix, page_imgs):
     return img_scores
 
 
-def get_imgs_in_file(score_path_pair, q_prefix):
-    pair_scores = load_npy_file(score_path_pair)
+def get_imgs_in_file(score_path, q_prefix):
+    # SOON TO BE NOT USED
+    pair_scores = load_npy_file(score_path)
     if pair_scores is None:
         return set()
 
@@ -56,6 +225,7 @@ def get_imgs_in_file(score_path_pair, q_prefix):
 
 
 def get_imgs_in_score_files(pairs: List[str], q_prefix: str):
+    # SOON TO BE NOT USED
     """
     Get all images names beginning with q_prefix in the scores files for the given pairs,
     Thus retrieving only image names from the same document
@@ -64,8 +234,8 @@ def get_imgs_in_score_files(pairs: List[str], q_prefix: str):
     with ThreadPoolExecutor() as executor:
         futures = []
         for pair in pairs:
-            score_path_pair = f"{SCORES_PATH}/{pair}.npy"
-            futures.append(executor.submit(get_imgs_in_file, score_path_pair, q_prefix))
+            score_path = f"{SCORES_PATH}/{pair}.npy"
+            futures.append(executor.submit(get_imgs_in_file, score_path, q_prefix))
 
         for future in futures:
             all_q_imgs.update(future.result())
@@ -81,6 +251,7 @@ def compute_page_scores(
     page_q_imgs=None,
     topk=10,
 ):
+    # SOON TO BE NOT USED
     q_prefix = q_regions.get_digit().get_ref()
     q_ref = q_regions.get_ref()
     sim_refs = [regions.get_ref() for regions in sim_regions]
@@ -99,11 +270,9 @@ def compute_page_scores(
     with ThreadPoolExecutor() as executor:
         futures = []
         for pair in pairs:
-            score_path_pair = f"{SCORES_PATH}/{pair}.npy"
+            score_path = f"{SCORES_PATH}/{pair}.npy"
             futures.append(
-                executor.submit(
-                    process_score_file, score_path_pair, q_prefix, page_q_imgs
-                )
+                executor.submit(process_score_file, score_path, q_prefix, page_q_imgs)
             )
 
         for future in futures:
@@ -211,12 +380,6 @@ def similarity_request(regions: List[Regions]):
     return False
 
 
-def check_score_files(file_names):
-    from app.similarity.tasks import check_similarity_files
-
-    check_similarity_files.delay(file_names)
-
-
 def load_similarity(pair):
     try:
         pair_scores = np.load(
@@ -246,10 +409,10 @@ def compute_total_similarity(
 
     for pair in doc_pairs(regions_refs):
         try:
-            score_path_pair = f"{SCORES_PATH}/{'-'.join(sorted(pair))}.npy"
-            if prefix_key not in score_path_pair:
+            score_path = f"{SCORES_PATH}/{'-'.join(sorted(pair))}.npy"
+            if prefix_key not in score_path:
                 continue
-            pair_scores = load_npy_file(score_path_pair)
+            pair_scores = load_npy_file(score_path)
         except FileNotFoundError as e:
             # TODO: trigger similarity request?
             log(f"[compute_total_similarity] no score file for {pair}", e)

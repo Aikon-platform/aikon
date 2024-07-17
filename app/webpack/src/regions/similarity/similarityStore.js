@@ -1,5 +1,5 @@
-import { csrfToken } from '../../constants';
-import { derived, get, writable } from 'svelte/store';
+import {csrfToken} from '../../constants';
+import {derived, get, writable} from 'svelte/store';
 
 function createSimilarityStore() {
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
@@ -35,14 +35,6 @@ function createSimilarityStore() {
 
         const imgs = await fetch(
             `${baseUrl}query-images`,
-            {
-                method: "POST",
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({ regionsRefs: Object.keys(regions) })
-            }
         ).then(response => response.json()
         ).then(data => {
             if (data.length === 0 || !data) {
@@ -96,6 +88,8 @@ function createSimilarityStore() {
                 body: JSON.stringify({
                     regionsIds: Object.values(selectedRegions).map(r => r.id),
                     pageImgs: get(pageQImgs),
+                    topk: 10, // TODO retrieve this value from the user
+                    excludedCategories: [] // TODO retrieve this value from the toolbar
                 }),
                 headers: {
                     'Content-Type': 'application/json',
@@ -108,6 +102,35 @@ function createSimilarityStore() {
         return data;
     };
 
+    // const fetchQSimilarity = async (qImg) => {
+    //     const response = await fetch(
+    //         `${baseUrl}similarity-page`,
+    //         {
+    //             method: "POST",
+    //             body: JSON.stringify({
+    //                 regionsIds: Object.values(get(selectedRegions)).map(r => r.id),
+    //                 qImg: qImg,
+    //             }),
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //                 'X-CSRFToken': csrfToken
+    //             },
+    //         }
+    //     );
+    //     return await response.json()
+    // };
+
+    function addSimilarity(qImg, sImg) {
+        // TODO send request to add region pair record
+        // TODO django side, check if region ref is correctly formatted + correspond to existing wit+digit
+        // TODO django side, check if region pair already exists
+        // TODO django side, check if digit has already regions, if not create one?
+        // TODO django side, create region pair record (if 2 images has been paired, add user id to category x)
+        // TODO if successful add region to comparedRegions (if not already the case)
+        // TODO if successful select region in selectedRegions (if not already the case)
+        // TODO if successful display new similar regions
+        // TODO if unsuccessful display error message + do not show new similar regions
+    }
 
     function handlePageUpdate(pageNb) {
         currentPage.set(pageNb);

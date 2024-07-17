@@ -202,29 +202,6 @@ def index_regions(request, regions_ref=None):
     }
 
     for file in regions_files:
-        # a_ref = file.replace(".txt", "")
-        # ref = parse_ref(a_ref)
-        # if not ref or not ref["regions"]:
-        #     # if there is no regions_id in the ref, pass
-        #     not_indexed_regions.append(a_ref)
-        #     continue
-        # regions_id = ref["regions"][1]
-        # regions = Regions.objects.filter(pk=regions_id).first()
-        # if not regions:
-        #     digit = Digitization.objects.filter(pk=ref["digit"][1]).first()
-        #     if not digit:
-        #         # if there is no digit corresponding to the ref, pass
-        #         not_indexed_regions.append(a_ref)
-        #         continue
-        #     regions = Regions(
-        #         id=regions_id, digitization=digit, model="CHANGE THIS VALUE"
-        #     )
-        #     regions.save()
-        #
-        # from app.webapp.tasks import reindex_from_file
-        #
-        # reindex_from_file.delay(regions_id)
-        # indexed_regions.append(a_ref)
         passed, a_ref = reindex_file(file)
         res["Indexed" if passed else "Not indexed"].append(a_ref)
 
@@ -386,6 +363,7 @@ def show_regions(request, regions_ref):
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def show_all_regions(request, regions_ref):
+    # NOTE soon to be not used
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
         return JsonResponse(regions)

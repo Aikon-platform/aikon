@@ -42,8 +42,10 @@
                 body: JSON.stringify({
                     'img_1': qImg,
                     'img_2': sImg,
-                    'regions_ref_1': `${w1}_${d1}_${c1}`, // TODO wrong regions ref
-                    'regions_ref_2': `${w2}_${d2}_${c2}`,
+                    'regions_id_1': "", // TODO get region ID
+                    'regions_id_2': "",
+                    // 'regions_ref_1': `${w1}_${d1}_${c1}`, // TODO wrong regions ref
+                    // 'regions_ref_2': `${w2}_${d2}_${c2}`,
                     'category': category <= 4 ? selectedCategory : null,
                     'category_x': category === 5 ? isCategory5Selected : null,
                 })
@@ -71,7 +73,13 @@
                 <br>
                 Page {parseInt(canvas)}
                 <br>
-                <b>Score: {score}</b>
+                <b>
+                    {#if score}
+                        Score: {score}
+                    {:else}
+                        {appLang === 'en' ? 'Manual similarity' : 'Correspondance manuelle'}
+                    {/if}
+                </b>
             </span>
         </div>
     </figure>

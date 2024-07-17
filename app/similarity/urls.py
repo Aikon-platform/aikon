@@ -64,4 +64,9 @@ urlpatterns += [
     ),
     path(f"save-category", save_category, name="save-category"),
     path(f"get-categories", get_categories, name="get-categories"),
+    path(
+        f"index-similarity/<str:regions_ref>",
+        index_regions_similarity,
+        name="index-similarity",
+    ),
 ]

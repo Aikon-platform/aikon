@@ -30,7 +30,7 @@ def compute_similarity_scores(
 
 
 @celery_app.task
-def check_similarity_files(file_names):
-    # TODO: check content of similarity files
-    # must contain a list of dictionaries with keys: 'ref1', 'ref2', 'score'
-    pass
+def process_similarity_file(file_name):
+    from app.similarity.utils import score_file_to_db
+
+    return score_file_to_db(file_name)

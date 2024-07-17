@@ -16,11 +16,17 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.config.settings")
 
 redis_prefix = "redis://" if DEBUG else f"redis://:{ENV('REDIS_PASSWORD')}@"
 
+ADDITIONAL_MODULES = ENV.list("ADDITIONAL_MODULES")
+
+imported_tasks = ("app.webapp.tasks",)
+for module in ADDITIONAL_MODULES:
+    imported_tasks += (f"app.{module}.tasks",)
+
 celery_app = Celery(
     "config",
     broker=f"{redis_prefix}localhost:6379/0",
     backend=f"{redis_prefix}localhost:6379/0",
-    imports=("app.webapp.tasks",),
+    imports=imported_tasks,
 )
 
 # Load Celery configuration from Django settings
@@ -34,4 +40,4 @@ celery_app.conf.update(
 )
 
 # Discover and register tasks automatically in Django applications
-celery_app.autodiscover_tasks()
+# celery_app.autodiscover_tasks()

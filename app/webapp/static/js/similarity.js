@@ -112,8 +112,8 @@ const displayScores = (scores) => {
                             <form class="category-form">
                                 <input type="hidden" class="img_1" value="${qImg}">
                                 <input type="hidden" class="img_2" value="${sImg}">
-                                <input type="hidden" class="regions_ref_1" value="${getImageInfo(qImg).regionsRef}">
-                                <input type="hidden" class="regions_ref_2" value="${getImageInfo(sImg).regionsRef}">
+                                <input type="hidden" class="regions_id_1" value="${getImageInfo(qImg).regionsRef}">
+                                <input type="hidden" class="regions_id_2" value="${getImageInfo(sImg).regionsRef}">
                                 <label for="">1</label>
                                 <input id="category1" type="checkbox" name="category" value="1">
                                 <label for="" class="hspace">2</label>
@@ -166,8 +166,8 @@ const displayScores = (scores) => {
             }
             let img_1 = form.querySelector('.img_1').value;
             let img_2 = form.querySelector('.img_2').value;
-            let regions_ref_1 = form.querySelector('.regions_ref_1').value;
-            let regions_ref_2 = form.querySelector('.regions_ref_2').value;
+            let regions_id_1 = form.querySelector('.regions_id_1').value;
+            let regions_id_2 = form.querySelector('.regions_id_2').value;
             let category = form.querySelector('input[name="category"]:not(#category5):checked');
             let category_x = form.querySelector('#category5:checked');
             form.querySelectorAll('input[name="category"]').forEach((checkbox) => {
@@ -176,8 +176,8 @@ const displayScores = (scores) => {
             let data = {
                 'img_1': img_1,
                 'img_2': img_2,
-                'regions_ref_1': regions_ref_1,
-                'regions_ref_2': regions_ref_2,
+                'regions_id_1': regions_id_1,
+                'regions_id_2': regions_id_2,
                 'category': category ? category.value : null,
                 'category_x': category_x ? category_x.value : null,
             };

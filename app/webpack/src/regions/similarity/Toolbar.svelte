@@ -1,5 +1,5 @@
 <script>
-    import { fly } from 'svelte/transition';
+    import { fly, fade } from 'svelte/transition';
     import * as cat from './similarityCategory';
 
     let hoveredCategory = null;
@@ -11,8 +11,14 @@
         { id: 3, title: cat.semanticLabel, svg: cat.semanticSvg },
         { id: 4, title: cat.noLabel, svg: cat.noSvg },
         { id: 5, title: cat.userLabel, svg: cat.userSvg },
-        { id: 6, title: showNoMatch ? cat.hideLabel : cat.showLabel, svg:  showNoMatch ? cat.hideSvg : cat.showSvg },
+        {
+            id: 6,
+            title: showNoMatch ? cat.hideLabel : cat.showLabel,
+            svg:  showNoMatch ? cat.hideSvg : cat.showSvg
+        },
     ];
+
+    // TODO toggle or not view of different categories?
 
     function toggleNoMatch() {
         showNoMatch = !showNoMatch;
@@ -20,9 +26,10 @@
     }
 </script>
 
-<div class="toolbar is-contrasted pb-3 pl-3 pr-4">
+<div class="toolbar is-contrasted pb-3 pl-3 pr-4" transition:fade={{ duration: 500 }}>
     {#each categories as category}
         <div class="toolbar-item"
+             style="cursor: {hoveredCategory === 6 ? 'pointer' : 'help'}"
              on:mouseenter={() => hoveredCategory = category.id}
              on:mouseleave={() => hoveredCategory = null}
              on:click={category.id === 6 ? toggleNoMatch() : null}
@@ -62,7 +69,6 @@
     .tool-icon {
         background: none;
         border: none;
-        cursor: pointer;
     }
 
     .label-container {
