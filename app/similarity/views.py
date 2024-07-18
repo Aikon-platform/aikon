@@ -28,6 +28,12 @@ from app.webapp.views import is_superuser, check_ref
 
 
 @user_passes_test(is_superuser)
+def delete_all_regions_pairs(request):
+    RegionPair.objects.all().delete()
+    return JsonResponse({"message": "All region pairs deleted"})
+
+
+@user_passes_test(is_superuser)
 def send_similarity(request, regions_refs):
     """
     To relaunch similarity request in case the automatic process has failed
@@ -143,6 +149,7 @@ def compute_score(request):
 
 
 def get_similarity_page(request, wid, rid=None):
+    # SOON TO BE NOT USED
     if request.method == "POST":
         if rid is not None:
             q_regions = [get_object_or_404(Regions, id=rid)]
@@ -173,15 +180,16 @@ def get_similarity_page(request, wid, rid=None):
             page_scores = {}
             for q_r in q_regions:
                 for q_img in page_imgs:
-                    page_scores.update(
-                        get_best_pairs(
-                            q_img,
-                            get_region_pairs_with(
-                                q_img, include_self=q_r.id in regions_ids
-                            ),
-                            excluded_categories=excluded_cat,
-                            topk=topk,
-                        )
+                    if q_img not in page_scores:
+                        page_scores[q_img] = []
+                    page_scores[q_img] += get_best_pairs(
+                        q_img,
+                        get_region_pairs_with(
+                            q_img, include_self=q_r.id in regions_ids
+                        ),
+                        excluded_categories=excluded_cat,
+                        topk=topk,
+                        user_id=request.user.id,
                     )
 
             return JsonResponse(page_scores)
@@ -192,6 +200,56 @@ def get_similarity_page(request, wid, rid=None):
 
 
 def get_similar_regions(request, wid, rid=None):
+    if request.method == "POST":
+        if rid is not None:
+            q_regions = [get_object_or_404(Regions, id=rid)]
+        else:
+            witness = get_object_or_404(Witness, id=wid)
+            q_regions = witness.get_regions()
+
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+            try:
+                regions_ids = list(data.get("regionsIds", []))
+                q_img = str(data.get("qImg", ""))
+                topk = int(data.get("topk", 10))
+                excluded_cat = list(data.get("excludedCategories", [4]))
+            except ValueError:
+                return JsonResponse({"error": "Invalid JSON data"}, status=400)
+
+            if len(regions_ids) == 0:
+                # selection is empty
+                return JsonResponse({})
+
+            if q_img == "":
+                # no images to display
+                return JsonResponse({})
+
+            topk = min(max(topk, 1), 20)
+
+            pairs = []
+            for q_r in q_regions:
+                pairs += get_region_pairs_with(
+                    q_img, include_self=q_r.id in regions_ids
+                )
+
+            return JsonResponse(
+                get_best_pairs(
+                    q_img,
+                    pairs,
+                    excluded_categories=excluded_cat,
+                    topk=topk,
+                    user_id=request.user.id,
+                ),
+                safe=False,
+            )
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON data"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=400)
+
+
+def get_compared_regions(request, wid, rid=None):
     """
     Return the id and metadata of the Regions that have a score file of similarity
     in common with the Regions whose id is passed in the URL
@@ -220,7 +278,7 @@ def get_similar_regions(request, wid, rid=None):
         )
 
 
-def get_query_images(request, wid, rid=None):
+def get_query_regions(request, wid, rid=None):
     if rid is not None:
         q_regions = [get_object_or_404(Regions, id=rid)]
     else:

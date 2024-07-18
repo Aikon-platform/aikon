@@ -1,66 +1,55 @@
 <script>
-    import { appLang, csrfToken } from '../../constants';
+    import {appLang, csrfToken} from '../../constants';
     import { similarityStore } from "./similarityStore.js";
-    const { setPageSImgs, pageSImgs } = similarityStore;
+    const { selectedRegions } = similarityStore;
     import SimilarRegion from "./SimilarRegion.svelte";
 
     export let qImg;
-    // const baseUrl = window.location.origin;
+    const baseUrl = `${window.location.origin}${window.location.pathname}`;
 
-    // async function fetchPageSimilarity(qImg) {
-    //     await $setPageSImgs;
-    //
-    //     const similarImgs = similarityStore.getSimilarImgs(qImg);
-    //     const imgPairs = similarImgs.map(([sImg, _]) => `${qImg}|${sImg}`);
-    //
-    //     const response = await fetch(`${baseUrl}/get-categories`, {
-    //         method: 'POST',
-    //         headers: {
-    //             'Content-Type': 'application/json',
-    //             'X-CSRFToken': csrfToken
-    //         },
-    //         body: JSON.stringify({ img_pairs: imgPairs })
-    //     });
-    //
-    //     if (!response.ok) {
-    //         throw new Error('Failed to fetch categories');
-    //     }
-    //
-    //     const categories = await response.json();
-    //
-    //     return {
-    //         similarImgs,
-    //         categories
-    //     };
-    // }
-    //
-    // let pageSimilarityPromise = fetchPageSimilarity(qImg);
+    async function fetchSImgs(qImg, selection) {
+        const response = await fetch(
+            `${baseUrl}similar-regions`,
+            {
+                method: "POST",
+                body: JSON.stringify({
+                    regionsIds: Object.values(selection).map(r => r.id),
+                    qImg: qImg,
+                    topk: 10, // TODO retrieve this value from the user
+                    excludedCategories: [] // TODO retrieve this value from the toolbar
+                }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+            }
+        );
+        return await response.json()
+    }
+
+    $: sImgsPromise = fetchSImgs(qImg, $selectedRegions);
 </script>
 
-<!--{#await pageSimilarityPromise}-->
-<!--    <div class="faded is-center">-->
-<!--        {appLang === 'en' ? 'Retrieving similar regions...' : 'Récupération des régions similaires...'}-->
-<!--    </div>-->
-<!--{:then { similarImgs, categories }}-->
-<!--    {#each similarImgs as [sImg, score]}-->
-<!--        <SimilarRegion {qImg} {sImg} {score} regionsCategory={categories[`${qImg}|${sImg}`]}/>-->
-<!--    {/each}-->
-<!--{:catch error}-->
-<!--    <div class="faded is-center">-->
-<!--        Error when retrieving similar regions: {error}-->
-<!--    </div>-->
-<!--{/await}-->
-{#await $setPageSImgs}
+{#await sImgsPromise}
     <div class="faded is-center">
         {appLang === 'en' ? 'Retrieving similar regions...' : 'Récupération des régions similaires...'}
     </div>
-{:then _}
-    <!--TODO update with new -->
-    {#each $pageSImgs as [sImg, score, categories, userCategory]}
-        <SimilarRegion {qImg} {sImg} {score} regionsCategory={categories[`${qImg}|${sImg}`]}/>
+{:then simImgs}
+    <!--TODO update on page change-->
+    <!--TODO update with manually added Regions-->
+    <!--TODO make querying by qImg instead of page-->
+    <!--{#each Object.entries($pageSImgs) as [qImg, [score, _, sImg, qRegions, sRegions, category, users, isManual]]}-->
+    <!--    <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual}/>-->
+    <!--{/each}-->
+    {#each simImgs as [score, _, sImg, qRegions, sRegions, category, users, isManual]}
+        <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual}/>
     {/each}
 {:catch error}
     <div class="faded is-center">
-        Error when retrieving similar regions: {error}
+        {
+            appLang === 'en' ?
+            `Error when retrieving similar regions: ${error}` :
+            `Erreur de recupération des régions similaires: ${error}`
+        }
     </div>
 {/await}

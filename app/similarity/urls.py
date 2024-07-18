@@ -33,24 +33,24 @@ urlpatterns = [
 # ENDPOINTS
 urlpatterns += [
     path(
-        f"witness/<int:wid>/regions/<int:rid>/similar-regions",
-        get_similar_regions,
-        name="similarity-regions",
+        f"witness/<int:wid>/regions/<int:rid>/compared-regions",
+        get_compared_regions,
+        name="compared-regions",
     ),
     path(
-        f"witness/<int:wid>/regions/similar-regions",
-        get_similar_regions,
-        name="witness-similarity-regions",
+        f"witness/<int:wid>/regions/compared-regions",
+        get_compared_regions,
+        name="witness-compared-regions",
     ),
     path(
-        f"witness/<int:wid>/regions/<int:rid>/query-images",
-        get_query_images,
-        name="query-images",
+        f"witness/<int:wid>/regions/<int:rid>/query-regions",
+        get_query_regions,
+        name="query-regions",
     ),
     path(
-        f"witness/<int:wid>/regions/query-images",
-        get_query_images,
-        name="witness-query-images",
+        f"witness/<int:wid>/regions/query-regions",
+        get_query_regions,
+        name="witness-query-regions",
     ),
     path(
         f"witness/<int:wid>/regions/<int:rid>/similarity-page",
@@ -62,6 +62,16 @@ urlpatterns += [
         get_similarity_page,
         name="witness-similarity-page",
     ),
+    path(
+        f"witness/<int:wid>/regions/<int:rid>/similar-regions",
+        get_similar_regions,
+        name="similar-regions",
+    ),
+    path(
+        f"witness/<int:wid>/regions/similar-regions",
+        get_similar_regions,
+        name="witness-similar-regions",
+    ),
     path(f"save-category", save_category, name="save-category"),
     path(f"get-categories", get_categories, name="get-categories"),
     path(
@@ -69,4 +79,5 @@ urlpatterns += [
         index_regions_similarity,
         name="index-similarity",
     ),
+    # path(f"similarity/delete-all", delete_all_regions_pairs, name="delete-pairs"),
 ]

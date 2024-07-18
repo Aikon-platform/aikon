@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="regionpair",
             name="is_manual",
-            field=models.CharField(max_length=150, null=True),
+            field=models.BooleanField(default=False, max_length=150, null=True),
         ),
         migrations.AddField(
             model_name="regionpair",

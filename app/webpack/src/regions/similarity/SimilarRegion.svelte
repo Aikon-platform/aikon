@@ -10,13 +10,16 @@
     export let qImg;
     export let sImg;
     export let score = 0;
-    export let regionsCategory = null;
+    export let qRegions = null;
+    export let sRegions = null;
+    export let category = null;
+    export let users = [];
 
     const [wit, digit, canvas, xyhw] = sImg.split('.')[0].split('_');
     const img = `${wit}_${digit}_${canvas}`;
 
-    $: selectedCategory = regionsCategory ? regionsCategory.category : null;
-    $: isCategory5Selected = regionsCategory ? regionsCategory.category_x?.includes(Number(userId)) || false : false;
+    $: selectedCategory = category;
+    $: isCategory5Selected = users.includes(Number(userId)) || false;
 
     function updateCategory(category) {
         if (category === 5) {
@@ -42,10 +45,8 @@
                 body: JSON.stringify({
                     'img_1': qImg,
                     'img_2': sImg,
-                    'regions_id_1': "", // TODO get region ID
-                    'regions_id_2': "",
-                    // 'regions_ref_1': `${w1}_${d1}_${c1}`, // TODO wrong regions ref
-                    // 'regions_ref_2': `${w2}_${d2}_${c2}`,
+                    'regions_id_1': qRegions,
+                    'regions_id_2': sRegions,
                     'category': category <= 4 ? selectedCategory : null,
                     'category_x': category === 5 ? isCategory5Selected : null,
                 })

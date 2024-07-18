@@ -53,6 +53,7 @@ def score_file_to_db(score_path):
                     regions_id_1=ref_1.split("_anno")[1],
                     regions_id_2=ref_2.split("_anno")[1],
                     is_manual=False,
+                    category_x=[],
                 )
             )
     except ValueError as e:
@@ -92,12 +93,11 @@ def get_region_pairs_with(q_img, include_self=False):
     return list(RegionPair.objects.filter(query))
 
 
-def get_compared_regions_ids(regions_id, include_self=False):
+def get_compared_regions_ids(regions_id):
     """
     Retrieve all unique region IDs that have been associated with the given region ID in RegionPair records.
 
     :param regions_id: str, the region ID to look for
-    :param include_self: bool, if we consider comparisons of the region with itself
     :return: list of unique region IDs
     """
     pairs = RegionPair.objects.filter(
@@ -113,19 +113,6 @@ def get_compared_regions_ids(regions_id, include_self=False):
         )
 
     return list(associated_ids)
-    # return list(set(
-    #     RegionPair.objects.filter(
-    #         Q(regions_id_1=regions_id) | Q(regions_id_2=regions_id)
-    #     ).annotate(
-    #         other_id=Case(
-    #             When(
-    #                 regions_id_1=regions_id,
-    #                 then=F('regions_id_2')
-    #             ),
-    #             default=F('regions_id_1')
-    #         )
-    #     ).values_list('other_id', flat=True).distinct()
-    # ))
 
 
 def get_regions_q_imgs(regions_id: int):
@@ -153,7 +140,8 @@ def get_best_pairs(
     region_pairs: List[RegionPair],
     excluded_categories: List[int],
     topk: int,
-) -> Dict[str, Set[Tuple[str, float, int, List[int]]]]:
+    user_id: int = None,
+) -> List[Set[Tuple[str, float, int, List[int]]]]:
     """
     Process RegionPair objects and return a structured dictionary.
 
@@ -161,35 +149,33 @@ def get_best_pairs(
     :param q_img: Query image name
     :param excluded_categories: List of category numbers to exclude
     :param topk: Number of top scoring pairs to include
-    :return: Dictionary with structured data
+    :param user_id: int ID of the user asking for similarities
+    :return: List with structured data
     """
-    result = {q_img: []}
+    best_pairs = []
     manual_pairs = []
     pairs = []
 
-    # TODO add user category (add user_id in param)
-
     for pair in region_pairs:
-        s_img = pair.img_2 if pair.img_1 == q_img else pair.img_1
-        category = pair.category
+        # pair_data = (score, q_img, s_img, q_regions, s_regions, category, category_x, is_manual)
+        pair_data = pair.get_info(q_img)
 
-        pair_data = (s_img, pair.score, category, pair.category_x)
-
-        if pair.is_manual:
-            manual_pairs.append(pair_data)
-        elif len(pair.category_x) > 0:
-            manual_pairs.append(pair_data)
-        elif category not in excluded_categories:
-            pairs.append(pair_data)
+        if pair.category not in excluded_categories:
+            if pair.is_manual:
+                manual_pairs.append(pair_data)
+            elif len(pair.category_x or []) > 0 and user_id in pair.category_x:
+                manual_pairs.append(pair_data)
+            else:
+                pairs.append(pair_data)
 
     # All manual pairs are added
-    result[q_img].append(manual_pairs)
+    best_pairs += manual_pairs
 
     # Sort pairs by score in descending order and add top k
-    pairs.sort(key=lambda x: x[1], reverse=True)
-    result[q_img].append(pairs[:topk])
+    pairs.sort(key=lambda x: x[0], reverse=True)
+    best_pairs += pairs[:topk]
 
-    return result
+    return best_pairs
 
 
 def process_score_file(score_path, q_prefix, page_imgs):

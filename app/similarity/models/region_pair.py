@@ -95,9 +95,27 @@ class RegionPair(models.Model):
     """
     Is this pair manually added by a user or automatically generated (ie from a score file)
     """
-    is_manual = models.CharField(max_length=150, null=True)
+    is_manual = models.BooleanField(max_length=150, null=True, default=False)
 
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
     objects = RegionPairManager()
+
+    def get_info(self, q_img=None):
+        if q_img is None:
+            q_img = self.img_1
+        s_img = self.img_2 if self.img_1 == q_img else self.img_1
+        q_regions = self.regions_id_1 if self.img_1 == q_img else self.regions_id_2
+        s_regions = self.regions_id_2 if self.img_1 == q_img else self.regions_id_1
+
+        return (
+            self.score or 0,
+            q_img,
+            s_img,
+            q_regions,
+            s_regions,
+            self.category,
+            self.category_x or [],
+            self.is_manual,
+        )
