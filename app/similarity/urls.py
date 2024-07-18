@@ -17,22 +17,6 @@ urlpatterns = [
         name="send-similarity",
     ),
     path(
-        f"{APP_NAME}/<str:regions_ref>/show-similarity",  # regions_refs = regions_ref+regions_ref+regions_ref
-        show_similarity,
-        name="show-similarity",
-    ),
-    path(
-        f"{APP_NAME}/compute-score",
-        compute_score,
-        name="compute-score",
-    ),
-    path(f"{APP_NAME}/retrieve-category/", retrieve_category, name="retrieve-category"),
-    path(f"{APP_NAME}/save-category/", save_category, name="save-category"),
-]
-
-# ENDPOINTS
-urlpatterns += [
-    path(
         f"witness/<int:wid>/regions/<int:rid>/compared-regions",
         get_compared_regions,
         name="compared-regions",
@@ -53,16 +37,6 @@ urlpatterns += [
         name="witness-query-regions",
     ),
     path(
-        f"witness/<int:wid>/regions/<int:rid>/similarity-page",
-        get_similarity_page,
-        name="similarity-page",
-    ),
-    path(
-        f"witness/<int:wid>/regions/similarity-page",
-        get_similarity_page,
-        name="witness-similarity-page",
-    ),
-    path(
         f"witness/<int:wid>/regions/<int:rid>/similar-regions",
         get_similar_regions,
         name="similar-regions",
@@ -73,7 +47,6 @@ urlpatterns += [
         name="witness-similar-regions",
     ),
     path(f"save-category", save_category, name="save-category"),
-    path(f"get-categories", get_categories, name="get-categories"),
     path(
         f"index-similarity/<str:regions_ref>",
         index_regions_similarity,

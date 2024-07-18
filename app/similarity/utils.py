@@ -4,6 +4,7 @@ import requests
 from pathlib import Path
 from django.db import transaction
 from django.db.models import Q, F
+from django.urls import reverse
 from typing import Tuple, Dict, Set, List
 from collections import defaultdict, Counter
 from itertools import combinations_with_replacement
@@ -44,6 +45,7 @@ def score_file_to_db(score_path):
 
     pairs_to_update = []
     try:
+        # img1 and img2 are supposedly always in alphabetical order
         for score, img1, img2 in pair_scores:
             pairs_to_update.append(
                 RegionPair(
@@ -320,7 +322,8 @@ def get_compared_regions(regions: Regions):
 
 
 def gen_list_url(regions_ref):
-    return f"{APP_URL}/{APP_NAME}/{regions_ref}/list"
+    # TODO check if correct
+    return reverse("webapp:regions-list", kwargs={"regions_ref": regions_ref})
 
 
 def similarity_request(regions: List[Regions]):

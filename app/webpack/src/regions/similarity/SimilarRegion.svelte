@@ -10,8 +10,8 @@
     export let qImg;
     export let sImg;
     export let score = 0;
-    export let qRegions = null;
-    export let sRegions = null;
+    // export let qRegions = null;
+    // export let sRegions = null;
     export let category = null;
     export let users = [];
 
@@ -19,20 +19,17 @@
     const img = `${wit}_${digit}_${canvas}`;
 
     $: selectedCategory = category;
-    $: isCategory5Selected = users.includes(Number(userId)) || false;
+    $: isSelectedByUser = users.includes(Number(userId)) || false;
 
     function updateCategory(category) {
         if (category === 5) {
-            isCategory5Selected = !isCategory5Selected;
+            isSelectedByUser = !isSelectedByUser;
         } else {
             selectedCategory = selectedCategory === category ? null : category;
         }
     }
 
     async function categorize(category) {
-        const [w1, d1, c1, _1] = qImg.split('.')[0].split('_');
-        const [w2, d2, c2, _2] = sImg.split('.')[0].split('_');
-
         updateCategory(category);
 
         try {
@@ -45,10 +42,8 @@
                 body: JSON.stringify({
                     'img_1': qImg,
                     'img_2': sImg,
-                    'regions_id_1': qRegions,
-                    'regions_id_2': sRegions,
-                    'category': category <= 4 ? selectedCategory : null,
-                    'category_x': category === 5 ? isCategory5Selected : null,
+                    'category': selectedCategory,
+                    'user_selected': isSelectedByUser,
                 })
             });
 
@@ -105,7 +100,7 @@
               title="{appLang === 'en' ? 'No match' : 'Aucune correspondance'}">
             {@html noSvg}
         </span>
-        <span class="tag is-hoverable pl-4 pr-5 py-4" class:is-link={isCategory5Selected}
+        <span class="tag is-hoverable pl-4 pr-5 py-4" class:is-link={isSelectedByUser}
               on:click={() => categorize(5)} on:keyup={null}
               title="{appLang === 'en' ? 'User match' : 'Correspondance utilisateur'}">
             {@html userSvg}
