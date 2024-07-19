@@ -7,7 +7,12 @@
     export let qImg;
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
 
-    async function fetchSImgs(qImg, selection) {
+    async function fetchSImgs(qImg, selection, excludedCategories) {
+        const regionsIds = Object.values(selection).map(r => r.id);
+        if (regionsIds.length === 0) {
+            return {};
+        }
+
         const response = await fetch(
             `${baseUrl}similar-regions`,
             {
@@ -16,7 +21,7 @@
                     regionsIds: Object.values(selection).map(r => r.id),
                     qImg: qImg,
                     topk: 10, // TODO retrieve this value from the user
-                    excludedCategories: $excludedCategories
+                    excludedCategories: excludedCategories
                 }),
                 headers: {
                     'Content-Type': 'application/json',
@@ -27,7 +32,7 @@
         return await response.json()
     }
 
-    $: sImgsPromise = fetchSImgs(qImg, $selectedRegions);
+    $: sImgsPromise = fetchSImgs(qImg, $selectedRegions, $excludedCategories);
 </script>
 
 {#await sImgsPromise}
@@ -43,6 +48,16 @@
     <!--{/each}-->
     {#each simImgs as [score, _, sImg, qRegions, sRegions, category, users, isManual]}
         <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual}/>
+    {:else}
+        {#if Object.values($selectedRegions).length === 0}
+            <div class="faded is-center">
+                {appLang === 'en' ? 'No document selected' : 'Aucun document sélectionné'}
+            </div>
+        {:else}
+            <div class="faded is-center">
+                {appLang === 'en' ? 'No similar regions' : 'Pas de régions similaires'}
+            </div>
+        {/if}
     {/each}
 {:catch error}
     <div class="faded is-center">

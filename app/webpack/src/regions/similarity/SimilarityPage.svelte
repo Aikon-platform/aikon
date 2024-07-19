@@ -1,14 +1,14 @@
 <script>
     import { appLang } from '../../constants';
     import { similarityStore } from "./similarityStore.js";
-    const { qImgs, pageQImgs, setPageQImgs } = similarityStore;
+    const { qImgs, pageQImgs, setPageQImgs, pageLength } = similarityStore;
     import Pagination from "../../Pagination.svelte";
     import Table from "../../Table.svelte";
     import SimilarityRow from "./SimilarityRow.svelte";
     import SimilarRegions from "./SimilarRegions.svelte";
 </script>
 
-<Pagination store={similarityStore} nbOfItems={$qImgs.length}/>
+<Pagination store={similarityStore} nbOfItems={$qImgs.length} {pageLength}/>
 
 <Table>
     {#await $setPageQImgs}

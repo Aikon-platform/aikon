@@ -3,6 +3,7 @@
     import * as cat from './similarityCategory';
     import { similarityStore } from "./similarityStore.js";
     const { excludedCategories } = similarityStore;
+    import { appLang } from '../../constants';
 
     let hoveredCategory = null;
 
@@ -30,7 +31,8 @@
 
 <div class="toolbar" transition:fade={{ duration: 500 }}>
     {#each categories as category}
-        <div class="toolbar-item hoverable {$excludedCategories.includes(category.id) ? '' : 'selected'}"
+        <!--hoverable-->
+        <div class="toolbar-item {$excludedCategories.includes(category.id) ? '' : 'selected'}"
              on:mouseenter={() => hoveredCategory = category.id}
              on:mouseleave={() => hoveredCategory = null}
              on:click={() => toggleCategory(category.id)}
@@ -41,6 +43,11 @@
             {#if hoveredCategory === category.id}
                 <div class="label-container px-2 py-1" transition:fly={{ x: 40, duration: 300 }}>
                     <span class="label">
+                        {#if $excludedCategories.includes(category.id)}
+                            {appLang === 'en' ? 'Show ' : 'Afficher les '}
+                        {:else}
+                            {appLang === 'en' ? 'Hide ' : 'Masquer les '}
+                        {/if}
                         {category.title}
                     </span>
                 </div>

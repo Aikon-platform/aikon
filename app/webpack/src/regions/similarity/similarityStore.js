@@ -3,7 +3,7 @@ import {derived, get, writable} from 'svelte/store';
 
 function createSimilarityStore() {
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
-    const pageLength = 50;
+    const pageLength = 25;
 
     const currentPage = writable(1);
     const comparedRegions = writable({});
@@ -69,18 +69,6 @@ function createSimilarityStore() {
         return currentQImgs;
     }
 
-    function addSimilarRegion(qImg, sImg) {
-        // TODO send request to add region pair record
-        // TODO django side, check if region ref is correctly formatted + correspond to existing wit+digit
-        // TODO django side, check if region pair already exists
-        // TODO django side, check if digit has already regions, if not create one?
-        // TODO django side, create region pair record (if 2 images has been paired, add user id to category x)
-        // TODO if successful add region to comparedRegions (if not already the case)
-        // TODO if successful select region in selectedRegions (if not already the case)
-        // TODO if successful display new similar regions
-        // TODO if unsuccessful display error message + do not show new similar regions
-    }
-
     function handlePageUpdate(pageNb) {
         currentPage.set(pageNb);
         if (typeof window !== 'undefined') {
@@ -137,6 +125,7 @@ function createSimilarityStore() {
         unselect,
         select,
         isSelected,
+        pageLength
     };
 }
 

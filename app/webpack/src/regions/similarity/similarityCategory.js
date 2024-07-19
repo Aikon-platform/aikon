@@ -50,10 +50,8 @@ export const hideSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 
                 <path d="M 39 56 L 57 38" fill="none" stroke="#ffffff" stroke-width="3" stroke-miterlimit="10"/>
             </svg>`;
 
-export const exactLabel = appLang === 'en'?  "Overall visual match" : "Correspondance visuelle globale";
-export const partialLabel = appLang === 'en'?  "Visual match on part of the image": "Correspondance visuelle sur une partie de l'image";
-export const semanticLabel = appLang === 'en'?  "Semantic and non visual match" : "Correspondance sémantique et non visuelle";
-export const noLabel = appLang === 'en'?  "None of the above" : "Aucune de ces catégories";
-export const userLabel = appLang === 'en'?  "User specific category" : "Correspondance spécifique à l'utilisateur";
-export const showLabel = appLang === 'en'?  "Show 'no match' regions" : "Afficher les régions sans correspondance";
-export const hideLabel = appLang === 'en'?  "Hide 'no match' regions" : "Cacher les régions sans correspondance";
+export const exactLabel = appLang === 'en' ?  "overall visual matches" : "correspondances visuelles globales";
+export const partialLabel = appLang === 'en' ?  "visual matches on part of the image": "correspondances visuelles sur une partie de l'image";
+export const semanticLabel = appLang === 'en' ?  "semantic and non-visual matches" : "correspondances sémantiques et non-visuelle";
+export const noLabel = appLang === 'en' ?  "regions without match" : "régions sans correspondance";
+export const userLabel = appLang === 'en' ?  "user specific category" : "correspondances spécifiques à l'utilisateur";
