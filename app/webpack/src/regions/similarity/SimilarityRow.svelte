@@ -9,6 +9,7 @@
 <tr>
     <th class="is-3 center-flex is-narrow" style="width: 260px">
         <div class="content-wrapper py-5">
+            <!--TODO make image copyable-->
             <img src="{refToIIIF(qImg, 'full', '250,')}" alt="Query region" class="mb-3 card">
             <a class="tag px-2 py-1 is-rounded is-hoverable" href="{manifestToMirador(manifest, parseInt(canvas))}" target="_blank">
                 <i class="fa-solid fa-pen-to-square"></i>

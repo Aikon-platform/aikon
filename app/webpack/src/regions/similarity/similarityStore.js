@@ -8,10 +8,8 @@ function createSimilarityStore() {
     const currentPage = writable(1);
     const comparedRegions = writable({});
     const selectedRegions = writable(JSON.parse(localStorage.getItem("selectedRegions")) || {});
+    const excludedCategories = writable(JSON.parse(localStorage.getItem("excludedCategories")) || []);
     const qImgs = writable([]);
-    /**
-     * List of query images (i.e. current regions in first column) for the current page
-     */
     const pageQImgs = writable([]);
 
     /**
@@ -128,6 +126,7 @@ function createSimilarityStore() {
     return {
         currentPage,
         comparedRegions,
+        excludedCategories,
         qImgs,
         pageQImgs,
         selectedRegions,

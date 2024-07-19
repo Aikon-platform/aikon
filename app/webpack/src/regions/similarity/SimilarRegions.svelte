@@ -1,7 +1,7 @@
 <script>
     import {appLang, csrfToken} from '../../constants';
     import { similarityStore } from "./similarityStore.js";
-    const { selectedRegions } = similarityStore;
+    const { selectedRegions, excludedCategories } = similarityStore;
     import SimilarRegion from "./SimilarRegion.svelte";
 
     export let qImg;
@@ -16,7 +16,7 @@
                     regionsIds: Object.values(selection).map(r => r.id),
                     qImg: qImg,
                     topk: 10, // TODO retrieve this value from the user
-                    excludedCategories: [] // TODO retrieve this value from the toolbar
+                    excludedCategories: $excludedCategories
                 }),
                 headers: {
                     'Content-Type': 'application/json',

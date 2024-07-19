@@ -80,27 +80,27 @@
         </div>
     </figure>
     <div class="tags has-addons is-dark is-center">
-        <span class="tag is-hoverable pl-5 pr-4 py-4" class:is-link={selectedCategory === 1}
+        <span class="tag is-hoverable pl-4 pr-3 py-4" class:is-link={selectedCategory === 1}
               on:click={() => categorize(1)} on:keyup={null}
               title="{appLang === 'en' ? 'Exact match' : 'Correspondance exacte'}">
             {@html exactSvg}
         </span>
-        <span class="tag is-hoverable p-4" class:is-link={selectedCategory === 2}
+        <span class="tag is-hoverable py-4 px-3" class:is-link={selectedCategory === 2}
               on:click={() => categorize(2)} on:keyup={null}
               title="{appLang === 'en' ? 'Partial match' : 'Correspondance partielle'}">
             {@html partialSvg}
         </span>
-        <span class="tag is-hoverable p-4" class:is-link={selectedCategory === 3}
+        <span class="tag is-hoverable py-4 px-3" class:is-link={selectedCategory === 3}
               on:click={() => categorize(3)} on:keyup={null}
               title="{appLang === 'en' ? 'Semantic match' : 'Correspondance sémantique'}">
             {@html semanticSvg}
         </span>
-        <span class="tag is-hoverable p-4" class:is-link={selectedCategory === 4}
+        <span class="tag is-hoverable py-4 px-3" class:is-link={selectedCategory === 4}
               on:click={() => categorize(4)} on:keyup={null}
               title="{appLang === 'en' ? 'No match' : 'Aucune correspondance'}">
             {@html noSvg}
         </span>
-        <span class="tag is-hoverable pl-4 pr-5 py-4" class:is-link={isSelectedByUser}
+        <span class="tag is-hoverable pl-3 pr-4 py-4" class:is-link={isSelectedByUser}
               on:click={() => categorize(5)} on:keyup={null}
               title="{appLang === 'en' ? 'User match' : 'Correspondance utilisateur'}">
             {@html userSvg}
