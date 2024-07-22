@@ -1,22 +1,77 @@
 <script>
     import { getContext } from 'svelte';
-    import { appLang } from "../../constants";
-    import { manifestToMirador, refToIIIF } from "../../utils.js";
+    import { similarityStore } from "./similarityStore.js";
+    import { appLang, csrfToken } from "../../constants";
+    import { manifestToMirador, refToIIIF, showMessage } from "../../utils.js";
+
     export let qImg;
+    let sImg = "";
     const [wit, digit, canvas, xyhw] = qImg.split('.')[0].split('_');
     const manifest = getContext('manifest');
+    const baseUrl = `${window.location.origin}${window.location.pathname}`;
 
-    function addMatch() {
-        console.log('Add match');
-        // get input value
-        // check if value is correctly formatted
+    function check_region_ref(region_ref) {
+        region_ref = region_ref.replace('.jpg', '');
+        const region_ref_regex = /^wit\d+_[a-zA-Z]{3}\d+_\d+_\d+,\d+,\d+,\d+$/;
+        return region_ref_regex.test(region_ref);
+    }
 
+    async function addMatch() {
+        if (!sImg || !check_region_ref(sImg)) {
+            await showMessage(
+                appLang === "en" ?
+                    "Please insert a valid region reference to add a new match" :
+                    "Veuillez insérer une référence de région valide pour ajouter une nouvelle correspondance",
+                "Error");
+            return;
+        }
 
-        // TODO send request to add region pair record
-        // TODO django side, check if region ref is correctly formatted + correspond to existing wit+digit
-        // TODO django side, check if region pair already exists
-        // TODO django side, check if digit has already regions, if not create one?
-        // TODO django side, create region pair record (if 2 images has been paired, add user id to category x)
+        try {
+            const response = await fetch(`${baseUrl}add-region-pair`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    'q_img': qImg.replace('.jpg', ''),
+                    's_img': sImg,
+                })
+            });
+
+            if (!response.ok) {
+                console.error(`Error: Network response was not ok`);
+                await showMessage(
+                    appLang === "en" ?
+                        "Problem with network, match was not added" :
+                        "Problème de réseau, la correspondance n'a pas été ajoutée",
+                    "Error"
+                );
+            }
+
+            const data = await response.json();
+            if (data.hasOwnProperty('error')){
+                await showMessage(
+                    appLang === "en" ?
+                        `Request was unsuccessful, match was not added:\n${error}` :
+                        `La requête n'a pas abouti, la correspondance n'a pas été ajoutée :\n${error}`,
+                    "Error"
+                );
+            }
+            const regions = data.s_regions
+            similarityStore.addComparedRegions(regions)
+            similarityStore.select(regions)
+
+        } catch (error) {
+            console.error('Error:', error);
+            await showMessage(
+                appLang === "en" ?
+                    `An error has occurred, match was not added:\n${error}` :
+                    `Une erreur s'est produite, la correspondance n'a pas été ajoutée :\n${error}`,
+                "Error"
+            );
+        }
+
         // TODO if successful add region to comparedRegions (if not already the case)
         // TODO if successful select region in selectedRegions (if not already the case)
         // TODO if successful display new similar regions
@@ -24,7 +79,7 @@
     }
 
     function noMatch() {
-        // TODO
+        // TODO add message
         console.log('No match');
     }
 </script>
@@ -43,16 +98,16 @@
 
             <div class="new-similarity control pt-2 is-center">
                 <div class="tags has-addons" style="flex-wrap: nowrap">
-                    <input class="input is-small tag" type="text"
+                    <input bind:value={sImg} class="input is-small tag" type="text"
                            placeholder="{appLang === 'en' ? 'Add new match' : 'Ajouter une correpondance'}"
                     />
-                    <button class="button is-small tag is-link is-center">
+                    <button class="button is-small tag is-link is-center" on:click={addMatch}>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
                             <path fill="currentColor" d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 144L48 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l144 0 0 144c0 17.7 14.3 32 32 32s32-14.3 32-32l0-144 144 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-144 0 0-144z"/>
                         </svg>
                     </button>
                 </div>
-                <button class="button is-small tag is-link is-center m-0" on:click={noMatch}
+                <button class="button is-small tag is-danger is-center m-0" on:click={noMatch}
                         title="{appLang === 'en' ? 'No match for this region' : 'Aucune correspondance'}">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
                         <path fill="currentColor" d="M376.6 84.5c11.3-13.6 9.5-33.8-4.1-45.1s-33.8-9.5-45.1 4.1L192 206 56.6 43.5C45.3 29.9 25.1 28.1 11.5 39.4S-3.9 70.9 7.4 84.5L150.3 256 7.4 427.5c-11.3 13.6-9.5 33.8 4.1 45.1s33.8 9.5 45.1-4.1L192 306 327.4 468.5c11.3 13.6 31.5 15.4 45.1 4.1s15.4-31.5 4.1-45.1L233.7 256 376.6 84.5z"/>

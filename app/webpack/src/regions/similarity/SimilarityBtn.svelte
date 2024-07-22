@@ -25,7 +25,7 @@
         {#if isSelf(regionId)}
             <span class="tag is-dark">current</span>
         {/if}
-        <span class="tag is-small {$isSelected(regionId) ? 'is-link' : 'is-contrasted'}">
+        <span class="tag is-small {$isSelected(regionId) ? 'is-selected' : 'is-contrasted'}">
             {region.title}
         </span>
     </div>

@@ -1,14 +1,17 @@
 import json
+import re
 
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
+from django.core.exceptions import ValidationError
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 
 from app.config.settings import APP_LANG
 from app.similarity.const import SCORES_PATH
 from app.similarity.models.region_pair import RegionPair
+from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import sort_key
@@ -21,6 +24,7 @@ from app.similarity.utils import (
     get_region_pairs_with,
     get_compared_regions_ids,
     get_regions_q_imgs,
+    validate_image_ref,
 )
 from app.webapp.views import is_superuser, check_ref
 
@@ -96,6 +100,7 @@ def receive_similarity(request):
 
 @user_passes_test(is_superuser)
 def delete_all_regions_pairs(request):
+    # NOTE deactivated, only for dev purposes
     RegionPair.objects.all().delete()
     return JsonResponse({"message": "All region pairs deleted"})
 
@@ -177,7 +182,7 @@ def get_similar_regions(request, wid, rid=None):
 
 def get_compared_regions(request, wid, rid=None):
     """
-    Return the id and metadata of the Regions that have a score file of similarity
+    Return the id and metadata of the Regions that have a RegionPair record
     in common with the Regions whose id is passed in the URL
     """
     if rid is not None:
@@ -204,7 +209,87 @@ def get_compared_regions(request, wid, rid=None):
         )
 
 
+def get_regions(img_1, img_2, wid, rid):
+    def get_digit_id(img):
+        return int(re.findall(r"\d+", img)[1])
+
+    def get_regions_from_digit(digit_id):
+        digit = get_object_or_404(Digitization, id=digit_id)
+        regions = list(digit.get_regions())
+        if not regions:
+            regions = Regions.objects.create(
+                digitization=digit,
+                model="manual",
+            )
+        else:
+            regions = regions[0]
+        return regions.id  # Return the id directly, not regions[0].id
+
+    if img_1.startswith(f"wit{wid}"):
+        witness = get_object_or_404(Witness, id=wid)
+        regions_1 = rid or witness.get_regions()[0].id
+        digit_2 = get_digit_id(img_2)
+        regions_2 = get_regions_from_digit(digit_2)
+    else:
+        digit_1 = get_digit_id(img_1)
+        regions_1 = get_regions_from_digit(digit_1)
+        witness = get_object_or_404(Witness, id=wid)
+        regions_2 = rid or witness.get_regions()[0].id
+
+    return regions_1, regions_2
+
+
+def add_region_pair(request, wid, rid=None):
+    try:
+        data = json.loads(request.body)
+        q_img, s_img = data.get("q_img"), data.get("s_img")
+
+        if not (validate_image_ref(q_img) and validate_image_ref(s_img)):
+            raise ValidationError("Invalid image string format")
+
+        img_1, img_2 = sorted([q_img, s_img], key=sort_key)
+
+        regions_1, regions_2 = get_regions(img_1, img_2, wid, rid)
+
+        region_pair, created = RegionPair.objects.get_or_create(
+            img_1=f"{img_1}.jpg",
+            img_2=f"{img_2}.jpg",
+            defaults={
+                # if the pair doesn't exist, create it with those values
+                "regions_id_1": regions_1,
+                "regions_id_2": regions_2,
+                "is_manual": True,
+            },
+        )
+
+        if not created:
+            if request.user.id not in region_pair.category_x:
+                region_pair.category_x.append(request.user.id)
+                region_pair.save()
+
+        s_regions = get_object_or_404(
+            Regions, id=regions_2 if q_img == img_1 else regions_1
+        )
+        return JsonResponse(
+            {
+                "success": "Region pair added successfully",
+                "s_regions": s_regions.to_json(),
+                "created": created,
+            }
+        )
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except ValidationError as e:
+        return JsonResponse({"error": str(e)}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
 def get_query_regions(request, wid, rid=None):
+    """
+    returns the list of region images associated to a query Regions
+    """
     if rid is not None:
         q_regions = [get_object_or_404(Regions, id=rid)]
     else:

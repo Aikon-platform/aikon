@@ -1,4 +1,3 @@
-import {csrfToken} from '../../constants';
 import {derived, get, writable} from 'svelte/store';
 
 function createSimilarityStore() {
@@ -78,6 +77,12 @@ function createSimilarityStore() {
         }
     }
 
+    function addComparedRegions(region) {
+        comparedRegions.update(regions => {
+            return {...regions, [region.ref]: region};
+        });
+    }
+
     function store(selection) {
         localStorage.setItem("selectedRegions", JSON.stringify(selection));
     }
@@ -124,9 +129,10 @@ function createSimilarityStore() {
         handlePageUpdate,
         unselect,
         select,
+        addComparedRegions,
         isSelected,
         pageLength
     };
 }
 
-export const similarityStore = createSimilarityStore();
+export const similarityStore= createSimilarityStore();

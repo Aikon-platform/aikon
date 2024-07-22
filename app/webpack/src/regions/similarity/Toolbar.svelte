@@ -108,6 +108,7 @@
     .tool-icon {
         background: none;
         border: none;
+        color: white;
     }
 
     .label-container {

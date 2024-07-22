@@ -61,30 +61,18 @@
                             {/if}
                             {#if item.buttons.includes("regions")}
                                 <a href="{item.url}regions/" class="button is-small is-rounded is-link px-2"
-                                   title="{appLang === 'en' ? 'Show extracted regions' : 'Afficher les zones d\'images'}">
+                                   title="{appLang === 'en' ? 'View image regions' : 'Afficher les régions d\'images'}">
                                     <span class="iconify" data-icon="entypo:documents"/>
+                                    <span class="ml-2">
+                                        {appLang === 'en' ? 'Show regions' : 'Afficher les régions'}
+                                    </span>
                                 </a>
                             {/if}
-
-                            {#if item.buttons.includes("similarity")}
-                                <a href="{item.url}similarity/" class="button is-small is-rounded is-link px-2"
-                                   title="{appLang === 'en' ? 'Show similarity' : 'Afficher les similarités'}">
-                                    <span class="iconify" data-icon="octicon:mirror-16"></span>
-                                </a>
-                            {/if}
-
-                            {#if item.buttons.includes("vectorization")}
-                                <a href="{item.url}vectorization/" class="button is-small is-rounded is-link px-2"
-                                   title="{appLang === 'en' ? 'Show vectorizations' : 'Afficher les vectorisations'}">
-                                    <span class="iconify" data-icon="arcticons:geogebra-geometry"></span>
-                                </a>
-                            {/if}
-
                         </p>
                     {/if}
                 </div>
                 <div class="media-right">
-                    <button class="button {itemSelected ? 'is-inverted' : ''}" on:click={() => selectionStore.toggle(item)}>
+                    <button class="button" class:is-inverted={itemSelected} on:click={() => selectionStore.toggle(item)}>
                         {#if appLang === 'en'}
                             {itemSelected ? 'Remove from' : 'Add to'} selection
                         {:else}

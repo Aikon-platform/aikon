@@ -263,16 +263,22 @@ td.is-fullwidth {
 :root {
     --contrasted: #f5f0f0;
     --accent: hsl(0deg 0% 0% / 5%);
+    --selected: hsl(234deg 100% 96%);
+    --selected-text: hsl(233deg 100% 33%);
 }
 
 [data-theme="light"] {
     --contrasted: #f3eff1;
     --accent: hsl(0deg 0% 0% / 5%);
+    --selected: hsl(234deg 100% 96%);
+    --selected-text: hsl(233deg 100% 33%);
 }
 
 [data-theme="dark"] {
     --contrasted: #252424;
     --accent: hsla(0, 0%, 100%, 0.05);
+    --selected: hsl(234deg 100% 96%);
+    --selected-text: hsl(233deg 100% 33%);
 }
 
 .is-contrasted {
@@ -312,4 +318,9 @@ td.is-fullwidth {
 
 .hoverable:hover::after {
     opacity: 1;
+}
+
+.is-selected {
+    background-color: var(--selected);
+    color: var(--selected-text);
 }

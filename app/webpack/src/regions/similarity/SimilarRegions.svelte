@@ -40,12 +40,6 @@
         {appLang === 'en' ? 'Retrieving similar regions...' : 'Récupération des régions similaires...'}
     </div>
 {:then simImgs}
-    <!--TODO update on page change-->
-    <!--TODO update with manually added Regions-->
-    <!--TODO make querying by qImg instead of page-->
-    <!--{#each Object.entries($pageSImgs) as [qImg, [score, _, sImg, qRegions, sRegions, category, users, isManual]]}-->
-    <!--    <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual}/>-->
-    <!--{/each}-->
     {#each simImgs as [score, _, sImg, qRegions, sRegions, category, users, isManual]}
         <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual}/>
     {:else}

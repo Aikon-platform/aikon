@@ -1,4 +1,6 @@
 import os
+import re
+
 import requests
 
 from pathlib import Path
@@ -178,6 +180,12 @@ def get_best_pairs(
     best_pairs += pairs[:topk]
 
     return best_pairs
+
+
+def validate_image_ref(img_string):
+    # wit<id>_<digit><id>_<canvas_nb>_<x>,<y>,<h>,<w>
+    pattern = r"^wit\d+_[a-zA-Z]{3}\d+_\d+_\d+,\d+,\d+,\d+$"
+    return bool(re.match(pattern, img_string))
 
 
 def doc_pairs(doc_ids: list):

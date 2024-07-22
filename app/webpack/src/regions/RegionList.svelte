@@ -1,4 +1,5 @@
 <script>
+    import { fade } from 'svelte/transition';
     import { setContext } from 'svelte';
     import { refToIIIF } from "../utils.js";
     import { selectionStore } from '../selection/selectionStore.js';
@@ -75,9 +76,11 @@
         <div class="cell is-right is-middle">
             <RegionsBtn {baseUrl} {currentRegionId}/>
         </div>
-        <div class="cell">
-            <ActionButtons/>
-        </div>
+        {#if ["all", "page"].includes(currentLayout)}
+            <div class="cell" transition:fade={{ duration: 500 }}>
+                <ActionButtons/>
+            </div>
+        {/if}
     </div>
 
     <div class="tabs is-centered">

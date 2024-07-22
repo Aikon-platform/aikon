@@ -44,7 +44,17 @@ urlpatterns = [
     path(
         f"witness/<int:wid>/regions/similar-regions",
         get_similar_regions,
-        name="witness-similar-regions",
+        name="witness-similar-region",
+    ),
+    path(
+        f"witness/<int:wid>/regions/<int:rid>/add-region-pair",
+        add_region_pair,
+        name="add-region-pair",
+    ),
+    path(
+        f"witness/<int:wid>/regions/add-region-pair",
+        add_region_pair,
+        name="add-witness-region-pair",
     ),
     path(f"save-category", save_category, name="save-category"),
     path(
