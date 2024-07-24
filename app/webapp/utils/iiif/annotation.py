@@ -16,6 +16,7 @@ from app.config.settings import (
     SAS_APP_URL,
     APP_NAME,
     APP_URL,
+    ADDITIONAL_MODULES,
 )
 from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, flatten_dict
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
@@ -525,6 +526,10 @@ def get_regions_annotations(
 
 
 def check_indexation(regions: Regions, reindex=False):
+    """
+    Check if the number of generated annotations is the same as the number of indexed annotations
+    If not, unindex all annotations and (if reindex=True) reindex the regions
+    """
     lines = get_txt_regions(regions)
 
     if not lines:
@@ -612,11 +617,6 @@ def get_images_annotations(regions: Regions):
 
 
 def unindex_regions(regions_ref, manifest_url):
-    # DO NOT WORK
-    # manifests = get_indexed_manifests()
-    # if manifests and manifest_url in manifests:
-    #     unindex_manifest(regions)
-
     index_manifest_in_sas(manifest_url)
     sas_annotation_id = 0
     try:
@@ -635,6 +635,11 @@ def unindex_regions(regions_ref, manifest_url):
 def delete_regions(regions: Regions):
     manifest_url = regions.gen_manifest_url(version=MANIFEST_V2)
     regions_ref = regions.get_ref()
+
+    if "similarity" in ADDITIONAL_MODULES:
+        from app.similarity.utils import delete_pairs_with_regions
+
+        delete_pairs_with_regions(regions.id)
 
     try:
         # Delete the regions record in the database

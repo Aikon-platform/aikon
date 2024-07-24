@@ -24,7 +24,8 @@ from app.similarity.utils import (
     get_region_pairs_with,
     get_compared_regions_ids,
     get_regions_q_imgs,
-    validate_image_ref,
+    validate_img_ref,
+    get_matched_regions,
 )
 from app.webapp.views import is_superuser, check_ref
 
@@ -126,58 +127,58 @@ def index_regions_similarity(request, regions_ref=None):
     )
 
 
-def get_similar_regions(request, wid, rid=None):
+def get_similar_images(request, wid, rid=None):
     """
     Return the best region images that are similar to the query region image
     whose id is passed in the POST parameters
     """
-    if request.method == "POST":
-        if rid is not None:
-            q_regions = [get_object_or_404(Regions, id=rid)]
-        else:
-            witness = get_object_or_404(Witness, id=wid)
-            q_regions = witness.get_regions()
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
 
+    if rid is not None:
+        q_regions = [get_object_or_404(Regions, id=rid)]
+    else:
+        witness = get_object_or_404(Witness, id=wid)
+        q_regions = witness.get_regions()
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
         try:
-            data = json.loads(request.body.decode("utf-8"))
-            try:
-                regions_ids = list(data.get("regionsIds", []))
-                q_img = str(data.get("qImg", ""))
-                topk = int(data.get("topk", 10))
-                excluded_cat = list(data.get("excludedCategories", [4]))
-            except ValueError:
-                return JsonResponse({"error": "Invalid JSON data"}, status=400)
-
-            if len(regions_ids) == 0:
-                # selection is empty
-                return JsonResponse({})
-
-            if q_img == "":
-                # no images to display
-                return JsonResponse({})
-
-            topk = min(max(topk, 1), 20)
-
-            pairs = []
-            for q_r in q_regions:
-                pairs += get_region_pairs_with(
-                    q_img, include_self=q_r.id in regions_ids
-                )
-
-            return JsonResponse(
-                get_best_pairs(
-                    q_img,
-                    pairs,
-                    excluded_categories=excluded_cat,
-                    topk=topk,
-                    user_id=request.user.id,
-                ),
-                safe=False,
-            )
-        except json.JSONDecodeError:
+            regions_ids = list(data.get("regionsIds", []))
+            q_img = str(data.get("qImg", ""))
+            topk = int(data.get("topk", 10))
+            excluded_cat = list(data.get("excludedCategories", [4]))
+        except ValueError:
             return JsonResponse({"error": "Invalid JSON data"}, status=400)
 
-    return JsonResponse({"error": "Invalid request method"}, status=400)
+        if len(regions_ids) == 0:
+            # selection is empty
+            return JsonResponse({})
+
+        if q_img == "":
+            # no images to display
+            return JsonResponse({})
+
+        topk = min(max(topk, 1), 20)
+
+        pairs = []
+        for q_r in q_regions:
+            pairs += get_region_pairs_with(
+                q_img, regions_ids, include_self=q_r.id in regions_ids
+            )
+
+        return JsonResponse(
+            get_best_pairs(
+                q_img,
+                pairs,
+                excluded_categories=excluded_cat,
+                topk=topk,
+                user_id=request.user.id,
+            ),
+            safe=False,
+        )
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
 
 
 def get_compared_regions(request, wid, rid=None):
@@ -197,10 +198,8 @@ def get_compared_regions(request, wid, rid=None):
         for q_r in q_regions:
             q_ref = q_r.get_ref()
             compared_regions[q_ref] = q_r.to_json()
-            sim_regions += [
-                Regions.objects.get(id=region_id)
-                for region_id in get_compared_regions_ids(q_r.id)
-            ]
+            region_ids = get_compared_regions_ids(q_r.id)
+            sim_regions = list(Regions.objects.filter(id__in=region_ids))
         compared_regions.update({r.get_ref(): r.to_json() for r in sim_regions})
         return JsonResponse(compared_regions)
     except Exception as e:
@@ -240,11 +239,14 @@ def get_regions(img_1, img_2, wid, rid):
 
 
 def add_region_pair(request, wid, rid=None):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
     try:
         data = json.loads(request.body)
         q_img, s_img = data.get("q_img"), data.get("s_img")
 
-        if not (validate_image_ref(q_img) and validate_image_ref(s_img)):
+        if not (validate_img_ref(q_img) and validate_img_ref(s_img)):
             raise ValidationError("Invalid image string format")
 
         img_1, img_2 = sorted([q_img, s_img], key=sort_key)
@@ -286,7 +288,29 @@ def add_region_pair(request, wid, rid=None):
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
-def get_query_regions(request, wid, rid=None):
+def no_match(request, wid, rid=None):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        q_img = data.get("q_img")
+        s_regions = data.get("s_regions")
+        pairs = get_matched_regions(q_img, s_regions)
+        for pair in pairs:
+            pair.category = 4
+            # TODO remove pair once and for all?
+            pair.save()
+
+        return JsonResponse({"success": "Updated matches"})
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
+def get_query_images(request, wid, rid=None):
     """
     returns the list of region images associated to a query Regions
     """

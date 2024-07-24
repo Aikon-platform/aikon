@@ -14,7 +14,7 @@
         }
 
         const response = await fetch(
-            `${baseUrl}similar-regions`,
+            `${baseUrl}similar-images`,
             {
                 method: "POST",
                 body: JSON.stringify({

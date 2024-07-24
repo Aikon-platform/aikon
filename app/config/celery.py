@@ -10,13 +10,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
-DEBUG = ENV.bool("DEBUG")
+DEBUG = ENV.bool("DEBUG", default=True)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.config.settings")
 
-redis_prefix = "redis://" if DEBUG else f"redis://:{ENV('REDIS_PASSWORD')}@"
+redis_prefix = "redis://" if DEBUG else f"redis://:{ENV.str('REDIS_PASSWORD', '')}@"
 
-ADDITIONAL_MODULES = ENV.list("ADDITIONAL_MODULES")
+ADDITIONAL_MODULES = ENV.list("ADDITIONAL_MODULES", default=[])
 
 imported_tasks = ("app.webapp.tasks",)
 for module in ADDITIONAL_MODULES:

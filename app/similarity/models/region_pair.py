@@ -69,7 +69,9 @@ class RegionPair(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.img_1} | {self.img_2}"
+        return (
+            f"{self.img_1} (#{self.regions_id_1}) | {self.img_2} (#{self.regions_id_2})"
+        )
 
     img_1 = models.CharField(max_length=150)
     img_2 = models.CharField(max_length=150)

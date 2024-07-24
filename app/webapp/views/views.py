@@ -21,6 +21,9 @@ from app.config.settings import (
     ENV,
     GEONAMES_USER,
     APP_LANG,
+    DEBUG,
+    SAS_USERNAME,
+    SAS_PASSWORD,
 )
 from app.webapp.models.edition import Edition
 from app.webapp.models.language import Language
@@ -300,8 +303,8 @@ def populate_annotation(request, regions_id):
     """
     Populate annotation store from IIIF Annotation List
     """
-    if not ENV("DEBUG"):
-        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+    if not DEBUG:
+        credentials(f"{SAS_APP_URL}/", SAS_USERNAME, SAS_PASSWORD)
 
     regions = get_object_or_404(Regions, pk=regions_id)
     return HttpResponse(status=200 if index_regions(regions) else 500)
@@ -336,8 +339,8 @@ def show_regions(request, regions_ref):
         #     create_empty_regions(regions)
         return JsonResponse(regions)
 
-    if not ENV("DEBUG"):
-        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+    if not DEBUG:
+        credentials(f"{SAS_APP_URL}/", SAS_USERNAME, SAS_PASSWORD)
 
     bboxes, canvas_annotations = formatted_annotations(regions)
 
@@ -368,8 +371,8 @@ def show_all_regions(request, regions_ref):
     if not passed:
         return JsonResponse(regions)
 
-    if not ENV("DEBUG"):
-        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+    if not DEBUG:
+        credentials(f"{SAS_APP_URL}/", SAS_USERNAME, SAS_PASSWORD)
 
     # _, all_annotations = formatted_annotations(regions)
     # all_regions = [
@@ -406,8 +409,8 @@ def export_all_regions(request, regions_ref):
     if not passed:
         return JsonResponse(regions)
 
-    if not ENV("DEBUG"):
-        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+    if not DEBUG:
+        credentials(f"{SAS_APP_URL}/", SAS_USERNAME, SAS_PASSWORD)
 
     # _, all_annotations = formatted_annotations(regions)
     # all_regions = [

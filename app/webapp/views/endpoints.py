@@ -137,8 +137,9 @@ def delete_regions(request, rid):
     if request.method == "DELETE":
         regions = get_object_or_404(Regions, id=rid)
         try:
+            # TODO here do not unindex the manifest because retrieve the json content after deletion
             delete_annotations.delay(
-                regions.gen_manifest_url(version=MANIFEST_V2), regions.get_ref()
+                regions.get_ref(), regions.gen_manifest_url(version=MANIFEST_V2)
             )
             try:
                 # Delete the regions record in the database

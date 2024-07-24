@@ -27,7 +27,7 @@ function createSimilarityStore() {
         );
 
         const imgs = await fetch(
-            `${baseUrl}query-regions`,
+            `${baseUrl}query-images`,
         ).then(response => response.json()
         ).then(data => {
             if (data.length === 0 || !data) {

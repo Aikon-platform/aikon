@@ -27,23 +27,23 @@ urlpatterns = [
         name="witness-compared-regions",
     ),
     path(
-        f"witness/<int:wid>/regions/<int:rid>/query-regions",
-        get_query_regions,
-        name="query-regions",
+        f"witness/<int:wid>/regions/<int:rid>/query-images",
+        get_query_images,
+        name="query-images",
     ),
     path(
-        f"witness/<int:wid>/regions/query-regions",
-        get_query_regions,
-        name="witness-query-regions",
+        f"witness/<int:wid>/regions/query-images",
+        get_query_images,
+        name="witness-query-images",
     ),
     path(
-        f"witness/<int:wid>/regions/<int:rid>/similar-regions",
-        get_similar_regions,
-        name="similar-regions",
+        f"witness/<int:wid>/regions/<int:rid>/similar-images",
+        get_similar_images,
+        name="similar-images",
     ),
     path(
-        f"witness/<int:wid>/regions/similar-regions",
-        get_similar_regions,
+        f"witness/<int:wid>/regions/similar-images",
+        get_similar_images,
         name="witness-similar-region",
     ),
     path(
@@ -55,6 +55,16 @@ urlpatterns = [
         f"witness/<int:wid>/regions/add-region-pair",
         add_region_pair,
         name="add-witness-region-pair",
+    ),
+    path(
+        f"witness/<int:wid>/regions/<int:rid>/no-match",
+        no_match,
+        name="no-match",
+    ),
+    path(
+        f"witness/<int:wid>/regions/no-match",
+        no_match,
+        name="witness-no-match",
     ),
     path(f"save-category", save_category, name="save-category"),
     path(

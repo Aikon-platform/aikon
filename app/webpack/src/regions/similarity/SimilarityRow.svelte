@@ -1,6 +1,8 @@
 <script>
     import { getContext } from 'svelte';
+    import { fade } from 'svelte/transition';
     import { similarityStore } from "./similarityStore.js";
+    const { selectedRegions } = similarityStore;
     import { appLang, csrfToken } from "../../constants";
     import { manifestToMirador, refToIIIF, showMessage } from "../../utils.js";
 
@@ -9,6 +11,9 @@
     const [wit, digit, canvas, xyhw] = qImg.split('.')[0].split('_');
     const manifest = getContext('manifest');
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
+    const error_name = appLang === "en" ? "Error" : "Erreur";
+
+    $: sLen = Object.values($selectedRegions).length;
 
     function check_region_ref(region_ref) {
         region_ref = region_ref.replace('.jpg', '');
@@ -45,20 +50,21 @@
                     appLang === "en" ?
                         "Problem with network, match was not added" :
                         "Problème de réseau, la correspondance n'a pas été ajoutée",
-                    "Error"
+                    error_name
                 );
             }
 
             const data = await response.json();
-            if (data.hasOwnProperty('error')){
+            const regions = data.s_regions
+            if (data.hasOwnProperty('error') && regions !== undefined){
                 await showMessage(
                     appLang === "en" ?
-                        `Request was unsuccessful, match was not added:\n${error}` :
-                        `La requête n'a pas abouti, la correspondance n'a pas été ajoutée :\n${error}`,
-                    "Error"
+                        `Request was unsuccessful, match was not added:\n${data.error}` :
+                        `La requête n'a pas abouti, la correspondance n'a pas été ajoutée :\n${data.error}`,
+                    error_name
                 );
             }
-            const regions = data.s_regions
+
             similarityStore.addComparedRegions(regions)
             similarityStore.select(regions)
 
@@ -68,19 +74,57 @@
                 appLang === "en" ?
                     `An error has occurred, match was not added:\n${error}` :
                     `Une erreur s'est produite, la correspondance n'a pas été ajoutée :\n${error}`,
-                "Error"
+                error_name
+            );
+        }
+    }
+
+    async function noMatch() {
+        const regions = Object.values($selectedRegions)[0];
+        const confirmed = await showMessage(
+            appLang === "en" ?
+                `Do you confirm this region does not have any match in ${regions.title}?` :
+                `Confirmez-vous que cette région n'a pas de correspondance dans ${regions.title} ?`,
+            appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
+            true
+        );
+
+        if (!confirmed) {
+            return;
+        }
+        try {
+            const response = await fetch(`${baseUrl}no-match`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    'q_img': qImg,
+                    's_regions': regions.id,
+                })
+            });
+
+            if (!response.ok) {
+                console.error(`Error: Network response was not ok`);
+                await showMessage(
+                    appLang === "en" ? "Problem with network" : "Problème de réseau",
+                    error_name
+                );
+            }
+
+            similarityStore.select(regions)
+
+        } catch (error) {
+            console.error('Error:', error);
+            await showMessage(
+                appLang === "en" ?
+                    `An error has occurred, request was unsuccessful:\n${error}` :
+                    `Une erreur s'est produite, la requête n'a pas abouti :\n${error}`,
+                error_name
             );
         }
 
-        // TODO if successful add region to comparedRegions (if not already the case)
-        // TODO if successful select region in selectedRegions (if not already the case)
-        // TODO if successful display new similar regions
-        // TODO if unsuccessful display error message + do not show new similar regions
-    }
-
-    function noMatch() {
-        // TODO add message
-        console.log('No match');
     }
 </script>
 
@@ -107,10 +151,11 @@
                         </svg>
                     </button>
                 </div>
-                <button class="button is-small tag is-danger is-center m-0" on:click={noMatch}
-                        title="{appLang === 'en' ? 'No match for this region' : 'Aucune correspondance'}">
+                <button id="no-match" class="button is-small tag is-danger is-center m-0 {sLen === 1 ? 'visible' : ''}"
+                        on:click={noMatch} transition:fade={{ duration: 500 }}
+                        title="{appLang === 'en' ? 'No match for this region in this witness' : 'Aucune correspondance de cette région pour ce témoin'}">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
-                        <path fill="currentColor" d="M376.6 84.5c11.3-13.6 9.5-33.8-4.1-45.1s-33.8-9.5-45.1 4.1L192 206 56.6 43.5C45.3 29.9 25.1 28.1 11.5 39.4S-3.9 70.9 7.4 84.5L150.3 256 7.4 427.5c-11.3 13.6-9.5 33.8 4.1 45.1s33.8 9.5 45.1-4.1L192 306 327.4 468.5c11.3 13.6 31.5 15.4 45.1 4.1s15.4-31.5 4.1-45.1L233.7 256 376.6 84.5z"/>
+                        <path fill="white" d="M376.6 84.5c11.3-13.6 9.5-33.8-4.1-45.1s-33.8-9.5-45.1 4.1L192 206 56.6 43.5C45.3 29.9 25.1 28.1 11.5 39.4S-3.9 70.9 7.4 84.5L150.3 256 7.4 427.5c-11.3 13.6-9.5 33.8 4.1 45.1s33.8 9.5 45.1-4.1L192 306 327.4 468.5c11.3 13.6 31.5 15.4 45.1 4.1s15.4-31.5 4.1-45.1L233.7 256 376.6 84.5z"/>
                     </svg>
                 </button>
             </div>
@@ -129,5 +174,14 @@
     .new-similarity {
         display: flex;
         gap: 0.5em;
+    }
+    #no-match {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+    }
+    .visible {
+        opacity: 1 !important;
+        visibility: visible !important;
     }
 </style>

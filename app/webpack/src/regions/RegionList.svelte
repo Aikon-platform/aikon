@@ -1,6 +1,6 @@
 <script>
-    import { fade } from 'svelte/transition';
     import { setContext } from 'svelte';
+    import { fade } from 'svelte/transition';
     import { refToIIIF } from "../utils.js";
     import { selectionStore } from '../selection/selectionStore.js';
     const { selected } = selectionStore;

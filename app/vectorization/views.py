@@ -11,11 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 
-from app.config.settings import (
-    SAS_APP_URL,
-    APP_NAME,
-    ENV,
-)
+from app.config.settings import SAS_APP_URL, APP_NAME, DEBUG, SAS_USERNAME, SAS_PASSWORD
 from app.webapp.filters import jpg_to_none
 
 from app.webapp.utils.functions import (
@@ -200,8 +196,8 @@ def show_vectorization(request, regions_ref):
     if not passed:
         return JsonResponse(regions)
 
-    if not ENV("DEBUG"):
-        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+    if not DEBUG:
+        credentials(f"{SAS_APP_URL}/", SAS_USERNAME, SAS_PASSWORD)
 
     _, all_regions = formatted_annotations(regions)
     all_crops = [
@@ -236,8 +232,8 @@ def export_all_images_and_svgs(request, regions_ref):
     if not passed:
         return JsonResponse(regions)
 
-    if not ENV("DEBUG"):
-        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+    if not DEBUG:
+        credentials(f"{SAS_APP_URL}/", SAS_USERNAME, SAS_PASSWORD)
 
     urls_list = []
     path_list = []
