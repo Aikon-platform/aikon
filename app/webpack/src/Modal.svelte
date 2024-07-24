@@ -1,5 +1,5 @@
 <script>
-    export let appLang = 'en';
+    import { appLang } from './constants';
 </script>
 
 <button id="hidden-msg-btn" class="js-modal-trigger" data-target="msg-modal" hidden/>
@@ -14,7 +14,7 @@
             <button class="delete media-left" aria-label="close"></button>
         </div>
         <section id="modal-body" class="modal-card-body"></section>
-        <footer id="modal-footer" class="modal-card-foot is-center pt-1" hidden>
+        <footer id="modal-footer" class="modal-card-foot is-center pt-3" hidden>
             <div class="buttons">
                 <button id="cancel-btn" class="button is-link is-light">
                     {appLang === 'en' ? 'Cancel' : 'Annuler'}

@@ -1,6 +1,6 @@
 <script>
+    import { appLang } from '../constants';
     export let selectionLength = 0;
-    export let appLang = 'en';
 
     let previousLength = selectionLength;
     $: if (selectionLength !== previousLength) {
@@ -21,6 +21,18 @@
     }
 </script>
 
+<div class="set-container">
+    <button id="set-btn"
+            class="button px-5 py-4 is-link js-modal-trigger"
+            data-target="selection-modal">
+        <span id="btn-content">
+            <i class="fa-solid fa-book-bookmark"></i>
+            {appLang === 'en' ? 'Selection' : 'Sélection'}
+            ({selectionLength})
+        </span>
+    </button>
+</div>
+
 <style>
     .set-container {
         display: flex;
@@ -35,15 +47,3 @@
         border-radius: 0;
     }
 </style>
-
-<div class="set-container">
-    <button id="set-btn"
-            class="button px-5 py-4 is-link js-modal-trigger"
-            data-target="selection-modal">
-        <span id="btn-content">
-            <i class="fa-solid fa-book-bookmark"></i>
-            {appLang === 'en' ? 'Selection' : 'Sélection'}
-            ({selectionLength})
-        </span>
-    </button>
-</div>

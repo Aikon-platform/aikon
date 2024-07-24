@@ -16,6 +16,7 @@ from app.config.settings import (
     SAS_APP_URL,
     APP_NAME,
     APP_URL,
+    ADDITIONAL_MODULES,
 )
 from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, flatten_dict
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
@@ -46,64 +47,6 @@ def index_regions(regions: Regions):
     return True
 
 
-def get_regions_annotations(
-    regions: Regions, as_json=False, r_annos=None, min_c: int = None, max_c: int = None
-):
-    if r_annos is None:
-        r_annos = {} if as_json else []
-
-    region_ref = regions.get_ref()
-    try:
-        r = requests.get(f"{SAS_APP_URL}/search-api/{region_ref}/search")
-        annos = r.json()["resources"]
-    except Exception as e:
-        log(
-            f"[get_regions_annotations]: Failed to get annotations in SAS for Regions #{regions.id}",
-            e,
-        )
-        return r_annos
-
-    img_name = region_ref.split("_anno")[0]
-    nb_len = get_img_nb_len(img_name)
-
-    for anno in annos:
-        try:
-            canvas = anno["on"].split("/canvas/c")[1].split(".json")[0]
-            xyhw = anno["on"].split("xywh=")[1]
-            if min_c is not None and (int(canvas) < min_c or int(canvas) > max_c):
-                continue
-            if as_json:
-                if canvas not in r_annos:
-                    r_annos[canvas] = {}
-                img = f"{img_name}_{canvas.zfill(nb_len)}"
-                aid = anno["@id"].split("/")[-1]
-                r_annos[canvas][aid] = {
-                    "id": aid,
-                    "ref": f"{img}_{xyhw}",
-                    "class": "Region",
-                    "type": get_name("Regions"),
-                    "title": region_title(canvas, xyhw),
-                    "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
-                    "canvas": canvas,
-                    "xyhw": xyhw.split(","),
-                    "img": img,
-                }
-            else:
-                r_annos.append((canvas, xyhw, f"{img_name}_{canvas.zfill(nb_len)}"))
-        except Exception as e:
-            log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
-            continue
-
-    # if min_c is not None:
-    #     min_c = min_c or 1
-    #     for canvas in range(min_c, max_c):
-    #         canvas = str(canvas)
-    #         if canvas not in r_annos:
-    #             r_annos[canvas] = {"empty": {"img": f"{img_name}_{canvas.zfill(nb_len)}"}}
-
-    return r_annos
-
-
 def reindex_file(filename):
     a_ref = filename.replace(".txt", "")
     ref = parse_ref(a_ref)
@@ -127,12 +70,8 @@ def reindex_file(filename):
     return True, a_ref
 
 
-def unindex_annotation(annotation_id, remove_from_annotation_ids=False):
+def unindex_annotation(annotation_id):
     http_sas = SAS_APP_URL.replace("https", "http")
-
-    # if remove_from_annotation_ids:
-    #     id_annotation = re.search(r"_anno(\d+)", annotation_id).group(1)
-    #     # TODO remove from annotation.annotation_ids when it is only one annotation that is deleted
 
     # annotation_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}
     delete_url = (
@@ -486,18 +425,21 @@ def formatted_annotations(regions: Regions):
     return annotation_ids, canvas_annotations
 
 
-def get_manifest_annotations(regions: Regions):
+def get_manifest_annotations(regions_ref, only_ids=True):
     try:
-        response = requests.get(f"{SAS_APP_URL}/search-api/{regions.get_ref()}/search")
+        response = requests.get(f"{SAS_APP_URL}/search-api/{regions_ref}/search")
         annotations = response.json()
 
         if response.status_code != 200:
             log(
-                f"[get_manifest_annotations] Failed to get annotations from SAS: {response.status_code}"
+                f"[get_manifest_annotations] Failed to get annotations from SAS for {regions_ref}: {response.status_code}"
             )
             return []
     except requests.exceptions.RequestException as e:
-        log(f"[get_manifest_annotations] Failed to retrieve annotations", e)
+        log(
+            f"[get_manifest_annotations] Failed to retrieve annotations for {regions_ref}",
+            e,
+        )
         return []
 
     if "resources" not in annotations or len(annotations["resources"]) == 0:
@@ -508,13 +450,82 @@ def get_manifest_annotations(regions: Regions):
             annotation["@id"] for annotation in annotations["resources"]
         ]
     except Exception as e:
-        log(f"[get_manifest_annotations] Failed to parse annotations", e)
+        log(
+            f"[get_manifest_annotations] Failed to parse annotations for {regions_ref}",
+            e,
+        )
         return []
 
-    return manifest_annotations
+    return manifest_annotations if only_ids else annotations["resources"]
+
+
+def get_regions_annotations(
+    regions: Regions, as_json=False, r_annos=None, min_c: int = None, max_c: int = None
+):
+    if r_annos is None:
+        r_annos = {} if as_json else []
+
+    # region_ref = regions.get_ref()
+    # try:
+    #     r = requests.get(f"{SAS_APP_URL}/search-api/{region_ref}/search")
+    #     annos = r.json()["resources"]
+    # except Exception as e:
+    #     log(
+    #         f"[get_regions_annotations]: Failed to get annotations in SAS for Regions #{regions.id}",
+    #         e,
+    #     )
+    #     return r_annos
+    regions_ref = regions.get_ref()
+    annos = get_manifest_annotations(regions_ref, False)
+    if len(annos) == 0:
+        return r_annos
+
+    img_name = regions_ref.split("_anno")[0]
+    nb_len = get_img_nb_len(img_name)
+
+    for anno in annos:
+        try:
+            canvas = anno["on"].split("/canvas/c")[1].split(".json")[0]
+            xyhw = anno["on"].split("xywh=")[1]
+            if min_c is not None and (int(canvas) < min_c or int(canvas) > max_c):
+                continue
+            if as_json:
+                if canvas not in r_annos:
+                    r_annos[canvas] = {}
+                img = f"{img_name}_{canvas.zfill(nb_len)}"
+                aid = anno["@id"].split("/")[-1]
+                r_annos[canvas][aid] = {
+                    "id": aid,
+                    "ref": f"{img}_{xyhw}",
+                    "class": "Region",
+                    "type": get_name("Regions"),
+                    "title": region_title(canvas, xyhw),
+                    "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
+                    "canvas": canvas,
+                    "xyhw": xyhw.split(","),
+                    "img": img,
+                }
+            else:
+                r_annos.append((canvas, xyhw, f"{img_name}_{canvas.zfill(nb_len)}"))
+        except Exception as e:
+            log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
+            continue
+
+    # if min_c is not None:
+    #     min_c = min_c or 1
+    #     for canvas in range(min_c, max_c):
+    #         canvas = str(canvas)
+    #         if canvas not in r_annos:
+    #             r_annos[canvas] = {"empty": {"img": f"{img_name}_{canvas.zfill(nb_len)}"}}
+
+    return r_annos
 
 
 def check_indexation(regions: Regions, reindex=False):
+    """
+    Check if the number of generated annotations is the same as the number of indexed annotations
+    If not, unindex all annotations and (if reindex=True) reindex the regions
+    """
     lines = get_txt_regions(regions)
 
     if not lines:
@@ -589,11 +600,23 @@ def get_images_annotations(regions: Regions):
     return imgs
 
 
-def delete_regions(regions: Regions):
-    index_manifest_in_sas(regions.gen_manifest_url(version=MANIFEST_V2))
+# def unindex_manifest(regions: Regions):
+#     # DO NOT WORK
+#     response = requests.delete(f"{SAS_APP_URL}/manifests/{regions.get_ref()}")
+#     if response.status_code != 200:
+#         log(
+#             f"[unindex_manifest] Failed to un-index manifest for Regions #{regions.id}. "
+#             f"Status code: {response.status_code} / {response.text}"
+#         )
+#         return False
+#     return True
+
+
+def unindex_regions(regions_ref, manifest_url):
+    index_manifest_in_sas(manifest_url)
     sas_annotation_id = 0
     try:
-        for sas_annotation in get_manifest_annotations(regions):
+        for sas_annotation in get_manifest_annotations(regions_ref):
             sas_annotation_id = sas_annotation.split("/")[-1]
             unindex_annotation(sas_annotation_id)
     except Exception as e:
@@ -602,6 +625,18 @@ def delete_regions(regions: Regions):
         )
         return False
 
+    return True
+
+
+def delete_regions(regions: Regions):
+    manifest_url = regions.gen_manifest_url(version=MANIFEST_V2)
+    regions_ref = regions.get_ref()
+
+    if "similarity" in ADDITIONAL_MODULES:
+        from app.similarity.utils import delete_pairs_with_regions
+
+        delete_pairs_with_regions(regions.id)
+
     try:
         # Delete the regions record in the database
         regions.delete()
@@ -609,7 +644,8 @@ def delete_regions(regions: Regions):
         log(f"[delete_regions] Failed to delete regions record #{regions.id}", e)
         return False
 
-    return True
+    # Remove all annotations associated with this record
+    return unindex_regions(regions_ref, manifest_url)
 
 
 def get_training_regions(regions: Regions):

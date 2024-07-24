@@ -344,7 +344,6 @@ class Digitization(models.Model):
             self.pdf.name = self.get_file_path(is_abs=False)
 
         elif self.get_digit_abbr() == IMG_ABBR:
-            # TODO change to have list of image name
             self.images.name = f"{IMG} uploaded.jpg"
 
         super().save(*args, **kwargs)
@@ -397,6 +396,4 @@ def remove_digitization(digit: Digitization, other_media=None):
 
     delete_files(digit.get_imgs(is_abs=True))
     if other_media:
-        delete_files(
-            other_media, MEDIA_DIR
-        )  # TODO check if other media must be deleted in this dir
+        delete_files(other_media, MEDIA_DIR)

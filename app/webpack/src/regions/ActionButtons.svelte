@@ -1,24 +1,25 @@
 <script>
-    import {manifestToMirador, showMessage, downloadBlob} from "../utils.js";
-    import {selectionStore} from "./stores/selectionStore.js";
+    import { getContext } from 'svelte';
+    import { manifestToMirador, showMessage, downloadBlob, withLoading } from "../utils.js";
+    import { selectionStore } from "../selection/selectionStore.js";
     const { selected, nbSelected } = selectionStore;
-    import { regionsStore } from './stores/regions.js';
+    import { regionsStore } from './stores/regionsStore.js';
     const { allRegions } = regionsStore;
+    import { appLang, regionsType, csrfToken } from '../constants';
 
-    export let appLang;
-    export let manifest;
-    export let isValidated;
-    export let regionsType;
+    const manifest = getContext('manifest');
+    const isValidated = getContext('isValidated');
 
     $: selectionLength = $nbSelected(true);
     $: isEditMode = !isValidated;
     $: selectedRegions = $selected(true);
+
     // TODO here when there is not only one document selected, this assertion is erroneous
     $: areAllSelected = selectionLength >= Object.keys($allRegions).length;
 
     function toggleEditMode() {
         isEditMode = !isEditMode;
-        // todo send validation status to backend
+        // TODO! send validation status to backend
     }
 
     async function deleteSelectedRegions() {
@@ -69,11 +70,11 @@
     async function downloadRegions(){
         // download only displayed regions?
         const regionsRef = Object.values($selected(true)).map(r => r.ref);
-        const response = await fetch(`${window.location.origin}/regions/export`, {
+        const response = await withLoading(() => fetch(`${window.location.origin}/regions/export`, {
             method: "POST",
-            headers: { "X-CSRFToken": CSRF_TOKEN },
+            headers: { "X-CSRFToken": csrfToken },
             body: JSON.stringify({regionsRef})
-        });
+        }));
         const blob = await response.blob();
         // TODO find better filename
         downloadBlob(blob, 'regions.zip');
@@ -94,16 +95,17 @@
         {#if isEditMode}{appLang === 'en' ? 'Validate' : 'Valider'}{:else}{appLang === 'en' ? 'Edit' : 'Modifier'}{/if}
     </button>
     <button class="button is-link is-light mr-3" on:click={toggleAllSelection}>
+        <!--<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
         {#if areAllSelected}
-            <!--Unchecked icon-->
-<!--            <path d="M64 80c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16H384c8.8 0 16-7.2 16-16V96c0-8.8-7.2-16-16-16H64zM0 96C0 60.7 28.7 32 64 32H384c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L303 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>-->
+            <! --Unchecked icon-- >
+            <! --<path d="M64 80c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16H384c8.8 0 16-7.2 16-16V96c0-8.8-7.2-16-16-16H64zM0 96C0 60.7 28.7 32 64 32H384c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L303 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>-- >
             <path d="m10.6 16.2l7.05-7.05l-1.4-1.4l-5.65 5.65l-2.85-2.85l-1.4 1.4zM5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v14q0 .825-.587 1.413T19 21zm0-2h14V5H5zM5 5v14z" />
-
         {:else}
-            <!--Checked icon-->
-<!--            <path d="M64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L303 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>-->
+            <! --Checked icon-- >
+            <! --<path d="M64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L303 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>-- >
             <path d="m10.6 16.2l7.05-7.05l-1.4-1.4l-5.65 5.65l-2.85-2.85l-1.4 1.4zM5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v14q0 .825-.587 1.413T19 21z" />
         {/if}
+        </svg>-->
         <i class="fa-solid fa-square-check"></i>
         <span id="all-selection">{appLang === 'en' ? 'Select all' : 'Tout sélectionner'}</span>
     </button>
@@ -135,7 +137,8 @@
     .edit-action {
         height: 2em;
     }
-    path {
+    svg > path {
+        transition: fill 0.1s ease-out;
         fill: currentColor;
     }
 </style>

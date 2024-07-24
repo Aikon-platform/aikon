@@ -1,22 +1,32 @@
 <script>
-    export let witness;
-    export let appLang = "en";
+    import { getContext } from 'svelte';
+    import {showMessage, withLoading} from "../utils.js";
+    import { appLang, csrfToken } from '../constants';
+
+    const witness = getContext('witness');
     export let baseUrl = `${window.location.origin}${window.location.pathname}`;
-    // const currentRegionId = parseInt(baseUrl.split('regions/')[1].replace("/", ""));
     export let currentRegionId;
 
     async function deleteRegions() {
-        // todo add confirmation modal
+        const confirmed = await showMessage(
+            appLang === "en" ? "Are you sure you want to delete this record?" : "Voulez-vous vraiment supprimer cet enregistrement?",
+            appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
+            true
+        );
+
+        if (!confirmed) {
+            return;
+        }
 
         if (typeof currentRegionId !== 'number') {
             throw new Error('Invalid region ID');
         }
         const url = `${window.location.origin}/regions/${currentRegionId}/delete`;
         try {
-            const response = await fetch(url, {
+            const response = await withLoading(() => fetch(url, {
                 method: "DELETE",
-                headers: { "X-CSRFToken": CSRF_TOKEN },
-            });
+                headers: { "X-CSRFToken": csrfToken },
+            }));
             if (response.status !== 204) {
                 throw new Error(`Failed to delete regions: '${response.statusText}'`);
             }
