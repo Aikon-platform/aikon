@@ -45,8 +45,6 @@ class Regions(models.Model):
     )
     # NOTE machine learning model used to generate annotations
     model = models.CharField(max_length=150)
-    # # TODO check if useful
-    # region_ids = ArrayField(models.CharField(max_length=150), blank=True, null=True)
     is_validated = models.BooleanField(default=False)
 
     def get_digit(self):
@@ -101,11 +99,6 @@ class Regions(models.Model):
     def gen_annotation_id(self, canvas_nb, save_id=False):
         # annotation_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}"
         annotation_id = f"{self.get_ref()}_c{canvas_nb}_{uuid4().hex}"
-
-        # # TODO check if it is necessary
-        # if save_id:
-        #     self.annotation_ids.append(annotation_id)
-        #     self.save()
         return annotation_id
 
     def has_regions(self):

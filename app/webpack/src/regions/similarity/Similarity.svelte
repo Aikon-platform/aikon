@@ -9,10 +9,6 @@
 </script>
 
 <!--TODO add field with autocomplete to ask for similarity for a new witness-->
-<!--TODO toolbar -->
-<!--TODO add input to add new region-->
-<!--TODO order similar regions by category then score-->
-<!--TODO add button to indicate that this is no similar regions-->
 <!--TODO order similar witnesses according to a metric-->
 
 <Toolbar/>

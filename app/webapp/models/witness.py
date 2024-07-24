@@ -116,7 +116,7 @@ class Witness(models.Model):
         # help_text=get_name('page_type_info'),
     )
     # TODO allow only user to access the record if is_public = False
-    # TODO allow only the creator and super-admin to modify the record
+    # TODO! allow only the creator and super-admin to modify the record
     is_public = models.BooleanField(
         verbose_name=get_name("is_public"),
         default=False,
@@ -163,9 +163,6 @@ class Witness(models.Model):
         buttons = [
             "regions",
         ]
-        if "similarity" in ADDITIONAL_MODULES:
-            # TODO add other modules
-            buttons += ["similarity"]
 
         digits = self.get_digits()
 
@@ -190,8 +187,7 @@ class Witness(models.Model):
                 get_name("page_nb"): self.get_page(),
                 get_name("Language"): self.get_lang_names(),
             },
-            "buttons": buttons
-            # TODO add to_json() to other models
+            "buttons": buttons,
         }
 
     def get_type(self):
@@ -363,7 +359,9 @@ class Witness(models.Model):
         return [role.person for role in self.get_roles() if role.role == AUTHOR]
 
     def get_author_names(self):
-        # TODO add something when no author defined
+        authors = self.get_authors()
+        if len(authors) == 0:
+            return "No authors"
         return "<br>".join([author.__str__() for author in self.get_authors()])
 
     def add_roles(self, metadata):

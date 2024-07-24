@@ -19,7 +19,7 @@
 
     function toggleEditMode() {
         isEditMode = !isEditMode;
-        // todo send validation status to backend
+        // TODO! send validation status to backend
     }
 
     async function deleteSelectedRegions() {

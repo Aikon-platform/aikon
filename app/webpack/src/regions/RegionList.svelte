@@ -86,7 +86,6 @@
     <div class="tabs is-centered">
         <ul class="panel-tabs">
             {#each Object.entries(layouts) as [layout, meta]}
-                <!--TODO make active tab appear in url-->
                 <li class:is-active={layout === currentLayout}
                     on:click={() => changeLayout(layout)} on:keyup={() => null}>
                     <a href={null}>{meta.text}</a>
@@ -105,7 +104,6 @@
             </div>
         {:then _}
             {#each Object.values($allRegions) as item (item.id)}
-                <!--TODO dont sort object keys alphabetically-->
                 <Region {item} isCopied={isItemCopied(item)}
                         on:copyRef={handleCopyRef}/>
             {:else}

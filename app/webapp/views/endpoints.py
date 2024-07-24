@@ -48,6 +48,7 @@ def save_document_set(request):
 
 
 def get_canvas_regions(request, wid, rid):
+    # TODO mutualize with get_canvas_witness_regions
     regions = get_object_or_404(Regions, id=rid)
     p_nb = int(request.GET.get("p", 0))
     if p_nb > 0:
@@ -137,7 +138,7 @@ def delete_regions(request, rid):
     if request.method == "DELETE":
         regions = get_object_or_404(Regions, id=rid)
         try:
-            # TODO here do not unindex the manifest because retrieve the json content after deletion
+            # TODO! here do not unindex the manifest because retrieve the json content after deletion
             delete_annotations.delay(
                 regions.get_ref(), regions.gen_manifest_url(version=MANIFEST_V2)
             )

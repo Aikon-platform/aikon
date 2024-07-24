@@ -70,12 +70,8 @@ def reindex_file(filename):
     return True, a_ref
 
 
-def unindex_annotation(annotation_id, remove_from_annotation_ids=False):
+def unindex_annotation(annotation_id):
     http_sas = SAS_APP_URL.replace("https", "http")
-
-    # if remove_from_annotation_ids:
-    #     id_annotation = re.search(r"_anno(\d+)", annotation_id).group(1)
-    #     # TODO remove from annotation.annotation_ids when it is only one annotation that is deleted
 
     # annotation_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}
     delete_url = (

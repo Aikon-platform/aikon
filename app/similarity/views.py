@@ -299,7 +299,7 @@ def no_match(request, wid, rid=None):
         pairs = get_matched_regions(q_img, s_regions)
         for pair in pairs:
             pair.category = 4
-            # TODO remove pair once and for all?
+            # NOTE remove pair once and for all?
             pair.save()
 
         return JsonResponse({"success": "Updated matches"})
