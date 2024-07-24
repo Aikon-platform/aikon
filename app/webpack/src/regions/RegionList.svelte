@@ -11,13 +11,14 @@
     import Loading from '../Loading.svelte';
     import Region from './Region.svelte';
     import SelectionBtn from "../selection/SelectionBtn.svelte";
-    import SelectionFooter from "../selection/SelectionFooter.svelte";
+    // import SelectionFooter from "../selection/SelectionFooter.svelte";
     import Modal from "../Modal.svelte";
     import ExtractionButtons from "./ExtractionButtons.svelte";
     import RegionsBtn from "./RegionsBtn.svelte";
     import ActionButtons from "./ActionButtons.svelte";
     import Similarity from "./similarity/Similarity.svelte";
     import PageRegions from "./PageRegions.svelte";
+    import SelectionModal from "../selection/SelectionModal.svelte";
 
     export let manifest = '';
     export let isValidated = false;
@@ -121,45 +122,30 @@
     <div>tout doux</div>
 {/if}
 
-<!--TODO create component with slot for items-->
-<div id="selection-modal" class="modal fade" tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
-    <div class="modal-background"/>
-    <div class="modal-content">
-        <div class="modal-card-head media mb-0">
-            <div class="title is-4 mb-0 media-content">
-                <i class="fa-solid fa-book-bookmark"></i>
-                {appLang === 'en' ? 'Selected regions' : 'Regions sélectionnées'}
-                ({selectionLength})
-            </div>
-            <button class="delete media-left" aria-label="close"/>
-        </div>
-        <section class="modal-card-body">
-            {#if areSelectedRegions}
-                <div class="fixed-grid has-6-cols">
-                    <div class="grid is-gap-2">
-                        {#each Object.entries(selectedRegions) as [id, meta]}
-                            <div class="selection cell">
-                                <figure class="image is-64x64 card">
-                                    <img src="{refToIIIF(meta.img, meta.xyhw, '96,')}" alt="Extracted region"/>
-                                    <div class="overlay is-center">
-                                        <span class="overlay-desc">{meta.title}</span>
-                                    </div>
-                                </figure>
-                                <button class="delete region-btn" aria-label="remove from selection"
-                                        on:click={() => selectionStore.remove(id, regionsType)}/>
+<SelectionModal isRegion={true} {selectionLength}>
+    {#if areSelectedRegions}
+        <div class="fixed-grid has-6-cols">
+            <div class="grid is-gap-2">
+                {#each Object.entries(selectedRegions) as [id, meta]}
+                    <div class="selection cell">
+                        <figure class="image is-64x64 card">
+                            <img src="{refToIIIF(meta.img, meta.xyhw, '96,')}" alt="Extracted region"/>
+                            <div class="overlay is-center">
+                                <span class="overlay-desc">{meta.title}</span>
                             </div>
-                        {/each}
+                        </figure>
+                        <button class="delete region-btn" aria-label="remove from selection"
+                                on:click={() => selectionStore.remove(id, regionsType)}/>
                     </div>
-                </div>
-            {:else}
-                <div>
-                    {appLang === 'en' ? 'No regions in selection' : 'Aucune région sélectionnée'}
-                </div>
-            {/if}
-        </section>
-        <SelectionFooter isRegion={true}/>
-    </div>
-</div>
+                {/each}
+            </div>
+        </div>
+    {:else}
+        <div>
+            {appLang === 'en' ? 'No regions in selection' : 'Aucune région sélectionnée'}
+        </div>
+    {/if}
+</SelectionModal>
 
 <style>
     .selection {

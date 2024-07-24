@@ -31,4 +31,4 @@
     {/await}
 </Table>
 
-<Pagination store={similarityStore} nbOfItems={$qImgs.length}/>
+<Pagination store={similarityStore} nbOfItems={$qImgs.length} {pageLength}/>
