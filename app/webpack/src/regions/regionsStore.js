@@ -1,16 +1,27 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 
 function createRegionsStore() {
+    const baseUrl = `${window.location.origin}${window.location.pathname}`;
+
     const currentPage = writable(1);
     const allRegions = writable({});
     const pageRegions = writable({});
-    const baseUrl = `${window.location.origin}${window.location.pathname}`;
+    const clipBoard = writable("");
 
     if (typeof window !== 'undefined') {
         const urlPage = new URLSearchParams(window.location.search).get("p");
         if (urlPage) {
             currentPage.set(parseInt(urlPage));
         }
+    }
+
+    function copyRef(ref) {
+        clipBoard.update((cb) => {
+            const itemRef = cb === ref ? "" : ref;
+            // NOTE: isItemCopied stays to true if user copied another string
+            navigator.clipboard.writeText(itemRef).then(r => "");
+            return itemRef;
+        });
     }
 
     const fetchAll = (async () => {
@@ -69,6 +80,8 @@ function createRegionsStore() {
         fetchAll,
         handlePageUpdate,
         remove,
+        clipBoard,
+        copyRef,
     };
 }
 
