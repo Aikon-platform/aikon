@@ -1,25 +1,27 @@
 <script>
-    export let appLang = 'en';
-    export let modules = [];
-    export let witness = {};
+    import { showMessage, withLoading } from '../utils.js';
+    import { appLang, modules, csrfToken } from '../constants';
+    import { getContext } from 'svelte';
+    const witness = getContext('witness');
     export let currentRegionId;
-
-    const baseUrl = `${window.location.origin}`
+    export let baseUrl;
 
     async function newRegions() {
-        let url = `${baseUrl}/witness/${witness.id}/regions/add`;
+        const wlo = window.location.origin
+        let url = `${wlo}/witness/${witness.id}/regions/add`;
         if (witness.regions.length === 1 || currentRegionId){
             const regionId = currentRegionId || witness.regions[0];
-            url = `${baseUrl}/witness/${witness.id}/regions/${regionId}/add`;
+            url = `${wlo}/witness/${witness.id}/regions/${regionId}/add`;
         }
 
         // todo : allow "witness/<int:wid>/digitization/<int:did>/regions/add"
-        const response = await fetch(url, {
+        const response = await withLoading(() => fetch(url, {
             method: "POST",
-            headers: { "X-CSRFToken": CSRF_TOKEN },
-        });
+            headers: { "X-CSRFToken": csrfToken },
+        }));
 
         if (!response.ok) {
+            await showMessage(`Failed to create regions: '${response.statusText}'`, "Error");
             throw new Error(`Failed to create regions: '${response.statusText}'`);
         }
 
@@ -27,8 +29,11 @@
         try {
             res = await response.json();
         } catch (error) {
-            throw new Error('Failed to parse JSON response');
+            await showMessage(`Failed to parse JSON response: '${error}'`, "Error");
+            throw new Error(`Failed to parse JSON response: '${error}'`);
         }
+
+        console.log(res);
 
         if (res.hasOwnProperty('mirador_url')) {
             window.open(res.mirador_url);

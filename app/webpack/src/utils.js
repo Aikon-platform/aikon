@@ -1,9 +1,23 @@
+import { writable } from 'svelte/store';
+import { sasUrl, cantaloupeUrl } from './constants';
+
+export const loading = writable(false);
+
+export async function withLoading(asyncFunction) {
+    loading.set(true);
+    try {
+        return await asyncFunction();
+    } finally {
+        loading.set(false);
+    }
+}
+
 export function getCantaloupeUrl() {
-    return CANTALOUPE_APP_URL ?? "http://localhost:8182";
+    return cantaloupeUrl ?? "http://localhost:8182";
 }
 
 export function getSasUrl() {
-    return SAS_APP_URL ?? "http://localhost:3000";
+    return sasUrl ?? "http://localhost:3000";
 }
 
 export async function getRecordList() {
@@ -49,6 +63,8 @@ export function showMessage(msg, title = null, confirm = false) {
         if (msgModal) {
             if (confirm) {
                 document.getElementById("modal-footer").hidden = false;
+            } else {
+                resolve(undefined);
             }
             if (title) {
                 document.getElementById("modal-title").textContent = title;

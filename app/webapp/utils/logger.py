@@ -1,5 +1,7 @@
+import inspect
 import json
 import logging
+import traceback
 import os
 import time
 
@@ -31,13 +33,15 @@ def get_color(msg_type=None):
     return TerminalColors.OKBLUE
 
 
+def print_stack_trace():
+    formatted_stack = traceback.format_stack()
+    log("".join(formatted_stack))
+
+
 def log(msg, exception: Exception = None):
     """
     Record an error message in the system log
     """
-    import logging
-    import traceback
-
     exc = ""
     if exception:
         exc = f"\n[{exception.__class__.__name__}] {exception}"

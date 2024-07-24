@@ -147,7 +147,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         for nb in range(0, 4):
             digit_id = request.POST.get(f"digitizations-{nb}-id", None)
             if digit_id:
-                # TODO don't save again digit that were already treated
+                # TODO! don't save again digit that were already treated
                 continue
             digit_type = request.POST.get(f"digitizations-{nb}-digit_type", None)
             files = request.FILES.getlist(f"digitizations-{nb}-images")
