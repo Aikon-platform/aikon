@@ -1,22 +1,18 @@
 <script>
-    import { fade } from 'svelte/transition';
-    import { refToIIIF } from "../../utils.js";
     import { similarityStore } from './similarityStore.js';
-    import { userId, appLang, csrfToken } from '../../constants';
+    import { userId, appLang, csrfToken, regionsType } from '../../constants';
     import { exactSvg, partialSvg, semanticSvg, noSvg, userSvg } from './similarityCategory';
+    import Region from "../Region.svelte";
 
     const baseUrl = window.location.origin;
 
     export let qImg;
     export let sImg;
     export let score = 0;
-    // export let qRegions = null;
-    // export let sRegions = null;
     export let category = null;
     export let users = [];
 
     const [wit, digit, canvas, xyhw] = sImg.split('.')[0].split('_');
-    const img = `${wit}_${digit}_${canvas}`;
 
     $: selectedCategory = category;
     $: isSelectedByUser = users.includes(Number(userId)) || false;
@@ -58,27 +54,24 @@
             updateCategory(category);
         }
     }
+
+    const item = {
+        id: sImg, // note for normal regions, it is their SAS annotation id: used for region selection
+        img: sImg,
+        xywh: xyhw,
+        canvas: canvas,
+        ref: sImg.replace('.jpg', ''),
+        type: regionsType
+    }
+
+    const regionRef = `${wit}_${digit}`;
+    const desc = `${similarityStore.getRegionsInfo(regionRef).title}<br>
+        Page ${parseInt(canvas)}<br>
+        <b>${score ? `Score: ${score}` : appLang === 'en' ? 'Manual similarity' : 'Correspondance manuelle'}</b>`
 </script>
 
-<div class="region is-center" transition:fade={{ duration: 500 }}>
-    <figure class="image region-image card" tabindex="-1">
-        <img src="{refToIIIF(img, xyhw, ',256')}" alt="Similar region"/>
-        <div class="overlay is-center">
-            <span class="overlay-desc">
-                {similarityStore.getRegionsInfo(`${wit}_${digit}`).title}
-                <br>
-                Page {parseInt(canvas)}
-                <br>
-                <b>
-                    {#if score}
-                        Score: {score}
-                    {:else}
-                        {appLang === 'en' ? 'Manual similarity' : 'Correspondance manuelle'}
-                    {/if}
-                </b>
-            </span>
-        </div>
-    </figure>
+<div>
+    <Region {item} size={256} {desc} isSquare={false}/>
     <div class="tags has-addons is-dark is-center">
         <span class="tag is-hoverable pl-4 pr-3 py-4" class:is-selected={selectedCategory === 1}
               on:click={() => categorize(1)} on:keyup={null}
@@ -107,32 +100,3 @@
         </span>
     </div>
 </div>
-
-<style>
-    .overlay {
-        font-size: 75%;
-    }
-    figure {
-        transition: outline 0.1s ease-out;
-        outline: 0 solid var(--bulma-link);
-    }
-    .region {
-        cursor: pointer;
-        position: relative;
-    }
-    .region-image {
-        height: 225px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        overflow: hidden;
-        position: relative;
-        cursor: default;
-    }
-    .region-image img {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-        position: absolute;
-    }
-</style>

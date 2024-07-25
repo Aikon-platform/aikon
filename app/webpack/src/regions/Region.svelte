@@ -10,14 +10,16 @@
     export let item;
     $: isCopied = item.ref === $clipBoard;
     export let isSquare = true;
+    export let height = isSquare ? 96 : 140;
+    export let desc = item.title;
 </script>
 
-<div class="region image is-center {$isSelected(item) ? 'checked' : ''}" transition:fade={{ duration: 500 }}>
-    <figure class="image card {isSquare ? 'is-96x96' : ''}" tabindex="-1"
+<div class="region is-center {$isSelected(item) ? 'checked' : ''}" transition:fade={{ duration: 500 }}>
+    <figure class="image card region-image {isSquare ? 'is-96x96' : ''}" tabindex="-1" style="height: {height}px; min-width: {height}px;"
             on:click={() => selectionStore.toggle(item)} on:keyup={() => null}>
-        <img src="{refToIIIF(item.img, item.xyhw, isSquare ? '96,' : '140,')}" alt="Extracted region"/>
+        <img src="{refToIIIF(item.img, item.xyhw, isSquare ? '96,' : `,${height}`)}" alt="Extracted region"/>
         <div class="overlay is-center">
-            <span class="overlay-desc">{item.title}</span>
+            <span class="overlay-desc">{@html desc}</span>
         </div>
     </figure>
     <button class="button region-btn tag" on:click={() => regionsStore.copyRef(item.ref)}>
