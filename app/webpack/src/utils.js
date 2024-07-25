@@ -67,9 +67,9 @@ export function showMessage(msg, title = null, confirm = false) {
                 resolve(undefined);
             }
             if (title) {
-                document.getElementById("modal-title").textContent = title;
+                document.getElementById("modal-title").innerHTML = title;
             }
-            document.getElementById("modal-body").textContent = msg;
+            document.getElementById("modal-body").innerHTML = msg;
             document.getElementById("hidden-msg-btn").click();
 
             const cancelBtn = document.getElementById("cancel-btn");

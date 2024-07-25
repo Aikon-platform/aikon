@@ -265,9 +265,11 @@ def add_region_pair(request, wid, rid=None):
         )
 
         if not created:
-            if request.user.id not in region_pair.category_x:
+            if region_pair.category_x is None:
+                region_pair.category_x = [request.user.id]
+            elif request.user.id not in region_pair.category_x:
                 region_pair.category_x.append(request.user.id)
-                region_pair.save()
+            region_pair.save()
 
         s_regions = get_object_or_404(
             Regions, id=regions_2 if q_img == img_1 else regions_1
