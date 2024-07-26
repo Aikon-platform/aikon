@@ -1,23 +1,25 @@
 import json
 import os
-import zipfile
 
 from django.core.files.storage import default_storage
-
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.decorators.csrf import csrf_exempt
-
 from django.contrib.auth.decorators import login_required, user_passes_test
 
 from app.config.settings import SAS_APP_URL, APP_NAME, DEBUG, SAS_USERNAME, SAS_PASSWORD
 from app.webapp.filters import jpg_to_none
 
+from app.webapp.models.regions import Regions
+from app.webapp.models.witness import Witness
+
 from app.webapp.utils.functions import (
     credentials,
     zip_images_and_files,
     is_url,
+    get_files_with_prefix,
 )
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.utils.logger import log
@@ -27,48 +29,23 @@ from app.vectorization.const import SVG_PATH
 from app.vectorization.utils import (
     vectorization_request_for_one,
     delete_and_relauch_request,
+    save_svg_files,
 )
 from app.webapp.views import check_ref, is_superuser
-
-
-def save_svg_files(zip_file):
-    """
-    Dézippe un fichier ZIP contenant des fichiers SVG et les enregistre dans le répertoire de médiafiles.
-
-    :param zip_file: Fichier ZIP reçu de l'API
-    """
-    # Vérifie si le répertoire SVG_PATH existe, sinon le crée
-    if not os.path.exists(SVG_PATH):
-        os.makedirs(SVG_PATH)
-
-    with zipfile.ZipFile(zip_file, "r") as zip_ref:
-        for file_info in zip_ref.infolist():
-            # Vérifie si le fichier est un fichier SVG
-            if file_info.filename.endswith(".svg"):
-                file_path = os.path.join(SVG_PATH, os.path.basename(file_info.filename))
-
-                # Supprime le fichier existant s'il y en a un
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-
-                # Extrait le fichier SVG et l'écrit dans le répertoire spécifié
-                with zip_ref.open(file_info) as svg_file:
-                    with open(file_path, "wb") as output_file:
-                        output_file.write(svg_file.read())
 
 
 @csrf_exempt
 def receive_vectorization(request):
     """
-    Vue pour recevoir un fichier ZIP via une requête POST.
+    Endpoint to receive a ZIP file containing SVG files and save them to the media directory.
     """
     if "file" not in request.FILES:
-        return JsonResponse({"error": "aucun fichier reçu"}, status=400)
+        return JsonResponse({"error": "No file received"}, status=400)
 
     file = request.FILES["file"]
 
     if file.name == "":
-        return JsonResponse({"error": "No selected file"}, status=400)
+        return JsonResponse({"error": "File name is empty"}, status=400)
 
     if file and file.name.endswith(".zip"):
         try:
@@ -77,7 +54,11 @@ def receive_vectorization(request):
             temp_zip_file = default_storage.path(temp_zip_path)
 
             # Dézippe et enregistre les fichiers SVG
-            save_svg_files(temp_zip_file)
+            success = save_svg_files(temp_zip_file)
+            if not success:
+                return JsonResponse(
+                    {"error": "Failed to extract and save SVG files"}, status=500
+                )
 
             # Supprime le fichier ZIP temporaire
             default_storage.delete(temp_zip_path)
@@ -116,7 +97,7 @@ def show_crop_vectorization(request, img_file, coords, regions, canvas_nb):
 
 
 @user_passes_test(is_superuser)
-def smash_and_relauch_vectorization(request, regions_ref):
+def smash_and_relaunch_vectorization(request, regions_ref):
     """
     delete the imgs in the API from the repo corresponding to doc_id + relauch vectorization
     """
@@ -164,7 +145,6 @@ def send_vectorization(request, regions_ref):
     if not passed:
         return JsonResponse(regions)
 
-    print(regions)
     if not regions:
         return JsonResponse(
             {"response": f"No corresponding regions in the database for {regions_ref}"},
@@ -191,7 +171,7 @@ def send_vectorization(request, regions_ref):
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def show_vectorization(request, regions_ref):
-
+    # NOTE SOON TO BE NOT USED
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
         return JsonResponse(regions)
@@ -266,3 +246,29 @@ def export_selected_imgs_and_svgs(request):
         else:
             paths_list.append(element)
     return zip_images_and_files(urls_list, paths_list)
+
+
+def get_vectorized_images(request, wid, rid=None):
+    """
+    Return the best region images that are similar to the query region image
+    whose id is passed in the POST parameters
+    """
+    if rid is not None:
+        q_regions = [get_object_or_404(Regions, id=rid)]
+    else:
+        witness = get_object_or_404(Witness, id=wid)
+        q_regions = witness.get_regions()
+
+    try:
+        v_imgs = set()
+        for q_r in q_regions:
+            digit_ref = q_r.get_ref().split("_anno")[0]
+            v_imgs.update(get_files_with_prefix(SVG_PATH, digit_ref, ext=".svg"))
+        return JsonResponse(sorted(list(v_imgs)), safe=False)
+    except Exception as e:
+        return JsonResponse(
+            {
+                "error": f"Couldn't retrieve images of regions #{rid} in the database: {e}"
+            },
+            status=400,
+        )

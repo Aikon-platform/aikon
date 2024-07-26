@@ -176,7 +176,7 @@ def reindex_regions(request, obj_ref):
 @user_passes_test(is_superuser)
 def index_witness_regions(request, wit_id):
     wit = get_object_or_404(Witness, pk=wit_id)
-    regions_files = get_files_with_prefix(REGIONS_PATH, f"{wit.get_ref()}_")
+    regions_files = sorted(get_files_with_prefix(REGIONS_PATH, f"{wit.get_ref()}_"))
     res = {
         "All": regions_files,
         "Indexed": [],

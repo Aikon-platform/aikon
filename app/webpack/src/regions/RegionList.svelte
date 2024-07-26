@@ -1,13 +1,14 @@
 <script>
     import { setContext } from 'svelte';
     import { fade } from 'svelte/transition';
-    import { refToIIIF } from "../utils.js";
+    import { refToIIIF, loading } from "../utils.js";
+    import { appLang, regionsType, modules } from '../constants';
+
     import { selectionStore } from '../selection/selectionStore.js';
     const { selected } = selectionStore;
     import { regionsStore } from './regionsStore.js';
     const { allRegions, fetchAll } = regionsStore;
-    import { loading } from '../utils.js';
-    import { appLang, regionsType, modules } from '../constants';
+
     import Loading from '../Loading.svelte';
     import Region from './Region.svelte';
     import SelectionBtn from "../selection/SelectionBtn.svelte";
@@ -18,6 +19,7 @@
     import Similarity from "./similarity/Similarity.svelte";
     import PageRegions from "./PageRegions.svelte";
     import SelectionModal from "../selection/SelectionModal.svelte";
+    import Vectorization from "./vectorization/Vectorization.svelte";
 
     export let manifest = '';
     export let isValidated = false;
@@ -107,7 +109,7 @@
 {:else if currentLayout === "similarity"}
     <Similarity/>
 {:else if currentLayout === "vectorization"}
-    <div>tout doux</div>
+    <Vectorization/>
 {/if}
 
 <SelectionModal isRegion={true} {selectionLength}>

@@ -76,7 +76,7 @@
                         {#if appLang === 'en'}
                             {itemSelected ? 'Remove from' : 'Add to'} selection
                         {:else}
-                            {itemSelected ? 'Retirer de' : 'Ajouter à la'} sélection
+                            {itemSelected ? 'Retirer de la' : 'Ajouter à la'} sélection
                         {/if}
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
                             {#if itemSelected}

@@ -8,7 +8,6 @@ from django.core.exceptions import ValidationError
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 
-from app.config.settings import APP_LANG
 from app.similarity.const import SCORES_PATH
 from app.similarity.models.region_pair import RegionPair
 from app.webapp.models.digitization import Digitization
@@ -222,7 +221,7 @@ def get_regions(img_1, img_2, wid, rid):
             )
         else:
             regions = regions[0]
-        return regions.id  # Return the id directly, not regions[0].id
+        return regions.id
 
     if img_1.startswith(f"wit{wid}"):
         witness = get_object_or_404(Witness, id=wid)
