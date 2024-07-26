@@ -3,29 +3,40 @@
     import { vectorizationStore } from "./vectorizationStore.js";
     const { vectImgs, pageVectImgs, setPageVectImgs, pageLength } = vectorizationStore;
     import Pagination from "../../Pagination.svelte";
-
-    console.log($vectImgs);
+    import VectorizedRegions from "./VectorizedRegions.svelte";
 </script>
 
 <Pagination store={vectorizationStore} nbOfItems={$vectImgs.length} {pageLength}/>
 
-<div class="grid is-gap-2">
+<div class="grid is-gap-2 mx-5">
     {#await $setPageVectImgs}
-        <tr class="faded is-center">
+        <div class="faded is-center">
             {appLang === 'en' ? 'Retrieving vectorization page...' : 'Récupération la page de vectorisation...'}
-        </tr>
+        </div>
     {:then _}
         {#each $pageVectImgs as vectImg (vectImg.id)}
-            <p>{vectImg}</p>
+            <VectorizedRegions svgPath={vectImg}/>
         {:else}
-            <tr class="faded is-center">
+            <div class="faded is-center">
                 {appLang === 'en' ? 'No vectorization' : 'Pas de vectorisation'}
-            </tr>
+            </div>
             <!--TODO add button for launching vectorization-->
         {/each}
     {:catch error}
-        <tr>Error when retrieving similar regions: {error}</tr>
+        <div class="faded is-center">
+            {#if appLang === 'en'}
+                Error when retrieving vectorized regions: {error}
+            {:else}
+                Erreur lors de la récupération des régions vectorisées : {error}
+            {/if}
+        </div>
     {/await}
 </div>
 
 <Pagination store={vectorizationStore} nbOfItems={$vectImgs.length} {pageLength}/>
+
+<style>
+    .grid {
+        --bulma-grid-column-min: 12rem;
+    }
+</style>

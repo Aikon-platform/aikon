@@ -60,7 +60,7 @@
                                 {/each}
                             {/if}
                             {#if item.buttons.includes("regions")}
-                                <a href="{item.url}regions/" class="button is-small is-rounded is-link px-2"
+                                <a href="{item.url}regions/" class="button is-small is-rounded is-link px-2 py-1"
                                    title="{appLang === 'en' ? 'View image regions' : 'Afficher les régions d\'images'}">
                                     <span class="iconify" data-icon="entypo:documents"/>
                                     <span class="ml-2">

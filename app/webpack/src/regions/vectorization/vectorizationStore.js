@@ -3,7 +3,7 @@ import {initPagination, pageUpdate} from "../../utils.js";
 
 function createVectorizationStore() {
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
-    const pageLength = 50;
+    const pageLength = 49;
 
     const currentPage = writable(1);
     const vectImgs = writable([]);
@@ -18,7 +18,6 @@ function createVectorizationStore() {
             `${baseUrl}vectorized-images`
         ).then(response => response.json()
         ).then(data => {
-            console.log(data);
             vectImgs.set(data);
             return data;
         }).catch(
