@@ -74,7 +74,7 @@
         cursor: pointer;
         padding-left: 0.5em;
         padding-right: 0.6em;
-        background-color: var(--bulma-background);
+        background-color: var(--contrasted);
         transition: background-color 0.2s ease-in-out;
     }
 
@@ -102,13 +102,16 @@
     }
 
     .toolbar-item.selected {
-        background-color: var(--bulma-link);
+        background-color: var(--selected);
     }
 
     .tool-icon {
         background: none;
         border: none;
-        color: white;
+        color: hsl(var(--bulma-tag-h), var(--bulma-tag-s), var(--bulma-tag-color-l));
+    }
+    .selected .tool-icon {
+        color: var(--selected-text);
     }
 
     .label-container {

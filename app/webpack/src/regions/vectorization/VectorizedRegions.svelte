@@ -1,7 +1,7 @@
 <script>
     import { fade } from 'svelte/transition';
     import { onMount } from 'svelte';
-    import { appLang, mediaPrefix } from "../../constants.js";
+    import {mediaPrefix } from "../../constants.js";
     import {refToIIIF} from "../../utils.js";
 
     export let svgPath;
@@ -12,6 +12,10 @@
     let isHovered = false;
     let svgContent = '';
     let svgViewBox = '';
+
+    // TODO display name and canvas of the region
+    // TODO add button to access individual vectorization
+    // TODO add button to delete svg
 
     onMount(async () => {
         const response = await fetch(`${mediaPrefix}svg/${svgPath}`);

@@ -327,12 +327,13 @@ def validate_regions(request, regions_ref):
 
 def witness_sas_annotations(request, regions_id):
     regions = get_object_or_404(Regions, pk=regions_id)
-    _, canvas_annotations = formatted_annotations(regions)
-    return JsonResponse(canvas_annotations, safe=False)
+    _, c_annos = formatted_annotations(regions)
+    return JsonResponse(c_annos, safe=False)
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def show_regions(request, regions_ref):
+    # NOTE soon to be not used
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
         # if cls(regions) == Digitization:
@@ -342,9 +343,9 @@ def show_regions(request, regions_ref):
     if not DEBUG:
         credentials(f"{SAS_APP_URL}/", SAS_USERNAME, SAS_PASSWORD)
 
-    bboxes, canvas_annotations = formatted_annotations(regions)
+    bboxes, c_annos = formatted_annotations(regions)
 
-    paginator = Paginator(canvas_annotations, 50)
+    paginator = Paginator(c_annos, 50)
     try:
         page_regions = paginator.page(request.GET.get("page"))
     except PageNotAnInteger:
@@ -405,6 +406,7 @@ def show_all_regions(request, regions_ref):
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def export_all_regions(request, regions_ref):
+    # NOTE soon to be not used
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
         return JsonResponse(regions)
@@ -515,6 +517,7 @@ def legacy_manifest(request, old_id):
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def advanced_search(request):
+    # NOTE soon to be not used
     witness_list = Witness.objects.order_by("id")
     witness_filter = WitnessFilter(request.GET, queryset=witness_list)
 
@@ -526,7 +529,7 @@ def advanced_search(request):
         "title": "Advanced search" if APP_LANG == "en" else "Recherche avancée",
         "witness_filter": witness_filter,
         "result_count": witness_filter.qs.count(),
-        "page_obj": page_obj,
+        "page_obj": page_obj,  # witnesses
     }
     return render(request, "webapp/search.html", context)
 

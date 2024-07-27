@@ -1,5 +1,8 @@
 <script>
+    import { onMount } from 'svelte';
     import Record from "./Record.svelte";
+    import { recordsStore } from "./recordStore.js";
+    const { pageRecords, resultPage } = recordsStore;
     import { selectionStore } from "../selection/selectionStore.js";
     const { selected, nbSelected } = selectionStore;
     import SelectionBtn from "../selection/SelectionBtn.svelte";
@@ -7,23 +10,38 @@
     import {appLang, regionsType} from '../constants';
     import {refToIIIF} from "../utils.js";
     import SelectionModal from "../selection/SelectionModal.svelte";
-    export let records = [];
+    import RecordSearch from "./RecordSearch.svelte";
+    // export let records = [];
 
     $: selectedRecords = $selected(false);
     $: selectionLength = $nbSelected(false);
+
 </script>
 
 <SelectionBtn {selectionLength}/>
 
-{#if records.length !== 0}
-    <div>
-        {#each records as item (item.id)}
-            <Record {item}/>
-        {:else}
-            <p>{appLang === 'en' ? 'No records found' : 'Aucun document trouvé'}</p>
-        {/each}
+<RecordSearch/>
+
+{#await resultPage}
+    <div class="faded is-center">
+        {appLang === 'en' ? 'Retrieving records...' : 'Récupération des enregistrements...'}
     </div>
-{/if}
+{:then _}
+    {#if $pageRecords.length !== 0}
+        <div>
+            {#each $pageRecords as item (item.id)}
+                <Record {item}/>
+            {:else}
+                <p>{appLang === 'en' ? 'No records found' : 'Aucun enregistrement trouvé'}</p>
+            {/each}
+        </div>
+    {/if}
+{:catch error}
+    <div class="faded is-center">
+        {appLang === 'en' ? 'Error when retrieving records: ' : 'Erreur lors de la récupération des enregistrements : '}
+        {error}
+    </div>
+{/await}
 
 <SelectionModal {selectionLength}>
     {#each selectedRecords as [type, selectedItems]}

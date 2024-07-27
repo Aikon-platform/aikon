@@ -117,6 +117,9 @@ class WitnessList(AbstractRecordList):
     model = Witness
 
 
+# TODO SeriesList, WorkList, TreatmentList, DocumentSetList, RegionsSetList
+
+
 class WitnessRegionsView(AbstractRecordView):
     # f"witness/<int:wid>/regions/"
     # display only all Regions objects for a given Witness

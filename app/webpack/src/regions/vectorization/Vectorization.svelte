@@ -5,7 +5,8 @@
     import VectorizationPage from "./VectorizationPage.svelte";
 </script>
 
-<!--todo au survol pouvoir choisir le type de chose qui s'affiche (juste le svg, juste l'image)-->
+<!--TODO choose what appear on hover: only svg, only image, etc-->
+<!--TODO add button to download svg-->
 
 {#await fetchVectorization}
     <div class="container faded is-center">

@@ -1,12 +1,10 @@
 import RecordList from './RecordList.svelte';
-import { parseData } from "../utils.js";
-
-const records = parseData('record-data');
+// import { parseData } from "../utils.js";
 
 const app = new RecordList({
     target: document.getElementById('record-list'),
     props: {
-        records: records,
+        // records: parseData('record-data'),
     }
 });
 
