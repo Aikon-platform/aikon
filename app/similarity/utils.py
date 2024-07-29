@@ -12,9 +12,7 @@ from collections import defaultdict, Counter
 from itertools import combinations_with_replacement
 import numpy as np
 
-from heapq import nlargest
 from functools import lru_cache
-from concurrent.futures import ThreadPoolExecutor
 
 from app.similarity.const import SCORES_PATH
 from app.config.settings import CV_API_URL, APP_URL, APP_NAME, APP_LANG
