@@ -7,6 +7,7 @@
     let formData = {};
     searchFields.forEach(field => {
         formData[field.name] = field.initial || '';
+        // todo make param appear in URL
     });
 
     function handleSearch(event) {
@@ -14,42 +15,45 @@
         const queryString = new URLSearchParams(formData).toString();
         fetchPage(queryString);
     }
+
+    const isMulti = field => field.type.includes('Multiple');
 </script>
 
 {#if searchFields.length > 0}
-    <form on:submit={handleSearch}>
-        <div class="columns">
-            <div class="panel is-link column p-0 mx-4 my-3">
-                {#each searchFields as field}
-                    <div class="panel-block py-1">
-                        <label for={field.name}>{field.label}</label>
-                        {#if field.type === 'ChoiceField'}
-                            <select id={field.name} name={field.name} bind:value={formData[field.name]}>
-                                <option value="">Select {field.label}</option>
-                                {#each field.choices as choice}
-                                    <option value={choice.value}>{choice.label}</option>
-                                {/each}
-                            </select>
+    <form on:submit={handleSearch} class="fixed-grid container">
+        <article class="message grid">
+            {#each searchFields as field}
+                <div class="field columns is-middle">
+                    <label for={field.name} class="label column is-small is-3">{field.label}</label>
+                    <div class="control has-icons-right column is-8">
+                        {#if field.type.includes('ChoiceField')}
+                            <div class="select is-small {isMulti(field) ? 'is-multiple' : ''}">
+                                <select id={field.name} name={field.name} bind:value={formData[field.name]}
+                                        {...isMulti(field) ? { size: 4, multiple: true } : {}}>
+                                    {#if !isMulti(field)}
+                                        <option value="">Select {field.label}</option>
+                                    {/if}
+                                    {#each field.choices as choice}
+                                        <option value={choice.value}>{choice.label}</option>
+                                    {/each}
+                                </select>
+                            </div>
                         {:else if field.type === 'BooleanField'}
                             <input type="checkbox" id={field.name} name={field.name} bind:checked={formData[field.name]}>
-                        {:else if field.type === 'DateTimeField' || field.type === 'DateField'}
-                            <input type='date'
-                                   id={field.name}
-                                   name={field.name}
-                                   bind:value={formData[field.name]}>
+                        {:else if field.type.includes('Date')}}
+                            <input type='date' class='input is-small' id={field.name} name={field.name} bind:value={formData[field.name]}>
+                        {:else if field.type === 'IntegerField' || field.type === 'FloatField'}
+                            <input type='number' class='input is-small' id={field.name} name={field.name} bind:value={formData[field.name]}>
                         {:else}
-                            <input type='text'
-                                   id={field.name}
-                                   name={field.name}
-                                   bind:value={formData[field.name]}>
-                        {/if}
-                        {#if field.help_text}
-                            <small>{field.help_text}</small>
+                            <input type='text' class='input is-small' id={field.name} name={field.name} bind:value={formData[field.name]}>
                         {/if}
                     </div>
-                {/each}
-            </div>
-        </div>
+                    <!--{#if field.help_text}-->
+                    <!--    <small>{field.help_text}</small>-->
+                    <!--{/if}-->
+                </div>
+            {/each}
+        </article>
 
         <div class="panel-block columns">
             <button type="submit" class="button is-link is-outlined is-fullwidth">
