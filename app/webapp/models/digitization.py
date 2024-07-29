@@ -170,8 +170,8 @@ class Digitization(models.Model):
     def get_regions(self):
         return self.regions.all()
 
-    def get_treatments(self):
-        return self.treatments.all()
+    # def get_treatments(self):
+    #     return self.treatments.all()
 
     def get_treatments(self):
         return self.treatments.all()
@@ -361,11 +361,7 @@ class Digitization(models.Model):
 
 @receiver(post_save, sender=Digitization)
 def digitization_post_save(sender, instance, created, **kwargs):
-    # TODO use Celery instead of threading
-
     if created:
-        event = threading.Event()
-
         digit_type = instance.get_digit_abbr()
         if digit_type == PDF_ABBR:
             convert_pdf_to_img.delay(instance.get_file_path(is_abs=False))

@@ -7,7 +7,7 @@ app_name = "similarity"
 
 urlpatterns = [
     path(
-        f"{APP_NAME}/similarity",
+        f"{APP_NAME}/get-similarity",
         receive_similarity,
         name="receive-similarity",
     ),

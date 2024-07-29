@@ -7,7 +7,9 @@ from django.urls import reverse
 
 from app.webapp.search_filters import WitnessFilter
 from app.webapp.forms import *
+from app.webapp.forms.treatment import TreatmentForm
 from app.webapp.models.regions import Regions
+from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2
 
@@ -179,3 +181,17 @@ class RegionsView(AbstractRecordView):
         context["img_prefix"] = regions.get_ref().split("_anno")[0]
         context["img_nb"] = regions.img_nb()
         return context
+
+
+class TreatmentView(AbstractRecordView):
+    model = Treatment
+    form_class = TreatmentForm
+
+
+class TreatmentCreate(AbstractRecordCreate):
+    model = Treatment
+    form_class = TreatmentForm
+
+
+class TreatmentList(AbstractRecordList):
+    model = Treatment
