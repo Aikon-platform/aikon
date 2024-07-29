@@ -171,6 +171,9 @@ fieldset:not(:last-child) {
 .is-bold {
     font-weight: bold;
 }
+.is-wide {
+    width: 100%;
+}
 
 .svg-inline--fa {
     padding-right: 10px !important;

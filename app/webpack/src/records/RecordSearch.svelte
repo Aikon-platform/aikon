@@ -1,19 +1,27 @@
 <script>
-    import { recordsStore } from "./recordStore.js";
-    const { fetchPage } = recordsStore;
-    import { appLang } from '../constants';
+    import {recordsStore} from "./recordStore.js";
+    import {appLang} from '../constants';
+    import {onMount} from 'svelte';
+
+    const { recordSearch, searchParams } = recordsStore;
 
     export let searchFields = [];
     let formData = {};
-    searchFields.forEach(field => {
-        formData[field.name] = field.initial || '';
+    // searchFields.forEach(field => {
+    //     formData[field.name] = field.initial || '';
+    // });
+
+    onMount(() => {
+        // fill search form according to URL search params
+        const params = $searchParams ?? new URLSearchParams(window.location.search);
+        searchFields.forEach(field => {
+            formData[field.name] = params.get(field.name) || field.initial || '';
+        });
     });
 
     function handleSearch(event) {
         event.preventDefault();
-        const queryString = new URLSearchParams(formData).toString();
-        fetchPage(queryString);
-        // TODO make search param appear in URL + load results from URL
+        recordSearch(formData);
     }
 
     const isMulti = field => field.type.includes('Multiple');
@@ -27,9 +35,9 @@
                     <label for={field.name} class="label column is-small is-3">{field.label}</label>
                     <div class="control has-icons-right column is-8">
                         {#if field.type.includes('ChoiceField')}
-                            <div class="select is-small {isMulti(field) ? 'is-multiple' : ''}">
-                                <select id={field.name} name={field.name} bind:value={formData[field.name]}
-                                        {...isMulti(field) ? { size: 4, multiple: true } : {}}>
+                            <div class="select is-small is-wide {isMulti(field) ? 'is-multiple' : ''}">
+                                <select id={field.name} name={field.name} bind:value={formData[field.name]} class="is-wide"
+                                        {...isMulti(field) ? { size: 3, multiple: true } : {}}>
                                     {#if !isMulti(field)}
                                         <option value="" disabled selected class="faded">Select ...</option>
                                     {/if}
@@ -39,13 +47,13 @@
                                 </select>
                             </div>
                         {:else if field.type === 'BooleanField'}
-                            <input type="checkbox" id={field.name} name={field.name} bind:checked={formData[field.name]}>
+                            <input type='checkbox' id={field.name} name={field.name} bind:checked={formData[field.name]}>
                         {:else if field.type.includes('Date')}}
-                            <input type='date' class='input is-small' id={field.name} name={field.name} bind:value={formData[field.name]}>
+                            <input type='date' class='input is-small is-wide' id={field.name} name={field.name} bind:value={formData[field.name]}>
                         {:else if field.type === 'IntegerField' || field.type === 'FloatField'}
-                            <input type='number' class='input is-small' id={field.name} name={field.name} bind:value={formData[field.name]}>
+                            <input type='number' class='input is-small is-wide' id={field.name} name={field.name} bind:value={formData[field.name]}>
                         {:else}
-                            <input type='text' class='input is-small' id={field.name} name={field.name} bind:value={formData[field.name]}>
+                            <input type='text' class='input is-small is-wide' id={field.name} name={field.name} bind:value={formData[field.name]}>
                         {/if}
                     </div>
                     <!--{#if field.help_text}-->

@@ -5,19 +5,25 @@ function createRecordsStore() {
     const currentPage = writable(1);
     const pageRecords = writable([]);
     const resultNumber = writable(0);
+    const searchParams = writable(new URLSearchParams(window.location.search));
 
     initPagination(currentPage, "p");
 
-    async function fetchPage(queryString = null) {
-        if (!queryString) {
-            queryString = `p=${get(currentPage)}`;
-        }
+    async function fetchPage() {
+        const params = get(searchParams);
+        params.set('p', `${get(currentPage)}`);
+
         try {
-            const response = await fetch(`${window.location.origin}/search/witness/?${queryString}`);
+            const response = await fetch(`${window.location.origin}/search/witness/?${params.toString()}`);
             const data = await response.json();
             pageRecords.set(data.results);
             resultNumber.set(data.count);
             currentPage.set(data.current_page);
+
+            params.set('p', String(get(currentPage)));
+            const newUrl = `${window.location.pathname}?${params.toString()}`;
+            history.pushState(null, '', newUrl);
+
             return data;
         } catch (error) {
             console.error("Error fetching page:", error);
@@ -31,8 +37,14 @@ function createRecordsStore() {
         resultPage = fetchPage();
     }
 
+    function recordSearch(formData) {
+        const queryParams = new URLSearchParams(formData);
+        searchParams.set(queryParams);
+        handlePageUpdate(1);
+    }
+
     function remove(recordId) {
-        // todo
+        // todo add deletion feature
     }
 
     return {
@@ -42,6 +54,7 @@ function createRecordsStore() {
         resultNumber,
         fetchPage,
         handlePageUpdate,
+        recordSearch,
     };
 }
 
