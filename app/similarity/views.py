@@ -16,7 +16,8 @@ from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import sort_key
 from app.webapp.utils.logger import log
 from app.similarity.utils import (
-    similarity_request,
+    send_request,
+    check_score_files,
     check_computed_pairs,
     get_computed_pairs,
     get_best_pairs,
@@ -56,7 +57,7 @@ def send_similarity(request, regions_refs):
         )
 
     try:
-        if similarity_request(regions):
+        if send_request(regions):
             return JsonResponse(
                 {"response": f"Successful similarity request for {regions_refs}"},
                 safe=False,
@@ -82,6 +83,8 @@ def receive_similarity(request):
 
     if request.method == "POST":
         filenames = []
+        # treatment_id = request.DATA["experiment_id"]
+
         try:
             for regions_refs, file in request.FILES.items():
                 with open(f"{SCORES_PATH}/{regions_refs}.npy", "wb") as destination:
@@ -104,7 +107,7 @@ def delete_all_regions_pairs(request):
     RegionPair.objects.all().delete()
     return JsonResponse({"message": "All region pairs deleted"})
 
-
+  
 @user_passes_test(is_superuser)
 def index_regions_similarity(request, regions_ref=None):
     """

@@ -1,64 +1,81 @@
 import requests
 
-from app.config.settings import CV_API_URL, APP_URL, APP_NAME
-from app.webapp.models.digitization import Digitization
-from app.webapp.models.treatment import Treatment
+from app.config.settings import CV_API_URL, APP_URL, APP_NAME, APP_LANG
+
 from app.regions.const import EXTRACTOR_MODEL
+from app.webapp.models.utils.constants import WIT
 from app.webapp.utils.logger import log
 
 
-def create_treatment(treatment_type, task_type, user_id, treated_object):
-    try:
-        treatment = Treatment(
-            treatment_type=treatment_type,
-            task_type=task_type,
-            user_id=user_id,
-            treated_object=treated_object,
-        )
-        treatment.save()
+def prepare_request(witnesses, treatment_id):
+    manifests = {}
 
-        return treatment
+    try:
+        for witness in witnesses:
+            if witness.has_regions():
+                log(
+                    f"[regions_request] Witness {witness.get_ref()} already has regions"
+                )
+                pass
+            else:
+                digits = witness.get_digits()
+                for digit in digits:
+                    manifests.update({witness.get_ref(): digit.gen_manifest_url()})
+
+        if manifests:
+            return {
+                "experiment_id": f"{treatment_id}",
+                "documents": manifests,
+                "model": f"{EXTRACTOR_MODEL}",  # Use only if specific model is desire
+                "callback": f"{APP_URL}/{APP_NAME}/get-regions",  # URL to which the regions file must be sent back
+                "tracking_url": f"{APP_URL}/{APP_NAME}/api-progress",
+            }
+        else:
+            return {
+                "message": f"Regions were already extracted for all the selected {WIT}es"
+                if APP_LANG == "en"
+                else f"Les régions ont déjà été extraites pour tous les {WIT}s sélectionnés"
+            }
+
     except Exception as e:
         log(
-            f"[create_treatment] Failed to create treatment requested by user {user_id} for digit #{treated_object.id}",
+            f"[prepare_request] Failed to prepare data for regions request",
             e,
         )
-        return False
+        raise Exception(f"[prepare_request] Failed to prepare data for regions request")
 
 
-def regions_request(digit: Digitization, user_id, treatment_type="auto"):
-    treatment = create_treatment(
-        treatment_type=treatment_type,
-        task_type="regions",
-        user_id=user_id,
-        treated_object=digit,
-    )
+def regions_request(manifests, treatment_id):
+    """
+    To relaunch extraction request in case the automatic process has failed
+    """
 
     try:
         response = requests.post(
-            url=f"{CV_API_URL}/extraction/start",
-            data={
-                "experiment_id": treatment.id,
-                "manifest_url": digit.gen_manifest_url(),
+            url=f"{CV_API_URL}/regions/start",
+            json={
+                "manifests": manifests,
+                "experiment_id": f"{treatment_id}",
                 "model": f"{EXTRACTOR_MODEL}",  # Use only if specific model is desire
                 "callback": f"{APP_URL}/{APP_NAME}/get-regions",  # URL to which the regions file must be sent back
             },
         )
         if response.status_code == 200:
-            treatment.update_treatment()
+            api_response = response.json()
             log(
-                f"[regions_request] Regions extraction request send: {response.text or ''}"
+                f"[regions_request] Regions extraction request send: {api_response or ''}"
             )
-            return True
+            return api_response["tracking_id"]
         else:
             error = {
                 "source": "[regions_request]",
-                "error_message": f"Regions extraction request for {digit.get_ref()} with status code: {response.status_code}",
+                "error_message": f"Regions extraction request for treatment #{treatment_id} with status code: {response.status_code}",
                 "request_info": {
                     "method": "POST",
-                    "url": f"{CV_API_URL}/extraction/start",
-                    "data": {
-                        "manifest_url": digit.gen_manifest_url(),
+                    "url": f"{CV_API_URL}/regions/start",
+                    "payload": {
+                        "manifests": manifests,
+                        "treatment": treatment_id,
                         "model": f"{EXTRACTOR_MODEL}",
                         "callback": f"{APP_URL}/{APP_NAME}/get-regions",
                     },
@@ -69,30 +86,13 @@ def regions_request(digit: Digitization, user_id, treatment_type="auto"):
                 },
             }
 
-            treatment.error_treatment(error)
             log(error)
-            return False
+            raise Exception(error)
     except Exception as e:
-        treatment.error_treatment(e)
         log(
-            f"[regions_request] Regions extraction request for {digit.get_ref()} failed",
+            f"[regions_request] Regions extraction request for treatment #{treatment_id} failed",
             e,
         )
-        return False
-
-
-def send_regions_request(digits, user_id):
-    if not CV_API_URL.startswith("http"):
-        # on local to prevent bugs
-        return True
-
-    for digit in digits:
-        try:
-            regions_request(digit, user_id)
-        except Exception as e:
-            log(
-                f"[send_regions_request] Failed to send regions extraction request for digit #{digit.id}",
-                e,
-            )
-            return False
-    return True
+        raise Exception(
+            f"[regions_request] Regions extraction request for treatment #{treatment_id} failed"
+        )

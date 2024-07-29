@@ -25,6 +25,12 @@
                             {% if APP_LANG == "en" %}Add{% else %}Ajouter une{% endif %} {{ SER }}
                         </span>
                     </a>
+                    <a href="{% url 'admin:webapp_treatment_add' %}">
+                        <span class="icon-text">
+                            <span class="icon"><i class="fas fa-plus-circle"></i></span>
+                            {% if APP_LANG == "en" %}Request{% else %}Effectuer un{% endif %} {{ TRMT }}
+                        </span>
+                    </a>
                 </ul>
             </aside>
         </div>
