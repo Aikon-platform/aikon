@@ -218,7 +218,7 @@ class Digitization(models.Model):
 
     def img_nb(self):
         # get the number of images for a digitization
-        return get_nb_of_files(IMG_PATH, self.get_ref())
+        return get_nb_of_files(IMG_PATH, self.get_ref()) or 0
 
     def has_vectorization(self):
         # TODO voir comment modulariser ?
@@ -239,10 +239,6 @@ class Digitization(models.Model):
             return True
         return False
 
-    def img_nb(self):
-        # get the number of images for a digitization
-        return get_nb_of_files(self.get_ref(), IMG_PATH)
-
     def get_img(self, is_abs=False, only_first=False):
         if only_first:
             return get_first_img(self.get_ref())
@@ -251,7 +247,7 @@ class Digitization(models.Model):
     def get_imgs(self, is_abs=False, temp=False, only_one=False):
         prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
         path = f"{IMG_PATH}/" if is_abs else ""
-        return get_files_with_prefix(IMG_PATH, prefix, path, only_one)
+        return sorted(get_files_with_prefix(IMG_PATH, prefix, path, only_one))
 
     def get_metadata(self):
         metadata = self.get_witness().get_metadata() if self.get_witness() else {}
@@ -348,7 +344,6 @@ class Digitization(models.Model):
             self.pdf.name = self.get_file_path(is_abs=False)
 
         elif self.get_digit_abbr() == IMG_ABBR:
-            # TODO change to have list of image name
             self.images.name = f"{IMG} uploaded.jpg"
 
         super().save(*args, **kwargs)
@@ -397,6 +392,4 @@ def remove_digitization(digit: Digitization, other_media=None):
 
     delete_files(digit.get_imgs(is_abs=True))
     if other_media:
-        delete_files(
-            other_media, MEDIA_DIR
-        )  # TODO check if other media must be deleted in this dir
+        delete_files(other_media, MEDIA_DIR)

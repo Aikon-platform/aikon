@@ -4,18 +4,18 @@ from app.webapp.utils.paths import BASE_DIR, LOG_PATH, MEDIA_DIR, STATIC_DIR
 ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
 
-APP_NAME = ENV("APP_NAME")
+APP_NAME = ENV.str("APP_NAME", default="")
 WEBAPP_NAME = "webapp"
-ADDITIONAL_MODULES = ENV.list("ADDITIONAL_MODULES")
+ADDITIONAL_MODULES = ENV.list("ADDITIONAL_MODULES", default=[])
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = ENV("SECRET_KEY")
+SECRET_KEY = ENV.str("SECRET_KEY", default="")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = ENV.bool("DEBUG")
+DEBUG = ENV.bool("DEBUG", default=False)
 
 INSTALLED_APPS = [
     "dal",
@@ -36,14 +36,12 @@ INSTALLED_APPS = [
     f"{WEBAPP_NAME}",
 ] + ADDITIONAL_MODULES
 
-hosts = ENV.list("ALLOWED_HOSTS")
-hosts.append(ENV("PROD_URL"))
+hosts = ENV.list("ALLOWED_HOSTS", default=[])
+hosts.append(ENV.str("PROD_URL", default=""))
 ALLOWED_HOSTS = hosts
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-APP_LANG = ENV("APP_LANG")
-
-CONTACT_MAIL = ENV("CONTACT_MAIL")
+CONTACT_MAIL = ENV.str("CONTACT_MAIL", default="")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -85,23 +83,26 @@ if DEBUG:
 # Define the default values for application URLs in development mode
 # APP, CANTALOUPE, SAS
 APP_PORT = 8000
-CANTALOUPE_PORT = ENV("CANTALOUPE_PORT")
-SAS_PORT = ENV("SAS_PORT")
+CANTALOUPE_PORT = ENV.int("CANTALOUPE_PORT", 8182)
+SAS_PORT = ENV.int("SAS_PORT", 8888)
 
 APP_URL = f"http://localhost:{APP_PORT}"
 CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
 SAS_APP_URL = f"http://localhost:{SAS_PORT}"
 
-CV_API_URL = ENV("CV_API_URL")
-GEONAMES_USER = ENV("GEONAMES_USER")
+CV_API_URL = ENV.str("CV_API_URL", default="")
+GEONAMES_USER = ENV.str("GEONAMES_USER", default="")
 
-PROD_URL = f"https://{ENV('PROD_URL')}"
+PROD_URL = f"https://{ENV.str('PROD_URL', default='')}"
 
 # Override the default values in production mode
 if not DEBUG:
     APP_URL = f"{PROD_URL}"
     CANTALOUPE_APP_URL = f"{PROD_URL}"
     SAS_APP_URL = f"{PROD_URL}/sas"
+
+SAS_USERNAME = ENV.str("SAS_USERNAME", default="")
+SAS_PASSWORD = ENV.str("SAS_PASSWORD", default="")
 
 ROOT_URLCONF = "config.urls"
 
@@ -133,11 +134,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": ENV("DB_NAME"),
-        "USER": ENV("DB_USERNAME"),
-        "PASSWORD": ENV("DB_PASSWORD"),
-        "HOST": ENV("DB_HOST"),
-        "PORT": ENV("DB_PORT"),
+        "NAME": ENV.str("DB_NAME", default=""),
+        "USER": ENV.str("DB_USERNAME", default=""),
+        "PASSWORD": ENV.str("DB_PASSWORD", default=""),
+        "HOST": ENV.str("DB_HOST", default="localhost"),
+        "PORT": ENV.str("DB_PORT", default=5432),
     }
 }
 
@@ -162,7 +163,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
-APP_LANG = ENV("APP_LANG")
+APP_LANG = ENV.str("APP_LANG", default="en")
 LANGUAGE_CODE = "en-us" if APP_LANG == "en" else "fr-FR"
 
 TIME_ZONE = "UTC"
@@ -198,6 +199,9 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
         "file": {
             "class": "logging.FileHandler",
             "filename": LOG_PATH,
@@ -207,8 +211,13 @@ LOGGING = {
     },
     "loggers": {
         "django": {
-            "handlers": ["file"],
+            "handlers": ["console", "file"],
             "level": "WARNING",
+        },
+        "celery": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": True,
         },
     },
     "formatters": {
@@ -224,10 +233,10 @@ CELERY_TASK_SERIALIZER = "pickle"
 CELERY_RESULT_SERIALIZER = "pickle"
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = ENV("EMAIL_HOST")
+EMAIL_HOST = ENV.str("EMAIL_HOST", default="")
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = ENV("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = ENV("EMAIL_HOST_PASSWORD")
+EMAIL_HOST_USER = ENV.str("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = ENV.str("EMAIL_HOST_PASSWORD", default="")
 
 CRISPY_TEMPLATE_PACK = "bootstrap4"

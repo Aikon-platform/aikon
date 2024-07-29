@@ -6,6 +6,7 @@ import os
 import re
 import zipfile
 from pathlib import Path
+from typing import Optional, List
 from urllib.parse import urlparse
 
 import PyPDF2
@@ -78,19 +79,43 @@ def substrs_in_str(string, substrings):
     return False
 
 
-def get_files_with_prefix(path, prefix, filepath="", only_one=False):
-    files = []
+def get_files_with_prefix(
+    path: str,
+    prefix: str,
+    filepath: str = "",
+    only_one: bool = False,
+    ext: Optional[str] = None,
+):
+    """
+    Efficiently retrieve files with a given prefix in a directory.
+
+    :param path: Directory path to search in
+    :param prefix: Prefix to match at the beginning of file names
+    :param filepath: Additional path to prepend to filenames (default: "")
+    :param only_one: If True, return the first matching file (default: False)
+    :param ext: File extension to filter by (default: None)
+    :return: A single filename (if only_one is True), a list of filenames, or None if no matches found
+    """
     with os.scandir(path) as entries:
-        for file in entries:
-            if file.is_file() and file.name.startswith(prefix):
-                if only_one:
-                    return file.name
-                files.append(f"{filepath}{file.name}")
-    return None if only_one else sorted(files)
+        if only_one:
+            for entry in entries:
+                if entry.is_file() and entry.name.startswith(prefix):
+                    if ext and not entry.name.endswith(ext):
+                        continue
+                    return f"{filepath}{entry.name}"
+            return None
+
+        return [
+            f"{filepath}{e.name}"
+            for e in entries
+            if e.is_file()
+            and e.name.startswith(prefix)
+            and (not ext or e.name.endswith(ext))
+        ]
 
 
 def get_nb_of_files(path, prefix):
-    return len(get_files_with_prefix(path, prefix))
+    return len(get_files_with_prefix(path, prefix)) or 0
 
 
 def get_first_img(img_ref):

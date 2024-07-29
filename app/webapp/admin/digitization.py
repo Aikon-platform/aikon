@@ -63,9 +63,8 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
     @admin.display(description=get_name("view_digit"))
     def view_digit(self, obj: Digitization):
+        # NOTE soon to be NOT USED
         if obj.id and obj.has_images():
-            # # TODO Always display digitization without automatic regions
-            # return gen_btn(Digitization.objects.filter(pk=obj.id).first(), "view")
             if not obj.has_regions():
                 return gen_btn(Digitization.objects.filter(pk=obj.id).first(), "view")
 
@@ -78,11 +77,13 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
     @admin.display(description=get_name("view_regions"))
     def view_regions(self, obj: Digitization):
+        # NOTE soon to be NOT USED
         if obj.id and obj.has_images() and obj.has_regions():
             regions_btn = []
             for regions in obj.get_regions():
                 action = "final" if regions.is_validated else "edit"
                 regions_btn.append(gen_btn(regions, action))
+                # TODO! this function is faulty, should be delete
                 if obj.has_vectorization():
                     return mark_safe(
                         "<br>".join(regions_btn)

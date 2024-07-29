@@ -1,17 +1,6 @@
-from django.conf.urls.static import static
 from django.urls import path, include, register_converter
 
-from app.config.settings import APP_NAME, MEDIA_URL, MEDIA_ROOT
-
-from app.vectorization.views import (
-    show_vectorization,
-    receive_vectorization,
-    show_crop_vectorization,
-    export_selected_imgs_and_svgs,
-    export_all_images_and_svgs,
-    send_vectorization,
-    smash_and_relauch_vectorization,
-)
+from app.vectorization.views import *
 
 app_name = "vectorization"
 
@@ -48,7 +37,20 @@ urlpatterns = [
     ),
     path(
         f"{APP_NAME}/smash-and-relaunch-vectorization/<str:regions_ref>",
-        smash_and_relauch_vectorization,
+        smash_and_relaunch_vectorization,
         name="smash-and-relaunch-vectorization",
+    ),
+]
+
+urlpatterns += [
+    path(
+        f"witness/<int:wid>/regions/<int:rid>/vectorized-images",
+        get_vectorized_images,
+        name="vectorized-images",
+    ),
+    path(
+        f"witness/<int:wid>/regions/vectorized-images",
+        get_vectorized_images,
+        name="witness-vectorized-images",
     ),
 ]

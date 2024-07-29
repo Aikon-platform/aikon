@@ -1,7 +1,10 @@
+import os
+import zipfile
+
 import requests
 
 from app.config.settings import APP_URL, APP_NAME, CV_API_URL, APP_LANG
-from app.vectorization.const import VECTO_MODEL_EPOCH
+from app.vectorization.const import VECTO_MODEL_EPOCH, SVG_PATH
 from app.webapp.models.utils.constants import WIT
 
 from app.webapp.utils.logger import log
@@ -137,3 +140,35 @@ def delete_and_relauch_request(regions):
     except Exception as e:
         log(f"[vectorization_request] Request failed for {regions}", e)
         return False
+
+
+def save_svg_files(zip_file):
+    """
+    Extracts SVG files from a ZIP file and saves them to the SVG_PATH directory.
+    """
+    # Vérifie si le répertoire SVG_PATH existe, sinon le crée
+    if not os.path.exists(SVG_PATH):
+        os.makedirs(SVG_PATH)
+
+    try:
+        with zipfile.ZipFile(zip_file, "r") as zip_ref:
+            for file_info in zip_ref.infolist():
+                # TODO do not save jpg file
+                # Vérifie si le fichier est un fichier SVG
+                if file_info.filename.endswith(".svg"):
+                    file_path = os.path.join(
+                        SVG_PATH, os.path.basename(file_info.filename)
+                    )
+
+                    # Supprime le fichier existant s'il y en a un
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+
+                    # Extrait le fichier SVG et l'écrit dans le répertoire spécifié
+                    with zip_ref.open(file_info) as svg_file:
+                        with open(file_path, "wb") as output_file:
+                            output_file.write(svg_file.read())
+    except Exception as e:
+        log(f"[save_svg_files] Error when extracting SVG files from ZIP file", e)
+        return False
+    return True

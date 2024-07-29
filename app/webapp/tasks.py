@@ -1,8 +1,3 @@
-from pathlib import Path
-from typing import List
-
-from celery import shared_task
-
 from app.config.celery import celery_app
 
 from app.webapp.utils.constants import MAX_RES
@@ -33,6 +28,22 @@ def reindex_from_file(regions_id):
 
     regions = Regions.objects.filter(pk=regions_id).first()
     return check_indexation(regions, True)
+
+
+@celery_app.task
+def delete_regions_and_annotations(regions_id):
+    from app.webapp.models.regions import Regions
+    from app.webapp.utils.iiif.annotation import delete_regions
+
+    regions = Regions.objects.filter(pk=regions_id).first()
+    return delete_regions(regions)
+
+
+@celery_app.task
+def delete_annotations(regions_ref, manifest_url):
+    from app.webapp.utils.iiif.annotation import unindex_regions
+
+    return unindex_regions(regions_ref, manifest_url)
 
 
 @celery_app.task

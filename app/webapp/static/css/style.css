@@ -114,7 +114,8 @@ fieldset:not(:last-child) {
 
 .faded {
     font-style: italic;
-    color: rgba(var(--body-fg), 0.75);
+    /*color: rgba(var(--body-fg), 0.75);*/
+    opacity: 0.75;
 }
 
 .btn {
@@ -151,14 +152,21 @@ fieldset:not(:last-child) {
     text-align: center;
     justify-content: center;
 }
-
+.is-middle {
+    display: flex;
+    align-content: center;
+    align-items: center;
+}
 .is-top {
     z-index: 1000;
 }
-
 .is-left {
     display: flex;
     justify-content: flex-end;
+}
+.is-right {
+    display: flex;
+    justify-content: flex-start;
 }
 
 .svg-inline--fa {
@@ -255,16 +263,22 @@ td.is-fullwidth {
 :root {
     --contrasted: #f5f0f0;
     --accent: hsl(0deg 0% 0% / 5%);
+    --selected: hsl(234deg 100% 96%);
+    --selected-text: hsl(233deg 100% 33%);
 }
 
 [data-theme="light"] {
     --contrasted: #f3eff1;
     --accent: hsl(0deg 0% 0% / 5%);
+    --selected: hsl(234deg 100% 96%);
+    --selected-text: hsl(233deg 100% 33%);
 }
 
 [data-theme="dark"] {
     --contrasted: #252424;
     --accent: hsla(0, 0%, 100%, 0.05);
+    --selected: #000528;
+    --selected-text: #7281f9;
 }
 
 .is-contrasted {
@@ -277,4 +291,36 @@ td.is-fullwidth {
 
 .menu-list a:hover {
     background-color: var(--contrasted);
+}
+
+.is-256x256 {
+    width: 256px;
+    height: 256px;
+}
+
+.hoverable {
+    position: relative;
+    overflow: hidden;
+}
+
+.hoverable::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.2);
+    opacity: 0;
+    transition: opacity 0.2s;
+    mix-blend-mode: overlay;
+}
+
+.hoverable:hover::after {
+    opacity: 1;
+}
+
+.is-selected {
+    background-color: var(--selected);
+    color: var(--selected-text);
 }

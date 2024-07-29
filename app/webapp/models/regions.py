@@ -5,8 +5,7 @@ from uuid import uuid4
 from django.utils.safestring import mark_safe
 from django.db import models
 from iiif_prezi.factory import StructuralError
-
-from app.config.settings import APP_URL, APP_NAME, APP_LANG
+from app.config.settings import APP_URL, APP_NAME, APP_LANG, SAS_APP_URL
 from app.similarity.const import SCORES_PATH
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.utils.constants import WIT
@@ -46,8 +45,6 @@ class Regions(models.Model):
     )
     # NOTE machine learning model used to generate annotations
     model = models.CharField(max_length=150)
-    # # TODO check if useful
-    # region_ids = ArrayField(models.CharField(max_length=150), blank=True, null=True)
     is_validated = models.BooleanField(default=False)
 
     def get_digit(self):
@@ -62,7 +59,7 @@ class Regions(models.Model):
         return None
 
     def img_nb(self):
-        return self.get_digit().img_nb()
+        return self.get_digit().img_nb() or 0
 
     def gen_manifest_url(self, only_base=False, version=MANIFEST_V1):
         witness = self.get_witness()
@@ -87,6 +84,9 @@ class Regions(models.Model):
                 return error
         return error
 
+    def gen_mirador_url(self):
+        return f"{SAS_APP_URL}/index.html?iiif-content={self.gen_manifest_url(version=MANIFEST_V2)}"
+
     def get_ref(self):
         if digit := self.get_digit():
             # regions_prefix = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}"
@@ -99,11 +99,6 @@ class Regions(models.Model):
     def gen_annotation_id(self, canvas_nb, save_id=False):
         # annotation_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}"
         annotation_id = f"{self.get_ref()}_c{canvas_nb}_{uuid4().hex}"
-
-        # # TODO check if it is necessary
-        # if save_id:
-        #     self.annotation_ids.append(annotation_id)
-        #     self.save()
         return annotation_id
 
     def has_regions(self):
@@ -128,6 +123,15 @@ class Regions(models.Model):
 
             return metadata
         return {}
+
+    def to_json(self):
+        return {
+            "id": self.id,
+            "ref": self.get_ref(),
+            "class": self.__class__.__name__,
+            "type": get_name("Regions"),
+            "title": self.__str__(),
+        }
 
     def get_annotations(self):
         from app.webapp.utils.iiif.annotation import get_regions_annotations

@@ -28,17 +28,6 @@ function capitalize(s) {
     return s[0].toUpperCase() + s.slice(1);
 }
 
-function getWitType() {
-    // TODO remove fct
-    const currentUrl = getUrl();
-    if (currentUrl.includes(MS)) {
-        return MS;
-    } else if (currentUrl.includes("printed") || currentUrl.includes(VOL)) {
-        return VOL;
-    }
-    return null;
-}
-
 function getRegionsRef() {
     const currentUrl = getUrl();
     if (currentUrl.includes("show")){

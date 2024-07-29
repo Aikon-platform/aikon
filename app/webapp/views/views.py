@@ -13,14 +13,16 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required, user_passes_test
 
 from app.webapp.models.regions import Regions, check_version
-from app.webapp.filters import WitnessFilter
+from app.webapp.search_filters import WitnessFilter
 from app.webapp.models.digitization import Digitization
 from app.config.settings import (
     SAS_APP_URL,
     APP_NAME,
-    ENV,
     GEONAMES_USER,
     APP_LANG,
+    DEBUG,
+    SAS_USERNAME,
+    SAS_PASSWORD,
 )
 from app.webapp.models.edition import Edition
 from app.webapp.models.language import Language
@@ -132,6 +134,7 @@ def reindex_regions(request, obj_ref):
     To reindex regions from a text file named after <obj_ref>
     either to create a Regions obj from a regions txt file if obj_ref is a digit_ref
     or to delete then create a new regions file if obj_ref is a regions_ref
+    TODO differenciate clearly from index_regions
     """
     passed, obj = check_ref(obj_ref, "Regions")
     if not passed:
@@ -170,9 +173,10 @@ def reindex_regions(request, obj_ref):
     return JsonResponse({"error": f"No regions file for reference #{obj_ref}."})
 
 
+@user_passes_test(is_superuser)
 def index_witness_regions(request, wit_id):
     wit = get_object_or_404(Witness, pk=wit_id)
-    regions_files = get_files_with_prefix(REGIONS_PATH, f"{wit.get_ref()}_")
+    regions_files = sorted(get_files_with_prefix(REGIONS_PATH, f"{wit.get_ref()}_"))
     res = {
         "All": regions_files,
         "Indexed": [],
@@ -201,29 +205,6 @@ def index_regions(request, regions_ref=None):
     }
 
     for file in regions_files:
-        # a_ref = file.replace(".txt", "")
-        # ref = parse_ref(a_ref)
-        # if not ref or not ref["regions"]:
-        #     # if there is no regions_id in the ref, pass
-        #     not_indexed_regions.append(a_ref)
-        #     continue
-        # regions_id = ref["regions"][1]
-        # regions = Regions.objects.filter(pk=regions_id).first()
-        # if not regions:
-        #     digit = Digitization.objects.filter(pk=ref["digit"][1]).first()
-        #     if not digit:
-        #         # if there is no digit corresponding to the ref, pass
-        #         not_indexed_regions.append(a_ref)
-        #         continue
-        #     regions = Regions(
-        #         id=regions_id, digitization=digit, model="CHANGE THIS VALUE"
-        #     )
-        #     regions.save()
-        #
-        # from app.webapp.tasks import reindex_from_file
-        #
-        # reindex_from_file.delay(regions_id)
-        # indexed_regions.append(a_ref)
         passed, a_ref = reindex_file(file)
         res["Indexed" if passed else "Not indexed"].append(a_ref)
 
@@ -309,8 +290,8 @@ def populate_annotation(request, regions_id):
     """
     Populate annotation store from IIIF Annotation List
     """
-    if not ENV("DEBUG"):
-        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+    if not DEBUG:
+        credentials(f"{SAS_APP_URL}/", SAS_USERNAME, SAS_PASSWORD)
 
     regions = get_object_or_404(Regions, pk=regions_id)
     return HttpResponse(status=200 if index_regions(regions) else 500)
@@ -333,24 +314,25 @@ def validate_regions(request, regions_ref):
 
 def witness_sas_annotations(request, regions_id):
     regions = get_object_or_404(Regions, pk=regions_id)
-    _, canvas_annotations = formatted_annotations(regions)
-    return JsonResponse(canvas_annotations, safe=False)
+    _, c_annos = formatted_annotations(regions)
+    return JsonResponse(c_annos, safe=False)
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def show_regions(request, regions_ref):
+    # NOTE soon to be not used
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
         # if cls(regions) == Digitization:
         #     create_empty_regions(regions)
         return JsonResponse(regions)
 
-    if not ENV("DEBUG"):
-        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+    if not DEBUG:
+        credentials(f"{SAS_APP_URL}/", SAS_USERNAME, SAS_PASSWORD)
 
-    bboxes, canvas_annotations = formatted_annotations(regions)
+    bboxes, c_annos = formatted_annotations(regions)
 
-    paginator = Paginator(canvas_annotations, 50)
+    paginator = Paginator(c_annos, 50)
     try:
         page_regions = paginator.page(request.GET.get("page"))
     except PageNotAnInteger:
@@ -372,12 +354,13 @@ def show_regions(request, regions_ref):
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def show_all_regions(request, regions_ref):
+    # NOTE soon to be not used
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
         return JsonResponse(regions)
 
-    if not ENV("DEBUG"):
-        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+    if not DEBUG:
+        credentials(f"{SAS_APP_URL}/", SAS_USERNAME, SAS_PASSWORD)
 
     # _, all_annotations = formatted_annotations(regions)
     # all_regions = [
@@ -410,22 +393,23 @@ def show_all_regions(request, regions_ref):
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def export_all_regions(request, regions_ref):
+    # NOTE soon to be not used
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
         return JsonResponse(regions)
 
-    if not ENV("DEBUG"):
-        credentials(f"{SAS_APP_URL}/", ENV("SAS_USERNAME"), ENV("SAS_PASSWORD"))
+    if not DEBUG:
+        credentials(f"{SAS_APP_URL}/", SAS_USERNAME, SAS_PASSWORD)
+
+    # _, all_annotations = formatted_annotations(regions)
+    # all_regions = [
+    #     (canvas_nb, coord, img_file)
+    #     for canvas_nb, coord, img_file in all_annotations
+    #     if coord
+    # ]
+    all_regions = get_regions_annotations(regions)
 
     urls_list = []
-
-    _, all_annotations = formatted_annotations(regions)
-    all_regions = [
-        (canvas_nb, coord, img_file)
-        for canvas_nb, coord, img_file in all_annotations
-        if coord
-    ]
-
     for canvas_nb, coord, img_file in all_regions:
         urls_list.extend(gen_iiif_url(img_file, 2, f"{c[0]}/full/0") for c in coord)
 
@@ -520,6 +504,7 @@ def legacy_manifest(request, old_id):
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def advanced_search(request):
+    # NOTE soon to be not used
     witness_list = Witness.objects.order_by("id")
     witness_filter = WitnessFilter(request.GET, queryset=witness_list)
 
@@ -531,7 +516,7 @@ def advanced_search(request):
         "title": "Advanced search" if APP_LANG == "en" else "Recherche avancée",
         "witness_filter": witness_filter,
         "result_count": witness_filter.qs.count(),
-        "page_obj": page_obj,
+        "page_obj": page_obj,  # witnesses
     }
     return render(request, "webapp/search.html", context)
 
