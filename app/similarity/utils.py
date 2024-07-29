@@ -12,12 +12,11 @@ from collections import defaultdict, Counter
 from itertools import combinations_with_replacement
 import numpy as np
 
-from heapq import nlargest
 from functools import lru_cache
-from concurrent.futures import ThreadPoolExecutor
 
 from app.similarity.const import SCORES_PATH
 from app.config.settings import CV_API_URL, APP_URL, APP_NAME, APP_LANG
+from app.similarity.models.region_pair import RegionPair
 from app.webapp.models.regions import Regions
 from app.webapp.models.utils.constants import WIT
 
@@ -454,7 +453,7 @@ def compute_total_similarity(
 
     return sorted_total_scores
 
-  
+
 def reset_similarity(regions_ref):
     # TODO function to delete all similarity files concerning the regions_ref
     # TODO send request to delete features and scores concerning the anno ref as well
