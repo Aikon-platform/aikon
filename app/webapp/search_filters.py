@@ -3,9 +3,10 @@ import django_filters
 from django.forms import DateTimeField, DateField
 from django.forms.models import ModelChoiceIteratorValue
 
-from app.webapp.models.edition import Edition
+from app.webapp.models.edition import Edition, get_name as edition_name
 from app.webapp.models.language import Language
-from app.webapp.models.witness import Witness
+from app.webapp.models.witness import Witness, get_name as witness_name
+from app.webapp.models.work import get_name as work_name
 
 
 def serialize_choice_value(value):
@@ -15,14 +16,20 @@ def serialize_choice_value(value):
 
 
 class RecordFilter(django_filters.FilterSet):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.custom_labels = getattr(self.Meta, "labels", {})
+
     def to_form_fields(self):
         form_fields = []
 
         for field_name, field in self.form.fields.items():
+            label = self.custom_labels.get(field_name.replace("__icontains", ""))
+
             field_info = {
                 "name": field_name,
                 "type": field.__class__.__name__,
-                "label": field.label or field_name.capitalize(),
+                "label": label or field.label,
                 "required": field.required,
                 "help_text": field.help_text,
                 "initial": field.initial,
@@ -45,6 +52,7 @@ class RecordFilter(django_filters.FilterSet):
 
 
 class WitnessFilter(RecordFilter):
+    # TODO make autocompletion work
     edition = django_filters.ModelChoiceFilter(
         queryset=Edition.objects.all(),
         widget=autocomplete.ModelSelect2(url="webapp:edition-autocomplete"),
@@ -54,10 +62,10 @@ class WitnessFilter(RecordFilter):
         widget=autocomplete.ModelSelect2Multiple(url="webapp:language-autocomplete"),
     )
     contents__date_min = django_filters.RangeFilter(
-        field_name="contents__date_min", label="Date minimale"
+        field_name="contents__date_min", label=witness_name("date_min")
     )  # , widget=django_filters.widgets.RangeWidget(attrs={"class": "range"}))
     contents__date_max = django_filters.RangeFilter(
-        field_name="contents__date_max", label="Date maximale"
+        field_name="contents__date_max", label=witness_name("date_max")
     )
 
     class Meta:
@@ -75,4 +83,18 @@ class WitnessFilter(RecordFilter):
             "contents__work__author": ["exact"],
             "contents__lang": ["exact"],
             "contents__tags": ["exact"],
+        }
+        labels = {
+            "type": witness_name("type"),
+            "id_nb": witness_name("id_nb"),
+            "place": witness_name("ConservationPlace"),
+            "edition": edition_name("Edition"),
+            "edition__name": edition_name("name"),
+            "edition__place": edition_name("pub_place"),
+            "edition__publisher": edition_name("publisher"),
+            "contents__work": work_name("Work"),
+            "contents__work__title": work_name("title"),
+            "contents__work__author": work_name("author"),
+            "contents__lang": witness_name("Language"),
+            "contents__tags": witness_name("Tag"),
         }

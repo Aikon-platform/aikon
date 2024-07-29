@@ -72,18 +72,15 @@
                 </div>
             </div>
 
-            <div class="content">
-<!--TODO make appear as 2 columns of metadata (i.e 2 tables)-->
-                <table class="table pl-2 is-fullwidth">
-                    <tbody>
+            <div class="content fixed-grid px-6">
+                <div class="grid metadata pt-2">
                     {#each Object.entries(item.metadata) as [field, value]}
-                        <tr>
-                            <th class="is-narrow is-3">{field}</th>
-                            <td>{value}</td>
-                        </tr>
+                        <div class="datum is-middle columns">
+                            <div class="column is-3 is-bold">{field}</div>
+                            <div class="column is-8 {value === '-' ? 'faded' : ''}">{value}</div>
+                        </div>
                     {/each}
-                    </tbody>
-                </table>
+                </div>
             </div>
         </div>
     </div>
@@ -105,5 +102,14 @@
         height: 1em;
         overflow: visible;
         vertical-align: -.125em;
+    }
+    .metadata {
+        color: var(--bulma-text-strong);
+    }
+    .metadata .datum:not(:nth-last-child(-n+2)) {
+        border-bottom: 1px solid var(--bulma-border);
+    }
+    .columns {
+        margin-bottom: 0.5rem;
     }
 </style>
