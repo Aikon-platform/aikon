@@ -1,4 +1,4 @@
-import { writable, derived, get } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 import {initPagination, pageUpdate} from "../utils.js";
 
 function createRecordsStore() {
@@ -8,17 +8,6 @@ function createRecordsStore() {
 
     initPagination(currentPage, "p");
 
-    function handlePageUpdate(pageNb) {
-        pageUpdate(pageNb, currentPage, "p");
-    }
-
-    // const fetchPage = derived(currentPage, ($currentPage) =>
-    //     (async () => {
-    //         const response = await fetch(`${window.location.origin}/search/witness/?p=${$currentPage}`);
-    //         const data = await response.json();
-    //         pageRecords.set(data);
-    //         return data;
-    //     })());
     async function fetchPage(queryString = null) {
         if (!queryString) {
             queryString = `p=${get(currentPage)}`;
@@ -37,6 +26,10 @@ function createRecordsStore() {
     }
 
     let resultPage = fetchPage();
+    function handlePageUpdate(pageNb) {
+        pageUpdate(pageNb, currentPage, "p");
+        resultPage = fetchPage();
+    }
 
     function remove(recordId) {
         // todo
@@ -46,6 +39,7 @@ function createRecordsStore() {
         currentPage,
         pageRecords,
         resultPage,
+        resultNumber,
         fetchPage,
         handlePageUpdate,
     };

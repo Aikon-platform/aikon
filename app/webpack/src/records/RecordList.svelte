@@ -1,26 +1,24 @@
 <script>
-    import { onMount } from 'svelte';
     import Record from "./Record.svelte";
     import { recordsStore } from "./recordStore.js";
-    const { pageRecords, resultPage } = recordsStore;
+    const { pageRecords, resultPage, resultNumber } = recordsStore;
     import { selectionStore } from "../selection/selectionStore.js";
     const { selected, nbSelected } = selectionStore;
     import SelectionBtn from "../selection/SelectionBtn.svelte";
-    import SelectionFooter from "../selection/SelectionFooter.svelte";
-    import {appLang, regionsType} from '../constants';
-    import {refToIIIF} from "../utils.js";
+    import { appLang } from '../constants';
     import SelectionModal from "../selection/SelectionModal.svelte";
     import RecordSearch from "./RecordSearch.svelte";
-    // export let records = [];
+    import Pagination from "../Pagination.svelte";
 
     $: selectedRecords = $selected(false);
     $: selectionLength = $nbSelected(false);
 
+    export let searchFields = [];
 </script>
 
 <SelectionBtn {selectionLength}/>
 
-<RecordSearch/>
+<RecordSearch {searchFields}/>
 
 {#await resultPage}
     <div class="faded is-center">
@@ -28,6 +26,7 @@
     </div>
 {:then _}
     {#if $pageRecords.length !== 0}
+        <Pagination store={recordsStore} nbOfItems={$resultNumber}/>
         <div>
             {#each $pageRecords as item (item.id)}
                 <Record {item}/>
@@ -35,6 +34,7 @@
                 <p>{appLang === 'en' ? 'No records found' : 'Aucun enregistrement trouvé'}</p>
             {/each}
         </div>
+        <Pagination store={recordsStore} nbOfItems={$resultNumber}/>
     {/if}
 {:catch error}
     <div class="faded is-center">

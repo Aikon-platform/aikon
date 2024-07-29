@@ -204,4 +204,7 @@ urlpatterns += [
 ]
 
 # SEARCH
-urlpatterns += [path("search/witness/", search_witnesses, name="search-witnesses")]
+urlpatterns += [
+    # path("search/<record-name>/", search_<record-name>, name="search-<record-name>"),
+    path("search/witness/", search_witnesses, name="search-witnesses"),
+]

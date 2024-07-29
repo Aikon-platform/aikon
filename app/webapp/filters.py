@@ -1,10 +1,5 @@
-import django_filters
-from dal import autocomplete
 from django.template import Library
 from app.config.settings import CANTALOUPE_APP_URL, SAS_APP_URL, APP_URL, APP_NAME
-from app.webapp.models.edition import Edition
-from app.webapp.models.language import Language
-from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, TRUNCATEWORDS_SIM
 
 register = Library()
@@ -91,37 +86,3 @@ def truncate_words(text, max_length=TRUNCATEWORDS_SIM):
 @register.filter
 def jpg_to_none(img_file):
     return img_file.replace(".jpg", "")
-
-
-class WitnessFilter(django_filters.FilterSet):
-    edition = django_filters.ModelChoiceFilter(
-        queryset=Edition.objects.all(),
-        widget=autocomplete.ModelSelect2(url="webapp:edition-autocomplete"),
-    )
-    contents__lang = django_filters.ModelChoiceFilter(
-        queryset=Language.objects.all(),
-        widget=autocomplete.ModelSelect2Multiple(url="webapp:language-autocomplete"),
-    )
-    contents__date_min = django_filters.RangeFilter(
-        field_name="contents__date_min", label="Date minimale"
-    )  # , widget=django_filters.widgets.RangeWidget(attrs={"class": "range"}))
-    contents__date_max = django_filters.RangeFilter(
-        field_name="contents__date_max", label="Date maximale"
-    )
-
-    class Meta:
-        model = Witness
-        fields = {
-            "type": ["exact"],
-            "id_nb": ["icontains"],
-            "place": ["exact"],
-            "edition": ["exact"],
-            "edition__name": ["exact"],
-            "edition__place": ["exact"],
-            "edition__publisher": ["exact"],
-            "contents__work": ["exact"],
-            "contents__work__title": ["exact"],
-            "contents__work__author": ["exact"],
-            "contents__lang": ["exact"],
-            "contents__tags": ["exact"],
-        }

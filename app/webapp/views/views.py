@@ -13,12 +13,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required, user_passes_test
 
 from app.webapp.models.regions import Regions, check_version
-from app.webapp.filters import WitnessFilter
+from app.webapp.search_filters import WitnessFilter
 from app.webapp.models.digitization import Digitization
 from app.config.settings import (
     SAS_APP_URL,
     APP_NAME,
-    ENV,
     GEONAMES_USER,
     APP_LANG,
     DEBUG,

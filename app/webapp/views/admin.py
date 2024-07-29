@@ -5,12 +5,11 @@ from django.views.generic import CreateView, DetailView, View, ListView, UpdateV
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 
+from app.webapp.search_filters import WitnessFilter
 from app.webapp.forms import *
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2
-from app.webapp.utils.functions import DateTimeEncoder, flatten
-from app.webapp.utils.iiif.annotation import get_regions_annotations
 
 
 class AbstractView(LoginRequiredMixin, View):
@@ -87,13 +86,13 @@ class AbstractRecordList(AbstractView, ListView):
     #     return ordering
 
     def get_view_title(self):
-        return f"List of {self.model._meta.verbose_name}"
+        # TODO find better name (bilingual)
+        return f"List of {self.model._meta.verbose_name_plural}"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["json_object_list"] = json.dumps(
-            [obj.to_json() for obj in context["object_list"]]  # , cls=DateTimeEncoder
-        )
+        context["record_name"] = self.model._meta.verbose_name
+        context["search_fields"] = []
 
         return context
 
@@ -116,6 +115,13 @@ class WitnessUpdate(AbstractRecordUpdate):
 class WitnessList(AbstractRecordList):
     model = Witness
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["record_name"] = Witness._meta.verbose_name_plural
+        context["search_fields"] = WitnessFilter().to_form_fields()
+
+        return context
+
 
 # TODO SeriesList, WorkList, TreatmentList, DocumentSetList, RegionsSetList
 
@@ -130,7 +136,6 @@ class WitnessRegionsView(AbstractRecordView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        anno_regions = {}
         context["regions_ids"] = []
         context["is_validated"] = True
         context["img_nb"] = None
@@ -142,9 +147,6 @@ class WitnessRegionsView(AbstractRecordView):
             pass
 
         for regions in witness.get_regions():
-            # anno_regions = get_regions_annotations(
-            #     regions, as_json=True, r_annos=anno_regions
-            # )
             context["regions_ids"].append(regions.id)
             # TODO handle multiple manifest for multiple regions
             context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
@@ -154,9 +156,6 @@ class WitnessRegionsView(AbstractRecordView):
             if not regions.is_validated:
                 context["is_validated"] = False
 
-        # context["regions_list"] = json.dumps(
-        #     {k: v for canvases in anno_regions.values() for k, v in canvases.items()}
-        # )
         return context
 
 
@@ -177,10 +176,6 @@ class RegionsView(AbstractRecordView):
         context["witness"] = regions.get_witness().to_json()
         context["is_validated"] = regions.is_validated
         context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
-        # anno_regions = get_regions_annotations(regions, as_json=True)
-        # context["regions_list"] = json.dumps(
-        #     {k: v for canvases in anno_regions.values() for k, v in canvases.items()}
-        # )
         context["img_prefix"] = regions.get_ref().split("_anno")[0]
         context["img_nb"] = regions.img_nb()
         return context
