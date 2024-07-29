@@ -127,17 +127,17 @@ urlpatterns = [
         name="language-autocomplete",
     ),
     path("retrieve_place_info/", retrieve_place_info, name="retrieve-place-info"),
-    path(
-        f"{APP_NAME}/task-status/<str:task_id>/",
-        task_status,
-        name="task-status",
-    ),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
     path(f"{APP_NAME}/advanced-search/", advanced_search, name="advanced-search"),
     path(
         f"{APP_NAME}/autocomplete/edition/",
         EditionAutocomplete.as_view(),
         name="edition-autocomplete",
+    ),
+    path(
+        f"{APP_NAME}/api-progress",
+        api_progress,
+        name="api-progress",
     ),
 ]
 
@@ -161,6 +161,9 @@ urlpatterns += [
         WitnessRegionsView.as_view(),
         name="witness_regions_view",
     ),
+    path(f"treatment/", TreatmentList.as_view(), name="treatment_list"),
+    path(f"treatment/<int:id>/", TreatmentView.as_view(), name="treatment_view"),
+    path(f"treatment/add/", TreatmentCreate.as_view(), name="treatment_create"),
 ]
 
 # ENDPOINTS

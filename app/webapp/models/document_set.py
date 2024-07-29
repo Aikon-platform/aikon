@@ -21,25 +21,17 @@ class DocumentSet(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        return self.name
+        return self.title
 
-    user_id = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
-    name = models.CharField(max_length=50, unique=True)
-    title = models.CharField(max_length=150)
+    title = models.CharField(max_length=50, unique=True)
     is_public = models.BooleanField(default=False)
 
-    wit_ids = ArrayField(models.IntegerField(), default=list)
-    ser_ids = ArrayField(models.IntegerField(), default=list)
-    digit_ids = ArrayField(models.IntegerField(), default=list)
-    work_ids = ArrayField(models.IntegerField(), default=list)
+    wit_ids = ArrayField(models.IntegerField(), default=list, blank=True, null=True)
+    ser_ids = ArrayField(models.IntegerField(), default=list, blank=True, null=True)
+    digit_ids = ArrayField(models.IntegerField(), default=list, blank=True, null=True)
+    work_ids = ArrayField(models.IntegerField(), default=list, blank=True, null=True)
 
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
-
-    def get_objects(self):
-        # TODO: return JSON to link to treatment
-        try:
-            return self.wit_ids
-        except AttributeError:
-            return None

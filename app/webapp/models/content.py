@@ -73,6 +73,7 @@ class Content(models.Model):
     )
     work = models.ForeignKey(
         Work,
+        related_name="contents",
         verbose_name=get_name("Work"),
         on_delete=models.SET_NULL,
         blank=True,

@@ -70,20 +70,17 @@ def receive_vectorization(request):
         return JsonResponse({"error": "aucun fichier reçu"}, status=400)
 
     file = request.FILES["file"]
+    # treatment_id = request.DATA["experiment_id"]
 
     if file.name == "":
         return JsonResponse({"error": "No selected file"}, status=400)
 
     if file and file.name.endswith(".zip"):
         try:
-            # Sauvegarde temporairement le fichier ZIP reçu
             temp_zip_path = default_storage.save("temp.zip", file)
             temp_zip_file = default_storage.path(temp_zip_path)
 
-            # Dézippe et enregistre les fichiers SVG
             save_svg_files(temp_zip_file)
-
-            # Supprime le fichier ZIP temporaire
             default_storage.delete(temp_zip_path)
 
             return JsonResponse(
@@ -122,9 +119,8 @@ def show_crop_vectorization(request, img_file, coords, regions, canvas_nb):
 @user_passes_test(is_superuser)
 def smash_and_relauch_vectorization(request, regions_ref):
     """
-    delete the imgs in the API from the repo corresponding to doc_id + relauch vectorization
+    Delete the imgs in the API from the repo corresponding to doc_id + relauch vectorization
     """
-
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
         return JsonResponse(regions)
@@ -161,14 +157,13 @@ def smash_and_relauch_vectorization(request, regions_ref):
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def send_vectorization(request, regions_ref):
     """
-    Send vectorization request from the witness info template
+    To relaunch vectorization request in case the automatic process has failed
     """
 
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
         return JsonResponse(regions)
 
-    print(regions)
     if not regions:
         return JsonResponse(
             {"response": f"No corresponding regions in the database for {regions_ref}"},
@@ -195,7 +190,6 @@ def send_vectorization(request, regions_ref):
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def show_vectorization(request, regions_ref):
-
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
         return JsonResponse(regions)

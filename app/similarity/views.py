@@ -13,7 +13,7 @@ from app.similarity.models.region_pair import RegionPair
 from app.webapp.utils.functions import sort_key
 from app.webapp.utils.logger import log
 from app.similarity.utils import (
-    similarity_request,
+    send_request,
     check_score_files,
     check_computed_pairs,
     get_compared_regions,
@@ -48,7 +48,7 @@ def send_similarity(request, regions_refs):
         )
 
     try:
-        if similarity_request(regions):
+        if send_request(regions):
             return JsonResponse(
                 {"response": f"Successful similarity request for {regions_refs}"},
                 safe=False,
@@ -72,6 +72,8 @@ def receive_similarity(request):
     """
     if request.method == "POST":
         filenames = []
+        # treatment_id = request.DATA["experiment_id"]
+
         try:
             for regions_refs, file in request.FILES.items():
                 with open(f"{SCORES_PATH}/{regions_refs}.npy", "wb") as destination:
@@ -88,7 +90,7 @@ def receive_similarity(request):
 
 
 def compute_score(request):
-    from app.webapp.tasks import compute_similarity_scores
+    from app.similarity.tasks import compute_similarity_scores
 
     if request.method == "POST":
         try:

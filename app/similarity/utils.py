@@ -7,8 +7,9 @@ import requests
 from typing import List
 
 from app.similarity.const import SCORES_PATH
-from app.config.settings import CV_API_URL, APP_URL, APP_NAME
+from app.config.settings import CV_API_URL, APP_URL, APP_NAME, APP_LANG
 from app.webapp.models.regions import Regions
+from app.webapp.models.utils.constants import WIT
 from app.webapp.utils.logger import log
 
 
@@ -56,7 +57,55 @@ def gen_list_url(regions_ref):
     return f"{APP_URL}/{APP_NAME}/{regions_ref}/list"
 
 
-def similarity_request(regions: List[Regions]):
+def prepare_request(witnesses, treatment_id):
+    regions = []
+
+    try:
+        for witness in witnesses:
+            # if len(check_computed_pairs([region.get_ref() for region in witness.get_regions()])) == 0:
+            #     pass
+            # else:
+            regions.extend(witness.get_regions())
+
+        if regions:
+            documents = {
+                ref: gen_list_url(ref)
+                for ref in [region.get_ref() for region in regions]
+            }
+            return {
+                "experiment_id": f"{treatment_id}",
+                "documents": documents,
+                # "model": f"{FEAT_BACKBONE}",
+                "callback": f"{APP_URL}/{APP_NAME}/get-similarity",  # URL to which the pair file must be sent back
+                "tracking_url": f"{APP_URL}/{APP_NAME}/api-progress",
+            }
+
+        else:
+            return {
+                "message": f"No similarity to compute for the selected {WIT}es."
+                if APP_LANG == "en"
+                else f"Pas de similarité à calculer pour les {WIT}s sélectionnés."
+            }
+
+    except Exception as e:
+        log(
+            f"[prepare_request] Failed to prepare data for similarity request",
+            e,
+        )
+        raise Exception(
+            f"[prepare_request] Failed to prepare data for similarity request"
+        )
+
+
+def send_request(witnesses):
+    """
+    To relaunch similarity request in case the automatic process has failed
+    """
+
+    regions = []
+    for witness in witnesses:
+        regions.extend(witness.get_regions())
+
     documents = {
         ref: gen_list_url(ref) for ref in [region.get_ref() for region in regions]
     }
@@ -71,7 +120,7 @@ def similarity_request(regions: List[Regions]):
             },
         )
         if response.status_code == 200:
-            log(f"[similarity_request] Similarity request send: {response.text or ''}")
+            log(f"[similarity_request] Similarity request sent: {response.text or ''}")
             return True
         else:
             error = {
@@ -92,15 +141,16 @@ def similarity_request(regions: List[Regions]):
             }
 
             log(error)
-            return False
+            raise Exception(error)
     except Exception as e:
         log(f"[similarity_request] Request failed for {list(documents.keys())}", e)
-
-    return False
+        raise Exception(
+            f"[similarity_request] Request failed for {list(documents.keys())}"
+        )
 
 
 def check_score_files(file_names):
-    from app.webapp.tasks import check_similarity_files
+    from app.similarity.tasks import check_similarity_files
 
     # TODO check similarity file content inside a celery task
     check_similarity_files.delay(file_names)

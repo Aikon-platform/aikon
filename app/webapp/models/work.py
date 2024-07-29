@@ -69,3 +69,9 @@ class Work(models.Model):
     def clean(self):
         super().clean()
         validate_dates(self.date_min, self.date_max)
+
+    def get_witnesses(self):
+        from app.webapp.models.witness import Witness
+
+        witness_ids = self.contents.values_list("witness", flat=True).distinct()
+        return Witness.objects.filter(id__in=witness_ids)

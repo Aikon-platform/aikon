@@ -12,3 +12,4 @@ from app.webapp.admin.series import *
 from app.webapp.admin.tag import *
 from app.webapp.admin.witness import *
 from app.webapp.admin.work import *
+from app.webapp.admin.treatment import *

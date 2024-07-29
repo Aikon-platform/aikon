@@ -24,6 +24,7 @@ from app.config.settings import (
 )
 from app.webapp.models.edition import Edition
 from app.webapp.models.language import Language
+from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, MAX_ROWS
 from app.webapp.utils.functions import (
@@ -274,19 +275,6 @@ def get_regions_img_list(request, regions_ref):
         return JsonResponse({"response": error, "reason": e}, safe=False)
 
     return JsonResponse(regions_dict, status=200, safe=False)
-
-
-def task_status(request, task_id):
-    task = AsyncResult(task_id)
-    if task.ready():
-        try:
-            result = json.dumps(task.result)
-        except TypeError as e:
-            log(task.result)
-            log(f"[task_status] Could not parse result for {task_id}", e)
-            return JsonResponse({"status": "failed", "result": ""})
-        return JsonResponse({"status": "success", "result": result})
-    return JsonResponse({"status": "running"})
 
 
 def export_regions_img(request, regions_id):
@@ -560,3 +548,19 @@ class EditionAutocomplete(autocomplete.Select2QuerySetView):
             qs = qs.filter(name__icontains=self.q)
 
         return qs
+
+
+@csrf_exempt
+def api_progress(request):
+    """
+    Receives treatment updates from API
+    """
+    if request.method == "POST":
+        treatment_id = request.POST["experiment_id"]
+        info = request.POST["message"]
+
+        treatment = Treatment.objects.get(id=treatment_id)
+        treatment.receive_notification(event=request.POST["event"], info=info)
+        return JsonResponse({"message": "Update received"}, status=200)
+
+    return JsonResponse({"message": "Invalid request"}, status=400)
