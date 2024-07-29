@@ -257,7 +257,7 @@ class Treatment(models.Model):
             try:
                 send_mail(
                     f"[{APP_NAME.upper()} {self.task_type}] Task {self.status.lower()}",
-                    f"Dear {APP_NAME.upper()} user,\n\nThe {self.task_type} task you requested on the {APP_NAME.upper()} platform was completed with the status {self.status}. Your documents are available on the platform.\n\nErrors: {error if error else message}.\n\nBest,\nthe {APP_NAME.upper()} team.",
+                    f"Dear {APP_NAME.upper()} user,\n\nThe {self.task_type} task (#{self.id}) you requested on the {APP_NAME.upper()} platform was completed with the status {self.status}.\n\nErrors: {error if error else message}.\n\nBest,\nthe {APP_NAME.upper()} team.",
                     EMAIL_HOST_USER,
                     [self.requested_by.email],
                     fail_silently=False,
@@ -288,25 +288,3 @@ class Treatment(models.Model):
                 "error": info,
             }
             self.on_task_error(data)
-
-    def get_progress(self):
-        """
-        Queries the API to get the task progress
-        """
-        try:
-            api_query = requests.get(
-                f"{CV_API_URL}/{self.task_type}/{self.api_tracking_id}/status",
-            )
-        except ConnectionError:
-            return {
-                "status": "UNKNOWN",
-                "error": "Connection error when getting task progress from the worker",
-            }
-
-        try:
-            return {"status": self.status, **api_query.json()}
-        except:
-            log(f"[treatment] Error when reading task progress: {api_query.text}")
-            return {
-                "status": "UNKNOWN",
-            }
