@@ -4,7 +4,7 @@
 
     export let nbOfItems;
     export let pageLength = 50;
-    const maxPage = Math.ceil(nbOfItems / pageLength);
+    $: maxPage = Math.ceil(nbOfItems / pageLength);
 </script>
 
 {#if maxPage > 1}

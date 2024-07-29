@@ -168,6 +168,9 @@ fieldset:not(:last-child) {
     display: flex;
     justify-content: flex-start;
 }
+.is-bold {
+    font-weight: bold;
+}
 
 .svg-inline--fa {
     padding-right: 10px !important;

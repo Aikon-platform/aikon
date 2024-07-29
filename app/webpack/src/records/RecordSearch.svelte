@@ -7,13 +7,13 @@
     let formData = {};
     searchFields.forEach(field => {
         formData[field.name] = field.initial || '';
-        // todo make param appear in URL
     });
 
     function handleSearch(event) {
         event.preventDefault();
         const queryString = new URLSearchParams(formData).toString();
         fetchPage(queryString);
+        // TODO make search param appear in URL + load results from URL
     }
 
     const isMulti = field => field.type.includes('Multiple');
@@ -31,7 +31,7 @@
                                 <select id={field.name} name={field.name} bind:value={formData[field.name]}
                                         {...isMulti(field) ? { size: 4, multiple: true } : {}}>
                                     {#if !isMulti(field)}
-                                        <option value="">Select {field.label}</option>
+                                        <option value="" disabled selected class="faded">Select ...</option>
                                     {/if}
                                     {#each field.choices as choice}
                                         <option value={choice.value}>{choice.label}</option>
