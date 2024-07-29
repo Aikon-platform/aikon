@@ -14,6 +14,7 @@
     $: selectionLength = $nbSelected(false);
 
     export let searchFields = [];
+    // TODO make result count appear + filter name
 </script>
 
 <SelectionBtn {selectionLength}/>

@@ -3,6 +3,7 @@ import { regionsType } from '../constants';
 
 
 function createSelectionStore() {
+    // TODO load from database
     const selection = writable(JSON.parse(localStorage.getItem("documentSet")) || {});
     const { subscribe, get, update } = selection;
 
@@ -61,8 +62,11 @@ function createSelectionStore() {
         subscribe,
         save: () => update(selection => {
             console.log(selection);
+            // TODO
             // api call to save selection in database
             // receive id of saved
+            // if saved, btn for treatment
+            // continue modifying ?
             return selection
         }),
         empty: (isRegion) => update(selection => {
@@ -86,13 +90,6 @@ function createSelectionStore() {
             } else {
                 return add(selection, item);
             }
-        }),
-        toggleAll: (isRegion, items, areAllSelected) => update(selection => {
-            // if (areAllSelected) {
-            //     return removeAll(selection, item.id, item.type);
-            // } else {
-            //     return addAll(selection, items);
-            // }
         }),
         // REACTIVE STATEMENT
         isSelected: derived(selection, $selection =>
