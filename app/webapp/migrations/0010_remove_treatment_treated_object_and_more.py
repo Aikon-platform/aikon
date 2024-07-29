@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ("webapp", "0008_alter_conservationplace_options_and_more"),
+        ("webapp", "0009_rename_regions_ref_1_regionpair_regions_id_1_and_more"),
     ]
 
     operations = [

@@ -8,7 +8,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("webapp", "0009_remove_treatment_treated_object_and_more"),
+        ("webapp", "0010_remove_treatment_treated_object_and_more"),
     ]
 
     operations = [
