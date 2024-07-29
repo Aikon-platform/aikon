@@ -5,26 +5,9 @@
     import { appLang } from '../constants';
     export let item;
     $: itemSelected = $isSelected(item);
-</script>
 
-<style>
-    .card.image {
-        overflow: hidden;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    .hoverable:hover {
-        cursor: pointer;
-        text-decoration: underline;
-    }
-    svg {
-        padding-left: 10px !important;
-        height: 1em;
-        overflow: visible;
-        vertical-align: -.125em;
-    }
-</style>
+    // TODO add delete button if USER is the creator of the record
+</script>
 
 <div class="item">
     <div class="card mb-3">
@@ -60,7 +43,7 @@
                                 {/each}
                             {/if}
                             {#if item.buttons.includes("regions")}
-                                <a href="{item.url}regions/" class="button is-small is-rounded is-link px-2"
+                                <a href="{item.url}regions/" class="button is-small is-rounded is-link px-2 py-1"
                                    title="{appLang === 'en' ? 'View image regions' : 'Afficher les régions d\'images'}">
                                     <span class="iconify" data-icon="entypo:documents"/>
                                     <span class="ml-2">
@@ -76,7 +59,7 @@
                         {#if appLang === 'en'}
                             {itemSelected ? 'Remove from' : 'Add to'} selection
                         {:else}
-                            {itemSelected ? 'Retirer de' : 'Ajouter à la'} sélection
+                            {itemSelected ? 'Retirer de la' : 'Ajouter à la'} sélection
                         {/if}
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
                             {#if itemSelected}
@@ -90,6 +73,7 @@
             </div>
 
             <div class="content">
+<!--TODO make appear as 2 columns of metadata (i.e 2 tables)-->
                 <table class="table pl-2 is-fullwidth">
                     <tbody>
                     {#each Object.entries(item.metadata) as [field, value]}
@@ -104,3 +88,22 @@
         </div>
     </div>
 </div>
+
+<style>
+    .card.image {
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .hoverable:hover {
+        cursor: pointer;
+        text-decoration: underline;
+    }
+    svg {
+        padding-left: 10px !important;
+        height: 1em;
+        overflow: visible;
+        vertical-align: -.125em;
+    }
+</style>

@@ -1,4 +1,5 @@
 import {derived, get, writable} from 'svelte/store';
+import {initPagination, pageUpdate} from "../../utils.js";
 
 function createSimilarityStore() {
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
@@ -44,17 +45,7 @@ function createSimilarityStore() {
         return imgs;
     })();
 
-    const initCurrentPage = () => {
-        if (typeof window !== 'undefined') {
-            const urlPage = parseInt(new URLSearchParams(window.location.search).get("sp"));
-            if (!isNaN(urlPage)) {
-                currentPage.set(urlPage);
-                return urlPage;
-            }
-        }
-        currentPage.set(1);
-        return 1;
-    }
+    const initCurrentPage = () => initPagination(currentPage, "sp");
 
     const setPageQImgs = derived(currentPage, ($currentPage) =>
         (async () => updatePageQImgs($currentPage))()
@@ -69,12 +60,7 @@ function createSimilarityStore() {
     }
 
     function handlePageUpdate(pageNb) {
-        currentPage.set(pageNb);
-        if (typeof window !== 'undefined') {
-            const url = new URL(window.location.href);
-            url.searchParams.set("sp", pageNb);
-            window.history.pushState({}, '', url);
-        }
+        pageUpdate(pageNb, currentPage, "sp");
     }
 
     function addComparedRegions(region) {

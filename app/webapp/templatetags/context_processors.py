@@ -61,4 +61,5 @@ def global_variables(request):
         "MANIFEST_V2": MANIFEST_V2,
         "CATEGORY_INFO": CATEGORY_INFO,
     }
+
     return {**constants, **ENTITY_NAMES}

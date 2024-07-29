@@ -20,13 +20,24 @@ export function getSasUrl() {
     return sasUrl ?? "http://localhost:3000";
 }
 
-export async function getRecordList() {
-    const res = await fetch('/api/records/');
+export function initPagination(pageWritable, urlParam) {
+    if (typeof window !== 'undefined') {
+        const urlPage = parseInt(new URLSearchParams(window.location.search).get(urlParam));
+        if (!isNaN(urlPage)) {
+            pageWritable.set(urlPage);
+            return urlPage;
+        }
+    }
+    pageWritable.set(1);
+    return 1;
+}
 
-    if (res.ok) {
-        return await res.text();
-    } else {
-        throw new Error('Request failed');
+export function pageUpdate(pageNb, pageWritable, urlParam) {
+    pageWritable.set(pageNb);
+    if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.set(urlParam, pageNb);
+        window.history.pushState({}, '', url);
     }
 }
 
@@ -67,9 +78,9 @@ export function showMessage(msg, title = null, confirm = false) {
                 resolve(undefined);
             }
             if (title) {
-                document.getElementById("modal-title").textContent = title;
+                document.getElementById("modal-title").innerHTML = title;
             }
-            document.getElementById("modal-body").textContent = msg;
+            document.getElementById("modal-body").innerHTML = msg;
             document.getElementById("hidden-msg-btn").click();
 
             const cancelBtn = document.getElementById("cancel-btn");

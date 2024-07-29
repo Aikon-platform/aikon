@@ -247,7 +247,7 @@ class Digitization(models.Model):
     def get_imgs(self, is_abs=False, temp=False, only_one=False):
         prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
         path = f"{IMG_PATH}/" if is_abs else ""
-        return get_files_with_prefix(IMG_PATH, prefix, path, only_one)
+        return sorted(get_files_with_prefix(IMG_PATH, prefix, path, only_one))
 
     def get_metadata(self):
         metadata = self.get_witness().get_metadata() if self.get_witness() else {}

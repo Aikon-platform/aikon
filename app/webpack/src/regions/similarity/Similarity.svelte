@@ -25,7 +25,11 @@
 {:catch error}
     <Table>
         <tr class="faded is-center">
+            {#if appLang === 'en'}
             Error when retrieving similarities: {error}
+        {:else}
+            Erreur lors de la récupération des similarités: {error}
+        {/if}
         </tr>
     </Table>
 {/await}

@@ -3,7 +3,7 @@
     import { manifestToMirador, showMessage, downloadBlob, withLoading } from "../utils.js";
     import { selectionStore } from "../selection/selectionStore.js";
     const { selected, nbSelected } = selectionStore;
-    import { regionsStore } from './stores/regionsStore.js';
+    import { regionsStore } from './regionsStore.js';
     const { allRegions } = regionsStore;
     import { appLang, regionsType, csrfToken } from '../constants';
 

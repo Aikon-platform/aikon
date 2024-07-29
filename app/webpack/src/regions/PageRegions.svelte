@@ -1,6 +1,6 @@
 <script>
     import { getContext } from 'svelte';
-    import { regionsStore } from "./stores/regionsStore.js";
+    import { regionsStore } from "./regionsStore.js";
     const { pageRegions, fetchPages } = regionsStore;
     import Region from "./Region.svelte";
     import Pagination from "../Pagination.svelte";
@@ -8,9 +8,6 @@
     import Table from "../Table.svelte";
     import ExtractionButtons from "./ExtractionButtons.svelte";
     import { appLang } from '../constants';
-
-    export let isItemCopied;
-    export let handleCopyRef;
 
     const nbOfPages = getContext('nbOfPages');
 
@@ -33,9 +30,7 @@
             {#each Object.entries($pageRegions) as [canvasNb, items]}
                 <RegionsRow canvasImg={toImgName(canvasNb)} {canvasNb}>
                     {#each Object.values(items) as item (item.id)}
-                        <Region {item} isSquare={false}
-                                isCopied={isItemCopied(item)}
-                                on:copyRef={handleCopyRef}/>
+                        <Region {item} isSquare={false}/>
                     {/each}
                 </RegionsRow>
             {/each}

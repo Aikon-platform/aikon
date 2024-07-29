@@ -5,6 +5,7 @@ from app.webapp.views.users import *
 
 app_name = "webapp"
 
+# TODO delete the unused endpoints
 urlpatterns = [
     path("", admin_app, name="home"),
     path(f"{APP_NAME}/logout", logout_view, name="logout"),
@@ -200,4 +201,10 @@ urlpatterns += [
         export_regions,
         name="export_regions",
     ),
+]
+
+# SEARCH
+urlpatterns += [
+    # path("search/<record-name>/", search_<record-name>, name="search-<record-name>"),
+    path("search/witness/", search_witnesses, name="search-witnesses"),
 ]

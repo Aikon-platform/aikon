@@ -214,10 +214,11 @@ LOGGING = {
             "handlers": ["console", "file"],
             "level": "WARNING",
         },
-        # 'celery': {
-        #     'handlers': ["console"],  # 'file'
-        #     'level': "DEBUG",
-        # },
+        "celery": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": True,
+        },
     },
     "formatters": {
         "verbose": {"format": "%(asctime)s - %(levelname)s - %(message)s"},

@@ -12,23 +12,19 @@
         {% include "includes/breadcrumbs.html" %}
         <h1 class="is-title is-size-2 py-3">{{ filter }}</h1>
     {% else %}
-        <h1 class="is-title is-size-2 py-3">All {{ record_name }}</h1>
+        <h1 class="is-title is-size-2 py-3">
+            {{ view_title }}
+        </h1>
     {% endif %}
-
-    {% include "includes/pagination.html" %}
-
-    {# SEARCH SECTION #}
 
     <div>
         <div id="record-list"></div>
     </div>
-
-    {% include "includes/pagination.html" %}
 {% endblock %}
 
 {% block extra_js %}
-    <script type="application/json" id="record-data">
-        {{ json_object_list|safe }}
+    <script>
+        const searchFields = {{ search_fields|js|safe }};
     </script>
     <script src="{% static 'svelte/recordList.js' %}"></script>
 {% endblock %}

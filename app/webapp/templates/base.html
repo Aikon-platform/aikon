@@ -1,6 +1,6 @@
 {% load static shared_tags %}
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -46,6 +46,9 @@
 
         const MANIFEST_V1 = "{{ MANIFEST_V1 }}";
         const MANIFEST_V2 = "{{ MANIFEST_V2 }}";
+
+        const SVG_PATH = "{{ SVG_PATH }}";
+        const MEDIA_PATH = "{% get_media_prefix %}";
     </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css">
     <link rel="stylesheet" href="{% static "css/style.css" %}?v1.1">

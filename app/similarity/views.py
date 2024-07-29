@@ -8,7 +8,6 @@ from django.core.exceptions import ValidationError
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 
-from app.config.settings import APP_LANG
 from app.similarity.const import SCORES_PATH
 from app.similarity.models.region_pair import RegionPair
 from app.webapp.models.digitization import Digitization
@@ -222,7 +221,7 @@ def get_regions(img_1, img_2, wid, rid):
             )
         else:
             regions = regions[0]
-        return regions.id  # Return the id directly, not regions[0].id
+        return regions.id
 
     if img_1.startswith(f"wit{wid}"):
         witness = get_object_or_404(Witness, id=wid)
@@ -265,9 +264,11 @@ def add_region_pair(request, wid, rid=None):
         )
 
         if not created:
-            if request.user.id not in region_pair.category_x:
+            if region_pair.category_x is None:
+                region_pair.category_x = [request.user.id]
+            elif request.user.id not in region_pair.category_x:
                 region_pair.category_x.append(request.user.id)
-                region_pair.save()
+            region_pair.save()
 
         s_regions = get_object_or_404(
             Regions, id=regions_2 if q_img == img_1 else regions_1

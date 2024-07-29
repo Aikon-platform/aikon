@@ -55,16 +55,16 @@
             }
 
             const data = await response.json();
-            const regions = data.s_regions
-            if (data.hasOwnProperty('error') && regions !== undefined){
+            if (data.hasOwnProperty('error') || !data.hasOwnProperty('s_regions')){
                 await showMessage(
                     appLang === "en" ?
-                        `Request was unsuccessful, match was not added:\n${data.error}` :
-                        `La requête n'a pas abouti, la correspondance n'a pas été ajoutée :\n${data.error}`,
+                        `Request was unsuccessful, match was not added:<br>${data.error}` :
+                        `La requête n'a pas abouti, la correspondance n'a pas été ajoutée :<br>${data.error}`,
                     error_name
                 );
+                return;
             }
-
+            const regions = data.s_regions;
             similarityStore.addComparedRegions(regions)
             similarityStore.select(regions)
 
@@ -72,8 +72,8 @@
             console.error('Error:', error);
             await showMessage(
                 appLang === "en" ?
-                    `An error has occurred, match was not added:\n${error}` :
-                    `Une erreur s'est produite, la correspondance n'a pas été ajoutée :\n${error}`,
+                    `An error has occurred, match was not added:<br>${error}` :
+                    `Une erreur s'est produite, la correspondance n'a pas été ajoutée :<br>${error}`,
                 error_name
             );
         }
@@ -119,8 +119,8 @@
             console.error('Error:', error);
             await showMessage(
                 appLang === "en" ?
-                    `An error has occurred, request was unsuccessful:\n${error}` :
-                    `Une erreur s'est produite, la requête n'a pas abouti :\n${error}`,
+                    `An error has occurred, request was unsuccessful:<br>${error}` :
+                    `Une erreur s'est produite, la requête n'a pas abouti :<br>${error}`,
                 error_name
             );
         }
