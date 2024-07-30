@@ -76,8 +76,6 @@ class Series(models.Model):
     )
 
     def to_json(self):
-        witnesses = self.get_witnesses()
-
         return {
             "id": self.id,
             "class": self.__class__.__name__,
@@ -93,8 +91,10 @@ class Series(models.Model):
                 get_name("place_name"): self.get_edition_place(),
                 get_name("publisher"): self.get_publisher(),
                 get_name("cons_place"): self.place.__str__(),
-                get_name("vol"): ", ".join(wit.__str__() for wit in witnesses)
-                if witnesses
+                get_name("vol"): ", ".join(
+                    wit.__str__() for wit in self.get_witnesses()
+                )
+                if self.get_witnesses()
                 else "-",
             },
         }

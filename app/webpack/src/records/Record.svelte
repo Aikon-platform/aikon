@@ -33,7 +33,9 @@
                     </a>
 
                     <p class="subtitle is-6 mb-0 ml-2 pt-2">
+                        {#if item.user}
                         {item.user}
+                        {/if}
                         {#if item.updated_at}
                         <span class="tag p-1 mb-1">{item.updated_at}</span>
                         {/if}

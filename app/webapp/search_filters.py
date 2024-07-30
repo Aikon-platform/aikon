@@ -116,6 +116,17 @@ class TreatmentFilter(RecordFilter):
 
 
 class WorkFilter(RecordFilter):
+    contents__lang = django_filters.ModelChoiceFilter(
+        queryset=Language.objects.all(),
+        widget=autocomplete.ModelSelect2Multiple(url="webapp:language-autocomplete"),
+    )
+    contents__date_min = django_filters.RangeFilter(
+        field_name="contents__date_min", label=witness_name("date_min")
+    )  # , widget=django_filters.widgets.RangeWidget(attrs={"class": "range"}))
+    contents__date_max = django_filters.RangeFilter(
+        field_name="contents__date_max", label=witness_name("date_max")
+    )
+
     class Meta:
         model = Work
         fields = {
@@ -132,6 +143,12 @@ class SeriesFilter(RecordFilter):
     edition = django_filters.ModelChoiceFilter(
         queryset=Edition.objects.all(),
         widget=autocomplete.ModelSelect2(url="webapp:edition-autocomplete"),
+    )
+    contents__date_min = django_filters.RangeFilter(
+        field_name="contents__date_min", label=witness_name("date_min")
+    )  # , widget=django_filters.widgets.RangeWidget(attrs={"class": "range"}))
+    contents__date_max = django_filters.RangeFilter(
+        field_name="contents__date_max", label=witness_name("date_max")
     )
 
     class Meta:
