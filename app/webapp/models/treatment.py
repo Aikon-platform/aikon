@@ -27,14 +27,14 @@ from app.webapp.utils.logger import log
 
 def get_name(fieldname, plural=False):
     fields = {
-        "id": {"en": "treatment id", "fr": "id de traitement"},
+        "id": {"en": "Identification number", "fr": "Identifiant"},
         "status": {"en": "task status", "fr": "statut de la tâche"},
         "is_finished": {"en": "finished", "fr": "tâche achevée"},
         "requested_on": {"en": "requested on", "fr": "demandé le"},
         "requested_by": {"en": "requested by", "fr": "demandé par"},
         "task_type": {"en": "task type", "fr": "type de tâche"},
         "treated_objects": {"en": "treated objects", "fr": "objets traités"},
-        "api_tracking_id": {"en": "api tracking id", "fr": "id de suivi api"},
+        "api_tracking_id": {"en": "API identification number", "fr": "Identifiant API"},
     }
     return get_fieldname(fieldname, fields, plural)
 
