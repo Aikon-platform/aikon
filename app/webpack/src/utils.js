@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { sasUrl, cantaloupeUrl } from './constants';
+import { sasUrl, cantaloupeUrl, appName } from './constants';
 
 export const loading = writable(false);
 
@@ -127,3 +127,27 @@ export function downloadBlob(blob, filename) {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
 }
+
+export async function cancelTreatment(treatmentId) {
+    if (confirm(APP_LANG === "en" ? "Are you sure you want to cancel treatment?" :
+            "Êtes-vous sûr de vouloir annuler le traitement en cours ?")) {
+        try {
+            const response = await fetch(`/${appName}/cancel-treatment/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ treatment_id: treatmentId })
+            });
+            if (response.ok) {
+                window.alert(APP_LANG === "en" ? "Successfully cancelled treatment" :
+                "Le traitement a été annulé");
+            } else {
+                window.alert(APP_LANG === "en" ? "Treatment could not be cancelled" :
+                "Le traitement n'a pas pu être annulé");
+            }
+        } catch (error) {
+            window.alert(APP_LANG === "en" ? "Error connecting to API" :
+                "Erreur lors de la connexion à l'API");
+        }
+}}

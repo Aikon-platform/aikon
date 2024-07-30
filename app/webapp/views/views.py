@@ -2,6 +2,7 @@ import json
 import os
 from os.path import exists
 
+import requests
 from celery.result import AsyncResult
 from dal import autocomplete
 
@@ -23,6 +24,7 @@ from app.config.settings import (
     DEBUG,
     SAS_USERNAME,
     SAS_PASSWORD,
+    CV_API_URL,
 )
 from app.webapp.models.edition import Edition
 from app.webapp.models.language import Language
@@ -549,3 +551,30 @@ def api_progress(request):
         return JsonResponse({"message": "Update received"}, status=200)
 
     return JsonResponse({"message": "Invalid request"}, status=400)
+
+
+@csrf_exempt
+def cancel_treatment(request):
+    """
+    Cancel treatment in the API
+    """
+    import json
+
+    data = json.loads(request.body)
+    treatment_id = data.get("treatment_id")
+
+    if not treatment_id:
+        return JsonResponse({"error": "Invalid treatment ID"}, status=400)
+    try:
+        treatment = Treatment.objects.get(id=treatment_id)
+
+        try:
+            requests.post(url=f"{CV_API_URL}/{treatment.api_tracking_id}/cancel")
+        except Exception as e:
+            return JsonResponse({"error": "Could not connect to API"}, e)
+
+        treatment.is_finished = True
+        treatment.save()
+        return JsonResponse({"success": True})
+    except Exception as e:
+        return JsonResponse({"error": "Treatment not found"}, e)

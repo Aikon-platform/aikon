@@ -140,6 +140,11 @@ urlpatterns = [
         api_progress,
         name="api-progress",
     ),
+    path(
+        f"{APP_NAME}/cancel-treatment/",
+        cancel_treatment,
+        name="cancel-treatment",
+    ),
 ]
 
 # ADMIN VIEWS
