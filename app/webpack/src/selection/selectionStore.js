@@ -170,6 +170,12 @@ function createSelectionStore() {
                 return add(selection, item);
             }
         }),
+        updateTitle: (newTitle, isRegion) => update(selection => {
+            const key = isRegion ? "regions" : "records";
+            selection[key] = { ...selection[key], title: newTitle };
+            store(selection[key]);
+            return selection;
+        }),
         // REACTIVE STATEMENT
         isSelected: derived(selection, $selection =>
             item => getSelected($selection, item.type === regionsType)[item.type]?.hasOwnProperty(item.id) || false
