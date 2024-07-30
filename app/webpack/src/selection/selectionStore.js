@@ -60,9 +60,12 @@ function createSelectionStore() {
 
     return {
         subscribe,
-        save: () => update(selection => {
+        save: () => update(async selection => {
             console.log(selection);
             // TODO
+            // todo check if selection has id
+            // todo check if regions or document set
+            const response = await fetch(`${window.location.origin}/document-set/add`);
             // api call to save selection in database
             // receive id of saved
             // if saved, btn for treatment

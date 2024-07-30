@@ -1,15 +1,13 @@
 <script>
-    import {recordsStore} from "./recordStore.js";
-    import {appLang} from '../constants';
-    import {onMount} from 'svelte';
+    import { onMount } from 'svelte';
+    import { appLang } from '../constants';
 
+    export let recordsStore;
     const { recordSearch, searchParams } = recordsStore;
+
 
     export let searchFields = [];
     let formData = {};
-    // searchFields.forEach(field => {
-    //     formData[field.name] = field.initial || '';
-    // });
 
     onMount(() => {
         // fill search form according to URL search params
