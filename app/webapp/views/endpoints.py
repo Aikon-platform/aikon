@@ -30,7 +30,7 @@ def save_document_set(request, dsid=None):
         try:
             data = json.loads(request.body.decode("utf-8"))
 
-            set_name = data.get("title")
+            set_name = data.get("title", "Document set")
             witness_ids = data.get("Witness", [])
             series_ids = data.get("Series", [])
             work_ids = data.get("Work", [])
@@ -42,14 +42,14 @@ def save_document_set(request, dsid=None):
 
             try:
                 if dsid:
-                    document_set = DocumentSet.objects.get(id=dsid)
+                    ds = DocumentSet.objects.get(id=dsid)
                 else:
-                    document_set = DocumentSet.objects.create(user=request.user)
-                document_set.title = set_name
-                document_set.wit_ids = witness_ids
-                document_set.ser_ids = series_ids
-                document_set.work_ids = work_ids
-                document_set.save()
+                    ds = DocumentSet.objects.create(user=request.user)
+                ds.title = f"{set_name} #{ds.id}" if "#" not in set_name else set_name
+                ds.wit_ids = witness_ids
+                ds.ser_ids = series_ids
+                ds.work_ids = work_ids
+                ds.save()
 
             except Exception as e:
                 return JsonResponse(
@@ -58,11 +58,14 @@ def save_document_set(request, dsid=None):
             return JsonResponse(
                 {
                     "message": "Document set saved successfully",
-                    "document_set_id": document_set.id,
+                    "document_set_id": ds.id,
+                    "document_set_title": ds.title,
                 }
             )
         except Exception as e:
-            return JsonResponse({"message": "Error saving score files"}, status=500)
+            return JsonResponse(
+                {"message": f"Error saving score files: {e}"}, status=500
+            )
     return JsonResponse({"message": "Invalid request"}, status=400)
 
 

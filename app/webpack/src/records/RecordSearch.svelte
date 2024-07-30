@@ -5,7 +5,6 @@
     export let recordsStore;
     const { recordSearch, searchParams } = recordsStore;
 
-
     export let searchFields = [];
     let formData = {};
 

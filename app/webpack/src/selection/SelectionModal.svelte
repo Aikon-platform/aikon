@@ -1,7 +1,7 @@
 <script>
     import { appLang } from "../constants.js";
-    // import { selectionStore } from "./selectionStore.js";
-    // const { selected } = selectionStore;
+    import { selectionStore } from "./selectionStore.js";
+    const { selectionTitle } = selectionStore;
     import SelectionFooter from "./SelectionFooter.svelte";
 
     export let isRegion = false;
@@ -15,7 +15,7 @@
         <div class="modal-card-head media mb-0">
             <div class="title is-4 mb-0 media-content">
                 <i class="fa-solid fa-book-bookmark"></i>
-                {appLang === 'en' ? 'Selected regions' : 'Regions sélectionnées'}
+                {$selectionTitle(isRegion)}
                 ({selectionLength})
             </div>
             <button class="delete media-left" aria-label="close"/>

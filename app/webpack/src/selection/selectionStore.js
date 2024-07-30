@@ -1,18 +1,18 @@
 import {derived, writable} from 'svelte/store';
-import {csrfToken, regionsType} from '../constants';
+import {csrfToken, regionsType, appLang} from '../constants';
 
 
 function createSelectionStore() {
     const docSetTemplate = {
         "id": null, // <null|document_set_id>
         "type": "documentSet",
-        "title": "Unnamed document set", // <string>
+        "title": appLang === "en" ? "Document set" : "Set de document", // <string>
         "selected": {}, // <{model_name: {record_id: {record_meta}, record_id: {record_meta}}, model_name: {...}, ...}>
     }
     const regionsSetTemplate = {
         "id": null, // <null|regions_set_id>
         "type": "regionsSet",
-        "title": "Unnamed regions set", // <string>
+        "title": appLang === "en" ? "Regions set" : "Set de régions", // <string>
         "selected": {} // <{regionsType: {record_id: {record_meta}, record_id: {record_meta}, ...}}>
     }
     const selectedRecords = JSON.parse(localStorage.getItem("documentSet")) || docSetTemplate;
@@ -28,7 +28,7 @@ function createSelectionStore() {
     }
 
     function getSelected(selection, isRegion) {
-        return selection[isRegion ? "regions" : "records"].selected
+        return selection[isRegion ? "regions" : "records"]?.selected || {};
     }
     function filter(selection, isRegion = true) {
         const selected = getSelected(selection, isRegion);
@@ -104,51 +104,55 @@ function createSelectionStore() {
         store(selection[isRegion ? "regions" : "records"]);
         return selection;
     }
+    function save(selection, isRegion) {
+        const modelName = isRegion ? "regions-set" : "document-set";
+        if (isRegion) {
+            window.alert("Region set management is not yet implemented");
+            // todo implement region set
+            return selection;
+        }
+
+        let set = selection[isRegion ? "regions" : "records"];
+
+        let selectedIds = {};
+        Object.entries(set.selected).forEach(([modelName, records]) => {
+            selectedIds[modelName] = Object.keys(records);
+        });
+
+        const endpoint = set.id !== null ? `${set.id}/change` : "add";
+
+        fetch(`${window.location.origin}/${modelName}/${endpoint}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                'title': set.title,
+                ...selectedIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data?.document_set_id) {
+                throw new Error('Failed to save selection');
+            }
+            update(currentSelection => {
+                const set = currentSelection[isRegion ? "regions" : "records"];
+                set.id = data.document_set_id;
+                set.title = data.document_set_title;
+                return currentSelection;
+            });
+            // TODO if saved, btn for treatment
+        })
+        .catch(error => console.error('Error:', error));
+
+        return selection;
+    }
 
     return {
         subscribe,
-        save: (isRegion) => update(async selection => {
-            const modelName = isRegion ? "regions-set" : "document-set";
-            if (isRegion) {
-                window.alert("Region set management is not yet implemented");
-                // todo implement region set
-                return selection;
-            }
-
-            let set = selection[isRegion ? "regions" : "records"];
-
-            let selectedIds = {};
-            Object.entries(set.selected).forEach(([modelName, records]) => {
-                selectedIds[modelName] = Object.keys(records);
-            });
-
-            const endpoint = set.id !== null ? `${set.id}/change` : "add";
-            console.log(selectedIds, `${window.location.origin}/${modelName}/${endpoint}`);
-
-            selection[isRegion ? "regions" : "records"] = await fetch(`${window.location.origin}/${modelName}/${endpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({
-                    'title': set.title,
-                    ...selectedIds
-                })
-            }).then(response => response.json()
-            ).then(data => {
-                if (!data || !data.hasOwnProperty("document_set_id")) {
-                    throw new Error('Failed to save selection');
-                }
-                set.id = data.document_set_id;
-                // TODO if saved, btn for treatment
-                return set;
-            }).catch(
-                error => console.error('Error:', error)
-            );
-
-            return selection
-        }),
+        save: (isRegion) => update(selection => save(selection, isRegion)),
         empty: (isRegion) => update(selection => {
             selection[isRegion ? "regions" : "records"].selected = {};
             store(selection[isRegion ? "regions" : "records"]);
@@ -183,7 +187,12 @@ function createSelectionStore() {
                     (count, [_, selectedItems]) => count + Object.keys(selectedItems).length, 0
                 )
             }
-        )
+        ),
+        selectionTitle: derived(selection, $selection =>
+            isRegion => {
+                return $selection[isRegion ? "regions" : "records"].title;
+            }
+        ),
     };
 }
 export const selectionStore = createSelectionStore();
