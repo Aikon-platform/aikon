@@ -23,7 +23,7 @@
 {% else %}
     {% if request.user.is_authenticated %}
         <p class="breadcrumbs">
-            <a class="button is-text" href="{% url "webapp:"|add:record_type|add:'_list' %}">
+            <a class="button is-text" href="{% url "webapp:"|add:model_name|add:'_list' %}">
                 All {{ record_name }}
             </a>
         </p>

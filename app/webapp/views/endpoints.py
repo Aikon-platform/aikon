@@ -5,6 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
 
 from app.webapp.models.digitization import Digitization
+from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2
@@ -23,7 +24,7 @@ ONLY FOR API CALLS
 
 
 @csrf_exempt
-def save_document_set(request):
+def save_document_set(request, dsid=None):
     """
     Endpoint used to create/update a document set
     """
@@ -31,15 +32,32 @@ def save_document_set(request):
         try:
             data = json.loads(request.body.decode("utf-8"))
 
+            set_name = data.get("title")
             witness_ids = data.get("witness_ids", [])
             series_ids = data.get("series_ids", [])
-            regions_ids = data.get("regions_ids", [])
+            work_ids = data.get("work_ids", [])
 
             # TODO create logic for saving document set etc.
 
-            if len(witness_ids) + len(series_ids) + len(regions_ids) == 0:
+            if len(witness_ids) + len(series_ids) + len(work_ids) == 0:
                 return JsonResponse(
                     {"error": "No documents to save in the set"}, status=400
+                )
+
+            try:
+                if id:
+                    document_set = DocumentSet.objects.get(id=id)
+                else:
+                    document_set = DocumentSet.objects.create(user=request.user)
+                document_set.title = set_name
+                document_set.wit_ids = witness_ids
+                document_set.ser_ids = series_ids
+                document_set.work_ids = work_ids
+                document_set.save()
+
+            except Exception as e:
+                return JsonResponse(
+                    {"error": f"Failed to save document set: {e}"}, status=500
                 )
             return JsonResponse({"message": "Document set saved successfully"})
         except Exception as e:

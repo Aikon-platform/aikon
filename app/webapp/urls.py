@@ -171,6 +171,16 @@ urlpatterns += [
 # ENDPOINTS
 urlpatterns += [
     path(
+        f"document-set/add",
+        save_document_set,
+        name="new-document-set",
+    ),
+    path(
+        f"document-set/<int:dsid>/",
+        save_document_set,
+        name="change-document-set",
+    ),
+    path(
         f"witness/<int:wid>/regions/<int:rid>/canvas",
         get_canvas_regions,
         name="canvas_regions",

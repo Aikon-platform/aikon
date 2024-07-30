@@ -87,7 +87,6 @@
     </div>
 </div>
 
-
 {#if currentLayout === "all"}
     <div class="grid is-gap-2">
         {#await fetchAll}
