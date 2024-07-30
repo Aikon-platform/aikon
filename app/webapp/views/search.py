@@ -38,7 +38,10 @@ def search_witnesses(request):
 
 @require_GET
 def search_treatments(request):
-    treatment_list = Treatment.objects.order_by("id")
+    user = request.user
+    treatment_list = Treatment.objects.all()
+    treatment_list = treatment_list.filter(requested_by=user).order_by("id")
+
     treatment_filter = TreatmentFilter(request.GET, queryset=treatment_list)
     return JsonResponse(paginated_records(request, treatment_filter.qs))
 

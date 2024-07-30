@@ -574,6 +574,7 @@ def cancel_treatment(request):
             return JsonResponse({"error": "Could not connect to API"}, e)
 
         treatment.is_finished = True
+        treatment.status = "CANCELLED"
         treatment.save()
         return JsonResponse({"success": True})
     except Exception as e:

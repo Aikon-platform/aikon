@@ -139,6 +139,7 @@ for x in ADDITIONAL_MODULES:
     TRMT_TYPE += (trmt,)
 
 TRMT_STATUS = (
+    ("CANCELLED", "CANCELLED"),
     ("ERROR", "ERROR"),
     ("IN PROGRESS", "IN PROGRESS"),
     ("PENDING", "PENDING"),

@@ -59,13 +59,6 @@
                 <div class="media-right">
                     {#if item.class === "Treatment"}
                         {#if !item.is_finished && item.api_tracking_id}
-<!--                            <a href="{item.cancel_url}" class="button is-small is-rounded is-danger is-outlined px-2 py-1 mr-2"-->
-<!--                                   title="{appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}">-->
-<!--                                    <i class="fa-solid fa-ban"></i>-->
-<!--                                    <span>-->
-<!--                                        {appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}-->
-<!--                                    </span>-->
-<!--                            </a>-->
                             <button class="button is-small is-rounded is-danger is-outlined px-2 py-1 mr-2"
                                 title="{appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}"
                                 on:click={() => cancelTreatment(item.id)}>
@@ -77,7 +70,7 @@
                         {/if}
                         {#if item.status === "SUCCESS"}
                         <span class="tag is-success p-1 mb-1">{item.status}</span>
-                        {:else if item.status === "ERROR"}
+                        {:else if item.status === ("ERROR" || "CANCELLED")}
                         <span class="tag is-danger p-1 mb-1">{item.status}</span>
                         {:else}
                         <span class="tag is-info p-1 mb-1">{item.status}</span>

@@ -107,7 +107,7 @@ class Treatment(models.Model):
         # for id in self.document_set.digit_ids:
         #     treated_objects.append(Digitization.objects.filter(id=id).get().__str__())
 
-        return "\n".join(treated_objects)
+        return ", ".join(treated_objects)
 
     def get_cancel_url(self):
         return f"{CV_API_URL}/{self.task_type}/{self.api_tracking_id}/cancel"
@@ -127,7 +127,6 @@ class Treatment(models.Model):
             "api_tracking_id": self.api_tracking_id,
             "metadata": {
                 get_name("id"): self.id,
-                get_name("api_tracking_id"): self.api_tracking_id,
                 get_name("treated_objects"): self.get_objects(),
             },
         }
