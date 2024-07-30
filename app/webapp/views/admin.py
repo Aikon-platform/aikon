@@ -25,11 +25,11 @@ class AbstractView(LoginRequiredMixin, View):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["view_title"] = self.get_view_title()
-        context["record_type"] = str(
-            getattr(self, "record_type", self.model._meta.model_name)
+        context["model_name"] = str(
+            getattr(self, "model_name", self.model._meta.model_name)
         ).lower()
-        context["record_name"] = str(
-            getattr(self, "record_type", self.model._meta.verbose_name)
+        context["model_title"] = str(
+            getattr(self, "model_title", self.model._meta.verbose_name)
         )
         context["app_name"] = "webapp"
         context["user"] = (
@@ -93,7 +93,6 @@ class AbstractRecordList(AbstractView, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["record_name"] = self.model._meta.verbose_name
         context["search_fields"] = []
 
         return context
@@ -119,7 +118,6 @@ class WitnessList(AbstractRecordList):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["record_name"] = Witness._meta.verbose_name_plural
         context["search_fields"] = WitnessFilter().to_form_fields()
 
         return context

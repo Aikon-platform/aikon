@@ -72,7 +72,7 @@
                 </div>
             </div>
 
-            <div class="content fixed-grid px-6">
+            <div class="content fixed-grid px-5">
                 <div class="grid metadata pt-2">
                     {#each Object.entries(item.metadata) as [field, value]}
                         <div class="datum is-middle columns">

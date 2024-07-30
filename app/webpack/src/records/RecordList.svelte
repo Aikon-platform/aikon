@@ -1,7 +1,5 @@
 <script>
     import Record from "./Record.svelte";
-    import { recordsStore } from "./recordStore.js";
-    const { pageRecords, resultPage, resultNumber } = recordsStore;
     import { selectionStore } from "../selection/selectionStore.js";
     const { selected, nbSelected } = selectionStore;
     import SelectionBtn from "../selection/SelectionBtn.svelte";
@@ -9,16 +7,26 @@
     import SelectionModal from "../selection/SelectionModal.svelte";
     import RecordSearch from "./RecordSearch.svelte";
     import Pagination from "../Pagination.svelte";
+    import { setContext } from "svelte";
+
+    export let modelName = '';
+    setContext('modelName', modelName);
+
+    import { createRecordsStore } from "./recordStore.js";
+    const recordsStore = createRecordsStore(modelName);
+    const { pageRecords, resultPage, resultNumber } = recordsStore;
 
     $: selectedRecords = $selected(false);
     $: selectionLength = $nbSelected(false);
 
+
     export let searchFields = [];
+    // TODO make result count appear + filter name
 </script>
 
 <SelectionBtn {selectionLength}/>
 
-<RecordSearch {searchFields}/>
+<RecordSearch {recordsStore} {searchFields}/>
 
 {#await resultPage}
     <div class="faded is-center">
