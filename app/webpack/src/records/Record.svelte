@@ -13,11 +13,13 @@
     <div class="card mb-3">
         <div class="card-content">
             <div class="media">
+                {#if item.class === "Witness"}
                 <div class="media-left">
                     <figure class="card image is-96x96">
                         <img src="{refToIIIF(item.img, 'full', '250,')}" alt="Record illustration"/>
                     </figure>
                 </div>
+                {/if}
                 <div class="media-content">
                     <a href="{item.url}" class="title is-4 hoverable pt-2">
                         <span class="tag px-2 py-1 mb-1 is-dark is-rounded">{item.type} #{item.id}</span>
@@ -35,7 +37,7 @@
                         <span class="tag p-1 mb-1">{item.updated_at}</span>
                     </p>
 
-                    {#if item.buttons.length !== 0}
+                    {#if item.buttons}
                         <p class="subtitle is-6 mb-0 ml-2 pt-2">
                             {#if item.hasOwnProperty('iiif')}
                                 {#each item.iiif as iiif}
@@ -55,6 +57,24 @@
                     {/if}
                 </div>
                 <div class="media-right">
+                    {#if item.class === "Treatment"}
+                        {#if !item.is_finished && item.api_tracking_id}
+                            <a href="{item.cancel_url}" class="button is-small is-rounded is-danger is-outlined px-2 py-1 mr-2"
+                                   title="{appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}">
+                                    <i class="fa-solid fa-ban"></i>
+                                    <span>
+                                        {appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}
+                                    </span>
+                            </a>
+                        {/if}
+                        {#if item.status === "SUCCESS"}
+                        <span class="tag is-success p-1 mb-1">{item.status}</span>
+                        {:else if item.status === "ERROR"}
+                        <span class="tag is-danger p-1 mb-1">{item.status}</span>
+                        {:else}
+                        <span class="tag is-info p-1 mb-1">{item.status}</span>
+                        {/if}
+                    {:else}
                     <button class="button" class:is-inverted={itemSelected} on:click={() => selectionStore.toggle(item)}>
                         {#if appLang === 'en'}
                             {itemSelected ? 'Remove from' : 'Add to'} selection
@@ -69,6 +89,7 @@
                             {/if}
                         </svg>
                     </button>
+                    {/if}
                 </div>
             </div>
 

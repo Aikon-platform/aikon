@@ -36,7 +36,7 @@
         </div>
 
         <!-- Main content -->
-        <div class="column is-5">
+        <div class="column is-6">
             <div class="block">
                 <p class="box notification is-contrasted mgt-medium">
                     {% if APP_LANG == "en" %}Welcome {{ user.first_name }} {{ user.last_name }} to the administrative interface!
@@ -87,8 +87,8 @@
                 </div>
             {% endif %}
 
-        <div class="column is-5">
-            <div class="box is-contrasted ml-5">
+        <div class="column is-4">
+            <!-- <div class="box is-contrasted ml-5">
                 <p class="is-size-4 has-text-weight-light">{% if APP_LANG == "en" %}Personnal Space{% else %}Espace Utilisateur{% endif %}</p>
                 <p>
                     <a>
@@ -98,7 +98,7 @@
                     </span>
                     </a>
                 </p>
-            </div>
+            </div> -->
             <div class="box is-contrasted ml-5">
                 <p class="is-size-4 has-text-weight-light">
                     {% if APP_LANG == "en" %}Dear user,{% else %}Cher utilisateur,{% endif %}

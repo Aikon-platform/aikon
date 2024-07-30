@@ -5,8 +5,10 @@ from django.forms.models import ModelChoiceIteratorValue
 
 from app.webapp.models.edition import Edition, get_name as edition_name
 from app.webapp.models.language import Language
+from app.webapp.models.series import Series
+from app.webapp.models.treatment import Treatment, get_name as treatment_name
 from app.webapp.models.witness import Witness, get_name as witness_name
-from app.webapp.models.work import get_name as work_name
+from app.webapp.models.work import Work, get_name as work_name
 
 
 def serialize_choice_value(value):
@@ -97,4 +99,52 @@ class WitnessFilter(RecordFilter):
             "contents__work__author": work_name("author"),
             "contents__lang": witness_name("Language"),
             "contents__tags": witness_name("Tag"),
+        }
+
+
+class TreatmentFilter(RecordFilter):
+    class Meta:
+        model = Treatment
+        fields = {
+            "status": ["exact"],
+            "task_type": ["exact"],
+        }
+        labels = {
+            "status": treatment_name("status"),
+            "task_type": treatment_name("task_type"),
+        }
+
+
+class WorkFilter(RecordFilter):
+    class Meta:
+        model = Work
+        fields = {
+            "place": ["exact"],
+            "author": ["exact"],
+        }
+        labels = {
+            "place": work_name("place"),
+            "author": work_name("author"),
+        }
+
+
+class SeriesFilter(RecordFilter):
+    edition = django_filters.ModelChoiceFilter(
+        queryset=Edition.objects.all(),
+        widget=autocomplete.ModelSelect2(url="webapp:edition-autocomplete"),
+    )
+
+    class Meta:
+        model = Series
+        fields = {
+            "edition": ["exact"],
+            "edition__name": ["exact"],
+            "edition__place": ["exact"],
+            "edition__publisher": ["exact"],
+        }
+        labels = {
+            "edition": edition_name("Edition"),
+            "edition__name": edition_name("name"),
+            "edition__place": edition_name("pub_place"),
+            "edition__publisher": edition_name("publisher"),
         }

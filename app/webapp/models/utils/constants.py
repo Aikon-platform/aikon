@@ -138,6 +138,14 @@ for x in ADDITIONAL_MODULES:
     trmt = (x, x)
     TRMT_TYPE += (trmt,)
 
+TRMT_STATUS = (
+    ("ERROR", "ERROR"),
+    ("IN PROGRESS", "IN PROGRESS"),
+    ("PENDING", "PENDING"),
+    ("STARTED", "STARTED"),
+    ("SUCCESS", "SUCCESS"),
+)
+
 REGIONS_VERSION = (
     (MANIFEST_V1, "automatic"),
     (MANIFEST_V2, "corrected"),
