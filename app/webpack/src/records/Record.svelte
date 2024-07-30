@@ -76,7 +76,7 @@
                 <div class="grid metadata pt-2">
                     {#each Object.entries(item.metadata) as [field, value]}
                         <div class="datum is-middle columns">
-                            <div class="column is-3 is-bold">{field}</div>
+                            <div class="column is-4 is-bold">{field}</div>
                             <div class="column is-8 {value === '-' ? 'faded' : ''}">{value}</div>
                         </div>
                     {/each}

@@ -1,7 +1,6 @@
 import json
 
 from django.http import HttpResponse, JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
 
 from app.webapp.models.digitization import Digitization
@@ -23,7 +22,6 @@ ONLY FOR API CALLS
 """
 
 
-@csrf_exempt
 def save_document_set(request, dsid=None):
     """
     Endpoint used to create/update a document set
@@ -33,11 +31,9 @@ def save_document_set(request, dsid=None):
             data = json.loads(request.body.decode("utf-8"))
 
             set_name = data.get("title")
-            witness_ids = data.get("witness_ids", [])
-            series_ids = data.get("series_ids", [])
-            work_ids = data.get("work_ids", [])
-
-            # TODO create logic for saving document set etc.
+            witness_ids = data.get("Witness", [])
+            series_ids = data.get("Series", [])
+            work_ids = data.get("Work", [])
 
             if len(witness_ids) + len(series_ids) + len(work_ids) == 0:
                 return JsonResponse(
@@ -45,8 +41,8 @@ def save_document_set(request, dsid=None):
                 )
 
             try:
-                if id:
-                    document_set = DocumentSet.objects.get(id=id)
+                if dsid:
+                    document_set = DocumentSet.objects.get(id=dsid)
                 else:
                     document_set = DocumentSet.objects.create(user=request.user)
                 document_set.title = set_name
@@ -59,7 +55,12 @@ def save_document_set(request, dsid=None):
                 return JsonResponse(
                     {"error": f"Failed to save document set: {e}"}, status=500
                 )
-            return JsonResponse({"message": "Document set saved successfully"})
+            return JsonResponse(
+                {
+                    "message": "Document set saved successfully",
+                    "document_set_id": document_set.id,
+                }
+            )
         except Exception as e:
             return JsonResponse({"message": "Error saving score files"}, status=500)
     return JsonResponse({"message": "Invalid request"}, status=400)

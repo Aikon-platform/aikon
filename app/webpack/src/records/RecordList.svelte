@@ -7,6 +7,10 @@
     import SelectionModal from "../selection/SelectionModal.svelte";
     import RecordSearch from "./RecordSearch.svelte";
     import Pagination from "../Pagination.svelte";
+    // import Loading from '../Loading.svelte';
+    // import { loading } from "../utils.js";
+    import Modal from "../Modal.svelte";
+
     import { setContext } from "svelte";
 
     export let modelName = '';
@@ -19,10 +23,13 @@
     $: selectedRecords = $selected(false);
     $: selectionLength = $nbSelected(false);
 
-
     export let searchFields = [];
     // TODO make result count appear + filter name
 </script>
+
+<!--<Loading visible={$loading}/>-->
+
+<Modal/>
 
 <SelectionBtn {selectionLength}/>
 
