@@ -28,7 +28,7 @@
     <form on:submit={handleSearch} class="fixed-grid is-center">
         <article class="message grid">
             {#each searchFields as field}
-                <div class="field columns is-middle">
+                <div class="search-field field columns is-middle">
                     <label for={field.name} class="label column is-small is-3">{field.label}</label>
                     <div class="control has-icons-right column is-9">
                         {#if field.type.includes('ChoiceField')}
@@ -70,6 +70,9 @@
 {/if}
 
 <style>
+    .search-field {
+        margin-bottom: .2rem;
+    }
     label {
         text-align: left;
         padding-left: 2.5em;

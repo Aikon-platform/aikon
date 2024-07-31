@@ -28,7 +28,7 @@
                 {/if}
                 <div class="media-content">
                     <a href="{item.url}" class="title is-4 hoverable pt-2">
-                        <span class="tag px-2 py-1 mb-1 is-dark is-rounded">{item.type} #{item.id}</span>
+                        <span class="tag px-2 py-1 mb-1 mr-1 is-dark is-rounded">{item.type} #{item.id}</span>
                         {item.title}
                         {#if item.is_public}
                             <span class="pl-3 icon-text is-size-7 is-center has-text-weight-normal">
