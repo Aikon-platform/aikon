@@ -189,6 +189,17 @@ class TreatmentCreate(AbstractRecordCreate):
     model = Treatment
     form_class = TreatmentForm
 
+    def form_valid(self, form):
+        self.object = form.save(commit=False)
+        self.object.requested_by = self.request.user
+        self.object = form.save()
+
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        # Return the URL for the TreatmentList view
+        return reverse("webapp:treatment_list")
+
 
 class TreatmentList(AbstractRecordList):
     model = Treatment

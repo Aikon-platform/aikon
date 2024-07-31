@@ -40,7 +40,7 @@ def search_witnesses(request):
 def search_treatments(request):
     user = request.user
     treatment_list = Treatment.objects.all()
-    treatment_list = treatment_list.filter(requested_by=user).order_by("id")
+    treatment_list = treatment_list.filter(requested_by=user).order_by("-requested_on")
 
     treatment_filter = TreatmentFilter(request.GET, queryset=treatment_list)
     return JsonResponse(paginated_records(request, treatment_filter.qs))
