@@ -1,16 +1,12 @@
-import json
-
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
 from django.utils.html import format_html
 from django.urls import reverse
 
-from app.config.settings import ADDITIONAL_MODULES
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.edition import Edition
 
-# from app.webapp.models.volume import Volume
 from app.webapp.models.series import Series
 from app.webapp.models.utils.constants import (
     VOL,
@@ -28,7 +24,7 @@ from app.webapp.models.utils.constants import (
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
-from app.webapp.utils.functions import get_icon, flatten, format_dates, get_first_img
+from app.webapp.utils.functions import get_icon, flatten, format_dates
 from app.webapp.utils.logger import log
 
 
@@ -78,8 +74,8 @@ class Witness(models.Model):
         )
 
     def get_absolute_url(self):
-        # return reverse("admin:webapp_witness_change", args=[self.id])
-        return reverse("webapp:witness_view", args=[self.id])
+        return reverse("admin:webapp_witness_change", args=[self.id])
+        # return reverse("webapp:witness_view", args=[self.id])
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(

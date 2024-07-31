@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.urls import reverse
 from django.utils.html import format_html
 
 from app.webapp.models.conservation_place import ConservationPlace
@@ -70,13 +71,19 @@ class Series(models.Model):
         blank=True,
     )
 
+    def get_absolute_url(self):
+        return reverse("admin:webapp_series_change", args=[self.id])
+        # return reverse("webapp:series_view", args=[self.id])
+
     def to_json(self):
         return {
             "id": self.id,
             "class": self.__class__.__name__,
             "type": get_name("Series"),
+            "url": self.get_absolute_url(),
             "title": self.__str__(),
             "user": self.user.__str__(),
+            "user_id": self.user.id,
             "is_public": self.is_public,
             "work": self.work.__str__(),
             "edition": self.edition.__str__(),

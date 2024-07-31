@@ -120,7 +120,7 @@ class Treatment(models.Model):
             "title": self.get_title(),
             "updated_at": self.requested_on.strftime("%Y-%m-%d %H:%M"),
             "user": self.requested_by.__str__(),
-            "user_id": self.user.id,
+            "user_id": self.requested_by.id,
             "status": self.status,
             "is_finished": self.is_finished,
             "treated_objects": self.treated_objects,
