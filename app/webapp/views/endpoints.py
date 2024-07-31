@@ -1,7 +1,6 @@
 import json
 
 from django.http import HttpResponse, JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
 
 from app.webapp.models.digitization import Digitization
@@ -23,7 +22,6 @@ ONLY FOR API CALLS
 """
 
 
-@csrf_exempt
 def save_document_set(request, dsid=None):
     """
     Endpoint used to create/update a document set
@@ -32,12 +30,10 @@ def save_document_set(request, dsid=None):
         try:
             data = json.loads(request.body.decode("utf-8"))
 
-            set_name = data.get("title")
-            witness_ids = data.get("witness_ids", [])
-            series_ids = data.get("series_ids", [])
-            work_ids = data.get("work_ids", [])
-
-            # TODO create logic for saving document set etc.
+            set_name = data.get("title", "Document set")
+            witness_ids = data.get("Witness", [])
+            series_ids = data.get("Series", [])
+            work_ids = data.get("Work", [])
 
             if len(witness_ids) + len(series_ids) + len(work_ids) == 0:
                 return JsonResponse(
@@ -45,23 +41,31 @@ def save_document_set(request, dsid=None):
                 )
 
             try:
-                if id:
-                    document_set = DocumentSet.objects.get(id=id)
+                if dsid:
+                    ds = DocumentSet.objects.get(id=dsid)
                 else:
-                    document_set = DocumentSet.objects.create(user=request.user)
-                document_set.title = set_name
-                document_set.wit_ids = witness_ids
-                document_set.ser_ids = series_ids
-                document_set.work_ids = work_ids
-                document_set.save()
+                    ds = DocumentSet.objects.create(user=request.user)
+                ds.title = f"{set_name} #{ds.id}" if "#" not in set_name else set_name
+                ds.wit_ids = witness_ids
+                ds.ser_ids = series_ids
+                ds.work_ids = work_ids
+                ds.save()
 
             except Exception as e:
                 return JsonResponse(
                     {"error": f"Failed to save document set: {e}"}, status=500
                 )
-            return JsonResponse({"message": "Document set saved successfully"})
+            return JsonResponse(
+                {
+                    "message": "Document set saved successfully",
+                    "document_set_id": ds.id,
+                    "document_set_title": ds.title,
+                }
+            )
         except Exception as e:
-            return JsonResponse({"message": "Error saving score files"}, status=500)
+            return JsonResponse(
+                {"message": f"Error saving score files: {e}"}, status=500
+            )
     return JsonResponse({"message": "Invalid request"}, status=400)
 
 

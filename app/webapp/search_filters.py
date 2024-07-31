@@ -136,6 +136,7 @@ class WorkFilter(RecordFilter):
         labels = {
             "place": work_name("place"),
             "author": work_name("author"),
+            "contents__lang": work_name("Language"),
         }
 
 

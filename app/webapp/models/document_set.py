@@ -25,7 +25,7 @@ class DocumentSet(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
-    title = models.CharField(max_length=50, unique=True)
+    title = models.CharField(max_length=50)
     is_public = models.BooleanField(default=False)
 
     wit_ids = ArrayField(models.IntegerField(), default=list, blank=True, null=True)

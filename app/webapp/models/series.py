@@ -1,9 +1,10 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.urls import reverse
 from django.utils.html import format_html
 
 from app.webapp.models.conservation_place import ConservationPlace
-from app.webapp.models.edition import Edition
+from app.webapp.models.edition import Edition, get_name as edition_name
 from app.webapp.models.tag import Tag
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.utils.constants import PUBLISHED_INFO, DATE_INFO
@@ -21,11 +22,6 @@ def get_name(fieldname, plural=False):
             "en": "No volume number provided",
             "fr": "Pas de numéro de volume renseigné",
         },
-        "cons_place": {"en": "conservation place", "fr": "lieu de conservation"},
-        "work": {"en": "work", "fr": "oeuvre"},
-        "place_name": {"en": "publishing place", "fr": "lieu de publication"},
-        "publisher": {"en": "publisher", "fr": "éditeur"},
-        "vol": {"en": "volumes", "fr": "volumes"},
     }
     return get_fieldname(fieldname, fields, plural)
 
@@ -75,23 +71,29 @@ class Series(models.Model):
         blank=True,
     )
 
+    def get_absolute_url(self):
+        return reverse("admin:webapp_series_change", args=[self.id])
+        # return reverse("webapp:series_view", args=[self.id])
+
     def to_json(self):
         return {
             "id": self.id,
             "class": self.__class__.__name__,
             "type": get_name("Series"),
+            "url": self.get_absolute_url(),
             "title": self.__str__(),
             "user": self.user.__str__(),
+            "user_id": self.user.id,
             "is_public": self.is_public,
             "work": self.work.__str__(),
             "edition": self.edition.__str__(),
             "metadata": {
-                get_name("work"): self.work.__str__(),
+                get_name("Work"): self.work.__str__(),
                 get_name("dates"): format_dates(self.date_min, self.date_max),
-                get_name("place_name"): self.get_edition_place(),
-                get_name("publisher"): self.get_publisher(),
-                get_name("cons_place"): self.place.__str__(),
-                get_name("vol"): ", ".join(
+                edition_name("pub_place"): self.get_edition_place().__str__(),
+                edition_name("publisher"): self.get_publisher().__str__(),
+                get_name("ConservationPlace"): self.place.__str__(),
+                get_name("Volume"): "<br>".join(
                     wit.__str__() for wit in self.get_witnesses()
                 )
                 if self.get_witnesses()

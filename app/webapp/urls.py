@@ -181,7 +181,7 @@ urlpatterns += [
         name="new-document-set",
     ),
     path(
-        f"document-set/<int:dsid>/",
+        f"document-set/<int:dsid>/change",
         save_document_set,
         name="change-document-set",
     ),

@@ -5,7 +5,6 @@
     export let recordsStore;
     const { recordSearch, searchParams } = recordsStore;
 
-
     export let searchFields = [];
     let formData = {};
 
@@ -26,12 +25,12 @@
 </script>
 
 {#if searchFields.length > 0}
-    <form on:submit={handleSearch} class="fixed-grid container">
+    <form on:submit={handleSearch} class="fixed-grid is-center">
         <article class="message grid">
             {#each searchFields as field}
-                <div class="field columns is-middle">
+                <div class="search-field field columns is-middle">
                     <label for={field.name} class="label column is-small is-3">{field.label}</label>
-                    <div class="control has-icons-right column is-8">
+                    <div class="control has-icons-right column is-9">
                         {#if field.type.includes('ChoiceField')}
                             <div class="select is-small is-wide {isMulti(field) ? 'is-multiple' : ''}">
                                 <select id={field.name} name={field.name} bind:value={formData[field.name]} class="is-wide"
@@ -69,3 +68,13 @@
         </div>
     </form>
 {/if}
+
+<style>
+    .search-field {
+        margin-bottom: .2rem;
+    }
+    label {
+        text-align: left;
+        padding-left: 2.5em;
+    }
+</style>

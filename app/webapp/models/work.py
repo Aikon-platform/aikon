@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 
 from app.webapp.models.language import Language
 from app.webapp.models.place import Place
@@ -68,11 +69,18 @@ class Work(models.Model):
         blank=True,
     )
 
+    def get_absolute_url(self):
+        return reverse("admin:webapp_work_change", args=[self.id])
+        # return reverse("webapp:work_view", args=[self.id])
+
     def to_json(self):
         return {
             "id": self.id,
             "class": self.__class__.__name__,
             "type": get_name("Work"),
+            # "user": self.user.__str__(),
+            # "user_id": self.user.id,
+            "url": self.get_absolute_url(),
             "title": self.__str__(),
             "metadata": {
                 get_name("dates"): format_dates(self.date_min, self.date_max),
