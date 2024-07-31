@@ -7,13 +7,15 @@ from app.webapp.models.tag import Tag
 from app.webapp.models.utils.constants import AUTHOR_MSG, DATE_INFO
 
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.utils.functions import validate_dates
+from app.webapp.utils.functions import validate_dates, format_dates, flatten
 
 
 def get_name(fieldname, plural=False):
     fields = {
         "place": {"en": "creation place", "fr": "lieu de création"},
         "author": {"en": "author", "fr": "auteur"},
+        "dates": {"en": "dates", "fr": "dates"},
+        "language": {"en": "language", "fr": "langue"},
     }
     return get_fieldname(fieldname, fields, plural)
 
@@ -66,6 +68,20 @@ class Work(models.Model):
         blank=True,
     )
 
+    def to_json(self):
+        return {
+            "id": self.id,
+            "class": self.__class__.__name__,
+            "type": get_name("Work"),
+            "title": self.__str__(),
+            "metadata": {
+                get_name("dates"): format_dates(self.date_min, self.date_max),
+                get_name("place"): self.place.__str__(),
+                get_name("author"): self.author.__str__(),
+                get_name("language"): self.get_lang_names(),
+            },
+        }
+
     def clean(self):
         super().clean()
         validate_dates(self.date_min, self.date_max)
@@ -75,3 +91,7 @@ class Work(models.Model):
 
         witness_ids = self.contents.values_list("witness", flat=True).distinct()
         return Witness.objects.filter(id__in=witness_ids)
+
+    def get_lang_names(self):
+        langs = self.lang.all()
+        return "<br>".join([lang.__str__() for lang in langs]) if langs else "-"

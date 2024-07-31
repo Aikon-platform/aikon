@@ -24,8 +24,6 @@ from app.webapp.models.utils.constants import (
     CONS_PLA_MSG,
     WIT_CHANGE,
     MAP_WIT_TYPE,
-    MS_ABBR,
-    WPR_ABBR,
     FOL_ABBR,
 )
 from app.webapp.models.utils.functions import get_fieldname

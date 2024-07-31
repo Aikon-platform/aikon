@@ -1,5 +1,5 @@
 <script>
-    import { refToIIIF } from "../utils.js";
+    import { refToIIIF, cancelTreatment } from "../utils.js";
     import { selectionStore } from '../selection/selectionStore.js';
     const { isSelected } = selectionStore;
     import { appLang, userId } from '../constants';
@@ -39,11 +39,15 @@
                     </a>
 
                     <p class="subtitle is-6 mb-0 ml-2 pt-2">
-                        {item.user}
-                        <span class="tag p-1 mb-1">{item.updated_at}</span>
+                        {#if item.user}
+                            {item.user}
+                        {/if}
+                        {#if item.updated_at}
+                            <span class="tag p-1 mb-1">{item.updated_at}</span>
+                        {/if}
                     </p>
 
-                    {#if item.buttons.length !== 0}
+                    {#if item.hasOwnProperty("buttons") && item.buttons.length !== 0}
                         <p class="subtitle is-6 mb-0 ml-2 pt-2 is-middle">
                             {#if item.hasOwnProperty('iiif')}
                                 {#each item.iiif as iiif}
@@ -71,20 +75,42 @@
                             </svg>
                         </button>
                     {/if}-->
-                    <button class="button" class:is-inverted={itemSelected} on:click={() => selectionStore.toggle(item)}>
-                        {#if appLang === 'en'}
-                            {itemSelected ? 'Remove from' : 'Add to'} selection
-                        {:else}
-                            {itemSelected ? 'Retirer de la' : 'Ajouter à la'} sélection
+                    {#if item.class === "Treatment"}
+                        <!--TODO make treatment button component-->
+                        {#if !item.is_finished && item.api_tracking_id}
+                            <button class="button is-small is-rounded is-danger is-outlined px-2 py-1 mr-2"
+                                    title="{appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}"
+                                    on:click={() => cancelTreatment(item.id)}>
+                                <i class="fa-solid fa-ban"></i>
+                                <span>
+                                    {appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}
+                                </span>
+                            </button>
                         {/if}
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
-                            {#if itemSelected}
-                                <path d="M0 48V487.7C0 501.1 10.9 512 24.3 512c5 0 9.9-1.5 14-4.4L192 400 345.7 507.6c4.1 2.9 9 4.4 14 4.4c13.4 0 24.3-10.9 24.3-24.3V48c0-26.5-21.5-48-48-48H48C21.5 0 0 21.5 0 48z"/>
+                        {#if item.status === "SUCCESS"}
+                            <span class="tag is-success p-1 mb-1">{item.status}</span>
+                        {:else if item.status === ("ERROR" || "CANCELLED")}
+                            <span class="tag is-danger p-1 mb-1">{item.status}</span>
+                        {:else}
+                            <span class="tag is-info p-1 mb-1">{item.status}</span>
+                        {/if}
+                    {:else}
+                        <!--TODO make selection button component-->
+                        <button class="button" class:is-inverted={itemSelected} on:click={() => selectionStore.toggle(item)}>
+                            {#if appLang === 'en'}
+                                {itemSelected ? 'Remove from' : 'Add to'} selection
                             {:else}
-                                <path d="M0 48C0 21.5 21.5 0 48 0l0 48V441.4l130.1-92.9c8.3-6 19.6-6 27.9 0L336 441.4V48H48V0H336c26.5 0 48 21.5 48 48V488c0 9-5 17.2-13 21.3s-17.6 3.4-24.9-1.8L192 397.5 37.9 507.5c-7.3 5.2-16.9 5.9-24.9 1.8S0 497 0 488V48z"/>
+                                {itemSelected ? 'Retirer de la' : 'Ajouter à la'} sélection
                             {/if}
-                        </svg>
-                    </button>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+                                {#if itemSelected}
+                                    <path d="M0 48V487.7C0 501.1 10.9 512 24.3 512c5 0 9.9-1.5 14-4.4L192 400 345.7 507.6c4.1 2.9 9 4.4 14 4.4c13.4 0 24.3-10.9 24.3-24.3V48c0-26.5-21.5-48-48-48H48C21.5 0 0 21.5 0 48z"/>
+                                {:else}
+                                    <path d="M0 48C0 21.5 21.5 0 48 0l0 48V441.4l130.1-92.9c8.3-6 19.6-6 27.9 0L336 441.4V48H48V0H336c26.5 0 48 21.5 48 48V488c0 9-5 17.2-13 21.3s-17.6 3.4-24.9-1.8L192 397.5 37.9 507.5c-7.3 5.2-16.9 5.9-24.9 1.8S0 497 0 488V48z"/>
+                                {/if}
+                            </svg>
+                        </button>
+                    {/if}
                 </div>
             </div>
 
@@ -93,7 +119,7 @@
                     {#each Object.entries(item.metadata) as [field, value]}
                         <div class="datum is-middle columns">
                             <div class="column is-4 is-bold">{field}</div>
-                            <div class="column is-8 {value === '-' ? 'faded' : ''}">{value}</div>
+                            <div class="column is-8 {value === '-' ? 'faded' : ''}">{@html value}</div>
                         </div>
                     {/each}
                 </div>

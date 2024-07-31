@@ -5,7 +5,14 @@ from django.views.generic import CreateView, DetailView, View, ListView, UpdateV
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 
-from app.webapp.search_filters import WitnessFilter
+from app.webapp.models.series import Series
+from app.webapp.models.work import Work
+from app.webapp.search_filters import (
+    WitnessFilter,
+    TreatmentFilter,
+    WorkFilter,
+    SeriesFilter,
+)
 from app.webapp.forms import *
 from app.webapp.forms.treatment import TreatmentForm
 from app.webapp.models.regions import Regions
@@ -123,9 +130,6 @@ class WitnessList(AbstractRecordList):
         return context
 
 
-# TODO SeriesList, WorkList, TreatmentList, DocumentSetList, RegionsSetList
-
-
 class WitnessRegionsView(AbstractRecordView):
     # f"witness/<int:wid>/regions/"
     # display only all Regions objects for a given Witness
@@ -181,11 +185,6 @@ class RegionsView(AbstractRecordView):
         return context
 
 
-class TreatmentView(AbstractRecordView):
-    model = Treatment
-    form_class = TreatmentForm
-
-
 class TreatmentCreate(AbstractRecordCreate):
     model = Treatment
     form_class = TreatmentForm
@@ -193,3 +192,35 @@ class TreatmentCreate(AbstractRecordCreate):
 
 class TreatmentList(AbstractRecordList):
     model = Treatment
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["record_name"] = Treatment._meta.verbose_name_plural
+        context["search_fields"] = TreatmentFilter().to_form_fields()
+
+        return context
+
+
+class WorkList(AbstractRecordList):
+    model = Work
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["record_name"] = Work._meta.verbose_name_plural
+        context["search_fields"] = WorkFilter().to_form_fields()
+
+        return context
+
+
+class SeriesList(AbstractRecordList):
+    model = Series
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["record_name"] = Series._meta.verbose_name_plural
+        context["search_fields"] = SeriesFilter().to_form_fields()
+
+        return context
+
+
+# TODO DocumentSetList, RegionsSetList
