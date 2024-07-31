@@ -1,0 +1,138 @@
+{% load shared_tags %}
+
+{% with prefix=fieldset.formset.prefix|default:"fieldset" id_prefix=id_prefix|default:"0" id_suffix=id_suffix|default:"0" name=fieldset.name|default:""|slugify %}
+    <fieldset class="module aligned {{ fieldset.classes }}"
+            {% if name %} aria-labelledby="{{ prefix }}-{{ id_prefix}}-{{ name }}-{{ id_suffix }}-heading"{% endif %}>
+        {% if name %}
+            {% if fieldset.is_collapsible %}
+                <details><summary>
+            {% endif %}
+        <h{{ heading_level|default:2 }} id="{{ prefix }}-{{ id_prefix}}-{{ name }}-{{ id_suffix }}-heading" class="fieldset-heading">
+            {{ fieldset.name }}
+        </h{{ heading_level|default:2 }}>
+        {% if fieldset.is_collapsible %}
+            </summary>
+        {% endif %}
+        {% endif %}
+        {% if fieldset.description %}
+            <div class="description">{{ fieldset.description|safe }}</div>
+        {% endif %}
+        {% for line in fieldset %}
+            <div class="form-row
+             {% if line.fields|length == 1 and line.errors %} errors{% endif %}
+             {% if not line.has_visible_field %} hidden{% endif %}
+             {% for field in line %}{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% endfor %}">
+                {% if line.fields|length == 1 %}
+                    {{ line.errors }}
+                {% else %}
+                    <div class="flex-container form-multiline">
+                {% endif %}
+                {% for field in line %}
+                    <div>
+                        {% if not line.fields|length == 1 and not field.is_readonly %}{{ field.errors }}{% endif %}
+                        <div class="flex-container is-middle
+                             {% if not line.fields|length == 1 %} fieldBox{% if field.field.name %} field-{{ field.field.name }}{% endif %}
+                             {% if not field.is_readonly and field.errors %} errors{% endif %}
+                             {% if field.field.is_hidden %} hidden{% endif %}{% endif %}{% if field.is_checkbox %} checkbox-row{% endif %}">
+                            {% if field.is_checkbox %}
+                                {{ field.field }}
+                                {{ field.label_tag|add_class:"label is-small p-2 m-0" }}
+                                {% if field.field.help_text %}
+                                    <div class="ml-4 help"{% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
+                                        <div>{{ field.field.help_text|safe }}</div>
+                                    </div>
+                                {% endif %}
+                            {% elif field.field|is_select %}
+                                {{ field.label_tag|add_class:"label is-small" }}
+                                <div class="select is-small">
+                                    {{ field.field|add_class:"select" }}
+                                </div>
+                            {% else %}
+                                {{ field.label_tag|add_class:"label is-small" }}
+                                {% if field.is_readonly %}
+                                    <div class="readonly">{{ field.contents }}</div>
+                                {% else %}
+                                    {{ field.field|add_class:"input is-small" }}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+                {#                {% for field in line %}#}
+                {#                    {{ field.errors }}#}
+                {#                    {% if field|field_type == "HiddenInput" %}#}
+                {#                        {{ field }}#}
+                {#                    {% else %}#}
+                {#                        <div class="field">#}
+                {#                            <div class="py-1">#}
+                {# LABEL #}
+                {#                                <label for="{{ field.id_for_label }}" class="label {% if field.field.required %}required{% endif %}">#}
+                {#                                    {% if field|field_type != "CheckboxInput" %}{{ field.label }}{% else %}{% endif %}#}
+                {#                                </label>#}
+                {#                            </div>#}
+                {##}
+                {#                            {% if field|field_type == "CheckboxInput" %}#}
+                {#                                <div class="control">#}
+                {#                                    <label for="{{ field.id_for_label }}" class="label">#}
+                {#                                        {{ field|add_class:"checkbox" }}#}
+                {#                                        {{ field.label }}#}
+                {#                                    </label>#}
+                {#                                    {% if field.help_text %}#}
+                {#                                        <div class="help">{{ field.help_text }}</div>#}
+                {#                                    {% endif %}#}
+                {#                                </div>#}
+                {#                            {% elif field|field_type == "Textarea" or field|field_type == "CheckboxSelectMultiple" or field|field_type == "RadioSelect" %}#}
+                {#                                {% if field.help_text %}#}
+                {#                                    <div class="help pb-2">{{ field.help_text }}</div>#}
+                {#                                {% endif %}#}
+                {#                                <div>#}
+                {#                                    {{ field }}#}
+                {#                                </div>#}
+                {#                            {% elif field|field_type == "Select" %}#}
+                {#                                <div>#}
+                {#                                    <div class="select">#}
+                {#                                        {{ field }}#}
+                {#                                    </div>#}
+                {#                                </div>#}
+                {#                            {% elif field|field_type == "ClearableFileInput" or field|field_type == "FileInput" %}#}
+                {#                                <div class="file has-name is-fullwidth" id="{{ field.id_for_label }}-wrapper">#}
+                {#                                    <label for="{{ field.id_for_label }}" class="file-label {% if field.field.required %}required{% endif %}">#}
+                {#                    <span class="file-cta">#}
+                {#                        <span class="file-icon">#}
+                {#                            <span class="iconify" data-icon="mdi:upload"></span>#}
+                {#                        </span>#}
+                {#                        <span class="file-label">Select a file...</span>#}
+                {#                    </span>#}
+                {#                                        <span class="file-name">No file selected</span>#}
+                {#                                        {{ field|add_class:"file-input" }}#}
+                {#                                    </label>#}
+                {#                                </div>#}
+                {##}
+                {#                                <script>#}
+                {#                                    const fileInput = document.querySelector("#{{ field.id_for_label|escapejs }}-wrapper input[type=file]");#}
+                {#                                    fileInput.onchange = () => {#}
+                {#                                        if (fileInput.files.length > 0) {#}
+                {#                                            const fileName = document.querySelector("#{{ field.id_for_label|escapejs }}-wrapper .file-name");#}
+                {#                                            fileName.textContent = fileInput.files[0].name;#}
+                {#                                        }#}
+                {#                                    };#}
+                {#                                </script>#}
+                {#                            {% else %}#}
+                {#                                <div>#}
+                {#                                    {{ field.field|add_class:"input" }}#}
+                {#                                    {% if field.help_text %}#}
+                {#                                        <div class="help">{{ field.help_text }}</div>#}
+                {#                                    {% endif %}#}
+                {#                                </div>#}
+                {#                            {% endif %}#}
+                {#                        </div>#}
+                {#                    {% endif %}#}
+                {#                {% endfor %}#}
+                {% if not line.fields|length == 1 %}</div>{% endif %}
+            </div>
+        {% endfor %}
+        {% if name and fieldset.is_collapsible %}
+            </details>
+        {% endif %}
+    </fieldset>
+{% endwith %}
