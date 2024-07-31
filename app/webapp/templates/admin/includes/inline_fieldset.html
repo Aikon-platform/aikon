@@ -1,0 +1,92 @@
+{% load i18n admin_urls static admin_modify shared_tags %}
+<div class="js-inline-admin-formset inline-group" id="{{ inline_admin_formset.formset.prefix }}-group"
+     data-inline-type="tabular"
+     data-inline-formset="{{ inline_admin_formset.inline_formset_data }}">
+    <div class="tabular inline-related {% if forloop.last %}last-related{% endif %}">
+        {{ inline_admin_formset.formset.management_form }}
+        <fieldset class="module {{ inline_admin_formset.classes }}">
+            {{ inline_admin_formset.formset.non_form_errors }}
+            <table>
+                <thead>
+                <tr>
+                    {% for field in inline_admin_formset.fields %}
+                        <th class="{{ field.widget.attrs.class }}">
+                            {{ field.label|capfirst }}
+                            {% if field.help_text %}&nbsp;<img src="{% static "admin/img/icon-unknown.svg" %}" class="help help-tooltip" width="10" height="10" alt="({{ field.help_text|striptags }})" title="{{ field.help_text|striptags }}">{% endif %}
+                        </th>
+                    {% endfor %}
+                    {% if inline_admin_formset.formset.can_delete and inline_admin_formset.has_delete_permission %}<th>{% trans "Delete?" %}</th>{% endif %}
+                </tr>
+                </thead>
+
+                <tbody>
+                {% for inline_admin_form in inline_admin_formset %}
+                    {% if inline_admin_form.form.non_field_errors %}
+                        <tr class="row-form-errors"><td colspan="{{ inline_admin_form|cell_count }}">{{ inline_admin_form.form.non_field_errors }}</td></tr>
+                    {% endif %}
+                    <tr class="form-row {% if inline_admin_form.original or inline_admin_form.show_url %}has_original{% endif %}{% if forloop.last and inline_admin_formset.has_add_permission %} empty-form{% endif %}"
+                        id="{{ inline_admin_formset.formset.prefix }}-{% if forloop.last and inline_admin_formset.has_add_permission %}empty{% else %}{{ forloop.counter0 }}{% endif %}">
+                        {% for fieldset in inline_admin_form %}
+                            {% for line in fieldset %}
+                                {#                                {% for field in line %}#}
+                                {#                                    <td class="{% if field.field.name %}field-{{ field.field.name }}{% endif %}{% if field.field.is_hidden %} hidden{% endif %}">#}
+                                {#                                        {% if field.is_readonly %}#}
+                                {#                                            <p>{{ field.contents }}</p>#}
+                                {#                                        {% else %}#}
+                                {#                                            {{ field.field.errors.as_ul }}#}
+                                {#                                            {{ field.field }}#}
+                                {#                                        {% endif %}#}
+                                {#                                    </td>#}
+                                {#                                {% endfor %}#}
+                                <div class="form-row
+                                     {% if line.fields|length == 1 and line.errors %} errors{% endif %}
+                                     {% if not line.has_visible_field %} hidden{% endif %}
+                                     {% for field in line %}{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% endfor %}">
+                                {% if line.fields|length == 1 %}
+                                    {{ line.errors }}
+                                {% else %}
+                                    <div class="flex-container form-multiline">
+                                {% endif %}
+                                {% for field in line %}
+                                    <div>
+                                        {% if not line.fields|length == 1 and not field.is_readonly %}{{ field.errors }}{% endif %}
+                                        <div class="flex-container is-middle
+                             {% if not line.fields|length == 1 %} fieldBox{% if field.field.name %} field-{{ field.field.name }}{% endif %}
+                             {% if not field.is_readonly and field.errors %} errors{% endif %}
+                             {% if field.field.is_hidden %} hidden{% endif %}{% endif %}{% if field.is_checkbox %} checkbox-row{% endif %}">
+                                            {% if field.is_checkbox %}
+                                                {{ field.field }}
+                                                {{ field.label_tag|add_class:"label is-small p-2 m-0" }}
+                                                {% if field.field.help_text %}
+                                                    <div class="ml-4 help"{% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
+                                                        <div>{{ field.field.help_text|safe }}</div>
+                                                    </div>
+                                                {% endif %}
+                                            {% elif field.field|is_select %}
+                                                {{ field.label_tag|add_class:"label is-small" }}
+                                                <div class="select is-small">
+                                                    {{ field.field|add_class:"select" }}
+                                                </div>
+                                            {% else %}
+                                                {{ field.label_tag|add_class:"label is-small" }}
+                                                {% if field.is_readonly %}
+                                                    <div class="readonly">{{ field.contents }}</div>
+                                                {% else %}
+                                                    {{ field.field|add_class:"input is-small" }}
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% endfor %}
+                        {% endfor %}
+                        {% if inline_admin_formset.formset.can_delete and inline_admin_form.original %}
+                            <td class="delete">{{ inline_admin_form.deletion_field.field }}</td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </fieldset>
+    </div>
+</div>

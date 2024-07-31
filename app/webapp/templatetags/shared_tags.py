@@ -45,10 +45,6 @@ def dump(obj):
 
 @register.filter
 def add_class(element, class_name):
-    # if isinstance(element, BoundField):
-    #     print("prout")
-    #     element = element.field
-
     if hasattr(element, "field"):
         # For form fields
         css_classes = element.field.widget.attrs.get("class", "")
@@ -68,6 +64,9 @@ def add_class(element, class_name):
 
 @register.filter
 def is_select(field):
+    if isinstance(field, dict):
+        return False
+
     return isinstance(field.field.widget, Select)
 
 

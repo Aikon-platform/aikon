@@ -25,6 +25,46 @@
         p.url {
             margin-left: 0 !important;
         }
+        .inline-related h3 {
+            background: var(--accent);
+            border-radius: var(--bulma-radius-small) !important;
+            color: var(--bulma-text-strong);
+            border-color: var(--bulma-border) !important;
+            padding: 1em 10px;
+        }
+        .djn-delete-handler {
+            float: right;
+            text-indent: -9999px;
+            background: url(../img/inline-delete.svg) 0 0 no-repeat;
+            margin-top: -.25em;
+            width: 16px;
+            height: 16px;
+            border: 0 none;
+        }
+        .djn-delete-handler * {
+            opacity: 0;
+        }
+        .form-row label {
+            font-size: var(--bulma-size-small);
+            color: var(--bulma-text-strong);
+            font-weight: var(--bulma-weight-semibold);
+        }
+        .form-row select {
+            padding-inline-end: 2.5em;
+            cursor: pointer;
+            border-radius: var(--bulma-radius-small) !important;
+            background-color: var(--bulma-body-background-color) !important;
+            border-color: var(--bulma-border) !important;
+            position: relative !important;
+            height: var(--bulma-control-height);
+            color: var(--bulma-text-strong);
+            padding: .2em 1.5em .2em 1em;
+        }
+        .form-row select:after {
+            border: .125em solid var(--bulma-link);
+            border-right: 0;
+            border-top: 0;
+        }
     </style>
 {% endblock %}
 

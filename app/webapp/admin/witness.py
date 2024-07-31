@@ -333,6 +333,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 class WitnessInline(nested_admin.NestedStackedInline):
     # FORM contained in the Series form
     model = Witness
+    # template = 'admin/includes/inline_fieldset.html'
     extra = 0  # 1
     ordering = ("id",)
     fields = [("volume_nb", "volume_title")]

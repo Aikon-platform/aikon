@@ -277,6 +277,8 @@ td.is-fullwidth {
     --accent: hsl(0deg 0% 0% / 5%);
     --selected: hsl(234deg 100% 96%);
     --selected-text: hsl(233deg 100% 33%);
+    /*--darkened-bg: var(--selected);*/
+    /*--hairline-color: var(--bulma-border);*/
 }
 
 [data-theme="light"] {

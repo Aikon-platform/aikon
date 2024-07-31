@@ -2,12 +2,17 @@
 .select2 {
     color: var(--bulma-text-strong) !important;
 }
-.select2-container {
+.select2-container, .related-widget-wrapper, .select2-hidden-accessible {
     border-radius: var(--bulma-radius-small) !important;
-    background-color: hsl(var(--bulma-input-h), var(--bulma-input-s), calc(var(--bulma-input-background-l) + var(--bulma-input-background-l-delta))) !important;
-    border-color: hsl(var(--bulma-input-h), var(--bulma-input-s), calc(var(--bulma-input-border-l) + var(--bulma-input-border-l-delta))) !important;
+    background-color: var(--bulma-body-background-color) !important;
+    border-color: var(--bulma-border) !important;
     padding-right: 1em !important;
     margin-right: 2em !important;
+    position: relative !important;
+}
+.select2-container--default .select2-selection--multiple {
+    border-radius: var(--bulma-radius-small) !important;
+    border-color: var(--bulma-border) !important;
 }
 .select2-results {
     background-color: var(--bulma-body-background-color) !important;
@@ -34,6 +39,16 @@ input.select2-search__field {
 .select2-container--default .select2-results__option--highlighted[aria-selected] {
     /*background-color: hsl(233deg 100% 88%) !important;*/
     /*color: var(--bulma-link-text) !important;*/
+    background-color: var(--selected) !important;
+    color: var(--selected-text) !important;
+}
+
+/* DO NOT WORK */
+.select2-results__option .select2-results__option[aria-selected] {
+     background-color: var(--bulma-link) !important;
+     color: var(--bulma-text-strong) !important;
+}
+.select2-results__option .select2-results__option--highlighted[aria-selected] {
     background-color: var(--selected) !important;
     color: var(--selected-text) !important;
 }
