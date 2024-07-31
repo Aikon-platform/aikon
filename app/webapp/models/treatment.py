@@ -84,6 +84,7 @@ class Treatment(models.Model):
             "type": self.task_type,
             "requested_on": self.requested_on,
             "requested_by": self.requested_by.__str__(),
+            "user_id": self.user.id,
             "treated_objects": self.treated_objects,
         }
 

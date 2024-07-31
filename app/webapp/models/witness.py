@@ -175,6 +175,7 @@ class Witness(models.Model):
             "iiif": [digit.manifest_link(inline=True) for digit in digits],
             "title": self.__str__(),
             "img": self.get_img(only_first=True),
+            "user_id": self.user.id,
             "user": self.user.__str__(),
             "url": self.get_absolute_url(),
             "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),

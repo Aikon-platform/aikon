@@ -7,10 +7,10 @@
 
 <footer class="modal-card-foot is-center">
     <div class="buttons">
-        <button class="button is-link is-light" on:click={() => selectionStore.empty(isRegion)}>
+        <button class="button button-close is-link is-light" on:click={() => selectionStore.empty(isRegion)}>
             {appLang === 'en' ? 'Clear selection' : 'Vider la sélection'}
         </button>
-        <button class="button is-link" on:click={() => selectionStore.save()}>
+        <button class="button is-link" on:click={() => selectionStore.save(isRegion)}>
             <i class="fa-solid fa-floppy-disk"></i>
             {appLang === 'en' ? 'Save selection' : 'Sauvegarder la sélection'}
         </button>
