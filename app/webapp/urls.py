@@ -127,6 +127,11 @@ urlpatterns = [
         LanguageAutocomplete.as_view(),
         name="language-autocomplete",
     ),
+    path(
+        f"{APP_NAME}/autocomplete/document-set/",
+        DocumentSetAutocomplete.as_view(),
+        name="document-set-autocomplete",
+    ),
     path("retrieve_place_info/", retrieve_place_info, name="retrieve-place-info"),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
     path(f"{APP_NAME}/advanced-search/", advanced_search, name="advanced-search"),

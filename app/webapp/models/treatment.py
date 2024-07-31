@@ -6,6 +6,8 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from app.config.settings import (
     APP_LANG,
@@ -87,10 +89,12 @@ class Treatment(models.Model):
 
     api_tracking_id = models.UUIDField(null=True, editable=False)
 
+    _internal_save = False
+
     def get_title(self):
         return f"{self.task_type.__str__().capitalize()} | {self.document_set.title}"
 
-    def get_objects(self):
+    def get_objects_name(self):
         treated_objects = []
         if self.document_set.wit_ids:
             for id in self.document_set.wit_ids:
@@ -107,7 +111,26 @@ class Treatment(models.Model):
         # for id in self.document_set.digit_ids:
         #     treated_objects.append(Digitization.objects.filter(id=id).get().__str__())
 
-        return ", ".join(treated_objects)
+        return treated_objects
+
+    def get_objects(self):
+        treated_objects = []
+        if self.document_set.wit_ids:
+            for id in self.document_set.wit_ids:
+                treated_objects.append(Witness.objects.filter(id=id).get())
+
+        if self.document_set.work_ids:
+            for id in self.document_set.work_ids:
+                treated_objects.append(Work.objects.filter(id=id).get())
+
+        if self.document_set.ser_ids:
+            for id in self.document_set.ser_ids:
+                treated_objects.append(Series.objects.filter(id=id).get())
+
+        # for id in self.document_set.digit_ids:
+        #     treated_objects.append(Digitization.objects.filter(id=id).get().__str__())
+
+        return treated_objects
 
     def get_cancel_url(self):
         return f"{CV_API_URL}/{self.task_type}/{self.api_tracking_id}/cancel"
@@ -128,45 +151,59 @@ class Treatment(models.Model):
             "api_tracking_id": self.api_tracking_id,
             "metadata": {
                 get_name("id"): self.id,
-                get_name("treated_objects"): self.get_objects(),
+                get_name("treated_objects"): ", ".join(self.get_objects_name()),
             },
         }
 
     def save(self, *args, **kwargs):
-        self.treated_objects = {
-            "witnesses": {
-                "total": len(self.document_set.wit_ids)
-                if self.document_set.wit_ids
-                else "0",
-                "ids": self.document_set.wit_ids if self.document_set.wit_ids else None,
-            },
-            "series": {
-                "total": len(self.document_set.ser_ids)
-                if self.document_set.ser_ids
-                else "0",
-                "ids": self.document_set.ser_ids if self.document_set.ser_ids else None,
-            },
-            "works": {
-                "total": len(self.document_set.work_ids)
-                if self.document_set.work_ids
-                else "0",
-                "ids": self.document_set.work_ids
-                if self.document_set.work_ids
-                else None,
-            },
-            "digitizations": {
-                "total": len(self.document_set.digit_ids)
-                if self.document_set.digit_ids
-                else "0",
-                "ids": self.document_set.digit_ids
-                if self.document_set.digit_ids
-                else None,
-            },
-        }
+        if not self._internal_save:
+            self._internal_save = True
+            print(f"Saving Treatment {self.id}")
 
-        super().save(*args, **kwargs)
+            user = kwargs.pop("user", None)
+            if not self.requested_by and user:
+                self.requested_by = user
 
-    def start_task(self, request, witnesses):
+            self.treated_objects = {
+                "witnesses": {
+                    "total": len(self.document_set.wit_ids)
+                    if self.document_set.wit_ids
+                    else "0",
+                    "ids": self.document_set.wit_ids
+                    if self.document_set.wit_ids
+                    else None,
+                },
+                "series": {
+                    "total": len(self.document_set.ser_ids)
+                    if self.document_set.ser_ids
+                    else "0",
+                    "ids": self.document_set.ser_ids
+                    if self.document_set.ser_ids
+                    else None,
+                },
+                "works": {
+                    "total": len(self.document_set.work_ids)
+                    if self.document_set.work_ids
+                    else "0",
+                    "ids": self.document_set.work_ids
+                    if self.document_set.work_ids
+                    else None,
+                },
+                "digitizations": {
+                    "total": len(self.document_set.digit_ids)
+                    if self.document_set.digit_ids
+                    else "0",
+                    "ids": self.document_set.digit_ids
+                    if self.document_set.digit_ids
+                    else None,
+                },
+            }
+
+            super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
+
+    def start_task(self, witnesses):
         """
         Start the task
         """
@@ -183,7 +220,7 @@ class Treatment(models.Model):
                         "notify": self.notify_email,
                         "message": parameters["message"],
                     },
-                    request,
+                    # request,
                 )
                 self.save()
                 return
@@ -193,14 +230,14 @@ class Treatment(models.Model):
                     url=f"{CV_API_URL}/{self.task_type}/start",
                     json=parameters,
                 )
-            except ConnectionError:
+            except Exception:
                 log(f"[start_task] Connection error wit {CV_API_URL}")
                 self.on_task_error(
                     {
                         "error": "API connection error",
                         "notify": self.notify_email,
                     },
-                    request,
+                    # request,
                 )
                 self.save()
                 return
@@ -213,12 +250,12 @@ class Treatment(models.Model):
                 self.api_tracking_id = api_response["tracking_id"]
                 self.status = "STARTED"
 
-                flash_msg = (
-                    "The requested task is underway. Please wait a few moments."
-                    if APP_LANG == "en"
-                    else "La tâche demandée est en cours. Veuillez patienter quelques instants."
-                )
-                messages.warning(request, flash_msg)
+                # flash_msg = (
+                #     "The requested task is underway. Please wait a few moments."
+                #     if APP_LANG == "en"
+                #     else "La tâche demandée est en cours. Veuillez patienter quelques instants."
+                # )
+                # messages.warning(request, flash_msg)
 
             except Exception as e:
                 error = {
@@ -241,7 +278,7 @@ class Treatment(models.Model):
                         "error": "API error when starting requested task.",
                         "notify": self.notify_email,
                     },
-                    request,
+                    # request,
                 )
 
         else:
@@ -251,7 +288,7 @@ class Treatment(models.Model):
                     "error": "Uninstalled module.",
                     "notify": self.notify_email,
                 },
-                request,
+                # request,
             )
 
         self.save()
@@ -302,7 +339,7 @@ class Treatment(models.Model):
             try:
                 send_mail(
                     f"[{APP_NAME.upper()} {self.task_type}] Task {self.status.lower()}",
-                    f"Dear {APP_NAME.upper()} user,\n\nThe {self.task_type} task (#{self.id}) you requested on the {APP_NAME.upper()} platform was completed with the status {self.status}.\n\nErrors: {error if error else message}.\n\nBest,\nthe {APP_NAME.upper()} team.",
+                    f"Dear {APP_NAME.upper()} user,\n\nThe {self.task_type} task (#{self.id}) you requested on the {APP_NAME.upper()} platform was completed with the status {self.status}.\n\nMessage: {error if error else message}.\n\nBest,\nthe {APP_NAME.upper()} team.",
                     EMAIL_HOST_USER,
                     [self.requested_by.email],
                     fail_silently=False,
@@ -333,3 +370,25 @@ class Treatment(models.Model):
                 "error": info,
             }
             self.on_task_error(data)
+
+
+@receiver(post_save, sender=Treatment)
+def treatment_post_save(sender, instance, created, **kwargs):
+    if created:
+        witnesses = []
+
+        for object in instance.get_objects():
+            if type(object) is Witness:
+                try:
+                    witnesses.append(object)
+                except:
+                    pass
+            elif type(object) is Series or Work:
+                try:
+                    objects = object.get_witnesses().get()
+                    witnesses.append(objects)
+                except:
+                    pass
+            # elif object == "digitizations":
+        print(witnesses)
+        instance.start_task(witnesses)
