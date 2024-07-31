@@ -3,6 +3,7 @@ import {csrfToken, regionsType, appLang} from '../constants';
 
 
 function createSelectionStore() {
+    // TODO make isRegion a parameter or make everything modelName centered
     const docSetTemplate = {
         "id": null, // <null|document_set_id>
         "type": "documentSet",
@@ -23,7 +24,10 @@ function createSelectionStore() {
     });
     const { subscribe, update } = selection;
 
-    function store(selection) {
+    const isSaved = writable(false);
+
+    function store(selection, saved= false) {
+        isSaved.set(saved);
         localStorage.setItem(selection.type, JSON.stringify(selection));
     }
 
@@ -32,6 +36,7 @@ function createSelectionStore() {
     }
     function filter(selection, isRegion = true) {
         const selected = getSelected(selection, isRegion);
+        // TODO make usage more consistent
         return isRegion ? selected[regionsType] ?? {} : Object.entries(selected);
     }
 
@@ -141,6 +146,7 @@ function createSelectionStore() {
                 const set = currentSelection[isRegion ? "regions" : "records"];
                 set.id = data.document_set_id;
                 set.title = data.document_set_title;
+                isSaved.set(true);
                 return currentSelection;
             });
             // TODO if saved, btn for treatment
@@ -173,10 +179,11 @@ function createSelectionStore() {
         updateTitle: (newTitle, isRegion) => update(selection => {
             const key = isRegion ? "regions" : "records";
             selection[key] = { ...selection[key], title: newTitle };
-            store(selection[key]);
+            store(selection[key], true);
             return selection;
         }),
         // REACTIVE STATEMENT
+        isSaved,
         isSelected: derived(selection, $selection =>
             item => getSelected($selection, item.type === regionsType)[item.type]?.hasOwnProperty(item.id) || false
         ),
