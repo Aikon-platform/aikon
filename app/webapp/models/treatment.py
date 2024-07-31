@@ -14,19 +14,27 @@ from app.config.settings import (
     CV_API_URL,
     ADDITIONAL_MODULES,
 )
+from app.webapp.models.digitization import Digitization
 
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.utils.constants import TRMT_TYPE
+from app.webapp.models.series import Series
+from app.webapp.models.utils.constants import TRMT_TYPE, TRMT_STATUS
 from app.webapp.models.utils.functions import get_fieldname
+from app.webapp.models.witness import Witness
+from app.webapp.models.work import Work
 from app.webapp.utils.logger import log
 
 
 def get_name(fieldname, plural=False):
     fields = {
-        "Treatment": {
-            "en": "treatment",
-            "fr": "traitement",
-        },
+        "id": {"en": "Identification number", "fr": "Identifiant"},
+        "status": {"en": "task status", "fr": "statut de la tâche"},
+        "is_finished": {"en": "finished", "fr": "tâche achevée"},
+        "requested_on": {"en": "requested on", "fr": "demandé le"},
+        "requested_by": {"en": "requested by", "fr": "demandé par"},
+        "task_type": {"en": "task type", "fr": "type de tâche"},
+        "treated_objects": {"en": "treated objects", "fr": "objets traités"},
+        "api_tracking_id": {"en": "API identification number", "fr": "Identifiant API"},
     }
     return get_fieldname(fieldname, fields, plural)
 
@@ -42,7 +50,11 @@ class Treatment(models.Model):
         return f"Treatment #{self.id}{space}: {self.id}"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    status = models.CharField(max_length=20, default="Pending", editable=False)
+    status = models.CharField(
+        max_length=50,
+        default="PENDING",
+        choices=TRMT_STATUS,
+    )
     is_finished = models.BooleanField(default=False, editable=False)
 
     requested_on = models.DateTimeField(auto_now_add=True, editable=False)
@@ -75,16 +87,48 @@ class Treatment(models.Model):
 
     api_tracking_id = models.UUIDField(null=True, editable=False)
 
-    def get_set(self, set_id):
-        return self.set_id.all()
+    def get_title(self):
+        return f"{self.task_type.__str__().capitalize()} | {self.document_set.title}"
+
+    def get_objects(self):
+        treated_objects = []
+        if self.document_set.wit_ids:
+            for id in self.document_set.wit_ids:
+                treated_objects.append(Witness.objects.filter(id=id).get().__str__())
+
+        if self.document_set.work_ids:
+            for id in self.document_set.work_ids:
+                treated_objects.append(Work.objects.filter(id=id).get().__str__())
+
+        if self.document_set.ser_ids:
+            for id in self.document_set.ser_ids:
+                treated_objects.append(Series.objects.filter(id=id).get().__str__())
+
+        # for id in self.document_set.digit_ids:
+        #     treated_objects.append(Digitization.objects.filter(id=id).get().__str__())
+
+        return ", ".join(treated_objects)
+
+    def get_cancel_url(self):
+        return f"{CV_API_URL}/{self.task_type}/{self.api_tracking_id}/cancel"
 
     def to_json(self):
         return {
             "id": self.id.__str__(),
-            "type": self.task_type,
-            "requested_on": self.requested_on,
-            "requested_by": self.requested_by.__str__(),
+            "class": self.__class__.__name__,
+            "type": get_name("Treatment"),
+            "title": self.get_title(),
+            "updated_at": self.requested_on.strftime("%Y-%m-%d %H:%M"),
+            "user": self.requested_by.__str__(),
+            "status": self.status,
+            "is_finished": self.is_finished,
             "treated_objects": self.treated_objects,
+            "cancel_url": self.get_cancel_url(),
+            "api_tracking_id": self.api_tracking_id,
+            "metadata": {
+                get_name("id"): self.id,
+                get_name("treated_objects"): self.get_objects(),
+            },
         }
 
     def save(self, *args, **kwargs):

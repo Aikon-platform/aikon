@@ -140,6 +140,11 @@ urlpatterns = [
         api_progress,
         name="api-progress",
     ),
+    path(
+        f"{APP_NAME}/cancel-treatment/",
+        cancel_treatment,
+        name="cancel-treatment",
+    ),
 ]
 
 # ADMIN VIEWS
@@ -163,8 +168,9 @@ urlpatterns += [
         name="witness_regions_view",
     ),
     path(f"treatment/", TreatmentList.as_view(), name="treatment_list"),
-    path(f"treatment/<int:id>/", TreatmentView.as_view(), name="treatment_view"),
     path(f"treatment/add/", TreatmentCreate.as_view(), name="treatment_create"),
+    path(f"work/", WorkList.as_view(), name="work_list"),
+    path(f"series/", SeriesList.as_view(), name="series_list"),
 ]
 
 # ENDPOINTS
@@ -220,4 +226,7 @@ urlpatterns += [
 urlpatterns += [
     # path("search/<record-name>/", search_<record-name>, name="search-<record-name>"),
     path("search/witness/", search_witnesses, name="search-witnesses"),
+    path("search/treatment/", search_treatments, name="search-treatments"),
+    path("search/work/", search_works, name="search-works"),
+    path("search/series/", search_series, name="search-series"),
 ]
