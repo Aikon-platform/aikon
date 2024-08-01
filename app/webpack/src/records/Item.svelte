@@ -3,7 +3,7 @@
     import { appLang, userId } from '../constants';
 
     export let item;
-    const hasUrl = item.hasOwnProperty("url");
+    const hasUrl = item.hasOwnProperty("url") && item.url !== "";
 
     function deleteItem() {
         // TODO add delete button if USER is the creator of the record OR super admin
@@ -95,5 +95,8 @@
         display: flex;
         justify-content: center;
         align-items: center;
+    }
+    a:not(.hoverable) {
+        cursor: default !important;
     }
 </style>
