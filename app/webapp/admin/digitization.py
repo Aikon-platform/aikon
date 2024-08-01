@@ -59,51 +59,32 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
     @admin.display(description=get_name("Digitization"))
     def digit_preview(self, obj: Digitization):
+        # TODO check is used else delete
         return mark_safe(
             f'<a href="{self.digit_url()}/?q={obj.id}" target="_blank">{IIIF_ICON} {IMG_MSG}</a>'
         )
 
     @admin.display(description=get_name("view_digit"))
     def view_digit(self, obj: Digitization):
-        # NOTE soon to be NOT USED
         if obj.id and obj.has_images():
-            if not obj.has_regions():
-                return gen_btn(Digitization.objects.filter(pk=obj.id).first(), "view")
+            return gen_btn(obj, "view")
+            # if not obj.has_regions():
+            #     return gen_btn(Digitization.objects.filter(pk=obj.id).first(), "view")
 
-            digit_btn = []
-            for regions in obj.get_regions():
-                digit_btn.append(gen_btn(regions, "auto-view"))
-            return mark_safe("<br>".join(digit_btn))
+            # digit_btn = []
+            # for regions in obj.get_regions():
+            #     digit_btn.append(gen_btn(regions, "auto-view"))
+            # return mark_safe("<br>".join(digit_btn))
 
         return "-"
 
     @admin.display(description=get_name("view_regions"))
     def view_regions(self, obj: Digitization):
-        # NOTE soon to be NOT USED
         if obj.id and obj.has_images() and obj.has_regions():
             regions_btn = []
             for regions in obj.get_regions():
-                action = "final" if regions.is_validated else "edit"
-                regions_btn.append(gen_btn(regions, action))
-                # TODO! this function is faulty, should be delete
-                if obj.has_vectorization():
-                    return mark_safe(
-                        "<br>".join(regions_btn)
-                        + gen_btn(regions, "regions")
-                        + gen_btn(regions, "vectors")
-                    )
-                elif obj.has_vectorization():
-                    return mark_safe(
-                        "<br>".join(anno_btn)
-                        + gen_btn(anno, "vectorization")
-                        + gen_btn(anno, "crops")
-                        + gen_btn(anno, "vectors")
-                    )
-                else:
-                    return mark_safe(
-                        "<br>".join(regions_btn) + gen_btn(regions, "regions")
-                    )
-        # TODO maybe add a btn to create a manual annotation (utils.iiif.annotation.create_empty_annotation())
+                regions_btn.append(gen_btn(regions, "regions"))
+            return mark_safe("<br>".join(regions_btn))
         return "-"
 
     def get_fields(self, request, obj: Digitization = None):

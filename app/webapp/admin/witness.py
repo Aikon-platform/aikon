@@ -167,6 +167,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     # MARKER LIST COLUMNS
     @admin.display(description=f"{DIG} & {REG}")
     def digit_regions_btn(self, obj: Witness):
+        # TODO check if used else delete
         digits = obj.get_digits()
         if len(digits) == 0:
             return "-"
@@ -175,6 +176,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     @admin.display(description="IIIF manifest")
     def manifest_link(self, obj):
+        # TODO check if used else delete
         # To display a button in the list of witnesses to give direct link to witness manifest
         return mark_safe(
             "<br>".join(digit.manifest_link() for digit in obj.get_digits())
