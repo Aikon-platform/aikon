@@ -13,6 +13,7 @@ class PersonFilter(AutocompleteFilter):
 
 @admin.register(Person)
 class PersonAdmin(UnregisteredAdmin):
+    change_form_template = "admin/form.html"
     search_fields = ("name",)
     list_filter = ("name",)
     list_per_page = 5

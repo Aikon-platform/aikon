@@ -15,6 +15,7 @@ from app.webapp.utils.logger import log
 @admin.register(Digitization)
 class DigitizationAdmin(UnregisteredAdmin):
     # Class for list display and search features
+    change_form_template = "admin/form.html"
     search_fields = ("witness",)
     list_per_page = 100
     list_display = (

@@ -14,6 +14,7 @@ class WorkFilter(AutocompleteFilter):
 @admin.register(Work)
 class WorkAdmin(UnregisteredAdmin):
     form = LanguageForm
+    change_form_template = "admin/form.html"
     search_fields = ("title", "author__name")
     list_filter = ("title",)
     fields = [
