@@ -312,6 +312,7 @@ class Digitization(models.Model):
         if len(regions) == 0:
             return f"{iiif_link}<br>{self.digit_btn()}"
         return f"{iiif_link}<br>{self.regions_btn()}"
+        # return f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"
 
     def manifest_link(self, inline=False):
         from app.webapp.utils.iiif.gen_html import gen_manifest_btn

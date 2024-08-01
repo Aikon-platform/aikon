@@ -54,6 +54,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
 ]
 
+
 if DEBUG:
     INSTALLED_APPS += [
         "livereload",
@@ -120,7 +121,7 @@ TEMPLATES = [
                 "webapp.templatetags.context_processors.global_variables",
             ],
             "builtins": [
-                "webapp.filters",
+                "webapp.templatetags.filters",
             ],
         },
     },

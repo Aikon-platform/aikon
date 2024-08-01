@@ -73,10 +73,6 @@ class Witness(models.Model):
             f"{self.place.name if self.place else CONS_PLA_MSG} | {self.id_nb}"
         )
 
-    def get_absolute_url(self):
-        return reverse("admin:webapp_witness_change", args=[self.id])
-        # return reverse("webapp:witness_view", args=[self.id])
-
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
         verbose_name=get_name("type"), choices=WIT_TYPE, max_length=150
@@ -153,10 +149,13 @@ class Witness(models.Model):
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
+    def get_absolute_url(self):
+        return reverse("admin:webapp_witness_change", args=[self.id])
+        # return reverse("webapp:witness_view", args=[self.id])
+
     def to_json(self):
-        buttons = [
-            "regions",
-        ]
+        # TODO create to_json template in a Abstract class
+        buttons = {"regions": reverse("webapp:witness_regions_view", args=[self.id])}
 
         digits = self.get_digits()
 

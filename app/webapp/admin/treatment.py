@@ -1,11 +1,7 @@
-from django.contrib import admin, messages
+from django.contrib import admin
 
-from app.config.settings import APP_LANG
 from app.webapp.admin import UnregisteredAdmin
-from app.webapp.models.series import Series
 from app.webapp.models.treatment import Treatment
-from app.webapp.models.witness import Witness
-from app.webapp.models.work import Work
 
 
 @admin.register(Treatment)

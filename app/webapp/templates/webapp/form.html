@@ -1,6 +1,7 @@
 {% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify shared_tags %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}{{ view_title }}{% endblock %}
 {% load static %}
 
 {% block extrahead %}

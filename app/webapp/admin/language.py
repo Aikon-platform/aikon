@@ -15,6 +15,7 @@ class LanguageAdmin(admin.ModelAdmin):
     class Media:
         css = {"all": ("css/witness-form.css",)}
 
+    change_form_template = "admin/form.html"
     search_fields = ("lang",)
     list_filter = ("lang",)
     list_display = ("id", "lang")

@@ -54,15 +54,15 @@
                         {/if}
                     </p>
 
-                    {#if item.hasOwnProperty("buttons") && item.buttons.length !== 0}
+                    {#if item.hasOwnProperty("buttons") && Object.keys(item.buttons).length !== 0}
                         <p class="subtitle is-6 mb-0 ml-2 pt-2 is-middle">
                             {#if item.hasOwnProperty('iiif')}
                                 {#each item.iiif as iiif}
                                     <span class="tag logo mt-1">{@html iiif}</span>
                                 {/each}
                             {/if}
-                            {#if item.buttons.includes("regions")}
-                                <a href="{item.url}regions/" class="regions-btn button is-small is-rounded is-link px-2"
+                            {#if item.buttons.hasOwnProperty("regions")}
+                                <a href="{item.buttons.regions}" class="regions-btn button is-small is-rounded is-link px-2"
                                    title='{appLang === "en" ? "View image regions" : "Afficher les régions d\'images"}'>
                                     <span class="iconify" data-icon="entypo:documents"/>
                                     <span class="ml-2">

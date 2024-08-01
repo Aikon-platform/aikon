@@ -85,15 +85,6 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     ordering = ("id", "place__name")
 
-    # Fields that are taken into account by the search bar
-    search_fields = (
-        # "id_nb",
-        # "place__name",
-        # "type",
-        # "contents__roles__person__name",
-        "contents__work__title",
-        # "notes",
-    )
     # Filters options in the sidebar
     list_filter = (
         "type",
@@ -103,11 +94,8 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     )
     # Attributes to be excluded from the form fields
     exclude = ("slug", "created_at", "updated_at")
-    # Dropdown fields
-    autocomplete_fields = ("place", "volume", "edition")
 
     # MARKER FORM FIELDS
-    # info on fieldsets: https://docs.djangoproject.com/en/4.2/ref/contrib/admin/#django.contrib.admin.ModelAdmin.fieldsets
     banner = (
         f"{get_name('Witness')} identification"
         if APP_LANG == "en"
@@ -123,6 +111,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         "link",
         "is_public",
     ]
+    autocomplete_fields = ("place", "volume", "edition")
     fieldsets = (
         (
             banner.capitalize(),
@@ -178,6 +167,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     # MARKER LIST COLUMNS
     @admin.display(description=f"{DIG} & {REG}")
     def digit_regions_btn(self, obj: Witness):
+        # TODO check if used else delete
         digits = obj.get_digits()
         if len(digits) == 0:
             return "-"
@@ -186,6 +176,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     @admin.display(description="IIIF manifest")
     def manifest_link(self, obj):
+        # TODO check if used else delete
         # To display a button in the list of witnesses to give direct link to witness manifest
         return mark_safe(
             "<br>".join(digit.manifest_link() for digit in obj.get_digits())
@@ -333,6 +324,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 class WitnessInline(nested_admin.NestedStackedInline):
     # FORM contained in the Series form
     model = Witness
+    template = "admin/includes/inline_fieldset.html"
     extra = 0  # 1
     ordering = ("id",)
     fields = [("volume_nb", "volume_title")]
