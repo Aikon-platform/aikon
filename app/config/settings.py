@@ -8,6 +8,9 @@ APP_NAME = ENV.str("APP_NAME", default="")
 WEBAPP_NAME = "webapp"
 ADDITIONAL_MODULES = ENV.list("ADDITIONAL_MODULES", default=[])
 
+# Logos to be displayed in the footer
+APP_LOGO = ENV.list("APP_LOGO", default=[])
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
