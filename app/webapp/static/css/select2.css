@@ -7,7 +7,7 @@
     background-color: var(--bulma-body-background-color) !important;
     border-color: var(--bulma-border) !important;
     padding-right: 1em !important;
-    margin-right: 2em !important;
+    /*margin-right: 2em !important;*/
     position: relative !important;
 }
 .select2-container--default .select2-selection--multiple {

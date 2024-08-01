@@ -26,7 +26,6 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         "is_public",
     )
     list_display_links = ("get_edition",)  # ("edition",)
-    autocomplete_fields = ("work", "edition", "place")
 
     class Meta:
         verbose_name = get_name("Series")
@@ -48,6 +47,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         "is_public",
     ]
     inlines = [RoleInline, WitnessInline]
+    # autocomplete_fields = ("work", "edition", "place")
 
     @admin.display(description=get_name("Edition"))
     def get_edition(self, obj):

@@ -15,4 +15,4 @@ class ConservationPlaceFilter(AutocompleteFilter):
 class ConservationPlaceAdmin(UnregisteredAdmin):
     search_fields = ("name", "city__name", "city__country")
     list_filter = ("name", "city__name")
-    autocomplete_fields = ("city",)
+    # autocomplete_fields = ("city",)

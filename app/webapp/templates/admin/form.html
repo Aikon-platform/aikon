@@ -34,20 +34,20 @@
             transition: background-color 100ms, color 100ms;
         }
         .grp-predelete h3 {
-            background: var(--bulma-danger-dark);
-            color: var(--bulma-danger-light);
+            background: var(--deleted);
+            color: var(--deleted-text);
         }
         .djn-delete-handler {
-            background: url(../img/inline-delete.svg) 0 0 no-repeat;
             margin-top: -.25em;
             width: 16px;
             height: 16px;
             border: 0 none;
             transition: background-color 100ms;
+            background: var(--bulma-text) url(../img/inline-delete.svg) no-repeat 0 0;
+            border-radius: 2em;
         }
         .grp-predelete .djn-delete-handler {
             background-color: var(--bulma-danger);
-            border-radius: 2em;
         }
         .djn-delete-handler input {
             opacity: 0;
@@ -56,26 +56,8 @@
             margin-left: -5em !important;
             margin-top: .35em;
         }
-        .form-row label {
-            font-size: var(--bulma-size-small);
-            color: var(--bulma-text-strong);
-            font-weight: var(--bulma-weight-semibold);
-        }
-        .form-row select {
-            padding-inline-end: 2.5em;
-            cursor: pointer;
-            border-radius: var(--bulma-radius-small) !important;
-            background-color: var(--bulma-body-background-color) !important;
-            border-color: var(--bulma-border) !important;
-            position: relative !important;
-            height: var(--bulma-control-height);
-            color: var(--bulma-text-strong);
-            padding: .2em 1.5em .2em 1em;
-        }
-        .form-row select:after {
-            border: .125em solid var(--bulma-link);
-            border-right: 0;
-            border-top: 0;
+        fieldset fieldset fieldset {
+            margin-left: -10px !important;
         }
     </style>
 {% endblock %}
@@ -88,7 +70,7 @@
     <div class="container">
         {% include "includes/breadcrumbs.html" %}
 
-        <h1 class="is-title is-size-2 py-3 mt-3">{{ title }}</h1>
+        <h1 class="is-title is-size-2 py-3 mt-3">{{ title }} <span class="faded smaller ml-5">{{ subtitle }}</span></h1>
 
         <div id="content-main">
             <form method="post" id="{{ opts.model_name }}_form" novalidate

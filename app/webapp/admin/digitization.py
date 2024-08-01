@@ -45,7 +45,7 @@ class DigitizationAdmin(UnregisteredAdmin):
 
 class DigitizationInline(nested_admin.NestedStackedInline):
     model = Digitization
-    # template = 'admin/includes/inline_fieldset.html'
+    template = "admin/includes/inline_fieldset.html"
     extra = 1  # Display only one empty form in the parent form
     max_num = 5
     readonly_fields = ("digit_preview", "view_digit", "view_regions")

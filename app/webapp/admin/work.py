@@ -25,7 +25,7 @@ class WorkAdmin(UnregisteredAdmin):
         "lang",
         "tags",
     ]
-    autocomplete_fields = ("author", "place")
+    # autocomplete_fields = ("author", "place")
 
 
 # class WorkInline(nested_admin.NestedStackedInline):
