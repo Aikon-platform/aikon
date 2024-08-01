@@ -65,7 +65,7 @@
 
 <div id="nav-actions" class="mb-5">
     <div class="actions grid">
-        <div class="cell is-right is-middle">
+        <div class="cell is-left is-middle">
             <RegionsBtn {baseUrl} {currentRegionId}/>
         </div>
         {#if ["all", "page"].includes(currentLayout)}

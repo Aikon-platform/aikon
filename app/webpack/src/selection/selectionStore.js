@@ -22,7 +22,7 @@ function createSelectionStore() {
         records: selectedRecords,
         regions: selectedRegions
     });
-    const { subscribe, update } = selection;
+    const { subscribe, update, get } = selection;
 
     const isSaved = writable(false);
 
@@ -204,6 +204,11 @@ function createSelectionStore() {
         selectionTitle: derived(selection, $selection =>
             isRegion => {
                 return $selection[isRegion ? "regions" : "records"].title;
+            }
+        ),
+        selection: derived(selection, $selection =>
+            isRegion => {
+                return $selection[isRegion ? "regions" : "records"];
             }
         ),
     };
