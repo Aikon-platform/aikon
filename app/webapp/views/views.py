@@ -547,9 +547,15 @@ class DocumentSetAutocomplete(autocomplete.Select2QuerySetView):
         qs = qs.filter(user=self.request.user).all()
 
         if self.q:
-            qs = qs.filter(title__icontains=self.q)
+            if self.q.isdigit():
+                qs = qs.filter(id=int(self.q))
+            else:
+                qs = qs.filter(title__icontains=self.q)
 
         return qs
+
+    def get_result_label(self, result):
+        return f"{result.title}"
 
 
 @csrf_exempt
@@ -569,15 +575,10 @@ def api_progress(request):
 
 
 @csrf_exempt
-def cancel_treatment(request):
+def cancel_treatment(request, treatment_id):
     """
     Cancel treatment in the API
     """
-    import json
-
-    data = json.loads(request.body)
-    treatment_id = data.get("treatment_id")
-
     if not treatment_id:
         return JsonResponse({"error": "Invalid treatment ID"}, status=400)
     try:
@@ -594,3 +595,27 @@ def cancel_treatment(request):
         return JsonResponse({"success": True})
     except Exception as e:
         return JsonResponse({"error": "Treatment not found"}, e)
+
+
+@csrf_exempt
+def relaunch_treatment(request, treatment_id):
+    """
+    Relaunch same treatment
+    """
+    if not treatment_id:
+        return JsonResponse({"error": "Invalid treatment ID"}, status=400)
+
+    try:
+        treatment = Treatment.objects.get(id=treatment_id)
+        return JsonResponse({"success": True})
+
+    except Exception as e:
+        return JsonResponse({"error": "Treatment not found"}, e)
+
+
+def set_title(request, set_id):
+    try:
+        set = DocumentSet.objects.get(id=set_id)
+        return JsonResponse({"title": set.title})
+    except DocumentSet.DoesNotExist:
+        return JsonResponse({"title": "Unknown"}, status=404)

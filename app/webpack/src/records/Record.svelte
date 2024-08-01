@@ -1,5 +1,5 @@
 <script>
-    import { refToIIIF, cancelTreatment } from "../utils.js";
+    import {refToIIIF, cancelTreatment} from "../utils.js";
     import { selectionStore } from '../selection/selectionStore.js';
     const { isSelected } = selectionStore;
     import { appLang, userId } from '../constants';
@@ -27,6 +27,12 @@
                     </div>
                 {/if}
                 <div class="media-content">
+                    {#if item.class === "Treatment"}
+                    <span class="title is-4 pt-2">
+                        <span class="tag px-2 py-1 mb-1 mr-1 is-dark is-rounded">{item.type} #{item.id}</span>
+                        {item.title}
+                    </span>
+                    {:else}
                     <a href="{item.url}" class="title is-4 hoverable pt-2">
                         <span class="tag px-2 py-1 mb-1 mr-1 is-dark is-rounded">{item.type} #{item.id}</span>
                         {item.title}
@@ -37,6 +43,7 @@
                             </span>
                         {/if}
                     </a>
+                    {/if}
 
                     <p class="subtitle is-6 mb-0 ml-2 pt-2">
                         {#if item.user}
@@ -86,6 +93,14 @@
                                     {appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}
                                 </span>
                             </button>
+                        {:else if item.is_finished && item.status === "ERROR"}
+                            <a href="add/{item.query_parameters}" class="button is-small is-rounded is-primary is-outlined px-2 py-1 mr-2"
+                                   title='{appLang === "en" ? "Relaunch same treatment" : "Relancer le même traitement"}'>
+                                <i class="fa-solid fa-arrow-rotate-left"></i>
+                                <span>
+                                    {appLang === 'en' ? 'Relaunch same treatment' : 'Relancer le même traitement'}
+                                </span>
+                            </a>
                         {/if}
                         {#if item.status === "SUCCESS"}
                             <span class="tag is-success p-1 mb-1">{item.status}</span>

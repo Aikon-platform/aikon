@@ -1,6 +1,11 @@
 {% extends "admin/base_site.html" %}
 
 {% block title %}{{ title }}{% endblock %}
+{% load static %}
+
+{% block extrahead %}
+    <script src="{% static 'js/treatment-form.js' %}"></script>
+{% endblock %}
 
 {% block content %}
 <div class="centerwrap">
