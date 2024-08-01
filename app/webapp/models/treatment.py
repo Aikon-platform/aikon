@@ -135,6 +135,9 @@ class Treatment(models.Model):
     def get_cancel_url(self):
         return f"{CV_API_URL}/{self.task_type}/{self.api_tracking_id}/cancel"
 
+    def get_query_parameters(self):
+        return f"?document_set={self.document_set.id}&task_type={self.task_type}&notify_email={self.notify_email}"
+
     def to_json(self):
         return {
             "id": self.id.__str__(),
@@ -148,6 +151,7 @@ class Treatment(models.Model):
             "is_finished": self.is_finished,
             "treated_objects": self.treated_objects,
             "cancel_url": self.get_cancel_url(),
+            "query_parameters": self.get_query_parameters(),
             "api_tracking_id": self.api_tracking_id,
             "metadata": {
                 get_name("id"): self.id,

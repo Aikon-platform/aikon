@@ -132,6 +132,11 @@ urlpatterns = [
         DocumentSetAutocomplete.as_view(),
         name="document-set-autocomplete",
     ),
+    path(
+        f"{APP_NAME}/set-title/<int:set_id>",
+        set_title,
+        name="set-title",
+    ),
     path("retrieve_place_info/", retrieve_place_info, name="retrieve-place-info"),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
     path(f"{APP_NAME}/advanced-search/", advanced_search, name="advanced-search"),
@@ -146,9 +151,14 @@ urlpatterns = [
         name="api-progress",
     ),
     path(
-        f"{APP_NAME}/cancel-treatment/",
+        f"{APP_NAME}/cancel-treatment/<str:treatment_id>",
         cancel_treatment,
         name="cancel-treatment",
+    ),
+    path(
+        f"{APP_NAME}/relaunch-treatment/<str:treatment_id>",
+        relaunch_treatment,
+        name="relaunch-treatment",
     ),
 ]
 
