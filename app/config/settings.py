@@ -182,14 +182,6 @@ STATIC_ROOT = BASE_DIR / STATIC_DIR
 MEDIA_URL = "media/"
 MEDIA_ROOT = MEDIA_DIR
 
-# DAL_WIDGET_CSS = {
-#     'autocomplete': [
-#         'admin/css/vendor/select2/select2.min.css',
-#         'admin/css/autocomplete.css',
-#         f'{STATIC_ROOT}/css/select2.css',
-#     ]
-# }
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
