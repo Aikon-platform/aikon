@@ -166,7 +166,7 @@ urlpatterns = [
 urlpatterns += [
     path(f"witness/", WitnessList.as_view(), name="witness_list"),
     path(f"witness/<int:id>/", WitnessView.as_view(), name="witness_view"),
-    path(f"witness/add/", WitnessCreate.as_view(), name="witness_create"),
+    # path(f"witness/add/", WitnessCreate.as_view(), name="witness_create"),
     path(
         f"witness/<int:id>/change/",
         WitnessUpdate.as_view(),
