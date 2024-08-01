@@ -619,3 +619,17 @@ def sort_key(s):
 
 def gen_img_ref(img, coord):
     return f"{img.split('.')[0]}_{coord}"
+
+
+def get_summary(elements):
+    strings = [str(el) for el in elements]
+    if len(strings) < 4:
+        return "<br>".join(strings)
+
+    first_three, rest = strings[:3], strings[3:]
+    ellip = ""  # "<span class='ellipsis'>...</span>"
+
+    visible = "<br>".join(first_three)
+    summary = f"<summary>{visible}<br>{ellip}</summary>"
+    details = "<br>".join(rest)
+    return f"<details class='summary'>{summary}{details}</details>"

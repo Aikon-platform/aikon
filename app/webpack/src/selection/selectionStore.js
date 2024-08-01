@@ -160,7 +160,7 @@ function createSelectionStore() {
         subscribe,
         save: (isRegion) => update(selection => save(selection, isRegion)),
         empty: (isRegion) => update(selection => {
-            selection[isRegion ? "regions" : "records"].selected = {};
+            selection[isRegion ? "regions" : "records"] = isRegion ? regionsSetTemplate : docSetTemplate;
             store(selection[isRegion ? "regions" : "records"]);
             return selection
         }),

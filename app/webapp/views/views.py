@@ -555,7 +555,7 @@ class DocumentSetAutocomplete(autocomplete.Select2QuerySetView):
         return qs
 
     def get_result_label(self, result):
-        return f"{result.title}"
+        return f"{result}"
 
 
 @csrf_exempt

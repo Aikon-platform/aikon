@@ -28,6 +28,16 @@ class DocumentSet(models.Model):
         app_label = "webapp"
 
     def __str__(self):
+        if self.length() != 1:
+            return f"{self.title} ({self.length()} documents)"
+        if self.wit_ids:
+            return f"{self.get_witnesses()[0]}"
+        if self.ser_ids:
+            return f"{self.get_series()[0]}"
+        if self.digit_ids:
+            return f"{self.get_digits()[0]}"
+        if self.work_ids:
+            return f"{self.get_works()[0]}"
         return self.title
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -47,6 +57,12 @@ class DocumentSet(models.Model):
         # TODO create view to edit document set without loading it
         # return reverse("document_set", args=[self.id])
         return ""
+
+    def length(self):
+        return sum(
+            len(field or [])
+            for field in (self.wit_ids, self.ser_ids, self.digit_ids, self.work_ids)
+        )
 
     def get_witnesses(self):
         if not self.wit_ids:
@@ -68,8 +84,24 @@ class DocumentSet(models.Model):
             return []
         return list(Work.objects.filter(id__in=self.work_ids))
 
-    def get_str_documents(self):
-        pass
+    def get_documents(self):
+        return (
+            self.get_witnesses()
+            + self.get_series()
+            + self.get_digits()
+            + self.get_works()
+        )
+
+    def get_document_names(self):
+        return [obj.__str__() for obj in self.get_documents()]
+
+    def get_document_metadata(self):
+        return {
+            "Witness": {wit.id: wit.__str__() for wit in self.get_witnesses()},
+            "Series": {ser.id: ser.__str__() for ser in self.get_series()},
+            "Digitization": {digit.id: digit.__str__() for digit in self.get_digits()},
+            "Work": {work.id: work.__str__() for work in self.get_works()},
+        }
 
     def to_json(self):
         return {
@@ -82,13 +114,5 @@ class DocumentSet(models.Model):
             "url": self.get_absolute_url(),
             "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),
             "is_public": self.is_public,
-            # "metadata": {
-            #     get_name("id_nb"): self.id_nb or "-",
-            #     get_name("Work"): self.get_work_titles(),
-            #     get_name("place_name"): self.get_place_names(),
-            #     get_name("dates"): format_dates(*self.get_dates()),
-            #     get_name("page_nb"): self.get_page(),
-            #     get_name("Language"): self.get_lang_names(),
-            # },
-            # "buttons": buttons,
+            "documents": self.get_document_metadata(),
         }

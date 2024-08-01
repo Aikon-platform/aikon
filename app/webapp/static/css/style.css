@@ -304,6 +304,11 @@ td.is-fullwidth {
     --deleted-text: var(--bulma-danger-light);
 }
 
+.is-delete {
+    color: var(--deleted-text);
+    background-color: var(--deleted);
+}
+
 .is-contrasted {
     background-color: var(--contrasted) !important;
 }
@@ -347,3 +352,23 @@ td.is-fullwidth {
     background-color: var(--selected);
     color: var(--selected-text);
 }
+
+/*.summary summary {*/
+/*    position: relative;*/
+/*    padding-right: 5em;*/
+/*    cursor: pointer;*/
+/*}*/
+/*.summary summary .ellipsis::after {*/
+/*    content: '►';*/
+/*    padding-left: 2em;*/
+/*    transform: translateY(-50%);*/
+/*}*/
+/*.summary[open] summary .ellipsis::after {*/
+/*    content: '▼';*/
+/*}*/
+/*.summary summary::-webkit-details-marker {*/
+/*    display: none;*/
+/*}*/
+/*.summary summary .ellipsis {*/
+/*    margin-right: 5px;*/
+/*}*/
