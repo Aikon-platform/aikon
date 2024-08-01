@@ -25,12 +25,6 @@
                             {% if APP_LANG == "en" %}Add{% else %}Ajouter une{% endif %} {{ SER }}
                         </span>
                     </a>
-                    <a href="{% url 'admin:webapp_treatment_add' %}">
-                        <span class="icon-text">
-                            <span class="icon"><i class="fas fa-plus-circle"></i></span>
-                            {% if APP_LANG == "en" %}Request{% else %}Effectuer un{% endif %} {{ TRMT }}
-                        </span>
-                    </a>
                 </ul>
             </aside>
         </div>
@@ -56,6 +50,21 @@
                         {% include "includes/admin_row.html" with entity_title=WIT entity_name="witness" %}
                         {% include "includes/admin_row.html" with entity_title=SER entity_name="series" %}
                         {% include "includes/admin_row.html" with entity_title=WORK entity_name="work" %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="block box mg-medium p-5 has-background-link-light">
+                <div class="box is-contrasted" style="width: 100%; overflow-x: auto;">
+                    <table class="table is-capitalized is-fullwidth" id="main_entities">
+                        <thead>
+                        <tr class="table-header">
+                            <th colspan="3">{% if APP_LANG == "en" %}My Tasks{% else %}Mes tâches{% endif %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% include "includes/admin_row.html" with entity_title=TRMT entity_name="treatment" %}
+                        {% include "includes/admin_row.html" with entity_title=SET entity_name="document_set" %}
                         </tbody>
                     </table>
                 </div>

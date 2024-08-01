@@ -13,6 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 
+from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions, check_version
 from app.webapp.search_filters import WitnessFilter
 from app.webapp.models.digitization import Digitization
@@ -533,6 +534,20 @@ class EditionAutocomplete(autocomplete.Select2QuerySetView):
 
         if self.q:
             qs = qs.filter(name__icontains=self.q)
+
+        return qs
+
+
+class DocumentSetAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return DocumentSet.objects.none()
+
+        qs = DocumentSet.objects.all()
+        qs = qs.filter(user=self.request.user).all()
+
+        if self.q:
+            qs = qs.filter(title__icontains=self.q)
 
         return qs
 
