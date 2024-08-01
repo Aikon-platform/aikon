@@ -12,12 +12,12 @@
             {appLang === 'en' ? 'Clear selection' : 'Vider la sélection'}
         </button>
         {#if $isSaved}
-            <button class="button is-link" on:click={() => null}>
+            <a class="button is-link" href="/treatment/add/?document_set={selectionStore.getDocumentSetId(isRegion)}">
                 <span>
                     <i class="fa-solid fa-gear"></i>
                     {appLang === 'en' ? 'Go to treatment' : 'Accéder au traitement'}
                 </span>
-            </button>
+            </a>
         {:else}
             <button class="button is-link" on:click={() => selectionStore.save(isRegion)}>
                 <span>
