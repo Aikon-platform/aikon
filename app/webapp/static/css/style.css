@@ -353,22 +353,7 @@ td.is-fullwidth {
     color: var(--selected-text);
 }
 
-/*.summary summary {*/
-/*    position: relative;*/
-/*    padding-right: 5em;*/
-/*    cursor: pointer;*/
-/*}*/
-/*.summary summary .ellipsis::after {*/
-/*    content: '►';*/
-/*    padding-left: 2em;*/
-/*    transform: translateY(-50%);*/
-/*}*/
-/*.summary[open] summary .ellipsis::after {*/
-/*    content: '▼';*/
-/*}*/
-/*.summary summary::-webkit-details-marker {*/
-/*    display: none;*/
-/*}*/
-/*.summary summary .ellipsis {*/
-/*    margin-right: 5px;*/
-/*}*/
+.hoverable:hover {
+    cursor: pointer;
+    text-decoration: underline;
+}

@@ -622,6 +622,9 @@ def gen_img_ref(img, coord):
 
 
 def get_summary(elements):
+    if len(elements) == 0:
+        return f"<span class='faded'>{'Empty' if APP_LANG == 'en' else 'Vide'}</span>"
+
     strings = [str(el) for el in elements]
     if len(strings) < 4:
         return "<br>".join(strings)

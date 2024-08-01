@@ -1,7 +1,9 @@
+from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.core.paginator import Paginator
 
+from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.series import Series
 from app.webapp.models.treatment import Treatment
 from app.webapp.models.work import Work
@@ -58,3 +60,12 @@ def search_series(request):
     series_list = Series.objects.order_by("id")
     series_filter = SeriesFilter(request.GET, queryset=series_list)
     return JsonResponse(paginated_records(request, series_filter.qs))
+
+
+@require_GET
+def search_document_set(request):
+    user = request.user
+    doc_sets = DocumentSet.objects.filter(Q(is_public=True) | Q(user=user)).order_by(
+        "-id"
+    )
+    return JsonResponse(paginated_records(request, doc_sets))

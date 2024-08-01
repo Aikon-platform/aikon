@@ -5,6 +5,7 @@ from django.views.generic import CreateView, DetailView, View, ListView, UpdateV
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 
+from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.series import Series
 from app.webapp.models.work import Work
 from app.webapp.search_filters import (
@@ -229,6 +230,16 @@ class SeriesList(AbstractRecordList):
         context["search_fields"] = SeriesFilter().to_form_fields()
 
         return context
+
+
+class DocumentSetList(AbstractRecordList):
+    model = DocumentSet
+
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     # context["search_fields"] = SeriesFilter().to_form_fields()
+    #
+    #     return context
 
 
 # TODO DocumentSetList, RegionsSetList

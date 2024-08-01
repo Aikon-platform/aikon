@@ -7,9 +7,9 @@
     import SelectionModal from "../selection/SelectionModal.svelte";
     import RecordSearch from "./RecordSearch.svelte";
     import Pagination from "../Pagination.svelte";
+    import Modal from "../Modal.svelte";
     // import Loading from '../Loading.svelte';
     // import { loading } from "../utils.js";
-    import Modal from "../Modal.svelte";
 
     import { setContext } from "svelte";
 
@@ -17,6 +17,8 @@
     setContext('modelName', modelName);
 
     import { createRecordsStore } from "./recordStore.js";
+    import Set from "./Set.svelte";
+    import Treatment from "./Treatment.svelte";
     const recordsStore = createRecordsStore(modelName);
     const { pageRecords, resultPage, resultNumber } = recordsStore;
 
@@ -44,7 +46,13 @@
         <Pagination store={recordsStore} nbOfItems={$resultNumber}/>
         <div>
             {#each $pageRecords as item (item.id)}
-                <Record {item}/>
+                {#if item.class === 'Treatment'}
+                    <Treatment {item}/>
+                {:else if item.class.includes('Set')}
+                    <Set {item}/>
+                {:else}
+                    <Record {item}/>
+                {/if}
             {:else}
                 <p>{appLang === 'en' ? 'No records found' : 'Aucun enregistrement trouvé'}</p>
             {/each}

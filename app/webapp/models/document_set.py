@@ -9,6 +9,7 @@ from django.urls import reverse
 
 from app.webapp.models.witness import Witness
 from app.webapp.models.work import Work
+from app.webapp.utils.functions import get_summary
 
 
 def get_name(fieldname, plural=False):
@@ -96,23 +97,31 @@ class DocumentSet(models.Model):
         return [obj.__str__() for obj in self.get_documents()]
 
     def get_document_metadata(self):
+        def obj_meta(obj):
+            return {"id": obj.id, "title": obj.__str__(), "url": obj.get_absolute_url()}
+
         return {
-            "Witness": {wit.id: wit.__str__() for wit in self.get_witnesses()},
-            "Series": {ser.id: ser.__str__() for ser in self.get_series()},
-            "Digitization": {digit.id: digit.__str__() for digit in self.get_digits()},
-            "Work": {work.id: work.__str__() for work in self.get_works()},
+            "Witness": {wit.id: obj_meta(wit) for wit in self.get_witnesses()},
+            "Series": {ser.id: obj_meta(ser) for ser in self.get_series()},
+            "Digitization": {digit.id: obj_meta(digit) for digit in self.get_digits()},
+            "Work": {work.id: obj_meta(work) for work in self.get_works()},
         }
 
     def to_json(self):
         return {
             "id": self.id,
             "class": self.__class__.__name__,
-            "type": get_name("Treatment"),
+            "type": get_name("DocumentSet"),
             "title": self.__str__(),
             "user_id": self.user.id,
             "user": self.user.__str__(),
             "url": self.get_absolute_url(),
             "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),
             "is_public": self.is_public,
-            "documents": self.get_document_metadata(),
+            "selection": {
+                "id": self.id,
+                "type": "documentSet",
+                "title": self.title,
+                "selected": self.get_document_metadata(),
+            },
         }

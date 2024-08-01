@@ -1,8 +1,9 @@
 <script>
     import { appLang } from '../constants';
     import {selectionStore} from "../selection/selectionStore.js";
+    const { isSelected } = selectionStore;
     export let item;
-    export let itemSelected;
+    $: itemSelected = $isSelected(item);
 </script>
 
 <button class="button" class:is-inverted={itemSelected} on:click={() => selectionStore.toggle(item)}>
