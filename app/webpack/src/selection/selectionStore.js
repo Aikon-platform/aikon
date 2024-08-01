@@ -22,7 +22,7 @@ function createSelectionStore() {
         records: selectedRecords,
         regions: selectedRegions
     });
-    const { subscribe, update } = selection;
+    const { subscribe, update, get } = selection;
 
     const isSaved = writable(false);
 
@@ -156,15 +156,6 @@ function createSelectionStore() {
         return selection;
     }
 
-    function getDocumentSetId() {
-        let docSetId;
-        update(currentSelection => {
-            docSetId = currentSelection.records.id;
-            return currentSelection;
-        });
-        return docSetId;
-    }
-
     return {
         subscribe,
         save: (isRegion) => update(selection => save(selection, isRegion)),
@@ -215,7 +206,11 @@ function createSelectionStore() {
                 return $selection[isRegion ? "regions" : "records"].title;
             }
         ),
-        getDocumentSetId
+        selection: derived(selection, $selection =>
+            isRegion => {
+                return $selection[isRegion ? "regions" : "records"];
+            }
+        ),
     };
 }
 export const selectionStore = createSelectionStore();
