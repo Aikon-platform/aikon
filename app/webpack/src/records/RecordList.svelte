@@ -68,6 +68,7 @@
 
 <SelectionModal {selectionLength}>
     {#each selectedRecords as [type, selectedItems]}
+        {#if Object.values(selectedItems).length > 0}
         <h3>{type}</h3>
         <table class="table pl-2 is-fullwidth">
             <tbody>
@@ -84,15 +85,16 @@
                                 on:click={() => selectionStore.remove(id, type)}/>
                     </td>
                 </tr>
-            {:else}
-                <tr>
-                    <td>
-                        {appLang === 'en' ? 'No documents in selection' : 'Aucun document sélectionné'}
-                    </td>
-                </tr>
+            <!--{:else}-->
+            <!--    <tr>-->
+            <!--        <td>-->
+            <!--            {appLang === 'en' ? 'No documents in selection' : 'Aucun document sélectionné'}-->
+            <!--        </td>-->
+            <!--    </tr>-->
             {/each}
             </tbody>
         </table>
+        {/if}
     {:else}
         <tr>
             <td>
