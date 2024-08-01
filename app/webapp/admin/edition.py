@@ -13,4 +13,4 @@ class EditionFilter(AutocompleteFilter):
 @admin.register(Edition)
 class EditionAdmin(UnregisteredAdmin):
     search_fields = ("publisher__name", "place__name")
-    # autocomplete_fields = ("publisher", "place")
+    autocomplete_fields = ("publisher", "place")

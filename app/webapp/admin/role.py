@@ -9,4 +9,4 @@ class RoleInline(NestedStackedInline):
     extra = 1
 
     fields = [("role", "person")]
-    # autocomplete_fields = ("person",)
+    autocomplete_fields = ("person",)

@@ -21,7 +21,7 @@ class ContentAdmin(UnregisteredAdmin):
 
 
 class ContentInline(nested_admin.NestedStackedInline):
-    # form = LanguageForm
+    form = LanguageForm
     model = Content
     template = "admin/includes/inline_fieldset.html"
     extra = 1  # Display only one empty form in the parent form
@@ -35,7 +35,7 @@ class ContentInline(nested_admin.NestedStackedInline):
         "tags",
     ]
 
-    # autocomplete_fields = ("work", "place")
+    autocomplete_fields = ("work", "place")
     inlines = [RoleInline]
 
 
@@ -47,7 +47,7 @@ class ContentWorkInline(nested_admin.NestedStackedInline):
     extra = 1
     max_num = 1
     fields = ["work"]  # ("page_min", "page_max")
-    # autocomplete_fields = ("work",)
+    autocomplete_fields = ("work",)
 
     # def has_add_permission(self, request, obj=None):
     #     # Returning False will hide the "Add another" link

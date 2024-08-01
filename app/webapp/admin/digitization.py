@@ -51,7 +51,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     readonly_fields = ("digit_preview", "view_digit", "view_regions")
 
     fields = ["digit_type", "pdf", "manifest", "images", ("is_open", "source")]
-    # autocomplete_fields = ("source",)
+    autocomplete_fields = ("source",)
 
     def digit_url(self):
         return f"/{APP_NAME}-admin/{WEBAPP_NAME}/digitization"

@@ -47,7 +47,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         "is_public",
     ]
     inlines = [RoleInline, WitnessInline]
-    # autocomplete_fields = ("work", "edition", "place")
+    autocomplete_fields = ("work", "edition", "place")
 
     @admin.display(description=get_name("Edition"))
     def get_edition(self, obj):

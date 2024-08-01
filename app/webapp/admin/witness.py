@@ -120,7 +120,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         "link",
         "is_public",
     ]
-    # autocomplete_fields = ("place", "volume", "edition")
+    autocomplete_fields = ("place", "volume", "edition")
     fieldsets = (
         (
             banner.capitalize(),
