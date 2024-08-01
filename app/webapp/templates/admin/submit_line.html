@@ -1,0 +1,18 @@
+{% load i18n admin_urls %}
+<div class="submit-row buttons field is-grouped" style="justify-content: center">
+
+    <div class="buttons">
+        {% if show_save %}
+            <input class="button is-link" type="submit" value="{% translate 'Save' %}" name="_save">
+        {% endif %}
+        {% if show_save_and_continue %}
+            <input class="button is-link is-outlined mr-5" type="submit" value="{% if can_change %}{% translate 'Save and continue editing' %}{% else %}{% translate 'Save and view' %}{% endif %}" name="_continue">
+        {% endif %}
+        {% if show_delete_link and original %}
+            {% url opts|admin_urlname:'delete' original.pk|admin_urlquote as delete_url %}
+            <a href="{% add_preserved_filters delete_url %}" class="button is-danger is-dark" style="padding-top: .35em; padding-bottom: .35em">
+                {% translate "Delete" %}
+            </a>
+        {% endif %}
+    </div>
+</div>

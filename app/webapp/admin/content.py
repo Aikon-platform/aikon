@@ -23,6 +23,7 @@ class ContentAdmin(UnregisteredAdmin):
 class ContentInline(nested_admin.NestedStackedInline):
     form = LanguageForm
     model = Content
+    template = "admin/includes/inline_fieldset.html"
     extra = 1  # Display only one empty form in the parent form
 
     fields = [
@@ -41,6 +42,7 @@ class ContentInline(nested_admin.NestedStackedInline):
 class ContentWorkInline(nested_admin.NestedStackedInline):
     # INLINE FORM ACCESSIBLE IN THE FORM SERIES
     model = Content
+    template = "admin/includes/inline_fieldset.html"
     # verbose_name_plural = ""
     extra = 1
     max_num = 1

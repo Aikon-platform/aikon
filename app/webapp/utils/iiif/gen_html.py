@@ -1,6 +1,6 @@
 from django.utils.safestring import mark_safe
 
-from app.webapp.models.regions import Regions
+from django.urls import reverse
 from app.webapp.models.digitization import Digitization
 from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2
 from app.webapp.utils.functions import get_icon, get_action, cls
@@ -8,6 +8,7 @@ from app.config.settings import (
     SAS_APP_URL,
     APP_URL,
     APP_NAME,
+    APP_LANG,
 )
 from app.webapp.utils.iiif import IIIF_ICON
 
@@ -64,8 +65,8 @@ def regions_btn(obj, action="view"):
         disabled = "disabled"
 
     return (
-        f"<a href='{link}' class='btn btn-md active manifest-regions' role='button' aria-pressed='true' target='_blank'"
-        f"{disabled} style='background-color:{color};'>{icon} {btn}</a>"
+        f"<a href='{link}' class='button active is-link is-inverted is-small my-2' role='button' "
+        f"aria-pressed='true' target='_blank' {disabled}>{icon} {btn}</a>"
     )
 
 
@@ -85,8 +86,18 @@ def gen_btn(obj, action="view"):
         return mark_safe(regions_btn(obj, action))
 
     is_regions = True
-    if action == "regions" or action == "vectors":
-        return mark_safe(f"<br>{regions_btn(obj, action)}")
+    if action == "regions":
+        region_url = reverse(
+            "webapp:regions_view", kwargs={"wid": obj.get_witness().id, "rid": obj.id}
+        )
+        title = "Show regions" if APP_LANG == "en" else "Afficher les régions"
+        return mark_safe(
+            f"<a href='{region_url}' class='button is-small is-link px-2' title='{title}'>"
+            f"<span class='iconify' data-icon='entypo:documents'/>"
+            f"<span class='ml-2'>{title.upper()}</span></a>"
+        )
+    # if action == "regions" or action == "vectors":
+    #     return mark_safe(f"<br>{regions_btn(obj, action)}")
 
     if action == "auto-view":
         digit_id = obj.id if cls(obj) == Digitization else obj.get_digit().id

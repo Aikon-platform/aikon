@@ -206,7 +206,6 @@ class TreatmentList(AbstractRecordList):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["record_name"] = Treatment._meta.verbose_name_plural
         context["search_fields"] = TreatmentFilter().to_form_fields()
 
         return context
@@ -217,7 +216,6 @@ class WorkList(AbstractRecordList):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["record_name"] = Work._meta.verbose_name_plural
         context["search_fields"] = WorkFilter().to_form_fields()
 
         return context
@@ -228,7 +226,6 @@ class SeriesList(AbstractRecordList):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["record_name"] = Series._meta.verbose_name_plural
         context["search_fields"] = SeriesFilter().to_form_fields()
 
         return context
