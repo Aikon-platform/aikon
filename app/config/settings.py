@@ -121,7 +121,7 @@ TEMPLATES = [
                 "webapp.templatetags.context_processors.global_variables",
             ],
             "builtins": [
-                "webapp.filters",
+                "webapp.templatetags.filters",
             ],
         },
     },

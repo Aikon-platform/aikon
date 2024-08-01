@@ -34,6 +34,7 @@
                              {% if not line.fields|length == 1 %} fieldBox{% if field.field.name %} field-{{ field.field.name }}{% endif %}
                              {% if not field.is_readonly and field.errors %} errors{% endif %}
                              {% if field.field.is_hidden %} hidden{% endif %}{% endif %}{% if field.is_checkbox %} checkbox-row{% endif %}">
+
                             {% if field.is_checkbox %}
                                 {{ field.field }}
                                 {{ field.label_tag|add_class:"label is-small p-2 m-0" }}
@@ -42,19 +43,43 @@
                                         <div>{{ field.field.help_text|safe }}</div>
                                     </div>
                                 {% endif %}
-                            {% elif field.field|is_select %}
-                                {{ field.label_tag|add_class:"label is-small" }}
-                                <div class="select is-small">
-                                    {{ field.field|add_class:"select" }}
-                                </div>
                             {% else %}
                                 {{ field.label_tag|add_class:"label is-small" }}
                                 {% if field.is_readonly %}
                                     <div class="readonly">{{ field.contents }}</div>
                                 {% else %}
-                                    {{ field.field|add_class:"input is-small" }}
+                                    {% with field_type=field.field|get_field_type %}
+                                        {% if field_type == "select" %}
+                                            <div class="select is-small">
+                                                {{ field.field }}
+                                            </div>
+                                        {% elif field_type == "textarea" %}
+                                            <div class="textarea-container">
+                                                {{ field.field|add_class:"textarea is-small" }}
+                                            </div>
+                                        {% elif field_type == "multiselect" %}
+                                            <div class="select is-multiple is-small">
+                                                {{ field.field }}
+                                            </div>
+                                        {% else %}
+                                            {{ field.field|add_class:"input is-small" }}
+                                        {% endif %}
+                                    {% endwith %}
                                 {% endif %}
                             {% endif %}
+                            {#                            {% elif field.field|is_select %}#}
+                            {#                                {{ field.label_tag|add_class:"label is-small" }}#}
+                            {#                                <div class="select is-small">#}
+                            {#                                    {{ field.field|add_class:"select" }}#}
+                            {#                                </div>#}
+                            {#                            {% else %}#}
+                            {#                                {{ field.label_tag|add_class:"label is-small" }}#}
+                            {#                                {% if field.is_readonly %}#}
+                            {#                                    <div class="readonly">{{ field.contents }}</div>#}
+                            {#                                {% else %}#}
+                            {#                                    {{ field.field|add_class:"input is-small" }}#}
+                            {#                                {% endif %}#}
+                            {#                            {% endif %}#}
                         </div>
                     </div>
                 {% endfor %}
