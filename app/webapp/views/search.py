@@ -12,6 +12,7 @@ from app.webapp.search_filters import (
     TreatmentFilter,
     WorkFilter,
     SeriesFilter,
+    DocumentSetFilter,
 )
 from app.webapp.models.witness import Witness
 
@@ -72,4 +73,6 @@ def search_document_set(request):
         else DocumentSet.objects.filter(Q(is_public=True) | Q(user=user))
     )
     doc_sets = doc_sets.order_by("-id")
-    return JsonResponse(paginated_records(request, doc_sets))
+
+    doc_sets = DocumentSetFilter(request.GET, queryset=doc_sets)
+    return JsonResponse(paginated_records(request, doc_sets.qs))

@@ -13,6 +13,7 @@ from app.webapp.search_filters import (
     TreatmentFilter,
     WorkFilter,
     SeriesFilter,
+    DocumentSetFilter,
 )
 from app.webapp.forms import *
 from app.webapp.forms.treatment import TreatmentForm
@@ -245,6 +246,12 @@ class SeriesList(AbstractRecordList):
 
 class DocumentSetList(AbstractRecordList):
     model = DocumentSet
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["search_fields"] = DocumentSetFilter().to_form_fields()
+
+        return context
 
 
 # TODO RegionsSetList

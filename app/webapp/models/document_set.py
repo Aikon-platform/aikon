@@ -139,10 +139,12 @@ class DocumentSet(models.Model):
             "class": self.__class__.__name__,
             "type": get_name("DocumentSet"),
             "title": self.__str__(),
-            "user_id": self.user.id,
-            "user": self.user.__str__(),
+            "user_id": self.user.id if self.user else "None",
+            "user": self.user.__str__() if self.user else "None",
             "url": self.get_absolute_url(),
-            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),
+            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M")
+            if self.updated_at
+            else "None",
             "is_public": self.is_public,
             "selection": {
                 "id": self.id,

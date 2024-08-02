@@ -21,8 +21,8 @@
                title='{appLang === "en" ? "Relaunch same treatment" : "Relancer le même traitement"}'>
                 <i class="fa-solid fa-arrow-rotate-left"></i>
                 <span>
-            {appLang === 'en' ? 'Relaunch same treatment' : 'Relancer le même traitement'}
-        </span>
+                {appLang === 'en' ? 'Relaunch same treatment' : 'Relancer le même traitement'}
+                </span>
             </a>
         {/if}
 
@@ -35,24 +35,14 @@
         {/if}
     </div>
 
-    <div slot="body" class="grid metadata pt-2">
-        {#each Object.entries(item.metadata) as [field, value]}
-            <div class="datum is-middle columns">
-                <div class="column is-4 is-bold">{field}</div>
-                <div class="column is-8 {value === '-' ? 'faded' : ''}">{@html value}</div>
-            </div>
+    <div slot="body" class="pt-2 grid">
+        {#each Object.entries(item.selection.selected) as [modelName, selectedRecords]}
+            {#each Object.entries(selectedRecords) as [id, meta]}
+                <div>
+                    <span class="tag is-rounded is-accent">{modelName} #{id}</span>
+                    {meta.title}
+                </div>
+            {/each}
         {/each}
     </div>
 </Item>
-
-<style>
-    .metadata {
-        color: var(--bulma-text-strong);
-    }
-    .metadata .datum:not(:nth-last-child(-n+2)) {
-        border-bottom: 1px solid var(--bulma-border);
-    }
-    .columns {
-        margin-bottom: 0.5rem;
-    }
-</style>

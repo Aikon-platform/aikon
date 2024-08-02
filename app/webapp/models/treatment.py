@@ -152,8 +152,7 @@ class Treatment(models.Model):
             "type": get_name("Treatment"),
             "title": self.get_title(),
             "url": self.get_absolute_url(),
-            "updated_at": self.requested_on.strftime("%Y-%m-%d %H:%M"),
-            "user": user.__str__() if user else "unknown user",
+            "user": user.__str__() if user else "Unknown user",
             "user_id": user.id if user else 0,
             "status": self.status,
             "is_finished": self.is_finished,
@@ -161,9 +160,11 @@ class Treatment(models.Model):
             "cancel_url": self.get_cancel_url(),
             "query_parameters": self.get_query_parameters(),
             "api_tracking_id": self.api_tracking_id,
-            "metadata": {
-                get_name("id"): self.id,
-                get_name("treated_objects"): get_summary(self.get_objects()),
+            "selection": {
+                "id": self.id,
+                "type": "Treatment",
+                "title": self.get_title(),
+                "selected": self.document_set.get_document_metadata(),
             },
         }
 
@@ -374,15 +375,15 @@ def treatment_post_save(sender, instance, created, **kwargs):
     if created:
         witnesses = []
 
-        for object in instance.get_objects():
-            if type(object) is Witness:
+        for obj in instance.get_objects():
+            if type(obj) is Witness:
                 try:
-                    witnesses.append(object)
+                    witnesses.append(obj)
                 except:
                     pass
-            elif type(object) is Series or Work:
+            elif type(obj) is Series or Work:
                 try:
-                    objects = object.get_witnesses().get()
+                    objects = obj.get_witnesses().get()
                     witnesses.append(objects)
                 except:
                     pass
