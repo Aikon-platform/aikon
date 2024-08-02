@@ -1,0 +1,19 @@
+{% load static shared_tags %}
+{#{% url "admin:"|add:record|add:'_list' %}#}
+<a class="column is-one-third" href="{% url "admin:webapp_"|add:record|add:'_changelist' %}" data-theme="dark">
+    <div class="card clickable">
+{#        <div class="card-image">#}
+{#            <figure class="image is-4by3">#}
+{#                <img src="{% static 'img/'|add:record|add:'.png' %}" alt="{{ record }} image"/>#}
+{#            </figure>#}
+{#        </div>#}
+        <div class="card-content">
+            <div class="media">
+                <div class="media-content" style="height: 95px">
+                    <p class="title is-4 mb-2">{{ record_title }}</p>
+                    <p class="subtitle is-6">{{ record_subtitle }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</a>

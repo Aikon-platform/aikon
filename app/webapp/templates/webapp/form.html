@@ -1,0 +1,25 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify shared_tags %}
+
+{% block title %}{{ view_title }}{% endblock %}
+{% load static %}
+
+{% block extrahead %}
+    <script src="{% static 'js/treatment-form.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="centerwrap">
+
+    {% include "includes/breadcrumbs.html" %}
+
+    <h1 class="is-title is-size-2 py-3">{{ view_title }}</h1>
+    <form action="" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% include "webapp/base_form.html" %}
+        <p class="has-text-centered">
+            <input class="button is-link" type="submit" value="Submit">
+        </p>
+    </form>
+</div>
+{% endblock %}

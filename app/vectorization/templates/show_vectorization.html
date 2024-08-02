@@ -1,0 +1,237 @@
+{% extends "admin/base_site.html" %}
+
+{% load static %}
+
+{% block title %}{{ regions }}{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'css/tools.css' %}">
+    <style>
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            grid-gap: 20px;
+        }
+
+        .grid-item img {
+            width: auto;
+            height: 200px;
+            display: block;
+        }
+
+        .hidden {
+            display: none;
+        }
+        </style>
+
+{% endblock %}
+
+{% block header %}
+    <div class="toolbar">
+        <div class="title">
+            <b>{{ regions|capfirst }}</b>
+        </div>
+        <div style="display: flex; flex-direction: row;">
+            <a href="{% url 'webapp:show-all-regions' regions_ref=regions_ref %}" target="_blank">
+                <button class="export-button" type="submit">
+                    <i class="fa-solid fa-eye"></i>
+                    {% if APP_LANG == "en" %}
+                        Visualize all regions
+                    {% else %}
+                        Voir toutes les régions
+                    {% endif %}
+                </button>
+            </a>
+            <a href="{% url 'webapp:export-all-imgs-and-svgs' regions_ref=regions_ref %}">
+                <button class="export-button" type="submit">
+                    <i class="fa-regular fa-file-zipper"></i>&nbsp;
+                    {% if APP_LANG == "en" %}
+                        Download all
+                    {% else %}
+                        Télécharger toutes les
+                    {% endif %}
+                    vectorisations
+                </button>
+            </a>
+
+            <form id="export" action="{% url 'vectorization:export-img-and-svg' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="liste_images" name="liste_images" value="">
+                <button class="export-button" type="submit">
+                    <i class="fa-regular fa-file-zipper"></i>&nbsp;
+                    {% if APP_LANG == "en" %}
+                        Download selected vectorizations
+                    {% else %}
+                        Télécharger les vectorisations sélectionnées
+                    {% endif %}
+                </button>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+
+<div class="tabs-crops">
+    <div class="row">
+        <div class="tab-buttons">
+            <button class="btn-change active-tab">{% if APP_LANG == "en" %}
+                Page view
+            {% else %}
+                Vue page
+            {% endif %}
+            </button>
+            <button class="btn-change">{% if APP_LANG == "en" %}
+                Dump view
+            {% else %}
+                Vue générale
+            {% endif %}
+            </button>
+        </div>
+    </div>
+
+
+<div class="tab-bodies">
+
+    <div class="row" style="display:block;">
+        <div class="column">
+            <table class="region-table" style="margin-top: 0em;">
+                {% for canvas_nb, coord, img_file in page_regions %}
+                    <tr class="region-row">
+                        <td class="region-td page-col">
+                            <a href="{{ img_file|img_to_iiif}}" target="_blank">
+                                <img class="page-preview" src="{{ img_file|img_to_iiif:"full/350,/0" }}" alt="Click to see real size image">
+                            </a>
+                            <h3><a href="{{ img_file|img_to_iiif }}" target="_blank">Page {{ canvas_nb }}</a></h3>
+                        </td>
+                        <td class="region-td region-col">
+                            {% for coords, id in coord %}
+                                <div id="ill_{{ id }}" class="region-div grid-item" style=" display: flex; flex-wrap: wrap; justify-content: center;">
+                                    {% with region_full=coords|add:'/full/0' region=coords|add:'/,200/0' %}
+                                        <a href="{{ img_file|img_to_iiif:region_full }}" target="_blank">
+                                            <img src="{{ img_file|img_to_iiif:region }}" alt="scan preview">
+                                        </a>
+                                        <img src="{% get_media_prefix %}svg/{{ img_file|jpg_to_none }}_{{ coords }}.svg" class="img-fluid" alt="{{ img_file|jpg_to_none }}_{{ coords }}.svg">
+                                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px;">
+                                        <a href="{% url 'vectorization:img-and-svg' img_file=img_file coords=coords regions=regions canvas_nb=canvas_nb %}" target="_blank">{% if APP_LANG == "en" %}Visualize{% else %}Visualiser{% endif %}</a>
+                                        <br>
+                                        <input type="checkbox" name="vecto_checkbox" value='["{{ img_file|jpg_to_none }}_{{ coords }}.svg", "{{ img_file|img_to_iiif:region }}"]' onchange="updateSelectedImageURLs()">
+                                        </div>
+                                    {% endwith %}
+                                </div>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+            {% include 'includes/pagination.html' with current_page=page_regions %}
+        </div>
+    </div>
+
+    <div style="display: none;">
+        <div style="margin-top: 5%;">
+            <div class="grid-container">
+                {% for canvas_nb, coord, img_file in all_crops %}
+                    {% for coords, id in coord %}
+                        <div class="grid-item">
+                            <div style="display: flex; flex-direction: column;">
+                                <div style="display: flex; flex-direction: row;">{% with small=coords|add:'/full/0' %}
+                                    <a href="{{ img_file|img_to_iiif:small }}" target="_blank">
+                                        <img src="{{ img_file|img_to_iiif:small }}" class="img-fluid" alt="{{ img_file }}" style="margin-right: 10px;">
+                                    </a>
+                                    <img src="{% get_media_prefix %}svg/{{ img_file|jpg_to_none }}_{{ coords }}.svg" class="img-fluid" alt="{{ img_file|jpg_to_none }}_{{ coords }}.svg">
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px;">
+                                    <a href="{% url 'vectorization:img-and-svg' img_file=img_file coords=coords regions=regions canvas_nb=canvas_nb %}" target="_blank">
+                                        {% if APP_LANG == "en" %}Visualize{% else %}Visualiser{% endif %}
+                                    </a>
+                                    <input type="checkbox" name="vecto_checkbox" value='["{{ img_file|jpg_to_none }}_{{ coords }}.svg", "{{ img_file|img_to_iiif:small }}"]' onchange="updateSelectedImageURLs()">
+                                </div>
+                                {% endwith %}
+                            </div>
+                            <h3><a href="{{ img_file|img_to_iiif }}" target="_blank">Page {{ canvas_nb }}</a></h3>
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+
+</div>
+</div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const tabContainers = document.querySelectorAll('.tabs-crops');
+
+        tabContainers.forEach((tabContainer, tabID) => {
+            const registerButtons = tabContainer.querySelectorAll('.tab-buttons .btn-change');
+            const tabBodies = tabContainer.querySelectorAll('.tab-bodies > div');
+
+            registerButtons.forEach((button, index) => {
+                button.setAttribute('aria-controls', `${tabID}_${index}`);
+                if (tabBodies[index]) {
+                    tabBodies[index].setAttribute('id', `${tabID}_${index}`);
+                }
+
+                button.addEventListener('click', () => {
+                    setActiveTab(registerButtons, tabBodies, button);
+                });
+            });
+        });
+
+        function setActiveTab(registerButtons, tabBodies, activeButton) {
+            registerButtons.forEach((button, index) => {
+                if (button === activeButton) {
+                    button.classList.add('active-tab');
+                    if (tabBodies[index]) {
+                        tabBodies[index].style.display = 'block';
+                    }
+                } else {
+                    button.classList.remove('active-tab');
+                    if (tabBodies[index]) {
+                        tabBodies[index].style.display = 'none';
+                    }
+                }
+                button.setAttribute('aria-expanded', button === activeButton ? 'true' : 'false');
+            });
+        }
+    });
+
+    var checkboxes = document.querySelectorAll('input[name="vecto_checkbox"]');
+    var selectedImages = [];
+
+    function updateSelectedImageURLs() {
+    // Clear the selectedImages array before processing checkboxes
+    selectedImages.length = 0; // More efficient way to clear the array
+
+    // Loop through all checkboxes
+    checkboxes.forEach(function(checkbox) {
+        if (checkbox.checked) {
+        try {
+            // Parse the JSON string from checkbox value (handle potential errors)
+            var parsedImages = JSON.parse(checkbox.value);
+            // Add parsed images to selectedImages array (assuming correct format)
+            selectedImages.push(...parsedImages);
+        } catch (error) {
+            console.error("Error parsing JSON from checkbox:", checkbox.value, error);
+        }
+        }
+    });
+
+    // Convert the selectedImages array to JSON string (handle empty array)
+    var jsonString = selectedImages.length > 0 ? JSON.stringify(selectedImages) : "";
+
+    // Update the hidden input "liste_images" with the JSON string
+    document.getElementById("liste_images").value = jsonString;
+
+    // Log the JSON string for verification (optional)
+    console.log(selectedImages);
+    console.log(jsonString);
+    }
+
+    </script>
+{% endblock %}

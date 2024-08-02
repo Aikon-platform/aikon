@@ -1,0 +1,9 @@
+{% load shared_tags static %}
+
+{% if context == "css" %}
+    <link rel="stylesheet" href="{% static 'svelte/_.css' %}">
+{% elif context == "html" %}
+    <div id="_"></div>
+{% elif context == "js" %}
+    <script src="{% static 'svelte/_.js' %}"></script>
+{% endif %}

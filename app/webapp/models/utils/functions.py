@@ -3,8 +3,9 @@ from app.webapp.models.utils.constants import MODEL_NAMES
 from app.webapp.utils.functions import pluralize
 
 common_fields = {
-    "date_min": {"en": "Minimum date", "fr": "date minimale"},
-    "date_max": {"en": "Maximum date", "fr": "date maximale"},
+    "date_min": {"en": "minimum date", "fr": "date minimale"},
+    "date_max": {"en": "maximum date", "fr": "date maximale"},
+    "dates": {"en": "dates", "fr": "dates"},
     "name": {"en": "name", "fr": "nom"},
     "title": {"en": "title", "fr": "titre"},
     "type": {"en": "type", "fr": "type"},

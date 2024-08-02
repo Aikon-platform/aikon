@@ -11,7 +11,7 @@ Checks that a list of manifests has the correct number of canvases
 
 output_file = "incomplete_manifests.txt"
 no_file = "no_manifests.txt"
-anno_file = "manifest_to_annotate.txt"
+regions_file = "manifest_to_annotate.txt"
 download_file = "manifest_to_download.txt"
 ok_file = "complete_manifests.txt"
 gallica_file = "gallica.txt"
@@ -66,7 +66,7 @@ def compare_manifests(manifest_url):
             )
         else:
             if not is_annotated:
-                append_to_file(f"{manifest_url}", anno_file)
+                append_to_file(f"{manifest_url}", regions_file)
             append_to_file(manifest_url, ok_file)
             print(
                 f"👌 {app_id}: Both manifests have the same number of canvases: {num_canvases1}."
@@ -74,7 +74,7 @@ def compare_manifests(manifest_url):
             return
     else:
         if not is_annotated:
-            append_to_file(f"{manifest_url}", anno_file)
+            append_to_file(f"{manifest_url}", regions_file)
         append_to_file(manifest_url, ok_file)
         print(f"👌 {app_id}: No source manifest found in the metadata.")
         return

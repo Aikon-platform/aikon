@@ -14,6 +14,7 @@ class TagAdmin(admin.ModelAdmin):
     class Media:
         css = {"all": ("css/witness-form.css",)}
 
+    change_form_template = "admin/form.html"
     search_fields = ("label",)
     list_filter = ("label",)
     list_display = ("id", "label")
