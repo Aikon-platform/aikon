@@ -3,7 +3,7 @@
     import { selectionStore } from "../selection/selectionStore.js";
     const { selected, nbSelected } = selectionStore;
     import SelectionBtn from "../selection/SelectionBtn.svelte";
-    import { appLang } from '../constants';
+    import { appLang, appName, webappName } from '../constants';
     import SelectionModal from "../selection/SelectionModal.svelte";
     import RecordSearch from "./RecordSearch.svelte";
     import Pagination from "../Pagination.svelte";
@@ -15,6 +15,9 @@
 
     export let modelName = '';
     setContext('modelName', modelName);
+
+    export let modelTitle = '';
+    setContext('modelTitle', modelTitle);
 
     import { createRecordsStore } from "./recordStore.js";
     import Set from "./Set.svelte";
@@ -37,8 +40,9 @@
 
 <RecordSearch {recordsStore} {searchFields}/>
 
-{#if !modelName.includes('documentset')}
+{#if !modelTitle.includes('set')}
 <span class="is-right">
+    {#if modelTitle.includes('treatment')}
     <a href="/{modelName}/add/" class="button is-rounded is-primary mb-4"
        title='{appLang === "en" ? `Add ${modelName}` : `Ajouter ${modelName}`}'>
         <i class="fa-solid fa-plus"></i>
@@ -46,6 +50,15 @@
         {appLang === 'en' ? `Add ${modelName}` : `Ajouter ${modelName}`}
         </span>
     </a>
+    {:else}
+    <a href="/{appName}-admin/{webappName}/{modelName}/add/" class="button is-rounded is-primary mb-4"
+       title='{appLang === "en" ? `Add ${modelName}` : `Ajouter ${modelName}`}'>
+        <i class="fa-solid fa-plus"></i>
+        <span>
+        {appLang === 'en' ? `Add ${modelName}` : `Ajouter ${modelName}`}
+        </span>
+    </a>
+    {/if}
 </span>
 {/if}
 

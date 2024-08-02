@@ -4,7 +4,8 @@ const recordApp = new RecordList({
     target: document.getElementById('record-list'),
     props: {
         searchFields,
-        modelName
+        modelName,
+        modelTitle
     }
 });
 

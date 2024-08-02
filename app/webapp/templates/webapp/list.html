@@ -26,6 +26,7 @@
     <script>
         const modelName = "{{ model_name }}";
         const searchFields = {{ search_fields|js|safe }};
+        const modelTitle = "{{ model_title }}";
     </script>
     <script src="{% static 'svelte/recordList.js' %}"></script>
 {% endblock %}
