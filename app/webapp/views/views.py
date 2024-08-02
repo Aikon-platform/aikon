@@ -15,6 +15,8 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions, check_version
+from app.webapp.models.series import Series
+from app.webapp.models.work import Work
 from app.webapp.search_filters import WitnessFilter
 from app.webapp.models.digitization import Digitization
 from app.config.settings import (
@@ -555,7 +557,37 @@ class DocumentSetAutocomplete(autocomplete.Select2QuerySetView):
         return qs
 
     def get_result_label(self, result):
-        return f"{result.title}"
+        return f"{result}"
+
+
+class WitnessAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        qs = Witness.objects.all()
+
+        if self.q:
+            qs = qs.filter(id__icontains=self.q)
+
+        return qs
+
+
+class SeriesAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        qs = Series.objects.all()
+
+        if self.q:
+            qs = qs.filter(id__icontains=self.q)
+
+        return qs
+
+
+class WorkAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        qs = Work.objects.all()
+
+        if self.q:
+            qs = qs.filter(id__icontains=self.q)
+
+        return qs
 
 
 @csrf_exempt

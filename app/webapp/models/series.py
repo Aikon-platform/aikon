@@ -10,7 +10,12 @@ from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.utils.constants import PUBLISHED_INFO, DATE_INFO
 from app.webapp.models.work import Work
 from app.webapp.utils.constants import TRUNCATEWORDS
-from app.webapp.utils.functions import validate_dates, truncate_words, format_dates
+from app.webapp.utils.functions import (
+    validate_dates,
+    truncate_words,
+    format_dates,
+    get_summary,
+)
 
 
 def get_name(fieldname, plural=False):
@@ -93,9 +98,7 @@ class Series(models.Model):
                 edition_name("pub_place"): self.get_edition_place().__str__(),
                 edition_name("publisher"): self.get_publisher().__str__(),
                 get_name("ConservationPlace"): self.place.__str__(),
-                get_name("Volume"): "<br>".join(
-                    wit.__str__() for wit in self.get_witnesses()
-                )
+                get_name("Volume"): get_summary(self.get_witnesses())
                 if self.get_witnesses()
                 else "-",
             },

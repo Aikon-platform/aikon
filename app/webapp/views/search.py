@@ -1,7 +1,9 @@
+from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.core.paginator import Paginator
 
+from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.series import Series
 from app.webapp.models.treatment import Treatment
 from app.webapp.models.work import Work
@@ -10,6 +12,7 @@ from app.webapp.search_filters import (
     TreatmentFilter,
     WorkFilter,
     SeriesFilter,
+    DocumentSetFilter,
 )
 from app.webapp.models.witness import Witness
 
@@ -39,8 +42,9 @@ def search_witnesses(request):
 @require_GET
 def search_treatments(request):
     user = request.user
-    treatment_list = Treatment.objects.all()
-    treatment_list = treatment_list.filter(requested_by=user).order_by("-requested_on")
+    treatment_list = Treatment.objects.all().order_by("-requested_on")
+    if not user.is_superuser:
+        treatment_list = treatment_list.filter(requested_by=user)
 
     treatment_filter = TreatmentFilter(request.GET, queryset=treatment_list)
     return JsonResponse(paginated_records(request, treatment_filter.qs))
@@ -58,3 +62,17 @@ def search_series(request):
     series_list = Series.objects.order_by("id")
     series_filter = SeriesFilter(request.GET, queryset=series_list)
     return JsonResponse(paginated_records(request, series_filter.qs))
+
+
+@require_GET
+def search_document_set(request):
+    user = request.user
+    doc_sets = (
+        DocumentSet.objects.all()
+        if user.is_superuser
+        else DocumentSet.objects.filter(Q(is_public=True) | Q(user=user))
+    )
+    doc_sets = doc_sets.order_by("-id")
+
+    doc_sets = DocumentSetFilter(request.GET, queryset=doc_sets)
+    return JsonResponse(paginated_records(request, doc_sets.qs))

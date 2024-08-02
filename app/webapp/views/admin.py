@@ -5,6 +5,7 @@ from django.views.generic import CreateView, DetailView, View, ListView, UpdateV
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 
+from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.series import Series
 from app.webapp.models.work import Work
 from app.webapp.search_filters import (
@@ -12,6 +13,7 @@ from app.webapp.search_filters import (
     TreatmentFilter,
     WorkFilter,
     SeriesFilter,
+    DocumentSetFilter,
 )
 from app.webapp.forms import *
 from app.webapp.forms.treatment import TreatmentForm
@@ -193,6 +195,7 @@ class TreatmentCreate(AbstractRecordCreate):
         self.object = form.save(commit=False)
         self.object.requested_by = self.request.user
         self.object = form.save()
+        # TODO make treatment submission instantaneous + loading widget
 
         return super().form_valid(form)
 
@@ -231,4 +234,14 @@ class SeriesList(AbstractRecordList):
         return context
 
 
-# TODO DocumentSetList, RegionsSetList
+class DocumentSetList(AbstractRecordList):
+    model = DocumentSet
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["search_fields"] = DocumentSetFilter().to_form_fields()
+
+        return context
+
+
+# TODO RegionsSetList

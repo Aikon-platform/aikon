@@ -304,6 +304,11 @@ td.is-fullwidth {
     --deleted-text: var(--bulma-danger-light);
 }
 
+.is-delete {
+    color: var(--deleted-text);
+    background-color: var(--deleted);
+}
+
 .is-contrasted {
     background-color: var(--contrasted) !important;
 }
@@ -346,4 +351,9 @@ td.is-fullwidth {
 .is-selected {
     background-color: var(--selected);
     color: var(--selected-text);
+}
+
+.hoverable:hover {
+    cursor: pointer;
+    text-decoration: underline;
 }

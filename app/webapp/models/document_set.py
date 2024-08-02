@@ -1,7 +1,15 @@
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+
+from app.webapp.models.digitization import Digitization
+from app.webapp.models.series import Series
 from app.webapp.models.utils.functions import get_fieldname
+from django.urls import reverse
+
+from app.webapp.models.witness import Witness
+from app.webapp.models.work import Work
+from app.webapp.utils.functions import get_summary
 
 
 def get_name(fieldname, plural=False):
@@ -21,6 +29,16 @@ class DocumentSet(models.Model):
         app_label = "webapp"
 
     def __str__(self):
+        if self.length() != 1:
+            return f"{self.title} ({self.length()} documents)"
+        if self.wit_ids:
+            return f"{self.get_witnesses()[0]}"
+        if self.ser_ids:
+            return f"{self.get_series()[0]}"
+        if self.digit_ids:
+            return f"{self.get_digits()[0]}"
+        if self.work_ids:
+            return f"{self.get_works()[0]}"
         return self.title
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -35,3 +53,77 @@ class DocumentSet(models.Model):
 
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
+
+    def get_absolute_url(self):
+        # TODO create view to edit document set without loading it
+        # return reverse("document_set", args=[self.id])
+        return ""
+
+    def length(self):
+        return sum(
+            len(field or [])
+            for field in (self.wit_ids, self.ser_ids, self.digit_ids, self.work_ids)
+        )
+
+    def get_witnesses(self):
+        if not self.wit_ids:
+            return []
+        return list(Witness.objects.filter(id__in=self.wit_ids))
+
+    def get_series(self):
+        if not self.ser_ids:
+            return []
+        return list(Series.objects.filter(id__in=self.ser_ids))
+
+    def get_digits(self):
+        if not self.digit_ids:
+            return []
+        return list(Digitization.objects.filter(id__in=self.digit_ids))
+
+    def get_works(self):
+        if not self.work_ids:
+            return []
+        return list(Work.objects.filter(id__in=self.work_ids))
+
+    def get_documents(self):
+        return (
+            self.get_witnesses()
+            + self.get_series()
+            + self.get_digits()
+            + self.get_works()
+        )
+
+    def get_document_names(self):
+        return [obj.__str__() for obj in self.get_documents()]
+
+    def get_document_metadata(self):
+        def obj_meta(obj):
+            return {"id": obj.id, "title": obj.__str__(), "url": obj.get_absolute_url()}
+
+        return {
+            "Witness": {wit.id: obj_meta(wit) for wit in self.get_witnesses()},
+            "Series": {ser.id: obj_meta(ser) for ser in self.get_series()},
+            "Digitization": {digit.id: obj_meta(digit) for digit in self.get_digits()},
+            "Work": {work.id: obj_meta(work) for work in self.get_works()},
+        }
+
+    def to_json(self):
+        return {
+            "id": self.id,
+            "class": self.__class__.__name__,
+            "type": get_name("DocumentSet"),
+            "title": self.__str__(),
+            "user_id": self.user.id if self.user else "None",
+            "user": self.user.__str__() if self.user else "None",
+            "url": self.get_absolute_url(),
+            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M")
+            if self.updated_at
+            else "None",
+            "is_public": self.is_public,
+            "selection": {
+                "id": self.id,
+                "type": "documentSet",
+                "title": self.title,
+                "selected": self.get_document_metadata(),
+            },
+        }

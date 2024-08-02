@@ -24,6 +24,7 @@ from app.webapp.models.utils.constants import TRMT_TYPE, TRMT_STATUS
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.witness import Witness
 from app.webapp.models.work import Work
+from app.webapp.utils.functions import get_summary
 from app.webapp.utils.logger import log
 
 
@@ -95,42 +96,10 @@ class Treatment(models.Model):
         return f"{self.task_type.__str__().capitalize()} | {self.document_set.title}"
 
     def get_objects_name(self):
-        treated_objects = []
-        if self.document_set.wit_ids:
-            for id in self.document_set.wit_ids:
-                treated_objects.append(Witness.objects.filter(id=id).get().__str__())
-
-        if self.document_set.work_ids:
-            for id in self.document_set.work_ids:
-                treated_objects.append(Work.objects.filter(id=id).get().__str__())
-
-        if self.document_set.ser_ids:
-            for id in self.document_set.ser_ids:
-                treated_objects.append(Series.objects.filter(id=id).get().__str__())
-
-        # for id in self.document_set.digit_ids:
-        #     treated_objects.append(Digitization.objects.filter(id=id).get().__str__())
-
-        return treated_objects
+        return self.document_set.get_document_names()
 
     def get_objects(self):
-        treated_objects = []
-        if self.document_set.wit_ids:
-            for id in self.document_set.wit_ids:
-                treated_objects.append(Witness.objects.filter(id=id).get())
-
-        if self.document_set.work_ids:
-            for id in self.document_set.work_ids:
-                treated_objects.append(Work.objects.filter(id=id).get())
-
-        if self.document_set.ser_ids:
-            for id in self.document_set.ser_ids:
-                treated_objects.append(Series.objects.filter(id=id).get())
-
-        # for id in self.document_set.digit_ids:
-        #     treated_objects.append(Digitization.objects.filter(id=id).get().__str__())
-
-        return treated_objects
+        return self.document_set.get_documents()
 
     def get_cancel_url(self):
         return f"{CV_API_URL}/{self.task_type}/{self.api_tracking_id}/cancel"
@@ -144,18 +113,22 @@ class Treatment(models.Model):
             "class": self.__class__.__name__,
             "type": get_name("Treatment"),
             "title": self.get_title(),
-            "updated_at": self.requested_on.strftime("%Y-%m-%d %H:%M"),
+            "updated_at": self.requested_on.strftime("%Y-%m-%d %H:%M")
+            if self.requested_on
+            else "None",
             "user": self.requested_by.__str__(),
-            "user_id": self.requested_by.id,
+            "user_id": self.requested_by.id if self.requested_by else "None",
             "status": self.status,
             "is_finished": self.is_finished,
             "treated_objects": self.treated_objects,
             "cancel_url": self.get_cancel_url(),
             "query_parameters": self.get_query_parameters(),
             "api_tracking_id": self.api_tracking_id,
-            "metadata": {
-                get_name("id"): self.id,
-                get_name("treated_objects"): ", ".join(self.get_objects_name()),
+            "selection": {
+                "id": self.id,
+                "type": "Treatment",
+                "title": self.get_title(),
+                "selected": self.document_set.get_document_metadata(),
             },
         }
 
