@@ -7,9 +7,9 @@
     import SelectionModal from "../selection/SelectionModal.svelte";
     import RecordSearch from "./RecordSearch.svelte";
     import Pagination from "../Pagination.svelte";
+    import Modal from "../Modal.svelte";
     // import Loading from '../Loading.svelte';
     // import { loading } from "../utils.js";
-    import Modal from "../Modal.svelte";
 
     import { setContext } from "svelte";
 
@@ -17,6 +17,8 @@
     setContext('modelName', modelName);
 
     import { createRecordsStore } from "./recordStore.js";
+    import Set from "./Set.svelte";
+    import Treatment from "./Treatment.svelte";
     const recordsStore = createRecordsStore(modelName);
     const { pageRecords, resultPage, resultNumber } = recordsStore;
 
@@ -44,7 +46,13 @@
         <Pagination store={recordsStore} nbOfItems={$resultNumber}/>
         <div>
             {#each $pageRecords as item (item.id)}
-                <Record {item}/>
+                {#if item.class === 'Treatment'}
+                    <Treatment {item}/>
+                {:else if item.class.includes('Set')}
+                    <Set {item}/>
+                {:else}
+                    <Record {item}/>
+                {/if}
             {:else}
                 <p>{appLang === 'en' ? 'No records found' : 'Aucun enregistrement trouvé'}</p>
             {/each}
@@ -60,6 +68,7 @@
 
 <SelectionModal {selectionLength}>
     {#each selectedRecords as [type, selectedItems]}
+        {#if Object.values(selectedItems).length > 0}
         <h3>{type}</h3>
         <table class="table pl-2 is-fullwidth">
             <tbody>
@@ -76,15 +85,16 @@
                                 on:click={() => selectionStore.remove(id, type)}/>
                     </td>
                 </tr>
-            {:else}
-                <tr>
-                    <td>
-                        {appLang === 'en' ? 'No documents in selection' : 'Aucun document sélectionné'}
-                    </td>
-                </tr>
+            <!--{:else}-->
+            <!--    <tr>-->
+            <!--        <td>-->
+            <!--            {appLang === 'en' ? 'No documents in selection' : 'Aucun document sélectionné'}-->
+            <!--        </td>-->
+            <!--    </tr>-->
             {/each}
             </tbody>
         </table>
+        {/if}
     {:else}
         <tr>
             <td>

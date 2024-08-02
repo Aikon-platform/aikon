@@ -156,11 +156,28 @@ function createSelectionStore() {
         return selection;
     }
 
+    function loadSet(selection, set) {
+        const isRegion = set.class.toLowerCase().includes("regions");
+        selection[isRegion ? "regions" : "records"] = set.selection;
+        return selection;
+    }
+
+    function unloadSet(selection, set) {
+        const isRegion = set.class.toLowerCase().includes("regions");
+        selection[isRegion ? "regions" : "records"] = isRegion ? regionsSetTemplate : docSetTemplate;
+        return selection;
+    }
+
+    function isThisSetSelected(selection, set) {
+        const isRegion = set.class.toLowerCase().includes("regions");
+        return selection[isRegion ? "regions" : "records"].id === set.id
+    }
+
     return {
         subscribe,
         save: (isRegion) => update(selection => save(selection, isRegion)),
         empty: (isRegion) => update(selection => {
-            selection[isRegion ? "regions" : "records"].selected = {};
+            selection[isRegion ? "regions" : "records"] = isRegion ? regionsSetTemplate : docSetTemplate;
             store(selection[isRegion ? "regions" : "records"]);
             return selection
         }),
@@ -187,6 +204,9 @@ function createSelectionStore() {
         isSelected: derived(selection, $selection =>
             item => getSelected($selection, item.type === regionsType)[item.type]?.hasOwnProperty(item.id) || false
         ),
+        isSetSelected: derived(selection, $selection =>
+            set => isThisSetSelected($selection, set)
+        ),
         selected: derived(selection, $selection =>
             isRegion => filter($selection, isRegion)
         ),
@@ -211,6 +231,12 @@ function createSelectionStore() {
                 return $selection[isRegion ? "regions" : "records"];
             }
         ),
+        toggleSet: set => update(selection => {
+            if (isThisSetSelected(selection, set)) {
+                return unloadSet(selection, set);
+            }
+            return loadSet(selection, set);
+        }),
     };
 }
 export const selectionStore = createSelectionStore();

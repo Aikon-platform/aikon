@@ -186,6 +186,7 @@ urlpatterns += [
     path(f"treatment/add/", TreatmentCreate.as_view(), name="treatment_create"),
     path(f"work/", WorkList.as_view(), name="work_list"),
     path(f"series/", SeriesList.as_view(), name="series_list"),
+    path(f"document-set/", DocumentSetList.as_view(), name="document_set_list"),
 ]
 
 # ENDPOINTS
@@ -244,4 +245,5 @@ urlpatterns += [
     path("search/treatment/", search_treatments, name="search-treatments"),
     path("search/work/", search_works, name="search-works"),
     path("search/series/", search_series, name="search-series"),
+    path("search/documentset/", search_document_set, name="search-document-sets"),
 ]
