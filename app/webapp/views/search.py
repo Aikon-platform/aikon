@@ -41,8 +41,9 @@ def search_witnesses(request):
 @require_GET
 def search_treatments(request):
     user = request.user
-    treatment_list = Treatment.objects.all()
-    treatment_list = treatment_list.filter(requested_by=user).order_by("-requested_on")
+    treatment_list = Treatment.objects.all().order_by("-requested_on")
+    if not user.is_superuser:
+        treatment_list = treatment_list.filter(requested_by=user)
 
     treatment_filter = TreatmentFilter(request.GET, queryset=treatment_list)
     return JsonResponse(paginated_records(request, treatment_filter.qs))
@@ -65,7 +66,10 @@ def search_series(request):
 @require_GET
 def search_document_set(request):
     user = request.user
-    doc_sets = DocumentSet.objects.filter(Q(is_public=True) | Q(user=user)).order_by(
-        "-id"
+    doc_sets = (
+        DocumentSet.objects.all()
+        if user.is_superuser
+        else DocumentSet.objects.filter(Q(is_public=True) | Q(user=user))
     )
+    doc_sets = doc_sets.order_by("-id")
     return JsonResponse(paginated_records(request, doc_sets))

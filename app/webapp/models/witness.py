@@ -204,6 +204,12 @@ class Witness(models.Model):
                 return False
         return True
 
+    # def is_validated(self):
+    #     for digit in self.get_digits():
+    #         if digit.is_validated():
+    #             return True
+    #     return False
+
     def change_url(self):
         change_url = reverse("admin:webapp_witness_change", args=[self.id])
         return f"<a href='{change_url}' target='_blank'>{WIT_CHANGE} #{self.id}</a>"
@@ -258,12 +264,6 @@ class Witness(models.Model):
         for digit in self.get_digits():
             regions.extend(digit.get_regions())
         return regions
-
-    def is_validated(self):
-        for digit in self.get_digits():
-            if digit.is_validated():
-                return True
-        return False
 
     def has_images(self):
         return any(digit.has_images() for digit in self.get_digits())

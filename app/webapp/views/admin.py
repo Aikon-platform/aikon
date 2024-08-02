@@ -194,6 +194,7 @@ class TreatmentCreate(AbstractRecordCreate):
         self.object = form.save(commit=False)
         self.object.requested_by = self.request.user
         self.object = form.save()
+        # TODO make treatment submission instantaneous + loading widget
 
         return super().form_valid(form)
 
@@ -235,11 +236,5 @@ class SeriesList(AbstractRecordList):
 class DocumentSetList(AbstractRecordList):
     model = DocumentSet
 
-    # def get_context_data(self, **kwargs):
-    #     context = super().get_context_data(**kwargs)
-    #     # context["search_fields"] = SeriesFilter().to_form_fields()
-    #
-    #     return context
 
-
-# TODO DocumentSetList, RegionsSetList
+# TODO RegionsSetList

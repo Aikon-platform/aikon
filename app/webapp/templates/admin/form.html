@@ -13,62 +13,6 @@
 {% block extrastyle %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static "admin/css/forms.css" %}">
-
-    <style>
-        fieldset h2 {
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--bulma-border);
-        }
-        label.required {
-            color: var(--bulma-text-strong) !important;
-        }
-        p.url {
-            margin-left: 0 !important;
-        }
-        .inline-related h3 {
-            background: var(--accent);
-            border-radius: var(--bulma-radius-small) !important;
-            color: var(--bulma-text-strong);
-            border-color: var(--bulma-border) !important;
-            padding: 1em 10px;
-            transition: background-color 100ms, color 100ms;
-        }
-        .grp-predelete h3 {
-            background: var(--deleted);
-            color: var(--deleted-text);
-        }
-        .djn-delete-handler {
-            margin-top: -.25em;
-            width: 16px;
-            height: 16px;
-            border: 0 none;
-            transition: background-color 100ms;
-            background: var(--bulma-text) url(../img/inline-delete.svg) no-repeat 0 0;
-            border-radius: 2em;
-        }
-        .grp-predelete .djn-delete-handler {
-            background-color: var(--bulma-danger);
-        }
-        .djn-delete-handler input {
-            opacity: 0;
-        }
-        .djn-delete-handler label {
-            margin-left: -5em !important;
-            margin-top: .35em;
-        }
-        fieldset fieldset fieldset {
-            margin-left: -10px !important;
-        }
-        .select.is-multiple option:checked {
-            background-color: var(--bulma-link) !important;
-            color: white !important;
-        }
-        div.readonly {
-            margin-left: 0 !important;
-        }
-    {# TODO add style for djn-add-item add-row button #}
-    {# TODO add style for related-widget-wrapper-link <change/add/delete>-related #}
-    </style>
 {% endblock %}
 
 {% block coltype %}colM{% endblock %}

@@ -1,5 +1,6 @@
 <script>
     import { similarityStore } from './similarityStore.js';
+    import { extractNb } from '../../utils.js';
     import { userId, appLang, csrfToken, regionsType } from '../../constants';
     import { exactSvg, partialSvg, semanticSvg, noSvg, userSvg } from './similarityCategory';
     import Region from "../Region.svelte";
@@ -58,6 +59,7 @@
     const item = {
         id: sImg, // note for normal regions, it is their SAS annotation id: used for region selection
         img: sImg,
+        title: `Canvas ${canvas} - ${xyhw} - ${appLang === 'en' ? 'Witness' : 'Témoin'} #${extractNb(wit)}`,
         xywh: xyhw,
         canvas: canvas,
         ref: sImg.replace('.jpg', ''),

@@ -216,6 +216,10 @@ class Digitization(models.Model):
         # NOTE: might result in returning None even though there are images (but not the first one)
         return bool(get_first_img(self.get_ref()))
 
+    def has_digit(self):
+        # if there is either a pdf/manifest/img associated with the digitization
+        return bool(self.pdf or self.manifest or self.images)
+
     def img_nb(self):
         # get the number of images for a digitization
         return get_nb_of_files(IMG_PATH, self.get_ref()) or 0
