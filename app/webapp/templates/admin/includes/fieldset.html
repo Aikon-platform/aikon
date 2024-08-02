@@ -61,25 +61,13 @@
                                             <div class="select is-multiple is-small">
                                                 {{ field.field }}
                                             </div>
+                                            {# TODO add file field #}
                                         {% else %}
                                             {{ field.field|add_class:"input is-small" }}
                                         {% endif %}
                                     {% endwith %}
                                 {% endif %}
                             {% endif %}
-                            {#                            {% elif field.field|is_select %}#}
-                            {#                                {{ field.label_tag|add_class:"label is-small" }}#}
-                            {#                                <div class="select is-small">#}
-                            {#                                    {{ field.field|add_class:"select" }}#}
-                            {#                                </div>#}
-                            {#                            {% else %}#}
-                            {#                                {{ field.label_tag|add_class:"label is-small" }}#}
-                            {#                                {% if field.is_readonly %}#}
-                            {#                                    <div class="readonly">{{ field.contents }}</div>#}
-                            {#                                {% else %}#}
-                            {#                                    {{ field.field|add_class:"input is-small" }}#}
-                            {#                                {% endif %}#}
-                            {#                            {% endif %}#}
                         </div>
                     </div>
                 {% endfor %}
