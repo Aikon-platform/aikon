@@ -140,24 +140,43 @@ class Treatment(models.Model):
     def get_query_parameters(self):
         return f"?document_set={self.document_set.id}&task_type={self.task_type}&notify_email={self.notify_email}"
 
+    def get_document_metadata(self):
+        def obj_meta(obj):
+            return {"id": obj.id, "title": obj.__str__(), "url": obj.get_absolute_url()}
+
+        return {
+            "Witness": {
+                wit.id: obj_meta(wit) for wit in self.document_set.get_witnesses()
+            },
+            "Series": {ser.id: obj_meta(ser) for ser in self.document_set.get_series()},
+            "Digitization": {
+                digit.id: obj_meta(digit) for digit in self.document_set.get_digits()
+            },
+            "Work": {work.id: obj_meta(work) for work in self.document_set.get_works()},
+        }
+
     def to_json(self):
         return {
             "id": self.id.__str__(),
             "class": self.__class__.__name__,
             "type": get_name("Treatment"),
             "title": self.get_title(),
-            "updated_at": self.requested_on.strftime("%Y-%m-%d %H:%M"),
+            "updated_at": self.requested_on.strftime("%Y-%m-%d %H:%M")
+            if self.requested_on
+            else "None",
             "user": self.requested_by.__str__(),
-            "user_id": self.requested_by.id,
+            "user_id": self.requested_by.id if self.requested_by else "None",
             "status": self.status,
             "is_finished": self.is_finished,
             "treated_objects": self.treated_objects,
             "cancel_url": self.get_cancel_url(),
             "query_parameters": self.get_query_parameters(),
             "api_tracking_id": self.api_tracking_id,
-            "metadata": {
-                get_name("id"): self.id,
-                get_name("treated_objects"): get_summary(self.get_objects()),
+            "selection": {
+                "id": self.id,
+                "type": "Treatment",
+                "title": self.get_title(),
+                "selected": self.get_document_metadata(),
             },
         }
 

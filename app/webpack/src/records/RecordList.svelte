@@ -42,7 +42,7 @@
 
 {#if !modelTitle.includes('set')}
 <span class="is-right">
-    {#if modelTitle.includes('treatment')}
+    {#if modelTitle.includes('Treatment')}
     <a href="/{modelName}/add/" class="button is-rounded is-primary mb-4"
        title='{appLang === "en" ? `Add ${modelName}` : `Ajouter ${modelName}`}'>
         <i class="fa-solid fa-plus"></i>
