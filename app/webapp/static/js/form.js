@@ -46,6 +46,9 @@ function setDigitBlock(digitNb = 0, digitBlockId= "") {
 
     let fields = [manifestDiv, pdfDiv, imageDiv, viewDigit, viewAnno, sourceDiv, freeDiv];
 
+    // console.log(hasDigit, prefix, digitNb);
+    // console.log($(`#${prefix}digitizations-${digitNb}`)[0]);
+
     if (hasDigit && viewDigit.find('div.readonly').first().text() !== "-"){
         // if a digitization has already been uploaded
         // hide fields to upload new digit

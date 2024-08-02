@@ -40,7 +40,7 @@ function createSelectionStore() {
         return isRegion ? selected[regionsType] ?? {} : Object.entries(selected);
     }
 
-    // TODO load from database
+    // TODO add way to make selection public
 
     function remove(selection, itemId, itemType) {
         const isRegion = itemType === regionsType;

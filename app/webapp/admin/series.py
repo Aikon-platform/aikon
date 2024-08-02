@@ -1,6 +1,7 @@
 import nested_admin
 from django.contrib import admin
 
+from app.config.settings import APP_LANG
 from app.webapp.admin.role import RoleInline
 from app.webapp.admin.witness import WitnessInline
 from app.webapp.models.series import Series, get_name
@@ -26,6 +27,12 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         "is_public",
     )
     list_display_links = ("get_edition",)  # ("edition",)
+
+    # banner = (
+    #     f"{get_name('Series')} identification"
+    #     if APP_LANG == "en"
+    #     else f"Identification de la {get_name('Series')}"
+    # )
 
     class Meta:
         verbose_name = get_name("Series")
