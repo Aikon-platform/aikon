@@ -37,6 +37,18 @@
 
 <RecordSearch {recordsStore} {searchFields}/>
 
+{#if !modelName.includes('documentset')}
+<span class="is-right">
+    <a href="/{modelName}/add/" class="button is-rounded is-primary mb-4"
+       title='{appLang === "en" ? `Add ${modelName}` : `Ajouter ${modelName}`}'>
+        <i class="fa-solid fa-plus"></i>
+        <span>
+        {appLang === 'en' ? `Add ${modelName}` : `Ajouter ${modelName}`}
+        </span>
+    </a>
+</span>
+{/if}
+
 {#await resultPage}
     <div class="faded is-center">
         {appLang === 'en' ? 'Retrieving records...' : 'Récupération des enregistrements...'}
@@ -46,7 +58,7 @@
         <Pagination store={recordsStore} nbOfItems={$resultNumber}/>
         <div>
             {#each $pageRecords as item (item.id)}
-                {#if item.class === 'Treatment'}
+                {#if item.class.includes('Treatment')}
                     <Treatment {item}/>
                 {:else if item.class.includes('Set')}
                     <Set {item}/>

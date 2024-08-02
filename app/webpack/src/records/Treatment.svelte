@@ -21,8 +21,8 @@
                title='{appLang === "en" ? "Relaunch same treatment" : "Relancer le même traitement"}'>
                 <i class="fa-solid fa-arrow-rotate-left"></i>
                 <span>
-            {appLang === 'en' ? 'Relaunch same treatment' : 'Relancer le même traitement'}
-        </span>
+                {appLang === 'en' ? 'Relaunch same treatment' : 'Relancer le même traitement'}
+                </span>
             </a>
         {/if}
 
