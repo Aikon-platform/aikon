@@ -93,21 +93,32 @@ class Treatment(models.Model):
     _internal_save = False
 
     def get_title(self):
-        return f"{self.task_type.__str__().capitalize()} | {self.document_set.title}"
+        if self.document_set:
+            return (
+                f"{self.task_type.__str__().capitalize()} | {self.document_set.title}"
+            )
+        return f"{self.task_type.__str__().capitalize()}"
 
     def get_objects_name(self):
+        if not self.document_set:
+            return []
         return self.document_set.get_document_names()
 
     def get_objects(self):
+        if not self.document_set:
+            return []
         return self.document_set.get_documents()
 
     def get_cancel_url(self):
         return f"{CV_API_URL}/{self.task_type}/{self.api_tracking_id}/cancel"
 
     def get_query_parameters(self):
+        if not self.document_set:
+            return ""
         return f"?document_set={self.document_set.id}&task_type={self.task_type}&notify_email={self.notify_email}"
 
     def to_json(self):
+        user = self.requested_by
         return {
             "id": self.id.__str__(),
             "class": self.__class__.__name__,
@@ -116,8 +127,8 @@ class Treatment(models.Model):
             "updated_at": self.requested_on.strftime("%Y-%m-%d %H:%M")
             if self.requested_on
             else "None",
-            "user": self.requested_by.__str__(),
-            "user_id": self.requested_by.id if self.requested_by else "None",
+            "user": user.__str__() if user else "Unknown user",
+            "user_id": user.id if user else 0,
             "status": self.status,
             "is_finished": self.is_finished,
             "treated_objects": self.treated_objects,
@@ -354,15 +365,15 @@ def treatment_post_save(sender, instance, created, **kwargs):
     if created:
         witnesses = []
 
-        for object in instance.get_objects():
-            if type(object) is Witness:
+        for obj in instance.get_objects():
+            if type(obj) is Witness:
                 try:
-                    witnesses.append(object)
+                    witnesses.append(obj)
                 except:
                     pass
-            elif type(object) is Series or Work:
+            elif type(obj) is Series or Work:
                 try:
-                    objects = object.get_witnesses().get()
+                    objects = obj.get_witnesses().get()
                     witnesses.append(objects)
                 except:
                     pass
