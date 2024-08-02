@@ -36,7 +36,7 @@
     </div>
 
     <div slot="body" class="pt-2 grid">
-        {#if item.hasOwnProperty('selection') && item.selection.hasOwnProperty('selected')}
+        {#if item.hasOwnProperty('selection') && item.selection.hasOwnProperty('selected') && item.selection.selected}
             {#each Object.entries(item.selection.selected) as [modelName, selectedRecords]}
                 {#each Object.entries(selectedRecords) as [id, meta]}
                     <div>
