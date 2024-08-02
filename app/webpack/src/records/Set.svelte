@@ -25,11 +25,14 @@
         </button>
     </div>
 
+    <!-- TODO add way to make selection public-->
+
 
     <div slot="body" class="pt-2 grid">
         {#each Object.entries(item.selection.selected) as [modelName, selectedRecords]}
             {#each Object.entries(selectedRecords) as [id, meta]}
                 <div>
+                    <!--TODO add possibility to remove from selection-->
                     <span class="tag is-rounded is-accent">{modelName} #{id}</span>
                     {meta.title}
                 </div>

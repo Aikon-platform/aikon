@@ -66,8 +66,12 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
     @admin.display(description=get_name("view_digit"))
     def view_digit(self, obj: Digitization):
-        if obj.id and obj.has_images():
-            return gen_btn(obj, "view")
+        if obj.id:
+            if obj.has_images():
+                return gen_btn(obj, "view")
+            if obj.has_digit():
+                # if the digitization is associated with a pdf/manifest/img but no images on the server
+                return gen_btn(obj, "no_digit")
             # if not obj.has_regions():
             #     return gen_btn(Digitization.objects.filter(pk=obj.id).first(), "view")
 

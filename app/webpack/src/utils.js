@@ -12,6 +12,10 @@ export async function withLoading(asyncFunction) {
     }
 }
 
+export function extractNb(str) {
+    return str.match(/\d+/g).toString();
+}
+
 export function getCantaloupeUrl() {
     return cantaloupeUrl ?? "http://localhost:8182";
 }
