@@ -13,8 +13,8 @@
                     on:click={() => cancelTreatment(item.id)}>
                 <i class="fa-solid fa-ban"></i>
                 <span>
-            {appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}
-        </span>
+                    {appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}
+                </span>
             </button>
         {:else if item.is_finished && item.status === "ERROR"}
             <a href="add/{item.query_parameters}" class="button is-small is-rounded is-primary is-outlined px-2 py-1 mr-2"
@@ -36,13 +36,15 @@
     </div>
 
     <div slot="body" class="pt-2 grid">
-        {#each Object.entries(item.selection.selected) as [modelName, selectedRecords]}
-            {#each Object.entries(selectedRecords) as [id, meta]}
-                <div>
-                    <span class="tag is-rounded is-accent">{modelName} #{id}</span>
-                    {meta.title}
-                </div>
+        {#if item.hasOwnProperty('selection') && item.selection.hasOwnProperty('selected')}
+            {#each Object.entries(item.selection.selected) as [modelName, selectedRecords]}
+                {#each Object.entries(selectedRecords) as [id, meta]}
+                    <div>
+                        <span class="tag is-rounded is-accent">{modelName} #{id}</span>
+                        {meta.title}
+                    </div>
+                {/each}
             {/each}
-        {/each}
+        {/if}
     </div>
 </Item>
