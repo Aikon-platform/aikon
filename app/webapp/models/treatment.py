@@ -96,42 +96,9 @@ class Treatment(models.Model):
         return f"{self.task_type.__str__().capitalize()} | {self.document_set.title}"
 
     def get_objects_name(self):
-        # treated_objects = []
-        # if self.document_set.wit_ids:
-        #     for id in self.document_set.wit_ids:
-        #         treated_objects.append(Witness.objects.filter(id=id).get().__str__())
-        #
-        # if self.document_set.work_ids:
-        #     for id in self.document_set.work_ids:
-        #         treated_objects.append(Work.objects.filter(id=id).get().__str__())
-        #
-        # if self.document_set.ser_ids:
-        #     for id in self.document_set.ser_ids:
-        #         treated_objects.append(Series.objects.filter(id=id).get().__str__())
-        #
-        # # for id in self.document_set.digit_ids:
-        # #     treated_objects.append(Digitization.objects.filter(id=id).get().__str__())
-        #
-        # return treated_objects
         return self.document_set.get_document_names()
 
     def get_objects(self):
-        # treated_objects = []
-        # if self.document_set.wit_ids:
-        #     for id in self.document_set.wit_ids:
-        #         treated_objects.append(Witness.objects.filter(id=id).get())
-        #
-        # if self.document_set.work_ids:
-        #     for id in self.document_set.work_ids:
-        #         treated_objects.append(Work.objects.filter(id=id).get())
-        #
-        # if self.document_set.ser_ids:
-        #     for id in self.document_set.ser_ids:
-        #         treated_objects.append(Series.objects.filter(id=id).get())
-        #
-        # # for id in self.document_set.digit_ids:
-        # #     treated_objects.append(Digitization.objects.filter(id=id).get().__str__())
-        # return treated_objects
         return self.document_set.get_documents()
 
     def get_cancel_url(self):
@@ -139,21 +106,6 @@ class Treatment(models.Model):
 
     def get_query_parameters(self):
         return f"?document_set={self.document_set.id}&task_type={self.task_type}&notify_email={self.notify_email}"
-
-    def get_document_metadata(self):
-        def obj_meta(obj):
-            return {"id": obj.id, "title": obj.__str__(), "url": obj.get_absolute_url()}
-
-        return {
-            "Witness": {
-                wit.id: obj_meta(wit) for wit in self.document_set.get_witnesses()
-            },
-            "Series": {ser.id: obj_meta(ser) for ser in self.document_set.get_series()},
-            "Digitization": {
-                digit.id: obj_meta(digit) for digit in self.document_set.get_digits()
-            },
-            "Work": {work.id: obj_meta(work) for work in self.document_set.get_works()},
-        }
 
     def to_json(self):
         return {
@@ -176,7 +128,7 @@ class Treatment(models.Model):
                 "id": self.id,
                 "type": "Treatment",
                 "title": self.get_title(),
-                "selected": self.get_document_metadata(),
+                "selected": self.document_set.get_document_metadata(),
             },
         }
 
