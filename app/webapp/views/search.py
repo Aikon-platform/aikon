@@ -42,7 +42,7 @@ def search_witnesses(request):
 def search_treatments(request):
     user = request.user
     treatment_list = Treatment.objects.all().order_by("-requested_on")
-    if not user.is_admin:
+    if not user.is_superuser:
         treatment_list = treatment_list.filter(requested_by=user)
 
     treatment_filter = TreatmentFilter(request.GET, queryset=treatment_list)
@@ -68,7 +68,7 @@ def search_document_set(request):
     user = request.user
     doc_sets = (
         DocumentSet.objects.all()
-        if user.is_admin
+        if user.is_superuser
         else DocumentSet.objects.filter(Q(is_public=True) | Q(user=user))
     )
     doc_sets = doc_sets.order_by("-id")
