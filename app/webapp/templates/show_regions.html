@@ -1,0 +1,206 @@
+{% extends "admin/base_site.html" %}
+{# TODO DELETE WHEN NOT USED #}
+
+{% load static %}
+
+{% block title %}{{ regions }}{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'css/tools.css' %}">
+
+{% endblock %}
+
+{% block header %}
+    <div class="toolbar">
+        <div class="title">
+            <b>{{ regions|capfirst }}</b>
+        </div>
+
+        <div style="display: flex; flex-direction: row;">
+            <a href="{% url 'export-regions' regions_ref=regions_ref %}">
+                <button class="export-button" type="submit">
+                    <i class="fa-regular fa-file-zipper"></i>&nbsp;
+                    {% if APP_LANG == "en" %}
+                        Download all regions
+                    {% else %}
+                        Télécharger toutes les régions
+                    {% endif %}
+                </button>
+            </a>
+
+            <form id="export" action="{% url 'export-selected-regions' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="listeURL" name="listeURL" value="">
+                <button class="export-button" type="submit">
+                    <i class="fa-regular fa-file-zipper"></i>&nbsp;
+                    {% if APP_LANG == "en" %}
+                        Download selected regions
+                    {% else %}
+                        Télécharger les régions sélectionnées
+                    {% endif %}
+                </button>
+            </form>
+
+            {% if not regions.is_validated %}
+                <a href="{% url 'show-regions' regions_ref=regions_ref %}" target="_blank">
+                    <button class="edit-button" type="submit">
+                        <i class="fa fa-pencil"></i>&nbsp;
+                        {% if APP_LANG == "en" %}
+                            Edit regions
+                        {% else %}
+                            Éditer les régions
+                        {% endif %}
+                    </button>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+
+<div class="tabs-regions">
+    <div class="row">
+        <div class="tab-buttons">
+            <button class="button btn-change active-tab">
+            {% if APP_LANG == "en" %}
+                Page view
+            {% else %}
+                Vue page
+            {% endif %}
+            </button>
+            <button class="button btn-change">
+            {% if APP_LANG == "en" %}
+                Dump view
+            {% else %}
+                Vue générale
+            {% endif %}
+            </button>
+        </div>
+    </div>
+
+    <div class="tab-bodies">
+        <div class="row" style="display:block;">
+            <div class="column">
+                <table class="region-table" style="margin-top: 0">
+                    {% for canvas_nb, coord, img_file in page_regions %}
+                        <tr class="region-row">
+                            <td class="region-td page-col">
+                                <a href="{{ img_file|img_to_iiif}}" target="_blank">
+                                    <img class="page-preview" src="{{ img_file|img_to_iiif:"full/350,/0" }}" alt="Click to see real size image">
+                                </a>
+                                <h3><a href="{{ img_file|img_to_iiif }}" target="_blank">Page {{ canvas_nb }}</a></h3>
+                            </td>
+                            <td class="region-td region-col">
+                                {% for coords, id in coord %}
+                                    <div id="ill_{{ id }}" class="region-div">
+                                        {% with region_full=coords|add:'/full/0' region=coords|add:'/,200/0' %}
+                                            <a href="{{ img_file|img_to_iiif:region_full }}" target="_blank">
+                                                <img src="{{ img_file|img_to_iiif:region }}" alt="scan preview">
+                                            </a>
+                                            <br>
+                                            <input id="bbox_{{ id }}" type="checkbox" name="crop_checkbox" value="{{ img_file|img_to_iiif:region_full }}" onchange="updateSelectedImageURLs()">
+                                            <label for="bbox_{{ id }}">
+                                                {% if APP_LANG == "en" %}Select{% else %}Sélectionner{% endif %}
+                                            </label>
+                                        {% endwith %}
+                                    </div>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </table>
+                {% include 'includes/pagination.html' %}
+            </div>
+        </div>
+
+        <div style="display:none;">
+            <div class="grid-container" style="margin-top: .5em;">
+                {% for canvas_nb, coord, img_file in all_regions %}
+                    {% for coords, id in coord %}
+                        {% with region_full=coords|add:'/full/0' region=coords|add:'/,250/0' %}
+                            <div class="grid-item">
+                                <a href="{{ img_file|img_to_iiif:region_full }}" target="_blank">
+                                    <img src="{{ img_file|img_to_iiif:region }}" alt="scan preview">
+                                </a>
+                                <h3><a href="{{ img_file|img_to_iiif }}" target="_blank">Page {{ canvas_nb }}</a></h3>
+                                <input id="bbox_{{ id }}" type="checkbox" name="crop_checkbox" value="{{ img_file|img_to_iiif:region_full }}" onchange="updateSelectedImageURLs()">
+                                <label for="bbox_{{ id }}">
+                                    {% if APP_LANG == "en" %}Select{% else %}Sélectionner{% endif %}
+                                </label>
+                            </div>
+                        {% endwith %}
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var checkboxes = document.querySelectorAll('input[name="crop_checkbox"]');
+    var selectedImageURLs = [];
+    // Fonction pour mettre à jour la liste des URL sélectionnées
+    function updateSelectedImageURLs() {
+        // Réinitialiser la liste des URL sélectionnées
+        selectedImageURLs = [];
+
+        // Parcourir toutes les cases à cocher
+        checkboxes.forEach(function(checkbox) {
+            // Vérifier si la case est cochée
+            if (checkbox.checked) {
+                // Récupérez l'URL de l'image à partir de la value de la case cochée
+                var imageURL = checkbox.value;
+                // Ajouter l'URL de l'image à la liste des URL sélectionnées
+                selectedImageURLs.push(imageURL);
+                }
+            }
+        );
+        // Afficher la liste des URLs sélectionnées
+        console.log(selectedImageURLs);
+        var jsonString = JSON.stringify(selectedImageURLs);
+
+        // liste => hidden input
+        document.getElementById("listeURL").value = jsonString;
+        // Vérifier si la valeur du champ est correcte
+        console.log(document.getElementById("listeURL").value);
+    };
+
+    Array.from(document.querySelectorAll('.tabs-regions')).forEach((tab_container, TabID) => {
+        const registers = tab_container.querySelector('.tab-buttons');
+        const bodies = tab_container.querySelector('.tab-bodies');
+
+        Array.from(registers.children).forEach((el, i) => {
+          el.setAttribute('aria-controls', `${TabID}_${i}`)
+          bodies.children[i]?.setAttribute('id', `${TabID}_${i}`)
+
+          el.addEventListener('click', (ev) => {
+            let activeRegister = registers.querySelector('.active-tab');
+            activeRegister.classList.remove('active-tab')
+            activeRegister = el;
+            activeRegister.classList.add('active-tab')
+            changeBody(registers, bodies, activeRegister)
+          })
+      })
+    })
+
+    function changeBody(registers, bodies, activeRegister) {
+        selectedImageURLs = [];
+
+        checkboxes.forEach(function(checkbox) {
+        checkbox.checked = false;
+        });
+
+        Array.from(registers.children).forEach((el, i) => {
+
+            if (bodies.children[i]) {
+                bodies.children[i].style.display = el == activeRegister ? 'block' : 'none'
+            }
+
+            el.setAttribute('aria-expanded', el == activeRegister ? 'true' : 'false')
+        })
+    }
+</script>
+
+{% endblock %}

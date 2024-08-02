@@ -1,0 +1,32 @@
+{% extends "admin/base_site.html" %}
+{% load shared_tags static %}
+
+{% block title %}List of {{ model_title }}{% endblock %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="{% static 'svelte/recordList.css' %}">
+{% endblock %}
+
+{% block content %}
+    {% if filter %}
+        {% include "includes/breadcrumbs.html" %}
+        <h1 class="is-title is-size-2 py-3">{{ filter }}</h1>
+    {% else %}
+        <h1 class="is-title is-size-2 py-3">
+            {{ view_title }}
+        </h1>
+    {% endif %}
+
+    <div>
+        <div id="record-list" class="container"></div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        const modelName = "{{ model_name }}";
+        const searchFields = {{ search_fields|js|safe }};
+        const modelTitle = "{{ model_title }}";
+    </script>
+    <script src="{% static 'svelte/recordList.js' %}"></script>
+{% endblock %}

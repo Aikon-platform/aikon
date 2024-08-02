@@ -1,68 +1,49 @@
-from typing import List
-
-from celery import shared_task
-
 from app.config.celery import celery_app
-from app.webapp.utils.iiif.annotation import process_anno, check_indexation_annos
-from app.webapp.utils.similarity import compute_total_similarity
+
+from app.webapp.utils.constants import MAX_RES
+
+from app.webapp.utils.functions import pdf_to_img, temp_to_img
+from app.webapp.utils.iiif.download import iiif_to_img
 
 
 @celery_app.task
-def convert_pdf_to_imgs(pdf_path, img_path):
-    # TODO: pdf_to_images_conversion
-    pass
+def convert_pdf_to_img(pdf_name, dpi=MAX_RES):
+    return pdf_to_img(pdf_name, dpi=dpi)
 
 
 @celery_app.task
-def extract_imgs_from_manifest(url, img_path, work):
-    # TODO: manifest_image_extraction
-    pass
+def convert_temp_to_img(digit):
+    return temp_to_img(digit)
 
 
 @celery_app.task
-def check_similarity_files(file_names):
-    # TODO: manifest_image_extraction
-    pass
-
-
-# @celery_app.task
-def compute_similarity_scores(
-    anno_refs: List[str] = None, max_rows: int = 50, show_checked_ref: bool = False
-):
-    from app.webapp.views import check_ref
-
-    checked_anno = anno_refs[0]
-
-    annos = [
-        anno
-        for (passed, anno) in [check_ref(ref, "Annotation") for ref in anno_refs]
-        if passed
-    ]
-
-    if not len(annos):
-        from app.webapp.utils.logger import log
-
-        log(f"[compute_similarity_scores] No annotation corresponding to {anno_refs}")
-        return {}
-    return compute_total_similarity(
-        annos, checked_anno, anno_refs, max_rows, show_checked_ref
-    )
+def extract_images_from_iiif_manifest(manifest_url, digit_ref, digit):
+    return iiif_to_img(manifest_url, digit_ref, digit)
 
 
 @celery_app.task
-def process_anno_file(file_content, digit_id, treatment_id, model):
-    from app.webapp.models.annotation import Digitization
+def reindex_from_file(regions_id):
+    from app.webapp.models.regions import Regions
+    from app.webapp.utils.iiif.annotation import check_indexation
 
-    digitization = Digitization.objects.filter(pk=digit_id).first()
-    return process_anno(file_content, digitization, treatment_id, model)
+    regions = Regions.objects.filter(pk=regions_id).first()
+    return check_indexation(regions, True)
 
 
 @celery_app.task
-def reindex_from_file(anno_id):
-    from app.webapp.models.annotation import Annotation
+def delete_regions_and_annotations(regions_id):
+    from app.webapp.models.regions import Regions
+    from app.webapp.utils.iiif.annotation import delete_regions
 
-    annotation = Annotation.objects.filter(pk=anno_id).first()
-    return check_indexation_annos(annotation, True)
+    regions = Regions.objects.filter(pk=regions_id).first()
+    return delete_regions(regions)
+
+
+@celery_app.task
+def delete_annotations(regions_ref, manifest_url):
+    from app.webapp.utils.iiif.annotation import unindex_regions
+
+    return unindex_regions(regions_ref, manifest_url)
 
 
 @celery_app.task

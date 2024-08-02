@@ -107,18 +107,16 @@ function viewCart() {
                 <p><strong>Lieu de conservation :</strong> ${item.place}</p>
                 <p><strong>Dates :</strong> ${item.dates}</p>
                 <p><strong>Acteurs historiques :</strong> ${item.actors}</p>
-                <button class="btn btn-danger" onclick="removeFromCart('${item.id}')">
+                <button class="button is-danger" onclick="removeFromCart('${item.id}')">
                     <i class="fa-solid fa-cart-arrow-down"></i> Retirer du Panier
                 </button>
-                <button class="btn btn btn-info">
+                <button class="button is-info">
                     <i class="fa-solid fa-code-compare"></i> Similarité
                 </button>
             `;
             cartItemsList.innerHTML += `<li class="list-group-item">${itemDetails}</li>`;
         });
     }
-
-    $('#cartModal').modal('show');
 }
 
 function checkout() {

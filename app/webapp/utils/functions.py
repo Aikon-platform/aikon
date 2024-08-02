@@ -1,10 +1,12 @@
 import datetime
+import fnmatch
 import io
 import json
 import os
 import re
 import zipfile
 from pathlib import Path
+from typing import Optional, List
 from urllib.parse import urlparse
 
 import PyPDF2
@@ -14,6 +16,7 @@ from django.core.exceptions import ValidationError
 
 from django.utils.html import format_html
 from django.http import HttpResponse
+from django.utils.timezone import is_naive, make_aware
 from django.utils.safestring import mark_safe
 from urllib.request import (
     HTTPPasswordMgrWithDefaultRealm,
@@ -29,6 +32,7 @@ from app.webapp.utils.paths import (
     IMG_PATH,
     PDF_DIR,
 )
+from app.vectorization.const import SVG_PATH
 from app.webapp.utils.constants import MAX_SIZE, MAX_RES
 from app.webapp.utils.logger import log, console
 
@@ -59,11 +63,73 @@ def normalize_str(string):
     return string
 
 
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime.datetime):
+            if is_naive(obj):
+                obj = make_aware(obj)
+            return obj.strftime("%Y-%m-%d %H:%M")
+        return super().default(obj)
+
+
 def substrs_in_str(string, substrings):
     for substr in substrings:
         if substr in string:
             return True
     return False
+
+
+def get_files_with_prefix(
+    path: str,
+    prefix: str,
+    filepath: str = "",
+    only_one: bool = False,
+    ext: Optional[str] = None,
+):
+    """
+    Efficiently retrieve files with a given prefix in a directory.
+
+    :param path: Directory path to search in
+    :param prefix: Prefix to match at the beginning of file names
+    :param filepath: Additional path to prepend to filenames (default: "")
+    :param only_one: If True, return the first matching file (default: False)
+    :param ext: File extension to filter by (default: None)
+    :return: A single filename (if only_one is True), a list of filenames, or None if no matches found
+    """
+    with os.scandir(path) as entries:
+        if only_one:
+            for entry in entries:
+                if entry.is_file() and entry.name.startswith(prefix):
+                    if ext and not entry.name.endswith(ext):
+                        continue
+                    return f"{filepath}{entry.name}"
+            return None
+
+        return [
+            f"{filepath}{e.name}"
+            for e in entries
+            if e.is_file()
+            and e.name.startswith(prefix)
+            and (not ext or e.name.endswith(ext))
+        ]
+
+
+def get_nb_of_files(path, prefix):
+    return len(get_files_with_prefix(path, prefix)) or 0
+
+
+def get_first_img(img_ref):
+    for i in range(0, 5):
+        if os.path.exists(f"{IMG_PATH}/{img_ref}_{'1'.zfill(i)}.jpg"):
+            return f"{img_ref}_{'1'.zfill(i)}.jpg"
+    return None
+
+
+def get_img_nb_len(img_ref):
+    img_name = get_first_img(img_ref)
+    if img_name:
+        return len(img_name.split("_")[-1].split(".")[0])
+    return 0
 
 
 def pluralize(word):
@@ -146,7 +212,7 @@ def rename_file(old_path, new_path):
     return True
 
 
-def temp_to_img(digit, event=None):
+def temp_to_img(digit):
     try:
         delete_files(f"{IMG_PATH}/to_delete.txt")
 
@@ -157,13 +223,12 @@ def temp_to_img(digit, event=None):
             delete_files(img_path)
         # TODO change to have list of image name
         digit.images.name = f"{i + 1} {IMG} uploaded.jpg"
-        if event:
-            event.set()
+
     except Exception as e:
         log(f"[process_images] Failed to process images:\n{e} ({e.__class__.__name__})")
 
 
-def pdf_to_img(pdf_name, event=None, dpi=MAX_RES):
+def pdf_to_img(pdf_name, dpi=MAX_RES):
     """
     Convert the PDF file to JPEG images
     """
@@ -174,8 +239,7 @@ def pdf_to_img(pdf_name, event=None, dpi=MAX_RES):
     try:
         command = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
         subprocess.run(command, shell=True, check=True)
-        if event:
-            event.set()
+
     except Exception as e:
         log(
             f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e} ({e.__class__.__name__})"
@@ -270,24 +334,28 @@ def get_action(action, formatting=None):
     actions = {
         "view": {"en": "visualize source", "fr": "visualiser la source"},
         "auto-view": {
-            "en": "visualize automatic annotations",
-            "fr": "voir les annotations automatiques",
+            "en": "visualize automatic regions",
+            "fr": "voir les régions automatiques",
         },
-        "similarity": {"en": "compare annotations", "fr": "comparer les annotations"},
+        "similarity": {"en": "compare regions", "fr": "comparer les régions"},
         "no_manifest": {"en": "no manifest", "fr": "pas de manifest"},
         "no_digit": {"en": "no digitization", "fr": "pas de numérisation"},
         "no_img": {"en": "no image", "fr": "pas d'image"},
-        "no_anno": {"en": "no annotation yet", "fr": "non annoté"},
-        "download": {"en": "download annotations", "fr": "télécharger les annotations"},
-        "edit": {"en": "edit annotations", "fr": "modifier les annotations"},
-        "final": {"en": "final annotations", "fr": "annotations finales"},
-        "crops": {
-            "en": "view all annotations",
-            "fr": "visualiser toutes les annotations",
+        "no_regions": {"en": "no regions yet", "fr": "pas de régions"},
+        "download": {"en": "download regions", "fr": "télécharger les régions"},
+        "edit": {"en": "edit regions", "fr": "modifier les régions"},
+        "final": {"en": "visualize final regions", "fr": "voir les régions finales"},
+        "regions": {
+            "en": "all regions",
+            "fr": "toutes les régions",
         },
         "vectors": {
             "en": "visualize automatic vectorizations",
             "fr": "voir les vectorisations automatiques",
+        },
+        "vectorization": {
+            "en": "perform vectorization",
+            "fr": "vectorisation automatique",
         },
     }
     action = actions[action][APP_LANG]
@@ -357,6 +425,54 @@ def zip_files(filenames_contents, zip_name=f"{APP_NAME}_export"):
     )
     response["Content-Disposition"] = f"attachment; filename={zip_name}.zip"
     return response
+
+
+def zip_images_and_files(img_list, file_list, zip_name=f"{APP_NAME}_export"):
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as z:
+        # Ajouter des images à partir des URLs ou du répertoire local
+        for img_path in img_list:
+            img_name = f"{url_to_name(img_path)}.jpg"
+            if urlparse(img_path).scheme == "":
+                try:
+                    z.write(f"{SVG_PATH}/{img_name}", img_name)
+                except FileNotFoundError:
+                    log(f"[zip_images_and_files] Local image not found: {img_path}")
+            else:
+                response = requests.get(img_path)
+                if response.status_code == 200:
+                    z.writestr(img_name, response.content)
+                else:
+                    log(f"[zip_images_and_files] Fail to download image: {img_path}")
+
+        # Ajouter des fichiers à partir du répertoire mediafiles
+        for file_path in file_list:
+            try:
+                with open(f"{SVG_PATH}/{file_path}", "rb") as f:
+                    z.writestr(file_path, f.read())
+            except FileNotFoundError:
+                log(f"[zip_images_and_files] Local file not found: {file_path}")
+
+    response = HttpResponse(
+        buffer.getvalue(), content_type="application/x-zip-compressed"
+    )
+    response["Content-Disposition"] = f"attachment; filename={zip_name}.zip"
+    return response
+
+
+def is_url(chaine):
+    """
+    Vérifie si une chaîne est une URL.
+
+    Args:
+      chaine: string à tester.
+
+    Returns:
+      True si la chaîne est une URL, False sinon.
+    """
+
+    regex = r"^(http|https)://.*"
+    return re.search(regex, chaine) is not None
 
 
 def zip_dirs(dirnames_contents, zip_name=f"{APP_NAME}_export"):
@@ -499,3 +615,24 @@ def truncate_words(text, max_length):
 
 def sort_key(s):
     return [int(part) if part.isdigit() else part for part in re.split("(\d+)", s)]
+
+
+def gen_img_ref(img, coord):
+    return f"{img.split('.')[0]}_{coord}"
+
+
+def get_summary(elements):
+    if len(elements) == 0:
+        return f"<span class='faded'>{'Empty' if APP_LANG == 'en' else 'Vide'}</span>"
+
+    strings = [str(el) for el in elements]
+    if len(strings) < 4:
+        return "<br>".join(strings)
+
+    first_three, rest = strings[:3], strings[3:]
+    ellip = ""  # "<span class='ellipsis'>...</span>"
+
+    visible = "<br>".join(first_three)
+    summary = f"<summary>{visible}<br>{ellip}</summary>"
+    details = "<br>".join(rest)
+    return f"<details class='summary'>{summary}{details}</details>"

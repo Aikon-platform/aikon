@@ -7,7 +7,6 @@ from django.urls import reverse
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.edition import Edition
 
-# from app.webapp.models.volume import Volume
 from app.webapp.models.series import Series
 from app.webapp.models.utils.constants import (
     VOL,
@@ -21,7 +20,7 @@ from app.webapp.models.utils.constants import (
     CONS_PLA_MSG,
     WIT_CHANGE,
     MAP_WIT_TYPE,
-    MS_ABBR,
+    FOL_ABBR,
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
@@ -37,6 +36,8 @@ def get_name(fieldname, plural=False):
             "en": "external link (online catalog, etc.)",
             "fr": "lien externe (catalogue en ligne, etc.)",
         },
+        "place_name": {"en": "creation place", "fr": "lieu de création"},
+        "page_nb": {"en": "page number", "fr": "nombre de page"},
         "page_type": {"en": "pagination type", "fr": "type de pagination"},
         "page_type_info": {
             "en": "is the witness paginated, folioed, or other (scroll, etc.)?",
@@ -65,14 +66,12 @@ class Witness(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-        if self.type == MS_ABBR:
-            return format_html(
-                f"{self.place.name if self.place else CONS_PLA_MSG} | {self.id_nb}"
-            )
-        return format_html(f"{self.volume_title}, vol. {self.volume_nb}")
-
-    def get_absolute_url(self):
-        return reverse("admin:webapp_witness_change", args=[self.id])
+        if self.volume_title:
+            vol = f", vol. {self.volume_nb}" if self.volume_nb else f" | {self.id_nb}"
+            return format_html(f"{self.volume_title}{vol}")
+        return format_html(
+            f"{self.place.name if self.place else CONS_PLA_MSG} | {self.id_nb}"
+        )
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
@@ -107,7 +106,7 @@ class Witness(models.Model):
         # help_text=get_name('page_type_info'),
     )
     # TODO allow only user to access the record if is_public = False
-    # TODO allow only the creator and super-admin to modify the record
+    # TODO! allow only the creator and super-admin to modify the record
     is_public = models.BooleanField(
         verbose_name=get_name("is_public"),
         default=False,
@@ -150,12 +149,66 @@ class Witness(models.Model):
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
+    def get_absolute_url(self):
+        return reverse("admin:webapp_witness_change", args=[self.id])
+        # return reverse("webapp:witness_view", args=[self.id])
+
+    def to_json(self):
+        # TODO create to_json template in a Abstract class
+        buttons = {"regions": reverse("webapp:witness_regions_view", args=[self.id])}
+
+        digits = self.get_digits()
+
+        return {
+            "id": self.id,
+            "class": self.__class__.__name__,
+            "type": get_name("Witness"),
+            "digits": [digit.id for digit in digits],
+            "regions": [region.id for region in self.get_regions()],
+            "iiif": [digit.manifest_link(inline=True) for digit in digits],
+            "title": self.__str__(),
+            "img": self.get_img(only_first=True),
+            "user_id": self.user.id,
+            "user": self.user.__str__(),
+            "url": self.get_absolute_url(),
+            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),
+            "is_public": self.is_public,
+            "metadata": {
+                get_name("id_nb"): self.id_nb or "-",
+                get_name("Work"): self.get_work_titles(),
+                get_name("place_name"): self.get_place_names(),
+                get_name("dates"): format_dates(*self.get_dates()),
+                get_name("page_nb"): self.get_page(),
+                get_name("Language"): self.get_lang_names(),
+            },
+            "buttons": buttons,
+        }
+
     def get_type(self):
         # NOTE should be returning "letterpress" (tpr) / "woodblock" (wpr) / "manuscript" (ms)
         return MAP_WIT_TYPE[self.type]
 
     def get_ref(self):
         return f"wit{self.id}"
+
+    def get_page(self):
+        return (
+            f"{self.nb_pages} {'ff' if self.page_type == FOL_ABBR else 'pp'}."
+            if self.nb_pages
+            else "-"
+        )
+
+    def is_validated(self):
+        for regions in self.get_regions():
+            if not regions.is_validated:
+                return False
+        return True
+
+    # def is_validated(self):
+    #     for digit in self.get_digits():
+    #         if digit.is_validated():
+    #             return True
+    #     return False
 
     def change_url(self):
         change_url = reverse("admin:webapp_witness_change", args=[self.id])
@@ -206,20 +259,28 @@ class Witness(models.Model):
     def get_digits(self):
         return self.digitizations.all()
 
-    def get_annotations(self):
-        annos = []
+    def get_regions(self):
+        regions = []
         for digit in self.get_digits():
-            annos.extend(digit.get_annotations())
-        return annos
-
-    def is_validated(self):
-        for digit in self.get_digits():
-            if digit.is_validated():
-                return True
-        return False
+            regions.extend(digit.get_regions())
+        return regions
 
     def has_images(self):
         return any(digit.has_images() for digit in self.get_digits())
+
+    def has_vectorization(self):
+        return any(digit.has_vectorization() for digit in self.get_digits())
+
+    def has_all_vectorization(self):
+        return any(digit.has_all_vectorization() for digit in self.get_digits())
+
+    def get_img(self, is_abs=False, only_first=False):
+        # to get only one image of the witness
+        for digit in self.get_digits():
+            if img := digit.get_img(is_abs, only_first):
+                return img
+
+        return None
 
     def get_imgs(self, is_abs=False, temp=False):
         imgs = []
@@ -227,8 +288,8 @@ class Witness(models.Model):
             imgs.extend(digit.get_imgs(is_abs, temp))
         return imgs
 
-    def has_annotations(self):
-        return any(digit.has_annotations() for digit in self.get_digits())
+    def has_regions(self):
+        return any(digit.has_regions() for digit in self.get_digits())
 
     def get_works(self):
         return list(
@@ -244,6 +305,15 @@ class Witness(models.Model):
     def get_work_titles(self):
         works = self.get_works()
         return "<br>".join([work.__str__() for work in works]) if len(works) else "-"
+
+    def get_languages(self):
+        return list(
+            set(flatten([content.get_langs() for content in self.get_contents()]))
+        )
+
+    def get_lang_names(self):
+        langs = self.get_languages()
+        return "<br>".join([lang.__str__() for lang in langs]) if len(langs) else "-"
 
     def set_conservation_place(self, place: ConservationPlace):
         self.place = place
@@ -283,7 +353,9 @@ class Witness(models.Model):
         return [role.person for role in self.get_roles() if role.role == AUTHOR]
 
     def get_author_names(self):
-        # TODO add something when no author defined
+        authors = self.get_authors()
+        if len(authors) == 0:
+            return "No authors"
         return "<br>".join([author.__str__() for author in self.get_authors()])
 
     def add_roles(self, metadata):

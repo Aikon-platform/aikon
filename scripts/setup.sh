@@ -251,7 +251,7 @@ answer=$(printf "%s\n" "${options[@]}" | fzy)
 case $answer in
     "yes")
         echoTitle "DATABASE GENERATION"
-        colorEcho yellow "\n⚠️The script will create a app user named $db_user: at the end, you will be prompted twice to enter a password for this user"
+        colorEcho yellow "\n⚠️ The script will create a app user named $db_user: at the end, you will be prompted twice to enter a password for this user"
         ok=("ok")
         printf "%s\n" "${ok[@]}" | fzy
         bash "$SCRIPT_DIR"/new_db.sh "$db_name"
@@ -259,6 +259,29 @@ case $answer in
     *)
         ;;
 esac
+
+# TODO check setup for svelte
+colorEcho blue "\nSet up svelte with webpack?"
+answer=$(printf "%s\n" "${options[@]}" | fzy)
+
+case $answer in
+    "yes")
+        if ! command -v npm &> /dev/null; then
+            echoTitle "INSTALL NVM & NODE"
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+            nvm install node
+            npm install -g webpack webpack-cli
+        fi
+        echoTitle "SVELTE SETUP"
+        cd "$APP_ROOT"/app/webpack
+        npm init
+        colorEcho blue "\nCompile svelte components using: "
+        colorEcho cyan "              npm run build"
+        ;;
+    *)
+        ;;
+esac
+
 
 
 redis_psw=$(get_env_value "REDIS_PASSWORD" "$APP_ENV")

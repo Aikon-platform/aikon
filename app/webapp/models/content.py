@@ -73,6 +73,7 @@ class Content(models.Model):
     )
     work = models.ForeignKey(
         Work,
+        related_name="contents",
         verbose_name=get_name("Work"),
         on_delete=models.SET_NULL,
         blank=True,
@@ -145,6 +146,9 @@ class Content(models.Model):
     def get_roles(self):
         # Django automatically creates a reverse relationship from Content to Role
         return self.roles.all()
+
+    def get_langs(self):
+        return self.lang.all()
 
     def clean(self):
         super().clean()
