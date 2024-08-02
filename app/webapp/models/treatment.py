@@ -60,7 +60,7 @@ class Treatment(models.Model):
     )
     is_finished = models.BooleanField(default=False, editable=False)
 
-    requested_on = models.DateTimeField(auto_now_add=True, editable=False)
+    requested_on = models.DateTimeField(auto_now_add=True, editable=False, null=True)
     requested_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, editable=False
     )
@@ -375,18 +375,27 @@ def treatment_post_save(sender, instance, created, **kwargs):
     if created:
         witnesses = []
 
-        for obj in instance.get_objects():
-            if type(obj) is Witness:
-                try:
-                    witnesses.append(obj)
-                except:
-                    pass
-            elif type(obj) is Series or Work:
-                try:
-                    objects = obj.get_witnesses().get()
-                    witnesses.append(objects)
-                except:
-                    pass
-            # elif object == "digitizations":
+        # for obj in instance.get_objects():
+        #     if type(obj) is Witness:
+        #         try:
+        #             witnesses.append(obj)
+        #         except:
+        #             pass
+        #     elif type(obj) is Series or Work:
+        #         try:
+        #             objects = obj.get_witnesses().get()
+        #             witnesses.append(objects)
+        #         except:
+        #             pass
+        #     # elif object == "digitizations":
+        try:
+            if instance.document_set:
+                witnesses = instance.document_set.get_all_witnesses()
+        except Exception as e:
+            log(
+                f"[treatment_post_save] Error getting witnesses from document set {instance.document_set.id}",
+                e,
+            )
+            pass
         print(witnesses)
         instance.start_task(witnesses)
