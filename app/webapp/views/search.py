@@ -22,7 +22,7 @@ def paginated_records(request, records):
     page_number = request.GET.get("p", 1)
     page_obj = paginator.get_page(page_number)
 
-    results = [obj.to_json() for obj in page_obj]
+    results = [json_obj for obj in page_obj if (json_obj := obj.to_json()) is not None]
 
     return {
         "results": results,

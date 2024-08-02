@@ -60,7 +60,7 @@ class Treatment(models.Model):
     )
     is_finished = models.BooleanField(default=False, editable=False)
 
-    requested_on = models.DateTimeField(auto_now_add=True, editable=False)
+    requested_on = models.DateTimeField(auto_now_add=True, editable=False, null=True)
     requested_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, editable=False
     )
@@ -119,29 +119,34 @@ class Treatment(models.Model):
 
     def to_json(self):
         user = self.requested_by
-        return {
-            "id": self.id.__str__(),
-            "class": self.__class__.__name__,
-            "type": get_name("Treatment"),
-            "title": self.get_title(),
-            "updated_at": self.requested_on.strftime("%Y-%m-%d %H:%M")
-            if self.requested_on
-            else "None",
-            "user": user.__str__() if user else "Unknown user",
-            "user_id": user.id if user else 0,
-            "status": self.status,
-            "is_finished": self.is_finished,
-            "treated_objects": self.treated_objects,
-            "cancel_url": self.get_cancel_url(),
-            "query_parameters": self.get_query_parameters(),
-            "api_tracking_id": self.api_tracking_id,
-            "selection": {
-                "id": self.id,
-                "type": "Treatment",
+        doc_set = self.document_set
+        try:
+            return {
+                "id": self.id.__str__(),
+                "class": self.__class__.__name__,
+                "type": get_name("Treatment"),
                 "title": self.get_title(),
-                "selected": self.document_set.get_document_metadata(),
-            },
-        }
+                "updated_at": self.requested_on.strftime("%Y-%m-%d %H:%M")
+                if self.requested_on
+                else "None",
+                "user": user.__str__() if user else "Unknown user",
+                "user_id": user.id if user else 0,
+                "status": self.status,
+                "is_finished": self.is_finished,
+                "treated_objects": self.treated_objects,
+                "cancel_url": self.get_cancel_url(),
+                "query_parameters": self.get_query_parameters(),
+                "api_tracking_id": self.api_tracking_id,
+                "selection": {
+                    "id": self.id,
+                    "type": "Treatment",
+                    "title": self.get_title(),
+                    "selected": doc_set.get_document_metadata() if doc_set else None,
+                },
+            }
+        except Exception as e:
+            log(f"[treatment_to_json] Error", e)
+            return None
 
     def save(self, *args, **kwargs):
         if not self._internal_save:
