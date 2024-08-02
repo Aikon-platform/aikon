@@ -184,6 +184,7 @@ urlpatterns += [
     ),
     path(f"treatment/", TreatmentList.as_view(), name="treatment_list"),
     path(f"treatment/add/", TreatmentCreate.as_view(), name="treatment_create"),
+    path(f"treatment/<str:id>/", TreatmentView.as_view(), name="treatment_view"),
     path(f"work/", WorkList.as_view(), name="work_list"),
     path(f"series/", SeriesList.as_view(), name="series_list"),
     path(f"document-set/", DocumentSetList.as_view(), name="document_set_list"),

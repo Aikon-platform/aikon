@@ -1,7 +1,8 @@
 import importlib
 import uuid
-
 import requests
+
+from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
@@ -16,7 +17,6 @@ from app.config.settings import (
     CV_API_URL,
     ADDITIONAL_MODULES,
 )
-from app.webapp.models.digitization import Digitization
 
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.series import Series
@@ -102,45 +102,13 @@ class Treatment(models.Model):
     def get_objects_name(self):
         if not self.document_set:
             return []
-        # treated_objects = []
-        # if self.document_set.wit_ids:
-        #     for id in self.document_set.wit_ids:
-        #         treated_objects.append(Witness.objects.filter(id=id).get().__str__())
-        #
-        # if self.document_set.work_ids:
-        #     for id in self.document_set.work_ids:
-        #         treated_objects.append(Work.objects.filter(id=id).get().__str__())
-        #
-        # if self.document_set.ser_ids:
-        #     for id in self.document_set.ser_ids:
-        #         treated_objects.append(Series.objects.filter(id=id).get().__str__())
-        #
-        # # for id in self.document_set.digit_ids:
-        # #     treated_objects.append(Digitization.objects.filter(id=id).get().__str__())
-        #
-        # return treated_objects
+        # TODO display treated_objects instead of document_set ?
         return self.document_set.get_document_names()
 
     def get_objects(self):
         if not self.document_set:
             return []
-        # treated_objects =
-        # treated_objects = []
-        # if self.document_set.wit_ids:
-        #     for id in self.document_set.wit_ids:
-        #         treated_objects.append(Witness.objects.filter(id=id).get())
-        #
-        # if self.document_set.work_ids:
-        #     for id in self.document_set.work_ids:
-        #         treated_objects.append(Work.objects.filter(id=id).get())
-        #
-        # if self.document_set.ser_ids:
-        #     for id in self.document_set.ser_ids:
-        #         treated_objects.append(Series.objects.filter(id=id).get())
-        #
-        # # for id in self.document_set.digit_ids:
-        # #     treated_objects.append(Digitization.objects.filter(id=id).get().__str__())
-        # return treated_objects
+        # TODO display treated_objects instead of document_set ?
         return self.document_set.get_documents()
 
     def get_cancel_url(self):
@@ -151,6 +119,31 @@ class Treatment(models.Model):
             return ""
         return f"?document_set={self.document_set.id}&task_type={self.task_type}&notify_email={self.notify_email}"
 
+    def get_absolute_url(self):
+        return reverse("webapp:treatment_view", args=[self.id])
+
+    def get_treated_url(self):
+        urls = []
+        if not self.document_set:
+            return urls
+        witnesses = self.document_set.get_all_witnesses()
+        urls.append(
+            [
+                reverse("webapp:witness_regions_view", args=[witness.id])
+                for witness in witnesses
+            ]
+        )
+        #  TODO make variable used in svelte component and in overall app
+        tabs = {
+            "regions": "page",
+            "similarity": "similarity",
+            "vectorization": "vectorization",
+        }
+
+        if self.task_type in tabs.keys():
+            urls = [f"{url}?tab={tabs[self.task_type]}" for url in urls]
+        return urls
+
     def to_json(self):
         user = self.requested_by
         return {
@@ -158,6 +151,7 @@ class Treatment(models.Model):
             "class": self.__class__.__name__,
             "type": get_name("Treatment"),
             "title": self.get_title(),
+            "url": self.get_absolute_url(),
             "updated_at": self.requested_on.strftime("%Y-%m-%d %H:%M"),
             "user": user.__str__() if user else "unknown user",
             "user_id": user.id if user else 0,
@@ -184,36 +178,20 @@ class Treatment(models.Model):
 
             self.treated_objects = {
                 "witnesses": {
-                    "total": len(self.document_set.wit_ids)
-                    if self.document_set.wit_ids
-                    else "0",
-                    "ids": self.document_set.wit_ids
-                    if self.document_set.wit_ids
-                    else None,
+                    "total": len(self.document_set.wit_ids or []),
+                    "ids": self.document_set.wit_ids or None,
                 },
                 "series": {
-                    "total": len(self.document_set.ser_ids)
-                    if self.document_set.ser_ids
-                    else "0",
-                    "ids": self.document_set.ser_ids
-                    if self.document_set.ser_ids
-                    else None,
+                    "total": len(self.document_set.ser_ids or []),
+                    "ids": self.document_set.ser_ids or None,
                 },
                 "works": {
-                    "total": len(self.document_set.work_ids)
-                    if self.document_set.work_ids
-                    else "0",
-                    "ids": self.document_set.work_ids
-                    if self.document_set.work_ids
-                    else None,
+                    "total": len(self.document_set.work_ids or []),
+                    "ids": self.document_set.work_ids or None,
                 },
                 "digitizations": {
-                    "total": len(self.document_set.digit_ids)
-                    if self.document_set.digit_ids
-                    else "0",
-                    "ids": self.document_set.digit_ids
-                    if self.document_set.digit_ids
-                    else None,
+                    "total": len(self.document_set.digit_ids or []),
+                    "ids": self.document_set.digit_ids or None,
                 },
             }
 
@@ -233,7 +211,8 @@ class Treatment(models.Model):
             parameters = prepare_request(witnesses, self.id)
 
             if "message" in parameters.keys():
-                self.on_task_success(  # Success because a message is returned if all of the documents were already treated
+                self.on_task_success(
+                    # Success because a message is returned if all of the documents were already treated
                     {
                         "notify": self.notify_email,
                         "message": parameters["message"],

@@ -54,16 +54,14 @@ class DocumentSet(models.Model):
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
-    def get_absolute_url(self):
-        # TODO create view to edit document set without loading it
-        # return reverse("document_set", args=[self.id])
-        return ""
-
     def length(self):
         return sum(
             len(field or [])
             for field in (self.wit_ids, self.ser_ids, self.digit_ids, self.work_ids)
         )
+
+    def get_treatments(self):
+        return self.treatments.all()
 
     def get_witnesses(self):
         if not self.wit_ids:
@@ -93,6 +91,15 @@ class DocumentSet(models.Model):
             + self.get_works()
         )
 
+    def get_all_witnesses(self):
+        witnesses = self.get_witnesses()
+        for series in self.get_series():
+            witnesses += series.get_witnesses()
+        for work in self.get_works():
+            witnesses += work.get_witnesses()
+        # TODO distinct
+        return witnesses
+
     def get_document_names(self):
         return [obj.__str__() for obj in self.get_documents()]
 
@@ -106,6 +113,25 @@ class DocumentSet(models.Model):
             "Digitization": {digit.id: obj_meta(digit) for digit in self.get_digits()},
             "Work": {work.id: obj_meta(work) for work in self.get_works()},
         }
+
+    def get_treatment_metadata(self):
+        def meta(treatment):
+            return {
+                "id": treatment.id.__str__(),
+                "status": treatment.status,
+                "task_type": treatment.task_type,
+                "url": treatment.get_absolute_url(),
+            }
+
+        return {
+            treatment.id.__str__(): meta(treatment)
+            for treatment in self.get_treatments()
+        }
+
+    def get_absolute_url(self):
+        # TODO create view to edit document set without loading it
+        # return reverse("document_set", args=[self.id])
+        return ""
 
     def to_json(self):
         return {
@@ -124,4 +150,5 @@ class DocumentSet(models.Model):
                 "title": self.title,
                 "selected": self.get_document_metadata(),
             },
+            "treatments": self.get_treatment_metadata(),
         }

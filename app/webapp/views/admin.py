@@ -213,6 +213,16 @@ class TreatmentList(AbstractRecordList):
         return context
 
 
+class TreatmentView(AbstractRecordView):
+    model = Treatment
+    template_name = "webapp/treatment.html"
+    fields = []
+
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     context["urls"] = self.get_record().get_treated_url()
+
+
 class WorkList(AbstractRecordList):
     model = Work
 
