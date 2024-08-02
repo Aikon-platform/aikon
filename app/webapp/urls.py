@@ -133,6 +133,21 @@ urlpatterns = [
         name="document-set-autocomplete",
     ),
     path(
+        f"{APP_NAME}/autocomplete/witness/",
+        WitnessAutocomplete.as_view(),
+        name="witness-autocomplete",
+    ),
+    path(
+        f"{APP_NAME}/autocomplete/series/",
+        SeriesAutocomplete.as_view(),
+        name="series-autocomplete",
+    ),
+    path(
+        f"{APP_NAME}/autocomplete/work/",
+        WorkAutocomplete.as_view(),
+        name="work-autocomplete",
+    ),
+    path(
         f"{APP_NAME}/set-title/<int:set_id>",
         set_title,
         name="set-title",

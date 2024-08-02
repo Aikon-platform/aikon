@@ -3,9 +3,10 @@ import django_filters
 from django.forms import DateTimeField, DateField
 from django.forms.models import ModelChoiceIteratorValue
 
+from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.edition import Edition, get_name as edition_name
 from app.webapp.models.language import Language
-from app.webapp.models.series import Series
+from app.webapp.models.series import Series, get_name as series_name
 from app.webapp.models.treatment import Treatment, get_name as treatment_name
 from app.webapp.models.witness import Witness, get_name as witness_name
 from app.webapp.models.work import Work, get_name as work_name
@@ -59,8 +60,10 @@ class WitnessFilter(RecordFilter):
         queryset=Edition.objects.all(),
         widget=autocomplete.ModelSelect2(url="webapp:edition-autocomplete"),
     )
-    contents__lang = django_filters.ModelChoiceFilter(
+    contents__lang = django_filters.ModelMultipleChoiceFilter(
         queryset=Language.objects.all(),
+        null_value=None,
+        null_label="----------",
         widget=autocomplete.ModelSelect2Multiple(url="webapp:language-autocomplete"),
     )
     contents__date_min = django_filters.RangeFilter(
@@ -166,3 +169,57 @@ class SeriesFilter(RecordFilter):
             "edition__place": edition_name("pub_place"),
             "edition__publisher": edition_name("publisher"),
         }
+
+
+class DocumentSetFilter(RecordFilter):
+    wit_ids = django_filters.ModelMultipleChoiceFilter(
+        queryset=Witness.objects.all(),
+        widget=autocomplete.ModelSelect2Multiple(url="witness-autocomplete"),
+        method="filter_by_witness",
+        null_value=None,
+        null_label="----------",
+        label=witness_name("Witness"),
+    )
+    ser_ids = django_filters.ModelMultipleChoiceFilter(
+        queryset=Series.objects.all(),
+        widget=autocomplete.ModelSelect2Multiple(url="series-autocomplete"),
+        method="filter_by_series",
+        null_value=None,
+        null_label="----------",
+        label=series_name("Series"),
+    )
+    work_ids = django_filters.ModelMultipleChoiceFilter(
+        queryset=Work.objects.all(),
+        widget=autocomplete.ModelSelect2Multiple(url="work-autocomplete"),
+        method="filter_by_work",
+        null_value=None,
+        null_label="----------",
+        label=work_name("Work"),
+    )
+
+    class Meta:
+        model = DocumentSet
+        fields = {
+            "title": ["icontains"],
+        }
+        labels = {
+            "title": work_name("title"),
+        }
+
+    def filter_by_witness(self, queryset, name, value):
+        if value:
+            wit_ids = [w.id for w in value]
+            return queryset.filter(wit_ids__overlap=wit_ids)
+        return queryset
+
+    def filter_by_series(self, queryset, name, value):
+        if value:
+            ser_ids = [s.id for s in value]
+            return queryset.filter(ser_ids__overlap=ser_ids)
+        return queryset
+
+    def filter_by_work(self, queryset, name, value):
+        if value:
+            work_ids = [w.id for w in value]
+            return queryset.filter(work_ids__overlap=work_ids)
+        return queryset
