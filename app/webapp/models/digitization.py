@@ -218,7 +218,6 @@ class Digitization(models.Model):
 
     def has_digit(self):
         # if there is either a pdf/manifest/img associated with the digitization
-        print(self.pdf, self.manifest, self.images)
         return bool(self.pdf or self.manifest or self.images)
 
     def img_nb(self):
