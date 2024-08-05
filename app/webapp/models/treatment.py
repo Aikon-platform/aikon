@@ -123,12 +123,9 @@ class Treatment(AbstractSearchableModel):
         urls = []
         if not self.document_set:
             return urls
-        witnesses = self.document_set.get_all_witnesses()
+        witnesses = self.document_set.get_all_witness_ids()
         urls.append(
-            [
-                reverse("webapp:witness_regions_view", args=[witness.id])
-                for witness in witnesses
-            ]
+            [reverse("webapp:witness_regions_view", args=[wid]) for wid in witnesses]
         )
         #  TODO make variable used in svelte component and in overall app
         tabs = {

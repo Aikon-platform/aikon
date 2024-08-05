@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
+from app.webapp.models.content import Content
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
 from app.webapp.models.series import Series
@@ -110,14 +111,30 @@ class DocumentSet(AbstractSearchableModel):
 
     @lru_cache(maxsize=None)
     def get_all_witnesses(self):
-        witness_ids = set(self.wit_ids or [])
-        for series in self.series:
-            witness_ids.update(series.wit_ids or [])
-        for work in self.works:
-            witness_ids.update(work.wit_ids or [])
         return list(
-            Witness.objects.filter(id__in=witness_ids).select_related("relevant_field")
+            Witness.objects.filter(id__in=self.get_all_witness_ids()).select_related(
+                "digitizations"
+            )
         )
+
+    def get_all_witness_ids(self):
+        witness_ids = set(self.wit_ids or [])
+
+        if self.ser_ids:
+            series_witnesses = Witness.objects.filter(
+                series__id__in=self.ser_ids
+            ).select_related("digitizations")
+            for witness in series_witnesses:
+                witness_ids.add(witness.id)
+
+        if self.work_ids:
+            work_witness_ids = (
+                Content.objects.filter(work__id__in=self.work_ids)
+                .values_list("witness_id", flat=True)
+                .distinct()
+            )
+            witness_ids.update(work_witness_ids)
+        return list(witness_ids)
 
     def get_document_metadata(self):
         def obj_meta(obj):
