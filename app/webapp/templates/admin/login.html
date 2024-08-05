@@ -1,0 +1,63 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify shared_tags %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <script src="{% url 'admin:jsi18n' %}"></script>
+    <link rel="stylesheet" href="{% static 'css/form.css' %}">
+    <script src="{% static 'js/form.js' %}"></script>
+    {{ media }}
+{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static "admin/css/forms.css" %}">
+{% endblock %}
+
+{% block coltype %}colM{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-form{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div id="content-main">
+                <form method="post">
+                    {% csrf_token %}
+                    {% block form_top %}{% endblock %}
+                    {{ form.non_field_errors }}
+                    <div class="columns is-centered">
+                        <div class="column is-4">
+                            <div class="box is-contrasted">
+                                <h1 class="is-title is-size-3 is-center">{{ title }}</h1>
+                                <div class="form-group pt-4">
+                                    <label class="label" for="{{ form.username.id_for_label }}">Username</label>
+                                    <div class="control has-icons-left has-icons-right">
+                                        <input class="input" name="username" placeholder="Username" required>
+                                        <span class="icon is-small is-left pl-3">
+                                            <i class="fas fa-user"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            {{ form.username.errors }}
+                            <div class="form-group pt-4">
+                                <div class="field">
+                                    <label class="label" for="{{ form.password.id_for_label }}">Password</label>
+                                    <div class="control has-icons-left">
+                                        <input class="input" type="password" name="password" placeholder="*******" required>
+                                        <span class="icon is-small is-left pl-3">
+                                            <i class="fa fa-lock"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                                {{ form.password.errors }}
+                            </div>
+                            <div class="control pt-4 is-center">
+                                <button type="submit" class="button is-link">Login</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

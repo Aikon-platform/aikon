@@ -40,6 +40,9 @@ class AbstractView(LoginRequiredMixin, View):
         context["model_title"] = str(
             getattr(self, "model_title", self.model._meta.verbose_name)
         )
+        context["page_title"] = str(
+            getattr(self, "page_title", self.model._meta.verbose_name_plural.lower())
+        )
         context["app_name"] = "webapp"
         context["user"] = (
             self.request.user if self.request.user.is_authenticated else None
@@ -98,7 +101,11 @@ class AbstractRecordList(AbstractView, ListView):
 
     def get_view_title(self):
         # TODO find better name (bilingual)
-        return f"List of {self.model._meta.verbose_name_plural}"
+        return (
+            f"List of {self.model._meta.verbose_name_plural.lower()}"
+            if APP_LANG == "en"
+            else f"Liste de {self.model._meta.verbose_name_plural.lower()}"
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -212,6 +219,16 @@ class TreatmentList(AbstractRecordList):
         context["search_fields"] = TreatmentFilter().to_form_fields()
 
         return context
+
+
+class TreatmentView(AbstractRecordView):
+    model = Treatment
+    template_name = "webapp/treatment.html"
+    fields = []
+
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     context["urls"] = self.get_record().get_treated_url()
 
 
 class WorkList(AbstractRecordList):

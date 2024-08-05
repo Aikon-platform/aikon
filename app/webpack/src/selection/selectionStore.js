@@ -1,5 +1,5 @@
 import {derived, writable} from 'svelte/store';
-import {csrfToken, regionsType, appLang} from '../constants';
+import {csrfToken, regionsType, appLang, appName} from '../constants';
 
 
 function createSelectionStore() {
@@ -80,18 +80,18 @@ function createSelectionStore() {
     }
 
     function add(selection, item, storing = true) {
-        const key = item.type === regionsType ? "regions" : "records";
+        const key = item.class === regionsType ? "regions" : "records";
         const set = selection[key];
         const selected = set.selected;
 
-        const itemMeta = item.type === regionsType ? item : {title: item.title, url: item.url};
+        const itemMeta = item.class === regionsType ? item : {title: item.title, url: item.url};
 
         selection[key] = {
             ...set,
             selected: {
                 ...selected,
-                [item.type]: {
-                    ...(selected[item.type] || {}),
+                [item.class]: {
+                    ...(selected[item.class] || {}),
                     [item.id]: itemMeta
                 }
             }
@@ -126,7 +126,7 @@ function createSelectionStore() {
 
         const endpoint = set.id !== null ? `${set.id}/change` : "add";
 
-        fetch(`${window.location.origin}/${modelName}/${endpoint}`, {
+        fetch(`${window.location.origin}/${appName}/${modelName}/${endpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -134,6 +134,7 @@ function createSelectionStore() {
             },
             body: JSON.stringify({
                 'title': set.title,
+                'selection': set,
                 ...selectedIds
             })
         })
@@ -186,9 +187,9 @@ function createSelectionStore() {
         addAll: (items) => update(selection => addAll(selection, items)),
         add: (item) => update(selection => add(selection, item)),
         toggle: (item) => update(selection => {
-            const selected = getSelected(selection, item.type === regionsType);
-            if (selected[item.type]?.[item.id]) {
-                return remove(selection, item.id, item.type);
+            const selected = getSelected(selection, item.class === regionsType);
+            if (selected[item.class]?.[item.id]) {
+                return remove(selection, item.id, item.class);
             } else {
                 return add(selection, item);
             }
@@ -202,7 +203,7 @@ function createSelectionStore() {
         // REACTIVE STATEMENT
         isSaved,
         isSelected: derived(selection, $selection =>
-            item => getSelected($selection, item.type === regionsType)[item.type]?.hasOwnProperty(item.id) || false
+            item => getSelected($selection, item.class === regionsType)[item.class]?.hasOwnProperty(item.id) || false
         ),
         isSetSelected: derived(selection, $selection =>
             set => isThisSetSelected($selection, set)

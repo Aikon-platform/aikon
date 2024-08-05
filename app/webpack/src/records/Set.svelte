@@ -5,6 +5,17 @@
     const { isSetSelected } = selectionStore;
     export let item;
     $: setSelected = $isSetSelected(item);
+
+    function getColor(status) {
+        if (!status) return 'is-dark';
+        if (status === 'CANCELLED') return 'is-info';
+        if (status === 'ERROR') return 'is-danger';
+        if (status === 'IN PROGRESS') return 'is-warning';
+        if (status === 'PENDING') return 'is-info';
+        if (status === 'STARTED') return 'is-info';
+        if (status === 'SUCCESS') return 'is-success';
+        return 'is-dark';
+    }
 </script>
 
 <Item {item}>
@@ -28,15 +39,26 @@
     <!-- TODO add way to make selection public-->
 
 
-    <div slot="body" class="pt-2 grid">
-        {#each Object.entries(item.selection.selected) as [modelName, selectedRecords]}
-            {#each Object.entries(selectedRecords) as [id, meta]}
-                <div>
-                    <!--TODO add possibility to remove from selection-->
-                    <span class="tag is-rounded is-accent">{modelName} #{id}</span>
-                    {meta.title}
-                </div>
+    <div slot="body">
+        <div class="tags container">
+            {#each Object.entries(item.treatments) as [id, meta]}
+                <a href="{meta.url}" class="tag is-rounded is-small {getColor(meta.status)}">
+                    {meta.task_type} #{id}
+                </a>
             {/each}
-        {/each}
+        </div>
+
+        <div class="grid">
+            {#each Object.entries(item.selection.selected) as [modelName, selectedRecords]}
+                {#each Object.entries(selectedRecords) as [id, meta]}
+                    <div>
+                        <!--TODO add possibility to remove from selection-->
+                        <span class="tag is-rounded is-accent">{modelName} #{id}</span>
+                        {meta.title}
+                    </div>
+                {/each}
+            {/each}
+        </div>
+
     </div>
 </Item>
