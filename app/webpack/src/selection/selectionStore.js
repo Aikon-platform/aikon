@@ -134,6 +134,7 @@ function createSelectionStore() {
             },
             body: JSON.stringify({
                 'title': set.title,
+                'selection': set,
                 ...selectedIds
             })
         })

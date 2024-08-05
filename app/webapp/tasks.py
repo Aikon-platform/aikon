@@ -1,7 +1,9 @@
+from celery.schedules import crontab
 from app.config.celery import celery_app
+from django.apps import apps
 
+from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.utils.constants import MAX_RES
-
 from app.webapp.utils.functions import pdf_to_img, temp_to_img
 from app.webapp.utils.iiif.download import iiif_to_img
 
@@ -47,27 +49,29 @@ def delete_annotations(regions_ref, manifest_url):
 
 
 @celery_app.task
+def generate_all_json():
+    total_updated = 0
+    errors = []
+    for model in apps.get_models():
+        if (
+            issubclass(model, AbstractSearchableModel)
+            and model != AbstractSearchableModel
+        ):
+            try:
+                model.regenerate_all_json()
+                total_updated += model.objects.count()
+            except Exception as e:
+                errors.append(f"Error updating {model.__name__}: {str(e)}")
+
+    result = f"Updated JSON for {total_updated} objects"
+    if errors:
+        result += f"\nErrors encountered: {', '.join(errors)}"
+    return result
+
+
+@celery_app.task
 def get_all_witnesses(treatment):
-    from app.webapp.models.witness import Witness
-    from app.webapp.models.series import Series
-    from app.webapp.models.work import Work
-
-    witnesses = []
-
-    for object in treatment.get_objects():
-        if type(object) is Witness:
-            try:
-                witnesses.append(object)
-            except:
-                pass
-        elif type(object) is Series or Work:
-            try:
-                objects = object.get_witnesses().get()
-                witnesses.append(objects)
-            except:
-                pass
-        # elif object == "digitizations":
-
+    witnesses = treatment.get_witnesses()
     treatment.start_task(witnesses)
 
 
@@ -76,3 +80,11 @@ def test(log_msg):
     from app.webapp.utils.logger import log
 
     log(log_msg or ".dlrow olleH")
+
+
+@celery_app.on_after_configure.connect
+def periodic_tasks(sender, **kwargs):
+    sender.add_periodic_task(
+        crontab(hour=str(3), minute=str(0)),  # Run every day at 3:00 AM
+        generate_all_json.s(),
+    )
