@@ -70,6 +70,12 @@ def generate_all_json():
 
 
 @celery_app.task
+def get_all_witnesses(treatment):
+    witnesses = treatment.get_witnesses()
+    treatment.start_task(witnesses)
+
+
+@celery_app.task
 def test(log_msg):
     from app.webapp.utils.logger import log
 

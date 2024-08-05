@@ -1,5 +1,5 @@
 import {derived, writable} from 'svelte/store';
-import {csrfToken, regionsType, appLang} from '../constants';
+import {csrfToken, regionsType, appLang, appName} from '../constants';
 
 
 function createSelectionStore() {
@@ -126,7 +126,7 @@ function createSelectionStore() {
 
         const endpoint = set.id !== null ? `${set.id}/change` : "add";
 
-        fetch(`${window.location.origin}/${modelName}/${endpoint}`, {
+        fetch(`${window.location.origin}/${appName}/${modelName}/${endpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

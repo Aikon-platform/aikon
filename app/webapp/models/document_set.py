@@ -22,6 +22,10 @@ def get_name(fieldname, plural=False):
             "en": "document set",
             "fr": "set de documents",
         },
+        "DocumentSets": {
+            "en": "document sets",
+            "fr": "paniers de documents",
+        },
     }
     return get_fieldname(fieldname, fields, plural)
 
@@ -29,7 +33,7 @@ def get_name(fieldname, plural=False):
 class DocumentSet(AbstractSearchableModel):
     class Meta:
         verbose_name = get_name("DocumentSet")
-        verbose_name_plural = get_name("DocumentSet", True)
+        verbose_name_plural = get_name("DocumentSets")
         app_label = "webapp"
 
     def __str__(self):

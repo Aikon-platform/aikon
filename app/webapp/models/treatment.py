@@ -22,6 +22,8 @@ from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
 from app.webapp.models.utils.constants import TRMT_TYPE, TRMT_STATUS
 from app.webapp.models.utils.functions import get_fieldname
+from app.webapp.tasks import get_all_witnesses
+
 from app.webapp.utils.logger import log
 
 
@@ -107,6 +109,12 @@ class Treatment(AbstractSearchableModel):
             return []
         # TODO display treated_objects instead of document_set ?
         return self.document_set.documents
+
+    def get_witnesses(self):
+        if not self.document_set:
+            return []
+        # TODO display treated_objects instead of document_set ?
+        return self.document_set.get_all_witnesses()
 
     def get_cancel_url(self):
         return f"{CV_API_URL}/{self.task_type}/{self.api_tracking_id}/cancel"
@@ -378,29 +386,4 @@ class Treatment(AbstractSearchableModel):
 @receiver(post_save, sender=Treatment)
 def treatment_post_save(sender, instance, created, **kwargs):
     if created:
-        witnesses = []
-
-        # for obj in instance.get_objects():
-        #     if type(obj) is Witness:
-        #         try:
-        #             witnesses.append(obj)
-        #         except:
-        #             pass
-        #     elif type(obj) is Series or Work:
-        #         try:
-        #             objects = obj.get_witnesses().get()
-        #             witnesses.append(objects)
-        #         except:
-        #             pass
-        #     # elif object == "digitizations":
-        try:
-            if instance.document_set:
-                witnesses = instance.document_set.get_all_witnesses()
-        except Exception as e:
-            log(
-                f"[treatment_post_save] Error getting witnesses from document set {instance.document_set.id}",
-                e,
-            )
-            pass
-        print(witnesses)
-        instance.start_task(witnesses)
+        get_all_witnesses.delay(instance)
