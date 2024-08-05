@@ -19,7 +19,7 @@ from app.config.settings import (
 )
 
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.searchable_models import AbstractSearchableModel
+from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
 from app.webapp.models.utils.constants import TRMT_TYPE, TRMT_STATUS
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.logger import log
@@ -146,28 +146,32 @@ class Treatment(AbstractSearchableModel):
             user = self.requested_by
             doc_set = self.document_set
             req_on = self.requested_on
-            return {
-                "id": self.id.__str__(),
-                "class": self.__class__.__name__,
-                "type": get_name("Treatment"),
-                "title": self.get_title(),
-                "updated_at": req_on.strftime("%Y-%m-%d %H:%M") if req_on else None,
-                "url": self.get_absolute_url(),
-                "user": user.__str__() if user else "Unknown user",
-                "user_id": user.id if user else 0,
-                "status": self.status,
-                "is_finished": self.is_finished,
-                "treated_objects": self.treated_objects,
-                "cancel_url": self.get_cancel_url(),
-                "query_parameters": self.get_query_parameters(),
-                "api_tracking_id": self.api_tracking_id,
-                "selection": {
-                    "id": self.id,
-                    "type": "Treatment",
+            return json_encode(
+                {
+                    "id": self.id.__str__(),
+                    "class": self.__class__.__name__,
+                    "type": get_name("Treatment"),
                     "title": self.get_title(),
-                    "selected": doc_set.get_document_metadata() if doc_set else None,
-                },
-            }
+                    "updated_at": req_on.strftime("%Y-%m-%d %H:%M") if req_on else None,
+                    "url": self.get_absolute_url(),
+                    "user": user.__str__() if user else "Unknown user",
+                    "user_id": user.id if user else 0,
+                    "status": self.status,
+                    "is_finished": self.is_finished,
+                    "treated_objects": self.treated_objects,
+                    "cancel_url": self.get_cancel_url(),
+                    "query_parameters": self.get_query_parameters(),
+                    "api_tracking_id": self.api_tracking_id,
+                    "selection": {
+                        "id": self.id,
+                        "type": "Treatment",
+                        "title": self.get_title(),
+                        "selected": doc_set.get_document_metadata()
+                        if doc_set
+                        else None,
+                    },
+                }
+            )
         except Exception as e:
             log(f"[treatment_to_json] Error", e)
             return None

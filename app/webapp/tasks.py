@@ -1,5 +1,9 @@
 from app.config.celery import celery_app
 
+from celery import shared_task
+from django.apps import apps
+from django.db import models
+from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.utils.constants import MAX_RES
 
 from app.webapp.utils.functions import pdf_to_img, temp_to_img
@@ -51,3 +55,17 @@ def test(log_msg):
     from app.webapp.utils.logger import log
 
     log(log_msg or ".dlrow olleH")
+
+
+@celery_app.task
+def generate_all_json():
+    total_updated = 0
+    for model in apps.get_models():
+        if (
+            issubclass(model, AbstractSearchableModel)
+            and model != AbstractSearchableModel
+        ):
+            for obj in model.objects.all():
+                obj.get_json(reindex=True)
+                total_updated += 1
+    return f"Updated JSON for {total_updated} objects"

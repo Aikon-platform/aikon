@@ -6,7 +6,7 @@ from django.urls import reverse
 
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.edition import Edition
-from app.webapp.models.searchable_models import AbstractSearchableModel
+from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
 
 from app.webapp.models.series import Series
 from app.webapp.models.utils.constants import (
@@ -160,30 +160,32 @@ class Witness(AbstractSearchableModel):
 
         digits = self.get_digits()
 
-        return {
-            "id": self.id,
-            "class": self.__class__.__name__,
-            "type": get_name("Witness"),
-            "digits": [digit.id for digit in digits],
-            "regions": [region.id for region in self.get_regions()],
-            "iiif": [digit.manifest_link(inline=True) for digit in digits],
-            "title": self.__str__(),
-            "img": self.get_img(only_first=True),
-            "user_id": self.user.id,
-            "user": self.user.__str__(),
-            "url": self.get_absolute_url(),
-            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),
-            "is_public": self.is_public,
-            "metadata": {
-                get_name("id_nb"): self.id_nb or "-",
-                get_name("Work"): self.get_work_titles(),
-                get_name("place_name"): self.get_place_names(),
-                get_name("dates"): format_dates(*self.get_dates()),
-                get_name("page_nb"): self.get_page(),
-                get_name("Language"): self.get_lang_names(),
-            },
-            "buttons": buttons,
-        }
+        return json_encode(
+            {
+                "id": self.id,
+                "class": self.__class__.__name__,
+                "type": get_name("Witness"),
+                "digits": [digit.id for digit in digits],
+                "regions": [region.id for region in self.get_regions()],
+                "iiif": [digit.manifest_link(inline=True) for digit in digits],
+                "title": self.__str__(),
+                "img": self.get_img(only_first=True),
+                "user_id": self.user.id,
+                "user": self.user.__str__(),
+                "url": self.get_absolute_url(),
+                "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),
+                "is_public": self.is_public,
+                "metadata": {
+                    get_name("id_nb"): self.id_nb or "-",
+                    get_name("Work"): self.get_work_titles(),
+                    get_name("place_name"): self.get_place_names(),
+                    get_name("dates"): format_dates(*self.get_dates()),
+                    get_name("page_nb"): self.get_page(),
+                    get_name("Language"): self.get_lang_names(),
+                },
+                "buttons": buttons,
+            }
+        )
 
     def get_type(self):
         # NOTE should be returning "letterpress" (tpr) / "woodblock" (wpr) / "manuscript" (ms)

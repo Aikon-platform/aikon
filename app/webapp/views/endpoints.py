@@ -15,11 +15,19 @@ from app.webapp.utils.iiif.annotation import (
 )
 from app.webapp.utils.logger import log
 from app.webapp.utils.regions import create_empty_regions
+from app.webapp.tasks import generate_all_json
 
 """
 VIEWS THAT SERVE AS ENDPOINTS
 ONLY FOR API CALLS
 """
+
+
+def json_regeneration(request):
+    task = generate_all_json.delay()
+    return JsonResponse(
+        {"message": "JSON regeneration task started", "task_id": str(task.id)}
+    )
 
 
 def save_document_set(request, dsid=None):

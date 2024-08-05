@@ -4,7 +4,7 @@ from django.urls import reverse
 from app.webapp.models.language import Language
 from app.webapp.models.place import Place
 from app.webapp.models.person import Person
-from app.webapp.models.searchable_models import AbstractSearchableModel
+from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
 from app.webapp.models.tag import Tag
 from app.webapp.models.utils.constants import AUTHOR_MSG, DATE_INFO
 
@@ -75,21 +75,23 @@ class Work(AbstractSearchableModel):
         # return reverse("webapp:work_view", args=[self.id])
 
     def to_json(self):
-        return {
-            "id": self.id,
-            "class": self.__class__.__name__,
-            "type": get_name("Work"),
-            # "user": self.user.__str__(),
-            # "user_id": self.user.id,
-            "url": self.get_absolute_url(),
-            "title": self.__str__(),
-            "metadata": {
-                get_name("dates"): format_dates(self.date_min, self.date_max),
-                get_name("place"): self.place.__str__(),
-                get_name("author"): self.author.__str__(),
-                get_name("language"): self.get_lang_names(),
-            },
-        }
+        return json_encode(
+            {
+                "id": self.id,
+                "class": self.__class__.__name__,
+                "type": get_name("Work"),
+                # "user": self.user.__str__(),
+                # "user_id": self.user.id,
+                "url": self.get_absolute_url(),
+                "title": self.__str__(),
+                "metadata": {
+                    get_name("dates"): format_dates(self.date_min, self.date_max),
+                    get_name("place"): self.place.__str__(),
+                    get_name("author"): self.author.__str__(),
+                    get_name("language"): self.get_lang_names(),
+                },
+            }
+        )
 
     def clean(self):
         super().clean()

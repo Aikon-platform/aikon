@@ -5,13 +5,14 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 from app.webapp.models.digitization import Digitization
+from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
 from app.webapp.models.series import Series
 from app.webapp.models.utils.functions import get_fieldname
 from django.urls import reverse
 
 from app.webapp.models.witness import Witness
 from app.webapp.models.work import Work
-from app.webapp.utils.functions import get_summary
+from app.webapp.utils.logger import log
 
 
 def get_name(fieldname, plural=False):
@@ -24,7 +25,7 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, fields, plural)
 
 
-class DocumentSet(models.Model):
+class DocumentSet(AbstractSearchableModel):
     class Meta:
         verbose_name = get_name("DocumentSet")
         verbose_name_plural = get_name("DocumentSet", True)
@@ -122,12 +123,13 @@ class DocumentSet(models.Model):
         def obj_meta(obj):
             return {"id": obj.id, "title": obj.__str__(), "url": obj.get_absolute_url()}
 
-        return {
+        selection = {
             "Witness": {wit.id: obj_meta(wit) for wit in self.witnesses},
             "Series": {ser.id: obj_meta(ser) for ser in self.series},
             "Digitization": {digit.id: obj_meta(digit) for digit in self.digits},
             "Work": {work.id: obj_meta(work) for work in self.works},
         }
+        return selection
 
     def get_treatment_metadata(self):
         def meta(treatment):
@@ -156,23 +158,29 @@ class DocumentSet(models.Model):
                 "title": self.title,
                 "selected": self.get_document_metadata(),
             }
-            self.objects.filter(pk=self.pk).update(selection=json_data)
+            type(self).objects.filter(pk=self.pk).update(selection=json_data)
         return self.selection
 
-    def to_json(self):
+    def to_json(self, reindex=True):
         user = self.user
-        return {
-            "id": self.id,
-            "class": self.__class__.__name__,
-            "type": get_name("DocumentSet"),
-            "title": self.__str__(),
-            "user_id": user.id if user else "None",
-            "user": user.__str__() if user else "None",
-            "url": self.get_absolute_url(),
-            "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M")
-            if self.updated_at
-            else "None",
-            "is_public": self.is_public,
-            "selection": self.get_selection(),
-            "treatments": self.get_treatment_metadata(),
-        }
+        try:
+            return json_encode(
+                {
+                    "id": self.id,
+                    "class": self.__class__.__name__,
+                    "type": get_name("DocumentSet"),
+                    "title": self.__str__(),
+                    "user_id": user.id if user else "None",
+                    "user": user.__str__() if user else "None",
+                    "url": self.get_absolute_url(),
+                    "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M")
+                    if self.updated_at
+                    else "None",
+                    "is_public": self.is_public,
+                    "selection": self.get_selection(reindex),
+                    "treatments": self.get_treatment_metadata(),
+                }
+            )
+        except Exception as e:
+            log(f"[to_json] Error", e)
+            return None
