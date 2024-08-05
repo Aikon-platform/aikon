@@ -1,8 +1,9 @@
-from functools import lru_cache
+from functools import lru_cache, cached_property
 
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+from django.db.models import Q
 
 from app.webapp.models.content import Content
 from app.webapp.models.digitization import Digitization
@@ -40,13 +41,13 @@ class DocumentSet(AbstractSearchableModel):
         if self.length() != 1:
             return f"{self.title} ({self.length()} documents)"
         if self.wit_ids:
-            return f"{self.witnesses[0]}"
+            return str(self.get_all_witnesses[0])
         if self.ser_ids:
-            return f"{self.series[0]}"
+            return str(Series.objects.filter(id__in=self.ser_ids).first())
         if self.digit_ids:
-            return f"{self.digits[0]}"
+            return str(Digitization.objects.filter(id__in=self.digit_ids).first())
         if self.work_ids:
-            return f"{self.works[0]}"
+            return str(Work.objects.filter(id__in=self.work_ids).first())
         return self.title
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -113,31 +114,39 @@ class DocumentSet(AbstractSearchableModel):
     def document_names(self):
         return [obj.__str__() for obj in self.documents]
 
-    @lru_cache(maxsize=None)
+    @cached_property
     def get_all_witnesses(self):
         return list(
-            Witness.objects.filter(id__in=self.get_all_witness_ids()).select_related(
-                "digitizations"
-            )
+            Witness.objects.filter(id__in=self.get_all_witness_ids)
+            .select_related("series")
+            .prefetch_related("digitizations", "contents__work")
         )
 
+    @cached_property
     def get_all_witness_ids(self):
         witness_ids = set(self.wit_ids or [])
 
+        queries = []
+
         if self.ser_ids:
-            series_witnesses = Witness.objects.filter(
-                series__id__in=self.ser_ids
-            ).select_related("digitizations")
-            for witness in series_witnesses:
-                witness_ids.add(witness.id)
+            queries.append(Q(series__id__in=self.ser_ids))
 
         if self.work_ids:
-            work_witness_ids = (
-                Content.objects.filter(work__id__in=self.work_ids)
-                .values_list("witness_id", flat=True)
+            queries.append(Q(contents__work__id__in=self.work_ids))
+
+        if queries:
+            combined_query = queries.pop()
+            for query in queries:
+                combined_query |= query
+
+            additional_ids = (
+                Witness.objects.filter(combined_query)
+                .values_list("id", flat=True)
                 .distinct()
             )
-            witness_ids.update(work_witness_ids)
+
+            witness_ids.update(additional_ids)
+
         return list(witness_ids)
 
     def get_document_metadata(self):
