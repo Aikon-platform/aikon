@@ -38,8 +38,8 @@ class AbstractSearchableModel(models.Model):
 
     def get_json(self, reindex=False):
         if not self.json or reindex:
-            self.json = self.to_json()
-            self.__class__.objects.filter(pk=self.pk).update(json=self.json)
+            json_data = self.to_json()
+            self.__class__.objects.filter(pk=self.pk).update(json=json_data)
         return self.json
 
 

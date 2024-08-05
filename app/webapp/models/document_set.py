@@ -148,6 +148,17 @@ class DocumentSet(models.Model):
         # return reverse("document_set", args=[self.id])
         return ""
 
+    def get_selection(self, reindex=False):
+        if not self.selection or reindex:
+            json_data = {
+                "id": self.id,
+                "type": "documentSet",
+                "title": self.title,
+                "selected": self.get_document_metadata(),
+            }
+            self.objects.filter(pk=self.pk).update(selection=json_data)
+        return self.selection
+
     def to_json(self):
         user = self.user
         return {
@@ -162,11 +173,6 @@ class DocumentSet(models.Model):
             if self.updated_at
             else "None",
             "is_public": self.is_public,
-            "selection": {
-                "id": self.id,
-                "type": "documentSet",
-                "title": self.title,
-                "selected": self.get_document_metadata(),
-            },
+            "selection": self.get_selection(),
             "treatments": self.get_treatment_metadata(),
         }

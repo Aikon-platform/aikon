@@ -30,6 +30,8 @@ def save_document_set(request, dsid=None):
         try:
             data = json.loads(request.body.decode("utf-8"))
 
+            selection = data.get("selection", [])
+            # TODO use title and ids retrieved from selection directly?
             set_name = data.get("title", "Document set")
             witness_ids = data.get("Witness", [])
             series_ids = data.get("Series", [])
@@ -45,6 +47,7 @@ def save_document_set(request, dsid=None):
                     ds = DocumentSet.objects.get(id=dsid)
                 else:
                     ds = DocumentSet.objects.create(user=request.user)
+                ds.selection = selection
                 ds.title = f"{set_name} #{ds.id}" if "#" not in set_name else set_name
                 ds.wit_ids = witness_ids
                 ds.ser_ids = series_ids
