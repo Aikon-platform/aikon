@@ -10,3 +10,4 @@ source "$VENV_PATH/bin/activate"
 
 cd "$APP_ROOT" || exit 1
 "$VENV_PATH"/bin/celery -A app.config.celery worker --loglevel=info -P threads
+"$VENV_PATH"/bin/celery -A app.config.celery beat --loglevel=info

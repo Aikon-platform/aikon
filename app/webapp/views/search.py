@@ -23,7 +23,7 @@ def paginated_records(request, records):
     page_number = request.GET.get("p", 1)
     page_obj = paginator.get_page(page_number)
 
-    results = [json_obj for obj in page_obj if (json_obj := obj.to_json()) is not None]
+    results = [json_obj for obj in page_obj if (json_obj := obj.json) is not None]
 
     return {
         "results": results,
@@ -35,8 +35,7 @@ def paginated_records(request, records):
 
 @require_GET
 def search_witnesses(request):
-    witness_list = Witness.objects.order_by("id")
-    witness_filter = WitnessFilter(request.GET, queryset=witness_list)
+    witness_filter = WitnessFilter(request.GET, queryset=Witness.objects.order_by("id"))
     return JsonResponse(paginated_records(request, witness_filter.qs))
 
 
@@ -53,15 +52,13 @@ def search_treatments(request):
 
 @require_GET
 def search_works(request):
-    work_list = Work.objects.order_by("id")
-    work_filter = WorkFilter(request.GET, queryset=work_list)
+    work_filter = WorkFilter(request.GET, queryset=Work.objects.order_by("id"))
     return JsonResponse(paginated_records(request, work_filter.qs))
 
 
 @require_GET
 def search_series(request):
-    series_list = Series.objects.order_by("id")
-    series_filter = SeriesFilter(request.GET, queryset=series_list)
+    series_filter = SeriesFilter(request.GET, queryset=Series.objects.order_by("id"))
     return JsonResponse(paginated_records(request, series_filter.qs))
 
 
@@ -72,10 +69,13 @@ class ArrayLength(models.Func):
 @require_GET
 def search_document_set(request):
     user = request.user
-    doc_sets = (
-        DocumentSet.objects.all()
-        if user.is_superuser
-        else DocumentSet.objects.filter(Q(is_public=True) | Q(user=user))
+    doc_sets = DocumentSetFilter(
+        request.GET,
+        queryset=(
+            DocumentSet.objects.all()
+            if user.is_superuser
+            else DocumentSet.objects.filter(Q(is_public=True) | Q(user=user))
+        ).order_by("-id"),
     )
     doc_sets = doc_sets.annotate(
         set_len=ArrayLength("wit_ids")
