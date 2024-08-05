@@ -16,15 +16,13 @@ from app.config.settings import (
     CV_API_URL,
     ADDITIONAL_MODULES,
 )
-from app.webapp.models.digitization import Digitization
 
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.series import Series
+
 from app.webapp.models.utils.constants import TRMT_TYPE, TRMT_STATUS
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.models.witness import Witness
-from app.webapp.models.work import Work
-from app.webapp.utils.functions import get_summary
+from app.webapp.tasks import get_all_witnesses
+
 from app.webapp.utils.logger import log
 
 
@@ -352,20 +350,4 @@ class Treatment(models.Model):
 @receiver(post_save, sender=Treatment)
 def treatment_post_save(sender, instance, created, **kwargs):
     if created:
-        witnesses = []
-
-        for object in instance.get_objects():
-            if type(object) is Witness:
-                try:
-                    witnesses.append(object)
-                except:
-                    pass
-            elif type(object) is Series or Work:
-                try:
-                    objects = object.get_witnesses().get()
-                    witnesses.append(objects)
-                except:
-                    pass
-            # elif object == "digitizations":
-        print(witnesses)
-        instance.start_task(witnesses)
+        get_all_witnesses.delay(instance)
