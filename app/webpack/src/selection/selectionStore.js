@@ -84,14 +84,14 @@ function createSelectionStore() {
         const set = selection[key];
         const selected = set.selected;
 
-        const itemMeta = item.type === regionsType ? item : {title: item.title, url: item.url};
+        const itemMeta = item.class === regionsType ? item : {title: item.title, url: item.url};
 
         selection[key] = {
             ...set,
             selected: {
                 ...selected,
-                [item.type]: {
-                    ...(selected[item.type] || {}),
+                [item.class]: {
+                    ...(selected[item.class] || {}),
                     [item.id]: itemMeta
                 }
             }
