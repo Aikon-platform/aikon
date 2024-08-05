@@ -1,7 +1,9 @@
 {% extends "admin/base_site.html" %}
 {% load shared_tags static %}
 
-{% block title %}List of {{ model_title }}{% endblock %}
+{% block title %}
+    {% if APP_LANG == "en" %}List of {{ page_title }}{% else %}Liste de {{ page_title }}{% endif %}
+{% endblock %}
 
 {% block extrahead %}
     <link rel="stylesheet" href="{% static 'svelte/recordList.css' %}">
