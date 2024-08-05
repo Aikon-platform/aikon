@@ -4,7 +4,13 @@
 {% block content %}
 
     <div style="margin-bottom: 2%; margin-top: 2%;">
-        <p class="is-size-1 has-text-weight-light">{{ APP_NAME|upper }} Admin Home</p>
+        <p class="is-size-1 has-text-weight-light">
+            {% if APP_LANG == "en" %}
+                {{ APP_NAME|upper }} Admin Home
+            {% else %}
+                Accueil administrateur {{ APP_NAME|upper }}
+            {% endif %}
+        </p>
     </div>
 
     <div class="columns is-fluid">

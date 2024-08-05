@@ -98,7 +98,11 @@ class AbstractRecordList(AbstractView, ListView):
 
     def get_view_title(self):
         # TODO find better name (bilingual)
-        return f"List of {self.model._meta.verbose_name_plural}"
+        return (
+            f"List of {self.model._meta.verbose_name_plural}"
+            if APP_LANG == "en"
+            else f"Liste des {self.model._meta.verbose_name_plural}"
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
