@@ -179,75 +179,79 @@ urlpatterns = [
 
 # ADMIN VIEWS
 urlpatterns += [
-    path(f"witness/", WitnessList.as_view(), name="witness_list"),
-    path(f"witness/<int:id>/", WitnessView.as_view(), name="witness_view"),
+    path(f"{APP_NAME}/witness/", WitnessList.as_view(), name="witness_list"),
+    path(f"{APP_NAME}/witness/<int:id>/", WitnessView.as_view(), name="witness_view"),
     # path(f"witness/add/", WitnessCreate.as_view(), name="witness_create"),
     path(
-        f"witness/<int:id>/change/",
+        f"{APP_NAME}/witness/<int:id>/change/",
         WitnessUpdate.as_view(),
         name="witness_update",
     ),
     path(
-        f"witness/<int:wid>/regions/<int:rid>/",
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/",
         RegionsView.as_view(),
         name="regions_view",
     ),
     path(
-        f"witness/<int:id>/regions/",
+        f"{APP_NAME}/witness/<int:id>/regions/",
         WitnessRegionsView.as_view(),
         name="witness_regions_view",
     ),
-    path(f"treatment/", TreatmentList.as_view(), name="treatment_list"),
-    path(f"treatment/add/", TreatmentCreate.as_view(), name="treatment_create"),
-    path(f"work/", WorkList.as_view(), name="work_list"),
-    path(f"series/", SeriesList.as_view(), name="series_list"),
-    path(f"document-set/", DocumentSetList.as_view(), name="document_set_list"),
+    path(f"{APP_NAME}/treatment/", TreatmentList.as_view(), name="treatment_list"),
+    path(
+        f"{APP_NAME}/treatment/add/", TreatmentCreate.as_view(), name="treatment_create"
+    ),
+    path(f"{APP_NAME}/work/", WorkList.as_view(), name="work_list"),
+    path(f"{APP_NAME}/series/", SeriesList.as_view(), name="series_list"),
+    path(
+        f"{APP_NAME}/document-set/", DocumentSetList.as_view(), name="document_set_list"
+    ),
 ]
 
 # ENDPOINTS
 urlpatterns += [
     path(
-        f"document-set/add",
+        f"{APP_NAME}/document-set/add",
         save_document_set,
         name="new-document-set",
     ),
     path(
-        f"document-set/<int:dsid>/change",
+        f"{APP_NAME}/document-set/<int:dsid>/change",
         save_document_set,
         name="change-document-set",
     ),
     path(
-        f"witness/<int:wid>/regions/<int:rid>/canvas",
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/canvas",
         get_canvas_regions,
         name="canvas_regions",
     ),
     path(
-        f"witness/<int:wid>/regions/canvas",
+        f"{APP_NAME}/witness/<int:wid>/regions/canvas",
         get_canvas_witness_regions,
         name="canvas_witness_regions",
     ),
     path(
-        f"witness/<int:wid>/regions/add",
+        f"{APP_NAME}/witness/<int:wid>/regions/add",
         create_manual_regions,
         name="witness_manual_regions",
     ),
     path(
-        f"witness/<int:wid>/digitization/<int:did>/regions/add",
+        f"{APP_NAME}/witness/<int:wid>/digitization/<int:did>/regions/add",
         create_manual_regions,
         name="digit_manual_regions",
     ),
     path(
-        f"witness/<int:wid>/regions/<int:rid>/add",
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/add",
         create_manual_regions,
         name="regions_manual_regions",
     ),
     path(
-        f"regions/<int:rid>/delete",
+        f"{APP_NAME}/regions/<int:rid>/delete",
         delete_regions,
         name="delete_regions",
     ),
     path(
-        f"regions/export",
+        f"{APP_NAME}/regions/export",
         export_regions,
         name="export_regions",
     ),

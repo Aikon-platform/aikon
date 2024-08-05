@@ -47,6 +47,31 @@ def delete_annotations(regions_ref, manifest_url):
 
 
 @celery_app.task
+def get_all_witnesses(treatment):
+    from app.webapp.models.witness import Witness
+    from app.webapp.models.series import Series
+    from app.webapp.models.work import Work
+
+    witnesses = []
+
+    for object in treatment.get_objects():
+        if type(object) is Witness:
+            try:
+                witnesses.append(object)
+            except:
+                pass
+        elif type(object) is Series or Work:
+            try:
+                objects = object.get_witnesses().get()
+                witnesses.append(objects)
+            except:
+                pass
+        # elif object == "digitizations":
+
+    treatment.start_task(witnesses)
+
+
+@celery_app.task
 def test(log_msg):
     from app.webapp.utils.logger import log
 

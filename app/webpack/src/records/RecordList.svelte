@@ -43,19 +43,19 @@
 {#if !modelTitle.includes('set')}
 <span class="is-right">
     {#if modelTitle.includes('Treatment')}
-    <a href="/{modelName}/add/" class="button is-rounded is-primary mb-4"
-       title='{appLang === "en" ? `Add ${modelName}` : `Ajouter ${modelName}`}'>
+    <a href="/{appName}/{modelName}/add/" class="button is-rounded is-primary mb-4"
+       title='{appLang === "en" ? "Add" : "Ajouter"}'>
         <i class="fa-solid fa-plus"></i>
         <span>
-        {appLang === 'en' ? `Add ${modelName}` : `Ajouter ${modelName}`}
+        {appLang === 'en' ? "Add" : "Ajouter"}
         </span>
     </a>
     {:else}
     <a href="/{appName}-admin/{webappName}/{modelName}/add/" class="button is-rounded is-primary mb-4"
-       title='{appLang === "en" ? `Add ${modelName}` : `Ajouter ${modelName}`}'>
+       title='{appLang === "en" ? "Add" : "Ajouter"}'>
         <i class="fa-solid fa-plus"></i>
         <span>
-        {appLang === 'en' ? `Add ${modelName}` : `Ajouter ${modelName}`}
+        {appLang === 'en' ? "Add" : "Ajouter"}
         </span>
     </a>
     {/if}

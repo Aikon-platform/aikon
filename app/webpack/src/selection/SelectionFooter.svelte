@@ -1,7 +1,7 @@
 <script>
     import { selectionStore } from "./selectionStore.js";
     const { isSaved, selection } = selectionStore;
-    import { appLang } from '../constants';
+    import {appLang, appName} from '../constants';
 
     export let isRegion = true;
 </script>
@@ -12,7 +12,7 @@
             {appLang === 'en' ? 'Clear selection' : 'Vider la sélection'}
         </button>
         {#if $isSaved}
-            <a class="button is-link" href="/treatment/add/?document_set={$selection(isRegion).id}">
+            <a class="button is-link" href="/{appName}/treatment/add/?document_set={$selection(isRegion).id}">
                 <span>
                     <i class="fa-solid fa-gear"></i>
                     {appLang === 'en' ? 'Go to treatment' : 'Accéder au traitement'}
