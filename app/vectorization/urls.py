@@ -44,12 +44,12 @@ urlpatterns = [
 
 urlpatterns += [
     path(
-        f"witness/<int:wid>/regions/<int:rid>/vectorized-images",
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/vectorized-images",
         get_vectorized_images,
         name="vectorized-images",
     ),
     path(
-        f"witness/<int:wid>/regions/vectorized-images",
+        f"{APP_NAME}/witness/<int:wid>/regions/vectorized-images",
         get_vectorized_images,
         name="witness-vectorized-images",
     ),
