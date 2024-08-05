@@ -202,7 +202,7 @@ urlpatterns += [
         f"{APP_NAME}/treatment/add/", TreatmentCreate.as_view(), name="treatment_create"
     ),
     path(
-        f"{APP_NAME}/treatment/<int:id>", TreatmentView.as_view(), name="treatment_view"
+        f"{APP_NAME}/treatment/<str:id>", TreatmentView.as_view(), name="treatment_view"
     ),
     path(f"{APP_NAME}/work/", WorkList.as_view(), name="work_list"),
     path(f"{APP_NAME}/series/", SeriesList.as_view(), name="series_list"),
