@@ -67,7 +67,7 @@ def get_all_witnesses(treatment):
             except:
                 pass
         # elif object == "digitizations":
-    print(witnesses)
+
     treatment.start_task(witnesses)
 
 
