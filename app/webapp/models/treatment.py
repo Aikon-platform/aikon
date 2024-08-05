@@ -19,12 +19,9 @@ from app.config.settings import (
 )
 
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.series import Series
+from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.models.utils.constants import TRMT_TYPE, TRMT_STATUS
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.models.witness import Witness
-from app.webapp.models.work import Work
-from app.webapp.utils.functions import get_summary
 from app.webapp.utils.logger import log
 
 
@@ -42,7 +39,7 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, fields, plural)
 
 
-class Treatment(models.Model):
+class Treatment(AbstractSearchableModel):
     class Meta:
         verbose_name = get_name("Treatment")
         verbose_name_plural = get_name("Treatment", True)
@@ -50,7 +47,7 @@ class Treatment(models.Model):
 
     def __str__(self):
         space = "" if APP_LANG == "en" else " "
-        return f"Treatment #{self.id}{space}: {self.id}"
+        return f"Treatment #{self.id}{space}: {self.task_type}"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     status = models.CharField(
@@ -103,13 +100,13 @@ class Treatment(models.Model):
         if not self.document_set:
             return []
         # TODO display treated_objects instead of document_set ?
-        return self.document_set.get_document_names()
+        return self.document_set.document_names
 
     def get_objects(self):
         if not self.document_set:
             return []
         # TODO display treated_objects instead of document_set ?
-        return self.document_set.get_documents()
+        return self.document_set.documents
 
     def get_cancel_url(self):
         return f"{CV_API_URL}/{self.task_type}/{self.api_tracking_id}/cancel"
@@ -273,7 +270,7 @@ class Treatment(models.Model):
                     },
                     "response_info": {
                         "status_code": api_query.status_code,
-                        "text": api_query.text or "",
+                        "text": api_query.text or f"{e}",
                     },
                 }
 

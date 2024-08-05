@@ -6,6 +6,7 @@ from django.urls import reverse
 
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.edition import Edition
+from app.webapp.models.searchable_models import AbstractSearchableModel
 
 from app.webapp.models.series import Series
 from app.webapp.models.utils.constants import (
@@ -57,7 +58,7 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, fields, plural)
 
 
-class Witness(models.Model):
+class Witness(AbstractSearchableModel):
     class Meta:
         verbose_name = get_name("Witness")
         verbose_name_plural = get_name("Witness", True)

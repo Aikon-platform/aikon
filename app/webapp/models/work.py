@@ -4,6 +4,7 @@ from django.urls import reverse
 from app.webapp.models.language import Language
 from app.webapp.models.place import Place
 from app.webapp.models.person import Person
+from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.models.tag import Tag
 from app.webapp.models.utils.constants import AUTHOR_MSG, DATE_INFO
 
@@ -21,7 +22,7 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, fields, plural)
 
 
-class Work(models.Model):
+class Work(AbstractSearchableModel):
     class Meta:
         verbose_name = get_name("Work")
         verbose_name_plural = get_name("Work", True)

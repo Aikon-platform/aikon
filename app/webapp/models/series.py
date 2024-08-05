@@ -5,6 +5,7 @@ from django.utils.html import format_html
 
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.edition import Edition, get_name as edition_name
+from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.models.tag import Tag
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.utils.constants import PUBLISHED_INFO, DATE_INFO
@@ -31,7 +32,7 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, fields, plural)
 
 
-class Series(models.Model):
+class Series(AbstractSearchableModel):
     class Meta:
         verbose_name = get_name("Series")
         verbose_name_plural = get_name("Series", True)

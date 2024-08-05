@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -16,7 +18,7 @@ def get_name(fieldname, plural=False):
     fields = {
         "DocumentSet": {
             "en": "document set",
-            "fr": "panier de documents",
+            "fr": "set de documents",
         },
     }
     return get_fieldname(fieldname, fields, plural)
@@ -32,13 +34,13 @@ class DocumentSet(models.Model):
         if self.length() != 1:
             return f"{self.title} ({self.length()} documents)"
         if self.wit_ids:
-            return f"{self.get_witnesses()[0]}"
+            return f"{self.witnesses[0]}"
         if self.ser_ids:
-            return f"{self.get_series()[0]}"
+            return f"{self.series[0]}"
         if self.digit_ids:
-            return f"{self.get_digits()[0]}"
+            return f"{self.digits[0]}"
         if self.work_ids:
-            return f"{self.get_works()[0]}"
+            return f"{self.works[0]}"
         return self.title
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -54,6 +56,12 @@ class DocumentSet(models.Model):
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
+    selection = models.JSONField(
+        verbose_name="JSON selection",
+        blank=True,
+        null=True,
+    )
+
     def length(self):
         return sum(
             len(field or [])
@@ -63,55 +71,62 @@ class DocumentSet(models.Model):
     def get_treatments(self):
         return self.treatments.all()
 
-    def get_witnesses(self):
+    @property
+    def witnesses(self):
         if not self.wit_ids:
             return []
-        return list(Witness.objects.filter(id__in=self.wit_ids))
+        return list(Witness.objects.filter(id__in=self.wit_ids).select_related("place"))
 
-    def get_series(self):
+    @property
+    def series(self):
         if not self.ser_ids:
             return []
-        return list(Series.objects.filter(id__in=self.ser_ids))
-
-    def get_digits(self):
-        if not self.digit_ids:
-            return []
-        return list(Digitization.objects.filter(id__in=self.digit_ids))
-
-    def get_works(self):
-        if not self.work_ids:
-            return []
-        return list(Work.objects.filter(id__in=self.work_ids))
-
-    def get_documents(self):
-        return (
-            self.get_witnesses()
-            + self.get_series()
-            + self.get_digits()
-            + self.get_works()
+        return list(
+            Series.objects.filter(id__in=self.ser_ids).select_related("edition")
         )
 
-    def get_all_witnesses(self):
-        witnesses = self.get_witnesses()
-        for series in self.get_series():
-            witnesses += series.get_witnesses()
-        for work in self.get_works():
-            witnesses += work.get_witnesses()
-        # TODO distinct
-        return witnesses
+    @property
+    def digits(self):
+        if not self.digit_ids:
+            return []
+        return list(
+            Digitization.objects.filter(id__in=self.digit_ids).select_related("witness")
+        )
 
-    def get_document_names(self):
-        return [obj.__str__() for obj in self.get_documents()]
+    @property
+    def works(self):
+        if not self.work_ids:
+            return []
+        return list(Work.objects.filter(id__in=self.work_ids).select_related("author"))
+
+    @property
+    def documents(self):
+        return self.witnesses + self.series + self.digits + self.works
+
+    @property
+    def document_names(self):
+        return [obj.__str__() for obj in self.documents]
+
+    @lru_cache(maxsize=None)
+    def get_all_witnesses(self):
+        witness_ids = set(self.wit_ids or [])
+        for series in self.series:
+            witness_ids.update(series.wit_ids or [])
+        for work in self.works:
+            witness_ids.update(work.wit_ids or [])
+        return list(
+            Witness.objects.filter(id__in=witness_ids).select_related("relevant_field")
+        )
 
     def get_document_metadata(self):
         def obj_meta(obj):
             return {"id": obj.id, "title": obj.__str__(), "url": obj.get_absolute_url()}
 
         return {
-            "Witness": {wit.id: obj_meta(wit) for wit in self.get_witnesses()},
-            "Series": {ser.id: obj_meta(ser) for ser in self.get_series()},
-            "Digitization": {digit.id: obj_meta(digit) for digit in self.get_digits()},
-            "Work": {work.id: obj_meta(work) for work in self.get_works()},
+            "Witness": {wit.id: obj_meta(wit) for wit in self.witnesses},
+            "Series": {ser.id: obj_meta(ser) for ser in self.series},
+            "Digitization": {digit.id: obj_meta(digit) for digit in self.digits},
+            "Work": {work.id: obj_meta(work) for work in self.works},
         }
 
     def get_treatment_metadata(self):
@@ -134,13 +149,14 @@ class DocumentSet(models.Model):
         return ""
 
     def to_json(self):
+        user = self.user
         return {
             "id": self.id,
             "class": self.__class__.__name__,
             "type": get_name("DocumentSet"),
             "title": self.__str__(),
-            "user_id": self.user.id if self.user else "None",
-            "user": self.user.__str__() if self.user else "None",
+            "user_id": user.id if user else "None",
+            "user": user.__str__() if user else "None",
             "url": self.get_absolute_url(),
             "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M")
             if self.updated_at
