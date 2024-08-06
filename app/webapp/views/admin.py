@@ -1,7 +1,5 @@
-import json
-
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.views.generic import CreateView, DetailView, View, ListView, UpdateView
+from django.views.generic import CreateView, TemplateView, View, UpdateView
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 
@@ -90,17 +88,10 @@ class AbstractRecordUpdate(AbstractRecordView, UpdateView):
         return f"Change {self.model._meta.verbose_name}"
 
 
-class AbstractRecordList(AbstractView, ListView):
+class AbstractRecordList(AbstractView, TemplateView):
     template_name = "webapp/list.html"
-    paginate_by = 50
-    ordering = ["id"]
-
-    # def get_ordering(self):
-    #     ordering = self.request.GET.get('ordering', '-date_created')
-    #     return ordering
 
     def get_view_title(self):
-        # TODO find better name (bilingual)
         return (
             f"List of {self.model._meta.verbose_name_plural.lower()}"
             if APP_LANG == "en"
@@ -186,7 +177,7 @@ class RegionsView(AbstractRecordView):
         context["regions_id"] = self.kwargs["rid"]
 
         regions = self.get_record()
-        context["witness"] = regions.get_witness().to_json()
+        context["witness"] = regions.get_witness().get_json()
         context["is_validated"] = regions.is_validated
         context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
         context["img_prefix"] = regions.get_ref().split("_anno")[0]

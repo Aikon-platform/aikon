@@ -57,11 +57,11 @@ class RecordFilter(django_filters.FilterSet):
 class WitnessFilter(RecordFilter):
     # TODO make autocompletion work
     edition = django_filters.ModelChoiceFilter(
-        queryset=Edition.objects.all(),
+        queryset=Edition.objects.none(),
         widget=autocomplete.ModelSelect2(url="webapp:edition-autocomplete"),
     )
     contents__lang = django_filters.ModelMultipleChoiceFilter(
-        queryset=Language.objects.all(),
+        queryset=Language.objects.none(),
         null_value=None,
         null_label="----------",
         widget=autocomplete.ModelSelect2Multiple(url="webapp:language-autocomplete"),
@@ -120,7 +120,7 @@ class TreatmentFilter(RecordFilter):
 
 class WorkFilter(RecordFilter):
     contents__lang = django_filters.ModelChoiceFilter(
-        queryset=Language.objects.all(),
+        queryset=Language.objects.none(),
         widget=autocomplete.ModelSelect2Multiple(url="webapp:language-autocomplete"),
     )
     contents__date_min = django_filters.RangeFilter(
@@ -145,7 +145,7 @@ class WorkFilter(RecordFilter):
 
 class SeriesFilter(RecordFilter):
     edition = django_filters.ModelChoiceFilter(
-        queryset=Edition.objects.all(),
+        queryset=Edition.objects.none(),
         widget=autocomplete.ModelSelect2(url="webapp:edition-autocomplete"),
     )
     contents__date_min = django_filters.RangeFilter(
@@ -173,7 +173,7 @@ class SeriesFilter(RecordFilter):
 
 class DocumentSetFilter(RecordFilter):
     wit_ids = django_filters.ModelMultipleChoiceFilter(
-        queryset=Witness.objects.all(),
+        queryset=Witness.objects.none(),
         widget=autocomplete.ModelSelect2Multiple(url="witness-autocomplete"),
         method="filter_by_witness",
         null_value=None,
@@ -181,7 +181,7 @@ class DocumentSetFilter(RecordFilter):
         label=witness_name("Witness"),
     )
     ser_ids = django_filters.ModelMultipleChoiceFilter(
-        queryset=Series.objects.all(),
+        queryset=Series.objects.none(),
         widget=autocomplete.ModelSelect2Multiple(url="series-autocomplete"),
         method="filter_by_series",
         null_value=None,
@@ -189,7 +189,7 @@ class DocumentSetFilter(RecordFilter):
         label=series_name("Series"),
     )
     work_ids = django_filters.ModelMultipleChoiceFilter(
-        queryset=Work.objects.all(),
+        queryset=Work.objects.none(),
         widget=autocomplete.ModelSelect2Multiple(url="work-autocomplete"),
         method="filter_by_work",
         null_value=None,
