@@ -102,7 +102,7 @@ GEONAMES_USER = ENV.str("GEONAMES_USER", default="")
 PROD_URL = f"https://{ENV.str('PROD_URL', default='')}"
 
 # Override the default values in production mode
-if not DEBUG:
+if DEBUG:
     APP_URL = f"{PROD_URL}"
     CANTALOUPE_APP_URL = f"{PROD_URL}"
     SAS_APP_URL = f"{PROD_URL}/sas"
