@@ -36,10 +36,12 @@
                                 <select id={field.name} name={field.name} bind:value={formData[field.name]} class="is-wide"
                                         {...isMulti(field) ? { size: 3, multiple: true } : {}}>
                                     {#if !isMulti(field)}
-                                        <option value="" disabled selected class="faded">Select ...</option>
+                                        <option value="" disabled selected class="faded">
+                                            {appLang === 'en' ? 'Select' : 'Sélectionner'} ...
+                                        </option>
                                     {/if}
                                     {#each field.choices as choice}
-                                        <option value={choice.value}>{choice.label}</option>
+                                        <option value={choice.id}>{choice.label}</option>
                                     {/each}
                                 </select>
                             </div>

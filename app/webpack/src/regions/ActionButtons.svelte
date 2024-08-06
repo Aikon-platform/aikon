@@ -24,7 +24,7 @@
 
     async function deleteSelectedRegions() {
         const confirmed = await showMessage(
-            appLang === "en" ? "Are you sure you want to delete regions?" : "Voulez-vous vraiment supprimer les régions?",
+            appLang === "en" ? "Are you sure you want to delete these regions?" : "Voulez-vous vraiment supprimer ces régions ?",
             appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
             true
         );

@@ -19,7 +19,6 @@ class Place(models.Model):
         app_label = "webapp"
 
     def __str__(self):
-
         return f"{self.name}"  # , {self.country}"
 
     name = models.CharField(verbose_name=get_name("name"), max_length=200, unique=True)
