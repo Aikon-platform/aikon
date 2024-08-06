@@ -629,22 +629,6 @@ def cancel_treatment(request, treatment_id):
         return JsonResponse({"error": "Treatment not found"}, e)
 
 
-@csrf_exempt
-def relaunch_treatment(request, treatment_id):
-    """
-    Relaunch same treatment
-    """
-    if not treatment_id:
-        return JsonResponse({"error": "Invalid treatment ID"}, status=400)
-
-    try:
-        treatment = Treatment.objects.get(id=treatment_id)
-        return JsonResponse({"success": True})
-
-    except Exception as e:
-        return JsonResponse({"error": "Treatment not found"}, e)
-
-
 def set_title(request, set_id):
     try:
         set = DocumentSet.objects.get(id=set_id)
