@@ -68,7 +68,7 @@
     </div>
 {:then _}
     {#if $pageRecords.length !== 0}
-        <Pagination store={recordsStore} nbOfItems={$resultNumber}/>
+        <Pagination store={recordsStore} nbOfItems={$resultNumber} pageLength={$pageRecords.length}/>
         <div>
             {#each $pageRecords as item (item.id)}
                 {#if item.class.includes('Treatment')}
@@ -82,7 +82,7 @@
                 <p>{appLang === 'en' ? 'No records found' : 'Aucun enregistrement trouvé'}</p>
             {/each}
         </div>
-        <Pagination store={recordsStore} nbOfItems={$resultNumber}/>
+        <Pagination store={recordsStore} nbOfItems={$resultNumber} pageLength={$pageRecords.length}/>
     {/if}
 {:catch error}
     <div class="faded is-center">
