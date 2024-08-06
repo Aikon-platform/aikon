@@ -1,7 +1,7 @@
 <script>
     import Item from "./Item.svelte";
     import {appLang} from "../constants.js";
-    import {cancelTreatment} from "../utils.js";
+    import {cancelTreatment, deleteTreatment} from "../utils.js";
     export let item;
 </script>
 
@@ -33,6 +33,9 @@
         {:else}
             <span class="tag is-info p-1 mb-1">{item.status}</span>
         {/if}
+        <button class="delete is-medium"
+        title="{appLang === 'en' ? 'Delete treatment' : 'Supprimer le traitement'}"
+        on:click={() => deleteTreatment(item.id)}></button>
     </div>
 
     <div slot="body" class="pt-2 grid">

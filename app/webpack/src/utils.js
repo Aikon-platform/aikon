@@ -151,3 +151,19 @@ export async function cancelTreatment(treatmentId) {
                 "Erreur lors de la connexion à l'API");
         }
 }}
+
+export async function deleteTreatment(treatmentId) {
+    if (confirm(APP_LANG === "en" ? "Are you sure you want to delete treatment?" :
+            "Êtes-vous sûr de vouloir supprimer le traitement ?")) {
+        const response = await fetch(`/${appName}/delete-treatment/${treatmentId}`, {
+            method: 'GET'
+        });
+        if (response.ok) {
+            window.alert(APP_LANG === "en" ? "Successfully deleted treatment" :
+            "Le traitement a été supprimé");
+        } else {
+            window.alert(APP_LANG === "en" ? "Treatment could not be deleted" :
+            "Le traitement n'a pas pu être supprimé");
+        }
+    }
+}
