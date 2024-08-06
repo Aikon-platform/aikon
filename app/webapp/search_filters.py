@@ -4,9 +4,11 @@ from django.forms import DateTimeField, DateField
 from django.forms.models import ModelChoiceIteratorValue
 from django.db.models import QuerySet
 
+from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.edition import Edition, get_name as edition_name
 from app.webapp.models.language import Language
+from app.webapp.models.person import Person
 from app.webapp.models.series import Series, get_name as series_name
 from app.webapp.models.treatment import Treatment, get_name as treatment_name
 from app.webapp.models.witness import Witness, get_name as witness_name
@@ -64,13 +66,21 @@ class RecordFilter(django_filters.FilterSet):
 class WitnessFilter(RecordFilter):
     # TODO make autocompletion work
     edition = django_filters.ModelChoiceFilter(
-        queryset=Edition.objects.none(),
+        queryset=Edition.objects.all(),
         widget=autocomplete.ModelSelect2(url="webapp:edition-autocomplete"),
+    )
+    contents__work = django_filters.ModelChoiceFilter(
+        queryset=Work.objects.all(),
+    )
+    contents__work__author = django_filters.ModelChoiceFilter(
+        queryset=Person.objects.all(),
+    )
+    place = django_filters.ModelChoiceFilter(
+        queryset=ConservationPlace.objects.all(),
     )
     contents__lang = django_filters.ModelMultipleChoiceFilter(
         queryset=Language.objects.all(),
         null_value=None,
-        # null_label="----------",
         widget=autocomplete.ModelSelect2Multiple(url="webapp:language-autocomplete"),
     )
     contents__date_min = django_filters.RangeFilter(
@@ -123,7 +133,7 @@ class TreatmentFilter(RecordFilter):
 
 class WorkFilter(RecordFilter):
     contents__lang = django_filters.ModelChoiceFilter(
-        queryset=Language.objects.none(),
+        queryset=Language.objects.all(),
         widget=autocomplete.ModelSelect2Multiple(url="webapp:language-autocomplete"),
     )
     contents__date_min = django_filters.RangeFilter(
@@ -148,7 +158,7 @@ class WorkFilter(RecordFilter):
 
 class SeriesFilter(RecordFilter):
     edition = django_filters.ModelChoiceFilter(
-        queryset=Edition.objects.none(),
+        queryset=Edition.objects.all(),
         widget=autocomplete.ModelSelect2(url="webapp:edition-autocomplete"),
     )
     contents__date_min = django_filters.RangeFilter(
@@ -176,7 +186,7 @@ class SeriesFilter(RecordFilter):
 
 class DocumentSetFilter(RecordFilter):
     wit_ids = django_filters.ModelMultipleChoiceFilter(
-        queryset=Witness.objects.none(),
+        queryset=Witness.objects.all(),
         widget=autocomplete.ModelSelect2Multiple(url="witness-autocomplete"),
         method="filter_by_witness",
         null_value=None,
@@ -184,7 +194,7 @@ class DocumentSetFilter(RecordFilter):
         label=witness_name("Witness"),
     )
     ser_ids = django_filters.ModelMultipleChoiceFilter(
-        queryset=Series.objects.none(),
+        queryset=Series.objects.all(),
         widget=autocomplete.ModelSelect2Multiple(url="series-autocomplete"),
         method="filter_by_series",
         null_value=None,
@@ -192,7 +202,7 @@ class DocumentSetFilter(RecordFilter):
         label=series_name("Series"),
     )
     work_ids = django_filters.ModelMultipleChoiceFilter(
-        queryset=Work.objects.none(),
+        queryset=Work.objects.all(),
         widget=autocomplete.ModelSelect2Multiple(url="work-autocomplete"),
         method="filter_by_work",
         null_value=None,
