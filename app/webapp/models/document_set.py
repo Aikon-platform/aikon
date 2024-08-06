@@ -41,7 +41,7 @@ class DocumentSet(AbstractSearchableModel):
         if self.length() != 1:
             return f"{self.title} ({self.length()} documents)"
         if self.wit_ids:
-            return str(self.get_all_witnesses[0])
+            return str(Witness.objects.filter(id__in=self.ser_ids).first())
         if self.ser_ids:
             return str(Series.objects.filter(id__in=self.ser_ids).first())
         if self.digit_ids:
