@@ -73,16 +73,21 @@ def search_document_set(request):
         request.GET,
         queryset=(
             DocumentSet.objects.all()
+            .annotate(
+                set_len=ArrayLength("wit_ids")
+                + ArrayLength("ser_ids")
+                + ArrayLength("work_ids")
+            )
+            .filter(set_len__gt=1)
             if user.is_superuser
-            else DocumentSet.objects.filter(Q(is_public=True) | Q(user=user))
+            else DocumentSet.object.sall()
+            .annotate(
+                set_len=ArrayLength("wit_ids")
+                + ArrayLength("ser_ids")
+                + ArrayLength("work_ids")
+            )
+            .filter(Q(is_public=True) | Q(user=user) | Q(set_len__gt=1))
         ).order_by("-id"),
     )
-    doc_sets = doc_sets.annotate(
-        set_len=ArrayLength("wit_ids")
-        + ArrayLength("ser_ids")
-        + ArrayLength("work_ids")
-    ).filter(set_len__gt=1)
-    doc_sets = doc_sets.order_by("-id")
 
-    doc_sets = DocumentSetFilter(request.GET, queryset=doc_sets)
     return JsonResponse(paginated_records(request, doc_sets.qs))
