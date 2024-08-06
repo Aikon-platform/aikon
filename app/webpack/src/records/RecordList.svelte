@@ -30,6 +30,8 @@
 
     export let searchFields = [];
     // TODO make result count appear + filter name
+
+    const addUrl = modelTitle.includes('Treatment') ? `/${appName}-admin/${modelName}/add/` : `/${appName}/${webappName}/${modelName}/add/`
 </script>
 
 <!--<Loading visible={$loading}/>-->
@@ -41,25 +43,13 @@
 <RecordSearch {recordsStore} {searchFields}/>
 
 {#if !modelTitle.includes('set')}
-<span class="is-right">
-    {#if modelTitle.includes('Treatment')}
-    <a href="/{appName}/{modelName}/add/" class="button is-rounded is-primary mb-4"
-       title='{appLang === "en" ? "Add" : "Ajouter"}'>
-        <i class="fa-solid fa-plus"></i>
-        <span>
-        {appLang === 'en' ? "Add" : "Ajouter"}
-        </span>
-    </a>
-    {:else}
-    <a href="/{appName}-admin/{webappName}/{modelName}/add/" class="button is-rounded is-primary mb-4"
-       title='{appLang === "en" ? "Add" : "Ajouter"}'>
-        <i class="fa-solid fa-plus"></i>
-        <span>
-        {appLang === 'en' ? "Add" : "Ajouter"}
-        </span>
-    </a>
-    {/if}
-</span>
+    <span class="is-right">
+        <a href="{addUrl}" class="button is-rounded is-primary mb-4"
+           title='{appLang === "en" ? "Add" : "Ajouter"}'>
+            <i class="fa-solid fa-plus"></i>
+            <span>{appLang === 'en' ? "Add" : "Ajouter"}</span>
+        </a>
+    </span>
 {/if}
 
 {#await resultPage}
@@ -72,7 +62,7 @@
         <div>
             {#each $pageRecords as item (item.id)}
                 {#if item.class.includes('Treatment')}
-                    <Treatment {item}/>
+                    <Treatment {item} {recordsStore}/>
                 {:else if item.class.includes('Set')}
                     <Set {item}/>
                 {:else}
@@ -94,31 +84,31 @@
 <SelectionModal {selectionLength}>
     {#each selectedRecords as [type, selectedItems]}
         {#if Object.values(selectedItems).length > 0}
-        <h3>{type}</h3>
-        <table class="table pl-2 is-fullwidth">
-            <tbody>
-            {#each Object.entries(selectedItems) as [id, meta]}
-                <tr>
-                    <th class="is-narrow is-3">
-                        <span class="tag px-2 py-1 mb-1 is-dark is-rounded">#{id}</span>
-                    </th>
-                    <td>
-                        <a href="{meta.url}" target="_blank">{meta.title}</a>
-                    </td>
-                    <td class="is-narrow">
-                        <button class="delete" aria-label="close"
-                                on:click={() => selectionStore.remove(id, type)}/>
-                    </td>
-                </tr>
-            <!--{:else}-->
-            <!--    <tr>-->
-            <!--        <td>-->
-            <!--            {appLang === 'en' ? 'No documents in selection' : 'Aucun document sélectionné'}-->
-            <!--        </td>-->
-            <!--    </tr>-->
-            {/each}
-            </tbody>
-        </table>
+            <h3>{type}</h3>
+            <table class="table pl-2 is-fullwidth">
+                <tbody>
+                {#each Object.entries(selectedItems) as [id, meta]}
+                    <tr>
+                        <th class="is-narrow is-3">
+                            <span class="tag px-2 py-1 mb-1 is-dark is-rounded">#{id}</span>
+                        </th>
+                        <td>
+                            <a href="{meta.url}" target="_blank">{meta.title}</a>
+                        </td>
+                        <td class="is-narrow">
+                            <button class="delete" aria-label="close"
+                                    on:click={() => selectionStore.remove(id, type)}/>
+                        </td>
+                    </tr>
+                    <!--{:else}-->
+                    <!--    <tr>-->
+                    <!--        <td>-->
+                    <!--            {appLang === 'en' ? 'No documents in selection' : 'Aucun document sélectionné'}-->
+                    <!--        </td>-->
+                    <!--    </tr>-->
+                {/each}
+                </tbody>
+            </table>
         {/if}
     {:else}
         <tr>

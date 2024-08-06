@@ -132,38 +132,18 @@ export function downloadBlob(blob, filename) {
     document.body.removeChild(a);
 }
 
-export async function cancelTreatment(treatmentId) {
-    if (confirm(APP_LANG === "en" ? "Are you sure you want to cancel treatment?" :
-            "Êtes-vous sûr de vouloir annuler le traitement en cours ?")) {
-        try {
-            const response = await fetch(`/${appName}/treatment/${treatmentId}/cancel`, {
-                method: 'GET'
-            });
-            if (response.ok) {
-                window.alert(APP_LANG === "en" ? "Successfully cancelled treatment" :
-                "Le traitement a été annulé");
-            } else {
-                window.alert(APP_LANG === "en" ? "Treatment could not be cancelled" :
-                "Le traitement n'a pas pu être annulé");
-            }
-        } catch (error) {
-            window.alert(APP_LANG === "en" ? "Error connecting to API" :
-                "Erreur lors de la connexion à l'API");
-        }
-}}
 
-export async function deleteTreatment(treatmentId) {
-    if (confirm(APP_LANG === "en" ? "Are you sure you want to delete treatment?" :
-            "Êtes-vous sûr de vouloir supprimer le traitement ?")) {
-        const response = await fetch(`/${appName}/treatment/${treatmentId}/delete`, {
-            method: 'GET'
-        });
-        if (response.ok) {
-            window.alert(APP_LANG === "en" ? "Successfully deleted treatment" :
-            "Le traitement a été supprimé");
-        } else {
-            window.alert(APP_LANG === "en" ? "Treatment could not be deleted" :
-            "Le traitement n'a pas pu être supprimé");
-        }
+export async function getSuccess(url) {
+    try {
+        const response = await fetch(url);
+        return response.ok;
+    } catch (error) {
+        console.error('Error:', error);
+        return false;
     }
+}
+
+
+export async function deleteRecord(recordId, recordType){
+    return getSuccess(`/${appName}/${recordType.toLowerCase()}/${recordId}/delete`);
 }
