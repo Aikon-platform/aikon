@@ -47,7 +47,7 @@ class Treatment(AbstractSearchableModel):
         verbose_name_plural = get_name("Treatment", True)
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
         space = "" if APP_LANG == "en" else " "
         return f"Treatment #{self.id}{space}: {self.task_type}"
 

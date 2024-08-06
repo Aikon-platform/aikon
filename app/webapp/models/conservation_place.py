@@ -25,7 +25,9 @@ class ConservationPlace(models.Model):
         verbose_name_plural = get_name("ConservationPlace", True)
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
+        if light:
+            return self.name
         if self.city:
             return f"{self.city} | {self.name}"
         return self.name

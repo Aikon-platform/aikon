@@ -23,7 +23,7 @@ class Role(models.Model):
         verbose_name_plural = get_name("Role", True)
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
         name = self.person.name if self.person else get_name("unknown")
         role = dict(ROLES).get(self.role) if self.role else get_name("no_role")
         return f"{name} ({role})"

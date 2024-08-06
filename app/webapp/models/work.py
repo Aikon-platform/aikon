@@ -28,7 +28,9 @@ class Work(AbstractSearchableModel):
         verbose_name_plural = get_name("Work", True)
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
+        if light:
+            return self.title
         author = f"{self.author.name if self.author else AUTHOR_MSG}"
         return f"{author} | {self.title}"
 

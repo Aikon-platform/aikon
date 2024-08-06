@@ -17,7 +17,7 @@ class Language(models.Model):
         verbose_name_plural = get_name("Language", True)
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
         return self.lang
 
     lang = models.CharField(verbose_name=get_name("lang"), max_length=200, unique=True)

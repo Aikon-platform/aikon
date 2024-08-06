@@ -66,10 +66,13 @@ class Witness(AbstractSearchableModel):
         ordering = ["-place"]
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
         if self.volume_title:
             vol = f", vol. {self.volume_nb}" if self.volume_nb else f" | {self.id_nb}"
             return format_html(f"{self.volume_title}{vol}")
+        if light:
+            return self.id_nb
+
         return format_html(
             f"{self.place.name if self.place else CONS_PLA_MSG} | {self.id_nb}"
         )

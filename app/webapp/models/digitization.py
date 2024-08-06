@@ -91,7 +91,9 @@ class Digitization(models.Model):
         verbose_name_plural = get_name("Digitization", True)
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
+        if light:
+            return f"{self.get_digit_type()} #{self.id}"
         return f"{self.get_digit_type()} #{self.id}: {self.witness.__str__()}"
 
     witness = models.ForeignKey(

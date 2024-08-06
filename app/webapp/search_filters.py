@@ -25,7 +25,7 @@ QS_MODELS = {
     "contents__work": Work,
     "contents__tags": Tag,
     "contents__work__author": Person,
-    "place": Place,
+    "place": ConservationPlace,
     "contents__lang": Language,
     "work": Work,
     "wit_ids": Witness,
@@ -51,7 +51,7 @@ class RecordFilter(FilterSet):
 
         data = list(queryset.values(*("id",)))
         for item, obj in zip(data, list(queryset)):
-            item["label"] = obj.__str__()
+            item["label"] = obj.__str__(light=True)
 
         return data
 

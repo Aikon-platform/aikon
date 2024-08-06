@@ -37,7 +37,7 @@ class DocumentSet(AbstractSearchableModel):
         verbose_name_plural = get_name("DocumentSets")
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
         if self.length() != 1:
             return f"{self.title} ({self.length()} documents)"
         if self.wit_ids:
