@@ -25,6 +25,8 @@ QS_MODELS = {
     "contents__work": Work,
     "contents__tags": Tag,
     "contents__work__author": Person,
+    "edition__place": Place,
+    "edition__publisher": Person,
     "place": ConservationPlace,
     "contents__lang": Language,
     "work": Work,
