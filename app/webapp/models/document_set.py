@@ -114,7 +114,6 @@ class DocumentSet(AbstractSearchableModel):
     def document_names(self):
         return [obj.__str__() for obj in self.documents]
 
-    @cached_property
     def get_all_witnesses(self):
         return list(
             Witness.objects.filter(id__in=self.get_all_witness_ids)
@@ -122,7 +121,6 @@ class DocumentSet(AbstractSearchableModel):
             .prefetch_related("digitizations", "contents__work")
         )
 
-    @cached_property
     def get_all_witness_ids(self):
         witness_ids = set(self.wit_ids or [])
 
