@@ -13,6 +13,7 @@
 
     const zeros = (n, l) => n.toString().padStart(l, '0');
     function toImgName(canvasNb){
+        // NOTE here sometimes the number of trailing zeros generated is not corresponding to the number of pages
         return `${imgPrefix}_${zeros(canvasNb, String(nbOfPages).length + 1)}`;
     }
 </script>

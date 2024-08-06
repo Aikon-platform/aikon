@@ -190,6 +190,14 @@ class Treatment(AbstractSearchableModel):
             if not self.requested_by and user:
                 self.requested_by = user
 
+            if not self.document_set:
+                log(
+                    f"[treatment_save] No document set for treatment {self.id}, aborting."
+                )
+                self.status = "ERROR"
+                super().save(*args, **kwargs)
+                return
+
             self.treated_objects = {
                 "witnesses": {
                     "total": len(self.document_set.wit_ids or []),
@@ -209,9 +217,7 @@ class Treatment(AbstractSearchableModel):
                 },
             }
 
-            super().save(*args, **kwargs)
-        else:
-            super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def start_task(self, witnesses):
         """

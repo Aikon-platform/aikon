@@ -2,10 +2,13 @@ from dal import autocomplete
 import django_filters
 from django.forms import DateTimeField, DateField
 from django.forms.models import ModelChoiceIteratorValue
+from django.db.models import QuerySet
 
+from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.edition import Edition, get_name as edition_name
 from app.webapp.models.language import Language
+from app.webapp.models.person import Person
 from app.webapp.models.series import Series, get_name as series_name
 from app.webapp.models.treatment import Treatment, get_name as treatment_name
 from app.webapp.models.witness import Witness, get_name as witness_name
@@ -39,10 +42,16 @@ class RecordFilter(django_filters.FilterSet):
             }
 
             if hasattr(field, "choices"):
-                field_info["choices"] = [
-                    {"value": serialize_choice_value(choice[0]), "label": choice[1]}
-                    for choice in field.choices
-                ]
+                if isinstance(field.choices, QuerySet):
+                    field_info["choices_count"] = field.choices.count()
+                else:
+                    field_info["choices"] = [
+                        {
+                            "value": serialize_choice_value(choice[0]),
+                            "label": str(choice[1]),
+                        }
+                        for choice in field.choices
+                    ]
 
             if isinstance(field, (DateTimeField, DateField)):
                 field_info["initial"] = (
@@ -60,10 +69,18 @@ class WitnessFilter(RecordFilter):
         queryset=Edition.objects.all(),
         widget=autocomplete.ModelSelect2(url="webapp:edition-autocomplete"),
     )
+    contents__work = django_filters.ModelChoiceFilter(
+        queryset=Work.objects.all(),
+    )
+    contents__work__author = django_filters.ModelChoiceFilter(
+        queryset=Person.objects.all(),
+    )
+    place = django_filters.ModelChoiceFilter(
+        queryset=ConservationPlace.objects.all(),
+    )
     contents__lang = django_filters.ModelMultipleChoiceFilter(
         queryset=Language.objects.all(),
         null_value=None,
-        null_label="----------",
         widget=autocomplete.ModelSelect2Multiple(url="webapp:language-autocomplete"),
     )
     contents__date_min = django_filters.RangeFilter(
@@ -80,11 +97,7 @@ class WitnessFilter(RecordFilter):
             "id_nb": ["icontains"],
             "place": ["exact"],
             "edition": ["exact"],
-            # "edition__name": ["exact"],
-            # "edition__place": ["exact"],
-            # "edition__publisher": ["exact"],
             "contents__work": ["exact"],
-            # "contents__work__title": ["icontains"],
             "contents__work__author": ["exact"],
             "contents__lang": ["exact"],
             "contents__tags": ["exact"],

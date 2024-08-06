@@ -14,7 +14,9 @@ DEBUG = ENV.bool("DEBUG", default=True)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.config.settings")
 
-redis_prefix = "redis://" if DEBUG else f"redis://:{ENV.str('REDIS_PASSWORD', '')}@"
+REDIS_PASSWORD = ENV.str("REDIS_PASSWORD", default="")
+
+redis_prefix = f"redis://:{REDIS_PASSWORD}@" if REDIS_PASSWORD else "redis://"
 
 ADDITIONAL_MODULES = ENV.list("ADDITIONAL_MODULES", default=[])
 
