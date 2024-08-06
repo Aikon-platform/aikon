@@ -1,19 +1,12 @@
 from dal import autocomplete
-from django.db.models.fields import CharField
 from django.forms import DateTimeField, DateField
-from django.forms.models import (
-    ModelChoiceIteratorValue,
-    ModelChoiceField,
-    ModelMultipleChoiceField,
-)
-from django.db.models import QuerySet, F
-from django.db.models.functions import Concat
 from django_filters import FilterSet
 from django_filters.filters import (
     ModelChoiceFilter,
     ModelMultipleChoiceFilter,
     RangeFilter,
 )
+from django.forms.models import ModelChoiceIteratorValue
 
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.document_set import DocumentSet

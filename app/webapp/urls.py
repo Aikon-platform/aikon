@@ -166,14 +166,14 @@ urlpatterns = [
         name="api-progress",
     ),
     path(
-        f"{APP_NAME}/cancel-treatment/<str:treatment_id>",
+        f"{APP_NAME}/treatment/<str:treatment_id>/cancel",
         cancel_treatment,
         name="cancel-treatment",
     ),
     path(
-        f"{APP_NAME}/relaunch-treatment/<str:treatment_id>",
-        relaunch_treatment,
-        name="relaunch-treatment",
+        f"{APP_NAME}/treatment/<str:treatment_id>/delete",
+        delete_treatment,
+        name="delete-treatment",
     ),
 ]
 

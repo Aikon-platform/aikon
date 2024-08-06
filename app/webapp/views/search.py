@@ -2,6 +2,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.core.paginator import Paginator
+from django.db import models
 
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.series import Series
@@ -61,6 +62,10 @@ def search_series(request):
     return JsonResponse(paginated_records(request, series_filter.qs))
 
 
+class ArrayLength(models.Func):
+    function = "CARDINALITY"
+
+
 @require_GET
 def search_document_set(request):
     user = request.user
@@ -68,8 +73,21 @@ def search_document_set(request):
         request.GET,
         queryset=(
             DocumentSet.objects.all()
+            .annotate(
+                set_len=ArrayLength("wit_ids")
+                + ArrayLength("ser_ids")
+                + ArrayLength("work_ids")
+            )
+            .filter(set_len__gt=1)
             if user.is_superuser
-            else DocumentSet.objects.filter(Q(is_public=True) | Q(user=user))
+            else DocumentSet.object.sall()
+            .annotate(
+                set_len=ArrayLength("wit_ids")
+                + ArrayLength("ser_ids")
+                + ArrayLength("work_ids")
+            )
+            .filter(Q(is_public=True) | Q(user=user) | Q(set_len__gt=1))
         ).order_by("-id"),
     )
+
     return JsonResponse(paginated_records(request, doc_sets.qs))

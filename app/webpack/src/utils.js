@@ -136,7 +136,7 @@ export async function cancelTreatment(treatmentId) {
     if (confirm(APP_LANG === "en" ? "Are you sure you want to cancel treatment?" :
             "Êtes-vous sûr de vouloir annuler le traitement en cours ?")) {
         try {
-            const response = await fetch(`/${appName}/cancel-treatment/${treatmentId}`, {
+            const response = await fetch(`/${appName}/treatment/${treatmentId}/cancel`, {
                 method: 'GET'
             });
             if (response.ok) {
@@ -151,3 +151,19 @@ export async function cancelTreatment(treatmentId) {
                 "Erreur lors de la connexion à l'API");
         }
 }}
+
+export async function deleteTreatment(treatmentId) {
+    if (confirm(APP_LANG === "en" ? "Are you sure you want to delete treatment?" :
+            "Êtes-vous sûr de vouloir supprimer le traitement ?")) {
+        const response = await fetch(`/${appName}/treatment/${treatmentId}/delete`, {
+            method: 'GET'
+        });
+        if (response.ok) {
+            window.alert(APP_LANG === "en" ? "Successfully deleted treatment" :
+            "Le traitement a été supprimé");
+        } else {
+            window.alert(APP_LANG === "en" ? "Treatment could not be deleted" :
+            "Le traitement n'a pas pu être supprimé");
+        }
+    }
+}
