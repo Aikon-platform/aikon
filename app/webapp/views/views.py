@@ -28,6 +28,7 @@ from app.config.settings import (
     SAS_USERNAME,
     SAS_PASSWORD,
     CV_API_URL,
+    LOGIN_URL,
 )
 from app.webapp.models.edition import Edition
 from app.webapp.models.language import Language
@@ -323,7 +324,7 @@ def witness_sas_annotations(request, regions_id):
     return JsonResponse(c_annos, safe=False)
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+@login_required(login_url=LOGIN_URL)
 def show_regions(request, regions_ref):
     # NOTE soon to be not used
     passed, regions = check_ref(regions_ref, "Regions")
@@ -357,7 +358,7 @@ def show_regions(request, regions_ref):
     )
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+@login_required(login_url=LOGIN_URL)
 def show_all_regions(request, regions_ref):
     # NOTE soon to be not used
     passed, regions = check_ref(regions_ref, "Regions")
@@ -396,7 +397,7 @@ def show_all_regions(request, regions_ref):
     )
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+@login_required(login_url=LOGIN_URL)
 def export_all_regions(request, regions_ref):
     # NOTE soon to be not used
     passed, regions = check_ref(regions_ref, "Regions")
@@ -421,7 +422,7 @@ def export_all_regions(request, regions_ref):
     return zip_img(urls_list)
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+@login_required(login_url=LOGIN_URL)
 def export_selected_regions(request):
     urls_list = json.loads(request.POST.get("listeURL"))
     return zip_img(urls_list)
@@ -507,7 +508,7 @@ def legacy_manifest(request, old_id):
         return JsonResponse(json.loads(manifest.read()))
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+@login_required(login_url=LOGIN_URL)
 def advanced_search(request):
     # NOTE soon to be not used
     witness_list = Witness.objects.order_by("id")

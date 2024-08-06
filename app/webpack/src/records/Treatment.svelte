@@ -1,22 +1,75 @@
 <script>
     import Item from "./Item.svelte";
-    import {appLang} from "../constants.js";
-    import {cancelTreatment, deleteTreatment} from "../utils.js";
+    import {appLang, appName, regionsType} from "../constants.js";
+    import {deleteRecord, getSuccess, showMessage} from "../utils.js";
+    import {selectionStore} from "../selection/selectionStore.js";
     export let item;
+    export let recordsStore;
+
+    $: finished = item.is_finished;
+    $: task_status = item.status;
+
+    async function deleteTreatment() {
+        // todo generalize and put in Item.svelte
+        const confirmed = await showMessage(
+            appLang === "en" ? "Are you sure you want to delete this treatment?" : "Voulez-vous vraiment supprimer ce traitement ?",
+            appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
+            true
+        );
+
+        if (!confirmed) {
+            return; // User cancelled the deletion
+        }
+
+        const success = await deleteRecord(item.id, item.class);
+        if (success) {
+            recordsStore.remove(item.id);
+            // NOTE selection remove useful for other records
+            // selectionStore.remove(item.id, regionsType);
+        } else {
+            await showMessage(
+                appLang === "en" ? "Failed to delete treatment" : "Erreur lors de la suppression du traitement",
+                appLang === "en" ? "Error" : "Erreur"
+            );
+        }
+    }
+
+    async function cancelTreatment() {
+        const confirmed = await showMessage(
+            appLang === "en" ? "Are you sure you want to cancel treatment?" : "Êtes-vous sûr de vouloir annuler le traitement en cours ?",
+            appLang === "en" ? "Confirm cancel" : "Confirmer l'annulation",
+            true
+        );
+
+        if (!confirmed) {
+            return; // User cancelled
+        }
+
+        const success = await getSuccess(`/${appName}/treatment/${item.id}/cancel`);
+        if (success) {
+            finished = true;
+            task_status = "CANCELLED";
+        } else {
+            await showMessage(
+                appLang === "en" ? "Failed to cancel treatment" : "Erreur lors de l'annulation du traitement",
+                appLang === "en" ? "Error" : "Erreur"
+            )
+        }
+    }
 </script>
 
 <Item {item}>
     <div slot="buttons">
-        {#if !item.is_finished && item.api_tracking_id}
+        {#if !finished && item.api_tracking_id}
             <button class="button is-small is-rounded is-danger is-outlined px-2 py-1 mr-2"
                     title="{appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}"
-                    on:click={() => cancelTreatment(item.id)}>
+                    on:click={cancelTreatment}>
                 <i class="fa-solid fa-ban"></i>
                 <span>
                     {appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}
                 </span>
             </button>
-        {:else if item.is_finished && item.status === "ERROR"}
+        {:else if finished && task_status === "ERROR"}
             <a href="add/{item.query_parameters}" class="button is-small is-rounded is-primary is-outlined px-2 py-1 mr-2"
                title='{appLang === "en" ? "Relaunch same treatment" : "Relancer le même traitement"}'>
                 <i class="fa-solid fa-arrow-rotate-left"></i>
@@ -26,16 +79,15 @@
             </a>
         {/if}
 
-        {#if item.status === "SUCCESS"}
-            <span class="tag is-success p-1 mb-1">{item.status}</span>
-        {:else if item.status === ("ERROR" || "CANCELLED")}
-            <span class="tag is-danger p-1 mb-1">{item.status}</span>
+        {#if task_status === "SUCCESS"}
+            <span class="tag is-success p-1 mb-1">{task_status}</span>
+        {:else if task_status === ("ERROR" || "CANCELLED")}
+            <span class="tag is-danger p-1 mb-1">{task_status}</span>
         {:else}
-            <span class="tag is-info p-1 mb-1">{item.status}</span>
+            <span class="tag is-info p-1 mb-1">{task_status}</span>
         {/if}
-        <button class="delete is-medium"
-        title="{appLang === 'en' ? 'Delete treatment' : 'Supprimer le traitement'}"
-        on:click={() => deleteTreatment(item.id)}></button>
+        <button class="delete is-medium" title="{appLang === 'en' ? 'Delete treatment' : 'Supprimer le traitement'}"
+                on:click={deleteTreatment}/>
     </div>
 
     <div slot="body" class="pt-2 grid">
