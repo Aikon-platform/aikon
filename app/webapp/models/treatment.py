@@ -47,7 +47,7 @@ class Treatment(AbstractSearchableModel):
         verbose_name_plural = get_name("Treatment", True)
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
         space = "" if APP_LANG == "en" else " "
         return f"Treatment #{self.id}{space}: {self.task_type}"
 
@@ -114,7 +114,7 @@ class Treatment(AbstractSearchableModel):
         if not self.document_set:
             return []
         # TODO display treated_objects instead of document_set ?
-        return self.document_set.get_all_witnesses()
+        return self.document_set.all_witnesses()
 
     def get_cancel_url(self):
         return f"{CV_API_URL}/{self.task_type}/{self.api_tracking_id}/cancel"
@@ -131,7 +131,7 @@ class Treatment(AbstractSearchableModel):
         urls = []
         if not self.document_set:
             return urls
-        witnesses = self.document_set.get_all_witness_ids()
+        witnesses = self.document_set.all_witness_ids()
         urls.append(
             [reverse("webapp:witness_regions_view", args=[wid]) for wid in witnesses]
         )

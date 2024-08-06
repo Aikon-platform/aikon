@@ -30,7 +30,9 @@ class Regions(models.Model):
         verbose_name_plural = get_name("Regions")
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
+        if light:
+            return f'{get_name("Regions")} #{self.id}'
         witness = self.get_witness()
         space = "" if APP_LANG == "en" else " "
         return f"{WIT.capitalize()} #{witness.id}{space}: {witness}"

@@ -74,10 +74,10 @@ def get_all_witnesses(treatment):
     try:
         witnesses = treatment.get_witnesses()
         treatment.start_task(witnesses)
-    except:
+    except Exception as e:
         treatment.on_task_error(
             {
-                "error": "Error when retrieving documents from set",
+                "error": f"Error when retrieving documents from set: {e}",
                 "notify": treatment.notify_email,
             },
         )
