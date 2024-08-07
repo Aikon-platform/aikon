@@ -64,6 +64,9 @@ class Regions(AbstractSearchableModel):
     def img_nb(self):
         return self.get_digit().img_nb() or 0
 
+    def img_zeros(self):
+        return self.get_digit().img_zeros() or 0
+
     def gen_manifest_url(self, only_base=False, version=MANIFEST_V1):
         witness = self.get_witness()
         digit = self.get_digit()
@@ -128,12 +131,16 @@ class Regions(AbstractSearchableModel):
         return {}
 
     def to_json(self):
+        digit = self.get_digit()
         return {
             "id": self.id,
             "ref": self.get_ref(),
             "class": self.__class__.__name__,
             "type": get_name("Regions"),
+            "url": self.gen_mirador_url(),
             "title": self.__str__(),
+            "img_nb": digit.img_nb() if digit else 0,
+            "zeros": digit.img_zeros() if digit else 0,
         }
 
     def get_annotations(self):

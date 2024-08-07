@@ -7,7 +7,8 @@ const regionApp = new RegionList({
         manifest,
         isValidated,
         imgPrefix,
-        nbOfPages
+        nbOfPages,
+        trailingZeros
     }
 });
 export default regionApp;
