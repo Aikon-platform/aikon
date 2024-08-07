@@ -26,6 +26,7 @@ from app.similarity.utils import (
     get_regions_q_imgs,
     validate_img_ref,
     get_matched_regions,
+    get_all_pairs,
 )
 from app.webapp.views import is_superuser, check_ref
 
@@ -107,7 +108,7 @@ def delete_all_regions_pairs(request):
     RegionPair.objects.all().delete()
     return JsonResponse({"message": "All region pairs deleted"})
 
-  
+
 @user_passes_test(is_superuser)
 def index_regions_similarity(request, regions_ref=None):
     """
@@ -117,7 +118,10 @@ def index_regions_similarity(request, regions_ref=None):
     """
     from app.similarity.tasks import process_similarity_file
 
-    pairs = get_computed_pairs(regions_ref)
+    if regions_ref is None:
+        pairs = get_all_pairs()
+    else:
+        pairs = get_computed_pairs(regions_ref)
 
     for pair in pairs:
         process_similarity_file.delay(f"{SCORES_PATH}/{pair}.npy")

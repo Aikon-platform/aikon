@@ -251,6 +251,10 @@ def get_computed_pairs(regions_ref):
     ]
 
 
+def get_all_pairs():
+    return [pair_file.replace(".npy", "") for pair_file in os.listdir(SCORES_PATH)]
+
+
 def get_regions_ref_in_pairs(pairs):
     return list(set([ref for pair in pairs for ref in pair.split("-")]))
 

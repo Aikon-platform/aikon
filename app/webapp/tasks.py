@@ -71,8 +71,16 @@ def generate_all_json():
 
 @celery_app.task
 def get_all_witnesses(treatment):
-    witnesses = treatment.get_witnesses()
-    treatment.start_task(witnesses)
+    try:
+        witnesses = treatment.get_witnesses()
+        treatment.start_task(witnesses)
+    except Exception as e:
+        treatment.on_task_error(
+            {
+                "error": f"Error when retrieving documents from set: {e}",
+                "notify": treatment.notify_email,
+            },
+        )
 
 
 @celery_app.task

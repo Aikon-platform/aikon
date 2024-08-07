@@ -31,7 +31,7 @@
     export let searchFields = [];
     // TODO make result count appear + filter name
 
-    const addUrl = modelTitle.includes('Treatment') ? `/${appName}-admin/${modelName}/add/` : `/${appName}/${webappName}/${modelName}/add/`
+    const addUrl = modelName.includes('treatment') ? `/${appName}/${modelName}/add/` : `/${appName}-admin/${webappName}/${modelName}/add/`
 </script>
 
 <!--<Loading visible={$loading}/>-->
