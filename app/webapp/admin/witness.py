@@ -10,7 +10,8 @@ from app.webapp.utils.constants import MAX_ITEMS
 
 import nested_admin
 from admin_extra_buttons.mixins import ExtraButtonsMixin
-
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.contrib import admin, messages
 from django.utils.safestring import mark_safe
 
@@ -163,6 +164,15 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     # # # # # # # # # # # #
     # MARKER WITNESS LIST #
     # # # # # # # # # # # #
+
+    def response_add(self, request, obj, post_url_continue=None):
+        return HttpResponseRedirect(reverse("webapp:witness_list"))
+
+    def response_change(self, request, obj):
+        return HttpResponseRedirect(reverse("webapp:witness_list"))
+
+    def response_delete(self, request, obj_display, obj_id):
+        return HttpResponseRedirect(reverse("webapp:witness_list"))
 
     # MARKER LIST COLUMNS
     @admin.display(description=f"{DIG} & {REG}")

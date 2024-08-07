@@ -274,8 +274,7 @@ def get_compared_regions(regions: Regions):
 
 
 def gen_list_url(regions_ref):
-    # TODO check if correct
-    return reverse("webapp:regions-list", kwargs={"regions_ref": regions_ref})
+    return f"{APP_URL}/{APP_NAME}/{regions_ref}/list"
 
 
 def prepare_request(witnesses, treatment_id):
