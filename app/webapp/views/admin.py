@@ -75,7 +75,11 @@ class AbstractRecordCreate(AbstractRecordView, CreateView):
     template_name = "webapp/form.html"
 
     def get_view_title(self):
-        return f"Add {self.model._meta.verbose_name}"
+        return (
+            f"Add new {self.model._meta.verbose_name.lower()}"
+            if APP_LANG == "en"
+            else f"Ajout de {self.model._meta.verbose_name.lower()}"
+        )
 
     def get_success_url(self):
         return reverse(f"{self.model._meta.name}_list")
@@ -85,7 +89,11 @@ class AbstractRecordUpdate(AbstractRecordView, UpdateView):
     template_name = "webapp/form.html"
 
     def get_view_title(self):
-        return f"Change {self.model._meta.verbose_name}"
+        return (
+            f"Change {self.model._meta.verbose_name.lower()}"
+            if APP_LANG == "en"
+            else f"Modification {self.model._meta.verbose_name.lower()}"
+        )
 
 
 class AbstractRecordList(AbstractView, TemplateView):
@@ -138,6 +146,13 @@ class WitnessRegionsView(AbstractRecordView):
     pk_url_kwarg = "id"
     fields = []
 
+    def get_view_title(self):
+        return (
+            f"View {self.model._meta.verbose_name.lower()} regions"
+            if APP_LANG == "en"
+            else f"Visualiser les régions du {self.model._meta.verbose_name.lower()}"
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["regions_ids"] = []
@@ -145,7 +160,10 @@ class WitnessRegionsView(AbstractRecordView):
         context["img_nb"] = None
 
         witness = self.get_record()
-        context["witness"] = witness.to_json()
+        context["view_title"] = (
+            f"“{witness}” regions" if APP_LANG == "en" else f"Régions de « {witness} »"
+        )
+        context["witness"] = witness.get_json(reindex=True)
         if len(witness.get_digits()) == 0:
             # TODO handle case where no digitization is available
             pass
@@ -171,13 +189,24 @@ class RegionsView(AbstractRecordView):
     fields = []
     pk_url_kwarg = "rid"
 
+    def get_view_title(self):
+        return (
+            f"View {self.model._meta.verbose_name.lower()}"
+            if APP_LANG == "en"
+            else f"Visualiser les {self.model._meta.verbose_name.lower()}"
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["witness_id"] = self.kwargs["wid"]
         context["regions_id"] = self.kwargs["rid"]
 
         regions = self.get_record()
-        context["witness"] = regions.get_witness().get_json()
+        wit = regions.get_witness()
+        context["view_title"] = (
+            f"“{wit}” regions" if APP_LANG == "en" else f"Régions de « {witness} »"
+        )
+        context["witness"] = wit.get_json(reindex=True)
         context["is_validated"] = regions.is_validated
         context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
         context["img_prefix"] = regions.get_ref().split("_anno")[0]
@@ -193,7 +222,6 @@ class TreatmentCreate(AbstractRecordCreate):
         self.object = form.save(commit=False)
         self.object.requested_by = self.request.user
         self.object = form.save()
-        # TODO make treatment submission instantaneous + loading widget
 
         return super().form_valid(form)
 

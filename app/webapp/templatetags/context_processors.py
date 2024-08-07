@@ -14,6 +14,7 @@ from app.webapp.utils.constants import (
     COPYRIGHT,
     MANIFEST_V1,
     MANIFEST_V2,
+    PAGE_LEN,
 )
 from app.webapp.models.utils.constants import (
     MS_ABBR,
@@ -62,6 +63,7 @@ def global_variables(request):
         "MANIFEST_V1": MANIFEST_V1,
         "MANIFEST_V2": MANIFEST_V2,
         "CATEGORY_INFO": CATEGORY_INFO,
+        "PAGE_LEN": PAGE_LEN,
     }
 
     return {**constants, **ENTITY_NAMES}
