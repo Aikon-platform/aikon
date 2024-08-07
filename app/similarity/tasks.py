@@ -13,6 +13,7 @@ def check_similarity_files(file_names):
 def compute_similarity_scores(
     regions_refs: List[str] = None, max_rows: int = 50, show_checked_ref: bool = False
 ):
+    # TODO check if used else delete
     from app.webapp.views import check_ref
     from app.similarity.utils import compute_total_similarity
 

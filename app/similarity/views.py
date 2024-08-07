@@ -1,6 +1,7 @@
 import json
 import re
 
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
@@ -147,44 +148,52 @@ def get_similar_images(request, wid, rid=None):
         witness = get_object_or_404(Witness, id=wid)
         q_regions = witness.get_regions()
 
+    if not len(q_regions):
+        return JsonResponse(
+            {"error": f"No regions found for this witness #{wid}"}, status=400
+        )
+
     try:
         data = json.loads(request.body.decode("utf-8"))
-        try:
-            regions_ids = list(data.get("regionsIds", []))
-            q_img = str(data.get("qImg", ""))
-            topk = int(data.get("topk", 10))
-            excluded_cat = list(data.get("excludedCategories", [4]))
-        except ValueError:
-            return JsonResponse({"error": "Invalid JSON data"}, status=400)
+        regions_ids = list(data.get("regionsIds", []))
+        q_img = str(data.get("qImg", ""))
+        topk = min(max(int(data.get("topk", 10)), 1), 20)
+        excluded_cat = list(data.get("excludedCategories", [4]))
 
-        if len(regions_ids) == 0:
-            # selection is empty
+        if not regions_ids or not q_img:
             return JsonResponse({})
 
-        if q_img == "":
-            # no images to display
-            return JsonResponse({})
+        all_pairs = get_region_pairs_with(q_img, regions_ids, include_self=True)
 
-        topk = min(max(topk, 1), 20)
-
-        pairs = []
+        # Process pairs for each q_region
+        result = []
         for q_r in q_regions:
-            pairs += get_region_pairs_with(
-                q_img, regions_ids, include_self=q_r.id in regions_ids
+            pairs = [
+                pair
+                for pair in all_pairs
+                if pair.regions_id_1 == q_r.id or pair.regions_id_2 == q_r.id
+            ]
+            if q_r.id not in regions_ids:
+                pairs = [
+                    pair for pair in pairs if pair.regions_id_1 != pair.regions_id_2
+                ]
+
+            result.extend(
+                get_best_pairs(
+                    q_img,
+                    pairs,
+                    excluded_categories=excluded_cat,
+                    topk=topk,
+                    user_id=request.user.id,
+                )
             )
 
-        return JsonResponse(
-            get_best_pairs(
-                q_img,
-                pairs,
-                excluded_categories=excluded_cat,
-                topk=topk,
-                user_id=request.user.id,
-            ),
-            safe=False,
-        )
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+        return JsonResponse(result, safe=False)
+
+    except (json.JSONDecodeError, ValueError) as e:
+        return JsonResponse({"error": f"Invalid data: {str(e)}"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": f"An error occurred: {str(e)}"}, status=500)
 
 
 def get_compared_regions(request, wid, rid=None):
@@ -199,16 +208,27 @@ def get_compared_regions(request, wid, rid=None):
         q_regions = witness.get_regions()
 
     try:
-        sim_regions = []
-        compared_regions = {}
+        compared_regions = {q_r.get_ref(): q_r.get_json() for q_r in q_regions}
+
+        # Collect all region IDs to query at once
+        all_region_ids = set()
         for q_r in q_regions:
-            q_ref = q_r.get_ref()
-            compared_regions[q_ref] = q_r.to_json()
-            region_ids = get_compared_regions_ids(q_r.id)
-            sim_regions = list(Regions.objects.filter(id__in=region_ids))
-        compared_regions.update({r.get_ref(): r.to_json() for r in sim_regions})
+            pairs = RegionPair.objects.filter(
+                Q(regions_id_1=q_r.id) | Q(regions_id_2=q_r.id)
+            ).values_list("regions_id_1", "regions_id_2")
+
+            for id1, id2 in pairs:
+                all_region_ids.add(id2 if id1 == q_r.id else id1)
+
+        # Remove the original region IDs from the set
+        all_region_ids -= set(q_r.id for q_r in q_regions)
+
+        # Fetch all similar regions in one query
+        sim_regions = Regions.objects.filter(id__in=all_region_ids)
+        compared_regions.update({r.get_ref(): r.get_json() for r in sim_regions})
         return JsonResponse(compared_regions)
     except Exception as e:
+        log("[get_compared_regions] Couldn't retrieve compared regions", e)
         return JsonResponse(
             {"error": f"Couldn't retrieve compared regions: {e}"}, status=400
         )
@@ -331,6 +351,7 @@ def get_query_images(request, wid, rid=None):
     try:
         q_imgs = set()
         for q_r in q_regions:
+            rid = q_r.id
             q_imgs.update(get_regions_q_imgs(q_r.id))
         return JsonResponse(sorted(list(q_imgs)), safe=False)
     except Exception as e:

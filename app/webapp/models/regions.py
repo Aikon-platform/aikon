@@ -8,6 +8,7 @@ from iiif_prezi.factory import StructuralError
 from app.config.settings import APP_URL, APP_NAME, APP_LANG, SAS_APP_URL
 from app.similarity.const import SCORES_PATH
 from app.webapp.models.digitization import Digitization
+from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.models.utils.constants import WIT
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
@@ -24,7 +25,7 @@ def check_version(version):
     return version
 
 
-class Regions(models.Model):
+class Regions(AbstractSearchableModel):
     class Meta:
         verbose_name = get_name("Regions")
         verbose_name_plural = get_name("Regions")

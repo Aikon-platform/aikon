@@ -1,11 +1,12 @@
 import {derived, get, writable} from 'svelte/store';
-import {initPagination, pageUpdate} from "../../utils.js";
+import {errorMsg, initPagination, loading, pageUpdate} from "../../utils.js";
 
 function createSimilarityStore() {
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const pageLength = 25;
 
     const currentPage = writable(1);
+    // todo empty selected regions if not in compared regions
     const comparedRegions = writable({});
     const selectedRegions = writable(JSON.parse(localStorage.getItem("selectedRegions")) || {});
     const excludedCategories = writable(JSON.parse(localStorage.getItem("excludedCategories")) || []);
@@ -16,34 +17,26 @@ function createSimilarityStore() {
      * Fetches all query images and regions that were compared to current regions on load
      * @type {Promise<any>}
      */
-    const fetchSimilarity = (async () => {
-        const regions = await fetch(
-            `${baseUrl}compared-regions`
-        ).then(response => response.json()
-        ).then(data => {
-            comparedRegions.set(data);
-            return data;
-        }).catch(
-            error => console.error('Error:', error)
-        );
+    async function fetchSimilarity() {
+        loading.set(true);
+        try {
+            const regionsResponse = await fetch(`${baseUrl}compared-regions`);
+            const regionsData = await regionsResponse.json();
+            comparedRegions.set(regionsData);
 
-        const imgs = await fetch(
-            `${baseUrl}query-images`,
-        ).then(response => response.json()
-        ).then(data => {
-            if (data.length === 0 || !data) {
-                return null;
+            const imgsResponse = await fetch(`${baseUrl}query-images`);
+            const imgsData = await imgsResponse.json();
+            if (imgsData.length > 0) {
+                qImgs.set(imgsData);
+                handlePageUpdate(initCurrentPage());
             }
-            qImgs.set(data);
-            return data;
-        }).catch(
-            error => console.error('Error:', error)
-        );
-
-        // pageQImgs is derived from currentPage update
-        handlePageUpdate(initCurrentPage());
-        return imgs;
-    })();
+        } catch (err) {
+            console.error('Error:', err);
+            errorMsg.set(err.message);
+        } finally {
+            loading.set(false);
+        }
+    }
 
     const initCurrentPage = () => initPagination(currentPage, "sp");
 

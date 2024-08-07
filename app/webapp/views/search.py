@@ -16,10 +16,11 @@ from app.webapp.search_filters import (
     DocumentSetFilter,
 )
 from app.webapp.models.witness import Witness
+from app.webapp.utils.constants import PAGE_LEN
 
 
 def paginated_records(request, records):
-    paginator = Paginator(records, 25)
+    paginator = Paginator(records, PAGE_LEN)
     page_number = request.GET.get("p", 1)
     page_obj = paginator.get_page(page_number)
 
