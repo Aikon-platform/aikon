@@ -37,7 +37,7 @@ class DocumentSet(AbstractSearchableModel):
         verbose_name_plural = get_name("DocumentSets")
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
         if self.length() != 1:
             return f"{self.title} ({self.length()} documents)"
         if self.wit_ids:
@@ -114,14 +114,14 @@ class DocumentSet(AbstractSearchableModel):
     def document_names(self):
         return [obj.__str__() for obj in self.documents]
 
-    def get_all_witnesses(self):
+    def all_witnesses(self):
         return list(
-            Witness.objects.filter(id__in=self.get_all_witness_ids)
+            Witness.objects.filter(id__in=self.all_witness_ids())
             .select_related("series")
             .prefetch_related("digitizations", "contents__work")
         )
 
-    def get_all_witness_ids(self):
+    def all_witness_ids(self):
         witness_ids = set(self.wit_ids or [])
 
         queries = []

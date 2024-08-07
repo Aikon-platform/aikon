@@ -27,7 +27,9 @@ class Edition(models.Model):
         verbose_name_plural = get_name("Edition", True)
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
+        if light:
+            return self.name
         publisher = self.publisher.name if self.publisher else get_name("no_publisher")
         pub_place = self.place.__str__() if self.place else get_name("no_pub_place")
         return f"{self.name}, {publisher} ({pub_place})"

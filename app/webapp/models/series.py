@@ -38,7 +38,7 @@ class Series(AbstractSearchableModel):
         verbose_name_plural = get_name("Series", True)
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
         return self.edition.name  # TODO find a name
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
