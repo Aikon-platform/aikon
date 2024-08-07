@@ -2,24 +2,24 @@ import os
 import re
 
 import requests
+import numpy as np
+from typing import Tuple, Dict, Set, List
+from collections import defaultdict, Counter
+from itertools import combinations_with_replacement
+from functools import lru_cache
 
 from pathlib import Path
 from django.db import transaction
 from django.db.models import Q, F
 from django.urls import reverse
-from typing import Tuple, Dict, Set, List
-from collections import defaultdict, Counter
-from itertools import combinations_with_replacement
-import numpy as np
-
-from functools import lru_cache
+from django.core.cache import cache
 
 from app.similarity.const import SCORES_PATH
 from app.config.settings import CV_API_URL, APP_URL, APP_NAME, APP_LANG
 from app.similarity.models.region_pair import RegionPair
 from app.webapp.models.regions import Regions
 from app.webapp.models.utils.constants import WIT
-
+from app.webapp.utils.functions import extract_nb
 from app.webapp.utils.logger import log
 from app.webapp.views import check_ref
 
@@ -92,7 +92,6 @@ def get_region_pairs_with(q_img, regions_ids, include_self=False):
     :return: list of RegionPair objects
     """
     query = Q(img_1=q_img) | Q(img_2=q_img)
-
     query &= Q(regions_id_1__in=regions_ids) | Q(regions_id_2__in=regions_ids)
 
     if not include_self:
@@ -110,15 +109,11 @@ def get_compared_regions_ids(regions_id):
     """
     pairs = RegionPair.objects.filter(
         Q(regions_id_1=regions_id) | Q(regions_id_2=regions_id)
-    )
+    ).values_list("regions_id_1", "regions_id_2")
 
     associated_ids = set()
-    for pair in pairs:
-        associated_ids.add(
-            int(pair.regions_id_2)
-            if int(pair.regions_id_1) == regions_id
-            else int(pair.regions_id_1)
-        )
+    for id1, id2 in pairs:
+        associated_ids.add(int(id2) if int(id1) == regions_id else int(id1))
 
     return list(associated_ids)
 
@@ -126,7 +121,7 @@ def get_compared_regions_ids(regions_id):
 def get_regions_pairs(regions_id: int):
     return RegionPair.objects.filter(
         Q(regions_id_1=regions_id) | Q(regions_id_2=regions_id)
-    )
+    ).values_list("regions_id_1", "regions_id_2", "img_1", "img_2")
 
 
 def get_matched_regions(q_img: str, s_regions_id: int):
@@ -140,7 +135,7 @@ def get_matched_regions(q_img: str, s_regions_id: int):
     return RegionPair.objects.filter(
         (Q(img_1=q_img) & Q(regions_id_2=s_regions_id))
         | (Q(img_2=q_img) & Q(regions_id_1=s_regions_id))
-    )
+    ).values_list("regions_id_1", "regions_id_2", "img_1", "img_2")
 
 
 def delete_pairs_with_regions(regions_id: int):
@@ -149,22 +144,37 @@ def delete_pairs_with_regions(regions_id: int):
     ).delete()
 
 
-def get_regions_q_imgs(regions_id: int):
+def get_regions_q_imgs(regions_id: int, cached=False):
     """
     Retrieve all images associated with a given regions_id from RegionPair records.
 
     :param regions_id: int, the regions_id to look for
+    :param cached: bool, whether to cache the result
     :return: list of image names associated with the regions_id
     """
-    pairs = get_regions_pairs(regions_id)
-    result_imgs = []
-    for pair in pairs:
-        if int(pair.regions_id_1) == regions_id:
-            result_imgs.append(pair.img_1)
-        elif int(pair.regions_id_2) == regions_id:
-            result_imgs.append(pair.img_2)
+    cache_key = f"regions_q_imgs_{regions_id}"
+    if cached:
+        cached_result = cache.get(cache_key)
+        if cached_result is not None:
+            return cached_result
 
-    return list(set(result_imgs))
+    img_1_list = list(
+        RegionPair.objects.filter(regions_id_1=regions_id).values_list(
+            "img_1", flat=True
+        )
+    )
+    img_2_list = list(
+        RegionPair.objects.filter(regions_id_2=regions_id).values_list(
+            "img_2", flat=True
+        )
+    )
+
+    result = list(set(img_1_list + img_2_list))
+
+    if cached:
+        cache.set(cache_key, result, timeout=3600)  # Cache for 1 hour
+
+    return result
 
 
 def get_best_pairs(
@@ -184,30 +194,19 @@ def get_best_pairs(
     :param user_id: int ID of the user asking for similarities
     :return: List with structured data
     """
-    best_pairs = []
     manual_pairs = []
-    pairs = []
+    auto_pairs = []
 
     for pair in region_pairs:
-        # pair_data = (score, q_img, s_img, q_regions, s_regions, category, category_x, is_manual)
-        pair_data = pair.get_info(q_img)
-
         if pair.category not in excluded_categories:
-            if pair.is_manual:
-                manual_pairs.append(pair_data)
-            elif len(pair.category_x or []) > 0 and user_id in pair.category_x:
+            pair_data = pair.get_info(q_img)
+            if pair.is_manual or (pair.category_x and user_id in pair.category_x):
                 manual_pairs.append(pair_data)
             else:
-                pairs.append(pair_data)
+                auto_pairs.append(pair_data)
 
-    # All manual pairs are added
-    best_pairs += manual_pairs
-
-    # Sort pairs by score in descending order and add top k
-    pairs.sort(key=lambda x: x[0], reverse=True)
-    best_pairs += pairs[:topk]
-
-    return best_pairs
+    auto_pairs.sort(key=lambda x: x[0], reverse=True)
+    return manual_pairs + auto_pairs[:topk]
 
 
 def validate_img_ref(img_string):
@@ -396,6 +395,7 @@ def compute_total_similarity(
     max_rows: int = 50,
     show_checked_ref: bool = False,
 ):
+    # TODO check if used else delete
     total_scores = defaultdict(list)
     img_names = defaultdict(set)
     prefix_key = "_".join(checked_regions_ref.split("_")[:2])

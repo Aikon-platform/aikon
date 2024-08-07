@@ -1,5 +1,7 @@
 from django.contrib.postgres.fields import ArrayField
 from django.db import models, connection
+from django.db.models import Q, F
+
 from app.webapp.models.utils.functions import get_fieldname
 
 
@@ -66,6 +68,15 @@ class RegionPair(models.Model):
             models.Index(fields=["img_2"]),
             models.Index(fields=["regions_id_1"]),
             models.Index(fields=["regions_id_2"]),
+            models.Index(fields=["regions_id_1", "img_1"]),
+            models.Index(fields=["regions_id_2", "img_2"]),
+            models.Index(fields=["img_1", "regions_id_1", "regions_id_2"]),
+            models.Index(fields=["img_2", "regions_id_1", "regions_id_2"]),
+            models.Index(
+                fields=["regions_id_1", "regions_id_2"],
+                condition=Q(regions_id_1=F("regions_id_2")),
+                name="idx_same_regions",
+            ),
         ]
 
     def __str__(self):
@@ -75,8 +86,8 @@ class RegionPair(models.Model):
 
     img_1 = models.CharField(max_length=150)
     img_2 = models.CharField(max_length=150)
-    regions_id_1 = models.CharField(max_length=150)
-    regions_id_2 = models.CharField(max_length=150)
+    regions_id_1 = models.IntegerField()
+    regions_id_2 = models.IntegerField()
 
     """
     Score of similarity between the two regions (only from automatic pairs)
@@ -99,6 +110,7 @@ class RegionPair(models.Model):
     """
     is_manual = models.BooleanField(max_length=150, null=True, default=False)
 
+    # TODO: consider removing the following fields to reduce overhead
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
