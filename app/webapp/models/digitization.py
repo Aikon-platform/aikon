@@ -226,6 +226,13 @@ class Digitization(models.Model):
         # get the number of images for a digitization
         return get_nb_of_files(IMG_PATH, self.get_ref()) or 0
 
+    def img_zeros(self):
+        # get the number of digits for the images of this digitization (to know number of trailing zeros)
+        first_img = get_first_img(self.get_ref())
+        if not first_img:
+            return 0
+        return len(get_first_img(self.get_ref()).split("_")[-1].split(".")[0])
+
     def has_vectorization(self):
         # TODO voir comment modulariser ?
         from app.vectorization.const import SVG_PATH
