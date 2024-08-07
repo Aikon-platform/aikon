@@ -131,7 +131,9 @@ class Regions(AbstractSearchableModel):
         return {}
 
     def to_json(self):
+        rjson = self.json
         digit = self.get_digit()
+
         return {
             "id": self.id,
             "ref": self.get_ref(),
@@ -139,8 +141,8 @@ class Regions(AbstractSearchableModel):
             "type": get_name("Regions"),
             "url": self.gen_mirador_url(),
             "title": self.__str__(),
-            "img_nb": digit.img_nb() if digit else 0,
-            "zeros": digit.img_zeros() if digit else 0,
+            "img_nb": rjson["img_nb"] or digit.img_nb() if digit else 0,
+            "zeros": rjson["zeros"] or digit.img_zeros() if digit else 0,
         }
 
     def get_annotations(self):
