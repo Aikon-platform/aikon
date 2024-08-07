@@ -1,5 +1,7 @@
 import nested_admin
 from django.contrib import admin
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 
 from app.config.settings import APP_LANG
 from app.webapp.admin.role import RoleInline
@@ -122,3 +124,12 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         if not obj.user:
             obj.user = request.user
         obj.save()
+
+    def response_add(self, request, obj, post_url_continue=None):
+        return HttpResponseRedirect(reverse("webapp:series_list"))
+
+    def response_change(self, request, obj):
+        return HttpResponseRedirect(reverse("webapp:series_list"))
+
+    def response_delete(self, request, obj_display, obj_id):
+        return HttpResponseRedirect(reverse("webapp:series_list"))
