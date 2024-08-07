@@ -266,10 +266,13 @@ class Witness(AbstractSearchableModel):
         return self.digitizations.all()
 
     def get_regions(self):
-        regions = []
-        for digit in self.get_digits():
-            regions.extend(digit.get_regions())
-        return regions
+        # regions = []
+        # for digit in self.get_digits():
+        #     regions.extend(digit.get_regions())
+        # return regions
+        from app.webapp.models.regions import Regions
+
+        return Regions.objects.filter(digitization__witness=self).distinct()
 
     def has_images(self):
         return any(digit.has_images() for digit in self.get_digits())

@@ -2,6 +2,7 @@ import { writable } from 'svelte/store';
 import { sasUrl, cantaloupeUrl, appName } from './constants';
 
 export const loading = writable(false);
+export const errorMsg = writable("");
 
 export async function withLoading(asyncFunction) {
     loading.set(true);
