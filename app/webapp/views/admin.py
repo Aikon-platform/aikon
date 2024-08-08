@@ -177,7 +177,7 @@ class WitnessRegionsView(AbstractRecordView):
             context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
             context["img_prefix"] = regions.get_ref().split("_anno")[0]
             if context["img_nb"] is None:
-                rjson = regions.json
+                rjson = regions.get_json()
                 context["img_nb"] = rjson["img_nb"] or None
                 context["img_zeros"] = rjson["zeros"] or None
 
