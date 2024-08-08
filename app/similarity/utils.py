@@ -51,7 +51,7 @@ def score_file_to_db(score_path):
         # img1 and img2 are supposedly always in alphabetical order
         for score, img1, img2 in pair_scores:
             score = float(score)
-            if score < 25:
+            if score > 25:
                 pairs_to_update.append(
                     RegionPair(
                         img_1=img1,

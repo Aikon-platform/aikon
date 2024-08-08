@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const value = urlParams.get(name);
 
                 if (field.type === 'checkbox') {
-                    field.checked = (value === 't');
+                    field.checked = (value === 'True');
                 } else if ($(field).is('select') && $(field).data('select2')) {
                     const fetchAndSetTitle = function(id) {
                         $.ajax({
