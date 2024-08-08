@@ -210,7 +210,7 @@ class RegionsView(AbstractRecordView):
         regions = self.get_record()
         wit = regions.get_witness()
         context["view_title"] = (
-            f"“{wit}” regions" if APP_LANG == "en" else f"Régions de « {witness} »"
+            f"“{wit}” regions" if APP_LANG == "en" else f"Régions de « {wit} »"
         )
         context["witness"] = wit.get_json(reindex=True)
         context["is_validated"] = regions.is_validated
