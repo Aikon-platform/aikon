@@ -48,8 +48,15 @@ class Treatment(AbstractSearchableModel):
         app_label = "webapp"
 
     def __str__(self, light=False):
-        space = "" if APP_LANG == "en" else " "
-        return f"Treatment #{self.id}{space}: {self.task_type}"
+        task = f"{self.task_type.__str__().capitalize()} #{self.id}"
+        if light:
+            if self.json and "title" in self.json:
+                return self.json["title"]
+            return task
+
+        if self.document_set:
+            return f"{task} | {self.document_set.title}"
+        return task
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     status = models.CharField(
@@ -90,13 +97,6 @@ class Treatment(AbstractSearchableModel):
     api_tracking_id = models.UUIDField(null=True, editable=False)
 
     _internal_save = False
-
-    def get_title(self):
-        if self.document_set:
-            return (
-                f"{self.task_type.__str__().capitalize()} | {self.document_set.title}"
-            )
-        return f"{self.task_type.__str__().capitalize()}"
 
     def get_objects_name(self):
         if not self.document_set:
@@ -156,7 +156,7 @@ class Treatment(AbstractSearchableModel):
                     "id": self.id.__str__(),
                     "class": self.__class__.__name__,
                     "type": get_name("Treatment"),
-                    "title": self.get_title(),
+                    "title": self.__str__(),
                     "updated_at": req_on.strftime("%Y-%m-%d %H:%M") if req_on else None,
                     "url": self.get_absolute_url(),
                     "user": user.__str__() if user else "Unknown user",
@@ -170,7 +170,7 @@ class Treatment(AbstractSearchableModel):
                     "selection": {
                         "id": self.id,
                         "type": "Treatment",
-                        "title": self.get_title(),
+                        "title": self.__str__(),
                         "selected": doc_set.get_document_metadata()
                         if doc_set
                         else None,
