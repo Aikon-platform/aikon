@@ -18,8 +18,7 @@ class Place(models.Model):
         verbose_name_plural = get_name("Place", True)
         app_label = "webapp"
 
-    def __str__(self):
-
+    def __str__(self, light=False):
         return f"{self.name}"  # , {self.country}"
 
     name = models.CharField(verbose_name=get_name("name"), max_length=200, unique=True)

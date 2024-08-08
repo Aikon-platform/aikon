@@ -1,0 +1,135 @@
+{% extends "admin/base_site.html" %}
+{% load static shared_tags %}
+
+{% block content %}
+
+    <div style="margin-bottom: 2%; margin-top: 2%;">
+        <p class="is-size-1 has-text-weight-light">
+            {% if APP_LANG == "en" %}
+                {{ APP_NAME|upper }} Admin Home
+            {% else %}
+                Accueil administrateur {{ APP_NAME|upper }}
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="columns is-fluid">
+        <!-- Sidebar -->
+        <div class="column is-2">
+            <aside class="menu">
+                <p class="menu-label">Actions</p>
+                <ul class="menu-list is-capitalized">
+                    <a href="{% url 'admin:webapp_witness_add' %}">
+                        <span class="icon-text">
+                            <span class="icon"><i class="fas fa-plus-circle"></i></span>
+                            {% if APP_LANG == "en" %}Add{% else %}Ajouter un{% endif %} {{ WIT }}
+                        </span>
+                    </a>
+                    <a href="{% url 'admin:webapp_series_add' %}">
+                        <span class="icon-text">
+                            <span class="icon"><i class="fas fa-plus-circle"></i></span>
+                            {% if APP_LANG == "en" %}Add{% else %}Ajouter une{% endif %} {{ SER }}
+                        </span>
+                    </a>
+                </ul>
+            </aside>
+        </div>
+
+        <!-- Main content -->
+        <div class="column is-6">
+            <div class="block">
+                <p class="box notification is-contrasted mgt-medium">
+                    {% if APP_LANG == "en" %}Welcome {{ user.first_name }}, {{ user.last_name }} to the administrative interface!
+                    {% else %}Bienvenue sur l'interface Admin, {{ user.first_name }} {{ user.last_name }} !{% endif %}
+                </p>
+            </div>
+
+            <div class="block box mg-medium p-5 has-background-link-light">
+                <div class="box is-contrasted" style="width: 100%; overflow-x: auto;">
+                    <table class="table is-capitalized is-fullwidth" id="main_entities">
+                        <thead>
+                        <tr class="table-header">
+                            <th colspan="3">{% if APP_LANG == "en" %}Main Entities{% else %}Entités{% endif %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% include "includes/admin_row.html" with entity_title=WIT entity_name="witness" %}
+                        {% include "includes/admin_row.html" with entity_title=SER entity_name="series" %}
+                        {% include "includes/admin_row.html" with entity_title=WORK entity_name="work" %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="block box mg-medium p-5 has-background-link-light">
+                <div class="box is-contrasted" style="width: 100%; overflow-x: auto;">
+                    <table class="table is-capitalized is-fullwidth" id="main_entities">
+                        <thead>
+                        <tr class="table-header">
+                            <th colspan="3">{% if APP_LANG == "en" %}My Tasks{% else %}Mes tâches{% endif %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% include "includes/admin_row.html" with entity_title=TRMT entity_name="treatment" %}
+                        {% include "includes/admin_row.html" with entity_title=SET entity_name="document_set" %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% is_superuser request.user as is_admin %}
+            {% if is_admin %}
+                <div class="block box mgt-medium p-5 has-background-link-light">
+                    <div class="box is-contrasted" style="width: 100%; overflow-x: auto;">
+                        <table class="table is-capitalized is-fullwidth">
+                            <thead>
+                                <tr class="table-header">
+                                    <th colspan="3">
+                                        {% if APP_LANG == "en" %}
+                                            Superuser Actions
+                                        {% else %}
+                                            Espace Super utilisateur
+                                        {% endif %}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% include "includes/admin_row.html" with entity_title=USR entity_name="user" %}
+                            {% include "includes/admin_row.html" with entity_title=GRP entity_name="group" %}
+                            {% include "includes/admin_row.html" with entity_title=LANG entity_name="language" %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                </div>
+            {% endif %}
+
+        <div class="column is-4">
+            <!-- <div class="box is-contrasted ml-5">
+                <p class="is-size-4 has-text-weight-light">{% if APP_LANG == "en" %}Personnal Space{% else %}Espace Utilisateur{% endif %}</p>
+                <p>
+                    <a>
+                        <span class="icon-text">
+                        <span class="icon"><i class="far fa-user"></i></span>
+                        {% if APP_LANG == "en" %}Access{% else %}Accéder{% endif %}
+                    </span>
+                    </a>
+                </p>
+            </div> -->
+            <div class="box is-contrasted ml-5">
+                <p class="is-size-4 has-text-weight-light">
+                    {% if APP_LANG == "en" %}Dear user,{% else %}Cher utilisateur,{% endif %}
+                </p>
+                <p>
+                    {% if APP_LANG == "en" %}This version of the website is still a work in progress.  Don't hesitate to contact us if it is broken.
+                    {% else %}Ce site est encore en cours de développement. N'hésitez pas à nous contacter en cas de problème.{% endif %}
+                </p>
+                <p>
+                    {% if APP_LANG == "en" %}Enjoy testing {{APP_NAME|upper}}!
+                    {% else %}Bonne navigation !{% endif %}
+                </p>
+                <p style="text-align: right;">
+                    {% if APP_LANG == "fr" %}La {% endif %}DH Team
+                </p>
+            </div>
+        </div>
+    </div>
+{% endblock %}

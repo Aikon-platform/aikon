@@ -60,7 +60,9 @@ class Content(models.Model):
         verbose_name_plural = get_name("Content", True)
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
+        if light:
+            return f"{get_name('Content')} #{self.id}"
         return f"{self.witness.__str__()} ({self.get_pages()})"
 
     witness = models.ForeignKey(
@@ -73,6 +75,7 @@ class Content(models.Model):
     )
     work = models.ForeignKey(
         Work,
+        related_name="contents",
         verbose_name=get_name("Work"),
         on_delete=models.SET_NULL,
         blank=True,
@@ -145,6 +148,9 @@ class Content(models.Model):
     def get_roles(self):
         # Django automatically creates a reverse relationship from Content to Role
         return self.roles.all()
+
+    def get_langs(self):
+        return self.lang.all()
 
     def clean(self):
         super().clean()

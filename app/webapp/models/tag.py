@@ -16,7 +16,7 @@ class Tag(models.Model):
         verbose_name_plural = get_name("Tag", True)
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
         return self.label
 
     label = models.CharField(verbose_name=get_name("label"), max_length=50)

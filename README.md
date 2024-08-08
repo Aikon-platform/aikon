@@ -175,16 +175,6 @@ Launch everything (Django, Celery, Cantaloupe and SimpleAnnotationServer) at onc
 bash run.sh
 ```
 
-> Or launch each process separately:
-> ```bash
-> # Celery & Django
-> venv/bin/celery -A app.app.celery worker -B -c 1 --loglevel=info -P threads && venv/bin/python app/manage.py runserver localhost:8000
-> # Cantaloupe
-> sudo -S java -Dcantaloupe.config=cantaloupe/cantaloupe.properties -Xmx2g -jar cantaloupe/cantaloupe-4.1.11.war
-> # Simple Annotation Server
-> cd sas/ && mvn jetty:run
-> ```
-
 You can now visit the app at [http://localhost:8000](http://localhost:8000) and connect with the credentials you created
 
 ### *For more documentation, see [docs folder](docs/)*

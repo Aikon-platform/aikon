@@ -1,4 +1,4 @@
-from app.config.settings import APP_LANG
+from app.config.settings import APP_LANG, ADDITIONAL_MODULES
 from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2
 
 #############################
@@ -24,10 +24,14 @@ MODEL_NAMES = {
     "Role": {"en": "role", "fr": "rôle"},
     "Image": {"en": "image", "fr": "image"},
     "Pdf": {"en": "PDF", "fr": "PDF"},
-    "Annotation": {"en": "annotation", "fr": "annotation"},
+    "Regions": {"en": "regions", "fr": "régions"},
+    "User": {"en": "user", "fr": "utilisateur"},
+    "Group": {"en": "group", "fr": "groupe"},
+    "Treatment": {"en": "treatment", "fr": "traitement"},
+    "DocumentSet": {"en": "document set", "fr": "sélection de documents"},
 }
 
-MANIFEST = MODEL_NAMES["Manifest"][APP_LANG]
+MAN = MODEL_NAMES["Manifest"][APP_LANG]
 MS = MODEL_NAMES["Manuscript"][APP_LANG]
 VOL = MODEL_NAMES["Volume"][APP_LANG]
 WIT = MODEL_NAMES["Witness"][APP_LANG]
@@ -45,8 +49,37 @@ PERS = MODEL_NAMES["Person"][APP_LANG]
 ROLE = MODEL_NAMES["Role"][APP_LANG]
 IMG = MODEL_NAMES["Image"][APP_LANG]
 PDF = MODEL_NAMES["Pdf"][APP_LANG]
-ANNO = MODEL_NAMES["Annotation"][APP_LANG]
+REG = MODEL_NAMES["Regions"][APP_LANG]
+USR = MODEL_NAMES["User"][APP_LANG]
+GRP = MODEL_NAMES["Group"][APP_LANG]
+TRMT = MODEL_NAMES["Treatment"][APP_LANG]
+SET = MODEL_NAMES["DocumentSet"][APP_LANG]
 
+ENTITY_NAMES = {
+    "MAN": MAN,
+    "MS": MS,
+    "VOL": VOL,
+    "WIT": WIT,
+    "PR": PR,
+    "SER": SER,
+    "CONT": CONT,
+    "WORK": WORK,
+    "TAG": TAG,
+    "PLA": PLA,
+    "CONS_PLA": CONS_PLA,
+    "DIG": DIG,
+    "ED": ED,
+    "LANG": LANG,
+    "PERS": PERS,
+    "ROLE": ROLE,
+    "IMG": IMG,
+    "PDF": PDF,
+    "REG": REG,
+    "USR": USR,
+    "GRP": GRP,
+    "TRMT": TRMT,
+    "SET": SET,
+}
 
 # ABBREVIATION
 MS_ABBR = "ms"
@@ -99,7 +132,22 @@ MAP_WIT_TYPE = {
     WPR_ABBR: WPR.capitalize(),
 }
 
-ANNO_VERSION = (
+TRMT_TYPE = ()
+
+for x in ADDITIONAL_MODULES:
+    trmt = (x, x)
+    TRMT_TYPE += (trmt,)
+
+TRMT_STATUS = (
+    ("CANCELLED", "CANCELLED"),
+    ("ERROR", "ERROR"),
+    ("IN PROGRESS", "IN PROGRESS"),
+    ("PENDING", "PENDING"),
+    ("STARTED", "STARTED"),
+    ("SUCCESS", "SUCCESS"),
+)
+
+REGIONS_VERSION = (
     (MANIFEST_V1, "automatic"),
     (MANIFEST_V2, "corrected"),
 )
@@ -107,13 +155,13 @@ ANNO_VERSION = (
 DIGIT_TYPE = (
     (IMG_ABBR, IMG.capitalize()),
     (PDF_ABBR, PDF.capitalize()),
-    (MAN_ABBR, MANIFEST.capitalize()),
+    (MAN_ABBR, MAN.capitalize()),
 )
 
 DIGIT_ABBR = {
     IMG: IMG_ABBR,
     PDF: PDF_ABBR,
-    MANIFEST: MAN_ABBR,
+    MAN: MAN_ABBR,
 }
 
 PAGE_TYPE = (
@@ -180,7 +228,6 @@ CATEGORY_INFO = f"""<div class='category-info'>
                         </p>
                     </div>"""
 
-
 ###################################
 #        VALIDATION ERRORS        #
 ###################################
@@ -208,4 +255,3 @@ CONS_PLA_MSG = (
 AUTHOR_MSG = "Unknown author" if APP_LANG == "en" else "Auteur inconnu"
 IMG_MSG = "Manage images" if APP_LANG == "en" else "Gérer les images"
 WIT_CHANGE = f"Modify {WIT}" if APP_LANG == "en" else f"Modifier le {WIT}"
-SEARCH_MSG = "Search..." if APP_LANG == "en" else "Rechercher..."

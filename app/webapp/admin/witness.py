@@ -1,18 +1,17 @@
 from functools import reduce
 
-
-from app.config.settings import APP_LANG
+from app.config.settings import APP_LANG, ADDITIONAL_MODULES
 from app.webapp.admin.digitization import DigitizationInline
-from app.webapp.admin.content import ContentInline, ContentWorkInline
+from app.webapp.admin.content import ContentInline
 
-# from app.webapp.admin.volume import VolumeInline
-from app.webapp.models.utils.constants import WIT, ANNO, DIG
+from app.webapp.models.utils.constants import WIT, REG, DIG
 from app.webapp.models.witness import Witness, get_name
 from app.webapp.utils.constants import MAX_ITEMS
 
 import nested_admin
 from admin_extra_buttons.mixins import ExtraButtonsMixin
-
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.contrib import admin, messages
 from django.utils.safestring import mark_safe
 
@@ -23,19 +22,29 @@ from app.webapp.utils.functions import (
     get_file_ext,
     zip_dirs,
     format_dates,
-    flatten,
 )
-from app.webapp.utils.iiif.annotation import get_anno_images, get_training_anno
+from app.webapp.utils.iiif.annotation import (
+    get_images_annotations,
+    get_training_regions,
+)
 from app.webapp.utils.paths import IMG_PATH
-from app.webapp.utils.similarity import similarity_request, check_computed_pairs
 
 
-def no_anno_message(request):
+def no_regions_message(request):
     messages.warning(
         request,
-        f"Please select at least one {WIT} with annotations."
+        f"Please select at least one {WIT} with regions."
         if APP_LANG == "en"
-        else f"Merci de sélectionner au moins un {WIT} avec des annotations.",
+        else f"Merci de sélectionner au moins un {WIT} avec des régions.",
+    )
+
+
+def no_digit_message(request):
+    messages.warning(
+        request,
+        f"Please select at least one {WIT} with a digitization."
+        if APP_LANG == "en"
+        else f"Merci de sélectionner au moins un {WIT} avec une numérisation.",
     )
 
 
@@ -67,57 +76,47 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             "export_selected_manifests",
             "export_selected_iiif_images",
             "export_selected_images",
-            "export_annotated_imgs",
+            "export_imgs_regions",
             "export_training_imgs",
-            "export_training_anno",
-            "compute_similarity",
+            "export_training_regions_files",
         ]
+
+        for module in ADDITIONAL_MODULES:
+            self.actions += [f"compute_{module}"]
 
     ordering = ("id", "place__name")
 
-    # Fields that are taken into account by the search bar
-    search_fields = (
-        # "id_nb",
-        # "place__name",
-        # "type",
-        # "contents__roles__person__name",
-        "contents__work__title",
-        # "notes",
-    )
     # Filters options in the sidebar
     list_filter = (
         "type",
         "digitizations__is_open",
         "contents__tags__label",
-        "digitizations__annotations__is_validated",
+        "digitizations__regions__is_validated",
     )
     # Attributes to be excluded from the form fields
     exclude = ("slug", "created_at", "updated_at")
-    # Dropdown fields
-    autocomplete_fields = ("place", "volume", "edition")
 
     # MARKER FORM FIELDS
-    # info on fieldsets: https://docs.djangoproject.com/en/4.2/ref/contrib/admin/#django.contrib.admin.ModelAdmin.fieldsets
     banner = (
         f"{get_name('Witness')} identification"
         if APP_LANG == "en"
         else f"Identification du {get_name('Witness')}"
     )
+    fields = [
+        "type",
+        ("id_nb", "place"),  # place and id_nb appear on the same line
+        ("page_type", "nb_pages"),  # same
+        "notes",
+        "edition",
+        ("volume_nb", "volume_title"),
+        "link",
+        "is_public",
+    ]
+    autocomplete_fields = ("place", "volume", "edition")
     fieldsets = (
         (
             banner.capitalize(),
-            {
-                "fields": [
-                    "type",
-                    ("id_nb", "place"),  # place and id_nb appear on the same line
-                    ("page_type", "nb_pages"),  # same
-                    "notes",
-                    "edition",
-                    ("volume_nb", "volume_title"),
-                    "link",
-                    "is_public",
-                ]
-            },
+            {"fields": fields},
         ),
     )
 
@@ -138,15 +137,15 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         for nb in range(0, 4):
             digit_id = request.POST.get(f"digitizations-{nb}-id", None)
             if digit_id:
-                # TODO don't save again digit that were already treated
+                # TODO! don't save again digit that were already treated
                 continue
             digit_type = request.POST.get(f"digitizations-{nb}-digit_type", None)
             files = request.FILES.getlist(f"digitizations-{nb}-images")
 
             flash_msg = (
-                "The image conversion and annotation process is underway. Please wait a few moments."
+                "The image conversion process is underway. Please wait a few moments."
                 if APP_LANG == "en"
-                else "Le processus de téléchargement et d'annotation est en cours. Veuillez patienter quelques instants."
+                else "Le processus de téléchargement est en cours. Veuillez patienter quelques instants."
             )
 
             if len(files):  # if images were uploaded
@@ -166,17 +165,28 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     # MARKER WITNESS LIST #
     # # # # # # # # # # # #
 
+    def response_add(self, request, obj, post_url_continue=None):
+        return HttpResponseRedirect(reverse("webapp:witness_list"))
+
+    def response_change(self, request, obj):
+        return HttpResponseRedirect(reverse("webapp:witness_list"))
+
+    def response_delete(self, request, obj_display, obj_id):
+        return HttpResponseRedirect(reverse("webapp:witness_list"))
+
     # MARKER LIST COLUMNS
-    @admin.display(description=f"{DIG} & {ANNO}")
-    def digit_anno_btn(self, obj: Witness):
+    @admin.display(description=f"{DIG} & {REG}")
+    def digit_regions_btn(self, obj: Witness):
+        # TODO check if used else delete
         digits = obj.get_digits()
         if len(digits) == 0:
             return "-"
-        # To display a button in the list of witnesses to know if they were annotated or not
+        # To display a button in the list of witnesses to know if regions were extracted or not
         return mark_safe("<br><br>".join(digit.view_btn() for digit in digits))
 
     @admin.display(description="IIIF manifest")
     def manifest_link(self, obj):
+        # TODO check if used else delete
         # To display a button in the list of witnesses to give direct link to witness manifest
         return mark_safe(
             "<br>".join(digit.manifest_link() for digit in obj.get_digits())
@@ -208,7 +218,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         "get_dates",
         "get_works",
         "get_roles",
-        "digit_anno_btn",
+        "digit_regions_btn",
         "user",
     )
     list_display_links = ("id_nb",)
@@ -228,33 +238,6 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         return list_to_txt(img_list, "IIIF_images")
 
     @admin.action(
-        description=f"Compute similarity for {ANNO}s of selected {WIT}es"
-        if APP_LANG == "en"
-        else f"Calculer la similarité des annotations des {WIT}s sélectionnés"
-    )
-    def compute_similarity(self, request, queryset):
-        annos = []
-        for witness in queryset.exclude():
-            annos.extend(witness.get_annotations())
-        if len(annos) == 0:
-            return no_anno_message(request)
-        if len(check_computed_pairs([anno.get_ref() for anno in annos])) == 0:
-            return messages.warning(
-                request,
-                f"Similarity was already computed for all the selected {WIT}es"
-                if APP_LANG == "en"
-                else f"La similarité a déjà été calculée pour tous les {WIT}s sélectionnés",
-            )
-
-        similarity_request(annos)
-        return messages.info(
-            request,
-            "Similarity request was sent to the API"
-            if APP_LANG == "en"
-            else "La requête de similarité a été transmise à l'API",
-        )
-
-    @admin.action(
         description=f"Export IIIF manifests of selected {WIT}es"
         if APP_LANG == "en"
         else f"Exporter les manifestes IIIF des {WIT}s sélectionnés"
@@ -268,48 +251,48 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         return list_to_txt(manifests, "IIIF_manifests")
 
     @admin.action(
-        description=f"Download annotated diagram images in selected {WIT}es"
+        description=f"Download extracted images in selected {WIT}es"
         if APP_LANG == "en"
-        else f"Télécharger les images d'illustrations annotées des {WIT}s sélectionnés"
+        else f"Télécharger les images extraites des {WIT}s sélectionnés"
     )
-    def export_annotated_imgs(self, request, queryset):
+    def export_imgs_regions(self, request, queryset):
         if not check_selection(queryset, request):
             return
 
         img_urls = []
-        has_annotation = False
+        has_regions = False
         for witness in queryset.exclude():
-            anno_wit = []
-            for anno in witness.get_annotations():
-                has_annotation = True
-                anno_wit.extend(get_anno_images(anno))
-            img_urls.extend(anno_wit)
+            regions_wit = []
+            for regions in witness.get_regions():
+                has_regions = True
+                regions_wit.extend(get_images_annotations(regions))
+            img_urls.extend(regions_wit)
 
-        if not has_annotation:
-            no_anno_message(request)
+        if not has_regions:
+            no_regions_message(request)
             return
 
         return zip_img(img_urls)
 
     @admin.action(
-        description="Export annotations for segmentation model training"
+        description="Export regions for object extraction model training"
         if APP_LANG == "en"
-        else f"Exporter les annotations pour l'entraînement du modèle de segmentation"
+        else f"Exporter les régions pour l'entraînement du modèle d'extraction d'objets"
     )
-    def export_training_anno(self, request, queryset):
+    def export_training_regions_files(self, request, queryset):
         if not check_selection(queryset, request):
             return
 
         dirnames_contents = {}
-        has_annotation = False
+        has_regions = False
         for wit in queryset.exclude():
             dirnames_contents[wit.get_ref()] = []
-            for anno in wit.get_annotations():
-                dirnames_contents[wit.get_ref()].extend(get_training_anno(anno))
-                has_annotation = True
+            for regions in wit.get_regions():
+                dirnames_contents[wit.get_ref()].extend(get_training_regions(regions))
+                has_regions = True
 
-        if not has_annotation:
-            no_anno_message(request)
+        if not has_regions:
+            no_regions_message(request)
             return
 
         return zip_dirs(dirnames_contents)
@@ -351,6 +334,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 class WitnessInline(nested_admin.NestedStackedInline):
     # FORM contained in the Series form
     model = Witness
+    template = "admin/includes/inline_fieldset.html"
     extra = 0  # 1
     ordering = ("id",)
     fields = [("volume_nb", "volume_title")]

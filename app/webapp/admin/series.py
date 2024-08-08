@@ -1,6 +1,9 @@
 import nested_admin
 from django.contrib import admin
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 
+from app.config.settings import APP_LANG
 from app.webapp.admin.role import RoleInline
 from app.webapp.admin.witness import WitnessInline
 from app.webapp.models.series import Series, get_name
@@ -15,7 +18,6 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
     ordering = ("id",)
     list_per_page = 100
     search_fields = ("edition__name",)
-    # TODO: digit_anno_btn
     list_display = (
         "id",
         "get_edition",  # "edition",
@@ -27,7 +29,12 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         "is_public",
     )
     list_display_links = ("get_edition",)  # ("edition",)
-    autocomplete_fields = ("work", "edition", "place")
+
+    # banner = (
+    #     f"{get_name('Series')} identification"
+    #     if APP_LANG == "en"
+    #     else f"Identification de la {get_name('Series')}"
+    # )
 
     class Meta:
         verbose_name = get_name("Series")
@@ -49,6 +56,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         "is_public",
     ]
     inlines = [RoleInline, WitnessInline]
+    autocomplete_fields = ("work", "edition", "place")
 
     @admin.display(description=get_name("Edition"))
     def get_edition(self, obj):
@@ -116,3 +124,12 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         if not obj.user:
             obj.user = request.user
         obj.save()
+
+    def response_add(self, request, obj, post_url_continue=None):
+        return HttpResponseRedirect(reverse("webapp:series_list"))
+
+    def response_change(self, request, obj):
+        return HttpResponseRedirect(reverse("webapp:series_list"))
+
+    def response_delete(self, request, obj_display, obj_id):
+        return HttpResponseRedirect(reverse("webapp:series_list"))
