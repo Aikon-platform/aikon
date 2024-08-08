@@ -181,7 +181,7 @@ class WorkFilter(RecordFilter):
     class Meta:
         model = Work
         fields = {
-            "place": ["exact"],
+            # "place": ["exact"],
             "author": ["exact"],
         }
         labels = {
