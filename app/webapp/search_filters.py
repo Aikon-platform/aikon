@@ -55,6 +55,7 @@ class RecordFilter(FilterSet):
         for item, obj in zip(data, list(queryset)):
             item["label"] = obj.__str__(light=True)
 
+        data.insert(0, {"value": "", "label": "----------"})
         return data
 
     def to_form_fields(self):
@@ -99,23 +100,23 @@ class RecordFilter(FilterSet):
 
 class WitnessFilter(RecordFilter):
     edition = ModelChoiceFilter(
-        queryset=Edition.objects.none(),
+        queryset=Edition.objects.all(),
     )
     contents__work = ModelChoiceFilter(
-        queryset=Work.objects.none(),
+        queryset=Work.objects.all(),
     )
     contents__work__author = ModelChoiceFilter(
-        queryset=Person.objects.none(),
+        queryset=Person.objects.all(),
     )
     place = ModelChoiceFilter(
-        queryset=ConservationPlace.objects.none(),
+        queryset=ConservationPlace.objects.all(),
     )
     contents__lang = ModelMultipleChoiceFilter(
-        queryset=Language.objects.none(),
+        queryset=Language.objects.all(),
         null_value=None,
     )
     contents__tags = ModelMultipleChoiceFilter(
-        queryset=Tag.objects.none(),
+        queryset=Tag.objects.all(),
         null_value=None,
     )
     contents__date_min = RangeFilter(
@@ -168,7 +169,7 @@ class TreatmentFilter(RecordFilter):
 
 class WorkFilter(RecordFilter):
     contents__lang = ModelChoiceFilter(
-        queryset=Language.objects.none(),
+        queryset=Language.objects.all(),
     )
     contents__date_min = RangeFilter(
         field_name="contents__date_min", label=witness_name("date_min")
@@ -192,13 +193,13 @@ class WorkFilter(RecordFilter):
 
 class SeriesFilter(RecordFilter):
     edition = ModelChoiceFilter(
-        queryset=Edition.objects.none(),
+        queryset=Edition.objects.all(),
     )
     edition__place = ModelChoiceFilter(
-        queryset=Place.objects.none(),
+        queryset=Place.objects.all(),
     )
     edition__publisher = ModelChoiceFilter(
-        queryset=Person.objects.none(),
+        queryset=Person.objects.all(),
     )
     contents__date_min = RangeFilter(
         field_name="contents__date_min", label=witness_name("date_min")
@@ -225,7 +226,7 @@ class SeriesFilter(RecordFilter):
 
 class DocumentSetFilter(RecordFilter):
     wit_ids = ModelMultipleChoiceFilter(
-        queryset=Witness.objects.none(),
+        queryset=Witness.objects.all(),
         widget=autocomplete.ModelSelect2Multiple(url="witness-autocomplete"),
         method="filter_by_witness",
         null_value=None,
@@ -233,7 +234,7 @@ class DocumentSetFilter(RecordFilter):
         label=witness_name("Witness"),
     )
     ser_ids = ModelMultipleChoiceFilter(
-        queryset=Series.objects.none(),
+        queryset=Series.objects.all(),
         widget=autocomplete.ModelSelect2Multiple(url="series-autocomplete"),
         method="filter_by_series",
         null_value=None,
@@ -241,7 +242,7 @@ class DocumentSetFilter(RecordFilter):
         label=series_name("Series"),
     )
     work_ids = ModelMultipleChoiceFilter(
-        queryset=Work.objects.none(),
+        queryset=Work.objects.all(),
         widget=autocomplete.ModelSelect2Multiple(url="work-autocomplete"),
         method="filter_by_work",
         null_value=None,
