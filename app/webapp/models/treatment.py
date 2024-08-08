@@ -48,7 +48,7 @@ class Treatment(AbstractSearchableModel):
         app_label = "webapp"
 
     def __str__(self, light=False):
-        task = f"{self.task_type.__str__().capitalize()} #{self.id}"
+        task = f"{self.task_type.__str__().capitalize()}"
         if light:
             if self.json and "title" in self.json:
                 return self.json["title"]
