@@ -52,6 +52,7 @@ def delete_annotations(regions_ref, manifest_url):
 def generate_all_json():
     total_updated = 0
     errors = []
+    models = []
     for model in apps.get_models():
         if (
             issubclass(model, AbstractSearchableModel)
@@ -60,10 +61,14 @@ def generate_all_json():
             try:
                 model.regenerate_all_json()
                 total_updated += model.objects.count()
+                models.append(model.__name__)
             except Exception as e:
-                errors.append(f"Error updating {model.__name__}: {str(e)}")
+                import traceback
 
-    result = f"Updated JSON for {total_updated} objects"
+                errors.append(f"Error updating {model.__name__}: {e}")
+                traceback.print_exc()
+
+    result = f"Updated JSON for {total_updated} objects in models: {', '.join(models)}"
     if errors:
         result += f"\nErrors encountered: {', '.join(errors)}"
     return result

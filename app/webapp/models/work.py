@@ -30,6 +30,8 @@ class Work(AbstractSearchableModel):
 
     def __str__(self, light=False):
         if light:
+            if self.json and "title" in self.json:
+                return self.json["title"]
             return self.title
         author = f"{self.author.name if self.author else AUTHOR_MSG}"
         return f"{author} | {self.title}"

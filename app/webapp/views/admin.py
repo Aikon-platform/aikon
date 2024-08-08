@@ -164,17 +164,23 @@ class WitnessRegionsView(AbstractRecordView):
             f"“{witness}” regions" if APP_LANG == "en" else f"Régions de « {witness} »"
         )
         context["witness"] = witness.get_json(reindex=True)
-        if len(witness.get_digits()) == 0:
+        if len(context["witness"]["digits"]) == 0:
             # TODO handle case where no digitization is available
             pass
 
-        for regions in witness.get_regions():
-            context["regions_ids"].append(regions.id)
+        for rid in context["witness"]["regions"]:
+            regions = Regions.objects.get(pk=rid)
+            context["regions_ids"].append(rid)
+            # for regions in witness.get_regions():
+            #     context["regions_ids"].append(regions.id)
             # TODO handle multiple manifest for multiple regions
             context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
             context["img_prefix"] = regions.get_ref().split("_anno")[0]
             if context["img_nb"] is None:
-                context["img_nb"] = regions.img_nb()
+                rjson = regions.json
+                context["img_nb"] = rjson["img_nb"] or None
+                context["img_zeros"] = rjson["zeros"] or None
+
             if not regions.is_validated:
                 context["is_validated"] = False
 
@@ -210,7 +216,9 @@ class RegionsView(AbstractRecordView):
         context["is_validated"] = regions.is_validated
         context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
         context["img_prefix"] = regions.get_ref().split("_anno")[0]
-        context["img_nb"] = regions.img_nb()
+        rjson = regions.get_json()
+        context["img_nb"] = rjson["img_nb"] or 0
+        context["img_zeros"] = rjson["zeros"] or 0
         return context
 
 

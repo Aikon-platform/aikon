@@ -38,6 +38,9 @@ class DocumentSet(AbstractSearchableModel):
         app_label = "webapp"
 
     def __str__(self, light=False):
+        if light and self.json and "title" in self.json:
+            return self.json["title"]
+
         if self.length() != 1:
             return f"{self.title} ({self.length()} documents)"
         if self.wit_ids:

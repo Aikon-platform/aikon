@@ -25,10 +25,12 @@
     export let isValidated = false;
     export let imgPrefix = '';
     export let nbOfPages = 1;
+    export let trailingZeros = 1;
     export let witness = {};
 
     setContext('witness', witness);
     setContext('nbOfPages', nbOfPages);
+    setContext('trailingZeros', trailingZeros);
     setContext('imgPrefix', imgPrefix);
     setContext('manifest', manifest);
     setContext('isValidated', isValidated);

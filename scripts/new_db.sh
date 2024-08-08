@@ -38,6 +38,9 @@ APP_ROOT="$(dirname "$SCRIPT_DIR")"
 # Load environment variables from .env file
 . "$APP_ROOT"/app/config/.env
 
+# list all databases with
+# $command -c '\l'
+
 db_name=${1:-${DB_NAME}_2}
 db_sql_file=$2
 db_user=${DB_USERNAME:-admin}
@@ -53,13 +56,13 @@ create_user() {
 }
 
 # check if the user $db_user already exists, if not, create it
-is_user=$($command -tc "SELECT 1 FROM pg_roles WHERE rolname='$db_user'" | awk '{$1=$1;print}')
+is_user=$($command -tc "SELECT 1 FROM pg_roles WHERE rolname='$db_user'" | xargs)
 if [ "$is_user" != "1" ]; then
     create_user
 fi
 
 # check if the database $db_name already exists, if so, drop it
-is_db=$($command -tc "SELECT 1 FROM pg_database WHERE datname='$db_name'" | awk '{$1=$1;print}')
+is_db=$($command -tc "SELECT 1 FROM pg_database WHERE datname='$db_name'" | xargs)
 if [ "$is_db" == "1" ]; then
     $command -c "DROP DATABASE $db_name;"
 fi

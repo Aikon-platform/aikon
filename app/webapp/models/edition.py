@@ -21,6 +21,7 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, fields, plural)
 
 
+# TODO make it a Searchable Model
 class Edition(models.Model):
     class Meta:
         verbose_name = get_name("Edition")

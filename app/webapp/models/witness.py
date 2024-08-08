@@ -71,6 +71,8 @@ class Witness(AbstractSearchableModel):
             vol = f", vol. {self.volume_nb}" if self.volume_nb else f" | {self.id_nb}"
             return format_html(f"{self.volume_title}{vol}")
         if light:
+            if self.json and "title" in self.json:
+                return self.json["title"]
             return self.id_nb
 
         return format_html(
