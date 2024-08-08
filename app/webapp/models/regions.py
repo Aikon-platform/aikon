@@ -9,7 +9,7 @@ from app.config.settings import APP_URL, APP_NAME, APP_LANG, SAS_APP_URL
 from app.similarity.const import SCORES_PATH
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.searchable_models import AbstractSearchableModel
-from app.webapp.models.utils.constants import WIT
+from app.webapp.models.utils.constants import WIT, REG
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.webapp.utils.paths import REGIONS_PATH
@@ -33,10 +33,14 @@ class Regions(AbstractSearchableModel):
 
     def __str__(self, light=False):
         if light:
+            if self.json and "title" in self.json:
+                return self.json["title"]
             return f'{get_name("Regions")} #{self.id}'
+
         witness = self.get_witness()
-        space = "" if APP_LANG == "en" else " "
-        return f"{WIT.capitalize()} #{witness.id}{space}: {witness}"
+        if not witness:
+            return f'{get_name("Regions")} #{self.id}'
+        return f"{REG.capitalize()} #{self.id} | {witness.__str__()}"
 
     digitization = models.ForeignKey(
         Digitization,
@@ -131,18 +135,18 @@ class Regions(AbstractSearchableModel):
         return {}
 
     def to_json(self):
-        rjson = self.json
+        rjson = self.json or {}
         digit = self.get_digit()
 
         return {
             "id": self.id,
+            "title": self.__str__(),
             "ref": self.get_ref(),
             "class": self.__class__.__name__,
             "type": get_name("Regions"),
             "url": self.gen_mirador_url(),
-            "title": self.__str__(),
-            "img_nb": rjson["img_nb"] or digit.img_nb() if digit else 0,
-            "zeros": rjson["zeros"] or digit.img_zeros() if digit else 0,
+            "img_nb": rjson.get("img_nb", digit.img_nb() if digit else 0),
+            "zeros": rjson.get("zeros", digit.img_zeros() if digit else 0),
         }
 
     def get_annotations(self):

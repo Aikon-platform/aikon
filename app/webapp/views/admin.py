@@ -216,7 +216,7 @@ class RegionsView(AbstractRecordView):
         context["is_validated"] = regions.is_validated
         context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
         context["img_prefix"] = regions.get_ref().split("_anno")[0]
-        rjson = regions.json
+        rjson = regions.get_json()
         context["img_nb"] = rjson["img_nb"] or 0
         context["img_zeros"] = rjson["zeros"] or 0
         return context

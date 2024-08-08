@@ -146,10 +146,9 @@ class Digitization(models.Model):
     )
 
     def get_witness(self):
-        try:
-            return self.witness
-        except AttributeError:
-            return None
+        if witness := self.witness:
+            return witness
+        return None
 
     def get_wit_ref(self):
         if witness := self.get_witness():
