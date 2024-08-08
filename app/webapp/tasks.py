@@ -58,12 +58,15 @@ def generate_all_json():
             issubclass(model, AbstractSearchableModel)
             and model != AbstractSearchableModel
         ):
-            models.append(model.__name__)
             try:
                 model.regenerate_all_json()
                 total_updated += model.objects.count()
+                models.append(model.__name__)
             except Exception as e:
-                errors.append(f"Error updating {model.__name__}: {str(e)}")
+                import traceback
+
+                errors.append(f"Error updating {model.__name__}: {e}")
+                traceback.print_exc()
 
     result = f"Updated JSON for {total_updated} objects in models: {', '.join(models)}"
     if errors:
