@@ -9,7 +9,7 @@ from app.config.settings import APP_URL, APP_NAME, APP_LANG, SAS_APP_URL
 from app.similarity.const import SCORES_PATH
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.searchable_models import AbstractSearchableModel
-from app.webapp.models.utils.constants import WIT
+from app.webapp.models.utils.constants import WIT, REG
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.webapp.utils.paths import REGIONS_PATH
@@ -36,9 +36,11 @@ class Regions(AbstractSearchableModel):
             if self.json and "title" in self.json:
                 return self.json["title"]
             return f'{get_name("Regions")} #{self.id}'
+
         witness = self.get_witness()
-        space = "" if APP_LANG == "en" else " "
-        return f"{WIT.capitalize()} #{witness.id}{space}: {witness}"
+        if not witness:
+            return f'{get_name("Regions")} #{self.id}'
+        return f"{REG.capitalize()} #{self.id} | {witness.__str__()}"
 
     digitization = models.ForeignKey(
         Digitization,
