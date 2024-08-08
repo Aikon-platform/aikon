@@ -50,6 +50,8 @@ def delete_annotations(regions_ref, manifest_url):
 
 @celery_app.task
 def generate_all_json():
+    from app.webapp.utils.logger import log
+
     total_updated = 0
     errors = []
     models = []
@@ -58,12 +60,13 @@ def generate_all_json():
             issubclass(model, AbstractSearchableModel)
             and model != AbstractSearchableModel
         ):
-            models.append(model.__name__)
             try:
                 model.regenerate_all_json()
                 total_updated += model.objects.count()
+                models.append(model.__name__)
             except Exception as e:
-                errors.append(f"Error updating {model.__name__}: {str(e)}")
+                log(f"[generate_all_json] Error updating {model.__name__}", e)
+                errors.append(f"Error updating {model.__name__}: {e}")
 
     result = f"Updated JSON for {total_updated} objects in models: {', '.join(models)}"
     if errors:
