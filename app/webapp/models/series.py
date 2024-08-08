@@ -39,7 +39,9 @@ class Series(AbstractSearchableModel):
         app_label = "webapp"
 
     def __str__(self, light=False):
-        return self.edition.name  # TODO find a name
+        if light and self.json and "title" in self.json:
+            return self.json["title"]
+        return self.edition.name
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     notes = models.TextField(verbose_name=get_name("notes"), max_length=600, blank=True)
