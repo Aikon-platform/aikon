@@ -228,6 +228,8 @@ CATEGORY_INFO = f"""<div class='category-info'>
                         </p>
                     </div>"""
 
+NO_USER = "Unknown user" if APP_LANG == "en" else "Utilisateur inconnu"
+
 ###################################
 #        VALIDATION ERRORS        #
 ###################################

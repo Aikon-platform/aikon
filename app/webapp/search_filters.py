@@ -55,7 +55,7 @@ class RecordFilter(FilterSet):
         for item, obj in zip(data, list(queryset)):
             item["label"] = obj.__str__(light=True)
 
-        data.insert(0, {"value": "", "label": "----------"})
+        data.insert(0, {"id": "", "label": "----------"})
         return data
 
     def to_form_fields(self):
@@ -78,7 +78,7 @@ class RecordFilter(FilterSet):
                     field_info["choices"] = self.get_choices(QS_MODELS[field_name])
                 else:
                     field_info["choices"] = [
-                        {"value": self.get_val(choice[0]), "label": str(choice[1])}
+                        {"id": self.get_val(choice[0]), "label": str(choice[1])}
                         for choice in field.choices
                     ]
 
