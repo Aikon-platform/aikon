@@ -50,17 +50,19 @@ def score_file_to_db(score_path):
     try:
         # img1 and img2 are supposedly always in alphabetical order
         for score, img1, img2 in pair_scores:
-            pairs_to_update.append(
-                RegionPair(
-                    img_1=img1,
-                    img_2=img2,
-                    score=float(score),
-                    regions_id_1=ref_1.split("_anno")[1],
-                    regions_id_2=ref_2.split("_anno")[1],
-                    is_manual=False,
-                    category_x=[],
+            score = float(score)
+            if score > 25:
+                pairs_to_update.append(
+                    RegionPair(
+                        img_1=img1,
+                        img_2=img2,
+                        score=score,
+                        regions_id_1=ref_1.split("_anno")[1],
+                        regions_id_2=ref_2.split("_anno")[1],
+                        is_manual=False,
+                        category_x=[],
+                    )
                 )
-            )
     except ValueError as e:
         log(f"[score_file_to_db] error while processing {score_path}", e)
         return False

@@ -79,6 +79,8 @@ class Work(AbstractSearchableModel):
         # return reverse("webapp:work_view", args=[self.id])
 
     def to_json(self):
+        place = self.place
+        author = self.author
         return json_encode(
             {
                 "id": self.id,
@@ -90,8 +92,8 @@ class Work(AbstractSearchableModel):
                 "title": self.__str__(),
                 "metadata": {
                     get_name("dates"): format_dates(self.date_min, self.date_max),
-                    get_name("place"): self.place.__str__(),
-                    get_name("author"): self.author.__str__(),
+                    get_name("place"): place.__str__() if place else "-",
+                    get_name("author"): author.__str__() if author else "-",
                     get_name("language"): self.get_lang_names(),
                 },
             }

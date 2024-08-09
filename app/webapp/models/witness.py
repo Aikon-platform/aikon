@@ -22,6 +22,7 @@ from app.webapp.models.utils.constants import (
     WIT_CHANGE,
     MAP_WIT_TYPE,
     FOL_ABBR,
+    NO_USER,
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
@@ -164,6 +165,7 @@ class Witness(AbstractSearchableModel):
         buttons = {"regions": reverse("webapp:witness_regions_view", args=[self.id])}
 
         digits = self.get_digits()
+        user = self.user
 
         return json_encode(
             {
@@ -175,8 +177,8 @@ class Witness(AbstractSearchableModel):
                 "iiif": [digit.manifest_link(inline=True) for digit in digits],
                 "title": self.__str__(),
                 "img": self.get_img(only_first=True),
-                "user_id": self.user.id,
-                "user": self.user.__str__(),
+                "user_id": user.id if user else 0,
+                "user": user.__str__() if user else NO_USER,
                 "url": self.get_absolute_url(),
                 "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),
                 "is_public": self.is_public,
