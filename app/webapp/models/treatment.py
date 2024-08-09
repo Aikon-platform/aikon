@@ -20,7 +20,7 @@ from app.config.settings import (
 
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
-from app.webapp.models.utils.constants import TRMT_TYPE, TRMT_STATUS
+from app.webapp.models.utils.constants import TRMT_TYPE, TRMT_STATUS, NO_USER
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.tasks import get_all_witnesses
 
@@ -159,7 +159,7 @@ class Treatment(AbstractSearchableModel):
                     "title": self.__str__(),
                     "updated_at": req_on.strftime("%Y-%m-%d %H:%M") if req_on else None,
                     "url": self.get_absolute_url(),
-                    "user": user.__str__() if user else "Unknown user",
+                    "user": user.__str__() if user else NO_USER,
                     "user_id": user.id if user else 0,
                     "status": self.status,
                     "is_finished": self.is_finished,
@@ -168,7 +168,7 @@ class Treatment(AbstractSearchableModel):
                     "query_parameters": self.get_query_parameters(),
                     "api_tracking_id": self.api_tracking_id,
                     "selection": {
-                        "id": self.id,
+                        "id": doc_set.id if doc_set else None,
                         "type": "Treatment",
                         "title": self.__str__(),
                         "selected": doc_set.get_document_metadata()

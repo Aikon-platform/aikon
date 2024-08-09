@@ -9,6 +9,7 @@ from app.webapp.models.content import Content
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
 from app.webapp.models.series import Series
+from app.webapp.models.utils.constants import NO_USER
 from app.webapp.models.utils.functions import get_fieldname
 from django.urls import reverse
 
@@ -201,12 +202,12 @@ class DocumentSet(AbstractSearchableModel):
                     "class": self.__class__.__name__,
                     "type": get_name("DocumentSet"),
                     "title": self.__str__(),
-                    "user_id": user.id if user else "None",
-                    "user": user.__str__() if user else "None",
+                    "user_id": user.id if user else 0,
+                    "user": user.__str__() if user else NO_USER,
                     "url": self.get_absolute_url(),
                     "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M")
                     if self.updated_at
-                    else "None",
+                    else "-",
                     "is_public": self.is_public,
                     "selection": self.get_selection(reindex),
                     "treatments": self.get_treatment_metadata(),
