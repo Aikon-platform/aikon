@@ -1,7 +1,7 @@
 <script>
     import { getContext } from 'svelte';
     import {showMessage, withLoading} from "../utils.js";
-    import { appLang, csrfToken } from '../constants';
+    import { appLang, appName, csrfToken } from '../constants';
 
     const witness = getContext('witness');
     export let baseUrl = `${window.location.origin}${window.location.pathname}`;
@@ -21,7 +21,7 @@
         if (typeof currentRegionId !== 'number') {
             throw new Error('Invalid region ID');
         }
-        const url = `${window.location.origin}/regions/${currentRegionId}/delete`;
+        const url = `${window.location.origin}/${appName}/regions/${currentRegionId}/delete`;
         try {
             const response = await withLoading(() => fetch(url, {
                 method: "DELETE",
