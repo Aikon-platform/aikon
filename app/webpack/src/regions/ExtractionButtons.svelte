@@ -1,13 +1,13 @@
 <script>
     import { showMessage, withLoading } from '../utils.js';
-    import { appLang, modules, csrfToken } from '../constants';
+    import { appLang, appName, modules, csrfToken } from '../constants';
     import { getContext } from 'svelte';
     const witness = getContext('witness');
     export let currentRegionId;
     export let baseUrl;
 
     async function newRegions() {
-        const wlo = window.location.origin
+        const wlo = `${window.location.origin}/${appName}`
         let url = `${wlo}/witness/${witness.id}/regions/add`;
         if (witness.regions.length === 1 || currentRegionId){
             const regionId = currentRegionId || witness.regions[0];
@@ -32,8 +32,6 @@
             await showMessage(`Failed to parse JSON response: '${error}'`, "Error");
             throw new Error(`Failed to parse JSON response: '${error}'`);
         }
-
-        console.log(res);
 
         if (res.hasOwnProperty('mirador_url')) {
             window.open(res.mirador_url);
