@@ -10,7 +10,9 @@
     import Toolbar from "./Toolbar.svelte";
 
     onMount(() => {
-        fetchSimilarity();
+        if (modules.includes("similarity")){
+            fetchSimilarity();
+        }
     });
 </script>
 
