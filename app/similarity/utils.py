@@ -43,15 +43,15 @@ def score_file_to_db(score_path):
         return False
 
     # regions ref
-    ref_1, ref_2 = Path(score_path).stem.split("-")
+    ref_1, ref_2 = sorted(Path(score_path).stem.split("-"))
     # TODO verify that regions_id exists?
 
     pairs_to_update = []
     try:
-        # img1 and img2 are supposedly always in alphabetical order
         for score, img1, img2 in pair_scores:
+            img1, img2 = sorted([img1, img2])
             score = float(score)
-            if score > 25:
+            if score > 25:  # TODO put threshold as global variable
                 pairs_to_update.append(
                     RegionPair(
                         img_1=img1,
@@ -165,6 +165,7 @@ def get_regions_q_imgs(regions_id: int, cached=False):
             "img_1", flat=True
         )
     )
+
     img_2_list = list(
         RegionPair.objects.filter(regions_id_2=regions_id).values_list(
             "img_2", flat=True

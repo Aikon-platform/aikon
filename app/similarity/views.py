@@ -114,7 +114,7 @@ def delete_all_regions_pairs(request):
 def index_regions_similarity(request, regions_ref=None):
     """
     Index the content of a scores npy files containing regions_ref in their name
-    into the RegionPair database table
+    OR all the similarity score files into the RegionPair database table
     if the score files have already been added to the database, it will only override the score
     """
     from app.similarity.tasks import process_similarity_file
@@ -132,6 +132,26 @@ def index_regions_similarity(request, regions_ref=None):
             "Launched": pairs,
         }
     )
+
+
+@user_passes_test(is_superuser)
+def remove_incorrect_pairs(request):
+    """
+    Removes RegionPair instances where img_1 is alphabetically after img_2.
+    """
+    from django.db import DatabaseError
+    from django.db.models import F
+
+    try:
+        incorrect_pairs = RegionPair.objects.filter(img_1__gt=F("img_2"))
+        count = incorrect_pairs.count()
+        incorrect_pairs.delete()
+        return JsonResponse({"message": f"{count} incorrect pairs removed"})
+
+    except DatabaseError as e:
+        return JsonResponse(
+            {"message": "An error occurred while removing incorrect pairs"}, status=500
+        )
 
 
 def get_similar_images(request, wid, rid=None):

@@ -1,5 +1,6 @@
 <script>
     import { getContext } from 'svelte';
+    import { appLang } from '../../constants';
     import { similarityStore } from "./similarityStore.js";
     const { comparedRegions, isSelected } = similarityStore;
 
@@ -23,7 +24,7 @@
 {#each Object.entries($comparedRegions) as [regionId, region]}
     <div class="tags has-addons mb-0 is-hoverable" on:click={() => toggleSelection(region)} on:keyup={null}>
         {#if isSelf(regionId)}
-            <span class="tag is-dark">current</span>
+            <span class="tag is-dark">{appLang === 'en' ? 'current' : 'courant'}</span>
         {/if}
         <span class="tag is-small {$isSelected(regionId) ? 'is-selected' : 'is-contrasted'}">
             {region.title}
