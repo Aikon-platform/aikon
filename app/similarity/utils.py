@@ -178,22 +178,23 @@ def get_regions_q_imgs(regions_id: int, witness_id=None, cached=False):
         # NOTE workaround for incorrectly inserted RegionPairs (where regions_id_1 and img_1 do not match)
         from itertools import chain
 
-        img_1_list = chain(
+        img_set = set()
+        for img in chain(
             *RegionPair.objects.filter(regions_id_1=regions_id).values_list(
                 "img_1", "img_2"
             )
-        )
-        img_2_list = chain(
+        ):
+            if img.startswith(f"wit{witness_id}_"):
+                img_set.add(img)
+        for img in chain(
             *RegionPair.objects.filter(regions_id_2=regions_id).values_list(
                 "img_1", "img_2"
             )
-        )
+        ):
+            if img.startswith(f"wit{witness_id}_"):
+                img_set.add(img)
 
-        result = [
-            img
-            for img in set(img_1_list) | set(img_2_list)
-            if img.startswith(f"wit{witness_id}_")
-        ]
+        result = list(img_set)
 
     if cached:
         cache.set(cache_key, result, timeout=3600)  # Cache for 1 hour
