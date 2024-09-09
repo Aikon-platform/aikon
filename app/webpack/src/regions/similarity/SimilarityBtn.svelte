@@ -1,6 +1,7 @@
 <script>
     import { getContext } from 'svelte';
     import { appLang } from '../../constants';
+    import { shorten } from '../../utils.js';
     import { similarityStore } from "./similarityStore.js";
     const { comparedRegions, isSelected } = similarityStore;
 
@@ -27,7 +28,7 @@
             <span class="tag is-dark">{appLang === 'en' ? 'current' : 'courant'}</span>
         {/if}
         <span class="tag is-small {$isSelected(regionId) ? 'is-selected' : 'is-contrasted'}">
-            {region.title}
+            {shorten(region.title)}
         </span>
     </div>
 {/each}

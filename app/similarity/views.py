@@ -18,12 +18,12 @@ from app.webapp.utils.functions import sort_key
 from app.webapp.utils.logger import log
 from app.similarity.utils import (
     send_request,
-    check_score_files,
+    # check_score_files,
     check_computed_pairs,
     get_computed_pairs,
     get_best_pairs,
     get_region_pairs_with,
-    get_compared_regions_ids,
+    # get_compared_regions_ids,
     get_regions_q_imgs,
     validate_img_ref,
     get_matched_regions,
@@ -137,7 +137,8 @@ def index_regions_similarity(request, regions_ref=None):
 @user_passes_test(is_superuser)
 def remove_incorrect_pairs(request):
     """
-    Removes RegionPair instances where img_1 is alphabetically after img_2.
+    Removes RegionPair instances where img_1 is alphabetically after img_2,
+    indicating that the regions pairs has been incorrectly inserted in the database
     """
     from django.db import DatabaseError
     from django.db.models import F
@@ -372,7 +373,7 @@ def get_query_images(request, wid, rid=None):
         q_imgs = set()
         for q_r in q_regions:
             rid = q_r.id
-            q_imgs.update(get_regions_q_imgs(q_r.id))
+            q_imgs.update(get_regions_q_imgs(q_r.id, wid))
         return JsonResponse(sorted(list(q_imgs)), safe=False)
     except Exception as e:
         return JsonResponse(
