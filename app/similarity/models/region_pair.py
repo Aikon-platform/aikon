@@ -146,3 +146,6 @@ class RegionPair(models.Model):
             self.category_x or [],
             self.is_manual,
         )
+
+    def get_ref(self):
+        return "-".join(sorted([self.img_1, self.img_2]))
