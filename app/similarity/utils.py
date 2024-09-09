@@ -43,15 +43,15 @@ def score_file_to_db(score_path):
         return False
 
     # regions ref
-    ref_1, ref_2 = Path(score_path).stem.split("-")
+    ref_1, ref_2 = sorted(Path(score_path).stem.split("-"))
     # TODO verify that regions_id exists?
 
     pairs_to_update = []
     try:
-        # img1 and img2 are supposedly always in alphabetical order
         for score, img1, img2 in pair_scores:
+            img1, img2 = sorted([img1, img2])
             score = float(score)
-            if score > 25:
+            if score > 25:  # TODO put threshold as global variable
                 pairs_to_update.append(
                     RegionPair(
                         img_1=img1,
@@ -146,11 +146,12 @@ def delete_pairs_with_regions(regions_id: int):
     ).delete()
 
 
-def get_regions_q_imgs(regions_id: int, cached=False):
+def get_regions_q_imgs(regions_id: int, witness_id=None, cached=False):
     """
     Retrieve all images associated with a given regions_id from RegionPair records.
 
     :param regions_id: int, the regions_id to look for
+    :param witness_id: int, the id of the witness linked to the regions
     :param cached: bool, whether to cache the result
     :return: list of image names associated with the regions_id
     """
@@ -160,18 +161,39 @@ def get_regions_q_imgs(regions_id: int, cached=False):
         if cached_result is not None:
             return cached_result
 
-    img_1_list = list(
-        RegionPair.objects.filter(regions_id_1=regions_id).values_list(
-            "img_1", flat=True
+    if witness_id is None:
+        img_1_list = list(
+            RegionPair.objects.filter(regions_id_1=regions_id).values_list(
+                "img_1", flat=True
+            )
         )
-    )
-    img_2_list = list(
-        RegionPair.objects.filter(regions_id_2=regions_id).values_list(
-            "img_2", flat=True
-        )
-    )
 
-    result = list(set(img_1_list + img_2_list))
+        img_2_list = list(
+            RegionPair.objects.filter(regions_id_2=regions_id).values_list(
+                "img_2", flat=True
+            )
+        )
+        result = list(set(img_1_list + img_2_list))
+    else:
+        # NOTE workaround for incorrectly inserted RegionPairs (where regions_id_1 and img_1 do not match)
+        from itertools import chain
+
+        img_1_list = chain(
+            *RegionPair.objects.filter(regions_id_1=regions_id).values_list(
+                "img_1", "img_2"
+            )
+        )
+        img_2_list = chain(
+            *RegionPair.objects.filter(regions_id_2=regions_id).values_list(
+                "img_1", "img_2"
+            )
+        )
+
+        result = [
+            img
+            for img in set(img_1_list) | set(img_2_list)
+            if img.startswith(f"wit{witness_id}_")
+        ]
 
     if cached:
         cache.set(cache_key, result, timeout=3600)  # Cache for 1 hour

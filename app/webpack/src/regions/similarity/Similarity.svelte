@@ -33,7 +33,7 @@
                 {#if appLang === 'en'}
                     Error when retrieving similarities: {$errorMsg}
                 {:else}
-                    Erreur lors de la récupération des similarités: {$errorMsg}
+                    Erreur lors de la récupération des similarités : {$errorMsg}
                 {/if}
             </tr>
         </Table>

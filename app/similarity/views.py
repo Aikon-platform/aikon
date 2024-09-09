@@ -18,12 +18,12 @@ from app.webapp.utils.functions import sort_key
 from app.webapp.utils.logger import log
 from app.similarity.utils import (
     send_request,
-    check_score_files,
+    # check_score_files,
     check_computed_pairs,
     get_computed_pairs,
     get_best_pairs,
     get_region_pairs_with,
-    get_compared_regions_ids,
+    # get_compared_regions_ids,
     get_regions_q_imgs,
     validate_img_ref,
     get_matched_regions,
@@ -114,7 +114,7 @@ def delete_all_regions_pairs(request):
 def index_regions_similarity(request, regions_ref=None):
     """
     Index the content of a scores npy files containing regions_ref in their name
-    into the RegionPair database table
+    OR all the similarity score files into the RegionPair database table
     if the score files have already been added to the database, it will only override the score
     """
     from app.similarity.tasks import process_similarity_file
@@ -132,6 +132,27 @@ def index_regions_similarity(request, regions_ref=None):
             "Launched": pairs,
         }
     )
+
+
+@user_passes_test(is_superuser)
+def remove_incorrect_pairs(request):
+    """
+    Removes RegionPair instances where img_1 is alphabetically after img_2,
+    indicating that the regions pairs has been incorrectly inserted in the database
+    """
+    from django.db import DatabaseError
+    from django.db.models import F
+
+    try:
+        incorrect_pairs = RegionPair.objects.filter(img_1__gt=F("img_2"))
+        count = incorrect_pairs.count()
+        incorrect_pairs.delete()
+        return JsonResponse({"message": f"{count} incorrect pairs removed"})
+
+    except DatabaseError as e:
+        return JsonResponse(
+            {"message": "An error occurred while removing incorrect pairs"}, status=500
+        )
 
 
 def get_similar_images(request, wid, rid=None):
@@ -352,7 +373,7 @@ def get_query_images(request, wid, rid=None):
         q_imgs = set()
         for q_r in q_regions:
             rid = q_r.id
-            q_imgs.update(get_regions_q_imgs(q_r.id))
+            q_imgs.update(get_regions_q_imgs(q_r.id, wid))
         return JsonResponse(sorted(list(q_imgs)), safe=False)
     except Exception as e:
         return JsonResponse(

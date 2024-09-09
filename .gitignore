@@ -40,6 +40,7 @@ db.sqlite3
 
 # ENV settings
 .env
+.env.*
 .venv
 
 # Django secret key
