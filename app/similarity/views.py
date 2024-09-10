@@ -1,5 +1,6 @@
 import json
 import re
+from collections import OrderedDict
 
 from django.db.models import Q, Count
 from django.http import JsonResponse
@@ -177,7 +178,9 @@ def get_compared_regions(request, wid, rid=None):
         q_regions = witness.get_regions()
 
     try:
-        compared_regions = {q_r.get_ref(): q_r.get_json() for q_r in q_regions}
+        current_regions = {q_r.get_ref(): q_r.get_json() for q_r in q_regions}
+        # compared_regions = {q_r.get_ref(): q_r.get_json() for q_r in q_regions}
+        # compared_regions = {}
 
         # Collect all region IDs to query at once
         all_region_ids = set()
@@ -194,11 +197,14 @@ def get_compared_regions(request, wid, rid=None):
 
         # Fetch all similar regions in one query
         sim_regions = Regions.objects.filter(id__in=all_region_ids)
-        compared_regions.update({r.get_ref(): r.get_json() for r in sim_regions})
-
-        return JsonResponse(
-            dict(sorted(compared_regions.items(), key=lambda x: sort_key(x[0])))
+        compared_regions = dict(
+            sorted(
+                {r.get_ref(): r.get_json() for r in sim_regions}.items(),
+                key=lambda x: sort_key(x[0]),
+            )
         )
+
+        return JsonResponse(OrderedDict({**current_regions, **compared_regions}))
     except Exception as e:
         log("[get_compared_regions] Couldn't retrieve compared regions", e)
         return JsonResponse(
@@ -409,7 +415,6 @@ def remove_incorrect_pairs(request, mismatched=False, duplicate=False, swapped=T
     Removes RegionPair instances that are faulty
     """
     from django.db import DatabaseError
-    from django.db.models import F
 
     count = 0
 
@@ -417,12 +422,14 @@ def remove_incorrect_pairs(request, mismatched=False, duplicate=False, swapped=T
         if mismatched:
             from django.db.models import F
 
-            # if img_1 is alphabetically after img_2, indicating that the pair has been incorrectly inserted in the database
+            # if img_1 is alphabetically after img_2,
+            # indicating that the pair has been incorrectly inserted in the database
             mismatched_pairs = RegionPair.objects.filter(img_1__gt=F("img_2"))
             count += mismatched_pairs.count()
             mismatched_pairs.delete()
 
         if duplicate:
+            # if there is duplicates of the same img pair with different ids
             duplicate_pairs = (
                 RegionPair.objects.values("img_1", "img_2")
                 .annotate(count=Count("id"))
@@ -437,6 +444,7 @@ def remove_incorrect_pairs(request, mismatched=False, duplicate=False, swapped=T
                 duplicates[1:].delete()
 
         if swapped:
+            # if there is duplicates of the same img pair but with img_1 and img_2 swapped
             swapped_pairs = RegionPair.objects.filter(
                 Q(img_1__in=RegionPair.objects.values("img_2"))
                 & Q(img_2__in=RegionPair.objects.values("img_1"))
