@@ -3,13 +3,11 @@
     import { selectionStore } from "../selection/selectionStore.js";
     const { selected, nbSelected } = selectionStore;
     import SelectionBtn from "../selection/SelectionBtn.svelte";
-    import { appLang, appName, webappName } from '../constants';
+    import { appLang, appName, webappName, model2title } from '../constants';
     import SelectionModal from "../selection/SelectionModal.svelte";
     import RecordSearch from "./RecordSearch.svelte";
     import Pagination from "../Pagination.svelte";
     import Modal from "../Modal.svelte";
-    // import Loading from '../Loading.svelte';
-    // import { loading } from "../utils.js";
 
     import { setContext } from "svelte";
 
@@ -84,7 +82,7 @@
 <SelectionModal {selectionLength}>
     {#each selectedRecords as [type, selectedItems]}
         {#if Object.values(selectedItems).length > 0}
-            <h3>{type}</h3>
+            <h3>{model2title[type]}</h3>
             <table class="table pl-2 is-fullwidth">
                 <tbody>
                 {#each Object.entries(selectedItems) as [id, meta]}

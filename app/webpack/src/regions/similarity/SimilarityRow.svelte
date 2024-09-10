@@ -15,8 +15,6 @@
 
     $: sLen = Object.values($selectedRegions).length;
 
-    // console.log(sLen);
-
     function check_region_ref(region_ref) {
         region_ref = region_ref.replace('.jpg', '');
         const region_ref_regex = /^wit\d+_[a-zA-Z]{3}\d+_\d+_\d+,\d+,\d+,\d+$/;

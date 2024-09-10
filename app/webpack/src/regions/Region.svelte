@@ -59,8 +59,6 @@
     }
     .region-img {
         object-fit: contain;
-        object-position: center;
-        width: 100%;
         height: 100%;
     }
     .region {

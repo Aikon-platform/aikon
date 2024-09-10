@@ -81,7 +81,7 @@ def search_document_set(request):
             )
             .filter(set_len__gt=1)
             if user.is_superuser
-            else DocumentSet.object.sall()
+            else DocumentSet.objects.all()
             .annotate(
                 set_len=ArrayLength("wit_ids")
                 + ArrayLength("ser_ids")
