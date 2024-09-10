@@ -17,7 +17,7 @@
 <div class="region is-center {$isSelected(item) ? 'checked' : ''}" transition:fade={{ duration: 500 }}>
     <figure class="image card region-image {isSquare ? 'is-96x96' : ''}" tabindex="-1" style="height: {height}px; min-width: {height}px;"
             on:click={() => selectionStore.toggle(item)} on:keyup={() => null}>
-        <img src="{refToIIIF(item.img, item.xyhw, isSquare ? '96,' : `,${height}`)}" alt="Extracted region"/>
+        <img class="region-img" src="{refToIIIF(item.img, item.xyhw, isSquare ? '96,' : `,${height}`)}" alt="Extracted region"/>
         <div class="overlay is-center">
             <span class="overlay-desc">{@html desc}</span>
         </div>
@@ -51,10 +51,17 @@
     figure {
         transition: outline 0.1s ease-out;
         outline: 0 solid var(--bulma-link);
+        /*overflow: hidden;*/
     }
     .checked > figure {
         outline: 4px solid var(--bulma-link);
         border-radius: var(--bulma-card-radius);
+    }
+    .region-img {
+        object-fit: contain;
+        object-position: center;
+        width: 100%;
+        height: 100%;
     }
     .region {
         cursor: pointer;

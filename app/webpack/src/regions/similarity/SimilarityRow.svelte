@@ -15,6 +15,8 @@
 
     $: sLen = Object.values($selectedRegions).length;
 
+    // console.log(sLen);
+
     function check_region_ref(region_ref) {
         region_ref = region_ref.replace('.jpg', '');
         const region_ref_regex = /^wit\d+_[a-zA-Z]{3}\d+_\d+_\d+,\d+,\d+,\d+$/;
@@ -143,7 +145,7 @@
             <div class="new-similarity control pt-2 is-center">
                 <div class="tags has-addons" style="flex-wrap: nowrap">
                     <input bind:value={sImg} class="input is-small tag" type="text"
-                           placeholder="{appLang === 'en' ? 'Add new match' : 'Ajouter une correpondance'}"
+                           placeholder="{appLang === 'en' ? 'Add new match' : 'Ajouter une correspondance'}"
                     />
                     <button class="button is-small tag is-link is-center" on:click={addMatch}>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
