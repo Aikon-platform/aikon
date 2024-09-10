@@ -11,9 +11,10 @@
     const [wit, digit, canvas, xyhw] = qImg.split('.')[0].split('_');
     const manifest = getContext('manifest');
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
+    const currentPageId = window.location.pathname.match(/\d+/g).join('-');
     const error_name = appLang === "en" ? "Error" : "Erreur";
 
-    $: sLen = Object.values($selectedRegions).length;
+    $: sLen = $selectedRegions.hasOwnProperty(currentPageId) ? Object.values($selectedRegions[currentPageId]).length : 0;
 
     function check_region_ref(region_ref) {
         region_ref = region_ref.replace('.jpg', '');
@@ -80,7 +81,7 @@
     }
 
     async function noMatch() {
-        const regions = Object.values($selectedRegions)[0];
+        const regions = Object.values($selectedRegions[currentPageId])[0];
         const confirmed = await showMessage(
             appLang === "en" ?
                 `Do you confirm this region does not have any match in ${regions.title}?` :
