@@ -34,6 +34,7 @@ RUN apt-get update && apt-get install -y \
     ghostscript
 
 # TODO make sure python 3.10 is installed
+# TODO install java 11
 
 WORKDIR /home/${USER}
 
