@@ -179,8 +179,6 @@ def get_compared_regions(request, wid, rid=None):
 
     try:
         current_regions = {q_r.get_ref(): q_r.get_json() for q_r in q_regions}
-        # compared_regions = {q_r.get_ref(): q_r.get_json() for q_r in q_regions}
-        # compared_regions = {}
 
         # Collect all region IDs to query at once
         all_region_ids = set()

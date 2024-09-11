@@ -11,8 +11,8 @@
 
 Clone repository and checkout to production branch
 ```bash
-git clone git@github.com:faouinti/vhs.git
-cd vhs && git checkout <your-branch>-prod
+git clone git@github.com:Aikon-platform/aikon.git
+cd aikon && git checkout <your-branch>-prod
 ```
 
 ## Manual installation
@@ -93,7 +93,7 @@ ExecStart=<path/to>/config/venv/bin/gunicorn \
 WantedBy=multi-user.target
 ```
 
-The `/etc/nginx/sites-available/` directory should contain a config file for nginx named `vhs` for example:
+The `/etc/nginx/sites-available/` directory should contain a config file for nginx named `aikon` for example:
 ```yaml
 server {
     server_name <project-domain-name>;                           # CHANGE HERE
@@ -174,9 +174,9 @@ After=network.target
 After=nginx.service
 
 [Service]
-WorkingDirectory=/<absolute/path/to>/vhs/
-ExecStart=/<absolute/path/to>/vhs/cantaloupe/start.sh
-StandardError=append:/<absolute/path/to>/vhs/cantaloupe/log
+WorkingDirectory=/<absolute/path/to>/aikon/
+ExecStart=/<absolute/path/to>/aikon/cantaloupe/start.sh
+StandardError=append:/<absolute/path/to>/aikon/cantaloupe/log
 
 [Install]
 WantedBy=multi-user.target
@@ -198,16 +198,16 @@ sudo vi /etc/systemd/system/sas.service
 ```
 ```
 [Unit]
-Description=sas service 
+Description=sas service
 After=network.target
 After=nginx.service
 
 [Service]
 User=eida
 Group=eida
-WorkingDirectory=/<absolute/path/to>/vhs/sas/
-ExecStart=/<absolute/path/to>/vhs/sas/start.sh 
-StandardError=append:/<absolute/path/to>/vhs/sas/error.log 
+WorkingDirectory=/<absolute/path/to>/aikon/sas/
+ExecStart=/<absolute/path/to>/aikon/sas/start.sh
+StandardError=append:/<absolute/path/to>/aikon/sas/error.log
 
 [Install]
 WantedBy=multi-user.target
@@ -241,7 +241,7 @@ You can repeat this process for additional usernames.
 
 To configure Nginx password authentication, open up the server block configuration file and set up authentication
 ```bash
-sudo vi /etc/nginx/sites-enabled/<vhs>
+sudo vi /etc/nginx/sites-enabled/<aikon>
 ```
 
 ```bash
@@ -276,9 +276,9 @@ After=network.target
 After=nginx.service
 
 [Service]
-WorkingDirectory=/<absolute/path/to>/vhs
-ExecStart=/<absolute/path/to>/vhs/celery/start.sh
-StandardError=append:/<absolute/path/to>/vhs/celery/error.log
+WorkingDirectory=/<absolute/path/to>/aikon
+ExecStart=/<absolute/path/to>/aikon/celery/start.sh
+StandardError=append:/<absolute/path/to>/aikon/celery/error.log
 Restart=always
 
 [Install]
@@ -311,7 +311,7 @@ Test the password
 redis-cli -a <REDIS_PASSWORD>
 ```
 
-- [Install VHS on Observatoire servers](https://syrte-int.obspm.fr/dokuwiki/wiki/informatique/prive/eida/installspe#cantaloupe_sas_et_vhs)
+- [Install VHS on Observatoire servers](https://syrte-int.obspm.fr/dokuwiki/wiki/informatique/prive/eida/installspe#cantaloupe_sas_et_aikon)
 
 # Once the app is deployed...
 
