@@ -32,16 +32,29 @@ class RegionPairManager(models.Manager):
             columns = ", ".join(f.column for f in fields)
             placeholders = ", ".join("%s" for _ in fields)
 
+            # conflict_update = ", ".join(
+            #     f"{f.column} = EXCLUDED.{f.column}"
+            #     for f in fields
+            #     if f.name in update_fields and f.name != update_field
+            # )
+            #
+            # if conflict_update:
+            #     conflict_update += ", "
+            # conflict_update += f"{update_field} = CASE WHEN EXCLUDED.{update_field} > {table_name}.{update_field} THEN EXCLUDED.{update_field} ELSE {table_name}.{update_field} END"
+            #
+            # sql = f"""
+            #     INSERT INTO {table_name} ({columns})
+            #     VALUES ({placeholders})
+            #     ON CONFLICT ({', '.join(f.column for f in fields if f.name in match_field)})
+            #     DO UPDATE SET {conflict_update}
+            # """
             conflict_update = ", ".join(
                 f"{f.column} = EXCLUDED.{f.column}"
                 for f in fields
-                if f.name in update_fields and f.name != update_field
+                if f.name in update_fields
             )
 
-            if conflict_update:
-                conflict_update += ", "
-            conflict_update += f"{update_field} = CASE WHEN EXCLUDED.{update_field} > {table_name}.{update_field} THEN EXCLUDED.{update_field} ELSE {table_name}.{update_field} END"
-
+            # SQL query for bulk insert/update
             sql = f"""
                 INSERT INTO {table_name} ({columns})
                 VALUES ({placeholders})
@@ -133,3 +146,6 @@ class RegionPair(models.Model):
             self.category_x or [],
             self.is_manual,
         )
+
+    def get_ref(self):
+        return "-".join(sorted([self.img_1, self.img_2]))

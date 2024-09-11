@@ -1,7 +1,8 @@
 import json
 import re
+from collections import OrderedDict
 
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
@@ -18,12 +19,12 @@ from app.webapp.utils.functions import sort_key
 from app.webapp.utils.logger import log
 from app.similarity.utils import (
     send_request,
-    check_score_files,
+    # check_score_files,
     check_computed_pairs,
     get_computed_pairs,
     get_best_pairs,
     get_region_pairs_with,
-    get_compared_regions_ids,
+    # get_compared_regions_ids,
     get_regions_q_imgs,
     validate_img_ref,
     get_matched_regions,
@@ -103,37 +104,6 @@ def receive_similarity(request):
     return JsonResponse({"message": "Invalid request"}, status=400)
 
 
-@user_passes_test(is_superuser)
-def delete_all_regions_pairs(request):
-    # NOTE deactivated, only for dev purposes
-    RegionPair.objects.all().delete()
-    return JsonResponse({"message": "All region pairs deleted"})
-
-
-@user_passes_test(is_superuser)
-def index_regions_similarity(request, regions_ref=None):
-    """
-    Index the content of a scores npy files containing regions_ref in their name
-    into the RegionPair database table
-    if the score files have already been added to the database, it will only override the score
-    """
-    from app.similarity.tasks import process_similarity_file
-
-    if regions_ref is None:
-        pairs = get_all_pairs()
-    else:
-        pairs = get_computed_pairs(regions_ref)
-
-    for pair in pairs:
-        process_similarity_file.delay(f"{SCORES_PATH}/{pair}.npy")
-
-    return JsonResponse(
-        {
-            "Launched": pairs,
-        }
-    )
-
-
 def get_similar_images(request, wid, rid=None):
     """
     Return the best region images that are similar to the query region image
@@ -208,7 +178,7 @@ def get_compared_regions(request, wid, rid=None):
         q_regions = witness.get_regions()
 
     try:
-        compared_regions = {q_r.get_ref(): q_r.get_json() for q_r in q_regions}
+        current_regions = {q_r.get_ref(): q_r.get_json() for q_r in q_regions}
 
         # Collect all region IDs to query at once
         all_region_ids = set()
@@ -225,8 +195,14 @@ def get_compared_regions(request, wid, rid=None):
 
         # Fetch all similar regions in one query
         sim_regions = Regions.objects.filter(id__in=all_region_ids)
-        compared_regions.update({r.get_ref(): r.get_json() for r in sim_regions})
-        return JsonResponse(compared_regions)
+        compared_regions = dict(
+            sorted(
+                {r.get_ref(): r.get_json() for r in sim_regions}.items(),
+                key=lambda x: sort_key(x[0]),
+            )
+        )
+
+        return JsonResponse(OrderedDict({**current_regions, **compared_regions}))
     except Exception as e:
         log("[get_compared_regions] Couldn't retrieve compared regions", e)
         return JsonResponse(
@@ -352,7 +328,7 @@ def get_query_images(request, wid, rid=None):
         q_imgs = set()
         for q_r in q_regions:
             rid = q_r.id
-            q_imgs.update(get_regions_q_imgs(q_r.id))
+            q_imgs.update(get_regions_q_imgs(q_r.id, wid))
         return JsonResponse(sorted(list(q_imgs)), safe=False)
     except Exception as e:
         return JsonResponse(
@@ -397,4 +373,96 @@ def save_category(request):
             )
         return JsonResponse(
             {"status": "success", "message": "Existing region pair updated"}, status=200
+        )
+
+
+@user_passes_test(is_superuser)
+def index_regions_similarity(request, regions_ref=None):
+    """
+    Index the content of a scores npy files containing regions_ref in their name
+    OR all the similarity score files into the RegionPair database table
+    if the score files have already been added to the database, it will only override the score
+    """
+    from app.similarity.tasks import process_similarity_file
+
+    if regions_ref is None:
+        pairs = get_all_pairs()
+    else:
+        pairs = get_computed_pairs(regions_ref)
+
+    for pair in pairs:
+        process_similarity_file.delay(f"{SCORES_PATH}/{pair}.npy")
+
+    return JsonResponse(
+        {
+            "Launched": pairs,
+        }
+    )
+
+
+@user_passes_test(is_superuser)
+def delete_all_regions_pairs(request):
+    # NOTE deactivated, only for dev purposes
+    RegionPair.objects.all().delete()
+    return JsonResponse({"message": "All region pairs deleted"})
+
+
+@user_passes_test(is_superuser)
+def remove_incorrect_pairs(request, mismatched=False, duplicate=False, swapped=True):
+    """
+    Removes RegionPair instances that are faulty
+    """
+    from django.db import DatabaseError
+
+    count = 0
+
+    try:
+        if mismatched:
+            from django.db.models import F
+
+            # if img_1 is alphabetically after img_2,
+            # indicating that the pair has been incorrectly inserted in the database
+            mismatched_pairs = RegionPair.objects.filter(img_1__gt=F("img_2"))
+            count += mismatched_pairs.count()
+            mismatched_pairs.delete()
+
+        if duplicate:
+            # if there is duplicates of the same img pair with different ids
+            duplicate_pairs = (
+                RegionPair.objects.values("img_1", "img_2")
+                .annotate(count=Count("id"))
+                .filter(count__gt=1)
+            )
+            count += len(duplicate_pairs)
+            for pair in duplicate_pairs:
+                duplicates = RegionPair.objects.filter(
+                    img_1=pair["img_1"], img_2=pair["img_2"]
+                )
+                count += duplicates.count() - 1
+                duplicates[1:].delete()
+
+        if swapped:
+            # if there is duplicates of the same img pair but with img_1 and img_2 swapped
+            swapped_pairs = RegionPair.objects.filter(
+                Q(img_1__in=RegionPair.objects.values("img_2"))
+                & Q(img_2__in=RegionPair.objects.values("img_1"))
+            )
+            count += len(swapped_pairs)
+            for pair in swapped_pairs:
+                reverse_pair = RegionPair.objects.filter(
+                    img_1=pair.img_2, img_2=pair.img_1
+                ).first()
+                if reverse_pair:
+                    sorted_imgs = sorted([pair.img_1, pair.img_2], key=sort_key)
+                    if pair.img_1 != sorted_imgs[0]:
+                        pair.delete()
+                    else:
+                        reverse_pair.delete()
+
+        return JsonResponse({"message": f"{count} incorrect pairs removed"})
+
+    except DatabaseError as e:
+        return JsonResponse(
+            {"message": f"An error occurred while removing incorrect pairs: {e}"},
+            status=500,
         )

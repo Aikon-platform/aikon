@@ -3,12 +3,23 @@ import {errorMsg, initPagination, loading, pageUpdate} from "../../utils.js";
 
 function createSimilarityStore() {
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
+    const currentPageId = window.location.pathname.match(/\d+/g).join('-');
+    const emptySelection = { [currentPageId]: {}};
     const pageLength = 25;
 
     const currentPage = writable(1);
     // todo empty selected regions if not in compared regions
     const comparedRegions = writable({});
-    const selectedRegions = writable(JSON.parse(localStorage.getItem("selectedRegions")) || {});
+
+    // TODO to delete very soon
+    let storedSelection = JSON.parse(localStorage.getItem("selectedRegions"));
+    if (storedSelection && !storedSelection.hasOwnProperty(currentPageId)) {
+        storedSelection = emptySelection;
+    }
+    const selectedRegions = writable(storedSelection || emptySelection);
+    // TODO replace with this line
+    // const selectedRegions = writable(JSON.parse(localStorage.getItem("selectedRegions")) || emptySelection);
+
     const excludedCategories = writable(JSON.parse(localStorage.getItem("excludedCategories")) || []);
     const qImgs = writable([]);
     const pageQImgs = writable([]);
@@ -69,21 +80,27 @@ function createSimilarityStore() {
     function unselect(regionRef) {
         selectedRegions.update(selection => {
             const updatedSelection = { ...selection };
-            delete updatedSelection[regionRef];
+            delete updatedSelection[currentPageId][regionRef];
             store(updatedSelection)
             return updatedSelection;
         });
     }
     function select(region) {
         selectedRegions.update(selection => {
-            const updatedSelection = { ...selection, [region.ref]: region };
+            const updatedSelection = {
+                ...selection,
+                [currentPageId]: {
+                    ...(selection[currentPageId] || {}),
+                    [region.ref]: region
+                }
+            };
             store(updatedSelection)
             return updatedSelection;
         });
     }
 
     const isSelected = derived(selectedRegions, ($selectedRegions) =>
-        regionRef => $selectedRegions.hasOwnProperty(regionRef)
+        regionRef => $selectedRegions[currentPageId]?.hasOwnProperty(regionRef)
     );
 
     function getRegionsInfo(ref) {
