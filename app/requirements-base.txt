@@ -1,6 +1,6 @@
 ansicon==1.89.0
 arrow==1.2.3
-asgiref==3.5.0
+asgiref==3.6.0
 beautifulsoup4==4.11.1
 blessed==1.19.1
 bottle==0.12.23
@@ -9,11 +9,11 @@ certifi==2022.6.15
 celery==5.3.1
 cffi==1.15.1
 charset-normalizer==2.1.0
-cryptography==38.0.4
+cryptography==42.0.0
 cssselect2==0.6.0
 defusedxml==0.7.1
 deprecation==2.1.0
-Django==4.0.4
+Django>=4.1.10
 django-admin-extra-buttons==1.5.4
 django-admin-searchable-dropdown==1.2
 django-autocomplete-light==3.9.1
@@ -33,7 +33,6 @@ iiif-prezi==0.3.0
 jinxed==1.2.0
 lxml==4.8.0
 numpy>=1.18.5
-# opencv-python==4.8.1.78 # is it necessary?
 packaging==21.3
 pdf2image==1.16.2
 pikepdf==6.2.0

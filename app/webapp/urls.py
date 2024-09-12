@@ -274,4 +274,5 @@ urlpatterns += [
 # SUPERADMIN VIEWS
 urlpatterns += [
     path("superadmin/empty-works/", list_empty_works, name="empty-works"),
+    path("superadmin/works/", list_works, name="list-works"),
 ]
