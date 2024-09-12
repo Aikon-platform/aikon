@@ -10,18 +10,23 @@ from app.webapp.views import is_superuser
 from app.webapp.models.work import Work
 
 
-# @user_passes_test(is_superuser)
+@user_passes_test(is_superuser)
 def list_empty_works(request):
     # List all works that have no witnesses
     empty_works = []
     works = Work.objects.all()
     for w in works:
         if w.get_witnesses().count() == 0:
-            empty_works.append(w.json)
+            wjson = w.json
+            try:
+                w.delete()
+                empty_works.append(wjson)
+            except Exception as e:
+                print(e)
 
     return JsonResponse(
         {
-            "empty_works": empty_works,
+            "deleted works": empty_works,
             "count": len(empty_works),
         }
     )
