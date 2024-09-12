@@ -30,3 +30,15 @@ def list_empty_works(request):
             "count": len(empty_works),
         }
     )
+
+
+def list_works(request):
+    # return a list of works order alphabetically by title
+    works = Work.objects.all()
+    works = sorted(works, key=lambda x: x.title)
+    return JsonResponse(
+        {
+            "works": [{w.json} for w in works],
+            "count": len(works),
+        }
+    )
