@@ -1,13 +1,16 @@
 from dal import autocomplete
+from django.db.models import Q
 from django.forms import DateTimeField, DateField
 from django_filters import FilterSet
 from django_filters.filters import (
     ModelChoiceFilter,
     ModelMultipleChoiceFilter,
     RangeFilter,
+    CharFilter,
 )
 from django.forms.models import ModelChoiceIteratorValue
 
+from app.config.settings import APP_LANG
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.edition import Edition, get_name as edition_name
@@ -40,6 +43,8 @@ class RecordFilter(FilterSet):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.custom_labels = getattr(self.Meta, "labels", {})
+        self.search_fields = ["json"]
+        self.filters["search"] = self.create_search_filter()
 
     @staticmethod
     def get_choices(model):
@@ -90,6 +95,20 @@ class RecordFilter(FilterSet):
             form_fields.append(field_info)
 
         return form_fields
+
+    def create_search_filter(self):
+        return CharFilter(
+            method=self.search_method,
+            label="Full-text search" if APP_LANG == "en" else "Recherche plein texte",
+        )
+
+    def search_method(self, queryset, name, value):
+        if value and self.search_fields:
+            q_objects = Q()
+            for field in self.search_fields:
+                q_objects |= Q(**{f"{field}__icontains": value})
+            return queryset.filter(q_objects)
+        return queryset
 
     @staticmethod
     def get_val(value):

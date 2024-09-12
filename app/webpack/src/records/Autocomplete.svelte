@@ -12,6 +12,9 @@
     let isOpen = false;
     let selectedIndex = -1;
 
+    // TODO when emptying field, reset selectedIndex + selected ID
+    // TODO when clicking once on the option to select, make autocomplete list disappear
+
     const dispatch = createEventDispatcher();
 
     $: {
