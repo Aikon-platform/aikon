@@ -24,7 +24,7 @@ APP_ROOT="$(dirname "$DOCKER_DIR")"
 
 source "$APP_ROOT"/scripts/functions.sh
 
-# TODO update nginx conf with domain name
+# TODO update nginx conf with domain name + update docker compose with
 
 # if ../app/config/.env does not exist, create it
 if [ ! -f "$APP_ROOT"/app/config/.env ]; then

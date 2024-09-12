@@ -24,17 +24,16 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     build-essential \
     poppler-utils \
-    python3-dev \
-    python3-venv \
+    python3.10 \
+    python3.10-venv \
+    python3-pip \
     supervisor \
-    redis-server \
-    nginx \
     maven \
-    postgresql \
     ghostscript
+#    postgresql \
+#    redis-server \
+#    nginx \
 
-# TODO make sure python 3.10 is installed
-# TODO install java 11
 
 WORKDIR /home/${USER}
 
@@ -48,19 +47,16 @@ COPY --chown=${USER} ../sas /home/${USER}/sas
 COPY --chown=${USER} ./supervisord.conf /home/${USER}/supervisord.conf
 
 # Install python dependencies
-COPY --chown=${USER} ./requirements.txt /home/${USER}/app/requirements.txt
+COPY --chown=${USER} ./requirements-prod.txt /home/${USER}/app/requirements.txt
 RUN python3.10 -m venv venv
-RUN source venv/bin/activate && pip install --upgrade pip && pip install -r /home/${USER}/app/requirements.txt
+RUN /home/${USER}/venv/bin/pip install --upgrade pip
+RUN /home/${USER}/pip install -r /home/${USER}/app/requirements.txt
 
-## Initialize the database TODO make a docker compose for 2 container (app and db)
-#COPY --chown=${USER} ../scripts/new_db.sh /home/${USER}/app/init_db.sh
-#RUN chmod +x /home/${USER}/app/init_db.sh
-
-# Create nginx config outside of the container
-COPY docker/nginx.conf /etc/nginx/sites-available/aikon
+## Create nginx config outside of the container
+#COPY ./nginx.conf /etc/nginx/sites-available/aikon
 
 # Must match the PORT in docker.sh
-EXPOSE 8001 8182 8888
+EXPOSE 8001
 
 RUN mkdir -p /run && chown aikon:aikon /run
 
