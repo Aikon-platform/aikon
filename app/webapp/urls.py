@@ -270,3 +270,8 @@ urlpatterns += [
     path("search/documentset/", search_document_set, name="search-document-sets"),
     path("search/json-generation/", json_regeneration, name="regenerate_json"),
 ]
+
+# SUPERADMIN VIEWS
+urlpatterns += [
+    path("superadmin/empty-works/", list_empty_works, name="empty-works"),
+]
