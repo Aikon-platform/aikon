@@ -99,8 +99,8 @@ case $answer in
         ;;
 esac
 
-db_name=$(get_env_value "DB_NAME" "$APP_ENV")
-db_user=$(get_env_value "DB_USERNAME" "$APP_ENV")
+db_name=$(get_env_value "POSTGRES_DB" "$APP_ENV")
+db_user=$(get_env_value "POSTGRES_USER" "$APP_ENV")
 colorEcho blue "\nCreate a new database named $db_name?"
 answer=$(printf "%s\n" "${options[@]}" | fzy)
 

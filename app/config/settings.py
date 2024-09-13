@@ -140,9 +140,9 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": ENV.str("DB_NAME", default=""),
-        "USER": ENV.str("DB_USERNAME", default=""),
-        "PASSWORD": ENV.str("DB_PASSWORD", default=""),
+        "NAME": ENV.str("POSTGRES_DB", default=""),
+        "USER": ENV.str("POSTGRES_USER", default=""),
+        "PASSWORD": ENV.str("POSTGRES_PASSWORD", default=""),
         "HOST": ENV.str("DB_HOST", default="localhost"),
         "PORT": ENV.str("DB_PORT", default=5432),
     }
@@ -231,7 +231,7 @@ LOGGING = {
     },
 }
 
-# # Celery settings
+# # Celery settings TODO put that in celery.py
 # CELERY_BROKER_URL = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
 # CELERY_RESULT_BACKEND = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
 CELERY_ACCEPT_CONTENT = ["json", "pickle"]

@@ -1,92 +1,108 @@
-version: '3'
+version: '3.8'
 
 services:
   web:
     build:
-      context: .
-      dockerfile: Dockerfile
-    command: gunicorn app.config.wsgi:application --bind 0.0.0.0:8001 --workers 4
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        USERID: ${USERID}
+        PORT: ${DJANGO_PORT}
     volumes:
-      - ./app:/home/aikon/app
-      - ./celery:/home/aikon/celery
-      - ./cantaloupe:/home/aikon/cantaloupe
-      - ./sas:/home/aikon/sas
+      - ${DATA_FOLDER}:/data
+      - ../app:/home/aikon/app
+    env_file:
+      - ../app/config/.env
+      - ./.env
     ports:
-      - "8001:8001"
+      - "${DJANGO_PORT}:8000"
     depends_on:
       - db
       - redis
-    environment:
-      - POSTGRES_DB=your_db
-      - POSTGRES_USER=your_user
-      - POSTGRES_PASSWORD=your_password
     networks:
       - app_network
+    restart: unless-stopped
+
   db:
     image: postgres:13
     volumes:
       - pgdata:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_DB=your_db
-      - POSTGRES_USER=your_user
-      - POSTGRES_PASSWORD=your_password
+    env_file:
+      - ../app/config/.env
     networks:
       - app_network
+    restart: unless-stopped
+
   redis:
     image: redis:6
     volumes:
       - redisdata:/data
     networks:
       - app_network
+    restart: unless-stopped
+
   celery:
     build:
-      context: .
-      dockerfile: Dockerfile
-    command: ./start.sh
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: ../celery/start.sh
     volumes:
-      - ./celery:/home/aikon/celery
+      - ../celery:/home/aikon/celery
+      - ../app:/home/aikon/app
     depends_on:
+      - web
       - redis
       - db
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    env_file:
+      - ../app/config/.env
     networks:
       - app_network
+
   cantaloupe:
-    image: openjdk:11-jdk
     build:
-      context: ./cantaloupe
-    command: ./start.sh
+      context: ../cantaloupe
+      dockerfile: Dockerfile
     ports:
       - "8182:8182"
     volumes:
-      - ./cantaloupe:/home/aikon/cantaloupe
+      - ../cantaloupe:/home/aikon/cantaloupe
+      - /media/aikon:/data
     networks:
       - app_network
+    user: root
+
   sas:
-    image: openjdk:11-jdk
     build:
-      context: ./sas
-    command: ./start.sh
+      context: ../sas
+      dockerfile: Dockerfile
     volumes:
-      - ./sas:/home/aikon/sas
+      - ../sas:/home/aikon/sas
     ports:
       - "8888:8888"
     networks:
       - app_network
+
   nginx:
     image: nginx:latest
     ports:
       - "80:80"
+    env_file:
+      - ../app/config/.env
+      - ./.env
+    environment:
+      - PROD_URL=${PROD_URL:-localhost}
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./app/staticfiles:/home/aikon/app/staticfiles
-      - /media/datafiles:/data/mediafiles
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./app/staticfiles:/home/aikon/app/staticfiles:ro
+      - ${DATA_FOLDER:-/media/aikon}:/data:ro
     depends_on:
       - web
+      - cantaloupe
+      - sas
     networks:
       - app_network
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:

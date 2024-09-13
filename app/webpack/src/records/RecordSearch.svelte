@@ -34,7 +34,7 @@
 </script>
 
 {#if searchFields.length > 0}
-    <form on:submit={handleSearch} class="is-center">
+    <form on:submit={handleSearch} class="is-center pb-3">
         <article class="message fixed-grid">
             <!-- Full-text search -->
             {#each searchFields as field}

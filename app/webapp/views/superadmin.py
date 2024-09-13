@@ -38,7 +38,7 @@ def list_works(request):
     works = sorted(works, key=lambda x: x.title)
     return JsonResponse(
         {
-            "works": [{w.json} for w in works],
+            "works": [w.json for w in works],
             "count": len(works),
         }
     )
