@@ -59,7 +59,7 @@ COPY --chown=${USER} docker/supervisord.conf /home/${USER}/supervisord.conf
 COPY --chown=${USER} app/requirements-prod.txt /home/${USER}/app/requirements.txt
 RUN python3.10 -m venv venv
 RUN /home/${USER}/venv/bin/pip install --upgrade pip
-RUN /home/${USER}/pip install -r /home/${USER}/app/requirements.txt
+RUN /home/${USER}/venv/pip install -r /home/${USER}/app/requirements.txt
 
 # Must match the PORT in docker.sh
 EXPOSE ${PORT}

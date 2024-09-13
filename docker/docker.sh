@@ -8,7 +8,7 @@ if [ ! -f "$DOCKER_DIR"/.env ]; then
 fi
 
 build_containers() {
-    docker-compose build
+    docker compose build
 }
 
 if [ "$1" = "build" ] || [ "$1" = "update" ]; then
@@ -16,4 +16,4 @@ if [ "$1" = "build" ] || [ "$1" = "update" ]; then
     build_containers
 fi
 
-docker-compose up -d
+docker compose up -d
