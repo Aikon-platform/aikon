@@ -9,14 +9,14 @@ if [ ! -f "$APP_ROOT"/app/config/.env ]; then
     update_env "$APP_ROOT"/app/config/.env
 fi
 
-# if ../app/cantaloupe/.env does not exist, create it
-if [ ! -f "$APP_ROOT"/app/cantaloupe/.env ]; then
-    cp "$APP_ROOT"/app/cantaloupe/.env.template "$APP_ROOT"/app/cantaloupe/.env
+# if ../cantaloupe/.env does not exist, create it
+if [ ! -f "$APP_ROOT"/cantaloupe/.env ]; then
+    cp "$APP_ROOT"/cantaloupe/.env.template "$APP_ROOT"/cantaloupe/.env
     update_cantaloupe_env
     bash "$APP_ROOT"/cantaloupe/init.sh
 fi
 
-# if ../app/config/.env does not exist, create it
+# if docker/.env does not exist, create it
 if [ ! -f "$APP_ROOT"/docker/.env ]; then
     cp "$APP_ROOT"/docker/.env.template "$APP_ROOT"/docker/.env
     update_env "$APP_ROOT"/docker/.env
