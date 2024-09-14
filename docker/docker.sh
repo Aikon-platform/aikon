@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# HOW TO USE
+# Inside the docker/ directory, run:
+# bash docker.sh
+
 DOCKER_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # if the .env file does not exist, meaning that docker was never initialized

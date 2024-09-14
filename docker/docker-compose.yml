@@ -45,6 +45,9 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+      args:
+        USERID: ${USERID}
+        PORT: ${DJANGO_PORT}
     command: /home/aikon/celery/start.sh
     volumes:
       - ../celery:/home/aikon/celery
@@ -55,6 +58,7 @@ services:
       - db
     env_file:
       - ../app/config/.env
+      - ./.env
     networks:
       - app_network
 
