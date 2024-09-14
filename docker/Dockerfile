@@ -1,10 +1,11 @@
 # Final image
 FROM ubuntu:22.04
 
-# UPDATE THOSE VARIABLES
+# Use args passed in the build command and retrieved from docker/.env
+ARG USERID
+ARG PORT
+
 ENV USER=aikon
-ARG USERID=$USERID
-ARG PORT=$PORT
 
 RUN useradd -u ${USERID} -m -d /home/${USER} ${USER}
 
@@ -32,28 +33,22 @@ RUN apt-get update && apt-get install -y \
     python3.10 \
     python3.10-venv \
     python3-pip
-#    postgresql \
-#    redis-server \
-#    nginx \
 
 WORKDIR /home/${USER}
 
-## Copy app files
 #COPY --chown=${USER} ../app /home/${USER}/app
 #COPY --chown=${USER} ../gunicorn /home/${USER}/gunicorn
-## TODO check if necessary if the have their own docker image
 #COPY --chown=${USER} ../celery /home/${USER}/celery
-#COPY --chown=${USER} ../cantaloupe /home/${USER}/cantaloupe
-#COPY --chown=${USER} ../sas /home/${USER}/sas
-#COPY --chown=${USER} ./supervisord.conf /home/${USER}/supervisord.conf
+
 # Copy app files
 COPY --chown=${USER} app /home/${USER}/app
 COPY --chown=${USER} gunicorn /home/${USER}/gunicorn
-## TODO check if necessary if the have their own docker image
 COPY --chown=${USER} celery /home/${USER}/celery
+COPY --chown=${USER} docker/supervisord.conf /home/${USER}/supervisord.conf
+
+## TODO check if necessary if the have their own docker image
 COPY --chown=${USER} cantaloupe /home/${USER}/cantaloupe
 COPY --chown=${USER} sas /home/${USER}/sas
-COPY --chown=${USER} docker/supervisord.conf /home/${USER}/supervisord.conf
 
 # Install python dependencies
 COPY --chown=${USER} app/requirements-prod.txt /home/${USER}/app/requirements.txt

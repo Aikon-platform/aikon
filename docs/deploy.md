@@ -15,6 +15,8 @@ git clone git@github.com:Aikon-platform/aikon.git
 cd aikon && git checkout <your-branch>-prod
 ```
 
+[//]: # (TODO add DOcker documentation)
+
 ## Manual installation
 
 ### Dependencies

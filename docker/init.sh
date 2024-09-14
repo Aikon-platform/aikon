@@ -1,6 +1,8 @@
 DOCKER_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 APP_ROOT="$(dirname "$DOCKER_DIR")"
 
+# TODO add more echo and interactivity to let the user know what is happening
+
 source "$APP_ROOT"/scripts/functions.sh
 
 # if ../app/config/.env does not exist, create it
@@ -11,6 +13,7 @@ fi
 
 # if ../cantaloupe/.env does not exist, create it
 if [ ! -f "$APP_ROOT"/cantaloupe/.env ]; then
+    # TODO fix that part that is not working correctly
     cp "$APP_ROOT"/cantaloupe/.env.template "$APP_ROOT"/cantaloupe/.env
     update_cantaloupe_env
     bash "$APP_ROOT"/cantaloupe/init.sh

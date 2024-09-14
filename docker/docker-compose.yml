@@ -45,7 +45,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    command: ../celery/start.sh
+    command: /home/aikon/celery/start.sh
     volumes:
       - ../celery:/home/aikon/celery
       - ../app:/home/aikon/app
@@ -66,7 +66,7 @@ services:
       - "8182:8182"
     volumes:
       - ../cantaloupe:/home/aikon/cantaloupe
-      - /media/aikon:/data
+      - ${DATA_FOLDER}:/data
     networks:
       - app_network
     user: root
@@ -93,8 +93,8 @@ services:
       - PROD_URL=${PROD_URL:-localhost}
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./app/staticfiles:/home/aikon/app/staticfiles:ro
-      - ${DATA_FOLDER:-/media/aikon}:/data:ro
+      - ../app/staticfiles:/home/aikon/app/staticfiles:ro
+      - ${DATA_FOLDER}:/data:ro
     depends_on:
       - web
       - cantaloupe
