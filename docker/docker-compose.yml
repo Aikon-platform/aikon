@@ -66,8 +66,10 @@ services:
     build:
       context: ../cantaloupe
       dockerfile: Dockerfile
+    env_file:
+      - ./.env
     ports:
-      - "8182:8182"
+      - "${CANTALOUPE_PORT:-8182}:8182"
     volumes:
       - ../cantaloupe:/home/aikon/cantaloupe
       - ${DATA_FOLDER}:/data
@@ -81,18 +83,20 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ../sas:/home/aikon/sas
+    env_file:
+      - ./.env
     ports:
-      - "8888:8888"
+      - "${SAS_PORT:-8888}:8888"
     networks:
       - app_network
 
   nginx:
     image: nginx:latest
-    ports:
-      - "80:80"
     env_file:
       - ../app/config/.env
       - ./.env
+    ports:
+      - "${NGINX_PORT:-80}:80"
     environment:
       - PROD_URL=${PROD_URL:-localhost}
     volumes:
