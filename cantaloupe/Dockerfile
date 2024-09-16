@@ -4,7 +4,7 @@ WORKDIR /cantaloupe
 
 #COPY --chown=${USER} cantaloupe /home/${USER}/cantaloupe
 
-COPY start.sh /cantaloupe/start.sh
+COPY cantaloupe/start.sh /cantaloupe/start.sh
 RUN chmod +x /cantaloupe/start.sh
 
 EXPOSE 8182

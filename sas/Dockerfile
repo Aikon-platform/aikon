@@ -4,7 +4,7 @@ WORKDIR /sas
 
 #COPY --chown=${USER} sas /home/${USER}/sas
 
-COPY start.sh /sas/start.sh
+COPY sas/start.sh /sas/start.sh
 RUN chmod +x /sas/start.sh
 
 EXPOSE 8888
