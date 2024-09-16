@@ -7,6 +7,8 @@ ARG PORT
 
 ENV USER=aikon
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/home/${USER}
+#ENV DJANGO_SETTINGS_MODULE=app.config.settings
 
 RUN useradd -u ${USERID} -m -d /home/${USER} ${USER}
 
@@ -60,13 +62,12 @@ EXPOSE ${PORT}
 # For the gunicorn socket
 RUN mkdir -p /run && chown ${USER}:${USER} /run
 
-# For the static files
 RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER}/app/staticfiles
+RUN touch /home/${USER}/app/logs/app_log.log && chown ${USER}:${USER} /home/${USER}/app/logs/app_log.log
 
 COPY --chown=${USER} docker/manage.sh /home/aikon/manage.sh
 RUN chmod +x /home/aikon/manage.sh
 
-CMD ["/home/aikon/manage.sh"]
 
 # Launch gunicorn
 CMD export LC_ALL=C.UTF-8 && export LANG=C.UTF-8 && \
