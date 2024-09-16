@@ -17,10 +17,6 @@ services:
     depends_on:
       - db
       - redis
-#      db:
-#        condition: service_healthy
-#      redis:
-#        condition: service_healthy
 #    healthcheck:
 #      test: [ "CMD", "curl", "-f", "http://localhost:8000/test/" ]
 #      interval: 30s
@@ -58,27 +54,6 @@ services:
       timeout: 5s
       retries: 5
 
-#  celery:
-#    build:
-#      context: ..
-#      dockerfile: docker/Dockerfile
-#      args:
-#        USERID: ${USERID}
-#        PORT: ${DJANGO_PORT}
-#    command: /home/aikon/celery/start.sh
-#    volumes:
-#      - ../celery:/home/aikon/celery
-#      - ../app:/home/aikon/app
-#    depends_on:
-#      - web
-#      - redis
-#      - db
-#    env_file:
-#      - ../app/config/.env
-#      - ./.env
-#    networks:
-#      - app_network
-
   cantaloupe:
     build:
       context: ..
@@ -88,7 +63,6 @@ services:
     ports:
       - "${CANTALOUPE_PORT:-8182}:8182"
     volumes:
-#      - ../cantaloupe:/home/aikon/cantaloupe
       - ${DATA_FOLDER}:/data
     networks:
       - app_network
@@ -98,8 +72,6 @@ services:
     build:
       context: ..
       dockerfile: sas/Dockerfile
-    volumes:
-      - ../sas:/sas
     env_file:
       - ./.env
     ports:
@@ -121,12 +93,9 @@ services:
       - ../app/staticfiles:/home/aikon/app/staticfiles:ro
       - ${DATA_FOLDER}:/data:ro
     depends_on:
-      web:
-        condition: service_healthy
-      cantaloupe:
-        condition: service_healthy
-      sas:
-        condition: service_healthy
+      - web
+      - cantaloupe
+      - sas
     networks:
       - app_network
     restart: unless-stopped

@@ -52,8 +52,8 @@ RUN /home/${USER}/venv/bin/pip install --upgrade pip
 RUN /home/${USER}/venv/bin/pip install -r /home/${USER}/requirements.txt
 
 ## TODO check if necessary if the have their own docker image
-COPY --chown=${USER} cantaloupe /home/${USER}/cantaloupe
-COPY --chown=${USER} sas /home/${USER}/sas
+#COPY --chown=${USER} cantaloupe /home/${USER}/cantaloupe
+#COPY --chown=${USER} sas /home/${USER}/sas
 
 # Must match the PORT in docker.sh
 EXPOSE ${PORT}
