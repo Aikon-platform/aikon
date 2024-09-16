@@ -2,9 +2,8 @@ FROM openjdk:11-jdk
 
 WORKDIR /cantaloupe
 
-ENV USER=root
-
-COPY --chown=${USER} cantaloupe /
+COPY --chown=root cantaloupe /
+RUN ls /
 RUN chmod +x /cantaloupe/start.sh
 
 EXPOSE 8182
