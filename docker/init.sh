@@ -29,12 +29,12 @@ source "$APP_ROOT"/app/config/.env
 source "$APP_ROOT"/docker/.env
 
 # if nginx.conf does not exist, create it
-if [ ! -f "$APP_ROOT"/docker/nginx.conf ]; then
-    cp "$APP_ROOT"/docker/nginx.conf.template "$APP_ROOT"/docker/nginx.conf
+if [ ! -f "$APP_ROOT"/docker/nginx_conf ]; then
+    cp "$APP_ROOT"/docker/nginx.conf.template "$APP_ROOT"/docker/nginx_conf
     source "$APP_ROOT"/app/config/.env
 
-    sed -i "" -e "s~NGINX_PORT~$NGINX_PORT~" "$APP_ROOT"/docker/nginx.conf
-    sed -i "" -e "s~PROD_URL~$PROD_URL~" "$APP_ROOT"/docker/nginx.conf
+    sed -i -e "s~NGINX_PORT~$NGINX_PORT~" "$APP_ROOT"/docker/nginx_conf
+    sed -i -e "s~PROD_URL~$PROD_URL~" "$APP_ROOT"/docker/nginx_conf
 fi
 
 # TODO redis password
