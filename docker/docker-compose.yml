@@ -88,7 +88,7 @@ services:
     ports:
       - "${CANTALOUPE_PORT:-8182}:8182"
     volumes:
-      - ../cantaloupe:/cantaloupe
+      - ../cantaloupe:/home/aikon/cantaloupe
       - ${DATA_FOLDER}:/data
     networks:
       - app_network
