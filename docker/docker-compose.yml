@@ -21,11 +21,11 @@ services:
 #        condition: service_healthy
 #      redis:
 #        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/test/" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:8000/test/" ]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
     networks:
       - app_network
     restart: unless-stopped
@@ -81,8 +81,8 @@ services:
 
   cantaloupe:
     build:
-      context: ../cantaloupe
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: cantaloupe/Dockerfile
     env_file:
       - ./.env
     ports:
@@ -96,8 +96,8 @@ services:
 
   sas:
     build:
-      context: ../sas
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: sas/Dockerfile
     volumes:
       - ../sas:/home/aikon/sas
     env_file:
