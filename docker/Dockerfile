@@ -31,7 +31,6 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     poppler-utils \
     supervisor \
-    maven \
     ghostscript \
     python3.10 \
     python3.10-venv \
@@ -63,7 +62,6 @@ EXPOSE ${PORT}
 RUN mkdir -p /run && chown ${USER}:${USER} /run
 
 RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER}/app/staticfiles
-RUN touch /home/${USER}/app/logs/app_log.log && chown ${USER}:${USER} /home/${USER}/app/logs/app_log.log
 
 COPY --chown=${USER} docker/manage.sh /home/aikon/manage.sh
 RUN chmod +x /home/aikon/manage.sh

@@ -88,7 +88,7 @@ services:
     ports:
       - "${CANTALOUPE_PORT:-8182}:8182"
     volumes:
-      - ../cantaloupe:/home/aikon/cantaloupe
+      - ../cantaloupe:/cantaloupe
       - ${DATA_FOLDER}:/data
     networks:
       - app_network
@@ -99,7 +99,7 @@ services:
       context: ..
       dockerfile: sas/Dockerfile
     volumes:
-      - ../sas:/home/aikon/sas
+      - ../sas:/sas
     env_file:
       - ./.env
     ports:
