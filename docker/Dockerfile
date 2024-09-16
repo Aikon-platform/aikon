@@ -6,6 +6,7 @@ ARG USERID
 ARG PORT
 
 ENV USER=aikon
+ENV PYTHONUNBUFFERED=1
 
 RUN useradd -u ${USERID} -m -d /home/${USER} ${USER}
 
@@ -62,9 +63,11 @@ EXPOSE ${PORT}
 # For the gunicorn socket
 RUN mkdir -p /run && chown ${USER}:${USER} /run
 
+# For the static files
+RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER}/app/staticfiles
+
 COPY --chown=${USER} docker/manage.sh /home/aikon/manage.sh
 RUN chmod +x /home/aikon/manage.sh
-COPY --chown=${USER} scripts/create_superuser.py /home/aikon/create_superuser.py
 
 CMD ["/home/aikon/manage.sh"]
 

@@ -15,8 +15,10 @@ services:
     ports:
       - "${DJANGO_PORT}:8000"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - app_network
     restart: unless-stopped
@@ -30,6 +32,11 @@ services:
     networks:
       - app_network
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:6
@@ -38,6 +45,11 @@ services:
     networks:
       - app_network
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 #  celery:
 #    build:
@@ -87,6 +99,11 @@ services:
       - "${SAS_PORT:-8888}:8888"
     networks:
       - app_network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/test/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   nginx:
     image: nginx:latest
@@ -102,9 +119,12 @@ services:
       - ../app/staticfiles:/home/aikon/app/staticfiles:ro
       - ${DATA_FOLDER}:/data:ro
     depends_on:
-      - web
-      - cantaloupe
-      - sas
+      web:
+        condition: service_healthy
+      cantaloupe:
+        condition: service_healthy
+      sas:
+        condition: service_healthy
     networks:
       - app_network
     restart: unless-stopped
