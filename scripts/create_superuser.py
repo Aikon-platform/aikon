@@ -1,5 +1,11 @@
+import os
+import django
 from django.contrib.auth import get_user_model
 from app.config.settings import ENV
+
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.config.settings")
+django.setup()
 
 
 def create_superuser():
