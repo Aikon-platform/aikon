@@ -16,6 +16,10 @@ cd aikon && git checkout <your-branch>-prod
 ```
 
 [//]: # (TODO add Docker documentation + documentation on email setup)
+[//]: # (add user to docker group)
+[//]: # (install docker and docker-compose)
+[//]: # (install mail server)
+[//]: # (`docker compose logs <container-name>`)
 
 ## Manual installation
 

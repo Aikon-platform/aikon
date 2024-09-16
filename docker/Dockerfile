@@ -67,7 +67,8 @@ CMD export LC_ALL=C.UTF-8 && export LANG=C.UTF-8 && \
     source venv/bin/activate && \
     supervisord -c /home/${USER}/supervisord.conf
 
-COPY docker/manage.sh /home/aikon/manage.sh
+COPY --chown=${USER} docker/manage.sh /home/aikon/manage.sh
 RUN chmod +x /home/aikon/manage.sh
+COPY --chown=${USER} scripts/create_superuser.py /home/aikon/create_superuser.py
 
 CMD ["/home/aikon/manage.sh"]
