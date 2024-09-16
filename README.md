@@ -1,4 +1,4 @@
-# AIKON
+# <img alt="Aikon logo" src="app/webapp/static/favicon.ico" height="50" width="auto" style="display: inline; margin-bottom:-10px;"> AIKON
 
 > **[Aikon](https://aikon-platform.github.io/)** is a modular research platform designed to empower humanities scholars
 > in leveraging artificial intelligence and computer vision methods for analyzing large-scale heritage collections.
@@ -10,9 +10,6 @@
 - **VHS** [ANR-21-CE38-0008](https://anr.fr/Projet-ANR-21-CE38-0008): computer Vision and Historical analysis of Scientific illustration circulation
 - **EiDA** [ANR-22-CE38-0014](https://anr.fr/Projet-ANR-22-CE38-0014): EdIter et analyser les Diagrammes astronomiques historiques avec l’intelligence Artificielle
 - **DISCOVER** project [ERC-101076028](https://cordis.europa.eu/project/id/101076028): Discovering and Analyzing Visual Structures
-
-[//]: # (<img src="https://cdn-assets.inwink.com/e35f09cd-74e4-4383-8b70-15153fc0de48/9e39a716-4b31-408b-94f2-3af40901e6ac1">)
-[//]: # (<img src="https://www.scattererid.eu/wp-content/uploads/2019/02/erc_logo.png">)
 
 ## Requirements
 
@@ -30,9 +27,7 @@
 - **Geonames**:
     - Create an account on [Geonames](https://www.geonames.org/login) and activate it
 
-## Installation
-
-### Repository
+## Installation 🛠️
 
 ```bash
 git clone git@github.com:Aikon-platform/aikon.git
@@ -50,7 +45,7 @@ bash scripts/setup.sh
 Otherwise, follow the instructions below.
 
 <details>
-  <summary>### Manual install 🐢</summary>
+  <summary><h3>Manual install 🐢</h3></summary>
 
 #### Dependencies
 >
@@ -177,7 +172,7 @@ redis-cli -a $REDIS_PASSWORD
 ```
 </details>
 
-## Launch app
+## Launch app 🚀
 
 Launch everything (Django, Celery, Cantaloupe and SimpleAnnotationServer) at once (stop with `Ctrl+C`):
 ```bash
