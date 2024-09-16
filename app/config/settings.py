@@ -43,6 +43,7 @@ INSTALLED_APPS = [
 
 hosts = ENV.list("ALLOWED_HOSTS", default=[])
 hosts.append(ENV.str("PROD_URL", default=""))
+hosts.append("web")  # for docker nginx service
 ALLOWED_HOSTS = hosts
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
