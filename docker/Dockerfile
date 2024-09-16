@@ -35,12 +35,6 @@ RUN apt-get update && apt-get install -y \
     python3.10-venv \
     python3-pip
 
-# Install python dependencies
-COPY --chown=${USER} app/requirements-prod.txt /home/${USER}/app/requirements.txt
-RUN python3.10 -m venv venv
-RUN /home/${USER}/venv/bin/pip install --upgrade pip
-RUN /home/${USER}/venv/bin/pip install -r /home/${USER}/app/requirements.txt
-
 WORKDIR /home/${USER}
 
 # Copy app files
@@ -48,6 +42,13 @@ COPY --chown=${USER} app /home/${USER}/app
 COPY --chown=${USER} gunicorn /home/${USER}/gunicorn
 COPY --chown=${USER} celery /home/${USER}/celery
 COPY --chown=${USER} docker/supervisord.conf /home/${USER}/supervisord.conf
+
+# Install python dependencies
+COPY --chown=${USER} app/requirements-base.txt /home/${USER}/requirements-base.txt
+COPY --chown=${USER} app/requirements-prod.txt /home/${USER}/requirements.txt
+RUN python3.10 -m venv venv
+RUN /home/${USER}/venv/bin/pip install --upgrade pip
+RUN /home/${USER}/venv/bin/pip install -r /home/${USER}/requirements.txt
 
 ## TODO check if necessary if the have their own docker image
 #COPY --chown=${USER} cantaloupe /home/${USER}/cantaloupe
