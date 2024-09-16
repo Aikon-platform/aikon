@@ -17,11 +17,11 @@ services:
     depends_on:
       - db
       - redis
-#    healthcheck:
-#      test: [ "CMD", "curl", "-f", "http://localhost:8000/test/" ]
-#      interval: 30s
-#      timeout: 10s
-#      retries: 3
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/test/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - app_network
     restart: unless-stopped
@@ -78,6 +78,11 @@ services:
       - "${SAS_PORT:-8888}:8888"
     networks:
       - app_network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8888/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   nginx:
     image: nginx:latest
@@ -88,6 +93,7 @@ services:
       - "${NGINX_PORT:-80}:80"
     environment:
       - PROD_URL=${PROD_URL:-localhost}
+      - NGINX_PORT=${NGINX_PORT:-80}
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ../app/staticfiles:/home/aikon/app/staticfiles:ro
