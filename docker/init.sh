@@ -25,6 +25,9 @@ if [ ! -f "$APP_ROOT"/docker/.env ]; then
     update_env "$APP_ROOT"/docker/.env
 fi
 
+source "$APP_ROOT"/app/config/.env
+source "$APP_ROOT"/docker/.env
+
 # if nginx.conf does not exist, create it
 if [ ! -f "$APP_ROOT"/docker/nginx.conf ]; then
     cp "$APP_ROOT"/docker/nginx.conf.template "$APP_ROOT"/docker/nginx.conf
@@ -34,12 +37,10 @@ if [ ! -f "$APP_ROOT"/docker/nginx.conf ]; then
     sed -i "" -e "s~PROD_URL~$PROD_URL~" "$APP_ROOT"/docker/nginx.conf
 fi
 
-source "$APP_ROOT"/app/config/.env
 # TODO redis password
 
 # if $DATA_FOLDER does not exist
 if [ ! -d "$DATA_FOLDER" ]; then
-    source "$APP_ROOT"/docker/.env
     # Create $DATA_FOLDER folder with right permissions for user $USERID
     sudo mkdir -p "$DATA_FOLDER"
     sudo chown -R "$USERID:$USERID" "$DATA_FOLDER"
