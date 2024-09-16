@@ -135,3 +135,5 @@ logs/*
 scripts/*.txt
 scripts/*.sql
 scripts/.pgpass
+
+docker/nginx.conf

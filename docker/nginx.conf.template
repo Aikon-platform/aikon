@@ -12,9 +12,9 @@ http {
     keepalive_timeout  65;
 
     server {
-        listen ${NGINX_PORT};
-        listen [::]:${NGINX_PORT};
-        server_name ${PROD_URL};
+        listen NGINX_PORT;
+        listen [::]:NGINX_PORT;
+        server_name PROD_URL;
 
         client_max_body_size 5000M;
 
