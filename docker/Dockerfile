@@ -48,8 +48,8 @@ COPY --chown=${USER} celery /home/${USER}/celery
 COPY --chown=${USER} docker/supervisord.conf /home/${USER}/supervisord.conf
 
 ## TODO check if necessary if the have their own docker image
-COPY --chown=${USER} cantaloupe /home/${USER}/cantaloupe
-COPY --chown=${USER} sas /home/${USER}/sas
+#COPY --chown=${USER} cantaloupe /home/${USER}/cantaloupe
+#COPY --chown=${USER} sas /home/${USER}/sas
 
 # Install python dependencies
 COPY --chown=${USER} app/requirements-prod.txt /home/${USER}/app/requirements.txt

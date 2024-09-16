@@ -15,10 +15,17 @@ services:
     ports:
       - "${DJANGO_PORT}:8000"
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - db
+      - redis
+#      db:
+#        condition: service_healthy
+#      redis:
+#        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/test/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - app_network
     restart: unless-stopped
@@ -33,7 +40,7 @@ services:
       - app_network
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      test: [ "CMD-SHELL", "pg_isready" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -99,11 +106,6 @@ services:
       - "${SAS_PORT:-8888}:8888"
     networks:
       - app_network
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/test/" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   nginx:
     image: nginx:latest
