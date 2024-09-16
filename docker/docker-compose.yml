@@ -39,26 +39,26 @@ services:
       - app_network
     restart: unless-stopped
 
-  celery:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-      args:
-        USERID: ${USERID}
-        PORT: ${DJANGO_PORT}
-    command: /home/aikon/celery/start.sh
-    volumes:
-      - ../celery:/home/aikon/celery
-      - ../app:/home/aikon/app
-    depends_on:
-      - web
-      - redis
-      - db
-    env_file:
-      - ../app/config/.env
-      - ./.env
-    networks:
-      - app_network
+#  celery:
+#    build:
+#      context: ..
+#      dockerfile: docker/Dockerfile
+#      args:
+#        USERID: ${USERID}
+#        PORT: ${DJANGO_PORT}
+#    command: /home/aikon/celery/start.sh
+#    volumes:
+#      - ../celery:/home/aikon/celery
+#      - ../app:/home/aikon/app
+#    depends_on:
+#      - web
+#      - redis
+#      - db
+#    env_file:
+#      - ../app/config/.env
+#      - ./.env
+#    networks:
+#      - app_network
 
   cantaloupe:
     build:

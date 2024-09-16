@@ -20,6 +20,8 @@ cd aikon && git checkout <your-branch>-prod
 [//]: # (install docker and docker-compose)
 [//]: # (install mail server)
 [//]: # (`docker compose logs <container-name>`)
+[//]: # (https://docs.docker.com/engine/install/linux-postinstall/#configure-docker-to-start-on-boot-with-systemd)
+[//]: # (docker compose exec db psql -U ${POSTGRES_USER} -d ${POSTGRES_DB})
 
 ## Manual installation
 
