@@ -54,8 +54,8 @@ RUN /home/${USER}/venv/bin/pip install -r /home/${USER}/requirements.txt
 # Must match the PORT in docker.sh
 EXPOSE ${PORT}
 
-# For the gunicorn socket
-RUN mkdir -p /run && chown ${USER}:${USER} /run
+## For the gunicorn socket
+#RUN mkdir -p /run && chown ${USER}:${USER} /run
 
 RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER}/app/staticfiles
 

@@ -33,6 +33,7 @@ if [ ! -f "$APP_ROOT"/docker/nginx_conf ]; then
     cp "$APP_ROOT"/docker/nginx.conf.template "$APP_ROOT"/docker/nginx_conf
     source "$APP_ROOT"/app/config/.env
 
+#    sed -i -e "s~DJANGO_PORT~$DJANGO_PORT~" "$APP_ROOT"/docker/nginx_conf
     sed -i -e "s~NGINX_PORT~$NGINX_PORT~" "$APP_ROOT"/docker/nginx_conf
     sed -i -e "s~PROD_URL~$PROD_URL~" "$APP_ROOT"/docker/nginx_conf
 fi
