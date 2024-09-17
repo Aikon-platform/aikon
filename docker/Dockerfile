@@ -53,14 +53,11 @@ RUN /home/${USER}/venv/bin/pip install -r /home/${USER}/requirements.txt
 # Must match the PORT in docker.sh
 EXPOSE ${PORT}
 
-## For the gunicorn socket
-#RUN mkdir -p /run && chown ${USER}:${USER} /run
-
 RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER}/app/staticfiles
+COPY --chown=${USER} app/mediafiles /data/
 
 COPY --chown=${USER} docker/manage.sh /home/aikon/manage.sh
 RUN chmod +x /home/aikon/manage.sh
-
 
 # Launch gunicorn
 CMD export LC_ALL=C.UTF-8 && export LANG=C.UTF-8 && \
