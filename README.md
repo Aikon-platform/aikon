@@ -1,16 +1,5 @@
 # <img alt="Aikon logo" src="app/webapp/static/favicon.ico" height="50" width="auto" style="display: inline; margin-bottom:-10px;"> AIKON
 
-> **[Aikon](https://aikon-platform.github.io/)** is a modular research platform designed to empower humanities scholars
-> in leveraging artificial intelligence and computer vision methods for analyzing large-scale heritage collections.
-> It offers a user-friendly interface for visualizing, extracting, and analyzing illustrations from historical documents,
-> fostering interdisciplinary collaboration and sustainability across digital humanities projects. Built on proven
-> technologies and interoperable formats, Aikon's adaptable architecture supports all projects involving visual materials.
->
-> ***Aikon** is funded and supported by the Agence Nationale pour la Recherche and the European Research Council*
-> - **VHS** [ANR-21-CE38-0008](https://anr.fr/Projet-ANR-21-CE38-0008): computer Vision and Historical analysis of Scientific illustration circulation
-> - **EiDA** [ANR-22-CE38-0014](https://anr.fr/Projet-ANR-22-CE38-0014): EdIter et analyser les Diagrammes astronomiques historiques avec l’intelligence Artificielle
-> - **DISCOVER** project [ERC-101076028](https://cordis.europa.eu/project/id/101076028): Discovering and Analyzing Visual Structures
-
 ## Installation 🛠️
 
 ### Requirements
@@ -182,3 +171,35 @@ bash run.sh
 You can now visit the app at [http://localhost:8000](http://localhost:8000) and connect with the credentials you created
 
 ### *For more documentation, see [docs folder](docs/)*
+
+## Project 📜
+
+> **[Aikon](https://aikon-platform.github.io/)** is a modular research platform designed to empower humanities scholars
+> in leveraging artificial intelligence and computer vision methods for analyzing large-scale heritage collections.
+> It offers a user-friendly interface for visualizing, extracting, and analyzing illustrations from historical documents,
+> fostering interdisciplinary collaboration and sustainability across digital humanities projects. Built on proven
+> technologies and interoperable formats, Aikon's adaptable architecture supports all projects involving visual materials.
+>
+> ***Aikon** is funded and supported by the Agence Nationale pour la Recherche and the European Research Council*
+> - **VHS** [ANR-21-CE38-0008](https://anr.fr/Projet-ANR-21-CE38-0008): computer Vision and Historical analysis of Scientific illustration circulation
+> - **EiDA** [ANR-22-CE38-0014](https://anr.fr/Projet-ANR-22-CE38-0014): EdIter et analyser les Diagrammes astronomiques historiques avec l’intelligence Artificielle
+> - **DISCOVER** project [ERC-101076028](https://cordis.europa.eu/project/id/101076028): Discovering and Analyzing Visual Structures
+
+```bibtex
+@misc{albouy2024aikon,
+    title={AIKON: a computer vision platform for the Digital Humanities},
+    author={
+        Ségolène Albouy,
+        Jade Norindr,
+        Fouad Aouinti,
+        Clara Grometto,
+        Robin Champenois,
+        Alexandre Guilbaud,
+        Stavros Lazaris,
+        Matthieu Husson,
+        Mathieu Aubry
+    },
+    url={https://github.com/Aikon-platform/aikon}
+    year={2024}
+}
+```
