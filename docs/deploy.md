@@ -36,6 +36,7 @@ cd aikon && git checkout <your-branch>-prod
 [//]: # (        proxy_set_header X-Forwarded-Proto $scheme;)
 [//]: # (    })
 [//]: # (})
+[//]: # (sudo ln -s /etc/nginx/sites-available/aikon /etc/nginx/sites-enabled/)
 
 
 ## Manual installation
