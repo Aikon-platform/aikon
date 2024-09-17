@@ -1,33 +1,33 @@
-#FROM openjdk:11-jdk
-#
-#WORKDIR /sas
-#
-#ENV USER=aikon
-#
-#RUN apt-get update && apt-get install -y maven
-#
-#COPY --chown=${USER} sas/* /sas
-#RUN chmod +x /sas/start.sh
-#
-#EXPOSE 8888
-#
-#CMD ["/sas/start.sh"]
+FROM openjdk:11-jdk
 
-FROM maven:3.8-openjdk-11 AS builder
 WORKDIR /sas
-COPY sas/pom.xml .
-RUN mvn dependency:go-offline
 
-COPY sas /sas
-RUN mvn package
+ENV USER=aikon
 
-FROM openjdk:11-jre-slim
-WORKDIR /sas
-COPY --from=builder /sas/target/*.war /sas/simple-annotation-server.war
-COPY sas/start.sh /sas/start.sh
+RUN apt-get update && apt-get install -y maven
+
+COPY --chown=${USER} sas/* /sas
 RUN chmod +x /sas/start.sh
+
 EXPOSE 8888
+
 CMD ["/sas/start.sh"]
+
+#FROM maven:3.8-openjdk-11 AS builder
+#WORKDIR /sas
+#COPY sas/pom.xml .
+#RUN mvn dependency:go-offline
+#
+#COPY sas /sas
+#RUN mvn package
+#
+#FROM openjdk:11-jre-slim
+#WORKDIR /sas
+#COPY --from=builder /sas/target/*.war /sas/simple-annotation-server.war
+#COPY sas/start.sh /sas/start.sh
+#RUN chmod +x /sas/start.sh
+#EXPOSE 8888
+#CMD ["/sas/start.sh"]
 
 #FROM maven:3-jdk-11 AS buildstage
 #WORKDIR /usr/src/sas

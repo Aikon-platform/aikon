@@ -74,13 +74,13 @@ services:
       dockerfile: sas/Dockerfile
     env_file:
       - ./.env
-    volumes:
-        - ${DATA_FOLDER}/sas:/sas/data
+#    volumes:
+#        - ${DATA_FOLDER}/sas:/sas/data
     ports:
       - "${SAS_PORT:-8888}:8888"
     networks:
       - app_network
-    command: ["/sas/start.sh"]
+#    command: ["/sas/start.sh"]
 #    healthcheck:
 #      test: [ "CMD", "curl", "-f", "http://localhost:8888" ]
 #      interval: 30s
