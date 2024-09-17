@@ -3,18 +3,18 @@
 <footer id="footer" class="footer mt-6 pb-5 pt-5">
     <div class="columns is-centered" style="padding: 0 20vw">
         {% for logo in APP_LOGO %}
-        <a class="column is-2" href="">
+        <div class="column is-2">
             <figure class="image is-96x96 is-center mt-2 is-align-items-center is-flex">
-                <img src="{% static 'img/logo-'|add:logo|add:'.png' %}" alt="">
+                <img src="{% static 'img/logo-'|add:logo|add:'.png' %}" alt="{{ logo }} logo">
             </figure>
-        </a>
+        </div>
         {% endfor %}
     </div>
 
     <div class="columns is-centered">
         <div class="column is-8 has-text-centered">
             <hr class="mt-5" style="background-color: var(--accent);">
-            {{ COPYRIGHT }} <a href="mailto:{{ CONTACT_MAIL }}">{{ APP_NAME_UPPER }}</a> &copy; {% now "Y" %}
+            {{ COPYRIGHT }} <b class="has-text-link">{{ APP_NAME_UPPER }}</b> &copy; {% now "Y" %}
             <br><a href="{{ APP_URL }}/{{ APP_NAME }}/rgpd">RGPD and licensing</a>
         </div>
     </div>
