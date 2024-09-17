@@ -54,7 +54,6 @@ RUN /home/${USER}/venv/bin/pip install -r /home/${USER}/requirements.txt
 EXPOSE ${PORT}
 
 RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER}/app/staticfiles
-COPY --chown=${USER} app/mediafiles /data/
 
 COPY --chown=${USER} docker/manage.sh /home/aikon/manage.sh
 RUN chmod +x /home/aikon/manage.sh

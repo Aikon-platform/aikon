@@ -28,6 +28,11 @@ fi
 source "$APP_ROOT"/app/config/.env
 source "$APP_ROOT"/docker/.env
 
+if [ ! -d "$DATA_FOLDER"/mediafiles ]; then
+    cp -r "$APP_ROOT"/app/mediafiles "$DATA_FOLDER"/
+    chown -R "$USERID":"$USERID" "$DATA_FOLDER"/mediafiles
+fi
+
 # if nginx_conf does not exist, create it
 if [ ! -f "$APP_ROOT"/docker/nginx_conf ]; then
     cp "$APP_ROOT"/docker/nginx.conf.template "$APP_ROOT"/docker/nginx_conf
