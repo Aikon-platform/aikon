@@ -74,6 +74,8 @@ services:
       dockerfile: sas/Dockerfile
     env_file:
       - ./.env
+    volumes:
+        - ${DATA_FOLDER}/sas:/usr/src/app/data
     ports:
       - "${SAS_PORT:-8888}:8888"
     networks:

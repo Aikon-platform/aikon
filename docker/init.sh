@@ -28,9 +28,22 @@ fi
 source "$APP_ROOT"/app/config/.env
 source "$APP_ROOT"/docker/.env
 
+# if $DATA_FOLDER does not exist
+if [ ! -d "$DATA_FOLDER" ]; then
+    # Create $DATA_FOLDER folder with right permissions for user $USERID
+    sudo mkdir -p "$DATA_FOLDER"
+    sudo chown -R "$USERID:$USERID" "$DATA_FOLDER"
+    sudo chmod -R 775 "$DATA_FOLDER"
+fi
+
 if [ ! -d "$DATA_FOLDER"/mediafiles ]; then
     cp -r "$APP_ROOT"/app/mediafiles "$DATA_FOLDER"/
     chown -R "$USERID":"$USERID" "$DATA_FOLDER"/mediafiles
+fi
+
+if [ ! -d "$DATA_FOLDER"/sas ]; then
+    mkdir -p "$DATA_FOLDER"/sas
+    chown -R "$USERID":"$USERID" "$DATA_FOLDER"/sas
 fi
 
 # if nginx_conf does not exist, create it
@@ -44,11 +57,3 @@ if [ ! -f "$APP_ROOT"/docker/nginx_conf ]; then
 fi
 
 # TODO redis password
-
-# if $DATA_FOLDER does not exist
-if [ ! -d "$DATA_FOLDER" ]; then
-    # Create $DATA_FOLDER folder with right permissions for user $USERID
-    sudo mkdir -p "$DATA_FOLDER"
-    sudo chown -R "$USERID:$USERID" "$DATA_FOLDER"
-    sudo chmod -R 775 "$DATA_FOLDER"
-fi
