@@ -13,11 +13,21 @@
 #
 #CMD ["/sas/start.sh"]
 
-FROM maven:3-jdk-11
+FROM maven:3.8-openjdk-11 AS builder
 WORKDIR /sas
-ENV USER=aikon
-COPY --chown=${USER} sas/* /sas
-RUN cd /sas && mvn jetty:run
+COPY sas/pom.xml .
+RUN mvn dependency:go-offline
+
+COPY sas /sas
+RUN mvn package
+
+FROM openjdk:11-jre-slim
+WORKDIR /sas
+COPY --from=builder /sas/target/*.war /sas/simple-annotation-server.war
+COPY sas/start.sh /sas/start.sh
+RUN chmod +x /sas/start.sh
+EXPOSE 8888
+CMD ["/sas/start.sh"]
 
 #FROM maven:3-jdk-11 AS buildstage
 #WORKDIR /usr/src/sas
