@@ -8,13 +8,17 @@ http {
     include       /etc/nginx/mime.types;
     default_type  application/octet-stream;
 
-    sendfile        on;
+    sendfile           on;
     keepalive_timeout  65;
 
     log_format debug_log '$remote_addr - $remote_user [$time_local] '
                          '"$request" $status $body_bytes_sent '
                          '"$http_referer" "$http_user_agent" '
                          '$upstream_addr $upstream_response_time $request_time';
+
+    gzip_static  on;
+    gzip on;
+    gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
 
     upstream django {
         server web:DJANGO_PORT;
@@ -26,6 +30,11 @@ http {
         server_name PROD_URL;
 
         client_max_body_size 5000M;
+
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header X-Content-Type-Options "nosniff";
+        add_header X-Frame-Options "SAMEORIGIN";
+        add_header X-XSS-Protection "1; mode=block";
 
         access_log /var/log/nginx/access.log debug_log;
         error_log /var/log/nginx/error.log debug;
@@ -42,6 +51,9 @@ http {
             proxy_set_header        Upgrade              $http_upgrade;
             proxy_set_header        Connection           "upgrade";
 
+            proxy_http_version      1.1;
+            proxy_redirect          off;
+
             # Timeouts
             proxy_connect_timeout   2000s;
             proxy_send_timeout      2000s;
@@ -50,7 +62,11 @@ http {
         }
 
         location /iiif/ {
-            proxy_pass http://cantaloupe:8182/iiif/;
+            proxy_pass              http://cantaloupe:8182/iiif/;
+            proxy_set_header        Host                 $host;
+            proxy_set_header        X-Real-IP            $remote_addr;
+            proxy_set_header        X-Forwarded-For      $proxy_add_x_forwarded_for;
+            proxy_set_header        X-Forwarded-Proto    $scheme;
         }
 
         location /sas/ {
@@ -83,5 +99,10 @@ http {
             autoindex off;
             alias /data/mediafiles/;
         }
+
+        location /favicon.ico {
+            alias /home/aikon/app/staticfiles/favicon.ico;
+        }
+
     }
 }

@@ -8,7 +8,6 @@ ARG PORT
 ENV USER=aikon
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/home/${USER}
-#ENV DJANGO_SETTINGS_MODULE=app.config.settings
 
 RUN useradd -u ${USERID} -m -d /home/${USER} ${USER}
 
