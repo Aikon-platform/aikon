@@ -36,7 +36,9 @@ class Work(AbstractSearchableModel):
         author = f"{self.author.name if self.author else AUTHOR_MSG}"
         return f"{author} | {self.title}"
 
-    title = models.CharField(verbose_name=get_name("title"), max_length=600)
+    title = models.CharField(
+        verbose_name=get_name("title"), max_length=600, unique=False
+    )
     date_min = models.IntegerField(
         verbose_name=get_name("date_min"), null=True, blank=True, help_text=DATE_INFO
     )
