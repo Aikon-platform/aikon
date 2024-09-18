@@ -41,10 +41,10 @@ APP_ROOT="$(dirname "$SCRIPT_DIR")"
 # list all databases with
 # $command -c '\l'
 
-db_name=${1:-${DB_NAME}_2}
+db_name=${1:-${POSTGRES_DB}_2}
 db_sql_file=$2
-db_user=${DB_USERNAME:-admin}
-db_psw=${DB_PASSWORD:-dummy_password}
+db_user=${POSTGRES_USER:-admin}
+db_psw=${POSTGRES_PASSWORD:-dummy_password}
 
 create_user() {
      $command -c "CREATE USER $db_user WITH PASSWORD '$db_psw';"
@@ -72,7 +72,7 @@ $command -c "GRANT ALL PRIVILEGES ON DATABASE $db_name TO $db_user;"
 $command -c "ALTER DATABASE $db_name OWNER TO $db_user;"
 
 # Set variables in .env file
-sed -i '' -e "s/DB_NAME=.*/DB_NAME=$db_name/" "$APP_ROOT"/app/config/.env
+sed -i '' -e "s/POSTGRES_DB=.*/POSTGRES_DB=$db_name/" "$APP_ROOT"/app/config/.env
 
 if [ -z "$db_sql_file" ]; then
     # Empty migration directory and create new migrations
@@ -84,7 +84,7 @@ if [ -z "$db_sql_file" ]; then
 
     # create superuser
     "$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py createsuperuser --username="$db_user" --email="$CONTACT_MAIL"
-    #echo "from django.contrib.auth.models import User; User.objects.create_superuser('$db_user', '$CONTACT_MAIL', '$DB_PASSWORD')" | "$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py shell
+    #echo "from django.contrib.auth.models import User; User.objects.create_superuser('$db_user', '$CONTACT_MAIL', '$POSTGRES_PASSWORD')" | "$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py shell
 else
     psql -h localhost -d "$db_name" -U "$db_user" -f "$db_sql_file" || echo "‼️ Failed to import SQL data ‼️"
 fi

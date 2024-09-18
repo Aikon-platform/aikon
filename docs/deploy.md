@@ -15,6 +15,30 @@ git clone git@github.com:Aikon-platform/aikon.git
 cd aikon && git checkout <your-branch>-prod
 ```
 
+[//]: # (TODO add Docker documentation + documentation on email setup)
+[//]: # (add user to docker group)
+[//]: # (install docker and docker-compose)
+[//]: # (install mail server)
+[//]: # (`docker compose logs <container-name>`)
+[//]: # (https://docs.docker.com/engine/install/linux-postinstall/#configure-docker-to-start-on-boot-with-systemd)
+[//]: # (docker compose exec db psql -U ${POSTGRES_USER} -d ${POSTGRES_DB})
+[//]: # (create a nginx conf on machine)
+
+[//]: # (server {)
+[//]: # (    listen 80;)
+[//]: # (    server_name aikon.enpc.fr;)
+[//]: # ()
+[//]: # (    location / {)
+[//]: # (        proxy_pass http://localhost:8080;)
+[//]: # (        proxy_set_header Host $host;)
+[//]: # (        proxy_set_header X-Real-IP $remote_addr;)
+[//]: # (        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;)
+[//]: # (        proxy_set_header X-Forwarded-Proto $scheme;)
+[//]: # (    })
+[//]: # (})
+[//]: # (sudo ln -s /etc/nginx/sites-available/aikon /etc/nginx/sites-enabled/)
+
+
 ## Manual installation
 
 ### Dependencies

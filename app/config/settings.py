@@ -43,6 +43,7 @@ INSTALLED_APPS = [
 
 hosts = ENV.list("ALLOWED_HOSTS", default=[])
 hosts.append(ENV.str("PROD_URL", default=""))
+hosts.append("web")  # for docker nginx service
 ALLOWED_HOSTS = hosts
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
@@ -140,9 +141,9 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": ENV.str("DB_NAME", default=""),
-        "USER": ENV.str("DB_USERNAME", default=""),
-        "PASSWORD": ENV.str("DB_PASSWORD", default=""),
+        "NAME": ENV.str("POSTGRES_DB", default=""),
+        "USER": ENV.str("POSTGRES_USER", default=""),
+        "PASSWORD": ENV.str("POSTGRES_PASSWORD", default=""),
         "HOST": ENV.str("DB_HOST", default="localhost"),
         "PORT": ENV.str("DB_PORT", default=5432),
     }
@@ -208,20 +209,20 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
         },
-        "file": {
-            "class": "logging.FileHandler",
-            "filename": LOG_PATH,
-            "level": "ERROR",
-            "formatter": "verbose",
-        },
+        # "file": {
+        #     "class": "logging.FileHandler",
+        #     "filename": LOG_PATH,
+        #     "level": "ERROR",
+        #     "formatter": "verbose",
+        # },
     },
     "loggers": {
         "django": {
-            "handlers": ["console", "file"],
+            "handlers": ["console"],
             "level": "WARNING",
         },
         "celery": {
-            "handlers": ["console", "file"],
+            "handlers": ["console"],
             "level": "INFO",
             "propagate": True,
         },
@@ -231,7 +232,7 @@ LOGGING = {
     },
 }
 
-# # Celery settings
+# # Celery settings TODO put that in celery.py
 # CELERY_BROKER_URL = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
 # CELERY_RESULT_BACKEND = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
 CELERY_ACCEPT_CONTENT = ["json", "pickle"]

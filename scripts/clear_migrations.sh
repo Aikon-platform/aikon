@@ -36,8 +36,8 @@ source "$SCRIPT_DIR"/functions.sh
 # Load environment variables from .env file
 . "$APP_ROOT"/app/config/.env
 
-db_name=${DB_NAME:-APP_NAME}
-db_user=${DB_USERNAME:-admin}
+db_name=${POSTGRES_DB:-APP_NAME}
+db_user=${POSTGRES_USER:-admin}
 
 case $(get_os) in
     Linux)

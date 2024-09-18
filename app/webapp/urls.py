@@ -41,6 +41,11 @@ urlpatterns = [
         name="witness-annotations",
     ),
     path(
+        f"test",
+        test,
+        name="test",
+    ),
+    path(
         f"{APP_NAME}/test/<str:wit_ref>",
         test,
         name="test",
@@ -269,4 +274,10 @@ urlpatterns += [
     path("search/series/", search_series, name="search-series"),
     path("search/documentset/", search_document_set, name="search-document-sets"),
     path("search/json-generation/", json_regeneration, name="regenerate_json"),
+]
+
+# SUPERADMIN VIEWS
+urlpatterns += [
+    path("superadmin/empty-works/", list_empty_works, name="empty-works"),
+    path("superadmin/works/", list_works, name="list-works"),
 ]

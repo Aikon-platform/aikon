@@ -15,7 +15,7 @@ configure_nginx() {
 
     sudo sed -i "s|PROD_URL|$PROD_URL|g" "$SSL_FILE"
     sudo sed -i "s|APP_NAME|$APP_NAME|g" "$SSL_FILE"
-    sudo sed -i "s|DB_NAME|$DB_NAME|g" "$SSL_FILE"
+    sudo sed -i "s|POSTGRES_DB|$DB_NAME|g" "$SSL_FILE"
     sudo sed -i "s/SAS_PORT/$SAS_PORT/g" "$SSL_FILE"
     sudo sed -i "s/CANTALOUPE_PORT/$CANTALOUPE_PORT/g" "$SSL_FILE"
     sudo sed -i "s|APP_ROOT|$APP_ROOT|g" "$SSL_FILE"

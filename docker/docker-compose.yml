@@ -1,0 +1,118 @@
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        USERID: ${USERID}
+        PORT: ${DJANGO_PORT}
+    volumes:
+      - ${DATA_FOLDER}:/data
+      - ../app:/home/aikon/app
+    env_file:
+      - ../app/config/.env
+      - ./.env
+    ports:
+      - "${DJANGO_PORT}:8000"
+    depends_on:
+      - db
+      - redis
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:8000/test/" ]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+    networks:
+      - app_network
+    restart: unless-stopped
+
+  db:
+    image: postgres:13
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    env_file:
+      - ../app/config/.env
+    networks:
+      - app_network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:6
+    volumes:
+      - redisdata:/data
+    networks:
+      - app_network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cantaloupe:
+    build:
+      context: ..
+      dockerfile: cantaloupe/Dockerfile
+    env_file:
+      - ./.env
+    ports:
+      - "${CANTALOUPE_PORT:-8182}:8182"
+    volumes:
+      - ${DATA_FOLDER}:/data
+    networks:
+      - app_network
+    user: root
+
+  sas:
+    build:
+      context: ..
+      dockerfile: sas/Dockerfile
+    env_file:
+      - ./.env
+#    volumes:
+#        - ${DATA_FOLDER}/sas:/sas/data
+    ports:
+      - "${SAS_PORT:-8888}:8888"
+    networks:
+      - app_network
+#    command: ["/sas/start.sh"]
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:8888" ]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+
+  nginx:
+    image: nginx:latest
+    env_file:
+      - ../app/config/.env
+      - ./.env
+    ports:
+      - "${NGINX_PORT:-8080}:${NGINX_PORT:-8080}"
+    environment:
+      - PROD_URL=${PROD_URL:-localhost}
+      - NGINX_PORT=${NGINX_PORT:-8080}
+    volumes:
+      - ./nginx_conf:/etc/nginx/nginx.conf:ro
+      - ../app/staticfiles:/home/aikon/app/staticfiles:ro
+      - ${DATA_FOLDER}:/data:ro
+    depends_on:
+      - web
+      - cantaloupe
+      - sas
+    networks:
+      - app_network
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  app_network:
+    driver: bridge
