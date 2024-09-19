@@ -25,6 +25,14 @@ if [ ! -f "$APP_ROOT"/docker/.env ]; then
     update_env "$APP_ROOT"/docker/.env
 fi
 
+# if app/logs/app_log.log does not exist, create it
+if [ ! -f "$APP_ROOT"/logs/app_log.log ]; then
+    touch "$APP_ROOT"/logs/app_log.log
+    touch "$APP_ROOT"/logs/download.log
+    touch "$APP_ROOT"/logs/iiif.log
+    chown -R "$USERID:$USERID" "$APP_ROOT"/logs
+fi
+
 source "$APP_ROOT"/app/config/.env
 source "$APP_ROOT"/docker/.env
 
@@ -38,7 +46,7 @@ fi
 
 if [ ! -d "$DATA_FOLDER"/mediafiles ]; then
     cp -r "$APP_ROOT"/app/mediafiles "$DATA_FOLDER"/
-    chown -R "$USERID":"$USERID" "$DATA_FOLDER"/mediafiles
+    chown -R "$USERID:$USERID" "$DATA_FOLDER"/mediafiles
 fi
 
 if [ ! -d "$DATA_FOLDER"/sas ]; then
