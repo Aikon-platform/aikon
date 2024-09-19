@@ -89,7 +89,6 @@ services:
       - ./.env
     ports:
       - "${NGINX_PORT:-8080}:${NGINX_PORT:-8080}"
-      - "443:443"
     environment:
       - PROD_URL=${PROD_URL:-localhost}
       - NGINX_PORT=${NGINX_PORT:-8080}
