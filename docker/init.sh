@@ -53,7 +53,11 @@ if [ ! -f "$APP_ROOT"/docker/nginx_conf ]; then
 
     sed -i -e "s~DJANGO_PORT~$DJANGO_PORT~" "$APP_ROOT"/docker/nginx_conf
     sed -i -e "s~NGINX_PORT~$NGINX_PORT~" "$APP_ROOT"/docker/nginx_conf
+    sed -i -e "s~CANTALOUPE_PORT~$CANTALOUPE_PORT~" "$APP_ROOT"/docker/nginx_conf
+    sed -i -e "s~SAS_PORT~$SAS_PORT~" "$APP_ROOT"/docker/nginx_conf
     sed -i -e "s~PROD_URL~$PROD_URL~" "$APP_ROOT"/docker/nginx_conf
+    sed -i -e "s~SSL_CERTIFICATE~$SSL_CERTIFICATE~" "$APP_ROOT"/docker/nginx_conf
+    sed -i -e "s~SSL_KEY~$SSL_KEY~" "$APP_ROOT"/docker/nginx_conf
 fi
 
 # TODO redis password

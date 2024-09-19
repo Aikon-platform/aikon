@@ -96,6 +96,7 @@ services:
       - ./nginx_conf:/etc/nginx/nginx.conf:ro
       - ../app/staticfiles:/home/aikon/app/staticfiles:ro
       - ${DATA_FOLDER}:/data:ro
+      - /etc/ssl:/etc/ssl:ro
     depends_on:
       - web
       - cantaloupe

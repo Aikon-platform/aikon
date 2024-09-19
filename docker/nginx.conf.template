@@ -1,9 +1,3 @@
-worker_processes auto;
-
-events {
-    worker_connections 1024;
-}
-
 http {
     include       /etc/nginx/mime.types;
     default_type  application/octet-stream;
@@ -25,9 +19,16 @@ http {
     }
 
     server {
-        listen NGINX_PORT;
-        listen [::]:NGINX_PORT;
+        listen NGINX_PORT ssl;
+        listen [::]:NGINX_PORT ssl;
         server_name PROD_URL;
+
+        ssl_certificate SSL_CERTIFICATE;
+        ssl_certificate_key SSL_KEY;
+
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_prefer_server_ciphers on;
+        ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
 
         client_max_body_size 5000M;
 
@@ -44,9 +45,10 @@ http {
             proxy_pass_header       Set-Cookie;
 
             proxy_set_header        Host                 $http_host;
-            proxy_set_header        X-Real_IP            $remote_addr;
+            proxy_set_header        X-Real-IP            $remote_addr;
             proxy_set_header        X-Forwarded-For      $proxy_add_x_forwarded_for;
             proxy_set_header        X-Forwarded-Proto    $scheme;
+            proxy_set_header        X-Forwarded-Host     $server_name;
             proxy_set_header        X-NginX-Proxy        true;
             proxy_set_header        Upgrade              $http_upgrade;
             proxy_set_header        Connection           "upgrade";
@@ -62,7 +64,7 @@ http {
         }
 
         location /iiif/ {
-            proxy_pass              http://cantaloupe:8182/iiif/;
+            proxy_pass              http://cantaloupe:CANTALOUPE_PORT/iiif/;
             proxy_set_header        Host                 $host;
             proxy_set_header        X-Real-IP            $remote_addr;
             proxy_set_header        X-Forwarded-For      $proxy_add_x_forwarded_for;
@@ -70,7 +72,7 @@ http {
         }
 
         location /sas/ {
-            proxy_pass              http://sas:8888/;
+            proxy_pass              http://sas:SAS_PORT/;
             proxy_set_header        Host                 $host/sas;
             proxy_set_header        X-Real_IP            $remote_addr;
             proxy_set_header        X-Forwarded-For      $proxy_add_x_forwarded_for;
@@ -87,7 +89,7 @@ http {
         }
 
         location /javax.faces.resource/ {
-            proxy_pass http://sas:8888/javax.faces.resource/;
+            proxy_pass http://sas:SAS_PORT/javax.faces.resource/;
         }
 
         location /static/ {
