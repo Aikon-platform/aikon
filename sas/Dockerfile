@@ -6,7 +6,8 @@ ENV USER=aikon
 
 RUN apt-get update && apt-get install -y maven
 
-COPY --chown=${USER} sas/* /sas
+COPY --chown=${USER} sas /sas
+
 RUN chmod +x /sas/start.sh
 
 EXPOSE 8888

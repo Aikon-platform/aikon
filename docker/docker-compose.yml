@@ -76,6 +76,7 @@ services:
       - ./.env
 #    volumes:
 #        - ${DATA_FOLDER}/sas:/sas/data
+#        - ../sas:/sas
     ports:
       - "${SAS_PORT:-8888}:8888"
     networks:
