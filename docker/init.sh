@@ -26,11 +26,11 @@ if [ ! -f "$APP_ROOT"/docker/.env ]; then
 fi
 
 # if app/logs/app_log.log does not exist, create it
-if [ ! -f "$APP_ROOT"/logs/app_log.log ]; then
-    touch "$APP_ROOT"/logs/app_log.log
-    touch "$APP_ROOT"/logs/download.log
-    touch "$APP_ROOT"/logs/iiif.log
-    chown -R "$USERID:$USERID" "$APP_ROOT"/logs
+if [ ! -f "$APP_ROOT"/app/logs/app_log.log ]; then
+    touch "$APP_ROOT"/app/logs/app_log.log
+    touch "$APP_ROOT"/app/logs/download.log
+    touch "$APP_ROOT"/app/logs/iiif.log
+    chown -R "$USERID:$USERID" "$APP_ROOT"/app/logs
 fi
 
 source "$APP_ROOT"/app/config/.env
