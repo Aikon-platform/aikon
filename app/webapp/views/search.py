@@ -1,4 +1,4 @@
-from django.db.models import Q, Value
+from django.db.models import Q, Value, IntegerField
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
@@ -66,6 +66,7 @@ def search_series(request):
 
 class ArrayLength(models.Func):
     function = "CARDINALITY"
+    output_field = IntegerField()
 
 
 @require_GET
@@ -76,7 +77,9 @@ def search_document_set(request):
     ser_len = Coalesce(ArrayLength("ser_ids"), Value(0))
     work_len = Coalesce(ArrayLength("work_ids"), Value(0))
 
-    base_queryset = DocumentSet.objects.annotate(set_len=wit_len + ser_len + work_len)
+    base_queryset = DocumentSet.objects.all().annotate(
+        set_len=wit_len + ser_len + work_len
+    )
 
     if user.is_superuser:
         queryset = base_queryset.filter(set_len__gt=1)
