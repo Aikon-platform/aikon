@@ -1,4 +1,5 @@
-from django.db.models import Q, Sum, F, IntegerField
+from django.db.models import Q, Sum, F, IntegerField, Value
+from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.core.paginator import Paginator
@@ -71,15 +72,11 @@ class ArrayLength(models.Func):
 def search_document_set(request):
     user = request.user
 
-    # Calculate total length using Sum
-    total_length = Sum(
-        F("wit_ids__length", output_field=IntegerField())
-        + F("ser_ids__length", output_field=IntegerField())
-        + F("work_ids__length", output_field=IntegerField()),
-        output_field=IntegerField(),
-    )
+    wit_len = Coalesce(ArrayLength("wit_ids"), Value(0))
+    ser_len = Coalesce(ArrayLength("ser_ids"), Value(0))
+    work_len = Coalesce(ArrayLength("work_ids"), Value(0))
 
-    base_queryset = DocumentSet.objects.annotate(set_len=total_length)
+    base_queryset = DocumentSet.objects.annotate(set_len=wit_len + ser_len + work_len)
 
     if user.is_superuser:
         queryset = base_queryset.filter(set_len__gt=1)
