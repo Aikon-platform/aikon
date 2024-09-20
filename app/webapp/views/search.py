@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Q, Sum, F, IntegerField
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.core.paginator import Paginator
@@ -70,25 +70,24 @@ class ArrayLength(models.Func):
 @require_GET
 def search_document_set(request):
     user = request.user
-    doc_sets = DocumentSetFilter(
-        request.GET,
-        queryset=(
-            DocumentSet.objects.all()
-            .annotate(
-                set_len=ArrayLength("wit_ids")
-                + ArrayLength("ser_ids")
-                + ArrayLength("work_ids")
-            )
-            .filter(set_len__gt=1)
-            if user.is_superuser
-            else DocumentSet.objects.all()
-            .annotate(
-                set_len=ArrayLength("wit_ids")
-                + ArrayLength("ser_ids")
-                + ArrayLength("work_ids")
-            )
-            .filter(Q(is_public=True) | Q(user=user) | Q(set_len__gt=1))
-        ).order_by("-id"),
+
+    # Calculate total length using Sum
+    total_length = Sum(
+        F("wit_ids__length", output_field=IntegerField())
+        + F("ser_ids__length", output_field=IntegerField())
+        + F("work_ids__length", output_field=IntegerField()),
+        output_field=IntegerField(),
     )
+
+    base_queryset = DocumentSet.objects.annotate(set_len=total_length)
+
+    if user.is_superuser:
+        queryset = base_queryset.filter(set_len__gt=1)
+    else:
+        queryset = base_queryset.filter(
+            Q(is_public=True) | Q(user=user) | Q(set_len__gt=1)
+        )
+
+    doc_sets = DocumentSetFilter(request.GET, queryset=queryset.order_by("-id"))
 
     return JsonResponse(paginated_records(request, doc_sets.qs))
