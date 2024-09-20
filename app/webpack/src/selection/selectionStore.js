@@ -159,6 +159,10 @@ function createSelectionStore() {
 
     function loadSet(selection, set) {
         const isRegion = set.class.toLowerCase().includes("regions");
+        if (set.selection.id === null) {
+            // TODO dirty fix to avoid null id
+            set.selection.id = set.id;
+        }
         selection[isRegion ? "regions" : "records"] = set.selection;
         return selection;
     }

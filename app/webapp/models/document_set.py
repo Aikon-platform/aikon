@@ -182,10 +182,10 @@ class DocumentSet(AbstractSearchableModel):
         # return reverse("document_set", args=[self.id])
         return ""
 
-    def get_selection(self, reindex=False):
+    def get_selection(self, pk, reindex=False):
         if not self.selection or reindex:
             json_data = {
-                "id": self.id,
+                "id": pk,
                 "type": "documentSet",
                 "title": self.title,
                 "selected": self.get_document_metadata(),
@@ -209,7 +209,7 @@ class DocumentSet(AbstractSearchableModel):
                     if self.updated_at
                     else "-",
                     "is_public": self.is_public,
-                    "selection": self.get_selection(reindex),
+                    "selection": self.get_selection(self.id, reindex),
                     "treatments": self.get_treatment_metadata(),
                 }
             )
