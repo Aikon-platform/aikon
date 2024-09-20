@@ -1,4 +1,4 @@
-from django.db.models import Q, Sum, F, IntegerField, Value
+from django.db.models import Q, Value
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
