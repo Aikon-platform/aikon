@@ -1,6 +1,6 @@
 from django.urls import path, include, register_converter
 from django.conf.urls.static import static
-from django.conf.urls import handler404, handler500
+from django.conf.urls import handler404, handler500, handler403, handler400
 
 from app.config.settings import (
     MEDIA_URL,
@@ -28,6 +28,9 @@ register_converter(ListConverter, "list")
 # Custom error handlers
 handler404 = "webapp.views.error_404"
 handler500 = "webapp.views.error_500"
+handler403 = "webapp.views.error_403"
+handler400 = "webapp.views.error_400"
+
 
 urlpatterns = [
     path(f"{APP_NAME}-admin/", admin_site.urls),

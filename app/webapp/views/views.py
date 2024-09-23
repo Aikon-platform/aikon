@@ -100,6 +100,32 @@ def error_500(request):
     )
 
 
+def error_403(request):
+    return render(
+        request,
+        "error.html",
+        status=403,
+        context={
+            "error_code": 403,
+            "error_title": "Access Denied",
+            "error_message": "You do not have permission to access this page.",
+        },
+    )
+
+
+def error_400(request):
+    return render(
+        request,
+        "error.html",
+        status=400,
+        context={
+            "error_code": 400,
+            "error_title": "Bad Request",
+            "error_message": "Your request is invalid.",
+        },
+    )
+
+
 def check_ref(obj_ref, obj="Digitization"):
     ref = parse_ref(obj_ref)
     ref_format = (
