@@ -7,6 +7,8 @@ source /home/aikon/app/config/.env
 # wait 2sec for postgres to start
 sleep 2
 
+/home/aikon/venv/bin/python /home/aikon/app/manage.py collectstatic --noinput
+
 /home/aikon/venv/bin/python /home/aikon/app/manage.py makemigrations
 /home/aikon/venv/bin/python /home/aikon/app/manage.py migrate
 
@@ -21,5 +23,3 @@ if not User.objects.filter(username=username).exists():
 else:
     print('Superuser already exists.');
 " | /home/aikon/venv/bin/python /home/aikon/app/manage.py shell
-
-/home/aikon/venv/bin/python /home/aikon/app/manage.py collectstatic --noinput
