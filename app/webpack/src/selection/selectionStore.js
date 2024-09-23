@@ -163,7 +163,6 @@ function createSelectionStore() {
             // TODO dirty fix to avoid null id
             set.selection.id = set.id;
         }
-        console.log(`LOAD SET ${set.id}`, set.selection);
         selection[key] = set.selection;
         store(selection[key])
         return selection;
