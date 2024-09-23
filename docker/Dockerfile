@@ -37,18 +37,18 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /home/${USER}
 
+COPY --chown=${USER} app/requirements-base.txt app/requirements-prod.txt ./
+
+# Install python dependencies
+RUN python3.10 -m venv venv && \
+    /home/${USER}/venv/bin/pip install --upgrade pip && \
+    /home/${USER}/venv/bin/pip install -r requirements-prod.txt
+
 # Copy app files
 COPY --chown=${USER} app /home/${USER}/app
 COPY --chown=${USER} gunicorn /home/${USER}/gunicorn
 COPY --chown=${USER} celery /home/${USER}/celery
 COPY --chown=${USER} docker/supervisord.conf /home/${USER}/supervisord.conf
-
-# Install python dependencies
-COPY --chown=${USER} app/requirements-base.txt /home/${USER}/requirements-base.txt
-COPY --chown=${USER} app/requirements-prod.txt /home/${USER}/requirements.txt
-RUN python3.10 -m venv venv
-RUN /home/${USER}/venv/bin/pip install --upgrade pip
-RUN /home/${USER}/venv/bin/pip install -r /home/${USER}/requirements.txt
 
 # Must match the PORT in docker.sh
 EXPOSE ${PORT}

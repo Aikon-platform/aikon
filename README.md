@@ -1,12 +1,12 @@
 # <img alt="Aikon logo" src="app/webapp/static/favicon.ico" height="50" width="auto" style="display: inline; margin-bottom:-10px;"> AIKON
 
-## Installation 🛠️
+## Install 🛠️
 
 ### Requirements
 
 - **Sudo** privileges
 - **Bash** terminal
-- **Python**: 3.10
+- **Python** >= 3.10
 - **Java 11**: instructions for [Linux install](https://docs.oracle.com/en/java/javase/11/install/installation-jdk-linux-platforms.html#GUID-737A84E4-2EFF-4D38-8E60-3E29D1B884B8)
     - [Download OpenJDK](https://jdk.java.net/11/) (open source version of Java)
     - Download the latest [RPM Package](https://www.oracle.com/java/technologies/downloads/#java11)

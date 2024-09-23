@@ -25,6 +25,14 @@ if [ ! -f "$APP_ROOT"/docker/.env ]; then
     update_env "$APP_ROOT"/docker/.env
 fi
 
+# if app/logs/app_log.log does not exist, create it
+if [ ! -f "$APP_ROOT"/app/logs/app_log.log ]; then
+    touch "$APP_ROOT"/app/logs/app_log.log
+    touch "$APP_ROOT"/app/logs/download.log
+    touch "$APP_ROOT"/app/logs/iiif.log
+    chown -R "$USERID:$USERID" "$APP_ROOT"/app/logs
+fi
+
 source "$APP_ROOT"/app/config/.env
 source "$APP_ROOT"/docker/.env
 
@@ -38,7 +46,7 @@ fi
 
 if [ ! -d "$DATA_FOLDER"/mediafiles ]; then
     cp -r "$APP_ROOT"/app/mediafiles "$DATA_FOLDER"/
-    chown -R "$USERID":"$USERID" "$DATA_FOLDER"/mediafiles
+    chown -R "$USERID:$USERID" "$DATA_FOLDER"/mediafiles
 fi
 
 if [ ! -d "$DATA_FOLDER"/sas ]; then
@@ -53,7 +61,11 @@ if [ ! -f "$APP_ROOT"/docker/nginx_conf ]; then
 
     sed -i -e "s~DJANGO_PORT~$DJANGO_PORT~" "$APP_ROOT"/docker/nginx_conf
     sed -i -e "s~NGINX_PORT~$NGINX_PORT~" "$APP_ROOT"/docker/nginx_conf
+    sed -i -e "s~CANTALOUPE_PORT~$CANTALOUPE_PORT~" "$APP_ROOT"/docker/nginx_conf
+    sed -i -e "s~SAS_PORT~$SAS_PORT~" "$APP_ROOT"/docker/nginx_conf
     sed -i -e "s~PROD_URL~$PROD_URL~" "$APP_ROOT"/docker/nginx_conf
+    sed -i -e "s~SSL_CERTIFICATE~$SSL_CERTIFICATE~" "$APP_ROOT"/docker/nginx_conf
+    sed -i -e "s~SSL_KEY~$SSL_KEY~" "$APP_ROOT"/docker/nginx_conf
 fi
 
 # TODO redis password

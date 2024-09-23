@@ -158,14 +158,20 @@ function createSelectionStore() {
     }
 
     function loadSet(selection, set) {
-        const isRegion = set.class.toLowerCase().includes("regions");
-        selection[isRegion ? "regions" : "records"] = set.selection;
+        const key = set.class.toLowerCase().includes("regions") ? "regions" : "records";
+        if (set.selection.id === null) {
+            // TODO dirty fix to avoid null id
+            set.selection.id = set.id;
+        }
+        selection[key] = set.selection;
+        store(selection[key])
         return selection;
     }
 
     function unloadSet(selection, set) {
         const isRegion = set.class.toLowerCase().includes("regions");
         selection[isRegion ? "regions" : "records"] = isRegion ? regionsSetTemplate : docSetTemplate;
+        store(selection[isRegion ? "regions" : "records"]);
         return selection;
     }
 
