@@ -7,6 +7,7 @@ source /home/aikon/app/config/.env
 # wait 2sec for postgres to start
 sleep 2
 
+# TODO somehow not working
 /home/aikon/venv/bin/python /home/aikon/app/manage.py collectstatic --noinput
 
 /home/aikon/venv/bin/python /home/aikon/app/manage.py makemigrations
