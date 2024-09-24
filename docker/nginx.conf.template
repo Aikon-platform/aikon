@@ -1,0 +1,104 @@
+worker_processes auto;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    sendfile           on;
+    keepalive_timeout  65;
+
+    log_format debug_log '$remote_addr - $remote_user [$time_local] '
+                         '"$request" $status $body_bytes_sent '
+                         '"$http_referer" "$http_user_agent" '
+                         '$upstream_addr $upstream_response_time $request_time';
+
+    gzip_static  on;
+    gzip on;
+    gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
+
+    upstream django {
+        server web:DJANGO_PORT;
+    }
+
+    server {
+        listen NGINX_PORT;
+        listen [::]:NGINX_PORT;
+        server_name PROD_URL;
+
+        client_max_body_size 5000M;
+
+        access_log /var/log/nginx/access.log debug_log;
+        error_log /var/log/nginx/error.log debug;
+
+        location / {
+            proxy_pass              http://django;
+            proxy_pass_header       Set-Cookie;
+
+            proxy_set_header        Host                 $http_host;
+            proxy_set_header        X-Real-IP            $remote_addr;
+            proxy_set_header        X-Forwarded-For      $proxy_add_x_forwarded_for;
+            proxy_set_header        X-Forwarded-Proto    $scheme;
+            proxy_set_header        X-Forwarded-Host     $server_name;
+            proxy_set_header        X-NginX-Proxy        true;
+            proxy_set_header        Upgrade              $http_upgrade;
+            proxy_set_header        Connection           "upgrade";
+
+            proxy_http_version      1.1;
+            proxy_redirect          off;
+
+            # Timeouts
+            proxy_connect_timeout   2000s;
+            proxy_send_timeout      2000s;
+            proxy_read_timeout      2000s;
+            send_timeout            2000s;
+        }
+
+        location /iiif/ {
+            proxy_pass              http://cantaloupe:CANTALOUPE_PORT/iiif/;
+            proxy_set_header        Host                 $host;
+            proxy_set_header        X-Real-IP            $remote_addr;
+            proxy_set_header        X-Forwarded-For      $proxy_add_x_forwarded_for;
+            proxy_set_header        X-Forwarded-Proto    $scheme;
+        }
+
+        location /sas/ {
+            proxy_pass              http://sas:SAS_PORT/;
+            proxy_set_header        Host                 $host/sas;
+            proxy_set_header        X-Real_IP            $remote_addr;
+            proxy_set_header        X-Forwarded-For      $proxy_add_x_forwarded_for;
+            proxy_set_header        X-Forwarded-Proto    $scheme;
+            proxy_set_header        X-NginX-Proxy        true;
+            proxy_set_header        Upgrade              $http_upgrade;
+            proxy_pass_header       Set-Cookie;
+            proxy_ssl_server_name   on;
+
+            proxy_connect_timeout   2000;
+            proxy_send_timeout      2000;
+            proxy_read_timeout      2000;
+            send_timeout            2000;
+        }
+
+        location /javax.faces.resource/ {
+            proxy_pass http://sas:SAS_PORT/javax.faces.resource/;
+        }
+
+        location /static/ {
+            autoindex off;
+            alias /home/aikon/app/staticfiles/;
+        }
+
+        location /media/ {
+            autoindex off;
+            alias /data/mediafiles/;
+        }
+
+        location /favicon.ico {
+            alias /home/aikon/app/staticfiles/favicon.ico;
+        }
+
+    }
+}

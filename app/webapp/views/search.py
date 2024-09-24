@@ -1,4 +1,5 @@
-from django.db.models import Q
+from django.db.models import Q, Value, IntegerField
+from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.core.paginator import Paginator
@@ -65,30 +66,28 @@ def search_series(request):
 
 class ArrayLength(models.Func):
     function = "CARDINALITY"
+    output_field = IntegerField()
 
 
 @require_GET
 def search_document_set(request):
     user = request.user
-    doc_sets = DocumentSetFilter(
-        request.GET,
-        queryset=(
-            DocumentSet.objects.all()
-            .annotate(
-                set_len=ArrayLength("wit_ids")
-                + ArrayLength("ser_ids")
-                + ArrayLength("work_ids")
-            )
-            .filter(set_len__gt=1)
-            if user.is_superuser
-            else DocumentSet.objects.all()
-            .annotate(
-                set_len=ArrayLength("wit_ids")
-                + ArrayLength("ser_ids")
-                + ArrayLength("work_ids")
-            )
-            .filter(Q(is_public=True) | Q(user=user) | Q(set_len__gt=1))
-        ).order_by("-id"),
+
+    wit_len = Coalesce(ArrayLength("wit_ids"), Value(0))
+    ser_len = Coalesce(ArrayLength("ser_ids"), Value(0))
+    work_len = Coalesce(ArrayLength("work_ids"), Value(0))
+
+    base_queryset = DocumentSet.objects.all().annotate(
+        set_len=wit_len + ser_len + work_len
     )
+
+    if user.is_superuser:
+        queryset = base_queryset.filter(set_len__gt=1)
+    else:
+        queryset = base_queryset.filter(
+            Q(is_public=True) | Q(user=user) | Q(set_len__gt=1)
+        )
+
+    doc_sets = DocumentSetFilter(request.GET, queryset=queryset.order_by("-id"))
 
     return JsonResponse(paginated_records(request, doc_sets.qs))

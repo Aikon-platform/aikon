@@ -220,92 +220,61 @@ class Treatment(AbstractSearchableModel):
         super().save(*args, **kwargs)
 
     def start_task(self, witnesses):
-        """
-        Start the task
-        """
-        if self.task_type in ADDITIONAL_MODULES:
-            module_path = f"{self.task_type}.utils"
-            module = importlib.import_module(module_path)
+        """Start the task"""
+        if self.task_type not in ADDITIONAL_MODULES:
+            log(f"[start_task] Uninstalled module: {self.task_type}")
+            return
 
-            prepare_request = getattr(module, "prepare_request")
-            parameters = prepare_request(witnesses, self.id)
+        try:
+            module = importlib.import_module(f"{self.task_type}.utils")
+            parameters = getattr(module, "prepare_request")(witnesses, self.id)
+        except (ImportError, AttributeError) as e:
+            log(f"[start_task] Error loading module: {e}")
+            self.on_task_error(
+                {"error": "Module loading error.", "notify": self.notify_email}
+            )
+            self.save()
+            return
 
-            if "message" in parameters.keys():
-                self.on_task_success(
-                    # Success because a message is returned if all of the documents were already treated
-                    {
-                        "notify": self.notify_email,
-                        "message": parameters["message"],
-                    },
-                    # request,
-                )
-                self.save()
-                return
+        if "message" in parameters:
+            self.on_task_success(
+                {"notify": self.notify_email, "message": parameters["message"]}
+            )
+            self.save()
+            return
 
-            try:
-                api_query = requests.post(
-                    url=f"{CV_API_URL}/{self.task_type}/start",
-                    json=parameters,
-                )
-            except Exception:
-                log(f"[start_task] Connection error wit {CV_API_URL}")
-                self.on_task_error(
-                    {
-                        "error": "API connection error",
-                        "notify": self.notify_email,
-                    },
-                    # request,
-                )
-                self.save()
-                return
+        try:
+            api_query = requests.post(
+                f"{CV_API_URL}/{self.task_type}/start", json=parameters
+            )
+            if (
+                api_query.status_code != 200
+                or api_query.headers.get("Content-Type") != "application/json"
+            ):
+                raise ValueError(f"Unexpected response: {api_query.text}")
 
-            try:
-                api_response = api_query.json()
-                log(
-                    f"[start_task] {self.task_type} request sent to {CV_API_URL}: {api_response or ''}"
-                )
-                self.api_tracking_id = api_response["tracking_id"]
-                self.status = "STARTED"
+            api_response = api_query.json()
 
-                # flash_msg = (
-                #     "The requested task is underway. Please wait a few moments."
-                #     if APP_LANG == "en"
-                #     else "La tâche demandée est en cours. Veuillez patienter quelques instants."
-                # )
-                # messages.warning(request, flash_msg)
+            self.api_tracking_id = api_response["tracking_id"]
+            self.status = "STARTED"
 
-            except Exception as e:
-                error = {
+            log(f"[start_task] Task {self.task_type} started: {api_response}")
+
+        except (requests.RequestException, ValueError, KeyError) as e:
+            log(
+                {
                     "source": "[start_task]",
-                    "error_message": f"{self.task_type} request for treatment #{self.id} with status code: {api_query.status_code}",
+                    "error_message": f"{self.task_type} request failed with status: {api_query.status_code}",
                     "request_info": {
                         "method": "POST",
                         "url": f"{CV_API_URL}/{self.task_type}/start",
-                        "payload": prepare_request(witnesses, self.id),
+                        "payload": parameters,
                     },
-                    "response_info": {
-                        "status_code": api_query.status_code,
-                        "text": api_query.text or f"{e}",
-                    },
+                    "response_info": {"text": api_query.text, "error": str(e)},
                 }
-
-                log(error)
-                self.on_task_error(
-                    {
-                        "error": "API error when starting requested task.",
-                        "notify": self.notify_email,
-                    },
-                    # request,
-                )
-
-        else:
-            log(f"[start_task] Please install module for task {self.task_type}")
+            )
             self.on_task_error(
-                {
-                    "error": "Uninstalled module.",
-                    "notify": self.notify_email,
-                },
-                # request,
+                {"error": "API error when starting task.", "notify": self.notify_email}
             )
 
         self.save()

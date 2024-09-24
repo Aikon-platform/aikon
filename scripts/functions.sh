@@ -120,7 +120,7 @@ update_env() {
 }
 
 update_cantaloupe_env() {
-    cantaloupe_env="$APP_ROOT"/app/cantaloupe/.env
+    cantaloupe_env="$APP_ROOT"/cantaloupe/.env
     ordered_params=("BASE_URI" "FILE_SYSTEM_SOURCE" "HTTP_PORT" "HTTPS_PORT" "LOG_PATH")
     for param in "${ordered_params[@]}"; do
         current_val=$(get_env_value "$param" "$cantaloupe_env")
