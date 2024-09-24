@@ -1,16 +1,12 @@
-import json
-
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
 from django.utils.html import format_html
 from django.urls import reverse
 
-from app.config.settings import ADDITIONAL_MODULES
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.edition import Edition
 
-# from app.webapp.models.volume import Volume
 from app.webapp.models.series import Series
 from app.webapp.models.utils.constants import (
     VOL,
@@ -24,13 +20,11 @@ from app.webapp.models.utils.constants import (
     CONS_PLA_MSG,
     WIT_CHANGE,
     MAP_WIT_TYPE,
-    MS_ABBR,
-    WPR_ABBR,
     FOL_ABBR,
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
-from app.webapp.utils.functions import get_icon, flatten, format_dates, get_first_img
+from app.webapp.utils.functions import get_icon, flatten, format_dates
 from app.webapp.utils.logger import log
 
 
@@ -79,10 +73,6 @@ class Witness(models.Model):
             f"{self.place.name if self.place else CONS_PLA_MSG} | {self.id_nb}"
         )
 
-    def get_absolute_url(self):
-        # return reverse("admin:webapp_witness_change", args=[self.id])
-        return reverse("webapp:witness_view", args=[self.id])
-
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
         verbose_name=get_name("type"), choices=WIT_TYPE, max_length=150
@@ -116,7 +106,7 @@ class Witness(models.Model):
         # help_text=get_name('page_type_info'),
     )
     # TODO allow only user to access the record if is_public = False
-    # TODO allow only the creator and super-admin to modify the record
+    # TODO! allow only the creator and super-admin to modify the record
     is_public = models.BooleanField(
         verbose_name=get_name("is_public"),
         default=False,
@@ -159,13 +149,13 @@ class Witness(models.Model):
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
+    def get_absolute_url(self):
+        return reverse("admin:webapp_witness_change", args=[self.id])
+        # return reverse("webapp:witness_view", args=[self.id])
+
     def to_json(self):
-        buttons = [
-            "regions",
-        ]
-        if "similarity" in ADDITIONAL_MODULES:
-            # TODO add other modules
-            buttons += ["similarity"]
+        # TODO create to_json template in a Abstract class
+        buttons = {"regions": reverse("webapp:witness_regions_view", args=[self.id])}
 
         digits = self.get_digits()
 
@@ -178,6 +168,7 @@ class Witness(models.Model):
             "iiif": [digit.manifest_link(inline=True) for digit in digits],
             "title": self.__str__(),
             "img": self.get_img(only_first=True),
+            "user_id": self.user.id,
             "user": self.user.__str__(),
             "url": self.get_absolute_url(),
             "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),
@@ -190,8 +181,7 @@ class Witness(models.Model):
                 get_name("page_nb"): self.get_page(),
                 get_name("Language"): self.get_lang_names(),
             },
-            "buttons": buttons
-            # TODO add to_json() to other models
+            "buttons": buttons,
         }
 
     def get_type(self):
@@ -213,6 +203,12 @@ class Witness(models.Model):
             if not regions.is_validated:
                 return False
         return True
+
+    # def is_validated(self):
+    #     for digit in self.get_digits():
+    #         if digit.is_validated():
+    #             return True
+    #     return False
 
     def change_url(self):
         change_url = reverse("admin:webapp_witness_change", args=[self.id])
@@ -268,12 +264,6 @@ class Witness(models.Model):
         for digit in self.get_digits():
             regions.extend(digit.get_regions())
         return regions
-
-    def is_validated(self):
-        for digit in self.get_digits():
-            if digit.is_validated():
-                return True
-        return False
 
     def has_images(self):
         return any(digit.has_images() for digit in self.get_digits())
@@ -363,7 +353,9 @@ class Witness(models.Model):
         return [role.person for role in self.get_roles() if role.role == AUTHOR]
 
     def get_author_names(self):
-        # TODO add something when no author defined
+        authors = self.get_authors()
+        if len(authors) == 0:
+            return "No authors"
         return "<br>".join([author.__str__() for author in self.get_authors()])
 
     def add_roles(self, metadata):

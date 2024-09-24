@@ -20,23 +20,16 @@ function checkStatus(taskId, callback) {
     });
 }
 
+String.prototype.capitalize = function() {
+    return this.charAt(0).toUpperCase() + this.slice(1);
+}
+
 function getUrl() {
     return window.location.href;
 }
 
 function capitalize(s) {
     return s[0].toUpperCase() + s.slice(1);
-}
-
-function getWitType() {
-    // TODO remove fct
-    const currentUrl = getUrl();
-    if (currentUrl.includes(MS)) {
-        return MS;
-    } else if (currentUrl.includes("printed") || currentUrl.includes(VOL)) {
-        return VOL;
-    }
-    return null;
 }
 
 function getRegionsRef() {
@@ -52,9 +45,9 @@ function toManifest(witId, witType, version) {
     return `${APP_URL}/${APP_NAME}/iiif/${version}/${witType}/${witId}/manifest.json`
 }
 
-function extractNb(str) {
-    return str.match(/\d+/g).toString();
-}
+// function extractNb(str) {
+//     return str.match(/\d+/g).toString();
+// }
 
 function getJSON(url, callback, idMessage) {
     fetch(url).then(response => {

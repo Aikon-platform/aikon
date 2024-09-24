@@ -34,17 +34,26 @@
 
                 <div class="navbar-dropdown">
                     <a href="{% url 'webapp:witness_list' %}" class="navbar-item is-capitalized">{{ WIT }}</a>
-                    {#<a href="{% url 'webapp:series_list' %}" class="navbar-item is-capitalized">{{ SER }}</a>#}
-                    {#<a href="{% url 'webapp:works_list' %}" class="navbar-item is-capitalized">{{ WORK }}</a>#}
+                    <a href="{% url 'webapp:series_list' %}" class="navbar-item is-capitalized">{{ SER }}</a>
+                    <a href="{% url 'webapp:work_list' %}" class="navbar-item is-capitalized">{{ WORK }}</a>
+                    <hr class="navbar-divider">
+                    <a href="{% url 'webapp:document_set_list' %}" class="navbar-item is-capitalized">{{ SET }}</a>
+                </div>
+            </div>
+            <div class="navbar-item has-dropdown is-hoverable">
+                <a class="navbar-link">
+                    {% if APP_LANG == "en" %}Computer vision tasks{% else %}Tâches de vision{% endif %}
+                </a>
 
-                    {#<a href="{% url 'admin:webapp_series_changelist' %}" class="navbar-item is-capitalized">{{ SER }}</a>#}
+                <div class="navbar-dropdown">
+                    <a href="{% url 'webapp:treatment_list' %}" class="navbar-item is-capitalized">{{ TRMT }}</a>
                 </div>
             </div>
         </div>
 
         <div class="navbar-end mr-6">
             <div class="navbar-item">
-            <div class="button mr-4">
+            <div class="button mr-4 pl-5">
                 <button id="moon" class="icon">
                     <i class="fa-solid fa-moon fa-lg has-text-info"></i>
                 </button>

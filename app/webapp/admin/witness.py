@@ -85,15 +85,6 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     ordering = ("id", "place__name")
 
-    # Fields that are taken into account by the search bar
-    search_fields = (
-        # "id_nb",
-        # "place__name",
-        # "type",
-        # "contents__roles__person__name",
-        "contents__work__title",
-        # "notes",
-    )
     # Filters options in the sidebar
     list_filter = (
         "type",
@@ -103,11 +94,8 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     )
     # Attributes to be excluded from the form fields
     exclude = ("slug", "created_at", "updated_at")
-    # Dropdown fields
-    autocomplete_fields = ("place", "volume", "edition")
 
     # MARKER FORM FIELDS
-    # info on fieldsets: https://docs.djangoproject.com/en/4.2/ref/contrib/admin/#django.contrib.admin.ModelAdmin.fieldsets
     banner = (
         f"{get_name('Witness')} identification"
         if APP_LANG == "en"
@@ -123,6 +111,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         "link",
         "is_public",
     ]
+    autocomplete_fields = ("place", "volume", "edition")
     fieldsets = (
         (
             banner.capitalize(),
@@ -147,7 +136,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         for nb in range(0, 4):
             digit_id = request.POST.get(f"digitizations-{nb}-id", None)
             if digit_id:
-                # TODO don't save again digit that were already treated
+                # TODO! don't save again digit that were already treated
                 continue
             digit_type = request.POST.get(f"digitizations-{nb}-digit_type", None)
             files = request.FILES.getlist(f"digitizations-{nb}-images")
@@ -178,6 +167,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     # MARKER LIST COLUMNS
     @admin.display(description=f"{DIG} & {REG}")
     def digit_regions_btn(self, obj: Witness):
+        # TODO check if used else delete
         digits = obj.get_digits()
         if len(digits) == 0:
             return "-"
@@ -186,6 +176,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     @admin.display(description="IIIF manifest")
     def manifest_link(self, obj):
+        # TODO check if used else delete
         # To display a button in the list of witnesses to give direct link to witness manifest
         return mark_safe(
             "<br>".join(digit.manifest_link() for digit in obj.get_digits())
@@ -235,106 +226,6 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             img_names.extend(witness.get_imgs())
         img_list = [gen_iiif_url(img) for img in img_names]
         return list_to_txt(img_list, "IIIF_images")
-
-    @admin.action(
-        description=f"Compute similarity for {REG} of selected {WIT}es"
-        if APP_LANG == "en"
-        else f"Calculer la similarité des régions des {WIT}s sélectionnés"
-    )
-    def compute_similarity(self, request, queryset):
-        from app.similarity.utils import similarity_request, check_computed_pairs
-
-        regions = []
-        for witness in queryset.exclude():
-            regions.extend(witness.get_regions())
-        if len(regions) == 0:
-            return no_regions_message(request)
-        if len(check_computed_pairs([region.get_ref() for region in regions])) == 0:
-            return messages.warning(
-                request,
-                f"Similarity was already computed for all the selected {WIT}es"
-                if APP_LANG == "en"
-                else f"La similarité a déjà été calculée pour tous les {WIT}s sélectionnés",
-            )
-
-        similarity_request(regions)
-        return messages.info(
-            request,
-            "Similarity request was sent to the API"
-            if APP_LANG == "en"
-            else "La requête de similarité a été transmise à l'API",
-        )
-
-    ######################ClaraCode
-
-    @admin.action(
-        description=f"Compute vectorization for {REG}s of selected {WIT}es"
-        if APP_LANG == "en"
-        else f"Vectoriser les annotations des {WIT}s sélectionnés"
-    )
-    def compute_vectorization(self, request, queryset):
-        from app.vectorization.utils import vectorization_request
-
-        annos = []
-        for witness in queryset.exclude():
-            annos.extend(witness.get_annotations())
-            if witness.has_all_vectorization():
-                return messages.warning(
-                    request,
-                    f"Vectorization was already computed for the entire {witness}"
-                    if APP_LANG == "en"
-                    else f"La vectorisation a déjà été lancée pour l'intégralité du {witness}",
-                )
-        if len(annos) == 0:
-            return no_regions_message(request)
-
-        vectorization_request(annos)
-        return messages.info(
-            request,
-            "Vectorization request was sent to the API"
-            if APP_LANG == "en"
-            else "La requête de vectorisation a été transmise à l'API",
-        )
-
-    @admin.action(
-        description=f"Request object extraction for selected {WIT}es"
-        if APP_LANG == "en"
-        else f"Demander l'extraction des illustrations des {WIT}s sélectionnés"
-    )
-    def compute_regions(self, request, queryset):
-        from app.regions.utils import send_regions_request
-
-        digits = []
-        for witness in queryset:
-            digits.extend(witness.get_digits())
-
-            if witness.has_regions():
-                return messages.warning(
-                    request,
-                    f"Regions were already extracted for {WIT} #{witness.id}"
-                    if APP_LANG == "en"
-                    else f"Les régions ont déjà été extraites pour le {WIT} #{witness.id}",
-                )
-
-        if len(digits) == 0:
-            return no_digit_message(request)
-
-        import inspect
-
-        for frame_record in inspect.stack():
-            if frame_record[3] == "get_response":
-                request = frame_record[0].f_locals["request"]
-                break
-        else:
-            request = None
-
-        send_regions_request(digits, request.user)
-        return messages.info(
-            request,
-            "Regions extraction request was sent to the API"
-            if APP_LANG == "en"
-            else "La requête d'extraction des régions a été transmise à l'API",
-        )
 
     @admin.action(
         description=f"Export IIIF manifests of selected {WIT}es"
@@ -433,6 +324,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 class WitnessInline(nested_admin.NestedStackedInline):
     # FORM contained in the Series form
     model = Witness
+    template = "admin/includes/inline_fieldset.html"
     extra = 0  # 1
     ordering = ("id",)
     fields = [("volume_nb", "volume_title")]

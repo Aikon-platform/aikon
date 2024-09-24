@@ -170,8 +170,8 @@ class Digitization(models.Model):
     def get_regions(self):
         return self.regions.all()
 
-    def get_treatments(self):
-        return self.treatments.all()
+    # def get_treatments(self):
+    #     return self.treatments.all()
 
     def get_treatments(self):
         return self.treatments.all()
@@ -216,6 +216,10 @@ class Digitization(models.Model):
         # NOTE: might result in returning None even though there are images (but not the first one)
         return bool(get_first_img(self.get_ref()))
 
+    def has_digit(self):
+        # if there is either a pdf/manifest/img associated with the digitization
+        return bool(self.pdf or self.manifest or self.images)
+
     def img_nb(self):
         # get the number of images for a digitization
         return get_nb_of_files(IMG_PATH, self.get_ref()) or 0
@@ -247,7 +251,7 @@ class Digitization(models.Model):
     def get_imgs(self, is_abs=False, temp=False, only_one=False):
         prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
         path = f"{IMG_PATH}/" if is_abs else ""
-        return get_files_with_prefix(IMG_PATH, prefix, path, only_one)
+        return sorted(get_files_with_prefix(IMG_PATH, prefix, path, only_one))
 
     def get_metadata(self):
         metadata = self.get_witness().get_metadata() if self.get_witness() else {}
@@ -312,6 +316,7 @@ class Digitization(models.Model):
         if len(regions) == 0:
             return f"{iiif_link}<br>{self.digit_btn()}"
         return f"{iiif_link}<br>{self.regions_btn()}"
+        # return f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"
 
     def manifest_link(self, inline=False):
         from app.webapp.utils.iiif.gen_html import gen_manifest_btn
@@ -344,7 +349,6 @@ class Digitization(models.Model):
             self.pdf.name = self.get_file_path(is_abs=False)
 
         elif self.get_digit_abbr() == IMG_ABBR:
-            # TODO change to have list of image name
             self.images.name = f"{IMG} uploaded.jpg"
 
         super().save(*args, **kwargs)
@@ -362,11 +366,7 @@ class Digitization(models.Model):
 
 @receiver(post_save, sender=Digitization)
 def digitization_post_save(sender, instance, created, **kwargs):
-    # TODO use Celery instead of threading
-
     if created:
-        event = threading.Event()
-
         digit_type = instance.get_digit_abbr()
         if digit_type == PDF_ABBR:
             convert_pdf_to_img.delay(instance.get_file_path(is_abs=False))
@@ -397,6 +397,4 @@ def remove_digitization(digit: Digitization, other_media=None):
 
     delete_files(digit.get_imgs(is_abs=True))
     if other_media:
-        delete_files(
-            other_media, MEDIA_DIR
-        )  # TODO check if other media must be deleted in this dir
+        delete_files(other_media, MEDIA_DIR)

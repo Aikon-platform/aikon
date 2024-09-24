@@ -5,6 +5,7 @@ from app.webapp.views.users import *
 
 app_name = "webapp"
 
+# TODO delete the unused endpoints
 urlpatterns = [
     path("", admin_app, name="home"),
     path(f"{APP_NAME}/logout", logout_view, name="logout"),
@@ -126,12 +127,32 @@ urlpatterns = [
         LanguageAutocomplete.as_view(),
         name="language-autocomplete",
     ),
-    path("retrieve_place_info/", retrieve_place_info, name="retrieve-place-info"),
     path(
-        f"{APP_NAME}/task-status/<str:task_id>/",
-        task_status,
-        name="task-status",
+        f"{APP_NAME}/autocomplete/document-set/",
+        DocumentSetAutocomplete.as_view(),
+        name="document-set-autocomplete",
     ),
+    path(
+        f"{APP_NAME}/autocomplete/witness/",
+        WitnessAutocomplete.as_view(),
+        name="witness-autocomplete",
+    ),
+    path(
+        f"{APP_NAME}/autocomplete/series/",
+        SeriesAutocomplete.as_view(),
+        name="series-autocomplete",
+    ),
+    path(
+        f"{APP_NAME}/autocomplete/work/",
+        WorkAutocomplete.as_view(),
+        name="work-autocomplete",
+    ),
+    path(
+        f"{APP_NAME}/set-title/<int:set_id>",
+        set_title,
+        name="set-title",
+    ),
+    path("retrieve_place_info/", retrieve_place_info, name="retrieve-place-info"),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
     path(f"{APP_NAME}/advanced-search/", advanced_search, name="advanced-search"),
     path(
@@ -139,13 +160,28 @@ urlpatterns = [
         EditionAutocomplete.as_view(),
         name="edition-autocomplete",
     ),
+    path(
+        f"{APP_NAME}/api-progress",
+        api_progress,
+        name="api-progress",
+    ),
+    path(
+        f"{APP_NAME}/cancel-treatment/<str:treatment_id>",
+        cancel_treatment,
+        name="cancel-treatment",
+    ),
+    path(
+        f"{APP_NAME}/relaunch-treatment/<str:treatment_id>",
+        relaunch_treatment,
+        name="relaunch-treatment",
+    ),
 ]
 
 # ADMIN VIEWS
 urlpatterns += [
     path(f"witness/", WitnessList.as_view(), name="witness_list"),
     path(f"witness/<int:id>/", WitnessView.as_view(), name="witness_view"),
-    path(f"witness/add/", WitnessCreate.as_view(), name="witness_create"),
+    # path(f"witness/add/", WitnessCreate.as_view(), name="witness_create"),
     path(
         f"witness/<int:id>/change/",
         WitnessUpdate.as_view(),
@@ -161,10 +197,25 @@ urlpatterns += [
         WitnessRegionsView.as_view(),
         name="witness_regions_view",
     ),
+    path(f"treatment/", TreatmentList.as_view(), name="treatment_list"),
+    path(f"treatment/add/", TreatmentCreate.as_view(), name="treatment_create"),
+    path(f"work/", WorkList.as_view(), name="work_list"),
+    path(f"series/", SeriesList.as_view(), name="series_list"),
+    path(f"document-set/", DocumentSetList.as_view(), name="document_set_list"),
 ]
 
 # ENDPOINTS
 urlpatterns += [
+    path(
+        f"document-set/add",
+        save_document_set,
+        name="new-document-set",
+    ),
+    path(
+        f"document-set/<int:dsid>/change",
+        save_document_set,
+        name="change-document-set",
+    ),
     path(
         f"witness/<int:wid>/regions/<int:rid>/canvas",
         get_canvas_regions,
@@ -200,4 +251,14 @@ urlpatterns += [
         export_regions,
         name="export_regions",
     ),
+]
+
+# SEARCH
+urlpatterns += [
+    # path("search/<record-name>/", search_<record-name>, name="search-<record-name>"),
+    path("search/witness/", search_witnesses, name="search-witnesses"),
+    path("search/treatment/", search_treatments, name="search-treatments"),
+    path("search/work/", search_works, name="search-works"),
+    path("search/series/", search_series, name="search-series"),
+    path("search/documentset/", search_document_set, name="search-document-sets"),
 ]

@@ -30,11 +30,18 @@ function toggleDigitFields(digitSelect, fields) {
     }
 }
 
+let treatedDigits = {};
+
 function setDigitBlock(digitNb = 0, digitBlockId= "") {
     const prefix = digitBlockId.split('digitizations')[0];
 
+    if (treatedDigits[`#${prefix}digitizations-${digitNb}`]){
+        return
+    }
+    treatedDigits[`#${prefix}digitizations-${digitNb}`] = true;
+
     const viewDigit = $(`#${prefix}digitizations-${digitNb} .field-view_digit`).first();
-    const viewAnno = $(`#${prefix}digitizations-${digitNb} .field-view_anno`).first();
+    const viewAnno = $(`#${prefix}digitizations-${digitNb} .field-view_regions`).first();
     const hasDigit = viewDigit.length !== 0
 
     const manifestDiv = $(`#${prefix}digitizations-${digitNb} .field-manifest`).first();
@@ -44,15 +51,16 @@ function setDigitBlock(digitNb = 0, digitBlockId= "") {
     const sourceDiv = $(`#${prefix}digitizations-${digitNb} .field-source`).first();
     const freeDiv = $(`#${prefix}digitizations-${digitNb} .field-is_open`).first();
 
-    let fields = [manifestDiv, pdfDiv, imageDiv, viewDigit, viewAnno, sourceDiv, freeDiv]
+    let fields = [manifestDiv, pdfDiv, imageDiv, viewDigit, viewAnno, sourceDiv, freeDiv];
 
-    if (hasDigit && viewDigit.find('p').first().text() !== "-"){
+    if (hasDigit && viewDigit.find('div.readonly').first().text() !== "-"){
         // if a digitization has already been uploaded
         // hide fields to upload new digit
         const digitTypeDiv = $(`#${prefix}digitizations-${digitNb} .field-digit_type`).first();
         let divsToHide = [digitTypeDiv, manifestDiv, pdfDiv, imageDiv, sourceDiv];
         // if no annotations were yet generated
-        if (viewAnno.find('p').first().text() === "-"){
+        const annoText = viewAnno.find('div.readonly').first().text();
+        if (annoText === "-" || annoText === ""){
             divsToHide.push(viewAnno)
         }
         divsToHide.map(divToHide => divToHide.hide());

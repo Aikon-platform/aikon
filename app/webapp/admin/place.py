@@ -18,6 +18,7 @@ class PlaceAdmin(UnregisteredAdmin):
     class Media:
         css = {"all": ("css/witness-form.css",)}
 
+    change_form_template = "admin/form.html"
     form = PlaceForm
     search_fields = ("name", "country")
     list_filter = ("name",)

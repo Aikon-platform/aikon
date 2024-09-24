@@ -11,9 +11,9 @@ urlpatterns = [
         name="show-vectorization",
     ),
     path(
-        f"{APP_NAME}/receive-vectorization",
+        f"{APP_NAME}/get-vectorization",
         receive_vectorization,
-        name="receive-vectorization",
+        name="get-vectorization",
     ),
     path(
         f"{APP_NAME}/img-and-svg/<str:img_file>/<str:coords>/<str:regions>/<int:canvas_nb>",
@@ -36,8 +36,21 @@ urlpatterns = [
         name="run-vectorization",
     ),
     path(
-        f"{APP_NAME}/smash-and-relaunch-vecto/<str:anno_ref>",
+        f"{APP_NAME}/smash-and-relaunch-vectorization/<str:regions_ref>",
         smash_and_relaunch_vectorization,
-        name="smash-and-relaunch-vecto",
+        name="smash-and-relaunch-vectorization",
+    ),
+]
+
+urlpatterns += [
+    path(
+        f"witness/<int:wid>/regions/<int:rid>/vectorized-images",
+        get_vectorized_images,
+        name="vectorized-images",
+    ),
+    path(
+        f"witness/<int:wid>/regions/vectorized-images",
+        get_vectorized_images,
+        name="witness-vectorized-images",
     ),
 ]

@@ -114,7 +114,8 @@ fieldset:not(:last-child) {
 
 .faded {
     font-style: italic;
-    color: rgba(var(--body-fg), 0.75);
+    /*color: rgba(var(--body-fg), 0.75);*/
+    opacity: 0.75;
 }
 
 .btn {
@@ -161,11 +162,26 @@ fieldset:not(:last-child) {
 }
 .is-left {
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start !important;
 }
 .is-right {
     display: flex;
-    justify-content: flex-start;
+    justify-content: flex-end !important;
+}
+.is-bold {
+    font-weight: bold;
+}
+.is-wide {
+    width: 100%;
+}
+.is-tall {
+    height: 100%;
+}
+.smaller {
+    font-size: 0.75em;
+}
+.larger {
+    font-size: 1.25em;
 }
 
 .svg-inline--fa {
@@ -263,17 +279,35 @@ td.is-fullwidth {
 
     --contrasted: #f5f0f0;
     --accent: hsl(0deg 0% 0% / 5%);
+    --selected: hsl(234deg 100% 96%);
+    --selected-text: hsl(233deg 100% 33%);
+    --deleted: var(--bulma-danger-light);
+    --deleted-text: var(--bulma-danger-dark);
+    /*--darkened-bg: var(--selected);*/
+    /*--hairline-color: var(--bulma-border);*/
 }
 
 [data-theme="light"] {
     --contrasted: #f3eff1;
     --accent: hsl(0deg 0% 0% / 5%);
+    --selected: hsl(234deg 100% 96%);
+    --selected-text: hsl(237deg 82% 32%);
+    --deleted: var(--bulma-danger-light);
+    --deleted-text: var(--bulma-danger-dark);
 }
 
 [data-theme="dark"] {
     --contrasted: #252424;
     --accent: hsla(0, 0%, 100%, 0.05);
+    --selected: #000528;
+    --selected-text: #7281f9;
+    --deleted: var(--bulma-danger-dark);
+    --deleted-text: var(--bulma-danger-light);
+}
 
+.is-delete {
+    color: var(--deleted-text);
+    background-color: var(--deleted);
 }
 
 .is-contrasted {
@@ -282,4 +316,41 @@ td.is-fullwidth {
 
 .menu-list a:hover {
     background-color: var(--contrasted);
+}
+
+.is-256x256 {
+    width: 256px;
+    height: 256px;
+}
+
+.hoverable {
+    position: relative;
+    overflow: hidden;
+}
+
+.hoverable::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.2);
+    opacity: 0;
+    transition: opacity 0.2s;
+    mix-blend-mode: overlay;
+}
+
+.hoverable:hover::after {
+    opacity: 1;
+}
+
+.is-selected {
+    background-color: var(--selected);
+    color: var(--selected-text);
+}
+
+.hoverable:hover {
+    cursor: pointer;
+    text-decoration: underline;
 }

@@ -58,6 +58,7 @@ def create_empty_regions(digit: Digitization):
         return False
 
     try:
+        # TODO check if necessary
         with open(f"{REGIONS_PATH}/{regions.get_ref()}.txt", "w") as regions_file:
             for i, img_name in enumerate(imgs, 1):
                 regions_file.write(f"{i} {img_name}\n")
@@ -69,18 +70,22 @@ def create_empty_regions(digit: Digitization):
         return False
 
     try:
-        # TODO do not work properly...
+        # TODO some weird inconsistent problem with SAS (fails here unpredictably)
         success = index_manifest_in_sas(regions.gen_manifest_url(version=MANIFEST_V2))
         if not success:
             log(
-                f"[create_empty_regions] unable to index manifest in SAS for Regions #{regions.id}",
+                f"[create_empty_regions] unable to index manifest in SAS for Regions #{regions.id}."
+                f"Deleting Regions record.",
             )
+            regions.delete()
             return False
     except Exception as e:
         log(
-            f"[create_empty_regions] unable to index manifest in SAS for Regions #{regions.id}",
+            f"[create_empty_regions] Error when indexing manifest in SAS for Regions #{regions.id}."
+            f"Deleting Regions record.",
             e,
         )
+        regions.delete()
         return False
 
     return regions

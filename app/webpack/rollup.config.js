@@ -30,35 +30,8 @@ function serve() {
 }
 
 export default [
-    // {
-    //     input: 'src/main.js',
-    //     output: {
-    //         sourcemap: true,
-    //         format: 'iife',
-    //         name: 'app',
-    //         file: '../webapp/static/svelte/bundle.js'
-    //     },
-    //     plugins: [
-    //         svelte({
-    //             compilerOptions: {
-    //                 dev: !production
-    //             }
-    //         }),
-    //         css({ output: 'bundle.css' }),
-    //         resolve({
-    //             browser: true,
-    //             dedupe: ['svelte']
-    //         }),
-    //         commonjs(),
-    //         !production && livereload('public'),
-    //         production && terser()
-    //     ],
-    //     watch: {
-    //         clearScreen: false
-    //     }
-    // },
     {
-        input: 'src/list/region-list.js',
+        input: 'src/regions/region-list.js',
         output: {
             sourcemap: true,
             format: 'iife',
@@ -85,7 +58,7 @@ export default [
         }
     },
     {
-        input: 'src/list/record-list.js',
+        input: 'src/records/record-list.js',
         output: {
             sourcemap: true,
             format: 'iife',

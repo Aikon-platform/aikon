@@ -1,18 +1,47 @@
+import { writable } from 'svelte/store';
+import { sasUrl, cantaloupeUrl, appName } from './constants';
+
+export const loading = writable(false);
+
+export async function withLoading(asyncFunction) {
+    loading.set(true);
+    try {
+        return await asyncFunction();
+    } finally {
+        loading.set(false);
+    }
+}
+
+export function extractNb(str) {
+    return str.match(/\d+/g).toString();
+}
+
 export function getCantaloupeUrl() {
-    return CANTALOUPE_APP_URL ?? "http://localhost:8182";
+    return cantaloupeUrl ?? "http://localhost:8182";
 }
 
 export function getSasUrl() {
-    return SAS_APP_URL ?? "http://localhost:3000";
+    return sasUrl ?? "http://localhost:3000";
 }
 
-export async function getRecordList() {
-    const res = await fetch('/api/records/');
+export function initPagination(pageWritable, urlParam) {
+    if (typeof window !== 'undefined') {
+        const urlPage = parseInt(new URLSearchParams(window.location.search).get(urlParam));
+        if (!isNaN(urlPage)) {
+            pageWritable.set(urlPage);
+            return urlPage;
+        }
+    }
+    pageWritable.set(1);
+    return 1;
+}
 
-    if (res.ok) {
-        return await res.text();
-    } else {
-        throw new Error('Request failed');
+export function pageUpdate(pageNb, pageWritable, urlParam) {
+    pageWritable.set(pageNb);
+    if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.set(urlParam, pageNb);
+        window.history.pushState({}, '', url);
     }
 }
 
@@ -49,11 +78,13 @@ export function showMessage(msg, title = null, confirm = false) {
         if (msgModal) {
             if (confirm) {
                 document.getElementById("modal-footer").hidden = false;
+            } else {
+                resolve(undefined);
             }
             if (title) {
-                document.getElementById("modal-title").textContent = title;
+                document.getElementById("modal-title").innerHTML = title;
             }
-            document.getElementById("modal-body").textContent = msg;
+            document.getElementById("modal-body").innerHTML = msg;
             document.getElementById("hidden-msg-btn").click();
 
             const cancelBtn = document.getElementById("cancel-btn");
@@ -100,3 +131,23 @@ export function downloadBlob(blob, filename) {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
 }
+
+export async function cancelTreatment(treatmentId) {
+    if (confirm(APP_LANG === "en" ? "Are you sure you want to cancel treatment?" :
+            "Êtes-vous sûr de vouloir annuler le traitement en cours ?")) {
+        try {
+            const response = await fetch(`/${appName}/cancel-treatment/${treatmentId}`, {
+                method: 'GET'
+            });
+            if (response.ok) {
+                window.alert(APP_LANG === "en" ? "Successfully cancelled treatment" :
+                "Le traitement a été annulé");
+            } else {
+                window.alert(APP_LANG === "en" ? "Treatment could not be cancelled" :
+                "Le traitement n'a pas pu être annulé");
+            }
+        } catch (error) {
+            window.alert(APP_LANG === "en" ? "Error connecting to API" :
+                "Erreur lors de la connexion à l'API");
+        }
+}}
