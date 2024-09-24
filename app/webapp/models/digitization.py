@@ -91,7 +91,9 @@ class Digitization(models.Model):
         verbose_name_plural = get_name("Digitization", True)
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
+        if light:
+            return f"{self.get_digit_type()} #{self.id}"
         return f"{self.get_digit_type()} #{self.id}: {self.witness.__str__()}"
 
     witness = models.ForeignKey(
@@ -144,10 +146,9 @@ class Digitization(models.Model):
     )
 
     def get_witness(self):
-        try:
-            return self.witness
-        except AttributeError:
-            return None
+        if witness := self.witness:
+            return witness
+        return None
 
     def get_wit_ref(self):
         if witness := self.get_witness():
@@ -223,6 +224,13 @@ class Digitization(models.Model):
     def img_nb(self):
         # get the number of images for a digitization
         return get_nb_of_files(IMG_PATH, self.get_ref()) or 0
+
+    def img_zeros(self):
+        # get the number of digits for the images of this digitization (to know number of trailing zeros)
+        first_img = get_first_img(self.get_ref())
+        if not first_img:
+            return 0
+        return len(get_first_img(self.get_ref()).split("_")[-1].split(".")[0])
 
     def has_vectorization(self):
         # TODO voir comment modulariser ?

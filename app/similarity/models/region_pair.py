@@ -1,5 +1,7 @@
 from django.contrib.postgres.fields import ArrayField
 from django.db import models, connection
+from django.db.models import Q, F
+
 from app.webapp.models.utils.functions import get_fieldname
 
 
@@ -30,16 +32,29 @@ class RegionPairManager(models.Manager):
             columns = ", ".join(f.column for f in fields)
             placeholders = ", ".join("%s" for _ in fields)
 
+            # conflict_update = ", ".join(
+            #     f"{f.column} = EXCLUDED.{f.column}"
+            #     for f in fields
+            #     if f.name in update_fields and f.name != update_field
+            # )
+            #
+            # if conflict_update:
+            #     conflict_update += ", "
+            # conflict_update += f"{update_field} = CASE WHEN EXCLUDED.{update_field} > {table_name}.{update_field} THEN EXCLUDED.{update_field} ELSE {table_name}.{update_field} END"
+            #
+            # sql = f"""
+            #     INSERT INTO {table_name} ({columns})
+            #     VALUES ({placeholders})
+            #     ON CONFLICT ({', '.join(f.column for f in fields if f.name in match_field)})
+            #     DO UPDATE SET {conflict_update}
+            # """
             conflict_update = ", ".join(
                 f"{f.column} = EXCLUDED.{f.column}"
                 for f in fields
-                if f.name in update_fields and f.name != update_field
+                if f.name in update_fields
             )
 
-            if conflict_update:
-                conflict_update += ", "
-            conflict_update += f"{update_field} = CASE WHEN EXCLUDED.{update_field} > {table_name}.{update_field} THEN EXCLUDED.{update_field} ELSE {table_name}.{update_field} END"
-
+            # SQL query for bulk insert/update
             sql = f"""
                 INSERT INTO {table_name} ({columns})
                 VALUES ({placeholders})
@@ -66,6 +81,15 @@ class RegionPair(models.Model):
             models.Index(fields=["img_2"]),
             models.Index(fields=["regions_id_1"]),
             models.Index(fields=["regions_id_2"]),
+            models.Index(fields=["regions_id_1", "img_1"]),
+            models.Index(fields=["regions_id_2", "img_2"]),
+            models.Index(fields=["img_1", "regions_id_1", "regions_id_2"]),
+            models.Index(fields=["img_2", "regions_id_1", "regions_id_2"]),
+            models.Index(
+                fields=["regions_id_1", "regions_id_2"],
+                condition=Q(regions_id_1=F("regions_id_2")),
+                name="idx_same_regions",
+            ),
         ]
 
     def __str__(self):
@@ -75,8 +99,8 @@ class RegionPair(models.Model):
 
     img_1 = models.CharField(max_length=150)
     img_2 = models.CharField(max_length=150)
-    regions_id_1 = models.CharField(max_length=150)
-    regions_id_2 = models.CharField(max_length=150)
+    regions_id_1 = models.IntegerField()
+    regions_id_2 = models.IntegerField()
 
     """
     Score of similarity between the two regions (only from automatic pairs)
@@ -99,6 +123,7 @@ class RegionPair(models.Model):
     """
     is_manual = models.BooleanField(max_length=150, null=True, default=False)
 
+    # TODO: consider removing the following fields to reduce overhead
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
@@ -121,3 +146,6 @@ class RegionPair(models.Model):
             self.category_x or [],
             self.is_manual,
         )
+
+    def get_ref(self):
+        return "-".join(sorted([self.img_1, self.img_2]))

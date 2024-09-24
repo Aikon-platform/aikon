@@ -18,7 +18,7 @@ class DigitizationSource(models.Model):
         verbose_name_plural = get_name("DigitizationSource", True)
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
         return self.source
 
     source = models.CharField(max_length=150, unique=True)

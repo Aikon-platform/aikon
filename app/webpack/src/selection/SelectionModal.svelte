@@ -13,6 +13,7 @@
     function startEditing() {
         isEditing = true;
         currentTitle = $selectionTitle(isRegion);
+        // todo display changes of the title on the Item component as well + in the selection record list as well
         setTimeout(() => titleInput && titleInput.focus(), 0);
     }
 

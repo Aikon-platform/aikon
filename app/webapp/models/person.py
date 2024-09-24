@@ -14,7 +14,7 @@ class Person(models.Model):
         verbose_name_plural = get_name("Person", True)
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
         dates = format_dates(self.date_min, self.date_max)
         return f"{self.name}{f' ({dates})' if dates != '-' else ''}"
 

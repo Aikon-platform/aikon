@@ -5,7 +5,7 @@
     const { selected, nbSelected } = selectionStore;
     import { regionsStore } from './regionsStore.js';
     const { allRegions } = regionsStore;
-    import { appLang, regionsType, csrfToken } from '../constants';
+    import { appName, appLang, regionsType, csrfToken } from '../constants';
 
     const manifest = getContext('manifest');
     const isValidated = getContext('isValidated');
@@ -19,12 +19,14 @@
 
     function toggleEditMode() {
         isEditMode = !isEditMode;
-        // TODO! send validation status to backend
+        // TODO send validation status to backend
     }
+
+    // TODO add toggle button to switch in between select mode and view mode
 
     async function deleteSelectedRegions() {
         const confirmed = await showMessage(
-            appLang === "en" ? "Are you sure you want to delete regions?" : "Voulez-vous vraiment supprimer les régions?",
+            appLang === "en" ? "Are you sure you want to delete these regions?" : "Voulez-vous vraiment supprimer ces régions ?",
             appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
             true
         );
@@ -70,7 +72,7 @@
     async function downloadRegions(){
         // download only displayed regions?
         const regionsRef = Object.values($selected(true)).map(r => r.ref);
-        const response = await withLoading(() => fetch(`${window.location.origin}/regions/export`, {
+        const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/regions/export`, {
             method: "POST",
             headers: { "X-CSRFToken": csrfToken },
             body: JSON.stringify({regionsRef})

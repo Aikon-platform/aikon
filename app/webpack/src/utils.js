@@ -2,6 +2,7 @@ import { writable } from 'svelte/store';
 import { sasUrl, cantaloupeUrl, appName } from './constants';
 
 export const loading = writable(false);
+export const errorMsg = writable("");
 
 export async function withLoading(asyncFunction) {
     loading.set(true);
@@ -14,6 +15,12 @@ export async function withLoading(asyncFunction) {
 
 export function extractNb(str) {
     return str.match(/\d+/g).toString();
+}
+
+export function shorten(str, maxLen=100) {
+    // put '...' in between the 75% and last 25% characters oif the string it too long
+    const nthChar = Math.floor(maxLen * 0.75);
+    return str.length > maxLen ? str.slice(0, nthChar) + '...' + str.slice(- maxLen + nthChar) : str;
 }
 
 export function getCantaloupeUrl() {
@@ -132,22 +139,18 @@ export function downloadBlob(blob, filename) {
     document.body.removeChild(a);
 }
 
-export async function cancelTreatment(treatmentId) {
-    if (confirm(APP_LANG === "en" ? "Are you sure you want to cancel treatment?" :
-            "Êtes-vous sûr de vouloir annuler le traitement en cours ?")) {
-        try {
-            const response = await fetch(`/${appName}/cancel-treatment/${treatmentId}`, {
-                method: 'GET'
-            });
-            if (response.ok) {
-                window.alert(APP_LANG === "en" ? "Successfully cancelled treatment" :
-                "Le traitement a été annulé");
-            } else {
-                window.alert(APP_LANG === "en" ? "Treatment could not be cancelled" :
-                "Le traitement n'a pas pu être annulé");
-            }
-        } catch (error) {
-            window.alert(APP_LANG === "en" ? "Error connecting to API" :
-                "Erreur lors de la connexion à l'API");
-        }
-}}
+
+export async function getSuccess(url) {
+    try {
+        const response = await fetch(url);
+        return response.ok;
+    } catch (error) {
+        console.error('Error:', error);
+        return false;
+    }
+}
+
+
+export async function deleteRecord(recordId, recordType){
+    return getSuccess(`/${appName}/${recordType.toLowerCase()}/${recordId}/delete`);
+}

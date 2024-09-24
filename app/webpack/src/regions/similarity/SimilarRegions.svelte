@@ -6,6 +6,7 @@
 
     export let qImg;
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
+    const currentPageId = window.location.pathname.match(/\d+/g).join('-');
 
     async function fetchSImgs(qImg, selection, excludedCategories) {
         const regionsIds = Object.values(selection).map(r => r.id);
@@ -18,7 +19,7 @@
             {
                 method: "POST",
                 body: JSON.stringify({
-                    regionsIds: Object.values(selection).map(r => r.id),
+                    regionsIds: Object.values(selection[currentPageId]).map(r => r.id),
                     qImg: qImg,
                     topk: 10, // TODO retrieve this value from the user
                     excludedCategories: excludedCategories

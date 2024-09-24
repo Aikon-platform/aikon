@@ -1,4 +1,5 @@
 <script>
+    import { fade } from 'svelte/transition';
     import {refToIIIF} from "../utils.js";
     import { appLang, userId } from '../constants';
 
@@ -14,7 +15,7 @@
     }
 </script>
 
-<div class="item">
+<div class="item" transition:fade={{ duration: 500 }}>
     <div class="card mb-3">
         <div class="card-content">
             <div class="media">

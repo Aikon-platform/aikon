@@ -4,6 +4,7 @@ from django.urls import reverse
 from app.webapp.models.language import Language
 from app.webapp.models.place import Place
 from app.webapp.models.person import Person
+from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
 from app.webapp.models.tag import Tag
 from app.webapp.models.utils.constants import AUTHOR_MSG, DATE_INFO
 
@@ -21,17 +22,23 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, fields, plural)
 
 
-class Work(models.Model):
+class Work(AbstractSearchableModel):
     class Meta:
         verbose_name = get_name("Work")
         verbose_name_plural = get_name("Work", True)
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
+        if light:
+            if self.json and "title" in self.json:
+                return self.json["title"]
+            return self.title
         author = f"{self.author.name if self.author else AUTHOR_MSG}"
         return f"{author} | {self.title}"
 
-    title = models.CharField(verbose_name=get_name("title"), max_length=600)
+    title = models.CharField(
+        verbose_name=get_name("title"), max_length=600, unique=False
+    )
     date_min = models.IntegerField(
         verbose_name=get_name("date_min"), null=True, blank=True, help_text=DATE_INFO
     )
@@ -74,21 +81,25 @@ class Work(models.Model):
         # return reverse("webapp:work_view", args=[self.id])
 
     def to_json(self):
-        return {
-            "id": self.id,
-            "class": self.__class__.__name__,
-            "type": get_name("Work"),
-            # "user": self.user.__str__(),
-            # "user_id": self.user.id,
-            "url": self.get_absolute_url(),
-            "title": self.__str__(),
-            "metadata": {
-                get_name("dates"): format_dates(self.date_min, self.date_max),
-                get_name("place"): self.place.__str__(),
-                get_name("author"): self.author.__str__(),
-                get_name("language"): self.get_lang_names(),
-            },
-        }
+        place = self.place
+        author = self.author
+        return json_encode(
+            {
+                "id": self.id,
+                "class": self.__class__.__name__,
+                "type": get_name("Work"),
+                # "user": self.user.__str__(),
+                # "user_id": self.user.id,
+                "url": self.get_absolute_url(),
+                "title": self.__str__(),
+                "metadata": {
+                    get_name("dates"): format_dates(self.date_min, self.date_max),
+                    get_name("place"): place.__str__() if place else "-",
+                    get_name("author"): author.__str__() if author else "-",
+                    get_name("language"): self.get_lang_names(),
+                },
+            }
+        )
 
     def clean(self):
         super().clean()

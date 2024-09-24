@@ -1,27 +1,67 @@
 from dal import autocomplete
-import django_filters
+from django.db.models import Q
 from django.forms import DateTimeField, DateField
+from django_filters import FilterSet
+from django_filters.filters import (
+    ModelChoiceFilter,
+    ModelMultipleChoiceFilter,
+    RangeFilter,
+    CharFilter,
+)
 from django.forms.models import ModelChoiceIteratorValue
 
+from app.config.settings import APP_LANG
+from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.edition import Edition, get_name as edition_name
 from app.webapp.models.language import Language
+from app.webapp.models.person import Person
+from app.webapp.models.place import Place
 from app.webapp.models.series import Series, get_name as series_name
+from app.webapp.models.tag import Tag
 from app.webapp.models.treatment import Treatment, get_name as treatment_name
 from app.webapp.models.witness import Witness, get_name as witness_name
 from app.webapp.models.work import Work, get_name as work_name
 
+QS_MODELS = {
+    "edition": Edition,
+    "contents__work": Work,
+    "contents__tags": Tag,
+    "contents__work__author": Person,
+    "edition__place": Place,
+    "edition__publisher": Person,
+    "place": ConservationPlace,
+    "contents__lang": Language,
+    "work": Work,
+    "wit_ids": Witness,
+    "ser_ids": Series,
+    "work_ids": Work,
+}
 
-def serialize_choice_value(value):
-    if isinstance(value, ModelChoiceIteratorValue):
-        return str(value.value)
-    return value
 
-
-class RecordFilter(django_filters.FilterSet):
+class RecordFilter(FilterSet):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.custom_labels = getattr(self.Meta, "labels", {})
+        self.search_fields = ["json"]
+        self.filters["search"] = self.create_search_filter()
+
+    @staticmethod
+    def get_choices(model):
+        """
+        Get an efficient list of choices for any model.
+
+        :param model: The Django model class
+        :return: [{"value": record.id, "label": record.str()}, {"value": record.id, "label": record.str()}, ... ]
+        """
+        queryset = model.objects.all()
+
+        data = list(queryset.values(*("id",)))
+        for item, obj in zip(data, list(queryset)):
+            item["label"] = obj.__str__(light=True)
+
+        data.insert(0, {"id": "", "label": "----------"})
+        return data
 
     def to_form_fields(self):
         form_fields = []
@@ -39,10 +79,13 @@ class RecordFilter(django_filters.FilterSet):
             }
 
             if hasattr(field, "choices"):
-                field_info["choices"] = [
-                    {"value": serialize_choice_value(choice[0]), "label": choice[1]}
-                    for choice in field.choices
-                ]
+                if field_name in QS_MODELS:
+                    field_info["choices"] = self.get_choices(QS_MODELS[field_name])
+                else:
+                    field_info["choices"] = [
+                        {"id": self.get_val(choice[0]), "label": str(choice[1])}
+                        for choice in field.choices
+                    ]
 
             if isinstance(field, (DateTimeField, DateField)):
                 field_info["initial"] = (
@@ -53,23 +96,52 @@ class RecordFilter(django_filters.FilterSet):
 
         return form_fields
 
+    def create_search_filter(self):
+        return CharFilter(
+            method=self.search_method,
+            label="Full-text search" if APP_LANG == "en" else "Recherche plein texte",
+        )
+
+    def search_method(self, queryset, name, value):
+        if value and self.search_fields:
+            q_objects = Q()
+            for field in self.search_fields:
+                q_objects |= Q(**{f"{field}__icontains": value})
+            return queryset.filter(q_objects)
+        return queryset
+
+    @staticmethod
+    def get_val(value):
+        if isinstance(value, ModelChoiceIteratorValue):
+            return str(value.value)
+        return value
+
 
 class WitnessFilter(RecordFilter):
-    # TODO make autocompletion work
-    edition = django_filters.ModelChoiceFilter(
+    edition = ModelChoiceFilter(
         queryset=Edition.objects.all(),
-        widget=autocomplete.ModelSelect2(url="webapp:edition-autocomplete"),
     )
-    contents__lang = django_filters.ModelMultipleChoiceFilter(
+    contents__work = ModelChoiceFilter(
+        queryset=Work.objects.all(),
+    )
+    contents__work__author = ModelChoiceFilter(
+        queryset=Person.objects.all(),
+    )
+    place = ModelChoiceFilter(
+        queryset=ConservationPlace.objects.all(),
+    )
+    contents__lang = ModelMultipleChoiceFilter(
         queryset=Language.objects.all(),
         null_value=None,
-        null_label="----------",
-        widget=autocomplete.ModelSelect2Multiple(url="webapp:language-autocomplete"),
     )
-    contents__date_min = django_filters.RangeFilter(
+    contents__tags = ModelMultipleChoiceFilter(
+        queryset=Tag.objects.all(),
+        null_value=None,
+    )
+    contents__date_min = RangeFilter(
         field_name="contents__date_min", label=witness_name("date_min")
-    )  # , widget=django_filters.widgets.RangeWidget(attrs={"class": "range"}))
-    contents__date_max = django_filters.RangeFilter(
+    )
+    contents__date_max = RangeFilter(
         field_name="contents__date_max", label=witness_name("date_max")
     )
 
@@ -80,11 +152,7 @@ class WitnessFilter(RecordFilter):
             "id_nb": ["icontains"],
             "place": ["exact"],
             "edition": ["exact"],
-            # "edition__name": ["exact"],
-            # "edition__place": ["exact"],
-            # "edition__publisher": ["exact"],
             "contents__work": ["exact"],
-            # "contents__work__title": ["icontains"],
             "contents__work__author": ["exact"],
             "contents__lang": ["exact"],
             "contents__tags": ["exact"],
@@ -119,21 +187,20 @@ class TreatmentFilter(RecordFilter):
 
 
 class WorkFilter(RecordFilter):
-    contents__lang = django_filters.ModelChoiceFilter(
+    contents__lang = ModelChoiceFilter(
         queryset=Language.objects.all(),
-        widget=autocomplete.ModelSelect2Multiple(url="webapp:language-autocomplete"),
     )
-    contents__date_min = django_filters.RangeFilter(
+    contents__date_min = RangeFilter(
         field_name="contents__date_min", label=witness_name("date_min")
-    )  # , widget=django_filters.widgets.RangeWidget(attrs={"class": "range"}))
-    contents__date_max = django_filters.RangeFilter(
+    )
+    contents__date_max = RangeFilter(
         field_name="contents__date_max", label=witness_name("date_max")
     )
 
     class Meta:
         model = Work
         fields = {
-            "place": ["exact"],
+            # "place": ["exact"],
             "author": ["exact"],
         }
         labels = {
@@ -144,14 +211,19 @@ class WorkFilter(RecordFilter):
 
 
 class SeriesFilter(RecordFilter):
-    edition = django_filters.ModelChoiceFilter(
+    edition = ModelChoiceFilter(
         queryset=Edition.objects.all(),
-        widget=autocomplete.ModelSelect2(url="webapp:edition-autocomplete"),
     )
-    contents__date_min = django_filters.RangeFilter(
+    edition__place = ModelChoiceFilter(
+        queryset=Place.objects.all(),
+    )
+    edition__publisher = ModelChoiceFilter(
+        queryset=Person.objects.all(),
+    )
+    contents__date_min = RangeFilter(
         field_name="contents__date_min", label=witness_name("date_min")
-    )  # , widget=django_filters.widgets.RangeWidget(attrs={"class": "range"}))
-    contents__date_max = django_filters.RangeFilter(
+    )
+    contents__date_max = RangeFilter(
         field_name="contents__date_max", label=witness_name("date_max")
     )
 
@@ -172,7 +244,7 @@ class SeriesFilter(RecordFilter):
 
 
 class DocumentSetFilter(RecordFilter):
-    wit_ids = django_filters.ModelMultipleChoiceFilter(
+    wit_ids = ModelMultipleChoiceFilter(
         queryset=Witness.objects.all(),
         widget=autocomplete.ModelSelect2Multiple(url="witness-autocomplete"),
         method="filter_by_witness",
@@ -180,7 +252,7 @@ class DocumentSetFilter(RecordFilter):
         null_label="----------",
         label=witness_name("Witness"),
     )
-    ser_ids = django_filters.ModelMultipleChoiceFilter(
+    ser_ids = ModelMultipleChoiceFilter(
         queryset=Series.objects.all(),
         widget=autocomplete.ModelSelect2Multiple(url="series-autocomplete"),
         method="filter_by_series",
@@ -188,7 +260,7 @@ class DocumentSetFilter(RecordFilter):
         null_label="----------",
         label=series_name("Series"),
     )
-    work_ids = django_filters.ModelMultipleChoiceFilter(
+    work_ids = ModelMultipleChoiceFilter(
         queryset=Work.objects.all(),
         widget=autocomplete.ModelSelect2Multiple(url="work-autocomplete"),
         method="filter_by_work",

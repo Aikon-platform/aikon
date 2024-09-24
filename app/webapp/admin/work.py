@@ -1,5 +1,7 @@
 from django.contrib import admin
 from admin_searchable_dropdown.filters import AutocompleteFilter
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 
 from app.webapp.admin.admin import UnregisteredAdmin
 from app.webapp.forms import LanguageForm
@@ -27,6 +29,15 @@ class WorkAdmin(UnregisteredAdmin):
         "tags",
     ]
     autocomplete_fields = ("author", "place")
+
+    def response_add(self, request, obj, post_url_continue=None):
+        return HttpResponseRedirect(reverse("webapp:work_list"))
+
+    def response_change(self, request, obj):
+        return HttpResponseRedirect(reverse("webapp:work_list"))
+
+    def response_delete(self, request, obj_display, obj_id):
+        return HttpResponseRedirect(reverse("webapp:work_list"))
 
 
 # class WorkInline(nested_admin.NestedStackedInline):

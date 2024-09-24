@@ -4,7 +4,13 @@
 {% block content %}
 
     <div style="margin-bottom: 2%; margin-top: 2%;">
-        <p class="is-size-1 has-text-weight-light">{{ APP_NAME|upper }} Admin Home</p>
+        <p class="is-size-1 has-text-weight-light">
+            {% if APP_LANG == "en" %}
+                {{ APP_NAME|upper }} Admin Home
+            {% else %}
+                Accueil administrateur {{ APP_NAME|upper }}
+            {% endif %}
+        </p>
     </div>
 
     <div class="columns is-fluid">
@@ -26,8 +32,8 @@
         <div class="column is-6">
             <div class="block">
                 <p class="box notification is-contrasted mgt-medium">
-                    {% if APP_LANG == "en" %}Welcome {{ user.first_name }} {{ user.last_name }} to the administrative interface!
-                    {% else %}Bienvenue sur l'interface Admin {{ user.first_name }} {{ user.last_name }} !{% endif %}
+                    {% if APP_LANG == "en" %}Welcome to the administrative interface, {{ user.first_name }} {{ user.last_name }}!
+                    {% else %}Bienvenue sur l'interface administrateur, {{ user.first_name }} {{ user.last_name }} !{% endif %}
                 </p>
             </div>
 
@@ -68,15 +74,15 @@
                     <div class="box is-contrasted" style="width: 100%; overflow-x: auto;">
                         <table class="table is-capitalized is-fullwidth">
                             <thead>
-                                <tr class="table-header">
-                                    <th colspan="3">
-                                        {% if APP_LANG == "en" %}
-                                            Superuser Actions
-                                        {% else %}
-                                            Espace Super utilisateur
-                                        {% endif %}
-                                    </th>
-                                </tr>
+                            <tr class="table-header">
+                                <th colspan="3">
+                                    {% if APP_LANG == "en" %}
+                                        Superuser Actions
+                                    {% else %}
+                                        Espace Super utilisateur
+                                    {% endif %}
+                                </th>
+                            </tr>
                             </thead>
                             <tbody>
                             {% include "includes/admin_row.html" with entity_title=USR entity_name="user" %}
@@ -86,29 +92,25 @@
                         </table>
                     </div>
                 </div>
-                </div>
             {% endif %}
+        </div>
 
         <div class="column is-4">
-            <!-- <div class="box is-contrasted ml-5">
-                <p class="is-size-4 has-text-weight-light">{% if APP_LANG == "en" %}Personnal Space{% else %}Espace Utilisateur{% endif %}</p>
-                <p>
-                    <a>
-                        <span class="icon-text">
-                        <span class="icon"><i class="far fa-user"></i></span>
-                        {% if APP_LANG == "en" %}Access{% else %}Accéder{% endif %}
-                    </span>
-                    </a>
-                </p>
-            </div> -->
             <div class="box is-contrasted ml-5">
                 <p class="is-size-4 has-text-weight-light">
                     {% if APP_LANG == "en" %}Dear user,{% else %}Cher utilisateur,{% endif %}
                 </p>
-                <p>
-                    {% if APP_LANG == "en" %}This version of the website is still a work in progress.  Don't hesitate to contact us if it is broken.
-                    {% else %}Ce site est encore en cours de développement. N'hésitez pas à nous contacter en cas de problème.{% endif %}
-                </p>
+                {% if user.username == "guest" %}
+                    <p>
+                        {% if APP_LANG == "en" %}You are in connected as guest with limited access to the platform. If you wish to obtain an account, please <a href="mailto:{{ CONTACT_MAIL }}">contact the administrators</a>.
+                        {% else %}Vous êtes connecté en tant qu'invité, avec un accès limité à la plateforme. Si vous souhaitez obtenir un compte, merci de <a href="mailto:{{ CONTACT_MAIL }}">contacter les administrateurs</a>.{% endif %}
+                    </p>
+                {% else %}
+                    <p>
+                        {% if APP_LANG == "en" %}This version of the website is still a work in progress. Don't hesitate to <a href="mailto:{{ CONTACT_MAIL }}">give us feedback</a>.
+                        {% else %}Ce site est encore en cours de développement. N'hésitez pas à <a href="mailto:{{ CONTACT_MAIL }}">nous contacter</a> pour faire des retours.{% endif %}
+                    </p>
+                {% endif %}
                 <p>
                     {% if APP_LANG == "en" %}Enjoy testing {{APP_NAME|upper}}!
                     {% else %}Bonne navigation !{% endif %}

@@ -65,7 +65,7 @@ def receive_vectorization(request):
         return JsonResponse({"error": "Unsupported file type"}, status=400)
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+@login_required
 def show_crop_vectorization(request, img_file, coords, regions, canvas_nb):
     svg_filename = f"{jpg_to_none(img_file)}_{coords}.svg"
     svg_path = os.path.join(SVG_PATH, svg_filename)
@@ -127,7 +127,7 @@ def smash_and_relaunch_vectorization(request, regions_ref):
         return JsonResponse({"response": error, "reason": e}, safe=False)
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+@login_required
 def send_vectorization(request, regions_ref):
     """
     To relaunch vectorization request in case the automatic process has failed
@@ -161,7 +161,7 @@ def send_vectorization(request, regions_ref):
         return JsonResponse({"response": error, "reason": e}, safe=False)
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+@login_required
 def show_vectorization(request, regions_ref):
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
@@ -197,7 +197,7 @@ def show_vectorization(request, regions_ref):
     )
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+@login_required
 def export_all_images_and_svgs(request, regions_ref):
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
@@ -226,7 +226,7 @@ def export_all_images_and_svgs(request, regions_ref):
     return zip_images_and_files(urls_list, path_list)
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+@login_required
 def export_selected_imgs_and_svgs(request):
     images_list = json.loads(request.POST.get("liste_images"))
     urls_list = []

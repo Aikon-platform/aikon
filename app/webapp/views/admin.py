@@ -1,7 +1,5 @@
-import json
-
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.views.generic import CreateView, DetailView, View, ListView, UpdateView
+from django.views.generic import CreateView, TemplateView, View, UpdateView
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 
@@ -40,6 +38,9 @@ class AbstractView(LoginRequiredMixin, View):
         context["model_title"] = str(
             getattr(self, "model_title", self.model._meta.verbose_name)
         )
+        context["page_title"] = str(
+            getattr(self, "page_title", self.model._meta.verbose_name_plural.lower())
+        )
         context["app_name"] = "webapp"
         context["user"] = (
             self.request.user if self.request.user.is_authenticated else None
@@ -74,7 +75,11 @@ class AbstractRecordCreate(AbstractRecordView, CreateView):
     template_name = "webapp/form.html"
 
     def get_view_title(self):
-        return f"Add {self.model._meta.verbose_name}"
+        return (
+            f"Add new {self.model._meta.verbose_name.lower()}"
+            if APP_LANG == "en"
+            else f"Ajout de {self.model._meta.verbose_name.lower()}"
+        )
 
     def get_success_url(self):
         return reverse(f"{self.model._meta.name}_list")
@@ -84,21 +89,22 @@ class AbstractRecordUpdate(AbstractRecordView, UpdateView):
     template_name = "webapp/form.html"
 
     def get_view_title(self):
-        return f"Change {self.model._meta.verbose_name}"
+        return (
+            f"Change {self.model._meta.verbose_name.lower()}"
+            if APP_LANG == "en"
+            else f"Modification {self.model._meta.verbose_name.lower()}"
+        )
 
 
-class AbstractRecordList(AbstractView, ListView):
+class AbstractRecordList(AbstractView, TemplateView):
     template_name = "webapp/list.html"
-    paginate_by = 50
-    ordering = ["id"]
-
-    # def get_ordering(self):
-    #     ordering = self.request.GET.get('ordering', '-date_created')
-    #     return ordering
 
     def get_view_title(self):
-        # TODO find better name (bilingual)
-        return f"List of {self.model._meta.verbose_name_plural}"
+        return (
+            f"List of {self.model._meta.verbose_name_plural.lower()}"
+            if APP_LANG == "en"
+            else f"Liste de {self.model._meta.verbose_name_plural.lower()}"
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -140,6 +146,13 @@ class WitnessRegionsView(AbstractRecordView):
     pk_url_kwarg = "id"
     fields = []
 
+    def get_view_title(self):
+        return (
+            f"View {self.model._meta.verbose_name.lower()} regions"
+            if APP_LANG == "en"
+            else f"Visualiser les régions du {self.model._meta.verbose_name.lower()}"
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["regions_ids"] = []
@@ -147,18 +160,27 @@ class WitnessRegionsView(AbstractRecordView):
         context["img_nb"] = None
 
         witness = self.get_record()
-        context["witness"] = witness.to_json()
-        if len(witness.get_digits()) == 0:
+        context["view_title"] = (
+            f"“{witness}” regions" if APP_LANG == "en" else f"Régions de « {witness} »"
+        )
+        context["witness"] = witness.get_json(reindex=True)
+        if len(context["witness"]["digits"]) == 0:
             # TODO handle case where no digitization is available
             pass
 
-        for regions in witness.get_regions():
-            context["regions_ids"].append(regions.id)
+        for rid in context["witness"]["regions"]:
+            regions = Regions.objects.get(pk=rid)
+            context["regions_ids"].append(rid)
+            # for regions in witness.get_regions():
+            #     context["regions_ids"].append(regions.id)
             # TODO handle multiple manifest for multiple regions
             context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
             context["img_prefix"] = regions.get_ref().split("_anno")[0]
             if context["img_nb"] is None:
-                context["img_nb"] = regions.img_nb()
+                rjson = regions.get_json()
+                context["img_nb"] = rjson["img_nb"] or None
+                context["img_zeros"] = rjson["zeros"] or None
+
             if not regions.is_validated:
                 context["is_validated"] = False
 
@@ -173,17 +195,30 @@ class RegionsView(AbstractRecordView):
     fields = []
     pk_url_kwarg = "rid"
 
+    def get_view_title(self):
+        return (
+            f"View {self.model._meta.verbose_name.lower()}"
+            if APP_LANG == "en"
+            else f"Visualiser les {self.model._meta.verbose_name.lower()}"
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["witness_id"] = self.kwargs["wid"]
         context["regions_id"] = self.kwargs["rid"]
 
         regions = self.get_record()
-        context["witness"] = regions.get_witness().to_json()
+        wit = regions.get_witness()
+        context["view_title"] = (
+            f"“{wit}” regions" if APP_LANG == "en" else f"Régions de « {wit} »"
+        )
+        context["witness"] = wit.get_json(reindex=True)
         context["is_validated"] = regions.is_validated
         context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
         context["img_prefix"] = regions.get_ref().split("_anno")[0]
-        context["img_nb"] = regions.img_nb()
+        rjson = regions.get_json()
+        context["img_nb"] = rjson["img_nb"] or 0
+        context["img_zeros"] = rjson["zeros"] or 0
         return context
 
 
@@ -195,7 +230,6 @@ class TreatmentCreate(AbstractRecordCreate):
         self.object = form.save(commit=False)
         self.object.requested_by = self.request.user
         self.object = form.save()
-        # TODO make treatment submission instantaneous + loading widget
 
         return super().form_valid(form)
 
@@ -212,6 +246,16 @@ class TreatmentList(AbstractRecordList):
         context["search_fields"] = TreatmentFilter().to_form_fields()
 
         return context
+
+
+class TreatmentView(AbstractRecordView):
+    model = Treatment
+    template_name = "webapp/treatment.html"
+    fields = []
+
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     context["urls"] = self.get_record().get_treated_url()
 
 
 class WorkList(AbstractRecordList):

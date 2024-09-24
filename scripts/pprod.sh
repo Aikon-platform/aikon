@@ -17,15 +17,15 @@ source "$APP_ROOT"/venv/bin/activate
 pip install -r "$APP_ROOT"/app/requirements-prod.txt
 
 #create_db() {
-#    user_exists=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USERNAME'")
+#    user_exists=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$POSTGRES_USER'")
 #    if [ "$user_exists" != "1" ]; then
-#        sudo -u postgres psql -c "CREATE USER $DB_USERNAME WITH PASSWORD '$DB_PASSWORD';"
-#        sudo -u postgres psql -c "ALTER ROLE $DB_USERNAME SET client_encoding TO 'utf8';"
-#        sudo -u postgres psql -c "ALTER ROLE $DB_USERNAME SET default_transaction_isolation TO 'read committed';"
-#        sudo -u postgres psql -c "ALTER ROLE $DB_USERNAME SET timezone TO 'UTC';"
+#        sudo -u postgres psql -c "CREATE USER $POSTGRES_USER WITH PASSWORD '$POSTGRES_PASSWORD';"
+#        sudo -u postgres psql -c "ALTER ROLE $POSTGRES_USER SET client_encoding TO 'utf8';"
+#        sudo -u postgres psql -c "ALTER ROLE $POSTGRES_USER SET default_transaction_isolation TO 'read committed';"
+#        sudo -u postgres psql -c "ALTER ROLE $POSTGRES_USER SET timezone TO 'UTC';"
 #    fi
-#    sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;"
-#    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USERNAME;"
+#    sudo -u postgres psql -c "CREATE DATABASE $POSTGRES_DB;"
+#    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $POSTGRES_DB TO $POSTGRES_USER;"
 #}
 #
 #check_dbname() {
@@ -35,12 +35,12 @@ pip install -r "$APP_ROOT"/app/requirements-prod.txt
 #        db_name="${1}_$count"
 #        ((count++))
 #    done
-#    sed -i "s~^DB_NAME=.*~DB_NAME=\"$db_name\"~" "$ENV_FILE"
+#    sed -i "s~^POSTGRES_DB=.*~POSTGRES_DB=\"$db_name\"~" "$ENV_FILE"
 #    echo "$db_name"
 #}
 #
-#DB_NAME=$(check_dbname "$DB_NAME")
-#create_db "$DB_NAME"
+#POSTGRES_DB=$(check_dbname "$POSTGRES_DB")
+#create_db "$POSTGRES_DB"
 
 #python "$APP_ROOT"/app/manage.py makemigrations
 #python "$APP_ROOT"/app/manage.py migrate
@@ -57,7 +57,7 @@ configure_nginx() {
     sudo cp "$APP_ROOT"/gunicorn/ssl.template "$SSL_FILE"
 
     sudo sed -i "s|PROD_URL|$PROD_URL|g" "$SSL_FILE"
-    sudo sed -i "s|DB_NAME|$DB_NAME|g" "$SSL_FILE"
+    sudo sed -i "s|POSTGRES_DB|$POSTGRES_DB|g" "$SSL_FILE"
     sudo sed -i "s/SAS_PORT/$SAS_PORT/g" "$SSL_FILE"
     sudo sed -i "s/CANTALOUPE_PORT/$CANTALOUPE_PORT/g" "$SSL_FILE"
     sudo sed -i "s|APP_ROOT|$APP_ROOT|g" "$SSL_FILE"

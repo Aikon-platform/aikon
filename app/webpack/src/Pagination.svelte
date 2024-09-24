@@ -1,10 +1,12 @@
 <script>
+    import {pageSize} from "./constants.js";
+
     export let store;
     const { currentPage } = store;
 
     export let nbOfItems;
-    export let pageLength = 50;
-    $: maxPage = Math.ceil(nbOfItems / pageLength);
+    export let pageLength = pageSize;
+    $: maxPage = pageLength < pageSize ? 1 : Math.ceil(nbOfItems / pageLength);
 </script>
 
 {#if maxPage > 1}

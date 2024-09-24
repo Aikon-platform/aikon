@@ -1,7 +1,5 @@
 from typing import List
 
-from celery import shared_task
-
 from app.config.celery import celery_app
 
 
@@ -15,6 +13,7 @@ def check_similarity_files(file_names):
 def compute_similarity_scores(
     regions_refs: List[str] = None, max_rows: int = 50, show_checked_ref: bool = False
 ):
+    # TODO check if used else delete
     from app.webapp.views import check_ref
     from app.similarity.utils import compute_total_similarity
 
@@ -36,3 +35,10 @@ def compute_similarity_scores(
     return compute_total_similarity(
         regions, checked_regions, regions_refs, max_rows, show_checked_ref
     )
+
+
+@celery_app.task
+def process_similarity_file(file_name):
+    from app.similarity.utils import score_file_to_db
+
+    return score_file_to_db(file_name)

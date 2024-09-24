@@ -8,7 +8,8 @@ from iiif_prezi.factory import StructuralError
 from app.config.settings import APP_URL, APP_NAME, APP_LANG, SAS_APP_URL
 from app.similarity.const import SCORES_PATH
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.utils.constants import WIT
+from app.webapp.models.searchable_models import AbstractSearchableModel
+from app.webapp.models.utils.constants import WIT, REG
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.webapp.utils.paths import REGIONS_PATH
@@ -24,16 +25,22 @@ def check_version(version):
     return version
 
 
-class Regions(models.Model):
+class Regions(AbstractSearchableModel):
     class Meta:
         verbose_name = get_name("Regions")
         verbose_name_plural = get_name("Regions")
         app_label = "webapp"
 
-    def __str__(self):
+    def __str__(self, light=False):
+        if light:
+            if self.json and "title" in self.json:
+                return self.json["title"]
+            return f'{get_name("Regions")} #{self.id}'
+
         witness = self.get_witness()
-        space = "" if APP_LANG == "en" else " "
-        return f"{WIT.capitalize()} #{witness.id}{space}: {witness}"
+        if not witness:
+            return f'{get_name("Regions")} #{self.id}'
+        return f"{REG.capitalize()} #{self.id} | {witness.__str__()}"
 
     digitization = models.ForeignKey(
         Digitization,
@@ -60,6 +67,9 @@ class Regions(models.Model):
 
     def img_nb(self):
         return self.get_digit().img_nb() or 0
+
+    def img_zeros(self):
+        return self.get_digit().img_zeros() or 0
 
     def gen_manifest_url(self, only_base=False, version=MANIFEST_V1):
         witness = self.get_witness()
@@ -125,12 +135,18 @@ class Regions(models.Model):
         return {}
 
     def to_json(self):
+        rjson = self.json or {}
+        digit = self.get_digit()
+
         return {
             "id": self.id,
+            "title": self.__str__(),
             "ref": self.get_ref(),
             "class": self.__class__.__name__,
             "type": get_name("Regions"),
-            "title": self.__str__(),
+            "url": self.gen_mirador_url(),
+            "img_nb": rjson.get("img_nb", digit.img_nb() if digit else 0),
+            "zeros": rjson.get("zeros", digit.img_zeros() if digit else 0),
         }
 
     def get_annotations(self):

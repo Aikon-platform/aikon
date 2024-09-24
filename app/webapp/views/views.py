@@ -28,6 +28,7 @@ from app.config.settings import (
     SAS_USERNAME,
     SAS_PASSWORD,
     CV_API_URL,
+    LOGIN_URL,
 )
 from app.webapp.models.edition import Edition
 from app.webapp.models.language import Language
@@ -70,6 +71,59 @@ def is_superuser(user):
 
 def admin_app(request):
     return redirect("admin:index")
+
+
+def error_404(request, exception):
+    return render(
+        request,
+        "error.html",
+        status=404,
+        context={
+            "error_code": 404,
+            "error_title": "Page not found",
+            "error_message": "The page you are looking for does not exist.",
+            "exception": str(exception),
+        },
+    )
+
+
+def error_500(request):
+    return render(
+        request,
+        "error.html",
+        status=500,
+        context={
+            "error_code": 500,
+            "error_title": "Internal Server Error",
+            "error_message": "Something went wrong. Please try again later.",
+        },
+    )
+
+
+def error_403(request):
+    return render(
+        request,
+        "error.html",
+        status=403,
+        context={
+            "error_code": 403,
+            "error_title": "Access Denied",
+            "error_message": "You do not have permission to access this page.",
+        },
+    )
+
+
+def error_400(request):
+    return render(
+        request,
+        "error.html",
+        status=400,
+        context={
+            "error_code": 400,
+            "error_title": "Bad Request",
+            "error_message": "Your request is invalid.",
+        },
+    )
 
 
 def check_ref(obj_ref, obj="Digitization"):
@@ -323,7 +377,7 @@ def witness_sas_annotations(request, regions_id):
     return JsonResponse(c_annos, safe=False)
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+@login_required(login_url=LOGIN_URL)
 def show_regions(request, regions_ref):
     # NOTE soon to be not used
     passed, regions = check_ref(regions_ref, "Regions")
@@ -357,7 +411,7 @@ def show_regions(request, regions_ref):
     )
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+@login_required(login_url=LOGIN_URL)
 def show_all_regions(request, regions_ref):
     # NOTE soon to be not used
     passed, regions = check_ref(regions_ref, "Regions")
@@ -396,7 +450,7 @@ def show_all_regions(request, regions_ref):
     )
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+@login_required(login_url=LOGIN_URL)
 def export_all_regions(request, regions_ref):
     # NOTE soon to be not used
     passed, regions = check_ref(regions_ref, "Regions")
@@ -421,7 +475,7 @@ def export_all_regions(request, regions_ref):
     return zip_img(urls_list)
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+@login_required(login_url=LOGIN_URL)
 def export_selected_regions(request):
     urls_list = json.loads(request.POST.get("listeURL"))
     return zip_img(urls_list)
@@ -507,7 +561,7 @@ def legacy_manifest(request, old_id):
         return JsonResponse(json.loads(manifest.read()))
 
 
-@login_required(login_url=f"/{APP_NAME}-admin/login/")
+@login_required(login_url=LOGIN_URL)
 def advanced_search(request):
     # NOTE soon to be not used
     witness_list = Witness.objects.order_by("id")
@@ -629,25 +683,25 @@ def cancel_treatment(request, treatment_id):
         return JsonResponse({"error": "Treatment not found"}, e)
 
 
-@csrf_exempt
-def relaunch_treatment(request, treatment_id):
-    """
-    Relaunch same treatment
-    """
-    if not treatment_id:
-        return JsonResponse({"error": "Invalid treatment ID"}, status=400)
-
-    try:
-        treatment = Treatment.objects.get(id=treatment_id)
-        return JsonResponse({"success": True})
-
-    except Exception as e:
-        return JsonResponse({"error": "Treatment not found"}, e)
-
-
 def set_title(request, set_id):
     try:
         set = DocumentSet.objects.get(id=set_id)
         return JsonResponse({"title": set.title})
     except DocumentSet.DoesNotExist:
         return JsonResponse({"title": "Unknown"}, status=404)
+
+
+@csrf_exempt
+def delete_treatment(request, treatment_id):
+    """
+    Delete treatment instance from the db
+    """
+    if not treatment_id:
+        return JsonResponse({"error": "Invalid treatment ID"}, status=400)
+    try:
+        treatment = Treatment.objects.get(id=treatment_id)
+        treatment.delete()
+
+        return JsonResponse({"success": True})
+    except Exception as e:
+        return JsonResponse({"error": "Treatment not found"}, e)

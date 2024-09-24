@@ -10,10 +10,12 @@
     import { appLang } from '../constants';
 
     const nbOfPages = getContext('nbOfPages');
+    const trailingZeros = getContext('trailingZeros');
 
     const zeros = (n, l) => n.toString().padStart(l, '0');
     function toImgName(canvasNb){
-        return `${imgPrefix}_${zeros(canvasNb, String(nbOfPages).length + 1)}`;
+        // NOTE here sometimes the number of trailing zeros generated is not corresponding to the number of pages
+        return `${imgPrefix}_${zeros(canvasNb, trailingZeros)}`;
     }
 </script>
 

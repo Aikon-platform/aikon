@@ -1,7 +1,8 @@
 import importlib
 import uuid
-
 import requests
+
+from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
@@ -16,15 +17,13 @@ from app.config.settings import (
     CV_API_URL,
     ADDITIONAL_MODULES,
 )
-from app.webapp.models.digitization import Digitization
 
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.series import Series
-from app.webapp.models.utils.constants import TRMT_TYPE, TRMT_STATUS
+from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
+from app.webapp.models.utils.constants import TRMT_TYPE, TRMT_STATUS, NO_USER
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.models.witness import Witness
-from app.webapp.models.work import Work
-from app.webapp.utils.functions import get_summary
+from app.webapp.tasks import get_all_witnesses
+
 from app.webapp.utils.logger import log
 
 
@@ -42,15 +41,22 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, fields, plural)
 
 
-class Treatment(models.Model):
+class Treatment(AbstractSearchableModel):
     class Meta:
         verbose_name = get_name("Treatment")
         verbose_name_plural = get_name("Treatment", True)
         app_label = "webapp"
 
-    def __str__(self):
-        space = "" if APP_LANG == "en" else " "
-        return f"Treatment #{self.id}{space}: {self.id}"
+    def __str__(self, light=False):
+        task = f"{self.task_type.__str__().capitalize()}"
+        if light:
+            if self.json and "title" in self.json:
+                return self.json["title"]
+            return task
+
+        if self.document_set:
+            return f"{task} | {self.document_set.title}"
+        return task
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     status = models.CharField(
@@ -60,7 +66,7 @@ class Treatment(models.Model):
     )
     is_finished = models.BooleanField(default=False, editable=False)
 
-    requested_on = models.DateTimeField(auto_now_add=True, editable=False)
+    requested_on = models.DateTimeField(auto_now_add=True, editable=False, null=True)
     requested_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, editable=False
     )
@@ -92,22 +98,23 @@ class Treatment(models.Model):
 
     _internal_save = False
 
-    def get_title(self):
-        if self.document_set:
-            return (
-                f"{self.task_type.__str__().capitalize()} | {self.document_set.title}"
-            )
-        return f"{self.task_type.__str__().capitalize()}"
-
     def get_objects_name(self):
         if not self.document_set:
             return []
-        return self.document_set.get_document_names()
+        # TODO display treated_objects instead of document_set ?
+        return self.document_set.document_names
 
     def get_objects(self):
         if not self.document_set:
             return []
-        return self.document_set.get_documents()
+        # TODO display treated_objects instead of document_set ?
+        return self.document_set.documents
+
+    def get_witnesses(self):
+        if not self.document_set:
+            return []
+        # TODO display treated_objects instead of document_set ?
+        return self.document_set.all_witnesses()
 
     def get_cancel_url(self):
         return f"{CV_API_URL}/{self.task_type}/{self.api_tracking_id}/cancel"
@@ -117,31 +124,62 @@ class Treatment(models.Model):
             return ""
         return f"?document_set={self.document_set.id}&task_type={self.task_type}&notify_email={self.notify_email}"
 
-    def to_json(self):
-        user = self.requested_by
-        return {
-            "id": self.id.__str__(),
-            "class": self.__class__.__name__,
-            "type": get_name("Treatment"),
-            "title": self.get_title(),
-            "updated_at": self.requested_on.strftime("%Y-%m-%d %H:%M")
-            if self.requested_on
-            else "None",
-            "user": user.__str__() if user else "Unknown user",
-            "user_id": user.id if user else 0,
-            "status": self.status,
-            "is_finished": self.is_finished,
-            "treated_objects": self.treated_objects,
-            "cancel_url": self.get_cancel_url(),
-            "query_parameters": self.get_query_parameters(),
-            "api_tracking_id": self.api_tracking_id,
-            "selection": {
-                "id": self.id,
-                "type": "Treatment",
-                "title": self.get_title(),
-                "selected": self.document_set.get_document_metadata(),
-            },
+    def get_absolute_url(self):
+        return reverse("webapp:treatment_view", args=[self.id])
+
+    def get_treated_url(self):
+        urls = []
+        if not self.document_set:
+            return urls
+        witnesses = self.document_set.all_witness_ids()
+        urls.append(
+            [reverse("webapp:witness_regions_view", args=[wid]) for wid in witnesses]
+        )
+        #  TODO make variable used in svelte component and in overall app
+        tabs = {
+            "regions": "page",
+            "similarity": "similarity",
+            "vectorization": "vectorization",
         }
+
+        if self.task_type in tabs.keys():
+            urls = [f"{url}?tab={tabs[self.task_type]}" for url in urls]
+        return urls
+
+    def to_json(self):
+        try:
+            user = self.requested_by
+            doc_set = self.document_set
+            req_on = self.requested_on
+            return json_encode(
+                {
+                    "id": self.id.__str__(),
+                    "class": self.__class__.__name__,
+                    "type": get_name("Treatment"),
+                    "title": self.__str__(),
+                    "updated_at": req_on.strftime("%Y-%m-%d %H:%M") if req_on else None,
+                    "url": self.get_absolute_url(),
+                    "user": user.__str__() if user else NO_USER,
+                    "user_id": user.id if user else 0,
+                    "status": self.status,
+                    "is_finished": self.is_finished,
+                    "treated_objects": self.treated_objects,
+                    "cancel_url": self.get_cancel_url(),
+                    "query_parameters": self.get_query_parameters(),
+                    "api_tracking_id": self.api_tracking_id,
+                    "selection": {
+                        "id": doc_set.id if doc_set else None,
+                        "type": "Treatment",
+                        "title": self.__str__(),
+                        "selected": doc_set.get_document_metadata()
+                        if doc_set
+                        else None,
+                    },
+                }
+            )
+        except Exception as e:
+            log(f"[treatment_to_json] Error", e)
+            return None
 
     def save(self, *args, **kwargs):
         if not self._internal_save:
@@ -152,131 +190,91 @@ class Treatment(models.Model):
             if not self.requested_by and user:
                 self.requested_by = user
 
+            if not self.document_set:
+                log(
+                    f"[treatment_save] No document set for treatment {self.id}, aborting."
+                )
+                self.status = "ERROR"
+                super().save(*args, **kwargs)
+                return
+
             self.treated_objects = {
                 "witnesses": {
-                    "total": len(self.document_set.wit_ids)
-                    if self.document_set.wit_ids
-                    else "0",
-                    "ids": self.document_set.wit_ids
-                    if self.document_set.wit_ids
-                    else None,
+                    "total": len(self.document_set.wit_ids or []),
+                    "ids": self.document_set.wit_ids or None,
                 },
                 "series": {
-                    "total": len(self.document_set.ser_ids)
-                    if self.document_set.ser_ids
-                    else "0",
-                    "ids": self.document_set.ser_ids
-                    if self.document_set.ser_ids
-                    else None,
+                    "total": len(self.document_set.ser_ids or []),
+                    "ids": self.document_set.ser_ids or None,
                 },
                 "works": {
-                    "total": len(self.document_set.work_ids)
-                    if self.document_set.work_ids
-                    else "0",
-                    "ids": self.document_set.work_ids
-                    if self.document_set.work_ids
-                    else None,
+                    "total": len(self.document_set.work_ids or []),
+                    "ids": self.document_set.work_ids or None,
                 },
                 "digitizations": {
-                    "total": len(self.document_set.digit_ids)
-                    if self.document_set.digit_ids
-                    else "0",
-                    "ids": self.document_set.digit_ids
-                    if self.document_set.digit_ids
-                    else None,
+                    "total": len(self.document_set.digit_ids or []),
+                    "ids": self.document_set.digit_ids or None,
                 },
             }
 
-            super().save(*args, **kwargs)
-        else:
-            super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def start_task(self, witnesses):
-        """
-        Start the task
-        """
-        if self.task_type in ADDITIONAL_MODULES:
-            module_path = f"{self.task_type}.utils"
-            module = importlib.import_module(module_path)
+        """Start the task"""
+        if self.task_type not in ADDITIONAL_MODULES:
+            log(f"[start_task] Uninstalled module: {self.task_type}")
+            return
 
-            prepare_request = getattr(module, "prepare_request")
-            parameters = prepare_request(witnesses, self.id)
+        try:
+            module = importlib.import_module(f"{self.task_type}.utils")
+            parameters = getattr(module, "prepare_request")(witnesses, self.id)
+        except (ImportError, AttributeError) as e:
+            log(f"[start_task] Error loading module: {e}")
+            self.on_task_error(
+                {"error": "Module loading error.", "notify": self.notify_email}
+            )
+            self.save()
+            return
 
-            if "message" in parameters.keys():
-                self.on_task_success(  # Success because a message is returned if all of the documents were already treated
-                    {
-                        "notify": self.notify_email,
-                        "message": parameters["message"],
-                    },
-                    # request,
-                )
-                self.save()
-                return
+        if "message" in parameters:
+            self.on_task_success(
+                {"notify": self.notify_email, "message": parameters["message"]}
+            )
+            self.save()
+            return
 
-            try:
-                api_query = requests.post(
-                    url=f"{CV_API_URL}/{self.task_type}/start",
-                    json=parameters,
-                )
-            except Exception:
-                log(f"[start_task] Connection error wit {CV_API_URL}")
-                self.on_task_error(
-                    {
-                        "error": "API connection error",
-                        "notify": self.notify_email,
-                    },
-                    # request,
-                )
-                self.save()
-                return
+        try:
+            api_query = requests.post(
+                f"{CV_API_URL}/{self.task_type}/start", json=parameters
+            )
+            if (
+                api_query.status_code != 200
+                or api_query.headers.get("Content-Type") != "application/json"
+            ):
+                raise ValueError(f"Unexpected response: {api_query.text}")
 
-            try:
-                api_response = api_query.json()
-                log(
-                    f"[start_task] {self.task_type} request sent to {CV_API_URL}: {api_response or ''}"
-                )
-                self.api_tracking_id = api_response["tracking_id"]
-                self.status = "STARTED"
+            api_response = api_query.json()
 
-                # flash_msg = (
-                #     "The requested task is underway. Please wait a few moments."
-                #     if APP_LANG == "en"
-                #     else "La tâche demandée est en cours. Veuillez patienter quelques instants."
-                # )
-                # messages.warning(request, flash_msg)
+            self.api_tracking_id = api_response["tracking_id"]
+            self.status = "STARTED"
 
-            except Exception as e:
-                error = {
+            log(f"[start_task] Task {self.task_type} started: {api_response}")
+
+        except (requests.RequestException, ValueError, KeyError) as e:
+            log(
+                {
                     "source": "[start_task]",
-                    "error_message": f"{self.task_type} request for treatment #{self.id} with status code: {api_query.status_code}",
+                    "error_message": f"{self.task_type} request failed with status: {api_query.status_code}",
                     "request_info": {
                         "method": "POST",
                         "url": f"{CV_API_URL}/{self.task_type}/start",
-                        "payload": prepare_request(witnesses, self.id),
+                        "payload": parameters,
                     },
-                    "response_info": {
-                        "status_code": api_query.status_code,
-                        "text": api_query.text or "",
-                    },
+                    "response_info": {"text": api_query.text, "error": str(e)},
                 }
-
-                log(error)
-                self.on_task_error(
-                    {
-                        "error": "API error when starting requested task.",
-                        "notify": self.notify_email,
-                    },
-                    # request,
-                )
-
-        else:
-            log(f"[start_task] Please install module for task {self.task_type}")
+            )
             self.on_task_error(
-                {
-                    "error": "Uninstalled module.",
-                    "notify": self.notify_email,
-                },
-                # request,
+                {"error": "API error when starting task.", "notify": self.notify_email}
             )
 
         self.save()
@@ -363,20 +361,4 @@ class Treatment(models.Model):
 @receiver(post_save, sender=Treatment)
 def treatment_post_save(sender, instance, created, **kwargs):
     if created:
-        witnesses = []
-
-        for obj in instance.get_objects():
-            if type(obj) is Witness:
-                try:
-                    witnesses.append(obj)
-                except:
-                    pass
-            elif type(obj) is Series or Work:
-                try:
-                    objects = obj.get_witnesses().get()
-                    witnesses.append(objects)
-                except:
-                    pass
-            # elif object == "digitizations":
-        print(witnesses)
-        instance.start_task(witnesses)
+        get_all_witnesses.delay(instance)

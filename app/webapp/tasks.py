@@ -1,7 +1,9 @@
+from celery.schedules import crontab
 from app.config.celery import celery_app
+from django.apps import apps
 
+from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.utils.constants import MAX_RES
-
 from app.webapp.utils.functions import pdf_to_img, temp_to_img
 from app.webapp.utils.iiif.download import iiif_to_img
 
@@ -47,7 +49,55 @@ def delete_annotations(regions_ref, manifest_url):
 
 
 @celery_app.task
+def generate_all_json():
+    total_updated = 0
+    errors = []
+    models = []
+    for model in apps.get_models():
+        if (
+            issubclass(model, AbstractSearchableModel)
+            and model != AbstractSearchableModel
+        ):
+            try:
+                model.regenerate_all_json()
+                total_updated += model.objects.count()
+                models.append(model.__name__)
+            except Exception as e:
+                import traceback
+
+                errors.append(f"Error updating {model.__name__}: {e}")
+                traceback.print_exc()
+
+    result = f"Updated JSON for {total_updated} objects in models: {', '.join(models)}"
+    if errors:
+        result += f"\nErrors encountered: {', '.join(errors)}"
+    return result
+
+
+@celery_app.task
+def get_all_witnesses(treatment):
+    try:
+        witnesses = treatment.get_witnesses()
+        treatment.start_task(witnesses)
+    except Exception as e:
+        treatment.on_task_error(
+            {
+                "error": f"Error when retrieving documents from set: {e}",
+                "notify": treatment.notify_email,
+            },
+        )
+
+
+@celery_app.task
 def test(log_msg):
     from app.webapp.utils.logger import log
 
     log(log_msg or ".dlrow olleH")
+
+
+@celery_app.on_after_configure.connect
+def periodic_tasks(sender, **kwargs):
+    sender.add_periodic_task(
+        crontab(hour=str(3), minute=str(0)),  # Run every day at 3:00 AM
+        generate_all_json.s(),
+    )

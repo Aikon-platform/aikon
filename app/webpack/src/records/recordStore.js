@@ -46,7 +46,7 @@ export function createRecordsStore(modelName) {
     }
 
     function remove(recordId) {
-        // todo add deletion feature
+        pageRecords.update(records => records.filter(r => r.id !== recordId));
     }
 
     return {
@@ -57,5 +57,6 @@ export function createRecordsStore(modelName) {
         fetchPage,
         handlePageUpdate,
         recordSearch,
+        remove
     }
 }

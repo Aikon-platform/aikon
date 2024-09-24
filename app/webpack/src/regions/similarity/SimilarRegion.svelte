@@ -1,7 +1,7 @@
 <script>
     import { similarityStore } from './similarityStore.js';
     import { extractNb } from '../../utils.js';
-    import { userId, appLang, csrfToken, regionsType } from '../../constants';
+    import {userId, appLang, csrfToken, regionsType, appName} from '../../constants';
     import { exactSvg, partialSvg, semanticSvg, noSvg, userSvg } from './similarityCategory';
     import Region from "../Region.svelte";
 
@@ -30,7 +30,7 @@
         updateCategory(category);
 
         try {
-            const response = await fetch(`${baseUrl}/save-category`, {
+            const response = await fetch(`${baseUrl}/${appName}/save-category`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
