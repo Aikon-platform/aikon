@@ -4,12 +4,12 @@
 
     export let nbOfItems;
     export let pageLength = 50;
-    const maxPage = Math.ceil(nbOfItems / pageLength);
+    $: maxPage = Math.ceil(nbOfItems / pageLength);
 </script>
 
 {#if maxPage > 1}
-<nav class="pagination is-centered" aria-label="pagination">
-    <ul class="pagination-list">
+<nav class="pagination is-centered mb-2" aria-label="pagination">
+    <ul class="pagination-list ml-0">
         {#if $currentPage > 1}
             <li><a class="pagination-link" on:click|preventDefault={() => store.handlePageUpdate(1)} href={null}>1</a></li>
             {#if $currentPage - 1 > 1}
@@ -32,3 +32,6 @@
     </ul>
 </nav>
 {/if}
+<div class="is-size-7 is-center mb-4">
+    {$currentPage * pageLength - pageLength + 1} - {Math.min($currentPage * pageLength, nbOfItems)} / {nbOfItems}
+</div>

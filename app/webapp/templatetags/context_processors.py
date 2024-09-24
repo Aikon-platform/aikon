@@ -7,6 +7,7 @@ from app.config.settings import (
     WEBAPP_NAME,
     CONTACT_MAIL,
     ADDITIONAL_MODULES,
+    APP_LOGO,
 )
 from app.webapp.utils.constants import (
     APP_NAME_UPPER,
@@ -39,6 +40,7 @@ def global_variables(request):
         "APP_NAME": APP_NAME,
         "APP_LANG": APP_LANG,
         "APP_NAME_UPPER": APP_NAME_UPPER,
+        "APP_LOGO": APP_LOGO,
         "ADDITIONAL_MODULES": ADDITIONAL_MODULES,
         "CONTACT_MAIL": CONTACT_MAIL,
         "WEBAPP_NAME": WEBAPP_NAME,
@@ -61,4 +63,5 @@ def global_variables(request):
         "MANIFEST_V2": MANIFEST_V2,
         "CATEGORY_INFO": CATEGORY_INFO,
     }
+
     return {**constants, **ENTITY_NAMES}

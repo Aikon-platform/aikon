@@ -1,17 +1,17 @@
 <script>
     import { setContext } from 'svelte';
     import { fade } from 'svelte/transition';
-    import { refToIIIF } from "../utils.js";
+    import { refToIIIF, loading } from "../utils.js";
+    import { appLang, regionsType, modules } from '../constants';
+
     import { selectionStore } from '../selection/selectionStore.js';
     const { selected } = selectionStore;
-    import { regionsStore } from './stores/regionsStore.js';
+    import { regionsStore } from './regionsStore.js';
     const { allRegions, fetchAll } = regionsStore;
-    import { loading } from '../utils.js';
-    import { appLang, regionsType, modules } from '../constants';
+
     import Loading from '../Loading.svelte';
     import Region from './Region.svelte';
     import SelectionBtn from "../selection/SelectionBtn.svelte";
-    // import SelectionFooter from "../selection/SelectionFooter.svelte";
     import Modal from "../Modal.svelte";
     import ExtractionButtons from "./ExtractionButtons.svelte";
     import RegionsBtn from "./RegionsBtn.svelte";
@@ -19,6 +19,7 @@
     import Similarity from "./similarity/Similarity.svelte";
     import PageRegions from "./PageRegions.svelte";
     import SelectionModal from "../selection/SelectionModal.svelte";
+    import Vectorization from "./vectorization/Vectorization.svelte";
 
     export let manifest = '';
     export let isValidated = false;
@@ -54,16 +55,6 @@
         url.searchParams.set("tab", layout);
         window.history.pushState({}, "", url);
     }
-
-    $: clipBoard = "";
-    // NOTE: isItemCopied stays to true if user copied another string
-    $: isItemCopied = (item) => clipBoard === item.ref;
-    function handleCopyRef(event) {
-        const { item } = event.detail;
-        const itemRef = isItemCopied(item) ? "" : item.ref;
-        navigator.clipboard.writeText(itemRef);
-        clipBoard = itemRef;
-    }
 </script>
 
 <Loading visible={$loading}/>
@@ -74,7 +65,7 @@
 
 <div id="nav-actions" class="mb-5">
     <div class="actions grid">
-        <div class="cell is-right is-middle">
+        <div class="cell is-left is-middle">
             <RegionsBtn {baseUrl} {currentRegionId}/>
         </div>
         {#if ["all", "page"].includes(currentLayout)}
@@ -96,7 +87,6 @@
     </div>
 </div>
 
-
 {#if currentLayout === "all"}
     <div class="grid is-gap-2">
         {#await fetchAll}
@@ -105,8 +95,7 @@
             </div>
         {:then _}
             {#each Object.values($allRegions) as item (item.id)}
-                <Region {item} isCopied={isItemCopied(item)}
-                        on:copyRef={handleCopyRef}/>
+                <Region {item}/>
             {:else}
                 <ExtractionButtons {currentRegionId} {baseUrl}/>
             {/each}
@@ -115,11 +104,11 @@
         {/await}
     </div>
 {:else if currentLayout === "page"}
-    <PageRegions {isItemCopied} {handleCopyRef}/>
+    <PageRegions/>
 {:else if currentLayout === "similarity"}
     <Similarity/>
 {:else if currentLayout === "vectorization"}
-    <div>tout doux</div>
+    <Vectorization/>
 {/if}
 
 <SelectionModal isRegion={true} {selectionLength}>

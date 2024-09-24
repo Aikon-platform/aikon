@@ -1,7 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load shared_tags static %}
 
-{% block title %}List of {{ record_name }}{% endblock %}
+{% block title %}List of {{ model_title }}{% endblock %}
 
 {% block extrahead %}
     <link rel="stylesheet" href="{% static 'svelte/recordList.css' %}">
@@ -12,23 +12,21 @@
         {% include "includes/breadcrumbs.html" %}
         <h1 class="is-title is-size-2 py-3">{{ filter }}</h1>
     {% else %}
-        <h1 class="is-title is-size-2 py-3">All {{ record_name }}</h1>
+        <h1 class="is-title is-size-2 py-3">
+            {{ view_title }}
+        </h1>
     {% endif %}
 
-    {% include "includes/pagination.html" %}
-
-    {# SEARCH SECTION #}
-
     <div>
-        <div id="record-list"></div>
+        <div id="record-list" class="container"></div>
     </div>
-
-    {% include "includes/pagination.html" %}
 {% endblock %}
 
 {% block extra_js %}
-    <script type="application/json" id="record-data">
-        {{ json_object_list|safe }}
+    <script>
+        const modelName = "{{ model_name }}";
+        const searchFields = {{ search_fields|js|safe }};
+        const modelTitle = "{{ model_title }}";
     </script>
     <script src="{% static 'svelte/recordList.js' %}"></script>
 {% endblock %}

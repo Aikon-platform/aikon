@@ -37,7 +37,7 @@
     }
 </script>
 
-<div class="is-right">
+<div>
     {#if currentRegionId}
         <button on:click={deleteRegions} class="tag is-danger">
             {appLang === "en" ? "Delete regions record" : "Supprimer l'intégralité des régions"}

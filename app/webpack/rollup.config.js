@@ -30,33 +30,6 @@ function serve() {
 }
 
 export default [
-    // {
-    //     input: 'src/main.js',
-    //     output: {
-    //         sourcemap: true,
-    //         format: 'iife',
-    //         name: 'app',
-    //         file: '../webapp/static/svelte/bundle.js'
-    //     },
-    //     plugins: [
-    //         svelte({
-    //             compilerOptions: {
-    //                 dev: !production
-    //             }
-    //         }),
-    //         css({ output: 'bundle.css' }),
-    //         resolve({
-    //             browser: true,
-    //             dedupe: ['svelte']
-    //         }),
-    //         commonjs(),
-    //         !production && livereload('public'),
-    //         production && terser()
-    //     ],
-    //     watch: {
-    //         clearScreen: false
-    //     }
-    // },
     {
         input: 'src/regions/region-list.js',
         output: {

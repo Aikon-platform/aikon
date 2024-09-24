@@ -8,6 +8,9 @@ APP_NAME = ENV.str("APP_NAME", default="")
 WEBAPP_NAME = "webapp"
 ADDITIONAL_MODULES = ENV.list("ADDITIONAL_MODULES", default=[])
 
+# Logos to be displayed in the footer
+APP_LOGO = ENV.list("APP_LOGO", default=[])
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
@@ -53,6 +56,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
 ]
+
 
 if DEBUG:
     INSTALLED_APPS += [
@@ -120,7 +124,7 @@ TEMPLATES = [
                 "webapp.templatetags.context_processors.global_variables",
             ],
             "builtins": [
-                "webapp.filters",
+                "webapp.templatetags.filters",
             ],
         },
     },
@@ -214,10 +218,11 @@ LOGGING = {
             "handlers": ["console", "file"],
             "level": "WARNING",
         },
-        # 'celery': {
-        #     'handlers': ["console"],  # 'file'
-        #     'level': "DEBUG",
-        # },
+        "celery": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": True,
+        },
     },
     "formatters": {
         "verbose": {"format": "%(asctime)s - %(levelname)s - %(message)s"},

@@ -20,6 +20,10 @@ function checkStatus(taskId, callback) {
     });
 }
 
+String.prototype.capitalize = function() {
+    return this.charAt(0).toUpperCase() + this.slice(1);
+}
+
 function getUrl() {
     return window.location.href;
 }
@@ -41,9 +45,9 @@ function toManifest(witId, witType, version) {
     return `${APP_URL}/${APP_NAME}/iiif/${version}/${witType}/${witId}/manifest.json`
 }
 
-function extractNb(str) {
-    return str.match(/\d+/g).toString();
-}
+// function extractNb(str) {
+//     return str.match(/\d+/g).toString();
+// }
 
 function getJSON(url, callback, idMessage) {
     fetch(url).then(response => {

@@ -1,6 +1,6 @@
 import RegionList from './RegionList.svelte';
 
-const app = new RegionList({
+const regionApp = new RegionList({
     target: document.getElementById('region-list'),
     props: {
         witness,
@@ -10,4 +10,4 @@ const app = new RegionList({
         nbOfPages
     }
 });
-export default app;
+export default regionApp;

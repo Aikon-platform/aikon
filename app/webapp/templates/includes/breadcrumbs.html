@@ -8,7 +8,7 @@
             &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
 
             &rsaquo; {% if has_view_permission %}
-            <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+            <a href="{% url "webapp:"|add:opts.model_name|lower|add:'_list' %}">{{ opts.verbose_name_plural|capfirst }}</a>
         {% else %}
             {{ opts.verbose_name_plural|capfirst }}
         {% endif %}
@@ -23,7 +23,7 @@
 {% else %}
     {% if request.user.is_authenticated %}
         <p class="breadcrumbs">
-            <a class="button is-text" href="{% url "webapp:"|add:record_type|add:'_list' %}">
+            <a class="button is-text" href="{% url "webapp:"|add:model_name|add:'_list' %}">
                 All {{ record_name }}
             </a>
         </p>

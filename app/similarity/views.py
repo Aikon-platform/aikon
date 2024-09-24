@@ -8,7 +8,6 @@ from django.core.exceptions import ValidationError
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 
-from app.config.settings import APP_LANG
 from app.similarity.const import SCORES_PATH
 from app.similarity.models.region_pair import RegionPair
 from app.webapp.models.digitization import Digitization
@@ -17,7 +16,8 @@ from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import sort_key
 from app.webapp.utils.logger import log
 from app.similarity.utils import (
-    similarity_request,
+    send_request,
+    check_score_files,
     check_computed_pairs,
     get_computed_pairs,
     get_best_pairs,
@@ -57,7 +57,7 @@ def send_similarity(request, regions_refs):
         )
 
     try:
-        if similarity_request(regions):
+        if send_request(regions):
             return JsonResponse(
                 {"response": f"Successful similarity request for {regions_refs}"},
                 safe=False,
@@ -83,6 +83,8 @@ def receive_similarity(request):
 
     if request.method == "POST":
         filenames = []
+        # treatment_id = request.DATA["experiment_id"]
+
         try:
             for regions_refs, file in request.FILES.items():
                 with open(f"{SCORES_PATH}/{regions_refs}.npy", "wb") as destination:
@@ -105,7 +107,7 @@ def delete_all_regions_pairs(request):
     RegionPair.objects.all().delete()
     return JsonResponse({"message": "All region pairs deleted"})
 
-
+  
 @user_passes_test(is_superuser)
 def index_regions_similarity(request, regions_ref=None):
     """
@@ -222,7 +224,7 @@ def get_regions(img_1, img_2, wid, rid):
             )
         else:
             regions = regions[0]
-        return regions.id  # Return the id directly, not regions[0].id
+        return regions.id
 
     if img_1.startswith(f"wit{wid}"):
         witness = get_object_or_404(Witness, id=wid)
@@ -265,9 +267,11 @@ def add_region_pair(request, wid, rid=None):
         )
 
         if not created:
-            if request.user.id not in region_pair.category_x:
+            if region_pair.category_x is None:
+                region_pair.category_x = [request.user.id]
+            elif request.user.id not in region_pair.category_x:
                 region_pair.category_x.append(request.user.id)
-                region_pair.save()
+            region_pair.save()
 
         s_regions = get_object_or_404(
             Regions, id=regions_2 if q_img == img_1 else regions_1

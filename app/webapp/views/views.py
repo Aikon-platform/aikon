@@ -2,6 +2,7 @@ import json
 import os
 from os.path import exists
 
+import requests
 from celery.result import AsyncResult
 from dal import autocomplete
 
@@ -12,21 +13,25 @@ from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 
+from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions, check_version
-from app.webapp.filters import WitnessFilter
+from app.webapp.models.series import Series
+from app.webapp.models.work import Work
+from app.webapp.search_filters import WitnessFilter
 from app.webapp.models.digitization import Digitization
 from app.config.settings import (
     SAS_APP_URL,
     APP_NAME,
-    ENV,
     GEONAMES_USER,
     APP_LANG,
     DEBUG,
     SAS_USERNAME,
     SAS_PASSWORD,
+    CV_API_URL,
 )
 from app.webapp.models.edition import Edition
 from app.webapp.models.language import Language
+from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, MAX_ROWS
 from app.webapp.utils.functions import (
@@ -176,7 +181,7 @@ def reindex_regions(request, obj_ref):
 @user_passes_test(is_superuser)
 def index_witness_regions(request, wit_id):
     wit = get_object_or_404(Witness, pk=wit_id)
-    regions_files = get_files_with_prefix(REGIONS_PATH, f"{wit.get_ref()}_")
+    regions_files = sorted(get_files_with_prefix(REGIONS_PATH, f"{wit.get_ref()}_"))
     res = {
         "All": regions_files,
         "Indexed": [],
@@ -258,19 +263,6 @@ def get_regions_img_list(request, regions_ref):
     return JsonResponse(regions_dict, status=200, safe=False)
 
 
-def task_status(request, task_id):
-    task = AsyncResult(task_id)
-    if task.ready():
-        try:
-            result = json.dumps(task.result)
-        except TypeError as e:
-            log(task.result)
-            log(f"[task_status] Could not parse result for {task_id}", e)
-            return JsonResponse({"status": "failed", "result": ""})
-        return JsonResponse({"status": "success", "result": result})
-    return JsonResponse({"status": "running"})
-
-
 def export_regions_img(request, regions_id):
     regions = get_object_or_404(Regions, pk=regions_id)
     images = get_regions_img(regions)
@@ -327,12 +319,13 @@ def validate_regions(request, regions_ref):
 
 def witness_sas_annotations(request, regions_id):
     regions = get_object_or_404(Regions, pk=regions_id)
-    _, canvas_annotations = formatted_annotations(regions)
-    return JsonResponse(canvas_annotations, safe=False)
+    _, c_annos = formatted_annotations(regions)
+    return JsonResponse(c_annos, safe=False)
 
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def show_regions(request, regions_ref):
+    # NOTE soon to be not used
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
         # if cls(regions) == Digitization:
@@ -342,9 +335,9 @@ def show_regions(request, regions_ref):
     if not DEBUG:
         credentials(f"{SAS_APP_URL}/", SAS_USERNAME, SAS_PASSWORD)
 
-    bboxes, canvas_annotations = formatted_annotations(regions)
+    bboxes, c_annos = formatted_annotations(regions)
 
-    paginator = Paginator(canvas_annotations, 50)
+    paginator = Paginator(c_annos, 50)
     try:
         page_regions = paginator.page(request.GET.get("page"))
     except PageNotAnInteger:
@@ -405,6 +398,7 @@ def show_all_regions(request, regions_ref):
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def export_all_regions(request, regions_ref):
+    # NOTE soon to be not used
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
         return JsonResponse(regions)
@@ -515,6 +509,7 @@ def legacy_manifest(request, old_id):
 
 @login_required(login_url=f"/{APP_NAME}-admin/login/")
 def advanced_search(request):
+    # NOTE soon to be not used
     witness_list = Witness.objects.order_by("id")
     witness_filter = WitnessFilter(request.GET, queryset=witness_list)
 
@@ -526,7 +521,7 @@ def advanced_search(request):
         "title": "Advanced search" if APP_LANG == "en" else "Recherche avancée",
         "witness_filter": witness_filter,
         "result_count": witness_filter.qs.count(),
-        "page_obj": page_obj,
+        "page_obj": page_obj,  # witnesses
     }
     return render(request, "webapp/search.html", context)
 
@@ -543,3 +538,116 @@ class EditionAutocomplete(autocomplete.Select2QuerySetView):
             qs = qs.filter(name__icontains=self.q)
 
         return qs
+
+
+class DocumentSetAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return DocumentSet.objects.none()
+
+        qs = DocumentSet.objects.all()
+        qs = qs.filter(user=self.request.user).all()
+
+        if self.q:
+            if self.q.isdigit():
+                qs = qs.filter(id=int(self.q))
+            else:
+                qs = qs.filter(title__icontains=self.q)
+
+        return qs
+
+    def get_result_label(self, result):
+        return f"{result}"
+
+
+class WitnessAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        qs = Witness.objects.all()
+
+        if self.q:
+            qs = qs.filter(id__icontains=self.q)
+
+        return qs
+
+
+class SeriesAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        qs = Series.objects.all()
+
+        if self.q:
+            qs = qs.filter(id__icontains=self.q)
+
+        return qs
+
+
+class WorkAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        qs = Work.objects.all()
+
+        if self.q:
+            qs = qs.filter(id__icontains=self.q)
+
+        return qs
+
+
+@csrf_exempt
+def api_progress(request):
+    """
+    Receives treatment updates from API
+    """
+    if request.method == "POST":
+        treatment_id = request.POST["experiment_id"]
+        info = request.POST["message"]
+
+        treatment = Treatment.objects.get(id=treatment_id)
+        treatment.receive_notification(event=request.POST["event"], info=info)
+        return JsonResponse({"message": "Update received"}, status=200)
+
+    return JsonResponse({"message": "Invalid request"}, status=400)
+
+
+@csrf_exempt
+def cancel_treatment(request, treatment_id):
+    """
+    Cancel treatment in the API
+    """
+    if not treatment_id:
+        return JsonResponse({"error": "Invalid treatment ID"}, status=400)
+    try:
+        treatment = Treatment.objects.get(id=treatment_id)
+
+        try:
+            requests.post(url=f"{CV_API_URL}/{treatment.api_tracking_id}/cancel")
+        except Exception as e:
+            return JsonResponse({"error": "Could not connect to API"}, e)
+
+        treatment.is_finished = True
+        treatment.status = "CANCELLED"
+        treatment.save()
+        return JsonResponse({"success": True})
+    except Exception as e:
+        return JsonResponse({"error": "Treatment not found"}, e)
+
+
+@csrf_exempt
+def relaunch_treatment(request, treatment_id):
+    """
+    Relaunch same treatment
+    """
+    if not treatment_id:
+        return JsonResponse({"error": "Invalid treatment ID"}, status=400)
+
+    try:
+        treatment = Treatment.objects.get(id=treatment_id)
+        return JsonResponse({"success": True})
+
+    except Exception as e:
+        return JsonResponse({"error": "Treatment not found"}, e)
+
+
+def set_title(request, set_id):
+    try:
+        set = DocumentSet.objects.get(id=set_id)
+        return JsonResponse({"title": set.title})
+    except DocumentSet.DoesNotExist:
+        return JsonResponse({"title": "Unknown"}, status=404)

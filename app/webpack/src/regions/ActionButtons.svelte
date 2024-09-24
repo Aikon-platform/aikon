@@ -3,7 +3,7 @@
     import { manifestToMirador, showMessage, downloadBlob, withLoading } from "../utils.js";
     import { selectionStore } from "../selection/selectionStore.js";
     const { selected, nbSelected } = selectionStore;
-    import { regionsStore } from './stores/regionsStore.js';
+    import { regionsStore } from './regionsStore.js';
     const { allRegions } = regionsStore;
     import { appLang, regionsType, csrfToken } from '../constants';
 
@@ -81,7 +81,7 @@
     }
 </script>
 
-<div class="is-left mb-3">
+<div class="is-right mb-3">
     <button class="button {isEditMode ? 'is-success' : 'is-link'} mr-3" on:click={() => toggleEditMode()}>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="pr-3">
             {#if isEditMode}
@@ -115,7 +115,7 @@
     </button>
 </div>
 
-<div class="edit-action is-left">
+<div class="edit-action is-right">
     {#if isEditMode}
         <!--TODO make reload fetch regions with api request-->
         <button class="tag is-link is-light is-rounded mr-3" on:click={() => location.reload()}>

@@ -1,4 +1,4 @@
-from app.config.settings import APP_LANG
+from app.config.settings import APP_LANG, ADDITIONAL_MODULES
 from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2
 
 #############################
@@ -27,6 +27,8 @@ MODEL_NAMES = {
     "Regions": {"en": "regions", "fr": "régions"},
     "User": {"en": "user", "fr": "utilisateur"},
     "Group": {"en": "group", "fr": "groupe"},
+    "Treatment": {"en": "treatment", "fr": "traitement"},
+    "DocumentSet": {"en": "document set", "fr": "sélection de documents"},
 }
 
 MAN = MODEL_NAMES["Manifest"][APP_LANG]
@@ -50,6 +52,8 @@ PDF = MODEL_NAMES["Pdf"][APP_LANG]
 REG = MODEL_NAMES["Regions"][APP_LANG]
 USR = MODEL_NAMES["User"][APP_LANG]
 GRP = MODEL_NAMES["Group"][APP_LANG]
+TRMT = MODEL_NAMES["Treatment"][APP_LANG]
+SET = MODEL_NAMES["DocumentSet"][APP_LANG]
 
 ENTITY_NAMES = {
     "MAN": MAN,
@@ -73,6 +77,8 @@ ENTITY_NAMES = {
     "REG": REG,
     "USR": USR,
     "GRP": GRP,
+    "TRMT": TRMT,
+    "SET": SET,
 }
 
 # ABBREVIATION
@@ -125,6 +131,21 @@ MAP_WIT_TYPE = {
     TPR_ABBR: TPR.capitalize(),
     WPR_ABBR: WPR.capitalize(),
 }
+
+TRMT_TYPE = ()
+
+for x in ADDITIONAL_MODULES:
+    trmt = (x, x)
+    TRMT_TYPE += (trmt,)
+
+TRMT_STATUS = (
+    ("CANCELLED", "CANCELLED"),
+    ("ERROR", "ERROR"),
+    ("IN PROGRESS", "IN PROGRESS"),
+    ("PENDING", "PENDING"),
+    ("STARTED", "STARTED"),
+    ("SUCCESS", "SUCCESS"),
+)
 
 REGIONS_VERSION = (
     (MANIFEST_V1, "automatic"),

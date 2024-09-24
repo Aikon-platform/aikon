@@ -5,12 +5,22 @@ from django.views.generic import CreateView, DetailView, View, ListView, UpdateV
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 
+from app.webapp.models.document_set import DocumentSet
+from app.webapp.models.series import Series
+from app.webapp.models.work import Work
+from app.webapp.search_filters import (
+    WitnessFilter,
+    TreatmentFilter,
+    WorkFilter,
+    SeriesFilter,
+    DocumentSetFilter,
+)
 from app.webapp.forms import *
+from app.webapp.forms.treatment import TreatmentForm
 from app.webapp.models.regions import Regions
+from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2
-from app.webapp.utils.functions import DateTimeEncoder, flatten
-from app.webapp.utils.iiif.annotation import get_regions_annotations
 
 
 class AbstractView(LoginRequiredMixin, View):
@@ -24,11 +34,11 @@ class AbstractView(LoginRequiredMixin, View):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["view_title"] = self.get_view_title()
-        context["record_type"] = str(
-            getattr(self, "record_type", self.model._meta.model_name)
+        context["model_name"] = str(
+            getattr(self, "model_name", self.model._meta.model_name)
         ).lower()
-        context["record_name"] = str(
-            getattr(self, "record_type", self.model._meta.verbose_name)
+        context["model_title"] = str(
+            getattr(self, "model_title", self.model._meta.verbose_name)
         )
         context["app_name"] = "webapp"
         context["user"] = (
@@ -87,13 +97,12 @@ class AbstractRecordList(AbstractView, ListView):
     #     return ordering
 
     def get_view_title(self):
-        return f"List of {self.model._meta.verbose_name}"
+        # TODO find better name (bilingual)
+        return f"List of {self.model._meta.verbose_name_plural}"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["json_object_list"] = json.dumps(
-            [obj.to_json() for obj in context["object_list"]]  # , cls=DateTimeEncoder
-        )
+        context["search_fields"] = []
 
         return context
 
@@ -116,6 +125,12 @@ class WitnessUpdate(AbstractRecordUpdate):
 class WitnessList(AbstractRecordList):
     model = Witness
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["search_fields"] = WitnessFilter().to_form_fields()
+
+        return context
+
 
 class WitnessRegionsView(AbstractRecordView):
     # f"witness/<int:wid>/regions/"
@@ -127,7 +142,6 @@ class WitnessRegionsView(AbstractRecordView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        anno_regions = {}
         context["regions_ids"] = []
         context["is_validated"] = True
         context["img_nb"] = None
@@ -139,9 +153,6 @@ class WitnessRegionsView(AbstractRecordView):
             pass
 
         for regions in witness.get_regions():
-            # anno_regions = get_regions_annotations(
-            #     regions, as_json=True, r_annos=anno_regions
-            # )
             context["regions_ids"].append(regions.id)
             # TODO handle multiple manifest for multiple regions
             context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
@@ -151,9 +162,6 @@ class WitnessRegionsView(AbstractRecordView):
             if not regions.is_validated:
                 context["is_validated"] = False
 
-        # context["regions_list"] = json.dumps(
-        #     {k: v for canvases in anno_regions.values() for k, v in canvases.items()}
-        # )
         return context
 
 
@@ -174,10 +182,66 @@ class RegionsView(AbstractRecordView):
         context["witness"] = regions.get_witness().to_json()
         context["is_validated"] = regions.is_validated
         context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
-        # anno_regions = get_regions_annotations(regions, as_json=True)
-        # context["regions_list"] = json.dumps(
-        #     {k: v for canvases in anno_regions.values() for k, v in canvases.items()}
-        # )
         context["img_prefix"] = regions.get_ref().split("_anno")[0]
         context["img_nb"] = regions.img_nb()
         return context
+
+
+class TreatmentCreate(AbstractRecordCreate):
+    model = Treatment
+    form_class = TreatmentForm
+
+    def form_valid(self, form):
+        self.object = form.save(commit=False)
+        self.object.requested_by = self.request.user
+        self.object = form.save()
+        # TODO make treatment submission instantaneous + loading widget
+
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        # Return the URL for the TreatmentList view
+        return reverse("webapp:treatment_list")
+
+
+class TreatmentList(AbstractRecordList):
+    model = Treatment
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["search_fields"] = TreatmentFilter().to_form_fields()
+
+        return context
+
+
+class WorkList(AbstractRecordList):
+    model = Work
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["search_fields"] = WorkFilter().to_form_fields()
+
+        return context
+
+
+class SeriesList(AbstractRecordList):
+    model = Series
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["search_fields"] = SeriesFilter().to_form_fields()
+
+        return context
+
+
+class DocumentSetList(AbstractRecordList):
+    model = DocumentSet
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["search_fields"] = DocumentSetFilter().to_form_fields()
+
+        return context
+
+
+# TODO RegionsSetList

@@ -1,11 +1,16 @@
-import django_filters
-from dal import autocomplete
+from django.contrib.admin.widgets import RelatedFieldWidgetWrapper
+from django.forms import Textarea, SelectMultiple, Select, TypedChoiceField, BoundField
 from django.template import Library
 from app.config.settings import CANTALOUPE_APP_URL, SAS_APP_URL, APP_URL, APP_NAME
-from app.webapp.models.edition import Edition
-from app.webapp.models.language import Language
-from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, TRUNCATEWORDS_SIM
+import pprint
+import json
+
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
+from django.urls import NoReverseMatch, reverse
+
+# from django.forms.widgets import Select
 
 register = Library()
 
@@ -93,35 +98,83 @@ def jpg_to_none(img_file):
     return img_file.replace(".jpg", "")
 
 
-class WitnessFilter(django_filters.FilterSet):
-    edition = django_filters.ModelChoiceFilter(
-        queryset=Edition.objects.all(),
-        widget=autocomplete.ModelSelect2(url="webapp:edition-autocomplete"),
-    )
-    contents__lang = django_filters.ModelChoiceFilter(
-        queryset=Language.objects.all(),
-        widget=autocomplete.ModelSelect2Multiple(url="webapp:language-autocomplete"),
-    )
-    contents__date_min = django_filters.RangeFilter(
-        field_name="contents__date_min", label="Date minimale"
-    )  # , widget=django_filters.widgets.RangeWidget(attrs={"class": "range"}))
-    contents__date_max = django_filters.RangeFilter(
-        field_name="contents__date_max", label="Date maximale"
-    )
+@register.filter
+def add_str(arg1, arg2):
+    return str(arg1) + str(arg2)
 
-    class Meta:
-        model = Witness
-        fields = {
-            "type": ["exact"],
-            "id_nb": ["icontains"],
-            "place": ["exact"],
-            "edition": ["exact"],
-            "edition__name": ["exact"],
-            "edition__place": ["exact"],
-            "edition__publisher": ["exact"],
-            "contents__work": ["exact"],
-            "contents__work__title": ["exact"],
-            "contents__work__author": ["exact"],
-            "contents__lang": ["exact"],
-            "contents__tags": ["exact"],
-        }
+
+@register.filter
+def model_name(obj):
+    return obj.__class__.__name__
+
+
+@register.filter
+def dump(obj):
+    return mark_safe(f"<pre>{escape(pprint.pformat(vars(obj), indent=4))}</pre>")
+
+
+@register.filter
+def add_class(element, class_name):
+    if hasattr(element, "field"):
+        # For form fields
+        css_classes = element.field.widget.attrs.get("class", "")
+        classes = f"{css_classes} {class_name}".strip()
+        return element.as_widget(attrs={"class": classes})
+    else:
+        # For SafeString objects (already rendered HTML)
+        classes = element.split('class="')
+        if len(classes) > 1:
+            existing_classes = classes[1].split('"')[0]
+            new_classes = f"{existing_classes} {class_name}".strip()
+            return mark_safe(
+                element.replace(f'class="{existing_classes}"', f'class="{new_classes}"')
+            )
+        return mark_safe(element.replace(">", f' class="{class_name}">', 1))
+
+
+@register.filter
+def js(obj):
+    return json.dumps(obj)
+
+
+@register.simple_tag
+def check_url(*args, **kwargs):
+    try:
+        return reverse(*args, **kwargs)
+    except NoReverseMatch:
+        return ""
+
+
+@register.filter
+def field_type(obj):
+    return obj.field.widget.__class__.__name__
+
+
+@register.filter
+def is_select(field):
+    if not hasattr(field, "field"):
+        return False
+
+    return isinstance(field.field.widget, Select)
+
+
+@register.filter
+def get_field_type(field):
+    if not hasattr(field, "field"):
+        return "default"
+    if not isinstance(field, BoundField):
+        return "default"
+
+    widget = field.field.widget
+    if isinstance(widget, SelectMultiple):
+        return "multiselect"
+    elif isinstance(widget, Select):
+        return "select"
+    elif isinstance(widget, Textarea):
+        return "textarea"
+    elif isinstance(widget, RelatedFieldWidgetWrapper):
+        if "multiple>" in str(field):
+            return "multiselect"
+        return "default"
+    else:
+        return "default"

@@ -162,11 +162,26 @@ fieldset:not(:last-child) {
 }
 .is-left {
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start !important;
 }
 .is-right {
     display: flex;
-    justify-content: flex-start;
+    justify-content: flex-end !important;
+}
+.is-bold {
+    font-weight: bold;
+}
+.is-wide {
+    width: 100%;
+}
+.is-tall {
+    height: 100%;
+}
+.smaller {
+    font-size: 0.75em;
+}
+.larger {
+    font-size: 1.25em;
 }
 
 .svg-inline--fa {
@@ -265,13 +280,19 @@ td.is-fullwidth {
     --accent: hsl(0deg 0% 0% / 5%);
     --selected: hsl(234deg 100% 96%);
     --selected-text: hsl(233deg 100% 33%);
+    --deleted: var(--bulma-danger-light);
+    --deleted-text: var(--bulma-danger-dark);
+    /*--darkened-bg: var(--selected);*/
+    /*--hairline-color: var(--bulma-border);*/
 }
 
 [data-theme="light"] {
     --contrasted: #f3eff1;
     --accent: hsl(0deg 0% 0% / 5%);
     --selected: hsl(234deg 100% 96%);
-    --selected-text: hsl(233deg 100% 33%);
+    --selected-text: hsl(237deg 82% 32%);
+    --deleted: var(--bulma-danger-light);
+    --deleted-text: var(--bulma-danger-dark);
 }
 
 [data-theme="dark"] {
@@ -279,6 +300,13 @@ td.is-fullwidth {
     --accent: hsla(0, 0%, 100%, 0.05);
     --selected: #000528;
     --selected-text: #7281f9;
+    --deleted: var(--bulma-danger-dark);
+    --deleted-text: var(--bulma-danger-light);
+}
+
+.is-delete {
+    color: var(--deleted-text);
+    background-color: var(--deleted);
 }
 
 .is-contrasted {
@@ -323,4 +351,9 @@ td.is-fullwidth {
 .is-selected {
     background-color: var(--selected);
     color: var(--selected-text);
+}
+
+.hoverable:hover {
+    cursor: pointer;
+    text-decoration: underline;
 }

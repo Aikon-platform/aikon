@@ -30,7 +30,7 @@
         </div>
 
         <!-- Main content -->
-        <div class="column is-5">
+        <div class="column is-6">
             <div class="block">
                 <p class="box notification is-contrasted mgt-medium">
                     {% if APP_LANG == "en" %}Welcome {{ user.first_name }} {{ user.last_name }} to the administrative interface!
@@ -50,6 +50,21 @@
                         {% include "includes/admin_row.html" with entity_title=WIT entity_name="witness" %}
                         {% include "includes/admin_row.html" with entity_title=SER entity_name="series" %}
                         {% include "includes/admin_row.html" with entity_title=WORK entity_name="work" %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="block box mg-medium p-5 has-background-link-light">
+                <div class="box is-contrasted" style="width: 100%; overflow-x: auto;">
+                    <table class="table is-capitalized is-fullwidth" id="main_entities">
+                        <thead>
+                        <tr class="table-header">
+                            <th colspan="3">{% if APP_LANG == "en" %}My Tasks{% else %}Mes tâches{% endif %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% include "includes/admin_row.html" with entity_title=TRMT entity_name="treatment" %}
+                        {% include "includes/admin_row.html" with entity_title=SET entity_name="document_set" %}
                         </tbody>
                     </table>
                 </div>
@@ -81,8 +96,8 @@
                 </div>
             {% endif %}
 
-        <div class="column is-5">
-            <div class="box is-contrasted ml-5">
+        <div class="column is-4">
+            <!-- <div class="box is-contrasted ml-5">
                 <p class="is-size-4 has-text-weight-light">{% if APP_LANG == "en" %}Personnal Space{% else %}Espace Utilisateur{% endif %}</p>
                 <p>
                     <a>
@@ -92,7 +107,7 @@
                     </span>
                     </a>
                 </p>
-            </div>
+            </div> -->
             <div class="box is-contrasted ml-5">
                 <p class="is-size-4 has-text-weight-light">
                     {% if APP_LANG == "en" %}Dear user,{% else %}Cher utilisateur,{% endif %}
