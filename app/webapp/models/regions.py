@@ -42,8 +42,6 @@ class Regions(AbstractSearchableModel):
             return f'{get_name("Regions")} #{self.id}'
         return f"{REG.capitalize()} #{self.id} | {witness.__str__()}"
 
-    id = models.AutoField(primary_key=True)
-
     digitization = models.ForeignKey(
         Digitization,
         related_name="regions",  # to access the all regions from Digitization

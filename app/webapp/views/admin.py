@@ -161,7 +161,9 @@ class WitnessRegionsView(AbstractRecordView):
 
         witness = self.get_record()
         context["view_title"] = (
-            f"“{witness}” regions" if APP_LANG == "en" else f"Régions de « {witness} »"
+            f"“{witness}” regions"
+            if APP_LANG == "en"
+            else f"Images extraites de « {witness} »"
         )
         context["witness"] = witness.get_json(reindex=True)
         if len(context["witness"]["digits"]) == 0:
