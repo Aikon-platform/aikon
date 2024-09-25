@@ -24,20 +24,19 @@ def prepare_request(witnesses, treatment_id):
                         region, as_json=True, r_annos=anno_regions
                     )
 
-                if len(anno_regions) != 0:
-                    log(f"[prepare_request] Witness {wit_ref} already has regions")
-                    continue
-
                 different_model = True
                 for region in regions:
                     if region.model == EXTRACTOR_MODEL:
                         different_model = False
                         break
 
-                if not different_model:
-                    log(
-                        f"[prepare_request] Witness {wit_ref} already has regions extracted with {EXTRACTOR_MODEL}"
-                    )
+                if not different_model and len(anno_regions) != 0:
+                    if not different_model:
+                        log(
+                            f"[prepare_request] Witness {wit_ref} already has regions extracted with {EXTRACTOR_MODEL}"
+                        )
+                    if len(anno_regions) != 0:
+                        log(f"[prepare_request] Witness {wit_ref} already has regions")
                     continue
 
             digits = witness.get_digits()
