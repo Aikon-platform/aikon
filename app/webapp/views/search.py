@@ -77,16 +77,16 @@ def search_document_set(request):
     ser_len = Coalesce(ArrayLength("ser_ids"), Value(0))
     work_len = Coalesce(ArrayLength("work_ids"), Value(0))
 
-    base_queryset = DocumentSet.objects.all().annotate(
-        set_len=wit_len + ser_len + work_len
+    base_queryset = (
+        DocumentSet.objects.all()
+        .annotate(set_len=wit_len + ser_len + work_len)
+        .filter(set_len__gt=1)
     )
 
     if user.is_superuser:
-        queryset = base_queryset.filter(set_len__gt=1)
+        queryset = base_queryset
     else:
-        queryset = base_queryset.filter(
-            Q(is_public=True) | Q(user=user) | Q(set_len__gt=1)
-        )
+        queryset = base_queryset.filter(Q(user=user))
 
     doc_sets = DocumentSetFilter(request.GET, queryset=queryset.order_by("-id"))
 
