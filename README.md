@@ -161,6 +161,12 @@ redis-cli -a $REDIS_PASSWORD
 ```
 </details>
 
+### Connection to API 📡
+
+API code and instructions can be found in [this repository](https://github.com/Aikon-platform/discover-api).
+
+[//]: # (TODO add instructions to setup api and front, locally or remotely)
+
 ## Launch app 🚀
 
 Launch everything (Django, Celery, Cantaloupe and SimpleAnnotationServer) at once (stop with `Ctrl+C`):
@@ -171,12 +177,6 @@ bash run.sh
 You can now visit the app at [http://localhost:8000](http://localhost:8000) and connect with the credentials you created
 
 ### *For more documentation, see [docs folder](docs/)*
-
-## Connection to API 📡
-
-API code and instructions can be found in [this repository](https://github.com/Aikon-platform/discover-api).
-
-[//]: # (TODO add instructions to setup api and front, locally or remotely)
 
 ## Project 📜
 
