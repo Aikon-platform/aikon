@@ -1,6 +1,8 @@
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.views.generic import CreateView, TemplateView, View, UpdateView
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 
 from app.webapp.models.document_set import DocumentSet
@@ -238,6 +240,17 @@ class TreatmentCreate(AbstractRecordCreate):
     def get_success_url(self):
         # Return the URL for the TreatmentList view
         return reverse("webapp:treatment_list")
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.username == "guest":
+            messages.warning(request, "Guest users do not have access to this page.")
+            # raise PermissionDenied("Access denied for guest users.")
+            return redirect("webapp:home")
+        return super().dispatch(request, *args, **kwargs)
+
+    # def get_context_data(self, **kwargs):
+    # context = super().get_context_data(**kwargs)
+    # context["record_name"] = self.model._meta.verbose_name.lower()
 
 
 class TreatmentList(AbstractRecordList):

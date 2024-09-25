@@ -35,7 +35,7 @@
         {% if request.user.is_authenticated %}
             <p class="breadcrumbs">
                 <a class="button is-text" href="{{ list_url }}">
-                    All {{ record_name }}
+                    {% if APP_LANG == "en" %}All {{ record_name|default:'record' }}s{% else %}Tous les  {{ record_name|default:'enregistrement' }}s{% endif %}
                 </a>
             </p>
         {% endif %}
