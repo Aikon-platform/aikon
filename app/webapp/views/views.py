@@ -100,7 +100,7 @@ def error_500(request):
     )
 
 
-def error_403(request):
+def error_403(request, exeception):
     return render(
         request,
         "error.html",
@@ -113,7 +113,7 @@ def error_403(request):
     )
 
 
-def error_400(request):
+def error_400(request, exception):
     return render(
         request,
         "error.html",
