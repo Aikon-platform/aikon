@@ -313,10 +313,6 @@ td.is-fullwidth {
     background-color: var(--contrasted) !important;
 }
 
-.is-contrasted > * {
-    background-color: var(--contrasted) !important;
-}
-
 .menu-list a:hover {
     background-color: var(--contrasted);
 }

@@ -1,6 +1,7 @@
 from django.urls import path, include, register_converter
 from django.conf.urls.static import static
 from django.conf.urls import handler404, handler500, handler403, handler400
+from django.contrib.auth import views as auth_views
 
 from app.config.settings import (
     MEDIA_URL,
@@ -35,6 +36,27 @@ handler400 = "webapp.views.error_400"
 urlpatterns = [
     path(f"{APP_NAME}-admin/", admin_site.urls),
     path("", include("webapp.urls")),
+    # to reset password
+    path(
+        "password_reset/", auth_views.PasswordResetView.as_view(), name="password_reset"
+    ),
+    path(
+        "password_reset_done/",
+        auth_views.PasswordResetDoneView.as_view(),
+        name="password_reset_done",
+    ),
+    path(
+        "reset/<uidb64>/<token>/",
+        auth_views.PasswordResetConfirmView.as_view(),
+        name="password_reset_confirm",
+    ),
+    path(
+        "reset_done/",
+        auth_views.PasswordResetCompleteView.as_view(
+            template_name="reset_password_complete.html"
+        ),
+        name="password_reset_complete",
+    ),
 ]
 
 for module in ADDITIONAL_MODULES:

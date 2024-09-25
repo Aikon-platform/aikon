@@ -58,6 +58,7 @@
                     </div>
                 </div>
             </form>
+            <p><a href="{% url 'password_reset' %}">{% if APP_LANG == "en" %}Forgotten password{% else %}Mot de passe oublié ?{% endif %}</a></p>
         </div>
     </div>
 {% endblock %}
