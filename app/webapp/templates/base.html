@@ -80,13 +80,13 @@
 <div class="wrapper container is-fluid">
     <div class="content p-5" style="min-height: 80vh; max-width: 90vw">
         {% if messages %}
-            <div class="centerwrap">
-                <ul class="messages">
-                    {# TODO improve message display #}
-                    {% for message in messages %}
-                        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|urlize }}</li>
-                    {% endfor %}
-                </ul>
+            <div class="container">
+                {# TODO improve message display #}
+                {% for message in messages %}
+                    <div class="notification is-danger is-light {% if message.tags %}{{ message.tags }}{% endif %}">
+                        {{ message|urlize }}
+                    </div>
+                {% endfor %}
             </div>
         {% endif %}
 

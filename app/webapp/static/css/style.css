@@ -275,6 +275,10 @@ td.is-fullwidth {
     border-style: none;
 }
 
+.errorlist {
+    color: red;
+}
+
 :root {
     --contrasted: #ebebeb;
     --accent: hsl(0deg 0% 0% / 5%);
