@@ -1,47 +1,26 @@
 {% extends "admin/base_site.html" %}
-{% load i18n admin_urls static admin_modify shared_tags %}
-
-{% block extrahead %}
-    {{ block.super }}
-    <script src="{% url 'admin:jsi18n' %}"></script>
-    <link rel="stylesheet" href="{% static 'css/form.css' %}">
-    <script src="{% static 'js/form.js' %}"></script>
-    {{ media }}
-{% endblock %}
-
-{% block extrastyle %}
-    {{ block.super }}
-    <link rel="stylesheet" href="{% static "admin/css/forms.css" %}">
-{% endblock %}
-
-{% block coltype %}colM{% endblock %}
-
-{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-form{% endblock %}
 
 {% block content %}
     <div class="container">
         <div id="content-main">
-                <form method="post">
-                    {% csrf_token %}
-                    {% block form_top %}{% endblock %}
-                    {{ form.non_field_errors }}
-                    <div class="columns is-centered">
-                        <div class="column is-4">
-                            <div class="box is-contrasted">
-                                <h1 class="is-title is-size-3 is-center">{{ title }}</h1>
-                                <div class="form-group pt-4">
-                                    <label class="label" for="{{ form.username.id_for_label }}">Username</label>
-                                    <div class="control has-icons-left has-icons-right">
-                                        <input class="input" name="username" placeholder="Username" required>
-                                        <span class="icon is-small is-left pl-3">
-                                            <i class="fas fa-user"></i>
-                                        </span>
-                                    </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="columns is-centered">
+                    <div class="column is-4">
+                        <div class="box is-contrasted">
+                            <h1 class="is-title is-size-3 is-center">{{ title }}</h1>
+                            <div class="form-group pt-4">
+                                <label class="label" for="{{ form.username.id_for_label }}">{% if APP_LANG == "en" %}Username{% else %}Nom d'utilisateur{% endif %}</label>
+                                <div class="control has-icons-left has-icons-right">
+                                    <input class="input" name="username" placeholder="Username" required>
+                                    <span class="icon is-small is-left pl-3">
+                                        <i class="fas fa-user"></i>
+                                    </span>
                                 </div>
-                            {{ form.username.errors }}
+                            </div>
                             <div class="form-group pt-4">
                                 <div class="field">
-                                    <label class="label" for="{{ form.password.id_for_label }}">Password</label>
+                                    <label class="label" for="{{ form.password.id_for_label }}">{% if APP_LANG == "en" %}Password{% else %}Mot de passe{% endif %}</label>
                                     <div class="control has-icons-left">
                                         <input class="input" type="password" name="password" placeholder="*******" required>
                                         <span class="icon is-small is-left pl-3">
@@ -49,16 +28,22 @@
                                         </span>
                                     </div>
                                 </div>
-                                {{ form.password.errors }}
                             </div>
+                            {% if form.errors %}
+                                    <div class="message is-danger is-size-7">
+                                    {{ form.username.errors }}
+                                    {{ form.password.errors }}
+                                    {{ form.non_field_errors }}
+                                </div>
+                            {% endif %}
+                            <a class="pl-2 is-size-7" href="{% url 'webapp:password-reset' %}">{% if APP_LANG == "en" %}Forgotten password?{% else %}Mot de passe oublié ?{% endif %}</a>
                             <div class="control pt-4 is-center">
-                                <button type="submit" class="button is-link">Login</button>
+                                <button type="submit" class="button is-link">{% if APP_LANG == "en" %}Login{% else %}Connexion{% endif %}</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </form>
-            <p><a href="{% url 'password_reset' %}">{% if APP_LANG == "en" %}Forgotten password{% else %}Mot de passe oublié ?{% endif %}</a></p>
         </div>
     </div>
 {% endblock %}
