@@ -21,23 +21,32 @@
 {% block content %}
     <div class="container">
         <div id="content-main">
-                <form method="post">
-                    {% csrf_token %}
-                    {% block form_top %}{% endblock %}
-                    {{ form.non_field_errors }}
-                    <div class="columns is-centered">
-                        <div class="column is-4">
-                            <div class="box is-contrasted">
-                                <h1 class="is-title is-size-3 is-center">{{ title }}</h1>
-                                <div class="form-group pt-4">
-                                    <label class="label" for="{{ form.username.id_for_label }}">Username</label>
-                                    <div class="control has-icons-left has-icons-right">
-                                        <input class="input" name="username" placeholder="Username" required>
-                                        <span class="icon is-small is-left pl-3">
+            <form method="post">
+                {% csrf_token %}
+                {% block form_top %}{% endblock %}
+                {{ form.non_field_errors }}
+                <div class="columns is-centered">
+                    <div class="column is-4">
+                        <div class="box is-contrasted">
+                            <h1 class="is-title is-size-3 is-center">{{ title }}</h1>
+
+                            {% if APP_URL == "https://aikon.enpc.fr" %}
+                                To connect as a guest, use the following credentials:
+                                <ul>
+                                    <li>Username: <strong>guest</strong></li>
+                                    <li>Password: <strong>Aikon_2024</strong></li>
+                                </ul>
+                            {% endif %}
+
+                            <div class="form-group pt-4">
+                                <label class="label" for="{{ form.username.id_for_label }}">Username</label>
+                                <div class="control has-icons-left has-icons-right">
+                                    <input class="input" name="username" placeholder="Username" required>
+                                    <span class="icon is-small is-left pl-3">
                                             <i class="fas fa-user"></i>
                                         </span>
-                                    </div>
                                 </div>
+                            </div>
                             {{ form.username.errors }}
                             <div class="form-group pt-4">
                                 <div class="field">
