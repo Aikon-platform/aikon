@@ -4,6 +4,8 @@ import time
 import shutil
 
 import requests
+from urllib3.exceptions import ProtocolError
+from requests.exceptions import RequestException, Timeout
 from PIL import Image, UnidentifiedImageError
 
 from app.webapp.utils.functions import get_json, save_img, sanitize_url
@@ -38,7 +40,7 @@ def save_failed_img(image):
             img = Image.open(response.raw)
             save_img(img, img_name)
 
-    except requests.exceptions.RequestException as e:
+    except (RequestException, ProtocolError, Timeout, Exception) as e:
         shutil.copyfile(
             f"{BASE_DIR}/webapp/static/img/placeholder.jpg",
             f"{IMG_PATH}/{img_name}",
@@ -187,7 +189,8 @@ class IIIFDownloader:
                         return
                 return save_img(img, img_name)
 
-        except requests.exceptions.RequestException as e:
+        except (RequestException, ProtocolError, Timeout) as e:
+            download_log(img_name, img_url)
             log(f"[save_iiif_img] Failed to download image from {iiif_url}", e)
             return False
 

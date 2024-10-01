@@ -276,7 +276,7 @@ td.is-fullwidth {
 }
 
 :root {
-    --contrasted: #f5f0f0;
+    --contrasted: #ebebeb;
     --accent: hsl(0deg 0% 0% / 5%);
     --selected: hsl(234deg 100% 96%);
     --selected-text: hsl(233deg 100% 33%);
@@ -287,7 +287,7 @@ td.is-fullwidth {
 }
 
 [data-theme="light"] {
-    --contrasted: #f3eff1;
+    --contrasted: #ebebeb;
     --accent: hsl(0deg 0% 0% / 5%);
     --selected: hsl(234deg 100% 96%);
     --selected-text: hsl(237deg 82% 32%);
@@ -310,10 +310,6 @@ td.is-fullwidth {
 }
 
 .is-contrasted {
-    background-color: var(--contrasted) !important;
-}
-
-.is-contrasted > * {
     background-color: var(--contrasted) !important;
 }
 

@@ -12,6 +12,7 @@ ADDITIONAL_MODULES = ENV.list("ADDITIONAL_MODULES", default=[])
 APP_LOGO = ENV.list("APP_LOGO", default=[])
 
 LOGIN_URL = f"/{APP_NAME}-admin/login/"
+LOGIN_REDIRECT_URL = "/"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
@@ -41,9 +42,14 @@ INSTALLED_APPS = [
     f"{WEBAPP_NAME}",
 ] + ADDITIONAL_MODULES
 
-hosts = ENV.list("ALLOWED_HOSTS", default=[])
-hosts.append(ENV.str("PROD_URL", default=""))
-ALLOWED_HOSTS = hosts
+hosts = ENV.list("ALLOWED_HOSTS", default=[]) + [ENV.str("PROD_URL", default="")]
+hosts += ["web"]  # for docker nginx service
+https_hosts = [f"https://{host}" for host in hosts]
+wildcard_hosts = [f"https://*.{host}" for host in hosts if "." in host]
+
+ALLOWED_HOSTS = hosts + https_hosts + wildcard_hosts
+CSRF_TRUSTED_ORIGINS = https_hosts + wildcard_hosts
+
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 CONTACT_MAIL = ENV.str("CONTACT_MAIL", default="")
@@ -124,6 +130,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "webapp.templatetags.context_processors.global_variables",
+                "webapp.context_processors.login_url",
             ],
             "builtins": [
                 "webapp.templatetags.filters",
@@ -140,9 +147,9 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": ENV.str("DB_NAME", default=""),
-        "USER": ENV.str("DB_USERNAME", default=""),
-        "PASSWORD": ENV.str("DB_PASSWORD", default=""),
+        "NAME": ENV.str("POSTGRES_DB", default=""),
+        "USER": ENV.str("POSTGRES_USER", default=""),
+        "PASSWORD": ENV.str("POSTGRES_PASSWORD", default=""),
         "HOST": ENV.str("DB_HOST", default="localhost"),
         "PORT": ENV.str("DB_PORT", default=5432),
     }
@@ -208,20 +215,20 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
         },
-        "file": {
-            "class": "logging.FileHandler",
-            "filename": LOG_PATH,
-            "level": "ERROR",
-            "formatter": "verbose",
-        },
+        # "file": {
+        #     "class": "logging.FileHandler",
+        #     "filename": LOG_PATH,
+        #     "level": "ERROR",
+        #     "formatter": "verbose",
+        # },
     },
     "loggers": {
         "django": {
-            "handlers": ["console", "file"],
+            "handlers": ["console"],
             "level": "WARNING",
         },
         "celery": {
-            "handlers": ["console", "file"],
+            "handlers": ["console"],
             "level": "INFO",
             "propagate": True,
         },
@@ -231,7 +238,7 @@ LOGGING = {
     },
 }
 
-# # Celery settings
+# # Celery settings TODO put that in celery.py
 # CELERY_BROKER_URL = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
 # CELERY_RESULT_BACKEND = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
 CELERY_ACCEPT_CONTENT = ["json", "pickle"]

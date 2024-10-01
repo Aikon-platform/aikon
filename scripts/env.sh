@@ -52,14 +52,14 @@ get_env_value() {
 }
 
 update_env() {
-    ordered_params=("APP_NAME" "CONTACT_MAIL" "DB_NAME" "DB_USERNAME" "DB_PASSWORD" "ALLOWED_HOSTS" "SECRET_KEY" "MEDIA_DIR" "DEBUG" "DB_HOST" "DB_PORT" "SAS_USERNAME" "SAS_PASSWORD" "SAS_PORT" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "PROD_URL" "GEONAMES_USER" "APP_LANG" "CV_API_URL" "ADDITIONAL_MODULES" "REDIS_PASSWORD")
+    ordered_params=("APP_NAME" "CONTACT_MAIL" "POSTGRES_DB" "POSTGRES_USER" "POSTGRES_PASSWORD" "ALLOWED_HOSTS" "SECRET_KEY" "MEDIA_DIR" "DEBUG" "DB_HOST" "DB_PORT" "SAS_USERNAME" "SAS_PASSWORD" "SAS_PORT" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "PROD_URL" "GEONAMES_USER" "APP_LANG" "CV_API_URL" "ADDITIONAL_MODULES" "REDIS_PASSWORD")
     for param in "${ordered_params[@]}"; do
         current_val=$(grep -oP "(?<=^$param=\")[^\"]*" "$ENV_FILE")
         case $param in
-            "DB_NAME")
+            "POSTGRES_DB")
                 default_val=$(get_env_value "APP_NAME")
                 ;;
-            "DB_PASSWORD")
+            "POSTGRES_PASSWORD")
                 default_val="$(generate_random_string)"
                 ;;
             "DB_HOST")
@@ -69,7 +69,7 @@ update_env() {
                 default_val="5432"
                 ;;
             "SAS_USERNAME")
-                default_val=$(get_env_value "DB_USERNAME")
+                default_val=$(get_env_value "POSTGRES_USER")
                 ;;
             "SAS_PASSWORD")
                 default_val="$(generate_random_string)"

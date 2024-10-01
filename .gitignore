@@ -40,6 +40,7 @@ db.sqlite3
 
 # ENV settings
 .env
+.env.prod
 .venv
 
 # Django secret key
@@ -134,3 +135,5 @@ logs/*
 scripts/*.txt
 scripts/*.sql
 scripts/.pgpass
+
+docker/nginx.conf

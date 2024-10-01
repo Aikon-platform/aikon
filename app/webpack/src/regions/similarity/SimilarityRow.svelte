@@ -11,9 +11,10 @@
     const [wit, digit, canvas, xyhw] = qImg.split('.')[0].split('_');
     const manifest = getContext('manifest');
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
+    const currentPageId = window.location.pathname.match(/\d+/g).join('-');
     const error_name = appLang === "en" ? "Error" : "Erreur";
 
-    $: sLen = Object.values($selectedRegions).length;
+    $: sLen = $selectedRegions.hasOwnProperty(currentPageId) ? Object.values($selectedRegions[currentPageId]).length : 0;
 
     function check_region_ref(region_ref) {
         region_ref = region_ref.replace('.jpg', '');
@@ -80,7 +81,7 @@
     }
 
     async function noMatch() {
-        const regions = Object.values($selectedRegions)[0];
+        const regions = Object.values($selectedRegions[currentPageId])[0];
         const confirmed = await showMessage(
             appLang === "en" ?
                 `Do you confirm this region does not have any match in ${regions.title}?` :
@@ -143,7 +144,7 @@
             <div class="new-similarity control pt-2 is-center">
                 <div class="tags has-addons" style="flex-wrap: nowrap">
                     <input bind:value={sImg} class="input is-small tag" type="text"
-                           placeholder="{appLang === 'en' ? 'Add new match' : 'Ajouter une correpondance'}"
+                           placeholder="{appLang === 'en' ? 'Add new match' : 'Ajouter une correspondance'}"
                     />
                     <button class="button is-small tag is-link is-center" on:click={addMatch}>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">

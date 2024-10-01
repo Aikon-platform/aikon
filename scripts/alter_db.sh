@@ -4,36 +4,25 @@
 # Inside the scripts/ directory, run:
 # bash alter_db.sh
 
-get_os() {
-    unameOut="$(uname -s)"
-    case "${unameOut}" in
-        Linux*)     os=Linux;;
-        Darwin*)    os=Mac;;
-        CYGWIN*)    os=Cygwin;;
-        MINGW*)     os=MinGw;;
-        MSYS_NT*)   os=Git;;
-        *)          os="UNKNOWN:${unameOut}"
-    esac
-    echo "${os}"
-}
-
 SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"
+
+source "$SCRIPT_DIR"/functions.sh
 
 # Load environment variables from .env file
 . "$APP_ROOT"/app/config/.env
 
 PGPASS_FILE="./.pgpass"
-echo "$DB_HOST:$DB_PORT:$DB_NAME:$DB_USERNAME:$DB_PASSWORD" > "$PGPASS_FILE"
+echo "$DB_HOST:$DB_PORT:$POSTGRES_DB:$POSTGRES_USER:$POSTGRES_PASSWORD" > "$PGPASS_FILE"
 chmod 600 "$PGPASS_FILE"
 export PGPASSFILE='./.pgpass'
 
 case $(get_os) in
     Linux)
-        command="sudo -i -u $DB_USERNAME psql -d $DB_NAME"
+        command="sudo -i -u $POSTGRES_USER psql -d $POSTGRES_DB"
         ;;
     Mac)
-        command="psql -U $DB_USERNAME -d $DB_NAME"
+        command="psql -U $POSTGRES_USER -d $POSTGRES_DB"
         ;;
     *)
         echo "Unsupported OS: you need to create the database manually"

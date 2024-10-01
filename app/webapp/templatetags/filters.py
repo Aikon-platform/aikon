@@ -143,6 +143,8 @@ def check_url(*args, **kwargs):
         return reverse(*args, **kwargs)
     except NoReverseMatch:
         return ""
+    except Exception:
+        return ""
 
 
 @register.filter

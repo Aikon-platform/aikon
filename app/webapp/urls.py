@@ -1,7 +1,8 @@
-from django.urls import path
+from django.urls import path, reverse_lazy
 from app.config.settings import APP_NAME
 from app.webapp.views import *
 from app.webapp.views.users import *
+from django.contrib.auth import views as auth_views
 
 app_name = "webapp"
 
@@ -9,6 +10,37 @@ app_name = "webapp"
 urlpatterns = [
     path("", admin_app, name="home"),
     path(f"{APP_NAME}/logout", logout_view, name="logout"),
+    path(
+        f"{APP_NAME}/password-reset/",
+        auth_views.PasswordResetView.as_view(
+            template_name="admin/auth/password_reset.html",
+            success_url=reverse_lazy("webapp:password-reset-done"),
+            email_template_name="admin/auth/password_reset_email.html",
+        ),
+        name="password-reset",
+    ),
+    path(
+        f"{APP_NAME}/password-reset/done",
+        auth_views.PasswordResetDoneView.as_view(
+            template_name="admin/auth/password_reset_done.html"
+        ),
+        name="password-reset-done",
+    ),
+    path(
+        f"{APP_NAME}/reset/<uidb64>/<token>/",
+        auth_views.PasswordResetConfirmView.as_view(
+            template_name="admin/auth/password_reset_confirm.html",
+            success_url=reverse_lazy("webapp:password-reset-complete"),
+        ),
+        name="password-reset-confirm",
+    ),
+    path(
+        f"{APP_NAME}/reset-done/",
+        auth_views.PasswordResetCompleteView.as_view(
+            template_name="admin/auth/password_reset_complete.html"
+        ),
+        name="password-reset-complete",
+    ),
     path(f"{APP_NAME}/rgpd", rgpd),
     path(
         f"{APP_NAME}/<str:regions_ref>/show/",
@@ -39,6 +71,11 @@ urlpatterns = [
         f"{APP_NAME}/annotations/<int:regions_id>",
         witness_sas_annotations,
         name="witness-annotations",
+    ),
+    path(
+        f"test",
+        test,
+        name="test",
     ),
     path(
         f"{APP_NAME}/test/<str:wit_ref>",
@@ -269,4 +306,10 @@ urlpatterns += [
     path("search/series/", search_series, name="search-series"),
     path("search/documentset/", search_document_set, name="search-document-sets"),
     path("search/json-generation/", json_regeneration, name="regenerate_json"),
+]
+
+# SUPERADMIN VIEWS
+urlpatterns += [
+    path("superadmin/empty-works/", list_empty_works, name="empty-works"),
+    path("superadmin/works/", list_works, name="list-works"),
 ]

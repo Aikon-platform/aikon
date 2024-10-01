@@ -130,6 +130,12 @@
 {% endblock %}
 
 {% block content %}
+
+<div id="editing-tool">
+
+</div>
+
+
 <div class="container">
     <div class="sidebar">
         <div class="switch-container">
@@ -158,6 +164,14 @@
 
 
 <script>
+
+    let svg = {{ svg_content|safe }}
+    {% with small=coords|add:'/full/0' %}
+    let backgroundImage = "{{ img_file|img_to_iiif:small }}";
+    {% endwith %}
+
+
+
     document.addEventListener('DOMContentLoaded', function() {
 
         const svgElement = document.querySelector('svg'); // Sélectionner l'élément SVG

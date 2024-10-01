@@ -67,7 +67,7 @@
                 {% if request.user.is_authenticated %}
                     <div class="buttons">
                         <div class="has-text-grey pr-3">
-                            {% if APP_LANG == "en" %}Logged in as{% else %}Connecté·e en tant que{% endif %} <span class="has-text-link">{{ user.first_name }} {{ user.last_name }}</span>
+                            {% if APP_LANG == "en" %}Logged in as{% else %}Connecté·e en tant que{% endif %} <span class="has-text-link">{{ user.username }}</span>
                         </div>
                         <a class="button is-link is-outlined" href="{% url 'webapp:logout' %}" title="Log out">
                             {% if APP_LANG == "en" %}Log out{% else %}Déconnexion{% endif %}
@@ -75,7 +75,7 @@
                     </div>
                 {% else %}
                     <div class="buttons">
-                        <a class="button is-link is-outlined" href="{# {% url 'login' %} #}">Log in</a>
+                        <a class="button is-link is-outlined" href="{{ LOGIN_URL }}">Log in</a>
                     </div>
                 {% endif %}
             </div>

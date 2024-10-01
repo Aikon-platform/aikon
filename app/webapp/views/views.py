@@ -73,6 +73,59 @@ def admin_app(request):
     return redirect("admin:index")
 
 
+def error_404(request, exception):
+    return render(
+        request,
+        "error.html",
+        status=404,
+        context={
+            "error_code": 404,
+            "error_title": "Page not found",
+            "error_message": "The page you are looking for does not exist.",
+            "exception": str(exception),
+        },
+    )
+
+
+def error_500(request):
+    return render(
+        request,
+        "error.html",
+        status=500,
+        context={
+            "error_code": 500,
+            "error_title": "Internal Server Error",
+            "error_message": "Something went wrong. Please try again later.",
+        },
+    )
+
+
+def error_403(request, exeception):
+    return render(
+        request,
+        "error.html",
+        status=403,
+        context={
+            "error_code": 403,
+            "error_title": "Access Denied",
+            "error_message": "You do not have permission to access this page.",
+        },
+    )
+
+
+def error_400(request, exception):
+    return render(
+        request,
+        "error.html",
+        status=400,
+        context={
+            "error_code": 400,
+            "error_title": "Bad Request",
+            "error_message": "Your request is invalid.",
+        },
+    )
+
+
 def check_ref(obj_ref, obj="Digitization"):
     ref = parse_ref(obj_ref)
     ref_format = (
@@ -94,7 +147,7 @@ def check_ref(obj_ref, obj="Digitization"):
     if obj == "Digitization" or ref["regions"] is None:
         if obj_ref != digit.get_ref():
             return False, {
-                "response": f"Wrong info given in reference for digitization #{digit_id}",
+                "response": f"Wrong info given in reference for digitization #{digit_id}: {obj_ref} instead of {digit.get_ref()}",
                 "reason": f"Reference must follow this format: {ref_format}",
             }
         return True, digit

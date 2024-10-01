@@ -77,5 +77,10 @@ urlpatterns = [
         index_regions_similarity,
         name="index-similarity",
     ),
+    path(
+        f"{APP_NAME}/delete-incorrect-pairs",
+        remove_incorrect_pairs,
+        name="remove-incorrect-pairs",
+    ),
     # path(f"{APP_NAME}/similarity/delete-all", delete_all_regions_pairs, name="delete-pairs"),
 ]

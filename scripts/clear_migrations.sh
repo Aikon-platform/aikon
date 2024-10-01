@@ -10,41 +10,10 @@
 # bash clear_migration.sh
 # Restart Django to see effects
 
-colorEcho() {
-    Color_Off="\033[0m"
-    Red="\033[1;91m"        # Red
-    Green="\033[1;92m"      # Green
-    Yellow="\033[1;93m"     # Yellow
-    Blue="\033[1;94m"       # Blue
-    Purple="\033[1;95m"     # Purple
-    Cyan="\033[1;96m"       # Cyan
-
-    case "$1" in
-        "green") echo -e "$Green$2$Color_Off";;
-        "red") echo -e "$Red$2$Color_Off";;
-        "blue") echo -e "$Blue$2$Color_Off";;
-        "yellow") echo -e "$Yellow$2$Color_Off";;
-        "purple") echo -e "$Purple$2$Color_Off";;
-        "cyan") echo -e "$Cyan$2$Color_Off";;
-        *) echo "$2";;
-    esac
-}
-
-get_os() {
-    unameOut="$(uname -s)"
-    case "${unameOut}" in
-        Linux*)     os=Linux;;
-        Darwin*)    os=Mac;;
-        CYGWIN*)    os=Cygwin;;
-        MINGW*)     os=MinGw;;
-        MSYS_NT*)   os=Git;;
-        *)          os="UNKNOWN:${unameOut}"
-    esac
-    echo "${os}"
-}
-
 SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"
+
+source "$SCRIPT_DIR"/functions.sh
 
 #options=("yes" "no")
 #colorEcho blue "\nHave you committed your code before running the script?"
@@ -67,8 +36,8 @@ APP_ROOT="$(dirname "$SCRIPT_DIR")"
 # Load environment variables from .env file
 . "$APP_ROOT"/app/config/.env
 
-db_name=${DB_NAME:-APP_NAME}
-db_user=${DB_USERNAME:-admin}
+db_name=${POSTGRES_DB:-APP_NAME}
+db_user=${POSTGRES_USER:-admin}
 
 case $(get_os) in
     Linux)
