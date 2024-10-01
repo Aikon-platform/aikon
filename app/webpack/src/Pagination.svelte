@@ -7,9 +7,10 @@
     export let nbOfItems;
     export let pageLength = pageSize;
     $: maxPage = pageLength < pageSize ? 1 : Math.ceil(nbOfItems / pageLength);
+    // todo fic maxpage possiblement undefined / Nan
 </script>
 
-{#if maxPage > 1}
+{#if maxPage > 1 || nbOfItems > pageLength}
 <nav class="pagination is-centered mb-2" aria-label="pagination">
     <ul class="pagination-list ml-0">
         {#if $currentPage > 1}

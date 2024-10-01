@@ -94,6 +94,7 @@ function createSimilarityStore() {
                     [region.ref]: region
                 }
             };
+            console.log(updatedSelection);
             store(updatedSelection)
             return updatedSelection;
         });

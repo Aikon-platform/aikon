@@ -302,6 +302,7 @@ def no_match(request, wid, rid=None):
         s_regions = data.get("s_regions")
         pairs = get_matched_regions(q_img, s_regions)
         for pair in pairs:
+            # TODO here error tuple has no category attribute
             pair.category = 4
             # NOTE remove pair once and for all?
             pair.save()
