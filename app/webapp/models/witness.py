@@ -23,7 +23,7 @@ from app.webapp.models.utils.constants import (
     MAP_WIT_TYPE,
     FOL_ABBR,
     NO_USER,
-    MS,
+    MS_ABBR,
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
@@ -77,12 +77,13 @@ class Witness(AbstractSearchableModel):
                 return self.json["title"]
             return format_html(title)
 
-        place = self.place.name if self.place else CONS_PLA_MSG
-
-        if self.type == MS:
+        if self.type == MS_ABBR:
+            place = self.place.name if self.place else CONS_PLA_MSG
             return format_html(f"{wit_ref} | {place}")
 
-        return format_html(f"{self.edition.name}, {wit_ref}" if self.edition else title)
+        return format_html(
+            f"{self.type} {self.edition.name}, {wit_ref}" if self.edition else title
+        )
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
