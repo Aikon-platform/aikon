@@ -23,6 +23,7 @@ from app.webapp.models.utils.constants import (
     MAP_WIT_TYPE,
     FOL_ABBR,
     NO_USER,
+    MS_ABBR,
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
@@ -68,17 +69,19 @@ class Witness(AbstractSearchableModel):
         app_label = "webapp"
 
     def __str__(self, light=False):
-        if self.volume_title:
-            vol = f", vol. {self.volume_nb}" if self.volume_nb else f" | {self.id_nb}"
-            return format_html(f"{self.volume_title}{vol}")
+        wit_ref = f"Vol. {self.volume_nb}" if self.volume_nb else self.id_nb
+        title = f"{self.volume_title}, {wit_ref}" if self.volume_title else wit_ref
+
         if light:
             if self.json and "title" in self.json:
                 return self.json["title"]
-            return self.id_nb
+            return format_html(title)
 
-        return format_html(
-            f"{self.place.name if self.place else CONS_PLA_MSG} | {self.id_nb}"
-        )
+        if self.type == MS_ABBR:
+            place = self.place.name if self.place else CONS_PLA_MSG
+            return format_html(f"{wit_ref} | {place}")
+
+        return format_html(f"{self.edition.name}, {wit_ref}" if self.edition else title)
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
@@ -267,6 +270,8 @@ class Witness(AbstractSearchableModel):
         return self.contents.all()
 
     def get_digits(self):
+        if self.pk is None:
+            return []
         return self.digitizations.all()
 
     def get_regions(self):
@@ -279,6 +284,8 @@ class Witness(AbstractSearchableModel):
         return Regions.objects.filter(digitization__witness=self).distinct()
 
     def has_images(self):
+        if self.pk is None:
+            return []
         return any(digit.has_images() for digit in self.get_digits())
 
     def has_vectorization(self):
