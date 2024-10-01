@@ -81,9 +81,7 @@ class Witness(AbstractSearchableModel):
             place = self.place.name if self.place else CONS_PLA_MSG
             return format_html(f"{wit_ref} | {place}")
 
-        return format_html(
-            f"{self.type} {self.edition.name}, {wit_ref}" if self.edition else title
-        )
+        return format_html(f"{self.edition.name}, {wit_ref}" if self.edition else title)
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
