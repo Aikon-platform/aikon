@@ -40,7 +40,7 @@ def save_failed_img(image):
             img = Image.open(response.raw)
             save_img(img, img_name)
 
-    except (RequestException, ProtocolError, Timeout) as e:
+    except (RequestException, ProtocolError, Timeout, Exception) as e:
         shutil.copyfile(
             f"{BASE_DIR}/webapp/static/img/placeholder.jpg",
             f"{IMG_PATH}/{img_name}",
