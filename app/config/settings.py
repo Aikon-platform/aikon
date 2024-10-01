@@ -12,6 +12,7 @@ ADDITIONAL_MODULES = ENV.list("ADDITIONAL_MODULES", default=[])
 APP_LOGO = ENV.list("APP_LOGO", default=[])
 
 LOGIN_URL = f"/{APP_NAME}-admin/login/"
+LOGIN_REDIRECT_URL = "/"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
@@ -129,6 +130,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "webapp.templatetags.context_processors.global_variables",
+                "webapp.context_processors.login_url",
             ],
             "builtins": [
                 "webapp.templatetags.filters",
