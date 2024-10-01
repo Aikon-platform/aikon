@@ -20,10 +20,17 @@
                 <p class="menu-label">Actions</p>
                 <ul class="menu-list is-capitalized">
                     <a href="{% url 'admin:webapp_witness_add' %}">
-                        <span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>{% if APP_LANG == "en" %}Add{% else %}Ajouter un{% endif %} {{ WIT }}</span></a>
+                        <span class="icon-text">
+                            <span class="icon"><i class="fas fa-plus-circle"></i></span>
+                            {% if APP_LANG == "en" %}Add{% else %}Ajouter un{% endif %} {{ WIT }}
+                        </span>
+                    </a>
                     <a href="{% url 'admin:webapp_series_add' %}">
-                        <span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>{% if APP_LANG == "en" %}Add{% else %}Ajouter une{% endif %} {{ SER }}</span></a>
-                    <a><span class="icon-text"><span class="icon"><i class="fas fa-plus-circle"></i></span>{% if APP_LANG == "en" %}Add{% else %}Ajouter un{% endif %} Machin</span></a>
+                        <span class="icon-text">
+                            <span class="icon"><i class="fas fa-plus-circle"></i></span>
+                            {% if APP_LANG == "en" %}Add{% else %}Ajouter une{% endif %} {{ SER }}
+                        </span>
+                    </a>
                 </ul>
             </aside>
         </div>
