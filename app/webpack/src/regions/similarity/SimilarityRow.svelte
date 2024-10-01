@@ -15,7 +15,7 @@
     const error_name = appLang === "en" ? "Error" : "Erreur";
 
     $: sLen = $selectedRegions.hasOwnProperty(currentPageId) ? Object.values($selectedRegions[currentPageId]).length : 0;
-    $: hasNoMatch = false; // TODO change here if it has no match
+    $: hasNoMatch = false; // TODO HERE FIND A WAY TO SET NO MATCH FOR THIS Q REGIONS
 
     function check_region_ref(region_ref) {
         region_ref = region_ref.replace('.jpg', '');

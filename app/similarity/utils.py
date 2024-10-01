@@ -137,7 +137,7 @@ def get_matched_regions(q_img: str, s_regions_id: int):
     return RegionPair.objects.filter(
         (Q(img_1=q_img) & Q(regions_id_2=s_regions_id))
         | (Q(img_2=q_img) & Q(regions_id_1=s_regions_id))
-    ).values_list("regions_id_1", "regions_id_2", "img_1", "img_2")
+    )
 
 
 def delete_pairs_with_regions(regions_id: int):
