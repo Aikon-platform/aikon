@@ -50,6 +50,10 @@ COPY --chown=${USER} gunicorn /home/${USER}/gunicorn
 COPY --chown=${USER} celery /home/${USER}/celery
 COPY --chown=${USER} docker/supervisord.conf /home/${USER}/supervisord.conf
 
+RUN touch /home/${USER}/app/logs/app_log.log && chown ${USER}:${USER} /home/${USER}/app/logs/app_log.log
+RUN touch /home/${USER}/app/logs/iiif.log && chown ${USER}:${USER} /home/${USER}/app/logs/iiif.log
+RUN touch /home/${USER}/app/logs/download.log && chown ${USER}:${USER} /home/${USER}/app/logs/download.log
+
 # Must match the PORT in docker.sh
 EXPOSE ${PORT}
 
