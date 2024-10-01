@@ -1,38 +1,13 @@
 <script>
     import Item from "./Item.svelte";
     import {appLang, appName, regionsType} from "../constants.js";
-    import {deleteRecord, getSuccess, showMessage} from "../utils.js";
-    import {selectionStore} from "../selection/selectionStore.js";
+    import {getSuccess, showMessage} from "../utils.js";
+
     export let item;
     export let recordsStore;
 
     $: finished = item.is_finished;
     $: task_status = item.status;
-
-    async function deleteTreatment() {
-        // todo generalize and put in Item.svelte
-        const confirmed = await showMessage(
-            appLang === "en" ? "Are you sure you want to delete this treatment?" : "Voulez-vous vraiment supprimer ce traitement ?",
-            appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
-            true
-        );
-
-        if (!confirmed) {
-            return; // User cancelled the deletion
-        }
-
-        const success = await deleteRecord(item.id, item.class);
-        if (success) {
-            recordsStore.remove(item.id);
-            // NOTE selection remove useful for other records
-            // selectionStore.remove(item.id, regionsType);
-        } else {
-            await showMessage(
-                appLang === "en" ? "Failed to delete treatment" : "Erreur lors de la suppression du traitement",
-                appLang === "en" ? "Error" : "Erreur"
-            );
-        }
-    }
 
     async function cancelTreatment() {
         const confirmed = await showMessage(
@@ -58,7 +33,7 @@
     }
 </script>
 
-<Item {item}>
+<Item {item} {recordsStore}>
     <div slot="buttons">
         {#if !finished && item.api_tracking_id}
             <button class="button is-small is-rounded is-danger is-outlined px-2 py-1 mr-2"
@@ -86,8 +61,6 @@
         {:else}
             <span class="tag is-info p-1 mb-1">{task_status}</span>
         {/if}
-        <button class="delete is-medium" title="{appLang === 'en' ? 'Delete treatment' : 'Supprimer le traitement'}"
-                on:click={deleteTreatment}/>
     </div>
 
     <div slot="body" class="pt-2 grid">

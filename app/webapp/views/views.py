@@ -689,19 +689,3 @@ def set_title(request, set_id):
         return JsonResponse({"title": set.title})
     except DocumentSet.DoesNotExist:
         return JsonResponse({"title": "Unknown"}, status=404)
-
-
-@csrf_exempt
-def delete_treatment(request, treatment_id):
-    """
-    Delete treatment instance from the db
-    """
-    if not treatment_id:
-        return JsonResponse({"error": "Invalid treatment ID"}, status=400)
-    try:
-        treatment = Treatment.objects.get(id=treatment_id)
-        treatment.delete()
-
-        return JsonResponse({"success": True})
-    except Exception as e:
-        return JsonResponse({"error": "Treatment not found"}, e)

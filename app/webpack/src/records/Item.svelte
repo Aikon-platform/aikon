@@ -1,17 +1,36 @@
 <script>
     import { fade } from 'svelte/transition';
-    import {refToIIIF} from "../utils.js";
-    import { appLang, userId } from '../constants';
+    import {selectionStore} from "../selection/selectionStore.js";
+    import {deleteRecord, refToIIIF, showMessage} from "../utils.js";
+    import { appLang, userId, isSuperuser } from '../constants';
+
+    export let recordsStore;
 
     export let item;
     const hasUrl = item.hasOwnProperty("url") && item.url !== "";
 
-    function deleteItem() {
+    async function deleteItem() {
         // TODO add delete button if USER is the creator of the record OR super admin
-        // delete record
-        // remove from selection
-        // remove from record store
-        // add message
+        const confirmed = await showMessage(
+            appLang === "en" ? "Are you sure you want to delete this record?" : "Voulez-vous vraiment supprimer cet enregistrement ?",
+            appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
+            true
+        );
+        if (!confirmed) {
+            return; // User cancelled the deletion
+        }
+
+        const success = await deleteRecord(item.id, item.class);
+        if (success) {
+            recordsStore.remove(item.id);
+            // NOTE selection remove useful for other records
+            // selectionStore.remove(item.id, regionsType);
+        } else {
+            await showMessage(
+                appLang === "en" ? "Failed to delete record" : "Erreur lors de la suppression de l'enregistrement",
+                appLang === "en" ? "Error" : "Erreur"
+            );
+        }
     }
 </script>
 
@@ -67,16 +86,19 @@
                     {/if}
                 </div>
                 <div class="media-right">
-                    <!--{#if item.user_id === parseInt(userId)}
-                        <button class="button is-delete mr-2" aria-label="close" on:click={deleteItem}>
+                    <slot name="buttons"/>
+                </div>
+                {#if item.class === 'Treatment' || item.class === 'DocumentSet'}
+                    {#if item.user_id === parseInt(userId) || isSuperuser}
+                        <button class="delete is-medium" title="{appLang === 'en' ? 'Delete' : 'Supprimer'}" on:click={deleteItem}/>
+                        <!-- <button class="button is-delete mr-2" aria-label="close" on:click={deleteItem}>
                             {appLang === 'en' ? 'Delete' : 'Supprimer'}
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
                                 <path d="M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z"/>
                             </svg>
-                        </button>
-                    {/if}-->
-                    <slot name="buttons"/>
-                </div>
+                        </button>-->
+                    {/if}
+                {/if}
             </div>
 
             <div class="content fixed-grid px-5">
