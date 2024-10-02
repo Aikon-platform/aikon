@@ -4,6 +4,7 @@
     import {appLang} from "../constants.js";
     const { isSetSelected } = selectionStore;
     export let item;
+    export let recordsStore;
     $: setSelected = $isSetSelected(item);
 
     function getColor(status) {
@@ -18,7 +19,7 @@
     }
 </script>
 
-<Item {item}>
+<Item {item} {recordsStore}>
     <div slot="buttons">
         <button class="button" class:is-inverted={setSelected} on:click={() => selectionStore.toggleSet(item)}>
             {#if appLang === 'en'}

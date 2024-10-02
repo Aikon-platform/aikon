@@ -4,6 +4,7 @@ from app.config.settings import CV_API_URL, APP_URL, APP_NAME, APP_LANG
 
 from app.regions.const import EXTRACTOR_MODEL
 from app.webapp.models.utils.constants import WIT
+from app.webapp.utils.iiif.annotation import get_regions_annotations
 from app.webapp.utils.logger import log
 
 
@@ -13,20 +14,40 @@ def prepare_request(witnesses, treatment_id):
     try:
         for witness in witnesses:
             if witness.has_regions():
-                log(
-                    f"[regions_request] Witness {witness.get_ref()} already has regions"
-                )
-                pass
-            else:
-                digits = witness.get_digits()
-                for digit in digits:
-                    manifests.update({witness.get_ref(): digit.gen_manifest_url()})
+                regions = witness.get_regions()
+                wit_ref = witness.get_ref()
+
+                # check if the is annotations in SAS for this witness
+                anno_regions = {}
+                for region in regions:
+                    anno_regions = get_regions_annotations(
+                        region, as_json=True, r_annos=anno_regions
+                    )
+
+                different_model = True
+                for region in regions:
+                    if region.model == EXTRACTOR_MODEL:
+                        different_model = False
+                        break
+
+                if not different_model and len(anno_regions) != 0:
+                    if not different_model:
+                        log(
+                            f"[prepare_request] Witness {wit_ref} already has regions extracted with {EXTRACTOR_MODEL}"
+                        )
+                    if len(anno_regions) != 0:
+                        log(f"[prepare_request] Witness {wit_ref} already has regions")
+                    continue
+
+            digits = witness.get_digits()
+            for digit in digits:
+                manifests.update({witness.get_ref(): digit.gen_manifest_url()})
 
         if manifests:
             return {
                 "experiment_id": f"{treatment_id}",
                 "documents": manifests,
-                "model": f"{EXTRACTOR_MODEL}",  # Use only if specific model is desire
+                "model": f"{EXTRACTOR_MODEL}",  # Use only if specific model is desired
                 "callback": f"{APP_URL}/{APP_NAME}/get-regions",  # URL to which the regions file must be sent back
                 "tracking_url": f"{APP_URL}/{APP_NAME}/api-progress",
             }

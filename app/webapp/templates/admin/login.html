@@ -5,12 +5,24 @@
         <div id="content-main">
             <form method="post">
                 {% csrf_token %}
+                {% block form_top %}{% endblock %}
                 <div class="columns is-centered">
                     <div class="column is-4">
                         <div class="box is-contrasted">
                             <h1 class="is-title is-size-3 is-center">{{ title }}</h1>
+
+                            {% if APP_URL == "https://aikon.enpc.fr" %}
+                                To connect as a guest, use the following credentials:
+                                <ul>
+                                    <li>Username: <strong>guest</strong></li>
+                                    <li>Password: <strong>Aikon_2024</strong></li>
+                                </ul>
+                            {% endif %}
+
                             <div class="form-group pt-4">
-                                <label class="label" for="{{ form.username.id_for_label }}">{% if APP_LANG == "en" %}Username{% else %}Nom d'utilisateur{% endif %}</label>
+                                <label class="label" for="{{ form.username.id_for_label }}">
+                                    {% if APP_LANG == "en" %}Username{% else %}Nom d'utilisateur{% endif %}
+                                </label>
                                 <div class="control has-icons-left has-icons-right">
                                     <input class="input" name="username" placeholder="Username" required>
                                     <span class="icon is-small is-left pl-3">
@@ -20,7 +32,9 @@
                             </div>
                             <div class="form-group pt-4">
                                 <div class="field">
-                                    <label class="label" for="{{ form.password.id_for_label }}">{% if APP_LANG == "en" %}Password{% else %}Mot de passe{% endif %}</label>
+                                    <label class="label" for="{{ form.password.id_for_label }}">
+                                        {% if APP_LANG == "en" %}Password{% else %}Mot de passe{% endif %}
+                                    </label>
                                     <div class="control has-icons-left">
                                         <input class="input" type="password" name="password" placeholder="*******" required>
                                         <span class="icon is-small is-left pl-3">

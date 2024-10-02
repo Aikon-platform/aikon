@@ -9,6 +9,7 @@ from app.webapp.utils.constants import MANIFEST_V2
 
 from app.webapp.utils.logger import log
 from app.webapp.utils.paths import REGIONS_PATH
+from django.db.utils import IntegrityError
 
 
 def get_txt_regions(regions: Regions):
@@ -48,8 +49,7 @@ def create_empty_regions(digit: Digitization):
         return False
 
     try:
-        regions = Regions(digitization=digit, model="Manual")
-        regions.save()
+        regions = Regions.objects.create(digitization=digit, model="Manual")
     except Exception as e:
         log(
             f"[create_empty_regions] Unable to create new Regions for digit #{digit.id} in the database",

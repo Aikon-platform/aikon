@@ -51,4 +51,4 @@ class LanguageForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(LanguageForm, self).__init__(*args, **kwargs)
-        self.fields["lang"].help_text = None  # Set help_text to None to remove it
+        # self.fields["lang"].help_text = None  # Set help_text to None to remove it

@@ -62,9 +62,9 @@
                 {#if item.class.includes('Treatment')}
                     <Treatment {item} {recordsStore}/>
                 {:else if item.class.includes('Set')}
-                    <Set {item}/>
+                    <Set {item} {recordsStore}/>
                 {:else}
-                    <Record {item}/>
+                    <Record {item} {recordsStore}/>
                 {/if}
             {:else}
                 <p>{appLang === 'en' ? 'No records found' : 'Aucun enregistrement trouvé'}</p>

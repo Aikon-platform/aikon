@@ -207,10 +207,39 @@ urlpatterns = [
         cancel_treatment,
         name="cancel-treatment",
     ),
+]
+
+# DELETE VIEWS
+urlpatterns += [
     path(
-        f"{APP_NAME}/treatment/<str:treatment_id>/delete",
+        f"{APP_NAME}/treatment/<str:rec_id>/delete",
         delete_treatment,
         name="delete-treatment",
+    ),
+    path(
+        f"{APP_NAME}/documentset/<str:rec_id>/delete",
+        delete_doc_set,
+        name="delete-doc_set",
+    ),
+    path(
+        f"{APP_NAME}/work/<str:rec_id>/delete",
+        delete_work,
+        name="delete-work",
+    ),
+    path(
+        f"{APP_NAME}/witness/<str:rec_id>/delete",
+        delete_witness,
+        name="delete-witness",
+    ),
+    path(
+        f"{APP_NAME}/series/<str:rec_id>/delete",
+        delete_series,
+        name="delete-series",
+    ),
+    path(
+        f"{APP_NAME}/edition/<str:rec_id>/delete",
+        delete_edition,
+        name="delete-edition",
     ),
 ]
 

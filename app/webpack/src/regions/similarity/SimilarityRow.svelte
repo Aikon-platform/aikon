@@ -15,6 +15,7 @@
     const error_name = appLang === "en" ? "Error" : "Erreur";
 
     $: sLen = $selectedRegions.hasOwnProperty(currentPageId) ? Object.values($selectedRegions[currentPageId]).length : 0;
+    $: hasNoMatch = false; // TODO HERE FIND A WAY TO SET NO MATCH FOR THIS Q REGIONS
 
     function check_region_ref(region_ref) {
         region_ref = region_ref.replace('.jpg', '');
@@ -86,7 +87,7 @@
             appLang === "en" ?
                 `Do you confirm this region does not have any match in ${regions.title}?` :
                 `Confirmez-vous que cette région n'a pas de correspondance dans ${regions.title} ?`,
-            appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
+            appLang === "en" ? "Confirm no match" : "Confirmer l'absence de correspondance",
             true
         );
 

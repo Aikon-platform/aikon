@@ -132,10 +132,24 @@ MAP_WIT_TYPE = {
     WPR_ABBR: WPR.capitalize(),
 }
 
+REGIONS = (
+    "Image regions extraction" if APP_LANG == "en" else "Extraction de régions d'images"
+)
+SIMILARITY = (
+    "Compute similarity score" if APP_LANG == "en" else "Calcul de score de similarité"
+)
+VECTORIZATION = "Vectorization" if APP_LANG == "en" else "Vectorisation"
+
+MAP_TASK_TYPE = {
+    "regions": REGIONS,
+    "similarity": SIMILARITY,
+    "vectorization": VECTORIZATION,
+}
+
 TRMT_TYPE = ()
 
 for x in ADDITIONAL_MODULES:
-    trmt = (x, x)
+    trmt = (x, MAP_TASK_TYPE.get(x, x))
     TRMT_TYPE += (trmt,)
 
 TRMT_STATUS = (

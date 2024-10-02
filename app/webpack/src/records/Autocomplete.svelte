@@ -11,6 +11,7 @@
     let filteredItems = [];
     let isOpen = false;
     let selectedIndex = -1;
+    let selectedItem = null;
 
     // TODO when emptying field, reset selectedIndex + selected ID
     // TODO when clicking once on the option to select, make autocomplete list disappear
@@ -26,6 +27,10 @@
         } else {
             filteredItems = [];
             isOpen = false;
+            if (selectedItem) {
+                selectedItem = null;
+                dispatch('select', { id: null, label: '' });
+            }
         }
     }
 
@@ -48,6 +53,7 @@
 
     function selectItem(item) {
         inputValue = item.label;
+        selectedItem = item;
         isOpen = false;
         dispatch('select', item);
     }

@@ -26,10 +26,8 @@ class ConservationPlace(models.Model):
         app_label = "webapp"
 
     def __str__(self, light=False):
-        if light:
-            return self.name
         if self.city:
-            return f"{self.city} | {self.name}"
+            return f"{self.name}, {self.city.name}"
         return self.name
 
     name = models.CharField(verbose_name=get_name("name"), max_length=200)
