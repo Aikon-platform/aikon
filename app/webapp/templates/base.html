@@ -11,6 +11,7 @@
     <script>
         const CSRF_TOKEN = "{{ csrf_token }}";
         const USER_ID = "{{ user.id }}";
+        const IS_SUPERUSER = Boolean("{{ user.is_superuser }}");
 
         const ADDITIONAL_MODULES = {{ ADDITIONAL_MODULES|safe }};
 

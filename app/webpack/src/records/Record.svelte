@@ -2,9 +2,10 @@
     import SelectBtn from "./SelectBtn.svelte";
     import Item from "./Item.svelte";
     export let item;
+    export let recordsStore;
 </script>
 
-<Item {item}>
+<Item {item} {recordsStore}>
     <div slot="buttons">
         <SelectBtn {item}/>
     </div>
