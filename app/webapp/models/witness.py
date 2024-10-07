@@ -284,8 +284,11 @@ class Witness(AbstractSearchableModel):
     def has_vectorization(self):
         return any(digit.has_vectorization() for digit in self.get_digits())
 
-    def has_all_vectorization(self):
-        return any(digit.has_all_vectorization() for digit in self.get_digits())
+    def has_all_vectorizations(self):
+        return any(digit.has_all_vectorizations() for digit in self.get_digits())
+
+    def check_vectorizations(self):
+        return any(digit.check_vectorizations() for digit in self.get_digits())
 
     def get_img(self, is_abs=False, only_first=False):
         # to get only one image of the witness
