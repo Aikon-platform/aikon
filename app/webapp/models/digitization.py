@@ -32,6 +32,7 @@ from app.webapp.models.utils.constants import (
     PDF_ABBR,
     DIG,
     SOURCE_INFO,
+    MANIFEST_V2,
 )
 from app.webapp.utils.functions import (
     delete_files,
@@ -241,15 +242,57 @@ class Digitization(models.Model):
             return True
         return False
 
-    def has_all_vectorization(self):
+    ####### WORK IN PROGRESS
+
+    def count_annotations(self):
+        from app.webapp.utils.iiif.annotation import total_annotations
+
+        count = 0
+        for regions in self.get_regions():
+            count += total_annotations(regions)
+
+        return count
+
+    def has_all_vectorizations(self):
         from app.vectorization.const import SVG_PATH
 
-        # if there is as much svg files as there are images in the current digitization
-        if len(glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")) == len(
-            glob(f"{IMG_PATH}/{self.get_ref()}_*.jpg")
-        ):
+        # if there is as much svg files as there are regions in the current digitization
+        if len(glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")) == self.count_annotations():
             return True
         return False
+
+    def check_vectorizations(self):
+
+        from app.vectorization.const import SVG_PATH
+        from app.webapp.utils.iiif.annotation import create_list_annotations
+
+        # Liste de tous les fichiers SVG correspondants
+        svg_files_paths = glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")
+
+        # Vérifie que svg_files_paths est bien une liste
+        print(f"svg_files_paths : {svg_files_paths}")
+
+        # Extraire les noms de fichiers à partir des chemins sans l'extension ".svg"
+        svg_files_names = [
+            os.path.basename(file_path).replace(".svg", "")
+            for file_path in svg_files_paths
+        ]
+
+        # Récupérer la liste des annotations des régions
+        regions_list = []
+        for regions in self.get_regions():
+            regions_list.extend(create_list_annotations(regions))
+
+        # Comparer les noms de fichiers SVG et les régions
+        print(sorted(svg_files_names))
+        print(sorted(regions_list))
+        return (
+            bool(svg_files_names)
+            and bool(regions_list)
+            and sorted(svg_files_names) == sorted(regions_list)
+        )
+
+    ####### WORK IN PROGRESS
 
     def get_img(self, is_abs=False, only_first=False):
         if only_first:

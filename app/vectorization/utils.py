@@ -9,6 +9,7 @@ from app.webapp.models.utils.constants import WIT
 
 from app.webapp.utils.logger import log
 from app.webapp.utils.iiif.annotation import get_regions_urls
+from app.webapp.models.witness import Witness
 
 
 def prepare_request(witnesses, treatment_id):
@@ -16,19 +17,34 @@ def prepare_request(witnesses, treatment_id):
     regions_dic = {}
 
     try:
+        log(
+            f"[prepare_request] Start preparing vectorization request for treatment_id: {treatment_id}"
+        )
+
         for witness in witnesses:
-            if witness.has_vectorization():
+            log(f"[prepare_request] Checking vectorizations for witness: {witness.id}")
+            if witness.check_vectorizations():
                 log(
-                    f"[vectorization_request] Witness {witness.get_ref()} already has vectorizations"
+                    f"[prepare_request] All regions for witness {witness.id} have already been processed and vectorized"
                 )
-                pass
+                return {
+                    "message": "All the regions of the {WIT} have already been processed and vectorized."
+                    if APP_LANG == "en"
+                    else "Toutes les régions du {WIT} sont vectorisées."
+                }
             else:
+                log(f"[prepare_request] Retrieving regions for witness: {witness.id}")
                 regions_list.extend(witness.get_regions())
 
         if regions_list:
+            log(f"[prepare_request] Found {len(regions_list)} regions to process.")
             for regions in regions_list:
+                log(f"[prepare_request] Processing region: {regions.get_ref()}")
                 regions_dic.update({regions.get_ref(): get_regions_urls(regions)})
 
+            log(
+                f"[prepare_request] Successfully prepared vectorization request for treatment_id: {treatment_id}"
+            )
             return {
                 "experiment_id": f"{treatment_id}",
                 "documents": regions_dic,
@@ -38,19 +54,21 @@ def prepare_request(witnesses, treatment_id):
             }
 
         else:
+            log(
+                f"[prepare_request] No regions found to vectorize for any of the selected witnesses"
+            )
             return {
                 "message": f"No regions to vectorize for all the selected {WIT}es"
                 if APP_LANG == "en"
-                else f"Pas de regions à vectoriser pour tous les {WIT}s sélectionnés"
+                else f"Pas de régions à vectoriser pour tous les {WIT}s sélectionnés"
             }
 
     except Exception as e:
         log(
-            f"[prepare_request] Failed to prepare data for vectorization request",
-            e,
+            f"[prepare_request] Failed to prepare data for vectorization request. Error: {str(e)}"
         )
         raise Exception(
-            f"[prepare_request] Failed to prepare data for vectorization request"
+            f"[prepare_request] Failed to prepare data for vectorization request. Error: {str(e)}"
         )
 
 
