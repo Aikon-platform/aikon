@@ -26,9 +26,14 @@ urlpatterns = [
         name="export-img-and-svg",
     ),
     path(
-        f"{APP_NAME}/export-all-imgs-and-svgs/<str:regions_ref>",
+        f"{APP_NAME}/export-all-imgs-and-svgs/<int:witness_id>",
         export_all_images_and_svgs,
         name="export-all-imgs-and-svgs",
+    ),
+    path(
+        f"{APP_NAME}/export-regions-imgs-and-svgs/<int:regions_id>",
+        export_regions_images_and_svgs,
+        name="export-regions-imgs-and-svgs",
     ),
     path(
         f"{APP_NAME}/run-vectorization/<str:regions_ref>",
