@@ -408,6 +408,28 @@ def delete_all_regions_pairs(request):
 
 
 @user_passes_test(is_superuser)
+def reset_similarity(request, rid):
+    if rid:
+        regions = get_object_or_404(Regions, id=rid)
+        if reset_similarity(regions):
+            return JsonResponse(
+                {"message": f"Regions #{rid} similarities has been reset"}
+            )
+        return JsonResponse(
+            {"error": f"Regions #{rid} similarities couldn't been reset"}
+        )
+
+    all_regions = Regions.objects.all()
+    reset_similarities = []
+    for regions in all_regions:
+        if reset_similarity(regions):
+            reset_similarities.append(regions.id)
+    return JsonResponse(
+        {"message": f"Regions {', '.join(reset_similarities)} have been reset"}
+    )
+
+
+@user_passes_test(is_superuser)
 def remove_incorrect_pairs(request, mismatched=False, duplicate=False, swapped=True):
     """
     Removes RegionPair instances that are faulty

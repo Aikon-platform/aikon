@@ -59,6 +59,7 @@ EXPOSE ${PORT}
 
 RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER}/app/staticfiles
 
+# TODO staticfiles update is not working
 COPY --chown=${USER} docker/manage.sh /home/aikon/manage.sh
 RUN chmod +x /home/aikon/manage.sh
 
