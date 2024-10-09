@@ -278,5 +278,7 @@ def reset_regions_vectorization(request, rid=None):
         if reset_vectorization(regions):
             deleted_vectorization.append(regions.id)
     return JsonResponse(
-        {"message": f"Regions {', '.join(deleted_vectorization)} have been deleted"}
+        {
+            "message": f"Regions {', '.join(map(str, deleted_vectorization))} have been deleted"
+        }
     )

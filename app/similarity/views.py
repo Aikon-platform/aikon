@@ -424,7 +424,9 @@ def reset_regions_similarity(request, rid=None):
         if reset_similarity(regions):
             reset_similarities.append(regions.id)
     return JsonResponse(
-        {"message": f"Regions {', '.join(reset_similarities)} have been reset"}
+        {
+            "message": f"Regions {', '.join(map(str, reset_similarities))} have been reset"
+        }
     )
 
 
