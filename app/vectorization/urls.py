@@ -1,4 +1,5 @@
-from django.urls import path, include, register_converter
+from django.urls import path
+from app.config.settings import APP_NAME
 
 from app.vectorization.views import *
 
@@ -40,9 +41,6 @@ urlpatterns = [
         smash_and_relaunch_vectorization,
         name="smash-and-relaunch-vectorization",
     ),
-]
-
-urlpatterns += [
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/vectorized-images",
         get_vectorized_images,
@@ -52,5 +50,15 @@ urlpatterns += [
         f"{APP_NAME}/witness/<int:wid>/regions/vectorized-images",
         get_vectorized_images,
         name="witness-vectorized-images",
+    ),
+    path(
+        f"{APP_NAME}/vectorization/reset/<int:rid>",
+        reset_vectorization,
+        name="reset-regions-vectorization",
+    ),
+    path(
+        f"{APP_NAME}/vectorization/reset",
+        reset_vectorization,
+        name="reset-all-vectorization",
     ),
 ]
