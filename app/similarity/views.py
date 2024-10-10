@@ -8,7 +8,7 @@ from django.shortcuts import render, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
 
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import user_passes_test
 
 from app.similarity.const import SCORES_PATH
 from app.similarity.models.region_pair import RegionPair
@@ -19,16 +19,15 @@ from app.webapp.utils.functions import sort_key
 from app.webapp.utils.logger import log
 from app.similarity.utils import (
     send_request,
-    # check_score_files,
     check_computed_pairs,
     get_computed_pairs,
     get_best_pairs,
     get_region_pairs_with,
-    # get_compared_regions_ids,
     get_regions_q_imgs,
     validate_img_ref,
     get_matched_regions,
     get_all_pairs,
+    reset_similarity,
 )
 from app.webapp.views import is_superuser, check_ref
 
@@ -405,6 +404,30 @@ def delete_all_regions_pairs(request):
     # NOTE deactivated, only for dev purposes
     RegionPair.objects.all().delete()
     return JsonResponse({"message": "All region pairs deleted"})
+
+
+@user_passes_test(is_superuser)
+def reset_regions_similarity(request, rid=None):
+    if rid:
+        regions = get_object_or_404(Regions, id=rid)
+        if reset_similarity(regions):
+            return JsonResponse(
+                {"message": f"Regions #{rid} similarities has been reset"}
+            )
+        return JsonResponse(
+            {"error": f"Regions #{rid} similarities couldn't been reset"}
+        )
+
+    all_regions = Regions.objects.all()
+    reset_similarities = []
+    for regions in all_regions:
+        if reset_similarity(regions):
+            reset_similarities.append(regions.id)
+    return JsonResponse(
+        {
+            "message": f"Regions {', '.join(map(str, reset_similarities))} have been reset"
+        }
+    )
 
 
 @user_passes_test(is_superuser)
