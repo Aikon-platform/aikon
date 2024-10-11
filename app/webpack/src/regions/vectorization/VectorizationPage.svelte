@@ -4,7 +4,11 @@
     const { vectImgs, pageVectImgs, setPageVectImgs, pageLength } = vectorizationStore;
     import Pagination from "../../Pagination.svelte";
     import VectorizedRegions from "./VectorizedRegions.svelte";
+    import ExportButtons from "./ExportButtons.svelte";
+    let regionsRef = "";
 </script>
+
+<ExportButtons/>
 
 <Pagination store={vectorizationStore} nbOfItems={$vectImgs.length} {pageLength}/>
 
