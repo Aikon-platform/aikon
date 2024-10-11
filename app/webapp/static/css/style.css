@@ -275,6 +275,10 @@ td.is-fullwidth {
     border-style: none;
 }
 
+.errorlist {
+    color: red;
+}
+
 :root {
     --contrasted: #ebebeb;
     --accent: hsl(0deg 0% 0% / 5%);
@@ -296,7 +300,7 @@ td.is-fullwidth {
 }
 
 [data-theme="dark"] {
-    --contrasted: #252424;
+    --contrasted: #25272f;
     --accent: hsla(0, 0%, 100%, 0.05);
     --selected: #000528;
     --selected-text: #7281f9;

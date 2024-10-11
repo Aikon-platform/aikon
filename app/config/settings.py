@@ -12,6 +12,7 @@ ADDITIONAL_MODULES = ENV.list("ADDITIONAL_MODULES", default=[])
 APP_LOGO = ENV.list("APP_LOGO", default=[])
 
 LOGIN_URL = f"/{APP_NAME}-admin/login/"
+LOGIN_REDIRECT_URL = "/"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/

@@ -716,10 +716,12 @@ def process_regions(regions_file_content, digit, model="Unknown model"):
 
     try:
         # TODO add step to check if regions weren't generated before for the same model
-        regions = Regions(digitization=digit, model=model)
-        regions.save()
+        regions = Regions.objects.create(digitization=digit, model=model)
     except Exception as e:
-        log(f"[process_regions] Create regions record for digit #{digit.id}", e)
+        log(
+            f"[process_regions] Failed to create regions record for digit #{digit.id}",
+            e,
+        )
         return False
 
     try:

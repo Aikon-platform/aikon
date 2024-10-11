@@ -161,6 +161,12 @@ redis-cli -a $REDIS_PASSWORD
 ```
 </details>
 
+### Connection to API 📡
+
+API code and instructions can be found in [this repository](https://github.com/Aikon-platform/discover-api).
+
+[//]: # (TODO add instructions to setup api and front, locally or remotely)
+
 ## Launch app 🚀
 
 Launch everything (Django, Celery, Cantaloupe and SimpleAnnotationServer) at once (stop with `Ctrl+C`):
@@ -180,10 +186,10 @@ It offers a user-friendly interface for visualizing, extracting, and analyzing i
 fostering interdisciplinary collaboration and sustainability across digital humanities projects. Built on proven
 technologies and interoperable formats, Aikon's adaptable architecture supports all projects involving visual materials.
 
-> ***Aikon** is funded and supported by the Agence Nationale pour la Recherche and the European Research Council*
-> - **VHS** [ANR-21-CE38-0008](https://anr.fr/Projet-ANR-21-CE38-0008): computer Vision and Historical analysis of Scientific illustration circulation
-> - **EiDA** [ANR-22-CE38-0014](https://anr.fr/Projet-ANR-22-CE38-0014): EdIter et analyser les Diagrammes astronomiques historiques avec l’intelligence Artificielle
-> - **DISCOVER** project [ERC-101076028](https://cordis.europa.eu/project/id/101076028): Discovering and Analyzing Visual Structures
+***Aikon** is funded and supported by the Agence Nationale pour la Recherche and the European Research Council*
+- **VHS** [ANR-21-CE38-0008](https://anr.fr/Projet-ANR-21-CE38-0008): computer Vision and Historical analysis of Scientific illustration circulation
+- **EiDA** [ANR-22-CE38-0014](https://anr.fr/Projet-ANR-22-CE38-0014): EdIter et analyser les Diagrammes astronomiques historiques avec l’intelligence Artificielle
+- **DISCOVER** project [ERC-101076028](https://cordis.europa.eu/project/id/101076028): Discovering and Analyzing Visual Structures
 
 ```bibtex
 @misc{albouy2024aikon,

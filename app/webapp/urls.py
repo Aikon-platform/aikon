@@ -1,7 +1,8 @@
-from django.urls import path
+from django.urls import path, reverse_lazy
 from app.config.settings import APP_NAME
 from app.webapp.views import *
 from app.webapp.views.users import *
+from django.contrib.auth import views as auth_views
 
 app_name = "webapp"
 
@@ -9,6 +10,37 @@ app_name = "webapp"
 urlpatterns = [
     path("", admin_app, name="home"),
     path(f"{APP_NAME}/logout", logout_view, name="logout"),
+    path(
+        f"{APP_NAME}/password-reset/",
+        auth_views.PasswordResetView.as_view(
+            template_name="admin/auth/password_reset.html",
+            success_url=reverse_lazy("webapp:password-reset-done"),
+            email_template_name="admin/auth/password_reset_email.html",
+        ),
+        name="password-reset",
+    ),
+    path(
+        f"{APP_NAME}/password-reset/done",
+        auth_views.PasswordResetDoneView.as_view(
+            template_name="admin/auth/password_reset_done.html"
+        ),
+        name="password-reset-done",
+    ),
+    path(
+        f"{APP_NAME}/reset/<uidb64>/<token>/",
+        auth_views.PasswordResetConfirmView.as_view(
+            template_name="admin/auth/password_reset_confirm.html",
+            success_url=reverse_lazy("webapp:password-reset-complete"),
+        ),
+        name="password-reset-confirm",
+    ),
+    path(
+        f"{APP_NAME}/reset-done/",
+        auth_views.PasswordResetCompleteView.as_view(
+            template_name="admin/auth/password_reset_complete.html"
+        ),
+        name="password-reset-complete",
+    ),
     path(f"{APP_NAME}/rgpd", rgpd),
     path(
         f"{APP_NAME}/<str:regions_ref>/show/",
@@ -175,10 +207,39 @@ urlpatterns = [
         cancel_treatment,
         name="cancel-treatment",
     ),
+]
+
+# DELETE VIEWS
+urlpatterns += [
     path(
-        f"{APP_NAME}/treatment/<str:treatment_id>/delete",
+        f"{APP_NAME}/treatment/<str:rec_id>/delete",
         delete_treatment,
         name="delete-treatment",
+    ),
+    path(
+        f"{APP_NAME}/documentset/<str:rec_id>/delete",
+        delete_doc_set,
+        name="delete-doc_set",
+    ),
+    path(
+        f"{APP_NAME}/work/<str:rec_id>/delete",
+        delete_work,
+        name="delete-work",
+    ),
+    path(
+        f"{APP_NAME}/witness/<str:rec_id>/delete",
+        delete_witness,
+        name="delete-witness",
+    ),
+    path(
+        f"{APP_NAME}/series/<str:rec_id>/delete",
+        delete_series,
+        name="delete-series",
+    ),
+    path(
+        f"{APP_NAME}/edition/<str:rec_id>/delete",
+        delete_edition,
+        name="delete-edition",
     ),
 ]
 

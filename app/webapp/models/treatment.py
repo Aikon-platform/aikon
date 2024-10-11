@@ -37,6 +37,7 @@ def get_name(fieldname, plural=False):
         "task_type": {"en": "task type", "fr": "type de tâche"},
         "treated_objects": {"en": "treated objects", "fr": "objets traités"},
         "api_tracking_id": {"en": "API identification number", "fr": "Identifiant API"},
+        "notify_email": {"en": "notify by email", "fr": "Notifier par email"},
     }
     return get_fieldname(fieldname, fields, plural)
 
@@ -72,13 +73,16 @@ class Treatment(AbstractSearchableModel):
     )
     notify_email = models.BooleanField(
         default=True,
-        verbose_name="Notify by email",
+        verbose_name=get_name("notify_email"),
         blank=True,
-        help_text="Send an email when the task is finished",
+        help_text="Send an email when the task is finished"
+        if APP_LANG == "en"
+        else "Envoyer un email lorsque la tâche est terminée",
     )
 
     task_type = models.CharField(
         max_length=50,
+        verbose_name=get_name("task_type"),
         blank=True,
         null=True,
         choices=TRMT_TYPE,
