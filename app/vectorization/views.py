@@ -34,6 +34,10 @@ from app.vectorization.utils import (
 )
 from app.webapp.views import check_ref, is_superuser
 
+from app.webapp.utils.iiif.annotation import (
+    get_regions_annotations,
+)
+
 
 @csrf_exempt
 def receive_vectorization(request):
@@ -198,33 +202,46 @@ def show_vectorization(request, regions_ref):
     )
 
 
+####ClaraDev
+
+
 @login_required
-def export_all_images_and_svgs(request, regions_ref):
-    passed, regions = check_ref(regions_ref, "Regions")
-    if not passed:
-        return JsonResponse(regions)
+def export_all_images_and_svgs(request, witness_id):
+    witness = get_object_or_404(Witness, id=witness_id)
+    regions_list = witness.get_regions()
+    return export_common_logic(regions_list)
 
-    if not DEBUG:
-        credentials(f"{SAS_APP_URL}/", SAS_USERNAME, SAS_PASSWORD)
 
+@login_required
+def export_regions_images_and_svgs(request, regions_id):
+    regions = get_object_or_404(Regions, id=regions_id)
+    return export_common_logic([regions])
+
+
+def export_common_logic(regions_list):
     urls_list = []
     path_list = []
 
-    _, all_regions = formatted_annotations(regions)
-    all_crops = [
-        (canvas_nb, coord, img_file)
-        for canvas_nb, coord, img_file in all_regions
-        if coord
-    ]
+    for regions in regions_list:
+        anno_regions = get_regions_annotations(regions, as_json=True)
 
-    for canvas_nb, coord, img_file in all_crops:
-        urls_list.extend(gen_iiif_url(img_file, 2, f"{c[0]}/full/0") for c in coord)
-        vecto_path = f"{img_file[:-4]}_{''.join(c[0] for c in coord)}.svg"
-        # Vérifie si le chemin existe
-        if os.path.exists(os.path.join(SVG_PATH, vecto_path)):
-            path_list.append(vecto_path)
+        for canvas_id, regions in anno_regions.items():
+            for region_id, region_data in regions.items():
+                coord = region_data.get("xyhw")
+                reference = region_data.get("ref")
+                image = region_data.get("img")
+
+                url = gen_iiif_url(f"{image}.jpg", 2, f"{','.join(coord)}/full/0")
+                urls_list.append(url)
+
+                vecto_path = f"{reference}.svg"
+                if os.path.exists(os.path.join(SVG_PATH, vecto_path)):
+                    path_list.append(vecto_path)
 
     return zip_images_and_files(urls_list, path_list)
+
+
+####ClaraDev
 
 
 @login_required
