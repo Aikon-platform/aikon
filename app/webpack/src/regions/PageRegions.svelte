@@ -28,7 +28,6 @@
         </tr>
     {:then _}
         {#if Object.values($pageRegions).length > 0}
-            <!--TODO make empty canvases appear-->
             {#each Object.entries($pageRegions) as [canvasNb, items]}
                 <RegionsRow canvasImg={toImgName(canvasNb)} {canvasNb}>
                     {#each Object.values(items) as item (item.id)}

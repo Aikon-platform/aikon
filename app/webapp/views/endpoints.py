@@ -7,7 +7,7 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
-from app.webapp.utils.constants import MANIFEST_V2
+from app.webapp.utils.constants import MANIFEST_V2, PAGE_LEN
 from app.webapp.utils.functions import zip_img
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.utils.iiif.annotation import (
@@ -85,7 +85,7 @@ def get_canvas_regions(request, wid, rid):
     regions = get_object_or_404(Regions, id=rid)
     p_nb = int(request.GET.get("p", 0))
     if p_nb > 0:
-        p_len = 50
+        p_len = PAGE_LEN
         max_c = (
             p_nb * p_len
         )  # TODO limit to not exceed number of canvases of the witness
@@ -107,7 +107,7 @@ def get_canvas_witness_regions(request, wid):
     witness = get_object_or_404(Witness, id=wid)
     p_nb = int(request.GET.get("p", 0))
     if p_nb > 0:
-        p_len = 50
+        p_len = PAGE_LEN
         anno_regions = {}
         max_c = (
             p_nb * p_len

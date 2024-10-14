@@ -505,16 +505,6 @@ def get_regions_annotations(
     if r_annos is None:
         r_annos = {} if as_json else []
 
-    # region_ref = regions.get_ref()
-    # try:
-    #     r = requests.get(f"{SAS_APP_URL}/search-api/{region_ref}/search")
-    #     annos = r.json()["resources"]
-    # except Exception as e:
-    #     log(
-    #         f"[get_regions_annotations]: Failed to get annotations in SAS for Regions #{regions.id}",
-    #         e,
-    #     )
-    #     return r_annos
     regions_ref = regions.get_ref()
     annos = get_manifest_annotations(regions_ref, False)
     if len(annos) == 0:
@@ -523,12 +513,22 @@ def get_regions_annotations(
     img_name = regions_ref.split("_anno")[0]
     nb_len = get_img_nb_len(img_name)
 
+    if as_json:
+        min_c = min_c or 1
+        max_c = max_c or regions.img_nb()
+        for c in range(min_c, max_c):
+            canvas = str(c)
+            if canvas not in r_annos:
+                # Create canvas to display all pages
+                r_annos[canvas] = {}
+
     for anno in annos:
         try:
             canvas = anno["on"].split("/canvas/c")[1].split(".json")[0]
-            xyhw = anno["on"].split("xywh=")[1]
             if min_c is not None and (int(canvas) < min_c or int(canvas) > max_c):
                 continue
+
+            xyhw = anno["on"].split("xywh=")[1]
             if as_json:
                 if canvas not in r_annos:
                     r_annos[canvas] = {}
@@ -550,13 +550,6 @@ def get_regions_annotations(
         except Exception as e:
             log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
             continue
-
-    # if min_c is not None:
-    #     min_c = min_c or 1
-    #     for canvas in range(min_c, max_c):
-    #         canvas = str(canvas)
-    #         if canvas not in r_annos:
-    #             r_annos[canvas] = {"empty": {"img": f"{img_name}_{canvas.zfill(nb_len)}"}}
 
     return r_annos
 
