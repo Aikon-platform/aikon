@@ -426,6 +426,45 @@ def formatted_annotations(regions: Regions):
     return annotation_ids, canvas_annotations
 
 
+############## clara dev ##############
+
+
+def total_annotations(regions: Regions):
+    total_sas_anno_count = 0
+
+    try:
+        for canvas_nb, _ in get_canvas_list(regions):
+            c_annotations = get_indexed_canvas_annotations(regions, canvas_nb)
+            total_sas_anno_count += len(c_annotations)
+    except ValueError as e:
+        log(
+            f"[count_total_annotations] Error when counting annotations (probably no annotation file)",
+            e,
+        )
+
+    return total_sas_anno_count
+
+
+def create_list_annotations(regions: Regions):
+    list = []
+
+    _, all_regions = formatted_annotations(regions)
+    all_crops = [
+        (canvas_nb, coord, img_file)
+        for canvas_nb, coord, img_file in all_regions
+        if coord
+    ]
+
+    for _, coord, img_file in all_crops:
+        name = f"{img_file[:-4]}_{''.join(c[0] for c in coord)}"
+        list.append(name)
+
+    return list
+
+
+############## clara dev ##############
+
+
 def get_manifest_annotations(regions_ref, only_ids=True):
     try:
         response = requests.get(f"{SAS_APP_URL}/search-api/{regions_ref}/search")
@@ -466,16 +505,6 @@ def get_regions_annotations(
     if r_annos is None:
         r_annos = {} if as_json else []
 
-    # region_ref = regions.get_ref()
-    # try:
-    #     r = requests.get(f"{SAS_APP_URL}/search-api/{region_ref}/search")
-    #     annos = r.json()["resources"]
-    # except Exception as e:
-    #     log(
-    #         f"[get_regions_annotations]: Failed to get annotations in SAS for Regions #{regions.id}",
-    #         e,
-    #     )
-    #     return r_annos
     regions_ref = regions.get_ref()
     annos = get_manifest_annotations(regions_ref, False)
     if len(annos) == 0:
@@ -484,12 +513,22 @@ def get_regions_annotations(
     img_name = regions_ref.split("_anno")[0]
     nb_len = get_img_nb_len(img_name)
 
+    if as_json:
+        min_c = min_c or 1
+        max_c = max_c or regions.img_nb()
+        for c in range(min_c, max_c):
+            canvas = str(c)
+            if canvas not in r_annos:
+                # Create canvas to display all pages
+                r_annos[canvas] = {}
+
     for anno in annos:
         try:
             canvas = anno["on"].split("/canvas/c")[1].split(".json")[0]
-            xyhw = anno["on"].split("xywh=")[1]
             if min_c is not None and (int(canvas) < min_c or int(canvas) > max_c):
                 continue
+
+            xyhw = anno["on"].split("xywh=")[1]
             if as_json:
                 if canvas not in r_annos:
                     r_annos[canvas] = {}
@@ -511,13 +550,6 @@ def get_regions_annotations(
         except Exception as e:
             log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
             continue
-
-    # if min_c is not None:
-    #     min_c = min_c or 1
-    #     for canvas in range(min_c, max_c):
-    #         canvas = str(canvas)
-    #         if canvas not in r_annos:
-    #             r_annos[canvas] = {"empty": {"img": f"{img_name}_{canvas.zfill(nb_len)}"}}
 
     return r_annos
 

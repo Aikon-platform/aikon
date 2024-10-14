@@ -3,15 +3,14 @@ import re
 
 import requests
 import numpy as np
-from typing import Tuple, Dict, Set, List
-from collections import defaultdict, Counter
+from typing import Tuple, Set, List
+from collections import defaultdict
 from itertools import combinations_with_replacement
 from functools import lru_cache
 
 from pathlib import Path
 from django.db import transaction
 from django.db.models import Q, F
-from django.urls import reverse
 from django.core.cache import cache
 
 from app.similarity.const import SCORES_PATH
@@ -488,7 +487,25 @@ def compute_total_similarity(
     return sorted_total_scores
 
 
-def reset_similarity(regions_ref):
-    # TODO function to delete all similarity files concerning the regions_ref
+def reset_similarity(regions: Regions):
+    regions_id = regions.id
+    try:
+        regions_ref = regions.get_ref()
+    except Exception as e:
+        log(f"[reset_similarity] Failed to retrieve region ref for id {regions_id}", e)
+        return False
+
+    for file in os.listdir(SCORES_PATH):
+        if regions_ref in file:
+            try:
+                os.remove(os.path.join(SCORES_PATH, file))
+            except OSError as e:
+                log(f"[reset_similarity] Error removing file {file}", e)
+
+    try:
+        delete_pairs_with_regions(regions_id)
+    except Exception as e:
+        log(f"[reset_similarity] Error deleting pairs with region id {regions_id}", e)
+
     # TODO send request to delete features and scores concerning the anno ref as well
-    pass
+    return True

@@ -9,7 +9,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required, user_passes_test
 
-from app.config.settings import SAS_APP_URL, APP_NAME, DEBUG, SAS_USERNAME, SAS_PASSWORD
+from app.config.settings import SAS_APP_URL, DEBUG, SAS_USERNAME, SAS_PASSWORD
 from app.webapp.templatetags.filters import jpg_to_none
 
 from app.webapp.models.regions import Regions
@@ -30,8 +30,13 @@ from app.vectorization.utils import (
     vectorization_request_for_one,
     delete_and_relauch_request,
     save_svg_files,
+    reset_vectorization,
 )
 from app.webapp.views import check_ref, is_superuser
+
+from app.webapp.utils.iiif.annotation import (
+    get_regions_annotations,
+)
 
 
 @csrf_exempt
@@ -92,7 +97,7 @@ def show_crop_vectorization(request, img_file, coords, regions, canvas_nb):
 @user_passes_test(is_superuser)
 def smash_and_relaunch_vectorization(request, regions_ref):
     """
-    Delete the imgs in the API from the repo corresponding to doc_id + relauch vectorization
+    Delete the imgs in the API from the repo corresponding to doc_id + relaunch vectorization
     """
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
@@ -197,33 +202,46 @@ def show_vectorization(request, regions_ref):
     )
 
 
+####ClaraDev
+
+
 @login_required
-def export_all_images_and_svgs(request, regions_ref):
-    passed, regions = check_ref(regions_ref, "Regions")
-    if not passed:
-        return JsonResponse(regions)
+def export_all_images_and_svgs(request, witness_id):
+    witness = get_object_or_404(Witness, id=witness_id)
+    regions_list = witness.get_regions()
+    return export_common_logic(regions_list)
 
-    if not DEBUG:
-        credentials(f"{SAS_APP_URL}/", SAS_USERNAME, SAS_PASSWORD)
 
+@login_required
+def export_regions_images_and_svgs(request, regions_id):
+    regions = get_object_or_404(Regions, id=regions_id)
+    return export_common_logic([regions])
+
+
+def export_common_logic(regions_list):
     urls_list = []
     path_list = []
 
-    _, all_regions = formatted_annotations(regions)
-    all_crops = [
-        (canvas_nb, coord, img_file)
-        for canvas_nb, coord, img_file in all_regions
-        if coord
-    ]
+    for regions in regions_list:
+        anno_regions = get_regions_annotations(regions, as_json=True)
 
-    for canvas_nb, coord, img_file in all_crops:
-        urls_list.extend(gen_iiif_url(img_file, 2, f"{c[0]}/full/0") for c in coord)
-        vecto_path = f"{img_file[:-4]}_{''.join(c[0] for c in coord)}.svg"
-        # Vérifie si le chemin existe
-        if os.path.exists(os.path.join(SVG_PATH, vecto_path)):
-            path_list.append(vecto_path)
+        for canvas_id, regions in anno_regions.items():
+            for region_id, region_data in regions.items():
+                coord = region_data.get("xyhw")
+                reference = region_data.get("ref")
+                image = region_data.get("img")
+
+                url = gen_iiif_url(f"{image}.jpg", 2, f"{','.join(coord)}/full/0")
+                urls_list.append(url)
+
+                vecto_path = f"{reference}.svg"
+                if os.path.exists(os.path.join(SVG_PATH, vecto_path)):
+                    path_list.append(vecto_path)
 
     return zip_images_and_files(urls_list, path_list)
+
+
+####ClaraDev
 
 
 @login_required
@@ -240,10 +258,6 @@ def export_selected_imgs_and_svgs(request):
 
 
 def get_vectorized_images(request, wid, rid=None):
-    """
-    Return the best region images that are similar to the query region image
-    whose id is passed in the POST parameters
-    """
     if rid is not None:
         q_regions = [get_object_or_404(Regions, id=rid)]
     else:
@@ -258,8 +272,30 @@ def get_vectorized_images(request, wid, rid=None):
         return JsonResponse(sorted(list(v_imgs)), safe=False)
     except Exception as e:
         return JsonResponse(
-            {
-                "error": f"Couldn't retrieve images of regions #{rid} in the database: {e}"
-            },
+            {"error": f"Couldn't retrieve svg of regions #{rid}: {e}"},
             status=400,
         )
+
+
+@user_passes_test(is_superuser)
+def reset_regions_vectorization(request, rid=None):
+    if rid:
+        regions = get_object_or_404(Regions, id=rid)
+        if reset_vectorization(regions):
+            return JsonResponse(
+                {"message": f"Regions #{rid} vectorization has been deleted"}
+            )
+        return JsonResponse(
+            {"error": f"Regions #{rid} vectorization couldn't been deleted"}
+        )
+
+    all_regions = Regions.objects.all()
+    deleted_vectorization = []
+    for regions in all_regions:
+        if reset_vectorization(regions):
+            deleted_vectorization.append(regions.id)
+    return JsonResponse(
+        {
+            "message": f"Regions {', '.join(map(str, deleted_vectorization))} have been deleted"
+        }
+    )
