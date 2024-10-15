@@ -46,5 +46,6 @@
         {#each witness.regions as regionId}
             <a href="{baseUrl}{regionId}" class="tag is-dark mr-3 is-rounded">Regions #{regionId}</a>
         {/each}
+    <!--TODO add NEW REGIONS BUTTON (to create empty region in order to launch new automatic extraction)-->
     {/if}
 </div>
