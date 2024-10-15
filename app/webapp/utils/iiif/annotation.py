@@ -482,26 +482,22 @@ def get_manifest_annotations(
             if not resources:
                 break
 
-            # if only a certain range is needed
-            if min_c is not None:
-                first_canvas = int(
-                    resources[0]["on"].split("/canvas/c")[1].split(".json")[0]
-                )
-                last_canvas = int(
-                    resources[-1]["on"].split("/canvas/c")[1].split(".json")[0]
-                )
-
-                log(
-                    f"first_canvas: {first_canvas}, last_canvas: {last_canvas}, min_c: {min_c}, max_c: {max_c}"
-                )
-
-                # if max_c is not None and first_canvas > max_c:
-                #     break
-                #
-                # # Skip this page if the entire range is outside min_c and max_c
-                # if last_canvas < min_c:
-                #     next_page = annotations.get("next")
-                #     continue
+            # if only a certain range is needed (do not work because the annotations are sorted alphabetically by canvas number)
+            # if min_c is not None:
+            #     first_canvas = int(
+            #         resources[0]["on"].split("/canvas/c")[1].split(".json")[0]
+            #     )
+            #     last_canvas = int(
+            #         resources[-1]["on"].split("/canvas/c")[1].split(".json")[0]
+            #     )
+            #
+            #     if max_c is not None and first_canvas > max_c:
+            #         break
+            #
+            #     # Skip this page if the entire range is outside min_c and max_c
+            #     if last_canvas < min_c:
+            #         next_page = annotations.get("next")
+            #         continue
 
             if only_ids:
                 manifest_annotations.extend(
@@ -514,13 +510,13 @@ def get_manifest_annotations(
 
         except requests.exceptions.RequestException as e:
             log(
-                f"[get_manifest_annotations] Failed to retrieve annotations for {regions_ref}",
+                f"[get_manifest_annotations] Failed to retrieve annotations for {next_page}",
                 e,
             )
             return []
         except Exception as e:
             log(
-                f"[get_manifest_annotations] Failed to parse annotations for {regions_ref}",
+                f"[get_manifest_annotations] Failed to parse annotations for {next_page}",
                 e,
             )
             return []
