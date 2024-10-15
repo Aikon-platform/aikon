@@ -461,7 +461,9 @@ def create_list_annotations(regions: Regions):
     return anno_refs
 
 
-def get_manifest_annotations(regions_ref, only_ids=True, min_c=None, max_c=None):
+def get_manifest_annotations(
+    regions_ref, only_ids=True, min_c: int = None, max_c: int = None
+):
     manifest_annotations = []
     next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search"
 
@@ -489,12 +491,17 @@ def get_manifest_annotations(regions_ref, only_ids=True, min_c=None, max_c=None)
                     resources[-1]["on"].split("/canvas/c")[1].split(".json")[0]
                 )
 
-                # Skip this page if the entire range is outside min_c and max_c
-                if (min_c is not None and last_canvas < min_c) or (
-                    max_c is not None and first_canvas > max_c
-                ):
-                    next_page = annotations.get("next")
-                    continue
+                log(
+                    f"first_canvas: {first_canvas}, last_canvas: {last_canvas}, min_c: {min_c}, max_c: {max_c}"
+                )
+
+                # if max_c is not None and first_canvas > max_c:
+                #     break
+                #
+                # # Skip this page if the entire range is outside min_c and max_c
+                # if last_canvas < min_c:
+                #     next_page = annotations.get("next")
+                #     continue
 
             if only_ids:
                 manifest_annotations.extend(
