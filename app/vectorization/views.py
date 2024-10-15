@@ -9,7 +9,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required, user_passes_test
 
-from app.config.settings import SAS_APP_URL, APP_NAME, DEBUG, SAS_USERNAME, SAS_PASSWORD
+from app.config.settings import SAS_APP_URL, DEBUG, SAS_USERNAME, SAS_PASSWORD
 from app.webapp.templatetags.filters import jpg_to_none
 
 from app.webapp.models.regions import Regions
@@ -30,6 +30,7 @@ from app.vectorization.utils import (
     vectorization_request_for_one,
     delete_and_relauch_request,
     save_svg_files,
+    reset_vectorization,
 )
 from app.webapp.views import check_ref, is_superuser
 
@@ -96,7 +97,7 @@ def show_crop_vectorization(request, img_file, coords, regions, canvas_nb):
 @user_passes_test(is_superuser)
 def smash_and_relaunch_vectorization(request, regions_ref):
     """
-    Delete the imgs in the API from the repo corresponding to doc_id + relauch vectorization
+    Delete the imgs in the API from the repo corresponding to doc_id + relaunch vectorization
     """
     passed, regions = check_ref(regions_ref, "Regions")
     if not passed:
@@ -257,10 +258,6 @@ def export_selected_imgs_and_svgs(request):
 
 
 def get_vectorized_images(request, wid, rid=None):
-    """
-    Return the best region images that are similar to the query region image
-    whose id is passed in the POST parameters
-    """
     if rid is not None:
         q_regions = [get_object_or_404(Regions, id=rid)]
     else:
@@ -275,8 +272,30 @@ def get_vectorized_images(request, wid, rid=None):
         return JsonResponse(sorted(list(v_imgs)), safe=False)
     except Exception as e:
         return JsonResponse(
-            {
-                "error": f"Couldn't retrieve images of regions #{rid} in the database: {e}"
-            },
+            {"error": f"Couldn't retrieve svg of regions #{rid}: {e}"},
             status=400,
         )
+
+
+@user_passes_test(is_superuser)
+def reset_regions_vectorization(request, rid=None):
+    if rid:
+        regions = get_object_or_404(Regions, id=rid)
+        if reset_vectorization(regions):
+            return JsonResponse(
+                {"message": f"Regions #{rid} vectorization has been deleted"}
+            )
+        return JsonResponse(
+            {"error": f"Regions #{rid} vectorization couldn't been deleted"}
+        )
+
+    all_regions = Regions.objects.all()
+    deleted_vectorization = []
+    for regions in all_regions:
+        if reset_vectorization(regions):
+            deleted_vectorization.append(regions.id)
+    return JsonResponse(
+        {
+            "message": f"Regions {', '.join(map(str, deleted_vectorization))} have been deleted"
+        }
+    )
