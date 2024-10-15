@@ -424,9 +424,6 @@ def formatted_annotations(regions: Regions):
     return annotation_ids, canvas_annotations
 
 
-############## clara dev ##############
-
-
 def total_annotations(regions: Regions):
     response = requests.get(f"{SAS_APP_URL}/search-api/{regions.get_ref()}/search")
     res = response.json()
@@ -464,10 +461,7 @@ def create_list_annotations(regions: Regions):
     return anno_refs
 
 
-############## clara dev ##############
-
-
-def get_manifest_annotations(regions_ref, only_ids=True):
+def get_manifest_annotations(regions_ref, only_ids=True, min_c=None, max_c=None):
     manifest_annotations = []
     next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search"
 
@@ -482,8 +476,25 @@ def get_manifest_annotations(regions_ref, only_ids=True):
                 )
                 return []
 
-            if "resources" not in annotations or len(annotations["resources"]) == 0:
+            resources = annotations.get("resources", [])
+            if not resources:
                 break
+
+            # if only a certain range is needed
+            if min_c is not None:
+                first_canvas = int(
+                    resources[0]["on"].split("/canvas/c")[1].split(".json")[0]
+                )
+                last_canvas = int(
+                    resources[-1]["on"].split("/canvas/c")[1].split(".json")[0]
+                )
+
+                # Skip this page if the entire range is outside min_c and max_c
+                if (min_c is not None and last_canvas < min_c) or (
+                    max_c is not None and first_canvas > max_c
+                ):
+                    next_page = annotations.get("next")
+                    continue
 
             if only_ids:
                 manifest_annotations.extend(
@@ -517,7 +528,7 @@ def get_regions_annotations(
         r_annos = {} if as_json else []
 
     regions_ref = regions.get_ref()
-    annos = get_manifest_annotations(regions_ref, False)
+    annos = get_manifest_annotations(regions_ref, False, min_c, max_c)
     if len(annos) == 0:
         return r_annos
 
@@ -527,28 +538,26 @@ def get_regions_annotations(
     if as_json:
         min_c = min_c or 1
         max_c = max_c or regions.img_nb()
-        for c in range(min_c, max_c):
-            canvas = str(c)
-            if canvas not in r_annos:
-                # Create canvas to display all pages
-                r_annos[canvas] = {}
+        r_annos = {str(c): {} for c in range(min_c, max_c)}
 
     for anno in annos:
         try:
-            canvas = anno["on"].split("/canvas/c")[1].split(".json")[0]
-            if min_c is not None and (int(canvas) < min_c):
-                continue
+            on_value = anno["on"]
+            canvas = on_value.split("/canvas/c")[1].split(".json")[0]
+            canvas_num = int(canvas)
 
-            # Stop once max_c is reached
-            if max_c is not None and (int(canvas) > max_c):
+            # Stop once max_c is reached (since the annotations are sorted by canvas number)
+            if max_c is not None and (canvas_num > max_c):
                 break
 
-            xyhw = anno["on"].split("xywh=")[1]
+            if min_c is not None and (canvas_num < min_c):
+                continue
+
+            xyhw = on_value.split("xywh=")[1]
             if as_json:
-                if canvas not in r_annos:
-                    r_annos[canvas] = {}
                 img = f"{img_name}_{canvas.zfill(nb_len)}"
                 aid = anno["@id"].split("/")[-1]
+
                 r_annos[canvas][aid] = {
                     "id": aid,
                     "ref": f"{img}_{xyhw}",
