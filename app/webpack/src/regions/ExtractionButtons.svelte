@@ -47,6 +47,8 @@
             headers: { "X-CSRFToken": csrfToken },
         }));
 
+        // TODO allow to choose regions model and other parameters available in treatment form
+
         let res;
         if (!response.ok) {
             try {
@@ -64,6 +66,7 @@
             appLang === "en" ? `Regions extraction task has been triggered!` : `La tâche d'extraction des régions a été déclenchée!`,
             appLang === "en" ? "Success" : "Succès"
         );
+        window.location.href = `${window.location.origin}/${appName}/treatment`;
     }
 </script>
 
@@ -78,6 +81,7 @@
     <!--        {appLang === 'en' ? 'Import regions file' : 'Importer un fichier de région'}-->
     <!--    </button>-->
     {#if modules.includes("regions")}
+        <!--TODO make this button disappear if a task is already triggered for this witness ?-->
         <button class="button is-link is-inverted" on:click={automaticRegions}>
             {appLang === 'en' ? 'Automatic region extraction' : 'Extraction automatique des régions'}
         </button>

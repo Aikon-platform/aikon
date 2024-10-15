@@ -43,6 +43,7 @@ def send_regions_extraction(request, digit_ref):
 @require_POST
 def witness_regions_extraction(request, wit_id):
     """
+    TODO mutualize logic with all additional modules
     To launch regions extraction for a specific witness
     """
     from app.webapp.models.witness import Witness
@@ -85,7 +86,8 @@ def witness_regions_extraction(request, wit_id):
             document_set=doc_set,
         )
         treatment.save()
-        treatment.start_task([witness])
+        # TODO check if needed to achieve the task
+        # treatment.start_task([witness])
     except Exception as e:
         log(
             f"[witness_regions_extraction] Failed to create Treatment for witness #{wit_id}: {e}"

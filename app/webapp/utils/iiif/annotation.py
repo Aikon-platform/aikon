@@ -397,8 +397,6 @@ def formatted_annotations(regions: Regions):
     canvas_annotations = []
     annotation_ids = []
 
-    # TODO: here allow to display images that are not present in the regions file
-
     try:
         for canvas_nb, img_file in get_canvas_list(regions):
             c_annotations = get_indexed_canvas_annotations(regions, canvas_nb)
@@ -430,73 +428,86 @@ def formatted_annotations(regions: Regions):
 
 
 def total_annotations(regions: Regions):
-    total_sas_anno_count = 0
-
+    response = requests.get(f"{SAS_APP_URL}/search-api/{regions.get_ref()}/search")
+    res = response.json()
     try:
-        for canvas_nb, _ in get_canvas_list(regions):
-            c_annotations = get_indexed_canvas_annotations(regions, canvas_nb)
-            total_sas_anno_count += len(c_annotations)
-    except ValueError as e:
-        log(
-            f"[count_total_annotations] Error when counting annotations (probably no annotation file)",
-            e,
-        )
+        return res["within"]["total"]
+    except KeyError:
+        total_sas_anno_count = 0
 
-    return total_sas_anno_count
+        try:
+            for canvas_nb, _ in get_canvas_list(regions):
+                c_annotations = get_indexed_canvas_annotations(regions, canvas_nb)
+                total_sas_anno_count += len(c_annotations)
+        except ValueError as e:
+            log(
+                f"[count_total_annotations] Error when counting annotations (probably no annotation file)",
+                e,
+            )
+
+        return total_sas_anno_count
 
 
 def create_list_annotations(regions: Regions):
-    list = []
-
+    # TODO mutualize
     _, all_regions = formatted_annotations(regions)
     all_crops = [
         (canvas_nb, coord, img_file)
         for canvas_nb, coord, img_file in all_regions
         if coord
     ]
-
+    anno_refs = []
     for _, coord, img_file in all_crops:
         name = f"{img_file[:-4]}_{''.join(c[0] for c in coord)}"
-        list.append(name)
+        anno_refs.append(name)
 
-    return list
+    return anno_refs
 
 
 ############## clara dev ##############
 
 
 def get_manifest_annotations(regions_ref, only_ids=True):
-    try:
-        response = requests.get(f"{SAS_APP_URL}/search-api/{regions_ref}/search")
-        annotations = response.json()
+    manifest_annotations = []
+    next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search"
 
-        if response.status_code != 200:
+    while next_page:
+        try:
+            response = requests.get(next_page)
+            annotations = response.json()
+
+            if response.status_code != 200:
+                log(
+                    f"[get_manifest_annotations] Failed to get annotations from SAS for {regions_ref}: {response.status_code}"
+                )
+                return []
+
+            if "resources" not in annotations or len(annotations["resources"]) == 0:
+                break
+
+            if only_ids:
+                manifest_annotations.extend(
+                    annotation["@id"] for annotation in annotations["resources"]
+                )
+            else:
+                manifest_annotations.extend(annotations["resources"])
+
+            next_page = annotations.get("next")
+
+        except requests.exceptions.RequestException as e:
             log(
-                f"[get_manifest_annotations] Failed to get annotations from SAS for {regions_ref}: {response.status_code}"
+                f"[get_manifest_annotations] Failed to retrieve annotations for {regions_ref}",
+                e,
             )
             return []
-    except requests.exceptions.RequestException as e:
-        log(
-            f"[get_manifest_annotations] Failed to retrieve annotations for {regions_ref}",
-            e,
-        )
-        return []
+        except Exception as e:
+            log(
+                f"[get_manifest_annotations] Failed to parse annotations for {regions_ref}",
+                e,
+            )
+            return []
 
-    if "resources" not in annotations or len(annotations["resources"]) == 0:
-        return []
-
-    try:
-        manifest_annotations = [
-            annotation["@id"] for annotation in annotations["resources"]
-        ]
-    except Exception as e:
-        log(
-            f"[get_manifest_annotations] Failed to parse annotations for {regions_ref}",
-            e,
-        )
-        return []
-
-    return manifest_annotations if only_ids else annotations["resources"]
+    return manifest_annotations
 
 
 def get_regions_annotations(
@@ -525,8 +536,12 @@ def get_regions_annotations(
     for anno in annos:
         try:
             canvas = anno["on"].split("/canvas/c")[1].split(".json")[0]
-            if min_c is not None and (int(canvas) < min_c or int(canvas) > max_c):
+            if min_c is not None and (int(canvas) < min_c):
                 continue
+
+            # Stop once max_c is reached
+            if max_c is not None and (int(canvas) > max_c):
+                break
 
             xyhw = anno["on"].split("xywh=")[1]
             if as_json:

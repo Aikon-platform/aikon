@@ -262,7 +262,7 @@ class Digitization(models.Model):
         return False
 
     def check_vectorizations(self):
-
+        # TODO improve
         from app.vectorization.const import SVG_PATH
         from app.webapp.utils.iiif.annotation import create_list_annotations
 
