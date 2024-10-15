@@ -549,9 +549,10 @@ def get_regions_annotations(
             canvas = on_value.split("/canvas/c")[1].split(".json")[0]
             canvas_num = int(canvas)
 
-            # Stop once max_c is reached (since the annotations are sorted by canvas number)
+            # Stop once max_c is reached
+            # DO NOT WORK since the annotations are sorted ALPHABETICALLY by canvas number
             if max_c is not None and (canvas_num > max_c):
-                break
+                continue
 
             if min_c is not None and (canvas_num < min_c):
                 continue
