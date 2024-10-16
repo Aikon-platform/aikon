@@ -461,7 +461,9 @@ def create_list_annotations(regions: Regions):
     return anno_refs
 
 
-def get_manifest_annotations(regions_ref, only_ids=True, min_c=None, max_c=None):
+def get_manifest_annotations(
+    regions_ref, only_ids=True, min_c: int = None, max_c: int = None
+):
     manifest_annotations = []
     next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search"
 
@@ -480,21 +482,24 @@ def get_manifest_annotations(regions_ref, only_ids=True, min_c=None, max_c=None)
             if not resources:
                 break
 
-            # if only a certain range is needed
-            if min_c is not None:
-                first_canvas = int(
-                    resources[0]["on"].split("/canvas/c")[1].split(".json")[0]
-                )
-                last_canvas = int(
-                    resources[-1]["on"].split("/canvas/c")[1].split(".json")[0]
-                )
-
-                # Skip this page if the entire range is outside min_c and max_c
-                if (min_c is not None and last_canvas < min_c) or (
-                    max_c is not None and first_canvas > max_c
-                ):
-                    next_page = annotations.get("next")
-                    continue
+            # if only a certain range is needed (do not work because the annotations are sorted alphabetically by canvas number)
+            # TODO change the SAS code to add canvas number in the annotation metadata
+            #  AND/OR sort the annotations by canvas number
+            # if min_c is not None:
+            #     first_canvas = int(
+            #         resources[0]["on"].split("/canvas/c")[1].split(".json")[0]
+            #     )
+            #     last_canvas = int(
+            #         resources[-1]["on"].split("/canvas/c")[1].split(".json")[0]
+            #     )
+            #
+            #     if max_c is not None and first_canvas > max_c:
+            #         break
+            #
+            #     # Skip this page if the entire range is outside min_c and max_c
+            #     if last_canvas < min_c:
+            #         next_page = annotations.get("next")
+            #         continue
 
             if only_ids:
                 manifest_annotations.extend(
@@ -507,13 +512,13 @@ def get_manifest_annotations(regions_ref, only_ids=True, min_c=None, max_c=None)
 
         except requests.exceptions.RequestException as e:
             log(
-                f"[get_manifest_annotations] Failed to retrieve annotations for {regions_ref}",
+                f"[get_manifest_annotations] Failed to retrieve annotations for {next_page}",
                 e,
             )
             return []
         except Exception as e:
             log(
-                f"[get_manifest_annotations] Failed to parse annotations for {regions_ref}",
+                f"[get_manifest_annotations] Failed to parse annotations for {next_page}",
                 e,
             )
             return []
@@ -535,9 +540,9 @@ def get_regions_annotations(
     img_name = regions_ref.split("_anno")[0]
     nb_len = get_img_nb_len(img_name)
 
-    if as_json:
+    if as_json and max_c is not None:
+        # if max_c is None => means that we will get all the annotations anyway so this is not needed
         min_c = min_c or 1
-        max_c = max_c or regions.img_nb()
         r_annos = {str(c): {} for c in range(min_c, max_c)}
 
     for anno in annos:
@@ -546,11 +551,14 @@ def get_regions_annotations(
             canvas = on_value.split("/canvas/c")[1].split(".json")[0]
             canvas_num = int(canvas)
 
-            # Stop once max_c is reached (since the annotations are sorted by canvas number)
-            if max_c is not None and (canvas_num > max_c):
-                break
+            # Stop once max_c is reached
+            # DO NOT WORK since the annotations are sorted ALPHABETICALLY by canvas number
+            # if max_c is not None and (canvas_num > max_c):
+            #     break
 
-            if min_c is not None and (canvas_num < min_c):
+            if (max_c is not None and (canvas_num > max_c)) or (
+                min_c is not None and (canvas_num < min_c)
+            ):
                 continue
 
             xyhw = on_value.split("xywh=")[1]
