@@ -540,9 +540,9 @@ def get_regions_annotations(
     img_name = regions_ref.split("_anno")[0]
     nb_len = get_img_nb_len(img_name)
 
-    if as_json and max_c is not None:
-        # if max_c is None => means that we will get all the annotations anyway so this is not needed
+    if as_json:
         min_c = min_c or 1
+        max_c = max_c or regions.get_json()["img_nb"]
         r_annos = {str(c): {} for c in range(min_c, max_c)}
 
     for anno in annos:
