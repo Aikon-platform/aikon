@@ -57,7 +57,7 @@
 
             <form id="export" action="{% url 'vectorization:export-img-and-svg' %}" method="post">
                 {% csrf_token %}
-                <input type="hidden" id="liste_images" name="liste_images" value="">
+                <input type="hidden" id="img_list" name="img_list" value="">
                 <button class="export-button" type="submit">
                     <i class="fa-regular fa-file-zipper"></i>&nbsp;
                     {% if APP_LANG == "en" %}
@@ -225,8 +225,8 @@
     // Convert the selectedImages array to JSON string (handle empty array)
     var jsonString = selectedImages.length > 0 ? JSON.stringify(selectedImages) : "";
 
-    // Update the hidden input "liste_images" with the JSON string
-    document.getElementById("liste_images").value = jsonString;
+    // Update the hidden input "img_list" with the JSON string
+    document.getElementById("img_list").value = jsonString;
 
     // Log the JSON string for verification (optional)
     console.log(selectedImages);

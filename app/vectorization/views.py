@@ -241,12 +241,9 @@ def export_common_logic(regions_list):
     return zip_images_and_files(urls_list, path_list)
 
 
-####ClaraDev
-
-
 @login_required
 def export_selected_imgs_and_svgs(request):
-    images_list = json.loads(request.POST.get("liste_images"))
+    images_list = json.loads(request.POST.get("img_list"))
     urls_list = []
     paths_list = []
     for element in images_list:

@@ -84,21 +84,20 @@ def get_canvas_regions(request, wid, rid):
     # TODO mutualize with get_canvas_witness_regions
     regions = get_object_or_404(Regions, id=rid)
     p_nb = int(request.GET.get("p", 0))
+    max_canvas = regions.get_json()["img_nb"]
     if p_nb > 0:
         p_len = PAGE_LEN
-        max_c = (
-            p_nb * p_len
-        )  # TODO limit to not exceed number of canvases of the witness
+        max_c = p_nb * p_len
         min_c = max_c - p_len
         return JsonResponse(
             get_regions_annotations(
-                regions, as_json=True, r_annos={}, min_c=min_c, max_c=max_c
+                regions, as_json=True, r_annos={}, min_c=min_c, max_c=max_canvas
             ),
             safe=False,
         )
-
+    # to retrieve all regions
     return JsonResponse(
-        get_regions_annotations(regions, as_json=True),
+        get_regions_annotations(regions, as_json=True, min_c=1, max_c=max_canvas),
         safe=False,
     )
 
@@ -106,22 +105,22 @@ def get_canvas_regions(request, wid, rid):
 def get_canvas_witness_regions(request, wid):
     witness = get_object_or_404(Witness, id=wid)
     p_nb = int(request.GET.get("p", 0))
+    anno_regions = {}
     if p_nb > 0:
         p_len = PAGE_LEN
-        anno_regions = {}
-        max_c = (
-            p_nb * p_len
-        )  # TODO limit to not exceed number of canvases of the witness
+        max_c = p_nb * p_len
         min_c = max_c - p_len
         for regions in witness.get_regions():
+            max_c = regions.get_json()["img_nb"]
             anno_regions = get_regions_annotations(
                 regions, as_json=True, r_annos=anno_regions, min_c=min_c, max_c=max_c
             )
     else:
-        anno_regions = {}
+        # to retrieve all regions
         for regions in witness.get_regions():
+            max_c = regions.get_json()["img_nb"]
             anno_regions = get_regions_annotations(
-                regions, as_json=True, r_annos=anno_regions
+                regions, as_json=True, r_annos=anno_regions, min_c=1, max_c=max_c
             )
 
     return JsonResponse(anno_regions, safe=False)
