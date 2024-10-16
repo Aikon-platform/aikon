@@ -97,7 +97,7 @@ def get_canvas_regions(request, wid, rid):
         )
     # to retrieve all regions
     return JsonResponse(
-        get_regions_annotations(regions, as_json=True, min_c=1, max_c=None),
+        get_regions_annotations(regions, as_json=True, min_c=1, max_c=max_canvas),
         safe=False,
     )
 
@@ -118,8 +118,9 @@ def get_canvas_witness_regions(request, wid):
     else:
         # to retrieve all regions
         for regions in witness.get_regions():
+            max_c = regions.get_json()["img_nb"]
             anno_regions = get_regions_annotations(
-                regions, as_json=True, r_annos=anno_regions, min_c=1, max_c=None
+                regions, as_json=True, r_annos=anno_regions, min_c=1, max_c=max_c
             )
 
     return JsonResponse(anno_regions, safe=False)
