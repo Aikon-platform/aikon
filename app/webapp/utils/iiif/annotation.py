@@ -483,6 +483,8 @@ def get_manifest_annotations(
                 break
 
             # if only a certain range is needed (do not work because the annotations are sorted alphabetically by canvas number)
+            # TODO change the SAS code to add canvas number in the annotation metadata
+            #  AND/OR sort the annotations by canvas number
             # if min_c is not None:
             #     first_canvas = int(
             #         resources[0]["on"].split("/canvas/c")[1].split(".json")[0]
@@ -538,9 +540,9 @@ def get_regions_annotations(
     img_name = regions_ref.split("_anno")[0]
     nb_len = get_img_nb_len(img_name)
 
-    if as_json:
+    if as_json and max_c is not None:
+        # if max_c is None => means that we will get all the annotations anyway so this is not needed
         min_c = min_c or 1
-        max_c = max_c or regions.img_nb()
         r_annos = {str(c): {} for c in range(min_c, max_c)}
 
     for anno in annos:
@@ -551,10 +553,12 @@ def get_regions_annotations(
 
             # Stop once max_c is reached
             # DO NOT WORK since the annotations are sorted ALPHABETICALLY by canvas number
-            if max_c is not None and (canvas_num > max_c):
-                continue
+            # if max_c is not None and (canvas_num > max_c):
+            #     break
 
-            if min_c is not None and (canvas_num < min_c):
+            if (max_c is not None and (canvas_num > max_c)) or (
+                min_c is not None and (canvas_num < min_c)
+            ):
                 continue
 
             xyhw = on_value.split("xywh=")[1]
