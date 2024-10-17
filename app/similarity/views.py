@@ -278,7 +278,7 @@ def add_region_pair(request, wid, rid=None):
         return JsonResponse(
             {
                 "success": "Region pair added successfully",
-                "s_regions": s_regions.to_json(),
+                "s_regions": s_regions.get_json(),
                 "created": created,
             }
         )

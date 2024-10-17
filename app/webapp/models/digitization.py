@@ -301,7 +301,7 @@ class Digitization(AbstractSearchableModel):
         return self.get_imgs(is_abs, only_one=True)
 
     def get_imgs(self, is_abs=False, temp=False, only_one=False, reindex=False):
-        if self.get_json()["imgs"] and not reindex:
+        if self.get_json() and not reindex:
             return self.get_json()["imgs"]
         prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
         path = f"{IMG_PATH}/" if is_abs else ""

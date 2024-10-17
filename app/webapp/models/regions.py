@@ -134,8 +134,8 @@ class Regions(AbstractSearchableModel):
             return metadata
         return {}
 
-    def to_json(self):
-        rjson = self.json or {}
+    def to_json(self, reindex=True):
+        rjson = {} if reindex else self.json or {}
         digit = self.get_digit()
 
         return {

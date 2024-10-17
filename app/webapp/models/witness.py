@@ -163,7 +163,7 @@ class Witness(AbstractSearchableModel):
         return reverse("admin:webapp_witness_change", args=[self.id])
         # return reverse("webapp:witness_view", args=[self.id])
 
-    def to_json(self):
+    def to_json(self, reindex=True):
         # TODO create to_json template in a Abstract class
         buttons = {"regions": reverse("webapp:witness_regions_view", args=[self.id])}
 
