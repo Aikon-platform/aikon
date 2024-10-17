@@ -302,7 +302,12 @@ class Digitization(AbstractSearchableModel):
 
     def get_imgs(self, is_abs=False, temp=False, only_one=False, check_in_dir=False):
         if self.json or not check_in_dir:
-            return self.get_json()["imgs"]
+            imgs = self.get_json()["imgs"]
+            if len(imgs) != 0:
+                if only_one:
+                    return imgs[0]
+                return imgs
+
         prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
         path = f"{IMG_PATH}/" if is_abs else ""
         return sorted(get_files_with_prefix(IMG_PATH, prefix, path, only_one))
