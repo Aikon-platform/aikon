@@ -120,8 +120,9 @@ def get_nb_of_files(path, prefix):
 
 def get_first_img(img_ref):
     for i in range(0, 5):
-        if os.path.exists(f"{IMG_PATH}/{img_ref}_{'1'.zfill(i)}.jpg"):
-            return f"{img_ref}_{'1'.zfill(i)}.jpg"
+        img_name = f"{img_ref}_{'1'.zfill(i)}.jpg"
+        if os.path.exists(f"{IMG_PATH}/{img_name}"):
+            return img_name
     return None
 
 

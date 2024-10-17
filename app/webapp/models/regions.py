@@ -154,9 +154,9 @@ class Regions(AbstractSearchableModel):
 
         return get_regions_annotations(self)
 
-    def get_imgs(self):
+    def get_imgs(self, is_abs=False, only_one=False, reindex=False):
         if digit := self.get_digit():
-            return digit.get_imgs()
+            return digit.get_imgs(is_abs=is_abs, only_one=only_one, reindex=reindex)
         return []
 
     def view_btn(self):
