@@ -305,10 +305,10 @@ class Witness(AbstractSearchableModel):
 
         return None
 
-    def get_imgs(self, is_abs=False, temp=False):
+    def get_imgs(self, is_abs=False, temp=False, reindex=False):
         imgs = []
         for digit in self.get_digits():
-            imgs.extend(digit.get_imgs(is_abs, temp))
+            imgs.extend(digit.get_imgs(is_abs=is_abs, temp=temp, reindex=reindex))
         return imgs
 
     def has_regions(self):

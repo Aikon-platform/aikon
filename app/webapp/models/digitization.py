@@ -6,6 +6,7 @@ from iiif_prezi.factory import StructuralError
 
 from app.config.settings import APP_URL, APP_NAME
 from app.webapp.models.digitization_source import DigitizationSource
+from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.models.utils.functions import get_fieldname
 
 import threading
@@ -86,7 +87,7 @@ def no_save(instance, original_filename):
     return f"{instance.get_relative_path()}/to_delete.txt"
 
 
-class Digitization(models.Model):
+class Digitization(AbstractSearchableModel):
     class Meta:
         verbose_name = get_name("Digitization")
         verbose_name_plural = get_name("Digitization", True)
@@ -231,10 +232,10 @@ class Digitization(models.Model):
         first_img = get_first_img(self.get_ref())
         if not first_img:
             return 0
-        return len(get_first_img(self.get_ref()).split("_")[-1].split(".")[0])
+        return len(first_img.split("_")[-1].split(".")[0])
 
     def has_vectorization(self):
-        # TODO voir comment modulariser ?
+        # TODO check how to handle this with additional modules
         from app.vectorization.const import SVG_PATH
 
         # if there is at least one SVG file named after the current digitization
@@ -262,7 +263,7 @@ class Digitization(models.Model):
         return False
 
     def check_vectorizations(self):
-        # TODO improve
+        # TODO improve + save svg in differents folders
         from app.vectorization.const import SVG_PATH
         from app.webapp.utils.iiif.annotation import create_list_annotations
 
@@ -299,10 +300,28 @@ class Digitization(models.Model):
             return get_first_img(self.get_ref())
         return self.get_imgs(is_abs, only_one=True)
 
-    def get_imgs(self, is_abs=False, temp=False, only_one=False):
+    def get_imgs(self, is_abs=False, temp=False, only_one=False, reindex=False):
+        if self.get_json()["imgs"] and not reindex:
+            return self.get_json()["imgs"]
         prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
         path = f"{IMG_PATH}/" if is_abs else ""
         return sorted(get_files_with_prefix(IMG_PATH, prefix, path, only_one))
+
+    def to_json(self, reindex=True):
+        djson = {} if reindex else self.json or {}
+        imgs = djson.get("imgs", self.get_imgs(reindex=True))
+
+        return {
+            "id": self.id,
+            "title": self.__str__(),
+            "ref": self.get_ref(),
+            "class": self.__class__.__name__,
+            "type": get_name("Digitization"),
+            "url": self.gen_manifest_url(),
+            "imgs": imgs,
+            "img_nb": djson.get("img_nb", len(imgs)),
+            "zeros": djson.get("zeros", self.img_zeros()),
+        }
 
     def get_metadata(self):
         metadata = self.get_witness().get_metadata() if self.get_witness() else {}
@@ -446,6 +465,6 @@ def remove_digitization(digit: Digitization, other_media=None):
     for regions in digit.get_regions():
         delete_regions(regions)
 
-    delete_files(digit.get_imgs(is_abs=True))
+    delete_files(digit.get_imgs(is_abs=True, reindex=True))
     if other_media:
         delete_files(other_media, MEDIA_DIR)
