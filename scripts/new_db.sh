@@ -6,18 +6,10 @@
 # You will be asked to enter password twice
 # Restart Django to see effects
 
-get_os() {
-    unameOut="$(uname -s)"
-    case "${unameOut}" in
-        Linux*)     os=Linux;;
-        Darwin*)    os=Mac;;
-        CYGWIN*)    os=Cygwin;;
-        MINGW*)     os=MinGw;;
-        MSYS_NT*)   os=Git;;
-        *)          os="UNKNOWN:${unameOut}"
-    esac
-    echo "${os}"
-}
+SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
+APP_ROOT="$(dirname "$SCRIPT_DIR")"
+
+source "$SCRIPT_DIR"/functions.sh
 
 case $(get_os) in
     Linux)
@@ -31,9 +23,6 @@ case $(get_os) in
         exit 1
         ;;
 esac
-
-SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
-APP_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Load environment variables from .env file
 . "$APP_ROOT"/app/config/.env
