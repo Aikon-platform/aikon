@@ -312,7 +312,8 @@ class Digitization(AbstractSearchableModel):
         prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
         path = f"{IMG_PATH}/" if is_abs else ""
         imgs = sorted(get_files_with_prefix(IMG_PATH, prefix, path, only_one))
-        self.update_json(imgs)
+        if not temp:
+            self.update_json(imgs)
         return imgs
 
     def update_json(self, imgs):
