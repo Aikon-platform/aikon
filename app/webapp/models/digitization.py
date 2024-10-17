@@ -309,7 +309,7 @@ class Digitization(AbstractSearchableModel):
 
     def to_json(self, reindex=True):
         djson = {} if reindex else self.json or {}
-        imgs = djson.get("imgs", self.get_imgs(check_in_dir=True))
+        imgs = djson.get("imgs", self.get_imgs())
 
         return {
             "id": self.id,
