@@ -134,8 +134,8 @@ class Regions(AbstractSearchableModel):
             return metadata
         return {}
 
-    def to_json(self):
-        rjson = self.json or {}
+    def to_json(self, reindex=True):
+        rjson = {} if reindex else self.json or {}
         digit = self.get_digit()
 
         return {
@@ -154,9 +154,11 @@ class Regions(AbstractSearchableModel):
 
         return get_regions_annotations(self)
 
-    def get_imgs(self, is_abs=False, only_one=False, reindex=False):
+    def get_imgs(self, is_abs=False, only_one=False, check_in_dir=False):
         if digit := self.get_digit():
-            return digit.get_imgs(is_abs=is_abs, only_one=only_one, reindex=reindex)
+            return digit.get_imgs(
+                is_abs=is_abs, only_one=only_one, check_in_dir=check_in_dir
+            )
         return []
 
     def view_btn(self):

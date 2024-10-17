@@ -84,7 +84,7 @@ class Series(AbstractSearchableModel):
         return reverse("admin:webapp_series_change", args=[self.id])
         # return reverse("webapp:series_view", args=[self.id])
 
-    def to_json(self, reindex=False):
+    def to_json(self, reindex=True):
         library = self.place
         pub_place = self.get_edition_place()
         publisher = self.get_publisher()

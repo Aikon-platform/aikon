@@ -300,8 +300,8 @@ class Digitization(AbstractSearchableModel):
             return get_first_img(self.get_ref())
         return self.get_imgs(is_abs, only_one=True)
 
-    def get_imgs(self, is_abs=False, temp=False, only_one=False, reindex=False):
-        if self.get_json()["imgs"] and not reindex:
+    def get_imgs(self, is_abs=False, temp=False, only_one=False, check_in_dir=False):
+        if self.json or not check_in_dir:
             return self.get_json()["imgs"]
         prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
         path = f"{IMG_PATH}/" if is_abs else ""
@@ -309,7 +309,7 @@ class Digitization(AbstractSearchableModel):
 
     def to_json(self, reindex=True):
         djson = {} if reindex else self.json or {}
-        imgs = djson.get("imgs", self.get_imgs(reindex=True))
+        imgs = djson.get("imgs", self.get_imgs(check_in_dir=True))
 
         return {
             "id": self.id,
@@ -465,6 +465,6 @@ def remove_digitization(digit: Digitization, other_media=None):
     for regions in digit.get_regions():
         delete_regions(regions)
 
-    delete_files(digit.get_imgs(is_abs=True, reindex=True))
+    delete_files(digit.get_imgs(is_abs=True, check_in_dir=True))
     if other_media:
         delete_files(other_media, MEDIA_DIR)

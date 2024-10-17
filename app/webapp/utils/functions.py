@@ -218,9 +218,10 @@ def temp_to_img(digit):
         delete_files(f"{IMG_PATH}/to_delete.txt")
 
         i = 0
-        for i, img_path in enumerate(digit.get_imgs(is_abs=True, temp=True)):
+        for i, img_path in enumerate(
+            digit.get_imgs(is_abs=True, temp=True, check_in_dir=True)
+        ):
             to_jpg(img_path, digit.get_file_path(i=i + 1))
-            print(img_path)
             delete_files(img_path)
         # TODO change to have list of image name
         digit.images.name = f"{i + 1} {IMG} uploaded.jpg"
