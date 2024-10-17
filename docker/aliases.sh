@@ -29,13 +29,15 @@ npycat_func="npycat() {
 
 alias_gdiff="alias gdiff='git fetch && git diff \$(git_branch) origin/\$(git_branch) -- \":(exclude)$APP_ROOT/app/webapp/static/svelte/\"'"
 alias_aikon="alias aikon='cd $DOCKER_DIR && docker compose'"
-alias_static="alias static='aikon exec web /home/aikon/venv/bin/python /home/aikon/app/manage.py collectstatic --noinput'"
+alias_django="alias django='aikon exec web /home/aikon/venv/bin/python /home/aikon/app/manage.py'"
+alias_static="alias static='django collectstatic --noinput'"
 alias_log="alias log='aikon exec web tail -n 150 -f /home/aikon/app/logs/app_log.log'"
 
 add_if_not_exists "$git_branch_func" "$BASHRC_FILE"
 add_if_not_exists "$npycat_func" "$BASHRC_FILE"
 add_if_not_exists "$alias_gdiff" "$BASHRC_FILE"
 add_if_not_exists "$alias_aikon" "$BASHRC_FILE"
+add_if_not_exists "$alias_django" "$BASHRC_FILE"
 add_if_not_exists "$alias_static" "$BASHRC_FILE"
 add_if_not_exists "$alias_log" "$BASHRC_FILE"
 
