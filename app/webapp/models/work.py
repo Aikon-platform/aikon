@@ -80,7 +80,7 @@ class Work(AbstractSearchableModel):
         return reverse("admin:webapp_work_change", args=[self.id])
         # return reverse("webapp:work_view", args=[self.id])
 
-    def to_json(self):
+    def to_json(self, reindex=True):
         place = self.place
         author = self.author
         return json_encode(

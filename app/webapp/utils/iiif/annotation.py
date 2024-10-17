@@ -529,6 +529,7 @@ def get_manifest_annotations(
 def get_regions_annotations(
     regions: Regions, as_json=False, r_annos=None, min_c: int = None, max_c: int = None
 ):
+    # TODO improve efficiency: too slow for witness with a lot of annotations (because it parse all annotations)
     if r_annos is None:
         r_annos = {} if as_json else []
 

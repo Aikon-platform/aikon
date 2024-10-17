@@ -34,7 +34,7 @@ class AbstractSearchableModel(models.Model):
     def get_absolute_url(self):
         raise NotImplementedError("Subclasses must implement this method")
 
-    def to_json(self):
+    def to_json(self, reindex=True):
         try:
             return json_encode(
                 {
@@ -54,7 +54,7 @@ class AbstractSearchableModel(models.Model):
 
     def get_json(self, reindex=False):
         if not self.json or reindex:
-            json_data = self.to_json()
+            json_data = self.to_json(reindex=True)
             type(self).objects.filter(pk=self.pk.__str__()).update(json=json_data)
             return json_data
         return self.json

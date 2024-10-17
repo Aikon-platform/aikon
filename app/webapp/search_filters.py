@@ -12,6 +12,7 @@ from django.forms.models import ModelChoiceIteratorValue
 
 from app.config.settings import APP_LANG
 from app.webapp.models.conservation_place import ConservationPlace
+from app.webapp.models.digitization import Digitization, get_name as digitization_name
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.edition import Edition, get_name as edition_name
 from app.webapp.models.language import Language
@@ -295,3 +296,22 @@ class DocumentSetFilter(RecordFilter):
             work_ids = [w.id for w in value]
             return queryset.filter(work_ids__overlap=work_ids)
         return queryset
+
+
+class DigitizationFilter(RecordFilter):
+    witness = ModelChoiceFilter(
+        queryset=Witness.objects.all(),
+    )
+
+    class Meta:
+        model = Digitization
+        fields = {
+            "witness": ["exact"],
+            "is_open": ["exact"],
+            "digit_type": ["exact"],
+        }
+        labels = {
+            "witness": digitization_name("Witness"),
+            "is_open": digitization_name("is_open"),
+            "digit_type": digitization_name("type"),
+        }
