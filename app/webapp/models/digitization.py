@@ -301,21 +301,39 @@ class Digitization(AbstractSearchableModel):
         return self.get_imgs(is_abs, only_one=True)
 
     def get_imgs(self, is_abs=False, temp=False, only_one=False, check_in_dir=False):
-        if self.json or not check_in_dir:
-            imgs = self.get_json()["imgs"]
-            if len(imgs) != 0:
-                if only_one:
-                    return imgs[0]
-                return imgs
+        if not check_in_dir and not temp:
+            if self.json and "imgs" in self.json:
+                imgs = self.json["imgs"]
+                if len(imgs) != 0:
+                    if only_one:
+                        return imgs[0]
+                    return imgs
 
         prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
         path = f"{IMG_PATH}/" if is_abs else ""
-        return sorted(get_files_with_prefix(IMG_PATH, prefix, path, only_one))
+        imgs = sorted(get_files_with_prefix(IMG_PATH, prefix, path, only_one))
+        self.update_json(imgs)
+        return imgs
+
+    def update_json(self, imgs):
+        json_data = {
+            "id": self.id,
+            "title": self.__str__(),
+            "ref": self.get_ref(),
+            "class": self.__class__.__name__,
+            "type": get_name("Digitization"),
+            "url": self.gen_manifest_url(),
+            "imgs": imgs,
+            "img_nb": len(imgs),
+            "zeros": self.img_zeros(),
+        }
+        type(self).objects.filter(pk=self.pk.__str__()).update(json=json_data)
+        return self.json
 
     def to_json(self, reindex=True):
-        djson = {} if reindex else self.json or {}
-        imgs = djson.get("imgs", self.get_imgs())
-
+        djson = self.json or {}
+        imgs = djson.get("imgs", self.get_imgs(check_in_dir=True))
+        # zeros = len(imgs[0].split("_")[-1].split(".")[0])
         return {
             "id": self.id,
             "title": self.__str__(),
