@@ -115,20 +115,20 @@ def get_regions_annotations(
     for anno in annos:
         try:
             on_value = anno["on"]
-            # canvas = on_value.split("/canvas/c")[1].split(".json")[0]
-            # canvas_num = int(canvas)
-            #
-            # # Stop once max_c is reached
-            # # DO NOT WORK since the annotations are sorted ALPHABETICALLY by canvas number
-            # # if max_c is not None and (canvas_num > max_c):
-            # #     break
-
-            match = CANVAS_PATTERN.search(on_value)
-            if not match:
-                return None
-
-            canvas = match.group(1)
+            canvas = on_value.split("/canvas/c")[1].split(".json")[0]
             canvas_num = int(canvas)
+
+            # Stop once max_c is reached
+            # DO NOT WORK since the annotations are sorted ALPHABETICALLY by canvas number
+            # if max_c is not None and (canvas_num > max_c):
+            #     break
+
+            # match = CANVAS_PATTERN.search(on_value)
+            # if not match:
+            #     return None
+            #
+            # canvas = match.group(1)
+            # canvas_num = int(canvas)
 
             if (max_c is not None and canvas_num > max_c) or (
                 min_c is not None and canvas_num < min_c
