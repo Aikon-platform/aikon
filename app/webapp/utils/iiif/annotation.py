@@ -238,7 +238,15 @@ def get_regions_annotations(
                     if result:
                         canvas, data = result
                         if as_json:
-                            r_annos[canvas].update(data)
+                            try:
+                                r_annos[canvas].update(data)
+                            except Exception as e:
+                                log(
+                                    f"[get_regions_annotations] {canvas} exceeds {min_c}-{max_c}",
+                                    e,
+                                )
+                                r_annos[canvas] = {}
+                                r_annos[canvas].update(data)
                         else:
                             r_annos.append(data)
 
