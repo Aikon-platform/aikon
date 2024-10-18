@@ -24,7 +24,6 @@ from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.regions import get_txt_regions
 
 IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
-CANVAS_PATTERN = re.compile(r"/canvas/c(\d+)\.json")
 
 
 def get_manifest_annotations(
@@ -123,17 +122,10 @@ def get_regions_annotations(
             # if max_c is not None and (canvas_num > max_c):
             #     break
 
-            # match = CANVAS_PATTERN.search(on_value)
-            # if not match:
-            #     return None
-            #
-            # canvas = match.group(1)
-            # canvas_num = int(canvas)
-
             if (max_c is not None and canvas_num > max_c) or (
                 min_c is not None and canvas_num < min_c
             ):
-                return None
+                continue
 
             xyhw = on_value.split("xywh=")[1]
             if as_json:
