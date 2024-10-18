@@ -7,9 +7,6 @@ from urllib.request import urlopen
 import requests
 from PIL import Image
 
-import concurrent.futures
-from typing import List, Dict, Tuple, Optional
-
 from app.webapp.models.regions import Regions, get_name
 from app.webapp.models.digitization import Digitization
 
@@ -27,6 +24,7 @@ from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.regions import get_txt_regions
 
 IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
+CANVAS_PATTERN = re.compile(r"/canvas/c(\d+)\.json")
 
 
 def get_manifest_annotations(
@@ -117,18 +115,25 @@ def get_regions_annotations(
     for anno in annos:
         try:
             on_value = anno["on"]
-            canvas = on_value.split("/canvas/c")[1].split(".json")[0]
+            # canvas = on_value.split("/canvas/c")[1].split(".json")[0]
+            # canvas_num = int(canvas)
+            #
+            # # Stop once max_c is reached
+            # # DO NOT WORK since the annotations are sorted ALPHABETICALLY by canvas number
+            # # if max_c is not None and (canvas_num > max_c):
+            # #     break
+
+            match = CANVAS_PATTERN.search(on_value)
+            if not match:
+                return None
+
+            canvas = match.group(1)
             canvas_num = int(canvas)
 
-            # Stop once max_c is reached
-            # DO NOT WORK since the annotations are sorted ALPHABETICALLY by canvas number
-            # if max_c is not None and (canvas_num > max_c):
-            #     break
-
-            if (max_c is not None and (canvas_num > max_c)) or (
-                min_c is not None and (canvas_num < min_c)
+            if (max_c is not None and canvas_num > max_c) or (
+                min_c is not None and canvas_num < min_c
             ):
-                continue
+                return None
 
             xyhw = on_value.split("xywh=")[1]
             if as_json:
