@@ -23,7 +23,7 @@ public class SearchQuery {
 	protected List<String> _motivations = null;
 	protected List<DateRange> _dates = null;
 	protected List<String> _users = null;
-	protected int _resultsPerPage = 1000;
+	protected int _resultsPerPage = 2500;
 	protected int _page = 0;
 	protected String _scope = "";
 	protected String _baseURI = "";

@@ -32,7 +32,7 @@ import uk.org.llgc.annotation.store.data.AnnotationList;
 public class IIIFSearchAPI extends HttpServlet {
 	protected static Logger _logger = LogManager.getLogger(IIIFSearchAPI.class.getName());
 	protected StoreAdapter _store = null;
-	protected int _resultsPerPage = 1000;
+	protected int _resultsPerPage = 2500;
 
 	public void init(final ServletConfig pConfig) throws ServletException {
 		super.init(pConfig);
