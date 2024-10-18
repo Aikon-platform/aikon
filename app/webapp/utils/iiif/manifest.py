@@ -52,7 +52,12 @@ def process_images(obj, seq, version=None):
     class_name = obj.__class__.__name__
 
     try:
-        for counter, img in enumerate(obj.get_imgs(), start=1):
+        imgs = obj.get_imgs()
+        if len(imgs) == 0:
+            log(f"[process_images] No images for {class_name} n°{obj.id}")
+            return False
+
+        for counter, img in enumerate(imgs, start=1):
             try:
                 set_canvas(
                     seq,
@@ -66,7 +71,7 @@ def process_images(obj, seq, version=None):
             except FileNotFoundError as e:
                 log(f"[process_images] Non existing {img}", e)
     except Exception as e:
-        log(f"[process_images] Couldn't retrieve image for {class_name} n°{obj.id}", e)
+        log(f"[process_images] Couldn't retrieve images for {class_name} n°{obj.id}", e)
         return False
     return True
 
@@ -108,7 +113,12 @@ def gen_manifest_json(obj, version=None):
     try:
         # And walk through the pages
         seq = manifest.sequence(ident="normal", label="Normal Order")
-        process_images(obj, seq, version)
+        success = process_images(obj, seq, version)
+        if not success:
+            log(
+                f"[gen_manifest_json] Unable to retrieve images for {class_name} n°{obj.id}"
+            )
+            return False
     except Exception as e:
         log(
             f"[gen_manifest_json] Unable to process images for {class_name} n°{obj.id}",
