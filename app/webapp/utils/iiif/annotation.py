@@ -115,7 +115,13 @@ def get_regions_annotations(
         try:
             on_value = anno["on"]
             canvas = on_value.split("/canvas/c")[1].split(".json")[0]
-            canvas_num = int(canvas)
+            try:
+                canvas_num = int(canvas)
+            except ValueError:
+                log(
+                    f"[get_regions_annotations] Failed to parse canvas value '{canvas}' for annotation {on_value}"
+                )
+                continue
 
             # Stop once max_c is reached
             # DO NOT WORK since the annotations are sorted ALPHABETICALLY by canvas number
@@ -125,6 +131,12 @@ def get_regions_annotations(
             if (max_c is not None and canvas_num > max_c) or (
                 min_c is not None and canvas_num < min_c
             ):
+                continue
+
+            if canvas not in r_annos:
+                log(
+                    f"[get_regions_annotations] Key '{canvas}' should be included between {min_c}-{max_c} => pass"
+                )
                 continue
 
             xyhw = on_value.split("xywh=")[1]
