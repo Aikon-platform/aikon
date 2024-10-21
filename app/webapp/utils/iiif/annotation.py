@@ -10,7 +10,6 @@ from PIL import Image
 from app.webapp.models.regions import Regions, get_name
 from app.webapp.models.digitization import Digitization
 
-# from app.webapp.models.treatment import Treatment
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.config.settings import (
     CANTALOUPE_APP_URL,
@@ -25,6 +24,251 @@ from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.regions import get_txt_regions
 
 IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
+
+
+def get_manifest_annotations(
+    regions_ref, only_ids=True, min_c: int = None, max_c: int = None
+):
+    manifest_annotations = []
+    next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search"
+
+    while next_page:
+        try:
+            response = requests.get(next_page)
+            annotations = response.json()
+
+            if response.status_code != 200:
+                log(
+                    f"[get_manifest_annotations] Failed to get annotations from SAS for {regions_ref}: {response.status_code}"
+                )
+                return []
+
+            resources = annotations.get("resources", [])
+            if not resources:
+                break
+
+            # if only a certain range is needed (do not work because the annotations are sorted alphabetically by canvas number)
+            # TODO change the SAS code to add canvas number in the annotation metadata
+            #  AND/OR sort the annotations by canvas number
+            # if min_c is not None:
+            #     first_canvas = int(
+            #         resources[0]["on"].split("/canvas/c")[1].split(".json")[0]
+            #     )
+            #     last_canvas = int(
+            #         resources[-1]["on"].split("/canvas/c")[1].split(".json")[0]
+            #     )
+            #
+            #     if max_c is not None and first_canvas > max_c:
+            #         break
+            #
+            #     # Skip this page if the entire range is outside min_c and max_c
+            #     if last_canvas < min_c:
+            #         next_page = annotations.get("next")
+            #         continue
+
+            if only_ids:
+                manifest_annotations.extend(
+                    annotation["@id"] for annotation in annotations["resources"]
+                )
+            else:
+                manifest_annotations.extend(annotations["resources"])
+
+            next_page = annotations.get("next")
+
+        except requests.exceptions.RequestException as e:
+            log(
+                f"[get_manifest_annotations] Failed to retrieve annotations for {next_page}",
+                e,
+            )
+            return []
+        except Exception as e:
+            log(
+                f"[get_manifest_annotations] Failed to parse annotations for {next_page}",
+                e,
+            )
+            return []
+
+    return manifest_annotations
+
+
+def get_regions_annotations(
+    regions: Regions, as_json=False, r_annos=None, min_c: int = None, max_c: int = None
+):
+    # TODO improve efficiency: too slow for witness with a lot of annotations (because it parse all annotations)
+    if r_annos is None:
+        r_annos = {} if as_json else []
+
+    regions_ref = regions.get_ref()
+    annos = get_manifest_annotations(regions_ref, False, min_c, max_c)
+    if len(annos) == 0:
+        return r_annos
+
+    img_name = regions_ref.split("_anno")[0]
+    nb_len = get_img_nb_len(img_name)
+
+    if as_json:
+        min_c = min_c or 1
+        max_c = max_c or regions.get_json()["img_nb"]
+        r_annos = {str(c): {} for c in range(min_c, max_c)}
+
+    for anno in annos:
+        try:
+            on_value = anno["on"]
+            canvas = on_value.split("/canvas/c")[1].split(".json")[0]
+            try:
+                canvas_num = int(canvas)
+            except ValueError:
+                log(
+                    f"[get_regions_annotations] Failed to parse canvas value '{canvas}' for annotation {on_value}"
+                )
+                continue
+
+            # Stop once max_c is reached
+            # DO NOT WORK since the annotations are sorted ALPHABETICALLY by canvas number
+            # if max_c is not None and (canvas_num > max_c):
+            #     break
+
+            if (max_c is not None and canvas_num > max_c) or (
+                min_c is not None and canvas_num < min_c
+            ):
+                continue
+
+            if canvas not in r_annos:
+                log(
+                    f"[get_regions_annotations] Key '{canvas}' should be included between {min_c}-{max_c} => pass"
+                )
+                continue
+
+            xyhw = on_value.split("xywh=")[1]
+            if as_json:
+                img = f"{img_name}_{canvas.zfill(nb_len)}"
+                aid = anno["@id"].split("/")[-1]
+
+                r_annos[canvas][aid] = {
+                    "id": aid,
+                    "ref": f"{img}_{xyhw}",
+                    "class": "Region",
+                    "type": get_name("Regions"),
+                    "title": region_title(canvas, xyhw),
+                    "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
+                    "canvas": canvas,
+                    "xyhw": xyhw.split(","),
+                    "img": img,
+                }
+            else:
+                r_annos.append((canvas, xyhw, f"{img_name}_{canvas.zfill(nb_len)}"))
+        except Exception as e:
+            log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
+            continue
+
+    return r_annos
+
+
+# def get_regions_annotations(
+#     regions: Regions, as_json=False, r_annos=None, min_c: int = None, max_c: int = None
+# ) -> Dict[str, Dict] | List[Tuple[str, str, str]]:
+#
+#     regions_ref = regions.get_ref()
+#     img_name = regions_ref.split("_anno")[0]
+#     nb_len = get_img_nb_len(img_name)
+#
+#     if r_annos is None:
+#         r_annos = {} if as_json else []
+#
+#     if as_json:
+#         min_c = min_c or 1
+#         max_c = max_c or regions.get_json()["img_nb"]
+#         r_annos = {str(c): {} for c in range(min_c, max_c)}
+#
+#     def process_page(p_url: str) -> List[Dict]:
+#         try:
+#             res = requests.get(p_url)
+#             if res.status_code != 200:
+#                 log(
+#                     f"[get_regions_annotations] Failed to get annotations from SAS for {p_url}: {res.status_code}"
+#                 )
+#                 return []
+#             return res.json().get("resources", [])
+#         except Exception as e:
+#             log(
+#                 f"[get_regions_annotations] Failed to retrieve or parse annotations for {p_url}",
+#                 e,
+#             )
+#             return []
+#
+#     def process_annotation(anno: Dict) -> Optional[Tuple[str, Dict | Tuple]]:
+#         try:
+#             on_value = anno["on"]
+#             c = on_value.split("/canvas/c")[1].split(".json")[0]
+#             canvas_num = int(c)
+#
+#             if (max_c is not None and canvas_num > max_c) or (
+#                 min_c is not None and canvas_num < min_c
+#             ):
+#                 return None
+#
+#             xyhw = on_value.split("xywh=")[1]
+#             img = f"{img_name}_{c.zfill(nb_len)}"
+#
+#             if as_json:
+#                 aid = anno["@id"].split("/")[-1]
+#                 return c, {
+#                     aid: {
+#                         "id": aid,
+#                         "ref": f"{img}_{xyhw}",
+#                         "class": "Region",
+#                         "type": get_name("Regions"),
+#                         "title": region_title(c, xyhw),
+#                         "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
+#                         "canvas": c,
+#                         "xyhw": xyhw.split(","),
+#                         "img": img,
+#                     }
+#                 }
+#             return c, (c, xyhw, img)
+#         except Exception as e:
+#             log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
+#             return None
+#
+#     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+#         next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search"
+#         future_to_url = {executor.submit(process_page, next_page): next_page}
+#
+#         while True:
+#             done, _ = concurrent.futures.wait(
+#                 future_to_url, return_when=concurrent.futures.FIRST_COMPLETED
+#             )
+#             for future in done:
+#                 page_url = future_to_url[future]
+#                 annotations = future.result()
+#
+#                 annotation_futures = list(executor.map(process_annotation, annotations))
+#                 for result in annotation_futures:
+#                     if result:
+#                         canvas, data = result
+#                         if as_json:
+#                             try:
+#                                 r_annos[canvas].update(data)
+#                             except Exception as e:
+#                                 log(
+#                                     f"[get_regions_annotations] {canvas} exceeds {min_c}-{max_c}",
+#                                     e,
+#                                 )
+#                                 r_annos[canvas] = {}
+#                                 r_annos[canvas].update(data)
+#                         else:
+#                             r_annos.append(data)
+#
+#                 del future_to_url[future]
+#
+#                 response = requests.get(page_url)
+#                 next_page = response.json().get("next")
+#                 if next_page:
+#                     future_to_url[executor.submit(process_page, next_page)] = next_page
+#
+#             if not future_to_url:
+#                 break
+#     return r_annos
 
 
 def index_regions(regions: Regions):
@@ -459,132 +703,6 @@ def create_list_annotations(regions: Regions):
         anno_refs.append(name)
 
     return anno_refs
-
-
-def get_manifest_annotations(
-    regions_ref, only_ids=True, min_c: int = None, max_c: int = None
-):
-    manifest_annotations = []
-    next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search"
-
-    while next_page:
-        try:
-            response = requests.get(next_page)
-            annotations = response.json()
-
-            if response.status_code != 200:
-                log(
-                    f"[get_manifest_annotations] Failed to get annotations from SAS for {regions_ref}: {response.status_code}"
-                )
-                return []
-
-            resources = annotations.get("resources", [])
-            if not resources:
-                break
-
-            # if only a certain range is needed (do not work because the annotations are sorted alphabetically by canvas number)
-            # TODO change the SAS code to add canvas number in the annotation metadata
-            #  AND/OR sort the annotations by canvas number
-            # if min_c is not None:
-            #     first_canvas = int(
-            #         resources[0]["on"].split("/canvas/c")[1].split(".json")[0]
-            #     )
-            #     last_canvas = int(
-            #         resources[-1]["on"].split("/canvas/c")[1].split(".json")[0]
-            #     )
-            #
-            #     if max_c is not None and first_canvas > max_c:
-            #         break
-            #
-            #     # Skip this page if the entire range is outside min_c and max_c
-            #     if last_canvas < min_c:
-            #         next_page = annotations.get("next")
-            #         continue
-
-            if only_ids:
-                manifest_annotations.extend(
-                    annotation["@id"] for annotation in annotations["resources"]
-                )
-            else:
-                manifest_annotations.extend(annotations["resources"])
-
-            next_page = annotations.get("next")
-
-        except requests.exceptions.RequestException as e:
-            log(
-                f"[get_manifest_annotations] Failed to retrieve annotations for {next_page}",
-                e,
-            )
-            return []
-        except Exception as e:
-            log(
-                f"[get_manifest_annotations] Failed to parse annotations for {next_page}",
-                e,
-            )
-            return []
-
-    return manifest_annotations
-
-
-def get_regions_annotations(
-    regions: Regions, as_json=False, r_annos=None, min_c: int = None, max_c: int = None
-):
-    # TODO improve efficiency: too slow for witness with a lot of annotations (because it parse all annotations)
-    if r_annos is None:
-        r_annos = {} if as_json else []
-
-    regions_ref = regions.get_ref()
-    annos = get_manifest_annotations(regions_ref, False, min_c, max_c)
-    if len(annos) == 0:
-        return r_annos
-
-    img_name = regions_ref.split("_anno")[0]
-    nb_len = get_img_nb_len(img_name)
-
-    if as_json:
-        min_c = min_c or 1
-        max_c = max_c or regions.get_json()["img_nb"]
-        r_annos = {str(c): {} for c in range(min_c, max_c)}
-
-    for anno in annos:
-        try:
-            on_value = anno["on"]
-            canvas = on_value.split("/canvas/c")[1].split(".json")[0]
-            canvas_num = int(canvas)
-
-            # Stop once max_c is reached
-            # DO NOT WORK since the annotations are sorted ALPHABETICALLY by canvas number
-            # if max_c is not None and (canvas_num > max_c):
-            #     break
-
-            if (max_c is not None and (canvas_num > max_c)) or (
-                min_c is not None and (canvas_num < min_c)
-            ):
-                continue
-
-            xyhw = on_value.split("xywh=")[1]
-            if as_json:
-                img = f"{img_name}_{canvas.zfill(nb_len)}"
-                aid = anno["@id"].split("/")[-1]
-
-                r_annos[canvas][aid] = {
-                    "id": aid,
-                    "ref": f"{img}_{xyhw}",
-                    "class": "Region",
-                    "type": get_name("Regions"),
-                    "title": region_title(canvas, xyhw),
-                    "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
-                    "canvas": canvas,
-                    "xyhw": xyhw.split(","),
-                    "img": img,
-                }
-            else:
-                r_annos.append((canvas, xyhw, f"{img_name}_{canvas.zfill(nb_len)}"))
-        except Exception as e:
-            log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
-            continue
-
-    return r_annos
 
 
 def check_indexation(regions: Regions, reindex=False):
