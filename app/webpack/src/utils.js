@@ -55,11 +55,11 @@ export function pageUpdate(pageNb, pageWritable, urlParam) {
 export function refToIIIF(imgRef = null, coord= "full", size="full") {
     // imgRef can be like "wit<id>_<digit><id>_<page_nb>.jpg" or "wit<id>_<digit><id>_<page_nb>_<x,y,h,w>.jpg"
     if (!imgRef) {
-        return "https://via.placeholder.com/96x96?text=No+Image";
+        return "https://placehold.co/96x96/png?text=No+image";
     }
     imgRef = imgRef.split("_");
     if (imgRef.length < 3) {
-        return "https://via.placeholder.com/96x96?text=No+Image";
+        return "https://placehold.co/96x96/png?text=No+image";
     }
     const imgCoord = imgRef[imgRef.length -1].includes(",") ? imgRef.pop().replace(".jpg", "") : coord;
     const imgName = imgRef.join("_").replace(".jpg", "");
