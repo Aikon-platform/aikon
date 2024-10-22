@@ -68,7 +68,7 @@
 <div id="nav-actions" class="mb-5">
     <div class="actions grid">
         <div class="cell is-left is-middle">
-            <RegionsBtn {baseUrl} {currentRegionId}/>
+            <RegionsBtn {baseUrl} {currentRegionId} {currentLayout}/>
         </div>
         {#if ["all", "page"].includes(currentLayout)}
             <div class="cell" transition:fade={{ duration: 500 }}>
