@@ -41,7 +41,9 @@ def prepare_request(witnesses, treatment_id):
 
             digits = witness.get_digits()
             for digit in digits:
-                manifests.update({witness.get_ref(): digit.gen_manifest_url()})
+                manifests.update(
+                    {f"{APP_NAME}_{digit.get_ref()}": digit.gen_manifest_url()}
+                )
 
         if manifests:
             return {
