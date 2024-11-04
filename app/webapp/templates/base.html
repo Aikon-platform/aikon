@@ -84,7 +84,7 @@
             <div class="container">
                 {# TODO improve message display #}
                 {% for message in messages %}
-                    <div class="notification is-danger is-light {% if message.tags %}{{ message.tags }}{% endif %}">
+                    <div class="notification is-info is-light {% if message.tags %}{{ message.tags }}{% endif %}">
                         {{ message|urlize }}
                     </div>
                 {% endfor %}
