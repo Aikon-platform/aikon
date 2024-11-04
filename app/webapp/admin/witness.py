@@ -159,7 +159,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                     ) as saved_file:
                         saved_file.write(file.read())
 
-        messages.warning(request, flash_msg)
+        messages.info(request, flash_msg)
 
     # # # # # # # # # # # #
     # MARKER WITNESS LIST #
