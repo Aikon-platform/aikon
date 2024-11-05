@@ -278,7 +278,7 @@ def add_region_pair(request, wid, rid=None):
         return JsonResponse(
             {
                 "success": "Region pair added successfully",
-                "s_regions": s_regions.to_json(),
+                "s_regions": s_regions.get_json(),
                 "created": created,
             }
         )
@@ -402,22 +402,6 @@ def index_regions_similarity(request, regions_ref=None):
 @user_passes_test(is_superuser)
 def delete_all_regions_pairs(request):
     # NOTE deactivated, only for dev purposes
-    RegionPair.objects.all().delete()
-    return JsonResponse({"message": "All region pairs deleted"})
-
-
-@user_passes_test(is_superuser)
-def reset_regions_similarity(request, rid=None):
-    if rid:
-        regions = get_object_or_404(Regions, id=rid)
-        if reset_similarity(regions):
-            return JsonResponse(
-                {"message": f"Regions #{rid} similarities has been reset"}
-            )
-        return JsonResponse(
-            {"error": f"Regions #{rid} similarities couldn't been reset"}
-        )
-
     all_regions = Regions.objects.all()
     reset_similarities = []
     for regions in all_regions:
@@ -428,6 +412,23 @@ def reset_regions_similarity(request, rid=None):
             "message": f"Regions {', '.join(map(str, reset_similarities))} have been reset"
         }
     )
+
+
+def reset_regions_similarity(request, rid=None):
+    if request.method == "DELETE":
+        if rid:
+            regions = get_object_or_404(Regions, id=rid)
+            if reset_similarity(regions):
+                return JsonResponse(
+                    {"message": f"Regions #{rid} similarities has been reset"}
+                )
+            return JsonResponse(
+                {"error": f"Regions #{rid} similarities couldn't been reset"},
+                status=400,
+            )
+
+        return JsonResponse({"error": f"No region id provided"}, status=400)
+    return JsonResponse({"error": f"Invalid request method"}, status=400)
 
 
 @user_passes_test(is_superuser)
