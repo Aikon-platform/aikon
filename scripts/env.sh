@@ -119,7 +119,7 @@ update_cantaloupe_env() {
         current_val=$(grep -oP "(?<=^$param=\")[^\"]*" "$CANTALOUPE_ENV_FILE")
         case $param in
             "BASE_URI")
-                default_val="https://"$(get_env_value "PROD_URL")
+                default_val=""$(get_env_value "PROD_URL")
                 ;;
             "FILE_SYSTEM_SOURCE")
                 default_val=$(get_env_value "MEDIA_DIR")"/img/"
