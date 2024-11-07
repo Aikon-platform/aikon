@@ -1,3 +1,4 @@
+import json
 import os
 from glob import glob
 
@@ -370,7 +371,8 @@ class Digitization(AbstractSearchableModel):
         error = {"error": "Unable to create a valid manifest"}
         if manifest := gen_manifest_json(self):
             try:
-                return manifest.toJSON(top=True)
+                # return manifest.toJSON(top=True)
+                return manifest
             except StructuralError as e:
                 error["reason"] = f"{e}"
                 return error

@@ -127,6 +127,9 @@ def gen_manifest_json(obj, version=None):
         return False
 
     # DIRTY FIX FOR SAS 😡
+    import json
+
+    manifest = json.loads(manifest.toString())
     manifest["@context"] = f"{APP_URL}/iiif/context.json"
 
     return manifest
