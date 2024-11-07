@@ -520,7 +520,7 @@ def set_canvas(seq, canvas_nb, img_name, img, version=None):
 
 def get_indexed_manifests():
     try:
-        r = requests.get(f"{SAS_APP_URL}/manifests")
+        r = requests.get(f"{SAS_APP_URL}/manifests", proxies=PROXIES)
         manifests = r.json()["manifests"]
     except Exception as e:
         log(f"[get_indexed_manifests]: Failed to load indexed manifests in SAS", e)
