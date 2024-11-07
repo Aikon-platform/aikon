@@ -17,6 +17,7 @@ from app.config.settings import (
     APP_NAME,
     APP_URL,
     ADDITIONAL_MODULES,
+    PROXIES,
 )
 from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, flatten_dict
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
@@ -543,7 +544,9 @@ def index_manifest_in_sas(manifest_url, reindex=False):
 
     try:
         # Index the manifest into SAS
-        r = requests.post(f"{SAS_APP_URL}/manifests", json=manifest_content)
+        r = requests.post(
+            f"{SAS_APP_URL}/manifests", json=manifest_content, proxies=PROXIES
+        )
         print(r)
         if r.status_code != 200:
             log(

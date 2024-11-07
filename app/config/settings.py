@@ -23,6 +23,12 @@ SECRET_KEY = ENV.str("SECRET_KEY", default="")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = ENV.bool("DEBUG", default=False)
 
+
+PROXIES = {
+    "http": ENV.str("HTTP_PROXY", default=""),
+    "https": ENV.str("HTTPS_PROXY", default=""),
+}
+
 INSTALLED_APPS = [
     "dal",
     "dal_select2",

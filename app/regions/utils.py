@@ -71,6 +71,8 @@ def prepare_request(witnesses, treatment_id):
 def regions_request(manifests, treatment_id):
     """
     To relaunch extraction request in case the automatic process has failed
+
+    TODO make a class out of request json to mutualize payload
     """
 
     try:
