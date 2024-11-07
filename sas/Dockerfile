@@ -7,6 +7,8 @@ ENV USER=aikon
 
 RUN apt-get update && apt-get install -y maven
 
+COPY proxy.xml /root/.m2/settings.xml
+
 COPY --chown=${USER} sas /sas
 
 RUN chmod +x /sas/start.sh
