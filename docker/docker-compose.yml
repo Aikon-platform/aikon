@@ -1,5 +1,7 @@
 services:
   web:
+    environment:
+      - NO_PROXY=localhost,sas,cantaloupe
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -17,11 +19,6 @@ services:
     depends_on:
       - db
       - redis
-#    healthcheck:
-#      test: [ "CMD", "curl", "-f", "http://localhost:8000/test/" ]
-#      interval: 30s
-#      timeout: 10s
-#      retries: 3
     networks:
       - app_network
     restart: unless-stopped
