@@ -346,5 +346,5 @@ urlpatterns += [
 
 # DIRTY FIX FOR SAS 😡
 urlpatterns += [
-    path("iiif/context.json", iiif_context, name="iiif-context"),
+    path("context.json", iiif_context, name="iiif-context"),
 ]
