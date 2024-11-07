@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -225,7 +226,7 @@ def export_regions(request):
 @cache_page(60 * 60 * 24)  # Cache for 24h
 def iiif_context(request):
     try:
-        context_path = MEDIA_DIR / "context.json"
+        context_path = Path(MEDIA_DIR) / "context.json"
         if not context_path.exists():
             import requests
 
