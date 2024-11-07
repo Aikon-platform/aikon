@@ -2,6 +2,7 @@ import json
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
+from django.views.decorators.cache import cache_page
 
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
@@ -14,6 +15,7 @@ from app.webapp.utils.iiif.annotation import (
     get_regions_annotations,
 )
 from app.webapp.utils.logger import log
+from app.webapp.utils.paths import MEDIA_DIR
 from app.webapp.utils.regions import create_empty_regions
 from app.webapp.tasks import generate_all_json
 
@@ -217,3 +219,33 @@ def export_regions(request):
                 log(f"[export_regions] Couldn't parse {ref} for export", e)
 
         return zip_img(urls_list)
+
+
+# DIRTY FIX FOR SAS 😡
+@cache_page(60 * 60 * 24)  # Cache for 24h
+def iiif_context(request):
+    try:
+        context_path = MEDIA_DIR / "context.json"
+        if not context_path.exists():
+            import requests
+
+            response = requests.get("http://iiif.io/api/presentation/2/context.json")
+            context_data = response.json()
+            with open(context_path, "w") as f:
+                json.dump(context_data, f)
+        else:
+            with open(context_path, "r") as f:
+                context_data = json.load(f)
+
+        return JsonResponse(
+            context_data,
+            content_type="application/json",
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type",
+            },
+        )
+
+    except Exception as e:
+        return JsonResponse({"error": f"Unable to load IIIF context: {e}"}, status=500)
