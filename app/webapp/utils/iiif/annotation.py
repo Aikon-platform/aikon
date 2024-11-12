@@ -17,7 +17,6 @@ from app.config.settings import (
     APP_NAME,
     APP_URL,
     ADDITIONAL_MODULES,
-    PROXIES,
     SAS_DOCKER_URL,
 )
 from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, flatten_dict
@@ -546,7 +545,6 @@ def index_manifest_in_sas(manifest_url, reindex=False):
     try:
         # Index the manifest into SAS
         r = requests.post(f"{SAS_DOCKER_URL}/manifests", json=manifest_content)
-        print(r)
         if r.status_code != 200:
             log(
                 f"[index_manifest_in_sas] Failed to index manifest. Status code: {r.status_code}: {r.text}"

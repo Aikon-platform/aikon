@@ -334,7 +334,8 @@ class Digitization(AbstractSearchableModel):
 
     def to_json(self, reindex=True):
         djson = self.json or {}
-        imgs = djson.get("imgs", self.get_imgs(check_in_dir=True))
+        # imgs = djson.get("imgs", self.get_imgs(check_in_dir=True))
+        imgs = self.get_imgs(check_in_dir=True)
         # zeros = len(imgs[0].split("_")[-1].split(".")[0])
         return {
             "id": self.id,
@@ -344,7 +345,7 @@ class Digitization(AbstractSearchableModel):
             "type": get_name("Digitization"),
             "url": self.gen_manifest_url(),
             "imgs": imgs,
-            "img_nb": djson.get("img_nb", len(imgs)),
+            "img_nb": len(imgs),
             "zeros": djson.get("zeros", self.img_zeros()),
         }
 
@@ -474,6 +475,7 @@ def digitization_post_save(sender, instance, created, **kwargs):
             extract_images_from_iiif_manifest.delay(
                 instance.manifest, instance.get_ref(), instance
             )
+        # TODO check if
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance

@@ -5,6 +5,7 @@ from django.views.decorators.http import require_GET
 from django.core.paginator import Paginator
 from django.db import models
 
+from app.webapp.models.regions import Regions
 from app.webapp.search_filters import *
 from app.webapp.utils.constants import PAGE_LEN
 
@@ -59,6 +60,12 @@ def search_digitizations(request):
         request.GET, queryset=Digitization.objects.order_by("id")
     )
     return JsonResponse(paginated_records(request, digitization_filter.qs))
+
+
+@require_GET
+def search_regions(request):
+    regions_filter = RegionsFilter(request.GET, queryset=Regions.objects.order_by("id"))
+    return JsonResponse(paginated_records(request, regions_filter.qs))
 
 
 class ArrayLength(models.Func):

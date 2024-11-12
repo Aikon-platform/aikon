@@ -335,6 +335,7 @@ urlpatterns += [
     path("search/series/", search_series, name="search-series"),
     path("search/documentset/", search_document_set, name="search-document-sets"),
     path("search/digitization/", search_digitizations, name="search-digitizations"),
+    path("search/regions/", search_regions, name="search-regions"),
     path("search/json-generation/", json_regeneration, name="regenerate_json"),
 ]
 
