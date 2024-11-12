@@ -5,7 +5,6 @@ from django.views.decorators.http import require_GET
 from django.core.paginator import Paginator
 from django.db import models
 
-from app.webapp.models.regions import Regions
 from app.webapp.search_filters import *
 from app.webapp.utils.constants import PAGE_LEN
 
@@ -27,7 +26,13 @@ def paginated_records(request, records):
 
 @require_GET
 def search_witnesses(request):
-    witness_filter = WitnessFilter(request.GET, queryset=Witness.objects.order_by("id"))
+    user = request.user
+    base_queryset = Witness.objects.order_by("id")
+
+    if not user.is_superuser:
+        base_queryset = base_queryset.filter(Q(is_public=True) | Q(user=user))
+
+    witness_filter = WitnessFilter(request.GET, queryset=base_queryset)
     return JsonResponse(paginated_records(request, witness_filter.qs))
 
 
