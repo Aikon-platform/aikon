@@ -1,7 +1,12 @@
+x-proxy-settings: &proxy-settings
+  - HTTP_PROXY=http://proxy.enpc.fr:3128
+  - HTTPS_PROXY=http://proxy.enpc.fr:3128
+  - NO_PROXY=localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.app_network
+  - no_proxy=localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.app_network
+
 services:
   web:
-    environment:
-      - NO_PROXY=localhost,sas,cantaloupe
+    environment: *proxy-settings
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -66,6 +71,7 @@ services:
     user: root
 
   sas:
+    environment: *proxy-settings
     build:
       context: ..
       dockerfile: sas/Dockerfile
@@ -89,6 +95,8 @@ services:
     environment:
       - PROD_URL=${PROD_URL:-localhost}
       - NGINX_PORT=${NGINX_PORT:-8080}
+      - NO_PROXY=localhost,127.0.0.1,web,sas,cantaloupe,.app_network
+#      - *proxy-settings
     volumes:
       - ./nginx_conf:/etc/nginx/nginx.conf:ro
       - ../app/staticfiles:/home/aikon/app/staticfiles:ro
