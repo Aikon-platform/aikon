@@ -47,13 +47,6 @@ public class Populate extends HttpServlet {
 			_logger.debug("Reading from " + pReq.getParameter("uri"));
 			tAnnotationList = new URL(pReq.getParameter("uri")).openStream();
 		} else {
-			/*java.io.BufferedReader tReader = new java.io.BufferedReader( new java.io.InputStreamReader( pReq.getInputStream()));
-			String tLine = "";
-			System.out.println("Printing results");
-			while ((tLine = tReader.readLine()) != null) {
-				System.out.println("line:" + tLine);
-			}
-			System.out.println("done");*/
 			tAnnotationList = pReq.getInputStream();
 		}
 		List<Map<String, Object>> tAnnotationListJSON = _annotationUtils.readAnnotationList(tAnnotationList, StoreConfig.getConfig().getBaseURI(pReq) + "/annotation"); //annotaiton list
@@ -75,7 +68,7 @@ public class Populate extends HttpServlet {
             tExcpt.printStackTrace();
 			pRes.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 			pRes.setContentType("text/plain");
-			pRes.getOutputStream().println("Falied to load annotation as it was badly informed: " + tExcpt.toString());
+			pRes.getOutputStream().println("Failed to load annotation as it was badly informed: " + tExcpt.toString());
         }
 	}
 }

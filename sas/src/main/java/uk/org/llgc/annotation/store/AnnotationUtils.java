@@ -39,28 +39,39 @@ import uk.org.llgc.annotation.store.exceptions.MalformedAnnotation;
 
 public class AnnotationUtils {
 	protected static Logger _logger = LogManager.getLogger(AnnotationUtils.class.getName());
-
 	protected File _contextDir = null;
 	protected Encoder _encoder = null;
+    protected JsonLdOptions _jsonLdOptions = null;
 
     // Called by servlet
-    public AnnotationUtils() {
+    public AnnotationUtils(final File pContextsDir, final Encoder pEncoder) {
         try {
             _contextDir = StoreConfig.getConfig().getRealPath("/contexts"); // pContextDir;
             _encoder = StoreConfig.getConfig().getEncoder();
         } catch (javax.servlet.ServletException tExcpt) {
-            //tExcpt.printStackTrace();
+            // tExcpt.printStackTrace();
         }
     }
 
     // Called by tests
 	public AnnotationUtils(final File pContextDir, final Encoder pEncoder) {
-        _contextDir = pContextDir;
+        _contextDir = pContextsDir;
         _encoder = pEncoder;
+        _jsonLdOptions = new JsonLdOptions();
+        _jsonLdOptions.setDocumentLoader(new LocalContextLoader(pContextsDir));
+        _logger.info("AnnotationUtils initialized with contexts directory: " + pContextsDir.getAbsolutePath());
+    }
+
+    public JsonLdOptions getJsonLdOptions() {
+        if (_jsonLdOptions == null) {
+            _jsonLdOptions = new JsonLdOptions();
+            _jsonLdOptions.setDocumentLoader(new LocalContextLoader(_contextDir));
+        }
+        return _jsonLdOptions;
     }
 
 	/**
-	 * Convert a IIIF annotation list into a list of annotations that have fragement
+	 * Convert a IIIF annotation list into a list of annotations that have fragment
 	 * identifiers
 	 * @param InputStream the input stream to read to get the IIIF annotation list
 	 */
@@ -286,7 +297,7 @@ public class AnnotationUtils {
 				_logger.error("Annotation is broken " + tJsonLd.get("@id"));
 				return tJsonLd;
 			}
-            // Autmoatically fix mirador-2.1.4 annos as if its done in javascript then exports won't include fix so won't work in Mirador
+            // Automatically fix mirador-2.1.4 annos as if its done in javascript then exports won't include fix so won't work in Mirador
             // Do it automatically for mirador2.1.4 annos rather than using an encoder as we only want to fix this kind
             // of annos rather than all of them.
             if (((Map<String,Object>)tJsonLd.get("on")).get("selector") != null && ((Map<String,Object>)tJsonLd.get("on")).get("selector") != null && ((Map<String,Object>)((Map<String,Object>)tJsonLd.get("on")).get("selector")).get("item") != null) {
@@ -301,7 +312,6 @@ public class AnnotationUtils {
 		}
 		return tJsonLd;
 	}
-
 
 	public Map<String,Object> frameManifest(final Model pManifest) throws JsonLdError, IOException  {
 		final Map<String,Object> tContextJson = (Map<String,Object>)JsonUtils.fromInputStream(new URL("https://iiif.io/api/presentation/2/manifest_frame.json").openStream());
@@ -332,7 +342,7 @@ public class AnnotationUtils {
 		return tJsonLd;
 	}
 
-	// Need to move fragement into on
+	// Need to move fragment into on
 	public void colapseFragement(final Map<String,Object> pAnnotationJson) {
 		if (pAnnotationJson.get("on") instanceof Map) {
             collapseFragmentOn(pAnnotationJson, (Map<String,Object>)pAnnotationJson.get("on"));
