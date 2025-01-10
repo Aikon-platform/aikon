@@ -247,10 +247,12 @@ class Treatment(AbstractSearchableModel):
             self.save()
             return
 
+        # base_url = CV_API_URL if CV_API_URL.startswith('http') else f'http://{CV_API_URL}'
+        url = f"{CV_API_URL}/{self.task_type}/start"
+        api_query = requests.post(url, json=parameters)
+
         try:
-            api_query = requests.post(
-                f"{CV_API_URL}/{self.task_type}/start", json=parameters
-            )
+            api_query.raise_for_status()
             if (
                 api_query.status_code != 200
                 or api_query.headers.get("Content-Type") != "application/json"
@@ -271,7 +273,7 @@ class Treatment(AbstractSearchableModel):
                     "error_message": f"{self.task_type} request failed with status: {api_query.status_code}",
                     "request_info": {
                         "method": "POST",
-                        "url": f"{CV_API_URL}/{self.task_type}/start",
+                        "url": url,
                         "payload": parameters,
                     },
                     "response_info": {"text": api_query.text, "error": str(e)},

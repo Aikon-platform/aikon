@@ -254,44 +254,43 @@ class Digitization(AbstractSearchableModel):
 
         return count
 
-    def has_all_vectorizations(self):
+    def svg_paths(self):
+        # TODO save SVG in different folders
         from app.vectorization.const import SVG_PATH
 
+        return glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")
+
+    def has_all_vectorizations(self):
         # if there is as much svg files as there are regions in the current digitization
-        if len(glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")) == self.count_annotations():
+        if len(self.svg_paths()) == self.count_annotations():
             return True
         return False
 
-    def check_vectorizations(self):
-        # TODO improve + save svg in differents folders
-        from app.vectorization.const import SVG_PATH
+    def is_vectorized(self):
+        """
+        :return: True if all regions have vectorizations, False otherwise
+        """
         from app.webapp.utils.iiif.annotation import create_list_annotations
 
-        # Liste de tous les fichiers SVG correspondants
-        svg_files_paths = glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")
-
-        # Vérifie que svg_files_paths est bien une liste
-        print(f"svg_files_paths : {svg_files_paths}")
-
-        # Extraire les noms de fichiers à partir des chemins sans l'extension ".svg"
         svg_files_names = [
-            os.path.basename(file_path).replace(".svg", "")
-            for file_path in svg_files_paths
+            os.path.splitext(os.path.basename(path))[0] for path in self.svg_paths()
+        ]
+        if not svg_files_names:
+            return False
+
+        regions_list = [
+            anno
+            for region in self.get_regions()
+            for anno in create_list_annotations(region)
         ]
 
-        # Récupérer la liste des annotations des régions
-        regions_list = []
-        for regions in self.get_regions():
-            regions_list.extend(create_list_annotations(regions))
+        if not regions_list:
+            return False
 
-        # Comparer les noms de fichiers SVG et les régions
-        print(sorted(svg_files_names))
-        print(sorted(regions_list))
-        return (
-            bool(svg_files_names)
-            and bool(regions_list)
-            and sorted(svg_files_names) == sorted(regions_list)
-        )
+        if len(svg_files_names) != len(regions_list):
+            return False
+
+        return sorted(svg_files_names) == sorted(regions_list)
 
     ####### WORK IN PROGRESS
 

@@ -13,63 +13,54 @@ from app.webapp.utils.iiif.annotation import get_regions_urls
 
 
 def prepare_request(witnesses, treatment_id):
-    regions_list = []
-    regions_dic = {}
+    regions = []
+    # regions_dic = {}
 
     try:
         log(
             f"[prepare_request] Start preparing vectorization request for treatment_id: {treatment_id}"
         )
 
-        for witness in witnesses:
-            log(f"[prepare_request] Checking vectorizations for witness: {witness.id}")
-            if witness.check_vectorizations():
-                log(
-                    f"[prepare_request] All regions for witness {witness.id} have already been processed and vectorized"
-                )
+        for wit in witnesses:
+            if wit.is_vectorized():
                 return {
-                    "message": f"All the regions of the {WIT} have already been processed and vectorized."
+                    "message": f"All the regions of the {WIT} have already been vectorized."
                     if APP_LANG == "en"
                     else f"Toutes les régions du {WIT} sont vectorisées."
                 }
-            else:
-                log(f"[prepare_request] Retrieving regions for witness: {witness.id}")
-                regions_list.extend(witness.get_regions())
 
-        if regions_list:
-            log(f"[prepare_request] Found {len(regions_list)} regions to process.")
-            for regions in regions_list:
-                log(f"[prepare_request] Processing region: {regions.get_ref()}")
-                regions_dic.update({regions.get_ref(): get_regions_urls(regions)})
+            regions.extend(wit.get_regions())
 
-            log(
-                f"[prepare_request] Successfully prepared vectorization request for treatment_id: {treatment_id}"
+        if regions:
+            log(f"[prepare_request] Found {len(regions)} regions to process.")
+            # for regions in regions_list:
+            #     log(f"[prepare_request] Processing region: {regions.get_ref()}")
+            #     regions_dic.update({regions.get_ref(): get_regions_urls(regions)})
+            documents = (
+                [
+                    {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list"}
+                    for ref in [region.get_ref() for region in regions]
+                ],
             )
+
             return {
                 "experiment_id": f"{treatment_id}",
-                "documents": regions_dic,
+                "documents": documents,
                 "model": f"{VECTO_MODEL_EPOCH}",
                 "callback": f"{APP_URL}/{APP_NAME}/get-vectorization",  # URL to which the SVG zip file must be sent back
                 "tracking_url": f"{APP_URL}/{APP_NAME}/api-progress",
             }
 
-        else:
-            log(
-                f"[prepare_request] No regions found to vectorize for any of the selected witnesses"
-            )
-            return {
-                "message": f"No regions to vectorize for all the selected {WIT}es"
-                if APP_LANG == "en"
-                else f"Pas de régions à vectoriser pour tous les {WIT}s sélectionnés"
-            }
+        log(f"[prepare_request] No regions to vectorize in selected {WIT}es")
+        return {
+            "message": f"No regions to vectorize in the selected {WIT}es"
+            if APP_LANG == "en"
+            else f"Aucune régions à vectoriser pour les {WIT}s sélectionnés"
+        }
 
     except Exception as e:
-        log(
-            f"[prepare_request] Failed to prepare data for vectorization request. Error: {str(e)}"
-        )
-        raise Exception(
-            f"[prepare_request] Failed to prepare data for vectorization request. Error: {str(e)}"
-        )
+        log(f"[prepare_request] Failed to prepare data for vectorization request", e)
+        raise e
 
 
 def vectorization_request_for_one(regions):

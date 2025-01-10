@@ -9,7 +9,8 @@ from app.webapp.utils.logger import log
 
 
 def prepare_request(witnesses, treatment_id):
-    manifests = {}
+    # manifests = {}
+    manifests = []
 
     try:
         for witness in witnesses:
@@ -41,9 +42,10 @@ def prepare_request(witnesses, treatment_id):
 
             digits = witness.get_digits()
             for digit in digits:
-                manifests.update(
-                    {f"{APP_NAME}_{digit.get_ref()}": digit.gen_manifest_url()}
-                )
+                # manifests.update(
+                #     {f"{APP_NAME}_{digit.get_ref()}": digit.gen_manifest_url()}
+                # )
+                manifests.append({"type": "iiif", "src": digit.gen_manifest_url()})
 
         if manifests:
             return {

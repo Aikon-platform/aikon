@@ -303,10 +303,6 @@ def get_compared_regions(regions: Regions):
     ]
 
 
-def gen_list_url(regions_ref):
-    return f"{APP_URL}/{APP_NAME}/{regions_ref}/list"
-
-
 def prepare_request(witnesses, treatment_id):
     regions = []
 
@@ -318,13 +314,16 @@ def prepare_request(witnesses, treatment_id):
             regions.extend(witness.get_regions())
 
         if regions:
-            documents = {
-                ref: gen_list_url(ref)
-                for ref in [region.get_ref() for region in regions]
-            }
+            # documents = {
+            #     ref: gen_list_url(ref)
+            #     for ref in [region.get_ref() for region in regions]
+            # }
             return {
                 "experiment_id": f"{treatment_id}",
-                "documents": documents,
+                "documents": [
+                    {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list"}
+                    for ref in [region.get_ref() for region in regions]
+                ],
                 # "model": f"{FEAT_BACKBONE}",
                 "callback": f"{APP_URL}/{APP_NAME}/get-similarity",  # URL to which the pair file must be sent back
                 "tracking_url": f"{APP_URL}/{APP_NAME}/api-progress",
