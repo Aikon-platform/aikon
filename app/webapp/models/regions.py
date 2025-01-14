@@ -117,6 +117,24 @@ class Regions(AbstractSearchableModel):
             return True
         return False
 
+    def is_vectorized(self):
+        """
+        :return: True if the region has vectorizations, False otherwise
+        """
+        from app.webapp.utils.iiif.annotation import create_list_annotations
+
+        svg_files_names = [
+            os.path.splitext(os.path.basename(path))[0] for path in self.svg_paths()
+        ]
+        if not svg_files_names:
+            return False
+
+        anno_list = create_list_annotations(self)
+        if not anno_list:
+            return False
+
+        return sorted(svg_files_names) == sorted(anno_list)
+
     def get_computed_pairs(self):
         sim_files = [
             npy_file

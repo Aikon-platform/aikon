@@ -91,6 +91,33 @@ def get_manifest_annotations(
     return manifest_annotations
 
 
+def has_annotation(regions_ref):
+    """
+    Check if there are any annotations for the given regions reference.
+    Returns True if at least one annotation is found, False otherwise.
+    """
+    page = f"{SAS_APP_URL}/search-api/{regions_ref}/search"
+    try:
+        response = requests.get(page)
+        if response.status_code != 200:
+            log(
+                f"[has_annotation] Failed to get annotations from SAS for {regions_ref}: {response.status_code}"
+            )
+            return False
+
+        annotations = response.json()
+        if annotations.get("resources", None):
+            return True
+
+    except Exception as e:
+        log(
+            f"[has_annotation] Failed to parse annotations for {page}",
+            e,
+        )
+        return False
+    return False
+
+
 def get_regions_annotations(
     regions: Regions, as_json=False, r_annos=None, min_c: int = None, max_c: int = None
 ):
@@ -162,113 +189,6 @@ def get_regions_annotations(
             continue
 
     return r_annos
-
-
-# def get_regions_annotations(
-#     regions: Regions, as_json=False, r_annos=None, min_c: int = None, max_c: int = None
-# ) -> Dict[str, Dict] | List[Tuple[str, str, str]]:
-#
-#     regions_ref = regions.get_ref()
-#     img_name = regions_ref.split("_anno")[0]
-#     nb_len = get_img_nb_len(img_name)
-#
-#     if r_annos is None:
-#         r_annos = {} if as_json else []
-#
-#     if as_json:
-#         min_c = min_c or 1
-#         max_c = max_c or regions.get_json()["img_nb"]
-#         r_annos = {str(c): {} for c in range(min_c, max_c)}
-#
-#     def process_page(p_url: str) -> List[Dict]:
-#         try:
-#             res = requests.get(p_url)
-#             if res.status_code != 200:
-#                 log(
-#                     f"[get_regions_annotations] Failed to get annotations from SAS for {p_url}: {res.status_code}"
-#                 )
-#                 return []
-#             return res.json().get("resources", [])
-#         except Exception as e:
-#             log(
-#                 f"[get_regions_annotations] Failed to retrieve or parse annotations for {p_url}",
-#                 e,
-#             )
-#             return []
-#
-#     def process_annotation(anno: Dict) -> Optional[Tuple[str, Dict | Tuple]]:
-#         try:
-#             on_value = anno["on"]
-#             c = on_value.split("/canvas/c")[1].split(".json")[0]
-#             canvas_num = int(c)
-#
-#             if (max_c is not None and canvas_num > max_c) or (
-#                 min_c is not None and canvas_num < min_c
-#             ):
-#                 return None
-#
-#             xyhw = on_value.split("xywh=")[1]
-#             img = f"{img_name}_{c.zfill(nb_len)}"
-#
-#             if as_json:
-#                 aid = anno["@id"].split("/")[-1]
-#                 return c, {
-#                     aid: {
-#                         "id": aid,
-#                         "ref": f"{img}_{xyhw}",
-#                         "class": "Region",
-#                         "type": get_name("Regions"),
-#                         "title": region_title(c, xyhw),
-#                         "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
-#                         "canvas": c,
-#                         "xyhw": xyhw.split(","),
-#                         "img": img,
-#                     }
-#                 }
-#             return c, (c, xyhw, img)
-#         except Exception as e:
-#             log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
-#             return None
-#
-#     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-#         next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search"
-#         future_to_url = {executor.submit(process_page, next_page): next_page}
-#
-#         while True:
-#             done, _ = concurrent.futures.wait(
-#                 future_to_url, return_when=concurrent.futures.FIRST_COMPLETED
-#             )
-#             for future in done:
-#                 page_url = future_to_url[future]
-#                 annotations = future.result()
-#
-#                 annotation_futures = list(executor.map(process_annotation, annotations))
-#                 for result in annotation_futures:
-#                     if result:
-#                         canvas, data = result
-#                         if as_json:
-#                             try:
-#                                 r_annos[canvas].update(data)
-#                             except Exception as e:
-#                                 log(
-#                                     f"[get_regions_annotations] {canvas} exceeds {min_c}-{max_c}",
-#                                     e,
-#                                 )
-#                                 r_annos[canvas] = {}
-#                                 r_annos[canvas].update(data)
-#                         else:
-#                             r_annos.append(data)
-#
-#                 del future_to_url[future]
-#
-#                 response = requests.get(page_url)
-#                 next_page = response.json().get("next")
-#                 if next_page:
-#                     future_to_url[executor.submit(process_page, next_page)] = next_page
-#
-#             if not future_to_url:
-#                 break
-#     return r_annos
 
 
 def index_regions(regions: Regions):

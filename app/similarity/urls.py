@@ -7,9 +7,9 @@ app_name = "similarity"
 
 urlpatterns = [
     path(
-        f"{APP_NAME}/get-similarity",
+        f"{APP_NAME}/similarity/notify",
         receive_similarity,
-        name="receive-similarity",
+        name="notify-similarity",
     ),
     path(
         f"{APP_NAME}/run-similarity/<list:regions_refs>",  # regions_refs = regions_ref+regions_ref+regions_ref

@@ -28,7 +28,7 @@ from app.webapp.utils.iiif.annotation import formatted_annotations
 from app.vectorization.const import SVG_PATH
 from app.vectorization.utils import (
     vectorization_request_for_one,
-    delete_and_relauch_request,
+    delete_and_relaunch_request,
     save_svg_files,
     reset_vectorization,
 )
@@ -111,7 +111,7 @@ def smash_and_relaunch_vectorization(request, regions_ref):
         )
 
     try:
-        if delete_and_relauch_request(regions):
+        if delete_and_relaunch_request(regions):
             return JsonResponse(
                 {
                     "response": f"Successful smash + vectorization request for {regions_ref}"

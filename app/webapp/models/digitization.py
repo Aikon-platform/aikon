@@ -270,27 +270,7 @@ class Digitization(AbstractSearchableModel):
         """
         :return: True if all regions have vectorizations, False otherwise
         """
-        from app.webapp.utils.iiif.annotation import create_list_annotations
-
-        svg_files_names = [
-            os.path.splitext(os.path.basename(path))[0] for path in self.svg_paths()
-        ]
-        if not svg_files_names:
-            return False
-
-        regions_list = [
-            anno
-            for region in self.get_regions()
-            for anno in create_list_annotations(region)
-        ]
-
-        if not regions_list:
-            return False
-
-        if len(svg_files_names) != len(regions_list):
-            return False
-
-        return sorted(svg_files_names) == sorted(regions_list)
+        return all(region.is_vectorized() for region in self.get_regions())
 
     ####### WORK IN PROGRESS
 

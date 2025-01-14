@@ -1,154 +1,50 @@
 import os
 import zipfile
 
-import requests
-
-from app.config.settings import APP_URL, APP_NAME, CV_API_URL, APP_LANG
+from app.config.settings import APP_URL, APP_NAME
 from app.vectorization.const import VECTO_MODEL_EPOCH, SVG_PATH
+from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
-from app.webapp.models.utils.constants import WIT
+from app.webapp.models.witness import Witness
+from app.webapp.utils import tasking
 
 from app.webapp.utils.logger import log
-from app.webapp.utils.iiif.annotation import get_regions_urls
+
+
+def prepare_document(document: Witness | Digitization | Regions, **kwargs):
+    if document.is_vectorized():
+        return []
+
+    regions = document.get_regions() if hasattr(document, "get_regions") else [document]
+
+    return [
+        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list"}
+        for ref in [region.get_ref() for region in regions]
+    ]
 
 
 def prepare_request(witnesses, treatment_id):
-    regions = []
-    # regions_dic = {}
-
-    try:
-        log(
-            f"[prepare_request] Start preparing vectorization request for treatment_id: {treatment_id}"
-        )
-
-        for wit in witnesses:
-            if wit.is_vectorized():
-                return {
-                    "message": f"All the regions of the {WIT} have already been vectorized."
-                    if APP_LANG == "en"
-                    else f"Toutes les régions du {WIT} sont vectorisées."
-                }
-
-            regions.extend(wit.get_regions())
-
-        if regions:
-            log(f"[prepare_request] Found {len(regions)} regions to process.")
-            # for regions in regions_list:
-            #     log(f"[prepare_request] Processing region: {regions.get_ref()}")
-            #     regions_dic.update({regions.get_ref(): get_regions_urls(regions)})
-            documents = (
-                [
-                    {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list"}
-                    for ref in [region.get_ref() for region in regions]
-                ],
-            )
-
-            return {
-                "experiment_id": f"{treatment_id}",
-                "documents": documents,
-                "model": f"{VECTO_MODEL_EPOCH}",
-                "callback": f"{APP_URL}/{APP_NAME}/get-vectorization",  # URL to which the SVG zip file must be sent back
-                "tracking_url": f"{APP_URL}/{APP_NAME}/api-progress",
-            }
-
-        log(f"[prepare_request] No regions to vectorize in selected {WIT}es")
-        return {
-            "message": f"No regions to vectorize in the selected {WIT}es"
-            if APP_LANG == "en"
-            else f"Aucune régions à vectoriser pour les {WIT}s sélectionnés"
-        }
-
-    except Exception as e:
-        log(f"[prepare_request] Failed to prepare data for vectorization request", e)
-        raise e
+    tasking.prepare_request(
+        witnesses,
+        treatment_id,
+        prepare_document,
+        "vectorization",
+        {"model": f"{VECTO_MODEL_EPOCH}"},
+    )
 
 
 def vectorization_request_for_one(regions):
     """
     To relaunch vectorization request for one witness in case the automatic process has failed
     """
-    try:
-        response = requests.post(
-            url=f"{CV_API_URL}/vectorization/start",
-            json={
-                "doc_id": regions.get_ref(),
-                "model": f"{VECTO_MODEL_EPOCH}",
-                "images": get_regions_urls(regions),
-                "callback": f"{APP_URL}/{APP_NAME}/get-vectorization",
-            },
-        )
-        if response.status_code == 200:
-            log(
-                f"[vectorization_request] Vectorization request sent: {response.text or ''}"
-            )
-            return True
-        else:
-            error = {
-                "source": "[vectorization_request]",
-                "error_message": f"Request failed for {regions} with status code: {response.status_code}",
-                "request_info": {
-                    "method": "POST",
-                    "url": f"{CV_API_URL}/vectorization/start",
-                    "payload": {
-                        "document": regions,
-                        "callback": f"{APP_URL}/{APP_NAME}/get-vectorization",
-                    },
-                },
-                "response_info": {
-                    "status_code": response.status_code,
-                    "text": response.text or "",
-                },
-            }
-
-            log(error)
-            raise Exception(error)
-    except Exception as e:
-        log(f"[vectorization_request] Request failed for {regions}", e)
-        raise Exception(f"[vectorization_request] Request failed for {regions}")
+    tasking.task_request("vectorization", regions)
 
 
-def delete_and_relauch_request(regions):
+def delete_and_relaunch_request(regions):
     """
     Request to the API endpoint to delete imgs from the repo corresponding to doc_id + relaunch the vectorization
     """
-    try:
-        response = requests.post(
-            url=f"{CV_API_URL}/vectorization/start",
-            json={
-                "doc_id": regions.get_ref(),
-                "model": f"{VECTO_MODEL_EPOCH}",
-                "images": get_regions_urls(regions),
-                "callback": f"{APP_URL}/{APP_NAME}/get-vectorization",
-            },
-        )
-        if response.status_code == 200:
-            log(
-                f"[vectorization_request] Vectorization request sent: {response.text or ''}"
-            )
-            return True
-        else:
-            error = {
-                "source": "[vectorization_request]",
-                "error_message": f"Request failed for {regions} with status code: {response.status_code}",
-                "request_info": {
-                    "method": "POST",
-                    "url": f"{CV_API_URL}/vectorization/delete_and_relauch",
-                    "payload": {
-                        "document": regions,
-                        "callback": f"{APP_URL}/{APP_NAME}/get-vectorization",
-                    },
-                },
-                "response_info": {
-                    "status_code": response.status_code,
-                    "text": response.text or "",
-                },
-            }
-
-            log(error)
-            return False
-    except Exception as e:
-        log(f"[vectorization_request] Request failed for {regions}", e)
-        return False
+    tasking.task_request("vectorization", regions, None, endpoint="delete_and_relaunch")
 
 
 def save_svg_files(zip_file):

@@ -1,7 +1,6 @@
 import os
 import re
 
-import requests
 import numpy as np
 from typing import Tuple, Set, List
 from collections import defaultdict
@@ -14,10 +13,12 @@ from django.db.models import Q, F
 from django.core.cache import cache
 
 from app.similarity.const import SCORES_PATH
-from app.config.settings import CV_API_URL, APP_URL, APP_NAME, APP_LANG
+from app.config.settings import CV_API_URL, APP_URL, APP_NAME
 from app.similarity.models.region_pair import RegionPair
+from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
-from app.webapp.models.utils.constants import WIT
+from app.webapp.models.witness import Witness
+from app.webapp.utils import tasking
 from app.webapp.utils.functions import extract_nb, sort_key
 from app.webapp.utils.logger import log
 from app.webapp.views import check_ref
@@ -303,99 +304,38 @@ def get_compared_regions(regions: Regions):
     ]
 
 
+def prepare_document(document: Witness | Digitization | Regions, **kwargs):
+    regions = document.get_regions() if hasattr(document, "get_regions") else [document]
+
+    return [
+        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list"}
+        for ref in [region.get_ref() for region in regions]
+    ]
+
+
 def prepare_request(witnesses, treatment_id):
-    regions = []
-
-    try:
-        for witness in witnesses:
-            # if len(check_computed_pairs([region.get_ref() for region in witness.get_regions()])) == 0:
-            #     pass
-            # else:
-            regions.extend(witness.get_regions())
-
-        if regions:
-            # documents = {
-            #     ref: gen_list_url(ref)
-            #     for ref in [region.get_ref() for region in regions]
-            # }
-            return {
-                "experiment_id": f"{treatment_id}",
-                "documents": [
-                    {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list"}
-                    for ref in [region.get_ref() for region in regions]
-                ],
-                # "model": f"{FEAT_BACKBONE}",
-                "callback": f"{APP_URL}/{APP_NAME}/get-similarity",  # URL to which the pair file must be sent back
-                "tracking_url": f"{APP_URL}/{APP_NAME}/api-progress",
-            }
-
-        else:
-            return {
-                "message": f"No similarity to compute for the selected {WIT}es."
-                if APP_LANG == "en"
-                else f"Pas de similarité à calculer pour les {WIT}s sélectionnés."
-            }
-
-    except Exception as e:
-        log(
-            f"[prepare_request] Failed to prepare data for similarity request",
-            e,
-        )
-        raise Exception(
-            f"[prepare_request] Failed to prepare data for similarity request"
-        )
+    tasking.prepare_request(
+        witnesses,
+        treatment_id,
+        prepare_document,
+        "similarity",
+        {
+            # TODO add options for similarity
+            # "algorithm": "algorithm",
+            # "feat_net": "model.pt",
+            # "feat_set": "set",
+            # "feat_layer": "layer",
+            # "segswap_prefilter": true, # if algorithm is "segswap"
+            # "segswap_n": 0, # if algorithm is "segswap"
+        },
+    )
 
 
 def send_request(witnesses):
     """
     To relaunch similarity request in case the automatic process has failed
     """
-
-    regions = []
-    for witness in witnesses:
-        regions.extend(witness.get_regions())
-
-    documents = {
-        ref: gen_list_url(ref) for ref in [region.get_ref() for region in regions]
-    }
-
-    try:
-        response = requests.post(
-            url=f"{CV_API_URL}/similarity/start",
-            json={
-                "documents": documents,
-                # "model": f"{FEAT_BACKBONE}",
-                "callback": f"{APP_URL}/{APP_NAME}/similarity",
-            },
-        )
-        if response.status_code == 200:
-            log(f"[similarity_request] Similarity request sent: {response.text or ''}")
-            return True
-        else:
-            error = {
-                "source": "[similarity_request]",
-                "error_message": f"Request failed for {list(documents.keys())} with status code: {response.status_code}",
-                "request_info": {
-                    "method": "POST",
-                    "url": f"{CV_API_URL}/similarity/start",
-                    "payload": {
-                        "documents": documents,
-                        "callback": f"{APP_URL}/{APP_NAME}/similarity",
-                    },
-                },
-                "response_info": {
-                    "status_code": response.status_code,
-                    "text": response.text or "",
-                },
-            }
-
-            log(error)
-            raise Exception(error)
-    except Exception as e:
-        log(f"[similarity_request] Request failed for {list(documents.keys())}", e)
-        raise Exception(
-            f"[similarity_request] Request failed for {list(documents.keys())}"
-        )
+    tasking.task_request("similarity", witnesses)
 
 
 def check_score_files(file_names):

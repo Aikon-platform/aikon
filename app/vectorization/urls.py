@@ -12,9 +12,9 @@ urlpatterns = [
         name="show-vectorization",
     ),
     path(
-        f"{APP_NAME}/get-vectorization",
+        f"{APP_NAME}/vectorization/notify",
         receive_vectorization,
-        name="get-vectorization",
+        name="notify-vectorization",
     ),
     path(
         f"{APP_NAME}/img-and-svg/<str:img_file>/<str:coords>/<str:regions>/<int:canvas_nb>",

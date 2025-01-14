@@ -1,123 +1,48 @@
-import requests
-
-from app.config.settings import CV_API_URL, APP_URL, APP_NAME, APP_LANG
-
 from app.regions.const import EXTRACTOR_MODEL
-from app.webapp.models.utils.constants import WIT
-from app.webapp.utils.iiif.annotation import get_regions_annotations
+from app.webapp.models.digitization import Digitization
+from app.webapp.models.regions import Regions
+from app.webapp.models.witness import Witness
+from app.webapp.utils import tasking
+from app.webapp.utils.iiif.annotation import has_annotation
 from app.webapp.utils.logger import log
 
 
-def prepare_request(witnesses, treatment_id):
-    # manifests = {}
-    manifests = []
+def prepare_document(document: Witness | Digitization | Regions, **kwargs):
+    if type(document).__name__ == "Witness" and not document.has_digit():
+        return []
 
-    try:
-        for witness in witnesses:
-            if witness.has_regions():
-                regions = witness.get_regions()
-                wit_ref = witness.get_ref()
+    regions = document.get_regions() if hasattr(document, "get_regions") else [document]
 
-                # check if the is annotations in SAS for this witness
-                anno_regions = {}
-                for region in regions:
-                    anno_regions = get_regions_annotations(
-                        region, as_json=True, r_annos=anno_regions
-                    )
-
-                different_model = True
-                for region in regions:
-                    if region.model == EXTRACTOR_MODEL:
-                        different_model = False
-                        break
-
-                if not different_model and len(anno_regions) != 0:
-                    if not different_model:
-                        log(
-                            f"[prepare_request] Witness {wit_ref} already has regions extracted with {EXTRACTOR_MODEL}"
-                        )
-                    if len(anno_regions) != 0:
-                        log(f"[prepare_request] Witness {wit_ref} already has regions")
-                    continue
-
-            digits = witness.get_digits()
-            for digit in digits:
-                # manifests.update(
-                #     {f"{APP_NAME}_{digit.get_ref()}": digit.gen_manifest_url()}
-                # )
-                manifests.append({"type": "iiif", "src": digit.gen_manifest_url()})
-
-        if manifests:
-            return {
-                "experiment_id": f"{treatment_id}",
-                "documents": manifests,
-                "model": f"{EXTRACTOR_MODEL}",  # Use only if specific model is desired
-                "callback": f"{APP_URL}/{APP_NAME}/get-regions",  # URL to which the regions file must be sent back
-                "tracking_url": f"{APP_URL}/{APP_NAME}/api-progress",
-            }
-        else:
-            return {
-                "message": f"Regions were already extracted for all the selected {WIT}es"
-                if APP_LANG == "en"
-                else f"Les régions ont déjà été extraites pour tous les {WIT}s sélectionnés"
-            }
-
-    except Exception as e:
+    if any(
+        region.model == kwargs["model"] and has_annotation(region.get_ref())
+        for region in regions
+    ):
         log(
-            f"[prepare_request] Failed to prepare data for regions request",
-            e,
+            f"[prepare_document] Document #{document.get_ref()} already has regions extracted with {kwargs['model']}"
         )
-        raise Exception(f"[prepare_request] Failed to prepare data for regions request")
+        return []
+
+    digits = document.get_digits() if hasattr(document, "get_digits") else [document]
+
+    return [{"type": "iiif", "src": digit.gen_manifest_url()} for digit in digits]
 
 
-def regions_request(manifests, treatment_id):
+def prepare_request(witnesses, treatment_id):
+    tasking.prepare_request(
+        witnesses,
+        treatment_id,
+        prepare_document,
+        "regions",
+        {"model": f"{EXTRACTOR_MODEL}"},
+    )
+
+
+def regions_request(witnesses, treatment_id):
     """
     To relaunch extraction request in case the automatic process has failed
     """
-
-    try:
-        response = requests.post(
-            url=f"{CV_API_URL}/regions/start",
-            json={
-                "manifests": manifests,
-                "experiment_id": f"{treatment_id}",
-                "model": f"{EXTRACTOR_MODEL}",  # Use only if specific model is desire
-                "callback": f"{APP_URL}/{APP_NAME}/get-regions",  # URL to which the regions file must be sent back
-            },
-        )
-        if response.status_code == 200:
-            api_response = response.json()
-            log(
-                f"[regions_request] Regions extraction request send: {api_response or ''}"
-            )
-            return api_response["tracking_id"]
-        else:
-            error = {
-                "source": "[regions_request]",
-                "error_message": f"Regions extraction request for treatment #{treatment_id} with status code: {response.status_code}",
-                "request_info": {
-                    "method": "POST",
-                    "url": f"{CV_API_URL}/regions/start",
-                    "payload": {
-                        "manifests": manifests,
-                        "treatment": treatment_id,
-                        "model": f"{EXTRACTOR_MODEL}",
-                        "callback": f"{APP_URL}/{APP_NAME}/get-regions",
-                    },
-                },
-                "response_info": {
-                    "status_code": response.status_code,
-                    "text": response.text or "",
-                },
-            }
-
-            log(error)
-            raise Exception(error)
-    except Exception as e:
-        log(
-            f"[regions_request] Regions extraction request for treatment #{treatment_id} failed",
-            e,
-        )
-        raise Exception(
-            f"[regions_request] Regions extraction request for treatment #{treatment_id} failed"
-        )
+    tasking.task_request(
+        "regions",
+        witnesses,
+        treatment_id,
+    )

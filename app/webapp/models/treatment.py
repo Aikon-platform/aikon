@@ -233,7 +233,7 @@ class Treatment(AbstractSearchableModel):
             module = importlib.import_module(f"{self.task_type}.utils")
             parameters = getattr(module, "prepare_request")(witnesses, self.id)
         except (ImportError, AttributeError) as e:
-            log(f"[start_task] Error loading module: {e}")
+            log(f"[start_task] Error loading module", e)
             self.on_task_error(
                 {"error": "Module loading error.", "notify": self.notify_email}
             )
