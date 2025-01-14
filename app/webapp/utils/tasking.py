@@ -2,19 +2,80 @@ import importlib
 from typing import List
 
 import requests
+from django.contrib.auth.models import User
 
 from app.config.settings import APP_URL, APP_NAME, CV_API_URL, APP_LANG
 from app.webapp.models.digitization import Digitization
+from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions
+from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
 from app.webapp.utils.logger import log
 
 
-def create_treatment(records: List[Witness | Digitization | Regions]):
+def create_treatment(
+    records: List[Witness | Digitization | Regions], task_name, user: User = None
+) -> int:
     # TODO : is it better to create a Treatment and let the post save do the work (better tracking)
     # TODO : or use task_request separately (better control)
     # TODO : consider changing tasking workflow (it is weird to trigger start_task in get_all_witnesses task)
-    return "manual"
+    wit_ids = set()
+    doc_title = "Document set"
+
+    try:
+        for record in records:
+            witness = record.get_witness() if hasattr(record, "get_witness") else record
+            wit_ids.add(witness.id if witness else None)
+            if len(records) == 1:
+                doc_str = witness.__str__()
+                doc_title = doc_str if len(doc_str) < 48 else f"{doc_str[:48]}…"
+    except Exception as e:
+        log(
+            f"[create_treatment] Failed to retrieve witness ids",
+            e,
+        )
+        raise e
+
+    try:
+        if not user:
+            user = User.objects.filter(is_superuser=True).first()
+    except Exception as e:
+        log(
+            f"[create_treatment] Unable to retrieve admin user to trigger Treatment for witnesses {wit_ids}",
+            e,
+        )
+        raise e
+
+    try:
+        doc_set = DocumentSet.objects.create(
+            title=doc_title,
+            user=user,
+            wit_ids=list(wit_ids),
+            is_public=False,
+        )
+        doc_set.save()
+    except Exception as e:
+        log(
+            f"[create_treatment] Failed to create Document Set for witnesses {wit_ids}",
+            e,
+        )
+        raise e
+
+    try:
+        treatment = Treatment.objects.create(
+            requested_by=user,
+            task_type=task_name,
+            document_set=doc_set,
+        )
+        treatment.save()
+    except Exception as e:
+        log(
+            f"[create_treatment] Failed to create Treatment for witnesses {wit_ids}",
+            e,
+        )
+        raise e
+
+    return True
 
 
 def task_payload(task_name, records, treatment_id):
@@ -29,8 +90,13 @@ def task_request(task_name, records, treatment_id=None, endpoint="start"):
     """
     Utility function to send a vectorization request to a specified endpoint.
     """
-    if treatment_id:
-        treatment_id = create_treatment(records)
+    if not treatment_id:
+        try:
+            # create treatment post save method triggers the task request
+            create_treatment(records, task_name)
+            return True
+        except Exception:
+            treatment_id = "manual"
 
     try:
         payload = task_payload(task_name, records, treatment_id)

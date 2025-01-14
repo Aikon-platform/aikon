@@ -6,6 +6,7 @@ from django.views.decorators.http import require_POST
 
 from app.webapp.utils.logger import log
 from app.webapp.utils.regions import check_regions_file
+from app.webapp.utils.tasking import create_treatment
 from app.webapp.views import is_superuser, check_ref
 
 from app.regions.utils import regions_request
@@ -46,8 +47,6 @@ def witness_regions_extraction(request, wit_id):
     To launch regions extraction for a specific witness
     """
     from app.webapp.models.witness import Witness
-    from app.webapp.models.document_set import DocumentSet
-    from app.webapp.models.treatment import Treatment
 
     witness = Witness.objects.get(id=wit_id)
     digits = [digit for digit in witness.get_digits() if digit.has_images()]
@@ -59,42 +58,16 @@ def witness_regions_extraction(request, wit_id):
         )
 
     try:
-        wit_str = witness.__str__()
-        wit_title = wit_str if len(wit_str) < 48 else f"{wit_str[:48]}…"
-        doc_set = DocumentSet.objects.create(
-            title=wit_title,
-            user=request.user,
-            wit_ids=[wit_id],
-            is_public=False,
-        )
-        doc_set.save()
+        create_treatment([witness], "regions", request.user)
     except Exception as e:
-        log(
-            f"[witness_regions_extraction] Failed to create DocumentSet for witness #{wit_id}: {e}"
-        )
         return JsonResponse(
-            {"message": f"Failed to create DocumentSet for witness #{wit_id}: {e}"},
+            {
+                "message": f"Failed to launch region extraction for witness #{wit_id}: {e}"
+            },
             safe=False,
             status=500,
         )
 
-    try:
-        treatment = Treatment.objects.create(
-            requested_by=request.user,
-            task_type="regions",
-            document_set=doc_set,
-        )
-        treatment.save()
-    except Exception as e:
-        log(
-            f"[witness_regions_extraction] Failed to create Treatment for witness #{wit_id}",
-            e,
-        )
-        return JsonResponse(
-            {"message": f"Failed to create Treatment for witness #{wit_id}: {e}"},
-            safe=False,
-            status=500,
-        )
     return JsonResponse(
         {"message": f"Regions extraction was launched for witness #{wit_id}"},
         safe=False,
