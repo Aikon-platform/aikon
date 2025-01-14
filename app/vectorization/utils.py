@@ -1,4 +1,5 @@
 import os
+import shutil
 import zipfile
 
 from app.config.settings import APP_URL, APP_NAME
@@ -49,53 +50,47 @@ def delete_and_relaunch_request(regions):
 
 def save_svg_files(zip_file):
     """
-    Extracts SVG files from a ZIP file and saves them to the SVG_PATH directory.
+    Extracts SVG files from a ZIP file and saves them to a folder named after regions.ref inside SVG_PATH,
+    named after the ZIP file (without extension).
     """
-    # Vérifie si le répertoire SVG_PATH existe, sinon le crée
     if not os.path.exists(SVG_PATH):
         os.makedirs(SVG_PATH)
+
+    # Create a subdirectory named after the ZIP file
+    zip_name = os.path.splitext(os.path.basename(zip_file))[0]
+    subdir = os.path.join(SVG_PATH, zip_name)
+    os.makedirs(subdir, exist_ok=True)
 
     try:
         with zipfile.ZipFile(zip_file, "r") as zip_ref:
             for file_info in zip_ref.infolist():
-                # Vérifie si le fichier est un fichier SVG
                 if file_info.filename.endswith(".svg"):
                     file_path = os.path.join(
-                        SVG_PATH, os.path.basename(file_info.filename)
+                        subdir, os.path.basename(file_info.filename)
                     )
+                    with zip_ref.open(file_info) as svg_file, open(
+                        file_path, "wb"
+                    ) as output_file:
+                        output_file.write(svg_file.read())
 
-                    # Supprime le fichier existant s'il y en a un
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-
-                    # Extrait le fichier SVG et l'écrit dans le répertoire spécifié
-                    with zip_ref.open(file_info) as svg_file:
-                        with open(file_path, "wb") as output_file:
-                            output_file.write(svg_file.read())
     except Exception as e:
-        log(f"[save_svg_files] Error when extracting SVG files from ZIP file", e)
+        log(f"[save_svg_files] Error extracting SVG files from {zip_file}", e)
         return False
     return True
 
 
 def reset_vectorization(regions: Regions):
-    regions_id = regions.id
     try:
-        regions_ref = regions.get_ref()
+        svg_dir = os.path.join(SVG_PATH, regions.get_ref())
+        if os.path.exists(svg_dir):
+            shutil.rmtree(svg_dir)
+            # TODO send request to delete SVG to API
+            return True
+        log(f"[reset_vectorization] Folder {svg_dir} does not exist")
     except Exception as e:
         log(
-            f"[reset_vectorization] Failed to retrieve region ref for id {regions_id}",
+            f"[reset_vectorization] Error removing SVG folder for Regions #{regions.id}",
             e,
         )
         return False
-
-    for file in os.listdir(SVG_PATH):
-        # TODO change here once SVG files will be stored in different folders
-        if regions_ref in file:
-            try:
-                os.remove(os.path.join(SVG_PATH, file))
-            except OSError as e:
-                log(f"[reset_vectorization] Error removing {file}", e)
-
-    # TODO send request to delete svg to API
-    return True
+    return False
