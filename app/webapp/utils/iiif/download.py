@@ -189,7 +189,7 @@ class IIIFDownloader:
                         return
                 return save_img(img, img_name)
 
-        except (RequestException, ProtocolError, Timeout) as e:
+        except (RequestException, ProtocolError, Timeout, ConnectionError) as e:
             download_log(img_name, img_url)
             log(f"[save_iiif_img] Failed to download image from {iiif_url}", e)
             return False
