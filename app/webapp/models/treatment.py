@@ -290,7 +290,7 @@ class Treatment(AbstractSearchableModel):
 
         self.save()
 
-    def process_results(self, data):
+    def process_results(self, data, complete=True):
         try:
             process_task_results(self.task_type, data)
         except (ImportError, AttributeError) as e:
@@ -300,13 +300,15 @@ class Treatment(AbstractSearchableModel):
                     "notify": self.notify_email,
                 },
                 exception=e,
+                complete=complete,
             )
-        self.on_task_success(
-            {
-                "notify": self.notify_email,
-                "message": data.get("message"),
-            }
-        )
+        if complete:
+            self.on_task_success(
+                {
+                    "notify": self.notify_email,
+                    "message": data.get("message"),
+                }
+            )
 
     def on_task_success(self, data, request=None):
         """
@@ -324,21 +326,28 @@ class Treatment(AbstractSearchableModel):
             )
             messages.warning(request, flash_msg)
 
-    def on_task_error(self, data, request=None, exception: Exception = None):
+    def on_task_error(
+        self, data, request=None, exception: Exception = None, complete=True
+    ):
         """
         Handle the end of the task
         """
         log(data.get("error", "Unknown error"), exception=exception)
 
-        self.terminate_task(
-            "ERROR", error=data.get("error", "Unknown error"), notify=data.get("notify")
-        )
+        if complete:
+            self.terminate_task(
+                "ERROR",
+                error=data.get("error", "Unknown error"),
+                notify=data.get("notify"),
+            )
 
         if request:
             flash_msg = (
-                f"The requested task could not be completed.\n{data.get('error', 'Unknown error')}"
+                f"The requested task encountered an error during execution."
+                f"\n{data.get('error', 'Unknown error')}"
                 if APP_LANG == "en"
-                else f"La tâche demandée n'a pas pu être complétée.\n{data.get('error', 'Unknown error')}"
+                else f"La tâche demandée a rencontré une erreur lors de son exécution."
+                f"\n{data.get('error', 'Unknown error')}"
             )
             messages.warning(request, flash_msg)
 
@@ -379,6 +388,8 @@ class Treatment(AbstractSearchableModel):
             self.status = "IN PROGRESS"
             self.save()
             return True
+        elif event == "PROGRESS":
+            self.process_results(data, complete=False)
         elif event == "SUCCESS":
             # process_results triggers task_success/task_error when achieved
             self.process_results(data)
