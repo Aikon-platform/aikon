@@ -391,14 +391,16 @@ class Treatment(AbstractSearchableModel):
         elif event == "PROGRESS":
             self.process_results(data, complete=False)
         elif event == "SUCCESS":
-            # process_results triggers task_success/task_error when achieved
+            # process_results@complete=True triggers task_success/task_error when achieved
             self.process_results(data)
         elif event == "ERROR":
+            is_finished = data.get("completed", True)
             self.on_task_error(
                 {
                     "notify": self.notify_email,
                     "error": data.get("message"),
-                }
+                },
+                complete=is_finished,
             )
 
 

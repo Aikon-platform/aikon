@@ -30,6 +30,13 @@ def prepare_request(witnesses, treatment_id):
 
 
 def process_results(data):
+    # data = {
+    #     doc_id,: results[doc_id],
+    #     ?[doc_id: results[doc_id],]
+    #     ?["error": [list of error message]]
+    # }
+    # TODO check if doc_id was not already downloaded
+
     #     if "file" not in request.FILES:
     #         log("No zip file containing SVG")
     #         return JsonResponse({"error": "No file received"}, status=400)
