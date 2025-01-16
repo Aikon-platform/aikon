@@ -14,13 +14,8 @@ urlpatterns = [
     ),
     path(
         f"{APP_NAME}/notify/regions/<str:digit_ref>",
-        receive_regions_file,
+        receive_regions_notification,
         name="notify-regions",
-    ),
-    path(
-        f"{APP_NAME}/regions-deletion-extraction/<str:digit_ref>",
-        regions_deletion_extraction,
-        name="regions-deletion-extraction",
     ),
     path(
         f"{APP_NAME}/witness/<int:wit_id>/regions/extract",

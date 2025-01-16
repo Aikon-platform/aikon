@@ -645,22 +645,6 @@ class WorkAutocomplete(autocomplete.Select2QuerySetView):
 
 
 @csrf_exempt
-def api_progress(request):
-    """
-    Receives treatment updates from API
-    """
-    if request.method == "POST":
-        treatment_id = request.POST["experiment_id"]
-        info = request.POST["message"]
-
-        treatment = Treatment.objects.get(id=treatment_id)
-        treatment.receive_notification(event=request.POST["event"], info=info)
-        return JsonResponse({"message": "Update received"}, status=200)
-
-    return JsonResponse({"message": "Invalid request"}, status=400)
-
-
-@csrf_exempt
 def cancel_treatment(request, treatment_id):
     """
     Cancel treatment in the API

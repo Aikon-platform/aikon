@@ -25,6 +25,7 @@ from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.tasks import get_all_witnesses
 
 from app.webapp.utils.logger import log
+from app.webapp.utils.tasking import task_payload, process_task_results
 
 
 def get_name(fieldname, plural=False):
@@ -230,17 +231,20 @@ class Treatment(AbstractSearchableModel):
             return
 
         try:
-            module = importlib.import_module(f"{self.task_type}.utils")
-            parameters = getattr(module, "prepare_request")(witnesses, self.id)
+            parameters = task_payload(self.task_type, witnesses, self.id)
         except (ImportError, AttributeError) as e:
-            log(f"[start_task] Error loading module", e)
             self.on_task_error(
-                {"error": "Module loading error.", "notify": self.notify_email}
+                {
+                    "error": "[start_task] Module loading error.",
+                    "notify": self.notify_email,
+                },
+                exception=e,
             )
             self.save()
             return
 
         if "message" in parameters:
+            # means that the results are already existing
             self.on_task_success(
                 {"notify": self.notify_email, "message": parameters["message"]}
             )
@@ -276,14 +280,33 @@ class Treatment(AbstractSearchableModel):
                         "url": url,
                         "payload": parameters,
                     },
-                    "response_info": {"text": api_query.text, "error": str(e)},
-                }
+                    "response_info": {"text": api_query.text},
+                },
+                exception=e,
             )
             self.on_task_error(
                 {"error": "API error when starting task.", "notify": self.notify_email}
             )
 
         self.save()
+
+    def process_results(self, data):
+        try:
+            process_task_results(self.task_type, data)
+        except (ImportError, AttributeError) as e:
+            self.on_task_error(
+                {
+                    "error": "[process_results] Error processing task result.",
+                    "notify": self.notify_email,
+                },
+                exception=e,
+            )
+        self.on_task_success(
+            {
+                "notify": self.notify_email,
+                "message": data.get("message"),
+            }
+        )
 
     def on_task_success(self, data, request=None):
         """
@@ -295,16 +318,18 @@ class Treatment(AbstractSearchableModel):
 
         if request:
             flash_msg = (
-                f"The requested task was completed.\n{data.get('message') if data.get('message') else ''}"
+                f"The requested task was completed.\n{data.get('message', '')}"
                 if APP_LANG == "en"
-                else f"La tâche demandée a été complétée.\n{data.get('message') if data.get('message') else ''}"
+                else f"La tâche demandée a été complétée.\n{data.get('message', '')}"
             )
             messages.warning(request, flash_msg)
 
-    def on_task_error(self, data, request=None):
+    def on_task_error(self, data, request=None, exception: Exception = None):
         """
         Handle the end of the task
         """
+        log(data.get("error", "Unknown error"), exception=exception)
+
         self.terminate_task(
             "ERROR", error=data.get("error", "Unknown error"), notify=data.get("notify")
         )
@@ -317,7 +342,9 @@ class Treatment(AbstractSearchableModel):
             )
             messages.warning(request, flash_msg)
 
-    def terminate_task(self, status="SUCCESS", error=None, message=None, notify=True):
+    def terminate_task(
+        self, status="SUCCESS", error=None, message="No information", notify=True
+    ):
         """
         Called when the task is finished
         """
@@ -331,7 +358,9 @@ class Treatment(AbstractSearchableModel):
             try:
                 send_mail(
                     f"[{APP_NAME.upper()} {self.task_type}] Task {self.status.lower()}",
-                    f"Dear {APP_NAME.upper()} user,\n\nThe {self.task_type} task (#{self.id}) you requested on the {APP_NAME.upper()} platform was completed with the status {self.status}.\n\nMessage: {error if error else message}.\n\nBest,\nthe {APP_NAME.upper()} team.",
+                    f"Dear {APP_NAME.upper()} user,\n\n"
+                    f"The {self.task_type} task (#{self.id}) you requested on the {APP_NAME.upper()} platform was completed with the status {self.status}."
+                    f"\n\nMessage: {error or message}.\n\nBest,\nthe {APP_NAME.upper()} team.",
                     EMAIL_HOST_USER,
                     [self.requested_by.email],
                     fail_silently=False,
@@ -342,7 +371,7 @@ class Treatment(AbstractSearchableModel):
                     e,
                 )
 
-    def receive_notification(self, event, info):
+    def receive_notification(self, event, data):
         """
         Called by the API when tasks events happen
         """
@@ -351,17 +380,15 @@ class Treatment(AbstractSearchableModel):
             self.save()
             return True
         elif event == "SUCCESS":
-            data = {
-                "notify": self.notify_email,
-                "message": info,
-            }
-            self.on_task_success(data)
+            # process_results triggers task_success/task_error when achieved
+            self.process_results(data)
         elif event == "ERROR":
-            data = {
-                "notify": self.notify_email,
-                "error": info,
-            }
-            self.on_task_error(data)
+            self.on_task_error(
+                {
+                    "notify": self.notify_email,
+                    "error": data.get("message"),
+                }
+            )
 
 
 @receiver(post_save, sender=Treatment)

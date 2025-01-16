@@ -13,7 +13,7 @@ urlpatterns = [
     ),
     path(
         f"{APP_NAME}/vectorization/notify",
-        receive_vectorization,
+        receive_vectorization_notification,
         name="notify-vectorization",
     ),
     path(

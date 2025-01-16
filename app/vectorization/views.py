@@ -31,6 +31,7 @@ from app.vectorization.utils import (
     save_svg_files,
     reset_vectorization,
 )
+from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import check_ref, is_superuser
 
 from app.webapp.utils.iiif.annotation import (
@@ -39,26 +40,12 @@ from app.webapp.utils.iiif.annotation import (
 
 
 @csrf_exempt
-def receive_vectorization(request):
+def receive_vectorization_notification(request):
     """
     Endpoint to receive a ZIP file containing SVG files and save them to the media directory.
     """
-    if "file" not in request.FILES:
-        log("No zip file containing SVG")
-        return JsonResponse({"error": "No file received"}, status=400)
-
-    file = request.FILES["file"]
-
-    if not file.name or not file.name.endswith(".zip"):
-        log("No filename or correct file format for saving SVG results")
-        return JsonResponse({"error": "No filename or no zip"}, status=400)
-
-    if save_svg_files(file):
-        return JsonResponse(
-            {"message": "Files successfully uploaded and extracted"}, status=200
-        )
-
-    return JsonResponse({"error": "Failed to process SVG files"}, status=500)
+    response, status_code = receive_notification(request)
+    return JsonResponse(response, status=status_code, safe=False)
 
 
 @login_required

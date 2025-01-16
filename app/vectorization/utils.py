@@ -12,16 +12,11 @@ from app.webapp.utils import tasking
 from app.webapp.utils.logger import log
 
 
-def prepare_document(document: Witness | Digitization | Regions, **kwargs):
-    if document.is_vectorized():
-        return []
-
-    regions = document.get_regions() if hasattr(document, "get_regions") else [document]
-
-    return [
-        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list"}
-        for ref in [region.get_ref() for region in regions]
-    ]
+################################################################
+# ⚠️   prepare_request() & process_results() are mandatory  ⚠️ #
+# ⚠️ function used by Treatment to generate request payload ⚠️ #
+# ⚠️    and save results files when sends back by the API   ⚠️ #
+################################################################
 
 
 def prepare_request(witnesses, treatment_id):
@@ -32,6 +27,38 @@ def prepare_request(witnesses, treatment_id):
         "vectorization",
         {"model": f"{VECTO_MODEL_EPOCH}"},
     )
+
+
+def process_results(data):
+    #     if "file" not in request.FILES:
+    #         log("No zip file containing SVG")
+    #         return JsonResponse({"error": "No file received"}, status=400)
+    #
+    #     file = request.FILES["file"]
+    #
+    #     if not file.name or not file.name.endswith(".zip"):
+    #         log("No filename or correct file format for saving SVG results")
+    #         return JsonResponse({"error": "No filename or no zip"}, status=400)
+    #
+    #     if save_svg_files(file):
+    #         return JsonResponse(
+    #             {"message": "Files successfully uploaded and extracted"}, status=200
+    #         )
+    #
+    #     return JsonResponse({"error": "Failed to process SVG files"}, status=500)
+    pass
+
+
+def prepare_document(document: Witness | Digitization | Regions, **kwargs):
+    if document.is_vectorized():
+        return []
+
+    regions = document.get_regions() if hasattr(document, "get_regions") else [document]
+
+    return [
+        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list"}
+        for ref in [region.get_ref() for region in regions]
+    ]
 
 
 def vectorization_request_for_one(regions):

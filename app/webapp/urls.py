@@ -198,11 +198,6 @@ urlpatterns = [
         name="edition-autocomplete",
     ),
     path(
-        f"{APP_NAME}/api-progress",
-        api_progress,
-        name="api-progress",
-    ),
-    path(
         f"{APP_NAME}/treatment/<str:treatment_id>/cancel",
         cancel_treatment,
         name="cancel-treatment",

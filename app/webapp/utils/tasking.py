@@ -1,4 +1,5 @@
 import importlib
+import json
 from typing import List
 
 import requests
@@ -16,8 +17,7 @@ from app.webapp.utils.logger import log
 def create_treatment(
     records: List[Witness | Digitization | Regions], task_name, user: User = None
 ) -> int:
-    # TODO : is it better to create a Treatment and let the post save do the work (better tracking)
-    # TODO : or use task_request separately (better control)
+    # TODO : this creates a Treatment and let the post save do the work
     # TODO : consider changing tasking workflow (it is weird to trigger start_task in get_all_witnesses task)
     wit_ids = set()
     doc_title = "Document set"
@@ -78,6 +78,14 @@ def create_treatment(
     return True
 
 
+def process_task_results(task_name, data):
+    try:
+        module = importlib.import_module(f"{task_name}.utils")
+        return getattr(module, "process_results")(data)
+    except (ImportError, AttributeError) as e:
+        raise e
+
+
 def task_payload(task_name, records, treatment_id):
     try:
         module = importlib.import_module(f"{task_name}.utils")
@@ -98,6 +106,7 @@ def task_request(task_name, records, treatment_id=None, endpoint="start"):
         except Exception:
             treatment_id = "manual"
 
+    # TODO probably useless => put in start task method?
     try:
         payload = task_payload(task_name, records, treatment_id)
         response = requests.post(url=f"{CV_API_URL}/{task_name}/start", json=payload)
@@ -169,3 +178,39 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
     except Exception as e:
         log("[prepare_request] Failed to prepare request", e)
         raise e
+
+
+def receive_notification(request):
+    """
+
+    :param request:
+    :return: json response, status code.
+    """
+    if request.method != "POST":
+        return {"success": False, "error": "Only POST requests are supported"}, 400
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+        assert data is not None
+        assert "experiment_id" in data
+        assert "event" in data
+    except (ValueError, AssertionError) as e:
+        return {
+            "success": False,
+            "error": f"Data payload does not contain expected content: {e}",
+        }, 400
+
+    try:
+        treatment = Treatment.objects.get(id=data["experiment_id"])
+    except Treatment.DoesNotExist:
+        # TODO handle manual treatment?
+        return {"success": False, "error": "Treatment not found"}, 400
+
+    try:
+        treatment.receive_notification(
+            event=data.get("event"), info=data.get("message", None)
+        )
+    except Exception as e:
+        return {"success": False, "error": f"Error processing response {e}"}, 400
+
+    return {"success": True, "message": "Update received"}, 200

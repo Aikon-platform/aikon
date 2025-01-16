@@ -8,7 +8,7 @@ app_name = "similarity"
 urlpatterns = [
     path(
         f"{APP_NAME}/similarity/notify",
-        receive_similarity,
+        receive_similarity_notification,
         name="notify-similarity",
     ),
     path(

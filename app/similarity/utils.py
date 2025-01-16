@@ -24,6 +24,106 @@ from app.webapp.utils.logger import log
 from app.webapp.views import check_ref
 
 
+################################################################
+# ⚠️   prepare_request() & process_results() are mandatory  ⚠️ #
+# ⚠️ function used by Treatment to generate request payload ⚠️ #
+# ⚠️    and save results files when sends back by the API   ⚠️ #
+################################################################
+
+
+def prepare_request(witnesses, treatment_id):
+    tasking.prepare_request(
+        witnesses,
+        treatment_id,
+        prepare_document,
+        "similarity",
+        {
+            # TODO add options for similarity
+            # "algorithm": "algorithm",
+            # "feat_net": "model.pt",
+            # "feat_set": "set",
+            # "feat_layer": "layer",
+            # "segswap_prefilter": true, # if algorithm is "segswap"
+            # "segswap_n": 0, # if algorithm is "segswap"
+        },
+    )
+
+
+def process_results(data):
+    from app.similarity.tasks import process_similarity_file
+
+    # TODO very tricky because format has changed
+    pass
+    #     if request.method == "POST":
+    #         filenames = []
+    #         # treatment_id = request.DATA["experiment_id"]
+    #
+    #         try:
+    #             for regions_refs, file in request.FILES.items():
+    #                 with open(f"{SCORES_PATH}/{regions_refs}.npy", "wb") as destination:
+    #                     filenames.append(regions_refs)
+    #                     for chunk in file.chunks():
+    #                         destination.write(chunk)
+    #                 process_similarity_file.delay(f"{SCORES_PATH}/{regions_refs}.npy")
+    #
+    #             return JsonResponse({"message": "Score files received successfully"})
+    #         except Exception as e:
+    #             log("[receive_similarity] Error saving score files", e)
+    #             return JsonResponse({"message": "Error saving score files"}, status=500)
+    #
+    #     return JsonResponse({"message": "Invalid request"}, status=400)
+    #
+    # self.status = "PROCESSING RESULTS"
+    #         self.result_full_path.mkdir(parents=True, exist_ok=True)
+    #
+    #         if data is not None:
+    #             output = data.get("output", {})
+    #             if not output:
+    #                 self.on_task_error({"error": "No output data"})
+    #                 return
+    #
+    #             with open(self.task_full_path / f"{self.dataset.id}.json", "wb") as f:
+    #                   f.write(orjson.dumps(output.get("annotations", {})))
+    #                   self._similarity = similarity
+    #
+    #             dataset_url = output.get("dataset_url")
+    #             if dataset_url:
+    #                 self.dataset.api_url = dataset_url
+    #                 self.dataset.save()
+    #
+    #             try:
+    #                 if self.crops:
+    #                     self.dataset.apply_cropping(self.crops.get_bounding_boxes())
+    #
+    #                 self.prepare_sim_browser()
+    #
+    #             except Exception as e:
+    #                 self.on_task_error({"error": traceback.format_exc()})
+    #                 return
+    #
+    #         else:
+    #             self.on_task_error({"error": "No output data"})
+    #             return
+    #
+    #         return super().on_task_success(data)
+
+
+def prepare_document(document: Witness | Digitization | Regions, **kwargs):
+    regions = document.get_regions() if hasattr(document, "get_regions") else [document]
+
+    return [
+        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list"}
+        for ref in [region.get_ref() for region in regions]
+    ]
+
+
+def send_request(witnesses):
+    """
+    To relaunch similarity request in case the automatic process has failed
+    """
+    tasking.task_request("similarity", witnesses)
+
+
 @lru_cache(maxsize=None)
 def load_npy_file(score_path):
     try:
@@ -302,40 +402,6 @@ def get_compared_regions(regions: Regions):
         for (passed, region) in [check_ref(ref, "Regions") for ref in refs]
         if passed
     ]
-
-
-def prepare_document(document: Witness | Digitization | Regions, **kwargs):
-    regions = document.get_regions() if hasattr(document, "get_regions") else [document]
-
-    return [
-        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list"}
-        for ref in [region.get_ref() for region in regions]
-    ]
-
-
-def prepare_request(witnesses, treatment_id):
-    tasking.prepare_request(
-        witnesses,
-        treatment_id,
-        prepare_document,
-        "similarity",
-        {
-            # TODO add options for similarity
-            # "algorithm": "algorithm",
-            # "feat_net": "model.pt",
-            # "feat_set": "set",
-            # "feat_layer": "layer",
-            # "segswap_prefilter": true, # if algorithm is "segswap"
-            # "segswap_n": 0, # if algorithm is "segswap"
-        },
-    )
-
-
-def send_request(witnesses):
-    """
-    To relaunch similarity request in case the automatic process has failed
-    """
-    tasking.task_request("similarity", witnesses)
 
 
 def check_score_files(file_names):
