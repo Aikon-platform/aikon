@@ -293,7 +293,7 @@ class Treatment(AbstractSearchableModel):
     def process_results(self, data, complete=True):
         try:
             process_task_results(self.task_type, data)
-        except (ImportError, AttributeError) as e:
+        except (ImportError, AttributeError, Exception) as e:
             self.on_task_error(
                 {
                     "error": "[process_results] Error processing task result.",

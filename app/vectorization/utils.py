@@ -1,6 +1,9 @@
 import os
 import shutil
-import zipfile
+from pathlib import Path
+from zipfile import ZipFile
+from stream_unzip import stream_unzip
+import requests
 
 from app.config.settings import APP_URL, APP_NAME
 from app.vectorization.const import VECTO_MODEL_EPOCH, SVG_PATH
@@ -30,30 +33,61 @@ def prepare_request(witnesses, treatment_id):
 
 
 def process_results(data):
-    # data = {
-    #     doc_id,: results[doc_id],
-    #     ?[doc_id: results[doc_id],]
-    #     ?["error": [list of error message]]
-    # }
-    # TODO check if doc_id was not already downloaded
+    """
 
-    #     if "file" not in request.FILES:
-    #         log("No zip file containing SVG")
-    #         return JsonResponse({"error": "No file received"}, status=400)
-    #
-    #     file = request.FILES["file"]
-    #
-    #     if not file.name or not file.name.endswith(".zip"):
-    #         log("No filename or correct file format for saving SVG results")
-    #         return JsonResponse({"error": "No filename or no zip"}, status=400)
-    #
-    #     if save_svg_files(file):
-    #         return JsonResponse(
-    #             {"message": "Files successfully uploaded and extracted"}, status=200
-    #         )
-    #
-    #     return JsonResponse({"error": "Failed to process SVG files"}, status=500)
-    pass
+    :param data: {
+        doc_id,: result_url,
+        ?[doc_id: result_url,]
+        ?["error": [list of error message]]
+    }
+    :return:
+    """
+    if not data:
+        raise ValueError("No SVG results to unzip")
+
+    if not os.path.exists(SVG_PATH):
+        os.makedirs(SVG_PATH)
+
+    for doc_id, result_url in data.items():
+        if doc_id == "error":
+            log(result_url)
+            continue
+
+        result_dir = SVG_PATH / doc_id
+
+        if result_dir.exists() and any(result_dir.glob("*.svg")):
+            # if the path already exists and contains svg file,
+            # means that it was already downloaded
+            continue
+
+        try:
+            res = requests.get(result_url, stream=True)
+            res.raise_for_status()
+
+            result_dir.mkdir(parents=True, exist_ok=True)
+            zip_result_file = result_dir / "results.zip"
+
+            with open(zip_result_file, "wb") as f:
+                for chunk in res.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+            with (ZipFile(zip_result_file, "r") as zip_ref):
+                for file_info in zip_ref.infolist():
+                    filename = file_info.filename
+                    if not filename.endswith(".svg"):
+                        continue
+
+                    file_path = result_dir / os.path.basename(filename)
+                    with zip_ref.open(file_info) as input, open(
+                        file_path, "wb"
+                    ) as output:
+                        output.write(input.read())
+
+        except requests.exceptions.HTTPError as e:
+            log(f"[save_svg_files] Error extracting SVG files from {doc_id}", e)
+            continue
+
+        return True
 
 
 def prepare_document(document: Witness | Digitization | Regions, **kwargs):
@@ -63,7 +97,7 @@ def prepare_document(document: Witness | Digitization | Regions, **kwargs):
     regions = document.get_regions() if hasattr(document, "get_regions") else [document]
 
     return [
-        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list"}
+        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
         for ref in [region.get_ref() for region in regions]
     ]
 
@@ -80,37 +114,6 @@ def delete_and_relaunch_request(regions):
     Request to the API endpoint to delete imgs from the repo corresponding to doc_id + relaunch the vectorization
     """
     tasking.task_request("vectorization", regions, None, endpoint="delete_and_relaunch")
-
-
-def save_svg_files(zip_file):
-    """
-    Extracts SVG files from a ZIP file and saves them to a folder named after regions.ref inside SVG_PATH,
-    named after the ZIP file (without extension).
-    """
-    if not os.path.exists(SVG_PATH):
-        os.makedirs(SVG_PATH)
-
-    # Create a subdirectory named after the ZIP file
-    zip_name = os.path.splitext(os.path.basename(zip_file))[0]
-    subdir = os.path.join(SVG_PATH, zip_name)
-    os.makedirs(subdir, exist_ok=True)
-
-    try:
-        with zipfile.ZipFile(zip_file, "r") as zip_ref:
-            for file_info in zip_ref.infolist():
-                if file_info.filename.endswith(".svg"):
-                    file_path = os.path.join(
-                        subdir, os.path.basename(file_info.filename)
-                    )
-                    with zip_ref.open(file_info) as svg_file, open(
-                        file_path, "wb"
-                    ) as output_file:
-                        output_file.write(svg_file.read())
-
-    except Exception as e:
-        log(f"[save_svg_files] Error extracting SVG files from {zip_file}", e)
-        return False
-    return True
 
 
 def reset_vectorization(regions: Regions):

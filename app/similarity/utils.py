@@ -112,7 +112,7 @@ def prepare_document(document: Witness | Digitization | Regions, **kwargs):
     regions = document.get_regions() if hasattr(document, "get_regions") else [document]
 
     return [
-        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list"}
+        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
         for ref in [region.get_ref() for region in regions]
     ]
 
