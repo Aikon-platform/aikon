@@ -1,6 +1,7 @@
 import json
 import re
 from datetime import datetime
+from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
@@ -812,7 +813,7 @@ def process_regions(
 ):
     try:
         # TODO add step to check if regions weren't generated before for the same model
-        regions = Regions.objects.create(digitization=digit, model=model)
+        regions, is_new = Regions.objects.get_or_create(digitization=digit, model=model)
     except Exception as e:
         log(
             f"[process_regions] Failed to create regions record for digit #{digit.id}",
@@ -820,12 +821,22 @@ def process_regions(
         )
         return False
 
+    anno_file = f"{REGIONS_PATH}/{regions.get_ref()}.{extension}"
+    if not is_new and Path(anno_file).exists():
+        log(
+            f"[process_regions] Regions for #{digit.id} already exists with same model, skipping",
+        )
+        return False
+
     try:
-        with open(f"{REGIONS_PATH}/{regions.get_ref()}.{extension}", "w+b") as f:
-            f.write(regions_file_content.encode("utf-8"))
+        with open(anno_file, "w") as f:
+            if extension == "json":
+                json.dump(regions_file_content, f)
+            else:
+                f.write(str(regions_file_content))
     except Exception as e:
         log(
-            f"[process_regions] Failed to save received regions file for digit #{digit.id}",
+            f"[process_regions] Failed to save received content file for digit #{digit.id}",
             e,
         )
         return False
