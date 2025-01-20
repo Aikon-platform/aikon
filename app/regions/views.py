@@ -5,12 +5,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from app.webapp.utils.logger import log
-from app.webapp.utils.regions import check_regions_file
 from app.webapp.utils.tasking import create_treatment, receive_notification
 from app.webapp.views import is_superuser, check_ref
 
 from app.regions.utils import regions_request
-from app.regions.tasks import process_regions_file
 
 
 @user_passes_test(is_superuser)

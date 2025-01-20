@@ -20,7 +20,6 @@ from app.webapp.utils.functions import (
     is_url,
     get_files_in_dir,
 )
-from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.utils.logger import log
 from app.webapp.utils.iiif.annotation import formatted_annotations
 
@@ -28,7 +27,6 @@ from app.vectorization.const import SVG_PATH
 from app.vectorization.utils import (
     vectorization_request_for_one,
     delete_and_relaunch_request,
-    save_svg_files,
     reset_vectorization,
 )
 from app.webapp.utils.tasking import receive_notification

@@ -1,4 +1,5 @@
-import re
+import json
+from pathlib import Path
 
 from app.config.settings import (
     CANTALOUPE_APP_URL,
@@ -9,32 +10,52 @@ from app.webapp.utils.constants import MANIFEST_V2
 
 from app.webapp.utils.logger import log
 from app.webapp.utils.paths import REGIONS_PATH
-from django.db.utils import IntegrityError
 
 
-def get_txt_regions(regions: Regions):
-    try:
-        with open(f"{REGIONS_PATH}/{regions.get_ref()}.txt") as f:
-            return [line.strip() for line in f.readlines()]
-    except FileNotFoundError:
-        return None
+def get_file_regions(regions: Regions):
+    json_file = Path(REGIONS_PATH) / f"{regions.get_ref()}.json"
+    if json_file.exists():
+        try:
+            with open(json_file, "rb") as f:
+                return json.load(f), "json"
+        except Exception:
+            return None, None
+
+    txt_file = Path(REGIONS_PATH) / f"{regions.get_ref()}.txt"
+    if txt_file.exists():
+        try:
+            with open(txt_file, "r") as f:
+                return [line.strip() for line in f.readlines()], "txt"
+        except Exception:
+            return None, None
+    return None, None
 
 
 def get_regions_img(regions: Regions):
-    lines = get_txt_regions(regions)
-    if lines is None:
+    data, anno_format = get_file_regions(regions)
+    if data is None:
         return []
 
     imgs = []
     img_name = f"{regions.get_ref()}_0000.jpg"
-    for line in lines:
-        if len(line.split()) == 2:
-            img_name = line.split()[1]
-        else:
-            x, y, w, h = line.split()
-            imgs.append(
-                f"{CANTALOUPE_APP_URL}/iiif/2/{img_name}/{x},{y},{w},{h}/full/0/default.jpg"
-            )
+    if anno_format == "txt":
+        for line in data:
+            if len(line.split()) == 2:
+                img_name = line.split()[1]
+            else:
+                x, y, w, h = line.split()
+                imgs.append(
+                    f"{CANTALOUPE_APP_URL}/iiif/2/{img_name}/{x},{y},{w},{h}/full/0/default.jpg"
+                )
+    elif anno_format == "json":
+        for annotation in data:  # Iterate through all annotations
+            img_name = annotation["source"]
+            for crop in annotation["crops"]:
+                coord = crop["absolute"]
+                x, y, w, h = coord["x1"], coord["y1"], coord["width"], coord["height"]
+                imgs.append(
+                    f"{CANTALOUPE_APP_URL}/iiif/2/{img_name}/{x},{y},{w},{h}/full/0/default.jpg"
+                )
     return imgs
 
 
@@ -89,15 +110,3 @@ def create_empty_regions(digit: Digitization):
         return False
 
     return regions
-
-
-def check_regions_file(file_content):
-    # Either contains a number then an img.jpg / Or a series of 4 numbers
-    pattern = re.compile(r"^\d+\s+\S+\.jpg$|^\d+\s\d+\s\d+\s\d+$")
-    for line in file_content.split("\n"):
-        if line == "":
-            continue
-        if not pattern.match(line):
-            log(f"[check_regions_file] incorrect line {line}")
-            return False
-    return True

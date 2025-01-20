@@ -34,21 +34,21 @@ def prepare_request(witnesses, treatment_id):
 
 def process_results(data):
     """
-
-    :param data: {
+    :param data["output"]: {
         doc_id,: result_url,
         ?[doc_id: result_url,]
         ?["error": [list of error message]]
     }
     :return:
     """
-    if not data:
+    output = data.get("output", None)
+    if not data or not output:
         raise ValueError("No SVG results to unzip")
 
     if not os.path.exists(SVG_PATH):
         os.makedirs(SVG_PATH)
 
-    for doc_id, result_url in data.items():
+    for doc_id, result_url in output.items():
         if doc_id == "error":
             log(result_url)
             continue

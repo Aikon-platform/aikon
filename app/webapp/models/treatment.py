@@ -309,6 +309,7 @@ class Treatment(AbstractSearchableModel):
                     "message": data.get("message"),
                 }
             )
+            return
 
     def on_task_success(self, data, request=None):
         """
