@@ -214,11 +214,11 @@ def reindex_regions(request, obj_ref):
             {"error": f"Failed to retrieve digitization for regions #{obj_ref}"}
         )
 
-    if exists(f"{REGIONS_PATH}/{obj_ref}.txt"):
+    if anno_file := regions.region_file():
         try:
-            with open(f"{REGIONS_PATH}/{obj_ref}.txt", "r") as file:
+            with open(anno_file, "r") as file:
                 process_regions(file.read(), digit)
-            delete_files(f"{REGIONS_PATH}/{obj_ref}.txt")
+            delete_files(anno_file)
 
             return JsonResponse({"message": "Regions were re-indexed."})
 

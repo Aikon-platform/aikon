@@ -209,7 +209,7 @@ class Digitization(AbstractSearchableModel):
 
     def has_regions(self):
         # if there is at least one regions file named after the current digitization
-        if len(glob(f"{REGIONS_PATH}/{self.get_ref()}_*.txt")):
+        if len(glob(f"{REGIONS_PATH}/{self.get_ref()}_*")):
             # TODO check self.get_regions()
             return True
         return False

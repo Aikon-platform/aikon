@@ -214,7 +214,7 @@ def index_regions(regions: Regions):
 
 
 def reindex_file(filename):
-    a_ref = filename.replace(".txt", "")
+    a_ref = filename.replace(".txt", "").replace(".json", "")
     ref = parse_ref(a_ref)
     if not ref or not ref["regions"]:
         # if there is no regions_id in the ref, pass

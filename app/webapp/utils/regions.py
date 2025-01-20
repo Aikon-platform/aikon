@@ -78,17 +78,8 @@ def create_empty_regions(digit: Digitization):
         )
         return False
 
-    try:
-        # TODO check if necessary
-        with open(f"{REGIONS_PATH}/{regions.get_ref()}.txt", "w") as regions_file:
-            for i, img_name in enumerate(imgs, 1):
-                regions_file.write(f"{i} {img_name}\n")
-    except Exception as e:
-        log(
-            f"[create_empty_regions] unable to create new Regions file for digit #{digit.id}",
-            e,
-        )
-        return False
+    with open(f"{REGIONS_PATH}/{regions.get_ref()}.json", "w") as _:
+        pass
 
     try:
         # TODO some weird inconsistent problem with SAS (fails here unpredictably)
