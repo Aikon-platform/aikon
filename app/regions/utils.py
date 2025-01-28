@@ -83,6 +83,7 @@ def process_results(data):
             process_regions_file.delay(json_content, digit_id, model_name)
         except Exception as e:
             log(f"Could not process annotation from {annotation_url}", e)
+            raise e
     return
 
 

@@ -86,7 +86,7 @@ def process_task_results(task_name, data):
         raise e
 
 
-def task_payload(task_name, records, treatment_id):
+def prepare_task_request(task_name, records, treatment_id):
     try:
         module = importlib.import_module(f"{task_name}.utils")
         return getattr(module, "prepare_request")(records, treatment_id)
@@ -108,7 +108,7 @@ def task_request(task_name, records, treatment_id=None, endpoint="start"):
 
     # TODO probably useless => put in start task method?
     try:
-        payload = task_payload(task_name, records, treatment_id)
+        payload = prepare_task_request(task_name, records, treatment_id)
         response = requests.post(url=f"{CV_API_URL}/{task_name}/start", json=payload)
         if response.status_code == 200:
             log(

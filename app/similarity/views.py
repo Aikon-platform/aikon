@@ -373,7 +373,7 @@ def index_regions_similarity(request, regions_ref=None):
         pairs = get_computed_pairs(regions_ref)
 
     for pair in pairs:
-        process_similarity_file.delay(f"{SCORES_PATH}/{pair}.npy")
+        process_similarity_file.delay(pair)
 
     return JsonResponse(
         {

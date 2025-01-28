@@ -25,7 +25,7 @@ from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.tasks import get_all_witnesses
 
 from app.webapp.utils.logger import log
-from app.webapp.utils.tasking import task_payload, process_task_results
+from app.webapp.utils.tasking import prepare_task_request, process_task_results
 
 
 def get_name(fieldname, plural=False):
@@ -231,7 +231,7 @@ class Treatment(AbstractSearchableModel):
             return
 
         try:
-            parameters = task_payload(self.task_type, witnesses, self.id)
+            parameters = prepare_task_request(self.task_type, witnesses, self.id)
         except (ImportError, AttributeError) as e:
             self.on_task_error(
                 {

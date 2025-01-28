@@ -1,9 +1,12 @@
+import json
 import os
 import re
 
 import numpy as np
 from typing import Tuple, Set, List
-from collections import defaultdict
+
+import orjson
+import requests
 from itertools import combinations_with_replacement
 from functools import lru_cache
 
@@ -50,62 +53,67 @@ def prepare_request(witnesses, treatment_id):
 
 
 def process_results(data):
+    """
+    :param data: {
+        "dataset_url": self.dataset.get_absolute_url(),
+        "annotations": [{doc_pair_ref: result_url}],  => result_url returns a downloadable JSON
+    }
+
+    result_url JSON file content
+    {
+        "parameters": {
+            "algorithm": "cosine | segswap",
+            "topk": "nb of kept best matches after cosine similarity",
+            "feat_net": "backbone extractor",
+            "segswap_prefilter": self.segswap_prefilter,
+            "segswap_n": "nb of kept best matches after segswap similarity",
+            "raw_transpositions": "list of transforms",
+            "transpositions": "list of transforms",
+        },
+        "index": {
+            "sources": {
+                doc_ref: doc.to_dict()
+                for doc in self.dataset.documents
+            },
+            "images": [{
+                "uid": self.uid,
+                "src": self.src,
+                "path": "relative path to doc path",
+                "metadata": self.metadata,
+                "doc_uid": doc_ref
+            }, {...}],
+            "transpositions": "list of transforms",
+        },
+        "pairs": [(im1_idx, im2_idx, score, tr1, tr2), (...)],
+    }
+    """
     from app.similarity.tasks import process_similarity_file
 
-    # TODO very tricky because format has changed
-    pass
-    #     if request.method == "POST":
-    #         filenames = []
-    #         # treatment_id = request.DATA["experiment_id"]
-    #
-    #         try:
-    #             for regions_refs, file in request.FILES.items():
-    #                 with open(f"{SCORES_PATH}/{regions_refs}.npy", "wb") as destination:
-    #                     filenames.append(regions_refs)
-    #                     for chunk in file.chunks():
-    #                         destination.write(chunk)
-    #                 process_similarity_file.delay(f"{SCORES_PATH}/{regions_refs}.npy")
-    #
-    #             return JsonResponse({"message": "Score files received successfully"})
-    #         except Exception as e:
-    #             log("[receive_similarity] Error saving score files", e)
-    #             return JsonResponse({"message": "Error saving score files"}, status=500)
-    #
-    #     return JsonResponse({"message": "Invalid request"}, status=400)
-    #
-    # self.status = "PROCESSING RESULTS"
-    #         self.result_full_path.mkdir(parents=True, exist_ok=True)
-    #
-    #         if data is not None:
-    #             output = data.get("output", {})
-    #             if not output:
-    #                 self.on_task_error({"error": "No output data"})
-    #                 return
-    #
-    #             with open(self.task_full_path / f"{self.dataset.id}.json", "wb") as f:
-    #                   f.write(orjson.dumps(output.get("annotations", {})))
-    #                   self._similarity = similarity
-    #
-    #             dataset_url = output.get("dataset_url")
-    #             if dataset_url:
-    #                 self.dataset.api_url = dataset_url
-    #                 self.dataset.save()
-    #
-    #             try:
-    #                 if self.crops:
-    #                     self.dataset.apply_cropping(self.crops.get_bounding_boxes())
-    #
-    #                 self.prepare_sim_browser()
-    #
-    #             except Exception as e:
-    #                 self.on_task_error({"error": traceback.format_exc()})
-    #                 return
-    #
-    #         else:
-    #             self.on_task_error({"error": "No output data"})
-    #             return
-    #
-    #         return super().on_task_success(data)
+    output = data.get("output", None)
+    if not data or not output:
+        raise ValueError("No extraction results to process")
+
+    for pair_scores in output.get("annotations", []):
+        regions_ref_pair, score_url = pair_scores.items()
+
+        try:
+            response = requests.get(score_url, stream=True)
+            response.raise_for_status()
+            json_content = response.json()
+
+            with open(f"{SCORES_PATH}/{regions_ref_pair}.json", "wb") as f:
+                f.write(orjson.dumps(json_content))
+
+        except Exception as e:
+            log(f"Could not download similarity scores from {score_url}", e)
+            continue
+
+        try:
+            process_similarity_file.delay(regions_ref_pair)
+        except Exception as e:
+            log(f"Could not process similarity scores from {score_url}", e)
+            raise e
+    return
 
 
 def prepare_document(document: Witness | Digitization | Regions, **kwargs):
@@ -124,6 +132,24 @@ def send_request(witnesses):
     tasking.task_request("similarity", witnesses)
 
 
+def load_scores(pair):
+    if Path(f"{SCORES_PATH}/{pair}.json").exists():
+        return load_json_file(f"{SCORES_PATH}/{pair}.json")
+    if Path(f"{SCORES_PATH}/{pair}.npy").exists():
+        return load_npy_file(f"{SCORES_PATH}/{pair}.npy")
+    return None
+
+
+@lru_cache(maxsize=None)
+def load_json_file(score_path):
+    try:
+        with open(score_path, "r") as f:
+            return json_to_scores_tuples(orjson.loads(f))
+    except orjson.JSONDecodeError as e:
+        log(f"[load_json_file] invalid JSON in {score_path}", e)
+        return None
+
+
 @lru_cache(maxsize=None)
 def load_npy_file(score_path):
     try:
@@ -133,17 +159,43 @@ def load_npy_file(score_path):
         return None
 
 
-def score_file_to_db(score_path):
+def json_to_scores_tuples(json_scores):
+    """
+    Convert JSON scores format to list of (score, img1, img2) tuples.
+
+    Input JSON format:
+    {
+        "index": {
+            "images": [{"src": "img_001.jpg", ...}, ...]
+        },
+        "pairs": [[idx1, idx2, score, rot1, rot2], ...]
+    }
+
+    Returns:
+    List of tuples: [(score, img1, img2), ...]
+    """
+    if not json_scores or "index" not in json_scores or "pairs" not in json_scores:
+        return []
+
+    images = [img.get("src") for img in json_scores["index"].get("images")]
+
+    return [
+        (float(pair[2]), images[pair[0]], images[pair[1]])
+        for pair in json_scores["pairs"]
+    ]
+
+
+def score_file_to_db(pair):
     """
     Load scores from a .npy file and add all of its pairs in the RegionPair table
     If pair already exists, only score is updated
     """
-    pair_scores = load_npy_file(score_path)
+    pair_scores = load_scores(pair)
     if pair_scores is None:
         return False
 
     # regions ref
-    ref_1, ref_2 = sorted(Path(score_path).stem.split("-"), key=sort_key)
+    ref_1, ref_2 = sorted(pair.split("-"), key=sort_key)
     # TODO verify that regions_id exists?
 
     pairs_to_update = []
@@ -151,7 +203,7 @@ def score_file_to_db(score_path):
         for score, img1, img2 in pair_scores:
             img1, img2 = sorted([img1, img2], key=sort_key)
             score = float(score)
-            if score > 25:  # TODO put threshold as global variable
+            if score > 0:
                 pairs_to_update.append(
                     RegionPair(
                         img_1=img1,
@@ -164,7 +216,7 @@ def score_file_to_db(score_path):
                     )
                 )
     except ValueError as e:
-        log(f"[score_file_to_db] error while processing {score_path}", e)
+        log(f"[score_file_to_db] error while processing {pair}", e)
         return False
 
     # Bulk update existing pairs
@@ -177,10 +229,10 @@ def score_file_to_db(score_path):
                 "score",
             )
     except Exception as e:
-        log(f"[score_file_to_db] error while adding pairs to db {score_path}", e)
+        log(f"[score_file_to_db] error while adding pairs to db {pair}", e)
         return False
 
-    log(f"Processed {len(pair_scores)} pairs from {score_path}")
+    log(f"Processed {len(pair_scores)} pairs from {pair}")
     return True
 
 
@@ -420,76 +472,6 @@ def load_similarity(pair):
     except FileNotFoundError as e:
         log(f"[load_similarity] no score file for {pair}", e)
         return pair, None
-
-
-def compute_total_similarity(
-    regions: List[Regions],
-    checked_regions_ref: str,
-    regions_refs: List[str] = None,
-    max_rows: int = 50,
-    show_checked_ref: bool = False,
-):
-    # TODO check if used else delete
-    total_scores = defaultdict(list)
-    img_names = defaultdict(set)
-    prefix_key = "_".join(checked_regions_ref.split("_")[:2])
-    topk = 10
-
-    if regions_refs is None:
-        regions_refs = [region.get_ref() for region in regions]
-
-    for pair in doc_pairs(regions_refs):
-        try:
-            score_path_pair = f"{SCORES_PATH}/{'-'.join(sorted(pair))}.npy"
-            if prefix_key not in score_path_pair:
-                continue
-            pair_scores = load_npy_file(score_path_pair)
-        except FileNotFoundError as e:
-            # TODO: trigger similarity request?
-            log(f"[compute_total_similarity] no score file for {pair}", e)
-            continue
-
-        # Create a dictionary with image names as keys and scores as values
-        img_scores = defaultdict(set)
-        for score, img1, img2 in pair_scores:
-            if img2 not in img_names[img1]:
-                img_scores[img1].add((float(score), img2))
-                img_names[img1].add(img2)
-            if img1 not in img_names[img2]:
-                img_scores[img2].add((float(score), img1))
-                img_names[img2].add(img1)
-
-        # Update total scores
-        for img_name, scores in img_scores.items():
-            if img_name.startswith(prefix_key):
-                total_scores[img_name].extend(scores)
-
-    # Filter out items starting with prefix key
-    if not show_checked_ref:
-        for q_img in total_scores:
-            total_scores[q_img] = [
-                item
-                for item in total_scores[q_img]
-                if not item[1].startswith(prefix_key)
-            ]
-
-    # Sort scores for each query image in descending order and keep top 10
-    total_scores = {
-        q_img: sorted(scores, key=lambda x: x[0], reverse=True)[:topk]
-        for q_img, scores in total_scores.items()
-    }
-
-    # Sort rows based on the first score of image
-    sorted_total_scores = dict(
-        sorted(total_scores.items(), key=lambda x: x[1], reverse=True)
-    )
-
-    # Limit number of rows to max_rows
-    sorted_total_scores = {
-        k: sorted_total_scores[k] for k in list(sorted_total_scores)[:max_rows]
-    }
-
-    return sorted_total_scores
 
 
 def reset_similarity(regions: Regions):
