@@ -1,4 +1,3 @@
-import json
 import os
 import re
 
@@ -35,7 +34,7 @@ from app.webapp.views import check_ref
 
 
 def prepare_request(witnesses, treatment_id):
-    tasking.prepare_request(
+    return tasking.prepare_request(
         witnesses,
         treatment_id,
         prepare_document,

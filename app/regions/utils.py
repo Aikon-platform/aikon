@@ -19,7 +19,7 @@ from app.webapp.utils.logger import log
 
 
 def prepare_request(witnesses, treatment_id):
-    tasking.prepare_request(
+    return tasking.prepare_request(
         witnesses,
         treatment_id,
         prepare_document,
@@ -88,7 +88,7 @@ def process_results(data):
 
 
 def prepare_document(document: Witness | Digitization | Regions, **kwargs):
-    if type(document).__name__ == "Witness" and not document.has_digit():
+    if type(document).__name__ == "Witness" and not document.has_images():
         return []
 
     regions = document.get_regions() if hasattr(document, "get_regions") else [document]

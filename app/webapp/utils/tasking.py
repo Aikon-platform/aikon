@@ -9,7 +9,6 @@ from app.config.settings import APP_URL, APP_NAME, CV_API_URL, APP_LANG
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions
-from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
 from app.webapp.utils.logger import log
 
@@ -62,6 +61,8 @@ def create_treatment(
         raise e
 
     try:
+        from app.webapp.models.treatment import Treatment
+
         treatment = Treatment.objects.create(
             requested_by=user,
             task_type=task_name,
@@ -155,13 +156,13 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
 
         documents = []
         for record in records:
-            documents.extend(prepare_document(record, parameters))
+            documents.extend(prepare_document(record, **parameters))
 
         if documents:
             log(f"[prepare_request] Found {len(documents)} documents to process.")
 
             return {
-                "experiment_id": treatment_id,
+                "experiment_id": str(treatment_id),
                 "documents": documents,
                 # URL to which results and task notifications are sent back
                 "notify_url": f"{APP_URL}/{APP_NAME}/{task_name}/notify",
@@ -182,10 +183,11 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
 
 def receive_notification(request):
     """
-
     :param request:
     :return: json response, status code.
     """
+    from app.webapp.models.treatment import Treatment
+
     if request.method != "POST":
         return {"success": False, "error": "Only POST requests are supported"}, 400
 
