@@ -37,7 +37,19 @@ def paginated_records(request, records):
 
 @require_GET
 def search_witnesses(request):
-    witness_filter = WitnessFilter(request.GET, queryset=Witness.objects.order_by("id"))
+    current_user = request.user
+
+    if current_user.is_superuser:
+        witnesses = Witness.objects.order_by("id")
+    else:
+        witnesses = Witness.objects.filter(
+            Q(user=current_user)
+            | Q(is_public=True)
+            | Q(user__groups__in=current_user.groups.all())
+        ).distinct()
+
+    witness_filter = WitnessFilter(request.GET, queryset=witnesses)
+
     return JsonResponse(paginated_records(request, witness_filter.qs))
 
 

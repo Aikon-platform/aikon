@@ -636,3 +636,8 @@ def get_summary(elements):
     summary = f"<summary>{visible}<br>{ellip}</summary>"
     details = "<br>".join(rest)
     return f"<details class='summary'>{summary}{details}</details>"
+
+
+def is_in_group(creator, current_user):
+    groups = list(creator.groups.all())
+    return current_user.groups.filter(name__in=groups).exists()
