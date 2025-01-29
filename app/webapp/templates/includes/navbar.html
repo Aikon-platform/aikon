@@ -16,15 +16,23 @@
 
     <div id="navbar-content" class="navbar-menu">
         <div class="navbar-start">
-            <a id="nav-title" href="{% url 'webapp:home' %}" class="navbar-item nav-link px-0 is-size-4">
+            <a id="nav-title" href="{% url 'webapp:home' %}" class="navbar-item nav-link px-0 is-size-4 mr-5">
                 {{ APP_NAME|upper }}
             </a>
 
             {% is_superuser request.user as is_admin %}
             {% if is_admin %}
-                <a href="{% url 'admin:auth_user_changelist' %}" title="Admin stuff" class="navbar-item ml-5">
-                    <span class="iconify mr-1" data-icon="mdi:shield"></span> <span>{% if APP_LANG == "en" %}Manage users{% else %}Gérer les utilisateurs{% endif %}</span>
+                <div class="navbar-item has-dropdown is-hoverable pl-2">
+                <a class="navbar-link">
+                    <span class="iconify mr-1" data-icon="mdi:shield"></span> <span>{% if APP_LANG == "en" %}Admin actions{% else %}Administration{% endif %}</span>
                 </a>
+
+                <div class="navbar-dropdown">
+                    <a href="{% url 'admin:auth_user_changelist' %}" class="navbar-item">{% if APP_LANG == "en" %}Manage users{% else %}Gérer les utilisateurs{% endif %}</a>
+                    <a href="{% url 'admin:auth_group_changelist' %}" class="navbar-item">{% if APP_LANG == "en" %}Manage groups{% else %}Gérer les groupes{% endif %}</a>
+                    <a href="{% url 'admin:webapp_language_changelist' %}" class="navbar-item">{% if APP_LANG == "en" %}Manage languages{% else %}Gérer les langues{% endif %}</a>
+                </div>
+            </div>
             {% endif %}
 
             <div class="navbar-item has-dropdown is-hoverable pl-2">

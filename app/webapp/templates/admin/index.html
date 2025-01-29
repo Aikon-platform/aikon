@@ -75,31 +75,6 @@
                     </table>
                 </div>
             </div>
-            {% is_superuser request.user as is_admin %}
-            {% if is_admin %}
-                <div class="block box mgt-medium p-5 has-background-link-light">
-                    <div class="box is-contrasted" style="width: 100%; overflow-x: auto;">
-                        <table class="table is-capitalized is-fullwidth is-contrasted">
-                            <thead>
-                            <tr class="table-header">
-                                <th colspan="3">
-                                    {% if APP_LANG == "en" %}
-                                        Superuser Actions
-                                    {% else %}
-                                        Espace Super utilisateur
-                                    {% endif %}
-                                </th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% include "includes/admin_row.html" with entity_title=USR entity_name="user" %}
-                            {% include "includes/admin_row.html" with entity_title=GRP entity_name="group" %}
-                            {% include "includes/admin_row.html" with entity_title=LANG entity_name="language" %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            {% endif %}
         </div>
 
         <div class="column is-4">
