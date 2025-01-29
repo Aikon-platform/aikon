@@ -26,6 +26,7 @@ MODEL_NAMES = {
     "Pdf": {"en": "PDF", "fr": "PDF"},
     "Regions": {"en": "regions", "fr": "régions"},
     "User": {"en": "user", "fr": "utilisateur"},
+    "UserProfile": {"en": "user profile", "fr": "profil utilisateur"},
     "Group": {"en": "group", "fr": "groupe"},
     "Treatment": {"en": "treatment", "fr": "traitement"},
     "DocumentSet": {"en": "document set", "fr": "sélection de documents"},
