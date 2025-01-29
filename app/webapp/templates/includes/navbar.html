@@ -27,7 +27,7 @@
                 </a>
             {% endif %}
 
-            <div class="navbar-item has-dropdown is-hoverable">
+            <div class="navbar-item has-dropdown is-hoverable pl-2">
                 <a class="navbar-link">
                     {% if APP_LANG == "en" %}Manage documents{% else %}Gérer les documents{% endif %}
                 </a>
@@ -40,7 +40,7 @@
                     <a href="{% url 'webapp:document_set_list' %}" class="navbar-item is-capitalized">{{ SET }}</a>
                 </div>
             </div>
-            <div class="navbar-item has-dropdown is-hoverable">
+            <div class="navbar-item has-dropdown is-hoverable pl-2">
                 <a class="navbar-link">
                     {% if APP_LANG == "en" %}Computer vision tasks{% else %}Tâches de vision{% endif %}
                 </a>

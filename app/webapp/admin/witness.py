@@ -330,6 +330,30 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
         return queryset, use_distinct
 
+    # # # # # # # # # # # #
+    #     PERMISSIONS     #
+    # # # # # # # # # # # #
+
+    # def has_change_permission(self, request, obj=None):
+    #     # Here you have the object, but this is only really useful if it has
+    #     # ownership info on it, such as a `user` FK
+    #     if obj is not None:
+    #         return request.user.is_superuser or \
+    #             obj.user == request.user
+    #         # Now only the "owner" or a superuser will be able to edit this object
+    #     else:
+    #         # obj == None when you're on the changelist page, so returning `False`
+    #         # here will make the changelist page not even viewable, as a result,
+    #         # you'd want to do something like:
+    #         return request.user.is_superuser or \
+    #             self.model._default_manager.filter(user=request.user).exists()
+    #         # Then, users must "own" *something* or be a superuser or they
+    #         # can't see the changelist
+
+    def has_view_permission(self, request, obj=None):
+        if obj is not None:
+            return obj.user == request.user or obj.is_public == True
+
 
 class WitnessInline(nested_admin.NestedStackedInline):
     # FORM contained in the Series form

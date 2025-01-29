@@ -1,5 +1,6 @@
 import { writable, get } from 'svelte/store';
 import {initPagination, pageUpdate} from "../utils.js";
+import {isSuperuser, userId} from "../constants.js";
 
 export function createRecordsStore(modelName) {
     const model = modelName;
@@ -18,8 +19,16 @@ export function createRecordsStore(modelName) {
         try {
             const response = await fetch(`${window.location.origin}/search/${model}/?${params.toString()}`);
             const data = await response.json();
-            pageRecords.set(data.results);
-            resultNumber.set(data.count);
+
+            const publicData = data.results.filter(record => {
+                if (record.class === "Witness" && !isSuperuser) {
+                    return record.is_public || record.user_id.toString() === userId;
+                }
+                return true;
+            });
+
+            pageRecords.set(publicData);
+            resultNumber.set(publicData.length);
             currentPage.set(data.current_page);
 
             params.set('p', String(get(currentPage)));
