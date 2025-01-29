@@ -24,7 +24,7 @@ from app.webapp.models.utils.constants import TRMT_TYPE, TRMT_STATUS, NO_USER
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.tasks import get_all_witnesses
 
-from app.webapp.utils.logger import log
+from app.webapp.utils.logger import log, console
 from app.webapp.utils.tasking import prepare_task_request, process_task_results
 
 

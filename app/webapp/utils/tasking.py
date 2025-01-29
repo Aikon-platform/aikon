@@ -209,10 +209,9 @@ def receive_notification(request):
         return {"success": False, "error": "Treatment not found"}, 400
 
     try:
-        treatment.receive_notification(
-            event=data.get("event"), info=data.get("message", None)
-        )
+        treatment.receive_notification(event=data.get("event"), data=data)
     except Exception as e:
+        log("[receive_notification] Error processing API response", e)
         return {"success": False, "error": f"Error processing response {e}"}, 400
 
     return {"success": True, "message": "Update received"}, 200

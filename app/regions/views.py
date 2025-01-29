@@ -75,7 +75,7 @@ def witness_regions_extraction(request, wit_id):
 
 
 @csrf_exempt
-def receive_regions_notification(request, digit_ref):
+def receive_regions_notification(request):
     """
     Receive results and notification from the API
     """

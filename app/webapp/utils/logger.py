@@ -231,18 +231,15 @@ class Logger:
 logger = Logger(f"{BASE_DIR}/{LOG_DIR}")
 
 
-def log(msg, exception: Exception = None):
+def log(msg, exception: Exception = None, msg_type=None):
     if exception:
         logger.error(msg, exception=exception)
         return
-    logger.info(msg)
+    logger.log(msg, msg_type=msg_type)
 
 
 def console(msg="🚨🚨🚨", msg_type=None):
-    if not DEBUG:
-        log(msg)
-        return
-
+    print(pprint(msg))
     logger.log(msg, msg_type=msg_type)
 
 

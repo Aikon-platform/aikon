@@ -13,7 +13,7 @@ urlpatterns = [
         name="send-regions-extraction",
     ),
     path(
-        f"{APP_NAME}/notify/regions/<str:digit_ref>",
+        f"{APP_NAME}/regions/notify",
         receive_regions_notification,
         name="notify-regions",
     ),
