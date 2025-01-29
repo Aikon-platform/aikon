@@ -5,18 +5,7 @@ from django.views.decorators.http import require_GET
 from django.core.paginator import Paginator
 from django.db import models
 
-from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.series import Series
-from app.webapp.models.treatment import Treatment
-from app.webapp.models.work import Work
-from app.webapp.search_filters import (
-    WitnessFilter,
-    TreatmentFilter,
-    WorkFilter,
-    SeriesFilter,
-    DocumentSetFilter,
-)
-from app.webapp.models.witness import Witness
+from app.webapp.search_filters import *
 from app.webapp.utils.constants import PAGE_LEN
 
 
@@ -74,6 +63,14 @@ def search_works(request):
 def search_series(request):
     series_filter = SeriesFilter(request.GET, queryset=Series.objects.order_by("id"))
     return JsonResponse(paginated_records(request, series_filter.qs))
+
+
+@require_GET
+def search_digitizations(request):
+    digitization_filter = DigitizationFilter(
+        request.GET, queryset=Digitization.objects.order_by("id")
+    )
+    return JsonResponse(paginated_records(request, digitization_filter.qs))
 
 
 class ArrayLength(models.Func):

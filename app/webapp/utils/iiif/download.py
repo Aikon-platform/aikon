@@ -87,13 +87,14 @@ class IIIFDownloader:
                 self.save_iiif_img(rsrc, i)
                 i += 1
 
-            with open(DOWNLOAD_LOG_PATH, "r") as f:
-                images = f.read().splitlines()
-            images = list(filter(None, images))
-            open(DOWNLOAD_LOG_PATH, "w").close()
+            if DOWNLOAD_LOG_PATH:
+                with open(DOWNLOAD_LOG_PATH, "r") as f:
+                    images = f.read().splitlines()
+                images = list(filter(None, images))
+                open(DOWNLOAD_LOG_PATH, "w").close()
 
-            for image in images:
-                save_failed_img(image)
+                for image in images:
+                    save_failed_img(image)
 
             # NOTE to create manifests out of images URL
             # with open(BASE_DIR / IMG_PATH / f"{self.manifest_id}.txt", "a") as f:

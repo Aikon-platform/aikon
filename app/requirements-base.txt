@@ -17,7 +17,7 @@ djangorestframework==3.15.2
 Django>=5.1.1
 django-admin-extra-buttons==1.5.4
 django-admin-searchable-dropdown==1.2
-django-autocomplete-light==3.9.1
+django-autocomplete-light>=3.9.1
 django-classy-tags==3.0.1
 django-cors-headers==3.13.0
 django-crispy-forms==1.14.0
