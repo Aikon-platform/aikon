@@ -98,7 +98,7 @@ def process_results(data, completed=True):
 
     output = data.get("output", {})
     if not data or not output:
-        raise ValueError("No extraction results to process")
+        raise ValueError("No similarity results to process")
 
     result_url = output.get("results_url", [])
     # TODO when process results error => treatment status should be error

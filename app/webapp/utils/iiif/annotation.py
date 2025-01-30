@@ -533,6 +533,7 @@ def get_canvas_list(regions: Regions, all_img=False):
             # source always has 4 digits TODO improve to have iiif download use correct filename
             src = annotation["source"]
             for img_name in [
+                src,
                 src.replace("0", ""),
                 src.replace("00", ""),
                 src.replace("000", ""),

@@ -43,21 +43,6 @@ urlpatterns = [
     ),
     path(f"{APP_NAME}/rgpd", rgpd),
     path(
-        f"{APP_NAME}/<str:regions_ref>/show/",
-        show_regions,
-        name="show-regions",
-    ),
-    path(
-        f"{APP_NAME}/<str:regions_ref>/show-all-regions",
-        show_all_regions,
-        name="show-all-regions",
-    ),
-    path(
-        f"{APP_NAME}/export-regions/<str:regions_ref>",
-        export_all_regions,
-        name="export-regions",
-    ),
-    path(
         f"{APP_NAME}/export-selected-regions",
         export_selected_regions,
         name="export-selected-regions",
@@ -119,16 +104,16 @@ urlpatterns = [
         export_regions_img,
         name="regions-imgs",
     ),
-    path(
-        f"{APP_NAME}/iiif/digit-regions/<int:digit_id>",
-        export_digit_img,
-        name="digitization-imgs",
-    ),
-    path(
-        f"{APP_NAME}/iiif/witness-annotation/<int:wit_id>",
-        export_wit_img,
-        name="witness-imgs",
-    ),
+    # path(
+    #     f"{APP_NAME}/iiif/digit-regions/<int:digit_id>",
+    #     export_digit_img,
+    #     name="digitization-imgs",
+    # ),
+    # path(
+    #     f"{APP_NAME}/iiif/witness-annotation/<int:wit_id>",
+    #     export_wit_img,
+    #     name="witness-imgs",
+    # ),
     path(
         f"{APP_NAME}/index-witness/<int:wit_id>",
         index_witness_regions,
@@ -191,7 +176,7 @@ urlpatterns = [
     ),
     path("retrieve_place_info/", retrieve_place_info, name="retrieve-place-info"),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
-    path(f"{APP_NAME}/advanced-search/", advanced_search, name="advanced-search"),
+    # path(f"{APP_NAME}/advanced-search/", advanced_search, name="advanced-search"),
     path(
         f"{APP_NAME}/autocomplete/edition/",
         EditionAutocomplete.as_view(),
