@@ -61,32 +61,45 @@
 
         <div class="navbar-end mr-6">
             <div class="navbar-item">
-            <div class="button mr-4 pl-5">
-                <button id="moon" class="icon">
-                    <i class="fa-solid fa-moon fa-lg has-text-info"></i>
-                </button>
-                <button id="sun" class="icon">
-                    <i class="fa-solid fa-sun fa-lg has-text-warning"></i>
-                </button>
-                    <button id="auto" class="icon">
-                    <i class="fa-solid fa-adjust fa-lg has-text-primary"></i>
-                </button>
+                <div class="button mr-4 pl-5">
+                    <button id="moon" class="icon">
+                        <i class="fa-solid fa-moon fa-lg has-text-info"></i>
+                    </button>
+                    <button id="sun" class="icon">
+                        <i class="fa-solid fa-sun fa-lg has-text-warning"></i>
+                    </button>
+                        <button id="auto" class="icon">
+                        <i class="fa-solid fa-adjust fa-lg has-text-primary"></i>
+                    </button>
+                </div>
             </div>
-                {% if request.user.is_authenticated %}
-                    <div class="buttons">
-                        <div class="has-text-grey pr-3">
-                            {% if APP_LANG == "en" %}Logged in as{% else %}Connecté·e en tant que{% endif %} <span class="has-text-link">{{ user.username }}</span>
-                        </div>
-                        <a class="button is-link is-outlined" href="{% url 'webapp:logout' %}" title="Log out">
-                            {% if APP_LANG == "en" %}Log out{% else %}Déconnexion{% endif %}
+            {% if request.user.is_authenticated %}
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <a class="navbar-link">
+                        <span class="has-text-link">
+                            {% if user.first_name and user.last_name %}
+                                {{ user.first_name }} {{ user.last_name }}
+                            {% else %}
+                                {{ user.username }}
+                            {% endif %}
+                        </span>
+                    </a>
+
+                    <div class="navbar-dropdown">
+                        <a href="{% url 'webapp:edit-profile' %}" class="navbar-item">
+                            <span class="icon is-small pr-2 mb-1">
+                                <i class="fas fa-user"></i>
+                            </span>
+                            {% if APP_LANG == "en" %}Edit profile{% else %}Éditer le profil{% endif %}
                         </a>
+                        <a href="{% url 'webapp:logout' %}" title="Log out" class="navbar-item has-text-danger">{% if APP_LANG == "en" %}Log out{% else %}Déconnexion{% endif %}</a>
                     </div>
-                {% else %}
-                    <div class="buttons">
-                        <a class="button is-link is-outlined" href="{{ LOGIN_URL }}">Log in</a>
-                    </div>
-                {% endif %}
-            </div>
+                </div>
+            {% else %}
+                <div class="buttons">
+                    <a class="button is-link is-outlined" href="{{ LOGIN_URL }}">Log in</a>
+                </div>
+            {% endif %}
         </div>
     </div>
 </nav>

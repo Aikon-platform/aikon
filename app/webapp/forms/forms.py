@@ -5,6 +5,8 @@ from app.webapp.models.language import Language
 from app.webapp.models.place import Place
 from dal import autocomplete
 
+from app.webapp.models.user_profile import UserProfile
+
 SEARCH_MSG = "Search..." if APP_LANG == "en" else "Rechercher..."
 
 
@@ -52,3 +54,15 @@ class LanguageForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(LanguageForm, self).__init__(*args, **kwargs)
         # self.fields["lang"].help_text = None  # Set help_text to None to remove it
+
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = [
+            "picture",
+            "role",
+            "affiliation",
+            "presentation",
+            "is_team",
+        ]

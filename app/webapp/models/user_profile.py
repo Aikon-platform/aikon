@@ -10,6 +10,10 @@ def get_name(fieldname, plural=False):
         "role": {"en": "role", "fr": "rôle"},
         "affiliation": {"en": "affiliation", "fr": "affiliation"},
         "presentation": {"en": "presentation", "fr": "présentation"},
+        "is_team": {
+            "en": "display profile on team page",
+            "fr": "afficher le profil sur la page équipe",
+        },
     }
     return get_fieldname(fieldname, fields, plural)
 
@@ -35,4 +39,8 @@ class UserProfile(models.Model):
     )
     presentation = models.TextField(
         verbose_name=get_name("presentation"), max_length=3000, blank=True
+    )
+    is_team = models.BooleanField(
+        verbose_name=get_name("is_team"),
+        default=False,
     )

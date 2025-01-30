@@ -1,0 +1,26 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+    <div class="container">
+        <div id="content-main">
+            <form action="" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% block form_top %}{% endblock %}
+                <div class="columns is-centered">
+                    <div class="column is-10">
+                        <div class="box is-contrasted">
+                            <h1 class="is-title is-size-4">
+                                {% if APP_LANG == "en" %}Edit profile: {% else %}Éditer le profil : {% endif %}
+                                {{ user.first_name }} {{ user.last_name }}
+                            </h1>
+                            {% include "webapp/base_form.html" %}
+                            <div class="control pt-4 is-center">
+                                <button type="submit" class="button is-link">{% if APP_LANG == "en" %}Submit{% else %}Modifier{% endif %}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

@@ -41,6 +41,7 @@ urlpatterns = [
         ),
         name="password-reset-complete",
     ),
+    path(f"{APP_NAME}/profile/change", edit_profile, name="edit-profile"),
     path(f"{APP_NAME}/rgpd", rgpd),
     path(
         f"{APP_NAME}/<str:regions_ref>/show/",
