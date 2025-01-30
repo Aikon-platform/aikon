@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.contrib.auth import logout
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
@@ -21,7 +22,8 @@ def edit_profile(request):
         form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
         if form.is_valid():
             form.save()
-            return redirect("webapp:home")
+            messages.success(request, "Your profile has been updated successfully!")
+            return redirect("webapp:edit-profile")
 
     else:
         form = UserProfileForm(instance=user_profile)

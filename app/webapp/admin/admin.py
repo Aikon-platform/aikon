@@ -43,5 +43,13 @@ class UserAdmin(BaseUserAdmin):
     inlines = (ProfileInline,)
 
 
+@admin.register(UserProfile)
+class UserProfileAdmin(UnregisteredAdmin):
+    change_form_template = "admin/forms/profile.html"
+
+    def __init__(self, model, admin_site):
+        super().__init__(model, admin_site)
+
+
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
