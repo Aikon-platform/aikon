@@ -463,10 +463,10 @@ def pre_delete_digit(sender, instance: Digitization, **kwargs):
 
 
 def remove_digitization(digit: Digitization, other_media=None):
-    from app.webapp.utils.iiif.annotation import delete_regions
+    from app.webapp.utils.iiif.annotation import destroy_regions
 
     for regions in digit.get_regions():
-        delete_regions(regions)
+        destroy_regions(regions)
 
     delete_files(digit.get_imgs(is_abs=True, check_in_dir=True))
     if other_media:

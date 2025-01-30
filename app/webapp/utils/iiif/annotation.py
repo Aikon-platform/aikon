@@ -137,7 +137,7 @@ def get_regions_annotations(
     if as_json:
         min_c = min_c or 1
         max_c = max_c or regions.get_json()["img_nb"]
-        r_annos = {str(c): {} for c in range(min_c, max_c)}
+        r_annos = {str(c): {} for c in range(min_c, max_c + 1)}
 
     for anno in annos:
         try:
@@ -769,14 +769,15 @@ def unindex_regions(regions_ref, manifest_url):
             unindex_annotation(sas_annotation_id)
     except Exception as e:
         log(
-            f"[delete_regions] Failed to unindex SAS annotation #{sas_annotation_id}", e
+            f"[unindex_regions] Failed to unindex SAS annotation #{sas_annotation_id}",
+            e,
         )
         return False
 
     return True
 
 
-def delete_regions(regions: Regions):
+def destroy_regions(regions: Regions):
     manifest_url = regions.gen_manifest_url(version=MANIFEST_V2)
     regions_ref = regions.get_ref()
 
@@ -789,8 +790,16 @@ def delete_regions(regions: Regions):
         # Delete the regions record in the database
         regions.delete()
     except Exception as e:
-        log(f"[delete_regions] Failed to delete regions record #{regions.id}", e)
+        log(f"[destroy_regions] Failed to delete regions record #{regions.id}", e)
         return False
+
+    regions_file = REGIONS_PATH / f"{regions_ref}.json"
+    if regions_file.exists():
+        try:
+            # TODO fix do not work
+            regions_file.unlink()
+        except Exception as e:
+            log(f"[destroy_regions] Failed to delete regions file #{regions_ref}", e)
 
     # Remove all annotations associated with this record
     return unindex_regions(regions_ref, manifest_url)

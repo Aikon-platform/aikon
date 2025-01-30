@@ -27,7 +27,7 @@ from app.webapp.utils.logger import log
 from app.webapp.utils.iiif.annotation import (
     format_canvas_annotations,
     index_regions,
-    delete_regions,
+    destroy_regions,
     process_regions,
     formatted_annotations,
     reindex_file,
@@ -61,7 +61,7 @@ def reindex_regions(request, obj_ref):
     regions = obj if cls(obj) == Regions else None
     if regions:
         try:
-            delete_regions(regions)
+            destroy_regions(regions)
         except Exception as e:
             return JsonResponse(
                 {"error": f"Failed to delete regions #{regions.id}: {e}"}
@@ -141,7 +141,7 @@ def delete_annotations_regions(request, obj_ref):
     regions = obj if cls(obj) == Regions else None
     if regions:
         try:
-            delete_regions(regions)
+            destroy_regions(regions)
         except Exception as e:
             return JsonResponse(
                 {
