@@ -75,7 +75,7 @@ def generate_all_json():
 
 
 @celery_app.task
-def get_all_witnesses(treatment):
+def launch_task(treatment):
     try:
         witnesses = treatment.get_witnesses()
         treatment.start_task(witnesses)

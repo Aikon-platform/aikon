@@ -23,7 +23,7 @@ from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
 from app.webapp.models.utils.constants import TRMT_TYPE, TRMT_STATUS, NO_USER
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.tasks import get_all_witnesses
+from app.webapp.tasks import launch_task
 
 from app.webapp.utils.logger import log, console
 from app.webapp.utils.tasking import prepare_task_request, process_task_results
@@ -293,6 +293,9 @@ class Treatment(AbstractSearchableModel):
     def process_results(self, data, completed=True):
         try:
             process_task_results(self.task_type, data, completed)
+            # TODO add status "PROCESSING" and change status after results are processed
+            # self.status = "PROCESSING RESULTS"
+            # self.save()
         except (ImportError, AttributeError, Exception) as e:
             self.on_task_error(
                 {
@@ -302,14 +305,18 @@ class Treatment(AbstractSearchableModel):
                 exception=e,
                 completed=completed,
             )
-        if completed:
-            self.on_task_success(
-                {
-                    "notify": self.notify_email,
-                    "message": data.get("message"),
-                }
-            )
-            return
+        finally:
+            if completed:
+                self.on_task_success(
+                    {
+                        "notify": self.notify_email,
+                        "message": data.get("message"),
+                    }
+                )
+                return
+            # else:
+            #     self.status = "IN PROGRESS"
+            #     self.save()
 
     def on_task_success(self, data, request=None):
         """
@@ -411,4 +418,4 @@ class Treatment(AbstractSearchableModel):
 @receiver(post_save, sender=Treatment)
 def treatment_post_save(sender, instance, created, **kwargs):
     if created:
-        get_all_witnesses.delay(instance)
+        launch_task.delay(instance)

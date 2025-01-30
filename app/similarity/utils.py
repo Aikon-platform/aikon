@@ -1,3 +1,5 @@
+import hashlib
+import json
 import os
 import re
 
@@ -51,6 +53,11 @@ def prepare_request(witnesses, treatment_id):
     )
 
 
+def generate_hash(params):
+    serialized = json.dumps(params, sort_keys=True)
+    return hashlib.sha256(serialized.encode()).hexdigest()[:8]
+
+
 def process_results(data, completed=True):
     """
     :param data: {
@@ -76,9 +83,9 @@ def process_results(data, completed=True):
                 for doc in self.dataset.documents
             },
             "images": [{
-                "uid": self.uid,
-                "src": self.src,
-                "path": "relative path to doc path",
+                "uid": "wit<id>_<digit><id>_<page_nb>_<x,y,w,h>",
+                "src": "iiif image url",
+                "path": "path in API",
                 "metadata": self.metadata,
                 "doc_uid": doc_ref
             }, {...}],
@@ -93,18 +100,26 @@ def process_results(data, completed=True):
     if not data or not output:
         raise ValueError("No extraction results to process")
 
-    result_url = output.get("annotations" if not completed else "results_url", [])
+    result_url = output.get("results_url", [])
+    # TODO when process results error => treatment status should be error
+
     for pair_scores in result_url:
-        regions_ref_pair, score_url = pair_scores.get("doc_pair"), pair_scores.get(
-            "result_url"
-        )
+        regions_ref_pair = pair_scores.get("doc_pair")
+        score_url = pair_scores.get("result_url")
 
         try:
             response = requests.get(score_url, stream=True)
             response.raise_for_status()
             json_content = response.json()
 
-            with open(f"{SCORES_PATH}/{regions_ref_pair}.json", "wb") as f:
+            param_hash = generate_hash(json_content.get("parameters", {}))
+            score_file = Path(f"{SCORES_PATH}/{regions_ref_pair}/{param_hash}.json")
+            os.makedirs(f"{SCORES_PATH}/{regions_ref_pair}", exist_ok=True)
+            if score_file.exists():
+                continue
+
+            with open(score_file, "wb") as f:
+                json_content["result_url"] = result_url
                 f.write(orjson.dumps(json_content))
 
         except Exception as e:
@@ -112,7 +127,7 @@ def process_results(data, completed=True):
             continue
 
         try:
-            process_similarity_file.delay(regions_ref_pair)
+            process_similarity_file.delay(str(score_file))
         except Exception as e:
             log(f"Could not process similarity scores from {score_url}", e)
             raise e
@@ -135,22 +150,35 @@ def send_request(witnesses):
     tasking.task_request("similarity", witnesses)
 
 
-def load_scores(pair):
-    if Path(f"{SCORES_PATH}/{pair}.json").exists():
-        return load_json_file(f"{SCORES_PATH}/{pair}.json")
-    if Path(f"{SCORES_PATH}/{pair}.npy").exists():
-        return load_npy_file(f"{SCORES_PATH}/{pair}.npy")
+def load_scores(score_path: Path):
+    if not score_path.exists():
+        return None
+
+    ext = score_path.suffix
+    if ext == ".json":
+        return load_json_file(score_path)
+    # Should not be used anymore: to delete
+    if ext == ".npy":
+        return load_npy_file(score_path)
     return None
 
 
 @lru_cache(maxsize=None)
 def load_json_file(score_path):
     try:
-        with open(score_path, "r") as f:
-            return json_to_scores_tuples(orjson.loads(f))
+        with open(score_path, "rb") as f:
+            content = f.read()
+
+        if not content:
+            log(f"[load_json_file] Empty file: {score_path}")
+            return None
+
+        return json_to_scores_tuples(orjson.loads(content))
     except orjson.JSONDecodeError as e:
         log(f"[load_json_file] invalid JSON in {score_path}", e)
-        return None
+    except Exception as e:
+        log(f"[load_json_file] Unexpected error in {score_path}", e)
+    return None
 
 
 @lru_cache(maxsize=None)
@@ -169,7 +197,7 @@ def json_to_scores_tuples(json_scores):
     Input JSON format:
     {
         "index": {
-            "images": [{"src": "img_001.jpg", ...}, ...]
+            "images": [{"id": "img_001_x,y,w,h", ...}, ...]
         },
         "pairs": [[idx1, idx2, score, rot1, rot2], ...]
     }
@@ -180,7 +208,7 @@ def json_to_scores_tuples(json_scores):
     if not json_scores or "index" not in json_scores or "pairs" not in json_scores:
         return []
 
-    images = [img.get("src") for img in json_scores["index"].get("images")]
+    images = [img.get("id") for img in json_scores["index"].get("images")]
 
     return [
         (float(pair[2]), images[pair[0]], images[pair[1]])
@@ -188,17 +216,18 @@ def json_to_scores_tuples(json_scores):
     ]
 
 
-def score_file_to_db(pair):
+def score_file_to_db(file_path):
     """
-    Load scores from a .npy file and add all of its pairs in the RegionPair table
+    Load scores from a .json file and add all of its pairs in the RegionPair table
     If pair already exists, only score is updated
     """
-    pair_scores = load_scores(pair)
-    if pair_scores is None:
+    p = Path(file_path)
+    pair_scores = load_scores(p)
+    pair_ref, algo = p.parent.name, p.stem
+    if not pair_scores or not pair_ref:
         return False
 
-    # regions ref
-    ref_1, ref_2 = sorted(pair.split("-"), key=sort_key)
+    ref_1, ref_2 = sorted(pair_ref.split("-"), key=sort_key)
     # TODO verify that regions_id exists?
 
     pairs_to_update = []
@@ -215,11 +244,12 @@ def score_file_to_db(pair):
                         regions_id_1=ref_1.split("_anno")[1],
                         regions_id_2=ref_2.split("_anno")[1],
                         is_manual=False,
+                        # algorithm=algo,
                         category_x=[],
                     )
                 )
     except ValueError as e:
-        log(f"[score_file_to_db] error while processing {pair}", e)
+        log(f"[score_file_to_db] error while processing {pair_ref}", e)
         return False
 
     # Bulk update existing pairs
@@ -232,10 +262,10 @@ def score_file_to_db(pair):
                 "score",
             )
     except Exception as e:
-        log(f"[score_file_to_db] error while adding pairs to db {pair}", e)
+        log(f"[score_file_to_db] error while adding pairs to db {pair_ref}", e)
         return False
 
-    log(f"Processed {len(pair_scores)} pairs from {pair}")
+    log(f"Processed {len(pair_scores)} pairs from {pair_ref}")
     return True
 
 

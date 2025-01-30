@@ -1,5 +1,3 @@
-from typing import List
-
 from app.config.celery import celery_app
 
 
@@ -10,7 +8,7 @@ def check_similarity_files(file_names):
 
 
 @celery_app.task
-def process_similarity_file(pair):
+def process_similarity_file(file):
     from app.similarity.utils import score_file_to_db
 
-    return score_file_to_db(pair)
+    return score_file_to_db(file)

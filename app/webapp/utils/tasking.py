@@ -16,8 +16,6 @@ from app.webapp.utils.logger import log
 def create_treatment(
     records: List[Witness | Digitization | Regions], task_name, user: User = None
 ) -> int:
-    # TODO : this creates a Treatment and let the post save do the work
-    # TODO : consider changing tasking workflow (it is weird to trigger start_task in get_all_witnesses task)
     wit_ids = set()
     doc_title = "Document set"
 
