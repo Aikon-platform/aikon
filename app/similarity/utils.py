@@ -51,12 +51,13 @@ def prepare_request(witnesses, treatment_id):
     )
 
 
-def process_results(data):
+def process_results(data, completed=True):
     """
     :param data: {
         "dataset_url": self.dataset.get_absolute_url(),
         "annotations": [{doc_pair_ref: result_url}],  => result_url returns a downloadable JSON
     }
+    :param completed: whether the treatment is achieved or these are intermediary results
 
     result_url JSON file content
     {
@@ -88,12 +89,15 @@ def process_results(data):
     """
     from app.similarity.tasks import process_similarity_file
 
-    output = data.get("output", None)
+    output = data.get("output", {})
     if not data or not output:
         raise ValueError("No extraction results to process")
 
-    for pair_scores in output.get("annotations", []):
-        regions_ref_pair, score_url = pair_scores.items()
+    result_url = output.get("annotations" if not completed else "results_url", [])
+    for pair_scores in result_url:
+        regions_ref_pair, score_url = pair_scores.get("doc_pair"), pair_scores.get(
+            "result_url"
+        )
 
         try:
             response = requests.get(score_url, stream=True)

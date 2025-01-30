@@ -32,13 +32,14 @@ def prepare_request(witnesses, treatment_id):
     )
 
 
-def process_results(data):
+def process_results(data, completed=True):
     """
     :param data["output"]: {
         doc_id,: result_url,
         ?[doc_id: result_url,]
         ?["error": [list of error message]]
     }
+    :param completed: whether the treatment is achieved or these are intermediary results
     :return:
     """
     output = data.get("output", None)

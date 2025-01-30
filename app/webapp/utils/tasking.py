@@ -79,10 +79,10 @@ def create_treatment(
     return True
 
 
-def process_task_results(task_name, data):
+def process_task_results(task_name, data, completed=True):
     try:
         module = importlib.import_module(f"{task_name}.utils")
-        return getattr(module, "process_results")(data)
+        return getattr(module, "process_results")(data, completed)
     except (ImportError, AttributeError) as e:
         raise e
 

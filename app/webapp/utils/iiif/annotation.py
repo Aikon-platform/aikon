@@ -283,10 +283,10 @@ def get_annotations_per_canvas(region: Regions, last_canvas=0, specific_canvas="
 
     coord = (x, y, width, height)
     """
-
     to_include = lambda canvas: int(canvas) > last_canvas or canvas == specific_canvas
 
     data, anno_format = get_file_regions(region)
+
     if data is None:
         log(f"[get_annotations_per_canvas] No annotation file for Regions #{region.id}")
         return {}
@@ -501,10 +501,13 @@ def index_manifest_in_sas(manifest_url, reindex=False):
 
 def get_canvas_list(regions: Regions, all_img=False):
     imgs = regions.get_imgs()
+
     if all_img:
         # Display all images associated to the digitization, even if no regions were extracted
         return [(int(img.split("_")[-1].split(".")[0]), img) for img in imgs]
 
+    # TODO do not rely on annotation file to retrieve canvas,
+    #  use http://localhost:8888/search-api/{regions_ref}/search
     data, anno_format = get_file_regions(regions)
     if not data:
         log(f"[get_canvas_list] No regions file for regions #{regions.id}")
@@ -526,9 +529,16 @@ def get_canvas_list(regions: Regions, all_img=False):
 
     elif anno_format == "json":
         for idx, annotation in enumerate(data):
-            img_file = annotation["source"]
-            if img_file in imgs:
-                canvases.append((int(idx + 1), img_file))
+            digit_ref = annotation["doc_uid"]
+            # source always has 4 digits TODO improve to have iiif download use correct filename
+            src = annotation["source"]
+            for img_name in [
+                src.replace("0", ""),
+                src.replace("00", ""),
+                src.replace("000", ""),
+            ]:
+                if f"{digit_ref}_{img_name}" in imgs:
+                    canvases.append((int(idx + 1), f"{digit_ref}_{img_name}"))
 
     return canvases
 
@@ -823,8 +833,9 @@ def process_regions(
 
     anno_file = f"{REGIONS_PATH}/{regions.get_ref()}.{extension}"
     if not is_new and Path(anno_file).exists():
+        # necessary check because regions are sent twice (once for PROGRESS event, then when SUCCESS event)
         log(
-            f"[process_regions] Regions for #{digit.id} already exists with same model, skipping",
+            f"[process_regions] Regions for Digit #{digit.id} already exists with same model, skipping",
         )
         return False
 
@@ -859,12 +870,13 @@ def get_regions_urls(regions: Regions):
         "img_name": "..."
     }
     """
-    folio_regions = []
+    folio_regions = {}
 
     _, canvas_annotations = formatted_annotations(regions)
+
     for canvas_nb, annotations, img_name in canvas_annotations:
         if len(annotations):
-            folio_regions.append(
+            folio_regions.update(
                 {
                     gen_img_ref(img_name, a[0]): gen_iiif_url(
                         img_name, 2, f"{a[0]}/full/0"
@@ -873,4 +885,4 @@ def get_regions_urls(regions: Regions):
                 }
             )
 
-    return flatten_dict(folio_regions)
+    return folio_regions

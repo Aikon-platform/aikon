@@ -16,6 +16,7 @@ from app.config.settings import (
     APP_NAME,
     CV_API_URL,
     ADDITIONAL_MODULES,
+    DEBUG,
 )
 
 from app.webapp.models.document_set import DocumentSet
@@ -189,7 +190,6 @@ class Treatment(AbstractSearchableModel):
     def save(self, *args, **kwargs):
         if not self._internal_save:
             self._internal_save = True
-            print(f"Saving Treatment {self.id}")
 
             user = kwargs.pop("user", None)
             if not self.requested_by and user:
@@ -290,9 +290,9 @@ class Treatment(AbstractSearchableModel):
 
         self.save()
 
-    def process_results(self, data, complete=True):
+    def process_results(self, data, completed=True):
         try:
-            process_task_results(self.task_type, data)
+            process_task_results(self.task_type, data, completed)
         except (ImportError, AttributeError, Exception) as e:
             self.on_task_error(
                 {
@@ -300,9 +300,9 @@ class Treatment(AbstractSearchableModel):
                     "notify": self.notify_email,
                 },
                 exception=e,
-                complete=complete,
+                completed=completed,
             )
-        if complete:
+        if completed:
             self.on_task_success(
                 {
                     "notify": self.notify_email,
@@ -328,14 +328,14 @@ class Treatment(AbstractSearchableModel):
             messages.warning(request, flash_msg)
 
     def on_task_error(
-        self, data, request=None, exception: Exception = None, complete=True
+        self, data, request=None, exception: Exception = None, completed=True
     ):
         """
         Handle the end of the task
         """
         log(data.get("error", "Unknown error"), exception=exception)
 
-        if complete:
+        if completed:
             self.terminate_task(
                 "ERROR",
                 error=data.get("error", "Unknown error"),
@@ -359,27 +359,30 @@ class Treatment(AbstractSearchableModel):
         Called when the task is finished
         """
         self.status = status
-        if error:
-            log(f"[treatment] Error: {error}")
         self.is_finished = True
         self.save()
 
         if notify and self.notify_email:
+            email = (
+                f"Dear {APP_NAME.upper()} user,\n\n"
+                f"The {self.task_type} task (#{self.id}) you requested on the {APP_NAME.upper()} platform "
+                f"was completed with the status {self.status}."
+                f"\n\nMessage: {error or message}.\n\nBest,\nthe {APP_NAME.upper()} team."
+            )
             try:
                 send_mail(
                     f"[{APP_NAME.upper()} {self.task_type}] Task {self.status.lower()}",
-                    f"Dear {APP_NAME.upper()} user,\n\n"
-                    f"The {self.task_type} task (#{self.id}) you requested on the {APP_NAME.upper()} platform was completed with the status {self.status}."
-                    f"\n\nMessage: {error or message}.\n\nBest,\nthe {APP_NAME.upper()} team.",
+                    email,
                     EMAIL_HOST_USER,
                     [self.requested_by.email],
                     fail_silently=False,
                 )
             except Exception as e:
-                log(
-                    f"[treatment_email] Unable to send confirmation email for {self.requested_by.email}",
-                    e,
-                )
+                if not DEBUG:
+                    log(
+                        f"[treatment_email] Unable to send confirmation email for {self.requested_by.email}",
+                        e,
+                    )
 
     def receive_notification(self, event, data):
         """
@@ -390,9 +393,9 @@ class Treatment(AbstractSearchableModel):
             self.save()
             return True
         elif event == "PROGRESS":
-            self.process_results(data, complete=False)
+            self.process_results(data, completed=False)
         elif event == "SUCCESS":
-            # process_results@complete=True triggers task_success/task_error when achieved
+            # process_results@completed=True triggers task_success/task_error when achieved
             self.process_results(data)
         elif event == "ERROR":
             is_finished = data.get("completed", True)
@@ -401,7 +404,7 @@ class Treatment(AbstractSearchableModel):
                     "notify": self.notify_email,
                     "error": data.get("message"),
                 },
-                complete=is_finished,
+                completed=is_finished,
             )
 
 

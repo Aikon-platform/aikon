@@ -28,13 +28,14 @@ def prepare_request(witnesses, treatment_id):
     )
 
 
-def process_results(data):
+def process_results(data, completed=True):
     """
     :param data: {
         doc_id,: result_url, => result_url returns a downloadable JSON
         ?[doc_id: result_url,]
         ?["error": [list of error message]]
     }
+    :param completed: whether the treatment is achieved or these are intermediary results
     data["output"]["annotations"] = [list of url of json files containing annotations]
     [{
         "source": "image_name.jpg",
