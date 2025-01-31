@@ -1,0 +1,214 @@
+from enum import Enum
+from django import forms
+
+from app.config.settings import APP_LANG
+from app.similarity.const import MODULE_NAME
+from app.webapp.forms import FormConfig, get_available_models
+
+AVAILABLE_SIMILARITY_ALGORITHMS = {
+    "cosine": (
+        "Similarity using cosine distance between feature vectors"
+        if APP_LANG == "en"
+        else "Similarité basée sur la distance cosinus entre les vecteurs de 'features'"
+    ),
+    "segswap": (
+        "Similarity using correspondence matching between part of images"
+        if APP_LANG == "en"
+        else "Similarité basée sur la correspondance entre les parties des images"
+    ),
+}
+
+
+class SimilarityForm(forms.ModelForm):
+    class Meta:
+        fields = ("algorithm",)
+
+    # add default empty value for algorithm
+    algorithm = forms.ChoiceField(
+        choices=[("", "-")],  # Will be dynamically set in __init__
+        initial="",
+        label="Similarity Algorithm"
+        if APP_LANG == "en"
+        else "Algorithme de similarité",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        available_algos = [
+            algo
+            for algo in SimilarityAlgorithm
+            if algo.name in list(AVAILABLE_SIMILARITY_ALGORITHMS.keys())
+        ]
+        self.fields["algorithm"].choices += [
+            (algo.name, algo.config.display_name) for algo in available_algos
+        ]
+
+        self.algorithm_forms = {
+            algo.name: algo.config.form_class(prefix=f"{algo.name}_", *args)
+            for algo in available_algos
+        }
+
+        for name, form in self.algorithm_forms.items():
+            for field_name, field in form.fields.items():
+                full_field_name = f"{name}_{field_name}"
+                self.fields[full_field_name] = field
+
+    def clean(self):
+        cleaned_data = super().clean()
+        algorithm = cleaned_data.get("algorithm")
+        if algorithm and algorithm in self.algorithm_forms:
+            algo_form = self.algorithm_forms[algorithm]
+            if not algo_form.is_valid():
+                for field_name, error in algo_form.errors.items():
+                    self.add_error(f"{algorithm}_{field_name}", error)
+        return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        algorithm = self.cleaned_data["algorithm"]
+
+        parameters = {
+            name: self.cleaned_data[f"{algorithm}_{name}"]
+            for name in self.algorithm_forms[algorithm].fields
+        }
+        parameters["algorithm"] = algorithm
+
+        # TODO make something more dynamic using AVAILABLE_SIMILARITY_ALGORITHMS
+        if algorithm == "segswap":
+            parameters.update(
+                {
+                    "segswap_prefilter": self.cleaned_data.get(
+                        f"{algorithm}_cosine_preprocessing", True
+                    ),
+                    "segswap_n": self.cleaned_data.get(
+                        f"{algorithm}_cosine_n_filter", 0
+                    ),
+                }
+            )
+
+        # NOTE for watermarks only
+        # if parameters.get("use_transpositions"):
+        #     parameters["transpositions"] = ["none", "rot90", "rot270", "hflip", "vflip"]
+
+        instance.parameters = parameters
+
+        if commit:
+            instance.save()
+
+        return instance
+
+
+class BaseFeatureExtractionForm(forms.Form):
+    """Base form for feature extraction settings."""
+
+    class Meta:
+        fields = ("feat_net",)
+
+    feat_net = forms.ChoiceField(
+        label="Feature Extraction Backbone"
+        if APP_LANG == "en"
+        else "Modèle d'extraction des 'features'",
+        help_text=(
+            "Select the model to extract main characteristics of the images on which to perform similarity"
+            if APP_LANG == "en"
+            else "Sélectionnez le modèle pour extraire les caractéristiques principales des images sur lesquelles effectuer la similarité"
+        ),
+        widget=forms.Select(attrs={"extra-class": "preprocessing-field"}),
+    )
+    # # NOTE NOT USED for now
+    # cosine_threshold = forms.FloatField(
+    #     min_value=0.1,
+    #     max_value=0.99,
+    #     initial=0.6,
+    #     label="Cosine Threshold" if APP_LANG == "en" else "Seuil de Cosinus",
+    #     widget=forms.NumberInput(attrs={"extra-class": "preprocessing-field"}),
+    # )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["feat_net"].choices = get_available_models(MODULE_NAME)
+
+
+class CosinePreprocessing(BaseFeatureExtractionForm):
+    """Form for SegSwap-specific settings."""
+
+    cosine_preprocessing = forms.BooleanField(
+        required=False,
+        initial=True,
+        label=(
+            "Use Preprocessing" if APP_LANG == "en" else "Effectuer un prétraitement"
+        ),
+        help_text=(
+            "Filter less similar images before running algorithm"
+            if APP_LANG == "en"
+            else "Filtrer les images moins similaires avant d'exécuter l'algorithme"
+        ),
+        widget=forms.CheckboxInput(attrs={"class": "use-preprocessing"}),
+    )
+    cosine_n_filter = forms.IntegerField(
+        min_value=2,
+        initial=10,
+        label=(
+            "Number of images to keep"
+            if APP_LANG == "en"
+            else "Nombre d'images à conserver"
+        ),
+        widget=forms.NumberInput(attrs={"extra-class": "preprocessing-field"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.order_fields(
+            ["cosine_preprocessing"]
+            + list(BaseFeatureExtractionForm.Meta.fields)
+            + ["cosine_n_filter"]
+        )
+
+
+class CosineSimilarityForm(BaseFeatureExtractionForm):
+    """Form for cosine similarity-specific settings."""
+
+    # # NOTE NOT USED for now
+    # top_k = forms.IntegerField(
+    #     min_value=1,
+    #     max_value=100,
+    #     initial=10,
+    #     label="Number of similar images to keep",
+    #     widget=forms.NumberInput(attrs={"extra-class": "preprocessing-field"}),
+    # )
+
+    # NOTE for watermarks only
+    # use_transpositions = forms.BooleanField(
+    #     required=False,
+    #     initial=False,
+    #     label="Use Transpositions",
+    #     help_text="Include transposed images in similarity computation",
+    #     widget=forms.CheckboxInput(attrs={"extra-class": "preprocessing-field"}),
+    # )
+
+
+class SegSwapForm(CosinePreprocessing):
+    """Form for SegSwap-specific settings."""
+
+
+class SimilarityAlgorithm(Enum):
+    cosine = FormConfig(
+        display_name="Cosine Similarity",
+        description="Compute similarity using cosine distance",
+        form_class=CosineSimilarityForm,
+    )
+    segswap = FormConfig(
+        display_name="SegSwap",
+        description="Use segmentation and matching",
+        form_class=SegSwapForm,
+    )
+
+    @property
+    def config(self):
+        return self.value
+
+    @classmethod
+    def choices(cls):
+        return [(algo.name, algo.config.display_name) for algo in cls]
