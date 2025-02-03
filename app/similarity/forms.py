@@ -1,9 +1,12 @@
 from enum import Enum
+from sys import prefix
+
 from django import forms
 
 from app.config.settings import APP_LANG
 from app.similarity.const import MODULE_NAME
-from app.webapp.forms import FormConfig, get_available_models
+from app.webapp.forms import FormConfig, get_available_models, SubForm
+from app.webapp.utils.logger import log
 
 
 class SimilarityForm(forms.Form):
@@ -34,7 +37,8 @@ class SimilarityForm(forms.Form):
         ]
 
         for algo in available_algos:
-            form = algo.config.form_class(prefix=f"{algo.name}_", *args)
+            form_kwargs = {"prefix": f"{algo.name}_", "data": dict(args[0])["data"]}
+            form = algo.config.form_class(**form_kwargs)
             self.algorithm_forms[algo.name] = form
             self.fields.update(form.fields)
 
@@ -146,7 +150,7 @@ class CosinePreprocessing(BaseFeatureExtractionForm):
         )
 
 
-class CosineSimilarityForm(BaseFeatureExtractionForm):
+class CosineSimilarityForm(SubForm, BaseFeatureExtractionForm):
     """Form for cosine similarity-specific settings."""
 
     # # NOTE NOT USED for now
@@ -168,30 +172,33 @@ class CosineSimilarityForm(BaseFeatureExtractionForm):
     # )
 
 
-class SegSwapForm(CosinePreprocessing):
+class SegSwapForm(SubForm, CosinePreprocessing):
     """Form for SegSwap-specific settings."""
 
 
-AVAILABLE_SIMILARITY_ALGORITHMS = {"cosine", "segswap"}
+AVAILABLE_SIMILARITY_ALGORITHMS = {
+    "cosine": (
+        "Similarity using cosine distance between feature vectors"
+        if APP_LANG == "en"
+        else "Similarité basée sur la distance cosinus entre les vecteurs de 'features'"
+    ),
+    "segswap": (
+        "Similarity using correspondence matching between part of images"
+        if APP_LANG == "en"
+        else "Similarité basée sur la correspondance entre les parties des images"
+    ),
+}
 
 
 class SimilarityAlgorithm(Enum):
     cosine = FormConfig(
         display_name="Cosine Similarity",
-        description=(
-            "Similarity using cosine distance between feature vectors"
-            if APP_LANG == "en"
-            else "Similarité basée sur la distance cosinus entre les vecteurs de 'features'"
-        ),
+        description="Similarity using cosine distance between feature vectors",
         form_class=CosineSimilarityForm,
     )
     segswap = FormConfig(
         display_name="SegSwap",
-        description=(
-            "Similarity using correspondence matching between part of images"
-            if APP_LANG == "en"
-            else "Similarité basée sur la correspondance entre les parties des images"
-        ),
+        description="Similarity using correspondence matching between part of images",
         form_class=SegSwapForm,
     )
 

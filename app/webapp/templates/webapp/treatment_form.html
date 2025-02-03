@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% load i18n shared_tags %}
+{% csrf_token %}
+
+{% block title %}
+    {{ view_title }}
+{% endblock %}
+
+{% block content %}
+<div class="centerwrap">
+    <!--{# TODO DOES NOT WORK FOR TREATMENT LIST #}-->
+    {% include "includes/breadcrumbs.html" %}
+
+    <h1 class="is-title is-size-2 py-3">{{ view_title }}</h1>
+    <form action="" method="post" enctype="multipart/form-data">
+        {{ form.media }}
+
+        {% if form.non_field_errors %}
+        <div class="notification is-danger is-light py-3 px-4">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <div class="task-param">
+            {% include "includes/form/field_group.html" with included_fields="task_type,document_set,notify_email" %}
+        </div>
+
+
+        <div id="similarity" class="is-contrasted p-4 my-4 box">
+            <h2 class="title is-spaced">Similarity Settings</h2>
+            {% include "includes/form/field_group.html" with included_fields="similarity_algorithm" %}
+            {% for algo, desc in available_algorithms.items %}
+                <div id="algo-{{ algo }}" class="algorithms mt-5 message box" style="display: none;">
+                    <h3 class="title is-spaced">{{ algo|capfirst }} Settings</h3>
+                    <p class="message-body has-background-light-soft">
+                        {{ desc }}
+                    </p>
+                    {% with "similarity_"|add:algo as algo_prefix %}
+                        {% for field in form %}
+                            {% if field.name|startswith:algo_prefix %}
+                                {% include "includes/form/form_field.html" with field=field %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endwith %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <div id="regions" class="is-contrasted p-4 my-4 box">
+
+        </div>
+
+        <div id="vectorization" class="is-contrasted p-4 my-4 box">
+
+        </div>
+
+        <p class="has-text-centered pt-3">
+            <input class="button is-link" type="submit"
+                   value="{% if APP_LANG == 'en' %}Submit{% else %}Démarrer{% endif %}">
+        </p>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const algorithmSelect = document.getElementById("id_similarity_algorithm");
+        const algorithmDivs = document.querySelectorAll(".algorithms");
+        const usePreprocessing = document.querySelectorAll(".use-preprocessing");
+
+        function toggleAlgorithmFields() {
+            const selectedAlgo = algorithmSelect.value;
+            algorithmDivs.forEach(div => {
+                div.style.display = div.id === `algo-${selectedAlgo}` ? "block" : "none";
+            });
+        }
+
+        function togglePreprocessing(checkbox) {
+            const checked = checkbox.checked;
+            const preprocessingFields = checkbox.closest(".algorithms").querySelectorAll(".preprocessing-field");
+            preprocessingFields.forEach(div => {
+                div.style.display = checked ? "block" : "none";
+            })
+        }
+
+        if (algorithmSelect) {
+            algorithmSelect.addEventListener("change", toggleAlgorithmFields);
+            toggleAlgorithmFields();
+        }
+        if (usePreprocessing) {
+            usePreprocessing.forEach(checkbox => {
+                checkbox.addEventListener("change", function() {togglePreprocessing(this)});
+                togglePreprocessing(checkbox)
+            });
+        }
+    });
+    </script>
+{% endblock %}

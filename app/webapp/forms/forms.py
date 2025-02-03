@@ -20,6 +20,14 @@ class FormConfig:
     form_class: Type[forms.Form]
 
 
+class SubForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields = {
+            f"{self.prefix}{name}": field for name, field in self.fields.items()
+        }
+
+
 def get_available_models(task_name):
     try:
         response = requests.get(f"{CV_API_URL}/{task_name}/models")
