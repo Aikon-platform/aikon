@@ -26,9 +26,10 @@
             {% include "includes/form/field_group.html" with included_fields="task_type,document_set,notify_email" %}
         </div>
 
-
-        <div id="similarity" class="is-contrasted p-4 my-4 box">
-            <h2 class="title is-spaced">Similarity Settings</h2>
+        <div id="similarity" class="task-form is-contrasted p-4 my-4 box" style="display: none;">
+            <h2 class="title is-spaced">
+                {% if APP_LANG == 'en' %}Similarity settings{% else %}Paramètres de la similarité{% endif %}
+            </h2>
             {% include "includes/form/field_group.html" with included_fields="similarity_algorithm" %}
             {% for algo, desc in available_algorithms.items %}
                 <div id="algo-{{ algo }}" class="algorithms mt-5 message box" style="display: none;">
@@ -47,12 +48,18 @@
             {% endfor %}
         </div>
 
-        <div id="regions" class="is-contrasted p-4 my-4 box">
-
+        <div id="regions" class="task-form is-contrasted p-4 my-4 box">
+            <h2 class="title is-spaced">
+                {% if APP_LANG == 'en' %}Extraction settings{% else %}Paramètres de l'extraction{% endif %}
+                {% include "includes/form/field_group.html" with included_fields="regions" %}
+            </h2>
         </div>
 
-        <div id="vectorization" class="is-contrasted p-4 my-4 box">
-
+        <div id="vectorization" class="task-form is-contrasted p-4 my-4 box">
+            <h2 class="title is-spaced">
+                {% if APP_LANG == 'en' %}Vectorization settings{% else %}Paramètres de la vectorisation{% endif %}
+                {% include "includes/form/field_group.html" with included_fields="vectorization" %}
+            </h2>
         </div>
 
         <p class="has-text-centered pt-3">
@@ -66,6 +73,22 @@
 {% block extra_js %}
     <script>
     document.addEventListener("DOMContentLoaded", function () {
+        /* Task type forms */
+        const taskTypeSelect = document.getElementById("id_task_type");
+        const taskForms = document.querySelectorAll(".task-form");
+        if (taskTypeSelect) {
+            taskTypeSelect.addEventListener("change", toggleTaskForm);
+            toggleTaskForm();
+        }
+
+        function toggleTaskForm() {
+            const selectedTask = taskTypeSelect.value;
+            taskForms.forEach(div => {
+                div.style.display = div.id === selectedTask ? "block" : "none";
+            });
+        }
+
+        /* Similarity algorithm fields */
         const algorithmSelect = document.getElementById("id_similarity_algorithm");
         const algorithmDivs = document.querySelectorAll(".algorithms");
         const usePreprocessing = document.querySelectorAll(".use-preprocessing");

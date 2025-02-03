@@ -7,6 +7,7 @@ from app.regions.forms import RegionsForm
 from app.vectorization.forms import VectorizationForm
 from app.webapp.forms import SEARCH_MSG
 from app.webapp.models.treatment import Treatment
+from app.webapp.models.utils.constants import TRMT_TYPE
 
 
 class TreatmentForm(forms.ModelForm):
@@ -30,6 +31,7 @@ class TreatmentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self._user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
+        self.fields["task_type"].choices = TRMT_TYPE
 
         self.subforms = {}
         form_mapping = {

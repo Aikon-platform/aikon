@@ -21,7 +21,7 @@ from app.config.settings import (
 
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
-from app.webapp.models.utils.constants import TRMT_TYPE, TRMT_STATUS, NO_USER
+from app.webapp.models.utils.constants import TRMT_STATUS, NO_USER, TASK_TYPE
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.tasks import launch_task
 
@@ -87,7 +87,7 @@ class Treatment(AbstractSearchableModel):
         verbose_name=get_name("task_type"),
         blank=True,
         null=True,
-        choices=TRMT_TYPE,
+        choices=TASK_TYPE,  # overriden in form.__init__()
     )
 
     document_set = models.ForeignKey(
