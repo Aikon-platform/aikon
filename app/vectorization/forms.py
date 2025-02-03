@@ -5,7 +5,7 @@ from app.vectorization.const import MODULE_NAME
 from app.webapp.forms import get_available_models
 
 
-class VectorizationForm(forms.ModelForm):
+class VectorizationForm(forms.Form):
     class Meta:
         fields = ("model",)
 
@@ -25,10 +25,6 @@ class VectorizationForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["model"].choices = get_available_models(MODULE_NAME)
 
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        instance.parameters = {"model": self.cleaned_data["model"]}
-
-        if commit:
-            instance.save()
-        return instance
+    def get_api_parameters(self):
+        parameters = {"model": self.cleaned_data["model"]}
+        return parameters

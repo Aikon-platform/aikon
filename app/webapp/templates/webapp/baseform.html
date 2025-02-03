@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% load i18n shared_tags %}
+{% csrf_token %}
+
+{% block content %}
+<form action="" method="post" enctype="multipart/form-data">
+    {{ form.media }}
+
+    {% if form.non_field_errors %}
+    <div class="notification is-danger is-light py-3 px-4">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <div class="field-group">
+        {% for field in form %}
+            {% if included_fields|default:"" %}
+                {% if field.name|startswith:included_fields %}
+                    {% include "includes/form/form_field.html" %}
+                {% endif %}
+            {% elif excluded_fields|default:"" %}
+                {% if not field.name|startswith:excluded_fields %}
+                    {% include "includes/form/form_field.html" %}
+                {% endif %}
+            {% else %}
+                {% include "includes/form/form_field.html" %}
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <p class="has-text-centered pt-3">
+        <input class="button is-link" type="submit"
+               value="{% if APP_LANG == 'en' %}Submit{% else %}Démarrer{% endif %}">
+    </p>
+</form>
+{% endblock %}

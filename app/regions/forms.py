@@ -5,7 +5,7 @@ from app.regions.const import MODULE_NAME
 from app.webapp.forms import get_available_models
 
 
-class RegionsForm(forms.ModelForm):
+class RegionsForm(forms.Form):
     class Meta:
         fields = ("model",)
 
@@ -31,13 +31,9 @@ class RegionsForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["model"].choices = get_available_models(MODULE_NAME)
 
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        instance.parameters = {"model": self.cleaned_data["model"]}
+    def get_api_parameters(self):
+        parameters = {"model": self.cleaned_data["model"]}
         # NOTE for watermarks only
         # if self.cleaned_data.get("postprocess_watermarks"):
-        #     instance.parameters["postprocess"] = "watermarks"
-
-        if commit:
-            instance.save()
-        return instance
+        #     parameters["postprocess"] = "watermarks"
+        return parameters

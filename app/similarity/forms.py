@@ -5,21 +5,8 @@ from app.config.settings import APP_LANG
 from app.similarity.const import MODULE_NAME
 from app.webapp.forms import FormConfig, get_available_models
 
-AVAILABLE_SIMILARITY_ALGORITHMS = {
-    "cosine": (
-        "Similarity using cosine distance between feature vectors"
-        if APP_LANG == "en"
-        else "Similarité basée sur la distance cosinus entre les vecteurs de 'features'"
-    ),
-    "segswap": (
-        "Similarity using correspondence matching between part of images"
-        if APP_LANG == "en"
-        else "Similarité basée sur la correspondance entre les parties des images"
-    ),
-}
 
-
-class SimilarityForm(forms.ModelForm):
+class SimilarityForm(forms.Form):
     class Meta:
         fields = ("algorithm",)
 
@@ -34,25 +21,22 @@ class SimilarityForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.algorithm_forms = {}
 
         available_algos = [
             algo
             for algo in SimilarityAlgorithm
-            if algo.name in list(AVAILABLE_SIMILARITY_ALGORITHMS.keys())
+            if algo.name in AVAILABLE_SIMILARITY_ALGORITHMS
         ]
+
         self.fields["algorithm"].choices += [
             (algo.name, algo.config.display_name) for algo in available_algos
         ]
 
-        self.algorithm_forms = {
-            algo.name: algo.config.form_class(prefix=f"{algo.name}_", *args)
-            for algo in available_algos
-        }
-
-        for name, form in self.algorithm_forms.items():
-            for field_name, field in form.fields.items():
-                full_field_name = f"{name}_{field_name}"
-                self.fields[full_field_name] = field
+        for algo in available_algos:
+            form = algo.config.form_class(prefix=f"{algo.name}_", *args)
+            self.algorithm_forms[algo.name] = form
+            self.fields.update(form.fields)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -64,8 +48,7 @@ class SimilarityForm(forms.ModelForm):
                     self.add_error(f"{algorithm}_{field_name}", error)
         return cleaned_data
 
-    def save(self, commit=True):
-        instance = super().save(commit=False)
+    def get_api_parameters(self):
         algorithm = self.cleaned_data["algorithm"]
 
         parameters = {
@@ -91,12 +74,7 @@ class SimilarityForm(forms.ModelForm):
         # if parameters.get("use_transpositions"):
         #     parameters["transpositions"] = ["none", "rot90", "rot270", "hflip", "vflip"]
 
-        instance.parameters = parameters
-
-        if commit:
-            instance.save()
-
-        return instance
+        return parameters
 
 
 class BaseFeatureExtractionForm(forms.Form):
@@ -116,6 +94,7 @@ class BaseFeatureExtractionForm(forms.Form):
         ),
         widget=forms.Select(attrs={"extra-class": "preprocessing-field"}),
     )
+
     # # NOTE NOT USED for now
     # cosine_threshold = forms.FloatField(
     #     min_value=0.1,
@@ -193,15 +172,26 @@ class SegSwapForm(CosinePreprocessing):
     """Form for SegSwap-specific settings."""
 
 
+AVAILABLE_SIMILARITY_ALGORITHMS = {"cosine", "segswap"}
+
+
 class SimilarityAlgorithm(Enum):
     cosine = FormConfig(
         display_name="Cosine Similarity",
-        description="Compute similarity using cosine distance",
+        description=(
+            "Similarity using cosine distance between feature vectors"
+            if APP_LANG == "en"
+            else "Similarité basée sur la distance cosinus entre les vecteurs de 'features'"
+        ),
         form_class=CosineSimilarityForm,
     )
     segswap = FormConfig(
         display_name="SegSwap",
-        description="Use segmentation and matching",
+        description=(
+            "Similarity using correspondence matching between part of images"
+            if APP_LANG == "en"
+            else "Similarité basée sur la correspondance entre les parties des images"
+        ),
         form_class=SegSwapForm,
     )
 

@@ -25,7 +25,7 @@ from app.webapp.models.utils.constants import TRMT_TYPE, TRMT_STATUS, NO_USER
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.tasks import launch_task
 
-from app.webapp.utils.logger import log, console
+from app.webapp.utils.logger import log
 from app.webapp.utils.tasking import prepare_task_request, process_task_results
 
 
@@ -99,8 +99,8 @@ class Treatment(AbstractSearchableModel):
         null=True,
     )
     treated_objects = models.JSONField(blank=True, null=True)
-
     api_tracking_id = models.UUIDField(null=True, editable=False)
+    api_parameters = models.JSONField(blank=True, null=True)
 
     _internal_save = False
 

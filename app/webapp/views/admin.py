@@ -229,6 +229,7 @@ class RegionsView(AbstractRecordView):
 class TreatmentCreate(AbstractRecordCreate):
     model = Treatment
     form_class = TreatmentForm
+    template_name = "webapp/baseform.html"
 
     def form_valid(self, form):
         self.object = form.save(commit=False)
@@ -236,6 +237,13 @@ class TreatmentCreate(AbstractRecordCreate):
         self.object = form.save()
 
         return super().form_valid(form)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = (
+            self.request.user if self.request.user.is_authenticated else None
+        )
+        return kwargs
 
     def get_success_url(self):
         # Return the URL for the TreatmentList view
