@@ -29,3 +29,16 @@ class PlaceAdmin(UnregisteredAdmin):
         Return empty perms dict thus hiding the model from admin index
         """
         return {}
+
+    # # # # # # # # # # # #
+    #     PERMISSIONS     #
+    # # # # # # # # # # # #
+
+    def has_change_permission(self, request, obj=None):
+        return True
+
+    def has_view_permission(self, request, obj=None):
+        return True
+
+    def has_add_permission(self, request, obj=None):
+        return True

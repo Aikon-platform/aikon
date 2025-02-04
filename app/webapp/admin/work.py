@@ -39,6 +39,19 @@ class WorkAdmin(UnregisteredAdmin):
     def response_delete(self, request, obj_display, obj_id):
         return HttpResponseRedirect(reverse("webapp:work_list"))
 
+    # # # # # # # # # # # #
+    #     PERMISSIONS     #
+    # # # # # # # # # # # #
+
+    def has_change_permission(self, request, obj=None):
+        return True
+
+    def has_view_permission(self, request, obj=None):
+        return True
+
+    def has_add_permission(self, request, obj=None):
+        return True
+
 
 # class WorkInline(nested_admin.NestedStackedInline):
 #     fields = ["title", "author", ("date_min", "date_max")]

@@ -89,7 +89,6 @@
                     <slot name="buttons"/>
                 </div>
                 {#if item.class === 'Treatment' || item.class === 'DocumentSet'}
-                    <!--TODO check if item.user_id-->
                     {#if item.user_id === parseInt(userId) || isSuperuser}
                         <button class="delete is-medium" title="{appLang === 'en' ? 'Delete' : 'Supprimer'}" on:click={deleteItem}/>
                         <!-- <button class="button is-delete mr-2" aria-label="close" on:click={deleteItem}>

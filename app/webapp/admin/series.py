@@ -10,7 +10,12 @@ from app.webapp.models.series import Series, get_name
 from app.webapp.models.edition import get_name as ed_get_name
 from app.webapp.models.utils.constants import TPR, TPR_ABBR
 from app.webapp.utils.constants import TRUNCATEWORDS
-from app.webapp.utils.functions import format_start_end, format_dates, truncate_words
+from app.webapp.utils.functions import (
+    format_start_end,
+    format_dates,
+    truncate_words,
+    is_in_group,
+)
 
 
 @admin.register(Series)

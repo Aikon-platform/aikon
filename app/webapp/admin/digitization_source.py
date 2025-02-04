@@ -7,3 +7,16 @@ from app.webapp.models.digitization_source import DigitizationSource
 class DigitizationSourceAdmin(UnregisteredAdmin):
     change_form_template = "admin/form.html"
     search_fields = ("source",)
+
+    # # # # # # # # # # # #
+    #     PERMISSIONS     #
+    # # # # # # # # # # # #
+
+    def has_change_permission(self, request, obj=None):
+        return True
+
+    def has_view_permission(self, request, obj=None):
+        return True
+
+    def has_add_permission(self, request, obj=None):
+        return True
