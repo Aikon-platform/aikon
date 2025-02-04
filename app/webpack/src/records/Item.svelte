@@ -1,14 +1,15 @@
 <script>
     import { fade } from 'svelte/transition';
     import {selectionStore} from "../selection/selectionStore.js";
-    import {deleteRecord, refToIIIF, showMessage} from "../utils.js";
+    import {deleteRecord, manifestToMirador, refToIIIF, showMessage} from "../utils.js";
     import { appLang, userId, isSuperuser } from '../constants';
     import {setContext} from "svelte";
 
     export let recordsStore;
 
     export let item;
-    const hasUrl = item.hasOwnProperty("url") && item.url !== "";
+    const hasViewUrl = item.hasOwnProperty("view_url") && item.view_url !== "";
+    const hasEditUrl = item.hasOwnProperty("edit_url") && item.edit_url !== "";
 
     async function deleteItem() {
         // TODO add delete button if USER is the creator of the record OR super admin
@@ -40,24 +41,27 @@
         <div class="card-content">
             <div class="media">
                 {#if item.hasOwnProperty('img')}
-                    <div class="media-left">
-                        <figure class="card image is-96x96">
-                            <img src="{refToIIIF(item.img, 'full', '250,')}" alt="Record illustration"/>
-                        </figure>
-                    </div>
-                {/if}
-                <div class="media-content">
-                    {#if item.hasOwnProperty("buttons") && Object.keys(item.buttons).length !== 0 && item.buttons.hasOwnProperty("regions")}
-                        <a href="{item.buttons.regions}" class="title is-4 {hasUrl ? 'hoverable' : ''} pt-2">
-                            <span class="tag px-2 py-1 mb-1 mr-1 is-dark is-rounded">{item.type} #{item.id}</span>
-                            {item.title}
+                    {#if item.hasOwnProperty('iiif') && item.iiif.length !== 0}
+                        <a href="{manifestToMirador(item.iiif[0])}">
+                            <div class="media-left">
+                                <figure class="card image is-96x96">
+                                    <img src="{refToIIIF(item.img, 'full', '250,')}" alt="Record illustration"/>
+                                </figure>
+                            </div>
                         </a>
                     {:else}
-                        <a href={hasUrl ? item.url : null} class="title is-4 {hasUrl ? 'hoverable' : ''} pt-2">
-                            <span class="tag px-2 py-1 mb-1 mr-1 is-dark is-rounded">{item.type} #{item.id}</span>
-                            {item.title}
-                        </a>
+                        <div class="media-left">
+                            <figure class="card image is-96x96">
+                                <img src="{refToIIIF(item.img, 'full', '250,')}" alt="Record illustration"/>
+                            </figure>
+                        </div>
                     {/if}
+                {/if}
+                <div class="media-content">
+                    <a href={hasViewUrl ? item.view_url : null} class="title is-4 {hasViewUrl ? 'hoverable' : ''} pt-2">
+                        <span class="tag px-2 py-1 mb-1 mr-1 is-dark is-rounded">{item.type} #{item.id}</span>
+                        {item.title}
+                    </a>
                     {#if item.hasOwnProperty("is_public") && item.is_public}
                         <span class="pl-3 pt-1 icon-text is-size-7 is-center has-text-weight-normal">
                             <span class="icon has-text-success"><i class="fas fa-check-circle"></i></span>
@@ -74,22 +78,24 @@
                         {/if}
                     </p>
 
-                    {#if item.hasOwnProperty("buttons") && Object.keys(item.buttons).length !== 0}
-                        <p class="subtitle is-6 mb-0 ml-2 pt-2 is-middle">
-                            {#if item.hasOwnProperty('iiif')}
-                                {#each item.iiif as iiif}
-                                    <span class="tag logo mt-1">{@html iiif}</span>
-                                {/each}
-                            {/if}
-                            <a href={hasUrl ? item.url : null} class="regions-btn button is-small is-rounded is-link px-2"
+                    <p class="subtitle is-6 mb-0 ml-2 pt-2 is-middle">
+                        {#if hasEditUrl}
+                            <a href={hasEditUrl ? item.edit_url : null} class="regions-btn button is-small is-rounded is-link px-2"
                                title='{appLang === "en" ? "Edit" : "Éditer"}'>
                                 <span class="iconify" data-icon="entypo:edit"/>
                                 <span class="ml-2">
                                     {appLang === 'en' ? 'Edit' : 'Éditer'}
                                 </span>
                             </a>
-                        </p>
-                    {/if}
+                        {/if}
+                        {#if item.hasOwnProperty("buttons") && Object.keys(item.buttons).length !== 0}
+                            {#if item.hasOwnProperty('iiif')}
+                                {#each item.iiif as iiif}
+                                    <span class="tag logo mt-1">{@html iiif}</span>
+                                {/each}
+                            {/if}
+                        {/if}
+                    </p>
                 </div>
                 <div class="media-right">
                     <slot name="buttons"/>

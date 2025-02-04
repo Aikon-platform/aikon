@@ -76,9 +76,11 @@ class Work(AbstractSearchableModel):
         blank=True,
     )
 
-    def get_absolute_url(self):
+    def get_absolute_edit_url(self):
         return reverse("admin:webapp_work_change", args=[self.id])
-        # return reverse("webapp:work_view", args=[self.id])
+
+    def get_absolute_view_url(self):
+        return reverse("webapp:work_view", args=[self.id])
 
     def to_json(self, reindex=True):
         place = self.place
@@ -90,7 +92,8 @@ class Work(AbstractSearchableModel):
                 "type": get_name("Work"),
                 # "user": self.user.__str__(),
                 # "user_id": self.user.id,
-                "url": self.get_absolute_url(),
+                "edit_url": self.get_absolute_edit_url(),
+                "view_url": self.get_absolute_view_url(),
                 "title": self.__str__(),
                 "metadata": {
                     get_name("dates"): format_dates(self.date_min, self.date_max),

@@ -153,7 +153,11 @@ class DocumentSet(AbstractSearchableModel):
 
     def get_document_metadata(self):
         def obj_meta(obj):
-            return {"id": obj.id, "title": obj.__str__(), "url": obj.get_absolute_url()}
+            return {
+                "id": obj.id,
+                "title": obj.__str__(),
+                "url": obj.get_absolute_view_url(),
+            }
 
         selection = {
             "Witness": {wit.id: obj_meta(wit) for wit in self.witnesses},
@@ -169,7 +173,7 @@ class DocumentSet(AbstractSearchableModel):
                 "id": treatment.id.__str__(),
                 "status": treatment.status,
                 "task_type": treatment.task_type,
-                "url": treatment.get_absolute_url(),
+                "url": treatment.get_absolute_view_url(),
             }
 
         return {
@@ -177,10 +181,14 @@ class DocumentSet(AbstractSearchableModel):
             for treatment in self.get_treatments()
         }
 
-    def get_absolute_url(self):
+    def get_absolute_edit_url(self):
         # TODO create view to edit document set without loading it
         # return reverse("document_set", args=[self.id])
         return ""
+
+    def get_absolute_view_url(self):
+        # TODO create view to view documents from document set?
+        return reverse("webapp:document_set_view", args=[self.id])
 
     def get_selection(self, reindex=False):
         if not self.selection or reindex:
@@ -204,7 +212,8 @@ class DocumentSet(AbstractSearchableModel):
                     "title": self.__str__(),
                     "user_id": user.id if user else 0,
                     "user": user.__str__() if user else NO_USER,
-                    "url": self.get_absolute_url(),
+                    "edit_url": self.get_absolute_edit_url(),
+                    "view_url": self.get_absolute_view_url(),
                     "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M")
                     if self.updated_at
                     else "-",

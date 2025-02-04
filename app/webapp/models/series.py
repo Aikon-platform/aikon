@@ -80,9 +80,11 @@ class Series(AbstractSearchableModel):
         blank=True,
     )
 
-    def get_absolute_url(self):
+    def get_absolute_edit_url(self):
         return reverse("admin:webapp_series_change", args=[self.id])
-        # return reverse("webapp:series_view", args=[self.id])
+
+    def get_absolute_view_url(self):
+        return reverse("webapp:series_view", args=[self.id])
 
     def to_json(self, reindex=True):
         library = self.place
@@ -95,7 +97,8 @@ class Series(AbstractSearchableModel):
                 "id": self.id,
                 "class": self.__class__.__name__,
                 "type": get_name("Series"),
-                "url": self.get_absolute_url(),
+                "edit_url": self.get_absolute_edit_url(),
+                "view_url": self.get_absolute_view_url(),
                 "title": self.__str__(),
                 "user": user.__str__() if user else NO_USER,
                 "user_id": user.id if user else 0,

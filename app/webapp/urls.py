@@ -272,9 +272,16 @@ urlpatterns += [
         f"{APP_NAME}/treatment/<str:id>", TreatmentView.as_view(), name="treatment_view"
     ),
     path(f"{APP_NAME}/work/", WorkList.as_view(), name="work_list"),
+    path(f"{APP_NAME}/work/<str:id>", WorkView.as_view(), name="work_view"),
     path(f"{APP_NAME}/series/", SeriesList.as_view(), name="series_list"),
+    path(f"{APP_NAME}/series/<str:id>", SeriesView.as_view(), name="series_view"),
     path(
         f"{APP_NAME}/document-set/", DocumentSetList.as_view(), name="document_set_list"
+    ),
+    path(
+        f"{APP_NAME}/document-set/<str:id>",
+        DocumentSetView.as_view(),
+        name="document_set_view",
     ),
 ]
 

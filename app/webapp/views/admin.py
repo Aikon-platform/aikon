@@ -283,6 +283,16 @@ class WorkList(AbstractRecordList):
         return context
 
 
+class WorkView(AbstractRecordView):
+    model = Work
+    template_name = "webapp/work.html"
+    fields = []
+
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     context["urls"] = self.get_record().get_treated_url()
+
+
 class SeriesList(AbstractRecordList):
     model = Series
 
@@ -293,6 +303,16 @@ class SeriesList(AbstractRecordList):
         return context
 
 
+class SeriesView(AbstractRecordView):
+    model = Series
+    template_name = "webapp/series.html"
+    fields = []
+
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     context["urls"] = self.get_record().get_treated_url()
+
+
 class DocumentSetList(AbstractRecordList):
     model = DocumentSet
 
@@ -301,6 +321,16 @@ class DocumentSetList(AbstractRecordList):
         context["search_fields"] = DocumentSetFilter().to_form_fields()
 
         return context
+
+
+class DocumentSetView(AbstractRecordView):
+    model = DocumentSet
+    template_name = "webapp/document_set.html"
+    fields = []
+
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     context["urls"] = self.get_record().get_treated_url()
 
 
 # TODO RegionsSetList

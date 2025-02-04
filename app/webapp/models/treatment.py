@@ -128,7 +128,10 @@ class Treatment(AbstractSearchableModel):
             return ""
         return f"?document_set={self.document_set.id}&task_type={self.task_type}&notify_email={self.notify_email}"
 
-    def get_absolute_url(self):
+    def get_absolute_edit_url(self):
+        return ""
+
+    def get_absolute_view_url(self):
         return reverse("webapp:treatment_view", args=[self.id])
 
     def get_treated_url(self):
@@ -162,7 +165,8 @@ class Treatment(AbstractSearchableModel):
                     "type": get_name("Treatment"),
                     "title": self.__str__(),
                     "updated_at": req_on.strftime("%Y-%m-%d %H:%M") if req_on else None,
-                    "url": self.get_absolute_url(),
+                    "edit_url": self.get_absolute_edit_url(),
+                    "view_url": self.get_absolute_view_url(),
                     "user": user.__str__() if user else NO_USER,
                     "user_id": user.id if user else 0,
                     "status": self.status,
