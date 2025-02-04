@@ -208,13 +208,4 @@ document.addEventListener("DOMContentLoaded", () => {
         applyTheme('auto');
         localStorage.setItem('theme', 'auto');
     });
-
-    setTimeout(function() {
-        let messages = document.querySelectorAll(".notification");
-        messages.forEach(function(message) {
-            message.style.transition = "opacity .5s ease-out";
-            message.style.opacity = "0";
-            setTimeout(() => message.remove(), 500);
-        });
-    }, 3000);
 });

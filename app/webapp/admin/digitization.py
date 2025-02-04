@@ -38,6 +38,34 @@ class DigitizationAdmin(UnregisteredAdmin):
     def get_nb_pages(self, obj: Digitization):
         return obj.witness.nb_pages if obj.witness else None
 
+    # # # # # # # # # # # #
+    #     PERMISSIONS     #
+    # # # # # # # # # # # #
+
+    def has_change_permission(self, request, obj=None):
+        if obj:
+            return (
+                request.user.is_superuser
+                or obj.user == request.user
+                or is_in_group(request.user, obj.user)
+            )
+
+    def has_view_permission(self, request, obj=None):
+        if obj:
+            return (
+                obj.user == request.user
+                or obj.is_public
+                or is_in_group(request.user, obj.user)
+            )
+
+    def has_add_permission(self, request, obj=None):
+        if obj and obj.user:
+            print(obj)
+            print(obj.user)
+            return obj.user == request.user or is_in_group(request.user, obj.user)
+        else:
+            return True
+
 
 ############################
 #          INLINE          #
@@ -106,19 +134,25 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     # # # # # # # # # # # #
 
     def has_change_permission(self, request, obj=None):
-        if obj is not None:
+        if obj:
             return (
                 request.user.is_superuser
                 or obj.user == request.user
                 or is_in_group(request.user, obj.user)
             )
 
-    def has_add_permission(self, request, obj=None):
-        if obj is not None:
+    def has_view_permission(self, request, obj=None):
+        if obj and obj.user:
             return (
                 obj.user == request.user
                 or obj.is_public
                 or is_in_group(request.user, obj.user)
             )
+        else:
+            return True
+
+    def has_add_permission(self, request, obj=None):
+        if obj and obj.user:
+            return obj.user == request.user or is_in_group(request.user, obj.user)
         else:
             return True

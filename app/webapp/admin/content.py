@@ -44,7 +44,7 @@ class ContentInline(nested_admin.NestedStackedInline):
     # # # # # # # # # # # #
 
     def has_change_permission(self, request, obj=None):
-        if obj is not None:
+        if obj:
             return (
                 request.user.is_superuser
                 or obj.user == request.user
@@ -52,20 +52,18 @@ class ContentInline(nested_admin.NestedStackedInline):
             )
 
     def has_view_permission(self, request, obj=None):
-        if obj is not None:
+        if obj:
             return (
                 obj.user == request.user
                 or obj.is_public
                 or is_in_group(request.user, obj.user)
             )
+        else:
+            return True
 
     def has_add_permission(self, request, obj=None):
-        if obj and obj.user is not None:
-            return (
-                obj.user == request.user
-                or obj.is_public
-                or is_in_group(request.user, obj.user)
-            )
+        if obj and obj.user:
+            return obj.user == request.user or is_in_group(request.user, obj.user)
         else:
             return True
 
@@ -85,7 +83,7 @@ class ContentWorkInline(nested_admin.NestedStackedInline):
     # # # # # # # # # # # #
 
     def has_change_permission(self, request, obj=None):
-        if obj is not None:
+        if obj:
             return (
                 request.user.is_superuser
                 or obj.user == request.user
@@ -93,15 +91,17 @@ class ContentWorkInline(nested_admin.NestedStackedInline):
             )
 
     def has_view_permission(self, request, obj=None):
-        if obj is not None:
+        if obj:
             return (
                 obj.user == request.user
                 or obj.is_public
                 or is_in_group(request.user, obj.user)
             )
+        else:
+            return True
 
     def has_add_permission(self, request, obj=None):
-        if obj is not None:
+        if obj:
             return (
                 obj.user == request.user
                 or obj.is_public

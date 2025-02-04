@@ -336,7 +336,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
     # # # # # # # # # # # #
 
     def has_change_permission(self, request, obj=None):
-        if obj is not None:
+        if obj:
             return (
                 request.user.is_superuser
                 or obj.user == request.user
@@ -344,7 +344,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             )
 
     def has_view_permission(self, request, obj=None):
-        if obj is not None:
+        if obj:
             return (
                 obj.user == request.user
                 or obj.is_public
@@ -360,3 +360,41 @@ class WitnessInline(nested_admin.NestedStackedInline):
     ordering = ("id",)
     fields = [("volume_nb", "volume_title")]
     inlines = [DigitizationInline]
+
+    # # # # # # # # # # # #
+    #     PERMISSIONS     #
+    # # # # # # # # # # # #
+
+    def has_change_permission(self, request, obj=None):
+        if obj:
+            return (
+                request.user.is_superuser
+                or obj.user == request.user
+                or is_in_group(request.user, obj.user)
+            )
+        else:
+            return (
+                request.user.is_superuser
+                or obj.user == request.user
+                or is_in_group(request.user, obj.user)
+            )
+
+    def has_view_permission(self, request, obj=None):
+        if obj:
+            return (
+                obj.user == request.user
+                or obj.is_public
+                or is_in_group(request.user, obj.user)
+            )
+        else:
+            return True
+
+    def has_add_permission(self, request, obj=None):
+        if obj and obj.user:
+            return (
+                obj.user == request.user
+                or obj.is_public
+                or is_in_group(request.user, obj.user)
+            )
+        else:
+            return True
