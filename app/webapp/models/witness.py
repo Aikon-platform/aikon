@@ -115,8 +115,6 @@ class Witness(AbstractSearchableModel):
         default=(PAG_ABBR, PAGE.capitalize())
         # help_text=get_name('page_type_info'),
     )
-    # TODO allow only user to access the record if is_public = False
-    # TODO! allow only the creator and super-admin to modify the record
     is_public = models.BooleanField(
         verbose_name=get_name("is_public"),
         default=False,

@@ -22,6 +22,7 @@ from app.webapp.utils.functions import (
     get_file_ext,
     zip_dirs,
     format_dates,
+    is_in_group,
 )
 from app.webapp.utils.iiif.annotation import (
     get_images_annotations,
@@ -330,6 +331,26 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
         return queryset, use_distinct
 
+    # # # # # # # # # # # #
+    #     PERMISSIONS     #
+    # # # # # # # # # # # #
+
+    def has_change_permission(self, request, obj=None):
+        if obj:
+            return (
+                request.user.is_superuser
+                or obj.user == request.user
+                or is_in_group(request.user, obj.user)
+            )
+
+    def has_view_permission(self, request, obj=None):
+        if obj:
+            return (
+                obj.user == request.user
+                or obj.is_public
+                or is_in_group(request.user, obj.user)
+            )
+
 
 class WitnessInline(nested_admin.NestedStackedInline):
     # FORM contained in the Series form
@@ -339,3 +360,41 @@ class WitnessInline(nested_admin.NestedStackedInline):
     ordering = ("id",)
     fields = [("volume_nb", "volume_title")]
     inlines = [DigitizationInline]
+
+    # # # # # # # # # # # #
+    #     PERMISSIONS     #
+    # # # # # # # # # # # #
+
+    def has_change_permission(self, request, obj=None):
+        if obj:
+            return (
+                request.user.is_superuser
+                or obj.user == request.user
+                or is_in_group(request.user, obj.user)
+            )
+        else:
+            return (
+                request.user.is_superuser
+                or obj.user == request.user
+                or is_in_group(request.user, obj.user)
+            )
+
+    def has_view_permission(self, request, obj=None):
+        if obj:
+            return (
+                obj.user == request.user
+                or obj.is_public
+                or is_in_group(request.user, obj.user)
+            )
+        else:
+            return True
+
+    def has_add_permission(self, request, obj=None):
+        if obj and obj.user:
+            return (
+                obj.user == request.user
+                or obj.is_public
+                or is_in_group(request.user, obj.user)
+            )
+        else:
+            return True

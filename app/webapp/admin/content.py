@@ -5,6 +5,7 @@ from app.webapp.admin.role import RoleInline
 from app.webapp.admin.admin import UnregisteredAdmin
 from app.webapp.forms import LanguageForm
 from app.webapp.models.content import Content, get_name
+from app.webapp.utils.functions import is_in_group
 
 
 @admin.register(Content)
@@ -38,6 +39,34 @@ class ContentInline(nested_admin.NestedStackedInline):
     autocomplete_fields = ("work", "place")
     inlines = [RoleInline]
 
+    # # # # # # # # # # # #
+    #     PERMISSIONS     #
+    # # # # # # # # # # # #
+
+    def has_change_permission(self, request, obj=None):
+        if obj:
+            return (
+                request.user.is_superuser
+                or obj.user == request.user
+                or is_in_group(request.user, obj.user)
+            )
+
+    def has_view_permission(self, request, obj=None):
+        if obj:
+            return (
+                obj.user == request.user
+                or obj.is_public
+                or is_in_group(request.user, obj.user)
+            )
+        else:
+            return True
+
+    def has_add_permission(self, request, obj=None):
+        if obj and obj.user:
+            return obj.user == request.user or is_in_group(request.user, obj.user)
+        else:
+            return True
+
 
 class ContentWorkInline(nested_admin.NestedStackedInline):
     # INLINE FORM ACCESSIBLE IN THE FORM SERIES
@@ -49,9 +78,37 @@ class ContentWorkInline(nested_admin.NestedStackedInline):
     fields = ["work"]  # ("page_min", "page_max")
     autocomplete_fields = ("work",)
 
-    # def has_add_permission(self, request, obj=None):
-    #     # Returning False will hide the "Add another" link
-    #     return False
+    # # # # # # # # # # # #
+    #     PERMISSIONS     #
+    # # # # # # # # # # # #
+
+    def has_change_permission(self, request, obj=None):
+        if obj:
+            return (
+                request.user.is_superuser
+                or obj.user == request.user
+                or is_in_group(request.user, obj.user)
+            )
+
+    def has_view_permission(self, request, obj=None):
+        if obj:
+            return (
+                obj.user == request.user
+                or obj.is_public
+                or is_in_group(request.user, obj.user)
+            )
+        else:
+            return True
+
+    def has_add_permission(self, request, obj=None):
+        if obj:
+            return (
+                obj.user == request.user
+                or obj.is_public
+                or is_in_group(request.user, obj.user)
+            )
+        else:
+            return True
 
 
 # TabularInline: most common type of inline model. It displays the related models in a tabular format, similar to a table. Each row represents a related model instance. It is suitable for models with a large number of instances and provides a compact view.

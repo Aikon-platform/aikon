@@ -1,0 +1,43 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify shared_tags %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <script src="{% url 'admin:jsi18n' %}"></script>
+    <link rel="stylesheet" href="{% static 'css/form.css' %}">
+    <script src="{% static 'js/form.js' %}"></script>
+    {{ media }}
+{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static "admin/css/forms.css" %}">
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+            {% if messages %}
+                {% for message in messages %}{% endfor %}
+            {% endif %}
+        <div id="content-main">
+            <form action="" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% block form_top %}{% endblock %}
+                <div class="columns is-centered mt-4">
+                    <div class="column is-9">
+                        <div class="box is-contrasted">
+                            <h1 class="is-title is-size-4">
+                                {% if APP_LANG == "en" %}Edit profile: {% else %}Éditer le profil : {% endif %}
+                                {{ user.first_name }} {{ user.last_name }}
+                            </h1>
+                            {% include "webapp/base_form.html" %}
+                            <div class="control pt-4 is-center">
+                                <button type="submit" class="button is-link">{% if APP_LANG == "en" %}Submit{% else %}Modifier{% endif %}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

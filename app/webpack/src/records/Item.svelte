@@ -3,6 +3,7 @@
     import {selectionStore} from "../selection/selectionStore.js";
     import {deleteRecord, refToIIIF, showMessage} from "../utils.js";
     import { appLang, userId, isSuperuser } from '../constants';
+    import {setContext} from "svelte";
 
     export let recordsStore;
 
@@ -46,16 +47,23 @@
                     </div>
                 {/if}
                 <div class="media-content">
-                    <a href={hasUrl ? item.url : null} class="title is-4 {hasUrl ? 'hoverable' : ''} pt-2">
-                        <span class="tag px-2 py-1 mb-1 mr-1 is-dark is-rounded">{item.type} #{item.id}</span>
-                        {item.title}
-                        {#if item.hasOwnProperty("is_public") && item.is_public}
-                            <span class="pl-3 icon-text is-size-7 is-center has-text-weight-normal">
-                                <span class="icon has-text-success"><i class="fas fa-check-circle"></i></span>
-                                <span style="margin-left: -0.5rem">Public</span>
-                            </span>
-                        {/if}
-                    </a>
+                    {#if item.hasOwnProperty("buttons") && Object.keys(item.buttons).length !== 0 && item.buttons.hasOwnProperty("regions")}
+                        <a href="{item.buttons.regions}" class="title is-4 {hasUrl ? 'hoverable' : ''} pt-2">
+                            <span class="tag px-2 py-1 mb-1 mr-1 is-dark is-rounded">{item.type} #{item.id}</span>
+                            {item.title}
+                        </a>
+                    {:else}
+                        <a href={hasUrl ? item.url : null} class="title is-4 {hasUrl ? 'hoverable' : ''} pt-2">
+                            <span class="tag px-2 py-1 mb-1 mr-1 is-dark is-rounded">{item.type} #{item.id}</span>
+                            {item.title}
+                        </a>
+                    {/if}
+                    {#if item.hasOwnProperty("is_public") && item.is_public}
+                        <span class="pl-3 pt-1 icon-text is-size-7 is-center has-text-weight-normal">
+                            <span class="icon has-text-success"><i class="fas fa-check-circle"></i></span>
+                            <span style="margin-left: -0.5rem">Public</span>
+                        </span>
+                    {/if}
 
                     <p class="subtitle is-6 mb-0 ml-2 pt-2">
                         {#if item.user}
@@ -73,15 +81,13 @@
                                     <span class="tag logo mt-1">{@html iiif}</span>
                                 {/each}
                             {/if}
-                            {#if item.buttons.hasOwnProperty("regions")}
-                                <a href="{item.buttons.regions}" class="regions-btn button is-small is-rounded is-link px-2"
-                                   title='{appLang === "en" ? "View image regions" : "Afficher les régions d\'images"}'>
-                                    <span class="iconify" data-icon="entypo:documents"/>
-                                    <span class="ml-2">
-                                        {appLang === 'en' ? 'Show regions' : 'Afficher les régions'}
-                                    </span>
-                                </a>
-                            {/if}
+                            <a href={hasUrl ? item.url : null} class="regions-btn button is-small is-rounded is-link px-2"
+                               title='{appLang === "en" ? "Edit" : "Éditer"}'>
+                                <span class="iconify" data-icon="entypo:edit"/>
+                                <span class="ml-2">
+                                    {appLang === 'en' ? 'Edit' : 'Éditer'}
+                                </span>
+                            </a>
                         </p>
                     {/if}
                 </div>
@@ -89,7 +95,6 @@
                     <slot name="buttons"/>
                 </div>
                 {#if item.class === 'Treatment' || item.class === 'DocumentSet'}
-                    <!--TODO check if item.user_id-->
                     {#if item.user_id === parseInt(userId) || isSuperuser}
                         <button class="delete is-medium" title="{appLang === 'en' ? 'Delete' : 'Supprimer'}" on:click={deleteItem}/>
                         <!-- <button class="button is-delete mr-2" aria-label="close" on:click={deleteItem}>

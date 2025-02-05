@@ -17,3 +17,16 @@ class ConservationPlaceAdmin(UnregisteredAdmin):
     search_fields = ("name", "city__name", "city__country")
     list_filter = ("name", "city__name")
     # autocomplete_fields = ("city",)
+
+    # # # # # # # # # # # #
+    #     PERMISSIONS     #
+    # # # # # # # # # # # #
+
+    def has_change_permission(self, request, obj=None):
+        return True
+
+    def has_view_permission(self, request, obj=None):
+        return True
+
+    def has_add_permission(self, request, obj=None):
+        return True

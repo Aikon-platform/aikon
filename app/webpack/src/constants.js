@@ -3,6 +3,7 @@ export const appName = APP_NAME;
 export const webappName = WEBAPP_NAME;
 export const userId = USER_ID;
 export const isSuperuser = IS_SUPERUSER;
+export const addPermission = ADD_PERMISSION;
 export const csrfToken = CSRF_TOKEN;
 export const modules = ADDITIONAL_MODULES;
 export const regionsType = "Region";

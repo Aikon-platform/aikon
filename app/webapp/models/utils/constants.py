@@ -26,6 +26,7 @@ MODEL_NAMES = {
     "Pdf": {"en": "PDF", "fr": "PDF"},
     "Regions": {"en": "regions", "fr": "régions"},
     "User": {"en": "user", "fr": "utilisateur"},
+    "UserProfile": {"en": "user profile", "fr": "profil utilisateur"},
     "Group": {"en": "group", "fr": "groupe"},
     "Treatment": {"en": "treatment", "fr": "traitement"},
     "DocumentSet": {"en": "document set", "fr": "sélection de documents"},
@@ -54,6 +55,8 @@ USR = MODEL_NAMES["User"][APP_LANG]
 GRP = MODEL_NAMES["Group"][APP_LANG]
 TRMT = MODEL_NAMES["Treatment"][APP_LANG]
 SET = MODEL_NAMES["DocumentSet"][APP_LANG]
+PRFL = MODEL_NAMES["UserProfile"][APP_LANG]
+
 
 ENTITY_NAMES = {
     "MAN": MAN,

@@ -1,4 +1,8 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
+
+from app.webapp.models.user_profile import UserProfile
 
 from app.webapp.utils.constants import (
     SITE_HEADER,
@@ -28,3 +32,24 @@ class UnregisteredAdmin(admin.ModelAdmin):
         Return empty perms dict thus hiding the model from admin index
         """
         return {}
+
+
+class ProfileInline(admin.StackedInline):
+    model = UserProfile
+    can_delete = False
+
+
+class UserAdmin(BaseUserAdmin):
+    inlines = (ProfileInline,)
+
+
+@admin.register(UserProfile)
+class UserProfileAdmin(UnregisteredAdmin):
+    change_form_template = "admin/forms/profile.html"
+
+    def __init__(self, model, admin_site):
+        super().__init__(model, admin_site)
+
+
+admin.site.unregister(User)
+admin.site.register(User, UserAdmin)
