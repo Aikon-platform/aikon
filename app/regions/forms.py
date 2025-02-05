@@ -31,8 +31,16 @@ class RegionsForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields["model"].choices = get_available_models(MODULE_NAME)
 
+    def clean(self):
+        cleaned_data = super().clean()
+        if model := self.data.get("model"):
+            cleaned_data["model"] = model
+        else:
+            self.add_error("model", "Select a model to extract image regions")
+        return cleaned_data
+
     def get_api_parameters(self):
-        parameters = {"model": self.cleaned_data["model"]}
+        parameters = {"model": self.cleaned_data.get("model")}
         # NOTE for watermarks only
         # if self.cleaned_data.get("postprocess_watermarks"):
         #     parameters["postprocess"] = "watermarks"

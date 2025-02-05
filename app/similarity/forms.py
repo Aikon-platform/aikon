@@ -1,19 +1,16 @@
 from enum import Enum
-from sys import prefix
 
 from django import forms
 
 from app.config.settings import APP_LANG
 from app.similarity.const import MODULE_NAME
 from app.webapp.forms import FormConfig, get_available_models, SubForm
-from app.webapp.utils.logger import log
 
 
 class SimilarityForm(forms.Form):
     class Meta:
         fields = ("algorithm",)
 
-    # add default empty value for algorithm
     algorithm = forms.ChoiceField(
         choices=[("", "-")],  # Will be dynamically set in __init__
         initial="",
@@ -37,26 +34,38 @@ class SimilarityForm(forms.Form):
         ]
 
         for algo in available_algos:
-            form_kwargs = {"prefix": f"{algo.name}_", "data": dict(args[0])["data"]}
-            form = algo.config.form_class(**form_kwargs)
+            form = algo.config.form_class(
+                **{"prefix": f"{algo.name}_", "data": kwargs.get("data")}
+            )
             self.algorithm_forms[algo.name] = form
             self.fields.update(form.fields)
 
     def clean(self):
         cleaned_data = super().clean()
-        algorithm = cleaned_data.get("algorithm")
-        if algorithm and algorithm in self.algorithm_forms:
-            algo_form = self.algorithm_forms[algorithm]
-            if not algo_form.is_valid():
-                for field_name, error in algo_form.errors.items():
-                    self.add_error(f"{algorithm}_{field_name}", error)
+        algorithm = self.data.get("algorithm")
+        if not algorithm:
+            self.add_error("algorithm", "Please select a similarity algorithm")
+            return cleaned_data
+        cleaned_data["algorithm"] = algorithm
+
+        algo_form = self.algorithm_forms[algorithm]
+        if not algo_form.is_valid():
+            for field, error in algo_form.errors.items():
+                self.add_error(f"{algorithm}_{field}", error)
+            return cleaned_data
+
+        cleaned_data.update(
+            {f"{algorithm}_{field}": value for field, value in algo_form.data.items()}
+        )
         return cleaned_data
 
     def get_api_parameters(self):
-        algorithm = self.cleaned_data["algorithm"]
+        algorithm = self.cleaned_data.get("algorithm")
+        if not algorithm:
+            return {}
 
         parameters = {
-            name: self.cleaned_data[f"{algorithm}_{name}"]
+            name: self.cleaned_data.get(f"{algorithm}_{name}")
             for name in self.algorithm_forms[algorithm].fields
         }
         parameters["algorithm"] = algorithm

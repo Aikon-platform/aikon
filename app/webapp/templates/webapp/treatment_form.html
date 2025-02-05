@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 
 {% load i18n shared_tags %}
-{% csrf_token %}
 
 {% block title %}
     {{ view_title }}
@@ -14,6 +13,7 @@
 
     <h1 class="is-title is-size-2 py-3">{{ view_title }}</h1>
     <form action="" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
         {{ form.media }}
 
         {% if form.non_field_errors %}
@@ -84,7 +84,9 @@
         function toggleTaskForm() {
             const selectedTask = taskTypeSelect.value;
             taskForms.forEach(div => {
-                div.style.display = div.id === selectedTask ? "block" : "none";
+                const isSelected = div.id === selectedTask;
+                div.style.display = isSelected ? "block" : "none";
+                disabled_hidden(div, isSelected);
             });
         }
 
@@ -96,7 +98,9 @@
         function toggleAlgorithmFields() {
             const selectedAlgo = algorithmSelect.value;
             algorithmDivs.forEach(div => {
-                div.style.display = div.id === `algo-${selectedAlgo}` ? "block" : "none";
+                const isVisible = div.id === `algo-${selectedAlgo}`;
+                div.style.display = isVisible ? "block" : "none";
+                disabled_hidden(div, isVisible);
             });
         }
 
@@ -116,6 +120,12 @@
             usePreprocessing.forEach(checkbox => {
                 checkbox.addEventListener("change", function() {togglePreprocessing(this)});
                 togglePreprocessing(checkbox)
+            });
+        }
+
+        function disabled_hidden(el, isVisible) {
+            el.querySelectorAll("input, select, textarea").forEach(input => {
+                input.disabled = !isVisible;
             });
         }
     });

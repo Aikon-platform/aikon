@@ -31,7 +31,7 @@ class TreatmentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self._user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
-        self.fields["task_type"].choices = TRMT_TYPE
+        self.fields["task_type"].choices = (("", "-"),) + TRMT_TYPE
 
         self.subforms = {}
         form_mapping = {
@@ -40,14 +40,23 @@ class TreatmentForm(forms.ModelForm):
             "vectorization": VectorizationForm,
         }
 
-        for task in ADDITIONAL_MODULES:
-            if task in form_mapping:
+        for task_name in ADDITIONAL_MODULES:
+            if task_name in form_mapping:
                 self.add_subform(
-                    task, form_mapping[task], kwargs.get("data"), kwargs.get("files")
+                    task_name,
+                    form_mapping[task_name],
+                    kwargs.get("data"),
+                    kwargs.get("files"),
                 )
 
     def _populate_instance(self, instance):
         instance.requested_by = self._user
+
+        task_type = self.cleaned_data.get("task_type")
+        if task_type in self.subforms:
+            subform = self.subforms[task_type]
+            if subform.is_valid():
+                instance.api_parameters = subform.get_api_parameters()
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -59,34 +68,41 @@ class TreatmentForm(forms.ModelForm):
         return instance
 
     def add_subform(self, prefix, form_class, data=None, files=None):
-        self.subforms[prefix] = form_class(
-            {
-                "prefix": prefix,
-                "data": data,
-                "files": files,
-                "instance": getattr(self.instance, prefix, None),
+        subform_data = None
+        if data:
+            subform_data = {
+                name.replace(f"{prefix}_", ""): value
+                for name, value in data.items()
+                if name.startswith(f"{prefix}_")
             }
-        )
-        self.fields.update(
-            {
-                f"{prefix}_{name}": field
-                for name, field in self.subforms[prefix].fields.items()
-            }
-        )
 
-    def generate_api_parameters(self):
-        # todo call get_api_parameter on selected task type associated form
-        pass
+        self.subforms[prefix] = form_class(
+            data=subform_data,
+            prefix=prefix,
+            files=files,
+        )
+        for name, field in self.subforms[prefix].fields.items():
+            field.required = False  # make it optional and validate inside subforms
+            self.fields[f"{prefix}_{name}"] = field
 
     def clean(self):
         cleaned_data = super().clean()
 
-        for prefix, subform in self.subforms.items():
-            if not subform.is_valid():
-                for field, error in subform.errors.items():
-                    self.add_error(f"{prefix}_{field}", error)
-            else:
-                cleaned_data.update(
-                    {f"{prefix}_{k}": v for k, v in subform.cleaned_data.items()}
-                )
+        if not cleaned_data.get("document_set"):
+            self.add_error("document_set", "A document set is required.")
+
+        task_type = cleaned_data.get("task_type")
+        if not task_type:
+            self.add_error("task_type", "A task type is required.")
+
+        subform = self.subforms.get(task_type)
+        # Only validate selected subtask form
+        if not subform.is_valid():
+            for field, error in subform.errors.items():
+                self.add_error(f"{task_type}_{field}", error)
+        # else:
+        #     # If subform clean() method are modifying the data, uncomment
+        #     cleaned_data.update(
+        #         {f"{task_type}_{k}": v for k, v in subform.cleaned_data.items()}
+        #     )
         return cleaned_data
