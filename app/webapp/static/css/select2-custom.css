@@ -51,7 +51,9 @@ input.select2-search__field,
     /*background: var(--select2-bg) !important;*/
     border-color: var(--select2-border) !important;
     border-radius: var(--select2-radius) !important;
-    padding-right: 1em !important;
+    margin-right: 1em !important;
+    padding-top: 0 !important;
+
 }
 
 .select2-container--default .select2-selection--multiple .select2-selection__choice {
@@ -61,6 +63,8 @@ input.select2-search__field,
 .select2-selection.select2-selection--single.input {
     font-size: smaller;
     border: 1px solid var(--select2-border);
+    height: 2.5em;
+    padding: 0.6em;
 }
 
 .select2-selection__rendered {

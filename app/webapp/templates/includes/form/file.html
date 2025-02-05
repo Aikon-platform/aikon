@@ -1,0 +1,26 @@
+{% load shared_tags %}
+
+<div class="file has-name is-fullwidth" id="{{ field.id_for_label }}-wrapper">
+    <label for="{{ field.id_for_label }}" class="file-label {% if field.field.required %}required{% endif %}">
+        <span class="file-cta">
+            <span class="file-icon">
+                <span class="iconify" data-icon="mdi:upload"></span>
+            </span>
+            <span class="file-label">Select a file...</span>
+        </span>
+        <span class="file-name">No file selected</span>
+        {{ field|add_class:"file-input" }}
+    </label>
+</div>
+{% if field.help_text %}
+    <div class="help pb-2" style="margin-top: -0.6em;">{{ field.help_text }}</div>
+{% endif %}
+
+<script>
+    document.querySelector("#{{ field.id_for_label|escapejs }}-wrapper input[type=file]").onchange = function() {
+        if (this.files.length > 0) {
+            const fileName = document.querySelector("#{{ field.id_for_label|escapejs }}-wrapper .file-name");
+            fileName.textContent = this.files[0].name;
+        }
+    };
+</script>

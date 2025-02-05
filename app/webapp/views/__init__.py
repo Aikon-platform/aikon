@@ -5,3 +5,5 @@ from app.webapp.views.endpoints import *
 from app.webapp.views.search import *
 from app.webapp.views.superadmin import *
 from app.webapp.views.delete import *
+from app.webapp.views.autocomplete import *
+from app.webapp.views.regions import *

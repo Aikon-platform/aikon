@@ -1,0 +1,36 @@
+{% load shared_tags %}
+
+{% if field.errors %}
+    <div class="notification is-danger is-light py-3 px-4 mt-5 mb-2">
+        {{ field.errors }}
+    </div>
+{% endif %}
+
+{% if field|field_type == "HiddenInput" %}
+    {{ field }}
+{% else %}
+    <div class="field {{ field|field_classes }}">
+        <div class="py-1">
+            {# LABEL #}
+            <label for="{{ field.id_for_label }}" class="label {% if field.field.required %}required{% endif %}">
+                {% if field|field_type != "CheckboxInput" %}{{ field.label }}{% else %}{% endif %}
+            </label>
+        </div>
+
+        {% if field|field_type == "CheckboxInput" %}
+            {% include "includes/form/checkbox.html" %}
+        {% elif field|field_type == "Textarea" %}
+            {% include "includes/form/textarea.html" %}
+        {% elif field|field_type == "CheckboxSelectMultiple" %}
+            {% include "includes/form/checkbox_multiple.html" %}
+        {% elif field|field_type == "Select" %}
+            {% include "includes/form/select.html" %}
+        {% elif field|field_type == "RadioSelect" %}
+            {% include "includes/form/radio.html" %}
+        {% elif field|field_type == "ClearableFileInput" or "FileInput" in field|field_type %}
+            {% include "includes/form/file.html" %}
+        {% else %}
+            {% include "includes/form/input.html" %}
+        {% endif %}
+    </div>
+{% endif %}

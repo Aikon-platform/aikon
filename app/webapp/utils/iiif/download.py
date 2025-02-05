@@ -10,8 +10,8 @@ from PIL import Image, UnidentifiedImageError
 
 from app.webapp.utils.functions import get_json, save_img, sanitize_url
 from app.webapp.utils.constants import MAX_SIZE
-from app.webapp.utils.paths import MEDIA_DIR, IMG_PATH, BASE_DIR, DOWNLOAD_LOG_PATH
-from app.webapp.utils.logger import iiif_log, console, log, download_log
+from app.webapp.utils.paths import IMG_PATH, BASE_DIR, DOWNLOAD_LOG_PATH
+from app.webapp.utils.logger import log, download_log
 from app.webapp.utils.iiif import get_height, get_width, get_id, get_license_url
 
 

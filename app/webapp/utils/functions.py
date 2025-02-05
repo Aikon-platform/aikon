@@ -79,6 +79,31 @@ def substrs_in_str(string, substrings):
     return False
 
 
+def get_files_in_dir(path, include_subdir=False):
+    """
+    Returns a list of filenames in the specified directory.
+
+    Args:
+        path (str): Path to the directory.
+        include_subdir (bool): Whether to include files in subdirectories.
+
+    Returns:
+        list: List of filenames (with relative paths if subdirectories are included).
+    """
+    if not os.path.isdir(path):
+        raise ValueError(f"{path} is not a valid directory.")
+
+    if include_subdir:
+        return [
+            os.path.relpath(os.path.join(root, file), path)
+            for root, _, files in os.walk(path)
+            for file in files
+        ]
+    return [
+        file for file in os.listdir(path) if os.path.isfile(os.path.join(path, file))
+    ]
+
+
 def get_files_with_prefix(
     path: str,
     prefix: str,

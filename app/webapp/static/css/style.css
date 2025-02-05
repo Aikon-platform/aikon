@@ -357,3 +357,9 @@ td.is-fullwidth {
     cursor: pointer;
     text-decoration: underline;
 }
+
+.errorlist {
+    list-style: none !important;
+    margin: 0 !important;
+    font-size: 1rem !important;
+}

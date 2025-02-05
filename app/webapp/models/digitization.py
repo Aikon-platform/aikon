@@ -209,7 +209,7 @@ class Digitization(AbstractSearchableModel):
 
     def has_regions(self):
         # if there is at least one regions file named after the current digitization
-        if len(glob(f"{REGIONS_PATH}/{self.get_ref()}_*.txt")):
+        if len(glob(f"{REGIONS_PATH}/{self.get_ref()}_*")):
             # TODO check self.get_regions()
             return True
         return False
@@ -254,44 +254,23 @@ class Digitization(AbstractSearchableModel):
 
         return count
 
-    def has_all_vectorizations(self):
+    def svg_paths(self):
+        # TODO save SVG in different folders
         from app.vectorization.const import SVG_PATH
 
+        return glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")
+
+    def has_all_vectorizations(self):
         # if there is as much svg files as there are regions in the current digitization
-        if len(glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")) == self.count_annotations():
+        if len(self.svg_paths()) == self.count_annotations():
             return True
         return False
 
-    def check_vectorizations(self):
-        # TODO improve + save svg in differents folders
-        from app.vectorization.const import SVG_PATH
-        from app.webapp.utils.iiif.annotation import create_list_annotations
-
-        # Liste de tous les fichiers SVG correspondants
-        svg_files_paths = glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")
-
-        # Vérifie que svg_files_paths est bien une liste
-        print(f"svg_files_paths : {svg_files_paths}")
-
-        # Extraire les noms de fichiers à partir des chemins sans l'extension ".svg"
-        svg_files_names = [
-            os.path.basename(file_path).replace(".svg", "")
-            for file_path in svg_files_paths
-        ]
-
-        # Récupérer la liste des annotations des régions
-        regions_list = []
-        for regions in self.get_regions():
-            regions_list.extend(create_list_annotations(regions))
-
-        # Comparer les noms de fichiers SVG et les régions
-        print(sorted(svg_files_names))
-        print(sorted(regions_list))
-        return (
-            bool(svg_files_names)
-            and bool(regions_list)
-            and sorted(svg_files_names) == sorted(regions_list)
-        )
+    def is_vectorized(self):
+        """
+        :return: True if all regions have vectorizations, False otherwise
+        """
+        return all(region.is_vectorized() for region in self.get_regions())
 
     ####### WORK IN PROGRESS
 
@@ -484,10 +463,10 @@ def pre_delete_digit(sender, instance: Digitization, **kwargs):
 
 
 def remove_digitization(digit: Digitization, other_media=None):
-    from app.webapp.utils.iiif.annotation import delete_regions
+    from app.webapp.utils.iiif.annotation import destroy_regions
 
     for regions in digit.get_regions():
-        delete_regions(regions)
+        destroy_regions(regions)
 
     delete_files(digit.get_imgs(is_abs=True, check_in_dir=True))
     if other_media:

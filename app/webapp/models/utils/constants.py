@@ -143,7 +143,7 @@ SIMILARITY = (
 )
 VECTORIZATION = "Vectorization" if APP_LANG == "en" else "Vectorisation"
 
-MAP_TASK_TYPE = {
+TASK_TYPE = {
     "regions": REGIONS,
     "similarity": SIMILARITY,
     "vectorization": VECTORIZATION,
@@ -152,7 +152,7 @@ MAP_TASK_TYPE = {
 TRMT_TYPE = ()
 
 for x in ADDITIONAL_MODULES:
-    trmt = (x, MAP_TASK_TYPE.get(x, x))
+    trmt = (x, TASK_TYPE.get(x, x))
     TRMT_TYPE += (trmt,)
 
 TRMT_STATUS = (
