@@ -34,6 +34,7 @@ iiif-prezi==0.3.0
 jinxed==1.2.0
 lxml>=4.9.1
 numpy>=1.18.5
+orjson>=3.10.15
 packaging==21.3
 pdf2image==1.16.2
 pikepdf==6.2.0

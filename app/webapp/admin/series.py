@@ -10,7 +10,12 @@ from app.webapp.models.series import Series, get_name
 from app.webapp.models.edition import get_name as ed_get_name
 from app.webapp.models.utils.constants import TPR, TPR_ABBR
 from app.webapp.utils.constants import TRUNCATEWORDS
-from app.webapp.utils.functions import format_start_end, format_dates, truncate_words
+from app.webapp.utils.functions import (
+    format_start_end,
+    format_dates,
+    truncate_words,
+    is_in_group,
+)
 
 
 @admin.register(Series)
@@ -133,3 +138,23 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
 
     def response_delete(self, request, obj_display, obj_id):
         return HttpResponseRedirect(reverse("webapp:series_list"))
+
+    # # # # # # # # # # # #
+    #     PERMISSIONS     #
+    # # # # # # # # # # # #
+
+    def has_change_permission(self, request, obj=None):
+        if obj:
+            return (
+                request.user.is_superuser
+                or obj.user == request.user
+                or is_in_group(request.user, obj.user)
+            )
+
+    def has_view_permission(self, request, obj=None):
+        if obj:
+            return (
+                obj.user == request.user
+                or obj.is_public
+                or is_in_group(request.user, obj.user)
+            )

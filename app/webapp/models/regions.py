@@ -1,5 +1,6 @@
 import os
 from glob import glob
+from pathlib import Path
 from uuid import uuid4
 
 from django.utils.safestring import mark_safe
@@ -103,8 +104,12 @@ class Regions(AbstractSearchableModel):
             return f"{digit.get_ref()}_anno{self.id}"
         return None
 
-    def get_filename(self):
-        return f"{self.get_ref()}.txt"
+    def region_file(self):
+        if Path(f"{REGIONS_PATH}/{self.get_ref()}.json").exists():
+            return f"{REGIONS_PATH}/{self.get_ref()}.json"
+        if Path(f"{REGIONS_PATH}/{self.get_ref()}.txt").exists():
+            return f"{REGIONS_PATH}/{self.get_ref()}.txt"
+        return None
 
     def gen_annotation_id(self, canvas_nb, save_id=False):
         # annotation_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}"
@@ -113,9 +118,27 @@ class Regions(AbstractSearchableModel):
 
     def has_regions(self):
         # if there is a regions file named after the current Regions
-        if len(glob(f"{REGIONS_PATH}/{self.get_ref()}.txt")):
+        if len(glob(f"{REGIONS_PATH}/{self.get_ref()}*")):
             return True
         return False
+
+    def is_vectorized(self):
+        """
+        :return: True if the region has vectorizations, False otherwise
+        """
+        from app.webapp.utils.iiif.annotation import create_list_annotations
+
+        svg_files_names = [
+            os.path.splitext(os.path.basename(path))[0] for path in self.svg_paths()
+        ]
+        if not svg_files_names:
+            return False
+
+        anno_list = create_list_annotations(self)
+        if not anno_list:
+            return False
+
+        return sorted(svg_files_names) == sorted(anno_list)
 
     def get_computed_pairs(self):
         sim_files = [

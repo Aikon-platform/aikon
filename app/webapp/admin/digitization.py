@@ -6,7 +6,7 @@ from app.config.settings import APP_NAME, WEBAPP_NAME, APP_LANG
 from app.webapp.admin import UnregisteredAdmin
 from app.webapp.models.digitization import Digitization, get_name
 from app.webapp.models.utils.constants import IMG, IMG_MSG
-from app.webapp.utils.functions import gen_thumbnail, cls
+from app.webapp.utils.functions import gen_thumbnail, cls, is_in_group
 from app.webapp.utils.iiif import gen_iiif_url, IIIF_ICON
 from app.webapp.utils.iiif.gen_html import gen_btn
 from app.webapp.utils.logger import log
@@ -37,6 +37,34 @@ class DigitizationAdmin(UnregisteredAdmin):
 
     def get_nb_pages(self, obj: Digitization):
         return obj.witness.nb_pages if obj.witness else None
+
+    # # # # # # # # # # # #
+    #     PERMISSIONS     #
+    # # # # # # # # # # # #
+
+    def has_change_permission(self, request, obj=None):
+        if obj:
+            return (
+                request.user.is_superuser
+                or obj.user == request.user
+                or is_in_group(request.user, obj.user)
+            )
+
+    def has_view_permission(self, request, obj=None):
+        if obj:
+            return (
+                obj.user == request.user
+                or obj.is_public
+                or is_in_group(request.user, obj.user)
+            )
+
+    def has_add_permission(self, request, obj=None):
+        if obj and obj.user:
+            print(obj)
+            print(obj.user)
+            return obj.user == request.user or is_in_group(request.user, obj.user)
+        else:
+            return True
 
 
 ############################
@@ -100,3 +128,31 @@ class DigitizationInline(nested_admin.NestedStackedInline):
                 fields.append("view_regions")
 
         return fields
+
+    # # # # # # # # # # # #
+    #     PERMISSIONS     #
+    # # # # # # # # # # # #
+
+    def has_change_permission(self, request, obj=None):
+        if obj:
+            return (
+                request.user.is_superuser
+                or obj.user == request.user
+                or is_in_group(request.user, obj.user)
+            )
+
+    def has_view_permission(self, request, obj=None):
+        if obj and obj.user:
+            return (
+                obj.user == request.user
+                or obj.is_public
+                or is_in_group(request.user, obj.user)
+            )
+        else:
+            return True
+
+    def has_add_permission(self, request, obj=None):
+        if obj and obj.user:
+            return obj.user == request.user or is_in_group(request.user, obj.user)
+        else:
+            return True

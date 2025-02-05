@@ -3,7 +3,7 @@
     import { selectionStore } from "../selection/selectionStore.js";
     const { selected, nbSelected } = selectionStore;
     import SelectionBtn from "../selection/SelectionBtn.svelte";
-    import { appLang, appName, webappName, model2title } from '../constants';
+    import { appLang, appName, webappName, model2title, addPermission } from '../constants';
     import SelectionModal from "../selection/SelectionModal.svelte";
     import RecordSearch from "./RecordSearch.svelte";
     import Pagination from "../Pagination.svelte";
@@ -40,7 +40,7 @@
 
 <RecordSearch {recordsStore} {searchFields}/>
 
-{#if !modelTitle.includes('set')}
+{#if !modelTitle.includes('set') && addPermission}
     <span class="is-right">
         <a href="{addUrl}" class="button is-rounded is-primary mb-4"
            title='{appLang === "en" ? "Add" : "Ajouter"}'>

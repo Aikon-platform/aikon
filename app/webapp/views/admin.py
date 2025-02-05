@@ -5,6 +5,7 @@ from django.views.generic import CreateView, TemplateView, View, UpdateView
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 
+from app.similarity.forms import AVAILABLE_SIMILARITY_ALGORITHMS
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.series import Series
 from app.webapp.models.work import Work
@@ -229,6 +230,7 @@ class RegionsView(AbstractRecordView):
 class TreatmentCreate(AbstractRecordCreate):
     model = Treatment
     form_class = TreatmentForm
+    template_name = "webapp/treatment_form.html"
 
     def form_valid(self, form):
         self.object = form.save(commit=False)
@@ -236,6 +238,13 @@ class TreatmentCreate(AbstractRecordCreate):
         self.object = form.save()
 
         return super().form_valid(form)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = (
+            self.request.user if self.request.user.is_authenticated else None
+        )
+        return kwargs
 
     def get_success_url(self):
         # Return the URL for the TreatmentList view
@@ -248,9 +257,14 @@ class TreatmentCreate(AbstractRecordCreate):
             return redirect("webapp:home")
         return super().dispatch(request, *args, **kwargs)
 
-    # def get_context_data(self, **kwargs):
-    # context = super().get_context_data(**kwargs)
-    # context["record_name"] = self.model._meta.verbose_name.lower()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # context["record_name"] = self.model._meta.verbose_name.lower()
+        # context["model_name"] = str(
+        #         getattr(self, "model_name", self.model._meta.model_name)
+        #     ).lower()
+        context["available_algorithms"] = AVAILABLE_SIMILARITY_ALGORITHMS
+        return context
 
 
 class TreatmentList(AbstractRecordList):
@@ -267,10 +281,6 @@ class TreatmentView(AbstractRecordView):
     model = Treatment
     template_name = "webapp/treatment.html"
     fields = []
-
-    # def get_context_data(self, **kwargs):
-    #     context = super().get_context_data(**kwargs)
-    #     context["urls"] = self.get_record().get_treated_url()
 
 
 class WorkList(AbstractRecordList):

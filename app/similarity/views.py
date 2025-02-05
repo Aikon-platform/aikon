@@ -29,6 +29,7 @@ from app.similarity.utils import (
     get_all_pairs,
     reset_similarity,
 )
+from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
 
 
@@ -77,30 +78,12 @@ def send_similarity(request, regions_refs):
 
 
 @csrf_exempt
-def receive_similarity(request):
+def receive_similarity_notification(request):
     """
     Handle response of the API sending back similarity files
     """
-    from app.similarity.tasks import process_similarity_file
-
-    if request.method == "POST":
-        filenames = []
-        # treatment_id = request.DATA["experiment_id"]
-
-        try:
-            for regions_refs, file in request.FILES.items():
-                with open(f"{SCORES_PATH}/{regions_refs}.npy", "wb") as destination:
-                    filenames.append(regions_refs)
-                    for chunk in file.chunks():
-                        destination.write(chunk)
-                process_similarity_file.delay(f"{SCORES_PATH}/{regions_refs}.npy")
-
-            return JsonResponse({"message": "Score files received successfully"})
-        except Exception as e:
-            log("[receive_similarity] Error saving score files", e)
-            return JsonResponse({"message": "Error saving score files"}, status=500)
-
-    return JsonResponse({"message": "Invalid request"}, status=400)
+    response, status_code = receive_notification(request)
+    return JsonResponse(response, status=status_code, safe=False)
 
 
 def get_similar_images(request, wid, rid=None):
@@ -390,7 +373,7 @@ def index_regions_similarity(request, regions_ref=None):
         pairs = get_computed_pairs(regions_ref)
 
     for pair in pairs:
-        process_similarity_file.delay(f"{SCORES_PATH}/{pair}.npy")
+        process_similarity_file.delay(pair)
 
     return JsonResponse(
         {

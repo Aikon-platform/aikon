@@ -1,121 +1,200 @@
+import re
 import requests
 
-from app.config.settings import CV_API_URL, APP_URL, APP_NAME, APP_LANG
-
 from app.regions.const import EXTRACTOR_MODEL
-from app.webapp.models.utils.constants import WIT
-from app.webapp.utils.iiif.annotation import get_regions_annotations
+from app.regions.tasks import process_regions_file
+from app.webapp.models.digitization import Digitization
+from app.webapp.models.regions import Regions
+from app.webapp.models.witness import Witness
+from app.webapp.utils import tasking
+from app.webapp.utils.iiif import parse_ref
+from app.webapp.utils.iiif.annotation import has_annotation
 from app.webapp.utils.logger import log
+
+################################################################
+# ⚠️   prepare_request() & process_results() are mandatory  ⚠️ #
+# ⚠️ function used by Treatment to generate request payload ⚠️ #
+# ⚠️    and save results files when sends back by the API   ⚠️ #
+################################################################
 
 
 def prepare_request(witnesses, treatment_id):
-    manifests = {}
+    return tasking.prepare_request(
+        witnesses,
+        treatment_id,
+        prepare_document,
+        "regions",
+        {"model": f"{EXTRACTOR_MODEL}"},
+    )
 
-    try:
-        for witness in witnesses:
-            if witness.has_regions():
-                regions = witness.get_regions()
-                wit_ref = witness.get_ref()
 
-                # check if the is annotations in SAS for this witness
-                anno_regions = {}
-                for region in regions:
-                    anno_regions = get_regions_annotations(
-                        region, as_json=True, r_annos=anno_regions
-                    )
-
-                different_model = True
-                for region in regions:
-                    if region.model == EXTRACTOR_MODEL:
-                        different_model = False
-                        break
-
-                if not different_model and len(anno_regions) != 0:
-                    if not different_model:
-                        log(
-                            f"[prepare_request] Witness {wit_ref} already has regions extracted with {EXTRACTOR_MODEL}"
-                        )
-                    if len(anno_regions) != 0:
-                        log(f"[prepare_request] Witness {wit_ref} already has regions")
-                    continue
-
-            digits = witness.get_digits()
-            for digit in digits:
-                manifests.update(
-                    {f"{APP_NAME}_{digit.get_ref()}": digit.gen_manifest_url()}
-                )
-
-        if manifests:
-            return {
-                "experiment_id": f"{treatment_id}",
-                "documents": manifests,
-                "model": f"{EXTRACTOR_MODEL}",  # Use only if specific model is desired
-                "callback": f"{APP_URL}/{APP_NAME}/get-regions",  # URL to which the regions file must be sent back
-                "tracking_url": f"{APP_URL}/{APP_NAME}/api-progress",
+def process_results(data, completed=True):
+    """
+    :param data: {
+        doc_id,: result_url, => result_url returns a downloadable JSON
+        ?[doc_id: result_url,]
+        ?["error": [list of error message]]
+    }
+    :param completed: whether the treatment is achieved or these are intermediary results
+    data["output"]["annotations"] = [list of url of json files containing annotations]
+    [{
+        "source": "image_name.jpg",
+        "width": 1912,
+        "height": 2500,
+        "crops": [
+          {
+            "bbox": "gb638390",
+            "crop_id": "image_name.jpg-gb638390",
+            "source": "image_name.jpg",
+            "confidence": 0.8001,
+            "absolute": {
+              "x1": 866, "y1": 422, "x2": 1295, "y2": 1048, "width": 429, "height": 626
+            },
+            "relative": {
+              "x1": 0.4529, "y1": 0.1688, "x2": 0.6773, "y2": 0.4192, "width": 0.2244, "height": 0.2504
             }
-        else:
-            return {
-                "message": f"Regions were already extracted for all the selected {WIT}es"
-                if APP_LANG == "en"
-                else f"Les régions ont déjà été extraites pour tous les {WIT}s sélectionnés"
-            }
+          },
+          {...}
+        ],
+        "doc_uid": "doc_ref"
+      },{...}]
+    :return:
+    """
+    output = data.get("output", None)
+    if not data or not output:
+        log("No extraction results to process")
+        return
 
-    except Exception as e:
+    for digit_annotations in output.get("annotations", []):
+        # digit_annotations is supposed to be {doc.uid: result_url}
+        log(digit_annotations)
+        digit_ref, annotation_url = next(iter(digit_annotations.items()))
+        digit_id = parse_ref(digit_ref)["digit"][1]
+        try:
+            response = requests.get(annotation_url, stream=True)
+            response.raise_for_status()
+            json_content = response.json()
+        except Exception as e:
+            log(f"Could not retrieve annotation from {annotation_url}", e)
+            continue
+
+        if not check_regions_json_file(json_content):
+            continue
+
+        try:
+            model_name = annotation_url.split("/")[-1].split("+")[0] or EXTRACTOR_MODEL
+            process_regions_file.delay(json_content, digit_id, model_name)
+        except Exception as e:
+            log(f"Could not process annotation from {annotation_url}", e)
+            raise e
+    return
+
+
+def prepare_document(document: Witness | Digitization | Regions, **kwargs):
+    if type(document).__name__ == "Witness" and not document.has_images():
+        return []
+
+    regions = document.get_regions() if hasattr(document, "get_regions") else [document]
+
+    if any(
+        region.model == kwargs["model"] and has_annotation(region.get_ref())
+        for region in regions
+    ):
         log(
-            f"[prepare_request] Failed to prepare data for regions request",
-            e,
+            f"[prepare_document] Document #{document.get_ref()} already has regions extracted with {kwargs['model']}"
         )
-        raise Exception(f"[prepare_request] Failed to prepare data for regions request")
+        return []
+
+    digits = document.get_digits() if hasattr(document, "get_digits") else [document]
+
+    return [
+        {"type": "iiif", "src": digit.gen_manifest_url(), "uid": digit.get_ref()}
+        for digit in digits
+    ]
 
 
-def regions_request(manifests, treatment_id):
+def regions_request(witnesses, treatment_id):
     """
     To relaunch extraction request in case the automatic process has failed
     """
+    tasking.task_request(
+        "regions",
+        witnesses,
+        treatment_id,
+    )
 
+
+def check_regions_txt_file(file_content):
+    """
+    Check that the TXT of the file content really contains annotations
+    Should look something like this:
+        1 img_0001.jpg
+        x y h w
+        x y h w
+        2 img_0002.jpg
+        x y h w
+
+    :param file_content:
+    :return:
+    """
+    # Either contains a number then an img.jpg / Or a series of 4 numbers
+    pattern = re.compile(r"^\d+\s+\S+\.jpg$|^\d+\s\d+\s\d+\s\d+$")
+    for line in file_content.split("\n"):
+        if line == "":
+            continue
+        if not pattern.match(line):
+            log(f"[check_regions_txt_file] incorrect line {line}")
+            return False
+    return True
+
+
+def check_regions_json_file(file_content):
+    """
+    Check that the JSON of the file content really contains annotations
+    Should contain something like this:
+        [{
+            "source": "image_name.jpg",
+            "width": 1912,
+            "height": 2500,
+            "crops": [
+              {
+                "bbox": "gb638390",
+                "crop_id": "image_name.jpg-gb638390",
+                "source": "image_name.jpg",
+                "confidence": 0.8001,
+                "absolute": {
+                  "x1": 866, "y1": 422, "x2": 1295, "y2": 1048, "width": 429, "height": 626
+                },
+                "relative": {
+                  "x1": 0.4529, "y1": 0.1688, "x2": 0.6773, "y2": 0.4192, "width": 0.2244, "height": 0.2504
+                }
+              },
+              {...}
+            ],
+            "doc_uid": "doc_ref"
+          },{...}]
+    :param file_content:
+    :return:
+    """
     try:
-        response = requests.post(
-            url=f"{CV_API_URL}/regions/start",
-            json={
-                "manifests": manifests,
-                "experiment_id": f"{treatment_id}",
-                "model": f"{EXTRACTOR_MODEL}",  # Use only if specific model is desire
-                "callback": f"{APP_URL}/{APP_NAME}/get-regions",  # URL to which the regions file must be sent back
-            },
-        )
-        if response.status_code == 200:
-            api_response = response.json()
-            log(
-                f"[regions_request] Regions extraction request send: {api_response or ''}"
-            )
-            return api_response["tracking_id"]
-        else:
-            error = {
-                "source": "[regions_request]",
-                "error_message": f"Regions extraction request for treatment #{treatment_id} with status code: {response.status_code}",
-                "request_info": {
-                    "method": "POST",
-                    "url": f"{CV_API_URL}/regions/start",
-                    "payload": {
-                        "manifests": manifests,
-                        "treatment": treatment_id,
-                        "model": f"{EXTRACTOR_MODEL}",
-                        "callback": f"{APP_URL}/{APP_NAME}/get-regions",
-                    },
-                },
-                "response_info": {
-                    "status_code": response.status_code,
-                    "text": response.text or "",
-                },
-            }
+        if not isinstance(file_content, list):
+            return False
 
-            log(error)
-            raise Exception(error)
+        for annotation in file_content:
+            if not all(key in annotation for key in ["source", "crops"]):
+                return False
+
+            if not isinstance(annotation["crops"], list):
+                return False
+
+            for crop in annotation["crops"]:
+                if not all(key in crop for key in ["source", "absolute"]):
+                    return False
+
+                # for coords in crop['absolute']:
+                #     if not all(key in coords for key in ['x1', 'y1', 'width', 'height']):
+                #         return False
+        return True
     except Exception as e:
-        log(
-            f"[regions_request] Regions extraction request for treatment #{treatment_id} failed",
-            e,
-        )
-        raise Exception(
-            f"[regions_request] Regions extraction request for treatment #{treatment_id} failed"
-        )
+        log(f"[check_regions_json_file] incorrect data", e)
+        return False

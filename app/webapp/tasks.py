@@ -35,10 +35,10 @@ def reindex_from_file(regions_id):
 @celery_app.task
 def delete_regions_and_annotations(regions_id):
     from app.webapp.models.regions import Regions
-    from app.webapp.utils.iiif.annotation import delete_regions
+    from app.webapp.utils.iiif.annotation import destroy_regions
 
     regions = Regions.objects.filter(pk=regions_id).first()
-    return delete_regions(regions)
+    return destroy_regions(regions)
 
 
 @celery_app.task
@@ -75,7 +75,7 @@ def generate_all_json():
 
 
 @celery_app.task
-def get_all_witnesses(treatment):
+def launch_task(treatment):
     try:
         witnesses = treatment.get_witnesses()
         treatment.start_task(witnesses)

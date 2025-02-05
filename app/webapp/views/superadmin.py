@@ -5,9 +5,12 @@ TO BE USED ONLY BY SUPER ADMINS FOR MANAGING PURPOSES
 """
 from django.http import JsonResponse
 from django.contrib.auth.decorators import user_passes_test
-from app.webapp.views import is_superuser
 
 from app.webapp.models.work import Work
+
+
+def is_superuser(user):
+    return user.is_superuser
 
 
 @user_passes_test(is_superuser)

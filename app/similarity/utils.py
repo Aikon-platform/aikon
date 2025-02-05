@@ -1,10 +1,13 @@
+import hashlib
+import json
 import os
 import re
 
-import requests
 import numpy as np
 from typing import Tuple, Set, List
-from collections import defaultdict
+
+import orjson
+import requests
 from itertools import combinations_with_replacement
 from functools import lru_cache
 
@@ -14,13 +17,168 @@ from django.db.models import Q, F
 from django.core.cache import cache
 
 from app.similarity.const import SCORES_PATH
-from app.config.settings import CV_API_URL, APP_URL, APP_NAME, APP_LANG
+from app.config.settings import CV_API_URL, APP_URL, APP_NAME
 from app.similarity.models.region_pair import RegionPair
+from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
-from app.webapp.models.utils.constants import WIT
+from app.webapp.models.witness import Witness
+from app.webapp.utils import tasking
 from app.webapp.utils.functions import extract_nb, sort_key
 from app.webapp.utils.logger import log
 from app.webapp.views import check_ref
+
+
+################################################################
+# ⚠️   prepare_request() & process_results() are mandatory  ⚠️ #
+# ⚠️ function used by Treatment to generate request payload ⚠️ #
+# ⚠️    and save results files when sends back by the API   ⚠️ #
+################################################################
+
+
+def prepare_request(witnesses, treatment_id):
+    return tasking.prepare_request(
+        witnesses,
+        treatment_id,
+        prepare_document,
+        "similarity",
+        {
+            # TODO add options for similarity
+            # "algorithm": "algorithm",
+            # "feat_net": "model.pt",
+            # "feat_set": "set",
+            # "feat_layer": "layer",
+            # "segswap_prefilter": true, # if algorithm is "segswap"
+            # "segswap_n": 0, # if algorithm is "segswap"
+        },
+    )
+
+
+def generate_hash(params):
+    serialized = json.dumps(params, sort_keys=True)
+    return hashlib.sha256(serialized.encode()).hexdigest()[:8]
+
+
+def process_results(data, completed=True):
+    """
+    :param data: {
+        "dataset_url": self.dataset.get_absolute_url(),
+        "annotations": [{doc_pair_ref: result_url}],  => result_url returns a downloadable JSON
+    }
+    :param completed: whether the treatment is achieved or these are intermediary results
+
+    result_url JSON file content
+    {
+        "parameters": {
+            "algorithm": "cosine | segswap",
+            "topk": "nb of kept best matches after cosine similarity",
+            "feat_net": "backbone extractor",
+            "segswap_prefilter": self.segswap_prefilter,
+            "segswap_n": "nb of kept best matches after segswap similarity",
+            "raw_transpositions": "list of transforms",
+            "transpositions": "list of transforms",
+        },
+        "index": {
+            "sources": {
+                doc_ref: doc.to_dict()
+                for doc in self.dataset.documents
+            },
+            "images": [{
+                "uid": "wit<id>_<digit><id>_<page_nb>_<x,y,w,h>",
+                "src": "iiif image url",
+                "path": "path in API",
+                "metadata": self.metadata,
+                "doc_uid": doc_ref
+            }, {...}],
+            "transpositions": "list of transforms",
+        },
+        "pairs": [(im1_idx, im2_idx, score, tr1, tr2), (...)],
+    }
+    """
+    from app.similarity.tasks import process_similarity_file
+
+    output = data.get("output", {})
+    if not data or not output:
+        raise ValueError("No similarity results to process")
+
+    result_url = output.get("results_url", [])
+    # TODO when process results error => treatment status should be error
+
+    for pair_scores in result_url:
+        regions_ref_pair = pair_scores.get("doc_pair")
+        score_url = pair_scores.get("result_url")
+
+        try:
+            response = requests.get(score_url, stream=True)
+            response.raise_for_status()
+            json_content = response.json()
+
+            param_hash = generate_hash(json_content.get("parameters", {}))
+            score_file = Path(f"{SCORES_PATH}/{regions_ref_pair}/{param_hash}.json")
+            os.makedirs(f"{SCORES_PATH}/{regions_ref_pair}", exist_ok=True)
+            if score_file.exists():
+                continue
+
+            with open(score_file, "wb") as f:
+                json_content["result_url"] = result_url
+                f.write(orjson.dumps(json_content))
+
+        except Exception as e:
+            log(f"Could not download similarity scores from {score_url}", e)
+            continue
+
+        try:
+            process_similarity_file.delay(str(score_file))
+        except Exception as e:
+            log(f"Could not process similarity scores from {score_url}", e)
+            raise e
+    return
+
+
+def prepare_document(document: Witness | Digitization | Regions, **kwargs):
+    regions = document.get_regions() if hasattr(document, "get_regions") else [document]
+
+    return [
+        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
+        for ref in [region.get_ref() for region in regions]
+    ]
+
+
+def send_request(witnesses):
+    """
+    To relaunch similarity request in case the automatic process has failed
+    """
+    tasking.task_request("similarity", witnesses)
+
+
+def load_scores(score_path: Path):
+    if not score_path.exists():
+        return None
+
+    ext = score_path.suffix
+    if ext == ".json":
+        return load_json_file(score_path)
+    # Should not be used anymore: to delete
+    if ext == ".npy":
+        return load_npy_file(score_path)
+    return None
+
+
+@lru_cache(maxsize=None)
+def load_json_file(score_path):
+    try:
+        with open(score_path, "rb") as f:
+            content = f.read()
+
+        if not content:
+            log(f"[load_json_file] Empty file: {score_path}")
+            return None
+
+        return json_to_scores_tuples(orjson.loads(content))
+    except orjson.JSONDecodeError as e:
+        log(f"[load_json_file] invalid JSON in {score_path}", e)
+    except Exception as e:
+        log(f"[load_json_file] Unexpected error in {score_path}", e)
+    return None
 
 
 @lru_cache(maxsize=None)
@@ -32,17 +190,44 @@ def load_npy_file(score_path):
         return None
 
 
-def score_file_to_db(score_path):
+def json_to_scores_tuples(json_scores):
     """
-    Load scores from a .npy file and add all of its pairs in the RegionPair table
+    Convert JSON scores format to list of (score, img1, img2) tuples.
+
+    Input JSON format:
+    {
+        "index": {
+            "images": [{"id": "img_001_x,y,w,h", ...}, ...]
+        },
+        "pairs": [[idx1, idx2, score, rot1, rot2], ...]
+    }
+
+    Returns:
+    List of tuples: [(score, img1, img2), ...]
+    """
+    if not json_scores or "index" not in json_scores or "pairs" not in json_scores:
+        return []
+
+    images = [img.get("id") for img in json_scores["index"].get("images")]
+
+    return [
+        (float(pair[2]), images[pair[0]], images[pair[1]])
+        for pair in json_scores["pairs"]
+    ]
+
+
+def score_file_to_db(file_path):
+    """
+    Load scores from a .json file and add all of its pairs in the RegionPair table
     If pair already exists, only score is updated
     """
-    pair_scores = load_npy_file(score_path)
-    if pair_scores is None:
+    p = Path(file_path)
+    pair_scores = load_scores(p)
+    pair_ref, algo = p.parent.name, p.stem
+    if not pair_scores or not pair_ref:
         return False
 
-    # regions ref
-    ref_1, ref_2 = sorted(Path(score_path).stem.split("-"), key=sort_key)
+    ref_1, ref_2 = sorted(pair_ref.split("-"), key=sort_key)
     # TODO verify that regions_id exists?
 
     pairs_to_update = []
@@ -50,7 +235,7 @@ def score_file_to_db(score_path):
         for score, img1, img2 in pair_scores:
             img1, img2 = sorted([img1, img2], key=sort_key)
             score = float(score)
-            if score > 25:  # TODO put threshold as global variable
+            if score > 0:
                 pairs_to_update.append(
                     RegionPair(
                         img_1=img1,
@@ -59,11 +244,12 @@ def score_file_to_db(score_path):
                         regions_id_1=ref_1.split("_anno")[1],
                         regions_id_2=ref_2.split("_anno")[1],
                         is_manual=False,
+                        # algorithm=algo,
                         category_x=[],
                     )
                 )
     except ValueError as e:
-        log(f"[score_file_to_db] error while processing {score_path}", e)
+        log(f"[score_file_to_db] error while processing {pair_ref}", e)
         return False
 
     # Bulk update existing pairs
@@ -76,10 +262,10 @@ def score_file_to_db(score_path):
                 "score",
             )
     except Exception as e:
-        log(f"[score_file_to_db] error while adding pairs to db {score_path}", e)
+        log(f"[score_file_to_db] error while adding pairs to db {pair_ref}", e)
         return False
 
-    log(f"Processed {len(pair_scores)} pairs from {score_path}")
+    log(f"Processed {len(pair_scores)} pairs from {pair_ref}")
     return True
 
 
@@ -303,102 +489,6 @@ def get_compared_regions(regions: Regions):
     ]
 
 
-def gen_list_url(regions_ref):
-    return f"{APP_URL}/{APP_NAME}/{regions_ref}/list"
-
-
-def prepare_request(witnesses, treatment_id):
-    regions = []
-
-    try:
-        for witness in witnesses:
-            # if len(check_computed_pairs([region.get_ref() for region in witness.get_regions()])) == 0:
-            #     pass
-            # else:
-            regions.extend(witness.get_regions())
-
-        if regions:
-            documents = {
-                ref: gen_list_url(ref)
-                for ref in [region.get_ref() for region in regions]
-            }
-            return {
-                "experiment_id": f"{treatment_id}",
-                "documents": documents,
-                # "model": f"{FEAT_BACKBONE}",
-                "callback": f"{APP_URL}/{APP_NAME}/get-similarity",  # URL to which the pair file must be sent back
-                "tracking_url": f"{APP_URL}/{APP_NAME}/api-progress",
-            }
-
-        else:
-            return {
-                "message": f"No similarity to compute for the selected {WIT}es."
-                if APP_LANG == "en"
-                else f"Pas de similarité à calculer pour les {WIT}s sélectionnés."
-            }
-
-    except Exception as e:
-        log(
-            f"[prepare_request] Failed to prepare data for similarity request",
-            e,
-        )
-        raise Exception(
-            f"[prepare_request] Failed to prepare data for similarity request"
-        )
-
-
-def send_request(witnesses):
-    """
-    To relaunch similarity request in case the automatic process has failed
-    """
-
-    regions = []
-    for witness in witnesses:
-        regions.extend(witness.get_regions())
-
-    documents = {
-        ref: gen_list_url(ref) for ref in [region.get_ref() for region in regions]
-    }
-
-    try:
-        response = requests.post(
-            url=f"{CV_API_URL}/similarity/start",
-            json={
-                "documents": documents,
-                # "model": f"{FEAT_BACKBONE}",
-                "callback": f"{APP_URL}/{APP_NAME}/similarity",
-            },
-        )
-        if response.status_code == 200:
-            log(f"[similarity_request] Similarity request sent: {response.text or ''}")
-            return True
-        else:
-            error = {
-                "source": "[similarity_request]",
-                "error_message": f"Request failed for {list(documents.keys())} with status code: {response.status_code}",
-                "request_info": {
-                    "method": "POST",
-                    "url": f"{CV_API_URL}/similarity/start",
-                    "payload": {
-                        "documents": documents,
-                        "callback": f"{APP_URL}/{APP_NAME}/similarity",
-                    },
-                },
-                "response_info": {
-                    "status_code": response.status_code,
-                    "text": response.text or "",
-                },
-            }
-
-            log(error)
-            raise Exception(error)
-    except Exception as e:
-        log(f"[similarity_request] Request failed for {list(documents.keys())}", e)
-        raise Exception(
-            f"[similarity_request] Request failed for {list(documents.keys())}"
-        )
-
-
 def check_score_files(file_names):
     from app.similarity.tasks import check_similarity_files
 
@@ -415,76 +505,6 @@ def load_similarity(pair):
     except FileNotFoundError as e:
         log(f"[load_similarity] no score file for {pair}", e)
         return pair, None
-
-
-def compute_total_similarity(
-    regions: List[Regions],
-    checked_regions_ref: str,
-    regions_refs: List[str] = None,
-    max_rows: int = 50,
-    show_checked_ref: bool = False,
-):
-    # TODO check if used else delete
-    total_scores = defaultdict(list)
-    img_names = defaultdict(set)
-    prefix_key = "_".join(checked_regions_ref.split("_")[:2])
-    topk = 10
-
-    if regions_refs is None:
-        regions_refs = [region.get_ref() for region in regions]
-
-    for pair in doc_pairs(regions_refs):
-        try:
-            score_path_pair = f"{SCORES_PATH}/{'-'.join(sorted(pair))}.npy"
-            if prefix_key not in score_path_pair:
-                continue
-            pair_scores = load_npy_file(score_path_pair)
-        except FileNotFoundError as e:
-            # TODO: trigger similarity request?
-            log(f"[compute_total_similarity] no score file for {pair}", e)
-            continue
-
-        # Create a dictionary with image names as keys and scores as values
-        img_scores = defaultdict(set)
-        for score, img1, img2 in pair_scores:
-            if img2 not in img_names[img1]:
-                img_scores[img1].add((float(score), img2))
-                img_names[img1].add(img2)
-            if img1 not in img_names[img2]:
-                img_scores[img2].add((float(score), img1))
-                img_names[img2].add(img1)
-
-        # Update total scores
-        for img_name, scores in img_scores.items():
-            if img_name.startswith(prefix_key):
-                total_scores[img_name].extend(scores)
-
-    # Filter out items starting with prefix key
-    if not show_checked_ref:
-        for q_img in total_scores:
-            total_scores[q_img] = [
-                item
-                for item in total_scores[q_img]
-                if not item[1].startswith(prefix_key)
-            ]
-
-    # Sort scores for each query image in descending order and keep top 10
-    total_scores = {
-        q_img: sorted(scores, key=lambda x: x[0], reverse=True)[:topk]
-        for q_img, scores in total_scores.items()
-    }
-
-    # Sort rows based on the first score of image
-    sorted_total_scores = dict(
-        sorted(total_scores.items(), key=lambda x: x[1], reverse=True)
-    )
-
-    # Limit number of rows to max_rows
-    sorted_total_scores = {
-        k: sorted_total_scores[k] for k in list(sorted_total_scores)[:max_rows]
-    }
-
-    return sorted_total_scores
 
 
 def reset_similarity(regions: Regions):

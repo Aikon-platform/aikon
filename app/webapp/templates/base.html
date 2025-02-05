@@ -11,7 +11,8 @@
     <script>
         const CSRF_TOKEN = "{{ csrf_token }}";
         const USER_ID = "{{ user.id }}";
-        const IS_SUPERUSER = Boolean("{{ user.is_superuser }}");
+        const IS_SUPERUSER = "{{ user.is_superuser }}" === "True";
+        const ADD_PERMISSION = "{{ perms.APP_NAME.add_ }}" === "True";
 
         const ADDITIONAL_MODULES = {{ ADDITIONAL_MODULES|safe }};
 
@@ -81,7 +82,7 @@
 <div class="wrapper container is-fluid">
     <div class="content p-5" style="min-height: 80vh; max-width: 90vw">
         {% if messages %}
-            <div class="container mb-4">
+            <div class="container">
                 {% for message in messages %}
                     {% if message.tags %}
                         {% if message.tags == 'success' %}
