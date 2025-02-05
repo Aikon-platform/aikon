@@ -253,6 +253,10 @@ class Treatment(AbstractSearchableModel):
 
         # base_url = CV_API_URL if CV_API_URL.startswith('http') else f'http://{CV_API_URL}'
         url = f"{CV_API_URL}/{self.task_type}/start"
+
+        if api_param := self.api_parameters:
+            parameters.update(api_param)
+
         api_query = requests.post(url, json=parameters)
 
         try:
