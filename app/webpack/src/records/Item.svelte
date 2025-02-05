@@ -80,7 +80,7 @@
 
                     <p class="subtitle is-6 mb-0 ml-2 pt-2 is-middle">
                         {#if hasEditUrl}
-                            <a href={hasEditUrl ? item.edit_url : null} class="regions-btn button is-small is-rounded is-link px-2"
+                            <a href={hasEditUrl ? item.edit_url : null} class="edit-btn button is-small is-rounded is-link px-2"
                                title='{appLang === "en" ? "Edit" : "Éditer"}'>
                                 <span class="iconify" data-icon="entypo:edit"/>
                                 <span class="ml-2">
@@ -121,7 +121,7 @@
 </div>
 
 <style>
-    .regions-btn {
+    .edit-btn {
         padding-bottom: .15rem !important;
         padding-top: .15rem !important;
     }
