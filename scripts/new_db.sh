@@ -60,20 +60,24 @@ $command -c "CREATE DATABASE $db_name;"
 $command -c "GRANT ALL PRIVILEGES ON DATABASE $db_name TO $db_user;"
 $command -c "ALTER DATABASE $db_name OWNER TO $db_user;"
 
-# Set variables in .env file
+# Set new database name in .env file
 sed -i '' -e "s/POSTGRES_DB=.*/POSTGRES_DB=$db_name/" "$APP_ROOT"/app/config/.env
 
+manage="$APP_ROOT/venv/bin/python $APP_ROOT/app/manage.py"
+
 if [ -z "$db_sql_file" ]; then
-    # Empty migration directory and create new migrations
+    # Empty migration directory
     # find "$APP_ROOT"/app/webapp/migrations -type f ! -name '__init__.py' ! -name 'init.py' -delete
-    "$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py makemigrations
+
+    # Create new migrations
+    $manage makemigrations
 
     # Update database schema with new migrations
-    "$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py migrate
+    $manage migrate
 
     # create superuser
-    "$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py createsuperuser --username="$db_user" --email="$CONTACT_MAIL"
-    #echo "from django.contrib.auth.models import User; User.objects.create_superuser('$db_user', '$CONTACT_MAIL', '$POSTGRES_PASSWORD')" | "$APP_ROOT"/venv/bin/python "$APP_ROOT"/app/manage.py shell
+    $manage createsuperuser --username="$db_user" --email="$CONTACT_MAIL"
+#     echo "from django.contrib.auth.models import User; User.objects.create_superuser('$db_user', '$CONTACT_MAIL', '$POSTGRES_PASSWORD')" | $manage shell
 else
     psql -h localhost -d "$db_name" -U "$db_user" -f "$db_sql_file" || echo "‼️ Failed to import SQL data ‼️"
 fi
