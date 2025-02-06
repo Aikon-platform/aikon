@@ -44,13 +44,18 @@ def create_treatment(
         raise e
 
     try:
-        doc_set = DocumentSet.objects.create(
-            title=doc_title,
-            user=user,
-            wit_ids=list(wit_ids),
-            is_public=False,
-        )
-        doc_set.save()
+        # check if there is a doc set with same wit_ids and user
+        doc_set = DocumentSet.objects.filter(user=user, wit_ids=list(wit_ids)).first()
+
+        if not doc_set:
+            # if not create one
+            doc_set = DocumentSet.objects.create(
+                title=doc_title,
+                user=user,
+                wit_ids=list(wit_ids),
+                is_public=False,
+            )
+            doc_set.save()
     except Exception as e:
         log(
             f"[create_treatment] Failed to create Document Set for witnesses {wit_ids}",
