@@ -1,7 +1,7 @@
 <script>
     import { fade } from 'svelte/transition';
     import {selectionStore} from "../selection/selectionStore.js";
-    import {deleteRecord, manifestToMirador, refToIIIF, showMessage} from "../utils.js";
+    import {deleteRecord, refToIIIF, showMessage} from "../utils.js";
     import { appLang, userId, isSuperuser } from '../constants';
     import {setContext} from "svelte";
 
@@ -41,21 +41,11 @@
         <div class="card-content">
             <div class="media">
                 {#if item.hasOwnProperty('img')}
-                    {#if item.hasOwnProperty('iiif') && item.iiif.length !== 0}
-                        <a href="{manifestToMirador(item.iiif[0])}">
-                            <div class="media-left">
-                                <figure class="card image is-96x96">
-                                    <img src="{refToIIIF(item.img, 'full', '250,')}" alt="Record illustration"/>
-                                </figure>
-                            </div>
-                        </a>
-                    {:else}
-                        <div class="media-left">
-                            <figure class="card image is-96x96">
-                                <img src="{refToIIIF(item.img, 'full', '250,')}" alt="Record illustration"/>
-                            </figure>
-                        </div>
-                    {/if}
+                    <div class="media-left">
+                        <figure class="card image is-96x96">
+                            <img src="{refToIIIF(item.img, 'full', '250,')}" alt="Record illustration"/>
+                        </figure>
+                    </div>
                 {/if}
                 <div class="media-content">
                     <a href={hasViewUrl ? item.view_url : null} class="title is-4 {hasViewUrl ? 'hoverable' : ''} pt-2">
