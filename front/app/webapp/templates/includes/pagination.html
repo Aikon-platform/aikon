@@ -1,0 +1,21 @@
+{% if page_obj %}
+<nav class="pagination is-centered" role="navigation" aria-label="pagination">
+    <ul class="pagination-list">
+        {% if page_obj.has_previous %}
+            <li><a class="pagination-link" href="?p=1">1</a></li>
+            {% if page_obj.previous_page_number > 1 %}
+                <li><span class="pagination-ellipsis">&hellip;</span></li>
+                <li><a class="pagination-link" href="?p={{ page_obj.previous_page_number }}">{{ page_obj.previous_page_number }}</a></li>
+            {% endif %}
+        {% endif %}
+        <li><a class="pagination-link is-current">{{ page_obj.number }}</a></li>
+        {% if page_obj.has_next %}
+            {% if page_obj.next_page_number < page_obj.paginator.num_pages %}
+                <li><a class="pagination-link" href="?p={{ page_obj.next_page_number }}">{{ page_obj.next_page_number }}</a></li>
+                <li><span class="pagination-ellipsis">&hellip;</span></li>
+            {% endif %}
+            <li><a class="pagination-link" href="?p={{ page_obj.paginator.num_pages }}">{{ page_obj.paginator.num_pages }}</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}

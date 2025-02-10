@@ -1,9 +1,0 @@
-target/
-src/main/webapp/demo.html
-*.swp
-.DS_Store
-/data
-cache
-index-2.6.1.html
-src/main/webapp/stats
-.aws-credentials

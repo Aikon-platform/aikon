@@ -1,0 +1,11 @@
+{% load shared_tags %}
+
+<div class="control">
+    <label for="{{ field.id_for_label }}" class="label">
+        {{ field|add_class:"checkbox" }}
+        {{ field.label }}
+    </label>
+    {% if field.help_text %}
+        <div class="help">{{ field.help_text }}</div>
+    {% endif %}
+</div>

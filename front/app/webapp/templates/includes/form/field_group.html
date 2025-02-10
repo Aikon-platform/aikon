@@ -1,0 +1,17 @@
+{% load shared_tags %}
+
+<div class="field-group">
+    {% for field in form %}
+        {% if included_fields|default:"" %}
+            {% if field.name|startswith:included_fields %}
+                {% include "includes/form/form_field.html" %}
+            {% endif %}
+        {% elif excluded_fields|default:"" %}
+            {% if not field.name|startswith:excluded_fields %}
+                {% include "includes/form/form_field.html" %}
+            {% endif %}
+        {% else %}
+            {% include "includes/form/form_field.html" %}
+        {% endif %}
+    {% endfor %}
+</div>

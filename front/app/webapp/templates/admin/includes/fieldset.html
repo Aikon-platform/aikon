@@ -1,0 +1,81 @@
+{% load shared_tags %}
+
+{% with prefix=fieldset.formset.prefix|default:"fieldset" id_prefix=id_prefix|default:"0" id_suffix=id_suffix|default:"0" name=fieldset.name|default:""|slugify %}
+    <fieldset class="module aligned {{ fieldset.classes }}"
+            {% if name %} aria-labelledby="{{ prefix }}-{{ id_prefix}}-{{ name }}-{{ id_suffix }}-heading"{% endif %}>
+        {% if name %}
+            {% if fieldset.is_collapsible %}
+                <details><summary>
+            {% endif %}
+        <h{{ heading_level|default:2 }} id="{{ prefix }}-{{ id_prefix}}-{{ name }}-{{ id_suffix }}-heading" class="fieldset-heading">
+            {{ fieldset.name }}
+        </h{{ heading_level|default:2 }}>
+        {% if fieldset.is_collapsible %}
+            </summary>
+        {% endif %}
+        {% endif %}
+        {% if fieldset.description %}
+            <div class="description">{{ fieldset.description|safe }}</div>
+        {% endif %}
+        {% for line in fieldset %}
+            <div class="form-row
+             {% if line.fields|length == 1 and line.errors %} errors{% endif %}
+             {% if not line.has_visible_field %} hidden{% endif %}
+             {% for field in line %}{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% endfor %}">
+                {% if line.fields|length == 1 %}
+                    {{ line.errors }}
+                {% else %}
+                    <div class="flex-container form-multiline">
+                {% endif %}
+                {% for field in line %}
+                    <div>
+                        {% if not line.fields|length == 1 and not field.is_readonly %}{{ field.errors }}{% endif %}
+                        <div class="flex-container is-middle
+                             {% if not line.fields|length == 1 %} fieldBox{% if field.field.name %} field-{{ field.field.name }}{% endif %}
+                             {% if not field.is_readonly and field.errors %} errors{% endif %}
+                             {% if field.field.is_hidden %} hidden{% endif %}{% endif %}{% if field.is_checkbox %} checkbox-row{% endif %}">
+
+                            {% if field.is_checkbox %}
+                                {{ field.field }}
+                                {{ field.label_tag|add_class:"label is-small p-2 m-0" }}
+                                {% if field.field.help_text %}
+                                    <div class="ml-4 help"{% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
+                                        <div>{{ field.field.help_text|safe }}</div>
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                {{ field.label_tag|add_class:"label is-small" }}
+                                {% if field.is_readonly %}
+                                    <div class="readonly">{{ field.contents }}</div>
+                                {% else %}
+                                    {% with field_type=field.field|get_field_type %}
+                                        {% if field_type == "select" %}
+                                            <div class="select is-small">
+                                                {{ field.field }}
+                                            </div>
+                                        {% elif field_type == "textarea" %}
+                                            <div class="textarea-container">
+                                                {{ field.field|add_class:"textarea is-small" }}
+                                            </div>
+                                        {% elif field_type == "multiselect" %}
+                                            <div class="select is-multiple is-small">
+                                                {{ field.field }}
+                                            </div>
+                                            {# TODO add file field #}
+                                        {% else %}
+                                            {{ field.field|add_class:"input is-small" }}
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+                {% if not line.fields|length == 1 %}</div>{% endif %}
+            </div>
+        {% endfor %}
+        {% if name and fieldset.is_collapsible %}
+            </details>
+        {% endif %}
+    </fieldset>
+{% endwith %}
