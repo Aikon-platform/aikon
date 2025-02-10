@@ -205,7 +205,7 @@ technologies and interoperable formats, Aikon's adaptable architecture supports 
         Matthieu Husson,
         Mathieu Aubry
     },
-    url={https://github.com/Aikon-platform/aikon}
+    url={https://github.com/Aikon-platform/aikon},
     year={2024}
 }
 ```

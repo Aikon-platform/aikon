@@ -63,7 +63,7 @@ Please refer to [front/README](https://github.com/Aikon-platform/discover-api/bl
         Matthieu Husson,
         Mathieu Aubry
     },
-    url={https://github.com/Aikon-platform/aikon}
+    url={https://github.com/Aikon-platform/aikon},
     year={2024}
 }
 ```
