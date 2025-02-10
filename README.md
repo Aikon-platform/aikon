@@ -1,4 +1,4 @@
-# <img alt="Aikon logo" src="https://github.com/Aikon-platform/aikon/blob/main/app/webapp/static/favicon.ico" height="50" width="auto" style="display: inline; margin-bottom:-10px;"> AIKON bundle version
+# <img alt="Aikon logo" src="https://github.com/Aikon-platform/aikon/blob/main/app/webapp/static/favicon.ico" height="50" width="auto" style="display: inline; margin-bottom:-10px;"> AIKON platform
 
 **[Aikon](https://aikon-platform.github.io/)** is a modular research platform designed to empower humanities scholars
 in leveraging artificial intelligence and computer vision methods for analyzing large-scale heritage collections.
