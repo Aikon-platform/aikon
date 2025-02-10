@@ -1,10 +1,10 @@
 #!/bin/bash
 
-AIKON_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/aikon" >/dev/null 2>&1 && pwd )"
-DISCOVER_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/discover-api" >/dev/null 2>&1 && pwd )"
+AIKON_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/front" >/dev/null 2>&1 && pwd )"
+API_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/api" >/dev/null 2>&1 && pwd )"
 
 AIKON_SETUP="$AIKON_DIR/scripts/setup.sh"
-DISCOVER_SETUP="$DISCOVER_DIR/setup.sh"
+API_SETUP="$API_DIR/setup.sh"
 
 git submodule init
 git submodule update
@@ -57,16 +57,16 @@ if [ $? -ne 0 ]; then
     exit 1
 # fi
 
-colorEcho green "Discover installation..."
-(cd "$DISCOVER_DIR" && bash "$DISCOVER_SETUP")
+colorEcho green "API installation..."
+(cd "$API_DIR" && bash "$API_SETUP")
 
 if [ $? -ne 0 ]; then
-    colorEcho red "Discover setup encountered an error"
+    colorEcho red "API setup encountered an error"
     exit 1
 fi
 
 # replace CV_API_URL in aikon/.env by localhost:discover-api/.env.dev => $API_DEV_PORT
-api_port=$(grep "API_DEV_PORT" "$DISCOVER_DIR/.env.dev" | cut -d'=' -f2)
+api_port=$(grep "API_DEV_PORT" "$API_DIR/.env.dev" | cut -d'=' -f2)
 api_url=localhost:$(echo "$api_port" | tr -d '"')
 sed -i "" -e "s~^CV_API_URL=.*~CV_API_URL=$api_url~" "$AIKON_DIR/app/config/.env"
 
