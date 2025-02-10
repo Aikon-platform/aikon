@@ -1,0 +1,82 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name PROD_URL;
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location /static/ {
+        root APP_ROOT;
+    }
+
+    location / { return 301 https://$host$request_uri; }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name PROD_URL;
+    access_log /var/log/nginx/APP_NAME.access.log; # reduce I/0 with buffer=10m flush=5m
+    error_log  /var/log/nginx/APP_NAME.error.log;
+    location = /favicon.ico { access_log off; log_not_found off; }
+
+    ########### / ###############
+    location / {
+        proxy_set_header        X-Real_IP           $remote_addr;
+        proxy_set_header        X-Forwarded-For     $proxy_add_x_forwarded_for;
+        proxy_set_header        X-Forwarded-Proto   $scheme;
+        proxy_set_header        X-NginX-Proxy       true;
+        proxy_set_header        Host                $http_host;
+        proxy_set_header        Upgrade             $http_upgrade;
+        proxy_pass_header       Set-Cookie;
+        client_max_body_size    5000M;
+        proxy_connect_timeout   600;
+        proxy_send_timeout      600;
+        proxy_read_timeout      600;
+        send_timeout            600;
+        proxy_pass http://unix:/run/gunicorn.sock;
+    }
+
+    ########### /sas ###############
+    location /sas/ {
+        proxy_ssl_server_name on;
+        proxy_set_header        X-Real_IP           $remote_addr;
+        proxy_set_header        X-Forwarded-For     $proxy_add_x_forwarded_for;
+        proxy_set_header        X-Forwarded-Proto   $scheme;
+        proxy_set_header        X-NginX-Proxy       true;
+        proxy_set_header        Host                $host/sas;
+        proxy_set_header        Upgrade             $http_upgrade;
+        proxy_pass_header       Set-Cookie;
+        proxy_pass              http://0.0.0.0:SAS_PORT/;
+        #auth_basic              "Restricted Content";
+        #auth_basic_user_file    /etc/nginx/.htpasswd;
+    }
+
+    ########### /javax ###############
+    location /javax.faces.resource/ {
+        proxy_pass http://0.0.0.0:SAS_PORT/javax.faces.resource/;
+    }
+
+    ########### /static ###############
+    location /static/ {
+        autoindex off;
+        alias APP_ROOT/app/staticfiles/;
+    }
+
+    ########### /media ###############
+    location /media/ {
+        autoindex off;
+        alias MEDIA_DIR;
+    }
+
+    ########### /iiif ###############
+    location /iiif/ {
+        proxy_pass http://0.0.0.0:CANTALOUPE_PORT/iiif/;
+    }
+
+    ########### /pgadmin ###############
+    location /pgadmin {
+        rewrite ^/pgadmin(.*)$ https://PROD_URL:8443 redirect;
+    }
+
+    ########### CONF SSL  ###############
+    # TODO : generate SSL certificate with Certbot or else
+}
