@@ -1,3 +1,8 @@
+x-proxy-settings: &proxy-settings
+  HTTP_PROXY: ${HTTP_PROXY}
+  HTTPS_PROXY: ${HTTPS_PROXY}
+  NO_PROXY: "localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.aikon_network"
+
 services:
   web:
     build:
@@ -12,6 +17,11 @@ services:
     env_file:
       - ../app/config/.env
       - ./.env
+    environment:
+      <<: *proxy-settings
+#      - HTTP_PROXY
+#      - HTTPS_PROXY
+#      - NO_PROXY=localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.aikon_network
     ports:
       - "${DJANGO_PORT}:8000"
     depends_on:
@@ -23,7 +33,7 @@ services:
 #      timeout: 10s
 #      retries: 3
     networks:
-      - app_network
+      - aikon_network
     restart: unless-stopped
 
   db:
@@ -33,7 +43,7 @@ services:
     env_file:
       - ../app/config/.env
     networks:
-      - app_network
+      - aikon_network
     restart: unless-stopped
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready" ]
@@ -46,7 +56,7 @@ services:
     volumes:
       - redisdata:/data
     networks:
-      - app_network
+      - aikon_network
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
@@ -65,7 +75,9 @@ services:
     volumes:
       - ${DATA_FOLDER}:/data
     networks:
-      - app_network
+      - aikon_network
+    environment:
+      <<: *proxy-settings
     user: root
 
   sas:
@@ -80,7 +92,9 @@ services:
     ports:
       - "${SAS_PORT:-8888}:8888"
     networks:
-      - app_network
+      - aikon_network
+    environment:
+      <<: *proxy-settings
 
   nginx:
     image: nginx:latest
@@ -90,8 +104,10 @@ services:
     ports:
       - "${NGINX_PORT:-8080}:${NGINX_PORT:-8080}"
     environment:
-      - PROD_URL=${PROD_URL:-localhost}
-      - NGINX_PORT=${NGINX_PORT:-8080}
+#      - PROD_URL=${PROD_URL:-localhost}
+#      - NGINX_PORT=${NGINX_PORT:-8080}
+#      - NO_PROXY=localhost,127.0.0.1,web,sas,cantaloupe,.aikon_network
+      <<: *proxy-settings
     volumes:
       - ./nginx_conf:/etc/nginx/nginx.conf:ro
       - ../app/staticfiles:/home/aikon/app/staticfiles:ro
@@ -102,7 +118,7 @@ services:
       - cantaloupe
       - sas
     networks:
-      - app_network
+      - aikon_network
     restart: unless-stopped
 
 volumes:
@@ -110,5 +126,5 @@ volumes:
   redisdata:
 
 networks:
-  app_network:
+  aikon_network:
     driver: bridge

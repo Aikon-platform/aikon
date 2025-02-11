@@ -1,14 +1,16 @@
 #!/bin/bash
 
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-AIKON_DIR="$ROOT_DIR/front" >/dev/null 2>&1 && pwd )"
-API_DIR="$ROOT_DIR/api" >/dev/null 2>&1 && pwd )"
+AIKON_DIR="$ROOT_DIR/front"
+API_DIR="$ROOT_DIR/api"
 
 AIKON_SETUP="$AIKON_DIR/scripts/setup.sh"
 API_SETUP="$API_DIR/setup.sh"
 
 git submodule init
 git submodule update
+
+# TODO create accelerate setup script to define only important env variables
 
 colorEcho() {
     Color_Off="\033[0m"
