@@ -1,16 +1,29 @@
-#! /bin/bash
+#!/bin/bash
 
-ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-BIN="$ROOT_DIR"/venv/bin
-SCHEDULE_FILE="$ROOT_DIR/celery/celerybeat-schedule"
+FRONT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/front" >/dev/null 2>&1 && pwd )"
+API_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/api" >/dev/null 2>&1 && pwd )"
 
-read -s -p "Enter your sudo password: " password
-echo
+FRONT_RUN="$FRONT_DIR/run.sh"
+API_RUN="$API_DIR/run.sh"
 
-(trap 'kill 0' SIGINT;
-    ("$BIN"/celery -A app.config.celery worker -B -c 1 --loglevel=DEBUG -P threads) &
-    ("$BIN"/celery -A app.config.celery beat --schedule="$SCHEDULE_FILE" --loglevel=DEBUG) &
-    ("$BIN"/python app/manage.py runserver localhost:8000) &
-    (echo "$password" | sudo -S java -Dcantaloupe.config="$ROOT_DIR"/cantaloupe/cantaloupe.properties -Xmx2g -jar "$ROOT_DIR"/cantaloupe/cantaloupe-4.1.11.war > /dev/null 2>&1) &
-    (cd "$ROOT_DIR"/sas/ && mvn jetty:run -q);
-)
+front_pid=""
+api_pid=""
+
+cleanup() {
+    echo "Shutting down all processes..."
+    [ -n "$front_pid" ] && kill "$front_pid"
+    [ -n "$api_pid" ] && kill "$api_pid"
+    wait
+    echo "All processes terminated."
+    exit 0
+}
+
+trap cleanup SIGINT SIGTERM
+
+(cd "$FRONT_DIR" && bash "$FRONT_RUN") &
+front_pid=$!
+
+(cd "$API_DIR" && bash "$API_RUN") &
+api_pid=$!
+
+wait
