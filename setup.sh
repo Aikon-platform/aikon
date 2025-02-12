@@ -53,27 +53,17 @@ echoTitle(){
 echoTitle "AIKON BUNDLE INSTALL"
 
 colorEcho green "AIKON installation..."
-(cd "$AIKON_DIR" && bash "$AIKON_SETUP")
-
-if [ $? -ne 0 ]; then
-    colorEcho red "AIKON setup encountered an error"
-    exit 1
-# fi
+(cd "$AIKON_DIR" && bash "$AIKON_SETUP")||colorEcho red "FRONT setup encountered an error" && exit 1
 
 colorEcho green "API installation..."
-(cd "$API_DIR" && bash "$API_SETUP")
-
-if [ $? -ne 0 ]; then
-    colorEcho red "API setup encountered an error"
-    exit 1
-fi
+(cd "$API_DIR" && bash "$API_SETUP")||colorEcho red "API setup encountered an error" && exit 1
 
 # replace CV_API_URL in aikon/.env by localhost:discover-api/.env.dev => $API_DEV_PORT
 api_port=$(grep "API_DEV_PORT" "$API_DIR/.env.dev" | cut -d'=' -f2)
 api_url=localhost:$(echo "$api_port" | tr -d '"')
 sed -i "" -e "s~^CV_API_URL=.*~CV_API_URL=$api_url~" "$AIKON_DIR/app/config/.env"
 
-echoTitle "🎉 AIKON & DISCOVER ARE SET UP! 🎉"
+echoTitle "🎉 SETUP COMPLETE! 🎉"
 colorEcho blue "\nYou can now run the app and API with: "
 colorEcho green "              bash run.sh"
 

@@ -2,7 +2,7 @@
 
 # HOW TO USE
 # Inside the scripts/ directory, run:
-# bash new_db.sh <dbName> <?sql_script>
+# bash new_db.sh <?dbName> <?sql_script>
 # You will be asked to enter password twice
 # Restart Django to see effects
 
@@ -65,6 +65,16 @@ sed -i '' -e "s/POSTGRES_DB=.*/POSTGRES_DB=$db_name/" "$APP_ROOT"/app/config/.en
 
 manage="$APP_ROOT/venv/bin/python $APP_ROOT/app/manage.py"
 
+create_superuser() {
+echo "from django.contrib.auth import get_user_model;
+User = get_user_model();
+username = '$db_user';
+if not User.objects.filter(username=username).exists():
+    User.objects.create_superuser(username, '$CONTACT_MAIL', '$POSTGRES_PASSWORD');
+    print(f'Superuser named {username} created.');
+" | $manage shell
+}
+
 if [ -z "$db_sql_file" ]; then
     # Empty migration directory
     # find "$APP_ROOT"/app/webapp/migrations -type f ! -name '__init__.py' ! -name 'init.py' -delete
@@ -76,8 +86,13 @@ if [ -z "$db_sql_file" ]; then
     $manage migrate
 
     # create superuser
-    $manage createsuperuser --username="$db_user" --email="$CONTACT_MAIL"
+    create_superuser
+#     $manage createsuperuser --username="$db_user" --email="$CONTACT_MAIL"
 #     echo "from django.contrib.auth.models import User; User.objects.create_superuser('$db_user', '$CONTACT_MAIL', '$POSTGRES_PASSWORD')" | $manage shell
 else
     psql -h localhost -d "$db_name" -U "$db_user" -f "$db_sql_file" || echo "‼️ Failed to import SQL data ‼️"
 fi
+
+colorEcho blue '\nConnect to app using:'
+echo -e "          👤 $db_user"
+echo -e "          🔑 $POSTGRES_PASSWORD"
