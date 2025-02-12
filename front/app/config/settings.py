@@ -94,7 +94,7 @@ if DEBUG:
 
 # Define the default values for application URLs in development mode
 # APP, CANTALOUPE, SAS
-APP_PORT = 8000
+APP_PORT = ENV.int("FRONT_PORT", 8000)
 CANTALOUPE_PORT = ENV.int("CANTALOUPE_PORT", 8182)
 SAS_PORT = ENV.int("SAS_PORT", 8888)
 
@@ -102,7 +102,8 @@ APP_URL = f"http://localhost:{APP_PORT}"
 CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
 SAS_APP_URL = f"http://localhost:{SAS_PORT}"
 
-CV_API_URL = ENV.str("CV_API_URL", default="")
+api_url = ENV.str("CV_API_URL", default="http://localhost:5000")
+CV_API_URL = f"http://{api_url}" if not api_url.startswith("http") else api_url
 GEONAMES_USER = ENV.str("GEONAMES_USER", default="")
 
 PROD_URL = f"https://{ENV.str('PROD_URL', default='')}"

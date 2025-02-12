@@ -60,7 +60,7 @@ colorEcho green "API installation..."
 
 # replace CV_API_URL in aikon/.env by localhost:discover-api/.env.dev => $API_DEV_PORT
 api_port=$(grep "API_DEV_PORT" "$API_DIR/.env.dev" | cut -d'=' -f2)
-api_url=localhost:$(echo "$api_port" | tr -d '"')
+api_url=http://localhost:$(echo "$api_port" | tr -d '"')
 sed -i "" -e "s~^CV_API_URL=.*~CV_API_URL=$api_url~" "$AIKON_DIR/app/config/.env"
 
 echoTitle "🎉 SETUP COMPLETE! 🎉"
