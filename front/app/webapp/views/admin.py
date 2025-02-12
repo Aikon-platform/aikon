@@ -22,6 +22,7 @@ from app.webapp.models.regions import Regions
 from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2
+from app.config.settings import APP_LANG
 
 
 class AbstractView(LoginRequiredMixin, View):
@@ -295,12 +296,24 @@ class WorkList(AbstractRecordList):
 
 class WorkView(AbstractRecordView):
     model = Work
-    template_name = "webapp/work.html"
+    template_name = "webapp/wit_list.html"
     fields = []
 
-    # def get_context_data(self, **kwargs):
-    #     context = super().get_context_data(**kwargs)
-    #     context["urls"] = self.get_record().get_treated_url()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        work = self.get_record()
+        witnesses = {}
+        context["view_title"] = (
+            f"“{work}” witnesses" if APP_LANG == "en" else f"Témoins de « {work} »"
+        )
+
+        for witness in work.get_witnesses():
+            witnesses.setdefault(witness.id, witness.to_json())
+
+        context["witnesses"] = witnesses
+
+        return context
 
 
 class SeriesList(AbstractRecordList):
@@ -315,12 +328,24 @@ class SeriesList(AbstractRecordList):
 
 class SeriesView(AbstractRecordView):
     model = Series
-    template_name = "webapp/series.html"
+    template_name = "webapp/wit_list.html"
     fields = []
 
-    # def get_context_data(self, **kwargs):
-    #     context = super().get_context_data(**kwargs)
-    #     context["urls"] = self.get_record().get_treated_url()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        series = self.get_record()
+        witnesses = {}
+        context["view_title"] = (
+            f"“{series}” volumes" if APP_LANG == "en" else f"Volumes de « {series} »"
+        )
+
+        for witness in series.get_witnesses():
+            witnesses.setdefault(witness.id, witness.to_json())
+
+        context["witnesses"] = witnesses
+
+        return context
 
 
 class DocumentSetList(AbstractRecordList):
