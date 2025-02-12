@@ -1,0 +1,7 @@
+{
+    "@context": "http://iiif.io/api/presentation/2/context.json",
+    "@id": "https://example.com/manifest.json",
+    "@type": "sc:Manifest",
+    "sequences": [
+    ]
+}

@@ -1,0 +1,105 @@
+{% load static shared_tags %}
+
+<nav class="navbar is-fixed-top" role="navigation" aria-label="main navigation">
+    <div class="navbar-brand ml-5">
+        <a class="navbar-item" href="/{% url 'webapp:home' %}">
+            <img id="nav-icon" src="{% static 'img/favicon-'|add:APP_NAME|add:'.png' %}" alt="Icon">
+        </a>
+
+        <a role="button" class="navbar-burger" aria-label="menu" data-target="navbar-content">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+    </div>
+
+    <div id="navbar-content" class="navbar-menu">
+        <div class="navbar-start">
+            <a id="nav-title" href="{% url 'webapp:home' %}" class="navbar-item nav-link px-0 is-size-4 mr-5">
+                {{ APP_NAME|upper }}
+            </a>
+
+            {% is_superuser request.user as is_admin %}
+            {% if is_admin %}
+                <div class="navbar-item has-dropdown is-hoverable pl-2">
+                <a class="navbar-link">
+                    <span class="iconify mr-1" data-icon="mdi:shield"></span> <span>{% if APP_LANG == "en" %}Admin actions{% else %}Administration{% endif %}</span>
+                </a>
+
+                <div class="navbar-dropdown">
+                    <a href="{% url 'admin:auth_user_changelist' %}" class="navbar-item">{% if APP_LANG == "en" %}Manage users{% else %}Gérer les utilisateurs{% endif %}</a>
+                    <a href="{% url 'admin:auth_group_changelist' %}" class="navbar-item">{% if APP_LANG == "en" %}Manage groups{% else %}Gérer les groupes{% endif %}</a>
+                    <a href="{% url 'admin:webapp_language_changelist' %}" class="navbar-item">{% if APP_LANG == "en" %}Manage languages{% else %}Gérer les langues{% endif %}</a>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="navbar-item has-dropdown is-hoverable pl-2">
+                <a class="navbar-link">
+                    {% if APP_LANG == "en" %}Manage documents{% else %}Gérer les documents{% endif %}
+                </a>
+
+                <div class="navbar-dropdown">
+                    <a href="{% url 'webapp:witness_list' %}" class="navbar-item is-capitalized">{{ WIT }}</a>
+                    <a href="{% url 'webapp:series_list' %}" class="navbar-item is-capitalized">{{ SER }}</a>
+                    <a href="{% url 'webapp:work_list' %}" class="navbar-item is-capitalized">{{ WORK }}</a>
+                    <hr class="navbar-divider">
+                    <a href="{% url 'webapp:document_set_list' %}" class="navbar-item is-capitalized">{{ SET }}</a>
+                </div>
+            </div>
+            <div class="navbar-item has-dropdown is-hoverable pl-2">
+                <a class="navbar-link">
+                    {% if APP_LANG == "en" %}Computer vision tasks{% else %}Tâches de vision{% endif %}
+                </a>
+
+                <div class="navbar-dropdown">
+                    <a href="{% url 'webapp:treatment_list' %}" class="navbar-item is-capitalized">{{ TRMT }}</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="navbar-end mr-6">
+            <div class="navbar-item">
+                <div class="button mr-4 pl-5">
+                    <button id="moon" class="icon">
+                        <i class="fa-solid fa-moon fa-lg has-text-info"></i>
+                    </button>
+                    <button id="sun" class="icon">
+                        <i class="fa-solid fa-sun fa-lg has-text-warning"></i>
+                    </button>
+                        <button id="auto" class="icon">
+                        <i class="fa-solid fa-adjust fa-lg has-text-primary"></i>
+                    </button>
+                </div>
+            </div>
+            {% if request.user.is_authenticated %}
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <a class="navbar-link">
+                        <span class="has-text-link">
+                            {% if user.first_name and user.last_name %}
+                                {{ user.first_name }} {{ user.last_name }}
+                            {% else %}
+                                {{ user.username }}
+                            {% endif %}
+                        </span>
+                    </a>
+
+                    <div class="navbar-dropdown">
+                        <a href="{% url 'webapp:edit-profile' %}" class="navbar-item">
+                            <span class="icon is-small pr-2 mb-1">
+                                <i class="fas fa-user"></i>
+                            </span>
+                            {% if APP_LANG == "en" %}Edit profile{% else %}Éditer le profil{% endif %}
+                        </a>
+                        <a href="{% url 'webapp:logout' %}" title="Log out" class="navbar-item has-text-danger">{% if APP_LANG == "en" %}Log out{% else %}Déconnexion{% endif %}</a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="buttons">
+                    <a class="button is-link is-outlined" href="{{ LOGIN_URL }}">Log in</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</nav>

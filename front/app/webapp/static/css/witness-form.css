@@ -1,0 +1,19 @@
+#contents-0-roles-group h2 {
+    display: none;
+}
+#contents-1-roles-group h2 {
+    display: none;
+}
+#contents-2-roles-group h2 {
+    display: none;
+}
+#contents-3-roles-group h2 {
+    display: none;
+}
+#contents-4-roles-group h2 {
+    display: none;
+}
+
+.djn-group-nested .djn-items .inline-related > h3 {
+    display: none;
+}
