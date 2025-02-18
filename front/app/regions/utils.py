@@ -36,7 +36,7 @@ def process_results(data, completed=True):
         ?["error": [list of error message]]
     }
     :param completed: whether the treatment is achieved or these are intermediary results
-    data["output"]["annotations"] = [list of url of json files containing annotations]
+    data["output"]["results_url"] = [list of url of json files containing annotations]
     [{
         "source": "image_name.jpg",
         "width": 1912,
@@ -65,7 +65,7 @@ def process_results(data, completed=True):
         log("No extraction results to process")
         return
 
-    for digit_annotations in output.get("annotations", []):
+    for digit_annotations in output.get("results_url", []):
         # digit_annotations is supposed to be {doc.uid: result_url}
         log(digit_annotations)
         digit_ref, annotation_url = next(iter(digit_annotations.items()))
