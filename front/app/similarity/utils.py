@@ -62,7 +62,7 @@ def process_results(data, completed=True):
     """
     :param data: {
         "dataset_url": self.dataset.get_absolute_url(),
-        "annotations": [{doc_pair_ref: result_url}],  => result_url returns a downloadable JSON
+        "results_url": [{doc_pair_ref: result_url}],  => result_url returns a downloadable JSON
     }
     :param completed: whether the treatment is achieved or these are intermediary results
 
