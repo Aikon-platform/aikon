@@ -22,6 +22,13 @@ SECRET_KEY = ENV.str("SECRET_KEY", default="")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = ENV.bool("DEBUG", default=False)
+DOCKER = ENV.bool("DOCKER", default=False)
+
+
+PROXIES = {
+    "http": ENV.str("HTTP_PROXY", default=""),
+    "https": ENV.str("HTTPS_PROXY", default=""),
+}
 
 INSTALLED_APPS = [
     "dal",
@@ -112,6 +119,11 @@ if not DEBUG:
     APP_URL = f"{PROD_URL}"
     CANTALOUPE_APP_URL = f"{PROD_URL}"
     SAS_APP_URL = f"{PROD_URL}/sas"
+
+SAS_DOCKER_URL = f"http://sas:{SAS_PORT}" if DOCKER else SAS_APP_URL
+CANTALOUPE_DOCKER_URL = (
+    f"http://cantaloupe:{CANTALOUPE_PORT}" if DOCKER else CANTALOUPE_APP_URL
+)
 
 SAS_USERNAME = ENV.str("SAS_USERNAME", default="")
 SAS_PASSWORD = ENV.str("SAS_PASSWORD", default="")

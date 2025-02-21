@@ -33,31 +33,68 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class StoreConfig extends HttpServlet {
-	protected static Logger _logger = LogManager.getLogger(StoreConfig.class.getName());
-	protected Map<String,String> _props = null;
+    protected static Logger _logger = LogManager.getLogger(StoreConfig.class.getName());
+    protected Map<String,String> _props = null;
     public final String[] ALLOWED_PROPS = {"baseURI","encoder","store","data_dir","store","repo_url","solr_connection","elastic_connection"};
     protected AnnotationUtils _annotationUtils = null;
 
-	public StoreConfig() {
-		_props = null;
-	}
+    static {
+        configureProxy();
+    }
 
-	// Called from test scripts
-	public StoreConfig(final Properties pProps) {
-		this.overloadConfigFromEnviroment(pProps);
-		initConfig(this);
-	}
+    private static void configureProxy() {
+        String httpProxy = System.getenv("HTTP_PROXY");
+        String httpsProxy = System.getenv("HTTPS_PROXY");
+        String noProxy = System.getenv("NO_PROXY");
 
-  // Called by servlet
-	public void init(final ServletConfig pConfig) throws ServletException {
-		super.init(pConfig);
-		String tConfigFile = pConfig.getInitParameter("config_file");
+        if (httpProxy != null && !httpProxy.isEmpty()) {
+            try {
+                URL proxyUrl = new URL(httpProxy);
+                System.setProperty("http.proxyHost", proxyUrl.getHost());
+                System.setProperty("http.proxyPort", String.valueOf(proxyUrl.getPort()));
+                _logger.info("HTTP proxy configured: " + proxyUrl.getHost() + ":" + proxyUrl.getPort());
+            } catch (Exception e) {
+                _logger.error("Failed to parse HTTP_PROXY: " + e.getMessage());
+            }
+        }
+
+        if (httpsProxy != null && !httpsProxy.isEmpty()) {
+            try {
+                URL proxyUrl = new URL(httpsProxy);
+                System.setProperty("https.proxyHost", proxyUrl.getHost());
+                System.setProperty("https.proxyPort", String.valueOf(proxyUrl.getPort()));
+                _logger.info("HTTPS proxy configured: " + proxyUrl.getHost() + ":" + proxyUrl.getPort());
+            } catch (Exception e) {
+                _logger.error("Failed to parse HTTPS_PROXY: " + e.getMessage());
+            }
+        }
+
+        if (noProxy != null && !noProxy.isEmpty()) {
+            System.setProperty("http.nonProxyHosts", noProxy.replace(",", "|"));
+            _logger.info("No proxy hosts configured: " + noProxy);
+        }
+    }
+
+    public StoreConfig() {
+        _props = null;
+    }
+
+    // Called from test scripts
+    public StoreConfig(final Properties pProps) {
+        this.overloadConfigFromEnvironment(pProps);
+        initConfig(this);
+    }
+
+    // Called by servlet
+    public void init(final ServletConfig pConfig) throws ServletException {
+        super.init(pConfig);
+        String tConfigFile = pConfig.getInitParameter("config_file");
         boolean isRelative = true;
         if (pConfig.getInitParameter("relative") != null || pConfig.getInitParameter("relative").trim().length() != 0) {
             isRelative = pConfig.getInitParameter("relative").equals("true");
         }
-		Properties tProps = new Properties();
-		try {
+        Properties tProps = new Properties();
+        try {
             InputStream tPropsStream = null;
             if (isRelative) {
                 tPropsStream = this.getServletContext().getResourceAsStream("/WEB-INF/" + tConfigFile);
@@ -66,15 +103,15 @@ public class StoreConfig extends HttpServlet {
             }
 
             tProps.load(tPropsStream);
-		} catch (IOException tExcpt) {
-			tExcpt.printStackTrace();
-			throw new ServletException("Failed to load config file due to: " + tExcpt.getMessage());
-		}
-		this.overloadConfigFromEnviroment(tProps);
+        } catch (IOException tExcpt) {
+            tExcpt.printStackTrace();
+            throw new ServletException("Failed to load config file due to: " + tExcpt.getMessage());
+        }
+        this.overloadConfigFromEnvironment(tProps);
         _annotationUtils = new AnnotationUtils(this.getRealPath("/contexts"), getEncoder());
 
-		initConfig(this);
-	}
+        initConfig(this);
+    }
 
     public AnnotationUtils getAnnotationUtils() {
         return _annotationUtils;
@@ -92,8 +129,8 @@ public class StoreConfig extends HttpServlet {
         }
     }
 
-	protected void overloadConfigFromEnviroment(final Properties pProps) {
-		_props = new HashMap<String,String>();
+    protected void overloadConfigFromEnvironment(final Properties pProps) {
+        _props = new HashMap<String,String>();
         final String EMPTY="EMPTY";
         // Ensure all options are present to be overriden
         for (int i = 0; i < ALLOWED_PROPS.length; i++) {
@@ -101,123 +138,120 @@ public class StoreConfig extends HttpServlet {
                 pProps.setProperty(ALLOWED_PROPS[i], EMPTY);
             }
         }
-		for (String tKey : pProps.stringPropertyNames()) {
-			if (System.getProperty("SAS_" + tKey) != null) {
-				_logger.debug("Overloading " + tKey + " with value " + System.getProperty("SAS_" + tKey) + " from System.getProperty");
-				_props.put(tKey, System.getProperty("SAS_" + tKey));
+        for (String tKey : pProps.stringPropertyNames()) {
+            if (System.getProperty("SAS_" + tKey) != null) {
+                _logger.debug("Overloading " + tKey + " with value " + System.getProperty("SAS_" + tKey) + " from System.getProperty");
+                _props.put(tKey, System.getProperty("SAS_" + tKey));
             } else if (System.getenv("SAS_" + tKey) != null) {
-				_logger.debug("Overloading " + tKey + " with value " + System.getenv("SAS_" + tKey) + " from System.getenv");
-				_props.put(tKey, System.getenv("SAS_" + tKey));
-			} else {
+                _logger.debug("Overloading " + tKey + " with value " + System.getenv("SAS_" + tKey) + " from System.getenv");
+                _props.put(tKey, System.getenv("SAS_" + tKey));
+            } else {
                 if (!pProps.getProperty(tKey).equals(EMPTY)) {
-    				_props.put(tKey, pProps.getProperty(tKey));
+                    _props.put(tKey, pProps.getProperty(tKey));
                 }
-			}
-		}
-	}
+            }
+        }
+    }
 
 
-	public String getBaseURI(final HttpServletRequest pReq) {
-		if (_props.containsKey("baseURI")) {
-			return _props.get("baseURI");// external hostname
+    public String getBaseURI(final HttpServletRequest pReq) {
+        if (_props.containsKey("baseURI")) {
+            return _props.get("baseURI");// external hostname
         } else if (pReq == null) { // This is the case during testing
             return "http://example.com";
-		} else {
-			int tBase = 0;
-			String[] tURL = pReq.getRequestURL().toString().split("/");
-			String tServletName = "";
-			if (pReq.getServletPath().matches(".*/[a-zA-Z0-9.]*$")) {
-				tServletName = pReq.getServletPath().replaceAll("/[a-zA-Z0-9.]*$","").replaceAll("/","");
-			} else {
-				tServletName = pReq.getServletPath().replaceAll("/","");
-			}
-			for (int i = tURL.length - 1; i >=0 ; i--) {
-				if (tURL[i].equals(tServletName)) {
-					tBase = i;
-					break;
-				}
-			}
-			StringBuffer tBaseURL = new StringBuffer();
-			for (int i = 0; i < tBase; i++) {
-				tBaseURL.append(tURL[i] + "/");
-			}
-			String tBaseURLStr = tBaseURL.toString();
-			if (tBaseURLStr.endsWith("/")) {
-				 tBaseURLStr = tBaseURLStr.replaceAll("/$","");
-			}
-			return tBaseURLStr;
-		}
-	}
+        } else {
+            int tBase = 0;
+            String[] tURL = pReq.getRequestURL().toString().split("/");
+            String tServletName = "";
+            if (pReq.getServletPath().matches(".*/[a-zA-Z0-9.]*$")) {
+                tServletName = pReq.getServletPath().replaceAll("/[a-zA-Z0-9.]*$","").replaceAll("/","");
+            } else {
+                tServletName = pReq.getServletPath().replaceAll("/","");
+            }
+            for (int i = tURL.length - 1; i >=0 ; i--) {
+                if (tURL[i].equals(tServletName)) {
+                    tBase = i;
+                    break;
+                }
+            }
+            StringBuffer tBaseURL = new StringBuffer();
+            for (int i = 0; i < tBase; i++) {
+                tBaseURL.append(tURL[i] + "/");
+            }
+            String tBaseURLStr = tBaseURL.toString();
+            if (tBaseURLStr.endsWith("/")) {
+                 tBaseURLStr = tBaseURLStr.replaceAll("/$","");
+            }
+            return tBaseURLStr;
+        }
+    }
 
+    public StoreAdapter getStore() {
+        StoreAdapter tAdapter = null;
+        String tStore = _props.get("store");
 
-
-	public StoreAdapter getStore() {
-
-		StoreAdapter tAdapter = null;
-		String tStore = _props.get("store");
-
-		if (tStore.equals("jena")) {
-			tAdapter = new JenaStore(_annotationUtils, _props.get("data_dir"));
-		} else if (tStore.equals("sesame")) {
-			tAdapter = new SesameStore(_annotationUtils, _props.get("repo_url"));
-		} else if (tStore.equals("solr") || tStore.equals("solr-cloud")) {
-			String tCollection = null;
-			if (tStore.equals("solr-cloud")) {
+        if (tStore.equals("jena")) {
+            tAdapter = new JenaStore(_annotationUtils, _props.get("data_dir"));
+        } else if (tStore.equals("sesame")) {
+            tAdapter = new SesameStore(_annotationUtils, _props.get("repo_url"));
+        } else if (tStore.equals("solr") || tStore.equals("solr-cloud")) {
+            String tCollection = null;
+            if (tStore.equals("solr-cloud")) {
                 tCollection = _props.get("solr_collection");
                 if (tCollection == null || tCollection.trim().length() == 0) {
                     throw new IllegalArgumentException("If you are using solr-cloud you must specify the solr_collection field.");
                 }
-			}
-			tAdapter = new SolrStore(_props.get("solr_connection"), tCollection);
+            }
+            tAdapter = new SolrStore(_props.get("solr_connection"), tCollection);
         } else if (tStore.equals("elastic")) {
             try {
                 tAdapter = new ElasticStore(_props.get("elastic_connection"));
             } catch (URISyntaxException tExcpt) {
                 tExcpt.printStackTrace();
-                throw new IllegalArgumentException("Failed to create Elastic connection due a problem with the conection URL");
+                throw new IllegalArgumentException("Failed to create Elastic connection due a problem with the connection URL");
             } catch (IOException tExcpt) {
                 tExcpt.printStackTrace();
-                throw new IllegalArgumentException("Failed to create Elastic connection due a problem with the conection URL");
+                throw new IllegalArgumentException("Failed to create Elastic connection due a problem with the connection URL");
             }
-		} else {
+        } else {
             _logger.error("Couldn't find a store for '" + tStore + "'.");
         }
 
-		return tAdapter;
-	}
+        return tAdapter;
+    }
 
-	public Encoder getEncoder() throws ServletException {
-		Encoder tEncoder = null;
-		if (_props.get("encoder") != null) {
-			try {
-				Class tClass = Class.forName(_props.get("encoder"));
-				tEncoder = (Encoder)tClass.getDeclaredConstructor().newInstance();
-				tEncoder.init(_props);
-			} catch (ClassNotFoundException tExcpt) {
-				throw new ServletException("The Encoder you specified in the configuration is either incorrect or dosn't exist in the classpath " + _props.get("encoder"));
-			} catch (InstantiationException tExcpt) {
-				throw new ServletException("The Encoder must have a default constructor " + _props.get("encoder"));
-			} catch (NoSuchMethodException tExcpt) {
-				throw new ServletException("The Encoder must have a default constructor " + _props.get("encoder"));
-			} catch (InvocationTargetException tExcpt) {
-				throw new ServletException("The Encoder must have a default constructor " + _props.get("encoder"));
-			} catch (IllegalAccessException tExcpt) {
-				throw new ServletException("The default constructor must be public " + _props.get("encoder"));
-			}
-		}
-		return tEncoder;
-	}
+    public Encoder getEncoder() throws ServletException {
+        Encoder tEncoder = null;
+        if (_props.get("encoder") != null) {
+            try {
+                Class tClass = Class.forName(_props.get("encoder"));
+                tEncoder = (Encoder)tClass.getDeclaredConstructor().newInstance();
+                tEncoder.init(_props);
+            } catch (ClassNotFoundException tExcpt) {
+                throw new ServletException("The Encoder you specified in the configuration is either incorrect or doesn't exist in the classpath " + _props.get("encoder"));
+            } catch (InstantiationException tExcpt) {
+                throw new ServletException("The Encoder must have a default constructor " + _props.get("encoder"));
+            } catch (NoSuchMethodException tExcpt) {
+                throw new ServletException("The Encoder must have a default constructor " + _props.get("encoder"));
+            } catch (InvocationTargetException tExcpt) {
+                throw new ServletException("The Encoder must have a default constructor " + _props.get("encoder"));
+            } catch (IllegalAccessException tExcpt) {
+                throw new ServletException("The default constructor must be public " + _props.get("encoder"));
+            }
+        }
+        return tEncoder;
+    }
 
-	public Map<String,String> getProps() {
-		return _props;
-	}
+    public Map<String,String> getProps() {
+        return _props;
+    }
 
-	protected static StoreConfig _config = null;
-	protected static void initConfig(final StoreConfig pConfig) {
-		_config = pConfig;
-	}
+    protected static StoreConfig _config = null;
+    protected static void initConfig(final StoreConfig pConfig) {
+        _config = pConfig;
+    }
 
-	public static StoreConfig getConfig() {
-		return _config;
-	}
+    public static StoreConfig getConfig() {
+        return _config;
+    }
 }

@@ -18,6 +18,7 @@ from app.config.settings import (
     APP_NAME,
     APP_URL,
     ADDITIONAL_MODULES,
+    SAS_DOCKER_URL,
 )
 from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, flatten_dict
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
@@ -31,12 +32,14 @@ def get_manifest_annotations(
     regions_ref, only_ids=True, min_c: int = None, max_c: int = None
 ):
     manifest_annotations = []
-    next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search"
+    next_page = f"{SAS_DOCKER_URL}/search-api/{regions_ref}/search"
 
     while next_page:
         try:
             response = requests.get(next_page)
             annotations = response.json()
+
+            log(annotations)
 
             if response.status_code != 200:
                 log(
@@ -151,6 +154,8 @@ def get_regions_annotations(
                 )
                 continue
 
+            log(f"{canvas}")
+
             # Stop once max_c is reached
             # DO NOT WORK since the annotations are sorted ALPHABETICALLY by canvas number
             # if max_c is not None and (canvas_num > max_c):
@@ -237,11 +242,11 @@ def reindex_file(filename):
 
 
 def unindex_annotation(annotation_id):
-    http_sas = SAS_APP_URL.replace("https", "http")
+    http_sas = SAS_DOCKER_URL.replace("https", "http")
 
     # annotation_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}
     delete_url = (
-        f"{SAS_APP_URL}/annotation/destroy?uri={http_sas}/annotation/{annotation_id}"
+        f"{SAS_DOCKER_URL}/annotation/destroy?uri={http_sas}/annotation/{annotation_id}"
     )
     try:
         response = requests.delete(delete_url)
@@ -262,7 +267,7 @@ def index_annotations_on_canvas(regions: Regions, canvas_nb):
     formatted_annos = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions.get_ref()}/list/anno-{canvas_nb}.json"
     # POST request that index the annotations
     response = urlopen(
-        f"{SAS_APP_URL}/annotation/populate",
+        f"{SAS_DOCKER_URL}/annotation/populate",
         urlencode({"uri": formatted_annos}).encode("ascii"),
     )
 
@@ -459,7 +464,7 @@ def set_canvas(seq, canvas_nb, img_name, img, version=None):
 
 def get_indexed_manifests():
     try:
-        r = requests.get(f"{SAS_APP_URL}/manifests")
+        r = requests.get(f"{SAS_DOCKER_URL}/manifests")
         manifests = r.json()["manifests"]
     except Exception as e:
         log(f"[get_indexed_manifests]: Failed to load indexed manifests in SAS", e)
@@ -483,8 +488,7 @@ def index_manifest_in_sas(manifest_url, reindex=False):
 
     try:
         # Index the manifest into SAS
-        r = requests.post(f"{SAS_APP_URL}/manifests", json=manifest_content)
-        print(r)
+        r = requests.post(f"{SAS_DOCKER_URL}/manifests", json=manifest_content)
         if r.status_code != 200:
             log(
                 f"[index_manifest_in_sas] Failed to index manifest. Status code: {r.status_code}: {r.text}"
@@ -562,7 +566,7 @@ def get_indexed_annotations(regions: Regions):
 def get_indexed_canvas_annotations(regions: Regions, canvas_nb):
     try:
         response = urlopen(
-            f"{SAS_APP_URL}/annotation/search?uri={regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
+            f"{SAS_DOCKER_URL}/annotation/search?uri={regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
         )
         return json.loads(response.read())
     except Exception as e:
@@ -628,7 +632,7 @@ def formatted_annotations(regions: Regions):
 
 
 def total_annotations(regions: Regions):
-    response = requests.get(f"{SAS_APP_URL}/search-api/{regions.get_ref()}/search")
+    response = requests.get(f"{SAS_DOCKER_URL}/search-api/{regions.get_ref()}/search")
     res = response.json()
     try:
         return res["within"]["total"]
@@ -750,7 +754,7 @@ def get_images_annotations(regions: Regions):
 
 # def unindex_manifest(regions: Regions):
 #     # DO NOT WORK
-#     response = requests.delete(f"{SAS_APP_URL}/manifests/{regions.get_ref()}")
+#     response = requests.delete(f"{SAS_DOCKER_URL}/manifests/{regions.get_ref()}")
 #     if response.status_code != 200:
 #         log(
 #             f"[unindex_manifest] Failed to un-index manifest for Regions #{regions.id}. "

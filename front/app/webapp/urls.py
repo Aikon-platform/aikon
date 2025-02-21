@@ -316,6 +316,7 @@ urlpatterns += [
     path("search/series/", search_series, name="search-series"),
     path("search/documentset/", search_document_set, name="search-document-sets"),
     path("search/digitization/", search_digitizations, name="search-digitizations"),
+    path("search/regions/", search_regions, name="search-regions"),
     path("search/json-generation/", json_regeneration, name="regenerate_json"),
 ]
 
@@ -323,4 +324,9 @@ urlpatterns += [
 urlpatterns += [
     path("superadmin/empty-works/", list_empty_works, name="empty-works"),
     path("superadmin/works/", list_works, name="list-works"),
+]
+
+# DIRTY FIX FOR SAS 😡
+urlpatterns += [
+    path("context.json", iiif_context, name="iiif-context"),
 ]

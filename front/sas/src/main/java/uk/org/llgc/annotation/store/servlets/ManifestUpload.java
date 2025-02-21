@@ -18,6 +18,7 @@ import java.io.FilenameFilter;
 import java.io.BufferedReader;
 
 import java.net.URL;
+import java.net.HttpURLConnection;
 
 import java.util.Map;
 import java.util.List;
@@ -25,6 +26,8 @@ import java.util.HashMap;
 import java.util.ArrayList;
 
 import com.github.jsonldjava.utils.JsonUtils;
+import com.github.jsonldjava.core.DocumentLoader;
+import com.github.jsonldjava.core.JsonLdOptions;
 
 import org.apache.jena.rdf.model.Model;
 
@@ -37,79 +40,82 @@ import uk.org.llgc.annotation.store.AnnotationUtils;
 import uk.org.llgc.annotation.store.StoreConfig;
 
 public class ManifestUpload extends HttpServlet {
-	protected static Logger _logger = LogManager.getLogger(ManifestUpload.class.getName());
-	protected AnnotationUtils _annotationUtils = null;
-	protected StoreAdapter _store = null;
+    protected static Logger _logger = LogManager.getLogger(ManifestUpload.class.getName());
+    protected AnnotationUtils _annotationUtils = null;
+    protected StoreAdapter _store = null;
 
-	public void init(final ServletConfig pConfig) throws ServletException {
-		super.init(pConfig);
-		Encoder tEncoder = StoreConfig.getConfig().getEncoder();
-		_annotationUtils = new AnnotationUtils(new File(super.getServletContext().getRealPath("/contexts")), tEncoder);
-		_store = StoreConfig.getConfig().getStore();
-		_store.init(_annotationUtils);
-	}
+    public void init(final ServletConfig pConfig) throws ServletException {
+        super.init(pConfig);
+        Encoder tEncoder = StoreConfig.getConfig().getEncoder();
+        _annotationUtils = new AnnotationUtils(new File(super.getServletContext().getRealPath("/contexts")), tEncoder);
+        _store = StoreConfig.getConfig().getStore();
+        _store.init(_annotationUtils);
+    }
 
-	public void doPost(final HttpServletRequest pReq, final HttpServletResponse pRes) throws IOException {
-		String tID = "";
-		Map<String, Object> tManifestJson = null;
-		if (pReq.getParameter("uri") != null) {
-			tID = pReq.getParameter("uri");
-			tManifestJson = (Map<String,Object>)JsonUtils.fromInputStream(new URL(tID).openStream());
-		} else {
-			InputStream tManifestStream = pReq.getInputStream();
-            /*java.io.BufferedReader tReader = new java.io.BufferedReader(new java.io.InputStreamReader(tManifestStream));
-            String tLine = tReader.readLine();
-            while (tLine != null) {
-                System.out.println(tLine);
-                tLine = tReader.readLine();
-            }*/
+    public void doPost(final HttpServletRequest pReq, final HttpServletResponse pRes) throws IOException {
+        String tID = "";
+        Map<String, Object> tManifestJson = null;
 
-			tManifestJson = (Map<String,Object>)JsonUtils.fromInputStream(tManifestStream);
-		}
+        try {
+            if (pReq.getParameter("uri") != null) {
+                tID = pReq.getParameter("uri");
+                _logger.info("Fetching manifest from: " + tID);
+                URL url = new URL(tID);
+                // Use the proxy configuration utility to get the input stream
+                tManifestJson = (Map<String,Object>)JsonUtils.fromInputStream(url.openStream());
+            } else {
+                InputStream tManifestStream = pReq.getInputStream();
+                tManifestJson = (Map<String,Object>)JsonUtils.fromInputStream(tManifestStream);
+            }
 
-        Manifest tManifest = new Manifest(tManifestJson, null);
-		String tShortId = _store.indexManifest(tManifest);
-        Map<String,Object> tJson = new HashMap<String,Object>();
-        Map<String,String> tLinks = new HashMap<String,String>();
-        tJson.put("loaded", tLinks);
-        tLinks.put("uri", tManifest.getURI());
-        tLinks.put("short_id", tManifest.getShortId());
+            Manifest tManifest = new Manifest(tManifestJson, null);
+            String tShortId = _store.indexManifest(tManifest);
+            Map<String,Object> tJson = new HashMap<String,Object>();
+            Map<String,String> tLinks = new HashMap<String,String>();
+            tJson.put("loaded", tLinks);
+            tLinks.put("uri", tManifest.getURI());
+            tLinks.put("short_id", tManifest.getShortId());
 
-        pRes.setContentType("application/json");
+            pRes.setContentType("application/json");
+            pRes.setCharacterEncoding("UTF-8");
+            JsonUtils.write(pRes.getWriter(), tJson);
+
+        } catch (Exception e) {
+            _logger.error("Failed to process manifest: " + e.getMessage(), e);
+            pRes.sendError(HttpServletResponse.SC_BAD_GATEWAY, "Failed to process manifest: " + e.getMessage());
+        }
+    }
+
+    // if asked for without path then return collection of manifests that are loaded
+    public void doGet(final HttpServletRequest pReq, final HttpServletResponse pRes) throws IOException {
+        String tRequestURI = pReq.getRequestURI();
+        String[] tSplitURI = tRequestURI.split("/");
+
+        // Return collection
+        List<Manifest> tManifests = _store.getManifests();
+
+        Map<String,Object> tCollection = new HashMap<String,Object>();
+
+        tCollection.put("@context", "http://iiif.io/api/presentation/2/context.json");
+        tCollection.put("@id", StoreConfig.getConfig().getBaseURI(pReq) + "/annotation//collection/managed.json");
+        tCollection.put("@type", "sc:Collection");
+        tCollection.put("label","Collection of all manifests known by this annotation server");
+
+        List<Map<String,Object>> tMembers = new ArrayList<Map<String,Object>>();
+        for (Manifest tManifest : tManifests) {
+            Map<String, Object> tManifestJson = new HashMap<String,Object>();
+            tManifestJson.put("@id", tManifest.getURI());
+            tManifestJson.put("@type", "sc:Manifest");
+
+            tMembers.add(tManifestJson);
+        }
+
+        tCollection.put("members", tMembers);
+        tCollection.put("manifests", tMembers);
+
+        pRes.setStatus(HttpServletResponse.SC_CREATED);
+        pRes.setContentType("application/ld+json; charset=UTF-8");
         pRes.setCharacterEncoding("UTF-8");
-        JsonUtils.write(pRes.getWriter(), tJson);
-	}
-
-	// if asked for without path then return collection of manifests that are loaded
-	public void doGet(final HttpServletRequest pReq, final HttpServletResponse pRes) throws IOException {
-		String tRequestURI = pReq.getRequestURI();
-		String[] tSplitURI = tRequestURI.split("/");
-
-		// Return collection
-		List<Manifest> tManifests = _store.getManifests();
-
-		Map<String,Object> tCollection = new HashMap<String,Object>();
-
-		tCollection.put("@context", "http://iiif.io/api/presentation/2/context.json");
-		tCollection.put("@id", StoreConfig.getConfig().getBaseURI(pReq) + "/annotation//collection/managed.json");
-		tCollection.put("@type", "sc:Collection");
-		tCollection.put("label","Collection of all manifests known by this annotation server");
-
-		List<Map<String,Object>> tMembers = new ArrayList<Map<String,Object>>();
-		for (Manifest tManifest : tManifests) {
-			Map<String, Object> tManifestJson = new HashMap<String,Object>();
-			tManifestJson.put("@id", tManifest.getURI());
-			tManifestJson.put("@type", "sc:Manifest");
-
-			tMembers.add(tManifestJson);
-		}
-
-		tCollection.put("members", tMembers);
-		tCollection.put("manifests", tMembers);
-
-		pRes.setStatus(HttpServletResponse.SC_CREATED);
-		pRes.setContentType("application/ld+json; charset=UTF-8");
-		pRes.setCharacterEncoding("UTF-8");
-		JsonUtils.write(pRes.getWriter(), tCollection);
-	}
+        JsonUtils.write(pRes.getWriter(), tCollection);
+    }
 }
