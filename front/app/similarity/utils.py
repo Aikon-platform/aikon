@@ -331,6 +331,9 @@ def delete_pairs_with_regions(regions_id: int):
         Q(regions_id_1=regions_id) | Q(regions_id_2=regions_id)
     ).delete()
 
+    if cache.get(f"regions_q_imgs_{regions_id}") is not None:
+        cache.delete(f"regions_q_imgs_{regions_id}")
+
 
 def get_regions_q_imgs(regions_id: int, witness_id=None, cached=False):
     """
