@@ -11,5 +11,11 @@ echoTitle "VIRTUAL ENVIRONMENT SET UP"
 cd "$FRONT_DIR"
 python3.10 -m venv venv
 source venv/bin/activate
+
+# solve dependency conflicts and install errors
+pip install --upgrade pip
+pip install --upgrade wheel
+pip install "setuptools==70.0.0"
+
 pip install -r "$APP_DIR"/requirements-dev.txt
 pre-commit install

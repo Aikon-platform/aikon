@@ -18,20 +18,17 @@ git submodule update
 echoTitle "AIKON BUNDLE INSTALL"
 
 colorEcho green "AIKON installation..."
-(cd "$AIKON_DIR" && bash "$AIKON_SETUP")
+cd "$AIKON_DIR";
 
-if [ $? -ne 0 ]; then
+if ! bash "$AIKON_SETUP"; then
     colorEcho red "AIKON setup encountered an error"
     exit 1
 fi
 
-echo "🔪🔪🔪 DEV: STOPPING FOR NOW 🔪🔪🔪"
-exit
-
 colorEcho green "API installation..."
-(cd "$API_DIR" && bash "$API_SETUP")
+cd "$API_DIR"
 
-if [ $? -ne 0 ]; then
+if ! bash "$API_SETUP"; then
     colorEcho red "API setup encountered an error"
     exit 1
 fi
