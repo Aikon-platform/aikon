@@ -15,7 +15,7 @@ if ! command -v npm &> /dev/null; then
 fi
 
 echoTitle "SVELTE SETUP"
-cd "$FRONT_DIR"/app/webpack || echo "Webpack directory not found: $FRONT_DIR/app/webpack" && exit
+cd "$FRONT_DIR"/app/webpack || echo "Webpack directory not found: $FRONT_DIR/app/webpack"
 npm init
 colorEcho blue "\nCompile svelte components using: "
 colorEcho cyan "              npm run build"
