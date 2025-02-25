@@ -46,7 +46,6 @@ run_script setup_var_env.sh "Environment variables configuration"
 run_script setup_cantaloupe.sh "Cantaloupe configuration"
 run_script setup_db.sh "Database generation"
 run_script setup_webpack.sh "Webpack initialization"
-exit
 run_script setup_redis.sh "Redis password configuration"
 # run_script setup_sas.sh "SAS initialization"
 
