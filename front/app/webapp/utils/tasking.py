@@ -13,9 +13,7 @@ from app.webapp.models.witness import Witness
 from app.webapp.utils.logger import log
 
 
-def create_treatment(
-    records: List[Witness | Digitization | Regions], task_name, user: User = None
-) -> int:
+def create_doc_set(records: List[Witness | Digitization | Regions], user: User = None):
     wit_ids = set()
     doc_title = "Document set"
 
@@ -44,15 +42,16 @@ def create_treatment(
         raise e
 
     try:
+        wit_ids = list(sorted(wit_ids))
         # check if there is a doc set with same wit_ids and user
-        doc_set = DocumentSet.objects.filter(user=user, wit_ids=list(wit_ids)).first()
+        doc_set = DocumentSet.objects.filter(user=user, wit_ids=wit_ids).first()
 
         if not doc_set:
             # if not create one
             doc_set = DocumentSet.objects.create(
                 title=doc_title,
                 user=user,
-                wit_ids=list(wit_ids),
+                wit_ids=wit_ids,
                 is_public=False,
             )
             doc_set.save()
@@ -62,6 +61,14 @@ def create_treatment(
             e,
         )
         raise e
+
+    return doc_set, user
+
+
+def create_treatment(
+    records: List[Witness | Digitization | Regions], task_name, user: User = None
+) -> int:
+    doc_set, user = create_doc_set(records, user)
 
     try:
         from app.webapp.models.treatment import Treatment
