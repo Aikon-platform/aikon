@@ -11,6 +11,7 @@ echoTitle "REDIS DATABASE INITIALIZATION"
 redis_psw=$(get_env_value "REDIS_PASSWORD" "$APP_ENV")
 options=("yes" "no")
 
+# only runs if a redis password is defined
 if [ -n "$redis_psw" ]; then
     colorEcho blue "\nYou defined a redis password in $APP_ENV. Do you want to secure redis with it (not necessary on local)?"
     answer=$(printf "%s\n" "${options[@]}" | fzy)
@@ -32,7 +33,7 @@ if [ -n "$redis_psw" ]; then
             ;;
         "no")
             $SED_CMD "s~^REDIS_PASSWORD=.*~REDIS_PASSWORD=~" "$APP_ENV"
-            sudo $SED_CMD "s/^requirepass [^ ]*/# requirepass $redis_psw/" "$redis_conf"
+            sudo "$SED_CMD" "s/^requirepass [^ ]*/# requirepass $redis_psw/" "$redis_conf"
             ;;
         *)
             ;;
