@@ -70,7 +70,7 @@ tables=$($command -d "$db_name" -t -c "SELECT tablename FROM pg_tables WHERE tab
 colorEcho yellow "\nAdding app_label to models.py..."
 meta_class="    class Meta:"
 app_label="\n        app_label = 'webapp'"
-sed -i "" -e "s~^$meta_class~$meta_class$app_label~" webapp/models.py || exit 1;
+$SED_CMD "s~^$meta_class~$meta_class$app_label~" webapp/models.py || exit 1;
 
 colorEcho yellow "\nCreating migration for the current database state..."
 "$APP_ROOT"/venv/bin/python manage.py makemigrations || exit 1;
@@ -104,7 +104,7 @@ colorEcho cyan "Restart Django to see effects"
 #colorEcho yellow "\nAdding app_label to models.py..."
 #meta_class="    class Meta:"
 #app_label="\n        app_label = 'webapp'"
-#sed -i "" -e "s~^$meta_class~$meta_class$app_label~" "$APP_ROOT"/app/webapp/models.py || exit 1;
+#$SED_CMD "s~^$meta_class~$meta_class$app_label~" "$APP_ROOT"/app/webapp/models.py || exit 1;
 #
 #colorEcho yellow "\nRename temporary models/ directory..."
 #mv "$APP_ROOT"/app/webapp/models "$APP_ROOT"/app/webapp/models_bak || exit 1;

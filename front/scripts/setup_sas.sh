@@ -1,12 +1,15 @@
+#!/bin/env bash
+
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 FRONT_DIR=$(dirname "$SCRIPT_DIR")
 APP_ENV="$FRONT_DIR"/app/config/.env
 
 source "$SCRIPT_DIR"/functions.sh
 
-os=$(get_os)
+os="$(get_os)"
 sas_psw=$(get_env_value "SAS_PASSWORD" "$APP_ENV")
 sas_user=$(get_env_value "SAS_USERNAME" "$APP_ENV")
+options=("yes" "no")
 
 if [ -n "$sas_psw" ]; then
     colorEcho blue "\nYou defined a password for SAS in $APP_ENV. Do you want to secure SAS with it (not necessary on local)?"
@@ -28,7 +31,7 @@ if [ -n "$sas_psw" ]; then
                 esac
             ;;
         "no")
-            sed -i "" -e "s~^SAS_PASSWORD=.*~SAS_PASSWORD=~" "$APP_ENV"
+            $SED_CMD "s~^SAS_PASSWORD=.*~SAS_PASSWORD=~" "$APP_ENV"
             ;;
         *)
             ;;

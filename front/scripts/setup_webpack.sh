@@ -1,3 +1,5 @@
+#!/bin/env bash
+
 # TODO check setup for svelte
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -13,7 +15,7 @@ if ! command -v npm &> /dev/null; then
 fi
 
 echoTitle "SVELTE SETUP"
-cd "$FRONT_DIR"/app/webpack
+cd "$FRONT_DIR"/app/webpack || echo "Webpack directory not found: $FRONT_DIR/app/webpack" && exit
 npm init
 colorEcho blue "\nCompile svelte components using: "
 colorEcho cyan "              npm run build"

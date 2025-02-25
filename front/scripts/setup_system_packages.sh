@@ -1,3 +1,5 @@
+#!/bin/env bash
+
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source "$SCRIPT_DIR"/functions.sh
 
@@ -17,7 +19,7 @@ install_packages() {
             brew services start redis
             ;;
         *)
-            colorEcho red "Unsupported OS: $os"
+            colorEcho red "Unsupported OS: $OS"
             exit 1
             ;;
     esac

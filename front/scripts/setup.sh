@@ -5,8 +5,6 @@ FRONT_DIR="$(dirname "$SCRIPT_DIR")"
 
 source "$SCRIPT_DIR"/functions.sh
 
-OS=$(get_os)
-
 run_script() {
     local script_name="$1"
     local description="$2"
@@ -17,14 +15,15 @@ run_script() {
     echo ""
     case $answer in
         "yes")
-            bash "$SCRIPT_DIR/$script_name"
-            && colorEcho green "$description completed successfully"
+            bash "$SCRIPT_DIR/$script_name" \
+            && colorEcho green "$description completed successfully" \
             || colorEcho red "$description failed with exit code. Continuing..."
             ;;
         *)
             colorEcho blue "Skipping $description"
             ;;
     esac
+    echo ""
 }
 
 colorEcho blue "\nInstalling prompt utility fzy..."
@@ -36,15 +35,16 @@ case $OS in
         brew install fzy
         ;;
     *)
-        colorEcho red "Unsupported OS: $os"
+        colorEcho red "Unsupported OS: $OS"
         exit 1
         ;;
 esac
 
-run_script setup_install_packages.sh "Submodule initialization"
+run_script setup_system_packages.sh "Submodule initialization"
 run_script setup_venv.sh "Virutal environment initialization"
 run_script setup_var_env.sh "Environment variables configuration"
 run_script setup_cantaloupe.sh "Cantaloupe configuration"
+exit
 run_script setup_db.sh "Database generation"
 run_script setup_webpack.sh "Webpack initialization"
 run_script setup_redis.sh "Redis password configuration"

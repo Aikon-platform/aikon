@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/env bash
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -114,29 +114,32 @@ update_env() {
             esac
 
             new_value=$(prompt_user "$param" "$default_val" "$current_val" "$desc")
-            sed -i "" -e "s~^$param=.*~$param=$new_value~" "$env_file"
+            $SED_CMD "s~^$param=.*~$param=$new_value~" "$env_file"
         fi
         prev_line="$line"
     done
 }
 
 update_cantaloupe_env() {
+
     cantaloupe_env="$APP_ROOT"/cantaloupe/.env
+    app_env="$APP_ROOT"/app/config/.env
     ordered_params=("BASE_URI" "FILE_SYSTEM_SOURCE" "HTTP_PORT" "HTTPS_PORT" "LOG_PATH")
     for param in "${ordered_params[@]}"; do
         current_val=$(get_env_value "$param" "$cantaloupe_env")
+
         case $param in
             "BASE_URI")
-                default_val="https://"$(get_env_value "PROD_URL" "$APP_ENV")
+                default_val="https://"$(get_env_value "PROD_URL" "$app_env")
                 ;;
             "FILE_SYSTEM_SOURCE")
-                default_val=$(get_env_value "MEDIA_DIR" "$APP_ENV")"/img/"
+                default_val=$(get_env_value "MEDIA_DIR" "$app_env")"/img/"
                 ;;
             "HTTP_PORT")
-                default_val=$(get_env_value "CANTALOUPE_PORT" "$APP_ENV")
+                default_val=$(get_env_value "CANTALOUPE_PORT" "$app_env")
                 ;;
             "HTTPS_PORT")
-                default_val=$(get_env_value "CANTALOUPE_PORT_HTTPS" "$APP_ENV")
+                default_val=$(get_env_value "CANTALOUPE_PORT_HTTPS" "$app_env")
                 ;;
             "LOG_PATH")
                 default_val="$APP_ROOT"/cantaloupe/
@@ -148,8 +151,11 @@ update_cantaloupe_env() {
 
         new_value=$(prompt_user "$param" "$default_val" "$current_val")
         # créer une fonction replace_value qui remplace sed -i -e
-        sed -i "" -e "s~^$param=.*~$param=$new_value~" "$cantaloupe_env"
+        $SED_CMD "s~^$param=.*~$param=$new_value~" "$cantaloupe_env"
     done
 }
 
-SED_CMD=$([ $(get_os) = "Linux" ] && echo "sed -i -e" || echo "sed -i '' -e")
+SED_CMD=$([ "$(get_os)" = "Linux" ] && echo "sed -i -e" || echo "sed -i -e ''")
+
+export OS
+OS=$(get_os)
