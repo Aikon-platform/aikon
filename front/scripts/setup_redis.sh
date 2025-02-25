@@ -32,7 +32,7 @@ if [ -n "$redis_psw" ]; then
             ;;
         "no")
             $SED_CMD "s~^REDIS_PASSWORD=.*~REDIS_PASSWORD=~" "$APP_ENV"
-            sudo "$SED_CMD" "s/^requirepass [^ ]*/# requirepass $redis_psw/" "$redis_conf"
+            sudo $SED_CMD "s/^requirepass [^ ]*/# requirepass $redis_psw/" "$redis_conf"
             ;;
         *)
             ;;
