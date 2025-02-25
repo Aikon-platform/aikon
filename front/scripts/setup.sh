@@ -44,8 +44,8 @@ run_script setup_system_packages.sh "Submodule initialization"
 run_script setup_venv.sh "Virutal environment initialization"
 run_script setup_var_env.sh "Environment variables configuration"
 run_script setup_cantaloupe.sh "Cantaloupe configuration"
-exit
 run_script setup_db.sh "Database generation"
+exit
 run_script setup_webpack.sh "Webpack initialization"
 run_script setup_redis.sh "Redis password configuration"
 # run_script setup_sas.sh "SAS initialization"

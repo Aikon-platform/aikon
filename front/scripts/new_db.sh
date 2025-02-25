@@ -35,13 +35,23 @@ db_sql_file=$2
 db_user=${POSTGRES_USER:-admin}
 db_psw=${POSTGRES_PASSWORD:-dummy_password}
 
+# echo ""
+# echo ">>> db_name     $db_name"
+# echo ">>> db_sql_file $db_sql_file"
+# echo ">>> db_user     $db_user"
+# echo ">>> db_psw      $db_psw"
+# echo ""
+
 create_user() {
-     $command -c "CREATE USER $db_user WITH PASSWORD '$db_psw';"
-     $command -c "ALTER ROLE $db_user SET client_encoding TO 'utf8';"
-     $command -c "ALTER ROLE $db_user SET default_transaction_isolation TO 'read committed';"
-     $command -c "ALTER ROLE $db_user SET timezone TO 'UTC';"
-     $command -c "GRANT ALL ON SCHEMA public TO $db_user;"
-     $command -c "GRANT ALL ON SCHEMA public TO public;"
+    sql_arr=( "CREATE USER $db_user WITH PASSWORD '$db_psw';"
+              "ALTER ROLE $db_user SET client_encoding TO 'utf8';"
+              "ALTER ROLE $db_user SET default_transaction_isolation TO 'read committed';"
+              "ALTER ROLE $db_user SET timezone TO 'UTC';"
+              "GRANT ALL ON SCHEMA public TO $db_user;"
+              "GRANT ALL ON SCHEMA public TO public;" )
+    for sql in "${sql_arr[@]}"; do
+        $command -c "$sql"
+    done;
 }
 
 # check if the user $db_user already exists, if not, create it
