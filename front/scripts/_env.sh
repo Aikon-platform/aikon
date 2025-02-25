@@ -3,35 +3,14 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"
 
+source "$SCRIPT_DIR"/functions.sh
+
 cp "$APP_ROOT"/app/config/.env.template "$APP_ROOT"/app/config/.env
 
 ENV_FILE="$APP_ROOT"/app/config/.env
 MEDIA_DIR="$APP_ROOT/app/mediafiles"
 
-generate_random_string() {
-    echo "$(openssl rand -base64 32 | tr -d '/\n')"
-}
-
-colorEcho() {
-    Color_Off="\033[0m"
-    Red="\033[1;91m"        # Red
-    Green="\033[1;92m"      # Green
-    Yellow="\033[1;93m"     # Yellow
-    Blue="\033[1;94m"       # Blue
-    Purple="\033[1;95m"     # Purple
-    Cyan="\033[1;96m"       # Cyan
-
-    case "$1" in
-        "green") echo -e "$Green$2$Color_Off";;
-        "red") echo -e "$Red$2$Color_Off";;
-        "blue") echo -e "$Blue$2$Color_Off";;
-        "yellow") echo -e "$Yellow$2$Color_Off";;
-        "purple") echo -e "$Purple$2$Color_Off";;
-        "cyan") echo -e "$Cyan$2$Color_Off";;
-        *) echo "$2";;
-    esac
-}
-
+# not the same as functions/prompt_user
 prompt_user() {
     env_var=$(colorEcho 'red' "$1")
     default_val="$2"
@@ -45,9 +24,11 @@ prompt_user() {
     echo "${value:-$default_val}"
 }
 
+# old version of functions/get_env_value
 get_env_value() {
     param=$1
-    value=$(grep -oP "(?<=^$param=\")[^\"]*" "$ENV_FILE")
+    env_file=$2
+    value=$(grep -oP "(?<=^$param=\")[^\"]*" "$env_file")
     echo "$value"
 }
 
@@ -105,18 +86,19 @@ update_env() {
 
         new_value=$(prompt_user "$param" "$default_val" "$current_val")
         # sed -i "s~^$param=.*~$param=\"$new_value\"~" "$ENV_FILE"
-        sed -i '' -e "s~^$param=.*~$param=\"$new_value\"~" "$ENV_FILE"
+        sed -i -e "s~^$param=.*~$param=\"$new_value\"~" "$ENV_FILE"
     done
 }
 
 update_env
 
 CANTALOUPE_ENV_FILE="$APP_ROOT"/cantaloupe/.env
+cantaloupe_env=$CANTALOUPE_ENV_FILE
 cp "$CANTALOUPE_ENV_FILE".template "$CANTALOUPE_ENV_FILE"
 update_cantaloupe_env() {
     ordered_params=("BASE_URI" "FILE_SYSTEM_SOURCE" "HTTP_PORT" "HTTPS_PORT" "LOG_PATH")
     for param in "${ordered_params[@]}"; do
-        current_val=$(grep -oP "(?<=^$param=\")[^\"]*" "$CANTALOUPE_ENV_FILE")
+        current_val=$(local_get_env_value "$cantaloupe_env")
         case $param in
             "BASE_URI")
                 default_val=""$(get_env_value "PROD_URL")

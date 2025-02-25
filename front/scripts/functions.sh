@@ -101,6 +101,7 @@ update_env() {
             fi
 
             case $param in
+
                 *PASSWORD*)
                     default_val="$(generate_random_string)"
                     ;;
@@ -146,6 +147,9 @@ update_cantaloupe_env() {
         esac
 
         new_value=$(prompt_user "$param" "$default_val" "$current_val")
+        # créer une fonction replace_value qui remplace sed -i -e
         sed -i "" -e "s~^$param=.*~$param=$new_value~" "$cantaloupe_env"
     done
 }
+
+SED_CMD=$([ $(get_os) = "Linux" ] && echo "sed -i -e" || echo "sed -i '' -e")
