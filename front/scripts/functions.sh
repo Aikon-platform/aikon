@@ -86,14 +86,14 @@ get_os() {
     echo "${os}"
 }
 
-# extract a value for an install_type parameter: quick_install | full_install, defaults to full_install
+# returns "quick_install"|"full_install", defaults to "full_install"
 get_install_type() {
     [ "$1" = "quick_install" ] && echo "$1" || echo "full_install"
 }
 
+# TODO delete update_env to keep only update_app_env (currently update_env) is only used in front/docker/init.sh
 update_env() {
     env_file=$1
-    # default_params=$([ -n "$2" ] && echo "$2" || echo "")  # parameters for which we'll use the default instead of prompting. empty array if undefined
 
     IFS=$'\n' read -d '' -r -a lines < "$env_file"  # Read file into array
     for line in "${lines[@]}"; do
@@ -127,7 +127,7 @@ update_env() {
     done
 }
 
-update_dotenv() {
+update_app_env() {
     env_file=$1
     front_dir=$2
     install_type=$(get_install_type "$3")
@@ -171,9 +171,13 @@ update_dotenv() {
 
 update_cantaloupe_env() {
 
+    install_type=$(get_install_type "$1")
+
     cantaloupe_env="$APP_ROOT"/cantaloupe/.env
     app_env="$APP_ROOT"/app/config/.env
     ordered_params=("BASE_URI" "FILE_SYSTEM_SOURCE" "HTTP_PORT" "HTTPS_PORT" "LOG_PATH")
+    default_params=("${ordered_params[@]}")  # so far, all params are default params
+
     for param in "${ordered_params[@]}"; do
         current_val=$(get_env_value "$param" "$cantaloupe_env")
 
@@ -182,7 +186,7 @@ update_cantaloupe_env() {
                 default_val="https://"$(get_env_value "PROD_URL" "$app_env")
                 ;;
             "FILE_SYSTEM_SOURCE")
-                default_val=$(get_env_value "MEDIA_DIR" "$app_env")"/img/"
+                default_val=$(get_env_value "MEDIA_DIR" "$app_env")"/img"
                 ;;
             "HTTP_PORT")
                 default_val=$(get_env_value "CANTALOUPE_PORT" "$app_env")
@@ -191,15 +195,18 @@ update_cantaloupe_env() {
                 default_val=$(get_env_value "CANTALOUPE_PORT_HTTPS" "$app_env")
                 ;;
             "LOG_PATH")
-                default_val="$APP_ROOT"/cantaloupe/
+                default_val="$APP_ROOT"/cantaloupe
                 ;;
             *)
                 default_val="$current_val"
                 ;;
         esac
 
-        new_value=$(prompt_user "$param" "$default_val" "$current_val")
-        # créer une fonction replace_value qui remplace sed -i -e
+        if [ "$install_type" = "quick_install" ] && [[ " ${default_params[*]} " =~ "$param" ]]; then
+            new_value="$default_val"
+        else
+            new_value=$(prompt_user "$param" "$default_val" "$current_val")
+        fi
         $SED_CMD "s~^$param=.*~$param=$new_value~" "$cantaloupe_env"
     done
 }

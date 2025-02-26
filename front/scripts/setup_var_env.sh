@@ -11,4 +11,4 @@ INSTALL_TYPE=$(get_install_type "$1")
 echoTitle "APP ENV GENERATION"
 
 cp "$APP_ENV".template "$APP_ENV"
-update_dotenv "$APP_ENV" "$FRONT_DIR" "$INSTALL_TYPE"
+update_app_env "$APP_ENV" "$FRONT_DIR" "$INSTALL_TYPE"
