@@ -86,8 +86,15 @@ get_os() {
     echo "${os}"
 }
 
+# extract a value for an install_type parameter: quick_install | full_install, defaults to full_install
+get_install_type() {
+    [ "$1" = "quick_install" ] && echo "$1" || echo "full_install"
+}
+
 update_env() {
     env_file=$1
+    # default_params=$([ -n "$2" ] && echo "$2" || echo "")  # parameters for which we'll use the default instead of prompting. empty array if undefined
+
     IFS=$'\n' read -d '' -r -a lines < "$env_file"  # Read file into array
     for line in "${lines[@]}"; do
         if [[ $line =~ ^[^#]*= ]]; then
@@ -114,6 +121,48 @@ update_env() {
             esac
 
             new_value=$(prompt_user "$param" "$default_val" "$current_val" "$desc")
+            $SED_CMD "s~^$param=.*~$param=$new_value~" "$env_file"
+        fi
+        prev_line="$line"
+    done
+}
+
+update_dotenv() {
+    env_file=$1
+    front_dir=$2
+    install_type=$(get_install_type "$3")
+
+    default_params=("APP_NAME" "APP_LANG" "DEBUG" "C_FORCE_ROOT" "MEDIA_DIR" "CONTACT_MAIL" "POSTGRES_DB" "POSTGRES_USER" "DB_HOST" "DB_PORT" "ALLOWED_HOSTS" "SAS_USERNAME" "SAS_PORT" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "REDIS_HOST" "REDIS_PORT" "REDIS_PASSWORD" "EMAIL_HOST" "EMAIL_HOST_USER" "APP_LOGO")
+
+    IFS=$'\n' read -d '' -r -a lines < "$env_file"  # Read file into array
+    for line in "${lines[@]}"; do
+        if [[ $line =~ ^[^#]*= ]]; then
+
+            # extract param and current value from .env
+            param=$(echo "$line" | cut -d'=' -f1)
+            current_val=$(get_env_value "$param" "$env_file")
+
+            # Extract description from previous line if it exists
+            desc=""
+            if [[ $prev_line =~ ^# ]]; then
+                desc=$(echo "$prev_line" | sed 's/^#\s*//')
+            fi
+
+            # get a default value
+            if [ "$param" = "MEDIA_DIR" ]; then
+                default_val="$front_dir"/mediafiles
+            elif [[ "$param" =~ ^.*(PASSWORD|SECRET).*$ ]]; then
+                default_val="$(generate_random_string)"
+            else
+                default_val="$current_val"
+            fi
+
+            # update the .env file, without prompting user if quick_install and the parameter name is part of $default_params
+            if [ "$install_type" = "quick_install" ] && [[ " ${default_params[*]} " =~ "$param" ]]; then
+                new_value="$default_val"
+            else
+                new_value=$(prompt_user "$param" "$default_val" "$current_val" "$desc")
+            fi
             $SED_CMD "s~^$param=.*~$param=$new_value~" "$env_file"
         fi
         prev_line="$line"
