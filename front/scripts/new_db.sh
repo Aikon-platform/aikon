@@ -63,7 +63,8 @@ $command -c "ALTER DATABASE $db_name OWNER TO $db_user;"
 # Set new database name in .env file
 sed -i '' -e "s/POSTGRES_DB=.*/POSTGRES_DB=$db_name/" "$APP_ROOT"/app/config/.env
 
-manage="$APP_ROOT/venv/bin/python $APP_ROOT/app/manage.py"
+python="$APP_ROOT/venv/bin/python"
+manage="$python $APP_ROOT/app/manage.py"
 
 create_superuser() {
 echo "from django.contrib.auth import get_user_model;

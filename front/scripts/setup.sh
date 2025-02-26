@@ -35,6 +35,15 @@ else
 fi
 
 options=("yes" "no")
+
+colorEcho blue "\nInstallation for development?"
+answer=$(printf "%s\n" "${options[@]}" | fzy)
+TARGET="dev"
+if [ "$answer" = "no" ]; then
+    TARGET="prod"
+fi
+
+
 colorEcho blue "\nInstall system packages?"
 answer=$(printf "%s\n" "${options[@]}" | fzy)
 
@@ -50,8 +59,9 @@ if [ "$answer" = "yes" ]; then
     echoTitle "VIRTUAL ENVIRONMENT SET UP"
     python3.10 -m venv venv
     source venv/bin/activate
+    pip install --upgrade pip
     pip install wheel>=0.45.1
-    pip install -r app/requirements-dev.txt
+    pip install -r app/requirements-$TARGET.txt
     pre-commit install
 fi
 

@@ -56,7 +56,7 @@ Set up virtual environment
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-pip install -r app/requirements-prod.txt
+pip install -r front/requirements-prod.txt
 ```
 
 ### Application
@@ -391,7 +391,7 @@ source ~/.bashrc   # to activate aliases
 
 To activate DEBUG in prod in order to see Django errors (instead of 500 errors)
 ```bash
-# install config/webapp/requirements-dev.txt
+# install front/requirements-dev.txt
 vi app/config/.env           # set DEBUG=True
 vi app/config/settings.py    # l.87 `if not DEBUG:` => `if DEBUG:`
 ```
