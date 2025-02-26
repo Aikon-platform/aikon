@@ -43,23 +43,24 @@ public class AnnotationUtils {
 	protected Encoder _encoder = null;
     protected JsonLdOptions _jsonLdOptions = null;
 
-    // Called by servlet
-    public AnnotationUtils(final File pContextsDir, final Encoder pEncoder) {
+    public AnnotationUtils(final File pContextDir, final Encoder pEncoder) {
         try {
-            _contextDir = StoreConfig.getConfig().getRealPath("/contexts"); // pContextDir;
-            _encoder = StoreConfig.getConfig().getEncoder();
-        } catch (javax.servlet.ServletException tExcpt) {
-            // tExcpt.printStackTrace();
-        }
-    }
+            if (StoreConfig.getConfig() != null) {
+                // For servlet context
+                _contextDir = StoreConfig.getConfig().getRealPath("/contexts");
+                _encoder = StoreConfig.getConfig().getEncoder();
+            } else {
+                // For test context
+                _contextDir = pContextDir;
+                _encoder = pEncoder;
+            }
 
-    // Called by tests
-	public AnnotationUtils(final File pContextDir, final Encoder pEncoder) {
-        _contextDir = pContextDir;
-        _encoder = pEncoder;
-        _jsonLdOptions = new JsonLdOptions();
-        _jsonLdOptions.setDocumentLoader(new LocalContextLoader(pContextDir));
-        _logger.info("AnnotationUtils initialized with contexts directory: " + pContextDir.getAbsolutePath());
+            _jsonLdOptions = new JsonLdOptions();
+            _jsonLdOptions.setDocumentLoader(new LocalContextLoader(_contextDir));
+            _logger.info("AnnotationUtils initialized with contexts directory: " + _contextDir.getAbsolutePath());
+        } catch (javax.servlet.ServletException tExcpt) {
+            _logger.error("Failed to initialize AnnotationUtils", tExcpt);
+        }
     }
 
     // No-argument constructor for use in AnnotationList, RDFManifest, etc.
