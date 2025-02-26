@@ -26,21 +26,26 @@ public class LocalContextLoader extends DocumentLoader {
     }
 
     @Override
-    public RemoteDocument loadDocument(String url) throws Exception {
-        String localFile = contextMappings.get(url);
-        if (localFile != null) {
-            File contextFile = new File(contextsDir, localFile);
-            if (contextFile.exists()) {
-                _logger.info("Loading context from local file: " + contextFile.getAbsolutePath());
-                try (FileInputStream fis = new FileInputStream(contextFile)) {
-                    Object document = JsonUtils.fromInputStream(fis);
-                    return new RemoteDocument(url, document);
+    public RemoteDocument loadDocument(String url) {
+        try {
+            String localFile = contextMappings.get(url);
+            if (localFile != null) {
+                File contextFile = new File(contextsDir, localFile);
+                if (contextFile.exists()) {
+                    _logger.info("Loading context from local file: " + contextFile.getAbsolutePath());
+                    try (FileInputStream fis = new FileInputStream(contextFile)) {
+                        Object document = JsonUtils.fromInputStream(fis);
+                        return new RemoteDocument(url, document);
+                    }
+                } else {
+                    _logger.warn("Local context file not found: " + contextFile.getAbsolutePath() + ", falling back to remote URL");
                 }
-            } else {
-                _logger.warn("Local context file not found: " + contextFile.getAbsolutePath() + ", falling back to remote URL");
             }
+            _logger.info("Loading context from remote URL: " + url);
+            return super.loadDocument(url);
+        } catch (Exception e) {
+            _logger.error("Error loading document: " + e.getMessage(), e);
+            throw new RuntimeException("Error loading document: " + e.getMessage(), e);
         }
-        _logger.info("Loading context from remote URL: " + url);
-        return super.loadDocument(url);
     }
 }

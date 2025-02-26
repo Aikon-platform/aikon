@@ -44,7 +44,7 @@ public class AnnotationUtils {
     protected JsonLdOptions _jsonLdOptions = null;
 
     // Called by servlet
-    public AnnotationUtils(final File pContextDir, final Encoder pEncoder) {
+    public AnnotationUtils(final File pContextsDir, final Encoder pEncoder) {
         try {
             _contextDir = StoreConfig.getConfig().getRealPath("/contexts"); // pContextDir;
             _encoder = StoreConfig.getConfig().getEncoder();
@@ -60,6 +60,18 @@ public class AnnotationUtils {
         _jsonLdOptions = new JsonLdOptions();
         _jsonLdOptions.setDocumentLoader(new LocalContextLoader(pContextDir));
         _logger.info("AnnotationUtils initialized with contexts directory: " + pContextDir.getAbsolutePath());
+    }
+
+    // No-argument constructor for use in AnnotationList, RDFManifest, etc.
+    public AnnotationUtils() {
+        try {
+            _contextDir = StoreConfig.getConfig().getRealPath("/contexts");
+            _encoder = StoreConfig.getConfig().getEncoder();
+            _jsonLdOptions = new JsonLdOptions();
+            _jsonLdOptions.setDocumentLoader(new LocalContextLoader(_contextDir));
+        } catch (javax.servlet.ServletException tExcpt) {
+            _logger.error("Failed to initialize AnnotationUtils", tExcpt);
+        }
     }
 
     public JsonLdOptions getJsonLdOptions() {
