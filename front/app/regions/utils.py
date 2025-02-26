@@ -67,7 +67,6 @@ def process_results(data, completed=True):
 
     for digit_annotations in output.get("results_url", []):
         # digit_annotations is supposed to be {doc.uid: result_url}
-        log(digit_annotations)
         digit_ref, annotation_url = next(iter(digit_annotations.items()))
         digit_id = parse_ref(digit_ref)["digit"][1]
         try:

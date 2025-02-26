@@ -39,8 +39,6 @@ def get_manifest_annotations(
             response = requests.get(next_page)
             annotations = response.json()
 
-            log(annotations)
-
             if response.status_code != 200:
                 log(
                     f"[get_manifest_annotations] Failed to get annotations from SAS for {regions_ref}: {response.status_code}"
@@ -153,8 +151,6 @@ def get_regions_annotations(
                     f"[get_regions_annotations] Failed to parse canvas value '{canvas}' for annotation {on_value}"
                 )
                 continue
-
-            log(f"{canvas}")
 
             # Stop once max_c is reached
             # DO NOT WORK since the annotations are sorted ALPHABETICALLY by canvas number
