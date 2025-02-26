@@ -49,8 +49,6 @@ if [ -n "$redis_psw" ]; then
             "no")
                 redis_set_no_password
                 ;;
-            *)
-                ;;
         esac
 
     fi
