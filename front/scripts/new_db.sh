@@ -62,7 +62,6 @@ update_user() {
 
 # check if the user $db_user already exists. if it exists, update its pw to match the .env. if it doesn't exist, create it
 is_user=$($command -tc "SELECT 1 FROM pg_roles WHERE rolname='$db_user'" | xargs)
-echo "****** $is_user"
 if [ "$is_user" != "1" ]; then
     create_user
 else
