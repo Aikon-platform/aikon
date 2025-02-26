@@ -59,8 +59,6 @@ run_script setup_cantaloupe.sh "Cantaloupe configuration" "$INSTALL_TYPE"
 run_script setup_db.sh "Database generation" "$INSTALL_TYPE"
 run_script setup_webpack.sh "Webpack initialization" "$INSTALL_TYPE"
 run_script setup_redis.sh "Redis password configuration" "$INSTALL_TYPE"
-echo "that's all for now"
-exit 1
 # run_script setup_sas.sh "SAS initialization" "$INSTALL_TYPE"
 
 echoTitle "🎉 ALL SET UP! 🎉"
