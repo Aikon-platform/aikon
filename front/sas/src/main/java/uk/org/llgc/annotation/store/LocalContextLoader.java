@@ -1,5 +1,6 @@
 package uk.org.llgc.annotation.store;
 
+import com.github.jsonldjava.core.RemoteDocument;
 import com.github.jsonldjava.core.DocumentLoader;
 import com.github.jsonldjava.utils.JsonUtils;
 import org.apache.logging.log4j.LogManager;
@@ -25,14 +26,15 @@ public class LocalContextLoader extends DocumentLoader {
     }
 
     @Override
-    public Object loadDocument(String url) throws Exception {
+    public RemoteDocument loadDocument(String url) throws Exception {
         String localFile = contextMappings.get(url);
         if (localFile != null) {
             File contextFile = new File(contextsDir, localFile);
             if (contextFile.exists()) {
                 _logger.info("Loading context from local file: " + contextFile.getAbsolutePath());
                 try (FileInputStream fis = new FileInputStream(contextFile)) {
-                    return JsonUtils.fromInputStream(fis);
+                    Object document = JsonUtils.fromInputStream(fis);
+                    return new RemoteDocument(url, document);
                 }
             } else {
                 _logger.warn("Local context file not found: " + contextFile.getAbsolutePath() + ", falling back to remote URL");

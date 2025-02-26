@@ -44,7 +44,7 @@ public class AnnotationUtils {
     protected JsonLdOptions _jsonLdOptions = null;
 
     // Called by servlet
-    public AnnotationUtils(final File pContextsDir, final Encoder pEncoder) {
+    public AnnotationUtils(final File pContextDir, final Encoder pEncoder) {
         try {
             _contextDir = StoreConfig.getConfig().getRealPath("/contexts"); // pContextDir;
             _encoder = StoreConfig.getConfig().getEncoder();
@@ -55,11 +55,11 @@ public class AnnotationUtils {
 
     // Called by tests
 	public AnnotationUtils(final File pContextDir, final Encoder pEncoder) {
-        _contextDir = pContextsDir;
+        _contextDir = pContextDir;
         _encoder = pEncoder;
         _jsonLdOptions = new JsonLdOptions();
-        _jsonLdOptions.setDocumentLoader(new LocalContextLoader(pContextsDir));
-        _logger.info("AnnotationUtils initialized with contexts directory: " + pContextsDir.getAbsolutePath());
+        _jsonLdOptions.setDocumentLoader(new LocalContextLoader(pContextDir));
+        _logger.info("AnnotationUtils initialized with contexts directory: " + pContextDir.getAbsolutePath());
     }
 
     public JsonLdOptions getJsonLdOptions() {
