@@ -17,7 +17,7 @@ run_script() {
     case $answer in
         "yes")
             # only pass $install_type to $scrit_name if $script_name is in $pass_install_type
-            pass_install_type=("setup_var_env.sh" "setup_cantaloupe.sh")
+            pass_install_type=("setup_var_env.sh" "setup_cantaloupe.sh" "setup_redis.sh")
             extra_param=$([[ " ${pass_install_type[*]} " =~ "$script_name" ]] && echo "$install_type" || echo "" )
 
             bash "$SCRIPT_DIR/$script_name" "$extra_param" \
@@ -57,10 +57,10 @@ run_script setup_venv.sh "Virutal environment initialization" "$INSTALL_TYPE"
 run_script setup_var_env.sh "Environment variables configuration" "$INSTALL_TYPE"
 run_script setup_cantaloupe.sh "Cantaloupe configuration" "$INSTALL_TYPE"
 run_script setup_db.sh "Database generation" "$INSTALL_TYPE"
-echo "that's all for now"
-exit 1
 run_script setup_webpack.sh "Webpack initialization" "$INSTALL_TYPE"
 run_script setup_redis.sh "Redis password configuration" "$INSTALL_TYPE"
+echo "that's all for now"
+exit 1
 # run_script setup_sas.sh "SAS initialization" "$INSTALL_TYPE"
 
 echoTitle "🎉 ALL SET UP! 🎉"
