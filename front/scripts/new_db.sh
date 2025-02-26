@@ -11,6 +11,8 @@ APP_ROOT="$(dirname "$SCRIPT_DIR")"
 
 source "$SCRIPT_DIR"/functions.sh
 
+APP_ENV="$APP_ROOT"/app/config/.env
+
 case "$(get_os)" in
     Linux)
         command="sudo -i -u postgres psql"
@@ -54,10 +56,17 @@ create_user() {
     done;
 }
 
-# check if the user $db_user already exists, if not, create it
+update_user() {
+    $command -c "ALTER USER $db_user WITH PASSWORD '$db_psw';"
+}
+
+# check if the user $db_user already exists. if it exists, update its pw to match the .env. if it doesn't exist, create it
 is_user=$($command -tc "SELECT 1 FROM pg_roles WHERE rolname='$db_user'" | xargs)
+echo "****** $is_user"
 if [ "$is_user" != "1" ]; then
     create_user
+else
+    update_user
 fi
 
 # check if the database $db_name already exists, if so, drop it
@@ -86,8 +95,14 @@ if [ -z "$db_sql_file" ]; then
     $manage migrate
 
     # create superuser
-    $manage createsuperuser --username="$db_user" --email="$CONTACT_MAIL"
-#     echo "from django.contrib.auth.models import User; User.objects.create_superuser('$db_user', '$CONTACT_MAIL', '$POSTGRES_PASSWORD')" | $manage shell
+    export DJANGO_SUPERUSER_USERNAME
+    DJANGO_SUPERUSER_USERNAME=$(get_env_value "POSTGRES_USER" "$APP_ENV")
+    export DJANGO_SUPERUSER_EMAIL
+    DJANGO_SUPERUSER_EMAIL=$(get_env_value "CONTACT_MAIL" "$APP_ENV")
+    export DJANGO_SUPERUSER_PASSWORD
+    DJANGO_SUPERUSER_PASSWORD=$(get_env_value "POSTGRES_PASSWORD" "$APP_ENV")
+    $manage createsuperuser --noinput
+    # $manage createsuperuser --username="$db_user" --email="$CONTACT_MAIL"
 else
     psql -h localhost -d "$db_name" -U "$db_user" -f "$db_sql_file" || echo "‼️ Failed to import SQL data ‼️"
 fi

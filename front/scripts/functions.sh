@@ -153,6 +153,9 @@ update_app_env() {
                 default_val="$front_dir"/mediafiles
             elif [[ "$param" =~ ^.*(PASSWORD|SECRET).*$ ]]; then
                 default_val="$(generate_random_string)"
+            elif [ "$param" = "EMAIL_HOST_USER" ]; then
+                app_name=$(get_env_value "APP_NAME" "$env_file")
+                default_val=$([ -n "$app_name" ] && echo "$app_name@gmail.com" || echo "$current_val")
             else
                 default_val="$current_val"
             fi
