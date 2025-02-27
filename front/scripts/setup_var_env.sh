@@ -8,7 +8,7 @@ source "$SCRIPT_DIR"/functions.sh;
 
 INSTALL_TYPE=$(get_install_type "$1")
 
-echoTitle "APP ENV GENERATION"
+echo_title "APP ENV GENERATION"
 
 cp "$APP_ENV".template "$APP_ENV"
 update_app_env "$APP_ENV" "$FRONT_DIR" "$INSTALL_TYPE"

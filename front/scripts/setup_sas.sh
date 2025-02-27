@@ -12,7 +12,7 @@ sas_user=$(get_env_value "SAS_USERNAME" "$APP_ENV")
 options=("yes" "no")
 
 if [ -n "$sas_psw" ]; then
-    colorEcho blue "\nYou defined a password for SAS in $APP_ENV. Do you want to secure SAS with it (not necessary on local)?"
+    color_echo blue "\nYou defined a password for SAS in $APP_ENV. Do you want to secure SAS with it (not necessary on local)?"
     answer=$(printf "%s\n" "${options[@]}" | fzy)
     case $answer in
         "yes")

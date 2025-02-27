@@ -8,7 +8,7 @@ source "$SCRIPT_DIR"/functions.sh
 
 INSTALL_TYPE=$(get_install_type "$1")
 
-echoTitle "REDIS DATABASE INITIALIZATION"
+echo_title "REDIS DATABASE INITIALIZATION"
 
 redis_psw=$(get_env_value "REDIS_PASSWORD" "$APP_ENV")
 options=("yes" "no")
@@ -40,7 +40,7 @@ if [ -n "$redis_psw" ]; then
     if [ "$INSTALL_TYPE" = "quick_install" ]; then
         redis_set_no_password
     else
-        colorEcho blue "\nYou defined a redis password in $APP_ENV. Do you want to secure redis with it (not necessary on local)?"
+        color_echo blue "\nYou defined a redis password in $APP_ENV. Do you want to secure redis with it (not necessary on local)?"
         answer=$(printf "%s\n" "${options[@]}" | fzy)
         case $answer in
             "yes")

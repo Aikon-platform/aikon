@@ -3,7 +3,7 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"
 
-colorEcho() {
+color_echo() {
     Color_Off="\033[0m"
     Red="\033[1;91m"        # Red
     Green="\033[1;92m"      # Green
@@ -23,7 +23,7 @@ colorEcho() {
     esac
 }
 
-echoTitle(){
+echo_title(){
     sep_line="========================================"
     len_title=${#1}
 
@@ -42,7 +42,7 @@ echoTitle(){
         fi
     fi
 
-    colorEcho purple "\n\n$sep_line\n$title\n$sep_line"
+    color_echo purple "\n\n$sep_line\n$title\n$sep_line"
 }
 
 generate_random_string() {
@@ -50,15 +50,15 @@ generate_random_string() {
 }
 
 prompt_user() {
-    env_var=$(colorEcho 'red' "$1")
+    env_var=$(color_echo 'red' "$1")
     default_val="$2"
     current_val="$3"
     desc="$4"
 
     if [ "$2" != "$3" ]; then
-        default="Press enter for $(colorEcho 'cyan' "$default_val")"
+        default="Press enter for $(color_echo 'cyan' "$default_val")"
     elif [ -n "$current_val" ]; then
-        default="Press enter to keep $(colorEcho 'cyan' "$current_val")"
+        default="Press enter to keep $(color_echo 'cyan' "$current_val")"
         default_val=$current_val
     fi
 

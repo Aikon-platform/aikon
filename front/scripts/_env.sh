@@ -12,12 +12,12 @@ MEDIA_DIR="$APP_ROOT/app/mediafiles"
 
 # not the same as functions/prompt_user
 prompt_user() {
-    env_var=$(colorEcho 'red' "$1")
+    env_var=$(color_echo 'red' "$1")
     default_val="$2"
     if [ "$2" = "$3" ]; then
         default="Enter value"
     else
-        default="Press enter for $(colorEcho 'cyan' "$2")"
+        default="Press enter for $(color_echo 'cyan' "$2")"
     fi
 
     read -p "$env_var ($3)"$'\n'"$default: " value

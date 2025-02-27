@@ -6,7 +6,7 @@ APP_DIR="$FRONT_DIR"/app
 
 source "$SCRIPT_DIR"/functions.sh
 
-echoTitle "VIRTUAL ENVIRONMENT SET UP"
+echo_title "VIRTUAL ENVIRONMENT SET UP"
 
 cd "$FRONT_DIR"
 python3.10 -m venv venv

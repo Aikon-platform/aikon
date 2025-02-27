@@ -7,7 +7,7 @@ source "$SCRIPT_DIR"/functions.sh
 
 INSTALL_TYPE=$(get_install_type "$1")
 
-echoTitle "CANTALOUPE ENV GENERATION"
+echo_title "CANTALOUPE ENV GENERATION"
 
 CANTALOUPE_ENV_FILE="$FRONT_DIR"/cantaloupe/.env
 cp "$CANTALOUPE_ENV_FILE".template "$CANTALOUPE_ENV_FILE"

@@ -19,11 +19,11 @@ install_packages() {
             brew services start redis
             ;;
         *)
-            colorEcho red "Unsupported OS: $OS"
+            color_echo red "Unsupported OS: $OS"
             exit 1
             ;;
     esac
 }
 
-echoTitle "SYSTEM PACKAGES INSTALL"
+echo_title "SYSTEM PACKAGES INSTALL"
 install_packages
