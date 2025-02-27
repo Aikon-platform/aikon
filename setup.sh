@@ -3,12 +3,9 @@
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 AIKON_DIR="$ROOT_DIR/front"
 API_DIR="$ROOT_DIR/api"
-AIKON_SCRIPT_DIR="$AIKON_DIR/scripts"
 
 AIKON_SETUP="$AIKON_DIR/scripts/setup.sh"
 API_SETUP="$API_DIR/setup.sh"
-
-source "$AIKON_SCRIPT_DIR/functions.sh"
 
 git submodule init
 git submodule update
