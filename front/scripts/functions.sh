@@ -86,9 +86,42 @@ get_os() {
     echo "${os}"
 }
 
+export OS
+OS=$(get_os)
+
 # returns "quick_install"|"full_install", defaults to "full_install"
 get_install_type() {
     [ "$1" = "quick_install" ] && echo "$1" || echo "full_install"
+}
+
+# inline replacement in file $file with sed expression $sed_expr
+# `sed -i` can't be used in the same way with Linux and Max: it's `sed -i` on Linux, `sed -i ""` on Mac.
+# we must define the sed variants as functions and can't just store the variants as strings because this
+# messes up word splitting and quoting (especially when using `sudo "$sed_command_as_string"`).
+# instead, we define a function that takes an expression and a file and runs the replacement.
+# see: https://unix.stackexchange.com/a/444949
+sed_repl_inplace() {
+    sed_expr="$1"
+    file="$2"
+
+    if [ "$(get_os)" = "Linux" ]; then
+        sed -i -e "$sed_expr" "$file"
+    else
+        sed -i "" -e "$sed_expr" "$file"
+    fi
+}
+
+# sudo does not inherit from bash functions so this is a copy of
+# "bash_repl_inplace" with sudo privileges (see: https://stackoverflow.com/a/9448969)
+sudo_sed_repl_inplace() {
+    sed_expr="$1"
+    file="$2"
+
+    if [ "$(get_os)" = "Linux" ]; then
+        sed -i -e "$sed_expr" "$file"
+    else
+        sed -i "" -e "$sed_expr" "$file"
+    fi
 }
 
 # TODO delete update_env to keep only update_app_env (currently update_env) is only used in front/docker/init.sh
@@ -121,7 +154,7 @@ update_env() {
             esac
 
             new_value=$(prompt_user "$param" "$default_val" "$current_val" "$desc")
-            $SED_CMD "s~^$param=.*~$param=$new_value~" "$env_file"
+            sed_repl_inplace "s~^$param=.*~$param=$new_value~" "$env_file"
         fi
         prev_line="$line"
     done
@@ -166,7 +199,7 @@ update_app_env() {
             else
                 new_value=$(prompt_user "$param" "$default_val" "$current_val" "$desc")
             fi
-            $SED_CMD "s~^$param=.*~$param=$new_value~" "$env_file"
+            sed_repl_inplace "s~^$param=.*~$param=$new_value~" "$env_file"
         fi
         prev_line="$line"
     done
@@ -210,11 +243,6 @@ update_cantaloupe_env() {
         else
             new_value=$(prompt_user "$param" "$default_val" "$current_val")
         fi
-        $SED_CMD "s~^$param=.*~$param=$new_value~" "$cantaloupe_env"
+        sed_repl_inplace "s~^$param=.*~$param=$new_value~" "$cantaloupe_env"
     done
 }
-
-SED_CMD=$([ "$(get_os)" = "Linux" ] && echo "sed -i -e" || echo "sed -i -e ''")
-
-export OS
-OS=$(get_os)

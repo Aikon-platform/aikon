@@ -15,8 +15,8 @@ options=("yes" "no")
 
 redis_set_password() {
     redis_conf=$(redis-cli INFO | grep config_file | awk -F: '{print $2}' | tr -d '[:space:]')
-    sudo "$SED_CMD" "s/^requirepass [^ ]*/requirepass $redis_psw/" "$redis_conf"
-    sudo "$SED_CMD" "s/# requirepass [^ ]*/requirepass $redis_psw/" "$redis_conf"
+    sudo_sed_repl_inplace "s/^requirepass [^ ]*/requirepass $redis_psw/" "$redis_conf"
+    sudo_sed_repl_inplace "s/# requirepass [^ ]*/requirepass $redis_psw/" "$redis_conf"
     case $OS in
         "Linux")
             sudo systemctl restart redis-server
@@ -31,8 +31,8 @@ redis_set_password() {
 
 redis_set_no_password() {
     redis_conf=$(redis-cli INFO | grep config_file | awk -F: '{print $2}' | tr -d '[:space:]')
-    $SED_CMD "s~^REDIS_PASSWORD=.*~REDIS_PASSWORD=~" "$APP_ENV"
-    sudo $SED_CMD "s/^requirepass [^ ]*/# requirepass $redis_psw/" "$redis_conf"
+    sed_repl_inplace "s~^REDIS_PASSWORD=.*~REDIS_PASSWORD=~" "$APP_ENV"
+    sudo_sed_repl_inplace "s/^requirepass [^ ]*/# requirepass $redis_psw/" "$redis_conf"
 }
 
 # only runs if a redis password is defined

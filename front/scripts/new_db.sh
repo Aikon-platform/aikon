@@ -79,7 +79,7 @@ $command -c "GRANT ALL PRIVILEGES ON DATABASE $db_name TO $db_user;"
 $command -c "ALTER DATABASE $db_name OWNER TO $db_user;"
 
 # Set new database name in .env file
-$SED_CMD "s/POSTGRES_DB=.*/POSTGRES_DB=$db_name/" "$APP_ROOT"/app/config/.env
+sed_repl_inplace "s/POSTGRES_DB=.*/POSTGRES_DB=$db_name/" "$APP_ROOT"/app/config/.env
 
 manage="$APP_ROOT/venv/bin/python $APP_ROOT/app/manage.py"
 

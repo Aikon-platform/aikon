@@ -31,7 +31,7 @@ if [ -n "$sas_psw" ]; then
                 esac
             ;;
         "no")
-            $SED_CMD "s~^SAS_PASSWORD=.*~SAS_PASSWORD=~" "$APP_ENV"
+            sed_repl_inplace "s~^SAS_PASSWORD=.*~SAS_PASSWORD=~" "$APP_ENV"
             ;;
         *)
             ;;
