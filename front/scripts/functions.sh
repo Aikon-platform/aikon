@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/bin/env bash
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"
 
-colorEcho() {
+color_echo() {
     Color_Off="\033[0m"
     Red="\033[1;91m"        # Red
     Green="\033[1;92m"      # Green
@@ -23,7 +23,7 @@ colorEcho() {
     esac
 }
 
-echoTitle(){
+echo_title(){
     sep_line="========================================"
     len_title=${#1}
 
@@ -42,23 +42,24 @@ echoTitle(){
         fi
     fi
 
-    colorEcho purple "\n\n$sep_line\n$title\n$sep_line"
+    color_echo purple "\n\n$sep_line\n$title\n$sep_line"
 }
 
+# the sed at the end removes trailing non-alphanumeric chars.
 generate_random_string() {
-    echo "$(openssl rand -base64 32 | tr -d '/\n')"
+    echo "$(openssl rand -base64 32 | tr -d '/\n' | sed -r -e "s/[^a-zA-Z0-9]+$//")"
 }
 
 prompt_user() {
-    env_var=$(colorEcho 'red' "$1")
+    env_var=$(color_echo 'red' "$1")
     default_val="$2"
     current_val="$3"
     desc="$4"
 
     if [ "$2" != "$3" ]; then
-        default="Press enter for $(colorEcho 'cyan' "$default_val")"
+        default="Press enter for $(color_echo 'cyan' "$default_val")"
     elif [ -n "$current_val" ]; then
-        default="Press enter to keep $(colorEcho 'cyan' "$current_val")"
+        default="Press enter to keep $(color_echo 'cyan' "$current_val")"
         default_val=$current_val
     fi
 
@@ -86,8 +87,48 @@ get_os() {
     echo "${os}"
 }
 
+export OS
+OS=$(get_os)
+
+# returns "quick_install"|"full_install", defaults to "full_install"
+get_install_type() {
+    [ "$1" = "quick_install" ] && echo "$1" || echo "full_install"
+}
+
+# inline replacement in file $file with sed expression $sed_expr
+# `sed -i` can't be used in the same way with Linux and Max: it's `sed -i` on Linux, `sed -i ""` on Mac.
+# we must define the sed variants as functions and can't just store the variants as strings because this
+# messes up word splitting and quoting (especially when using `sudo "$sed_command_as_string"`).
+# instead, we define a function that takes an expression and a file and runs the replacement.
+# see: https://unix.stackexchange.com/a/444949
+sed_repl_inplace() {
+    sed_expr="$1"
+    file="$2"
+
+    if [ "$(get_os)" = "Linux" ]; then
+        sed -i -e "$sed_expr" "$file"
+    else
+        sed -i "" -e "$sed_expr" "$file"
+    fi
+}
+
+# sudo does not inherit from bash functions so this is a copy of
+# "bash_repl_inplace" with sudo privileges (see: https://stackoverflow.com/a/9448969)
+sudo_sed_repl_inplace() {
+    sed_expr="$1"
+    file="$2"
+
+    if [ "$(get_os)" = "Linux" ]; then
+        sudo sed -i -e "$sed_expr" "$file"
+    else
+        sudo sed -i "" -e "$sed_expr" "$file"
+    fi
+}
+
+# TODO delete update_env to keep only update_app_env (currently update_env) is only used in front/docker/init.sh
 update_env() {
     env_file=$1
+
     IFS=$'\n' read -d '' -r -a lines < "$env_file"  # Read file into array
     for line in "${lines[@]}"; do
         if [[ $line =~ ^[^#]*= ]]; then
@@ -101,6 +142,7 @@ update_env() {
             fi
 
             case $param in
+
                 *PASSWORD*)
                     default_val="$(generate_random_string)"
                     ;;
@@ -113,39 +155,95 @@ update_env() {
             esac
 
             new_value=$(prompt_user "$param" "$default_val" "$current_val" "$desc")
-            sed -i "" -e "s~^$param=.*~$param=$new_value~" "$env_file"
+            sed_repl_inplace "s~^$param=.*~$param=$new_value~" "$env_file"
+        fi
+        prev_line="$line"
+    done
+}
+
+update_app_env() {
+    env_file=$1
+    front_dir=$2
+    install_type=$(get_install_type "$3")
+
+    default_params=("APP_NAME" "APP_LANG" "DEBUG" "C_FORCE_ROOT" "MEDIA_DIR" "CONTACT_MAIL" "POSTGRES_DB" "POSTGRES_USER" "DB_HOST" "DB_PORT" "ALLOWED_HOSTS" "SAS_USERNAME" "SAS_PORT" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "REDIS_HOST" "REDIS_PORT" "REDIS_PASSWORD" "EMAIL_HOST" "EMAIL_HOST_USER" "APP_LOGO")
+
+    IFS=$'\n' read -d '' -r -a lines < "$env_file"  # Read file into array
+    for line in "${lines[@]}"; do
+        if [[ $line =~ ^[^#]*= ]]; then
+
+            # extract param and current value from .env
+            param=$(echo "$line" | cut -d'=' -f1)
+            current_val=$(get_env_value "$param" "$env_file")
+
+            # Extract description from previous line if it exists
+            desc=""
+            if [[ $prev_line =~ ^# ]]; then
+                desc=$(echo "$prev_line" | sed 's/^#\s*//')
+            fi
+
+            # get a default value
+            if [ "$param" = "MEDIA_DIR" ]; then
+                default_val="$front_dir"/mediafiles
+            elif [[ "$param" =~ ^.*(PASSWORD|SECRET).*$ ]]; then
+                default_val="$(generate_random_string)"
+            elif [ "$param" = "EMAIL_HOST_USER" ]; then
+                app_name=$(get_env_value "APP_NAME" "$env_file")
+                default_val=$([ -n "$app_name" ] && echo "$app_name@gmail.com" || echo "$current_val")
+            else
+                default_val="$current_val"
+            fi
+
+            # update the .env file, without prompting user if quick_install and the parameter name is part of $default_params
+            if [ "$install_type" = "quick_install" ] && [[ " ${default_params[*]} " =~ "$param" ]]; then
+                new_value="$default_val"
+            else
+                new_value=$(prompt_user "$param" "$default_val" "$current_val" "$desc")
+            fi
+            sed_repl_inplace "s~^$param=.*~$param=$new_value~" "$env_file"
         fi
         prev_line="$line"
     done
 }
 
 update_cantaloupe_env() {
+
+    install_type=$(get_install_type "$1")
+
     cantaloupe_env="$APP_ROOT"/cantaloupe/.env
+    app_env="$APP_ROOT"/app/config/.env
     ordered_params=("BASE_URI" "FILE_SYSTEM_SOURCE" "HTTP_PORT" "HTTPS_PORT" "LOG_PATH")
+    default_params=("${ordered_params[@]}")  # so far, all params are default params
+
     for param in "${ordered_params[@]}"; do
         current_val=$(get_env_value "$param" "$cantaloupe_env")
+
         case $param in
             "BASE_URI")
-                default_val="https://"$(get_env_value "PROD_URL" "$APP_ENV")
+                default_val="https://"$(get_env_value "PROD_URL" "$app_env")
                 ;;
             "FILE_SYSTEM_SOURCE")
-                default_val=$(get_env_value "MEDIA_DIR" "$APP_ENV")"/img/"
+                default_val=$(get_env_value "MEDIA_DIR" "$app_env")"/img"
                 ;;
             "HTTP_PORT")
-                default_val=$(get_env_value "CANTALOUPE_PORT" "$APP_ENV")
+                default_val=$(get_env_value "CANTALOUPE_PORT" "$app_env")
                 ;;
             "HTTPS_PORT")
-                default_val=$(get_env_value "CANTALOUPE_PORT_HTTPS" "$APP_ENV")
+                default_val=$(get_env_value "CANTALOUPE_PORT_HTTPS" "$app_env")
                 ;;
             "LOG_PATH")
-                default_val="$APP_ROOT"/cantaloupe/
+                default_val="$APP_ROOT"/cantaloupe
                 ;;
             *)
                 default_val="$current_val"
                 ;;
         esac
 
-        new_value=$(prompt_user "$param" "$default_val" "$current_val")
-        sed -i "" -e "s~^$param=.*~$param=$new_value~" "$cantaloupe_env"
+        if [ "$install_type" = "quick_install" ] && [[ " ${default_params[*]} " =~ "$param" ]]; then
+            new_value="$default_val"
+        else
+            new_value=$(prompt_user "$param" "$default_val" "$current_val")
+        fi
+        sed_repl_inplace "s~^$param=.*~$param=$new_value~" "$cantaloupe_env"
     done
 }

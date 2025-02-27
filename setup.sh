@@ -12,22 +12,12 @@ git submodule update
 
 # TODO create accelerate setup script to define only important env variables
 
-colorEcho() {
-    Color_Off="\033[0m"
-    Red="\033[1;91m"        # Red
-    Green="\033[1;92m"      # Green
-    Blue="\033[1;94m"       # Blue
-    Purple="\033[1;95m"     # Purple
+echo_title "AIKON BUNDLE INSTALL"
 
-    case "$1" in
-        "green") echo -e "$Green$2$Color_Off";;
-        "red") echo -e "$Red$2$Color_Off";;
-        "blue") echo -e "$Blue$2$Color_Off";;
-        "purple") echo -e "$Purple$2$Color_Off";;
-        *) echo "$2";;
-    esac
-}
+color_echo green "AIKON installation..."
+cd "$AIKON_DIR";
 
+<<<<<<< HEAD
 echoTitle(){
     sep_line="========================================"
     len_title=${#1}
@@ -57,18 +47,38 @@ colorEcho green "AIKON installation..."
 
 colorEcho green "API installation..."
 (cd "$API_DIR" && bash "$API_SETUP")||colorEcho red "API setup encountered an error" && exit 1
+=======
+if ! bash "$AIKON_SETUP"; then
+    color_echo red "AIKON setup encountered an error"
+    exit 1
+fi
+
+color_echo green "API installation..."
+cd "$API_DIR"
+
+if ! bash "$API_SETUP"; then
+    color_echo red "API setup encountered an error"
+    exit 1
+fi
+>>>>>>> main
 
 # replace CV_API_URL in aikon/.env by localhost:discover-api/.env.dev => $API_DEV_PORT
 api_port=$(grep "API_DEV_PORT" "$API_DIR/.env.dev" | cut -d'=' -f2)
 api_url=http://localhost:$(echo "$api_port" | tr -d '"')
 sed -i "" -e "s~^CV_API_URL=.*~CV_API_URL=$api_url~" "$AIKON_DIR/app/config/.env"
 
+<<<<<<< HEAD
 echoTitle "🎉 SETUP COMPLETE! 🎉"
 colorEcho blue "\nYou can now run the app and API with: "
 colorEcho green "              bash run.sh"
+=======
+echo_title "🎉 AIKON & DISCOVER ARE SET UP! 🎉"
+color_echo blue "\nYou can now run the app and API with: "
+color_echo green "              bash run.sh"
+>>>>>>> main
 
 user=$(grep "POSTGRES_USER" "$AIKON_DIR/app/config/.env" | cut -d'=' -f2)
 password=$(grep "POSTGRES_PASSWORD" "$AIKON_DIR/app/config/.env" | cut -d'=' -f2)
-colorEcho blue '\nConnect to app using:'
+color_echo blue '\nConnect to app using:'
 echo -e "          👤 $user"
 echo -e "          🔑 $password"

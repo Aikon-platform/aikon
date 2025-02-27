@@ -40,7 +40,8 @@ packaging==21.3
 pdf2image==1.16.2
 pikepdf==6.2.0
 Pillow>=10.3.0
-psycopg2==2.9.3
+#psycopg2==2.9.3
+psycopg2-binary==2.9.10
 pycparser==2.21
 PyLD==2.0.3
 pyparsing==3.0.9
