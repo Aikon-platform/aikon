@@ -11,7 +11,9 @@ APP_ROOT="$(dirname "$SCRIPT_DIR")"
 
 source "$SCRIPT_DIR"/functions.sh
 
-case $(get_os) in
+APP_ENV="$APP_ROOT"/app/config/.env
+
+case "$(get_os)" in
     Linux)
         command="sudo -i -u postgres psql"
         ;;
@@ -35,19 +37,35 @@ db_sql_file=$2
 db_user=${POSTGRES_USER:-admin}
 db_psw=${POSTGRES_PASSWORD:-dummy_password}
 
+# echo ""
+# echo ">>> db_name     $db_name"
+# echo ">>> db_sql_file $db_sql_file"
+# echo ">>> db_user     $db_user"
+# echo ">>> db_psw      $db_psw"
+# echo ""
+
 create_user() {
-     $command -c "CREATE USER $db_user WITH PASSWORD '$db_psw';"
-     $command -c "ALTER ROLE $db_user SET client_encoding TO 'utf8';"
-     $command -c "ALTER ROLE $db_user SET default_transaction_isolation TO 'read committed';"
-     $command -c "ALTER ROLE $db_user SET timezone TO 'UTC';"
-     $command -c "GRANT ALL ON SCHEMA public TO $db_user;"
-     $command -c "GRANT ALL ON SCHEMA public TO public;"
+    sql_arr=( "CREATE USER $db_user WITH PASSWORD '$db_psw';"
+              "ALTER ROLE $db_user SET client_encoding TO 'utf8';"
+              "ALTER ROLE $db_user SET default_transaction_isolation TO 'read committed';"
+              "ALTER ROLE $db_user SET timezone TO 'UTC';"
+              "GRANT ALL ON SCHEMA public TO $db_user;"
+              "GRANT ALL ON SCHEMA public TO public;" )
+    for sql in "${sql_arr[@]}"; do
+        $command -c "$sql"
+    done;
 }
 
-# check if the user $db_user already exists, if not, create it
+update_user() {
+    $command -c "ALTER USER $db_user WITH PASSWORD '$db_psw';"
+}
+
+# check if the user $db_user already exists. if it exists, update its pw to match the .env. if it doesn't exist, create it
 is_user=$($command -tc "SELECT 1 FROM pg_roles WHERE rolname='$db_user'" | xargs)
 if [ "$is_user" != "1" ]; then
     create_user
+else
+    update_user
 fi
 
 # check if the database $db_name already exists, if so, drop it
@@ -61,7 +79,7 @@ $command -c "GRANT ALL PRIVILEGES ON DATABASE $db_name TO $db_user;"
 $command -c "ALTER DATABASE $db_name OWNER TO $db_user;"
 
 # Set new database name in .env file
-sed -i '' -e "s/POSTGRES_DB=.*/POSTGRES_DB=$db_name/" "$APP_ROOT"/app/config/.env
+sed_repl_inplace "s/POSTGRES_DB=.*/POSTGRES_DB=$db_name/" "$APP_ROOT"/app/config/.env
 
 manage="$APP_ROOT/venv/bin/python $APP_ROOT/app/manage.py"
 
@@ -76,8 +94,14 @@ if [ -z "$db_sql_file" ]; then
     $manage migrate
 
     # create superuser
-    $manage createsuperuser --username="$db_user" --email="$CONTACT_MAIL"
-#     echo "from django.contrib.auth.models import User; User.objects.create_superuser('$db_user', '$CONTACT_MAIL', '$POSTGRES_PASSWORD')" | $manage shell
+    export DJANGO_SUPERUSER_USERNAME
+    DJANGO_SUPERUSER_USERNAME=$(get_env_value "POSTGRES_USER" "$APP_ENV")
+    export DJANGO_SUPERUSER_EMAIL
+    DJANGO_SUPERUSER_EMAIL=$(get_env_value "CONTACT_MAIL" "$APP_ENV")
+    export DJANGO_SUPERUSER_PASSWORD
+    DJANGO_SUPERUSER_PASSWORD=$(get_env_value "POSTGRES_PASSWORD" "$APP_ENV")
+    $manage createsuperuser --noinput
+    # $manage createsuperuser --username="$db_user" --email="$CONTACT_MAIL"
 else
     psql -h localhost -d "$db_name" -U "$db_user" -f "$db_sql_file" || echo "‼️ Failed to import SQL data ‼️"
 fi
