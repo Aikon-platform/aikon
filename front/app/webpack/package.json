@@ -20,5 +20,9 @@
   },
   "dependencies": {
     "sirv-cli": "^2.0.0"
-  }
+  },
+  "main": "rollup.config.js",
+  "author": "",
+  "license": "ISC",
+  "description": ""
 }
