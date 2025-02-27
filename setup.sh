@@ -15,21 +15,21 @@ git submodule update
 
 # TODO create accelerate setup script to define only important env variables
 
-echoTitle "AIKON BUNDLE INSTALL"
+echo_title "AIKON BUNDLE INSTALL"
 
-colorEcho green "AIKON installation..."
+color_echo green "AIKON installation..."
 cd "$AIKON_DIR";
 
 if ! bash "$AIKON_SETUP"; then
-    colorEcho red "AIKON setup encountered an error"
+    color_echo red "AIKON setup encountered an error"
     exit 1
 fi
 
-colorEcho green "API installation..."
+color_echo green "API installation..."
 cd "$API_DIR"
 
 if ! bash "$API_SETUP"; then
-    colorEcho red "API setup encountered an error"
+    color_echo red "API setup encountered an error"
     exit 1
 fi
 
@@ -38,12 +38,12 @@ api_port=$(grep "API_DEV_PORT" "$API_DIR/.env.dev" | cut -d'=' -f2)
 api_url=localhost:$(echo "$api_port" | tr -d '"')
 sed -i "" -e "s~^CV_API_URL=.*~CV_API_URL=$api_url~" "$AIKON_DIR/app/config/.env"
 
-echoTitle "🎉 AIKON & DISCOVER ARE SET UP! 🎉"
-colorEcho blue "\nYou can now run the app and API with: "
-colorEcho green "              bash run.sh"
+echo_title "🎉 AIKON & DISCOVER ARE SET UP! 🎉"
+color_echo blue "\nYou can now run the app and API with: "
+color_echo green "              bash run.sh"
 
 user=$(grep "POSTGRES_USER" "$AIKON_DIR/app/config/.env" | cut -d'=' -f2)
 password=$(grep "POSTGRES_PASSWORD" "$AIKON_DIR/app/config/.env" | cut -d'=' -f2)
-colorEcho blue '\nConnect to app using:'
+color_echo blue '\nConnect to app using:'
 echo -e "          👤 $user"
 echo -e "          🔑 $password"

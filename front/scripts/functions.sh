@@ -118,9 +118,9 @@ sudo_sed_repl_inplace() {
     file="$2"
 
     if [ "$(get_os)" = "Linux" ]; then
-        sed -i -e "$sed_expr" "$file"
+        sudo sed -i -e "$sed_expr" "$file"
     else
-        sed -i "" -e "$sed_expr" "$file"
+        sudo sed -i "" -e "$sed_expr" "$file"
     fi
 }
 
