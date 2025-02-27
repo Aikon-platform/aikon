@@ -45,8 +45,9 @@ echo_title(){
     color_echo purple "\n\n$sep_line\n$title\n$sep_line"
 }
 
+# the sed at the end removes trailing non-alphanumeric chars.
 generate_random_string() {
-    echo "$(openssl rand -base64 32 | tr -d '/\n')"
+    echo "$(openssl rand -base64 32 | tr -d '/\n' | sed -r -e "s/[^a-zA-Z0-9]+$//")"
 }
 
 prompt_user() {
