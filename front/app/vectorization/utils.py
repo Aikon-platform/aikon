@@ -37,13 +37,12 @@ def process_results(data, completed=True):
     :param data: {
         "output": {
             ?"dataset_url": dataset_url,
-            ?"results_url": {...},
+            ?"results_url":  [{
+                "doc_id": doc_id,
+                "result_url": result_url  => result_url returns a downloadable ZIP
+            }, {...}],
             "error": [list of error message],
         }
-    }
-    data["output"]["results_url": {
-        doc_id,: result_url,
-        ?[doc_id: result_url,]
     }
     :param completed: whether the treatment is achieved or these are intermediary results
     :return:
@@ -61,7 +60,7 @@ def process_results(data, completed=True):
     if not os.path.exists(SVG_PATH):
         os.makedirs(SVG_PATH)
 
-    # for doc_id, result_url in results_url.items():
+    # doc_results is supposed to be { "doc_id": doc_id, "result_url": result_url }
     for doc_results in results_url:
         doc_id = doc_results.get("doc_id")
         result_url = doc_results.get("result_url")

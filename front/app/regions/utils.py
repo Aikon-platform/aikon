@@ -33,10 +33,10 @@ def process_results(data, completed=True):
     :param data: {
         "output": {
             ?"dataset_url": dataset_url,
-            ?"results_url": {
-                doc_id,: result_url, => result_url returns a downloadable JSON
-                ?[doc_id: result_url,]
-            },
+            ?"results_url":  [{
+                "doc_id": doc_id,
+                "result_url": result_url  => result_url returns a downloadable JSON
+            }, {...}],
             "error": [list of error message],
         }
     }
@@ -76,11 +76,11 @@ def process_results(data, completed=True):
         log(error)
         raise ValueError("\n".join(error))
 
-    # for doc_id, result_url in results_url.items():
+    # doc_results is supposed to be { "doc_id": doc_id, "result_url": result_url }
     for doc_results in results_url:
         doc_id = doc_results.get("doc_id")
         result_url = doc_results.get("result_url")
-        # digit_annotations is supposed to be {doc.uid: result_url}
+
         digit_id = parse_ref(doc_id)["digit"][1]
         try:
             response = requests.get(result_url, stream=True)
