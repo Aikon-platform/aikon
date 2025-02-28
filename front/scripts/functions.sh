@@ -184,7 +184,7 @@ update_app_env() {
 
             # get a default value
             if [ "$param" = "MEDIA_DIR" ]; then
-                default_val="$front_dir"/mediafiles
+                default_val="$front_dir"/app/mediafiles
             elif [[ "$param" =~ ^.*(PASSWORD|SECRET).*$ ]]; then
                 default_val="$(generate_random_string)"
             elif [ "$param" = "EMAIL_HOST_USER" ]; then
@@ -199,6 +199,12 @@ update_app_env() {
                 new_value="$default_val"
             else
                 new_value=$(prompt_user "$param" "$default_val" "$current_val" "$desc")
+                # default media dir aldready has a structure clearly defined in the git repo.
+                # when chosing a nonstandard media directory, this structure is not copied,
+                # which may cause FileNotFound errors later on.
+                if [ "$param" = "MEDIA_DIR" ] && [ "$new_value" != "$default_val" ]; then
+                    cp -r "$default_val" "$new_value"
+                fi
             fi
             sed_repl_inplace "s~^$param=.*~$param=$new_value~" "$env_file"
         fi
