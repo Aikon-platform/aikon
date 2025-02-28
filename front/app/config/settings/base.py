@@ -122,7 +122,7 @@ APP_URL = f"http://localhost:{APP_PORT}"
 CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
 SAS_APP_URL = f"http://localhost:{SAS_PORT}"
 
-CV_API_URL = ENV.str("CV_API_URL", default="")
+API_URL = ENV.str("API_URL")
 GEONAMES_USER = ENV.str("GEONAMES_USER", default="")
 
 PROD_URL = f"https://{ENV.str('PROD_URL', default='')}"
