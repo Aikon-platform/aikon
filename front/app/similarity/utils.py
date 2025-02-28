@@ -62,7 +62,10 @@ def process_results(data, completed=True):
     """
     :param data: {
         "dataset_url": self.dataset.get_absolute_url(),
-        "results_url": [{doc_pair_ref: result_url}],  => result_url returns a downloadable JSON
+        "results_url": [{
+            "doc_pair": doc_pair_ref,
+            "result_url": result_url  => result_url returns a downloadable JSON
+        }, {...}],
     }
     :param completed: whether the treatment is achieved or these are intermediary results
 
@@ -98,15 +101,23 @@ def process_results(data, completed=True):
 
     output = data.get("output", {})
     if not data or not output:
-        log("No similarity results to process")
+        log("No similarity results to download")
         return
 
-    result_url = output.get("results_url", [])
+    results_url = output.get("results_url", [])
+    if not results_url:
+        error = output.get("error", ["No similarity results to process"])
+        log(error)
+        raise ValueError("\n".join(error))
     # TODO when process results error => treatment status should be error
 
-    for pair_scores in result_url:
+    for pair_scores in results_url:
         regions_ref_pair = pair_scores.get("doc_pair")
         score_url = pair_scores.get("result_url")
+
+        if regions_ref_pair == "dataset":
+            # do not index scores for the entire set of document pairs (used in AIKON-demo)
+            continue
 
         try:
             response = requests.get(score_url, stream=True)

@@ -34,10 +34,16 @@ def prepare_request(witnesses, treatment_id):
 
 def process_results(data, completed=True):
     """
-    :param data["output"]: {
+    :param data: {
+        "output": {
+            ?"dataset_url": dataset_url,
+            ?"results_url": {...},
+            "error": [list of error message],
+        }
+    }
+    data["output"]["results_url": {
         doc_id,: result_url,
         ?[doc_id: result_url,]
-        ?["error": [list of error message]]
     }
     :param completed: whether the treatment is achieved or these are intermediary results
     :return:
@@ -46,14 +52,19 @@ def process_results(data, completed=True):
     if not data or not output:
         raise ValueError("No SVG results to unzip")
 
+    results_url = output.get("results_url", None)
+    if not results_url:
+        error = output.get("error", ["No SVG results to process"])
+        log(error)
+        raise ValueError("\n".join(error))
+
     if not os.path.exists(SVG_PATH):
         os.makedirs(SVG_PATH)
 
-    for doc_id, result_url in output.items():
-        if doc_id == "error":
-            log(result_url)
-            continue
-
+    # for doc_id, result_url in results_url.items():
+    for doc_results in results_url:
+        doc_id = doc_results.get("doc_id")
+        result_url = doc_results.get("result_url")
         result_dir = SVG_PATH / doc_id
 
         if result_dir.exists() and any(result_dir.glob("*.svg")):
