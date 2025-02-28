@@ -122,6 +122,11 @@ APP_URL = f"http://localhost:{APP_PORT}"
 CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
 SAS_APP_URL = f"http://localhost:{SAS_PORT}"
 
+SAS_DOCKER_URL = f"http://sas:{SAS_PORT}" if DOCKER else SAS_APP_URL
+CANTALOUPE_DOCKER_URL = (
+    f"http://cantaloupe:{CANTALOUPE_PORT}" if DOCKER else CANTALOUPE_APP_URL
+)
+
 API_URL = ENV.str("API_URL")
 GEONAMES_USER = ENV.str("GEONAMES_USER", default="")
 
