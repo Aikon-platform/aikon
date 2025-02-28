@@ -21,9 +21,9 @@ LOGIN_REDIRECT_URL = "/"
 SECRET_KEY = ENV.str("SECRET_KEY", default="")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = ENV.bool("DEBUG", default=False)
+TARGET = ENV("TARGET", default="dev")
+DEBUG = ENV.bool("DEBUG", default=False if TARGET == "prod" else True)
 DOCKER = ENV.bool("DOCKER", default=False)
-
 
 PROXIES = {
     "http": ENV.str("HTTP_PROXY", default=""),
@@ -49,8 +49,7 @@ INSTALLED_APPS = [
     f"{WEBAPP_NAME}",
 ] + ADDITIONAL_MODULES
 
-hosts = ENV.list("ALLOWED_HOSTS", default=[]) + [ENV.str("PROD_URL", default="")]
-hosts += ["web"]  # for docker nginx service
+hosts = ENV.list("ALLOWED_HOSTS", default=[]) + ["web"]  # for docker nginx service
 https_hosts = [f"https://{host}" for host in hosts]
 wildcard_hosts = [f"https://*.{host}" for host in hosts if "." in host]
 
@@ -58,8 +57,6 @@ ALLOWED_HOSTS = hosts + https_hosts + wildcard_hosts
 CSRF_TRUSTED_ORIGINS = https_hosts + wildcard_hosts
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-CONTACT_MAIL = ENV.str("CONTACT_MAIL", default="")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -72,6 +69,35 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
 ]
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+        # "file": {
+        #     "class": "logging.FileHandler",
+        #     "filename": LOG_PATH,
+        #     "level": "ERROR",
+        #     "formatter": "verbose",
+        # },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "WARNING",
+        },
+        "celery": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": True,
+        },
+    },
+    "formatters": {
+        "verbose": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
+    },
+}
 
 if DEBUG:
     INSTALLED_APPS += [
@@ -85,23 +111,10 @@ if DEBUG:
     INTERNAL_IPS = [
         "127.0.0.1",
     ]
-    LOGGING = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "handlers": {
-            "console": {"class": "logging.StreamHandler"},
-        },
-        "loggers": {
-            "django": {
-                "handlers": ["console"],
-                "level": "INFO",
-            },
-        },
-    }
 
 # Define the default values for application URLs in development mode
 # APP, CANTALOUPE, SAS
-APP_PORT = 8000
+APP_PORT = ENV.int("FRONT_PORT", 8000)
 CANTALOUPE_PORT = ENV.int("CANTALOUPE_PORT", 8182)
 SAS_PORT = ENV.int("SAS_PORT", 8888)
 
@@ -119,11 +132,6 @@ if not DEBUG:
     APP_URL = f"{PROD_URL}"
     CANTALOUPE_APP_URL = f"{PROD_URL}"
     SAS_APP_URL = f"{PROD_URL}/sas"
-
-SAS_DOCKER_URL = f"http://sas:{SAS_PORT}" if DOCKER else SAS_APP_URL
-CANTALOUPE_DOCKER_URL = (
-    f"http://cantaloupe:{CANTALOUPE_PORT}" if DOCKER else CANTALOUPE_APP_URL
-)
 
 SAS_USERNAME = ENV.str("SAS_USERNAME", default="")
 SAS_PASSWORD = ENV.str("SAS_PASSWORD", default="")
@@ -219,49 +227,13 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240
 # Cross-Origin Resource Sharing (CORS) from any origin
 CORS_ALLOW_ALL_ORIGINS = True
 
-# Configure logging to record ERROR level messages to file
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-        },
-        # "file": {
-        #     "class": "logging.FileHandler",
-        #     "filename": LOG_PATH,
-        #     "level": "ERROR",
-        #     "formatter": "verbose",
-        # },
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-        "celery": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": True,
-        },
-    },
-    "formatters": {
-        "verbose": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
-    },
-}
-
-# # Celery settings TODO put that in celery.py
+# # Celery settings TODO delete?
 # CELERY_BROKER_URL = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
 # CELERY_RESULT_BACKEND = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
-CELERY_ACCEPT_CONTENT = ["json", "pickle"]
-CELERY_TASK_SERIALIZER = "pickle"
-CELERY_RESULT_SERIALIZER = "pickle"
-
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = ENV.str("EMAIL_HOST", default="")
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = ENV.str("EMAIL_HOST_USER", default="")
-EMAIL_HOST_PASSWORD = ENV.str("EMAIL_HOST_PASSWORD", default="")
+# CELERY_ACCEPT_CONTENT = ["json", "pickle"]
+# CELERY_TASK_SERIALIZER = "pickle"
+# CELERY_RESULT_SERIALIZER = "pickle"
 
 CRISPY_TEMPLATE_PACK = "bootstrap4"
+
+CONTACT_MAIL = ENV.str("CONTACT_MAIL", default=f"{APP_NAME}@mail.com")

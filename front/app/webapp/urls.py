@@ -53,6 +53,7 @@ urlpatterns = [
         get_regions_img_list,
         name="regions-list",
     ),
+    # TODO add f"{APP_NAME}/witness/<int:wit_id>/regions/<int:regions_id>/list/",
     path(
         f"{APP_NAME}/annotations/<int:regions_id>",
         witness_sas_annotations,
@@ -65,11 +66,6 @@ urlpatterns = [
     ),
     path(
         f"{APP_NAME}/test/<str:wit_ref>",
-        test,
-        name="test",
-    ),
-    path(
-        f"{APP_NAME}/test",
         test,
         name="test",
     ),
@@ -105,16 +101,6 @@ urlpatterns = [
         export_regions_img,
         name="regions-imgs",
     ),
-    # path(
-    #     f"{APP_NAME}/iiif/digit-regions/<int:digit_id>",
-    #     export_digit_img,
-    #     name="digitization-imgs",
-    # ),
-    # path(
-    #     f"{APP_NAME}/iiif/witness-annotation/<int:wit_id>",
-    #     export_wit_img,
-    #     name="witness-imgs",
-    # ),
     path(
         f"{APP_NAME}/index-witness/<int:wit_id>",
         index_witness_regions,
@@ -329,4 +315,18 @@ urlpatterns += [
 # DIRTY FIX FOR SAS 😡
 urlpatterns += [
     path("context.json", iiif_context, name="iiif-context"),
+]
+
+# TEST VIEWS
+urlpatterns += [
+    path(
+        f"{APP_NAME}/test",
+        test,
+        name="test",
+    ),
+    path(
+        f"{APP_NAME}/test/error",
+        test_error,
+        name="test-error",
+    ),
 ]

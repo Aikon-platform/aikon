@@ -244,6 +244,10 @@ class TreatmentCreate(AbstractRecordCreate):
         kwargs["user"] = (
             self.request.user if self.request.user.is_authenticated else None
         )
+        kwargs["document_set"] = self.request.GET.get("document_set")
+        kwargs["task_type"] = self.request.GET.get("task_type")
+        kwargs["notify_email"] = self.request.GET.get("notify_email")
+
         return kwargs
 
     def get_success_url(self):

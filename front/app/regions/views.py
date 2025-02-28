@@ -4,7 +4,11 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from app.webapp.utils.tasking import create_treatment, receive_notification
+from app.webapp.utils.tasking import (
+    create_treatment,
+    receive_notification,
+    create_doc_set,
+)
 from app.webapp.views import is_superuser, check_ref
 
 from app.regions.utils import regions_request
@@ -56,18 +60,19 @@ def witness_regions_extraction(request, wit_id):
         )
 
     try:
-        create_treatment([witness], "regions", request.user)
+        doc_set, _ = create_doc_set([witness], request.user)
     except Exception as e:
         return JsonResponse(
-            {
-                "message": f"Failed to launch region extraction for witness #{wit_id}: {e}"
-            },
+            {"message": f"Failed to create document set for witness #{wit_id}: {e}"},
             safe=False,
             status=500,
         )
 
     return JsonResponse(
-        {"message": f"Regions extraction was launched for witness #{wit_id}"},
+        {
+            "message": f"Regions extraction was launched for witness #{wit_id}",
+            "doc_set_id": doc_set.id,
+        },
         safe=False,
         status=200,
     )

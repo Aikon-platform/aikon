@@ -793,8 +793,8 @@ def destroy_regions(regions: Regions):
         log(f"[destroy_regions] Failed to delete regions record #{regions.id}", e)
         return False
 
-    regions_file = REGIONS_PATH / f"{regions_ref}.json"
-    if regions_file.exists():
+    regions_file = f"{REGIONS_PATH}/{regions_ref}.json"
+    if Path(regions_file).exists():
         try:
             # TODO fix do not work
             regions_file.unlink()

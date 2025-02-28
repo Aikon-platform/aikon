@@ -77,3 +77,6 @@ __pypackages__/
 
 # Webpack builds
 node_modules/
+
+front/celery/celerybeat-schedule.db
+front/celerybeat-schedule.db

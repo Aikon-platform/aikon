@@ -42,7 +42,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /home/${USER}
 
-COPY --chown=${USER} app/requirements-base.txt app/requirements-prod.txt ./
+COPY --chown=${USER} ./requirements-base.txt ./requirements-prod.txt ./
 
 # Install python dependencies
 RUN python3.10 -m venv venv && \
@@ -64,7 +64,7 @@ EXPOSE ${PORT}
 
 RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER}/app/staticfiles
 
-# TODO staticfiles update is not working
+# TODO staticfiles update + database migrations is not working
 COPY --chown=${USER} docker/manage.sh /home/aikon/manage.sh
 RUN chmod +x /home/aikon/manage.sh
 

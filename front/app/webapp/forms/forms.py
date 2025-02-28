@@ -5,7 +5,7 @@ from typing import Type
 from django import forms
 from dal import autocomplete
 
-from app.config.settings import APP_LANG, CV_API_URL
+from app.config.settings import APP_LANG, API_URL
 from app.webapp.models.language import Language
 from app.webapp.models.place import Place
 from app.webapp.models.user_profile import UserProfile
@@ -30,7 +30,7 @@ class SubForm(forms.Form):
 
 def get_available_models(task_name):
     try:
-        response = requests.get(f"{CV_API_URL}/{task_name}/models")
+        response = requests.get(f"{API_URL}/{task_name}/models")
         response.raise_for_status()
         models = response.json()
     except Exception as e:
