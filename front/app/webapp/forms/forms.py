@@ -1,6 +1,6 @@
 import requests
 from dataclasses import dataclass
-from typing import Type
+from typing import Type, Dict, List
 
 from django import forms
 from dal import autocomplete
@@ -28,11 +28,27 @@ class SubForm(forms.Form):
         }
 
 
+# TODO DELETE THIS AND ACTUALLY FIX API RESPONSE ERRORS
+# FOR `regions` AND `vectorization`.
+def dirty_fix_api_models(models: Dict) -> Dict:
+    """
+    the API response structure for <API_URL>/regions/models is
+    outdated => update the response if necessary to fit the format
+    """
+    return {
+        k: {"desc": f"{k} (retrieved on {v})", "model": k, "name": k}
+        for k, v in models.items()
+    }
+
+
 def get_available_models(task_name):
     try:
-        response = requests.get(f"{CV_API_URL}/{task_name}/models")
+        request_url = f"{CV_API_URL}/{task_name}/models"
+        response = requests.get(request_url)
         response.raise_for_status()
         models = response.json()
+        if task_name == "regions":
+            models = dirty_fix_api_models(models)
     except Exception as e:
         fetch_error = (
             f"Unable to fetch available models: {e}"

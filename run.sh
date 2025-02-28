@@ -20,7 +20,9 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM
 
-(cd "$FRONT_DIR" && bash "$FRONT_RUN") &
+read -s -p "Enter your sudo password: " PASSWORD
+
+(cd "$FRONT_DIR" && bash "$FRONT_RUN" "$PASSWORD") &
 front_pid=$!
 
 (cd "$API_DIR" && bash "$API_RUN") &
