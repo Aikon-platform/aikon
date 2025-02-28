@@ -70,11 +70,6 @@ urlpatterns = [
         name="test",
     ),
     path(
-        f"{APP_NAME}/test",
-        test,
-        name="test",
-    ),
-    path(
         # digit_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}
         f"{APP_NAME}/iiif/<str:digit_ref>/manifest.json",
         manifest_digitization,
@@ -106,16 +101,6 @@ urlpatterns = [
         export_regions_img,
         name="regions-imgs",
     ),
-    # path(
-    #     f"{APP_NAME}/iiif/digit-regions/<int:digit_id>",
-    #     export_digit_img,
-    #     name="digitization-imgs",
-    # ),
-    # path(
-    #     f"{APP_NAME}/iiif/witness-annotation/<int:wit_id>",
-    #     export_wit_img,
-    #     name="witness-imgs",
-    # ),
     path(
         f"{APP_NAME}/index-witness/<int:wit_id>",
         index_witness_regions,
@@ -324,4 +309,17 @@ urlpatterns += [
 urlpatterns += [
     path("superadmin/empty-works/", list_empty_works, name="empty-works"),
     path("superadmin/works/", list_works, name="list-works"),
+]
+
+urlpatterns += [
+    path(
+        f"{APP_NAME}/test",
+        test,
+        name="test",
+    ),
+    path(
+        f"{APP_NAME}/test/error",
+        test_error,
+        name="test-error",
+    ),
 ]

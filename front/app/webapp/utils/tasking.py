@@ -5,7 +5,7 @@ from typing import List
 import requests
 from django.contrib.auth.models import User
 
-from app.config.settings import APP_URL, APP_NAME, CV_API_URL, APP_LANG
+from app.config.settings import APP_URL, APP_NAME, API_URL, APP_LANG
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions
@@ -120,7 +120,7 @@ def task_request(task_name, records, treatment_id=None, endpoint="start"):
     # TODO probably useless => put in start task method?
     try:
         payload = prepare_task_request(task_name, records, treatment_id)
-        response = requests.post(url=f"{CV_API_URL}/{task_name}/start", json=payload)
+        response = requests.post(url=f"{API_URL}/{task_name}/start", json=payload)
         if response.status_code == 200:
             log(
                 f"[{task_name}_request] Successfully sent request: {response.text or ''}"
@@ -132,7 +132,7 @@ def task_request(task_name, records, treatment_id=None, endpoint="start"):
                 "error_message": f"Request failed with status code: {response.status_code}",
                 "request_info": {
                     "method": "POST",
-                    "url": f"{CV_API_URL}/{task_name}/{endpoint}",
+                    "url": f"{API_URL}/{task_name}/{endpoint}",
                     "payload": payload,
                 },
                 "response_info": {

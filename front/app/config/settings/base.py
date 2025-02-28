@@ -44,8 +44,7 @@ INSTALLED_APPS = [
     f"{WEBAPP_NAME}",
 ] + ADDITIONAL_MODULES
 
-hosts = ENV.list("ALLOWED_HOSTS", default=[]) + [ENV.str("PROD_URL", default="")]
-hosts += ["web"]  # for docker nginx service
+hosts = ENV.list("ALLOWED_HOSTS", default=[]) + ["web"]  # for docker nginx service
 https_hosts = [f"https://{host}" for host in hosts]
 wildcard_hosts = [f"https://*.{host}" for host in hosts if "." in host]
 
@@ -53,8 +52,6 @@ ALLOWED_HOSTS = hosts + https_hosts + wildcard_hosts
 CSRF_TRUSTED_ORIGINS = https_hosts + wildcard_hosts
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-CONTACT_MAIL = ENV.str("CONTACT_MAIL", default="")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -67,7 +64,35 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
 ]
 
-LOGGING = {}
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+        # "file": {
+        #     "class": "logging.FileHandler",
+        #     "filename": LOG_PATH,
+        #     "level": "ERROR",
+        #     "formatter": "verbose",
+        # },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "WARNING",
+        },
+        "celery": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": True,
+        },
+    },
+    "formatters": {
+        "verbose": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
+    },
+}
 
 if DEBUG:
     INSTALLED_APPS += [
@@ -81,21 +106,6 @@ if DEBUG:
     INTERNAL_IPS = [
         "127.0.0.1",
     ]
-    LOGGING.update(
-        {
-            "version": 1,
-            "disable_existing_loggers": False,
-            "handlers": {
-                "console": {"class": "logging.StreamHandler"},
-            },
-            "loggers": {
-                "django": {
-                    "handlers": ["console"],
-                    "level": "INFO",
-                },
-            },
-        }
-    )
 
 # Define the default values for application URLs in development mode
 # APP, CANTALOUPE, SAS
@@ -103,21 +113,8 @@ APP_PORT = ENV.int("FRONT_PORT", 8000)
 CANTALOUPE_PORT = ENV.int("CANTALOUPE_PORT", 8182)
 SAS_PORT = ENV.int("SAS_PORT", 8888)
 
-APP_URL = f"http://localhost:{APP_PORT}"
-CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
-SAS_APP_URL = f"http://localhost:{SAS_PORT}"
-
-api_url = ENV.str("CV_API_URL", default="http://localhost:5000")
-CV_API_URL = f"http://{api_url}" if not api_url.startswith("http") else api_url
+API_URL = ENV.str("API_URL")
 GEONAMES_USER = ENV.str("GEONAMES_USER", default="")
-
-PROD_URL = f"https://{ENV.str('PROD_URL', default='')}"
-
-# # Override the default values in production mode
-# if not DEBUG:
-#     APP_URL = f"{PROD_URL}"
-#     CANTALOUPE_APP_URL = f"{PROD_URL}"
-#     SAS_APP_URL = f"{PROD_URL}/sas"
 
 SAS_USERNAME = ENV.str("SAS_USERNAME", default="")
 SAS_PASSWORD = ENV.str("SAS_PASSWORD", default="")
@@ -213,39 +210,6 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240
 # Cross-Origin Resource Sharing (CORS) from any origin
 CORS_ALLOW_ALL_ORIGINS = True
 
-# Configure logging to record ERROR level messages to file
-LOGGING.update(
-    {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "handlers": {
-            "console": {
-                "class": "logging.StreamHandler",
-            },
-            # "file": {
-            #     "class": "logging.FileHandler",
-            #     "filename": LOG_PATH,
-            #     "level": "ERROR",
-            #     "formatter": "verbose",
-            # },
-        },
-        "loggers": {
-            "django": {
-                "handlers": ["console"],
-                "level": "WARNING",
-            },
-            "celery": {
-                "handlers": ["console"],
-                "level": "INFO",
-                "propagate": True,
-            },
-        },
-        "formatters": {
-            "verbose": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
-        },
-    }
-)
-
 # # Celery settings TODO delete?
 # CELERY_BROKER_URL = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
 # CELERY_RESULT_BACKEND = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
@@ -255,5 +219,4 @@ LOGGING.update(
 
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 
-ADMIN_EMAIL = CONTACT_MAIL
-EMAIL_HOST_USER = ENV("EMAIL_HOST_USER", default=ADMIN_EMAIL)
+CONTACT_MAIL = ENV.str("CONTACT_MAIL", default=f"{APP_NAME}@mail.com")

@@ -17,7 +17,7 @@ from django.db.models import Q, F
 from django.core.cache import cache
 
 from app.similarity.const import SCORES_PATH
-from app.config.settings import CV_API_URL, APP_URL, APP_NAME
+from app.config.settings import APP_URL, APP_NAME
 from app.similarity.models.region_pair import RegionPair
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
