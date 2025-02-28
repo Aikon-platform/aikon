@@ -12,6 +12,8 @@ APP_ROOT="$(dirname "$SCRIPT_DIR")"
 source "$SCRIPT_DIR"/functions.sh
 
 APP_ENV="$APP_ROOT"/app/config/.env
+# Load environment variables from .env file
+. "$APP_ENV"
 
 if [ "$OS" = "Linux" ]; then
     command="sudo -i -u postgres psql"
@@ -21,9 +23,6 @@ else
     color_echo red "Unsupported OS: you need to create the database manually"
     exit 1
 fi
-
-# Load environment variables from .env file
-. "$APP_ROOT"/app/config/.env
 
 # list all databases with
 # $command -c '\l'
