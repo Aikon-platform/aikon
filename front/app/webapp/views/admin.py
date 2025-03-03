@@ -214,8 +214,11 @@ class RegionsView(AbstractRecordView):
 
         regions = self.get_record()
         wit = regions.get_witness()
+        model = f" ({regions.model})" if regions.model else ""
         context["view_title"] = (
-            f"“{wit}” regions" if APP_LANG == "en" else f"Régions de « {wit} »"
+            f"“{wit}” regions{model}"
+            if APP_LANG == "en"
+            else f"Régions de « {wit} »{model}"
         )
         context["witness"] = wit.get_json(reindex=True)
         context["is_validated"] = regions.is_validated
