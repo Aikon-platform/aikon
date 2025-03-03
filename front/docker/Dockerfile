@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /home/${USER}
 
-COPY --chown=${USER} ./requirements-base.txt ./requirements-prod.txt ./
+COPY --chown=${USER} ./app/requirements-base.txt ./app/requirements-prod.txt ./
 
 # Install python dependencies
 RUN python3.10 -m venv venv && \
