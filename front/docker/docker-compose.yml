@@ -1,8 +1,8 @@
 x-proxy-settings: &proxy-settings
-  HTTP_PROXY: ${HTTP_PROXY}
-  HTTPS_PROXY: ${HTTPS_PROXY}
-  http_proxy: ${HTTP_PROXY}
-  https_proxy: ${HTTPS_PROXY}
+  HTTP_PROXY: "http://proxy.enpc.fr:3128/"
+  HTTPS_PROXY: "http://proxy.enpc.fr:3128/"
+  http_proxy: "http://proxy.enpc.fr:3128/"
+  https_proxy: "http://proxy.enpc.fr:3128/"
   NO_PROXY: "localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.aikon_network"
   no_proxy: "localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.aikon_network"
 
