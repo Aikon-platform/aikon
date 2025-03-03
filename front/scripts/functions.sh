@@ -273,3 +273,20 @@ update_cantaloupe_env() {
         prev_line="$line"
     done
 }
+
+update_cantaloupe_properties() {
+    cantaloupe_dir="$1"
+
+    cp "$cantaloupe_dir"/cantaloupe.properties{.template,}
+    config_cantaloupe="$cantaloupe_dir"/cantaloupe.properties
+
+    chmod +x "$cantaloupe_dir"/start.sh
+
+    source "$cantaloupe_dir"/.env
+
+    sed_repl_inplace "s~BASE_URI~$BASE_URI~" "$config_cantaloupe"
+    sed_repl_inplace "s~FILE_SYSTEM_SOURCE~$FILE_SYSTEM_SOURCE~" "$config_cantaloupe"
+    sed_repl_inplace "s~HTTP_PORT~$HTTP_PORT~" "$config_cantaloupe"
+    sed_repl_inplace "s~HTTPS_PORT~$HTTPS_PORT~" "$config_cantaloupe"
+    sed_repl_inplace "s~LOG_PATH~$LOG_PATH~" "$config_cantaloupe"
+}
