@@ -49,7 +49,8 @@ INSTALLED_APPS = [
     f"{WEBAPP_NAME}",
 ] + ADDITIONAL_MODULES
 
-hosts = ENV.list("ALLOWED_HOSTS", default=[]) + ["web"]  # for docker nginx service
+hosts = ENV.list("ALLOWED_HOSTS", default=[]) + [ENV.str("PROD_URL", default="")]
+hosts += ["web"]  # for docker nginx service
 https_hosts = [f"https://{host}" for host in hosts]
 wildcard_hosts = [f"https://*.{host}" for host in hosts if "." in host]
 

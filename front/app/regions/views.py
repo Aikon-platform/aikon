@@ -70,7 +70,7 @@ def witness_regions_extraction(request, wit_id):
 
     return JsonResponse(
         {
-            "message": f"Regions extraction was launched for witness #{wit_id}",
+            "message": f"Document set was created for witness #{wit_id}",
             "doc_set_id": doc_set.id,
         },
         safe=False,
