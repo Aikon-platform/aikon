@@ -81,7 +81,7 @@ get_env_desc() {
     if [[ $prev_line =~ ^# ]]; then
         desc=$(echo "$prev_line" | sed 's/^#\s*//')
     fi
-    echo "$prev_line"
+    echo "$desc"
 }
 
 get_os() {

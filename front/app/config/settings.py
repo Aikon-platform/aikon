@@ -102,7 +102,11 @@ APP_URL = f"http://localhost:{APP_PORT}"
 CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
 SAS_APP_URL = f"http://localhost:{SAS_PORT}"
 
-CV_API_URL = ENV.str("CV_API_URL", default="")
+# queries using only "localhost" (without http prefix) are blocked on ubuntu 20.04
+cv_api_url = ENV.str("CV_API_URL", default="")
+CV_API_URL = (
+    f"http://{cv_api_url}" if cv_api_url.startswith("localhost") else cv_api_url
+)
 GEONAMES_USER = ENV.str("GEONAMES_USER", default="")
 
 PROD_URL = f"https://{ENV.str('PROD_URL', default='')}"

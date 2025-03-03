@@ -6,9 +6,29 @@ API_DIR="$ROOT_DIR/api"
 
 AIKON_SETUP="$AIKON_DIR/scripts/setup.sh"
 API_SETUP="$API_DIR/setup.sh"
+source "$AIKON_DIR"/scripts/functions.sh
 
-git submodule init
-git submodule update
+color_echo blue "\nInstalling prompt utility fzy..."
+case $OS in
+    Linux)
+        sudo apt install fzy
+        ;;
+    Mac)
+        brew install fzy
+        ;;
+    *)
+        color_echo red "Unsupported OS: $OS"
+        exit 1
+        ;;
+esac
+
+color_echo blue "Do you want to init the api/ submodule (WARNING: this will checkout from your current API branch to a detached head, resetting all changes made to the API) ?"
+options=("yes" "no")
+answer=$(printf "%s\n" "${options[@]}" | fzy)
+if [ "$answer" = "yes" ]; then
+    git submodule init
+    git submodule update
+fi
 
 # TODO create accelerate setup script to define only important env variables
 
