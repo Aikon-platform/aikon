@@ -131,7 +131,7 @@ def process_results(data, completed=True):
                 continue
 
             with open(score_file, "wb") as f:
-                json_content["result_url"] = result_url
+                json_content["result_url"] = score_url
                 f.write(orjson.dumps(json_content))
 
         except Exception as e:
