@@ -19,6 +19,7 @@ from app.webapp.utils.functions import (
     zip_images_and_files,
     is_url,
     get_files_in_dir,
+    get_files_with_prefix,
 )
 from app.webapp.utils.logger import log
 from app.webapp.utils.iiif.annotation import formatted_annotations
@@ -204,10 +205,14 @@ def export_common_logic(regions_list):
         anno_regions = get_regions_annotations(regions, as_json=True)
 
         try:
-            path_list.update(get_files_in_dir(SVG_PATH / regions.get_ref()))
+            r_ref = regions.get_ref()
+            path_list.update(
+                f"{r_ref}{file}" for file in get_files_in_dir(f"{SVG_PATH}/{r_ref}")
+            )
         except ValueError:
             digit_ref = regions.get_ref().split("_anno")[0]
-            path_list.update(get_files_in_dir(SVG_PATH / digit_ref))
+            path_list.update(get_files_with_prefix(SVG_PATH, digit_ref))
+            # path_list.update(get_files_in_dir(SVG_PATH / digit_ref))
 
         for canvas_id, annos in anno_regions.items():
             for anno_data in annos.values():
@@ -240,11 +245,15 @@ def get_vectorized_images(request, wid, rid=None):
         v_imgs = set()
         for q_r in q_regions:
             try:
-                v_imgs.update(get_files_in_dir(SVG_PATH / q_r.get_ref()))
+                r_ref = q_r.get_ref()
+                v_imgs.update(
+                    f"{r_ref}{file}" for file in get_files_in_dir(f"{SVG_PATH}/{r_ref}")
+                )
             except ValueError:
                 # if there is no folder named after regions_ref, try with digit_ref
                 digit_ref = q_r.get_ref().split("_anno")[0]
-                v_imgs.update(get_files_in_dir(SVG_PATH / digit_ref))
+                # v_imgs.update(get_files_in_dir(f"{SVG_PATH}/{digit_ref}"))
+                v_imgs.update(get_files_with_prefix(SVG_PATH, digit_ref))
 
         return JsonResponse(sorted(list(v_imgs)), safe=False)
     except Exception as e:
