@@ -8,9 +8,9 @@ FRONT_SETUP="$FRONT_DIR/scripts/setup.sh"
 API_SETUP="$API_DIR/setup.sh"
 source "$AIKON_DIR"/scripts/functions.sh
 
-<<<<<<< HEAD
 color_echo blue "\nInstalling prompt utility fzy..."
 case $OS in
+
     Linux)
         sudo apt install fzy
         ;;
@@ -30,12 +30,6 @@ if [ "$answer" = "yes" ]; then
     git submodule init
     git submodule update
 fi
-=======
-FRONT_ENV="$FRONT_DIR/app/config/.env"
-
-git submodule init
-git submodule update
->>>>>>> main
 
 echo_title "AIKON BUNDLE INSTALL"
 
