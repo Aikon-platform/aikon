@@ -31,12 +31,17 @@ def prepare_request(witnesses, treatment_id):
 def process_results(data, completed=True):
     """
     :param data: {
-        doc_id,: result_url, => result_url returns a downloadable JSON
-        ?[doc_id: result_url,]
-        ?["error": [list of error message]]
+        "output": {
+            ?"dataset_url": dataset_url,
+            ?"results_url":  [{
+                "doc_id": doc_id,
+                "result_url": result_url  => result_url returns a downloadable JSON
+            }, {...}],
+            "error": [list of error message],
+        }
     }
     :param completed: whether the treatment is achieved or these are intermediary results
-    data["output"]["results_url"] = [list of url of json files containing annotations]
+    result_url content
     [{
         "source": "image_name.jpg",
         "width": 1912,
@@ -65,27 +70,34 @@ def process_results(data, completed=True):
         log("No extraction results to process")
         return
 
-    for digit_annotations in output.get("results_url", []):
-        # digit_annotations is supposed to be {doc.uid: result_url}
-        log(digit_annotations)
-        digit_ref, annotation_url = next(iter(digit_annotations.items()))
-        digit_id = parse_ref(digit_ref)["digit"][1]
+    results_url = output.get("results_url", None)
+    if not results_url:
+        error = output.get("error", ["No extraction results to process"])
+        log(error)
+        raise ValueError("\n".join(error))
+
+    # doc_results is supposed to be { "doc_id": doc_id, "result_url": result_url }
+    for doc_results in results_url:
+        doc_id = doc_results.get("doc_id")
+        result_url = doc_results.get("result_url")
+
+        digit_id = parse_ref(doc_id)["digit"][1]
         try:
-            response = requests.get(annotation_url, stream=True)
+            response = requests.get(result_url, stream=True)
             response.raise_for_status()
             json_content = response.json()
         except Exception as e:
-            log(f"Could not retrieve annotation from {annotation_url}", e)
+            log(f"Could not retrieve annotation from {result_url}", e)
             continue
 
         if not check_regions_json_file(json_content):
             continue
 
         try:
-            model_name = annotation_url.split("/")[-1].split("+")[0] or EXTRACTOR_MODEL
+            model_name = result_url.split("/")[-1].split("+")[0] or EXTRACTOR_MODEL
             process_regions_file.delay(json_content, digit_id, model_name)
         except Exception as e:
-            log(f"Could not process annotation from {annotation_url}", e)
+            log(f"Could not process annotation from {result_url}", e)
             raise e
     return
 

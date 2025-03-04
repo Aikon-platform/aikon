@@ -47,8 +47,6 @@
             headers: { "X-CSRFToken": csrfToken },
         }));
 
-        // TODO allow to choose regions model and other parameters available in treatment form
-
         let res;
         if (!response.ok) {
             try {
@@ -61,12 +59,12 @@
             await showMessage(`Failed to launch regions extraction: '${res.message}'`, "Error");
             throw new Error(`Failed to launch regions extraction: '${res.message}'`);
         }
-
-        await showMessage(
-            appLang === "en" ? `Regions extraction task has been triggered!` : `La tâche d'extraction des régions a été déclenchée !`,
-            appLang === "en" ? "Success" : "Succès"
-        );
-        window.location.href = `${window.location.origin}/${appName}/treatment`;
+        const docSet = res.doc_set_id;
+        if (!docSet) {
+            await showMessage(`Failed to launch regions extraction: 'No document set id'`, "Error");
+            throw new Error(`Failed to launch regions extraction: 'No document set id'`);
+        }
+        window.location.href = `${window.location.origin}/${appName}/treatment/add/?document_set=${docSet}&task_type=regions`;
     }
 </script>
 

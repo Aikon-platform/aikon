@@ -12,9 +12,9 @@ from django.dispatch import receiver
 
 from app.config.settings import (
     APP_LANG,
-    EMAIL_HOST_USER,
+    CONTACT_MAIL,
     APP_NAME,
-    CV_API_URL,
+    API_URL,
     ADDITIONAL_MODULES,
     DEBUG,
 )
@@ -123,7 +123,7 @@ class Treatment(AbstractSearchableModel):
         return self.document_set.all_witnesses()
 
     def get_cancel_url(self):
-        return f"{CV_API_URL}/{self.task_type}/{self.api_tracking_id}/cancel"
+        return f"{API_URL}/{self.task_type}/{self.api_tracking_id}/cancel"
 
     def get_query_parameters(self):
         if not self.document_set:
@@ -251,8 +251,7 @@ class Treatment(AbstractSearchableModel):
             self.save()
             return
 
-        # base_url = CV_API_URL if CV_API_URL.startswith('http') else f'http://{CV_API_URL}'
-        url = f"{CV_API_URL}/{self.task_type}/start"
+        url = f"{API_URL}/{self.task_type}/start"
 
         if api_param := self.api_parameters:
             parameters.update(api_param)
@@ -384,7 +383,7 @@ class Treatment(AbstractSearchableModel):
                 send_mail(
                     f"[{APP_NAME.upper()} {self.task_type}] Task {self.status.lower()}",
                     email,
-                    EMAIL_HOST_USER,
+                    CONTACT_MAIL,
                     [self.requested_by.email],
                     fail_silently=False,
                 )

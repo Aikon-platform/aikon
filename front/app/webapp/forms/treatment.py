@@ -30,7 +30,12 @@ class TreatmentForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self._user = kwargs.pop("user", None)
+        self._document_set = kwargs.pop("document_set", None)
+        self._task_type = kwargs.pop("task_type", None)
+        self._notify_email = kwargs.pop("notify_email", None)
+
         super().__init__(*args, **kwargs)
+
         self.fields["task_type"].choices = (("", "-"),) + TRMT_TYPE
 
         self.subforms = {}
@@ -48,6 +53,16 @@ class TreatmentForm(forms.ModelForm):
                     kwargs.get("data"),
                     kwargs.get("files"),
                 )
+
+        self._prefill()
+
+    def _prefill(self):
+        if self._document_set:
+            self.initial["document_set"] = self._document_set
+        if self._task_type:
+            self.initial["task_type"] = self._task_type
+        if self._notify_email:
+            self.initial["notify_email"] = self._notify_email.lower() == "true"
 
     def _populate_instance(self, instance):
         instance.requested_by = self._user
