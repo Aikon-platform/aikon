@@ -74,6 +74,16 @@ get_env_value() {
     echo "$value"
 }
 
+get_env_desc() {
+    current_line="$1"
+    prev_line="$2"
+    desc=""
+    if [[ $prev_line =~ ^# ]]; then
+        desc=$(echo "$prev_line" | sed 's/^#\s*//')
+    fi
+    echo "$desc"
+}
+
 get_os() {
     unameOut="$(uname -s)"
     case "${unameOut}" in
@@ -134,12 +144,13 @@ update_env() {
         if [[ $line =~ ^[^#]*= ]]; then
             param=$(echo "$line" | cut -d'=' -f1)
             current_val=$(get_env_value "$param" "$env_file")
+            desc=$(get_env_desc "$line" "$prev_line")
 
-            # Extract description from previous line if it exists
-            desc=""
-            if [[ $prev_line =~ ^# ]]; then
-                desc=$(echo "$prev_line" | sed 's/^#\s*//')
-            fi
+            # # Extract description from previous line if it exists
+            # desc=""
+            # if [[ $prev_line =~ ^# ]]; then
+            #     desc=$(echo "$prev_line" | sed 's/^#\s*//')
+            # fi
 
             case $param in
 
@@ -175,16 +186,17 @@ update_app_env() {
             # extract param and current value from .env
             param=$(echo "$line" | cut -d'=' -f1)
             current_val=$(get_env_value "$param" "$env_file")
+            desc=$(get_env_desc "$line" "$prev_line")
 
-            # Extract description from previous line if it exists
-            desc=""
-            if [[ $prev_line =~ ^# ]]; then
-                desc=$(echo "$prev_line" | sed 's/^#\s*//')
-            fi
+            # # Extract description from previous line if it exists
+            # desc=""
+            # if [[ $prev_line =~ ^# ]]; then
+            #     desc=$(echo "$prev_line" | sed 's/^#\s*//')
+            # fi
 
             # get a default value
             if [ "$param" = "MEDIA_DIR" ]; then
-                default_val="$front_dir"/mediafiles
+                default_val="$front_dir"/app/mediafiles
             elif [[ "$param" =~ ^.*(PASSWORD|SECRET).*$ ]]; then
                 default_val="$(generate_random_string)"
             elif [ "$param" = "EMAIL_HOST_USER" ]; then
@@ -199,6 +211,12 @@ update_app_env() {
                 new_value="$default_val"
             else
                 new_value=$(prompt_user "$param" "$default_val" "$current_val" "$desc")
+                # default media dir aldready has a structure clearly defined in the git repo.
+                # when chosing a nonstandard media directory, this structure is not copied,
+                # which may cause FileNotFound errors later on.
+                if [ "$param" = "MEDIA_DIR" ] && [ "$new_value" != "$default_val" ]; then
+                    cp -r "$default_val" "$new_value"
+                fi
             fi
             sed_repl_inplace "s~^$param=.*~$param=$new_value~" "$env_file"
         fi
@@ -210,40 +228,65 @@ update_cantaloupe_env() {
 
     install_type=$(get_install_type "$1")
 
-    cantaloupe_env="$APP_ROOT"/cantaloupe/.env
-    app_env="$APP_ROOT"/app/config/.env
-    ordered_params=("BASE_URI" "FILE_SYSTEM_SOURCE" "HTTP_PORT" "HTTPS_PORT" "LOG_PATH")
-    default_params=("${ordered_params[@]}")  # so far, all params are default params
+    cantaloupe_env_file="$APP_ROOT"/cantaloupe/.env
+    app_env_file="$APP_ROOT"/app/config/.env
+    ordered_params=("FILE_SYSTEM_SOURCE" "HTTP_PORT" "HTTPS_PORT" "LOG_PATH")
 
-    for param in "${ordered_params[@]}"; do
-        current_val=$(get_env_value "$param" "$cantaloupe_env")
+    IFS=$'\n' read -d '' -r -a lines < "$cantaloupe_env_file"  # Read file into array
+    for line in "${lines[@]}"; do
+        if [[ $line =~ ^[^#]*= ]]; then
 
-        case $param in
-            "BASE_URI")
-                default_val="https://"$(get_env_value "PROD_URL" "$app_env")
-                ;;
-            "FILE_SYSTEM_SOURCE")
-                default_val=$(get_env_value "MEDIA_DIR" "$app_env")"/img"
-                ;;
-            "HTTP_PORT")
-                default_val=$(get_env_value "CANTALOUPE_PORT" "$app_env")
-                ;;
-            "HTTPS_PORT")
-                default_val=$(get_env_value "CANTALOUPE_PORT_HTTPS" "$app_env")
-                ;;
-            "LOG_PATH")
-                default_val="$APP_ROOT"/cantaloupe
-                ;;
-            *)
-                default_val="$current_val"
-                ;;
-        esac
+            # extract param and current value from .env
+            param=$(echo "$line" | cut -d'=' -f1)
+            desc=$(get_env_desc "$line" "$prev_line")
+            current_val=$(get_env_value "$param" "$cantaloupe_env_file")
+            current_val=$(get_env_value "$param" "$cantaloupe_env_file")
 
-        if [ "$install_type" = "quick_install" ] && [[ " ${default_params[*]} " =~ "$param" ]]; then
-            new_value="$default_val"
-        else
-            new_value=$(prompt_user "$param" "$default_val" "$current_val")
+            case $param in
+                "BASE_URI")
+                    default_val="https://"$(get_env_value "PROD_URL" "$app_env_file")
+                    ;;
+                "FILE_SYSTEM_SOURCE")
+                    default_val=$(get_env_value "MEDIA_DIR" "$app_env_file")"/img"
+                    ;;
+                "HTTP_PORT")
+                    default_val=$(get_env_value "CANTALOUPE_PORT" "$app_env_file")
+                    ;;
+                "HTTPS_PORT")
+                    default_val=$(get_env_value "CANTALOUPE_PORT_HTTPS" "$app_env_file")
+                    ;;
+                "LOG_PATH")
+                    default_val="$APP_ROOT"/cantaloupe
+                    ;;
+                *)
+                    default_val="$current_val"
+                    ;;
+            esac
+
+            if [ "$install_type" = "quick_install" ] && [[ " ${default_params[*]} " =~ "$param" ]]; then
+                new_value="$default_val"
+            else
+                new_value=$(prompt_user "$param" "$default_val" "$current_val" "$desc")
+            fi
+            sed_repl_inplace "s~^$param=.*~$param=$new_value~" "$cantaloupe_env_file"
         fi
-        sed_repl_inplace "s~^$param=.*~$param=$new_value~" "$cantaloupe_env"
+        prev_line="$line"
     done
+}
+
+update_cantaloupe_properties() {
+    cantaloupe_dir="$1"
+
+    cp "$cantaloupe_dir"/cantaloupe.properties{.template,}
+    config_cantaloupe="$cantaloupe_dir"/cantaloupe.properties
+
+    chmod +x "$cantaloupe_dir"/start.sh
+
+    source "$cantaloupe_dir"/.env
+
+    sed_repl_inplace "s~BASE_URI~$BASE_URI~" "$config_cantaloupe"
+    sed_repl_inplace "s~FILE_SYSTEM_SOURCE~$FILE_SYSTEM_SOURCE~" "$config_cantaloupe"
+    sed_repl_inplace "s~HTTP_PORT~$HTTP_PORT~" "$config_cantaloupe"
+    sed_repl_inplace "s~HTTPS_PORT~$HTTPS_PORT~" "$config_cantaloupe"
+    sed_repl_inplace "s~LOG_PATH~$LOG_PATH~" "$config_cantaloupe"
 }
