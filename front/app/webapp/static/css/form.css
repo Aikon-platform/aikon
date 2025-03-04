@@ -1,7 +1,14 @@
 fieldset h2 {
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--bulma-border);
+    padding-bottom: 0.5rem !important;
+    border-bottom: 1px solid var(--bulma-border) !important;
+    font-size: 1.5em !important;
+    margin-bottom: .5em !important;
+    color: var(--bulma-content-heading-color) !important;
 }
+h3.djn-drag-handler {
+    font-size: 1em !important;
+}
+
 label.required {
     color: var(--bulma-text-strong) !important;
 }

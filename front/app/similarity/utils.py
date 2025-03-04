@@ -17,7 +17,7 @@ from django.db.models import Q, F
 from django.core.cache import cache
 
 from app.similarity.const import SCORES_PATH
-from app.config.settings import CV_API_URL, APP_URL, APP_NAME
+from app.config.settings import APP_URL, APP_NAME
 from app.similarity.models.region_pair import RegionPair
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
@@ -62,7 +62,10 @@ def process_results(data, completed=True):
     """
     :param data: {
         "dataset_url": self.dataset.get_absolute_url(),
-        "results_url": [{doc_pair_ref: result_url}],  => result_url returns a downloadable JSON
+        "results_url": [{
+            "doc_pair": doc_pair_ref,
+            "result_url": result_url  => result_url returns a downloadable JSON
+        }, {...}],
     }
     :param completed: whether the treatment is achieved or these are intermediary results
 
@@ -98,15 +101,23 @@ def process_results(data, completed=True):
 
     output = data.get("output", {})
     if not data or not output:
-        log("No similarity results to process")
+        log("No similarity results to download")
         return
 
-    result_url = output.get("results_url", [])
+    results_url = output.get("results_url", [])
+    if not results_url:
+        error = output.get("error", ["No similarity results to process"])
+        log(error)
+        raise ValueError("\n".join(error))
     # TODO when process results error => treatment status should be error
 
-    for pair_scores in result_url:
+    for pair_scores in results_url:
         regions_ref_pair = pair_scores.get("doc_pair")
         score_url = pair_scores.get("result_url")
+
+        if regions_ref_pair == "dataset":
+            # do not index scores for the entire set of document pairs (used in AIKON-demo)
+            continue
 
         try:
             response = requests.get(score_url, stream=True)
@@ -120,7 +131,7 @@ def process_results(data, completed=True):
                 continue
 
             with open(score_file, "wb") as f:
-                json_content["result_url"] = result_url
+                json_content["result_url"] = score_url
                 f.write(orjson.dumps(json_content))
 
         except Exception as e:
@@ -330,6 +341,9 @@ def delete_pairs_with_regions(regions_id: int):
     RegionPair.objects.filter(
         Q(regions_id_1=regions_id) | Q(regions_id_2=regions_id)
     ).delete()
+
+    if cache.get(f"regions_q_imgs_{regions_id}") is not None:
+        cache.delete(f"regions_q_imgs_{regions_id}")
 
 
 def get_regions_q_imgs(regions_id: int, witness_id=None, cached=False):

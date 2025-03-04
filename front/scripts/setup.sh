@@ -32,19 +32,14 @@ run_script() {
 }
 
 color_echo blue "\nInstalling prompt utility fzy..."
-case $OS in
-    Linux)
-        sudo apt install fzy
-        ;;
-    Mac)
-        brew install fzy
-        ;;
-    *)
-        color_echo red "Unsupported OS: $OS"
-        exit 1
-        ;;
-esac
-
+if [ "$OS" = "Linux" ]; then
+    sudo apt install fzy
+elif [ "$OS" = "Mac" ]; then
+    brew install fzy
+else
+    color_echo red "Unsupported OS: $OS"
+    exit 1
+fi
 
 color_echo blue "Do you want to run a full install or a quick install (skips defining basic env variables, perfect for dev) ?"
 options=("quick install" "full install")
@@ -53,7 +48,7 @@ INSTALL_TYPE="${answer/ /_}"  # "quick_install" or "full_install", will default 
 color_echo blue "Running a $answer !"
 
 run_script setup_system_packages.sh "Submodule initialization" "$INSTALL_TYPE"
-run_script setup_venv.sh "Virutal environment initialization" "$INSTALL_TYPE"
+run_script setup_venv.sh "Virtual environment initialization" "$INSTALL_TYPE"
 run_script setup_var_env.sh "Environment variables configuration" "$INSTALL_TYPE"
 run_script setup_cantaloupe.sh "Cantaloupe configuration" "$INSTALL_TYPE"
 run_script setup_db.sh "Database generation" "$INSTALL_TYPE"

@@ -214,8 +214,11 @@ class RegionsView(AbstractRecordView):
 
         regions = self.get_record()
         wit = regions.get_witness()
+        model = f" ({regions.model})" if regions.model else ""
         context["view_title"] = (
-            f"“{wit}” regions" if APP_LANG == "en" else f"Régions de « {wit} »"
+            f"“{wit}” regions{model}"
+            if APP_LANG == "en"
+            else f"Régions de « {wit} »{model}"
         )
         context["witness"] = wit.get_json(reindex=True)
         context["is_validated"] = regions.is_validated
@@ -244,6 +247,10 @@ class TreatmentCreate(AbstractRecordCreate):
         kwargs["user"] = (
             self.request.user if self.request.user.is_authenticated else None
         )
+        kwargs["document_set"] = self.request.GET.get("document_set")
+        kwargs["task_type"] = self.request.GET.get("task_type")
+        kwargs["notify_email"] = self.request.GET.get("notify_email")
+
         return kwargs
 
     def get_success_url(self):

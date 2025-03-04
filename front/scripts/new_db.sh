@@ -12,22 +12,17 @@ APP_ROOT="$(dirname "$SCRIPT_DIR")"
 source "$SCRIPT_DIR"/functions.sh
 
 APP_ENV="$APP_ROOT"/app/config/.env
-
-case "$(get_os)" in
-    Linux)
-        command="sudo -i -u postgres psql"
-        ;;
-    Mac)
-        command="psql postgres"
-        ;;
-    *)
-        echo "Unsupported OS: you need to create the database manually"
-        exit 1
-        ;;
-esac
-
 # Load environment variables from .env file
-. "$APP_ROOT"/app/config/.env
+. "$APP_ENV"
+
+if [ "$OS" = "Linux" ]; then
+    command="sudo -i -u postgres psql"
+elif [ "$OS" = "Mac" ]; then
+    command="psql postgres"
+else
+    color_echo red "Unsupported OS: you need to create the database manually"
+    exit 1
+fi
 
 # list all databases with
 # $command -c '\l'
@@ -36,13 +31,6 @@ db_name=${1:-${POSTGRES_DB}_2}
 db_sql_file=$2
 db_user=${POSTGRES_USER:-admin}
 db_psw=${POSTGRES_PASSWORD:-dummy_password}
-
-# echo ""
-# echo ">>> db_name     $db_name"
-# echo ">>> db_sql_file $db_sql_file"
-# echo ">>> db_user     $db_user"
-# echo ">>> db_psw      $db_psw"
-# echo ""
 
 create_user() {
     sql_arr=( "CREATE USER $db_user WITH PASSWORD '$db_psw';"
@@ -105,3 +93,7 @@ if [ -z "$db_sql_file" ]; then
 else
     psql -h localhost -d "$db_name" -U "$db_user" -f "$db_sql_file" || echo "‼️ Failed to import SQL data ‼️"
 fi
+
+colorEcho blue '\nConnect to app using:'
+echo -e "          👤 $db_user"
+echo -e "          🔑 $POSTGRES_PASSWORD"
