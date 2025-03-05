@@ -113,6 +113,7 @@ function createSimilarityStore() {
     }
 
     return {
+        baseUrl,
         currentPage,
         comparedRegions,
         excludedCategories,
@@ -131,4 +132,4 @@ function createSimilarityStore() {
     };
 }
 
-export const similarityStore= createSimilarityStore();
+export const similarityStore = createSimilarityStore();

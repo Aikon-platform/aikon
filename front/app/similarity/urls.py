@@ -22,9 +22,9 @@ urlpatterns = [
         name="compared-regions",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/compared-regions",
-        get_compared_regions,
-        name="witness-compared-regions",
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/suggested-regions/<str:img_id>",
+        get_suggested_regions,
+        name="suggested-regions",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/query-images",

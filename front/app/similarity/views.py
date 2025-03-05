@@ -192,6 +192,81 @@ def get_compared_regions(request, wid, rid=None):
         )
 
 
+def get_suggested_regions(request, wid, rid, img_id):
+    """
+    -- creates an undirected graph of distance 1 between all nodes in `img_1` and `img_2`
+    SELECT *
+    FROM webapp_regionpair
+    WHERE
+        webapp_regionpair.category = 1
+        AND (
+                webapp_regionpair.img_1 IN (
+                -- img_2_from_1
+                        SELECT DISTINCT webapp_regionpair.img_2
+                        FROM webapp_regionpair
+                        WHERE
+                                category = 1
+                                AND img_1 = $img_id
+                ) OR webapp_regionpair.img_1 IN (
+                -- img_2_from_2
+                        SELECT DISTINCT webapp_regionpair.img_2
+                        FROM webapp_regionpair
+                        WHERE
+                                webapp_regionpair.category = 1
+                                AND webapp_regionpair.img_2 = $img_id
+                )
+        )
+    ;
+    """
+    # unnests a single-column response from List[Tuple[Any]] to List[Any] (Tuple contains only 1 elt)
+    unnest = lambda r: [row[0] for row in r]
+
+    from django.db.models import Q
+
+    img_2_from_1 = (
+        RegionPair.objects.values_list("img_2")
+        .filter(Q(img_1=img_id) & Q(category=1))
+        .all()
+    )
+    img_2_from_2 = (
+        RegionPair.objects.values_list("img_2")
+        .filter(Q(img_2=img_id) & Q(category=1))
+        .all()
+    )
+    results = RegionPair.objects.filter(
+        Q(category=1)
+        & ~Q(img_1=img_id)
+        & (Q(img_1__in=img_2_from_1) | Q(img_1__in=img_2_from_2))
+    ).all()
+
+    img_2_from_1 = unnest(img_2_from_1)
+    img_2_from_2 = unnest(img_2_from_2)
+
+    print(
+        "\n*************************************************************************"
+        "\nREQUEST     ",
+        request,
+        "\nWID         ",
+        wid,
+        "\nRID         ",
+        rid,
+        "\nIMG_ID      ",
+        img_id,
+        "\n2_FROM_1    ",
+        img_2_from_1,
+        "\nLEN 2_FROM_1",
+        len(img_2_from_1),
+        "\n2_FROM_2    ",
+        img_2_from_2,
+        "\nLEN 2_FROM_2",
+        len(img_2_from_2),
+        "\nRESULTS     ",
+        results,
+        "\n*************************************************************************",
+    )
+    return JsonResponse({})
+
+
 def get_regions(img_1, img_2, wid, rid):
     def get_digit_id(img):
         return int(re.findall(r"\d+", img)[1])
