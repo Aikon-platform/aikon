@@ -6,7 +6,7 @@ It offers a user-friendly interface for visualizing, extracting, and analyzing i
 fostering interdisciplinary collaboration and sustainability across digital humanities projects.
 Aikon's adaptable architecture supports all projects involving visual materials.
 
-[About the AIKON platform](https://aikon-platform.github.io/)
+<img src="https://aikon-platform.github.io/aikon-platform.png" alt="" height="500" width="auto">
 
 This repository contains the code for the frontend platform, as well as a submodule for the worker API.
 
