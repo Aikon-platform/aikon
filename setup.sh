@@ -6,7 +6,7 @@ API_DIR="$ROOT_DIR/api"
 
 FRONT_SETUP="$FRONT_DIR/scripts/setup.sh"
 API_SETUP="$API_DIR/setup.sh"
-source "$AIKON_DIR"/scripts/functions.sh
+source "$FRONT_DIR"/scripts/functions.sh
 
 color_echo blue "\nInstalling prompt utility fzy..."
 case $OS in
