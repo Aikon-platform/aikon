@@ -179,12 +179,13 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
                 **parameters,
             }
 
-        log("[prepare_request] No document to process in selected records.")
-        return {
-            "message": f"No document to process in the selected records"
+        err = (
+            f"No document to process in the selected records"
             if APP_LANG == "en"
             else f"Aucun document à traiter pour les enregistrements sélectionnés."
-        }
+        )
+        log(f"[prepare_request] {err}")
+        raise Exception(err)
 
     except Exception as e:
         log("[prepare_request] Failed to prepare request", e)

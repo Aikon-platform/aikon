@@ -10,6 +10,8 @@ from app.webapp.utils import tasking
 from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.iiif.annotation import has_annotation
 from app.webapp.utils.logger import log
+from config.settings import APP_LANG
+
 
 ################################################################
 # ⚠️   prepare_request() & process_results() are mandatory  ⚠️ #
@@ -103,8 +105,12 @@ def process_results(data, completed=True):
 
 
 def prepare_document(document: Witness | Digitization | Regions, **kwargs):
-    if type(document).__name__ == "Witness" and not document.has_images():
-        return []
+    if not type(document).__name__ == "Witness" and not document.has_images():
+        raise ValueError(
+            f"“{document}” has no digitization to extract regions from"
+            if APP_LANG == "en"
+            else f"« {document} » n'a pas de numérisation pour laquelle extraire des régions"
+        )
 
     regions = document.get_regions() if hasattr(document, "get_regions") else [document]
 
@@ -112,10 +118,11 @@ def prepare_document(document: Witness | Digitization | Regions, **kwargs):
         region.model == kwargs["model"] and has_annotation(region.get_ref())
         for region in regions
     ):
-        log(
-            f"[prepare_document] Document #{document.get_ref()} already has regions extracted with {kwargs['model']}"
+        raise ValueError(
+            f"“{document}” already has regions extracted with {kwargs['model']}"
+            if APP_LANG == "en"
+            else f"« {document} » a déjà des régions extraites avec {kwargs['model']}"
         )
-        return []
 
     digits = document.get_digits() if hasattr(document, "get_digits") else [document]
 
