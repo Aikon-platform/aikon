@@ -113,7 +113,6 @@ function createSimilarityStore() {
     }
 
     return {
-        baseUrl,
         currentPage,
         comparedRegions,
         excludedCategories,

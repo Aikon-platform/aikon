@@ -1,6 +1,7 @@
 import json
 import re
 from collections import OrderedDict
+from typing import List, Dict, Tuple
 
 from django.db.models import Q, Count
 from django.http import JsonResponse
@@ -192,78 +193,82 @@ def get_compared_regions(request, wid, rid=None):
         )
 
 
-def get_suggested_regions(request, wid, rid, img_id):
+def get_suggested_regions(request, wid: str, rid: int, img_id: str):
     """
-    -- creates an undirected graph of distance 1 between all nodes in `img_1` and `img_2`
-    SELECT *
-    FROM webapp_regionpair
-    WHERE
-        webapp_regionpair.category = 1
-        AND (
-                webapp_regionpair.img_1 IN (
-                -- img_2_from_1
-                        SELECT DISTINCT webapp_regionpair.img_2
-                        FROM webapp_regionpair
-                        WHERE
-                                category = 1
-                                AND img_1 = $img_id
-                ) OR webapp_regionpair.img_1 IN (
-                -- img_2_from_2
-                        SELECT DISTINCT webapp_regionpair.img_2
-                        FROM webapp_regionpair
-                        WHERE
-                                webapp_regionpair.category = 1
-                                AND webapp_regionpair.img_2 = $img_id
-                )
-        )
-    ;
+    propagates exact matches between img_id and others.
+
+    -- OLD SQL
+    -- -- creates an undirected graph of distance 1 between all nodes in `img_1` and `img_2`
+    -- SELECT *
+    -- FROM webapp_regionpair
+    -- WHERE
+    --     webapp_regionpair.category = 1
+    --     AND (
+    --             webapp_regionpair.img_1 IN (
+    --             -- img_2_from_1
+    --                     SELECT DISTINCT webapp_regionpair.img_2
+    --                     FROM webapp_regionpair
+    --                     WHERE
+    --                             category = 1
+    --                             AND img_1 = $img_id
+    --             ) OR webapp_regionpair.img_1 IN (
+    --             -- img_2_from_2
+    --                     SELECT DISTINCT webapp_regionpair.img_2
+    --                     FROM webapp_regionpair
+    --                     WHERE
+    --                             webapp_regionpair.category = 1
+    --                             AND webapp_regionpair.img_2 = $img_id
+    --             )
+    --     )
+    -- ;
     """
+
     # unnests a single-column response from List[Tuple[Any]] to List[Any] (Tuple contains only 1 elt)
     unnest = lambda r: [row[0] for row in r]
 
-    from django.db.models import Q
+    def single_call(
+        _img_id: str, aldready_queried: List[str] = []
+    ) -> List[RegionPair | None]:
+        """
+        equivalent to (tested manually without recursion
+        and the SQL and Django ORM variants return the same n° of results):
 
-    img_2_from_1 = (
-        RegionPair.objects.values_list("img_2")
-        .filter(Q(img_1=img_id) & Q(category=1))
-        .all()
-    )
-    img_2_from_2 = (
-        RegionPair.objects.values_list("img_2")
-        .filter(Q(img_2=img_id) & Q(category=1))
-        .all()
-    )
-    results = RegionPair.objects.filter(
-        Q(category=1)
-        & ~Q(img_1=img_id)
-        & (Q(img_1__in=img_2_from_1) | Q(img_1__in=img_2_from_2))
-    ).all()
+        ```
+        WITH entry_point AS (SELECT $_img_id)
+        SELECT
+                webapp_regionpair.img_1 AS "img_match",
+                'img_1' AS "source",
+                1 AS "lvl"
+        FROM webapp_regionpair
+        WHERE webapp_regionpair.img_2 = (SELECT * FROM entry_point)
+        AND webapp_regionpair.category=1
+        UNION (
+                SELECT
+                        webapp_regionpair.img_2 AS "img_match",
+                        'img_2' AS "source",
+                        1 AS "lvl"
+                FROM webapp_regionpair
+                WHERE webapp_regionpair.img_1 = (SELECT * FROM entry_point)
+                AND webapp_regionpair.category=1
+        );
+        ```
+        """
+        img_2_from_1 = (
+            RegionPair.objects.values_list("img_2")
+            .filter(Q(img_1=_img_id) & Q(category=1) & ~Q(img_2__in=aldready_queried))
+            .all()
+        )
+        img_1_from_2 = (
+            RegionPair.objects.values_list("img_1")
+            .filter(Q(img_2=_img_id) & Q(category=1) & ~Q(img_1__in=aldready_queried))
+            .all()
+        )
+        return img_2_from_1.union(img_1_from_2).all()
 
-    img_2_from_1 = unnest(img_2_from_1)
-    img_2_from_2 = unnest(img_2_from_2)
+    r = single_call(img_id)
+    print("____________________", img_id, r)
+    print("____________________", img_id, len(r))
 
-    print(
-        "\n*************************************************************************"
-        "\nREQUEST     ",
-        request,
-        "\nWID         ",
-        wid,
-        "\nRID         ",
-        rid,
-        "\nIMG_ID      ",
-        img_id,
-        "\n2_FROM_1    ",
-        img_2_from_1,
-        "\nLEN 2_FROM_1",
-        len(img_2_from_1),
-        "\n2_FROM_2    ",
-        img_2_from_2,
-        "\nLEN 2_FROM_2",
-        len(img_2_from_2),
-        "\nRESULTS     ",
-        results,
-        "\n*************************************************************************",
-    )
     return JsonResponse({})
 
 
