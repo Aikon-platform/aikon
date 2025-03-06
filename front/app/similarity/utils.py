@@ -19,6 +19,7 @@ from django.core.cache import cache
 from app.similarity.const import SCORES_PATH
 from app.config.settings import APP_URL, APP_NAME
 from app.similarity.models.region_pair import RegionPair
+from app.similarity.tasks import delete_api_similarity
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
@@ -539,10 +540,12 @@ def reset_similarity(regions: Regions):
             except OSError as e:
                 log(f"[reset_similarity] Error removing file {file}", e)
 
+    # TODO retrieve info on the algorithm and feature network used (in json score files)
+    delete_api_similarity.delay(regions.get_ref(), algorithm=None, feat_net=None)
+
     try:
         delete_pairs_with_regions(regions_id)
     except Exception as e:
         log(f"[reset_similarity] Error deleting pairs with region id {regions_id}", e)
 
-    # TODO send request to delete features and scores concerning the anno ref as well
     return True

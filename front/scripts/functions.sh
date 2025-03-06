@@ -329,7 +329,7 @@ cleanup_pids() {
         fi
     done
 
-    sleep 3
+    sleep 2
 
     for pid in "${all_pids[@]}"; do
         if ps -p "$pid" > /dev/null 2>&1; then

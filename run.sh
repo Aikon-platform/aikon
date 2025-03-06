@@ -19,7 +19,7 @@ read -s -p "Enter your sudo password: " PASSWORD
 echo
 
 color_echo blue "STARTING FRONT..."
-(cd "$FRONT_DIR" && START_MODE="CHILD"  bash run.sh "$PASSWORD") &
+(cd "$FRONT_DIR" && START_MODE="CHILD" bash run.sh "$PASSWORD") &
 ALL_PIDS+=($!)
 
 sleep 2
