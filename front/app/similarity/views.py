@@ -305,6 +305,13 @@ def get_suggested_regions(request, wid: str, rid: int, img_id: str):
 
     ###################################################################
     # DO WE RETURN THE REGIONPAIR OR DO WE RETURN THE REGIONS OBJECTS ?
+    #
+    # TEST URL: http://localhost:8000/aikon/witness/2/regions/2/suggested-regions/wit2_pdf2_17_530,461,718,957
+    # TODO implement max_recursion_depth
+    # TODO see if we can limit the number of times
+    #      get_propagated_matches() runs. so far, it runs a lot of
+    #      times with single_call() not returning anything, which is
+    #      weird
     ###################################################################
     return JsonResponse({})
 
