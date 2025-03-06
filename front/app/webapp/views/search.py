@@ -38,7 +38,6 @@ def search_witnesses(request):
         ).distinct()
 
     witness_filter = WitnessFilter(request.GET, queryset=witnesses)
-
     return JsonResponse(paginated_records(request, witness_filter.qs))
 
 
@@ -71,6 +70,12 @@ def search_digitizations(request):
         request.GET, queryset=Digitization.objects.order_by("id")
     )
     return JsonResponse(paginated_records(request, digitization_filter.qs))
+
+
+@require_GET
+def search_regions(request):
+    regions_filter = RegionsFilter(request.GET, queryset=Regions.objects.order_by("id"))
+    return JsonResponse(paginated_records(request, regions_filter.qs))
 
 
 class ArrayLength(models.Func):

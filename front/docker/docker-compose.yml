@@ -1,7 +1,10 @@
 x-proxy-settings: &proxy-settings
-  HTTP_PROXY: ${HTTP_PROXY}
-  HTTPS_PROXY: ${HTTPS_PROXY}
+  HTTP_PROXY: "http://proxy.enpc.fr:3128/"
+  HTTPS_PROXY: "http://proxy.enpc.fr:3128/"
+  http_proxy: "http://proxy.enpc.fr:3128/"
+  https_proxy: "http://proxy.enpc.fr:3128/"
   NO_PROXY: "localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.aikon_network"
+  no_proxy: "localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.aikon_network"
 
 services:
   web:
@@ -102,9 +105,6 @@ services:
       <<: *proxy-settings
       PROD_URL: ${PROD_URL:-localhost}
       NGINX_PORT: ${NGINX_PORT:-8080}
-#      - PROD_URL=${PROD_URL:-localhost}
-#      - NGINX_PORT=${NGINX_PORT:-8080}
-#      - NO_PROXY=localhost,127.0.0.1,web,sas,cantaloupe,.aikon_network
     volumes:
       - ./nginx_conf:/etc/nginx/nginx.conf:ro
       - ../app/staticfiles:/home/aikon/app/staticfiles:ro
