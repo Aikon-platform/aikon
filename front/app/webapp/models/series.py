@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.urls import reverse
 from django.utils.html import format_html
+from django.utils.http import urlencode
 
 from app.config.settings import APP_LANG
 from app.webapp.models.conservation_place import ConservationPlace
@@ -84,7 +85,12 @@ class Series(AbstractSearchableModel):
         return reverse("admin:webapp_series_change", args=[self.id])
 
     def get_absolute_view_url(self):
-        return reverse("webapp:series_view", args=[self.id])
+        query_params = {"edition": f"{self.id}", "filter": "recent"}
+
+        base_url = reverse("webapp:series_view", args=[self.id])
+        query_string = urlencode(query_params)
+
+        return f"{base_url}?{query_string}"
 
     def to_json(self, reindex=True):
         library = self.place

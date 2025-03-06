@@ -303,7 +303,7 @@ class WorkList(AbstractRecordList):
 
 class WorkView(AbstractRecordView):
     model = Work
-    template_name = "webapp/wit_list.html"
+    template_name = "webapp/list.html"
     fields = []
 
     def get_context_data(self, **kwargs):
@@ -319,6 +319,8 @@ class WorkView(AbstractRecordView):
             witnesses.setdefault(witness.id, witness.to_json())
 
         context["witnesses"] = witnesses
+        context["type"] = self.model._meta.verbose_name.lower()
+        context["model_name"] = "witness"
 
         return context
 
@@ -335,7 +337,7 @@ class SeriesList(AbstractRecordList):
 
 class SeriesView(AbstractRecordView):
     model = Series
-    template_name = "webapp/wit_list.html"
+    template_name = "webapp/list.html"
     fields = []
 
     def get_context_data(self, **kwargs):
@@ -351,6 +353,8 @@ class SeriesView(AbstractRecordView):
             witnesses.setdefault(witness.id, witness.to_json())
 
         context["witnesses"] = witnesses
+        context["type"] = self.model._meta.verbose_name.lower()
+        context["model_name"] = "witness"
 
         return context
 
