@@ -19,6 +19,7 @@ from app.webapp.utils.logger import log
 from app.webapp.utils.paths import MEDIA_DIR
 from app.webapp.utils.regions import create_empty_regions
 from app.webapp.tasks import generate_all_json
+from webapp.utils.paths import REGIONS_PATH
 
 """
 VIEWS THAT SERVE AS ENDPOINTS
@@ -177,14 +178,19 @@ def create_manual_regions(request, wid, did=None, rid=None):
 
 def delete_regions(request, rid):
     from app.webapp.tasks import delete_annotations
+    from app.regions.tasks import delete_api_regions
 
     if request.method == "DELETE":
         regions = get_object_or_404(Regions, id=rid)
         try:
-            # TODO! here do not unindex the manifest because retrieve the json content after deletion
             delete_annotations.delay(
                 regions.get_ref(), regions.gen_manifest_url(version=MANIFEST_V2)
             )
+
+            Path(f"{REGIONS_PATH}/{regions.get_ref()}.json").unlink(missing_ok=True)
+
+            delete_api_regions.delay(regions.get_digit().get_ref(), regions.model)
+
             try:
                 # Delete the regions record in the database
                 regions.delete()

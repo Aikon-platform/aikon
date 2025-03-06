@@ -94,6 +94,6 @@ else
     psql -h localhost -d "$db_name" -U "$db_user" -f "$db_sql_file" || echo "‼️ Failed to import SQL data ‼️"
 fi
 
-colorEcho blue '\nConnect to app using:'
+color_echo blue '\nConnect to app using:'
 echo -e "          👤 $db_user"
 echo -e "          🔑 $POSTGRES_PASSWORD"

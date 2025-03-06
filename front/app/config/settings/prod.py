@@ -2,7 +2,10 @@ from urllib.parse import urlparse
 
 from .base import *
 
-API_URL = f"http://{API_URL}" if not API_URL.startswith("http") else API_URL
+prod_api_url = ENV.str("PROD_API_URL")
+API_URL = (
+    f"http://{prod_api_url}" if not prod_api_url.startswith("http") else prod_api_url
+)
 BASE_URL = f"https://{ENV.str('PROD_URL', default='')}"
 
 APP_URL = BASE_URL

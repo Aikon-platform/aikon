@@ -3,17 +3,17 @@
 **[Aikon](https://aikon-platform.github.io/)** is a modular research platform designed to empower humanities scholars
 in leveraging artificial intelligence and computer vision methods for analyzing large-scale heritage collections.
 It offers a user-friendly interface for visualizing, extracting, and analyzing illustrations from historical documents,
-fostering interdisciplinary collaboration and sustainability across digital humanities projects. Built on proven
-technologies and interoperable formats, Aikon's adaptable architecture supports all projects involving visual materials.
+fostering interdisciplinary collaboration and sustainability across digital humanities projects.
+Aikon's adaptable architecture supports all projects involving visual materials.
 
-[About the AIKON platform](https://aikon-platform.github.io/)
+<img src="https://aikon-platform.github.io/aikon-platform.png" alt="" height="500" width="auto">
 
 This repository contains the code for the frontend platform, as well as a submodule for the worker API.
 
 ## General requirements
 
 > - **Sudo** privileges
-> - **Python** >= 3.10
+> - **Python** == 3.10
 > - **Git**:
 >     - `sudo apt install git`
 >     - Having configured [SSH access to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
