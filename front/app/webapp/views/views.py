@@ -9,7 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions, check_version
 from app.webapp.models.digitization import Digitization
-from app.config.settings import CV_API_URL
+from app.config.settings import API_URL
 from app.webapp.models.treatment import Treatment
 from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.paths import MEDIA_DIR
@@ -148,13 +148,6 @@ def manifest_regions(request, version, regions_ref):
 #     return list_to_txt(regions, wit.get_ref())
 
 
-def test(request, wit_ref=None):
-    from app.webapp.tasks import test
-
-    test.delay("Hello world.")
-    return JsonResponse({"response": "OK"}, status=200)
-
-
 def rgpd(request):
     return render(request, "rgpd.html")
 
@@ -177,7 +170,7 @@ def cancel_treatment(request, treatment_id):
         treatment = Treatment.objects.get(id=treatment_id)
 
         try:
-            requests.post(url=f"{CV_API_URL}/{treatment.api_tracking_id}/cancel")
+            requests.post(url=f"{API_URL}/{treatment.api_tracking_id}/cancel")
         except Exception as e:
             return JsonResponse({"error": "Could not connect to API"}, e)
 

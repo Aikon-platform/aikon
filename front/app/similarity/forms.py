@@ -29,7 +29,7 @@ class SimilarityForm(forms.Form):
             if algo.name in AVAILABLE_SIMILARITY_ALGORITHMS
         ]
 
-        self.fields["algorithm"].choices += [
+        self.fields["algorithm"].choices = [
             (algo.name, algo.config.display_name) for algo in available_algos
         ]
 

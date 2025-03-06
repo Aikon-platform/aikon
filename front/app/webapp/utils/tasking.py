@@ -5,7 +5,7 @@ from typing import List
 import requests
 from django.contrib.auth.models import User
 
-from app.config.settings import APP_URL, APP_NAME, CV_API_URL, APP_LANG
+from app.config.settings import APP_URL, APP_NAME, API_URL, APP_LANG
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions
@@ -13,9 +13,7 @@ from app.webapp.models.witness import Witness
 from app.webapp.utils.logger import log
 
 
-def create_treatment(
-    records: List[Witness | Digitization | Regions], task_name, user: User = None
-) -> int:
+def create_doc_set(records: List[Witness | Digitization | Regions], user: User = None):
     wit_ids = set()
     doc_title = "Document set"
 
@@ -44,15 +42,16 @@ def create_treatment(
         raise e
 
     try:
+        wit_ids = list(sorted(wit_ids))
         # check if there is a doc set with same wit_ids and user
-        doc_set = DocumentSet.objects.filter(user=user, wit_ids=list(wit_ids)).first()
+        doc_set = DocumentSet.objects.filter(user=user, wit_ids=wit_ids).first()
 
         if not doc_set:
             # if not create one
             doc_set = DocumentSet.objects.create(
                 title=doc_title,
                 user=user,
-                wit_ids=list(wit_ids),
+                wit_ids=wit_ids,
                 is_public=False,
             )
             doc_set.save()
@@ -62,6 +61,14 @@ def create_treatment(
             e,
         )
         raise e
+
+    return doc_set, user
+
+
+def create_treatment(
+    records: List[Witness | Digitization | Regions], task_name, user: User = None
+) -> int:
+    doc_set, user = create_doc_set(records, user)
 
     try:
         from app.webapp.models.treatment import Treatment
@@ -113,7 +120,7 @@ def task_request(task_name, records, treatment_id=None, endpoint="start"):
     # TODO probably useless => put in start task method?
     try:
         payload = prepare_task_request(task_name, records, treatment_id)
-        response = requests.post(url=f"{CV_API_URL}/{task_name}/start", json=payload)
+        response = requests.post(url=f"{API_URL}/{task_name}/start", json=payload)
         if response.status_code == 200:
             log(
                 f"[{task_name}_request] Successfully sent request: {response.text or ''}"
@@ -125,7 +132,7 @@ def task_request(task_name, records, treatment_id=None, endpoint="start"):
                 "error_message": f"Request failed with status code: {response.status_code}",
                 "request_info": {
                     "method": "POST",
-                    "url": f"{CV_API_URL}/{task_name}/{endpoint}",
+                    "url": f"{API_URL}/{task_name}/{endpoint}",
                     "payload": payload,
                 },
                 "response_info": {

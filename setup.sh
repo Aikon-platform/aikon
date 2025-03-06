@@ -1,84 +1,65 @@
 #!/bin/bash
 
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-AIKON_DIR="$ROOT_DIR/front"
+FRONT_DIR="$ROOT_DIR/front"
 API_DIR="$ROOT_DIR/api"
 
-AIKON_SETUP="$AIKON_DIR/scripts/setup.sh"
+FRONT_SETUP="$FRONT_DIR/scripts/setup.sh"
 API_SETUP="$API_DIR/setup.sh"
+source "$FRONT_DIR"/scripts/functions.sh
 
-git submodule init
-git submodule update
+color_echo blue "\nInstalling prompt utility fzy..."
+case $OS in
 
-# TODO create accelerate setup script to define only important env variables
+    Linux)
+        sudo apt install fzy
+        ;;
+    Mac)
+        brew install fzy
+        ;;
+    *)
+        color_echo red "Unsupported OS: $OS"
+        exit 1
+        ;;
+esac
 
-colorEcho() {
-    Color_Off="\033[0m"
-    Red="\033[1;91m"        # Red
-    Green="\033[1;92m"      # Green
-    Blue="\033[1;94m"       # Blue
-    Purple="\033[1;95m"     # Purple
+color_echo blue "Do you want to init the api/ submodule (WARNING: this will checkout from your current API branch to a detached head, resetting all changes made to the API) ?"
+options=("yes" "no")
+answer=$(printf "%s\n" "${options[@]}" | fzy)
+if [ "$answer" = "yes" ]; then
+    git submodule init
+    git submodule update
+fi
 
-    case "$1" in
-        "green") echo -e "$Green$2$Color_Off";;
-        "red") echo -e "$Red$2$Color_Off";;
-        "blue") echo -e "$Blue$2$Color_Off";;
-        "purple") echo -e "$Purple$2$Color_Off";;
-        *) echo "$2";;
-    esac
-}
+echo_title "AIKON BUNDLE INSTALL"
 
-echoTitle(){
-    sep_line="========================================"
-    len_title=${#1}
+color_echo green "AIKON installation..."
+cd "$FRONT_DIR";
 
-    if [ "$len_title" -gt 40 ]; then
-        sep_line=$(printf "%0.s=" $(seq 1 $len_title))
-        title="$1"
-    else
-        diff=$((38 - len_title))
-        half_diff=$((diff / 2))
-        sep=$(printf "%0.s=" $(seq 1 $half_diff))
-
-        if [ $((diff % 2)) -ne 0 ]; then
-            title="$sep $1 $sep="
-        else
-            title="$sep $1 $sep"
-        fi
-    fi
-
-    colorEcho purple "\n\n$sep_line\n$title\n$sep_line"
-}
-
-echoTitle "AIKON BUNDLE INSTALL"
-
-colorEcho green "AIKON installation..."
-(cd "$AIKON_DIR" && bash "$AIKON_SETUP")
-
-if [ $? -ne 0 ]; then
-    colorEcho red "AIKON setup encountered an error"
-    exit 1
-# fi
-
-colorEcho green "API installation..."
-(cd "$API_DIR" && bash "$API_SETUP")
-
-if [ $? -ne 0 ]; then
-    colorEcho red "API setup encountered an error"
+if ! bash "$FRONT_SETUP"; then
+    color_echo red "AIKON setup encountered an error"
     exit 1
 fi
 
-# replace CV_API_URL in aikon/.env by localhost:discover-api/.env.dev => $API_DEV_PORT
-api_port=$(grep "API_DEV_PORT" "$API_DIR/.env.dev" | cut -d'=' -f2)
+color_echo green "API installation..."
+cd "$API_DIR"
+
+if ! bash "$API_SETUP"; then
+    color_echo red "API setup encountered an error"
+    exit 1
+fi
+
+# replace API_URL in aikon/.env by localhost:api/.env.dev => $API_PORT
+api_port=$(grep "API_PORT" "$API_DIR/.env.dev" | cut -d'=' -f2)
 api_url=localhost:$(echo "$api_port" | tr -d '"')
-sed -i "" -e "s~^CV_API_URL=.*~CV_API_URL=$api_url~" "$AIKON_DIR/app/config/.env"
+sed_repl_inplace "s~^API_URL=.*~API_URL=$api_url~" "$FRONT_ENV"
 
-echoTitle "🎉 AIKON & DISCOVER ARE SET UP! 🎉"
-colorEcho blue "\nYou can now run the app and API with: "
-colorEcho green "              bash run.sh"
+echo_title "🎉 AIKON & DISCOVER ARE SET UP! 🎉"
+color_echo blue "\nYou can now run the app and API with: "
+color_echo green "              bash run.sh"
 
-user=$(grep "POSTGRES_USER" "$AIKON_DIR/app/config/.env" | cut -d'=' -f2)
-password=$(grep "POSTGRES_PASSWORD" "$AIKON_DIR/app/config/.env" | cut -d'=' -f2)
-colorEcho blue '\nConnect to app using:'
+user=$(grep "POSTGRES_USER" "$FRONT_ENV" | cut -d'=' -f2)
+password=$(grep "POSTGRES_PASSWORD" "$FRONT_ENV" | cut -d'=' -f2)
+color_echo blue '\nConnect to app using:'
 echo -e "          👤 $user"
 echo -e "          🔑 $password"

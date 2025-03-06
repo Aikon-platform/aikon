@@ -213,9 +213,7 @@ def save_img(
             img = img.convert("RGB")
 
         if img.width > max_dim or img.height > max_dim:
-            img.thumbnail(
-                (max_dim, max_dim), Image.ANTIALIAS
-            )  # Image.Resampling.LANCZOS
+            img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
 
         img.save(img_path / f"{filename}.jpg", format=img_format)
         return img

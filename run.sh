@@ -9,6 +9,8 @@ API_RUN="$API_DIR/run.sh"
 front_pid=""
 api_pid=""
 
+read -s -p "Enter your sudo password: " PASSWORD
+
 cleanup() {
     echo "Shutting down all processes..."
     [ -n "$front_pid" ] && kill "$front_pid"
@@ -20,7 +22,7 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM
 
-(cd "$FRONT_DIR" && bash "$FRONT_RUN") &
+(cd "$FRONT_DIR" && bash "$FRONT_RUN" "$PASSWORD") &
 front_pid=$!
 
 (cd "$API_DIR" && bash "$API_RUN") &

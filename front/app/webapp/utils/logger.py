@@ -147,6 +147,8 @@ class Logger:
         error_msg = self.format_message(*msg, msg_type="error")
         if exception:
             error_msg += self.format_exception(exception)
+            # TODO add admin email notification?
+            # mail_admins(subject=f"[{APP_NAME} Error] {exception}", message=error_msg, fail_silently=False)
 
         self.logger.error(error_msg)
 

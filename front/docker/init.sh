@@ -16,7 +16,7 @@ if [ ! -f "$APP_ROOT"/cantaloupe/.env ]; then
     # TODO fix that part that is not working correctly
     cp "$APP_ROOT"/cantaloupe/.env.template "$APP_ROOT"/cantaloupe/.env
     update_cantaloupe_env
-    bash "$APP_ROOT"/cantaloupe/init.sh
+    update_cantaloupe_properties
 fi
 
 # if docker/.env does not exist, create it
@@ -57,7 +57,6 @@ fi
 # if nginx_conf does not exist, create it
 if [ ! -f "$APP_ROOT"/docker/nginx_conf ]; then
     cp "$APP_ROOT"/docker/nginx.conf.template "$APP_ROOT"/docker/nginx_conf
-    source "$APP_ROOT"/app/config/.env
 
     sed -i -e "s~DJANGO_PORT~$DJANGO_PORT~" "$APP_ROOT"/docker/nginx_conf
     sed -i -e "s~NGINX_PORT~$NGINX_PORT~" "$APP_ROOT"/docker/nginx_conf

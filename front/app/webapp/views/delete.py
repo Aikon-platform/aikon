@@ -26,6 +26,7 @@ def delete_record(rec_id, rec_class):
 
 @csrf_exempt
 def delete_treatment(request, rec_id):
+    # TODO delete results files ?
     return delete_record(rec_id, Treatment)
 
 
