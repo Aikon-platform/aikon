@@ -223,12 +223,7 @@ def get_suggested_regions(request, wid: str, rid: int, img_id: str):
     -- ;
     """
 
-    # unnests a single-column response from List[Tuple[Any]] to List[Any] (Tuple contains only 1 elt)
-    unnest = lambda r: [row[0] for row in r]
-
-    def single_call(
-        _img_id: str, aldready_queried: List[str] = []
-    ) -> List[RegionPair | None]:
+    def single_call(_img_id: str, queried: List[str] = []) -> List[str | None]:
         """
         equivalent to (tested manually without recursion
         and the SQL and Django ORM variants return the same n° of results):
@@ -255,20 +250,62 @@ def get_suggested_regions(request, wid: str, rid: int, img_id: str):
         """
         img_2_from_1 = (
             RegionPair.objects.values_list("img_2")
-            .filter(Q(img_1=_img_id) & Q(category=1) & ~Q(img_2__in=aldready_queried))
+            .filter(Q(img_1=_img_id) & Q(category=1) & ~Q(img_2__in=queried))
             .all()
         )
         img_1_from_2 = (
             RegionPair.objects.values_list("img_1")
-            .filter(Q(img_2=_img_id) & Q(category=1) & ~Q(img_1__in=aldready_queried))
+            .filter(Q(img_2=_img_id) & Q(category=1) & ~Q(img_1__in=queried))
             .all()
         )
-        return img_2_from_1.union(img_1_from_2).all()
+        matches = img_2_from_1.union(img_1_from_2).all()
+        return [row[0] for row in matches]
 
-    r = single_call(img_id)
-    print("____________________", img_id, r)
-    print("____________________", img_id, len(r))
+    def get_queried(
+        _img_id: str, _propagated_matches: List[Tuple[str] | None]
+    ) -> List[str | None]:
+        return list(set([_img_id] + _propagated_matches))
 
+    def get_propagated_matches(
+        _img_id: str, _propagated_matches: List[Tuple[str] | None] = []
+    ):
+        """
+        1: get all previously queried elts in `_propagated_matches`
+        2: get new matches for `_img_id`
+        3: propagate: for each new image match, run `get_propagated_matches`
+        """
+        queried = get_queried(_img_id, _propagated_matches)
+        s = single_call(_img_id, queried)
+        print(
+            ">>> _propagated_matches :", _propagated_matches, type(_propagated_matches)
+        )
+        print(">>> single_call()       :", s, type(s))
+        print(">>> queried             :", queried, type(queried))
+        print("%" * 110)
+        _propagated_matches += single_call(_img_id, queried)
+        for matched_img_id in _propagated_matches:
+            if matched_img_id not in queried:
+                get_propagated_matches(matched_img_id, _propagated_matches)
+        return _propagated_matches
+
+    propagated_matches = get_propagated_matches(img_id)
+    propagated_matches.remove(img_id)
+
+    # assert(len(propagated_matches) == len(set(propagated_matches)))
+    # assert(img_id not in propagated_matches)
+
+    # _propagated_matches = propagated_matches
+
+    propagated_matches = RegionPair.objects.filter(
+        (Q(img_1__in=propagated_matches) & Q(img_2=img_id))
+        | (Q(img_2__in=propagated_matches) & Q(img_1=img_id))
+    ).all()
+
+    # assert(len(propagated_matches) == len(_propagated_matches))
+
+    ###################################################################
+    # DO WE RETURN THE REGIONPAIR OR DO WE RETURN THE REGIONS OBJECTS ?
+    ###################################################################
     return JsonResponse({})
 
 
