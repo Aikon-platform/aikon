@@ -286,6 +286,9 @@ def get_suggested_regions(request, wid: str, rid: int, img_id: str):
 
     propagated_matches = get_propagated_matches(img_id, depth=0)
     propagated_matches.remove(img_id)
+    print(">>>>>>", propagated_matches)
+    print(">>>>>>", len(propagated_matches) == len(set(propagated_matches)))
+
     propagated_matches = RegionPair.objects.filter(
         (Q(img_1__in=propagated_matches) & Q(img_2=img_id))
         | (Q(img_2__in=propagated_matches) & Q(img_1=img_id))

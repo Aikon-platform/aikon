@@ -7,7 +7,7 @@
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentPageId = window.location.pathname.match(/\d+/g).join('-');
 
-    // retrieve similar images from `qImg`
+    /** retrieve similar images from `qImg` */
     async function fetchSImgs(qImg, selection, excludedCategories) {
         const regionsIds = Object.values(selection).map(r => r.id);
         if (regionsIds.length === 0) {
@@ -31,7 +31,6 @@
         );
         return await response.json()
     }
-
 
     export let qImg;
     $: sImgsPromise = fetchSImgs(qImg, $selectedRegions, $excludedCategories);

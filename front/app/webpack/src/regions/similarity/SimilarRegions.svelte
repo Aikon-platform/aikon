@@ -1,10 +1,11 @@
 <script>
-    import { appLang, csrfToken } from '../../constants';
+    import { appLang } from '../../constants';
     import { similarityStore } from "./similarityStore.js";
     const { selectedRegions } = similarityStore;
     import SimilarRegion from "./SimilarRegion.svelte";
 
     export let qImg, sImgsPromise;
+
 </script>
 
 {#await sImgsPromise}

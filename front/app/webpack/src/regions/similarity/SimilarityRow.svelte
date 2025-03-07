@@ -169,6 +169,8 @@
     <td class="p-5 is-fullwidth">
         <div class="fixed-grid has-5-cols">
             <SimilarityMatches {qImg}></SimilarityMatches>
+        </div>
+        <div class="fixed-grid has-5-cols">
             <SimilarityMatchesSuggestions {qImg}></SimilarityMatchesSuggestions>
         </div>
     </td>
