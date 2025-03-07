@@ -1,7 +1,7 @@
 <script>
     import { similarityStore } from './similarityStore.js';
     import { extractNb } from '../../utils.js';
-    import {userId, appLang, csrfToken, regionsType, appName} from '../../constants';
+    import { userId, appLang, csrfToken, regionsType, appName } from '../../constants';
     import { exactSvg, partialSvg, semanticSvg, noSvg, userSvg } from './similarityCategory';
     import Region from "../Region.svelte";
 
@@ -12,6 +12,7 @@
     export let score = 0;
     export let category = null;
     export let users = [];
+    export let target;  // `target` is only defined on suggested matches (SimilarRegion is a descendent of SimilarityMatchesSuggestion)
 
     const [wit, digit, canvas, xyhw] = sImg.split('.')[0].split('_');
 

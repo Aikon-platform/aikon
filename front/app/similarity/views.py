@@ -325,9 +325,27 @@ def suggested_regions_undirected(img_id: str) -> List[RegionPair | None]:
     # print("LEN_UNIQUE_IDS                :", len(set([ rp.id for rp in propagated_matches ])))
     # assert len(propagated_matches) == len(set([ rp.id for rp in propagated_matches ]))
 
-    # TODO: invert if the relation is from img_2 to img_1.
-    propagated_matches: List[Set[Tuple[str, float, int, List[int]]]] = [
-        rp.get_info() for rp in propagated_matches
+    # add `target` as last element of `get_info`
+
+    ###########################################################
+    # TODO
+    # instead of returning the regionpairs that aldready exist
+    # -- ie, (imgB <exactMatch> imgC) --, generate a dummy
+    # RegionPair (imgA <suggestedMatch> imgC) to be displayed
+    # in the frontend. then, depending on user interactions and
+    # selections, this dummy RegionPair will be saved to the
+    # database.
+    #
+    # this has 2 advantages:
+    # - anticipate the transformations that will have
+    #   to be done on save
+    # - work with the same data model as other RegionPairs,
+    #   without having to do dirty fixes to the frontend by
+    #   adding the `target` key.
+    ###########################################################
+
+    propagated_matches: List[Set[Tuple[str, float, int, List[int], str]]] = [
+        rp.get_info() + (rp.target,) for rp in propagated_matches
     ]
     return propagated_matches
 

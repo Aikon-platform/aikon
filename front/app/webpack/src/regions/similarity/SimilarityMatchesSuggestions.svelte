@@ -20,6 +20,8 @@
         {/await}
     </span>
     <div class="grid is-gap-2">
-        <SimilarRegions qImg={qImg} sImgsPromise={suggestionImgsPromise}></SimilarRegions>
+        <SimilarRegions qImg={qImg}
+                       sImgsPromise={suggestionImgsPromise}
+        ></SimilarRegions>
     </div>
 </div>
