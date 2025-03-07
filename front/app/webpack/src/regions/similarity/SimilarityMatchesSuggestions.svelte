@@ -8,12 +8,18 @@
     const getMatchesSuggestionImgs = async () =>
         fetch(`${baseUrl}suggested-regions/${qImg}`).then(r => r.json())
 
-    $: matchesSuggestionImgs = getMatchesSuggestionImgs()
-
+    $: suggestionImgsPromise = getMatchesSuggestionImgs()
 </script>
 
-<div>
-    <div class="grid is-gap-2" style="border: dotted 5px white">
-        <SimilarRegions qImg={qImg} sImgsPromise={matchesSuggestionImgs}></SimilarRegions>
+<div style="border: dotted 5px purple">
+    <span>
+        {#await suggestionImgsPromise}
+            WAITING :'(
+        {:then suggestionImgs}
+            {suggestionImgs.length} suggestions retrieved
+        {/await}
+    </span>
+    <div class="grid is-gap-2">
+        <SimilarRegions qImg={qImg} sImgsPromise={suggestionImgsPromise}></SimilarRegions>
     </div>
 </div>

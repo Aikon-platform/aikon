@@ -3,7 +3,7 @@ import re
 from collections import OrderedDict
 from typing import List, Dict, Tuple, Set
 
-from django.db.models import Q, Count
+from django.db.models import Q, Count, CharField, Value
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
@@ -193,6 +193,145 @@ def get_compared_regions(request, wid, rid=None):
         )
 
 
+def suggested_regions_directed(img_id: str) -> List[RegionPair | None]:
+    def single_call(_img_id: str, queried: List[int] = []) -> List[str | None]:
+        return list(
+            RegionPair.objects.distinct()
+            .filter(Q(img_1=_img_id) & Q(category=1) & ~Q(id__in=queried))
+            .all()
+        )
+
+    def get_queried(_propagated_matches: List[RegionPair | None]):
+        return [rp.id for rp in _propagated_matches]
+
+    def get_propagated_matches(
+        _img_id: str, _propagated_matches: List[RegionPair | None] = [], depth: int = 0
+    ):
+        max_depth = 5
+        depth += 1
+        if depth > max_depth:
+            return _propagated_matches
+        queried_row_ids = get_queried(_propagated_matches)
+        for regionpair in single_call(_img_id, queried_row_ids):
+            if regionpair.id not in queried_row_ids:
+                # 1st, add all newly retried rows to _propagated_matches.
+                # 2nd, recursively add propagated matches, which will rerun 1st and thus populate `propagated_matches`
+                _propagated_matches.append(regionpair)
+                _propagated_matches = get_propagated_matches(
+                    regionpair.img_2, _propagated_matches, depth
+                )
+        return _propagated_matches
+
+    propagated_matches = get_propagated_matches(img_id, depth=0)
+
+    # print("PROPAGATED_MATCHES            :", propagated_matches)
+    # print("UNIQUE IDS                    :", set([ rp.id for rp in propagated_matches ]))
+    # print("LEN PROPAGATED_MATCHES        :", len(propagated_matches))
+    # print("LEN_UNIQUE_IDS                :", len(set([ rp.id for rp in propagated_matches ])))
+
+    propagated_matches: List[Set[Tuple[str, float, int, List[int]]]] = [
+        rp.get_info() for rp in propagated_matches
+    ]
+    return propagated_matches
+
+
+def suggested_regions_undirected(img_id: str) -> List[RegionPair | None]:
+    # TODO see if we also need to do filtering by region id (param `rid`)
+    # TODO further optimize `get_propagated_matches` ? a lot of the later calls to `single_call_undirected()` return nothing, which means that they are "useless" and could be deleted in theory.
+    def single_call(_img_id: str, queried: List[str] = []) -> List[RegionPair | None]:
+        """
+        get all exact matches related to node _img_id, non-recursively.
+
+        equivalent to (tested manually without recursion, the
+        SQL and Django ORM variants return the same n° of results):
+        ```        WITH entry_point AS (SELECT $_img_id)
+        SELECT *, 'img_1' AS "target"
+        FROM webapp_regionpair
+        WHERE
+            webapp_regionpair.category=1
+            AND webapp_regionpair.img_2 IS NOT IN $queried
+            AND webapp_regionpair.img_2 = $_img_id
+        UNION (
+            SELECT *, 'img_2' AS "target"
+            FROM webapp_regionpair
+            WHERE
+                webapp_regionpair.category=1
+                AND webapp_regionpair.img_1 IS NOT IN $queried
+                AND webapp_regionpair.img_1 = $_img_id
+        )
+        ;
+        ```
+        """
+        img_2_from_1 = (
+            RegionPair.objects.distinct()
+            .filter(Q(img_1=_img_id) & Q(category=1) & ~Q(img_2__in=queried))
+            .annotate(target=Value("img_2", output_field=CharField()))
+        )
+        img_1_from_2 = (
+            RegionPair.objects.distinct()
+            .filter(Q(img_2=_img_id) & Q(category=1) & ~Q(img_1__in=queried))
+            .annotate(target=Value("img_1", output_field=CharField()))
+        )
+        return list(img_2_from_1.union(img_1_from_2).all())
+
+    # purposefully not the same as `suggested_regions_directed.get_queried()`:
+    # we need to check bidirectionnal relations between `img_1` and `img_2`
+    def get_queried(_propagated_matches: List[RegionPair | None]):
+        queried_imgs = []
+        for regionpair in _propagated_matches:
+            queried_imgs.append(regionpair.img_1)
+            queried_imgs.append(regionpair.img_2)
+        return queried_imgs
+
+    def get_propagated_matches(
+        _img_id: str, _propagated_matches: List[str | None] = [], depth: int = 0
+    ):
+        """
+        create the subgraph `propagated_matches`.
+        1. check depth to avoid excessive recursion.
+        2. get all previously queried elts in `_propagated_matches`
+        3. get new matches for `_img_id`
+        4. propagate: for each new image match, run `get_propagated_matches`
+        """
+        max_depth = 5
+        depth += 1
+        if depth > max_depth:
+            return _propagated_matches
+        queried_imgs = get_queried(_propagated_matches)
+        for regionpair in single_call(_img_id, queried_imgs):
+            queried = (
+                regionpair.img_1 in queried_imgs
+                if regionpair.target == "img_2"
+                else regionpair.img_2 in queried_imgs
+            )
+            if not queried:
+                # 1st, add all newly retried rows to _propagated_matches.
+                # 2nd, recursively add propagated matches, which will rerun 1st and thus populate `_propagated_matches`
+                _propagated_matches.append(regionpair)
+                _propagated_matches = get_propagated_matches(
+                    regionpair.img_2
+                    if regionpair.target == "img_1"
+                    else regionpair.img_1,
+                    _propagated_matches,
+                    depth,
+                )
+        return _propagated_matches
+
+    propagated_matches = get_propagated_matches(img_id, depth=0)
+
+    # print("PROPAGATED_MATCHES            :", propagated_matches)
+    # print("UNIQUE IDS                    :", set([ rp.id for rp in propagated_matches ]))
+    # print("LEN PROPAGATED_MATCHES        :", len(propagated_matches))
+    # print("LEN_UNIQUE_IDS                :", len(set([ rp.id for rp in propagated_matches ])))
+    # assert len(propagated_matches) == len(set([ rp.id for rp in propagated_matches ]))
+
+    # TODO: invert if the relation is from img_2 to img_1.
+    propagated_matches: List[Set[Tuple[str, float, int, List[int]]]] = [
+        rp.get_info() for rp in propagated_matches
+    ]
+    return propagated_matches
+
+
 def get_suggested_regions(request, wid: str, rid: int, img_id: str):
     """
     propagates exact matches between `img_id` and others.
@@ -209,93 +348,18 @@ def get_suggested_regions(request, wid: str, rid: int, img_id: str):
     - where edges E are relations between img_1 and img_2 in rows of
         RegionPair, where `RegionPair.category == 1` (1 = exact match)
     - where one of the nodes is `img_id`
+
     """
+    # NOTE problems with the directed variant:
+    # 1. `SimilarityMatchesSuggestion` in the frontend will display a ton of duplicates:
+    #     since it reuses `SimilarRegions.svelte` (intended for directed relations from
+    #     `img_1` to `img_2`), onky `img_2` will be displayed
+    # 2. there is the broader problem of 2 edges arriving at the same node
+    #     (RegionPair X and RegionPair Y will both point to the same RegionPair Z).
 
-    # TODO see if we also need to do filtering by region id (param `rid`)
-    # TODO further optimize `get_propagated_matches` ? a lot of the later calls to `single_call()` return nothing, which means that they are "useless" and could be deleted in theory.
-    def single_call(_img_id: str, queried: List[str] = []) -> List[str | None]:
-        """
-        get all exact matches related to node _img_id, non-recursively.
+    # propagated_matches = suggested_regions_directed(img_id)
+    propagated_matches = suggested_regions_undirected(img_id)
 
-        equivalent to (tested manually without recursion, the
-        SQL and Django ORM variants return the same n° of results):
-        ```
-        WITH entry_point AS (SELECT $_img_id)
-        SELECT
-                webapp_regionpair.img_1 AS "img_match",
-                'img_1' AS "source",
-                1 AS "lvl"
-        FROM webapp_regionpair
-        WHERE webapp_regionpair.img_2 = (SELECT * FROM entry_point)
-        AND webapp_regionpair.category=1
-        UNION (
-                SELECT
-                        webapp_regionpair.img_2 AS "img_match",
-                        'img_2' AS "source",
-                        1 AS "lvl"
-                FROM webapp_regionpair
-                WHERE webapp_regionpair.img_1 = (SELECT * FROM entry_point)
-                AND webapp_regionpair.category=1
-        );
-        ```
-        """
-        img_2_from_1 = (
-            RegionPair.objects.values_list("img_2")
-            .filter(Q(img_1=_img_id) & Q(category=1) & ~Q(img_2__in=queried))
-            .all()
-        )
-        img_1_from_2 = (
-            RegionPair.objects.values_list("img_1")
-            .filter(Q(img_2=_img_id) & Q(category=1) & ~Q(img_1__in=queried))
-            .all()
-        )
-        matches = img_2_from_1.union(img_1_from_2).all()
-        return [row[0] for row in matches]
-
-    def get_queried(
-        _img_id: str, _propagated_matches: List[str | None]
-    ) -> List[str | None]:
-        """
-        get all items previously queried to avoid the same nodes
-        being queried over and over (endless recursion)
-        """
-        return list(set([_img_id] + _propagated_matches))
-
-    def get_propagated_matches(
-        _img_id: str, _propagated_matches: List[str | None] = [], depth: int = 0
-    ):
-        """
-        create the subgraph `propagated_matches`.
-        1. check depth to avoid excessive recursion.
-        2. get all previously queried elts in `_propagated_matches`
-        3. get new matches for `_img_id`
-        4. propagate: for each new image match, run `get_propagated_matches`
-        """
-        max_depth = 5
-        depth += 1
-        if depth > max_depth:
-            return _propagated_matches
-        queried = get_queried(_img_id, _propagated_matches)
-        _propagated_matches += single_call(_img_id, queried)
-        for matched_img_id in _propagated_matches:
-            if matched_img_id not in queried:
-                _propagated_matches = get_propagated_matches(
-                    matched_img_id, _propagated_matches, depth
-                )
-        return _propagated_matches
-
-    propagated_matches = get_propagated_matches(img_id, depth=0)
-    propagated_matches.remove(img_id)
-    print(">>>>>>", propagated_matches)
-    print(">>>>>>", len(propagated_matches) == len(set(propagated_matches)))
-
-    propagated_matches = RegionPair.objects.filter(
-        (Q(img_1__in=propagated_matches) & Q(img_2=img_id))
-        | (Q(img_2__in=propagated_matches) & Q(img_1=img_id))
-    ).all()
-    propagated_matches: List[Set[Tuple[str, float, int, List[int]]]] = [
-        rp.get_info() for rp in propagated_matches
-    ]
     return JsonResponse(propagated_matches, safe=False)
 
 
