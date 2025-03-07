@@ -1,5 +1,5 @@
 <script>
-    import {appLang, csrfToken} from '../../constants';
+    import { appLang, csrfToken } from '../../constants';
     import { similarityStore } from "./similarityStore.js";
     const { selectedRegions, excludedCategories } = similarityStore;
     import SimilarRegion from "./SimilarRegion.svelte";

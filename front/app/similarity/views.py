@@ -195,39 +195,30 @@ def get_compared_regions(request, wid, rid=None):
 
 def get_suggested_regions(request, wid: str, rid: int, img_id: str):
     """
-    propagates exact matches between img_id and others.
+    propagates exact matches between `img_id` and others.
 
-    -- OLD SQL
-    -- -- creates an undirected graph of distance 1 between all nodes in `img_1` and `img_2`
-    -- SELECT *
-    -- FROM webapp_regionpair
-    -- WHERE
-    --     webapp_regionpair.category = 1
-    --     AND (
-    --             webapp_regionpair.img_1 IN (
-    --             -- img_2_from_1
-    --                     SELECT DISTINCT webapp_regionpair.img_2
-    --                     FROM webapp_regionpair
-    --                     WHERE
-    --                             category = 1
-    --                             AND img_1 = $img_id
-    --             ) OR webapp_regionpair.img_1 IN (
-    --             -- img_2_from_2
-    --                     SELECT DISTINCT webapp_regionpair.img_2
-    --                     FROM webapp_regionpair
-    --                     WHERE
-    --                             webapp_regionpair.category = 1
-    --                             AND webapp_regionpair.img_2 = $img_id
-    --             )
-    --     )
-    -- ;
+    suggested regions are RegionPair entries where
+    (with imgA being a value of RegionPair.img_1 or RegionPair.img_2):
+    ```
+    imgA <exactMatch> imgB, imgB <exactMatch> imgC, imgC <exactMatch> imgD
+    => imgA <suggestedMatch> (imgB, imgD)
+    ```
+
+    in graph terms, suggested regions are an undrirected subgraph G
+    - where nodes N are members of (RegionPair.img_1, RegionPair.img_2)
+    - where edges E are relations between img_1 and img_2 in rows of
+        RegionPair, where `RegionPair.category == 1` (1 = exact match)
+    - where one of the nodes is `img_id`
     """
 
+    # TODO see if we also need to do filtering by region id (param `rid`)
+    # TODO further optimize `get_propagated_matches` ? a lot of the later calls to `single_call()` return nothing, which means that they are "useless" and could be deleted in theory.
     def single_call(_img_id: str, queried: List[str] = []) -> List[str | None]:
         """
-        equivalent to (tested manually without recursion
-        and the SQL and Django ORM variants return the same n° of results):
+        get all exact matches related to node _img_id, non-recursively.
 
+        equivalent to (tested manually without recursion, the
+        SQL and Django ORM variants return the same n° of results):
         ```
         WITH entry_point AS (SELECT $_img_id)
         SELECT
@@ -262,58 +253,46 @@ def get_suggested_regions(request, wid: str, rid: int, img_id: str):
         return [row[0] for row in matches]
 
     def get_queried(
-        _img_id: str, _propagated_matches: List[Tuple[str] | None]
+        _img_id: str, _propagated_matches: List[str | None]
     ) -> List[str | None]:
+        """
+        get all items previously queried to avoid the same nodes
+        being queried over and over (endless recursion)
+        """
         return list(set([_img_id] + _propagated_matches))
 
     def get_propagated_matches(
-        _img_id: str, _propagated_matches: List[Tuple[str] | None] = []
+        _img_id: str, _propagated_matches: List[str | None] = [], depth: int = 0
     ):
         """
-        1: get all previously queried elts in `_propagated_matches`
-        2: get new matches for `_img_id`
-        3: propagate: for each new image match, run `get_propagated_matches`
+        create the subgraph `propagated_matches`.
+        1. check depth to avoid excessive recursion.
+        2. get all previously queried elts in `_propagated_matches`
+        3. get new matches for `_img_id`
+        4. propagate: for each new image match, run `get_propagated_matches`
         """
+        max_depth = 5
+        depth += 1
+        if depth > max_depth:
+            return _propagated_matches
         queried = get_queried(_img_id, _propagated_matches)
-        s = single_call(_img_id, queried)
-        print(
-            ">>> _propagated_matches :", _propagated_matches, type(_propagated_matches)
-        )
-        print(">>> single_call()       :", s, type(s))
-        print(">>> queried             :", queried, type(queried))
-        print("%" * 110)
         _propagated_matches += single_call(_img_id, queried)
         for matched_img_id in _propagated_matches:
             if matched_img_id not in queried:
-                get_propagated_matches(matched_img_id, _propagated_matches)
+                _propagated_matches = get_propagated_matches(
+                    matched_img_id, _propagated_matches, depth
+                )
+
         return _propagated_matches
 
-    propagated_matches = get_propagated_matches(img_id)
+    propagated_matches = get_propagated_matches(img_id, depth=0)
     propagated_matches.remove(img_id)
-
-    # assert(len(propagated_matches) == len(set(propagated_matches)))
-    # assert(img_id not in propagated_matches)
-
-    # _propagated_matches = propagated_matches
-
     propagated_matches = RegionPair.objects.filter(
         (Q(img_1__in=propagated_matches) & Q(img_2=img_id))
         | (Q(img_2__in=propagated_matches) & Q(img_1=img_id))
     ).all()
 
-    # assert(len(propagated_matches) == len(_propagated_matches))
-
-    ###################################################################
-    # DO WE RETURN THE REGIONPAIR OR DO WE RETURN THE REGIONS OBJECTS ?
-    #
-    # TEST URL: http://localhost:8000/aikon/witness/2/regions/2/suggested-regions/wit2_pdf2_17_530,461,718,957
-    # TODO implement max_recursion_depth
-    # TODO see if we can limit the number of times
-    #      get_propagated_matches() runs. so far, it runs a lot of
-    #      times with single_call() not returning anything, which is
-    #      weird
-    ###################################################################
-    return JsonResponse({})
+    return JsonResponse(propagated_matches, safe=False)
 
 
 def get_regions(img_1, img_2, wid, rid):
