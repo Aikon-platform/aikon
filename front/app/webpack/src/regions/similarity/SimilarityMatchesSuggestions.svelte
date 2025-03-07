@@ -9,7 +9,7 @@
     async function getSuggestionImgs() {
         fetch(`${baseUrl}suggested-regions/${qImg}`)
         .then(r => r.json()).then(responseBody => suggestionImgs.set(responseBody))
-        .catch(err => console.error("ERROR ON SimilaritySuggestions:", err))
+        .catch(err => console.error("ERROR ON SimilarityMatchesSuggestions:", err))
     }
     getSuggestionImgs();
 

@@ -1,7 +1,7 @@
 import json
 import re
 from collections import OrderedDict
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Set
 
 from django.db.models import Q, Count
 from django.http import JsonResponse
@@ -282,7 +282,6 @@ def get_suggested_regions(request, wid: str, rid: int, img_id: str):
                 _propagated_matches = get_propagated_matches(
                     matched_img_id, _propagated_matches, depth
                 )
-
         return _propagated_matches
 
     propagated_matches = get_propagated_matches(img_id, depth=0)
@@ -291,7 +290,9 @@ def get_suggested_regions(request, wid: str, rid: int, img_id: str):
         (Q(img_1__in=propagated_matches) & Q(img_2=img_id))
         | (Q(img_2__in=propagated_matches) & Q(img_1=img_id))
     ).all()
-
+    propagated_matches: List[Set[Tuple[str, float, int, List[int]]]] = [
+        rp.get_info() for rp in propagated_matches
+    ]
     return JsonResponse(propagated_matches, safe=False)
 
 

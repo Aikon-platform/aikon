@@ -5,7 +5,9 @@
     const { selectedRegions } = similarityStore;
     import { appLang, csrfToken } from "../../constants";
     import { manifestToMirador, refToIIIF, showMessage } from "../../utils.js";
-    import SimilaritySuggestions from "./SimilaritySuggestions.svelte";
+
+    import SimilarityMatches from "./SimilarityMatches.svelte";
+    import SimilarityMatchesSuggestions from "./SimilarityMatchesSuggestions.svelte";
 
     export let qImg;
     let sImg = "";
@@ -166,10 +168,8 @@
     </th>
     <td class="p-5 is-fullwidth">
         <div class="fixed-grid has-5-cols">
-            <div class="grid is-gap-2">
-                <slot/>
-            </div>
-            <SimilaritySuggestions {qImg}></SimilaritySuggestions>
+            <SimilarityMatches {qImg}></SimilarityMatches>
+            <SimilarityMatchesSuggestions {qImg}></SimilarityMatchesSuggestions>
         </div>
     </td>
 </tr>

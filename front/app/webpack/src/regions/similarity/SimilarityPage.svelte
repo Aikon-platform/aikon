@@ -17,9 +17,7 @@
         </tr>
     {:then _}
         {#each $pageQImgs as qImg (qImg.id)}
-            <SimilarityRow {qImg}>
-                <SimilarRegions {qImg}/>
-            </SimilarityRow>
+            <SimilarityRow {qImg}></SimilarityRow>
         {:else}
             <tr class="faded is-center">
                 {appLang === 'en' ? 'No similarity' : 'Pas de similarités'}
