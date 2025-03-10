@@ -13,30 +13,45 @@ from app.webapp.models.witness import Witness
 from app.webapp.utils.logger import log
 
 
-def create_doc_set(records: List[Witness | Digitization | Regions], user: User = None):
-    wit_ids = set()
-    doc_title = "Document set"
-
-    try:
-        for record in records:
-            witness = record.get_witness() if hasattr(record, "get_witness") else record
-            wit_ids.add(witness.id if witness else None)
-            if len(records) == 1:
-                doc_str = witness.__str__()
-                doc_title = doc_str if len(doc_str) < 48 else f"{doc_str[:48]}…"
-    except Exception as e:
+def create_doc_set(doc_list: list | dict, user: User = None):
+    if not len(doc_list):
         log(
-            f"[create_treatment] Failed to retrieve witness ids",
-            e,
+            f"[create_doc_set] Failed to create Document Set from empty list of documents",
         )
-        raise e
+        raise Exception("No documents to create Document Set")
 
     try:
         if not user:
             user = User.objects.filter(is_superuser=True).first()
     except Exception as e:
         log(
-            f"[create_treatment] Unable to retrieve admin user to trigger Treatment for witnesses {wit_ids}",
+            f"[create_doc_set] Unable to retrieve admin user to trigger create document set",
+            e,
+        )
+        raise e
+
+    if type(doc_list) == dict:
+        return create_doc_set_from_ids(doc_list, user)
+    return create_doc_set_form_records(doc_list, user)
+
+
+def create_doc_set_form_records(
+    records: List[Witness | Digitization | Regions], user: User = None
+):
+    wit_ids = set()
+    doc_title = "Document set"
+
+    try:
+        for record in records:
+            witness = record.get_witness() if hasattr(record, "get_witness") else record
+            # TODO: do not put all documents as witnesses, because some could be series, etc.
+            wit_ids.add(witness.id if witness else None)
+            if len(records) == 1:
+                doc_str = witness.__str__()
+                doc_title = doc_str if len(doc_str) < 48 else f"{doc_str[:48]}…"
+    except Exception as e:
+        log(
+            f"[create_doc_set] Failed to retrieve witness ids",
             e,
         )
         raise e
@@ -57,7 +72,36 @@ def create_doc_set(records: List[Witness | Digitization | Regions], user: User =
             doc_set.save()
     except Exception as e:
         log(
-            f"[create_treatment] Failed to create Document Set for witnesses {wit_ids}",
+            f"[create_doc_set] Failed to create Document Set for witnesses {wit_ids}",
+            e,
+        )
+        raise e
+
+    return doc_set, user
+
+
+def create_doc_set_from_ids(ids: dict, user: User = None):
+    """
+    ids: {
+        "wit_ids": List[int],
+        "ser_ids": List[int],
+        "digit_ids": List[int],
+        "work_ids": List[int],
+    }
+    """
+    try:
+        doc_set = DocumentSet.objects.filter(user=user, **ids).first()
+        if not doc_set:
+            doc_set = DocumentSet.objects.create(
+                title="Document set",
+                user=user,
+                **ids,
+                is_public=False,
+            )
+            doc_set.save()
+    except Exception as e:
+        log(
+            f"[create_doc_set] Failed to create Document Set for witnesses {ids}",
             e,
         )
         raise e
@@ -81,7 +125,7 @@ def create_treatment(
         treatment.save()
     except Exception as e:
         log(
-            f"[create_treatment] Failed to create Treatment for witnesses {wit_ids}",
+            f"[create_treatment] Failed to create Treatment for document set #{doc_set.id}",
             e,
         )
         raise e

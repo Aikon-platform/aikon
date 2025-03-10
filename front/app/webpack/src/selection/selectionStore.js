@@ -7,7 +7,7 @@ function createSelectionStore() {
     const docSetTemplate = {
         "id": null, // <null|document_set_id>
         "type": "documentSet",
-        "title": appLang === "en" ? "Document set" : "Set de document", // <string>
+        "title": appLang === "en" ? "Document set" : "Set de documents", // <string>
         "selected": {}, // <{model_name: {record_id: {record_meta}, record_id: {record_meta}}, model_name: {...}, ...}>
     }
     const regionsSetTemplate = {
@@ -150,6 +150,7 @@ function createSelectionStore() {
                 isSaved.set(true);
                 return currentSelection;
             });
+            store(selection[isRegion ? "regions" : "records"], true);
             // TODO if saved, btn for treatment
         })
         .catch(error => console.error('Error:', error));
