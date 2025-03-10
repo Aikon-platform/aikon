@@ -1,6 +1,6 @@
 import importlib
 import json
-from typing import List
+from typing import List, Tuple
 
 import requests
 from django.contrib.auth.models import User
@@ -13,33 +13,41 @@ from app.webapp.models.witness import Witness
 from app.webapp.utils.logger import log
 
 
-def create_doc_set(doc_list: list | dict, user: User = None):
+def get_user(user: User = None) -> User:
+    if not user:
+        try:
+            user = User.objects.filter(is_superuser=True).first()
+        except Exception as e:
+            log(
+                f"[create_doc_set] Unable to retrieve admin user",
+                e,
+            )
+            raise e
+    return user
+
+
+def create_doc_set(
+    doc_list: list | dict, user: User = None
+) -> Tuple[DocumentSet, bool]:
     if not len(doc_list):
         log(
             f"[create_doc_set] Failed to create Document Set from empty list of documents",
         )
         raise Exception("No documents to create Document Set")
 
-    try:
-        if not user:
-            user = User.objects.filter(is_superuser=True).first()
-    except Exception as e:
-        log(
-            f"[create_doc_set] Unable to retrieve admin user to trigger create document set",
-            e,
-        )
-        raise e
-
+    user = get_user(user)
     if type(doc_list) == dict:
         return create_doc_set_from_ids(doc_list, user)
-    return create_doc_set_form_records(doc_list, user)
+    return create_doc_set_from_records(doc_list, user)
 
 
-def create_doc_set_form_records(
+def create_doc_set_from_records(
     records: List[Witness | Digitization | Regions], user: User = None
 ):
     wit_ids = set()
     doc_title = "Document set"
+    is_new = False
+    user = get_user(user)
 
     try:
         for record in records:
@@ -70,6 +78,7 @@ def create_doc_set_form_records(
                 is_public=False,
             )
             doc_set.save()
+            is_new = True
     except Exception as e:
         log(
             f"[create_doc_set] Failed to create Document Set for witnesses {wit_ids}",
@@ -77,7 +86,7 @@ def create_doc_set_form_records(
         )
         raise e
 
-    return doc_set, user
+    return doc_set, is_new
 
 
 def create_doc_set_from_ids(ids: dict, user: User = None):
@@ -89,6 +98,8 @@ def create_doc_set_from_ids(ids: dict, user: User = None):
         "work_ids": List[int],
     }
     """
+    is_new = False
+    user = get_user(user)
     try:
         doc_set = DocumentSet.objects.filter(user=user, **ids).first()
         if not doc_set:
@@ -99,6 +110,7 @@ def create_doc_set_from_ids(ids: dict, user: User = None):
                 is_public=False,
             )
             doc_set.save()
+            is_new = True
     except Exception as e:
         log(
             f"[create_doc_set] Failed to create Document Set for witnesses {ids}",
@@ -106,13 +118,14 @@ def create_doc_set_from_ids(ids: dict, user: User = None):
         )
         raise e
 
-    return doc_set, user
+    return doc_set, is_new
 
 
 def create_treatment(
     records: List[Witness | Digitization | Regions], task_name, user: User = None
 ) -> int:
-    doc_set, user = create_doc_set(records, user)
+    user = get_user(user)
+    doc_set, is_new = create_doc_set(records, user)
 
     try:
         from app.webapp.models.treatment import Treatment
