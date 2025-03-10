@@ -1,8 +1,23 @@
+from __future__ import annotations  # for a reference to RegionPair from RegionPair
+
+from typing import List, Literal, NamedTuple
+
 from django.contrib.postgres.fields import ArrayField
 from django.db import models, connection
 from django.db.models import Q, F
 
 from app.webapp.models.utils.functions import get_fieldname
+
+
+class RegionPairTuple(NamedTuple):
+    score: float
+    q_img: str
+    s_img: str
+    q_regions: int
+    s_regions: int
+    category: int
+    category_int: List[int]
+    is_manual: bool
 
 
 def get_name(fieldname, plural=False):
@@ -129,7 +144,7 @@ class RegionPair(models.Model):
 
     objects = RegionPairManager()
 
-    def get_info(self, q_img=None):
+    def get_info(self, q_img=None) -> RegionPairTuple:
         if q_img is None:
             q_img = self.img_1
         s_img = self.img_2 if self.img_1 == q_img else self.img_1

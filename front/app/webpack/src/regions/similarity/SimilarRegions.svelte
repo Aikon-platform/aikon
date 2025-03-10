@@ -14,8 +14,8 @@
         {appLang === 'en' ? 'Retrieving similar regions...' : 'Récupération des régions similaires...'}
     </div>
 {:then simImgs}
-    {#each simImgs as [score, _, sImg, qRegions, sRegions, category, users, isManual, target]}
-        <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual} {target}/>
+    {#each simImgs as [score, _, sImg, qRegions, sRegions, category, users, isManual]}
+        <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual}/>
     {:else}
         {#if Object.values($selectedRegions).length === 0}
             <div class="faded is-center">

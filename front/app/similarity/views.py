@@ -1,7 +1,7 @@
 import json
 import re
 from collections import OrderedDict
-from typing import List, Dict, Tuple, Set
+from typing import List, Dict, Tuple, Set, Literal
 
 from django.db.models import Q, Count, CharField, Value
 from django.http import JsonResponse
@@ -12,12 +12,13 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import user_passes_test
 
 from app.similarity.const import SCORES_PATH
-from app.similarity.models.region_pair import RegionPair
+from app.similarity.models.region_pair import RegionPair, RegionPairTuple
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import sort_key
 from app.webapp.utils.logger import log
+from app.webapp.utils.iiif import parse_ref
 from app.similarity.utils import (
     send_request,
     check_computed_pairs,
@@ -224,14 +225,6 @@ def suggested_regions_directed(img_id: str) -> List[RegionPair | None]:
 
     propagated_matches = get_propagated_matches(img_id, depth=0)
 
-    # print("PROPAGATED_MATCHES            :", propagated_matches)
-    # print("UNIQUE IDS                    :", set([ rp.id for rp in propagated_matches ]))
-    # print("LEN PROPAGATED_MATCHES        :", len(propagated_matches))
-    # print("LEN_UNIQUE_IDS                :", len(set([ rp.id for rp in propagated_matches ])))
-
-    propagated_matches: List[Set[Tuple[str, float, int, List[int]]]] = [
-        rp.get_info() for rp in propagated_matches
-    ]
     return propagated_matches
 
 
@@ -276,7 +269,7 @@ def suggested_regions_undirected(img_id: str) -> List[RegionPair | None]:
 
     # purposefully not the same as `suggested_regions_directed.get_queried()`:
     # we need to check bidirectionnal relations between `img_1` and `img_2`
-    def get_queried(_propagated_matches: List[RegionPair | None]):
+    def get_queried(_propagated_matches: List[RegionPair | None]) -> List[str]:
         queried_imgs = []
         for regionpair in _propagated_matches:
             queried_imgs.append(regionpair.img_1)
@@ -285,7 +278,7 @@ def suggested_regions_undirected(img_id: str) -> List[RegionPair | None]:
 
     def get_propagated_matches(
         _img_id: str, _propagated_matches: List[str | None] = [], depth: int = 0
-    ):
+    ) -> List[RegionPair]:
         """
         create the subgraph `propagated_matches`.
         1. check depth to avoid excessive recursion.
@@ -319,34 +312,6 @@ def suggested_regions_undirected(img_id: str) -> List[RegionPair | None]:
 
     propagated_matches = get_propagated_matches(img_id, depth=0)
 
-    # print("PROPAGATED_MATCHES            :", propagated_matches)
-    # print("UNIQUE IDS                    :", set([ rp.id for rp in propagated_matches ]))
-    # print("LEN PROPAGATED_MATCHES        :", len(propagated_matches))
-    # print("LEN_UNIQUE_IDS                :", len(set([ rp.id for rp in propagated_matches ])))
-    # assert len(propagated_matches) == len(set([ rp.id for rp in propagated_matches ]))
-
-    # add `target` as last element of `get_info`
-
-    ###########################################################
-    # TODO
-    # instead of returning the regionpairs that aldready exist
-    # -- ie, (imgB <exactMatch> imgC) --, generate a dummy
-    # RegionPair (imgA <suggestedMatch> imgC) to be displayed
-    # in the frontend. then, depending on user interactions and
-    # selections, this dummy RegionPair will be saved to the
-    # database.
-    #
-    # this has 2 advantages:
-    # - anticipate the transformations that will have
-    #   to be done on save
-    # - work with the same data model as other RegionPairs,
-    #   without having to do dirty fixes to the frontend by
-    #   adding the `target` key.
-    ###########################################################
-
-    propagated_matches: List[Set[Tuple[str, float, int, List[int], str]]] = [
-        rp.get_info() + (rp.target,) for rp in propagated_matches
-    ]
     return propagated_matches
 
 
@@ -362,23 +327,58 @@ def get_suggested_regions(request, wid: str, rid: int, img_id: str):
     ```
 
     in graph terms, suggested regions are an undrirected subgraph G
-    - where nodes N are members of (RegionPair.img_1, RegionPair.img_2)
-    - where edges E are relations between img_1 and img_2 in rows of
+    - where nodes are members of (RegionPair.img_1, RegionPair.img_2)
+    - where edges are relations between img_1 and img_2 in rows of
         RegionPair, where `RegionPair.category == 1` (1 = exact match)
     - where one of the nodes is `img_id`
-
     """
-    # NOTE problems with the directed variant:
-    # 1. `SimilarityMatchesSuggestion` in the frontend will display a ton of duplicates:
-    #     since it reuses `SimilarRegions.svelte` (intended for directed relations from
-    #     `img_1` to `img_2`), onky `img_2` will be displayed
-    # 2. there is the broader problem of 2 edges arriving at the same node
-    #     (RegionPair X and RegionPair Y will both point to the same RegionPair Z).
+
+    def regions_id_from_img_id(_img_id: str, target: Literal[1, 2]) -> str:
+        """
+        assuming unique values of RegionPair.img_(1|2)
+        can only be mapped to an unique RegionPair.regions_id_(1|2),
+        retrieve the region id from the img name.
+        """
+        field_regions = "regions_id_1" if target == 1 else "regions_id_2"
+        field_img = "img_1" if target == 1 else "img_2"
+        region_id = (
+            RegionPair.objects.values_list(field_regions)
+            .filter(**{field_img: _img_id})
+            .first()
+        )
+        return region_id[0] if region_id else None
+
+    source_regions_id = regions_id_from_img_id(img_id, 1)
 
     # propagated_matches = suggested_regions_directed(img_id)
     propagated_matches = suggested_regions_undirected(img_id)
 
-    return JsonResponse(propagated_matches, safe=False)
+    # so far, `propagated_matches` does not store relations between
+    # `imgA` and `imgD` (query image and matched image), but between
+    # `ìmgC` and `imgD` (an intermediary matched image and the final
+    # suggested match) => create RegionPairs between `ìmgA` and `ìmgD`
+    # (those RegionPairs are not saved into the DB and only used to build
+    # a JSON for the front)
+    to_regionpair_info = lambda _img_1, _regions_id_1, regionpair: (
+        RegionPair(
+            score=None,  # no actual match was made, so no score.
+            img_1=_img_1,
+            img_2=regionpair.img_1
+            if regionpair.target == "img_1"
+            else regionpair.img_2,
+            regions_id_1=_regions_id_1,
+            regions_id_2=regionpair.regions_id_1
+            if regionpair.target == "img_1"
+            else regionpair.regions_id_2,
+        ).get_info()
+    )
+    propagated_matches_json = [
+        to_regionpair_info(img_id, source_regions_id, rp) for rp in propagated_matches
+    ]
+
+    # propagated_matches = [ rp.get_info() for rp in propagated_matches ]
+
+    return JsonResponse(propagated_matches_json, safe=False)
 
 
 def get_regions(img_1, img_2, wid, rid):

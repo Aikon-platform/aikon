@@ -12,7 +12,6 @@
     export let score = 0;
     export let category = null;
     export let users = [];
-    export let target;  // `target` is only defined on suggested matches (SimilarRegion is a descendent of SimilarityMatchesSuggestion)
 
     const [wit, digit, canvas, xyhw] = sImg.split('.')[0].split('_');
 
