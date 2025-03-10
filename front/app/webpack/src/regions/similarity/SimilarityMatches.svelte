@@ -34,10 +34,14 @@
 
     export let qImg;
     $: sImgsPromise = fetchSImgs(qImg, $selectedRegions, $excludedCategories);
+
 </script>
 
 <div class="grid is-gap-2">
-    <SimilarRegions {qImg} {sImgsPromise}></SimilarRegions>
+    <SimilarRegions {qImg}
+                    {sImgsPromise}
+                    displayType="similarityMatches"
+    ></SimilarRegions>
 </div>
 
 

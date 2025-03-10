@@ -6,12 +6,20 @@
 
     export let qImg;
     export let sImgsPromise;
+    export let displayType="similarityMatches";  // similarityMatches|suggestionMatches
 
 </script>
 
 {#await sImgsPromise}
     <div class="faded is-center">
-        {appLang === 'en' ? 'Retrieving similar regions...' : 'Récupération des régions similaires...'}
+        { appLang === 'en' && displayType === "similarityMatches"
+        ? 'Retrieving similar regions...'
+        : appLang === 'fr' && displayType === "similarityMatches"
+        ? 'Récupération des régions similaires...'
+        : appLang === 'en' && displayType === "suggestionMatches"
+        ? "Retrieving suggested regions..."
+        : "Récupération de suggestions de similarités..."
+        }
     </div>
 {:then simImgs}
     {#each simImgs as [score, _, sImg, qRegions, sRegions, category, users, isManual]}

@@ -375,9 +375,6 @@ def get_suggested_regions(request, wid: str, rid: int, img_id: str):
     propagated_matches_json = [
         to_regionpair_info(img_id, source_regions_id, rp) for rp in propagated_matches
     ]
-
-    # propagated_matches = [ rp.get_info() for rp in propagated_matches ]
-
     return JsonResponse(propagated_matches_json, safe=False)
 
 
