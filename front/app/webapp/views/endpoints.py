@@ -55,13 +55,14 @@ def save_document_set(request, dsid=None):
                 )
 
             try:
+                keep_title = False
                 if dsid:
                     ds = DocumentSet.objects.get(id=dsid)
                     ds.wit_ids = witness_ids
                     ds.ser_ids = series_ids
                     ds.work_ids = work_ids
                 else:
-                    ds, _ = create_doc_set(
+                    ds, is_new = create_doc_set(
                         {
                             "wit_ids": witness_ids,
                             "ser_ids": series_ids,
@@ -69,9 +70,10 @@ def save_document_set(request, dsid=None):
                         },
                         user=request.user,
                     )
+                    keep_title = not is_new
 
                 ds.selection = selection
-                title = set_name or ds.title
+                title = ds.title if keep_title else set_name
                 ds.title = f"{title} #{ds.id}" if "#" not in title else title
                 ds.save()
 
