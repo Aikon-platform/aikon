@@ -135,7 +135,7 @@ CANTALOUPE_DOCKER_URL = (
     f"http://cantaloupe:{CANTALOUPE_PORT}" if DOCKER else CANTALOUPE_APP_URL
 )
 
-API_URL = ENV.str("API_URL")
+API_URL = ENV.str("PROD_API_URL")
 GEONAMES_USER = ENV.str("GEONAMES_USER", default="")
 
 PROD_URL = f"https://{ENV.str('PROD_URL', default='')}"
