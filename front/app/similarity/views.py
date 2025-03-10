@@ -361,7 +361,7 @@ def save_category(request):
 @user_passes_test(is_superuser)
 def index_regions_similarity(request, regions_ref=None):
     """
-    Index the content of a scores npy files containing regions_ref in their name
+    Index the content of score files containing regions_ref in their name
     OR all the similarity score files into the RegionPair database table
     if the score files have already been added to the database, it will only override the score
     """

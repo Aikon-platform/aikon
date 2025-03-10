@@ -1,26 +1,20 @@
-import json
-import os
 from glob import glob
-
-from django.utils.safestring import mark_safe
+from functools import partial
 from iiif_prezi.factory import StructuralError
 
-from app.config.settings import APP_URL, APP_NAME
-from app.webapp.models.digitization_source import DigitizationSource
-from app.webapp.models.searchable_models import AbstractSearchableModel
-from app.webapp.models.utils.functions import get_fieldname
-
-import threading
-from functools import partial
-
+from django.utils.safestring import mark_safe
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.db.models.signals import pre_delete, post_save
 from django.dispatch.dispatcher import receiver
 
+from app.config.settings import APP_URL, APP_NAME
+from app.webapp.models.digitization_source import DigitizationSource
+from app.webapp.models.searchable_models import AbstractSearchableModel
+from app.webapp.models.utils.functions import get_fieldname
+from app.webapp.utils.iiif.validation import validate_manifest
+from app.webapp.models.witness import Witness
 from app.webapp.utils.iiif import NO_LICENSE
-from app.webapp.utils.logger import log, console
-
 from app.webapp.models.utils.constants import (
     IMG_INFO,
     MANIFEST_INFO,
@@ -34,7 +28,6 @@ from app.webapp.models.utils.constants import (
     PDF_ABBR,
     DIG,
     SOURCE_INFO,
-    MANIFEST_V2,
 )
 from app.webapp.utils.functions import (
     delete_files,
@@ -55,11 +48,6 @@ from app.webapp.tasks import (
     convert_temp_to_img,
     extract_images_from_iiif_manifest,
 )
-
-from app.webapp.utils.iiif.validation import validate_manifest
-
-from app.webapp.models.witness import Witness
-
 
 ALLOWED_EXT = ["jpg", "jpeg", "png", "tif"]
 

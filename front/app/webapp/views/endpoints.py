@@ -20,6 +20,7 @@ from app.webapp.utils.paths import MEDIA_DIR
 from app.webapp.utils.regions import create_empty_regions
 from app.webapp.tasks import generate_all_json
 from webapp.utils.paths import REGIONS_PATH
+from webapp.utils.tasking import create_doc_set
 
 """
 VIEWS THAT SERVE AS ENDPOINTS
@@ -43,8 +44,7 @@ def save_document_set(request, dsid=None):
             data = json.loads(request.body.decode("utf-8"))
 
             selection = data.get("selection", [])
-            # TODO use title and ids retrieved from selection directly?
-            set_name = data.get("title", "Document set")
+            set_name = data.get("title", None)
             witness_ids = data.get("Witness", [])
             series_ids = data.get("Series", [])
             work_ids = data.get("Work", [])
@@ -57,13 +57,22 @@ def save_document_set(request, dsid=None):
             try:
                 if dsid:
                     ds = DocumentSet.objects.get(id=dsid)
+                    ds.wit_ids = witness_ids
+                    ds.ser_ids = series_ids
+                    ds.work_ids = work_ids
                 else:
-                    ds = DocumentSet.objects.create(user=request.user)
+                    ds, _ = create_doc_set(
+                        {
+                            "wit_ids": witness_ids,
+                            "ser_ids": series_ids,
+                            "work_ids": work_ids,
+                        },
+                        user=request.user,
+                    )
+
                 ds.selection = selection
-                ds.title = f"{set_name} #{ds.id}" if "#" not in set_name else set_name
-                ds.wit_ids = witness_ids
-                ds.ser_ids = series_ids
-                ds.work_ids = work_ids
+                title = set_name or ds.title
+                ds.title = f"{title} #{ds.id}" if "#" not in title else title
                 ds.save()
 
             except Exception as e:
