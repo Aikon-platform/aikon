@@ -1,9 +1,13 @@
 <script>
+    import { setContext } from "svelte";
+
     import SimilarRegions from "./SimilarRegions.svelte";
     import TooltipGeneric from "../../TooltipGeneric.svelte";
     import { appLang } from '../../constants.js';
 
     export let qImg;
+
+    setContext("similaritySuggestionContext", true);  // bool. true if it's a similarity suggestion, false if it's any other match
 
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const getMatchesSuggestionImgs = async () =>

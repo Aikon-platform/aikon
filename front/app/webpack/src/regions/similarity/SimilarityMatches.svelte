@@ -1,4 +1,6 @@
 <script>
+    import { setContext } from "svelte";
+
     import { csrfToken } from '../../constants';
     import SimilarRegions from "./SimilarRegions.svelte";
     import { similarityStore } from "./similarityStore.js";

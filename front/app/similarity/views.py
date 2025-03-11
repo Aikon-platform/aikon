@@ -408,9 +408,16 @@ def get_regions(img_1, img_2, wid, rid):
     return regions_1, regions_2
 
 
-def add_region_pair(request, wid, rid=None):
+def add_region_pair(
+    request, wid, rid=None, context: Literal["default", "suggestion"] = "default"
+) -> Tuple[Dict, int]:
+    """
+    :returns:
+        status: html status code
+        response: json to send to the frontend
+    """
     if request.method != "POST":
-        return JsonResponse({"error": "Invalid request method"}, status=400)
+        return {"error": "Invalid request method"}, 400
 
     try:
         data = json.loads(request.body)
@@ -420,20 +427,33 @@ def add_region_pair(request, wid, rid=None):
             raise ValidationError("Invalid image string format")
 
         img_1, img_2 = sorted([q_img, s_img], key=sort_key)
-
         regions_1, regions_2 = get_regions(img_1, img_2, wid, rid)
+
+        if context == "default":
+            defaults = {
+                "regions_id_1": regions_1,
+                "regions_id_2": regions_2,
+                "is_manual": True,
+            }
+        else:
+            category = data.get("category")
+            category_x = data.get("category_x")
+            defaults = {
+                "regions_id_1": regions_1,
+                "regions_id_2": regions_2,
+                "category": category,
+                "category_x": category_x,
+                "is_manual": False,
+                "score": 0,  # TBDDDDDDDDDDDD???????
+            }
 
         region_pair, created = RegionPair.objects.get_or_create(
             img_1=f"{img_1}.jpg",
             img_2=f"{img_2}.jpg",
-            defaults={
-                # if the pair doesn't exist, create it with those values
-                "regions_id_1": regions_1,
-                "regions_id_2": regions_2,
-                "is_manual": True,
-            },
+            defaults=defaults,
         )
 
+        # in theory, it is not triggered if context=="suggestions"
         if not created:
             if region_pair.category_x is None:
                 region_pair.category_x = [request.user.id]
@@ -444,20 +464,36 @@ def add_region_pair(request, wid, rid=None):
         s_regions = get_object_or_404(
             Regions, id=regions_2 if q_img == img_1 else regions_1
         )
-        return JsonResponse(
-            {
-                "success": "Region pair added successfully",
-                "s_regions": s_regions.get_json(),
-                "created": created,
-            }
-        )
+        return {
+            "success": "Region pair added successfully",
+            "s_regions": s_regions.get_json(),
+            "created": created,
+        }
 
     except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+        return {"error": "Invalid JSON data"}, 400
     except ValidationError as e:
-        return JsonResponse({"error": str(e)}, status=400)
+        return {"error": str(e)}, 400
     except Exception as e:
-        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+        return {"error": f"An error occurred: {e}"}, 500
+
+
+def add_region_pair_default(request, wid, rid=None):
+    """
+    generally used for adding manual matches
+    """
+    response, status = add_region_pair(request, wid, rid, "default")
+    return JsonResponse(response, status=status)
+
+
+def add_region_pair_suggested_regions(request, wid, rid=None):
+    """
+    used when validating a suggested regionpair (see `get_suggested_regions`)
+
+    TODO: FRONTEND IMPLEMENTATION.
+    """
+    response, status = add_region_pair(request, wid, rid, "default")
+    return JsonResponse(response, status=status)
 
 
 def no_match(request, wid, rid=None):
@@ -512,8 +548,7 @@ def save_category(request):
         data = json.loads(request.body)
         img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
         category = data.get("category")
-        user_selected = data.get("user_selected")
-        user_id = request.user.id
+        category_x = data.get("category_x")
 
         region_pair, created = RegionPair.objects.get_or_create(
             img_1=img_1,
@@ -521,17 +556,7 @@ def save_category(request):
         )
 
         region_pair.category = int(category) if category else None
-        user_category = region_pair.category_x or []
-
-        # If the user's id doesn't exist in category_x, append it
-        if user_selected:
-            if user_id not in user_category:
-                user_category.append(user_id)
-            region_pair.category_x = sorted(user_category)
-        else:  # If user_selected is False, remove the user's id if it exists
-            if user_id in user_category:
-                region_pair.category_x.remove(user_id)
-
+        region_pair.category_x = sorted(category_x)
         region_pair.save()
 
         if created:

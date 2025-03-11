@@ -1,4 +1,6 @@
 <script>
+    import { getContext } from "svelte";
+
     import { appLang } from '../../constants';
     import { similarityStore } from "./similarityStore.js";
     const { selectedRegions } = similarityStore;
@@ -6,17 +8,17 @@
 
     export let qImg;
     export let sImgsPromise;
-    export let displayType="similarityMatches";  // similarityMatches|suggestionMatches
 
+    const similaritySuggestionContext = getContext("similaritySuggestionContext") || false;  // true if it's a suggestion, false otherwise
 </script>
 
 {#await sImgsPromise}
     <div class="faded is-center">
-        { appLang === 'en' && displayType === "similarityMatches"
+        { appLang === 'en' && !similaritySuggestionContext
         ? 'Retrieving similar regions...'
-        : appLang === 'fr' && displayType === "similarityMatches"
+        : appLang === 'fr' && !similaritySuggestionContext
         ? 'Récupération des régions similaires...'
-        : appLang === 'en' && displayType === "suggestionMatches"
+        : appLang === 'en' && similaritySuggestionContext
         ? "Retrieving suggested regions..."
         : "Récupération de suggestions de similarités..."
         }

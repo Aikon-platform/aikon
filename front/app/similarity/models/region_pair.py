@@ -16,7 +16,7 @@ class RegionPairTuple(NamedTuple):
     q_regions: int
     s_regions: int
     category: int
-    category_int: List[int]
+    category_x: List[int]
     is_manual: bool
 
 

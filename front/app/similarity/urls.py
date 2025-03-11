@@ -48,13 +48,23 @@ urlpatterns = [
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/add-region-pair",
-        add_region_pair,
+        add_region_pair_default,
         name="add-region-pair",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/add-region-pair",
-        add_region_pair,
+        add_region_pair_default,
         name="add-witness-region-pair",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/add-region-pair-suggestion",
+        add_region_pair_default,
+        name="add-region-pair-suggestion",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/add-region-pair-suggestion",
+        add_region_pair_default,
+        name="add-witness-region-pair-suggestion",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/no-match",
