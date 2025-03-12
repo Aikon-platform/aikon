@@ -64,10 +64,11 @@ class SimilarityForm(forms.Form):
         if not algorithm:
             return {}
 
-        parameters = {
-            name: self.cleaned_data.get(f"{algorithm}_{name}")
-            for name in self.algorithm_forms[algorithm].fields
-        }
+        parameters = {}
+        for name in self.algorithm_forms[algorithm].fields:
+            api_param = name.replace(f"{algorithm}_", "")
+            parameters[api_param] = self.cleaned_data.get(f"{algorithm}_{name}")
+
         parameters["algorithm"] = algorithm
 
         # TODO make something more dynamic using AVAILABLE_SIMILARITY_ALGORITHMS

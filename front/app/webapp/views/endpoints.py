@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -16,6 +17,8 @@ from app.webapp.utils.iiif.annotation import (
 from app.webapp.utils.logger import log
 from app.webapp.utils.regions import create_empty_regions
 from app.webapp.tasks import generate_all_json
+from webapp.utils.paths import REGIONS_PATH
+from webapp.utils.tasking import create_doc_set
 
 """
 VIEWS THAT SERVE AS ENDPOINTS
@@ -39,8 +42,7 @@ def save_document_set(request, dsid=None):
             data = json.loads(request.body.decode("utf-8"))
 
             selection = data.get("selection", [])
-            # TODO use title and ids retrieved from selection directly?
-            set_name = data.get("title", "Document set")
+            set_name = data.get("title", None)
             witness_ids = data.get("Witness", [])
             series_ids = data.get("Series", [])
             work_ids = data.get("Work", [])
@@ -51,15 +53,26 @@ def save_document_set(request, dsid=None):
                 )
 
             try:
+                keep_title = False
                 if dsid:
                     ds = DocumentSet.objects.get(id=dsid)
+                    ds.wit_ids = witness_ids
+                    ds.ser_ids = series_ids
+                    ds.work_ids = work_ids
                 else:
-                    ds = DocumentSet.objects.create(user=request.user)
+                    ds, is_new = create_doc_set(
+                        {
+                            "wit_ids": witness_ids,
+                            "ser_ids": series_ids,
+                            "work_ids": work_ids,
+                        },
+                        user=request.user,
+                    )
+                    keep_title = not is_new
+
                 ds.selection = selection
-                ds.title = f"{set_name} #{ds.id}" if "#" not in set_name else set_name
-                ds.wit_ids = witness_ids
-                ds.ser_ids = series_ids
-                ds.work_ids = work_ids
+                title = ds.title if keep_title else set_name
+                ds.title = f"{title} #{ds.id}" if "#" not in title else title
                 ds.save()
 
             except Exception as e:
@@ -174,14 +187,19 @@ def create_manual_regions(request, wid, did=None, rid=None):
 
 def delete_regions(request, rid):
     from app.webapp.tasks import delete_annotations
+    from app.regions.tasks import delete_api_regions
 
     if request.method == "DELETE":
         regions = get_object_or_404(Regions, id=rid)
         try:
-            # TODO! here do not unindex the manifest because retrieve the json content after deletion
             delete_annotations.delay(
                 regions.get_ref(), regions.gen_manifest_url(version=MANIFEST_V2)
             )
+
+            Path(f"{REGIONS_PATH}/{regions.get_ref()}.json").unlink(missing_ok=True)
+
+            delete_api_regions.delay(regions.get_digit().get_ref(), regions.model)
+
             try:
                 # Delete the regions record in the database
                 regions.delete()

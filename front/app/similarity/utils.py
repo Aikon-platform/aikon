@@ -19,6 +19,7 @@ from django.core.cache import cache
 from app.similarity.const import SCORES_PATH
 from app.config.settings import APP_URL, APP_NAME
 from app.similarity.models.region_pair import RegionPair
+from app.similarity.tasks import delete_api_similarity
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
@@ -26,6 +27,7 @@ from app.webapp.utils import tasking
 from app.webapp.utils.functions import extract_nb, sort_key
 from app.webapp.utils.logger import log
 from app.webapp.views import check_ref
+from config.settings import APP_LANG
 
 
 ################################################################
@@ -42,13 +44,7 @@ def prepare_request(witnesses, treatment_id):
         prepare_document,
         "similarity",
         {
-            # TODO add options for similarity
-            # "algorithm": "algorithm",
-            # "feat_net": "model.pt",
-            # "feat_set": "set",
-            # "feat_layer": "layer",
-            # "segswap_prefilter": true, # if algorithm is "segswap"
-            # "segswap_n": 0, # if algorithm is "segswap"
+            # NOTE api parameters are added in similarity.forms.get_api_parameters
         },
     )
 
@@ -148,6 +144,13 @@ def process_results(data, completed=True):
 
 def prepare_document(document: Witness | Digitization | Regions, **kwargs):
     regions = document.get_regions() if hasattr(document, "get_regions") else [document]
+
+    if not regions:
+        raise ValueError(
+            f"“{document}” has no extracted regions for which to calculate similarity scores"
+            if APP_LANG == "en"
+            else f"« {document} » n'a pas de régions extraites pour lesquelles calculer les scores de similarité"
+        )
 
     return [
         {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
@@ -537,10 +540,12 @@ def reset_similarity(regions: Regions):
             except OSError as e:
                 log(f"[reset_similarity] Error removing file {file}", e)
 
+    # TODO retrieve info on the algorithm and feature network used (in json score files)
+    delete_api_similarity.delay(regions.get_ref(), algorithm=None, feat_net=None)
+
     try:
         delete_pairs_with_regions(regions_id)
     except Exception as e:
         log(f"[reset_similarity] Error deleting pairs with region id {regions_id}", e)
 
-    # TODO send request to delete features and scores concerning the anno ref as well
     return True

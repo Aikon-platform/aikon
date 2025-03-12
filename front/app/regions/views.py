@@ -5,7 +5,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from app.webapp.utils.tasking import (
-    create_treatment,
     receive_notification,
     create_doc_set,
 )
@@ -60,7 +59,7 @@ def witness_regions_extraction(request, wit_id):
         )
 
     try:
-        doc_set, _ = create_doc_set([witness], request.user)
+        doc_set, is_new = create_doc_set([witness], request.user)
     except Exception as e:
         return JsonResponse(
             {"message": f"Failed to create document set for witness #{wit_id}: {e}"},

@@ -796,8 +796,7 @@ def destroy_regions(regions: Regions):
     regions_file = f"{REGIONS_PATH}/{regions_ref}.json"
     if Path(regions_file).exists():
         try:
-            # TODO fix do not work
-            regions_file.unlink()
+            Path(regions_file).unlink()
         except Exception as e:
             log(f"[destroy_regions] Failed to delete regions file #{regions_ref}", e)
 

@@ -225,7 +225,6 @@ update_app_env() {
 }
 
 update_cantaloupe_env() {
-
     install_type=$(get_install_type "$1")
 
     cantaloupe_env_file="$APP_ROOT"/cantaloupe/.env
@@ -276,12 +275,10 @@ update_cantaloupe_env() {
 
 update_cantaloupe_properties() {
     cantaloupe_dir="$1"
-
     cp "$cantaloupe_dir"/cantaloupe.properties{.template,}
     config_cantaloupe="$cantaloupe_dir"/cantaloupe.properties
 
     chmod +x "$cantaloupe_dir"/start.sh
-
     source "$cantaloupe_dir"/.env
 
     sed_repl_inplace "s~BASE_URI~$BASE_URI~" "$config_cantaloupe"
@@ -289,4 +286,82 @@ update_cantaloupe_properties() {
     sed_repl_inplace "s~HTTP_PORT~$HTTP_PORT~" "$config_cantaloupe"
     sed_repl_inplace "s~HTTPS_PORT~$HTTPS_PORT~" "$config_cantaloupe"
     sed_repl_inplace "s~LOG_PATH~$LOG_PATH~" "$config_cantaloupe"
+}
+
+get_child_pids() {
+    local all_pids=()
+
+    for pid in $(pgrep -P "$1" 2>/dev/null); do
+        all_pids+=("$pid")
+        local grandchild_pids=$(get_child_pids "$pid")
+        for gchild in $grandchild_pids; do
+            all_pids+=("$gchild")
+        done
+    done
+
+    echo "${all_pids[@]}"
+}
+
+cleanup_pids() {
+    local parent_pids=($1)
+    local services="$2"
+    local psw="$3"
+
+    local use_sudo=0
+    if [ -n "$psw" ]; then
+        use_sudo=1
+    fi
+
+    color_echo blue "Shutting down processes..."
+    local all_pids=()
+    for pid in "${parent_pids[@]}"; do
+        all_pids+=("$pid")
+        for child in $(get_child_pids "$pid"); do
+            all_pids+=("$child")
+        done
+    done
+    # remove duplicates
+    all_pids=($(echo "${all_pids[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+
+    for pid in "${all_pids[@]}"; do
+        if ps -p "$pid" > /dev/null 2>&1; then
+            kill -TERM "$pid" 2>/dev/null
+        fi
+    done
+
+    sleep 2
+
+    for pid in "${all_pids[@]}"; do
+        if ps -p "$pid" > /dev/null 2>&1; then
+            if [ "$use_sudo" -eq 1 ]; then
+                echo "$psw" | sudo -S kill -9 "$pid" 2>/dev/null
+            else
+                kill -9 "$pid" 2>/dev/null
+            fi
+        fi
+    done
+
+    local pid_still_running=0
+    for pid in "${all_pids[@]}"; do
+        if ps -p "$pid" > /dev/null 2>&1; then
+            pid_still_running=1
+            color_echo red "⚠️ Process $pid is still running!"
+        fi
+    done
+
+    if [ -n "$services" ]; then
+        local remaining=$(ps aux | grep -E "$services" | grep -v grep | wc -l)
+        if [ "$remaining" -gt 0 ]; then
+            color_echo red "⚠️ $remaining processes might still be running. You may need to manually kill them."
+            ps aux | grep -E "$services" | grep -v grep
+        elif [ "$pid_still_running" -eq 0 ]; then
+            color_echo blue "All processes successfully terminated."
+        fi
+    else
+        if [ "$pid_still_running" -eq 0 ]; then
+            color_echo blue "All tracked processes successfully terminated."
+        fi
+    fi
+
+    return 0
 }

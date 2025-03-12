@@ -1,6 +1,6 @@
 import importlib
 import json
-from typing import List
+from typing import List, Tuple
 
 import requests
 from django.contrib.auth.models import User
@@ -13,30 +13,53 @@ from app.webapp.models.witness import Witness
 from app.webapp.utils.logger import log
 
 
-def create_doc_set(records: List[Witness | Digitization | Regions], user: User = None):
+def get_user(user: User = None) -> User:
+    if not user:
+        try:
+            user = User.objects.filter(is_superuser=True).first()
+        except Exception as e:
+            log(
+                f"[create_doc_set] Unable to retrieve admin user",
+                e,
+            )
+            raise e
+    return user
+
+
+def create_doc_set(
+    doc_list: list | dict, user: User = None
+) -> Tuple[DocumentSet, bool]:
+    if not len(doc_list):
+        log(
+            f"[create_doc_set] Failed to create Document Set from empty list of documents",
+        )
+        raise Exception("No documents to create Document Set")
+
+    user = get_user(user)
+    if type(doc_list) == dict:
+        return create_doc_set_from_ids(doc_list, user)
+    return create_doc_set_from_records(doc_list, user)
+
+
+def create_doc_set_from_records(
+    records: List[Witness | Digitization | Regions], user: User = None
+):
     wit_ids = set()
     doc_title = "Document set"
+    is_new = False
+    user = get_user(user)
 
     try:
         for record in records:
             witness = record.get_witness() if hasattr(record, "get_witness") else record
+            # TODO: do not put all documents as witnesses, because some could be series, etc.
             wit_ids.add(witness.id if witness else None)
             if len(records) == 1:
                 doc_str = witness.__str__()
                 doc_title = doc_str if len(doc_str) < 48 else f"{doc_str[:48]}…"
     except Exception as e:
         log(
-            f"[create_treatment] Failed to retrieve witness ids",
-            e,
-        )
-        raise e
-
-    try:
-        if not user:
-            user = User.objects.filter(is_superuser=True).first()
-    except Exception as e:
-        log(
-            f"[create_treatment] Unable to retrieve admin user to trigger Treatment for witnesses {wit_ids}",
+            f"[create_doc_set] Failed to retrieve witness ids",
             e,
         )
         raise e
@@ -55,20 +78,54 @@ def create_doc_set(records: List[Witness | Digitization | Regions], user: User =
                 is_public=False,
             )
             doc_set.save()
+            is_new = True
     except Exception as e:
         log(
-            f"[create_treatment] Failed to create Document Set for witnesses {wit_ids}",
+            f"[create_doc_set] Failed to create Document Set for witnesses {wit_ids}",
             e,
         )
         raise e
 
-    return doc_set, user
+    return doc_set, is_new
+
+
+def create_doc_set_from_ids(ids: dict, user: User = None):
+    """
+    ids: {
+        "wit_ids": List[int],
+        "ser_ids": List[int],
+        "digit_ids": List[int],
+        "work_ids": List[int],
+    }
+    """
+    is_new = False
+    user = get_user(user)
+    try:
+        doc_set = DocumentSet.objects.filter(user=user, **ids).first()
+        if not doc_set:
+            doc_set = DocumentSet.objects.create(
+                title="Document set",
+                user=user,
+                **ids,
+                is_public=False,
+            )
+            doc_set.save()
+            is_new = True
+    except Exception as e:
+        log(
+            f"[create_doc_set] Failed to create Document Set for witnesses {ids}",
+            e,
+        )
+        raise e
+
+    return doc_set, is_new
 
 
 def create_treatment(
     records: List[Witness | Digitization | Regions], task_name, user: User = None
 ) -> int:
-    doc_set, user = create_doc_set(records, user)
+    user = get_user(user)
+    doc_set, is_new = create_doc_set(records, user)
 
     try:
         from app.webapp.models.treatment import Treatment
@@ -81,7 +138,7 @@ def create_treatment(
         treatment.save()
     except Exception as e:
         log(
-            f"[create_treatment] Failed to create Treatment for witnesses {wit_ids}",
+            f"[create_treatment] Failed to create Treatment for document set #{doc_set.id}",
             e,
         )
         raise e
@@ -179,12 +236,13 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
                 **parameters,
             }
 
-        log("[prepare_request] No document to process in selected records.")
-        return {
-            "message": f"No document to process in the selected records"
+        err = (
+            f"No document to process in the selected records"
             if APP_LANG == "en"
             else f"Aucun document à traiter pour les enregistrements sélectionnés."
-        }
+        )
+        log(f"[prepare_request] {err}")
+        raise Exception(err)
 
     except Exception as e:
         log("[prepare_request] Failed to prepare request", e)
