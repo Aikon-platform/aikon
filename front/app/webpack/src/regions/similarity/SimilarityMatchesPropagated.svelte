@@ -7,24 +7,24 @@
 
     export let qImg;
 
-    setContext("similaritySuggestionContext", true);  // bool. true if it's a similarity suggestion, false if it's any other match
+    setContext("similarityPropagatedContext", true);  // bool. true if it's a propagated similarity match, false if it's any other match
 
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
-    const getMatchesSuggestionImgs = async () =>
-        fetch(`${baseUrl}suggested-regions/${qImg}`).then(r => r.json());
+    const getPropagatedMatches = async () =>
+        fetch(`${baseUrl}propagated-matches/${qImg}`).then(r => r.json());
     const tooltipText =
         appLang==="en"
         ? "Propagated matches are exact matches to images that have an exact match with the current image. There may be up to 5 exact matches connecting the current image and propagated images."
         : "Les correspondances propagées correspondent à des correspondances exactes à des images ayant une correspondance exacte avec l'image actuelle. Il peut y avoir jusqu'à 5 images reliant l'image actuelle à une correspondance propagée.";
 
-    $: suggestionImgsPromise = getMatchesSuggestionImgs()
+    $: propagatedMatchesPromise = getPropagatedMatches()
 </script>
 
 <div class="block matches-suggestion-wrapper">
     <div class="matches-suggestion">
         <div class="block">
-            {#await suggestionImgsPromise then suggestionImgs}
-                {suggestionImgs.length} propagated regions
+            {#await propagatedMatchesPromise then propagatedImgs}
+                {propagatedImgs.length} propagated match{propagatedImgs.length > 1 ? "es" : "" }
                 <TooltipGeneric iconifyIcon="material-symbols:help-outline"
                                 altText={ appLang==="en" ? "Display help" : "Afficher une explication"}
                                 tooltipText={tooltipText}
@@ -33,7 +33,7 @@
         </div>
         <div class="grid is-gap-2">
             <SimilarRegions qImg={qImg}
-                           sImgsPromise={suggestionImgsPromise}
+                           sImgsPromise={propagatedMatchesPromise}
                            displayType="suggestionMatches"
             ></SimilarRegions>
         </div>

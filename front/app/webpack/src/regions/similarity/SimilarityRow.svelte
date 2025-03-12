@@ -7,7 +7,7 @@
     import { manifestToMirador, refToIIIF, showMessage } from "../../utils.js";
 
     import SimilarityMatches from "./SimilarityMatches.svelte";
-    import SimilarityMatchesSuggestions from "./SimilarityMatchesSuggestions.svelte";
+    import SimilarityMatchesPropagated from "./SimilarityMatchesPropagated.svelte";
 
     export let qImg;
     let sImg = "";
@@ -171,7 +171,7 @@
             <SimilarityMatches {qImg}></SimilarityMatches>
         </div>
         <div class="fixed-grid has-5-cols">
-            <SimilarityMatchesSuggestions {qImg}></SimilarityMatchesSuggestions>
+            <SimilarityMatchesPropagated {qImg}></SimilarityMatchesPropagated>
         </div>
     </td>
 </tr>

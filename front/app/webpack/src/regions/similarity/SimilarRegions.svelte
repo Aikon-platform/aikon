@@ -9,16 +9,16 @@
     export let qImg;
     export let sImgsPromise;
 
-    const similaritySuggestionContext = getContext("similaritySuggestionContext") || false;  // true if it's a suggestion, false otherwise
+    const similarityPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a suggestion, false otherwise
 </script>
 
 {#await sImgsPromise}
     <div class="faded is-center">
-        { appLang === 'en' && !similaritySuggestionContext
+        { appLang === 'en' && !similarityPropagatedContext
         ? 'Retrieving similar regions...'
-        : appLang === 'fr' && !similaritySuggestionContext
+        : appLang === 'fr' && !similarityPropagatedContext
         ? 'Récupération des régions similaires...'
-        : appLang === 'en' && similaritySuggestionContext
+        : appLang === 'en' && similarityPropagatedContext
         ? "Retrieving propagated regions..."
         : "Récupération de similarités propagées..."
         }

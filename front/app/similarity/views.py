@@ -194,67 +194,44 @@ def get_compared_regions(request, wid, rid=None):
         )
 
 
-def suggested_regions_directed(img_id: str) -> List[RegionPair | None]:
-    def single_call(_img_id: str, queried: List[int] = []) -> List[str | None]:
-        return list(
-            RegionPair.objects.distinct()
-            .filter(Q(img_1=_img_id) & Q(category=1) & ~Q(id__in=queried))
-            .all()
-        )
+# def propagated_regions_directed(img_id: str) -> List[RegionPair | None]:
+#     def single_call(_img_id: str, queried: List[int] = []) -> List[str | None]:
+#         return list(
+#             RegionPair.objects.distinct()
+#             .filter(Q(img_1=_img_id) & Q(category=1) & ~Q(id__in=queried))
+#             .all()
+#         )
+#
+#     def get_queried(_propagated_matches: List[RegionPair | None]):
+#         return [rp.id for rp in _propagated_matches]
+#
+#     def get_propagated_matches(
+#         _img_id: str, _propagated_matches: List[RegionPair | None] = [], depth: int = 0
+#     ):
+#         max_depth = 5
+#         depth += 1
+#         if depth > max_depth:
+#             return _propagated_matches
+#         queried_row_ids = get_queried(_propagated_matches)
+#         for regionpair in single_call(_img_id, queried_row_ids):
+#             if regionpair.id not in queried_row_ids:
+#                 # 1st, add all newly retried rows to _propagated_matches.
+#                 # 2nd, recursively add propagated matches, which will rerun 1st and thus populate `propagated_matches`
+#                 _propagated_matches.append(regionpair)
+#                 _propagated_matches = get_propagated_matches(
+#                     regionpair.img_2, _propagated_matches, depth
+#                 )
+#         return _propagated_matches
+#
+#     propagated_matches = get_propagated_matches(img_id, depth=0)
+#
+#     return propagated_matches
 
-    def get_queried(_propagated_matches: List[RegionPair | None]):
-        return [rp.id for rp in _propagated_matches]
 
-    def get_propagated_matches(
-        _img_id: str, _propagated_matches: List[RegionPair | None] = [], depth: int = 0
-    ):
-        max_depth = 5
-        depth += 1
-        if depth > max_depth:
-            return _propagated_matches
-        queried_row_ids = get_queried(_propagated_matches)
-        for regionpair in single_call(_img_id, queried_row_ids):
-            if regionpair.id not in queried_row_ids:
-                # 1st, add all newly retried rows to _propagated_matches.
-                # 2nd, recursively add propagated matches, which will rerun 1st and thus populate `propagated_matches`
-                _propagated_matches.append(regionpair)
-                _propagated_matches = get_propagated_matches(
-                    regionpair.img_2, _propagated_matches, depth
-                )
-        return _propagated_matches
-
-    propagated_matches = get_propagated_matches(img_id, depth=0)
-
-    return propagated_matches
-
-
-def suggested_regions_undirected(img_id: str) -> List[RegionPair | None]:
-    # TODO see if we also need to do filtering by region id (param `rid`)
-    # TODO further optimize `get_propagated_matches` ? a lot of the later calls to `single_call_undirected()` return nothing, which means that they are "useless" and could be deleted in theory.
-    def single_call(_img_id: str, queried: List[str] = []) -> List[RegionPair | None]:
-        """
-        get all exact matches related to node _img_id, non-recursively.
-
-        equivalent to (tested manually without recursion, the
-        SQL and Django ORM variants return the same n° of results):
-        ```        WITH entry_point AS (SELECT $_img_id)
-        SELECT *, 'img_1' AS "target"
-        FROM webapp_regionpair
-        WHERE
-            webapp_regionpair.category=1
-            AND webapp_regionpair.img_2 IS NOT IN $queried
-            AND webapp_regionpair.img_2 = $_img_id
-        UNION (
-            SELECT *, 'img_2' AS "target"
-            FROM webapp_regionpair
-            WHERE
-                webapp_regionpair.category=1
-                AND webapp_regionpair.img_1 IS NOT IN $queried
-                AND webapp_regionpair.img_1 = $_img_id
-        )
-        ;
-        ```
-        """
+def propagated_regions_undirected(img_id: str, rid: int) -> List[RegionPair | None]:
+    def single_call(
+        _img_id: str, rid: int | None = None, queried: List[str | None] = []
+    ) -> List[RegionPair | None]:
         img_2_from_1 = (
             RegionPair.objects.distinct()
             .filter(Q(img_1=_img_id) & Q(category=1) & ~Q(img_2__in=queried))
@@ -265,20 +242,26 @@ def suggested_regions_undirected(img_id: str) -> List[RegionPair | None]:
             .filter(Q(img_2=_img_id) & Q(category=1) & ~Q(img_1__in=queried))
             .annotate(target=Value("img_1", output_field=CharField()))
         )
+        if rid:
+            regions_filter = Q(regions_id_1=rid) & Q(regions_id_2=rid)
+            img_2_from_1 = img_2_from_1.filter(regions_filter)
+            img_1_from_2 = img_1_from_2.filter(regions_filter)
         return list(img_2_from_1.union(img_1_from_2).all())
 
     def get_queried(
         _propagated_matches: List[Tuple[RegionPair, int] | None]
     ) -> List[int]:
-        queried_imgs = []
-        for regionpair, depth in _propagated_matches:
-            # queried_imgs.append(regionpair.img_1)
-            # queried_imgs.append(regionpair.img_2)
-            queried_imgs.append(regionpair.id)
-        return queried_imgs
+        queried = []
+        for rp, depth in _propagated_matches:
+            queried.append(rp.img_1)
+            queried.append(rp.img_2)
+        return list(set(queried))
 
     def get_propagated_matches(
-        _img_id: str, _propagated_matches: List[str | None] = [], depth: int = 0
+        _img_id: str,
+        _rid: int | None = None,
+        _propagated_matches: List[str | None] = [],
+        depth: int = 0,
     ) -> List[Tuple[RegionPair, int] | None]:
         """
         create the subgraph `propagated_matches`.
@@ -296,83 +279,67 @@ def suggested_regions_undirected(img_id: str) -> List[RegionPair | None]:
         if depth > max_depth:
             return _propagated_matches
         queried_imgs = get_queried(_propagated_matches)
-        print(">>>>>>> _img_id", _img_id)
-        print(">>>>>>> queried_imgs", queried_imgs)
-        for regionpair in single_call(_img_id, queried_imgs):
+        for regionpair in single_call(_img_id, rid, queried_imgs):
+            # un peu trop drastique....
             # queried = (
             #     regionpair.img_1 in queried_imgs
             #     if regionpair.target == "img_2"
             #     else regionpair.img_2 in queried_imgs
             # )
-            queried = regionpair.id in queried_imgs
+            queried = False
             if not queried:
                 # 1st, add all newly retried rows to _propagated_matches
-                # (we don't add depths from the 1st match to avoid displaying imgA <exactMatch> imgB in _propagated_matches).
                 # 2nd, recursively add propagated matches, which will rerun 1st and thus populate `_propagated_matches`
                 _propagated_matches.append((regionpair, depth))
                 _propagated_matches = get_propagated_matches(
                     regionpair.img_1
                     if regionpair.target == "img_1"
                     else regionpair.img_2,
+                    _rid,
                     _propagated_matches,
                     depth,
                 )
         return _propagated_matches
 
     propagated_matches = get_propagated_matches(img_id, depth=0)
-    print(">>>>>>> propagated_matches", propagated_matches)
-    print(">>>>>>> propagated_matches depth", set(d for (rp, d) in propagated_matches))
-    print("*****************************************")
-
     # we remove matches with depth 1 since they aldready are exact matches (imgA <exactMatch> imgB)
     return [regionpair for (regionpair, depth) in propagated_matches if depth > 1]
 
 
-def get_suggested_regions(request, wid: str, rid: int, img_id: str):
+def get_propagated_matches(request, wid: str, rid: int | None = None, img_id: str = ""):
     """
     propagates exact matches between `img_id` and others.
 
-    suggested regions are RegionPair entries where
+    propagated regions are RegionPair entries where
     (with imgA being a value of RegionPair.img_1 or RegionPair.img_2):
     ```
     imgA <exactMatch> imgB, imgB <exactMatch> imgC, imgC <exactMatch> imgD
-    => imgA <suggestedMatch> (imgB, imgD)
+    => imgA <propagatedMatch> (imgB, imgD)
     ```
 
-    in graph terms, suggested regions are an undrirected subgraph G
+    in graph terms, propagated regions are an undrirected subgraph G
     - where nodes are members of (RegionPair.img_1, RegionPair.img_2)
     - where edges are relations between img_1 and img_2 in rows of
         RegionPair, where `RegionPair.category == 1` (1 = exact match)
     - where one of the nodes is `img_id`
     """
+    if rid:
+        from_regions_id = rid
+    else:
+        from_regions_id = (
+            RegionPair.objects.values_list("regions_id_1").filter(img_1=img_id).first()
+        )[0]
 
-    def regions_id_from_img_id(_img_id: str, target: Literal[1, 2]) -> str:
-        """
-        assuming unique values of RegionPair.img_(1|2)
-        can only be mapped to an unique RegionPair.regions_id_(1|2),
-        retrieve the region id from the img name.
-        """
-        field_regions = "regions_id_1" if target == 1 else "regions_id_2"
-        field_img = "img_1" if target == 1 else "img_2"
-        region_id = (
-            RegionPair.objects.values_list(field_regions)
-            .filter(**{field_img: _img_id})
-            .first()
-        )
-        return region_id[0] if region_id else None
-
-    source_regions_id = regions_id_from_img_id(img_id, 1)
-
-    # propagated_matches = suggested_regions_directed(img_id)
-    propagated_matches = suggested_regions_undirected(img_id)
+    # propagated_matches = propagated_regions_directed(img_id)
+    propagated_matches = propagated_regions_undirected(img_id, rid)
 
     # so far, `propagated_matches` does not store relations between
     # `imgA` and `imgD` (query image and matched image), but between
     # `ìmgC` and `imgD` (an intermediary matched image and the final
-    # suggested match) => create RegionPairs between `ìmgA` and `ìmgD`
+    # propagated match) => create RegionPairs between `ìmgA` and `ìmgD`
     # (those RegionPairs are not saved into the DB and only used to build
     # a JSON for the front)
-    to_regionpair_info = lambda _img_1, _regions_id_1, regionpair: (
+    to_regionpair = lambda _img_1, _regions_id_1, regionpair: (
         RegionPair(
             score=None,  # no actual match was made, so no score.
             img_1=_img_1,
@@ -383,11 +350,33 @@ def get_suggested_regions(request, wid: str, rid: int, img_id: str):
             regions_id_2=regionpair.regions_id_1
             if regionpair.target == "img_1"
             else regionpair.regions_id_2,
-        ).get_info()
+        )
     )
-    propagated_matches_json = [
-        to_regionpair_info(img_id, source_regions_id, rp) for rp in propagated_matches
-    ]
+
+    # deduplication of results: only 1 relationship between img_1 and img_2 can exist.
+    final_propagated_matches: List[RegionPair] = []
+    for rp in propagated_matches:
+        rp = to_regionpair(img_id, from_regions_id, rp)
+        if not any(
+            (rp.img_1 == frp.img_1 and rp.img_2 == frp.img_2)
+            for frp in final_propagated_matches
+        ):
+            final_propagated_matches.append(rp)
+            # WHYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY ??
+            print(
+                "RP EXISTS         ",
+                RegionPair.objects.filter(
+                    Q(img_1=rp.img_1) & Q(img_2=rp.img_2)
+                ).exists(),
+            )
+            print(
+                "RP INVERTED EXISTS",
+                RegionPair.objects.filter(
+                    Q(img_1=rp.img_2) & Q(img_2=rp.img_1)
+                ).exists(),
+            )
+
+    propagated_matches_json = [frp.get_info() for frp in final_propagated_matches]
     return JsonResponse(propagated_matches_json, safe=False)
 
 
@@ -421,16 +410,92 @@ def get_regions(img_1, img_2, wid, rid):
     return regions_1, regions_2
 
 
-def add_region_pair(
-    request, wid, rid=None, context: Literal["default", "suggestion"] = "default"
-) -> Tuple[Dict, int]:
-    """
-    :returns:
-        status: html status code
-        response: json to send to the frontend
-    """
+# def add_region_pair_internal(
+#     request, wid, rid=None, context: Literal["default", "propagation"] = "default"
+# ) -> Tuple[Dict, int]:
+#     """
+#     :returns:
+#         status: html status code
+#         response: json to send to the frontend
+#     """
+#     if request.method != "POST":
+#         return {"error": "Invalid request method"}, 400
+#
+#     try:
+#         data = json.loads(request.body)
+#         if context == "default":
+#             q_img, s_img = data.get("q_img"), data.get("s_img")
+#         else:
+#             q_img, s_img = data.get("img_1"), data.get("img_2")
+#
+#         if not (validate_img_ref(q_img) and validate_img_ref(s_img)):
+#             raise ValidationError("Invalid image string format")
+#
+#         img_1, img_2 = sorted([q_img, s_img], key=sort_key)
+#         regions_1, regions_2 = get_regions(img_1, img_2, wid, rid)
+#         if context == "default":
+#             defaults = {
+#                 "regions_id_1": regions_1,
+#                 "regions_id_2": regions_2,
+#                 "is_manual": True,
+#             }
+#         else:
+#             category = data.get("category")
+#             category_x = data.get("category_x")
+#             defaults = {
+#                 "regions_id_1": regions_1,
+#                 "regions_id_2": regions_2,
+#                 "category": category,
+#                 "category_x": category_x,
+#                 "is_manual": False,
+#                 "score": 0,  # TBDDDDDDDDDDDD???????
+#             }
+#
+#         region_pair, created = RegionPair.objects.get_or_create(
+#             img_1=f"{img_1}.jpg",
+#             img_2=f"{img_2}.jpg",
+#             defaults=defaults,
+#         )
+#
+#         # in theory, it is not triggered if context!="propagation"
+#         if not created:
+#             if region_pair.category_x is None:
+#                 region_pair.category_x = [request.user.id]
+#             elif request.user.id not in region_pair.category_x:
+#                 region_pair.category_x.append(request.user.id)
+#             region_pair.save()
+#
+#         s_regions = get_object_or_404(
+#             Regions, id=regions_2 if q_img == img_1 else regions_1
+#         )
+#         return {
+#             "success": "Region pair added successfully",
+#             "s_regions": s_regions.get_json(),
+#             "created": created,
+#         }, 200
+#
+#     except json.JSONDecodeError:
+#         return {"error": "Invalid JSON data"}, 400
+#     except ValidationError as e:
+#         return {"error": str(e)}, 400
+#     except Exception as e:
+#         import traceback
+#         print(traceback.format_exc())
+#         return {"error": f"An error occurred: {e}"}, 500
+#
+#
+# def add_region_pair(request, wid, rid=None, context: Literal["default", "propagated"]="default"):
+#     """
+#     generally used for adding manual matches
+#     """
+#     # response, status = add_region_pair_internal(request, wid, rid, context)
+#     response, status = add_region_pair_internal(request, wid, rid, context)
+#     return JsonResponse(response, status=status)
+
+
+def add_region_pair(request, wid, rid=None):
     if request.method != "POST":
-        return {"error": "Invalid request method"}, 400
+        return JsonResponse({"error": "Invalid request method"}, status=400)
 
     try:
         data = json.loads(request.body)
@@ -440,33 +505,20 @@ def add_region_pair(
             raise ValidationError("Invalid image string format")
 
         img_1, img_2 = sorted([q_img, s_img], key=sort_key)
-        regions_1, regions_2 = get_regions(img_1, img_2, wid, rid)
 
-        if context == "default":
-            defaults = {
-                "regions_id_1": regions_1,
-                "regions_id_2": regions_2,
-                "is_manual": True,
-            }
-        else:
-            category = data.get("category")
-            category_x = data.get("category_x")
-            defaults = {
-                "regions_id_1": regions_1,
-                "regions_id_2": regions_2,
-                "category": category,
-                "category_x": category_x,
-                "is_manual": False,
-                "score": 0,  # TBDDDDDDDDDDDD???????
-            }
+        regions_1, regions_2 = get_regions(img_1, img_2, wid, rid)
 
         region_pair, created = RegionPair.objects.get_or_create(
             img_1=f"{img_1}.jpg",
             img_2=f"{img_2}.jpg",
-            defaults=defaults,
+            defaults={
+                # if the pair doesn't exist, create it with those values
+                "regions_id_1": regions_1,
+                "regions_id_2": regions_2,
+                "is_manual": True,
+            },
         )
 
-        # in theory, it is not triggered if context=="suggestions"
         if not created:
             if region_pair.category_x is None:
                 region_pair.category_x = [request.user.id]
@@ -477,36 +529,20 @@ def add_region_pair(
         s_regions = get_object_or_404(
             Regions, id=regions_2 if q_img == img_1 else regions_1
         )
-        return {
-            "success": "Region pair added successfully",
-            "s_regions": s_regions.get_json(),
-            "created": created,
-        }
+        return JsonResponse(
+            {
+                "success": "Region pair added successfully",
+                "s_regions": s_regions.get_json(),
+                "created": created,
+            }
+        )
 
     except json.JSONDecodeError:
-        return {"error": "Invalid JSON data"}, 400
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except ValidationError as e:
-        return {"error": str(e)}, 400
+        return JsonResponse({"error": str(e)}, status=400)
     except Exception as e:
-        return {"error": f"An error occurred: {e}"}, 500
-
-
-def add_region_pair_default(request, wid, rid=None):
-    """
-    generally used for adding manual matches
-    """
-    response, status = add_region_pair(request, wid, rid, "default")
-    return JsonResponse(response, status=status)
-
-
-def add_region_pair_suggested_regions(request, wid, rid=None):
-    """
-    used when validating a suggested regionpair (see `get_suggested_regions`)
-
-    TODO: FRONTEND IMPLEMENTATION.
-    """
-    response, status = add_region_pair(request, wid, rid, "default")
-    return JsonResponse(response, status=status)
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
 def no_match(request, wid, rid=None):
@@ -557,6 +593,11 @@ def get_query_images(request, wid, rid=None):
 
 
 def save_category(request):
+    """
+    save category on an existing regionpair.
+    also used to save propagated regionpairs to database
+    when those are categorized by the user
+    """
     if request.method == "POST":
         data = json.loads(request.body)
         img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
@@ -564,19 +605,30 @@ def save_category(request):
         category_x = data.get("category_x")
 
         region_pair, created = RegionPair.objects.get_or_create(
-            img_1=img_1,
-            img_2=img_2,
+            img_1=img_1, img_2=img_2
         )
-
         region_pair.category = int(category) if category else None
         region_pair.category_x = sorted(category_x)
-        region_pair.save()
 
         if created:
-            # Shouldn't happen since all displayed regions are retrieved from database
+            # should only happen with propagated matches.
+            regions_id_1 = data.get("regions_id_1")
+            regions_id_2 = data.get("regions_id_2")
+            is_manual = data.get("is_manual")
+            region_pair.regions_id_1 = (
+                int(regions_id_1) if regions_id_1 else region_pair.regions_id_1
+            )
+            region_pair.regions_id_2 = (
+                int(regions_id_2) if regions_id_1 else region_pair.regions_id_2
+            )
+            region_pair.is_manual = is_manual if is_manual else False
+            region_pair.save()
+
             return JsonResponse(
                 {"status": "success", "message": "New region pair created"}, status=200
             )
+
+        region_pair.save()
         return JsonResponse(
             {"status": "success", "message": "Existing region pair updated"}, status=200
         )

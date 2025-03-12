@@ -11,7 +11,9 @@
 
     ////////////////////////////////////////////
 
-    const baseUrl = window.location.origin;
+    const windowUrl = new URL(window.location.href)
+    const baseUrl = windowUrl.origin;
+    const pathUrl = windowUrl.pathname;
 
     export let  qImg;
     export let  sImg;
@@ -22,11 +24,10 @@
     export let  users = [];
     export let  isManual;
 
-    const similaritySuggestionContext = getContext("similaritySuggestionContext") || false;  // true if it's a suggestion, false otherwise
+    const similarityPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagated match, false otherwise
 
     $: selectedCategory = category;
     $: isSelectedByUser = users.includes(Number(userId)) || false;
-    $: validatedSuggestion = false;
 
     ////////////////////////////////////////////
 
@@ -61,12 +62,12 @@
     const toRegionPair = () => ({
         img_1: qImg,
         img_2: sImg,
-        q_regions: qRegions,
-        s_regions: sRegions,
+        regions_id_1: qRegions,
+        regions_id_2: sRegions,
         score: score,
         category: selectedCategory,
         category_x: updateCurrentUsers(users),
-        is_manual: isManual
+        is_manual: isManual || similarityPropagatedContext
     })
 
     function updateCategory(category) {
@@ -79,16 +80,49 @@
 
     ////////////////////////////////////////////
 
-    // only used if `similaritySuggestionContext === true`
-    async function saveSimilarityMatchSuggestion() {
-        validatedSuggestion = true;
+    // /**
+    //  * save the new RegionPair to database. only used if `similarityPropagatedContext === true`
+    //  * @returns {boolean} true if the query succeeds
+    //  */
+    // async function saveSimilarityMatchPropagated() {
+    //     console.log("saveSimilarityMatchPropagated called !")
+    //     console.log(toRegionPair());
+    //
+    //     return fetch(`${baseUrl}${pathUrl}add-region-pair-propagated`, {
+    //         method: "POST",
+    //         headers: {
+    //             'Content-Type': 'application/json',
+    //             'X-CSRFToken': csrfToken
+    //         },
+    //         body: JSON.stringify(toRegionPair())
+    //     })
+    //     .then(async (response) => {
+    //         if (response.ok) {
+    //             return true
+    //         }
+    //         let responseBody = await response.json();
+    //         console.error(
+    //             `Error: Network response was not ok (HTTP status ${response.status})`,
+    //             responseBody
+    //         )
+    //         return false;
+    //     })
+    //     .catch(err => {
+    //         console.error("Error: ", err);
+    //         return false;
+    //     })
+    //
+    // }
 
-        // TODO
-
-    }
-
+    /**
+     * save the new RegionPair.category to database (RegionPair.category)
+     * if `similarityPropagatedContext===true`, the whole RegionPair will be created
+     * and saved to database: the current regionpair doesn't exist in database.
+     */
     async function categorize(category) {
+        console.log("categorize called !")
         updateCategory(category);
+        console.log(toRegionPair());
         try {
             const response = await fetch(`${baseUrl}/${appName}/save-category`, {
                 method: 'POST',
@@ -102,18 +136,14 @@
                 console.error(`Error: Network response was not ok`);
                 // unselect category
                 updateCategory(category);
+            } else {
+                response.json().then(data => console.log("categorize success response", data))
             }
         } catch (error) {
             console.error('Error:', error);
             // unselect category
             updateCategory(category);
         }
-    }
-
-    async function maybeSaveAndCategorize(category) {
-        return similaritySuggestionContext
-               ? saveSimilarityMatchSuggestion().then(() => categorize(category))
-               : categorize(category);
     }
 </script>
 
@@ -122,27 +152,27 @@
     <Region {item} size={256} {desc} isSquare={false}/>
     <div class="tags has-addons is-dark is-center">
         <span class="tag is-hoverable pl-4 pr-3 py-4" class:is-selected={selectedCategory === 1}
-              on:click={() => maybeSaveAndCategorize(1)} on:keyup={null}
+              on:click={() => categorize(1)} on:keyup={null}
               title="{appLang === 'en' ? 'Exact match' : 'Correspondance exacte'}">
             {@html exactSvg}
         </span>
         <span class="tag is-hoverable py-4 px-3" class:is-selected={selectedCategory === 2}
-              on:click={() => maybeSaveAndCategorize(2)} on:keyup={null}
+              on:click={() => categorize(2)} on:keyup={null}
               title="{appLang === 'en' ? 'Partial match' : 'Correspondance partielle'}">
             {@html partialSvg}
         </span>
         <span class="tag is-hoverable py-4 px-3" class:is-selected={selectedCategory === 3}
-              on:click={() => maybeSaveAndCategorize(3)} on:keyup={null}
+              on:click={() => categorize(3)} on:keyup={null}
               title="{appLang === 'en' ? 'Semantic match' : 'Correspondance sémantique'}">
             {@html semanticSvg}
         </span>
         <span class="tag is-hoverable py-4 px-3" class:is-selected={selectedCategory === 4}
-              on:click={() => maybeSaveAndCategorize(4)} on:keyup={null}
+              on:click={() => categorize(4)} on:keyup={null}
               title="{appLang === 'en' ? 'No match' : 'Aucune correspondance'}">
             {@html noSvg}
         </span>
         <span class="tag is-hoverable pl-3 pr-4 py-4" class:is-selected={isSelectedByUser}
-              on:click={() => maybeSaveAndCategorize(5)} on:keyup={null}
+              on:click={() => categorize(5)} on:keyup={null}
               title="{appLang === 'en' ? 'User match' : 'Correspondance utilisateur'}">
             {@html userSvg}
         </span>

@@ -22,9 +22,14 @@ urlpatterns = [
         name="compared-regions",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/suggested-regions/<str:img_id>",
-        get_suggested_regions,
-        name="suggested-regions",
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/propagated-matches/<str:img_id>",
+        get_propagated_matches,
+        name="propagated-regions",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/propagated-matches/<str:img_id>",
+        get_propagated_matches,
+        name="propagated-regions",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/query-images",
@@ -48,23 +53,27 @@ urlpatterns = [
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/add-region-pair",
-        add_region_pair_default,
+        add_region_pair,
+        {"context": "default"},
         name="add-region-pair",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/add-region-pair",
-        add_region_pair_default,
+        add_region_pair,
+        {"context": "default"},
         name="add-witness-region-pair",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/add-region-pair-suggestion",
-        add_region_pair_default,
-        name="add-region-pair-suggestion",
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/add-region-pair-propagated",
+        add_region_pair,
+        {"context": "propagated"},
+        name="add-region-pair-propagated",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/add-region-pair-suggestion",
-        add_region_pair_default,
-        name="add-witness-region-pair-suggestion",
+        f"{APP_NAME}/witness/<int:wid>/regions/add-region-pair-propagated",
+        add_region_pair,
+        {"context": "propagated"},
+        name="add-witness-region-pair-propagated",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/no-match",
