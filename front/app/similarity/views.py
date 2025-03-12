@@ -267,52 +267,65 @@ def suggested_regions_undirected(img_id: str) -> List[RegionPair | None]:
         )
         return list(img_2_from_1.union(img_1_from_2).all())
 
-    # purposefully not the same as `suggested_regions_directed.get_queried()`:
-    # we need to check bidirectionnal relations between `img_1` and `img_2`
-    def get_queried(_propagated_matches: List[RegionPair | None]) -> List[str]:
+    def get_queried(
+        _propagated_matches: List[Tuple[RegionPair, int] | None]
+    ) -> List[int]:
         queried_imgs = []
-        for regionpair in _propagated_matches:
-            queried_imgs.append(regionpair.img_1)
-            queried_imgs.append(regionpair.img_2)
+        for regionpair, depth in _propagated_matches:
+            # queried_imgs.append(regionpair.img_1)
+            # queried_imgs.append(regionpair.img_2)
+            queried_imgs.append(regionpair.id)
         return queried_imgs
 
     def get_propagated_matches(
         _img_id: str, _propagated_matches: List[str | None] = [], depth: int = 0
-    ) -> List[RegionPair]:
+    ) -> List[Tuple[RegionPair, int] | None]:
         """
         create the subgraph `propagated_matches`.
         1. check depth to avoid excessive recursion.
         2. get all previously queried elts in `_propagated_matches`
         3. get new matches for `_img_id`
         4. propagate: for each new image match, run `get_propagated_matches`
+
+        :returns:
+            Tuple(RegionPair, depth). we log the depth because RegionPairs
+            with depth==1 will be removed later on.
         """
         max_depth = 5
         depth += 1
         if depth > max_depth:
             return _propagated_matches
         queried_imgs = get_queried(_propagated_matches)
+        print(">>>>>>> _img_id", _img_id)
+        print(">>>>>>> queried_imgs", queried_imgs)
         for regionpair in single_call(_img_id, queried_imgs):
-            queried = (
-                regionpair.img_1 in queried_imgs
-                if regionpair.target == "img_2"
-                else regionpair.img_2 in queried_imgs
-            )
+            # queried = (
+            #     regionpair.img_1 in queried_imgs
+            #     if regionpair.target == "img_2"
+            #     else regionpair.img_2 in queried_imgs
+            # )
+            queried = regionpair.id in queried_imgs
             if not queried:
-                # 1st, add all newly retried rows to _propagated_matches.
+                # 1st, add all newly retried rows to _propagated_matches
+                # (we don't add depths from the 1st match to avoid displaying imgA <exactMatch> imgB in _propagated_matches).
                 # 2nd, recursively add propagated matches, which will rerun 1st and thus populate `_propagated_matches`
-                _propagated_matches.append(regionpair)
+                _propagated_matches.append((regionpair, depth))
                 _propagated_matches = get_propagated_matches(
-                    regionpair.img_2
+                    regionpair.img_1
                     if regionpair.target == "img_1"
-                    else regionpair.img_1,
+                    else regionpair.img_2,
                     _propagated_matches,
                     depth,
                 )
         return _propagated_matches
 
     propagated_matches = get_propagated_matches(img_id, depth=0)
+    print(">>>>>>> propagated_matches", propagated_matches)
+    print(">>>>>>> propagated_matches depth", set(d for (rp, d) in propagated_matches))
+    print("*****************************************")
 
-    return propagated_matches
+    # we remove matches with depth 1 since they aldready are exact matches (imgA <exactMatch> imgB)
+    return [regionpair for (regionpair, depth) in propagated_matches if depth > 1]
 
 
 def get_suggested_regions(request, wid: str, rid: int, img_id: str):

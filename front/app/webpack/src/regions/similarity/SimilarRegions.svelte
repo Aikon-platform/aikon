@@ -19,8 +19,8 @@
         : appLang === 'fr' && !similaritySuggestionContext
         ? 'Récupération des régions similaires...'
         : appLang === 'en' && similaritySuggestionContext
-        ? "Retrieving suggested regions..."
-        : "Récupération de suggestions de similarités..."
+        ? "Retrieving propagated regions..."
+        : "Récupération de similarités propagées..."
         }
     </div>
 {:then simImgs}

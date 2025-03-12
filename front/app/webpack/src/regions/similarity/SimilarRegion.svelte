@@ -79,9 +79,12 @@
 
     ////////////////////////////////////////////
 
+    // only used if `similaritySuggestionContext === true`
     async function saveSimilarityMatchSuggestion() {
         validatedSuggestion = true;
-        console.log(baseUrl, `${baseUrl}/${appName}`)
+
+        // TODO
+
     }
 
     async function categorize(category) {
@@ -118,13 +121,6 @@
 <div>
     <Region {item} size={256} {desc} isSquare={false}/>
     <div class="tags has-addons is-dark is-center">
-        {#if similaritySuggestionContext}
-            <span class="tag is-hoverable pl-4 pr-3 py-4" class:is-selected={validatedSuggestion}
-                  on:click={saveSimilarityMatchSuggestion} on:keyup={null}
-                  title="{appLang === 'en' ? 'Validate match' : 'Valider la correspondance'}">
-                {@html validateSvg}
-            </span>
-        {/if}
         <span class="tag is-hoverable pl-4 pr-3 py-4" class:is-selected={selectedCategory === 1}
               on:click={() => maybeSaveAndCategorize(1)} on:keyup={null}
               title="{appLang === 'en' ? 'Exact match' : 'Correspondance exacte'}">
