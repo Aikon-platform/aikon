@@ -2,6 +2,7 @@ import json
 import re
 from collections import OrderedDict
 from typing import List, Dict, Tuple, Set, Literal
+from functools import partial
 
 from django.db.models import Q, Count, CharField, Value
 from django.http import JsonResponse
@@ -386,44 +387,45 @@ def get_compared_regions(request, wid, rid=None):
 #     return JsonResponse(propagated_matches_json, safe=False)
 
 
-def get_propagated_matches_algo(q_img: str):
+def get_propagated_matches_algo(q_img: str, rid: int):
     """
     the algorithm
     """
 
-    def single_call(_q_img: str) -> List[str]:
+    def single_call(_q_img: str, _rid: str) -> List[str]:
         img_2_from_1 = RegionPair.objects.values_list("img_2").filter(
             Q(img_1=_q_img) & Q(category=1)
         )
         img_1_from_2 = RegionPair.objects.values_list("img_1").filter(
             Q(img_2=_q_img) & Q(category=1)
         )
-        matches = img_2_from_1.union(img_1_from_2).all()
-        return [r[0] for r in list(matches)]
+        if _rid:
+            img_2_from_1 = img_2_from_1.filter(Q(regions_id_2=_rid))
+            img_1_from_2 = img_1_from_2.filter(Q(regions_id_1=_rid))
+        return [r[0] for r in list(img_2_from_1.union(img_1_from_2).all())]
 
     def propagate(
         _q_img: str,
+        _rid: int,
         _propagated: List[Tuple[str, int] | None] = [],
         queried: List[str | None] = [],
         depth: int = 0,
+        max_depth=5,
     ) -> List[Tuple[str, int]]:
-        max_depth = 5
         depth += 1
         if depth > max_depth:
             return _propagated
-        p_img_array = single_call(_q_img)
+        p_img_array = single_call(_q_img, _rid)
         for p_img in p_img_array:
             if p_img in queried:
                 continue
-            # print(f">>>>> PROPAGATED ({depth})", _propagated, "\n",
-            #       f">>>>> QUERIED    ({depth})", queried)
             queried.append(p_img)
             _propagated.append((p_img, depth))
-            _propagated = propagate(p_img, _propagated, queried, depth)
+            _propagated = propagate(p_img, _rid, _propagated, queried, depth)
         return _propagated
 
     def regions_from_img(_q_img: str) -> int:
-        # union.first raises an error
+        # union.first() raises an error so we run 2 queries instead
         q1 = RegionPair.objects.values_list("regions_id_1").filter(img_1=_q_img).first()
         if q1:
             return q1[0]
@@ -436,7 +438,23 @@ def get_propagated_matches_algo(q_img: str):
         # remove the query image + exact matches of degree 1 (they aldready exist in database)
         _propagated = list(
             set(
-                p_img for (p_img, depth) in _propagated if depth > 1 and _q_img != p_img
+                p_img
+                for (p_img, depth) in _propagated
+                # remove exactMatches.
+                if depth > 1
+                # no relation from _q_img to itself
+                and _q_img != p_img
+                # the new relation we describe doesn't yet exist in the database
+                and not RegionPair.objects.filter(Q(img_1=_q_img) & Q(img_2=p_img))
+                # removes objects that aldready exist in the database.
+                # this is a bidirectional equivalent of the above.
+                # in the end, the condition that should be satisfied,
+                # but no regionpair will be returned if it's activated.
+                # see how/when regionspairs are saved to database to see if it's an explanation.
+                # and not (
+                #     RegionPair.objects.filter(Q(img_1=_q_img) & Q(img_2=p_img)) |
+                #     RegionPair.objects.filter(Q(img_2=_q_img) & Q(img_1=p_img))
+                # )
             )
         )
         q_img_regions = regions_from_img(_q_img)
@@ -453,7 +471,7 @@ def get_propagated_matches_algo(q_img: str):
             for p_img in _propagated
         ]
 
-    propagated = propagate(q_img)
+    propagated = propagate(q_img, rid)
     propagated_regionpairs = propagated_to_regionpair_json(q_img, propagated)
     return propagated_regionpairs
 
@@ -464,8 +482,7 @@ def get_propagated_matches(
     """
     the query
     """
-    propagated = get_propagated_matches_algo(img_id)
-    print(propagated)
+    propagated = get_propagated_matches_algo(img_id, rid)
     return JsonResponse(propagated, safe=False)
 
 
@@ -497,89 +514,6 @@ def get_regions(img_1, img_2, wid, rid):
         regions_2 = rid or witness.get_regions()[0].id
 
     return regions_1, regions_2
-
-
-# def add_region_pair_internal(
-#     request, wid, rid=None, context: Literal["default", "propagation"] = "default"
-# ) -> Tuple[Dict, int]:
-#     """
-#     :returns:
-#         status: html status code
-#         response: json to send to the frontend
-#     """
-#     if request.method != "POST":
-#         return {"error": "Invalid request method"}, 400
-#
-#     try:
-#         data = json.loads(request.body)
-#         if context == "default":
-#             q_img, s_img = data.get("q_img"), data.get("s_img")
-#         else:
-#             q_img, s_img = data.get("img_1"), data.get("img_2")
-#
-#         if not (validate_img_ref(q_img) and validate_img_ref(s_img)):
-#             raise ValidationError("Invalid image string format")
-#
-#         img_1, img_2 = sorted([q_img, s_img], key=sort_key)
-#         regions_1, regions_2 = get_regions(img_1, img_2, wid, rid)
-#         if context == "default":
-#             defaults = {
-#                 "regions_id_1": regions_1,
-#                 "regions_id_2": regions_2,
-#                 "is_manual": True,
-#             }
-#         else:
-#             category = data.get("category")
-#             category_x = data.get("category_x")
-#             defaults = {
-#                 "regions_id_1": regions_1,
-#                 "regions_id_2": regions_2,
-#                 "category": category,
-#                 "category_x": category_x,
-#                 "is_manual": False,
-#                 "score": 0,  # TBDDDDDDDDDDDD???????
-#             }
-#
-#         region_pair, created = RegionPair.objects.get_or_create(
-#             img_1=f"{img_1}.jpg",
-#             img_2=f"{img_2}.jpg",
-#             defaults=defaults,
-#         )
-#
-#         # in theory, it is not triggered if context!="propagation"
-#         if not created:
-#             if region_pair.category_x is None:
-#                 region_pair.category_x = [request.user.id]
-#             elif request.user.id not in region_pair.category_x:
-#                 region_pair.category_x.append(request.user.id)
-#             region_pair.save()
-#
-#         s_regions = get_object_or_404(
-#             Regions, id=regions_2 if q_img == img_1 else regions_1
-#         )
-#         return {
-#             "success": "Region pair added successfully",
-#             "s_regions": s_regions.get_json(),
-#             "created": created,
-#         }, 200
-#
-#     except json.JSONDecodeError:
-#         return {"error": "Invalid JSON data"}, 400
-#     except ValidationError as e:
-#         return {"error": str(e)}, 400
-#     except Exception as e:
-#         import traceback
-#         print(traceback.format_exc())
-#         return {"error": f"An error occurred: {e}"}, 500
-#
-#
-# def add_region_pair(request, wid, rid=None, context: Literal["default", "propagated"]="default"):
-#     """
-#     generally used for adding manual matches
-#     """
-#     # response, status = add_region_pair_internal(request, wid, rid, context)
-#     response, status = add_region_pair_internal(request, wid, rid, context)
-#     return JsonResponse(response, status=status)
 
 
 def add_region_pair(request, wid, rid=None):
@@ -698,6 +632,7 @@ def save_category(request):
         )
         region_pair.category = int(category) if category else None
         region_pair.category_x = sorted(category_x)
+        region_pair.save()
 
         if created:
             # should only happen with propagated matches.
@@ -716,8 +651,6 @@ def save_category(request):
             return JsonResponse(
                 {"status": "success", "message": "New region pair created"}, status=200
             )
-
-        region_pair.save()
         return JsonResponse(
             {"status": "success", "message": "Existing region pair updated"}, status=200
         )
