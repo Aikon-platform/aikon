@@ -392,7 +392,7 @@ def get_propagated_matches_algo(q_img: str, rid: int):
     the algorithm
     """
 
-    def single_call(_q_img: str, _rid: str) -> List[str]:
+    def single_call(_q_img: str, _rid: str, depth: int) -> List[str]:
         img_2_from_1 = RegionPair.objects.values_list("img_2").filter(
             Q(img_1=_q_img) & Q(category=1)
         )
@@ -402,6 +402,7 @@ def get_propagated_matches_algo(q_img: str, rid: int):
         if _rid:
             img_2_from_1 = img_2_from_1.filter(Q(regions_id_2=_rid))
             img_1_from_2 = img_1_from_2.filter(Q(regions_id_1=_rid))
+
         return [r[0] for r in list(img_2_from_1.union(img_1_from_2).all())]
 
     def propagate(
@@ -410,12 +411,12 @@ def get_propagated_matches_algo(q_img: str, rid: int):
         _propagated: List[Tuple[str, int] | None] = [],
         queried: List[str | None] = [],
         depth: int = 0,
-        max_depth=5,
     ) -> List[Tuple[str, int]]:
+        max_depth = 5
         depth += 1
         if depth > max_depth:
             return _propagated
-        p_img_array = single_call(_q_img, _rid)
+        p_img_array = single_call(_q_img, _rid, depth)
         for p_img in p_img_array:
             if p_img in queried:
                 continue
@@ -623,31 +624,41 @@ def save_category(request):
     """
     if request.method == "POST":
         data = json.loads(request.body)
+        print(
+            "****************************",
+            json.dumps(data, indent=4),
+            "****************************",
+        )
+
         img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
         category = data.get("category")
         category_x = data.get("category_x")
+        regions_id_1 = data.get("regions_id_1")
+        regions_id_2 = data.get("regions_id_2")
 
         region_pair, created = RegionPair.objects.get_or_create(
-            img_1=img_1, img_2=img_2
+            img_1=img_1,
+            img_2=img_2,
+            regions_id_1=int(regions_id_1)
+            if regions_id_1
+            else region_pair.regions_id_1,
+            regions_id_2=int(regions_id_2)
+            if regions_id_1
+            else region_pair.regions_id_2,
         )
         region_pair.category = int(category) if category else None
         region_pair.category_x = sorted(category_x)
+        is_manual = data.get("is_manual")
+        region_pair.regions_id_1 = (
+            int(regions_id_1) if regions_id_1 else region_pair.regions_id_1
+        )
+        region_pair.regions_id_2 = (
+            int(regions_id_2) if regions_id_1 else region_pair.regions_id_2
+        )
+        region_pair.is_manual = is_manual if is_manual else False
         region_pair.save()
 
         if created:
-            # should only happen with propagated matches.
-            regions_id_1 = data.get("regions_id_1")
-            regions_id_2 = data.get("regions_id_2")
-            is_manual = data.get("is_manual")
-            region_pair.regions_id_1 = (
-                int(regions_id_1) if regions_id_1 else region_pair.regions_id_1
-            )
-            region_pair.regions_id_2 = (
-                int(regions_id_2) if regions_id_1 else region_pair.regions_id_2
-            )
-            region_pair.is_manual = is_manual if is_manual else False
-            region_pair.save()
-
             return JsonResponse(
                 {"status": "success", "message": "New region pair created"}, status=200
             )
