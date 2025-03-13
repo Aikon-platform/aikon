@@ -1,16 +1,34 @@
-#! /bin/bash
+#!/bin/bash
 
-ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-BIN="$ROOT_DIR"/venv/bin
-SCHEDULE_FILE="$ROOT_DIR/celery/celerybeat-schedule"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+FRONT_DIR="$SCRIPT_DIR/front"
+API_DIR="$SCRIPT_DIR/api"
 
-read -s -p "Enter your sudo password: " password
+source "$FRONT_DIR/scripts/functions.sh"
+
+declare -a ALL_PIDS=()
+
+cleanup() {
+    cleanup_pids "${ALL_PIDS[*]}" "celery|dramatiq|flask|runserver|cantaloupe|jetty" "$PASSWORD"
+    exit 0
+}
+
+trap cleanup INT TERM HUP
+
+read -s -p "Enter your sudo password: " PASSWORD
 echo
 
-(trap 'kill 0' SIGINT;
-    ("$BIN"/celery -A app.config.celery worker -B -c 1 --loglevel=DEBUG -P threads) &
-    ("$BIN"/celery -A app.config.celery beat --schedule="$SCHEDULE_FILE" --loglevel=DEBUG) &
-    ("$BIN"/python app/manage.py runserver localhost:8000) &
-    (echo "$password" | sudo -S java -Dcantaloupe.config="$ROOT_DIR"/cantaloupe/cantaloupe.properties -Xmx2g -jar "$ROOT_DIR"/cantaloupe/cantaloupe-4.1.11.war > /dev/null 2>&1) &
-    (cd "$ROOT_DIR"/sas/ && mvn jetty:run -q);
-)
+color_echo blue "STARTING FRONT..."
+(cd "$FRONT_DIR" && START_MODE="CHILD" bash run.sh "$PASSWORD") &
+ALL_PIDS+=($!)
+
+sleep 2
+
+color_echo blue "STARTING API..."
+(cd "$API_DIR" && START_MODE="CHILD" bash run.sh) &
+ALL_PIDS+=($!)
+
+sleep 2
+
+color_echo magenta "All services started. Press Ctrl+C to stop everything."
+wait

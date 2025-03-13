@@ -1,0 +1,127 @@
+x-proxy-settings: &proxy-settings
+  HTTP_PROXY: ${HTTP_PROXY}
+  HTTPS_PROXY: ${HTTPS_PROXY}
+  NO_PROXY: "localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.aikon_network"
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        USERID: ${USERID}
+        PORT: ${DJANGO_PORT}
+    volumes:
+      - ${DATA_FOLDER}:/data
+      - ../app:/home/aikon/app
+    env_file:
+      - ../app/config/.env
+      - ./.env
+    environment:
+      <<: *proxy-settings
+#      - HTTP_PROXY
+#      - HTTPS_PROXY
+#      - NO_PROXY=localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.aikon_network
+    ports:
+      - "${DJANGO_PORT}:8000"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - aikon_network
+    restart: unless-stopped
+
+  db:
+    image: postgres:13
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    env_file:
+      - ../app/config/.env
+    networks:
+      - aikon_network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:6
+    volumes:
+      - redisdata:/data
+    networks:
+      - aikon_network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cantaloupe:
+    build:
+      context: ..
+      dockerfile: cantaloupe/Dockerfile
+    env_file:
+      - ./.env
+    ports:
+      - "${CANTALOUPE_PORT:-8182}:8182"
+    volumes:
+      - ${DATA_FOLDER}:/data
+    networks:
+      - aikon_network
+    environment:
+      <<: *proxy-settings
+    user: root
+
+  sas:
+    build:
+      context: ..
+      dockerfile: sas/Dockerfile
+    env_file:
+      - ./.env
+    volumes:
+#        - ${DATA_FOLDER}/sas:/sas/data
+        - ../sas:/sas
+    ports:
+      - "${SAS_PORT:-8888}:8888"
+    networks:
+      - aikon_network
+    environment:
+      <<: *proxy-settings
+
+  nginx:
+    image: nginx:latest
+    env_file:
+      - ../app/config/.env
+      - ./.env
+    ports:
+      - "${NGINX_PORT:-8080}:${NGINX_PORT:-8080}"
+    environment:
+      <<: *proxy-settings
+      PROD_URL: ${PROD_URL:-localhost}
+      NGINX_PORT: ${NGINX_PORT:-8080}
+#      - PROD_URL=${PROD_URL:-localhost}
+#      - NGINX_PORT=${NGINX_PORT:-8080}
+#      - NO_PROXY=localhost,127.0.0.1,web,sas,cantaloupe,.aikon_network
+    volumes:
+      - ./nginx_conf:/etc/nginx/nginx.conf:ro
+      - ../app/staticfiles:/home/aikon/app/staticfiles:ro
+      - ${DATA_FOLDER}:/data:ro
+      - /etc/ssl:/etc/ssl:ro
+    depends_on:
+      - web
+      - cantaloupe
+      - sas
+    networks:
+      - aikon_network
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  aikon_network:
+    driver: bridge
