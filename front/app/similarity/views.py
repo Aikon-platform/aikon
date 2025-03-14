@@ -31,6 +31,7 @@ from app.similarity.utils import (
     get_matched_regions,
     get_all_pairs,
     reset_similarity,
+    get_propagated_matches_algo,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
@@ -391,8 +392,9 @@ def get_propagated_matches_algo(q_img: str, rid: int):
     """
     the algorithm
     """
+    MAX_DEPTH = 5
 
-    def single_call(_q_img: str, _rid: str, depth: int) -> List[str]:
+    def get_direct_pairs(_q_img: str, _rid: str = None) -> List[str]:
         img_2_from_1 = RegionPair.objects.values_list("img_2").filter(
             Q(img_1=_q_img) & Q(category=1)
         )
@@ -405,25 +407,39 @@ def get_propagated_matches_algo(q_img: str, rid: int):
 
         return [r[0] for r in list(img_2_from_1.union(img_1_from_2).all())]
 
+    def has_direct_relationship(img1: str, img2: str) -> bool:
+        return RegionPair.objects.filter(
+            (Q(img_1=img1) & Q(img_2=img2)) | (Q(img_1=img2) & Q(img_2=img1))
+        ).exists()
+
     def propagate(
         _q_img: str,
-        _rid: int,
-        _propagated: List[Tuple[str, int] | None] = [],
-        queried: List[str | None] = [],
+        _rid: int = None,
+        queried: Set[str] = None,
         depth: int = 0,
-    ) -> List[Tuple[str, int]]:
-        max_depth = 5
-        depth += 1
-        if depth > max_depth:
-            return _propagated
-        p_img_array = single_call(_q_img, _rid, depth)
-        for p_img in p_img_array:
-            if p_img in queried:
+        max_depth: int = MAX_DEPTH,
+    ) -> List[str]:
+        if queried is None:
+            queried = set([_q_img])
+
+        if depth >= max_depth:
+            return []
+
+        direct_pairs = get_direct_pairs(_q_img, _rid)
+        matches = []
+
+        for match in direct_pairs:
+            if match in queried:
                 continue
-            queried.append(p_img)
-            _propagated.append((p_img, depth))
-            _propagated = propagate(p_img, _rid, _propagated, queried, depth)
-        return _propagated
+
+            queried.add(match)
+            if not has_direct_relationship(_q_img, match) and match != q_img:
+                matches.append(match)
+
+            sub_matches = propagate(match, _rid, queried, depth + 1)
+            matches.extend([m for m in sub_matches if m not in matches])
+
+        return matches
 
     def regions_from_img(_q_img: str) -> int:
         # union.first() raises an error so we run 2 queries instead
@@ -434,30 +450,30 @@ def get_propagated_matches_algo(q_img: str, rid: int):
         return q2[0]
 
     def propagated_to_regionpair_json(
-        _q_img, _propagated: List[Tuple[str, int] | None]
+        _q_img, _propagated: List[str]
     ) -> List[RegionPair]:
-        # remove the query image + exact matches of degree 1 (they aldready exist in database)
-        _propagated = list(
-            set(
-                p_img
-                for (p_img, depth) in _propagated
-                # remove exactMatches.
-                if depth > 1
-                # no relation from _q_img to itself
-                and _q_img != p_img
-                # the new relation we describe doesn't yet exist in the database
-                and not RegionPair.objects.filter(Q(img_1=_q_img) & Q(img_2=p_img))
-                # removes objects that aldready exist in the database.
-                # this is a bidirectional equivalent of the above.
-                # in the end, the condition that should be satisfied,
-                # but no regionpair will be returned if it's activated.
-                # see how/when regionspairs are saved to database to see if it's an explanation.
-                # and not (
-                #     RegionPair.objects.filter(Q(img_1=_q_img) & Q(img_2=p_img)) |
-                #     RegionPair.objects.filter(Q(img_2=_q_img) & Q(img_1=p_img))
-                # )
-            )
-        )
+        # # remove the query image + exact matches of degree 1 (they already exist in database)
+        # _propagated = list(
+        #     set(
+        #         p_img
+        #         for (p_img, depth) in _propagated
+        #         # remove exactMatches.
+        #         if depth > 1
+        #         # no relation from _q_img to itself
+        #         and _q_img != p_img
+        #         # the new relation we describe doesn't yet exist in the database
+        #         and not RegionPair.objects.filter(Q(img_1=_q_img) & Q(img_2=p_img))
+        #         # removes objects that aldready exist in the database.
+        #         # this is a bidirectional equivalent of the above.
+        #         # in the end, the condition that should be satisfied,
+        #         # but no regionpair will be returned if it's activated.
+        #         # see how/when regionspairs are saved to database to see if it's an explanation.
+        #         # and not (
+        #         #     RegionPair.objects.filter(Q(img_1=_q_img) & Q(img_2=p_img)) |
+        #         #     RegionPair.objects.filter(Q(img_2=_q_img) & Q(img_1=p_img))
+        #         # )
+        #     )
+        # )
         q_img_regions = regions_from_img(_q_img)
         return [
             RegionPair(
@@ -473,18 +489,17 @@ def get_propagated_matches_algo(q_img: str, rid: int):
         ]
 
     propagated = propagate(q_img, rid)
-    propagated_regionpairs = propagated_to_regionpair_json(q_img, propagated)
-    return propagated_regionpairs
+    return propagated_to_regionpair_json(q_img, propagated)
 
 
 def get_propagated_matches(
     request, wid: int | None = None, rid: int | None = None, img_id: str = ""
-) -> List[RegionPairTuple]:
+) -> JsonResponse:
     """
     the query
+    returns JSONified RegionPair tuples
     """
-    propagated = get_propagated_matches_algo(img_id, rid)
-    return JsonResponse(propagated, safe=False)
+    return JsonResponse(get_propagated_matches_algo(img_id, rid), safe=False)
 
 
 def get_regions(img_1, img_2, wid, rid):
