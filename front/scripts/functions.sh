@@ -1,7 +1,7 @@
 #!/bin/env bash
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-APP_ROOT="$(dirname "$SCRIPT_DIR")"
+FRONT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 color_echo() {
     Color_Off="\033[0m"
@@ -227,8 +227,8 @@ update_app_env() {
 update_cantaloupe_env() {
     install_type=$(get_install_type "$1")
 
-    cantaloupe_env_file="$APP_ROOT"/cantaloupe/.env
-    app_env_file="$APP_ROOT"/app/config/.env
+    cantaloupe_env_file="$FRONT_ROOT"/cantaloupe/.env
+    app_env_file="$FRONT_ROOT"/app/config/.env
     ordered_params=("FILE_SYSTEM_SOURCE" "HTTP_PORT" "HTTPS_PORT" "LOG_PATH")
 
     IFS=$'\n' read -d '' -r -a lines < "$cantaloupe_env_file"  # Read file into array
@@ -255,7 +255,7 @@ update_cantaloupe_env() {
                     default_val=$(get_env_value "CANTALOUPE_PORT_HTTPS" "$app_env_file")
                     ;;
                 "LOG_PATH")
-                    default_val="$APP_ROOT"/cantaloupe
+                    default_val="$FRONT_ROOT"/cantaloupe
                     ;;
                 *)
                     default_val="$current_val"
@@ -275,8 +275,8 @@ update_cantaloupe_env() {
 
 update_cantaloupe_properties() {
     cantaloupe_dir="$1"
-    cp "$cantaloupe_dir"/cantaloupe.properties{.template,}
     config_cantaloupe="$cantaloupe_dir"/cantaloupe.properties
+    cp "$config_cantaloupe.template" $config_cantaloupe
 
     chmod +x "$cantaloupe_dir"/start.sh
     source "$cantaloupe_dir"/.env
