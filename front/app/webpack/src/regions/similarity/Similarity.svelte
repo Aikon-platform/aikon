@@ -24,7 +24,7 @@
 <!--TODO order similar witnesses according to a metric-->
 
 {#if modules.includes("similarity")}
-    <ToobarController></ToobarController>
+    <ToolbarController></ToolbarController>
     <Toolbar/>
     {#if $loading}
         <Table>

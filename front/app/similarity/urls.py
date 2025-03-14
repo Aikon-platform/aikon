@@ -63,18 +63,6 @@ urlpatterns = [
         # { "context": "default" },
         name="add-witness-region-pair",
     ),
-    # path(
-    #     f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/add-region-pair-propagated",
-    #     add_region_pair,
-    #     { "context": "propagated" },
-    #     name="add-region-pair-propagated",
-    # ),
-    # path(
-    #     f"{APP_NAME}/witness/<int:wid>/regions/add-region-pair-propagated",
-    #     add_region_pair,
-    #     { "context": "propagated" },
-    #     name="add-witness-region-pair-propagated",
-    # ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/no-match",
         no_match,

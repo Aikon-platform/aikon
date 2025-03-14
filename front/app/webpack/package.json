@@ -19,6 +19,7 @@
     "svelte": "^3.55.0"
   },
   "dependencies": {
+    "nouislider": "^15.8.1",
     "sirv-cli": "^2.0.0"
   },
   "main": "rollup.config.js",

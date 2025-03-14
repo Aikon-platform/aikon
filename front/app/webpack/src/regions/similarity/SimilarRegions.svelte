@@ -25,7 +25,7 @@
     </div>
 {:then simImgs}
     {#each simImgs as [score, _, sImg, qRegions, sRegions, category, users, isManual]}
-        <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual}/>
+        <SimilarRegion qImg={qImg} sImg={sImg} score={score} qRegions={qRegions} sRegions={sRegions} category={category} users={users} isManual={isManual}/>
     {:else}
         {#if Object.values($selectedRegions).length === 0}
             <div class="faded is-center">
