@@ -6,8 +6,6 @@ APP_ENV="$FRONT_DIR"/app/config/.env
 
 source "$SCRIPT_DIR"/functions.sh
 
-INSTALL_TYPE=$(get_install_type "$1")
-
 echo_title "REDIS DATABASE INITIALIZATION"
 
 redis_psw=$(get_env_value "REDIS_PASSWORD" "$APP_ENV")
@@ -59,7 +57,7 @@ redis_set_no_password() {
 
 # only runs if a redis password is defined
 if [ -n "$redis_psw" ]; then
-    if [ "$INSTALL_TYPE" = "quick_install" ]; then
+    if [ "$INSTALL_MODE" = "quick_install" ]; then
         redis_set_no_password
     else
         color_echo blue "\nYou defined a redis password in $APP_ENV. Do you want to secure redis with it (not necessary on local)?"

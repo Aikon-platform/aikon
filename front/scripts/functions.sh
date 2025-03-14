@@ -3,6 +3,8 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 FRONT_ROOT="$(dirname "$SCRIPT_DIR")"
 
+FRONT_ENV="$FRONT_ROOT/app/config/.env"
+
 color_echo() {
     Color_Off="\033[0m"
     Red="\033[1;91m"        # Red
@@ -56,15 +58,23 @@ prompt_user() {
     current_val="$3"
     desc="$4"
 
-    if [ "$2" != "$3" ]; then
-        default="Press enter for $(color_echo 'cyan' "$default_val")"
-    elif [ -n "$current_val" ]; then
-        default="Press enter to keep $(color_echo 'cyan' "$current_val")"
+    if [ -n "$current_val" ]; then
+        prompt="Press enter to keep $(color_echo 'cyan' "$current_val")"
         default_val=$current_val
+    elif [ -n "$default_val" ]; then
+        prompt="Press enter for $(color_echo 'cyan' "$default_val")"
+    else
+        prompt=""
     fi
 
-    read -p "$env_var $desc"$'\n'"$default: " value
-    echo "${value:-$default_val}"
+    prompt="$prompt, type a space to set empty"
+    read -p "$env_var $desc"$'\n'"$prompt: " value
+
+    if [ "$value" = " " ]; then
+        echo ""  # if user entered a space character, return empty value
+    else
+        echo "${value:-$default_val}"
+    fi
 }
 
 get_env_value() {
@@ -100,13 +110,8 @@ get_os() {
 export OS
 OS=$(get_os)
 
-# returns "quick_install"|"full_install", defaults to "full_install"
-get_install_type() {
-    [ "$1" = "quick_install" ] && echo "$1" || echo "full_install"
-}
-
 # inline replacement in file $file with sed expression $sed_expr
-# `sed -i` can't be used in the same way with Linux and Max: it's `sed -i` on Linux, `sed -i ""` on Mac.
+# `sed -i` can't be used in the same way with Linux and Mac: it's `sed -i` on Linux, `sed -i ""` on Mac.
 # we must define the sed variants as functions and can't just store the variants as strings because this
 # messes up word splitting and quoting (especially when using `sudo "$sed_command_as_string"`).
 # instead, we define a function that takes an expression and a file and runs the replacement.
@@ -115,7 +120,7 @@ sed_repl_inplace() {
     sed_expr="$1"
     file="$2"
 
-    if [ "$(get_os)" = "Linux" ]; then
+    if [ "$OS" = "Linux" ]; then
         sed -i -e "$sed_expr" "$file"
     else
         sed -i "" -e "$sed_expr" "$file"
@@ -128,149 +133,161 @@ sudo_sed_repl_inplace() {
     sed_expr="$1"
     file="$2"
 
-    if [ "$(get_os)" = "Linux" ]; then
+    if [ "$OS" = "Linux" ]; then
         sudo sed -i -e "$sed_expr" "$file"
     else
         sudo sed -i "" -e "$sed_expr" "$file"
     fi
 }
 
-# TODO delete update_env to keep only update_app_env (currently update_env) is only used in front/docker/init.sh
-update_env() {
-    env_file=$1
+DEFAULT_PARAMS=()
+is_in_default_params() {
+    local param=$1
+    for default_param in "${DEFAULT_PARAMS[@]}"; do
+        if [ "$param" = "$default_param" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
 
-    IFS=$'\n' read -d '' -r -a lines < "$env_file"  # Read file into array
-    for line in "${lines[@]}"; do
+get_template_hash() {
+    local template_file=$1
+    md5sum "$template_file" | awk '{print $1}'
+}
+
+store_template_hash() {
+    local template_file=$1
+    local hash_file="${template_file}.hash"
+    local current_hash=$(get_template_hash "$template_file")
+    echo "$current_hash" > "$hash_file"
+}
+
+check_template_hash() {
+    local template_file=$1
+    local hash_file="${template_file}.hash"
+
+    if [ ! -f "$hash_file" ]; then
+        store_template_hash "$template_file"
+        return 1  # Hash file didn't exist, template is new
+    fi
+
+    local stored_hash=$(cat "$hash_file")
+    local current_hash=$(get_template_hash "$template_file")
+
+    if [ "$stored_hash" != "$current_hash" ]; then
+        store_template_hash "$template_file"
+        return 1  # Hash changed
+    fi
+
+    return 0  # Hash unchanged
+}
+
+get_default_val() {
+    local param=$1
+
+    if [ -n "${!param+x}" ]; then
+        # if the value is already exported in the current shell, use it as default
+        default_val="${!param}"
+    elif [[ "$param" =~ ^.*(PASSWORD|SECRET).*$ ]]; then
+        default_val="$(generate_random_string)"
+    elif [[ "$param" = "MEDIA_DIR" ]]; then
+        default_val="$FRONT_ROOT"/app/mediafiles
+    elif [ "$param" = "EMAIL_HOST_USER" ]; then
+        app_name=$(get_env_value "APP_NAME" "$FRONT_ENV")
+        app_name=${app_name:-"app"}
+        default_val=$([ -n "$app_name" ] && echo "$app_name@mail.com" || echo "$current_val")
+    elif [ "$param" = "CANTALOUPE_BASE_URI" ]; then
+        default_val="https://"$(get_env_value "PROD_URL" "$FRONT_ENV")
+    elif [ "$param" = "CANTALOUPE_IMG" ]; then
+        default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img"
+    elif [ "$param" = "CANTALOUPE_PORT" ]; then
+        default_val=$(get_env_value "CANTALOUPE_PORT" "$FRONT_ENV")
+    elif [ "$param" = "CANTALOUPE_PORT_HTTPS" ]; then
+        default_val=$(get_env_value "CANTALOUPE_PORT_HTTPS" "$FRONT_ENV")
+    elif [ "$param" = "CANTALOUPE_DIR" ]; then
+        default_val="$FRONT_ROOT"/cantaloupe
+    else
+        # prompt_user get current_val from env_file
+        default_val=""
+    fi
+    echo "$default_val"
+}
+
+update_env_var() {
+    local value=$1
+    local param=$2
+    local env_file=$3
+    sed_repl_inplace "s~^$param=.*~$param=$value~" "$env_file"
+}
+
+update_env() {
+    local env_file=$1
+
+    local prev_line=""
+    while IFS= read -r line; do
         if [[ $line =~ ^[^#]*= ]]; then
             param=$(echo "$line" | cut -d'=' -f1)
-            current_val=$(get_env_value "$param" "$env_file")
             desc=$(get_env_desc "$line" "$prev_line")
+            default_val=$(get_default_val $param)
 
-            # # Extract description from previous line if it exists
-            # desc=""
-            # if [[ $prev_line =~ ^# ]]; then
-            #     desc=$(echo "$prev_line" | sed 's/^#\s*//')
-            # fi
+            if [ "$INSTALL_MODE" = "full_install" ]; then
+                new_value=$(prompt_user "$param" "$default_val" "" "$desc")
+            elif [ -n "${!param+x}" ]; then
+                # If variable is already set in the current shell, use it as default
+                new_value="${!param}"
+            elif is_in_default_params "$param" && [ -n "$default_val" ]; then
+                new_value="$default_val"
+            else
+                new_value=$(prompt_user "$param" "$default_val" "" "$desc")
+            fi
 
-            case $param in
-
-                *PASSWORD*)
-                    default_val="$(generate_random_string)"
-                    ;;
-                *SECRET*)
-                    default_val="$(generate_random_string)"
-                    ;;
-                *)
-                    default_val="$current_val"
-                    ;;
-            esac
-
-            new_value=$(prompt_user "$param" "$default_val" "$current_val" "$desc")
-            sed_repl_inplace "s~^$param=.*~$param=$new_value~" "$env_file"
+            update_env_var "$new_value" "$param" "$env_file"
         fi
         prev_line="$line"
-    done
+    done < "$env_file"
+}
+
+setup_env() {
+    local env_file=$1
+    local template_file="${env_file}.template"
+    local default_params=("${@:2}")  # All arguments after env_file are default params
+    DEFAULT_PARAMS=("${default_params[@]}")
+
+    if [ ! -f "$env_file" ]; then
+        cp "$template_file" "$env_file"
+    elif ! check_template_hash "$template_file"; then
+        # the env file has already been created, but the template has changed
+        source "$env_file" # source current values to copy them in new env
+        cp "$env_file" "_$env_file" # backup current env
+        cp "$template_file" "$env_file"
+    fi
+
+    if [ -z "$INSTALL_MODE" ]; then
+        select_install_mode
+    fi
+
+    update_env "$env_file"
+    source "$env_file"
 }
 
 update_app_env() {
-    env_file=$1
-    front_dir=$2
-    install_type=$(get_install_type "$3")
+    env_file=${1:-$FRONT_ENV}
+    default_params=("APP_NAME" "DEBUG" "C_FORCE_ROOT" "MEDIA_DIR" "CONTACT_MAIL" "POSTGRES_DB" "POSTGRES_USER" "DB_HOST" "DB_PORT" "ALLOWED_HOSTS" "SAS_USERNAME" "SAS_PORT" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "REDIS_HOST" "REDIS_PORT" "REDIS_PASSWORD" "EMAIL_HOST" "EMAIL_HOST_USER" "APP_LOGO")
 
-    default_params=("APP_NAME" "APP_LANG" "DEBUG" "C_FORCE_ROOT" "MEDIA_DIR" "CONTACT_MAIL" "POSTGRES_DB" "POSTGRES_USER" "DB_HOST" "DB_PORT" "ALLOWED_HOSTS" "SAS_USERNAME" "SAS_PORT" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "REDIS_HOST" "REDIS_PORT" "REDIS_PASSWORD" "EMAIL_HOST" "EMAIL_HOST_USER" "APP_LOGO")
+    update_env "$env_file" "${default_params[@]}"
 
-    IFS=$'\n' read -d '' -r -a lines < "$env_file"  # Read file into array
-    for line in "${lines[@]}"; do
-        if [[ $line =~ ^[^#]*= ]]; then
-
-            # extract param and current value from .env
-            param=$(echo "$line" | cut -d'=' -f1)
-            current_val=$(get_env_value "$param" "$env_file")
-            desc=$(get_env_desc "$line" "$prev_line")
-
-            # # Extract description from previous line if it exists
-            # desc=""
-            # if [[ $prev_line =~ ^# ]]; then
-            #     desc=$(echo "$prev_line" | sed 's/^#\s*//')
-            # fi
-
-            # get a default value
-            if [ "$param" = "MEDIA_DIR" ]; then
-                default_val="$front_dir"/app/mediafiles
-            elif [[ "$param" =~ ^.*(PASSWORD|SECRET).*$ ]]; then
-                default_val="$(generate_random_string)"
-            elif [ "$param" = "EMAIL_HOST_USER" ]; then
-                app_name=$(get_env_value "APP_NAME" "$env_file")
-                default_val=$([ -n "$app_name" ] && echo "$app_name@gmail.com" || echo "$current_val")
-            else
-                default_val="$current_val"
-            fi
-
-            # update the .env file, without prompting user if quick_install and the parameter name is part of $default_params
-            if [ "$install_type" = "quick_install" ] && [[ " ${default_params[*]} " =~ "$param" ]]; then
-                new_value="$default_val"
-            else
-                new_value=$(prompt_user "$param" "$default_val" "$current_val" "$desc")
-                # default media dir aldready has a structure clearly defined in the git repo.
-                # when chosing a nonstandard media directory, this structure is not copied,
-                # which may cause FileNotFound errors later on.
-                if [ "$param" = "MEDIA_DIR" ] && [ "$new_value" != "$default_val" ]; then
-                    cp -r "$default_val" "$new_value"
-                fi
-            fi
-            sed_repl_inplace "s~^$param=.*~$param=$new_value~" "$env_file"
-        fi
-        prev_line="$line"
-    done
+    media_dir=$(get_env_value "MEDIA_DIR" "$env_file")
+    default_media_dir="$FRONT_ROOT"/app/mediafiles
+    if [ "$media_dir" != "$default_media_dir" ]; then
+        # when choosing a nonstandard media directory, copy the structure from the default media directory
+        cp -r "$default_media_dir" "$media_dir"
+    fi
 }
 
 update_cantaloupe_env() {
-    install_type=$(get_install_type "$1")
-
-    cantaloupe_env_file="$FRONT_ROOT"/cantaloupe/.env
-    app_env_file="$FRONT_ROOT"/app/config/.env
-    ordered_params=("FILE_SYSTEM_SOURCE" "HTTP_PORT" "HTTPS_PORT" "LOG_PATH")
-
-    IFS=$'\n' read -d '' -r -a lines < "$cantaloupe_env_file"  # Read file into array
-    for line in "${lines[@]}"; do
-        if [[ $line =~ ^[^#]*= ]]; then
-
-            # extract param and current value from .env
-            param=$(echo "$line" | cut -d'=' -f1)
-            desc=$(get_env_desc "$line" "$prev_line")
-            current_val=$(get_env_value "$param" "$cantaloupe_env_file")
-            current_val=$(get_env_value "$param" "$cantaloupe_env_file")
-
-            case $param in
-                "BASE_URI")
-                    default_val="https://"$(get_env_value "PROD_URL" "$app_env_file")
-                    ;;
-                "FILE_SYSTEM_SOURCE")
-                    default_val=$(get_env_value "MEDIA_DIR" "$app_env_file")"/img"
-                    ;;
-                "HTTP_PORT")
-                    default_val=$(get_env_value "CANTALOUPE_PORT" "$app_env_file")
-                    ;;
-                "HTTPS_PORT")
-                    default_val=$(get_env_value "CANTALOUPE_PORT_HTTPS" "$app_env_file")
-                    ;;
-                "LOG_PATH")
-                    default_val="$FRONT_ROOT"/cantaloupe
-                    ;;
-                *)
-                    default_val="$current_val"
-                    ;;
-            esac
-
-            if [ "$install_type" = "quick_install" ] && [[ " ${default_params[*]} " =~ "$param" ]]; then
-                new_value="$default_val"
-            else
-                new_value=$(prompt_user "$param" "$default_val" "$current_val" "$desc")
-            fi
-            sed_repl_inplace "s~^$param=.*~$param=$new_value~" "$cantaloupe_env_file"
-        fi
-        prev_line="$line"
-    done
+    export INSTALL_MODE=${1:-$INSTALL_MODE}
+    update_env "$FRONT_ROOT"/cantaloupe/.env
 }
 
 update_cantaloupe_properties() {
@@ -281,11 +298,11 @@ update_cantaloupe_properties() {
     chmod +x "$cantaloupe_dir"/start.sh
     source "$cantaloupe_dir"/.env
 
-    sed_repl_inplace "s~BASE_URI~$BASE_URI~" "$config_cantaloupe"
-    sed_repl_inplace "s~FILE_SYSTEM_SOURCE~$FILE_SYSTEM_SOURCE~" "$config_cantaloupe"
-    sed_repl_inplace "s~HTTP_PORT~$HTTP_PORT~" "$config_cantaloupe"
-    sed_repl_inplace "s~HTTPS_PORT~$HTTPS_PORT~" "$config_cantaloupe"
-    sed_repl_inplace "s~LOG_PATH~$LOG_PATH~" "$config_cantaloupe"
+    sed_repl_inplace "s~CANTALOUPE_BASE_URI~$CANTALOUPE_BASE_URI~" "$config_cantaloupe"
+    sed_repl_inplace "s~CANTALOUPE_IMG~$CANTALOUPE_IMG~" "$config_cantaloupe"
+    sed_repl_inplace "s~CANTALOUPE_PORT~$CANTALOUPE_PORT~" "$config_cantaloupe"
+    sed_repl_inplace "s~CANTALOUPE_PORT_HTTPS~$CANTALOUPE_PORT_HTTPS~" "$config_cantaloupe"
+    sed_repl_inplace "s~CANTALOUPE_DIR~$CANTALOUPE_DIR~" "$config_cantaloupe"
 }
 
 get_child_pids() {

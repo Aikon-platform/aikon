@@ -6,9 +6,7 @@ APP_ENV="$FRONT_DIR"/app/config/.env
 
 source "$SCRIPT_DIR"/functions.sh;
 
-INSTALL_TYPE=$(get_install_type "$1")
-
 echo_title "APP ENV GENERATION"
 
 cp "$APP_ENV".template "$APP_ENV"
-update_app_env "$APP_ENV" "$FRONT_DIR" "$INSTALL_TYPE"
+update_app_env "$APP_ENV" "$FRONT_DIR" "$INSTALL_MODE"

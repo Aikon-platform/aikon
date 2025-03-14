@@ -105,14 +105,14 @@ sudo chmod +x cantaloupe/init.sh && cp cantaloupe/.env{.template,} && nano canta
 ```
 >
 Change variables in the generated file `cantaloupe/.env`:
-- `BASE_URI`: leave it blank on local
-- `FILE_SYSTEM_SOURCE` depends on the folder in which you run cantaloupe (inside cantaloupe/ folder: `../app/mediafiles/img/`)
+- `CANTALOUPE_BASE_URI`: leave it blank on local
+- `CANTALOUPE_IMG` depends on the folder in which you run cantaloupe (inside cantaloupe/ folder: `../app/mediafiles/img/`)
 ```bash
-BASE_URI=
-FILE_SYSTEM_SOURCE=absolute/path/to/app/mediafiles/img/  # inside the project directory
-HTTP_PORT=8182
-HTTPS_PORT=8183
-LOG_PATH=/dir/where/cantaloupe/logs/will/be/stored
+CANTALOUPE_BASE_URI=
+CANTALOUPE_IMG=absolute/path/to/app/mediafiles/img/  # inside the project directory
+CANTALOUPE_PORT=8182
+CANTALOUPE_PORT_HTTPS=8183
+CANTALOUPE_DIR=/dir/where/cantaloupe/logs/will/be/stored
 ```
 >
 Set up Cantaloupe by running (it will create a `cantaloupe.properties` file with your variables):
