@@ -4,7 +4,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 FRONT_DIR=$(dirname "$SCRIPT_DIR")
 APP_ENV="$FRONT_DIR"/app/config/.env
 
-source "$SCRIPT_DIR"/functions.sh
+source "$SCRIPT_DIR"/utils.sh
 
 db_name=$(get_env_value "POSTGRES_DB" "$APP_ENV")
 db_user=$(get_env_value "POSTGRES_USER" "$APP_ENV")

@@ -4,7 +4,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 FRONT_DIR="$SCRIPT_DIR/front"
 API_DIR="$SCRIPT_DIR/api"
 
-source "$FRONT_DIR/scripts/functions.sh"
+source "$FRONT_DIR/scripts/utils.sh"
 
 declare -a ALL_PIDS=()
 

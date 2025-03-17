@@ -7,7 +7,7 @@
 SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"
 
-source "$SCRIPT_DIR"/functions.sh
+source "$SCRIPT_DIR"/utils.sh
 
 # Load environment variables from .env file
 . "$APP_ROOT"/app/config/.env

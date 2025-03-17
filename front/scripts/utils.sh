@@ -47,53 +47,6 @@ echo_title(){
     color_echo purple "\n\n$sep_line\n$title\n$sep_line"
 }
 
-# the sed at the end removes trailing non-alphanumeric chars.
-generate_random_string() {
-    echo "$(openssl rand -base64 32 | tr -d '/\n' | sed -r -e "s/[^a-zA-Z0-9]+$//")"
-}
-
-prompt_user() {
-    env_var=$(color_echo 'red' "$1")
-    default_val="$2"
-    current_val="$3"
-    desc="$4"
-
-    if [ -n "$current_val" ]; then
-        prompt="Press enter to keep $(color_echo 'cyan' "$current_val")"
-        default_val=$current_val
-    elif [ -n "$default_val" ]; then
-        prompt="Press enter for $(color_echo 'cyan' "$default_val")"
-    else
-        prompt=""
-    fi
-
-    prompt="$prompt, type a space to set empty"
-    read -p "$env_var $desc"$'\n'"$prompt: " value
-
-    if [ "$value" = " " ]; then
-        echo ""  # if user entered a space character, return empty value
-    else
-        echo "${value:-$default_val}"
-    fi
-}
-
-get_env_value() {
-    param=$1
-    env_file=$2
-    value=$(awk -F= -v param="$param" '/^[^#]/ && $1 == param {gsub(/"/, "", $2); print $2}' "$env_file")
-    echo "$value"
-}
-
-get_env_desc() {
-    current_line="$1"
-    prev_line="$2"
-    desc=""
-    if [[ $prev_line =~ ^# ]]; then
-        desc=$(echo "$prev_line" | sed 's/^#\s*//')
-    fi
-    echo "$desc"
-}
-
 get_os() {
     unameOut="$(uname -s)"
     case "${unameOut}" in
@@ -183,6 +136,53 @@ check_template_hash() {
     return 0  # Hash unchanged
 }
 
+# the sed at the end removes trailing non-alphanumeric chars.
+generate_random_string() {
+    echo "$(openssl rand -base64 32 | tr -d '/\n' | sed -r -e "s/[^a-zA-Z0-9]+$//")"
+}
+
+prompt_user() {
+    env_var=$(color_echo 'red' "$1")
+    default_val="$2"
+    current_val="$3"
+    desc="$4"
+
+    if [ -n "$current_val" ]; then
+        prompt="Press enter to keep $(color_echo 'cyan' "$current_val")"
+        default_val=$current_val
+    elif [ -n "$default_val" ]; then
+        prompt="Press enter for $(color_echo 'cyan' "$default_val")"
+    else
+        prompt=""
+    fi
+
+    prompt="$prompt, type a space to set empty"
+    read -p "$env_var $desc"$'\n'"$prompt: " value
+
+    if [ "$value" = " " ]; then
+        echo ""  # if user entered a space character, return empty value
+    else
+        echo "${value:-$default_val}"
+    fi
+}
+
+get_env_value() {
+    param=$1
+    env_file=$2
+    value=$(awk -F= -v param="$param" '/^[^#]/ && $1 == param {gsub(/"/, "", $2); print $2}' "$env_file")
+    echo "$value"
+}
+
+get_env_desc() {
+    current_line="$1"
+    prev_line="$2"
+    desc=""
+    if [[ $prev_line =~ ^# ]]; then
+        desc=$(echo "$prev_line" | sed 's/^#\s*//')
+    fi
+    echo "$desc"
+}
+
 get_default_val() {
     local param=$1
 
@@ -221,6 +221,12 @@ update_env_var() {
     sed_repl_inplace "s~^$param=.*~$param=$value~" "$env_file"
 }
 
+export_env() {
+    set -a # Turn on allexport mode
+    source "$env_file"
+    set +a # Turn off allexport mode
+}
+
 update_env() {
     local env_file=$1
 
@@ -232,11 +238,13 @@ update_env() {
             default_val=$(get_default_val $param)
 
             if [ "$INSTALL_MODE" = "full_install" ]; then
+                # For full install, all variables are prompted
                 new_value=$(prompt_user "$param" "$default_val" "" "$desc")
             elif [ -n "${!param+x}" ]; then
                 # If variable is already set in the current shell, use it as default
                 new_value="${!param}"
             elif is_in_default_params "$param" && [ -n "$default_val" ]; then
+                # If param is in default params, use default value if it exists
                 new_value="$default_val"
             else
                 new_value=$(prompt_user "$param" "$default_val" "" "$desc")
@@ -251,15 +259,15 @@ update_env() {
 setup_env() {
     local env_file=$1
     local template_file="${env_file}.template"
-    local default_params=("${@:2}")  # All arguments after env_file are default params
+    local default_params=("${@:2}")  # All arguments after $1 are default params
     DEFAULT_PARAMS=("${default_params[@]}")
 
     if [ ! -f "$env_file" ]; then
         cp "$template_file" "$env_file"
     elif ! check_template_hash "$template_file"; then
         # the env file has already been created, but the template has changed
-        source "$env_file" # source current values to copy them in new env
-        cp "$env_file" "_$env_file" # backup current env
+        export_env "$env_file" # source current values to copy them in new env
+        cp "$env_file" "${env_file}.backup"
         cp "$template_file" "$env_file"
     fi
 
@@ -268,14 +276,14 @@ setup_env() {
     fi
 
     update_env "$env_file"
-    source "$env_file"
+    export_env "$env_file"
 }
 
 update_app_env() {
     env_file=${1:-$FRONT_ENV}
     default_params=("APP_NAME" "DEBUG" "C_FORCE_ROOT" "MEDIA_DIR" "CONTACT_MAIL" "POSTGRES_DB" "POSTGRES_USER" "DB_HOST" "DB_PORT" "ALLOWED_HOSTS" "SAS_USERNAME" "SAS_PORT" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "REDIS_HOST" "REDIS_PORT" "REDIS_PASSWORD" "EMAIL_HOST" "EMAIL_HOST_USER" "APP_LOGO")
 
-    update_env "$env_file" "${default_params[@]}"
+    setup_env "$env_file" "${default_params[@]}"
 
     media_dir=$(get_env_value "MEDIA_DIR" "$env_file")
     default_media_dir="$FRONT_ROOT"/app/mediafiles
@@ -285,13 +293,11 @@ update_app_env() {
     fi
 }
 
-update_cantaloupe_env() {
+setup_cantaloupe() {
     export INSTALL_MODE=${1:-$INSTALL_MODE}
-    update_env "$FRONT_ROOT"/cantaloupe/.env
-}
+    cantaloupe_dir=${2:-$FRONT_ROOT/cantaloupe}
+    setup_env "$cantaloupe_dir"/.env
 
-update_cantaloupe_properties() {
-    cantaloupe_dir="$1"
     config_cantaloupe="$cantaloupe_dir"/cantaloupe.properties
     cp "$config_cantaloupe.template" $config_cantaloupe
 
