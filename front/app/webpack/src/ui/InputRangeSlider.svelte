@@ -4,6 +4,8 @@ import { onMount, createEventDispatcher } from "svelte";
 import noUiSlider from "nouislider";
 import 'nouislider/dist/nouislider.css';
 
+import TooltipGeneric from "./TooltipGeneric.svelte";
+
 //////////////////////////////////////////////
 
 export let minVal;                  /** @type {Number} */
@@ -12,18 +14,16 @@ export let step = 1;                /** @type {Number} */
 
 let slider;
 const dispatch = createEventDispatcher();
-
-$: selectedRange = { min:minVal, max:maxVal };
-$: noUiHandlesHtmlIds = [
+const oldSelectedRange = { min: undefined, max: undefined };
+const handleHtmlIds = [
     `noUi-handle-${window.crypto.randomUUID()}`,
     `noUi-handle-${window.crypto.randomUUID()}` ];
 
-//////////////////////////////////////////////
+$: selectedRange = { min:minVal, max:maxVal };
+$: handleTooltips = [];
+$: updateHandleTooltip(selectedRange);  // run updateHandleTooltip when `selectedRange` changes
 
-const updateSelectedRange = ([_min, _max]) => {
-    selectedRange = { min: _min, max: _max };
-    console.log("called it", [_min, _max], selectedRange);
-}
+//////////////////////////////////////////////
 
 function initSlider() {
     noUiSlider.create(slider, {
@@ -32,21 +32,47 @@ function initSlider() {
         connect: true,
         range: selectedRange,
         handleAttributes: [
-            { "id": noUiHandlesHtmlIds[0] },
-            { "id": noUiHandlesHtmlIds[1] } ]
+            { "id": handleHtmlIds[0] },
+            { "id": handleHtmlIds[1] } ]
     });
     slider.noUiSlider.on("set", () => {
         let range = slider.noUiSlider.get(true);
         updateSelectedRange(range);
         dispatch("updateRange", range);
     })
+}
 
+// the TooltipGenerics that are bound to the slider's handle must be created in a declarative way to be positionned correctly in the DOM
+function initHandleTooltips() {
+    handleHtmlIds.map((htmlId, idx) => {
+        console.log("htmlId", document.getElementById(htmlId));
+        handleTooltips.push(new TooltipGeneric({
+            target: document.getElementById(htmlId),
+            props: { tooltipText: idx===0 ? selectedRange.min : selectedRange.max }
+        }));
+    })
+}
+
+const updateSelectedRange = ([_min, _max]) => {
+    oldSelectedRange.min = selectedRange.min;
+    oldSelectedRange.max = selectedRange.max;
+    selectedRange = { min: _min, max: _max };
+    console.log(`updateSelectedRange ::: min: old ${oldSelectedRange.min}, new ${selectedRange.min} || max: old ${oldSelectedRange.min}, new ${selectedRange.min}`);
+}
+
+// update the `TooltipGeneric.tooltipText` prop when a new value is set.
+function updateHandleTooltip() {
+    if ( handleTooltips.length && oldSelectedRange.min !== selectedRange.min )
+        handleTooltips[0].$set({ tooltipText: selectedRange.min })
+    if ( handleTooltips.length && oldSelectedRange.max !== selectedRange.max )
+        handleTooltips[1].$set({ tooltipText: selectedRange.max })
 }
 
 //////////////////////////////////////////////
 
 onMount(() => {
-    initSlider()
+    initSlider();
+    initHandleTooltips();
 })
 </script>
 
@@ -80,6 +106,7 @@ onMount(() => {
     background-color: var(--default-color);
     border: solid 2px white;
     box-shadow: none;
+    cursor: grab;
 }
 :global(.noUi-horizontal .noUi-handle::before),
 :global(.noUi-horizontal .noUi-handle::after) {

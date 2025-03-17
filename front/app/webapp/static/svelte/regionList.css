@@ -314,7 +314,7 @@ span.svelte-503e8j{cursor:pointer;transition:background-color 0.2s ease-out}
   right: 28px;
 }
 
-.slider-wrapper.svelte-y1jplv{min-height:15px}.noUi-horizontal{height:5px}.noUi-horizontal .noUi-connects{outline:solid 1px white}.noUi-horizontal .noUi-connect{background-color:var(--default-color)}.noUi-horizontal .noUi-handle{width:15px;height:15px;right:-10px;top:-6px;border-radius:1rem;background-color:var(--default-color);border:solid 2px white;box-shadow:none}.noUi-horizontal .noUi-handle::before,.noUi-horizontal .noUi-handle::after{all:unset}
+.slider-wrapper.svelte-ol37h4{min-height:15px}.noUi-horizontal{height:5px}.noUi-horizontal .noUi-connects{outline:solid 1px white}.noUi-horizontal .noUi-connect{background-color:var(--default-color)}.noUi-horizontal .noUi-handle{width:15px;height:15px;right:-10px;top:-6px;border-radius:1rem;background-color:var(--default-color);border:solid 2px white;box-shadow:none;cursor:grab}.noUi-horizontal .noUi-handle::before,.noUi-horizontal .noUi-handle::after{all:unset}
 .pill-checkbox.svelte-1vd06dk.svelte-1vd06dk{transition:background-color var(--default-transition)}.pill-checkbox.svelte-1vd06dk input.svelte-1vd06dk{visibility:hidden;height:0;width:0}
 .propagation-ctrl-inputs.svelte-15ucvkm.svelte-15ucvkm{margin:10px;padding:5px}
 .input.svelte-sgypdx:focus{box-shadow:none}.selection-title.svelte-sgypdx{margin-top:-0.2rem;padding-bottom:0.75rem;padding-left:0.25rem;width:75%;height:2rem;display:inline-block;font-size:1.4rem;border:none;border-bottom:1px solid var(--bulma-link);border-radius:0}
