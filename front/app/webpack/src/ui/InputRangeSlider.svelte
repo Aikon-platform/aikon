@@ -14,6 +14,9 @@ let slider;
 const dispatch = createEventDispatcher();
 
 $: selectedRange = { min:minVal, max:maxVal };
+$: noUiHandlesHtmlIds = [
+    `noUi-handle-${window.crypto.randomUUID()}`,
+    `noUi-handle-${window.crypto.randomUUID()}` ];
 
 //////////////////////////////////////////////
 
@@ -27,13 +30,17 @@ function initSlider() {
         start: [ minVal, maxVal ],
         step: step,
         connect: true,
-        range: selectedRange
+        range: selectedRange,
+        handleAttributes: [
+            { "id": noUiHandlesHtmlIds[0] },
+            { "id": noUiHandlesHtmlIds[1] } ]
     });
     slider.noUiSlider.on("set", () => {
         let range = slider.noUiSlider.get(true);
         updateSelectedRange(range);
         dispatch("updateRange", range);
     })
+
 }
 
 //////////////////////////////////////////////
