@@ -9,7 +9,6 @@ import 'nouislider/dist/nouislider.css';
 export let minVal;                  /** @type {Number} */
 export let maxVal;                  /** @type {Number} */
 export let step = 1;                /** @type {Number} */
-// export let numberType = "integer";  /** @type {"integer"|"float"} */
 
 let slider;
 const dispatch = createEventDispatcher();
@@ -53,5 +52,30 @@ onMount(() => {
 
 
 <style>
-
+.slider-wrapper {
+    min-height: 15px;
+}
+:global(.noUi-horizontal) {
+    height: 5px;
+}
+:global(.noUi-horizontal .noUi-connects) {
+    outline: solid 1px white;
+}
+:global(.noUi-horizontal .noUi-connect) {
+    background-color: var(--default-color);
+}
+:global(.noUi-horizontal .noUi-handle) {
+	width: 15px;
+	height: 15px;
+	right: -10px;
+	top: -6px;
+    border-radius: 1rem;
+    background-color: var(--default-color);
+    border: solid 2px white;
+    box-shadow: none;
+}
+:global(.noUi-horizontal .noUi-handle::before),
+:global(.noUi-horizontal .noUi-handle::after) {
+    all: unset;
+}
 </style>

@@ -4,6 +4,7 @@
     --bulma-body-family: "Fira Sans", sans-serif;
     --default-color: hsl(229, 68%, 46%);
     --accent-grey: hsl(0, 0%, 14%);
+    --default-transition: ease-in-out .3s;
 }
 
 @media (prefers-color-scheme: dark) {}

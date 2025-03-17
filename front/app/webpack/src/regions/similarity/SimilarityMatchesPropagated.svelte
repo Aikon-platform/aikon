@@ -2,7 +2,7 @@
     import { setContext } from "svelte";
 
     import SimilarRegions from "./SimilarRegions.svelte";
-    import TooltipGeneric from "../../TooltipGeneric.svelte";
+    import IconTooltip from "../../ui/IconTooltip.svelte";
     import { appLang } from '../../constants.js';
 
     export let qImg;
@@ -25,10 +25,10 @@
         <div class="block">
             {#await propagatedMatchesPromise then propagatedImgs}
                 {propagatedImgs.length} propagated match{propagatedImgs.length > 1 ? "es" : "" }
-                <TooltipGeneric iconifyIcon="material-symbols:help-outline"
+                <IconTooltip iconifyIcon="material-symbols:help-outline"
                                 altText={ appLang==="en" ? "Display help" : "Afficher une explication"}
                                 tooltipText={tooltipText}
-                ></TooltipGeneric>
+                ></IconTooltip>
             {/await}
         </div>
         <div class="grid is-gap-2">
