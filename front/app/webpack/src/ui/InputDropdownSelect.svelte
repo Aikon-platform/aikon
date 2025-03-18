@@ -1,4 +1,4 @@
-<!-- an implementation of a subset of items from Svelte-Select
+<!-- an implementation of a subset of choices from Svelte-Select
     it implements specific styles and allows to provide an icon
     for each option.
 
@@ -8,83 +8,175 @@
 -->
 
 <script>
-import { onMount } from "svelte";
+import { onMount, onDestroy, createEventDispatcher } from "svelte";
 
-import Select  from "svelte-select";
+import Choices from "choices.js";
+import "choices.js/public/assets/styles/choices.css";
 
 import { appLang } from "../constants";
 
 /////////////////////////////////////////////////////
 
 /**
- * @typedef DropdownItem
- *    structure of the "items" that extends https://www.npmjs.com/package/svelte-select?activeTab=readme#props
- *    with the possibility to style an item
+ * @typedef DropdownChoice
+ *    structure of the "choices"
  * @property {String} value:
  * @property {String} label:
  * @property {String?} group: group name for nested selects
- * @property {String?} iconifyId: iconify identifier for an icon to add to dropdown item
- * @property {String?} iconSvg: svg-as-string of an icon
+ * @property {String?} icon: svg or iconify identifier for an icon to add to dropdown item
+ * @property {Boolean?} iconify: if true, icon will be treated as an iconify id instead of an svg.
  */
 
  /**
- * @typedef DropdownItemArray
- * @type {DropdownItem[]}
+ * @typedef DropdownChoiceArray
+ * @type {DropdownChoice[]}
  */
 
- /** @type {String} */
-export let placeholder = appLang === "fr" ? "Sélectionner une valeur" : "Select a value";
-export let items = [];                 /** @type {DropdownItemArray} */
-export let multiple = false;           /** @type {Boolean} */
+export let choices;                    /** @type {DropdownChoiceArray} */
+export let multiple;                   /** @type {Boolean} */
 export let searchable = true;          /** @type {String} */
-export let name;                       /** @type {String} */
-export let closeListOnChange = true;   /** @type {Boolean} */
+export let sort = true;                /** @type {Boolean} */
+ /** @type {String} */
+ export let placeholder = appLang === "fr" ? "Sélectionner une valeur" : "Select a value";
+
+const dispatch = createEventDispatcher();
+const htmlId = `input-dropdown-select-${window.crypto.randomUUID()}`;
+
+$: selectedValues = [];  /** @type {DropdownChoice.value[]} */
 
 /////////////////////////////////////////////////////
 
-// attributes that may be used if props but should not be used otherwise can be defined here
-function makeConditionalAttributes() {
-    let conditionalAttributes;
-    if (multiple) conditionalAttributes.groupBy = (item) => item.group
-    if (name) conditionalAttributes.name = name;
-    return conditionalAttributes
+const toIconify = (iconifyId) => `<span class="iconify" data-icon=${iconifyId}/>`;
+
+// generate a random UUID + add the icon.
+const formatChoices = () => choices = choices.map(el => {
+    el.id = `${window.crypto.randomUUID()}`;
+    if ( el.hasOwnProperty("icon") && el.icon != null) {
+        el.label = `<span>
+            <span class="dropdown-icon-wrapper">${
+                el.iconify===true ? toIconify(el.icon) : el.icon
+            }</span>
+            <span class="dropdown-icon-text">${el.label}</span>
+        </span>`;
+    }
+    return el;
+})
+
+const onAddItem = (e) => {
+    console.log("pre onAddItem", selectedValues);
+    if ( multiple===true ) {
+        const pos = selectedValues.indexOf(e.detail.value);
+        pos === -1
+        ? selectedValues.push(e.detail.value)
+        : selectedValues.slice(pos, 1);
+    } else {
+        selectedValues = [e.detail.value];
+    }
+    dispatch("updateValues", selectedValues);
+    console.log("post onAddItem", selectedValues);
+};
+
+const onRemoveItem = (e) => {
+    console.log("pre onRemoveItem", selectedValues)
+    selectedValues = selectedValues.filter(s => s !== e.detail.value);
+    dispatch("updateValues", selectedValues);
+    console.log("post onRemoveItem", selectedValues)
 }
 
-function insertIcons() {
-    items.forEach(item => {
-        let iconValue, iconType;
-        if ( Object.keys(item).includes("iconifyId") && item.iconifyId != null ) {
-            iconValue = item.iconifyId;
-            iconType = "iconify";
-        } else if ( Object.keys(item).includes("iconSvg") && item.iconSvg != null ) {
-            iconValue = item.iconSvg;
-            iconType = "svg";
-        };
-        if ( iconValue && iconType )  {
-
-        }
+function initChoices() {
+    const choicesTarget = document.getElementById(htmlId);
+    new Choices(choicesTarget, {
+        choices: choices,
+        addChoices: false,
+        addItems: false,
+        removeItems: true,
+        removeItemButton: true,
+        shouldSort: sort,
+        allowHTML: choices.some(c => c.hasOwnProperty("icon") && c.icon != null),
+        sorter: () => choices.label,  // idk
+        placeholderValue: placeholder,
+        classNames: {
+            item: ["choices__item", "dropdown-item"]
+        },
+        loadingText: 'Loading...',
+        noResultsText: appLang === "fr" ? "Pas de résultats" : 'No results found',
+        noChoicesText: appLang === "fr" ? "Pas de choix pour faire la sélection" : 'No choices to choose from',
+        itemSelectText: appLang === "fr" ? "Cliquer pour sélectionner" : 'Press to select',
+        uniqueItemText: appLang === "fr" ? "Seules des valeurs uniques peuvent être ajoutées" : 'Only unique values can be added',
+        customAddItemText: appLang === "fr" ? "Les valeurs ne répondent pas aux conditions attendues" : 'Only values matching specific conditions can be added',
+        addItemText: (value) =>
+            appLang === "fr"
+            ? `Cliquer sur Entrer pour ajouter <b>${value}</b>`
+            : `Press Enter to add <b>"${value}"</b>`,
+    removeItemIconText: () => appLang === "fr" ? "Retirer l'item" : `Remove item`,
+    removeItemLabelText: (value) =>
+        appLang === "fr"
+        ? `Retirer l'item: ${value}`
+        : `Remove item: ${value}`,
+    maxItemText: (maxItemCount) =>
+        appLang === "fr"
+        ? `Seulement ${maxItemCount} valeurs peuvent être ajoutées`
+        : `Only ${maxItemCount} values can be added`
     })
+
+    choicesTarget.addEventListener("addItem", onAddItem);  // TODO delete on destrooy
+    choicesTarget.addEventListener("removeItem", onRemoveItem)
 }
 
 onMount(() => {
-
+    console.log(choices);
+    formatChoices(choices);
+    initChoices();
 })
-
 </script>
 
 
 <div>
-    <Select {placeholder}
-            {items}
-            {searchable}
-            {multiple}
-            {/*closeListOnChange*/}
-            closeListOnChange={false}
-            {...makeConditionalAttributes()}
-    ></Select>
+    {#if multiple }
+        <select id={htmlId} multiple ></select>
+    {:else }
+        <select id={htmlId}></select>
+    {/if}
 </div>
 
 
 <style>
+/** TODO DEFINE STYLE FOR MULTIPLE */
+:global(.choices__inner),
+:global(.choiches__list--dropdown),
+:global(.dropdown-item) {
+    background-color: var(--bulma-body-background-color);
+    color: var(--bulma-body-background);
+    font-size: var(--bulma-body-font-size);
+}
+:global(.choices__inner) {
+    padding: 1px;
+    padding-bottom: 1px !important;
+    min-height: 30px;
+    border: solid 1px var(--bulma-border);
+    border-radius: var(--bulma-burger-border-radius);
+}
+:global(.choices__list--dropdown) {
+    z-index: 10 !important;
+}
+:global(.choices__list--multiple .choices__item) {
+    background-color: var(--default-color);
+    border: var(--default-border);
+    font-weight: normal;
+}
+:global(.choices__list--single .choices__item:not(.choices__placeholder)) {
+	width: fit-content;
+	padding: inherit;
+	background-color: var(--default-color);
+	border: var(--default-border);
+    border-radius: 1rem;
+	padding-left: 10px;
+}
+:global(.choices__list--dropdown .dropdown-item.is-highlighted) {
+    background-color: var(--default-color) !important;
+}
+:global(.choices__list--single .choices__button) {
+    background-color: white;
+}
 
 </style>
