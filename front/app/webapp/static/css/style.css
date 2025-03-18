@@ -288,6 +288,8 @@ td.is-fullwidth {
     --deleted-text: var(--bulma-danger-dark);
     /*--darkened-bg: var(--selected);*/
     /*--hairline-color: var(--bulma-border);*/
+    --bulma-shadow: 0 0 0 var(--contrasted), 0 0 0 1px var(--contrasted);
+    --bulma-box-hover-shadow: 0 0 0 var(--contrasted), 0 0 0 2px var(--contrasted);
 }
 
 [data-theme="light"] {

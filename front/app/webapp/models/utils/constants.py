@@ -57,7 +57,6 @@ TRMT = MODEL_NAMES["Treatment"][APP_LANG]
 SET = MODEL_NAMES["DocumentSet"][APP_LANG]
 PRFL = MODEL_NAMES["UserProfile"][APP_LANG]
 
-
 ENTITY_NAMES = {
     "MAN": MAN,
     "MS": MS,
@@ -82,6 +81,43 @@ ENTITY_NAMES = {
     "GRP": GRP,
     "TRMT": TRMT,
     "SET": SET,
+}
+
+MODEL_DESC = {
+    "Work": {
+        "en": "Represents the abstract intellectual production, encompassing the core ideas and content across various manifestations.",
+        "fr": "Production intellectuelle abstraite, représentant des idées et des contenus à travers toutes leurs manifestations.",
+    },
+    "Witness": {
+        "en": "Denotes the physical objects or primary sources preserved in institutions.",
+        "fr": "Objet physique, ou source primaire, conservé par les institutions.",
+    },
+    "Series": {
+        "en": "Encompasses a group of witnesses sharing a common coherence, such as volumes of an edition or manuscript fragments held in different institutions.",
+        "fr": "Regroupement de témoins partageant une cohérence, comme les volumes d'une édition ou les fragments de manuscrits conservés dans des institutions différentes.",
+    },
+    "Treatment": {
+        "en": "Automated task applied to a witness or document set.",
+        "fr": "Tâche automatique appliquée à un témoin ou un set de documents.",
+    },
+    "DocumentSet": {
+        "en": "Personal collection of witnesses, works and series created by the user.",
+        "fr": "Collection personnelle de témoins, oeuvres et séries constituée par un utilisateur.",
+    },
+}
+
+WIT_DESC = MODEL_DESC["Witness"][APP_LANG]
+SER_DESC = MODEL_DESC["Series"][APP_LANG]
+WORK_DESC = MODEL_DESC["Work"][APP_LANG]
+TRMT_DESC = MODEL_DESC["Treatment"][APP_LANG]
+SET_DESC = MODEL_DESC["DocumentSet"][APP_LANG]
+
+ENTITY_DESC = {
+    "WIT_DESC": WIT_DESC,
+    "SER_DESC": SER_DESC,
+    "WORK_DESC": WORK_DESC,
+    "TRMT_DESC": TRMT_DESC,
+    "SET_DESC": SET_DESC,
 }
 
 # ABBREVIATION
