@@ -8,5 +8,4 @@ source "$SCRIPT_DIR"/utils.sh;
 
 echo_title "APP ENV GENERATION"
 
-cp "$APP_ENV".template "$APP_ENV"
 update_app_env "$APP_ENV" "$FRONT_DIR" "$INSTALL_MODE"

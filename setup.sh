@@ -19,7 +19,7 @@ else
     exit 1
 fi
 
-color_echo blue "Do you want to init the api/ submodule (WARNING: this will checkout from your current API branch to a detached head, resetting all changes made to the API) ?"
+color_echo blue "Do you want to init the api/ submodule (⚠️ this will checkout from your current API branch to a detached head, resetting all changes made to the API)?"
 options=("yes" "no")
 answer=$(printf "%s\n" "${options[@]}" | fzy)
 if [ "$answer" = "yes" ]; then
@@ -52,9 +52,14 @@ sed_repl_inplace "s~^API_URL=.*~API_URL=$api_url~" "$FRONT_ENV"
 
 echo_title "🎉 FRONT & API ARE SET UP! 🎉"
 color_echo blue "\nYou can now run the app and API with: "
-color_echo green "              bash run.sh"
+color_echo green "          $ bash run.sh"
 
 source "$FRONT_ENV"
 color_echo blue '\nConnect to app using:'
 echo -e "          👤 $POSTGRES_USER"
 echo -e "          🔑 $POSTGRES_PASSWORD"
+echo ""
+
+cd $ROOT_DIR
+# remove exported variables from shell
+fresh_shell

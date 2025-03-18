@@ -63,6 +63,15 @@ get_os() {
 export OS
 OS=$(get_os)
 
+fresh_shell() {
+    # reset exported variables
+    if [ "$OS" = "Linux" ]; then
+        exec bash
+    else
+        exec zsh
+    fi
+}
+
 # inline replacement in file $file with sed expression $sed_expr
 # `sed -i` can't be used in the same way with Linux and Mac: it's `sed -i` on Linux, `sed -i ""` on Mac.
 # we must define the sed variants as functions and can't just store the variants as strings because this
@@ -147,22 +156,21 @@ prompt_user() {
     current_val="$3"
     desc="$4"
 
-    if [ -n "$current_val" ]; then
-        prompt="Press enter to keep $(color_echo 'cyan' "$current_val")"
-        default_val=$current_val
-    elif [ -n "$default_val" ]; then
+    if [ "$default_val" != "$current_val" ]; then
         prompt="Press enter for $(color_echo 'cyan' "$default_val")"
+    elif [ -n "$current_val" ]; then
+        prompt="Press enter to keep $(color_echo 'cyan' "$current_val")"
     else
-        prompt=""
+        prompt="Enter value"
     fi
 
-    prompt="$prompt, type a space to set empty"
-    read -p "$env_var $desc"$'\n'"$prompt: " value
+    prompt="$prompt [Space for empty value]"
+    read -p "$env_var $desc"$'\n'"$prompt: " value </dev/tty
 
     if [ "$value" = " " ]; then
-        echo ""  # if user entered a space character, return empty value
+        export new_value=""  # if user entered a space character, return empty value
     else
-        echo "${value:-$default_val}"
+        export new_value="${value:-$default_val}"
     fi
 }
 
@@ -185,31 +193,59 @@ get_env_desc() {
 
 get_default_val() {
     local param=$1
-
-    if [ -n "${!param+x}" ]; then
+    if [ -n "${!param}" ]; then
         # if the value is already exported in the current shell, use it as default
         default_val="${!param}"
+
     elif [[ "$param" =~ ^.*(PASSWORD|SECRET).*$ ]]; then
         default_val="$(generate_random_string)"
+
     elif [[ "$param" = "MEDIA_DIR" ]]; then
         default_val="$FRONT_ROOT"/app/mediafiles
+
+    elif [[ "$param" = "DOCKER" ]]; then
+        if [[ "$(get_env_value "TARGET" "$FRONT_ENV")" = "prod" ]]; then
+            default_val="True"
+        else
+            default_val="False"
+        fi
+
+    elif [[ "$param" = "DEBUG" ]]; then
+        if [[ "$(get_env_value "DOCKER" "$FRONT_ENV")" = "True" ]]; then
+            default_val="False"
+        else
+            default_val="True"
+        fi
+
+    elif [[ "$param" = "REDIS_HOST" ]]; then
+        if [[ "$(get_env_value "DOCKER" "$FRONT_ENV")" = "True" ]]; then
+            default_val="redis"
+        else
+            default_val="localhost"
+        fi
+
     elif [ "$param" = "EMAIL_HOST_USER" ]; then
         app_name=$(get_env_value "APP_NAME" "$FRONT_ENV")
         app_name=${app_name:-"app"}
         default_val=$([ -n "$app_name" ] && echo "$app_name@mail.com" || echo "$current_val")
+
     elif [ "$param" = "CANTALOUPE_BASE_URI" ]; then
         default_val="https://"$(get_env_value "PROD_URL" "$FRONT_ENV")
+
     elif [ "$param" = "CANTALOUPE_IMG" ]; then
         default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img"
+
     elif [ "$param" = "CANTALOUPE_PORT" ]; then
         default_val=$(get_env_value "CANTALOUPE_PORT" "$FRONT_ENV")
+
     elif [ "$param" = "CANTALOUPE_PORT_HTTPS" ]; then
         default_val=$(get_env_value "CANTALOUPE_PORT_HTTPS" "$FRONT_ENV")
+
     elif [ "$param" = "CANTALOUPE_DIR" ]; then
         default_val="$FRONT_ROOT"/cantaloupe
+
     else
-        # prompt_user get current_val from env_file
-        default_val=""
+        default_val=$(get_env_value "$param" "$env_file")
     fi
     echo "$default_val"
 }
@@ -236,18 +272,19 @@ update_env() {
             param=$(echo "$line" | cut -d'=' -f1)
             desc=$(get_env_desc "$line" "$prev_line")
             default_val=$(get_default_val $param)
+            current_val=$(get_env_value "$param" "$env_file")
 
             if [ "$INSTALL_MODE" = "full_install" ]; then
                 # For full install, all variables are prompted
-                new_value=$(prompt_user "$param" "$default_val" "" "$desc")
-            elif [ -n "${!param+x}" ]; then
+                prompt_user "$param" "$default_val" "$current_val" "$desc"
+            elif [ -n "${!param}" ]; then
                 # If variable is already set in the current shell, use it as default
                 new_value="${!param}"
             elif is_in_default_params "$param" && [ -n "$default_val" ]; then
                 # If param is in default params, use default value if it exists
                 new_value="$default_val"
             else
-                new_value=$(prompt_user "$param" "$default_val" "" "$desc")
+                prompt_user "$param" "$default_val" "$current_val" "$desc"
             fi
 
             update_env_var "$new_value" "$param" "$env_file"
@@ -263,12 +300,18 @@ setup_env() {
     DEFAULT_PARAMS=("${default_params[@]}")
 
     if [ ! -f "$env_file" ]; then
+        color_echo yellow "\nCreating $env_file"
         cp "$template_file" "$env_file"
     elif ! check_template_hash "$template_file"; then
+        color_echo yellow "\nUpdating $env_file"
         # the env file has already been created, but the template has changed
         export_env "$env_file" # source current values to copy them in new env
         cp "$env_file" "${env_file}.backup"
         cp "$template_file" "$env_file"
+    else
+        color_echo yellow "\n$env_file is up-to-date, skipping..."
+        export_env "$env_file"
+        exit 0
     fi
 
     if [ -z "$INSTALL_MODE" ]; then
@@ -281,7 +324,11 @@ setup_env() {
 
 update_app_env() {
     env_file=${1:-$FRONT_ENV}
-    default_params=("APP_NAME" "DEBUG" "C_FORCE_ROOT" "MEDIA_DIR" "CONTACT_MAIL" "POSTGRES_DB" "POSTGRES_USER" "DB_HOST" "DB_PORT" "ALLOWED_HOSTS" "SAS_USERNAME" "SAS_PORT" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "REDIS_HOST" "REDIS_PORT" "REDIS_PASSWORD" "EMAIL_HOST" "EMAIL_HOST_USER" "APP_LOGO")
+    default_params=("DEBUG" "C_FORCE_ROOT" "MEDIA_DIR" "CONTACT_MAIL" "POSTGRES_DB" "POSTGRES_USER"
+        "DB_PORT" "API_PORT" "ALLOWED_HOSTS" "SAS_USERNAME" "SAS_PORT" "SECRET_KEY" "FRONT_PORT"
+        "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "REDIS_HOST" "REDIS_PORT" "REDIS_PASSWORD"
+        "EMAIL_HOST" "EMAIL_HOST_PASSWORD" "DEFAULT_FROM_EMAIL" "EMAIL_HOST_USER" "APP_LOGO"
+        "HTTP_PROXY" "HTTPS_PROXY")
 
     setup_env "$env_file" "${default_params[@]}"
 
@@ -296,6 +343,7 @@ update_app_env() {
 setup_cantaloupe() {
     export INSTALL_MODE=${1:-$INSTALL_MODE}
     cantaloupe_dir=${2:-$FRONT_ROOT/cantaloupe}
+    default_params=("CANTALOUPE_BASE_URI" "CANTALOUPE_IMG" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "CANTALOUPE_DIR")
     setup_env "$cantaloupe_dir"/.env
 
     config_cantaloupe="$cantaloupe_dir"/cantaloupe.properties

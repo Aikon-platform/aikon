@@ -21,6 +21,7 @@ LOGIN_REDIRECT_URL = "/"
 SECRET_KEY = ENV.str("SECRET_KEY", default="")
 
 TARGET = ENV("TARGET", default="dev")
+DOCKER = ENV.bool("DOCKER", default=False)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = ENV.bool("DEBUG", default=False if TARGET == "prod" else True)
@@ -153,7 +154,7 @@ DATABASES = {
         "NAME": ENV.str("POSTGRES_DB", default=""),
         "USER": ENV.str("POSTGRES_USER", default=""),
         "PASSWORD": ENV.str("POSTGRES_PASSWORD", default=""),
-        "HOST": ENV.str("DB_HOST", default="localhost"),
+        "HOST": "db" if DOCKER else "localhost",
         "PORT": ENV.str("DB_PORT", default=5432),
     }
 }
