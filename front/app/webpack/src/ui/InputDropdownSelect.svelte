@@ -1,9 +1,15 @@
-<!-- an implementation of a subset of items from Svelte-Select.
-    so far, it is synchronous (no async data fetching) and does
-    not work with groups
+<!-- an implementation of a subset of items from Svelte-Select
+    it implements specific styles and allows to provide an icon
+    for each option.
+
+    restrictions:
+    - it is synchronous (no async data fetching)
+    - it does not handle updates to props values
 -->
 
 <script>
+import { onMount } from "svelte";
+
 import Select  from "svelte-select";
 
 import { appLang } from "../constants";
@@ -28,7 +34,7 @@ import { appLang } from "../constants";
 
  /** @type {String} */
 export let placeholder = appLang === "fr" ? "Sélectionner une valeur" : "Select a value";
-export let items;                    /** @type {DropdownItemArray} */
+export let items = [];                 /** @type {DropdownItemArray} */
 export let multiple = false;           /** @type {Boolean} */
 export let searchable = true;          /** @type {String} */
 export let name;                       /** @type {String} */
@@ -44,6 +50,26 @@ function makeConditionalAttributes() {
     return conditionalAttributes
 }
 
+function insertIcons() {
+    items.forEach(item => {
+        let iconValue, iconType;
+        if ( Object.keys(item).includes("iconifyId") && item.iconifyId != null ) {
+            iconValue = item.iconifyId;
+            iconType = "iconify";
+        } else if ( Object.keys(item).includes("iconSvg") && item.iconSvg != null ) {
+            iconValue = item.iconSvg;
+            iconType = "svg";
+        };
+        if ( iconValue && iconType )  {
+
+        }
+    })
+}
+
+onMount(() => {
+
+})
+
 </script>
 
 
@@ -52,7 +78,8 @@ function makeConditionalAttributes() {
             {items}
             {searchable}
             {multiple}
-            {closeListOnChange}
+            {/*closeListOnChange*/}
+            closeListOnChange={false}
             {...makeConditionalAttributes()}
     ></Select>
 </div>
