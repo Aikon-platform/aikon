@@ -14,13 +14,13 @@ export let step = 1;                /** @type {Number} */
 
 let slider;
 const dispatch = createEventDispatcher();
+const handleTooltips = [];
 const oldSelectedRange = { min: undefined, max: undefined };
 const handleHtmlIds = [
     `noUi-handle-${window.crypto.randomUUID()}`,
     `noUi-handle-${window.crypto.randomUUID()}` ];
 
 $: selectedRange = { min:minVal, max:maxVal };
-$: handleTooltips = [];
 $: updateHandleTooltip(selectedRange);  // run updateHandleTooltip when `selectedRange` changes
 
 //////////////////////////////////////////////
@@ -33,7 +33,11 @@ function initSlider() {
         range: selectedRange,
         handleAttributes: [
             { "id": handleHtmlIds[0] },
-            { "id": handleHtmlIds[1] } ]
+            { "id": handleHtmlIds[1] } ],
+        pips: {
+            mode: "steps",
+            filter: (value, type) => [minVal,maxVal].includes(value) ? 1 : -1  // only display min/max values on the slider
+        }
     });
     slider.noUiSlider.on("set", () => {
         let range = slider.noUiSlider.get(true);
@@ -45,7 +49,6 @@ function initSlider() {
 // the TooltipGenerics that are bound to the slider's handle must be created in a declarative way to be positionned correctly in the DOM
 function initHandleTooltips() {
     handleHtmlIds.map((htmlId, idx) => {
-        console.log("htmlId", document.getElementById(htmlId));
         handleTooltips.push(new TooltipGeneric({
             target: document.getElementById(htmlId),
             props: { tooltipText: idx===0 ? selectedRange.min : selectedRange.max }
@@ -57,7 +60,6 @@ const updateSelectedRange = ([_min, _max]) => {
     oldSelectedRange.min = selectedRange.min;
     oldSelectedRange.max = selectedRange.max;
     selectedRange = { min: _min, max: _max };
-    console.log(`updateSelectedRange ::: min: old ${oldSelectedRange.min}, new ${selectedRange.min} || max: old ${oldSelectedRange.min}, new ${selectedRange.min}`);
 }
 
 // update the `TooltipGeneric.tooltipText` prop when a new value is set.
@@ -87,6 +89,7 @@ onMount(() => {
 <style>
 .slider-wrapper {
     min-height: 15px;
+    margin: 10px;
 }
 :global(.noUi-horizontal) {
     height: 5px;

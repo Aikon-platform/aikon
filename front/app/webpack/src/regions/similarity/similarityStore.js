@@ -112,6 +112,18 @@ function createSimilarityStore() {
         return displayedRegions[regionRef[0]]
     }
 
+    const allowedPropagateDepthRange = [2,6];
+
+    const propagateParams = writable({
+        recursionDepth: allowedPropagateDepthRange,
+        filterByRegion: false
+    })
+    const otherParams = writable({ /** TBD */ });
+    const toolbarParams = derived([propagateParams, otherParams], ([$propagateParams, $otherParams]) => ({
+        propagate: $propagateParams,
+        other: $otherParams
+    }))
+
     return {
         currentPage,
         comparedRegions,
@@ -127,7 +139,10 @@ function createSimilarityStore() {
         select,
         addComparedRegions,
         isSelected,
-        pageLength
+        pageLength,
+        toolbarParams,
+        propagateParams,
+        allowedPropagateDepthRange
     };
 }
 
