@@ -6,7 +6,7 @@ environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
 
 APP_NAME = ENV.str("APP_NAME", default="")
 WEBAPP_NAME = "webapp"
-ADDITIONAL_MODULES = ENV.list("ADDITIONAL_MODULES", default=[])
+ADDITIONAL_MODULES = ENV.list("INSTALLED_APPS", default=[])
 
 # Logos to be displayed in the footer
 APP_LOGO = ENV.list("APP_LOGO", default=[])

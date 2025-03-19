@@ -9,6 +9,9 @@ FRONT_SETUP="$FRONT_DIR/scripts/setup.sh"
 API_SETUP="$API_DIR/setup.sh"
 source "$FRONT_DIR"/scripts/utils.sh
 
+read -s -p "Enter your sudo password: " SUDO_PSW
+export SUDO_PSW=$SUDO_PSW
+
 color_echo blue "\nInstalling prompt utility fzy..."
 if [ "$OS" = "Linux" ]; then
     sudo apt install fzy
@@ -19,17 +22,22 @@ else
     exit 1
 fi
 
-color_echo blue "Do you want to init the api/ submodule (⚠️ this will checkout from your current API branch to a detached head, resetting all changes made to the API)?"
-options=("yes" "no")
-answer=$(printf "%s\n" "${options[@]}" | fzy)
-if [ "$answer" = "yes" ]; then
+if [ ! -d "$API_DIR" ]; then
     git submodule init
     git submodule update
+else
+    color_echo blue "Do you want to init the api/ submodule (⚠️ this will checkout from your current API branch to a detached head, resetting all changes made to the API)?"
+    options=("yes" "no")
+    answer=$(printf "%s\n" "${options[@]}" | fzy)
+    if [ "$answer" = "yes" ]; then
+        git submodule init
+        git submodule update
+    fi
 fi
 
 echo_title "AIKON BUNDLE INSTALL"
 
-color_echo green "AIKON installation..."
+color_echo green "Front installation..."
 cd "$FRONT_DIR";
 
 if ! bash "$FRONT_SETUP"; then

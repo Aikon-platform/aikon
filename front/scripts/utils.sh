@@ -96,9 +96,9 @@ sudo_sed_repl_inplace() {
     file="$2"
 
     if [ "$OS" = "Linux" ]; then
-        sudo sed -i -e "$sed_expr" "$file"
+        [ -n "$SUDO_PSW" ] && echo "$SUDO_PSW" | sudo -S sed -i -e "$sed_expr" "$file" || sudo sed -i -e "$sed_expr" "$file"
     else
-        sudo sed -i "" -e "$sed_expr" "$file"
+        [ -n "$SUDO_PSW" ] && echo "$SUDO_PSW" | sudo -S sed -i "" -e "$sed_expr" "$file" || sudo sed -i "" -e "$sed_expr" "$file"
     fi
 }
 
@@ -327,7 +327,7 @@ update_app_env() {
     default_params=("DEBUG" "C_FORCE_ROOT" "MEDIA_DIR" "CONTACT_MAIL" "POSTGRES_DB" "POSTGRES_USER"
         "DB_PORT" "API_PORT" "ALLOWED_HOSTS" "SAS_USERNAME" "SAS_PORT" "SECRET_KEY" "FRONT_PORT"
         "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "REDIS_HOST" "REDIS_PORT" "REDIS_PASSWORD"
-        "EMAIL_HOST" "EMAIL_HOST_PASSWORD" "DEFAULT_FROM_EMAIL" "EMAIL_HOST_USER" "APP_LOGO"
+        "EMAIL_HOST" "EMAIL_HOST_USER" "EMAIL_HOST_PASSWORD" "DEFAULT_FROM_EMAIL" "APP_LOGO"
         "HTTP_PROXY" "HTTPS_PROXY")
 
     setup_env "$env_file" "${default_params[@]}"
