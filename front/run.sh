@@ -9,7 +9,7 @@ FRONT_PORT=${FRONT_PORT:-8000}
 declare -a PIDS=()
 
 source "$FRONT_DIR/app/config/.env"
-source "$FRONT_DIR/scripts/functions.sh"
+source "$FRONT_DIR/scripts/utils.sh"
 
 if [ -z "$PASSWORD" ]; then
     read -s -p "Enter your sudo password: " PASSWORD

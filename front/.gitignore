@@ -44,6 +44,8 @@ db.sqlite3
 .env
 .env.prod
 .venv
+.env.backup
+*.template.hash
 
 # Django secret key
 secret_key.py

@@ -24,7 +24,7 @@ REDIS_PASSWORD = re.sub(r"=$", "", REDIS_PASSWORD)  # dirty fix
 
 redis_prefix = f"redis://:{REDIS_PASSWORD}@" if REDIS_PASSWORD else "redis://"
 
-ADDITIONAL_MODULES = ENV.list("ADDITIONAL_MODULES", default=[])
+ADDITIONAL_MODULES = ENV.list("INSTALLED_APPS", default=[])
 
 imported_tasks = ("app.webapp.tasks",)
 for module in ADDITIONAL_MODULES:

@@ -5,7 +5,7 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 FRONT_DIR=$(dirname "$SCRIPT_DIR")
 
-source "$SCRIPT_DIR"/functions.sh
+source "$SCRIPT_DIR"/utils.sh
 
 if ! command -v npm &> /dev/null; then
     echo_title "INSTALL NVM & NODE"
