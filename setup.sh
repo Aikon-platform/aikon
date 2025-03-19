@@ -26,7 +26,7 @@ if [ ! -d "$API_DIR" ]; then
     git submodule init
     git submodule update
 else
-    color_echo blue "Do you want to init the api/ submodule (⚠️ this will checkout from your current API branch to a detached head, resetting all changes made to the API)?"
+    color_echo blue "Do you want to init the api/ submodule (⚠️  this will checkout from your current API branch to a detached head, resetting all changes made to the API)?"
     options=("yes" "no")
     answer=$(printf "%s\n" "${options[@]}" | fzy)
     if [ "$answer" = "yes" ]; then
