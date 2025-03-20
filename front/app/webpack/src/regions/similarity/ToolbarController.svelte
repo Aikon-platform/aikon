@@ -1,4 +1,6 @@
 <script>
+import { derived } from "svelte/store";
+
 import { similarityStore } from "./similarityStore.js";
 import * as cat from './similarityCategory';
 import { appLang } from "../../constants.js";
@@ -6,12 +8,14 @@ import { appLang } from "../../constants.js";
 import InputRangeSlider from "../../ui/InputRangeSlider.svelte";
 import InputPillCheckbox from "../../ui/InputPillCheckbox.svelte";
 import InputDropdownSelect from "../../ui/InputDropdownSelect.svelte";
+    import { shorten } from "../../utils.js";
 
 const toolbarParams = similarityStore.toolbarParams;
 const propagateParams = similarityStore.propagateParams
+const comparedRegions = similarityStore.comparedRegions;
 const allowedPropagateDepthRange = similarityStore.allowedPropagateDepthRange;
 
-const categories = [
+const categoriesChoices = [
     { value: 1, label: cat.exactLabel, icon: cat.exactSvg },
     { value: 2, label: cat.partialLabel, icon: cat.partialSvg },
     { value: 3, label: cat.semanticLabel, icon: cat.semanticSvg },
@@ -19,7 +23,12 @@ const categories = [
     { value: 5, label: cat.userLabel, icon: cat.userSvg },
 ];
 
-const regions = [ ];
+const comparedRegionsChoices = derived(comparedRegions, (($comparedRegions) =>
+    Object.entries($comparedRegions).map(([regionId, region]) => ({
+        value: regionId,
+        label: shorten(region.title)
+    }))));
+
 
 ///////////////////////////////////////
 
@@ -39,21 +48,26 @@ const setFilterByRegion = (e) => {
     console.log("setFilterByRegion :: $propagateParams", $propagateParams);
     console.log("setFilterByRegion :: $toolbarParams", $toolbarParams);
 }
+const setCategory = (e) => {}
+const setComparedRegions = (e) => {}
+
 </script>
 
 
 <div>
     <div class="ctrl-category">
-        <InputDropdownSelect choices={categories}
+        <InputDropdownSelect choices={categoriesChoices}
                              multiple={false}
                              placeholder={appLang==="fr" ? "Filtrer par catégorie" : "Filter by category"}
         ></InputDropdownSelect>
     </div>
     <div class="ctrl-regions">
-        <InputDropdownSelect choices={regions}
-                             multiple={true}
-                             placeholder={appLang==="fr" ? "Sélectionner des régions" : "Select regions"}
-        ></InputDropdownSelect>
+        {#if Object.keys($comparedRegionsChoices).length}
+            <InputDropdownSelect choices={$comparedRegionsChoices}
+                                 multiple={true}
+                                 placeholder={appLang==="fr" ? "Sélectionner des régions" : "Select regions"}
+            ></InputDropdownSelect>
+        {/if}
     </div>
     <div class="ctrl-propagation">
         <span><b>Propagation</b></span>

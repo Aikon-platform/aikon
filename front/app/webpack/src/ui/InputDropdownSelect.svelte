@@ -141,14 +141,16 @@ onMount(() => {
 
 
 <style>
-/** TODO DEFINE STYLE FOR MULTIPLE */
+/** basic styles */
 :global(.choices__inner),
 :global(.choiches__list--dropdown),
-:global(.dropdown-item) {
+:global(.dropdown-item),
+:global(.choices__inner .choices__input) {
     background-color: var(--bulma-body-background-color);
     color: var(--bulma-body-background);
     font-size: var(--bulma-body-font-size);
 }
+/** selected items wrapper style */
 :global(.choices__inner) {
     padding: 1px;
     padding-bottom: 1px !important;
@@ -156,13 +158,15 @@ onMount(() => {
     border: solid 1px var(--bulma-border);
     border-radius: var(--bulma-burger-border-radius);
 }
-:global(.choices__list--dropdown) {
-    z-index: 10 !important;
-}
+/** selected items (multiple) * /
 :global(.choices__list--multiple .choices__item) {
     background-color: var(--default-color);
     border: var(--default-border);
     font-weight: normal;
+}
+/** selected items (single) * /
+:global(.choices__list--single) {
+    margin: 0;
 }
 :global(.choices__list--single .choices__item:not(.choices__placeholder)) {
 	width: fit-content;
@@ -172,11 +176,52 @@ onMount(() => {
     border-radius: 1rem;
 	padding-left: 10px;
 }
-:global(.choices__list--dropdown .dropdown-item.is-highlighted) {
-    background-color: var(--default-color) !important;
+*/
+:global(.choices__list) {
+    padding: 0;
 }
+/** selected item (single and multi) */
+:global(.choices__inner .dropdown-item) {
+    background-color: var(--default-color);
+    color: var(--bulma-strong-color);
+    border: var(--default-border);
+    border-radius: 1rem;
+    padding-left: 10px;
+    font-weight: normal;
+    font-size: 12px;
+    margin: 3.75px;
+}
+/** selected item (multi placeholder) */
+:global(.choices__item.choices__placeholder) {
+    background-color: var(--bulma-body-background-color);
+    color: var(--bulma-body-color);
+    font-size: var(--bulma-body-font-size);
+    border: none;
+    margin: 0;
+}
+/** selected item (single placeholder) */
+:global(.choices__input) {
+    margin: 0;
+    padding: 8px 0 8px 10px;
+}
+/** selected item (single) */
+:global(.choices__list--single .choices__item) {
+    width: fit-content;
+}
+
+
 :global(.choices__list--single .choices__button) {
     background-color: white;
+}
+:global(.choices__inner .choices__item:not-.choices__placeholder) {
+    margin: 3.75px;
+}
+/** dropdown style */
+:global(.choices__list--dropdown) {
+    z-index: 10 !important;
+}
+:global(.choices__list--dropdown .dropdown-item.is-highlighted) {
+    background-color: var(--default-color) !important;
 }
 
 </style>
