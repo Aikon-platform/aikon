@@ -34,10 +34,10 @@ function initSlider() {
         handleAttributes: [
             { "id": handleHtmlIds[0] },
             { "id": handleHtmlIds[1] } ],
-        pips: {
-            mode: "steps",
-            filter: (value, type) => [minVal,maxVal].includes(value) ? 1 : -1  // only display min/max values on the slider
-        }
+        // pips: {
+        //     mode: "steps",
+        //     filter: (value, type) => [minVal,maxVal].includes(value) ? 1 : -1  // only display min/max values on the slider
+        // }
     });
     slider.noUiSlider.on("set", () => {
         let range = slider.noUiSlider.get(true);
@@ -67,7 +67,7 @@ function updateHandleTooltip() {
     if ( handleTooltips.length && oldSelectedRange.min !== selectedRange.min )
         handleTooltips[0].$set({ tooltipText: selectedRange.min });
     if ( handleTooltips.length && oldSelectedRange.max !== selectedRange.max )
-        handleTooltips[1].$set({ tooltipText: selectedRange.max })
+        handleTooltips[1].$set({ tooltipText: selectedRange.max });
 }
 
 //////////////////////////////////////////////
@@ -79,17 +79,26 @@ onMount(() => {
 </script>
 
 
-<div>
+<div class="slider-outer-wrapper is-flex flex-direction-row">
+    <span class="range-marker">{ selectedRange.min }</span>
     <div class="slider-wrapper">
         <div class="slider" bind:this={slider}></div>
     </div>
+    <span class="range-marker">{ selectedRange.max }</span>
 </div>
 
 
 <style>
+.slider-outer-wrapper {
+    margin: 10px;
+}
 .slider-wrapper {
     min-height: 15px;
-    margin: 10px;
+    width: 100%;
+    margin: 0 15px;
+}
+.range-marker {
+    transform: translateY(-40%);
 }
 :global(.noUi-horizontal) {
     height: 5px;
