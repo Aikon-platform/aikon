@@ -195,6 +195,56 @@ def get_compared_regions(request, wid, rid=None):
         )
 
 
+def get_similarity_score_range(
+    request, wid: int, rid: int | None = None
+) -> JsonResponse:
+    """
+    return a [minScore, maxScore] for similarities of `wid`
+    - if `rid` is specified, the query images must have that region id
+    - an optional `to_rid` is specified in the body: an array of regions the match images
+        must belong to. if `to_rid` is None, the min/max scores for all regions is returned.
+    """
+    from django.db.models import Max, Min
+
+    # def make_filter(_from: Literal[1,2], _wid:int, _rid:int|None, _to_rid:List[int]|None):
+    #     _to = 2 if _from==1 else 1
+    #     q = Q(**{ f"img_{_from}__contains": f"wit{_wid}" })
+    #     if _rid:
+    #         q = q & Q(**{ f"regions_id_{_wid}": _rid })
+    #     if _to_rid and len(_to_rid):
+    #         q = q & Q(**{ f"regions_id_{_to}__in": _to_rid })
+    #     q = q & ~Q(score=None)
+    #     return q
+
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        to_rid = []
+        if request.body and len(request.body):
+            data = json.loads(request.body)
+            to_rid = data.get("to_rid")
+
+        q = RegionPair.objects.filter(Q(img_1__contains=f"wit{wid}") & ~Q(score=None))
+        if rid:
+            q = q.filter(Q(regions_id_1=rid))
+        if to_rid and len(to_rid):
+            q = q.filter(Q(regions_id_2__in=to_rid))
+
+        _min = q.aggregate(Min("score"))
+        _max = q.aggregate(Max("score"))
+
+        # q_1_to_2 = RegionPair.objects.values("score").filter(make_filter(1, wid, rid, to_rid))
+        # q_2_to_1 = RegionPair.objects.values("score").filter(make_filter(1, wid, rid, to_rid))
+
+        return JsonResponse({"min": _min["score__min"], "max": _max["score__max"]})
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": f"Exception encountered: {e}"}, status=500)
+
+
 def get_propagated_matches(
     request, wid: int | None = None, rid: int | None = None, img_id: str = ""
 ) -> JsonResponse:

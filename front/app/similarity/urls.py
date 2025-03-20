@@ -22,6 +22,21 @@ urlpatterns = [
         name="compared-regions",
     ),
     path(
+        f"{APP_NAME}/witness/<int:wid>/regions/compared-regions",
+        get_compared_regions,
+        name="witness-compared-regions",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/similarity-score-range",
+        get_similarity_score_range,
+        name="similarity-score-range",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/similarity-score-range",
+        get_similarity_score_range,
+        name="witness-similarity-score-range",
+    ),
+    path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/propagated-matches/<str:img_id>",
         get_propagated_matches,
         name="propagated-regions",

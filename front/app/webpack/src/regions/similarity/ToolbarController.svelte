@@ -5,7 +5,7 @@ import { similarityStore } from "./similarityStore.js";
 import * as cat from './similarityCategory';
 import { appLang } from "../../constants.js";
 
-import InputRangeSlider from "../../ui/InputRangeSlider.svelte";
+import InputSlider from "../../ui/InputSlider.svelte";
 import InputPillCheckbox from "../../ui/InputPillCheckbox.svelte";
 import InputDropdownSelect from "../../ui/InputDropdownSelect.svelte";
     import { shorten } from "../../utils.js";
@@ -13,7 +13,11 @@ import InputDropdownSelect from "../../ui/InputDropdownSelect.svelte";
 const toolbarParams = similarityStore.toolbarParams;
 const propagateParams = similarityStore.propagateParams
 const comparedRegions = similarityStore.comparedRegions;
+const similarityScoreRange = similarityStore.similarityScoreRange
+const qImgs = similarityStore.qImgs;
 const allowedPropagateDepthRange = similarityStore.allowedPropagateDepthRange;
+
+$:console.log(">>>", $qImgs);
 
 const categoriesChoices = [
     { value: 1, label: cat.exactLabel, icon: cat.exactSvg },
@@ -50,14 +54,14 @@ const setFilterByRegion = (e) => {
 }
 const setCategory = (e) => {}
 const setComparedRegions = (e) => {}
-
+const setSelectedSimilarityScore = (e) => {}
 </script>
 
 
 <div>
     <div class="ctrl-category">
         <InputDropdownSelect choices={categoriesChoices}
-                             multiple={false}
+                             multiple={true}
                              placeholder={appLang==="fr" ? "Filtrer par catégorie" : "Filter by category"}
         ></InputDropdownSelect>
     </div>
@@ -69,16 +73,23 @@ const setComparedRegions = (e) => {}
             ></InputDropdownSelect>
         {/if}
     </div>
+    <div class="ctrl-score">
+        {#if $similarityScoreRange.length}
+            <InputSlider minVal={similarityScoreRange.min}
+                         maxVal={similarityScoreRange.max}
+                         on:updateSlider={setSelectedSimilarityScore}
+        {/if}
+    </div>
     <div class="ctrl-propagation">
         <span><b>Propagation</b></span>
         <div class="columns is-flex is-vcentered ctrl-propagation-inputs">
             <div class="depth column is-two-thirds">
                 <span>{ appLang==="fr" ? "Profondeur de récursion" : "Recursion depth" }</span>
-                <InputRangeSlider minVal={allowedPropagateDepthRange[0]}
-                                  maxVal={allowedPropagateDepthRange[1]}
-                                  step={1}
-                                  on:updateRange={setRecursionDepth}
-                ></InputRangeSlider>
+                <InputSlider minVal={allowedPropagateDepthRange[0]}
+                             maxVal={allowedPropagateDepthRange[1]}
+                             step={1}
+                             on:updateSlider={setRecursionDepth}
+                ></InputSlider>
             </div>
             <div class="region column">
                 <InputPillCheckbox checkboxLabel="Filter by region"

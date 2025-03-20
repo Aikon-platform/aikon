@@ -1,5 +1,7 @@
-import {derived, get, writable} from 'svelte/store';
-import {errorMsg, initPagination, loading, pageUpdate} from "../../utils.js";
+import { derived, get, writable } from 'svelte/store';
+import { errorMsg, initPagination, loading, pageUpdate } from "../../utils.js";
+import { csrfToken } from "../../constants.js";
+
 
 function createSimilarityStore() {
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
@@ -25,7 +27,7 @@ function createSimilarityStore() {
     const pageQImgs = writable([]);
 
     /**
-     * Fetches all query images and regions that were compared to current regions on load
+     * On load, fetches all query images and regions that were compared to current regions
      * @type {Promise<any>}
      */
     async function fetchSimilarity() {
@@ -47,6 +49,28 @@ function createSimilarityStore() {
         } finally {
             loading.set(false);
         }
+    }
+
+    const similarityScoreRange = writable([])
+    /** @param {Array<int>} to_rid: rid of regions to filter by */
+    async function fetchSimilarityScoreRange(to_rid=[]) {
+        loading.set(true)
+        console.log(`${baseUrl}similarity-score-range`);
+        fetch(`${baseUrl}similarity-score-range`,  {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ to_rid: to_rid })
+        })
+        .then(response => response.json())
+        .then(data => similarityScoreRange.set([data.min, data.max]))
+        .catch(err => {
+            console.error("Error on fetchSimilarityScoreRange:", err);
+            errorMsg.set(err.message);
+        })
+        .finally(() => loading.set(false))
     }
 
     const initCurrentPage = () => initPagination(currentPage, "sp");
@@ -132,6 +156,8 @@ function createSimilarityStore() {
         pageQImgs,
         selectedRegions,
         fetchSimilarity,
+        similarityScoreRange,
+        fetchSimilarityScoreRange,
         setPageQImgs,
         getRegionsInfo,
         handlePageUpdate,
@@ -142,7 +168,7 @@ function createSimilarityStore() {
         pageLength,
         toolbarParams,
         propagateParams,
-        allowedPropagateDepthRange
+        allowedPropagateDepthRange,
     };
 }
 

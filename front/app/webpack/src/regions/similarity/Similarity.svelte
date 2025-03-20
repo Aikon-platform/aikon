@@ -3,6 +3,7 @@
     import {appLang, modules} from '../../constants';
     import { similarityStore } from './similarityStore.js';
     const { fetchSimilarity } = similarityStore;
+    const fetchSimilarityScoreRange = similarityStore.fetchSimilarityScoreRange;
     import {errorMsg, loading} from "../../utils.js";
 
     import Table from "../../Table.svelte";
@@ -16,6 +17,7 @@
     onMount(() => {
         if (modules.includes("similarity")){
             fetchSimilarity();
+            fetchSimilarityScoreRange();
         }
     });
 </script>

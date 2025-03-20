@@ -33,16 +33,12 @@ function initSlider() {
         range: selectedRange,
         handleAttributes: [
             { "id": handleHtmlIds[0] },
-            { "id": handleHtmlIds[1] } ],
-        // pips: {
-        //     mode: "steps",
-        //     filter: (value, type) => [minVal,maxVal].includes(value) ? 1 : -1  // only display min/max values on the slider
-        // }
+            { "id": handleHtmlIds[1] } ]
     });
     slider.noUiSlider.on("set", () => {
         let range = slider.noUiSlider.get(true);
         updateSelectedRange(range);
-        dispatch("updateRange", range);
+        dispatch("updateSlider", range);
     })
 }
 
