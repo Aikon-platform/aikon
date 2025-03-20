@@ -65,7 +65,7 @@ const updateSelectedRange = ([_min, _max]) => {
 // update the `TooltipGeneric.tooltipText` prop when a new value is set.
 function updateHandleTooltip() {
     if ( handleTooltips.length && oldSelectedRange.min !== selectedRange.min )
-        handleTooltips[0].$set({ tooltipText: selectedRange.min })
+        handleTooltips[0].$set({ tooltipText: selectedRange.min });
     if ( handleTooltips.length && oldSelectedRange.max !== selectedRange.max )
         handleTooltips[1].$set({ tooltipText: selectedRange.max })
 }

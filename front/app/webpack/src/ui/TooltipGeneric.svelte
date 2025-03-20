@@ -19,14 +19,14 @@ export let targetHtmlId;
 const htmlId = `tooltip-generic-${window.crypto.randomUUID()}`;
 
 // set the width of a tooltip that is by default super thin
-$: tooltipWidthClass = setTooltipWidthClass();
-const setTooltipWidthClass = () =>
+$: tooltipWidthClass = setTooltipWidthClass(tooltipText);
+$: setTooltipWidthClass = (_tooltipText) =>
     tooltipWidthClass =
-        tooltipText.length < 20
-        ? "tooltip-thin"
-        : tooltipText.length < 100
+        _tooltipText.length > 100
+        ? "tooltip-wide"
+        : _tooltipText.length > 20
         ? "tooltip-mid"
-        : "tooltip-wide";
+        : "tooltip-thin";
 
 
 $: targetEl = undefined;
@@ -54,36 +54,36 @@ onDestroy(() => {
 
 <span id={htmlId}
       class="tooltip {tooltipWidthClass} { displayTooltip ? 'display' : '' }"
->{ tooltipText }</span>
+>{tooltipText}</span>
 
 
 <style>
-    .tooltip {
-        visibility: hidden;
-        background-color: rgba(0, 0, 0, 0.7);
-        color: #fff;
-        text-align: center;
-        border-radius: 6px;
-        padding: 5px;
-        position: absolute;
-        z-index: 6;
-        bottom: 125%;
-        left: 50%;
-        transform: translateX(-50%);
-        opacity: 0;
-        transition: opacity 0.3s;
-    }
-    .tooltip.display {
-        visibility: visible;
-        opacity: 1;
-    }
-    .tooltip-thin {
-        width: auto; /** very thin by default */
-    }
-    .tooltip-mid {
-        width: max(150px, 20vw)
-    }
-    .tooltip-wide {
-        width: max(300px, 30vw);
-    }
+.tooltip {
+    visibility: hidden;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 6;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.tooltip.display {
+    visibility: visible;
+    opacity: 1;
+}
+.tooltip-thin {
+    width: auto; /** very thin by default */
+}
+.tooltip-mid {
+    width: max(150px, 20vw)
+}
+.tooltip-wide {
+    width: max(300px, 30vw);
+}
 </style>
