@@ -73,20 +73,12 @@ const setSelectedSimilarityScore = (e) => {}
     </div>
     <div class="ctrl-score">
         {#if $similarityScoreRange.length}
-            <h1>{$similarityScoreRange}</h1>
-            {$similarityScoreRange[0]}
-            {$similarityScoreRange[1]}
-            <InputSlider minVal={0}
-                         maxVal={5}
-                         start={3}
-            ></InputSlider>
-
-            <!--
             <InputSlider minVal={$similarityScoreRange[0]}
                          maxVal={$similarityScoreRange[1]}
                          start={$similarityScoreRange[1]}
+                         roundTo={3}
+                         on:updateSlider={setSelectedSimilarityScore}
             ></InputSlider>
-            -->
         {/if}
     </div>
     <div class="ctrl-propagation">
@@ -94,14 +86,12 @@ const setSelectedSimilarityScore = (e) => {}
         <div class="columns is-flex is-vcentered ctrl-propagation-inputs">
             <div class="depth column is-two-thirds">
                 <span>{ appLang==="fr" ? "Profondeur de récursion" : "Recursion depth" }</span>
-                <!--
                 <InputSlider minVal={allowedPropagateDepthRange[0]}
                              maxVal={allowedPropagateDepthRange[1]}
                              start={allowedPropagateDepthRange}
                              step={1}
                              on:updateSlider={setRecursionDepth}
                 ></InputSlider>
-                -->
             </div>
             <div class="region column">
                 <InputPillCheckbox checkboxLabel="Filter by region"

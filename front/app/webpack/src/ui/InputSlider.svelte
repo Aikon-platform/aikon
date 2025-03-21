@@ -38,6 +38,8 @@ export let maxVal;
 export let start;
 /** @type {Number?} */
 export let step = undefined;
+/** @type {Number?} number of floating points to keep after the decimal */
+export let roundTo = 2;
 
 //////////////////////////////////////////////
 
@@ -64,19 +66,15 @@ $: updateHandleTooltip(selectedVal);  // run updateHandleTooltip when `selectedV
 
 //////////////////////////////////////////////
 
-const nomRound = n => Number((n).toFixed(2))
+const numRound = n => Number((n).toFixed(roundTo))
 
 /** @param {Number[]|Number}: if isRange, then array of 2 values. else, 1 value. */
 const updateSelectedRange = (val) => {
-    console.log("updateSelectedRange", val, isRange, minVal, maxVal, start);
     oldSelectedVal.data = selectedVal.data || undefined;
-    console.log("updateSelectedRange.oldSelectedVal", oldSelectedVal);
     selectedVal = {
         isRange: isRange,
-        data: nomRound(val)
+        data: Array.isArray(val) ? val.map(numRound) : numRound(val)
     };
-    console.log("updateSelectedRange.selectedVal", selectedVal);
-    console.log("updateSelectedRange.selectedVal", selectedVal);
 }
 
 // update the `TooltipGeneric.tooltipText` prop when selectedVal is updated.
@@ -125,12 +123,6 @@ function initSlider() {
 // the TooltipGenerics that are bound to the slider's handle must be created in a declarative way to be positionned correctly in the DOM
 function initHandleTooltips() {
     handleHtmlIds.map((handleHtmlId, idx) => {
-        console.log("initHandleTooltips DATA\n",
-                    "-----------------------\n",
-                    handleHtmlId, idx, selectedVal);
-        console.log("initHandleTooltips TARGET\n",
-                    "-------------------------\n",
-                    document.getElementById(handleHtmlId))
         handleTooltips.push(new TooltipGeneric({
             target: document.getElementById(handleHtmlId),
             props:
@@ -144,7 +136,6 @@ function initHandleTooltips() {
 //////////////////////////////////////////////
 
 onMount(() => {
-    // updateSelectedRange(start);
     initSlider();
     initHandleTooltips();
 })
@@ -154,9 +145,6 @@ onMount(() => {
 <div class="slider-outer-wrapper is-flex flex-direction-row">
     <span class="range-marker">{ minVal }</span>
     <div class="slider-wrapper">
-        <!--
-        <div class="slider" bind:this={slider}></div>
-        -->
         <div class="slider" id={sliderHtmlId}></div>
     </div>
     <span class="range-marker">{ maxVal }</span>
