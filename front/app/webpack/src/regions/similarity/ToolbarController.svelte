@@ -95,7 +95,7 @@ const setSelectedSimilarityScore = (e) => {}
             <div class="ctrl-row-wrapper">
                 <div class="ctrl-row ctrl-propagation columns">
                     <div class="ctrl-row-title column is-2 is-flex is-justify-content-center is-align-items-center">
-                        <span><b>Propagation</b></span>
+                        <span>Propagation</span>
                     </div>
                     <div class="ctrl-row-inputs column is-10 columns">
                         <div class="column is-two-thirds">
@@ -107,7 +107,7 @@ const setSelectedSimilarityScore = (e) => {}
                                         on:updateSlider={setRecursionDepth}
                             ></InputSlider>
                         </div>
-                        <div class="column">
+                        <div class="column is-flex is-justify-content-center is-align-items-center">
                             <InputPillCheckbox checkboxLabel="Filter by region"
                                             on:updateChecked={setFilterByRegion}
                             ></InputPillCheckbox>
@@ -151,7 +151,14 @@ const setSelectedSimilarityScore = (e) => {}
 .ctrl-row {
     margin: 0;
 }
+.ctrl-row-title, .ctrl-row-inputs {
+    margin-inline-start: 0;
+}
 .ctrl-row-title {
+    min-width: 100px;
+}
+.ctrl-row-title > span {
+    font-weight: bold;
 }
 .ctrl-row-inputs {
     padding-left: 5px;
