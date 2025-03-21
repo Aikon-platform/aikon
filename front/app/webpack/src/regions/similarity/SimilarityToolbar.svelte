@@ -31,12 +31,15 @@ const categoriesChoices = [
 ];
 
 const comparedRegionsChoices = derived(comparedRegions, (($comparedRegions) =>
-    Object.entries($comparedRegions).map(([regionId, region]) => {
-        console.log("comparedRegionsChoices", regionId, region);
-        return ({
+    Object.entries($comparedRegions).map(([regionId, region]) => ({
         value: regionId,
         label: shorten(region.title)
-    })})));
+    }))));
+
+/** @type {Number[]}: category values */
+const preSelectedExcludedCategories = $excludedCategories;
+/** @type {string[]}: regions IDs */
+const preSelectedRegions = Object.keys($selectedRegions[currentPageId]);
 
 ///////////////////////////////////////
 
@@ -52,7 +55,6 @@ const setPropagateFilterByRegion = (e) =>
     });
 const setExcludedCategories = (e) => {
     excludedCategories.set(e.detail);
-    // TODO adapt to handle content in localstorage
     localStorage.setItem('excludedCategories', JSON.stringify($excludedCategories));
 }
 const setComparedRegions = (e) => {
@@ -64,6 +66,7 @@ const setComparedRegions = (e) => {
         }
     })
     selectedRegions.set(newSelectedRegions);
+    localStorage.setItem("selectedRegions", JSON.stringify($selectedRegions));
 }
 const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data);
 </script>
@@ -83,6 +86,7 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                                 <InputDropdownSelect choices={$comparedRegionsChoices}
                                                     multiple={true}
                                                     placeholder={appLang==="fr" ? "Sélectionner des régions" : "Select regions"}
+                                                    defaultSelection={preSelectedRegions}
                                                     on:updateValues={setComparedRegions}
                                 ></InputDropdownSelect>
                             {/if}
@@ -91,6 +95,7 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                             <InputDropdownSelect choices={categoriesChoices}
                                                 multiple={true}
                                                 placeholder={appLang==="fr" ? "Exclure les catégories" : "Exclude categories"}
+                                                defaultSelection={preSelectedExcludedCategories}
                                                 on:updateValues={setExcludedCategories}
                             ></InputDropdownSelect>
                         </div>

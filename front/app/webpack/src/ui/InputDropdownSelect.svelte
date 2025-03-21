@@ -20,36 +20,46 @@ import { appLang } from "../constants";
 /**
  * @typedef DropdownChoice
  *    structure of the "choices"
- * @property {String} value:
+ * @property {Any} value:
  * @property {String} label:
  * @property {String?} group: group name for nested selects
  * @property {String?} icon: svg or iconify identifier for an icon to add to dropdown item
  * @property {Boolean?} iconify: if true, icon will be treated as an iconify id instead of an svg.
  */
 
- /**
+/**
  * @typedef DropdownChoiceArray
  * @type {DropdownChoice[]}
  */
 
-export let choices;                    /** @type {DropdownChoiceArray} */
-export let multiple;                   /** @type {Boolean} */
-export let searchable = true;          /** @type {String} */
-export let sort = true;                /** @type {Boolean} */
- /** @type {String} */
- export let placeholder = appLang === "fr" ? "Sélectionner une valeur" : "Select a value";
+/** @type {DropdownChoiceArray} */
+export let choices;
+/** @type {Boolean} */
+export let multiple;
+/** @type {String} */
+export let searchable = true;
+/** @type {Boolean} */
+export let sort = true;
+/** @type {String} */
+export let placeholder = appLang === "fr" ? "Sélectionner une valeur" : "Select a value";
+/** @type {DropdownChoice.value[]} the items selected by default, represented as an array of DropdownChoice.value */
+export let defaultSelection = [];
 
 const dispatch = createEventDispatcher();
 const htmlId = `input-dropdown-select-${window.crypto.randomUUID()}`;
 
-$: selectedValues = [];  /** @type {DropdownChoice.value[]} */
+/** @type {DropdownChoice.value[]} */
+$: selectedValues = [];
 
 /////////////////////////////////////////////////////
 
 const toIconify = (iconifyId) => `<span class="iconify" data-icon=${iconifyId}/>`;
 
-// generate a random UUID + add the icon.
-const formatChoices = () => choices = choices.map(el => {
+/**
+ * generate a random UUID + add the icon. [...arr] copies instead of modifying in place.
+ * @param {DropdownChoiceArray} arr
+ */
+const formatChoices = (arr) => [...arr].map(el => {
     el.id = `${window.crypto.randomUUID()}`;
     if ( el.hasOwnProperty("icon") && el.icon != null) {
         el.label = `<span>
@@ -79,10 +89,15 @@ const onRemoveItem = (e) => {
     dispatch("updateValues", selectedValues);
 }
 
-function initChoices() {
+/**
+ * @param {DropdownChoiceArray} allChoices: all the available choices
+ * @param {DropdownChoiceArray} preSelectedChoices: the pre-selected ones
+ */
+function initChoices(allChoices, preSelectedChoices) {
     const choicesTarget = document.getElementById(htmlId);
-    new Choices(choicesTarget, {
-        choices: choices,
+    const choicesObj = new Choices(choicesTarget, {
+        items: [],  // setting preSelectedChoices here does not work, so they are set programatically below.
+        choices: allChoices,
         addChoices: false,
         addItems: false,
         removeItems: true,
@@ -116,13 +131,22 @@ function initChoices() {
         : `Only ${maxItemCount} values can be added`
     })
 
+    choicesObj.setValue(preSelectedChoices);
+
     choicesTarget.addEventListener("addItem", onAddItem);  // TODO delete on destrooy
     choicesTarget.addEventListener("removeItem", onRemoveItem)
 }
 
+/////////////////////////////////////////////////////
+
 onMount(() => {
-    formatChoices(choices);
-    initChoices();
+    let reformattedDefaultChoices =formatChoices(
+        choices
+        .filter(c => defaultSelection.includes(c.value))
+        .map(c => ({ ...c, selected: true }))  // somehow, if `selected=true` is not added to the pre-selected choices, setting them as default value does not work.
+    );
+    let reformattedChoices = formatChoices(choices);
+    initChoices(reformattedChoices, reformattedDefaultChoices);
 })
 </script>
 
