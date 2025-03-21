@@ -8,13 +8,18 @@ import { appLang } from "../../constants.js";
 import InputSlider from "../../ui/InputSlider.svelte";
 import InputPillCheckbox from "../../ui/InputPillCheckbox.svelte";
 import InputDropdownSelect from "../../ui/InputDropdownSelect.svelte";
-    import { shorten } from "../../utils.js";
+import { shorten } from "../../utils.js";
 
-const toolbarParams = similarityStore.toolbarParams;
-const propagateParams = similarityStore.propagateParams
+///////////////////////////////////////
+
+// const similarityToolbarParams = similarityStore.similarityToolbarParams;
+const currentPageId = similarityStore.currentPageId;
+const selectedRegions = similarityStore.selectedRegions;
+const propagateParams = similarityStore.propagateParams;
 const comparedRegions = similarityStore.comparedRegions;
-const similarityScoreRange = similarityStore.similarityScoreRange
-const qImgs = similarityStore.qImgs;
+const excludedCategories = similarityStore.excludedCategories;
+const similarityScoreRange = similarityStore.similarityScoreRange;
+const similarityScoreCutoff = similarityStore.similarityScoreCutoff;
 const allowedPropagateDepthRange = similarityStore.allowedPropagateDepthRange;
 
 const categoriesChoices = [
@@ -26,33 +31,41 @@ const categoriesChoices = [
 ];
 
 const comparedRegionsChoices = derived(comparedRegions, (($comparedRegions) =>
-    Object.entries($comparedRegions).map(([regionId, region]) => ({
+    Object.entries($comparedRegions).map(([regionId, region]) => {
+        console.log("comparedRegionsChoices", regionId, region);
+        return ({
         value: regionId,
         label: shorten(region.title)
-    }))));
-
+    })})));
 
 ///////////////////////////////////////
 
-const setRecursionDepth = (e) => {
+const setPropagateRecursionDepth = (e) =>
     propagateParams.set({
         recursionDepth: e.detail,
         filterByRegion: $propagateParams.filterByRegion
     });
-    console.log("setRecursionDepth :: $propagateParams", $propagateParams);
-    console.log("setRecursionDepth :: $toolbarParams", $toolbarParams);
-}
-const setFilterByRegion = (e) => {
+const setPropagateFilterByRegion = (e) =>
     propagateParams.set({
         recursionDepth: $propagateParams.recursionDepth,
         filterByRegion: e.detail
-    })
-    console.log("setFilterByRegion :: $propagateParams", $propagateParams);
-    console.log("setFilterByRegion :: $toolbarParams", $toolbarParams);
+    });
+const setExcludedCategories = (e) => {
+    excludedCategories.set(e.detail);
+    // TODO adapt to handle content in localstorage
+    localStorage.setItem('excludedCategories', JSON.stringify($excludedCategories));
 }
-const setCategory = (e) => {}
-const setComparedRegions = (e) => {}
-const setSelectedSimilarityScore = (e) => {}
+const setComparedRegions = (e) => {
+    const selectedRegionsIds = e.detail;
+    const newSelectedRegions = { [currentPageId] : {} }
+    Object.keys($comparedRegions).forEach(key => {
+        if ( selectedRegionsIds.includes(key) ) {
+            newSelectedRegions[currentPageId][key] = $comparedRegions[key];
+        }
+    })
+    selectedRegions.set(newSelectedRegions);
+}
+const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data);
 </script>
 
 
@@ -66,18 +79,20 @@ const setSelectedSimilarityScore = (e) => {}
                     </div>
                     <div class="ctrl-row-inputs column is-10 columns is-multiline">
                         <div class="column">
-                            <InputDropdownSelect choices={categoriesChoices}
-                                                multiple={true}
-                                                placeholder={appLang==="fr" ? "Filtrer par catégorie" : "Filter by category"}
-                            ></InputDropdownSelect>
-                        </div>
-                        <div class="column">
                             {#if Object.keys($comparedRegionsChoices).length}
                                 <InputDropdownSelect choices={$comparedRegionsChoices}
                                                     multiple={true}
                                                     placeholder={appLang==="fr" ? "Sélectionner des régions" : "Select regions"}
+                                                    on:updateValues={setComparedRegions}
                                 ></InputDropdownSelect>
                             {/if}
+                        </div>
+                        <div class="column">
+                            <InputDropdownSelect choices={categoriesChoices}
+                                                multiple={true}
+                                                placeholder={appLang==="fr" ? "Exclure les catégories" : "Exclude categories"}
+                                                on:updateValues={setExcludedCategories}
+                            ></InputDropdownSelect>
                         </div>
                         <div class="column">
                             {#if $similarityScoreRange.length}
@@ -85,7 +100,7 @@ const setSelectedSimilarityScore = (e) => {}
                                             maxVal={$similarityScoreRange[1]}
                                             start={$similarityScoreRange[1]}
                                             roundTo={3}
-                                            on:updateSlider={setSelectedSimilarityScore}
+                                            on:updateSlider={setSimilarityScoreCutoff}
                                 ></InputSlider>
                             {/if}
                         </div>
@@ -104,12 +119,12 @@ const setSelectedSimilarityScore = (e) => {}
                                         maxVal={allowedPropagateDepthRange[1]}
                                         start={allowedPropagateDepthRange}
                                         step={1}
-                                        on:updateSlider={setRecursionDepth}
+                                        on:updateSlider={setPropagateRecursionDepth}
                             ></InputSlider>
                         </div>
                         <div class="column is-flex is-justify-content-center is-align-items-center">
                             <InputPillCheckbox checkboxLabel="Filter by region"
-                                            on:updateChecked={setFilterByRegion}
+                                            on:updateChecked={setPropagateFilterByRegion}
                             ></InputPillCheckbox>
                         </div>
                     </div>

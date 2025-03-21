@@ -2,27 +2,77 @@ import { derived, get, writable } from 'svelte/store';
 import { errorMsg, initPagination, loading, pageUpdate } from "../../utils.js";
 import { csrfToken } from "../../constants.js";
 
+/**
+ * @typedef { Object.<Number, RegionsType> } SelectedRegionsType
+ *  selected regions are witness Ids mapped to all the region extractions
+ *  against with which RegionPairs have been evaluated
+ */
+/**
+ * @typedef {Object.<Number, {}>} EmptyRegionsType:
+ *  like the above SelectedRegionsType, but there is no RegionsType, just a {}
+ */
+/**
+ * @typedef RegionsType
+ *  a regions extraction
+ * @property {Number} id
+ * @property {String} ref
+ * @property {String} url: IIIF URL to the extracted image regions
+ * @property {"Regions"} type
+ * @property {"Regions"} class: python  class
+ * @property {String} title
+ * @property {Number} zeros,
+ * @property {Number} img_nb: number of extracted images
+ */
+/**
+ * @typedef PropagateParamsType
+ * @property {Number[]} recursionDepth
+ * @property {boolean} filterByRegion
+ */
+/**
+ * @typedef SimilarityParamsType
+ * @param {Number[]} excludedCategories
+ * @param {SelectedRegionsType} regions
+ * @param {Number} similarityScoreCutoff
+ */
+/**
+ * @typedef SimilarityToolbarParamsType
+ *      all params defined in SimilarityToolbar
+ * @property {PropagateParamsType} propagate
+ * @property {SimilarityParamsType} similarity
+ */
+
 
 function createSimilarityStore() {
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
-    const currentPageId = window.location.pathname.match(/\d+/g).join('-');
-    const emptySelection = { [currentPageId]: {}};
     const pageLength = 25;
 
+    /** @type {Number} the current witness' ID */
+    const currentPageId = window.location.pathname.match(/\d+/g).join('-');
+
+    /** EmptyRegionsType:  */
+    const emptySelection = { [currentPageId]: {}};
+
     const currentPage = writable(1);
+
     // todo empty selected regions if not in compared regions
+    /** @type {RegionsType} */
     const comparedRegions = writable({});
 
     // TODO to delete very soon
+    /** @type {SelectedRegionsType} */
     let storedSelection = JSON.parse(localStorage.getItem("selectedRegions"));
     if (storedSelection && !storedSelection.hasOwnProperty(currentPageId)) {
         storedSelection = emptySelection;
     }
+
+    /** @type {SelectedRegionsType} */
     const selectedRegions = writable(storedSelection || emptySelection);
     // TODO replace with this line
     // const selectedRegions = writable(JSON.parse(localStorage.getItem("selectedRegions")) || emptySelection);
 
+    /** @type {Number[]} */
     const excludedCategories = writable(JSON.parse(localStorage.getItem("excludedCategories")) || []);
+
     const qImgs = writable([]);
     const pageQImgs = writable([]);
 
@@ -51,11 +101,14 @@ function createSimilarityStore() {
         }
     }
 
+    /** @type {Number[]} min/max scores for the currently selected regions */
     const similarityScoreRange = writable([])
+    /** @type {Number} RegionPairs below this will be hidden from the user */
+    const similarityScoreCutoff = writable()
+
     /** @param {Array<int>} to_rid: rid of regions to filter by */
     async function fetchSimilarityScoreRange(to_rid=[]) {
         loading.set(true)
-        console.log(`${baseUrl}similarity-score-range`);
         fetch(`${baseUrl}similarity-score-range`,  {
             method: "POST",
             headers: {
@@ -73,34 +126,32 @@ function createSimilarityStore() {
         .finally(() => loading.set(false))
     }
 
-    const initCurrentPage = () => initPagination(currentPage, "sp");
 
-    const setPageQImgs = derived(currentPage, ($currentPage) =>
-        (async () => updatePageQImgs($currentPage))()
-    );
+    const allowedPropagateDepthRange = [2,6];
 
-    function updatePageQImgs(pageNb) {
-        const start = (pageNb - 1) * pageLength;
-        const end = start + pageLength;
-        const currentQImgs = get(qImgs).slice(start, end)
-        pageQImgs.set(currentQImgs);
-        return currentQImgs;
-    }
-
-    function handlePageUpdate(pageNb) {
-        pageUpdate(pageNb, currentPage, "sp");
-    }
-
-    function addComparedRegions(region) {
-        comparedRegions.update(regions => {
-            return {...regions, [region.ref]: region};
-        });
-    }
+    /** @type {PropagateParamsType} */
+    const propagateParams = writable({
+        recursionDepth: allowedPropagateDepthRange,
+        filterByRegion: false
+    })
+    /** @type {SimilarityParamsType} */
+    const similarityParams = derived([excludedCategories, selectedRegions, similarityScoreCutoff], ([$excludedCategories, $selectedRegions, $similarityScoreCutoff]) => ({
+        excludedCategories: $excludedCategories,
+        regions: $selectedRegions,
+        similarityScoreCutoff: $similarityScoreCutoff  // @writable similarityScoreCutoff
+    }))
+    /** @type {SimilarityToolbarParamsType} */
+    const similarityToolbarParams = derived([propagateParams, similarityParams], ([$propagateParams, $similarityParams]) => ({
+        propagate: $propagateParams,
+        similarity: $similarityParams
+    }))
 
     function store(selection) {
         localStorage.setItem("selectedRegions", JSON.stringify(selection));
     }
 
+    // TODO see if `select` and `unselect` are still needed, since the modifications of
+    // `selectedRegions` has been moved to `similarityRegions.setComparedRegions`.
     function unselect(regionRef) {
         selectedRegions.update(selection => {
             const updatedSelection = { ...selection };
@@ -136,19 +187,32 @@ function createSimilarityStore() {
         return displayedRegions[regionRef[0]]
     }
 
-    const allowedPropagateDepthRange = [2,6];
+    const initCurrentPage = () => initPagination(currentPage, "sp");
 
-    const propagateParams = writable({
-        recursionDepth: allowedPropagateDepthRange,
-        filterByRegion: false
-    })
-    const otherParams = writable({ /** TBD */ });
-    const toolbarParams = derived([propagateParams, otherParams], ([$propagateParams, $otherParams]) => ({
-        propagate: $propagateParams,
-        other: $otherParams
-    }))
+    const setPageQImgs = derived(currentPage, ($currentPage) =>
+        (async () => updatePageQImgs($currentPage))()
+    );
+
+    function updatePageQImgs(pageNb) {
+        const start = (pageNb - 1) * pageLength;
+        const end = start + pageLength;
+        const currentQImgs = get(qImgs).slice(start, end)
+        pageQImgs.set(currentQImgs);
+        return currentQImgs;
+    }
+
+    function handlePageUpdate(pageNb) {
+        pageUpdate(pageNb, currentPage, "sp");
+    }
+
+    function addComparedRegions(region) {
+        comparedRegions.update(regions => {
+            return {...regions, [region.ref]: region};
+        });
+    }
 
     return {
+        currentPageId,
         currentPage,
         comparedRegions,
         excludedCategories,
@@ -166,9 +230,10 @@ function createSimilarityStore() {
         addComparedRegions,
         isSelected,
         pageLength,
-        toolbarParams,
+        similarityToolbarParams,
         propagateParams,
         allowedPropagateDepthRange,
+        similarityScoreCutoff,
     };
 }
 

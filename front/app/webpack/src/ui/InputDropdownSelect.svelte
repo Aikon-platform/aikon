@@ -63,7 +63,6 @@ const formatChoices = () => choices = choices.map(el => {
 })
 
 const onAddItem = (e) => {
-    console.log("pre onAddItem", selectedValues);
     if ( multiple===true ) {
         const pos = selectedValues.indexOf(e.detail.value);
         pos === -1
@@ -73,14 +72,11 @@ const onAddItem = (e) => {
         selectedValues = [e.detail.value];
     }
     dispatch("updateValues", selectedValues);
-    console.log("post onAddItem", selectedValues);
 };
 
 const onRemoveItem = (e) => {
-    console.log("pre onRemoveItem", selectedValues)
     selectedValues = selectedValues.filter(s => s !== e.detail.value);
     dispatch("updateValues", selectedValues);
-    console.log("post onRemoveItem", selectedValues)
 }
 
 function initChoices() {
@@ -125,7 +121,6 @@ function initChoices() {
 }
 
 onMount(() => {
-    console.log(choices);
     formatChoices(choices);
     initChoices();
 })

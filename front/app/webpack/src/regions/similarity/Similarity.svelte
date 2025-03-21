@@ -9,10 +9,8 @@
     import Table from "../../Table.svelte";
     import SimilarityPage from "./SimilarityPage.svelte";
     import SimilarityBtn from "./SimilarityBtn.svelte";
-    import Toolbar from "./Toolbar.svelte";
-    import ToolbarController from "./ToolbarController.svelte";
-
-    /////////////////////////////////////////////
+    // import Toolbar from "./Toolbar.svelte";
+    import SimilarityToolbar from "./SimilarityToolbar.svelte";
 
     onMount(() => {
         if (modules.includes("similarity")){
@@ -26,8 +24,10 @@
 <!--TODO order similar witnesses according to a metric-->
 
 {#if modules.includes("similarity")}
-    <ToolbarController></ToolbarController>
+    <SimilarityToolbar></SimilarityToolbar>
+    <!--
     <Toolbar/>
+    -->
     {#if $loading}
         <Table>
             <tr class="faded is-center">
@@ -45,7 +45,9 @@
             </tr>
         </Table>
     {:else}
+        <!--
         <SimilarityBtn/>
+        -->
         <SimilarityPage/>
     {/if}
 {/if}
