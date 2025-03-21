@@ -56,60 +56,108 @@ const setSelectedSimilarityScore = (e) => {}
 </script>
 
 
-<div>
-    <div class="ctrl-category">
-        <InputDropdownSelect choices={categoriesChoices}
-                             multiple={true}
-                             placeholder={appLang==="fr" ? "Filtrer par catégorie" : "Filter by category"}
-        ></InputDropdownSelect>
-    </div>
-    <div class="ctrl-regions">
-        {#if Object.keys($comparedRegionsChoices).length}
-            <InputDropdownSelect choices={$comparedRegionsChoices}
-                                 multiple={true}
-                                 placeholder={appLang==="fr" ? "Sélectionner des régions" : "Select regions"}
-            ></InputDropdownSelect>
-        {/if}
-    </div>
-    <div class="ctrl-score">
-        {#if $similarityScoreRange.length}
-            <InputSlider minVal={$similarityScoreRange[0]}
-                         maxVal={$similarityScoreRange[1]}
-                         start={$similarityScoreRange[1]}
-                         roundTo={3}
-                         on:updateSlider={setSelectedSimilarityScore}
-            ></InputSlider>
-        {/if}
-    </div>
-    <div class="ctrl-propagation">
-        <span><b>Propagation</b></span>
-        <div class="columns is-flex is-vcentered ctrl-propagation-inputs">
-            <div class="depth column is-two-thirds">
-                <span>{ appLang==="fr" ? "Profondeur de récursion" : "Recursion depth" }</span>
-                <InputSlider minVal={allowedPropagateDepthRange[0]}
-                             maxVal={allowedPropagateDepthRange[1]}
-                             start={allowedPropagateDepthRange}
-                             step={1}
-                             on:updateSlider={setRecursionDepth}
-                ></InputSlider>
+<div class="ctrl-wrapper is-flex is-justify-content-center is-align-items-center">
+    <div class="ctrl">
+        <div class="ctrl-inputs">
+            <div class="ctrl-row-wrapper">
+                <div class="ctrl-row ctrl-similarity columns">
+                    <div class="ctrl-row-title column is-2 is-flex is-justify-content-center is-align-items-center">
+                        <span>Similarity</span>
+                    </div>
+                    <div class="ctrl-row-inputs column is-10 columns is-multiline">
+                        <div class="column">
+                            <InputDropdownSelect choices={categoriesChoices}
+                                                multiple={true}
+                                                placeholder={appLang==="fr" ? "Filtrer par catégorie" : "Filter by category"}
+                            ></InputDropdownSelect>
+                        </div>
+                        <div class="column">
+                            {#if Object.keys($comparedRegionsChoices).length}
+                                <InputDropdownSelect choices={$comparedRegionsChoices}
+                                                    multiple={true}
+                                                    placeholder={appLang==="fr" ? "Sélectionner des régions" : "Select regions"}
+                                ></InputDropdownSelect>
+                            {/if}
+                        </div>
+                        <div class="column">
+                            {#if $similarityScoreRange.length}
+                                <InputSlider minVal={$similarityScoreRange[0]}
+                                            maxVal={$similarityScoreRange[1]}
+                                            start={$similarityScoreRange[1]}
+                                            roundTo={3}
+                                            on:updateSlider={setSelectedSimilarityScore}
+                                ></InputSlider>
+                            {/if}
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="region column">
-                <InputPillCheckbox checkboxLabel="Filter by region"
-                                on:updateChecked={setFilterByRegion}
-                ></InputPillCheckbox>
+            <div class="ctrl-row-wrapper">
+                <div class="ctrl-row ctrl-propagation columns">
+                    <div class="ctrl-row-title column is-2 is-flex is-justify-content-center is-align-items-center">
+                        <span><b>Propagation</b></span>
+                    </div>
+                    <div class="ctrl-row-inputs column is-10 columns">
+                        <div class="column is-two-thirds">
+                            <span>{ appLang==="fr" ? "Profondeur de récursion" : "Recursion depth" }</span>
+                            <InputSlider minVal={allowedPropagateDepthRange[0]}
+                                        maxVal={allowedPropagateDepthRange[1]}
+                                        start={allowedPropagateDepthRange}
+                                        step={1}
+                                        on:updateSlider={setRecursionDepth}
+                            ></InputSlider>
+                        </div>
+                        <div class="column">
+                            <InputPillCheckbox checkboxLabel="Filter by region"
+                                            on:updateChecked={setFilterByRegion}
+                            ></InputPillCheckbox>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+        <div class="ctrl-submit is-flex is-justify-content-center is-align-items-end">
+            <input type="submit"
+                   class="button"
+                   value={ appLang==="fr" ? "Valider" : "Submit"}
+            />
+        </div>
     </div>
-
 </div>
 
 
 <style>
-.ctrl-propagation-inputs {
-    margin: 10px;
-    padding: 5px;
-    gap: 2rem;
+.ctrl-wrapper {
+    width: 100%;
+    height: 100%;
+    margin: 5vh 0;
 }
-.ctrl-propagation-inputs > * {
+.ctrl {
+    width: min(90%, 1200px);
+    border: solid 1px var(--bulma-border);
+    border-radius: var(--bulma-burger-border-radius);
+    display: flex;
+    flex-direction: row;
+}
+.ctrl-inputs {
+    flex-grow: 2;
+    display: grid;
+    grid-template-columns: 100%;
+    grid-template-rows: 50% 50%;
+}
+.ctrl-row-wrapper {
+    margin: 20px 0;
+}
+.ctrl-row {
+    margin: 0;
+}
+.ctrl-row-title {
+}
+.ctrl-row-inputs {
+    padding-left: 5px;
+    border-left: solid 1px var(--bulma-border);
+}
+.ctrl-submit > * {
+    margin: 20px;
 }
 </style>
