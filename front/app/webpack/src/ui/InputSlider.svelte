@@ -1,3 +1,15 @@
+<!--
+    a slider with 1 or 2 inputs.
+    - if there's only 1 input, it behaves like a normal `input @type="range"`
+    - if there are 2 inputs, it's a range slider that allows to select a min/max.
+
+    number of inputs is determined by data passed to the props `start`:
+    - if 1 number is provided, InputSlider is a 1-input slider.
+    - if an array of [Number, Number] is provided, it's a 2-input slider.
+
+    restrictions:
+    - updates to props are not handled.
+-->
 <script>
 import { onMount, createEventDispatcher } from "svelte";
 
@@ -8,67 +20,131 @@ import TooltipGeneric from "./TooltipGeneric.svelte";
 
 //////////////////////////////////////////////
 
-export let minVal;                  /** @type {Number} */
-export let maxVal;                  /** @type {Number} */
-export let step = 1;                /** @type {Number} */
+/**
+ * @typedef SelectedValType:
+ *      the currently selected value(s) on the slider. data structure
+ *      changes slightly depending on if we're building a 1-input or 2-input slider.
+ * @type {Object}
+ * @property {Boolean} isRange
+ * @property {Number|Number[]} val:
+ *      Number if not isRange, [Number, Number] otherwise.
+ */
 
-let slider;
-const dispatch = createEventDispatcher();
-const handleTooltips = [];
-const oldSelectedRange = { min: undefined, max: undefined };
-const handleHtmlIds = [
-    `noUi-handle-${window.crypto.randomUUID()}`,
-    `noUi-handle-${window.crypto.randomUUID()}` ];
-
-$: selectedRange = { min:minVal, max:maxVal };
-$: updateHandleTooltip(selectedRange);  // run updateHandleTooltip when `selectedRange` changes
+/** @type {Number} */
+export let minVal;
+/** @type {Number} */
+export let maxVal;
+/** @type {Number|Number[]} : if 1 value is provided, then it's a single input slider. if an array of 2 values are provided, it's a min/max 2 input range slider */
+export let start;
+/** @type {Number?} */
+export let step = undefined;
 
 //////////////////////////////////////////////
 
+const sliderHtmlId = `lider-${window.crypto.randomUUID()}`;
+const dispatch = createEventDispatcher();
+
+const isRange = Array.isArray(start) && start.length === 2 && start.every(n => !isNaN(parseFloat(n)));  // true if Number, Number
+const handleTooltips = [];
+const oldSelectedVal = {
+    isRange: isRange,
+    data: start
+};
+const handleHtmlIds = isRange
+    ? [ `noUi-handle-${window.crypto.randomUUID()}`,
+        `noUi-handle-${window.crypto.randomUUID()}` ]
+    : [ `noUi-handle-${window.crypto.randomUUID()}` ];
+
+/** @type {SelectedValType} */
+$: selectedVal = {
+    isRange: isRange,
+    data: start
+};
+$: updateHandleTooltip(selectedVal);  // run updateHandleTooltip when `selectedVal` changes
+
+//////////////////////////////////////////////
+
+const nomRound = n => Number((n).toFixed(2))
+
+/** @param {Number[]|Number}: if isRange, then array of 2 values. else, 1 value. */
+const updateSelectedRange = (val) => {
+    console.log("updateSelectedRange", val, isRange, minVal, maxVal, start);
+    oldSelectedVal.data = selectedVal.data || undefined;
+    console.log("updateSelectedRange.oldSelectedVal", oldSelectedVal);
+    selectedVal = {
+        isRange: isRange,
+        data: nomRound(val)
+    };
+    console.log("updateSelectedRange.selectedVal", selectedVal);
+    console.log("updateSelectedRange.selectedVal", selectedVal);
+}
+
+// update the `TooltipGeneric.tooltipText` prop when selectedVal is updated.
+function updateHandleTooltip() {
+    if (
+        isRange
+        && handleTooltips.length
+        && selectedVal.data[0] !== oldSelectedVal.data[0]
+    ) {
+        handleTooltips[0].$set({ tooltipText: selectedVal.data[0] })
+    } else if (
+        isRange
+        && handleTooltips.length
+        && selectedVal.data[1] !== oldSelectedVal.data[1]
+    ) {
+        handleTooltips[1].$set({ tooltipText: selectedVal.data[1] })
+    } else if (
+        !isRange
+        && handleTooltips.length
+        && selectedVal.data !== oldSelectedVal.data
+    ) {
+        handleTooltips[0].$set({ tooltipText: selectedVal.data })
+    }
+}
+
 function initSlider() {
+    const slider = document.getElementById(sliderHtmlId);
     noUiSlider.create(slider, {
-        start: [ minVal, maxVal ],
+        start: start,
         step: step,
         connect: true,
-        range: selectedRange,
-        handleAttributes: [
-            { "id": handleHtmlIds[0] },
-            { "id": handleHtmlIds[1] } ]
+        range: { min: minVal, max: maxVal },
+        handleAttributes: handleHtmlIds.map((_id) => ({"id": _id }))  // 1 html ID per handle
+    });
+    // `selectedVal` is updated on update, and the parent component receives a new value on set.
+    slider.noUiSlider.on("update", () => {
+        let newVal = slider.noUiSlider.get(true);
+        updateSelectedRange(newVal);
     });
     slider.noUiSlider.on("set", () => {
-        let range = slider.noUiSlider.get(true);
-        updateSelectedRange(range);
-        dispatch("updateSlider", range);
-    })
+        let newVal = slider.noUiSlider.get(true);
+        dispatch("updateSlider", selectedVal);
+    });
 }
 
 // the TooltipGenerics that are bound to the slider's handle must be created in a declarative way to be positionned correctly in the DOM
 function initHandleTooltips() {
-    handleHtmlIds.map((htmlId, idx) => {
+    handleHtmlIds.map((handleHtmlId, idx) => {
+        console.log("initHandleTooltips DATA\n",
+                    "-----------------------\n",
+                    handleHtmlId, idx, selectedVal);
+        console.log("initHandleTooltips TARGET\n",
+                    "-------------------------\n",
+                    document.getElementById(handleHtmlId))
         handleTooltips.push(new TooltipGeneric({
-            target: document.getElementById(htmlId),
-            props: { tooltipText: idx===0 ? selectedRange.min : selectedRange.max }
+            target: document.getElementById(handleHtmlId),
+            props:
+                isRange
+                ? { tooltipText: idx===0 ? selectedVal.data[0] : selectedVal.data[1] }
+                : { tooltipText: selectedVal.data }
         }));
     })
-}
-
-const updateSelectedRange = ([_min, _max]) => {
-    oldSelectedRange.min = selectedRange.min;
-    oldSelectedRange.max = selectedRange.max;
-    selectedRange = { min: _min, max: _max };
-}
-
-// update the `TooltipGeneric.tooltipText` prop when a new value is set.
-function updateHandleTooltip() {
-    if ( handleTooltips.length && oldSelectedRange.min !== selectedRange.min )
-        handleTooltips[0].$set({ tooltipText: selectedRange.min });
-    if ( handleTooltips.length && oldSelectedRange.max !== selectedRange.max )
-        handleTooltips[1].$set({ tooltipText: selectedRange.max });
 }
 
 //////////////////////////////////////////////
 
 onMount(() => {
+    // updateSelectedRange(start);
     initSlider();
     initHandleTooltips();
 })
@@ -76,11 +152,14 @@ onMount(() => {
 
 
 <div class="slider-outer-wrapper is-flex flex-direction-row">
-    <span class="range-marker">{ selectedRange.min }</span>
+    <span class="range-marker">{ minVal }</span>
     <div class="slider-wrapper">
+        <!--
         <div class="slider" bind:this={slider}></div>
+        -->
+        <div class="slider" id={sliderHtmlId}></div>
     </div>
-    <span class="range-marker">{ selectedRange.max }</span>
+    <span class="range-marker">{ maxVal }</span>
 </div>
 
 

@@ -91,6 +91,7 @@ function initChoices() {
         addItems: false,
         removeItems: true,
         removeItemButton: true,
+        searchEnabled: searchable,
         shouldSort: sort,
         allowHTML: choices.some(c => c.hasOwnProperty("icon") && c.icon != null),
         sorter: () => choices.label,  // idk
@@ -150,6 +151,9 @@ onMount(() => {
     color: var(--bulma-body-background);
     font-size: var(--bulma-body-font-size);
 }
+:global(.choices__list) {
+    padding: 0;
+}
 /** selected items wrapper style */
 :global(.choices__inner) {
     padding: 1px;
@@ -157,28 +161,6 @@ onMount(() => {
     min-height: 30px;
     border: solid 1px var(--bulma-border);
     border-radius: var(--bulma-burger-border-radius);
-}
-/** selected items (multiple) * /
-:global(.choices__list--multiple .choices__item) {
-    background-color: var(--default-color);
-    border: var(--default-border);
-    font-weight: normal;
-}
-/** selected items (single) * /
-:global(.choices__list--single) {
-    margin: 0;
-}
-:global(.choices__list--single .choices__item:not(.choices__placeholder)) {
-	width: fit-content;
-	padding: inherit;
-	background-color: var(--default-color);
-	border: var(--default-border);
-    border-radius: 1rem;
-	padding-left: 10px;
-}
-*/
-:global(.choices__list) {
-    padding: 0;
 }
 /** selected item (single and multi) */
 :global(.choices__inner .dropdown-item) {
@@ -208,14 +190,14 @@ onMount(() => {
 :global(.choices__list--single .choices__item) {
     width: fit-content;
 }
-
-
 :global(.choices__list--single .choices__button) {
     background-color: white;
 }
-:global(.choices__inner .choices__item:not-.choices__placeholder) {
+/*
+:global(.choices__inner .choices__item:not(-).choices__placeholder) {
     margin: 3.75px;
 }
+*/
 /** dropdown style */
 :global(.choices__list--dropdown) {
     z-index: 10 !important;
