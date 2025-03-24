@@ -6,7 +6,7 @@ import * as cat from './similarityCategory';
 import { appLang } from "../../constants.js";
 
 import InputSlider from "../../ui/InputSlider.svelte";
-import InputPillCheckbox from "../../ui/InputPillCheckbox.svelte";
+import InputToggleCheckbox from "../../ui/InputToggleCheckbox.svelte";
 import InputDropdownSelect from "../../ui/InputDropdownSelect.svelte";
 import { shorten } from "../../utils.js";
 
@@ -128,9 +128,9 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                             ></InputSlider>
                         </div>
                         <div class="column is-flex is-justify-content-center is-align-items-center">
-                            <InputPillCheckbox checkboxLabel="Filter by region"
+                            <InputToggleCheckbox checkboxLabel="Filter by region"
                                             on:updateChecked={setPropagateFilterByRegion}
-                            ></InputPillCheckbox>
+                            ></InputToggleCheckbox>
                         </div>
                     </div>
                 </div>

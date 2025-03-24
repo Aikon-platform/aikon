@@ -1,10 +1,16 @@
-<!-- an implementation of a subset of choices from Svelte-Select
-    it implements specific styles and allows to provide an icon
-    for each option.
+<!-- a svelte implementation of Choices.JSON.
+    it handles single and multi-choice dropdowns,
+    adds specific styles, allows pre-select choices and
+    to provide an icon for each option (aming other features !).
 
     restrictions:
     - it is synchronous (no async data fetching)
-    - it does not handle updates to props values
+    - it does not handle updates to props update
+    - when passing a `defaultSelection`, the values
+        each item of `defaultSelection` and `choices`
+        (type DropdownChoice.value) must be hashable
+        so that values in `defaultSelection` can be matched
+        with `choices` items.
 -->
 
 <script>
@@ -34,6 +40,8 @@ import { appLang } from "../constants";
 
 /** @type {DropdownChoiceArray} */
 export let choices;
+/** @type {DropdownChoice.value[]} the items selected by default, represented as an array of DropdownChoice.value */
+export let defaultSelection = [];
 /** @type {Boolean} */
 export let multiple;
 /** @type {String} */
@@ -42,8 +50,6 @@ export let searchable = true;
 export let sort = true;
 /** @type {String} */
 export let placeholder = appLang === "fr" ? "Sélectionner une valeur" : "Select a value";
-/** @type {DropdownChoice.value[]} the items selected by default, represented as an array of DropdownChoice.value */
-export let defaultSelection = [];
 
 const dispatch = createEventDispatcher();
 const htmlId = `input-dropdown-select-${window.crypto.randomUUID()}`;
@@ -133,7 +139,7 @@ function initChoices(allChoices, preSelectedChoices) {
 
     choicesObj.setValue(preSelectedChoices);
 
-    choicesTarget.addEventListener("addItem", onAddItem);  // TODO delete on destrooy
+    choicesTarget.addEventListener("addItem", onAddItem);
     choicesTarget.addEventListener("removeItem", onRemoveItem)
 }
 
@@ -143,17 +149,23 @@ onMount(() => {
     let reformattedDefaultChoices =formatChoices(
         choices
         .filter(c => defaultSelection.includes(c.value))
-        .map(c => ({ ...c, selected: true }))  // somehow, if `selected=true` is not added to the pre-selected choices, setting them as default value does not work.
+        .map(c => ({ ...c, selected: true }))  // somehow, if `selected=true` is not added to the pre-selected choices, setting them as default items does not work.
     );
     let reformattedChoices = formatChoices(choices);
     initChoices(reformattedChoices, reformattedDefaultChoices);
+})
+
+onDestroy(() => {
+    const choicesTarget = document.getElementById(htmlId);
+    choicesTarget.removeEventListener("addItem");
+    choicesTarget.removeEventListener("removeItem");
 })
 </script>
 
 
 <div>
     {#if multiple }
-        <select id={htmlId} multiple ></select>
+        <select id={htmlId} multiple></select>
     {:else }
         <select id={htmlId}></select>
     {/if}
