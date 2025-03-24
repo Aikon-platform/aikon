@@ -13,6 +13,7 @@ from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
 
 from app.webapp.utils.logger import log
+from config.settings import APP_LANG
 
 
 ################################################################
@@ -103,7 +104,11 @@ def process_results(data, completed=True):
 
 def prepare_document(document: Witness | Digitization | Regions, **kwargs):
     if document.is_vectorized():
-        return []
+        raise ValueError(
+            f"“{document}” is already vectorized"
+            if APP_LANG == "en"
+            else f"« {document} » est déjà vectorisé"
+        )
 
     regions = document.get_regions() if hasattr(document, "get_regions") else [document]
 

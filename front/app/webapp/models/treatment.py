@@ -377,11 +377,12 @@ class Treatment(AbstractSearchableModel):
         self.save()
 
         if notify and self.notify_email:
+            msg = f"\n\nMessage: {error or message}." if (error or message) else ""
             email = (
                 f"Dear {APP_NAME.upper()} user,\n\n"
                 f"The {self.task_type} task (#{self.id}) you requested on the {APP_NAME.upper()} platform "
-                f"was completed with the status {self.status}."
-                f"\n\nMessage: {error or message}.\n\nBest,\nthe {APP_NAME.upper()} team."
+                f"was completed with the status {self.status}.{msg}"
+                f"\n\nBest,\nthe {APP_NAME.upper()} team."
             )
             try:
                 send_mail(

@@ -4,9 +4,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 FRONT_DIR=$(dirname "$SCRIPT_DIR")
 APP_ENV="$FRONT_DIR"/app/config/.env
 
-source "$SCRIPT_DIR"/functions.sh
-
-INSTALL_TYPE=$(get_install_type "$1")
+source "$SCRIPT_DIR"/utils.sh
 
 echo_title "REDIS DATABASE INITIALIZATION"
 
@@ -15,16 +13,11 @@ redis_conf_file=$(redis-cli INFO | grep config_file | awk -F: '{print $2}' | tr 
 options=("yes" "no")
 
 redis_restart() {
-    case "$OS" in
-        "Linux")
-            sudo systemctl restart redis-server
-            ;;
-        "Mac")
-            brew services restart redis
-            ;;
-        *)
-            ;;
-    esac
+    if [ "$OS" = "Linux" ]; then
+        sudo systemctl restart redis-server
+    elif [ "$OS" = "Mac" ]; then
+        brew services restart redis
+    fi
 }
 
 # $redis_conf_file defined above only works if no redis password is defined (else, redis-cli fails with NOAUTH)
@@ -59,7 +52,7 @@ redis_set_no_password() {
 
 # only runs if a redis password is defined
 if [ -n "$redis_psw" ]; then
-    if [ "$INSTALL_TYPE" = "quick_install" ]; then
+    if [ "$INSTALL_MODE" = "quick_install" ]; then
         redis_set_no_password
     else
         color_echo blue "\nYou defined a redis password in $APP_ENV. Do you want to secure redis with it (not necessary on local)?"

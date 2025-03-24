@@ -7,13 +7,19 @@
 SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"
 
-source "$SCRIPT_DIR"/functions.sh
+source "$SCRIPT_DIR"/utils.sh
 
 # Load environment variables from .env file
 . "$APP_ROOT"/app/config/.env
 
+if [[ "$DOCKER" = "True" ]]; then
+    db_host="db"
+else
+    db_host="localhost"
+fi
+
 PGPASS_FILE="./.pgpass"
-echo "$DB_HOST:$DB_PORT:$POSTGRES_DB:$POSTGRES_USER:$POSTGRES_PASSWORD" > "$PGPASS_FILE"
+echo "$db_host:$DB_PORT:$POSTGRES_DB:$POSTGRES_USER:$POSTGRES_PASSWORD" > "$PGPASS_FILE"
 chmod 600 "$PGPASS_FILE"
 export PGPASSFILE='./.pgpass'
 

@@ -48,23 +48,25 @@
         }));
 
         let res;
-        if (!response.ok) {
+        if (response.ok) {
             try {
                 res = await response.json();
+                console.log(res);
             } catch (error) {
                 await showMessage(`Failed to parse JSON response: '${error}'`, "Error");
                 throw new Error(`Failed to parse JSON response: '${error}'`);
+            } finally {
+                const docSet = res.doc_set_id;
+                if (!docSet) {
+                    await showMessage(`Failed to launch regions extraction: 'No document set id'`, "Error");
+                    throw new Error(`Failed to launch regions extraction: 'No document set id'`);
+                }
+                window.location.href = `${window.location.origin}/${appName}/treatment/add/?document_set=${docSet}&task_type=regions`;
             }
-
+        } else {
             await showMessage(`Failed to launch regions extraction: '${res.message}'`, "Error");
             throw new Error(`Failed to launch regions extraction: '${res.message}'`);
         }
-        const docSet = res.doc_set_id;
-        if (!docSet) {
-            await showMessage(`Failed to launch regions extraction: 'No document set id'`, "Error");
-            throw new Error(`Failed to launch regions extraction: 'No document set id'`);
-        }
-        window.location.href = `${window.location.origin}/${appName}/treatment/add/?document_set=${docSet}&task_type=regions`;
     }
 </script>
 

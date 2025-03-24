@@ -20,15 +20,11 @@ LOGIN_REDIRECT_URL = "/"
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = ENV.str("SECRET_KEY", default="")
 
-# SECURITY WARNING: don't run with debug turned on in production!
 TARGET = ENV("TARGET", default="dev")
-DEBUG = ENV.bool("DEBUG", default=False if TARGET == "prod" else True)
 DOCKER = ENV.bool("DOCKER", default=False)
 
-PROXIES = {
-    "http": ENV.str("HTTP_PROXY", default=""),
-    "https": ENV.str("HTTPS_PROXY", default=""),
-}
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = ENV.bool("DEBUG", default=False if TARGET == "prod" else True)
 
 INSTALLED_APPS = [
     "dal",
@@ -119,25 +115,8 @@ APP_PORT = ENV.int("FRONT_PORT", 8000)
 CANTALOUPE_PORT = ENV.int("CANTALOUPE_PORT", 8182)
 SAS_PORT = ENV.int("SAS_PORT", 8888)
 
-APP_URL = f"http://localhost:{APP_PORT}"
-CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
-SAS_APP_URL = f"http://localhost:{SAS_PORT}"
-
-SAS_DOCKER_URL = f"http://sas:{SAS_PORT}" if DOCKER else SAS_APP_URL
-CANTALOUPE_DOCKER_URL = (
-    f"http://cantaloupe:{CANTALOUPE_PORT}" if DOCKER else CANTALOUPE_APP_URL
-)
-
 API_URL = ENV.str("API_URL")
 GEONAMES_USER = ENV.str("GEONAMES_USER", default="")
-
-PROD_URL = f"https://{ENV.str('PROD_URL', default='')}"
-
-# Override the default values in production mode
-if not DEBUG:
-    APP_URL = f"{PROD_URL}"
-    CANTALOUPE_APP_URL = f"{PROD_URL}"
-    SAS_APP_URL = f"{PROD_URL}/sas"
 
 SAS_USERNAME = ENV.str("SAS_USERNAME", default="")
 SAS_PASSWORD = ENV.str("SAS_PASSWORD", default="")

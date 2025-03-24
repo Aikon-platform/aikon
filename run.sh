@@ -1,31 +1,34 @@
 #!/bin/bash
 
-FRONT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/front" >/dev/null 2>&1 && pwd )"
-API_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/api" >/dev/null 2>&1 && pwd )"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+FRONT_DIR="$SCRIPT_DIR/front"
+API_DIR="$SCRIPT_DIR/api"
 
-FRONT_RUN="$FRONT_DIR/run.sh"
-API_RUN="$API_DIR/run.sh"
+source "$FRONT_DIR/scripts/utils.sh"
 
-front_pid=""
-api_pid=""
-
-read -s -p "Enter your sudo password: " PASSWORD
+declare -a ALL_PIDS=()
 
 cleanup() {
-    echo "Shutting down all processes..."
-    [ -n "$front_pid" ] && kill "$front_pid"
-    [ -n "$api_pid" ] && kill "$api_pid"
-    wait
-    echo "All processes terminated."
+    cleanup_pids "${ALL_PIDS[*]}" "celery|dramatiq|flask|runserver|cantaloupe|jetty" "$PASSWORD"
     exit 0
 }
 
-trap cleanup SIGINT SIGTERM
+trap cleanup INT TERM HUP
 
-(cd "$FRONT_DIR" && bash "$FRONT_RUN" "$PASSWORD") &
-front_pid=$!
+read -s -p "Enter your sudo password: " PASSWORD
+echo
 
-(cd "$API_DIR" && bash "$API_RUN") &
-api_pid=$!
+color_echo blue "STARTING FRONT..."
+(cd "$FRONT_DIR" && START_MODE="CHILD" bash run.sh "$PASSWORD") &
+ALL_PIDS+=($!)
 
+sleep 2
+
+color_echo blue "STARTING API..."
+(cd "$API_DIR" && START_MODE="CHILD" bash run.sh) &
+ALL_PIDS+=($!)
+
+sleep 2
+
+color_echo magenta "All services started. Press Ctrl+C to stop everything."
 wait

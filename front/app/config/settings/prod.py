@@ -2,12 +2,21 @@ from urllib.parse import urlparse
 
 from .base import *
 
-API_URL = f"http://{API_URL}" if not API_URL.startswith("http") else API_URL
+prod_api_url = ENV.str("PROD_API_URL")
+API_URL = (
+    f"http://{prod_api_url}" if not prod_api_url.startswith("http") else prod_api_url
+)
 BASE_URL = f"https://{ENV.str('PROD_URL', default='')}"
-
 APP_URL = BASE_URL
-CANTALOUPE_APP_URL = BASE_URL
-SAS_APP_URL = f"{BASE_URL}/sas"
+CANTALOUPE_APP_URL = f"http://cantaloupe:{CANTALOUPE_PORT}" if DOCKER else BASE_URL
+SAS_APP_URL = f"http://sas:{SAS_PORT}" if DOCKER else f"{BASE_URL}/sas"
+
+if ENV.str("HTTPS_PROXY", default=""):
+    PROXIES = {
+        "http": ENV.str("HTTP_PROXY", default=""),
+        "https": ENV.str("HTTPS_PROXY", default=""),
+        "no_proxy": ENV.str("NO_PROXY", default="localhost,127.0.0.1"),
+    }
 
 ADMIN_EMAIL = CONTACT_MAIL
 EMAIL_HOST_USER = ENV("EMAIL_HOST_USER", default=ADMIN_EMAIL)
