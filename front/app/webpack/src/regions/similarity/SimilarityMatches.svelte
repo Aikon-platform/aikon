@@ -1,16 +1,18 @@
 <script>
-    import { setContext } from "svelte";
-
     import { csrfToken } from '../../constants';
     import SimilarRegions from "./SimilarRegions.svelte";
     import { similarityStore } from "./similarityStore.js";
 
-    const { selectedRegions, excludedCategories } = similarityStore;
+    export let qImg;
+    let sImgsPromise;
+
+    const { updateSimilarity, similarityToolbarParams } = similarityStore;
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentPageId = window.location.pathname.match(/\d+/g).join('-');
 
-    /** retrieve similar images from `qImg` */
+    /** retrieve similar images to `qImg` */
     async function fetchSImgs(qImg, selection, excludedCategories) {
+        console.log("fetchSImgs called");
         const regionsIds = Object.values(selection).map(r => r.id);
         if (regionsIds.length === 0) {
             return {};
@@ -34,9 +36,12 @@
         return await response.json()
     }
 
-    export let qImg;
-    $: sImgsPromise = fetchSImgs(qImg, $selectedRegions, $excludedCategories);
-
+    updateSimilarity.subscribe((newVal) => {
+        // TODO run only if selectedRegions OR excludedCategories change
+        const selectedRegions = $similarityToolbarParams.similarity.regions;
+        const excludedCategories = $similarityToolbarParams.similarity.excludedCategories;
+        sImgsPromise = fetchSImgs(qImg, selectedRegions, excludedCategories)
+    });
 </script>
 
 <div class="grid is-gap-2">

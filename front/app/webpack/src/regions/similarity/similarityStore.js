@@ -3,13 +3,13 @@ import { errorMsg, initPagination, loading, pageUpdate } from "../../utils.js";
 import { csrfToken } from "../../constants.js";
 
 /**
- * @typedef { Object.<Number, RegionsType> } SelectedRegionsType
+ * @typedef { Object.<number, RegionsType> } SelectedRegionsType
  *  selected regions are witness Ids mapped to all the region extractions
  *  against with which RegionPairs have been evaluated
  */
 /**
- * @typedef {Object.<Number, {}>} EmptyRegionsType:
- *  like the above SelectedRegionsType, but there is no RegionsType, just a {}
+ * @typedef {Object.<number, undefined>} EmptyRegionsType:
+ *  like the above SelectedRegionsType, but there is no RegionsType
  */
 /**
  * @typedef RegionsType
@@ -53,7 +53,7 @@ function createSimilarityStore() {
     const currentPageId = window.location.pathname.match(/\d+/g).join('-');
 
     /** EmptyRegionsType:  */
-    const emptySelection = { [currentPageId]: {}};
+    const emptySelection = { [currentPageId]: {} };
 
     const currentPage = writable(1);
 
@@ -76,6 +76,7 @@ function createSimilarityStore() {
     /** @type {Number[]} */
     const excludedCategories = writable(JSON.parse(localStorage.getItem("excludedCategories")) || []);
 
+    /** @type {String[]|[]} query image names for the current witness */
     const qImgs = writable([]);
     const pageQImgs = writable([]);
 
@@ -199,14 +200,27 @@ function createSimilarityStore() {
 
     const initCurrentPage = () => initPagination(currentPage, "sp");
 
-    const setPageQImgs = derived(currentPage, ($currentPage) =>
-        (async () => updatePageQImgs($currentPage))()
+    // const setPageQImgs = derived(currentPage, ($currentPage) =>
+    //     (async () => updatePageQImgs($currentPage))()
+    // );
+
+    // function updatePageQImgs(pageNb) {
+    //     const start = (pageNb - 1) * pageLength;
+    //     const end = start + pageLength;
+    //     const currentQImgs = get(qImgs).slice(start, end)
+    //     pageQImgs.set(currentQImgs);
+    //     return currentQImgs;
+    // }
+
+    // without `qImgs`, `setPageQImgs` may run before qImgs has been defined
+    const setPageQImgs = derived([currentPage, qImgs], ([$currentPage, $qImgs]) =>
+        (async () => updatePageQImgs($currentPage, $qImgs))()
     );
 
-    function updatePageQImgs(pageNb) {
+    function updatePageQImgs(pageNb, _qImgs) {
         const start = (pageNb - 1) * pageLength;
         const end = start + pageLength;
-        const currentQImgs = get(qImgs).slice(start, end)
+        const currentQImgs = _qImgs.slice(start, end);
         pageQImgs.set(currentQImgs);
         return currentQImgs;
     }
@@ -222,7 +236,6 @@ function createSimilarityStore() {
     }
 
     return {
-        currentPageId,
         currentPage,
         comparedRegions,
         excludedCategories,

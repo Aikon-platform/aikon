@@ -10,6 +10,12 @@
     export let sImgsPromise;
 
     const similarityPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a suggestion, false otherwise
+    const currentPageId = window.location.pathname.match(/\d+/g).join('-');
+
+    $: noRegionsSelected =
+        Object.values($selectedRegions).length === 0
+        || $selectedRegions[currentPageId] === undefined
+        || !Object.keys($selectedRegions[currentPageId]).length
 </script>
 
 {#await sImgsPromise}
@@ -25,9 +31,9 @@
     </div>
 {:then simImgs}
     {#each simImgs as [score, _, sImg, qRegions, sRegions, category, users, isManual]}
-        <SimilarRegion qImg={qImg} sImg={sImg} score={score} qRegions={qRegions} sRegions={sRegions} category={category} users={users} isManual={isManual}/>
+        <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual}/>
     {:else}
-        {#if Object.values($selectedRegions).length === 0}
+        {#if noRegionsSelected }
             <div class="faded is-center">
                 {appLang === 'en' ? 'No document selected' : 'Aucun document sélectionné'}
             </div>

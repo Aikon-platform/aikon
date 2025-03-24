@@ -14,7 +14,6 @@ import { shorten } from "../../utils.js";
 
 // const similarityToolbarParams = similarityStore.similarityToolbarParams;
 const  {
-    currentPageId,
     selectedRegions,
     propagateParams,
     comparedRegions,
@@ -24,6 +23,8 @@ const  {
     allowedPropagateDepthRange,
     updateSimilarity
 } = similarityStore;
+
+const currentPageId = window.location.pathname.match(/\d+/g).join('-');
 
 const categoriesChoices = [
     { value: 1, label: cat.exactLabel, icon: cat.exactSvg },
