@@ -85,15 +85,15 @@ ENTITY_NAMES = {
 
 MODEL_DESC = {
     "Work": {
-        "en": "Represents the abstract intellectual production, encompassing the core ideas and content across various manifestations.",
-        "fr": "Production intellectuelle abstraite, représentant des idées et des contenus à travers toutes leurs manifestations.",
+        "en": "Abstract intellectual production, encompassing its core ideas and content across various manifestations.",
+        "fr": "Production intellectuelle abstraite, y compris ses principaux contenus et idées à travers toutes leurs manifestations.",
     },
     "Witness": {
-        "en": "Denotes the physical objects or primary sources preserved in institutions.",
+        "en": "Physical objects or primary sources preserved in institutions.",
         "fr": "Objet physique, ou source primaire, conservé par les institutions.",
     },
     "Series": {
-        "en": "Encompasses a group of witnesses sharing a common coherence, such as volumes of an edition or manuscript fragments held in different institutions.",
+        "en": "Group of witnesses sharing a common coherence, such as volumes of an edition or manuscript fragments held in different institutions.",
         "fr": "Regroupement de témoins partageant une cohérence, comme les volumes d'une édition ou les fragments de manuscrits conservés dans des institutions différentes.",
     },
     "Treatment": {
