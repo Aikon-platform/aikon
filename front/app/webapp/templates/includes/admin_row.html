@@ -1,4 +1,4 @@
-{% load shared_tags %}
+{% load static shared_tags %}
 
 {% check_url 'webapp:'|add:entity_title|add:'_create' as add_url %}
 {% if add_url == '' %}
@@ -16,11 +16,11 @@
     {% check_url 'admin:auth_'|add:entity_title|add:'_changelist' as list_url %}
 {% endif %}
 
-<div class="block box mg-medium p-5 m-5" style="height:80%;">
+<div class="block box mg-medium p-5 m-4" style="height:90%;">
     <div class="content is-center">
         <h3 class="is-center is-capitalized">{{ entity_title }}</h3>
-        <img src="" class="is-94x94"/>
-        <p class="is-italic is-size-7">{{ entity_desc }}</p>
+        <img src="{% static 'img/'|add:entity_title|add:'.svg' %}" onerror="this.onerror=null;this.style.display='none';src='';this.class='';" class="image is-center is-128x128 mb-5" style="filter:invert(.7);" alt="{{ entity_title }} icon"/>
+        <p class="is-size-7">{{ entity_desc }}</p>
         <div class="buttons is-center">
             <a href="{{ add_url }}" class="button is-ghost">
                 <span class="icon-text">
