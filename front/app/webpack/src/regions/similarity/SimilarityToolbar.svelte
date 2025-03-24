@@ -13,14 +13,17 @@ import { shorten } from "../../utils.js";
 ///////////////////////////////////////
 
 // const similarityToolbarParams = similarityStore.similarityToolbarParams;
-const currentPageId = similarityStore.currentPageId;
-const selectedRegions = similarityStore.selectedRegions;
-const propagateParams = similarityStore.propagateParams;
-const comparedRegions = similarityStore.comparedRegions;
-const excludedCategories = similarityStore.excludedCategories;
-const similarityScoreRange = similarityStore.similarityScoreRange;
-const similarityScoreCutoff = similarityStore.similarityScoreCutoff;
-const allowedPropagateDepthRange = similarityStore.allowedPropagateDepthRange;
+const  {
+    currentPageId,
+    selectedRegions,
+    propagateParams,
+    comparedRegions,
+    excludedCategories,
+    similarityScoreRange,
+    similarityScoreCutoff,
+    allowedPropagateDepthRange,
+    updateSimilarity
+} = similarityStore;
 
 const categoriesChoices = [
     { value: 1, label: cat.exactLabel, icon: cat.exactSvg },
@@ -41,11 +44,13 @@ const preSelectedExcludedCategories = $excludedCategories;
 /** @type {string[]}: regions IDs */
 const preSelectedRegions = Object.keys($selectedRegions[currentPageId]);
 
+updateSimilarity.subscribe((v) => console.log("changed", v));
+
 ///////////////////////////////////////
 
 const setPropagateRecursionDepth = (e) =>
     propagateParams.set({
-        recursionDepth: e.detail,
+        recursionDepth: e.detail.data,
         filterByRegion: $propagateParams.filterByRegion
     });
 const setPropagateFilterByRegion = (e) =>
@@ -69,11 +74,15 @@ const setComparedRegions = (e) => {
     localStorage.setItem("selectedRegions", JSON.stringify($selectedRegions));
 }
 const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data);
+
+const onSubmit = (e) => updateSimilarity.set(!$updateSimilarity);
 </script>
 
 
 <div class="ctrl-wrapper is-flex is-justify-content-center is-align-items-center">
-    <div class="ctrl">
+    <form class="ctrl"
+          on:submit|preventDefault={onSubmit}
+    >
         <div class="ctrl-inputs">
             <div class="ctrl-row-wrapper">
                 <div class="ctrl-row ctrl-similarity columns">
@@ -142,7 +151,7 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                    value={ appLang==="fr" ? "Valider" : "Submit"}
             />
         </div>
-    </div>
+    </form>
 </div>
 
 

@@ -14,6 +14,7 @@ import { csrfToken } from "../../constants.js";
 /**
  * @typedef RegionsType
  *  a regions extraction
+ * @type {object}
  * @property {Number} id
  * @property {String} ref
  * @property {String} url: IIIF URL to the extracted image regions
@@ -30,13 +31,15 @@ import { csrfToken } from "../../constants.js";
  */
 /**
  * @typedef SimilarityParamsType
- * @param {Number[]} excludedCategories
- * @param {SelectedRegionsType} regions
- * @param {Number} similarityScoreCutoff
+ * @type {object}
+ * @property {Number[]} excludedCategories
+ * @property {SelectedRegionsType} regions
+ * @property {Number} similarityScoreCutoff
  */
 /**
  * @typedef SimilarityToolbarParamsType
  *      all params defined in SimilarityToolbar
+ * @type {object}
  * @property {PropagateParamsType} propagate
  * @property {SimilarityParamsType} similarity
  */
@@ -103,7 +106,7 @@ function createSimilarityStore() {
 
     /** @type {Number[]} min/max scores for the currently selected regions */
     const similarityScoreRange = writable([])
-    /** @type {Number} RegionPairs below this will be hidden from the user */
+    /** @type {Number?} RegionPairs below this score will be hidden from the user */
     const similarityScoreCutoff = writable()
 
     /** @param {Array<int>} to_rid: rid of regions to filter by */
@@ -145,6 +148,13 @@ function createSimilarityStore() {
         propagate: $propagateParams,
         similarity: $similarityParams
     }))
+    /**
+     * @type {Boolean} true/false, toggled `SimilarityToolbar.onSubmit`
+     * to update the necessary components in the `Similarity` view.
+     * the true/false value doesn't have any meaning, switching this will
+     * just trigger logic on other components.
+     */
+    const updateSimilarity = writable(false);
 
     function store(selection) {
         localStorage.setItem("selectedRegions", JSON.stringify(selection));
@@ -234,6 +244,7 @@ function createSimilarityStore() {
         propagateParams,
         allowedPropagateDepthRange,
         similarityScoreCutoff,
+        updateSimilarity
     };
 }
 
