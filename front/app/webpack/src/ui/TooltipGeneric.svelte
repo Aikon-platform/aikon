@@ -28,24 +28,34 @@ $: setTooltipWidthClass = (_tooltipText) =>
         ? "tooltip-mid"
         : "tooltip-thin";
 
-
 $: targetEl = undefined;
 $: displayTooltip = false;
+
+//////////////////////////////////
+
+const onMouseover = () => displayTooltip = true;
+const onMouseout = () => displayTooltip = false;
+const onClick = () => displayTooltip = !displayTooltip;
+
+//////////////////////////////////
+
 onMount(() =>  {
     targetEl =
         targetHtmlId
         ? document.getElementById(targetHtmlId)
         : document.getElementById(htmlId).parentElement;
     if ( targetHtmlId && !targetEl ) {
-        console.error(`TooltipGeneric: element with ID ${targetHtmlId}, defaulting to the parent element`);
+        console.error(`TooltipGeneric: element with ID ${targetHtmlId} not found, defaulting to the parent element`);
         targetEl = document.getElementById(htmlId).targetElement;
     }
-    targetEl.addEventListener("mouseover", () => displayTooltip = true);
-    targetEl.addEventListener("mouseout", () => displayTooltip = false);
-    targetEl.addEventListener("click", () => displayTooltip = !displayTooltip);
+    targetEl.addEventListener("mouseover", onMouseover);
+    targetEl.addEventListener("mouseout", onMouseout);
+    targetEl.addEventListener("click", onClick);
 })
 onDestroy(() => {
-    ["mouseover", "mouseout", "click"].forEach(targetEl.removeEventListener);
+    targetEl.removeEventListener("mouseover", onMouseover);
+    targetEl.removeEventListener("mouseout", onMouseout);
+    targetEl.removeEventListener("click", onClick);
 })
 
 

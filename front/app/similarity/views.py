@@ -205,19 +205,8 @@ def get_similarity_score_range(
     """
     from django.db.models import Max, Min
 
-    # def make_filter(_from: Literal[1,2], _wid:int, _rid:int|None, _to_rid:List[int]|None):
-    #     _to = 2 if _from==1 else 1
-    #     q = Q(**{ f"img_{_from}__contains": f"wit{_wid}" })
-    #     if _rid:
-    #         q = q & Q(**{ f"regions_id_{_wid}": _rid })
-    #     if _to_rid and len(_to_rid):
-    #         q = q & Q(**{ f"regions_id_{_to}__in": _to_rid })
-    #     q = q & ~Q(score=None)
-    #     return q
-
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
-
     try:
         to_rid = []
         if request.body and len(request.body):
@@ -232,9 +221,6 @@ def get_similarity_score_range(
 
         _min = q.aggregate(Min("score"))
         _max = q.aggregate(Max("score"))
-
-        # q_1_to_2 = RegionPair.objects.values("score").filter(make_filter(1, wid, rid, to_rid))
-        # q_2_to_1 = RegionPair.objects.values("score").filter(make_filter(1, wid, rid, to_rid))
 
         return JsonResponse({"min": _min["score__min"], "max": _max["score__max"]})
 
@@ -251,20 +237,20 @@ def get_propagated_matches(
     returns JSONified RegionPair tuples
     """
     MAX_DEPTH = 5
+    MIN_DEPTH = 1
+    RECURSION_DEPTH = [MIN_DEPTH, MAX_DEPTH]
     OG_IMG_ID = img_id
 
-    def get_direct_pairs(q_img: str, _rid: str = None) -> List[str]:
+    def get_direct_pairs(q_img: str, _id_regions_array: List[int] = []) -> List[str]:
         img_2_from_1 = RegionPair.objects.values_list("img_2").filter(
             Q(img_1=q_img) & Q(category=1)
         )
         img_1_from_2 = RegionPair.objects.values_list("img_1").filter(
             Q(img_2=q_img) & Q(category=1)
         )
-        ## WARNING::::: RID WILL RESTRICT TO MATCHES WHERE regions_id_(1|2)==rid (THE REGIONS ID OF THE QUERY IMAGE)
-        # if _rid:
-        #     img_2_from_1 = img_2_from_1.filter(Q(regions_id_2=_rid))
-        #     img_1_from_2 = img_1_from_2.filter(Q(regions_id_1=_rid))
-
+        if len(_id_regions_array):
+            img_2_from_1 = img_2_from_1.filter(Q(regions_id_2__in=_id_regions_array))
+            img_1_from_2 = img_1_from_2.filter(Q(regions_id_1__in=_id_regions_array))
         return [r[0] for r in list(img_2_from_1.union(img_1_from_2).all())]
 
     def has_direct_relationship(img1: str, img2: str) -> bool:
@@ -274,36 +260,34 @@ def get_propagated_matches(
 
     def propagate(
         q_img: str,
-        _rid: int = None,
+        _id_regions_array: List[int] = [],
+        _recursion_depth: List[int] = RECURSION_DEPTH,
         queried: Set[str] | None = None,
         depth: int = 0,
-        max_depth: int = MAX_DEPTH,
     ) -> List[Tuple[str, int]]:
 
         if queried is None:
             queried = set([q_img])
-        if depth >= max_depth:
+        if depth >= _recursion_depth[1]:
             return []
         depth += 1
 
-        direct_pairs = get_direct_pairs(q_img, _rid)
+        direct_pairs = get_direct_pairs(q_img, _id_regions_array)
         matches = []
         for match in direct_pairs:
             if match in queried:
                 continue
             queried.add(match)
-            ## WARNING:::::
-            ##
-            ## this condition is theoritically impossible to fulfill
-            ## since all evaluated RegionPairs are saved to the database if their `score > 0`,
-            ## even though only the `topk` best matches will be displayed to the user.
-            ## see @similarity.utils.score_file_to_db
-            ##
-            # if not has_direct_relationship(q_img, match) and match != q_img:
-            #     matches.append(match)
+
+            # TODO doesn't seem to work?
+            if not has_direct_relationship(q_img, match) and match != q_img:
+                matches.append(match)
+
             if match != OG_IMG_ID:
                 matches.append((match, depth))
-            sub_matches = propagate(match, _rid, queried, depth)
+            sub_matches = propagate(
+                match, _id_regions_array, _recursion_depth, queried, depth
+            )
             matches.extend([m for m in sub_matches if m not in matches])
 
         return matches
@@ -316,8 +300,11 @@ def get_propagated_matches(
         q2 = RegionPair.objects.values_list("regions_id_2").filter(img_2=q_img).first()
         return q2[0]
 
-    def remove_depth_0(_propagated: List[Tuple[str, int]]) -> List[int]:
-        return [p_img for (p_img, depth) in _propagated if depth > 0]
+    def remove_min_depth(
+        _propagated: List[Tuple[str, int]],
+        _recursion_depth: List[int] = RECURSION_DEPTH,
+    ) -> List[int]:
+        return [p_img for (p_img, depth) in _propagated if depth > _recursion_depth[0]]
 
     def propagated_to_regionpair_json(
         q_img, _propagated: List[str]
@@ -336,10 +323,41 @@ def get_propagated_matches(
             for p_img in _propagated
         ]
 
-    propagated = propagate(img_id, rid)
-    propagated = remove_depth_0(propagated)
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+    try:
+        data = json.loads(request.body)
+        filter_by_regions: bool = data.get("filterByRegions")
+        id_regions_array: List[int] = data.get("regionsIds", [])
+        recursion_depth: List[int] = data.get("recursionDepth", [])
 
-    return JsonResponse(propagated_to_regionpair_json(img_id, propagated), safe=False)
+        recursion_depth = (
+            sorted(
+                [r - 1 for r in recursion_depth]
+            )  # recursion_depth measures recursion counting 1 as the 1st element, while here 0 is the 1st element.
+            if isinstance(recursion_depth, list) and len(recursion_depth) == 2
+            else [MIN_DEPTH, MAX_DEPTH]
+        )
+        id_regions_array = (
+            id_regions_array
+            if filter_by_regions
+            and isinstance(id_regions_array, list)
+            and len(id_regions_array)
+            else []
+        )
+
+        propagated = propagate(
+            img_id, _id_regions_array=id_regions_array, _recursion_depth=recursion_depth
+        )
+        propagated = remove_min_depth(propagated, recursion_depth)
+        return JsonResponse(
+            propagated_to_regionpair_json(img_id, propagated), safe=False
+        )
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
 def get_regions(img_1, img_2, wid, rid):

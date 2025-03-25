@@ -3,21 +3,57 @@
 
     import SimilarRegions from "./SimilarRegions.svelte";
     import IconTooltip from "../../ui/IconTooltip.svelte";
-    import { appLang } from '../../constants.js';
+
+    import { appLang, csrfToken } from '../../constants.js';
+    import { similarityStore } from "./similarityStore";
+
+    ////////////////////////////////////
 
     export let qImg;
 
-    setContext("similarityPropagatedContext", true);  // bool. true if it's a propagated similarity match, false if it's any other match
-
+    const { propagateParams, selectedRegions } = similarityStore;
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
-    const getPropagatedMatches = async () =>
-        fetch(`${baseUrl}propagated-matches/${qImg}`).then(r => r.json());
+    const currentPageId = window.location.pathname.match(/\d+/g).join('-');
     const tooltipText =
         appLang==="en"
         ? "Propagated matches are exact matches to images that have an exact match with the current image. There may be up to 5 exact matches connecting the current image and propagated images."
         : "Les correspondances propagées correspondent à des correspondances exactes à des images ayant une correspondance exacte avec l'image actuelle. Il peut y avoir jusqu'à 5 images reliant l'image actuelle à une correspondance propagée.";
 
-    $: propagatedMatchesPromise = getPropagatedMatches()
+    let propagatedMatchesPromise;
+
+    setContext("similarityPropagatedContext", true);  // bool. true if it's a propagated similarity match, false if it's any other match
+
+    ////////////////////////////////////
+
+    /**
+     * @param {boolean} filterByRegions
+     * @param {number[]} recursionDepth
+     * @param {RegionsType} selection
+     */
+    const getPropagatedMatches = async (filterByRegions, recursionDepth, selection) =>
+        fetch(`${baseUrl}propagated-matches/${qImg}`, {
+            method: "POST",
+            body: JSON.stringify({
+                regionsIds: Object.values(selection[currentPageId]).map(r => r.id),
+                filterByRegions: filterByRegions,
+                recursionDepth: recursionDepth
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+
+        }).then(r => r.json());
+
+    propagateParams.subscribe((newPropagatedParams) => {
+        propagatedMatchesPromise = getPropagatedMatches(
+            newPropagatedParams.filterByRegions,
+            newPropagatedParams.recursionDepth,
+            $selectedRegions
+        )
+    })
+
+
 </script>
 
 <div class="block matches-suggestion-wrapper">

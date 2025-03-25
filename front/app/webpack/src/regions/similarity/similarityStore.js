@@ -27,7 +27,7 @@ import { csrfToken } from "../../constants.js";
 /**
  * @typedef PropagateParamsType
  * @property {Number[]} recursionDepth
- * @property {boolean} filterByRegion
+ * @property {boolean} filterByRegions
  */
 /**
  * @typedef SimilarityParamsType
@@ -136,7 +136,7 @@ function createSimilarityStore() {
     /** @type {PropagateParamsType} */
     const propagateParams = writable({
         recursionDepth: allowedPropagateDepthRange,
-        filterByRegion: false
+        filterByRegions: false
     })
     /** @type {SimilarityParamsType} */
     const similarityParams = derived([excludedCategories, selectedRegions, similarityScoreCutoff], ([$excludedCategories, $selectedRegions, $similarityScoreCutoff]) => ({

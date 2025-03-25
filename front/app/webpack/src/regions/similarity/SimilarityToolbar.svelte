@@ -48,12 +48,12 @@ const preSelectedRegions = Object.keys($selectedRegions[currentPageId]);
 const setPropagateRecursionDepth = (e) =>
     propagateParams.set({
         recursionDepth: e.detail.data,
-        filterByRegion: $propagateParams.filterByRegion
+        filterByRegions: $propagateParams.filterByRegions
     });
 const setPropagateFilterByRegion = (e) =>
     propagateParams.set({
         recursionDepth: $propagateParams.recursionDepth,
-        filterByRegion: e.detail
+        filterByRegions: e.detail
     });
 const setExcludedCategories = (e) => {
     excludedCategories.set(e.detail);
@@ -180,7 +180,9 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
     padding-left: 5px;
     border-left: solid 1px var(--bulma-border);
 }
+/*
 .ctrl-submit > * {
     margin: 20px;
 }
+*/
 </style>
