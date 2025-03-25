@@ -12,7 +12,6 @@ import { shorten } from "../../utils.js";
 
 ///////////////////////////////////////
 
-// const similarityToolbarParams = similarityStore.similarityToolbarParams;
 const  {
     selectedRegions,
     propagateParams,
@@ -20,8 +19,7 @@ const  {
     excludedCategories,
     similarityScoreRange,
     similarityScoreCutoff,
-    allowedPropagateDepthRange,
-    updateSimilarity
+    allowedPropagateDepthRange
 } = similarityStore;
 
 const currentPageId = window.location.pathname.match(/\d+/g).join('-');
@@ -44,8 +42,6 @@ const comparedRegionsChoices = derived(comparedRegions, (($comparedRegions) =>
 const preSelectedExcludedCategories = $excludedCategories;
 /** @type {string[]}: regions IDs */
 const preSelectedRegions = Object.keys($selectedRegions[currentPageId]);
-
-updateSimilarity.subscribe((v) => console.log("changed", v));
 
 ///////////////////////////////////////
 
@@ -75,15 +71,11 @@ const setComparedRegions = (e) => {
     localStorage.setItem("selectedRegions", JSON.stringify($selectedRegions));
 }
 const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data);
-
-const onSubmit = (e) => updateSimilarity.set(!$updateSimilarity);
 </script>
 
 
 <div class="ctrl-wrapper is-flex is-justify-content-center is-align-items-center">
-    <form class="ctrl"
-          on:submit|preventDefault={onSubmit}
-    >
+    <form class="ctrl">
         <div class="ctrl-inputs">
             <div class="ctrl-row-wrapper">
                 <div class="ctrl-row ctrl-similarity columns">
@@ -145,12 +137,6 @@ const onSubmit = (e) => updateSimilarity.set(!$updateSimilarity);
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="ctrl-submit is-flex is-justify-content-center is-align-items-end">
-            <input type="submit"
-                   class="button"
-                   value={ appLang==="fr" ? "Valider" : "Submit"}
-            />
         </div>
     </form>
 </div>

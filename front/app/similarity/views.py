@@ -113,7 +113,6 @@ def get_similar_images(request, wid, rid=None):
         regions_ids = list(data.get("regionsIds", []))
         q_img = str(data.get("qImg", ""))
         topk = min(max(int(data.get("topk", 10)), 1), 20)
-        excluded_cat = list(data.get("excludedCategories", [4]))
 
         if not regions_ids or not q_img:
             return JsonResponse({})
@@ -137,7 +136,7 @@ def get_similar_images(request, wid, rid=None):
                 get_best_pairs(
                     q_img,
                     pairs,
-                    excluded_categories=excluded_cat,
+                    excluded_categories=[],
                     topk=topk,
                     user_id=request.user.id,
                 )

@@ -6,13 +6,17 @@
     export let qImg;
     let sImgsPromise;
 
-    const { updateSimilarity, similarityToolbarParams } = similarityStore;
+    const { selectedRegions } = similarityStore;
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentPageId = window.location.pathname.match(/\d+/g).join('-');
 
-    /** retrieve similar images to `qImg` */
-    async function fetchSImgs(qImg, selection, excludedCategories) {
-        console.log("fetchSImgs called");
+    /**
+     * retrieve similar images to `qImg`
+     * @param {String} qImg
+     * @param {SelectedRegionsType} selection
+     */
+    async function fetchSImgs(qImg, selection) {
+        console.log("SimilarityMatches.fetchSImgs called");
         const regionsIds = Object.values(selection).map(r => r.id);
         if (regionsIds.length === 0) {
             return {};
@@ -25,7 +29,6 @@
                     regionsIds: Object.values(selection[currentPageId]).map(r => r.id),
                     qImg: qImg,
                     topk: 10, // TODO retrieve this value from the user
-                    excludedCategories: excludedCategories
                 }),
                 headers: {
                     'Content-Type': 'application/json',
@@ -36,11 +39,9 @@
         return await response.json()
     }
 
-    updateSimilarity.subscribe((newVal) => {
-        // TODO run only if selectedRegions OR excludedCategories change
-        const selectedRegions = $similarityToolbarParams.similarity.regions;
-        const excludedCategories = $similarityToolbarParams.similarity.excludedCategories;
-        sImgsPromise = fetchSImgs(qImg, selectedRegions, excludedCategories)
+    selectedRegions.subscribe((newSelectedRegions) => {
+        console.log("SimilarityMatches.selectedRegions", newSelectedRegions)
+        sImgsPromise = fetchSImgs(qImg, newSelectedRegions)
     });
 </script>
 

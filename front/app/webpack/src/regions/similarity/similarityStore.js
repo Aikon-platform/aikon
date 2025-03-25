@@ -149,13 +149,6 @@ function createSimilarityStore() {
         propagate: $propagateParams,
         similarity: $similarityParams
     }))
-    /**
-     * @type {Boolean} true/false, toggled `SimilarityToolbar.onSubmit`
-     * to update the necessary components in the `Similarity` view.
-     * the true/false value doesn't have any meaning, switching this will
-     * just trigger logic on other components.
-     */
-    const updateSimilarity = writable(false);
 
     function store(selection) {
         localStorage.setItem("selectedRegions", JSON.stringify(selection));
@@ -257,7 +250,6 @@ function createSimilarityStore() {
         propagateParams,
         allowedPropagateDepthRange,
         similarityScoreCutoff,
-        updateSimilarity
     };
 }
 
