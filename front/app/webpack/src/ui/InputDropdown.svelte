@@ -1,7 +1,11 @@
-<!-- a svelte implementation of Choices.JSON.
-    it handles single and multi-choice dropdowns,
-    adds specific styles, allows pre-select choices and
-    to provide an icon for each option (among other features !).
+<!-- a svelte implementation of Choices.js.
+
+    it handles
+    - single and multi-choice dropdowns,
+    - pre-selected choices
+    - prefixes or svg icon icons for each option
+    - adds specific styles
+    - provides a lightDisplay option, for a more discreet view
 
     restrictions:
     - it is synchronous (no async data fetching)
@@ -26,12 +30,12 @@ import { appLang } from "../constants";
 /**
  * @typedef DropdownChoice
  *    structure of the "choices"
- * @property {Any} value:
- * @property {String} label:
+ * @property {Any} value
+ * @property {String} label
  * @property {String?} group: group name for nested selects
  * @property {String?} prefix: string, svg or iconify identifier prefix a dropdown item
- * @property {'string'|'iconify'|'svg'?} prefixType:
- *      - 'string': prefix will be displayed as a string literal
+ * @property {'text'|'iconify'|'svg'?} prefixType:
+ *      - 'text': prefix will be displayed as a string literal
  *      - 'iconfify': prefix will be treated as an iconify id and the corresponding icon will be displayed
  *      - 'svg': prefix is an svg and will be rendered
  */
@@ -117,8 +121,8 @@ function initChoices(allChoices, preSelectedChoices) {
         removeItems: true,
         removeItemButton: true,
         searchEnabled: searchable,
+        allowHTML: true,
         shouldSort: sort,
-        allowHTML: true, // choices.some(c => c.hasOwnProperty("prefix") && c.prefix != null),
         sorter: () => choices.label,  // idk
         placeholderValue: placeholder,
         classNames: {
@@ -165,8 +169,8 @@ onMount(() => {
 
 onDestroy(() => {
     const choicesTarget = document.getElementById(htmlId);
-    choicesTarget.removeEventListener("addItem");
-    choicesTarget.removeEventListener("removeItem");
+    choicesTarget.removeEventListener("addItem", onAddItem);
+    choicesTarget.removeEventListener("removeItem", onRemoveItem);
 })
 </script>
 
@@ -198,6 +202,8 @@ onDestroy(() => {
     padding: 1px;
     padding-bottom: 1px !important;
     min-height: 30px;
+    max-height: 45px;
+    overflow: scroll;
     border: solid 1px var(--bulma-border);
     border-radius: var(--bulma-burger-border-radius);
 }
@@ -232,10 +238,11 @@ onDestroy(() => {
 :global(.choices__list--single .choices__button) {
     background-color: white;
 }
-/** if `lightDisplay`, if the selected item has a prefix, hide the label and only display the prefix */
+/** `lightDisplay` specific options:
+    - if the selected item has a prefix, hide the label and only display the prefix
+*/
 :global(.input-dropdown-select.light-display .choices__inner .choices__item[aria-selected="true"]:has(.dropdown-prefix-wrapper) .dropdown-prefix-text) {
     display: none;
-    width: 0;
 }
 /** dropdown style */
 :global(.choices__list--dropdown) {

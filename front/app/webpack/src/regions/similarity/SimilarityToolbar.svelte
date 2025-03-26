@@ -7,7 +7,7 @@ import { appLang } from "../../constants.js";
 
 import InputSlider from "../../ui/InputSlider.svelte";
 import InputToggleCheckbox from "../../ui/InputToggleCheckbox.svelte";
-import InputDropdownSelect from "../../ui/InputDropdownSelect.svelte";
+import InputDropdown from "../../ui/InputDropdown.svelte";
 import { shorten } from "../../utils.js";
 
 ///////////////////////////////////////
@@ -34,6 +34,8 @@ const categoriesChoices = [
 
 const comparedRegionsChoices = derived(comparedRegions, (($comparedRegions) =>
     Object.entries($comparedRegions).map(([regionId, region]) => ({
+        prefix: `#${region.id}`,  // the number of the region
+        prefixType: "text",
         value: regionId,
         label: shorten(region.title)
     }))));
@@ -85,23 +87,23 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                     <div class="ctrl-row-inputs column is-10 columns is-multiline">
                         <div class="column">
                             {#if Object.keys($comparedRegionsChoices).length}
-                                <InputDropdownSelect choices={$comparedRegionsChoices}
+                                <InputDropdown choices={$comparedRegionsChoices}
                                                     multiple={true}
                                                     placeholder={appLang==="fr" ? "Sélectionner des régions" : "Select regions"}
                                                     defaultSelection={preSelectedRegions}
                                                     lightDisplay={true}
                                                     on:updateValues={setComparedRegions}
-                                ></InputDropdownSelect>
+                                ></InputDropdown>
                             {/if}
                         </div>
                         <div class="column">
-                            <InputDropdownSelect choices={categoriesChoices}
+                            <InputDropdown choices={categoriesChoices}
                                                 multiple={true}
                                                 placeholder={appLang==="fr" ? "Exclure les catégories" : "Exclude categories"}
                                                 defaultSelection={preSelectedExcludedCategories}
                                                 lightDisplay={true}
                                                 on:updateValues={setExcludedCategories}
-                            ></InputDropdownSelect>
+                            ></InputDropdown>
                         </div>
                         <div class="column">
                             {#if $similarityScoreRange.length}

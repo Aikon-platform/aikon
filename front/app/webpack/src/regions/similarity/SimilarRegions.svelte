@@ -83,7 +83,7 @@
     {:else}
         {#if noRegionsSelected }
             <div class="faded is-center">
-                {appLang === 'en' ? 'No document selected' : 'Aucun document sélectionné'}
+                {appLang === 'en' ? 'No document selected. Select one to display results.' : 'Aucun document sélectionné. Sélectionnez-en un pour afficher les résultats.'}
             </div>
         {:else}
             <div class="faded is-center">
