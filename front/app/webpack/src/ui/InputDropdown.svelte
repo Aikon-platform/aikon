@@ -65,7 +65,7 @@ const dispatch = createEventDispatcher();
 const htmlId = `input-dropdown-select-${window.crypto.randomUUID()}`;
 
 /** @type {DropdownChoice.value[]} */
-$: selectedValues = [];
+$: selectedValues = defaultSelection || [];
 
 /////////////////////////////////////////////////////
 
@@ -93,10 +93,13 @@ const formatChoices = (arr) => [...arr].map(el => {
 
 const onAddItem = (e) => {
     if ( multiple===true ) {
-        const pos = selectedValues.indexOf(e.detail.value);
-        pos === -1
-        ? selectedValues.push(e.detail.value)
-        : selectedValues.slice(pos, 1);
+        console.log("onAddItem start :", selectedValues);
+        // const pos = selectedValues.indexOf(e.detail.value);
+        // selectedValues = pos === -1
+        //     ? [...selectedValues, e.detail.value]
+        //     : selectedValues.slice(pos, number=1);
+        selectedValues = [...selectedValues, e.detail.value];
+        console.log("onAddItem end   :", selectedValues);
     } else {
         selectedValues = [e.detail.value];
     }
@@ -123,7 +126,7 @@ function initChoices(allChoices, preSelectedChoices) {
         removeItemButton: true,
         searchEnabled: searchable,
         shouldSort: sort,
-        allowHTML: true,  // choices.some(c => c.hasOwnProperty("icon") && c.icon != null),
+        allowHTML: true,
         sorter: () => choices.label,  // idk
         placeholderValue: placeholder,
         classNames: {
@@ -150,9 +153,7 @@ function initChoices(allChoices, preSelectedChoices) {
             : `Only ${maxItemCount} items can be added`
     })
 
-    console.log("pre", choicesObj.getValue());
     choicesObj.setValue(preSelectedChoices);
-    console.log("post", choicesObj.getValue());
 
     choicesTarget.addEventListener("addItem", onAddItem);
     choicesTarget.addEventListener("removeItem", onRemoveItem)
@@ -177,16 +178,40 @@ onDestroy(() => {
 </script>
 
 
-<div class="input-dropdown-select { lightDisplay ? 'light-display' : ''}">
+<div class="input-dropdown-select
+            { multiple ? 'is-multiple' : 'is-single' }
+            { multiple && selectedValues.length ? 'is-flex is-justify-content-flex-start is-align-items-center' : ''}
+            { lightDisplay ? 'light-display' : ''}"
+>
     {#if multiple }
-        <select id={htmlId} multiple></select>
+        {#if selectedValues.length }
+            <span class="input-dropdown-count tag is-link m-1">{ selectedValues.length }</span>
+        {/if }
+        <select id={htmlId} class="m-1" multiple></select>
     {:else }
-        <select id={htmlId}></select>
+        <select id={htmlId} class="m-1"></select>
     {/if}
 </div>
 
 
 <style>
+.input-dropdown-count {
+    /*
+    background-color: var(--bulma-background-active);
+    color: var(--bulma-body-color);
+    border: var(--default-border);
+    */
+    border-radius: 1rem;
+}
+.input-dropdown-select.is-multiple :global(.choices) {
+    flex-grow: 2;
+    /*
+    display: flex;
+    align-items: flex-start;
+    */
+}
+
+/** CHOICES.JS STYLING */
 /** basic styles */
 :global(.choices__inner),
 :global(.choiches__list--dropdown),
@@ -204,7 +229,7 @@ onDestroy(() => {
     padding: 1px;
     padding-bottom: 1px !important;
     min-height: 30px;
-    max-height: 45px;
+    max-height: 40px;
     overflow: scroll;
     border: solid 1px var(--bulma-border);
     border-radius: var(--bulma-burger-border-radius);
