@@ -25,11 +25,11 @@ const  {
 const currentPageId = window.location.pathname.match(/\d+/g).join('-');
 
 const categoriesChoices = [
-    { value: 1, label: cat.exactLabel, icon: cat.exactSvg },
-    { value: 2, label: cat.partialLabel, icon: cat.partialSvg },
-    { value: 3, label: cat.semanticLabel, icon: cat.semanticSvg },
-    { value: 4, label: cat.noLabel, icon: cat.noSvg },
-    { value: 5, label: cat.userLabel, icon: cat.userSvg },
+    { value: 1, label: cat.exactLabel, prefix: cat.exactSvg, prefixType: "svg" },
+    { value: 2, label: cat.partialLabel, prefix: cat.partialSvg, prefixType: "svg" },
+    { value: 3, label: cat.semanticLabel, prefix: cat.semanticSvg, prefixType: "svg" },
+    { value: 4, label: cat.noLabel, prefix: cat.noSvg, prefixType: "svg" },
+    { value: 5, label: cat.userLabel, prefix: cat.userSvg, prefixType: "svg" },
 ];
 
 const comparedRegionsChoices = derived(comparedRegions, (($comparedRegions) =>
@@ -89,6 +89,7 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                                                     multiple={true}
                                                     placeholder={appLang==="fr" ? "Sélectionner des régions" : "Select regions"}
                                                     defaultSelection={preSelectedRegions}
+                                                    lightDisplay={true}
                                                     on:updateValues={setComparedRegions}
                                 ></InputDropdownSelect>
                             {/if}
@@ -98,6 +99,7 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                                                 multiple={true}
                                                 placeholder={appLang==="fr" ? "Exclure les catégories" : "Exclude categories"}
                                                 defaultSelection={preSelectedExcludedCategories}
+                                                lightDisplay={true}
                                                 on:updateValues={setExcludedCategories}
                             ></InputDropdownSelect>
                         </div>

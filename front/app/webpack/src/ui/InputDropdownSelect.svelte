@@ -29,8 +29,11 @@ import { appLang } from "../constants";
  * @property {Any} value:
  * @property {String} label:
  * @property {String?} group: group name for nested selects
- * @property {String?} icon: svg or iconify identifier for an icon to add to dropdown item
- * @property {Boolean?} iconify: if true, icon will be treated as an iconify id instead of an svg.
+ * @property {String?} prefix: string, svg or iconify identifier prefix a dropdown item
+ * @property {'string'|'iconify'|'svg'?} prefixType:
+ *      - 'string': prefix will be displayed as a string literal
+ *      - 'iconfify': prefix will be treated as an iconify id and the corresponding icon will be displayed
+ *      - 'svg': prefix is an svg and will be rendered
  */
 
 /**
@@ -48,6 +51,8 @@ export let multiple;
 export let searchable = true;
 /** @type {Boolean} */
 export let sort = true;
+/** @type {Boolean} if true, UI will be lighter */
+export let lightDisplay = false;
 /** @type {String} */
 export let placeholder = appLang === "fr" ? "Sélectionner une valeur" : "Select a value";
 
@@ -61,20 +66,23 @@ $: selectedValues = [];
 
 const toIconify = (iconifyId) => `<span class="iconify" data-icon=${iconifyId}/>`;
 
+const prefixToHtml = (prefix, prefixType) =>
+    prefix != null && prefixType != null && prefix.length && prefixType.length
+    ? `<span class="dropdown-prefix-wrapper">${
+        prefixType==="iconify" ? toIconify(prefix) : prefix
+    }</span>`
+    : ""
+
 /**
  * generate a random UUID + add the icon. [...arr] copies instead of modifying in place.
  * @param {DropdownChoiceArray} arr
  */
 const formatChoices = (arr) => [...arr].map(el => {
-    el.id = `${window.crypto.randomUUID()}`;
-    if ( el.hasOwnProperty("icon") && el.icon != null) {
-        el.label = `<span>
-            <span class="dropdown-icon-wrapper">${
-                el.iconify===true ? toIconify(el.icon) : el.icon
-            }</span>
-            <span class="dropdown-icon-text">${el.label}</span>
-        </span>`;
-    }
+    el.id = `dropdown-choice-${window.crypto.randomUUID()}`;;
+    el.label = `<span>
+        ${prefixToHtml(el.prefix || "",  el.prefixType || "")}
+        <span class="dropdown-prefix-text">${el.label}</span>
+    </span>`;
     return el;
 })
 
@@ -110,7 +118,7 @@ function initChoices(allChoices, preSelectedChoices) {
         removeItemButton: true,
         searchEnabled: searchable,
         shouldSort: sort,
-        allowHTML: choices.some(c => c.hasOwnProperty("icon") && c.icon != null),
+        allowHTML: true, // choices.some(c => c.hasOwnProperty("prefix") && c.prefix != null),
         sorter: () => choices.label,  // idk
         placeholderValue: placeholder,
         classNames: {
@@ -163,7 +171,7 @@ onDestroy(() => {
 </script>
 
 
-<div>
+<div class="input-dropdown-select { lightDisplay ? 'light-display' : ''}">
     {#if multiple }
         <select id={htmlId} multiple></select>
     {:else }
@@ -224,11 +232,11 @@ onDestroy(() => {
 :global(.choices__list--single .choices__button) {
     background-color: white;
 }
-/*
-:global(.choices__inner .choices__item:not(-).choices__placeholder) {
-    margin: 3.75px;
+/** if `lightDisplay`, if the selected item has a prefix, hide the label and only display the prefix */
+:global(.input-dropdown-select.light-display .choices__inner .choices__item[aria-selected="true"]:has(.dropdown-prefix-wrapper) .dropdown-prefix-text) {
+    display: none;
+    width: 0;
 }
-*/
 /** dropdown style */
 :global(.choices__list--dropdown) {
     z-index: 10 !important;
@@ -236,5 +244,4 @@ onDestroy(() => {
 :global(.choices__list--dropdown .dropdown-item.is-highlighted) {
     background-color: var(--default-color) !important;
 }
-
 </style>
