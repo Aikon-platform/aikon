@@ -1,7 +1,7 @@
 <!-- a svelte implementation of Choices.JSON.
     it handles single and multi-choice dropdowns,
     adds specific styles, allows pre-select choices and
-    to provide an icon for each option (aming other features !).
+    to provide an icon for each option (among other features !).
 
     restrictions:
     - it is synchronous (no async data fetching)

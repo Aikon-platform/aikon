@@ -105,7 +105,7 @@ function initSlider() {
     noUiSlider.create(slider, {
         start: start,
         step: step,
-        connect: true,
+        connect: isRange ? true : "lower",
         range: { min: minVal, max: maxVal },
         handleAttributes: handleHtmlIds.map((_id) => ({"id": _id }))  // 1 html ID per handle
     });

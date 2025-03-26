@@ -16,7 +16,6 @@
      * @param {SelectedRegionsType} selection
      */
     async function fetchSImgs(qImg, selection) {
-        console.log("SimilarityMatches.fetchSImgs called");
         const regionsIds = Object.values(selection).map(r => r.id);
         if (regionsIds.length === 0) {
             return {};
@@ -40,7 +39,6 @@
     }
 
     selectedRegions.subscribe((newSelectedRegions) => {
-        console.log("SimilarityMatches.selectedRegions", newSelectedRegions)
         sImgsPromise = fetchSImgs(qImg, newSelectedRegions)
     });
 </script>
