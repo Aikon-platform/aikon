@@ -88,28 +88,29 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                         <div class="column">
                             {#if Object.keys($comparedRegionsChoices).length}
                                 <InputDropdown choices={$comparedRegionsChoices}
-                                                    multiple={true}
-                                                    placeholder={appLang==="fr" ? "Sélectionner des régions" : "Select regions"}
-                                                    defaultSelection={preSelectedRegions}
-                                                    lightDisplay={true}
-                                                    on:updateValues={setComparedRegions}
+                                               multiple={true}
+                                               placeholder={appLang==="fr" ? "Sélectionner des régions" : "Select regions"}
+                                               defaultSelection={preSelectedRegions}
+                                               lightDisplay={true}
+                                               on:updateValues={setComparedRegions}
                                 ></InputDropdown>
                             {/if}
                         </div>
                         <div class="column">
                             <InputDropdown choices={categoriesChoices}
-                                                multiple={true}
-                                                placeholder={appLang==="fr" ? "Exclure les catégories" : "Exclude categories"}
-                                                defaultSelection={preSelectedExcludedCategories}
-                                                lightDisplay={true}
-                                                on:updateValues={setExcludedCategories}
+                                           multiple={true}
+                                           placeholder={appLang==="fr" ? "Exclure les catégories" : "Exclude categories"}
+                                           defaultSelection={preSelectedExcludedCategories}
+                                           lightDisplay={true}
+                                           on:updateValues={setExcludedCategories}
                             ></InputDropdown>
                         </div>
                         <div class="column">
                             {#if $similarityScoreRange.length}
-                                <InputSlider minVal={$similarityScoreRange[0]}
+                                <InputSlider title={ appLang==="fr" ? "Score minimal" : "Minimal score" }
+                                            minVal={$similarityScoreRange[0]}
                                             maxVal={$similarityScoreRange[1]}
-                                            start={$similarityScoreRange[1]}
+                                            start={$similarityScoreRange[0]}
                                             roundTo={3}
                                             on:updateSlider={setSimilarityScoreCutoff}
                                 ></InputSlider>
@@ -125,8 +126,8 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                     </div>
                     <div class="ctrl-row-inputs column is-10 columns">
                         <div class="column is-two-thirds">
-                            <span>{ appLang==="fr" ? "Profondeur de récursion" : "Recursion depth" }</span>
-                            <InputSlider minVal={allowedPropagateDepthRange[0]}
+                            <InputSlider title={ appLang==="fr" ? "Profondeur de récursion" : "Recursion depth" }
+                                        minVal={allowedPropagateDepthRange[0]}
                                         maxVal={allowedPropagateDepthRange[1]}
                                         start={allowedPropagateDepthRange}
                                         step={1}

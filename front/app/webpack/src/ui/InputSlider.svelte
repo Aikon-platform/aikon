@@ -40,6 +40,8 @@ export let start;
 export let step = undefined;
 /** @type {Number?} number of floating points to keep after the decimal */
 export let roundTo = 2;
+/** @type {String?} title to give to the slider */
+export let title = "";
 
 //////////////////////////////////////////////
 
@@ -142,12 +144,15 @@ onMount(() => {
 </script>
 
 
-<div class="slider-outer-wrapper is-flex flex-direction-row">
-    <span class="range-marker">{ minVal }</span>
-    <div class="slider-wrapper">
-        <div class="slider" id={sliderHtmlId}></div>
+<div>
+    <span>{title}</span>
+    <div class="slider-outer-wrapper is-flex flex-direction-row">
+        <span class="range-marker">{ minVal }</span>
+        <div class="slider-wrapper">
+            <div class="slider" id={sliderHtmlId}></div>
+        </div>
+        <span class="range-marker">{ maxVal }</span>
     </div>
-    <span class="range-marker">{ maxVal }</span>
 </div>
 
 

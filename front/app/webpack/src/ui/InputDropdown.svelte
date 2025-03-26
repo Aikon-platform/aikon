@@ -24,6 +24,7 @@ import Choices from "choices.js";
 import "choices.js/public/assets/styles/choices.css";
 
 import { appLang } from "../constants";
+    import { loop_guard } from "svelte/internal";
 
 /////////////////////////////////////////////////////
 
@@ -121,35 +122,37 @@ function initChoices(allChoices, preSelectedChoices) {
         removeItems: true,
         removeItemButton: true,
         searchEnabled: searchable,
-        allowHTML: true,
         shouldSort: sort,
+        allowHTML: true,  // choices.some(c => c.hasOwnProperty("icon") && c.icon != null),
         sorter: () => choices.label,  // idk
         placeholderValue: placeholder,
         classNames: {
             item: ["choices__item", "dropdown-item"]
         },
-        loadingText: 'Loading...',
+        loadingText: appLang === "fr" ? 'Chargement...' : 'Loading...',
         noResultsText: appLang === "fr" ? "Pas de résultats" : 'No results found',
         noChoicesText: appLang === "fr" ? "Pas de choix pour faire la sélection" : 'No choices to choose from',
         itemSelectText: appLang === "fr" ? "Cliquer pour sélectionner" : 'Press to select',
         uniqueItemText: appLang === "fr" ? "Seules des valeurs uniques peuvent être ajoutées" : 'Only unique values can be added',
         customAddItemText: appLang === "fr" ? "Les valeurs ne répondent pas aux conditions attendues" : 'Only values matching specific conditions can be added',
+        removeItemIconText: appLang === "fr" ? "Retirer l'item" : `Remove item`,
         addItemText: (value) =>
             appLang === "fr"
             ? `Cliquer sur Entrer pour ajouter <b>${value}</b>`
             : `Press Enter to add <b>"${value}"</b>`,
-    removeItemIconText: () => appLang === "fr" ? "Retirer l'item" : `Remove item`,
-    removeItemLabelText: (value) =>
-        appLang === "fr"
-        ? `Retirer l'item: ${value}`
-        : `Remove item: ${value}`,
-    maxItemText: (maxItemCount) =>
-        appLang === "fr"
-        ? `Seulement ${maxItemCount} valeurs peuvent être ajoutées`
-        : `Only ${maxItemCount} values can be added`
+        removeItemLabelText: (value) =>
+            appLang === "fr"
+            ? `Retirer l'item: ${value}`
+            : `Remove item: ${value}`,
+        maxItemText: (maxItemCount) =>
+            appLang === "fr"
+            ? `Seulement ${maxItemCount} items peuvent être ajoutées`
+            : `Only ${maxItemCount} items can be added`
     })
 
+    console.log("pre", choicesObj.getValue());
     choicesObj.setValue(preSelectedChoices);
+    console.log("post", choicesObj.getValue());
 
     choicesTarget.addEventListener("addItem", onAddItem);
     choicesTarget.addEventListener("removeItem", onRemoveItem)
@@ -158,12 +161,11 @@ function initChoices(allChoices, preSelectedChoices) {
 /////////////////////////////////////////////////////
 
 onMount(() => {
-    let reformattedDefaultChoices =formatChoices(
-        choices
-        .filter(c => defaultSelection.includes(c.value))
-        .map(c => ({ ...c, selected: true }))  // somehow, if `selected=true` is not added to the pre-selected choices, setting them as default items does not work.
-    );
-    let reformattedChoices = formatChoices(choices);
+    let reformattedChoices = [], reformattedDefaultChoices = [];
+    formatChoices(choices).map(c =>
+        defaultSelection.includes(c.value)
+        ? reformattedDefaultChoices.push({ ...c, selected: true })
+        : reformattedChoices.push(c))
     initChoices(reformattedChoices, reformattedDefaultChoices);
 })
 
