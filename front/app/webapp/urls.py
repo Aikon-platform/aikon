@@ -298,6 +298,29 @@ urlpatterns += [
         export_regions,
         name="export_regions",
     ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/json", get_json_witness, name="get_json_witness"
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/json/regions",
+        get_json_regions,
+        name="get_json_regions",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/json/similarities",
+        get_json_simil,
+        name="get_json_simil",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/json/vectorized-images",
+        get_json_vecto,
+        name="get_json_vecto",
+    ),
+    path(
+        f"{APP_NAME}/document-set/<int:dsid>/json",
+        get_json_document_set,
+        name="get_json_document_set",
+    ),
 ]
 
 # SEARCH

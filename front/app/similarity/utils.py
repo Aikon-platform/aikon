@@ -424,6 +424,7 @@ def get_best_pairs(
     excluded_categories: List[int],
     topk: int,
     user_id: int = None,
+    export: bool = False
 ) -> List[Set[RegionPairTuple]]:
     """
     Process RegionPair objects and return a list.
@@ -433,6 +434,7 @@ def get_best_pairs(
     :param excluded_categories: List of category numbers to exclude
     :param topk: Number of top scoring pairs to include
     :param user_id: int ID of the user asking for similarities
+    :param export: boolean value - when building pair for export, no sorting & no threshold
     :return: List with structured data
     """
     manual_pairs = []
@@ -441,6 +443,7 @@ def get_best_pairs(
     auto_pairs = []
     nomatch_pairs = []  # category == 4
     added_pairs = set()
+    export_pairs = []   # pairs for export: all in big a single big list
 
     for pair in region_pairs:
         if pair.category not in excluded_categories:
@@ -452,21 +455,27 @@ def get_best_pairs(
                 continue
             added_pairs.add(pair_ref)
 
-            if (
-                pair.is_manual
-                or pair.similarity_type == 2
-                or (pair.category_x and user_id in pair.category_x)
-            ):
-                manual_pairs.append(pair_data)
-            elif pair.similarity_type == 3:
-                propagated_pairs.append(pair_data)
-            elif pair.category == 4:
-                nomatch_pairs.append(pair_data)
-            elif pair.category is not None:
-                annotated_pairs.append(pair_data)
+            if export:
+                export_pairs.append(pair_data)
             else:
-                auto_pairs.append(pair_data)
+                if (
+                    pair.is_manual
+                    or pair.similarity_type == 2
+                    or (pair.category_x and user_id in pair.category_x)
+                ):
+                    manual_pairs.append(pair_data)
+                elif pair.similarity_type == 3:
+                    propagated_pairs.append(pair_data)
+                elif pair.category == 4:
+                    nomatch_pairs.append(pair_data)
+                elif pair.category is not None:
+                    annotated_pairs.append(pair_data)
+                else:
+                    auto_pairs.append(pair_data)
 
+    if export:
+        return export_pairs
+    
     annotated_pairs.sort(key=lambda x: x[5])  # sort by category number, ascending
     auto_pairs.sort(key=lambda x: x[0], reverse=True)
     return (
