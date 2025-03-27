@@ -53,10 +53,10 @@
      *      updated, but the update is not transmitted to the parent
      *      (aka, the current component)
      */
-    $: displaySimImg = (simImgScore, simImgCategory, usersCategory) =>
+    $: displaySimImg = (simImgScore, simImgCategory, usersCategory, _excludedCategories, _similarityScoreCutoff) =>
         isPropagatedContext  // the similarity filter won't affect the display of propagations
-        || (isAboveCutoff(simImgScore, $similarityScoreCutoff)
-            && isNotInExcludedCategories(simImgCategory, usersCategory, $excludedCategories));
+        || (isAboveCutoff(simImgScore, _similarityScoreCutoff)
+            && isNotInExcludedCategories(simImgCategory, usersCategory, _excludedCategories));
 
     $: noRegionsSelected =
         Object.values($selectedRegions).length === 0

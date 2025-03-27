@@ -24,7 +24,6 @@ import Choices from "choices.js";
 import "choices.js/public/assets/styles/choices.css";
 
 import { appLang } from "../constants";
-    import { loop_guard } from "svelte/internal";
 
 /////////////////////////////////////////////////////
 
@@ -60,6 +59,8 @@ export let sort = true;
 export let lightDisplay = false;
 /** @type {String} */
 export let placeholder = appLang === "fr" ? "Sélectionner une valeur" : "Select a value";
+/** @type {String?} */
+export let title = undefined;
 
 const dispatch = createEventDispatcher();
 const htmlId = `input-dropdown-select-${window.crypto.randomUUID()}`;
@@ -92,17 +93,10 @@ const formatChoices = (arr) => [...arr].map(el => {
 })
 
 const onAddItem = (e) => {
-    if ( multiple===true ) {
-        console.log("onAddItem start :", selectedValues);
-        // const pos = selectedValues.indexOf(e.detail.value);
-        // selectedValues = pos === -1
-        //     ? [...selectedValues, e.detail.value]
-        //     : selectedValues.slice(pos, number=1);
-        selectedValues = [...selectedValues, e.detail.value];
-        console.log("onAddItem end   :", selectedValues);
-    } else {
-        selectedValues = [e.detail.value];
-    }
+    selectedValues =
+        multiple===true
+        ? [...selectedValues, e.detail.value]
+        : selectedValues = [e.detail.value];
     dispatch("updateValues", selectedValues);
 };
 
@@ -178,37 +172,43 @@ onDestroy(() => {
 </script>
 
 
-<div class="input-dropdown-select
-            { multiple ? 'is-multiple' : 'is-single' }
-            { multiple && selectedValues.length ? 'is-flex is-justify-content-flex-start is-align-items-center' : ''}
-            { lightDisplay ? 'light-display' : ''}"
->
-    {#if multiple }
-        {#if selectedValues.length }
-            <span class="input-dropdown-count tag is-link m-1">{ selectedValues.length }</span>
-        {/if }
-        <select id={htmlId} class="m-1" multiple></select>
-    {:else }
-        <select id={htmlId} class="m-1"></select>
+<div class="input-dropdown-select-wrapper">
+    {#if title!==undefined }
+        <label for="htmlId">{title}</label>
     {/if}
+    <div class="input-dropdown-select
+                { multiple ? 'is-multiple' : 'is-single' }
+                { multiple && selectedValues.length ? 'is-flex is-justify-content-flex-start is-align-items-center' : ''}
+                { lightDisplay ? 'light-display' : ''}"
+    >
+        {#if multiple }
+            {#if selectedValues.length }
+                <span class="input-dropdown-count tag is-link m-1">{ selectedValues.length }</span>
+            {/if }
+            <select id={htmlId}
+                    name={htmlId}
+                    aria-label={title}
+                    class="m-1"
+                    multiple
+            ></select>
+        {:else }
+            <select id={htmlId}
+                    name={htmlId}
+                    aria-label={title}
+                    class="m-1"
+            ></select>
+        {/if}
+    </div>
+
 </div>
 
 
 <style>
 .input-dropdown-count {
-    /*
-    background-color: var(--bulma-background-active);
-    color: var(--bulma-body-color);
-    border: var(--default-border);
-    */
     border-radius: 1rem;
 }
 .input-dropdown-select.is-multiple :global(.choices) {
     flex-grow: 2;
-    /*
-    display: flex;
-    align-items: flex-start;
-    */
 }
 
 /** CHOICES.JS STYLING */

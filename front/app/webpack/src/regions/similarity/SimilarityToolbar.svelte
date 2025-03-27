@@ -4,11 +4,12 @@ import { derived } from "svelte/store";
 import { similarityStore } from "./similarityStore.js";
 import * as cat from './similarityCategory';
 import { appLang } from "../../constants.js";
+import { shorten } from "../../utils.js";
 
 import InputSlider from "../../ui/InputSlider.svelte";
 import InputToggleCheckbox from "../../ui/InputToggleCheckbox.svelte";
 import InputDropdown from "../../ui/InputDropdown.svelte";
-import { shorten } from "../../utils.js";
+import IconTooltip from "../../ui/IconTooltip.svelte";
 
 ///////////////////////////////////////
 
@@ -23,6 +24,11 @@ const  {
 } = similarityStore;
 
 const currentPageId = window.location.pathname.match(/\d+/g).join('-');
+
+const tooltipText =
+    appLang==="en"
+    ? "Propagated matches are exact matches to images that have an exact match with the current image. There may be up to 6 exact matches connecting the current image and propagated images."
+    : "Les correspondances propagées correspondent à des correspondances exactes à des images ayant une correspondance exacte avec l'image actuelle. Il peut y avoir jusqu'à 6 images reliant l'image actuelle à une correspondance propagée.";
 
 const categoriesChoices = [
     { value: 1, label: cat.exactLabel, prefix: cat.exactSvg, prefixType: "svg" },
@@ -98,34 +104,36 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                         <span>Similarity</span>
                     </div>
                     <div class="ctrl-block-inputs column is-10 columns is-vcentered { wideDisplay ? '' : 'is-multiline' }">
-                        <div class="column { wideDisplay ? 'is-one-third' : '' }">
+                        <div class="column { wideDisplay ? 'mb-2 is-one-third' : '' }">
                             {#if Object.keys($comparedRegionsChoices).length}
                                 <InputDropdown choices={$comparedRegionsChoices}
                                                multiple={true}
                                                placeholder={appLang==="fr" ? "Sélectionner des régions" : "Select regions"}
                                                defaultSelection={preSelectedRegions}
                                                lightDisplay={true}
+                                               title={appLang==="fr" ? "Régions sélectionnées" : "Selected regions"}
                                                on:updateValues={setComparedRegions}
                                 ></InputDropdown>
                             {/if}
                         </div>
-                        <div class="column { wideDisplay ? 'is-one-third' : '' }">
+                        <div class="column { wideDisplay ? 'mb-2 is-one-third' : '' }">
                             <InputDropdown choices={categoriesChoices}
                                            multiple={true}
-                                           placeholder={appLang==="fr" ? "Exclure les catégories" : "Exclude categories"}
+                                           placeholder={appLang==="fr" ? "Masquer les catégories" : "Hide categories"}
                                            defaultSelection={preSelectedExcludedCategories}
                                            lightDisplay={true}
+                                           title={appLang==="fr" ? "Catégories masquées" : "Hidden categories"}
                                            on:updateValues={setExcludedCategories}
                             ></InputDropdown>
                         </div>
                         <div class="column { wideDisplay ? 'is-one-third' : '' }">
                             {#if $similarityScoreRange.length}
                                 <InputSlider title={ appLang==="fr" ? "Score minimal" : "Minimal score" }
-                                            minVal={$similarityScoreRange[0]}
-                                            maxVal={$similarityScoreRange[1]}
-                                            start={$similarityScoreRange[0]}
-                                            roundTo={3}
-                                            on:updateSlider={setSimilarityScoreCutoff}
+                                             minVal={$similarityScoreRange[0]}
+                                             maxVal={$similarityScoreRange[1]}
+                                             start={$similarityScoreRange[0]}
+                                             roundTo={3}
+                                             on:updateSlider={setSimilarityScoreCutoff}
                                 ></InputSlider>
                             {/if}
                         </div>
@@ -135,7 +143,12 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
             <div class="ctrl-block-wrapper column { wideDisplay ? 'is-two-fifths' : 'is-half' }">
                 <div class="ctrl-block ctrl-propagation">
                     <div class="ctrl-block-title column is-2">
-                        <span>Propagation</span>
+                        <span class="mr-1">Propagation</span>
+                        <IconTooltip iconifyIcon="material-symbols:help-outline"
+                                    altText={ appLang==="en" ? "Display help" : "Afficher une explication"}
+                                    tooltipText={tooltipText}
+                        ></IconTooltip>
+
                     </div>
                     <div class="ctrl-block-inputs column is-10 columns { wideDisplay ? '' : 'is-multiline' }">
                         <div class="column { wideDisplay ? 'is-two-thirds' : 'is-full' }">
@@ -196,6 +209,11 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
 }
 .ctrl-block-title {
     min-width: 100px;
+}
+.ctrl-propagation > .ctrl-block-title {
+    display: flex;
+    justify-content: start;
+    align-items: center;
 }
 .ctrl-block-title > span {
     font-weight: bold;
