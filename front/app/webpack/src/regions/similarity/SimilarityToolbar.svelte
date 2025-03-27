@@ -45,6 +45,10 @@ const preSelectedExcludedCategories = $excludedCategories;
 /** @type {string[]}: regions IDs */
 const preSelectedRegions = Object.keys($selectedRegions[currentPageId]);
 
+/** @type {Number} */
+let innerWidth, innerHeight;
+$: wideDisplay = innerWidth > 1200;
+
 ///////////////////////////////////////
 
 const setPropagateRecursionDepth = (e) =>
@@ -76,16 +80,20 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
 </script>
 
 
+
+<svelte:window bind:innerWidth bind:innerHeight></svelte:window>
+
+<h1>{innerWidth}-{innerHeight} ({wideDisplay})</h1>
 <div class="ctrl-wrapper is-flex is-justify-content-center is-align-items-center">
     <form class="ctrl">
-        <div class="ctrl-inputs">
-            <div class="ctrl-row-wrapper">
-                <div class="ctrl-row ctrl-similarity columns">
-                    <div class="ctrl-row-title column is-2 is-flex is-justify-content-center is-align-items-center">
+        <div class="ctrl-inputs columns">
+            <div class="ctrl-block-wrapper column { wideDisplay ? 'is-three-fifths' : 'is-half' }">
+                <div class="ctrl-block ctrl-similarity">
+                    <div class="ctrl-block-title column is-2">
                         <span>Similarity</span>
                     </div>
-                    <div class="ctrl-row-inputs column is-10 columns is-multiline">
-                        <div class="column">
+                    <div class="ctrl-block-inputs column is-10 columns is-vcentered { wideDisplay ? '' : 'is-multiline' }">
+                        <div class="column { wideDisplay ? 'is-one-third' : '' }">
                             {#if Object.keys($comparedRegionsChoices).length}
                                 <InputDropdown choices={$comparedRegionsChoices}
                                                multiple={true}
@@ -96,7 +104,7 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                                 ></InputDropdown>
                             {/if}
                         </div>
-                        <div class="column">
+                        <div class="column { wideDisplay ? 'is-one-third' : '' }">
                             <InputDropdown choices={categoriesChoices}
                                            multiple={true}
                                            placeholder={appLang==="fr" ? "Exclure les catégories" : "Exclude categories"}
@@ -105,7 +113,7 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                                            on:updateValues={setExcludedCategories}
                             ></InputDropdown>
                         </div>
-                        <div class="column">
+                        <div class="column { wideDisplay ? 'is-one-third' : '' }">
                             {#if $similarityScoreRange.length}
                                 <InputSlider title={ appLang==="fr" ? "Score minimal" : "Minimal score" }
                                             minVal={$similarityScoreRange[0]}
@@ -119,13 +127,13 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                     </div>
                 </div>
             </div>
-            <div class="ctrl-row-wrapper">
-                <div class="ctrl-row ctrl-propagation columns">
-                    <div class="ctrl-row-title column is-2 is-flex is-justify-content-center is-align-items-center">
+            <div class="ctrl-block-wrapper column { wideDisplay ? 'is-two-fifths' : 'is-half' }">
+                <div class="ctrl-block ctrl-propagation">
+                    <div class="ctrl-block-title column is-2">
                         <span>Propagation</span>
                     </div>
-                    <div class="ctrl-row-inputs column is-10 columns">
-                        <div class="column is-two-thirds">
+                    <div class="ctrl-block-inputs column is-10 columns { wideDisplay ? '' : 'is-multiline' }">
+                        <div class="column { wideDisplay ? 'is-two-thirds' : 'is-full' }">
                             <InputSlider title={ appLang==="fr" ? "Profondeur de récursion" : "Recursion depth" }
                                         minVal={allowedPropagateDepthRange[0]}
                                         maxVal={allowedPropagateDepthRange[1]}
@@ -134,7 +142,8 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                                         on:updateSlider={setPropagateRecursionDepth}
                             ></InputSlider>
                         </div>
-                        <div class="column is-flex is-justify-content-center is-align-items-center">
+                        <div class="column is-flex is-align-items-center
+                                    { wideDisplay ? 'is-one-third is-justify-content-center' : 'is-full is-justify-content-start' }">
                             <InputToggleCheckbox checkboxLabel="Filter by region"
                                             on:updateChecked={setPropagateFilterByRegion}
                             ></InputToggleCheckbox>
@@ -154,7 +163,7 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
     margin: 5vh 0;
 }
 .ctrl {
-    width: min(90%, 1200px);
+    width: 100%;
     border: solid 1px var(--bulma-border);
     border-radius: var(--bulma-burger-border-radius);
     display: flex;
@@ -162,32 +171,34 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
 }
 .ctrl-inputs {
     flex-grow: 2;
-    display: grid;
-    grid-template-columns: 100%;
-    grid-template-rows: 50% 50%;
+    margin-inline-start: 0;
+    margin-inline-end: 0;
 }
-.ctrl-row-wrapper {
-    margin: 20px 0;
+.ctrl-block-wrapper {
+    margin: 12px 0;
 }
-.ctrl-row {
+.ctrl-block-wrapper:last-child {
+    border-left: var(--default-border);
+}
+.ctrl-block {
     margin: 0;
 }
-.ctrl-row-title, .ctrl-row-inputs {
+.ctrl-block-title, .ctrl-block-inputs {
     margin-inline-start: 0;
 }
-.ctrl-row-title {
+.ctrl-block-title {
     min-width: 100px;
 }
-.ctrl-row-title > span {
+.ctrl-block-title > span {
     font-weight: bold;
 }
-.ctrl-row-inputs {
-    padding-left: 5px;
-    border-left: solid 1px var(--bulma-border);
+.ctrl-block-inputs {
+    width: 100%;
 }
-/*
-.ctrl-submit > * {
-    margin: 20px;
+.ctrl-block-inputs > * {
+    height: fit-content;
 }
-*/
+:global(.ctrl-block-inputs .slider-outer-wrapper) {
+    margin-bottom: 0;
+}
 </style>
