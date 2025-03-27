@@ -3,6 +3,7 @@
     it handles
     - single and multi-choice dropdowns,
     - pre-selected choices
+    - select all / unselect all choices in the dropdown
     - prefixes or svg icon icons for each option
     - adds specific styles
     - provides a lightDisplay option, for a more discreet view
@@ -53,17 +54,20 @@ export let defaultSelection = [];
 export let multiple;
 /** @type {String} */
 export let searchable = true;
-/** @type {Boolean} */
-export let sort = true;
 /** @type {Boolean} if true, UI will be lighter */
 export let lightDisplay = false;
 /** @type {String} */
 export let placeholder = appLang === "fr" ? "Sélectionner une valeur" : "Select a value";
 /** @type {String?} */
 export let title = undefined;
+/** @type {Boolean} if True, extra "Select All" and "Unselect All" options will be preprended to `choices`. clicking on them will (un)select all choices. by default, true for multi-choice, false for single-choice */
+export let selectAll = multiple ? true : false;
 
 const dispatch = createEventDispatcher();
+
 const htmlId = `input-dropdown-select-${window.crypto.randomUUID()}`;
+const selectAllValue = `select-all-${window.crypto.randomUUID()}`;  // the value of "(un)select all" option is an UUID to ensure that the value is not a duplicate of an other item in `choices`
+const unSelectAllValue = `unselect-all-${window.crypto.randomUUID()}`
 
 /** @type {DropdownChoice.value[]} */
 $: selectedValues = defaultSelection || [];
@@ -77,26 +81,83 @@ const prefixToHtml = (prefix, prefixType) =>
     ? `<span class="dropdown-prefix-wrapper">${
         prefixType==="iconify" ? toIconify(prefix) : prefix
     }</span>`
-    : ""
+    : "";
+
+const maybeAddSelectAllAndCopy = (arr, _selectAll) =>
+    _selectAll
+    ? [
+        {
+            value: selectAllValue,
+            label: `<b>${appLang==="fr" ? "Tout sélectionner" : "Select all"}</b>`
+        }, {
+            value: unSelectAllValue,
+            label: `<b>${appLang==="fr" ? "Tout retirer" : "Remove all"}</b>`
+        }, ...arr]
+    : [...arr];
 
 /**
  * generate a random UUID + add the icon. [...arr] copies instead of modifying in place.
  * @param {DropdownChoiceArray} arr
  */
-const formatChoices = (arr) => [...arr].map(el => {
-    el.id = `dropdown-choice-${window.crypto.randomUUID()}`;;
-    el.label = `<span>
-        ${prefixToHtml(el.prefix || "",  el.prefixType || "")}
-        <span class="dropdown-prefix-text">${el.label}</span>
-    </span>`;
-    return el;
-})
+const formatChoices = (arr, _selectAll) =>
+    maybeAddSelectAllAndCopy(arr, _selectAll)
+    .map(el => {
+        el.id = `dropdown-choice-${window.crypto.randomUUID()}`;;
+        el.label = `<span>
+            ${prefixToHtml(el.prefix || "",  el.prefixType || "")}
+            <span class="dropdown-prefix-text">${el.label}</span>
+        </span>`;
+        return el;
+    });
 
-const onAddItem = (e) => {
-    selectedValues =
-        multiple===true
-        ? [...selectedValues, e.detail.value]
-        : selectedValues = [e.detail.value];
+/**
+ * emit "updateValues" when adding an item. this also handles "Select All" and "Unselect All" cases.
+ *
+ * things get weird when `selectAll` is true and the "Select All" button is clicked:
+ * - "select all" clicked
+ *      => `onAddItem`  called
+ *          => "select all" and any other items that were previously selected are programatically removed from the select items (to avoid emitting them to the parent)
+ *              => `onRemoveItem` called, once per item to remove
+ *          => all objects from `allChoices` are programatically added
+ *              => `onAddItem` called, once per item in `allChoices`. but then, the `selectAllValue===false` branch is called, unlike in the original `onAddItem`
+ * => in practice, onAddItem will add all items twice, hence the use of [...new Set()] to deduplicate.
+ * @param {Object} e
+ * @param {DropdownChoiceArray} allChoices
+ * @param {Choices} choicesObj
+ */
+const onAddItem = (e, allChoices, choicesObj) => {
+    let localSelectedValues = [...selectedValues];  // avoid triggering side effects of `selectedValues`
+    if (e.detail.value === selectAllValue) {
+        // set `selectedValues` + unselect all previous choices and reselect all choices except the Select/Unselect ones.
+        allChoices = allChoices.map(c =>
+            c.value !== selectAllValue && c.value !== unSelectAllValue
+            ? ({ ...c, selected: true })
+            : ({ ...c, selected: false })
+        );
+        choicesObj
+            .removeActiveItems()
+            .setValue(allChoices)
+            .hideDropdown();
+        localSelectedValues = [...new Set(
+            allChoices
+            .filter(c => c.selected===true)
+            .map(c => c.value)
+        )];
+    } else if (e.detail.value === unSelectAllValue) {
+        choicesObj
+            .removeActiveItems()
+            .hideDropdown();
+        localSelectedValues = [];
+    } else {
+        localSelectedValues =
+            multiple===true
+            ? [...localSelectedValues, e.detail.value]
+            : [e.detail.value];
+    }
+    console.log("localSelectedValues", localSelectedValues);
+
+    // see docstring: when clicking on "Select All", further deduplication is needed
+    selectedValues = [...new Set(localSelectedValues)];
     dispatch("updateValues", selectedValues);
 };
 
@@ -105,23 +166,30 @@ const onRemoveItem = (e) => {
     dispatch("updateValues", selectedValues);
 }
 
+
 /**
  * @param {DropdownChoiceArray} allChoices: all the available choices
- * @param {DropdownChoiceArray} preSelectedChoices: the pre-selected ones
  */
-function initChoices(allChoices, preSelectedChoices) {
+function initChoices(allChoices, _selectAll) {
+    // all items in allChoices with `selected: true` will be automatically pre-selected as items.
+    allChoices = formatChoices(allChoices, _selectAll).map(c =>
+        defaultSelection.includes(c.value)
+        ? ({ ...c, selected: true })
+        : ({ ...c, selected: false })
+    )
+
     const choicesTarget = document.getElementById(htmlId);
     const choicesObj = new Choices(choicesTarget, {
-        items: [],  // setting preSelectedChoices here does not work, so they are set programatically below.
+        items: [],
         choices: allChoices,
         addChoices: false,
         addItems: false,
         removeItems: true,
         removeItemButton: true,
         searchEnabled: searchable,
-        shouldSort: sort,
         allowHTML: true,
-        sorter: () => choices.label,  // idk
+        shouldSort: _selectAll ? false : true,  // if selectAll, then "Select all" "Remove all" should be on top.
+        sorter: (a,b) => a.label.localeCompare(b.label),  // alpanumeric sorting
         placeholderValue: placeholder,
         classNames: {
             item: ["choices__item", "dropdown-item"]
@@ -147,21 +215,14 @@ function initChoices(allChoices, preSelectedChoices) {
             : `Only ${maxItemCount} items can be added`
     })
 
-    choicesObj.setValue(preSelectedChoices);
-
-    choicesTarget.addEventListener("addItem", onAddItem);
-    choicesTarget.addEventListener("removeItem", onRemoveItem)
+    choicesTarget.addEventListener("addItem", (e) => onAddItem(e, allChoices, choicesObj));
+    choicesTarget.addEventListener("removeItem", (e) => onRemoveItem(e))
 }
 
 /////////////////////////////////////////////////////
 
 onMount(() => {
-    let reformattedChoices = [], reformattedDefaultChoices = [];
-    formatChoices(choices).map(c =>
-        defaultSelection.includes(c.value)
-        ? reformattedDefaultChoices.push({ ...c, selected: true })
-        : reformattedChoices.push(c))
-    initChoices(reformattedChoices, reformattedDefaultChoices);
+    initChoices(choices, selectAll);
 })
 
 onDestroy(() => {
@@ -174,7 +235,7 @@ onDestroy(() => {
 
 <div class="input-dropdown-select-wrapper">
     {#if title!==undefined }
-        <label for="htmlId">{title}</label>
+        <label for={htmlId}>{title}</label>
     {/if}
     <div class="input-dropdown-select
                 { multiple ? 'is-multiple' : 'is-single' }
@@ -223,6 +284,9 @@ onDestroy(() => {
 }
 :global(.choices__list) {
     padding: 0;
+}
+:global(.choices__list--dropdown) {
+    z-index: 7;
 }
 /** selected items wrapper style */
 :global(.choices__inner) {

@@ -112,6 +112,7 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                                                defaultSelection={preSelectedRegions}
                                                lightDisplay={true}
                                                title={appLang==="fr" ? "Régions sélectionnées" : "Selected regions"}
+                                               selectAll={true}
                                                on:updateValues={setComparedRegions}
                                 ></InputDropdown>
                             {/if}
@@ -123,6 +124,7 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                                            defaultSelection={preSelectedExcludedCategories}
                                            lightDisplay={true}
                                            title={appLang==="fr" ? "Catégories masquées" : "Hidden categories"}
+                                           selectAll={true}
                                            on:updateValues={setExcludedCategories}
                             ></InputDropdown>
                         </div>
