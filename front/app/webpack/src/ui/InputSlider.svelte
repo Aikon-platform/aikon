@@ -145,7 +145,7 @@ onMount(() => {
 
 
 <div>
-    <span>{title}</span>
+    <span>{title} ({selectedVal.data})</span>
     <div class="slider-outer-wrapper is-flex flex-direction-row">
         <span class="range-marker">{ minVal }</span>
         <div class="slider-wrapper">

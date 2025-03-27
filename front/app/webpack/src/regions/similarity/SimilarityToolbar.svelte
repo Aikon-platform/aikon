@@ -1,5 +1,5 @@
 <script>
-import { derived, onMount, onDestroy } from "svelte/store";
+import { derived } from "svelte/store";
 
 import { similarityStore } from "./similarityStore.js";
 import * as cat from './similarityCategory';
