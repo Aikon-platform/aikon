@@ -1,5 +1,5 @@
 <script>
-import { derived } from "svelte/store";
+import { derived, onMount, onDestroy } from "svelte/store";
 
 import { similarityStore } from "./similarityStore.js";
 import * as cat from './similarityCategory';
@@ -48,8 +48,12 @@ const preSelectedRegions = Object.keys($selectedRegions[currentPageId]);
 /** @type {Number} */
 let innerWidth, innerHeight;
 $: wideDisplay = innerWidth > 1200;
+$: stickyTop = calcStickyTop(innerWidth, innerHeight);
 
 ///////////////////////////////////////
+
+const calcStickyTop = () =>
+    document.querySelector("#nav-actions")?.offsetHeight;
 
 const setPropagateRecursionDepth = (e) =>
     propagateParams.set({
@@ -83,8 +87,9 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
 
 <svelte:window bind:innerWidth bind:innerHeight></svelte:window>
 
-<h1>{innerWidth}-{innerHeight} ({wideDisplay})</h1>
-<div class="ctrl-wrapper is-flex is-justify-content-center is-align-items-center">
+<div class="ctrl-wrapper is-flex is-justify-content-center is-align-items-center"
+     style="{ stickyTop ? `top: ${stickyTop}px` : '' }"
+>
     <form class="ctrl">
         <div class="ctrl-inputs columns">
             <div class="ctrl-block-wrapper column { wideDisplay ? 'is-three-fifths' : 'is-half' }">
@@ -160,12 +165,15 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
 .ctrl-wrapper {
     width: 100%;
     height: 100%;
-    margin: 5vh 0;
+    margin: 0 0 5vh;
+    position: sticky;
+    background-color: var(--bulma-body-background-color);
+    z-index: 2;
 }
 .ctrl {
     width: 100%;
     border: solid 1px var(--bulma-border);
-    border-radius: var(--bulma-burger-border-radius);
+    border-radius: 0 0 var(--bulma-burger-border-radius) var(--bulma-burger-border-radius);
     display: flex;
     flex-direction: row;
 }
