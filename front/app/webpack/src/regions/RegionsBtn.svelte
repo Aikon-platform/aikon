@@ -70,7 +70,6 @@
 </script>
 
 <div>
-    {currentLayout}
     {#if currentRegionId}
         {#if ["all", "page"].includes(currentLayout)}
             <button on:click={deleteRegions} class="tag is-danger">

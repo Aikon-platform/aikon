@@ -71,11 +71,6 @@ function createSimilarityStore() {
     const excludedCategories = writable(JSON.parse(localStorage.getItem("excludedCategories")) || []);
     excludedCategories.subscribe((value) => localStorage.setItem("excludedCategories", JSON.stringify(value)));
 
-    /** @type {Number[]} min/max scores for the currently selected regions */
-    const similarityScoreRange = writable(JSON.parse(localStorage.getItem("similarityScoreRange")) || []);
-    similarityScoreRange.subscribe((value) =>
-        localStorage.setItem("similarityScoreRange", JSON.stringify(value)));
-
     /** @type {Number?} RegionPairs below this score will be hidden from the user */
     const similarityScoreCutoff = writable(JSON.parse(localStorage.getItem("similarityScoreCutoff")) || undefined);
     similarityScoreCutoff.subscribe((value) => {
@@ -137,26 +132,6 @@ function createSimilarityStore() {
         } finally {
             loading.set(false);
         }
-    }
-
-    /** @param {Array<int>} to_rid: rid of regions to filter by */
-    async function fetchSimilarityScoreRange(to_rid=[]) {
-        loading.set(true)
-        fetch(`${baseUrl}similarity-score-range`,  {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify({ to_rid: to_rid })
-        })
-        .then(response => response.json())
-        .then(data => similarityScoreRange.set([data.min, data.max]))
-        .catch(err => {
-            console.error("Error on fetchSimilarityScoreRange:", err);
-            errorMsg.set(err.message);
-        })
-        .finally(() => loading.set(false))
     }
 
     function store(selection) {
@@ -236,10 +211,8 @@ function createSimilarityStore() {
         similarityToolbarParams,
         propagateParams,
         similarityScoreCutoff,
-        similarityScoreRange,
         allowedPropagateDepthRange,
         fetchSimilarity,
-        fetchSimilarityScoreRange,
         setPageQImgs,
         getRegionsInfo,
         handlePageUpdate,

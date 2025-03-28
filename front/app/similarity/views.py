@@ -199,7 +199,6 @@ def get_similarity_score_range(
 ) -> JsonResponse:
     """
     return a [minScore, maxScore] for similarities of `wid`
-    - if `rid` is specified, the query images must have that region id
     - an optional `to_rid` is specified in the body: an array of regions the match images
         must belong to. if `to_rid` is None, the min/max scores for all regions is returned.
     """
@@ -213,16 +212,32 @@ def get_similarity_score_range(
             data = json.loads(request.body)
             to_rid = data.get("to_rid")
 
-        q = RegionPair.objects.filter(Q(img_1__contains=f"wit{wid}") & ~Q(score=None))
-        if rid:
-            q = q.filter(Q(regions_id_1=rid))
+        q1 = RegionPair.objects.filter(Q(img_1__contains=f"wit{wid}") & ~Q(score=None))
         if to_rid and len(to_rid):
-            q = q.filter(Q(regions_id_2__in=to_rid))
+            q1 = q1.filter(Q(regions_id_2__in=to_rid))
+        q2 = RegionPair.objects.filter(Q(img_2__contains=f"wit{wid}") & ~Q(score=None))
+        if to_rid and len(to_rid):
+            q2 = q2.filter(Q(regions_id_1__in=to_rid))
 
-        _min = q.aggregate(Min("score"))
-        _max = q.aggregate(Max("score"))
+        # it's not possible to do min/max on an union, so we run the 2 queries separately
+        # and then calculate a minmax. an extra gotcha is that if there's no score in q1 or q2,
+        # score__min/score__max will be None and min() can't be calculated on that.
+        _min = min(
+            [
+                m["score__min"]
+                for m in [q1.aggregate(Min("score")), q2.aggregate(Min("score"))]
+                if m["score__min"] is not None
+            ]
+        )
+        _max = max(
+            [
+                m["score__max"]
+                for m in [q1.aggregate(Max("score")), q2.aggregate(Max("score"))]
+                if m["score__max"] is not None
+            ]
+        )
 
-        return JsonResponse({"min": _min["score__min"], "max": _max["score__max"]})
+        return JsonResponse({"min": _min, "max": _max})
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)

@@ -3,7 +3,7 @@ import { derived } from "svelte/store";
 
 import { similarityStore } from "./similarityStore.js";
 import * as cat from './similarityCategory';
-import { appLang } from "../../constants.js";
+import { appLang, csrfToken } from "../../constants.js";
 import { shorten } from "../../utils.js";
 
 import InputSlider from "../../ui/InputSlider.svelte";
@@ -17,7 +17,6 @@ const  {
     selectedRegions,
     comparedRegions,
     excludedCategories,
-    similarityScoreRange,
     similarityScoreCutoff,
     propagateRecursionDepth,
     propagateFilterByRegions,
@@ -25,6 +24,7 @@ const  {
 } = similarityStore;
 
 const currentPageId = window.location.pathname.match(/\d+/g).join('-');
+const baseUrl = `${window.location.origin}${window.location.pathname}`;
 
 const tooltipText =
     appLang==="en"
@@ -55,8 +55,12 @@ const defaultRegions = Object.keys($selectedRegions[currentPageId] || {});
 const defaultRecursionDepth = $propagateRecursionDepth;
 /** @type {Boolean} */
 const defaultFilterByRegions = $propagateFilterByRegions;
-/** @type {Number} default `undefined` and set as `$:` instead of `const` because `$similarityScoreCutoff` may be undefined, `$similarityScoreRange` is async and may not be defined => value is defined asynchronously (but will be defined once the corresponding block is initiated) */
-$: defaultSimilarityScoreCutoff = $similarityScoreCutoff || $similarityScoreRange[0] || undefined;
+
+/** @type {Number?} updated by fetchSimilarityScoreRange */
+$: defaultSimilarityScoreCutoff = $similarityScoreCutoff || undefined
+
+/** @type {Promise<Array<Number?>>}. will be updated every time $selectedRegions changes */
+$: similarityScoreRangePromise = fetchSimilarityScoreRange($selectedRegions);
 
 /** @type {Number} */
 let innerWidth, innerHeight;
@@ -64,6 +68,49 @@ $: wideDisplay = innerWidth > 1200;
 $: stickyTop = calcStickyTop(innerWidth, innerHeight);
 
 ///////////////////////////////////////
+
+/**
+ * reactive to changes in $selectedRegions
+ * @returns {Promise<Array<Number?>>}
+ */
+async function fetchSimilarityScoreRange(_selectedRegions={}) {
+    let range = [];
+    let toRid = [];  // all regions for which similarities to the current witness were computed
+    if ( _selectedRegions[currentPageId] != null ) {
+        try {
+            toRid = Object.values(_selectedRegions[currentPageId]).map(r => r.id);
+        } catch(e) {
+            console.error("fetchSimilarityScoreRange: error retrieving regions", e);
+        }
+    }
+    return await fetch(`${baseUrl}similarity-score-range`,  {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({ to_rid: toRid })
+    })
+    .then(response => response.json())
+    .then(data => {
+        range = [data.min, data.max];
+        if ( !range.every(x => typeof x === "number") ) {
+            console.error(`fetchSimilarityScoreRange: expected '[number, number]', got '${range}'. Defaulting to '[]'`);
+            range = [];
+        } else {
+            defaultSimilarityScoreCutoff =
+                $similarityScoreCutoff && range[0] <= $similarityScoreCutoff && range[1] >= $similarityScoreCutoff
+                ? $similarityScoreCutoff
+                : range[0]
+        }
+        return range;
+    })
+    .catch(err => {
+        console.error("Error on fetchSimilarityScoreRange:", err);
+        errorMsg.set(err.message);
+        return range
+    })
+}
 
 const calcStickyTop = () =>
     document.querySelector("#nav-actions")?.offsetHeight;
@@ -123,15 +170,17 @@ const setComparedRegions = (e) => {
                             ></InputDropdown>
                         </div>
                         <div class="column { wideDisplay ? 'is-one-third' : '' }">
-                            {#if $similarityScoreRange.length}
-                                <InputSlider title={ appLang==="fr" ? "Score minimal" : "Minimal score" }
-                                             minVal={$similarityScoreRange[0]}
-                                             maxVal={$similarityScoreRange[1]}
-                                             start={defaultSimilarityScoreCutoff}
-                                             roundTo={3}
-                                             on:updateSlider={setSimilarityScoreCutoff}
-                                ></InputSlider>
-                            {/if}
+                            {#await similarityScoreRangePromise then similarityScoreRange}
+                                {#if similarityScoreRange.length}
+                                    <InputSlider title={ appLang==="fr" ? "Score minimal" : "Minimal score" }
+                                                 minVal={similarityScoreRange[0]}
+                                                 maxVal={similarityScoreRange[1]}
+                                                 start={defaultSimilarityScoreCutoff || similarityScoreRange[0]}
+                                                 roundTo={3}
+                                                 on:updateSlider={setSimilarityScoreCutoff}
+                                    ></InputSlider>
+                                {/if}
+                            {/await}
                         </div>
                     </div>
                 </div>
