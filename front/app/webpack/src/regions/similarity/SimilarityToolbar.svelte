@@ -50,7 +50,7 @@ const comparedRegionsChoices = derived(comparedRegions, (($comparedRegions) =>
 /** @type {Number[]}: category values */
 const defaultExcludedCategories = $excludedCategories;
 /** @type {string[]}: regions IDs */
-const defaultRegions = Object.keys($selectedRegions[currentPageId]);
+const defaultRegions = Object.keys($selectedRegions[currentPageId] || {});
 /** @type {number[]} */
 const defaultRecursionDepth = $propagateRecursionDepth;
 /** @type {Boolean} */

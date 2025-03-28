@@ -29,7 +29,7 @@
         fetch(`${baseUrl}propagated-matches/${qImg}`, {
             method: "POST",
             body: JSON.stringify({
-                regionsIds: Object.values(selection[currentPageId]).map(r => r.id),
+                regionsIds: Object.values(selection[currentPageId] || {}).map(r => r.id),
                 filterByRegions: filterByRegions,
                 recursionDepth: recursionDepth
             }),
@@ -41,7 +41,7 @@
         })
         .then(r => r.json())
         .catch(e => {
-            console.error("SimilarityMatchesPropagated.getPropagatedMatches:", e);
+            console.error("PropagatedMatches.getPropagatedMatches:", e);
             return []
         })
 

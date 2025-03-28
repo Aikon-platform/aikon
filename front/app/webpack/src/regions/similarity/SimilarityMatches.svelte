@@ -16,7 +16,8 @@
      * @param {SelectedRegionsType} selection
      */
     async function fetchSImgs(qImg, selection) {
-        const regionsIds = Object.values(selection).map(r => r.id);
+        const selectionForWitness = selection[currentPageId] || {};
+        const regionsIds = Object.values(selectionForWitness).map(r => r.id);
         if (regionsIds.length === 0) {
             return {};
         }
@@ -25,7 +26,7 @@
             {
                 method: "POST",
                 body: JSON.stringify({
-                    regionsIds: Object.values(selection[currentPageId]).map(r => r.id),
+                    regionsIds: regionsIds,
                     qImg: qImg,
                     topk: 10, // TODO retrieve this value from the user
                 }),

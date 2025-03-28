@@ -11,7 +11,7 @@
     - updates to props are not handled.
 -->
 <script>
-import { onMount, createEventDispatcher } from "svelte";
+import { onMount, onDestroy, createEventDispatcher } from "svelte";
 
 import noUiSlider from "nouislider";
 import 'nouislider/dist/nouislider.css';
@@ -45,9 +45,9 @@ export let title = "";
 
 //////////////////////////////////////////////
 
-const sliderHtmlId = `lider-${window.crypto.randomUUID()}`;
 const dispatch = createEventDispatcher();
 
+const sliderHtmlId = `slider-${window.crypto.randomUUID()}`;
 const isRange = Array.isArray(start) && start.length === 2 && start.every(n => !isNaN(parseFloat(n)));  // true if Number, Number
 const handleTooltips = [];
 const oldSelectedVal = {
@@ -117,7 +117,7 @@ function initSlider() {
         updateSelectedRange(newVal);
     });
     slider.noUiSlider.on("set", () => {
-        let newVal = slider.noUiSlider.get(true);
+        // let newVal = slider.noUiSlider.get(true);
         dispatch("updateSlider", selectedVal);
     });
 }
@@ -140,6 +140,11 @@ function initHandleTooltips() {
 onMount(() => {
     initSlider();
     initHandleTooltips();
+})
+onDestroy(() => {
+    // very dirty destroy
+    if (document.getElementById(sliderHtmlId))
+        document.getElementById(sliderHtmlId).innerHTML = "";
 })
 </script>
 

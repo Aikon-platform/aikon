@@ -63,13 +63,6 @@ function createSimilarityStore() {
     /** @type {RegionsType} */
     const comparedRegions = writable({});
 
-    // TODO to delete very soon
-    /** @type {SelectedRegionsType} */
-    // let storedSelection = JSON.parse(localStorage.getItem("selectedRegions"));
-    // if (storedSelection && !storedSelection.hasOwnProperty(currentPageId)) {
-    //     storedSelection = emptySelection;
-    // }
-
     /** @type {SelectedRegionsType} */
     const selectedRegions = writable(JSON.parse(localStorage.getItem("selectedRegions")) || emptySelection);
     selectedRegions.subscribe((value) => localStorage.setItem("selectedRegions", JSON.stringify(value)));
@@ -80,11 +73,15 @@ function createSimilarityStore() {
 
     /** @type {Number[]} min/max scores for the currently selected regions */
     const similarityScoreRange = writable(JSON.parse(localStorage.getItem("similarityScoreRange")) || []);
-    similarityScoreRange.subscribe((value) => localStorage.setItem("similarityScoreRange", JSON.stringify(value)));
+    similarityScoreRange.subscribe((value) =>
+        localStorage.setItem("similarityScoreRange", JSON.stringify(value)));
 
     /** @type {Number?} RegionPairs below this score will be hidden from the user */
     const similarityScoreCutoff = writable(JSON.parse(localStorage.getItem("similarityScoreCutoff")) || undefined);
-    similarityScoreCutoff.subscribe((value) => localStorage.setItem("similarityScoreCutoff", JSON.stringify(value)));
+    similarityScoreCutoff.subscribe((value) => {
+        // since the 1st value is undefined, we need to ensure we're not writing this to localStorage
+        if (value!=null) localStorage.setItem("similarityScoreCutoff", JSON.stringify(value))
+    });
 
     /** @type {Number[]} */
     const propagateRecursionDepth = writable(JSON.parse(localStorage.getItem("propagateRecursionDepth")) || allowedPropagateDepthRange);

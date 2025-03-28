@@ -226,9 +226,9 @@ onMount(() => {
 })
 
 onDestroy(() => {
-    const choicesTarget = document.getElementById(htmlId);
-    choicesTarget.removeEventListener("addItem", onAddItem);
-    choicesTarget.removeEventListener("removeItem", onRemoveItem);
+    // const choicesTarget = document.getElementById(htmlId);
+    // choicesTarget.removeEventListener("addItem", onAddItem);
+    // choicesTarget.removeEventListener("removeItem", onRemoveItem);
 })
 </script>
 
