@@ -1,11 +1,17 @@
 <script>
 import { createEventDispatcher } from "svelte";
 
+/** @type {String} */
 export let checkboxLabel;
+/** @type {Boolean} default value */
+export let start = false;
+/** @type {Boolean} button-like styling */
+export let buttonDisplay = false;
+
 const htmlId = `input-input-checkbox-wrapper-${window.crypto.randomUUID()}`;
 const dispatch = createEventDispatcher();
 
-$: isChecked = false;
+$: isChecked = start;
 
 const toggleOnClick = () => {
     isChecked = !isChecked;
@@ -13,18 +19,29 @@ const toggleOnClick = () => {
 };
 </script>
 
-<div class="input-checkbox-wrapper button is-clickable
-            {isChecked ? 'is-checked' : ''}"
+<div class="input-checkbox-wrapper
+            { buttonDisplay ? 'button is-clickable' : 'is-flex is-align-items-center is-justify-content-center' }
+            { isChecked ? 'is-checked' : '' }"
 >
     <span class="switch-wrapper">
         <span class="switch">
             <span class="switch-control">
-                <input type="checkbox"
-                       class="is-clickable"
-                       id={htmlId}
-                       name={htmlId}
-                       on:click={toggleOnClick}
-                />
+                {#if start===true }
+                    <input type="checkbox"
+                           class="is-clickable"
+                           id={htmlId}
+                           name={htmlId}
+                           on:click={toggleOnClick}
+                           checked
+                    />
+                {:else}
+                    <input type="checkbox"
+                            class="is-clickable"
+                            id={htmlId}
+                            name={htmlId}
+                            on:click={toggleOnClick}
+                     />
+                {/if}
             </span>
         </span>
     </span>

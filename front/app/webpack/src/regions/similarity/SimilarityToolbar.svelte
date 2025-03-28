@@ -15,11 +15,12 @@ import IconTooltip from "../../ui/IconTooltip.svelte";
 
 const  {
     selectedRegions,
-    propagateParams,
     comparedRegions,
     excludedCategories,
     similarityScoreRange,
     similarityScoreCutoff,
+    propagateRecursionDepth,
+    propagateFilterByRegions,
     allowedPropagateDepthRange
 } = similarityStore;
 
@@ -47,9 +48,15 @@ const comparedRegionsChoices = derived(comparedRegions, (($comparedRegions) =>
     }))));
 
 /** @type {Number[]}: category values */
-const preSelectedExcludedCategories = $excludedCategories;
+const defaultExcludedCategories = $excludedCategories;
 /** @type {string[]}: regions IDs */
-const preSelectedRegions = Object.keys($selectedRegions[currentPageId]);
+const defaultRegions = Object.keys($selectedRegions[currentPageId]);
+/** @type {number[]} */
+const defaultRecursionDepth = $propagateRecursionDepth;
+/** @type {Boolean} */
+const defaultFilterByRegions = $propagateFilterByRegions;
+/** @type {Number} default `undefined` and set as `$:` instead of `const` because `$similarityScoreCutoff` may be undefined, `$similarityScoreRange` is async and may not be defined => value is defined asynchronously (but will be defined once the corresponding block is initiated) */
+$: defaultSimilarityScoreCutoff = $similarityScoreCutoff || $similarityScoreRange[0] || undefined;
 
 /** @type {Number} */
 let innerWidth, innerHeight;
@@ -61,20 +68,10 @@ $: stickyTop = calcStickyTop(innerWidth, innerHeight);
 const calcStickyTop = () =>
     document.querySelector("#nav-actions")?.offsetHeight;
 
-const setPropagateRecursionDepth = (e) =>
-    propagateParams.set({
-        recursionDepth: e.detail.data,
-        filterByRegions: $propagateParams.filterByRegions
-    });
-const setPropagateFilterByRegion = (e) =>
-    propagateParams.set({
-        recursionDepth: $propagateParams.recursionDepth,
-        filterByRegions: e.detail
-    });
-const setExcludedCategories = (e) => {
-    excludedCategories.set(e.detail);
-    localStorage.setItem('excludedCategories', JSON.stringify($excludedCategories));
-}
+const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data);
+const setExcludedCategories = (e) => excludedCategories.set(e.detail);
+const setPropagateRecursionDepth = (e) => propagateRecursionDepth.set(e.detail.data);
+const setPropagateFilterByRegions = (e) => propagateFilterByRegions.set(e.detail);
 const setComparedRegions = (e) => {
     const selectedRegionsIds = e.detail;
     const newSelectedRegions = { [currentPageId] : {} }
@@ -84,11 +81,8 @@ const setComparedRegions = (e) => {
         }
     })
     selectedRegions.set(newSelectedRegions);
-    localStorage.setItem("selectedRegions", JSON.stringify($selectedRegions));
 }
-const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data);
 </script>
-
 
 
 <svelte:window bind:innerWidth bind:innerHeight></svelte:window>
@@ -109,7 +103,7 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                                 <InputDropdown choices={$comparedRegionsChoices}
                                                multiple={true}
                                                placeholder={appLang==="fr" ? "Sélectionner des régions" : "Select regions"}
-                                               defaultSelection={preSelectedRegions}
+                                               start={defaultRegions}
                                                lightDisplay={true}
                                                title={appLang==="fr" ? "Régions sélectionnées" : "Selected regions"}
                                                selectAll={true}
@@ -121,7 +115,7 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                             <InputDropdown choices={categoriesChoices}
                                            multiple={true}
                                            placeholder={appLang==="fr" ? "Masquer les catégories" : "Hide categories"}
-                                           defaultSelection={preSelectedExcludedCategories}
+                                           start={defaultExcludedCategories}
                                            lightDisplay={true}
                                            title={appLang==="fr" ? "Catégories masquées" : "Hidden categories"}
                                            selectAll={true}
@@ -133,7 +127,7 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                                 <InputSlider title={ appLang==="fr" ? "Score minimal" : "Minimal score" }
                                              minVal={$similarityScoreRange[0]}
                                              maxVal={$similarityScoreRange[1]}
-                                             start={$similarityScoreRange[0]}
+                                             start={defaultSimilarityScoreCutoff}
                                              roundTo={3}
                                              on:updateSlider={setSimilarityScoreCutoff}
                                 ></InputSlider>
@@ -155,17 +149,19 @@ const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data)
                     <div class="ctrl-block-inputs column is-10 columns { wideDisplay ? '' : 'is-multiline' }">
                         <div class="column { wideDisplay ? 'is-two-thirds' : 'is-full' }">
                             <InputSlider title={ appLang==="fr" ? "Profondeur de récursion" : "Recursion depth" }
-                                        minVal={allowedPropagateDepthRange[0]}
-                                        maxVal={allowedPropagateDepthRange[1]}
-                                        start={allowedPropagateDepthRange}
-                                        step={1}
-                                        on:updateSlider={setPropagateRecursionDepth}
+                                         minVal={allowedPropagateDepthRange[0]}
+                                         maxVal={allowedPropagateDepthRange[1]}
+                                         start={defaultRecursionDepth}
+                                         step={1}
+                                         on:updateSlider={setPropagateRecursionDepth}
                             ></InputSlider>
                         </div>
                         <div class="column is-flex is-align-items-center
                                     { wideDisplay ? 'is-one-third is-justify-content-center' : 'is-full is-justify-content-start' }">
                             <InputToggleCheckbox checkboxLabel="Filter by region"
-                                            on:updateChecked={setPropagateFilterByRegion}
+                                                 on:updateChecked={setPropagateFilterByRegions}
+                                                 start={defaultFilterByRegions}
+                                                 buttonDisplay={true}
                             ></InputToggleCheckbox>
                         </div>
                     </div>

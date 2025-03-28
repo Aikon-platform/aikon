@@ -34,7 +34,7 @@ import TooltipGeneric from "./TooltipGeneric.svelte";
 export let minVal;
 /** @type {Number} */
 export let maxVal;
-/** @type {Number|Number[]} : if 1 value is provided, then it's a single input slider. if an array of 2 values are provided, it's a min/max 2 input range slider */
+/** @type {Number|Number[]} : default, pre-selecteed values. if 1 value is provided, then it's a single input slider. if an array of 2 values are provided, it's a min/max 2 input range slider */
 export let start;
 /** @type {Number?} */
 export let step = undefined;

@@ -11,10 +11,10 @@
     restrictions:
     - it is synchronous (no async data fetching)
     - it does not handle updates to props update
-    - when passing a `defaultSelection`, the values
-        each item of `defaultSelection` and `choices`
+    - when passing a `start`, the values
+        each item of `start` and `choices`
         (type DropdownChoice.value) must be hashable
-        so that values in `defaultSelection` can be matched
+        so that values in `start` can be matched
         with `choices` items.
 -->
 
@@ -49,7 +49,7 @@ import { appLang } from "../constants";
 /** @type {DropdownChoiceArray} */
 export let choices;
 /** @type {DropdownChoice.value[]} the items selected by default, represented as an array of DropdownChoice.value */
-export let defaultSelection = [];
+export let start = [];
 /** @type {Boolean} */
 export let multiple;
 /** @type {String} */
@@ -70,7 +70,7 @@ const selectAllValue = `select-all-${window.crypto.randomUUID()}`;  // the value
 const unSelectAllValue = `unselect-all-${window.crypto.randomUUID()}`
 
 /** @type {DropdownChoice.value[]} */
-$: selectedValues = defaultSelection || [];
+$: selectedValues = start || [];
 
 /////////////////////////////////////////////////////
 
@@ -173,7 +173,7 @@ const onRemoveItem = (e) => {
 function initChoices(allChoices, _selectAll) {
     // all items in allChoices with `selected: true` will be automatically pre-selected as items.
     allChoices = formatChoices(allChoices, _selectAll).map(c =>
-        defaultSelection.includes(c.value)
+        start.includes(c.value)
         ? ({ ...c, selected: true })
         : ({ ...c, selected: false })
     )

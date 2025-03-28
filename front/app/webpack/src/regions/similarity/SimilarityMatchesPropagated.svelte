@@ -47,15 +47,15 @@
 
         propagateParams.subscribe((newPropagateParams) => {
             propagatedMatchesPromise = getPropagatedMatches(
-                newPropagateParams.filterByRegions,
-                newPropagateParams.recursionDepth,
+                newPropagateParams.propagateFilterByRegions,
+                newPropagateParams.propagateRecursionDepth,
                 $selectedRegions
             )
         })
         selectedRegions.subscribe((newSelectedRegions) => {
             propagatedMatchesPromise = getPropagatedMatches(
-                $propagateParams.filterByRegions,
-                $propagateParams.recursionDepth,
+                $propagateParams.propagateFilterByRegions,
+                $propagateParams.propagateRecursionDepth,
                 newSelectedRegions
             )
         })

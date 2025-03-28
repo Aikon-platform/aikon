@@ -52,8 +52,10 @@ function createSimilarityStore() {
     /** @type {Number} the current witness' ID */
     const currentPageId = window.location.pathname.match(/\d+/g).join('-');
 
-    /** EmptyRegionsType:  */
+    /** @type {EmptyRegionsType}  */
     const emptySelection = { [currentPageId]: {} };
+
+    const allowedPropagateDepthRange = [2,6];
 
     const currentPage = writable(1);
 
@@ -63,18 +65,53 @@ function createSimilarityStore() {
 
     // TODO to delete very soon
     /** @type {SelectedRegionsType} */
-    let storedSelection = JSON.parse(localStorage.getItem("selectedRegions"));
-    if (storedSelection && !storedSelection.hasOwnProperty(currentPageId)) {
-        storedSelection = emptySelection;
-    }
+    // let storedSelection = JSON.parse(localStorage.getItem("selectedRegions"));
+    // if (storedSelection && !storedSelection.hasOwnProperty(currentPageId)) {
+    //     storedSelection = emptySelection;
+    // }
 
     /** @type {SelectedRegionsType} */
-    const selectedRegions = writable(storedSelection || emptySelection);
-    // TODO replace with this line
-    // const selectedRegions = writable(JSON.parse(localStorage.getItem("selectedRegions")) || emptySelection);
+    const selectedRegions = writable(JSON.parse(localStorage.getItem("selectedRegions")) || emptySelection);
+    selectedRegions.subscribe((value) => localStorage.setItem("selectedRegions", JSON.stringify(value)));
 
     /** @type {Number[]} */
     const excludedCategories = writable(JSON.parse(localStorage.getItem("excludedCategories")) || []);
+    excludedCategories.subscribe((value) => localStorage.setItem("excludedCategories", JSON.stringify(value)));
+
+    /** @type {Number[]} min/max scores for the currently selected regions */
+    const similarityScoreRange = writable(JSON.parse(localStorage.getItem("similarityScoreRange")) || []);
+    similarityScoreRange.subscribe((value) => localStorage.setItem("similarityScoreRange", JSON.stringify(value)));
+
+    /** @type {Number?} RegionPairs below this score will be hidden from the user */
+    const similarityScoreCutoff = writable(JSON.parse(localStorage.getItem("similarityScoreCutoff")) || undefined);
+    similarityScoreCutoff.subscribe((value) => localStorage.setItem("similarityScoreCutoff", JSON.stringify(value)));
+
+    /** @type {Number[]} */
+    const propagateRecursionDepth = writable(JSON.parse(localStorage.getItem("propagateRecursionDepth")) || allowedPropagateDepthRange);
+    propagateRecursionDepth.subscribe((value) => localStorage.setItem("propagateRecursionDepth", JSON.stringify(value)));
+
+    /** @type {Boolean} */
+    const propagateFilterByRegions = writable(JSON.parse(localStorage.getItem("propagateFilterByRegions")) || false);
+    propagateFilterByRegions.subscribe((value) => localStorage.setItem("propagateFilterByRegions", JSON.stringify(value)));
+
+    /** @type {PropagateParamsType} no localStorage syncing since individual stores are aldready synced */
+    const propagateParams = derived([propagateRecursionDepth, propagateFilterByRegions], ([$propagateRecursionDepth, $propagateFilterByRegions]) => ({
+        propagateRecursionDepth: $propagateRecursionDepth,
+        propagateFilterByRegions: $propagateFilterByRegions
+    }));
+
+    /** @type {SimilarityParamsType} no localStorage syncing since individual stores are aldready synced */
+    const similarityParams = derived([excludedCategories, selectedRegions, similarityScoreCutoff], ([$excludedCategories, $selectedRegions, $similarityScoreCutoff]) => ({
+        excludedCategories: $excludedCategories,
+        regions: $selectedRegions,
+        similarityScoreCutoff: $similarityScoreCutoff
+    }));
+
+    /** @type {SimilarityToolbarParamsType} no localStorage syncing since individual stores are aldready synced */
+    const similarityToolbarParams = derived([propagateParams, similarityParams], ([$propagateParams, $similarityParams]) => ({
+        propagate: $propagateParams,
+        similarity: $similarityParams
+    }));
 
     /** @type {String[]|[]} query image names for the current witness */
     const qImgs = writable([]);
@@ -105,11 +142,6 @@ function createSimilarityStore() {
         }
     }
 
-    /** @type {Number[]} min/max scores for the currently selected regions */
-    const similarityScoreRange = writable([])
-    /** @type {Number?} RegionPairs below this score will be hidden from the user */
-    const similarityScoreCutoff = writable()
-
     /** @param {Array<int>} to_rid: rid of regions to filter by */
     async function fetchSimilarityScoreRange(to_rid=[]) {
         loading.set(true)
@@ -130,32 +162,11 @@ function createSimilarityStore() {
         .finally(() => loading.set(false))
     }
 
-
-    const allowedPropagateDepthRange = [2,6];
-
-    /** @type {PropagateParamsType} */
-    const propagateParams = writable({
-        recursionDepth: allowedPropagateDepthRange,
-        filterByRegions: false
-    })
-    /** @type {SimilarityParamsType} */
-    const similarityParams = derived([excludedCategories, selectedRegions, similarityScoreCutoff], ([$excludedCategories, $selectedRegions, $similarityScoreCutoff]) => ({
-        excludedCategories: $excludedCategories,
-        regions: $selectedRegions,
-        similarityScoreCutoff: $similarityScoreCutoff  // @writable similarityScoreCutoff
-    }))
-    /** @type {SimilarityToolbarParamsType} */
-    const similarityToolbarParams = derived([propagateParams, similarityParams], ([$propagateParams, $similarityParams]) => ({
-        propagate: $propagateParams,
-        similarity: $similarityParams
-    }))
-
     function store(selection) {
         localStorage.setItem("selectedRegions", JSON.stringify(selection));
     }
 
-    // TODO see if `select` and `unselect` are still needed, since the modifications of
-    // `selectedRegions` has been moved to `similarityRegions.setComparedRegions`.
+    // TODO delete select/unselect ? unselect is only used in `_SimilarityBtn` (to be deleted), `select` is still used in `SimilarRegion`.
     function unselect(regionRef) {
         selectedRegions.update(selection => {
             const updatedSelection = { ...selection };
@@ -193,18 +204,6 @@ function createSimilarityStore() {
 
     const initCurrentPage = () => initPagination(currentPage, "sp");
 
-    // const setPageQImgs = derived(currentPage, ($currentPage) =>
-    //     (async () => updatePageQImgs($currentPage))()
-    // );
-
-    // function updatePageQImgs(pageNb) {
-    //     const start = (pageNb - 1) * pageLength;
-    //     const end = start + pageLength;
-    //     const currentQImgs = get(qImgs).slice(start, end)
-    //     pageQImgs.set(currentQImgs);
-    //     return currentQImgs;
-    // }
-
     // without `qImgs`, `setPageQImgs` may run before qImgs has been defined
     const setPageQImgs = derived([currentPage, qImgs], ([$currentPage, $qImgs]) =>
         (async () => updatePageQImgs($currentPage, $qImgs))()
@@ -235,8 +234,14 @@ function createSimilarityStore() {
         qImgs,
         pageQImgs,
         selectedRegions,
-        fetchSimilarity,
+        propagateRecursionDepth,
+        propagateFilterByRegions,
+        similarityToolbarParams,
+        propagateParams,
+        similarityScoreCutoff,
         similarityScoreRange,
+        allowedPropagateDepthRange,
+        fetchSimilarity,
         fetchSimilarityScoreRange,
         setPageQImgs,
         getRegionsInfo,
@@ -246,10 +251,6 @@ function createSimilarityStore() {
         addComparedRegions,
         isSelected,
         pageLength,
-        similarityToolbarParams,
-        propagateParams,
-        allowedPropagateDepthRange,
-        similarityScoreCutoff,
     };
 }
 

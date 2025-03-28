@@ -80,40 +80,6 @@
 
     ////////////////////////////////////////////
 
-    // /**
-    //  * save the new RegionPair to database. only used if `similarityPropagatedContext === true`
-    //  * @returns {boolean} true if the query succeeds
-    //  */
-    // async function saveSimilarityMatchPropagated() {
-    //     console.log("saveSimilarityMatchPropagated called !")
-    //     console.log(toRegionPair());
-    //
-    //     return fetch(`${baseUrl}${pathUrl}add-region-pair-propagated`, {
-    //         method: "POST",
-    //         headers: {
-    //             'Content-Type': 'application/json',
-    //             'X-CSRFToken': csrfToken
-    //         },
-    //         body: JSON.stringify(toRegionPair())
-    //     })
-    //     .then(async (response) => {
-    //         if (response.ok) {
-    //             return true
-    //         }
-    //         let responseBody = await response.json();
-    //         console.error(
-    //             `Error: Network response was not ok (HTTP status ${response.status})`,
-    //             responseBody
-    //         )
-    //         return false;
-    //     })
-    //     .catch(err => {
-    //         console.error("Error: ", err);
-    //         return false;
-    //     })
-    //
-    // }
-
     /**
      * save the new RegionPair.category to database (RegionPair.category)
      * if `similarityPropagatedContext===true`, the whole RegionPair will be created
