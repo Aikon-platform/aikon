@@ -335,6 +335,7 @@ def get_propagated_matches(
                 category_x=[],
                 is_manual=False,
                 score=None,
+                similarity_type=3,
             ).get_info()
             for p_img in _propagated
         ]
@@ -346,11 +347,11 @@ def get_propagated_matches(
         filter_by_regions: bool = data.get("filterByRegions")
         id_regions_array: List[int] = data.get("regionsIds", [])
         recursion_depth: List[int] = data.get("recursionDepth", [])
-
         recursion_depth = (
             sorted(
+                # recursion_depth measures recursion counting 1 as the 1st element, while here 0 is the 1st element.
                 [r - 1 for r in recursion_depth]
-            )  # recursion_depth measures recursion counting 1 as the 1st element, while here 0 is the 1st element.
+            )
             if isinstance(recursion_depth, list) and len(recursion_depth) == 2
             else [MIN_DEPTH, MAX_DEPTH]
         )
@@ -429,6 +430,7 @@ def add_region_pair(request, wid, rid=None):
                 "regions_id_1": regions_1,
                 "regions_id_2": regions_2,
                 "is_manual": True,
+                "similarity_type": 2,
             },
         )
 
@@ -525,6 +527,7 @@ def save_category(request):
         regions_id_1 = data.get("regions_id_1")
         regions_id_2 = data.get("regions_id_2")
         is_manual = data.get("is_manual")
+        similarity_type = data.get("similarity_type", 1)
         score = data.get("score")
 
         region_pair, created = RegionPair.objects.get_or_create(
@@ -533,17 +536,11 @@ def save_category(request):
             regions_id_1=int(regions_id_1),
             regions_id_2=int(regions_id_2),
         )
-
-        # region_pair.regions_id_1 = (
-        #     int(regions_id_1) if regions_id_1 else region_pair.regions_id_1
-        # )
-        # region_pair.regions_id_2 = (
-        #     int(regions_id_2) if regions_id_2 else region_pair.regions_id_2
-        # )
         region_pair.score = int(score) if score else None
         region_pair.category = int(category) if category else None
         region_pair.category_x = sorted(category_x)
         region_pair.is_manual = is_manual if is_manual else False
+        region_pair.similarity_type = int(similarity_type) if similarity_type else 1
         region_pair.save()
 
         if created:

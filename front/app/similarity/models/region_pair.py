@@ -18,6 +18,7 @@ class RegionPairTuple(NamedTuple):
     category: int
     category_x: List[int]
     is_manual: bool
+    similarity_type: int
 
 
 def get_name(fieldname, plural=False):
@@ -167,6 +168,7 @@ class RegionPair(models.Model):
             self.category,
             self.category_x or [],
             self.is_manual,
+            self.similarity_type,
         )
 
     def get_ref(self):

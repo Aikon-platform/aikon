@@ -18,7 +18,7 @@ from django.core.cache import cache
 
 from app.similarity.const import SCORES_PATH
 from app.config.settings import APP_URL, APP_NAME
-from app.similarity.models.region_pair import RegionPair
+from app.similarity.models.region_pair import RegionPair, RegionPairTuple
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
@@ -256,7 +256,6 @@ def score_file_to_db(file_path):
                         regions_id_1=ref_1.split("_anno")[1],
                         regions_id_2=ref_2.split("_anno")[1],
                         is_manual=False,
-                        # algorithm=algo,
                         category_x=[],
                     )
                 )
@@ -407,7 +406,7 @@ def get_best_pairs(
     excluded_categories: List[int],
     topk: int,
     user_id: int = None,
-) -> List[Set[Tuple[str, float, int, List[int]]]]:
+) -> List[Set[RegionPairTuple]]:
     """
     Process RegionPair objects and return a structured dictionary.
 
@@ -419,25 +418,32 @@ def get_best_pairs(
     :return: List with structured data
     """
     manual_pairs = []
+    propagated_pairs = []
     auto_pairs = []
     added_pairs = set()
 
     for pair in region_pairs:
         if pair.category not in excluded_categories:
             pair_data = pair.get_info(q_img)
-
             pair_ref = pair.get_ref()
+
             if pair_ref in added_pairs:
                 continue
             added_pairs.add(pair_ref)
 
-            if pair.is_manual or (pair.category_x and user_id in pair.category_x):
+            if (
+                pair.is_manual
+                or pair.similarity_type == 2
+                or (pair.category_x and user_id in pair.category_x)
+            ):
                 manual_pairs.append(pair_data)
+            elif pair.similarity_type == 3:
+                propagated_pairs.append(pair_data)
             else:
                 auto_pairs.append(pair_data)
 
     auto_pairs.sort(key=lambda x: x[0], reverse=True)
-    return manual_pairs + auto_pairs[:topk]
+    return manual_pairs + propagated_pairs + auto_pairs[:topk]
 
 
 def validate_img_ref(img_string):
