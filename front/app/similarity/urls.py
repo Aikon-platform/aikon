@@ -104,7 +104,6 @@ urlpatterns = [
         remove_incorrect_pairs,
         name="remove-incorrect-pairs",
     ),
-    # path(f"{APP_NAME}/similarity/delete-all", delete_all_regions_pairs, name="delete-pairs"),
     path(
         f"{APP_NAME}/similarity/reset/<int:rid>",
         reset_regions_similarity,
@@ -115,4 +114,5 @@ urlpatterns = [
         reset_regions_similarity,
         name="reset-all-similarity",
     ),
+    # path(f"{APP_NAME}/similarity/delete-all", delete_all_regions_pairs, name="delete-pairs"),
 ]

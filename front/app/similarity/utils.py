@@ -256,6 +256,7 @@ def score_file_to_db(file_path):
                         regions_id_1=ref_1.split("_anno")[1],
                         regions_id_2=ref_2.split("_anno")[1],
                         is_manual=False,
+                        # algorithm=algo,
                         category_x=[],
                     )
                 )
@@ -418,7 +419,7 @@ def get_best_pairs(
     :return: List with structured data
     """
     manual_pairs = []
-    propagated_pairs = []
+    propagated_pairs = []  # propagated pairs that have been saved to database
     auto_pairs = []
     added_pairs = set()
 

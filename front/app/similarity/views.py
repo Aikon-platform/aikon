@@ -185,7 +185,9 @@ def get_compared_regions(request, wid, rid=None):
                 key=lambda x: sort_key(x[0]),
             )
         )
-
+        # if there's no similarities retrieved at all, avoid returning the region itself
+        if len(list(compared_regions.keys())) == 0:
+            return JsonResponse({})
         return JsonResponse(OrderedDict({**current_regions, **compared_regions}))
     except Exception as e:
         log("[get_compared_regions] Couldn't retrieve compared regions", e)

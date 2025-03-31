@@ -7,7 +7,6 @@
     import { exactSvg, partialSvg, semanticSvg, noSvg, userSvg, validateSvg } from './similarityCategory';
 
     import Region from "../Region.svelte";
-    import { derived } from "svelte/store";
 
     ////////////////////////////////////////////
 
@@ -23,8 +22,10 @@
     export let  category = null;
     export let  users = [];
     export let  isManual;
+    export let similarityType;
 
-    const similarityPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagated match, false otherwise
+    const getRegionsInfo = similarityStore.getRegionsInfo;
+    const similarityPropagatedContext = getContext("similarityPropagatedContext") || false;
 
     $: selectedCategory = category;
     $: isSelectedByUser = users.includes(Number(userId)) || false;
@@ -42,9 +43,24 @@
         type: regionsType
     }
     const regionRef = `${wit}_${digit}`;
-    const desc = `${similarityStore.getRegionsInfo(regionRef).title}<br>
+
+    if (getRegionsInfo(regionRef).title === "Error") {
+        console.log(similarityType, regionRef, getRegionsInfo(regionRef));
+    }
+    const desc = `
+        ${getRegionsInfo(regionRef).title}<br>
         Page ${parseInt(canvas)}<br>
-        <b>${score ? `Score: ${score}` : appLang === 'en' ? 'Manual similarity' : 'Correspondance manuelle'}</b>`
+        <b>${
+            score
+            ? `Score: ${score}`
+            : similarityType === 2 && appLang === 'en'
+            ? 'Manual similarity'
+            : similarityType === 2 && appLang === 'fr'
+            ? 'Correspondance manuelle'
+            : similarityType === 3 && appLang === 'en'
+            ? 'Propagated match'
+            : 'Correspondance propagée'
+        }</b>`
 
     ////////////////////////////////////////////
 
@@ -67,7 +83,8 @@
         score: score,
         category: selectedCategory,
         category_x: updateCurrentUsers(users),
-        is_manual: isManual || similarityPropagatedContext
+        is_manual: isManual || similarityType === 2,
+        similarityType: similarityType
     })
 
     function updateCategory(category) {

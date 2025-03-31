@@ -53,8 +53,9 @@
      *      updated, but the update is not transmitted to the parent
      *      (aka, the current component)
      */
-    $: displaySimImg = (simImgScore, simImgCategory, usersCategory, _excludedCategories, _similarityScoreCutoff) =>
-        isPropagatedContext  // the similarity filter won't affect the display of propagations
+    $: displaySimImg = (simImgScore, simImgCategory, usersCategory, similarityType, _excludedCategories, _similarityScoreCutoff) =>
+        similarityType !== 1    // the similarity filter won't affect the display of propagations or manual matches
+        || isPropagatedContext
         || (isAboveCutoff(simImgScore, _similarityScoreCutoff)
             && isNotInExcludedCategories(simImgCategory, usersCategory, _excludedCategories));
 
@@ -76,9 +77,9 @@
         }
     </div>
 {:then simImgs}
-    {#each simImgs as [score, _, sImg, qRegions, sRegions, category, users, isManual]}
-        {#if displaySimImg(score, category, users, $excludedCategories, $similarityScoreCutoff)}
-            <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual}/>
+    {#each simImgs as [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]}
+        {#if displaySimImg(score, category, users, similarityType, $excludedCategories, $similarityScoreCutoff)}
+            <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual} {similarityType}/>
         {/if}
     {:else}
         {#if noRegionsSelected }

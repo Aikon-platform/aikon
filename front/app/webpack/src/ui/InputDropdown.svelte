@@ -10,7 +10,10 @@
 
     restrictions:
     - it is synchronous (no async data fetching)
-    - it does not handle updates to props update
+    - it does not handle updates to props update. tried to fix this
+        several times and it is REALLY difficult to avoid weird feedback
+        loops where updates in InputDropdown will trigger the parent to update
+        the choices props, thus re-modifying InputDropdown.
     - when passing a `start`, the values
         each item of `start` and `choices`
         (type DropdownChoice.value) must be hashable

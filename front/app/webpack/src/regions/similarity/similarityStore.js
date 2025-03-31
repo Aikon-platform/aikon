@@ -16,7 +16,7 @@ import { csrfToken } from "../../constants.js";
  *  a regions extraction
  * @type {object}
  * @property {Number} id
- * @property {String} ref
+ * @property {String} ref
  * @property {String} url: IIIF URL to the extracted image regions
  * @property {"Regions"} type
  * @property {"Regions"} class: python  class
@@ -168,6 +168,7 @@ function createSimilarityStore() {
     function getRegionsInfo(ref) {
         const displayedRegions = get(comparedRegions);
         const regionRef = Object.keys(displayedRegions).filter(key => key.startsWith(ref));
+        // console.log("getRegionsInfo", ref, regionRef.length, regionRef)
         if (regionRef.length !== 1) {
             return {title: "Error"};
         }
