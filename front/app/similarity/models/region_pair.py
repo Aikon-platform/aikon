@@ -137,6 +137,13 @@ class RegionPair(models.Model):
     Is this pair manually added by a user or automatically generated (ie from a score file)
     """
     is_manual = models.BooleanField(max_length=150, null=True, default=False)
+    """
+    Type of similarity. This should replace `is_manual` in the long run
+    1 = automatic / computed similarity
+    2 = manual similarity
+    3 = propagated similarity
+    """
+    similarity_type = models.IntegerField(blank=True, null=True, default=1)
 
     # TODO: consider removing the following fields to reduce overhead
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)

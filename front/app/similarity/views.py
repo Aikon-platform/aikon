@@ -334,6 +334,7 @@ def get_propagated_matches(
                 category=None,
                 category_x=[],
                 is_manual=False,
+                score=None,
             ).get_info()
             for p_img in _propagated
         ]
@@ -520,30 +521,28 @@ def save_category(request):
 
         img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
         category = data.get("category")
-        category_x = data.get("category_x")
+        category_x = data.get("category_x", [])
         regions_id_1 = data.get("regions_id_1")
         regions_id_2 = data.get("regions_id_2")
+        is_manual = data.get("is_manual")
+        score = data.get("score")
 
         region_pair, created = RegionPair.objects.get_or_create(
             img_1=img_1,
             img_2=img_2,
+            regions_id_1=int(regions_id_1),
+            regions_id_2=int(regions_id_2),
         )
 
-        region_pair.regions_id_1 = (
-            int(regions_id_1) if regions_id_1 else region_pair.regions_id_1
-        )
-        region_pair.regions_id_2 = (
-            int(regions_id_2) if regions_id_2 else region_pair.regions_id_2
-        )
+        # region_pair.regions_id_1 = (
+        #     int(regions_id_1) if regions_id_1 else region_pair.regions_id_1
+        # )
+        # region_pair.regions_id_2 = (
+        #     int(regions_id_2) if regions_id_2 else region_pair.regions_id_2
+        # )
+        region_pair.score = int(score) if score else None
         region_pair.category = int(category) if category else None
         region_pair.category_x = sorted(category_x)
-        is_manual = data.get("is_manual")
-        region_pair.regions_id_1 = (
-            int(regions_id_1) if regions_id_1 else region_pair.regions_id_1
-        )
-        region_pair.regions_id_2 = (
-            int(regions_id_2) if regions_id_1 else region_pair.regions_id_2
-        )
         region_pair.is_manual = is_manual if is_manual else False
         region_pair.save()
 
