@@ -117,7 +117,9 @@ def get_similar_images(request, wid, rid=None):
         if not regions_ids or not q_img:
             return JsonResponse({})
 
-        all_pairs = get_region_pairs_with(q_img, regions_ids, include_self=True)
+        all_pairs = get_region_pairs_with(
+            q_img, regions_ids, include_self=True, strict=True
+        )
 
         # Process pairs for each q_region
         result = []
@@ -212,32 +214,16 @@ def get_similarity_score_range(
         to_rid = []
         if request.body and len(request.body):
             data = json.loads(request.body)
-            to_rid = data.get("to_rid")
+            to_rid = data.get("to_rid", [])
 
-        q1 = RegionPair.objects.filter(Q(img_1__contains=f"wit{wid}") & ~Q(score=None))
-        if to_rid and len(to_rid):
-            q1 = q1.filter(Q(regions_id_2__in=to_rid))
-        q2 = RegionPair.objects.filter(Q(img_2__contains=f"wit{wid}") & ~Q(score=None))
-        if to_rid and len(to_rid):
-            q2 = q2.filter(Q(regions_id_1__in=to_rid))
-
-        # it's not possible to do min/max on an union, so we run the 2 queries separately
-        # and then calculate a minmax. an extra gotcha is that if there's no score in q1 or q2,
-        # score__min/score__max will be None and min() can't be calculated on that.
-        _min = min(
-            [
-                m["score__min"]
-                for m in [q1.aggregate(Min("score")), q2.aggregate(Min("score"))]
-                if m["score__min"] is not None
-            ]
-        )
-        _max = max(
-            [
-                m["score__max"]
-                for m in [q1.aggregate(Max("score")), q2.aggregate(Max("score"))]
-                if m["score__max"] is not None
-            ]
-        )
+        q1 = Q(img_1__startswith=f"wit{wid}") & ~Q(score=None)
+        q2 = Q(img_2__startswith=f"wit{wid}") & ~Q(score=None)
+        if len(to_rid):
+            q1 &= Q(regions_id_2__in=to_rid)
+            q2 &= Q(regions_id_1__in=to_rid)
+        q = RegionPair.objects.filter((q1) | (q2))
+        _min = q.aggregate(Min("score"))["score__min"]
+        _max = q.aggregate(Max("score"))["score__max"]
 
         return JsonResponse({"min": _min, "max": _max})
 
@@ -253,10 +239,10 @@ def get_propagated_matches(
     """
     returns JSONified RegionPair tuples
     """
+    OG_IMG_ID = img_id
     MAX_DEPTH = 5
     MIN_DEPTH = 1
     RECURSION_DEPTH = [MIN_DEPTH, MAX_DEPTH]
-    OG_IMG_ID = img_id
 
     def get_direct_pairs(q_img: str, _id_regions_array: List[int] = []) -> List[str]:
         img_2_from_1 = RegionPair.objects.values_list("img_2").filter(
@@ -270,9 +256,17 @@ def get_propagated_matches(
             img_1_from_2 = img_1_from_2.filter(Q(regions_id_1__in=_id_regions_array))
         return [r[0] for r in list(img_2_from_1.union(img_1_from_2).all())]
 
-    def has_direct_relationship(img1: str, img2: str) -> bool:
+    # THE CAUSE OF ALL MY SUFFERING
+    # # ensures that the RegionPairs (img1, img2) and (OG_IMG_ID, img2) don't exist in the db
+    # def has_direct_relationship(img1: str, img2: str) -> bool:
+    #     return RegionPair.objects.filter(
+    #         (Q(img_1=img1) & Q(img_2=img2)) | (Q(img_1=img2) & Q(img_2=img1))
+    #     ).exists()
+
+    def has_direct_relationship_to_og(img_id: str) -> bool:
         return RegionPair.objects.filter(
-            (Q(img_1=img1) & Q(img_2=img2)) | (Q(img_1=img2) & Q(img_2=img1))
+            (Q(img_1=OG_IMG_ID) & Q(img_2=img_id))
+            | (Q(img_1=img_id) & Q(img_2=OG_IMG_ID))
         ).exists()
 
     def propagate(
@@ -296,16 +290,29 @@ def get_propagated_matches(
                 continue
             queried.add(match)
 
-            # TODO doesn't seem to work?
-            if not has_direct_relationship(q_img, match) and match != q_img:
-                matches.append(match)
+            ## THIS WILL AWAYS BE FALSE since we're only comparing relations
+            ## of depth 1, which have aldready been logged in database...
+            # if has_direct_relationship(q_img, match):
+            #     matches.append((match, depth))
 
-            if match != OG_IMG_ID:
-                matches.append((match, depth))
+            if match != q_img and match != OG_IMG_ID:
+                # has_direct_relationship_to_og should always return true if depth==1 (q_img==OG_IMG_ID),
+                # so we only run "has_direct_relationship_to_og" if depth > 1.
+                if depth == 1:
+                    matches.append((match, depth))
+                elif depth > 1 and not has_direct_relationship_to_og(match):
+                    matches.append((match, depth))
+
             sub_matches = propagate(
                 match, _id_regions_array, _recursion_depth, queried, depth
             )
-            matches.extend([m for m in sub_matches if m not in matches])
+            matches.extend(
+                [
+                    (match, depth)
+                    for (match, depth) in sub_matches
+                    if not any(m[0] == match for m in matches)
+                ]
+            )
 
         return matches
 

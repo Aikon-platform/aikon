@@ -281,17 +281,23 @@ def score_file_to_db(file_path):
     return True
 
 
-def get_region_pairs_with(q_img, regions_ids, include_self=False):
+def get_region_pairs_with(q_img, regions_ids, include_self=False, strict=False):
     """
     Retrieve all RegionPair records containing the given query image name
 
     :param q_img: str, the image name to look for
     :param regions_ids: list, ids of regions that should be included in the pairs (regions_id_1 or regions_id_2)
     :param include_self: bool, if we consider comparisons of the region with itself
+    :param strict: bool, ensures that `regions_ids` is used to filter the similarity image, not the query image (`q_img`): the matched image's regions, must be in `regions_ids`
     :return: list of RegionPair objects
     """
-    query = Q(img_1=q_img) | Q(img_2=q_img)
-    query &= Q(regions_id_1__in=regions_ids) | Q(regions_id_2__in=regions_ids)
+    if not strict:
+        query = Q(img_1=q_img) | Q(img_2=q_img)
+        query &= Q(regions_id_1__in=regions_ids) | Q(regions_id_2__in=regions_ids)
+    else:
+        query = (Q(img_1=q_img) & Q(regions_id_2__in=regions_ids)) | (
+            Q(img_2=q_img) & Q(regions_id_1__in=regions_ids)
+        )
 
     if not include_self:
         query &= ~Q(regions_id_1=F("regions_id_2"))

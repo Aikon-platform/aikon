@@ -18,6 +18,7 @@
     async function fetchSImgs(qImg, selection) {
         const selectionForWitness = selection[currentPageId] || {};
         const regionsIds = Object.values(selectionForWitness).map(r => r.id);
+        console.log(regionsIds);
         if (regionsIds.length === 0) {
             return {};
         }

@@ -157,7 +157,6 @@ const onAddItem = (e, allChoices, choicesObj) => {
             ? [...localSelectedValues, e.detail.value]
             : [e.detail.value];
     }
-    console.log("localSelectedValues", localSelectedValues);
 
     // see docstring: when clicking on "Select All", further deduplication is needed
     selectedValues = [...new Set(localSelectedValues)];
