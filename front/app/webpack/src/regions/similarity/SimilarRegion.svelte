@@ -24,7 +24,7 @@
     export let  isManual;
     export let similarityType;
 
-    const getRegionsInfo = similarityStore.getRegionsInfo;
+    const { getRegionsInfo, comparedRegions } = similarityStore;
     const similarityPropagatedContext = getContext("similarityPropagatedContext") || false;
 
     $: selectedCategory = category;
@@ -44,25 +44,38 @@
     }
     const regionRef = `${wit}_${digit}`;
 
-    if (getRegionsInfo(regionRef).title === "Error") {
-        console.log(similarityType, regionRef, getRegionsInfo(regionRef));
-    }
-    const desc = `
-        ${getRegionsInfo(regionRef).title}<br>
-        Page ${parseInt(canvas)}<br>
-        <b>${
-            score
-            ? `Score: ${score}`
-            : similarityType === 2 && appLang === 'en'
-            ? 'Manual similarity'
-            : similarityType === 2 && appLang === 'fr'
-            ? 'Correspondance manuelle'
-            : similarityType === 3 && appLang === 'en'
-            ? 'Propagated match'
-            : 'Correspondance propagée'
-        }</b>`
-
     ////////////////////////////////////////////
+
+    /**
+     * if the current SimilarRegion is a propagation, then
+     * `similarityStore.comparedRegions` may not contain the `regions`.
+     * in that case, we fetch the title from the backend.
+     */
+    async function getDesc() {
+        const formatter = (title) =>
+            `${title}<br>
+            Page ${parseInt(canvas)}<br>
+            <b>${
+                !isNaN(parseFloat(score)) && similarityType === 1
+                ? `Score: ${score}`
+                : similarityType === 2 && appLang === 'en'
+                ? 'Manual similarity'
+                : similarityType === 2 && appLang === 'fr'
+                ? 'Correspondance manuelle'
+                : similarityType === 3 && appLang === 'en'
+                ? 'Propagated match'
+                : 'Correspondance propagée'
+            }</b>`;
+        return similarityPropagatedContext
+            ? fetch(`${baseUrl}${pathUrl}get_regions_title/${regionRef}`)
+                .then(r => r.json())
+                .then(r => formatter(r.title))
+                .catch(e => {
+                    console.error("SimilarRegion.getDesc()", e);
+                    return formatter(appLang === "fr" ? "Titre inconnu" : "Unknown title");
+                })
+            : formatter(getRegionsInfo(regionRef).title);
+    }
 
     function updateCurrentUsers(_users) {
         _users = _users.slice();  // copy `_users`
@@ -75,6 +88,7 @@
         return _users;
     };
 
+    // format the current SimilarRegion to send to the backend
     const toRegionPair = () => ({
         img_1: qImg,
         img_2: sImg,
@@ -84,7 +98,7 @@
         category: selectedCategory,
         category_x: updateCurrentUsers(users),
         is_manual: isManual || similarityType === 2,
-        similarityType: similarityType
+        similarity_type: similarityType
     })
 
     function updateCategory(category) {
@@ -132,7 +146,9 @@
 
 
 <div>
-    <Region {item} size={256} {desc} isSquare={false}/>
+    {#await getDesc() then desc}
+        <Region {item} size={256} {desc} isSquare={false}/>
+    {/await}
     <div class="tags has-addons is-dark is-center">
         <span class="tag is-hoverable pl-4 pr-3 py-4" class:is-selected={selectedCategory === 1}
               on:click={() => categorize(1)} on:keyup={null}

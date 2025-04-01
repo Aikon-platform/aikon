@@ -46,6 +46,7 @@
                 body: JSON.stringify({
                     'q_img': qImg.replace('.jpg', ''),
                     's_img': sImg,
+                    'similarity_type': 2
                 })
             });
 

@@ -168,7 +168,6 @@ function createSimilarityStore() {
     function getRegionsInfo(ref) {
         const displayedRegions = get(comparedRegions);
         const regionRef = Object.keys(displayedRegions).filter(key => key.startsWith(ref));
-        // console.log("getRegionsInfo", ref, regionRef.length, regionRef)
         if (regionRef.length !== 1) {
             return {title: "Error"};
         }

@@ -67,15 +67,23 @@ urlpatterns = [
         name="witness-similar-region",
     ),
     path(
+        f"{APP_NAME}/witness/<int:wid>/regions/get_regions_title/<str:regions_ref>",
+        get_regions_title_by_ref,
+        name="get-regions-title-by-ref",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/get_regions_title/<str:regions_ref>",
+        get_regions_title_by_ref,
+        name="get-regions-title-regions-by-ref",
+    ),
+    path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/add-region-pair",
         add_region_pair,
-        # { "context": "default" },
         name="add-region-pair",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/add-region-pair",
         add_region_pair,
-        # { "context": "default" },
         name="add-witness-region-pair",
     ),
     path(

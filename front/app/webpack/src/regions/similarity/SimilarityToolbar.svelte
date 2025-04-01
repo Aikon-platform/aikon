@@ -1,4 +1,5 @@
 <script>
+import { onMount } from "svelte";
 import { derived } from "svelte/store";
 
 import { similarityStore } from "./similarityStore.js";
@@ -64,8 +65,9 @@ $: similarityScoreRangePromise = fetchSimilarityScoreRange($selectedRegions);
 
 /** @type {Number} */
 let innerWidth, innerHeight;
+$: mounted = false;
 $: wideDisplay = innerWidth > 1200;
-$: stickyTop = calcStickyTop(innerWidth, innerHeight);
+$: stickyTop = calcStickyTop(innerWidth, innerHeight, mounted);  // stickyTop will be recalculated on mount and on window resize
 
 ///////////////////////////////////////
 
@@ -115,6 +117,7 @@ async function fetchSimilarityScoreRange(_selectedRegions={}) {
 const calcStickyTop = () =>
     document.querySelector("#nav-actions")?.offsetHeight;
 
+
 const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data);
 const setExcludedCategories = (e) => excludedCategories.set(e.detail);
 const setPropagateRecursionDepth = (e) => propagateRecursionDepth.set(e.detail.data);
@@ -129,6 +132,12 @@ const setComparedRegions = (e) => {
     })
     selectedRegions.set(newSelectedRegions);
 }
+
+///////////////////////////////////////
+
+onMount(() => {
+    mounted = true
+});
 </script>
 
 

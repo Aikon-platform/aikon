@@ -409,6 +409,21 @@ def get_regions(img_1, img_2, wid, rid):
     return regions_1, regions_2
 
 
+def get_regions_title_by_ref(request, wid, rid=None, regions_ref: str = None):
+    try:
+        regions = Regions.objects.filter(json__ref__startswith=regions_ref).first()
+        if regions is None:
+            return JsonResponse(
+                {"error": f"Regions not found for regions_ref {regions_ref}"},
+                status=400,
+            )
+        return JsonResponse({"title": regions.json["title"]})
+    except Exception as e:
+        return JsonResponse(
+            {"error": "Error retrieving regions title: {e}"}, status=500
+        )
+
+
 def add_region_pair(request, wid, rid=None):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
