@@ -29,6 +29,8 @@ import "choices.js/public/assets/styles/choices.css";
 
 import { appLang } from "../constants";
 
+import TooltipGeneric from "./TooltipGeneric.svelte";
+
 /////////////////////////////////////////////////////
 
 /**
@@ -69,11 +71,13 @@ export let selectAll = multiple ? true : false;
 const dispatch = createEventDispatcher();
 
 const htmlId = `input-dropdown-select-${window.crypto.randomUUID()}`;
+const counterHtmlId = `input-dropdown-counter-${window.crypto.randomUUID()}`;
 const selectAllValue = `select-all-${window.crypto.randomUUID()}`;  // the value of "(un)select all" option is an UUID to ensure that the value is not a duplicate of an other item in `choices`
 const unSelectAllValue = `unselect-all-${window.crypto.randomUUID()}`
 
 /** @type {DropdownChoice.value[]} */
 $: selectedValues = start || [];
+$: displayCountTooltip = false;
 
 /////////////////////////////////////////////////////
 
@@ -246,7 +250,23 @@ onDestroy(() => {
     >
         {#if multiple }
             {#if selectedValues.length }
-                <span class="input-dropdown-count tag is-link m-1">{ selectedValues.length }</span>
+                <span class="is-relative">
+                    <span id={counterHtmlId}
+                        class="input-dropdown-count tag m-1"
+                    >{ selectedValues.length }</span>
+                    <TooltipGeneric
+                        targetHtmlId={counterHtmlId}
+                        tooltipText={`${selectedValues.length}
+                                    ${ appLang==="fr" && selectedValues.length > 1
+                                    ? "valeurs sélectionnées"
+                                    : appLang==="fr" && selectedValues.length === 1
+                                    ? "valeur sélectionnée"
+                                    : appLang==="en" && selectedValues.length > 1
+                                    ? "selected values"
+                                    : "selected value"
+                                    }`}
+                    ></TooltipGeneric>
+                </span>
             {/if }
             <select id={htmlId}
                     name={htmlId}
@@ -269,6 +289,7 @@ onDestroy(() => {
 <style>
 .input-dropdown-count {
     border-radius: 1rem;
+    border: var(--default-border);
 }
 .input-dropdown-select.is-multiple :global(.choices) {
     flex-grow: 2;
@@ -303,7 +324,7 @@ onDestroy(() => {
 /** selected item (single and multi) */
 :global(.choices__inner .dropdown-item) {
     background-color: var(--default-color);
-    color: var(--bulma-strong-color);
+    color: white;
     border: var(--default-border);
     border-radius: 1rem;
     padding-left: 10px;
@@ -343,5 +364,6 @@ onDestroy(() => {
 }
 :global(.choices__list--dropdown .dropdown-item.is-highlighted) {
     background-color: var(--default-color) !important;
+    color: white;
 }
 </style>

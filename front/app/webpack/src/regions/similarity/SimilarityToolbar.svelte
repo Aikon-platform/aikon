@@ -45,7 +45,7 @@ const comparedRegionsChoices = derived(comparedRegions, (($comparedRegions) =>
         prefix: `#${region.id}`,  // the number of the region
         prefixType: "text",
         value: regionId,
-        label: shorten(region.title)
+        label: shorten(region.title.replace(/^[^|]+/, ""))
     }))));
 
 /** @type {Number[]}: category values */
@@ -158,7 +158,7 @@ onMount(() => {
                             {#if Object.keys($comparedRegionsChoices).length}
                                 <InputDropdown choices={$comparedRegionsChoices}
                                                multiple={true}
-                                               placeholder={appLang==="fr" ? "Sélectionner des régions" : "Select regions"}
+                                               placeholder="..."
                                                start={defaultRegions}
                                                lightDisplay={true}
                                                title={appLang==="fr" ? "Régions sélectionnées" : "Selected regions"}
@@ -170,7 +170,7 @@ onMount(() => {
                         <div class="column { wideDisplay ? 'mb-2 is-one-third' : '' }">
                             <InputDropdown choices={categoriesChoices}
                                            multiple={true}
-                                           placeholder={appLang==="fr" ? "Masquer les catégories" : "Hide categories"}
+                                           placeholder="..."
                                            start={defaultExcludedCategories}
                                            lightDisplay={true}
                                            title={appLang==="fr" ? "Catégories masquées" : "Hidden categories"}
