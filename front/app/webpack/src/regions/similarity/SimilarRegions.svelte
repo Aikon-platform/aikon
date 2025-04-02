@@ -11,34 +11,49 @@
     const {
         selectedRegions,
         excludedCategories,
-        similarityScoreCutoff
+        similarityScoreCutoff,
+        propagateFilterByRegions
     } = similarityStore;
 
     const isPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagation, false otherwise
     const currentPageId = window.location.pathname.match(/\d+/g).join('-');
 
+    $: noRegionsSelected =
+        Object.values($selectedRegions).length === 0
+        || $selectedRegions[currentPageId] === undefined
+        || !Object.keys($selectedRegions[currentPageId]).length;
+
     //////////////////////////////
 
     /**
-     * @param {Number|String} simImgScore
-     * @param {Number} cutoff
+     * @param {number|string} simImgScore
+     * @param {number} cutoff
      */
     const isAboveCutoff = (simImgScore, cutoff) =>
         cutoff === undefined
         ? true
-        : simImgScore != null && Number(simImgScore) >= cutoff;
+        : simImgScore != null && number(simImgScore) >= cutoff;
 
     /**
-     * @param {Number} simImgCategory
-     * @param {Array<Number>} usersCategory
-     * @param {Array<Number>} _excludedCategories
+     * @param {number} simImgCategory
+     * @param {Array<number>} usersCategory
+     * @param {Array<number>} _excludedCategories
      */
     const isNotInExcludedCategories = (simImgCategory, usersCategory, _excludedCategories) =>
         !_excludedCategories.includes(simImgCategory);
 
     /**
+     * @param {number} simImgRegions
+     * @param {Array<number>} _selectedRegions
+    */
+    const isInSelectedRegions = (simImgRegions, _selectedRegions) =>
+        Object.keys(_selectedRegions[currentPageId])
+        .map(k => _selectedRegions[currentPageId][k].id)
+        .includes(simImgRegions);
+
+    /**
      * NOTE: the filtered images won't be updated if the user
-     * sets a category on a `SimilarRegion`
+     * sets a category on a `SimilarRegion` until the next refresh
      * expected behaviour
      *      the user sets a category => filters are
      *      recomputed and if the `SimilarRegion` belongs to one of
@@ -53,16 +68,35 @@
      *      updated, but the update is not transmitted to the parent
      *      (aka, the current component)
      */
-    $: displaySimImg = (simImgScore, simImgCategory, usersCategory, similarityType, _excludedCategories, _similarityScoreCutoff) =>
-        similarityType !== 1    // the similarity filter won't affect the display of propagations or manual matches
-        || isPropagatedContext
-        || (isAboveCutoff(simImgScore, _similarityScoreCutoff)
-            && isNotInExcludedCategories(simImgCategory, usersCategory, _excludedCategories));
-
-    $: noRegionsSelected =
-        Object.values($selectedRegions).length === 0
-        || $selectedRegions[currentPageId] === undefined
-        || !Object.keys($selectedRegions[currentPageId]).length;
+    const displaySimImg = (
+        simImgScore,
+        simImgRegions,
+        simImgCategory,
+        usersCategory,
+        _selectedRegions,
+        _excludedCategories,
+        _similarityScoreCutoff,
+        _propagateFilterByRegions
+    ) => {
+        if ( isPropagatedContext ) {
+            // apply `_propagateFilterByRegions` if this component inherits from PropagatedMatches.svelte
+            return _propagateFilterByRegions
+                ? isInSelectedRegions(simImgRegions, _selectedRegions)
+                : true;
+        }
+        else {
+            // `inSelectedRegions` will only have an effect on regions where `similarityType===3` (propagated matches that inherit from SimilarityMatches)
+            let inSelectedRegions =
+                _propagateFilterByRegions
+                ? isInSelectedRegions(simImgRegions, _selectedRegions)
+                : true;
+            return (
+                isAboveCutoff(simImgScore, _similarityScoreCutoff)
+                && isNotInExcludedCategories(simImgCategory, usersCategory, _excludedCategories)
+                && inSelectedRegions
+            );
+        }
+    }
 </script>
 
 {#await sImgsPromise}
@@ -78,7 +112,16 @@
     </div>
 {:then simImgs}
     {#each simImgs as [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]}
-        {#if displaySimImg(score, category, users, similarityType, $excludedCategories, $similarityScoreCutoff)}
+        {#if displaySimImg(
+            score,
+            sRegions,
+            category,
+            users,
+            $selectedRegions,
+            $excludedCategories,
+            $similarityScoreCutoff,
+            $propagateFilterByRegions
+        )}
             <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual} {similarityType}/>
         {/if}
     {:else}

@@ -29,8 +29,8 @@ import { csrfToken } from "../../constants.js";
  */
 /**
  * @typedef PropagateParamsType
- * @property {number[]} recursionDepth
- * @property {boolean} filterByRegions
+ * @property {number} propagateRecursionDepth
+ * @property {boolean} propagateFilterByRegions
  */
 /**
  * @typedef SimilarityParamsType
@@ -82,7 +82,7 @@ function createSimilarityStore() {
     });
 
     /** @type {number[]} */
-    const propagateRecursionDepth = writable(JSON.parse(localStorage.getItem("propagateRecursionDepth")) || allowedPropagateDepthRange);
+    const propagateRecursionDepth = writable(JSON.parse(localStorage.getItem("propagateRecursionDepth")) || allowedPropagateDepthRange[1]);
     propagateRecursionDepth.subscribe((value) => localStorage.setItem("propagateRecursionDepth", JSON.stringify(value)));
 
     /** @type {Boolean} */

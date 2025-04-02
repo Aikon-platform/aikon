@@ -1,5 +1,11 @@
 <script>
-import { onMount } from "svelte";
+/**
+ * SimilarityToolbar defines individual filters that are then
+ * applied that modify the content displayed (either using front-end
+ * filtering when possible or backend queries).
+ * front-end filtering is done is `SimilarRegions.svelte`
+ */
+
 import { derived } from "svelte/store";
 
 import { similarityStore } from "./similarityStore.js";
@@ -48,51 +54,32 @@ const comparedRegionsChoices = derived(comparedRegions, (($comparedRegions) =>
         label: shorten(region.title.replace(/^[^|]+/, ""))
     }))));
 
-/** @type {Number[]}: category values */
+/** @type {number[]}: category values */
 const defaultExcludedCategories = $excludedCategories;
 /** @type {string[]}: regions IDs */
 const defaultRegions = Object.keys($selectedRegions[currentPageId] || {});
-/** @type {number[]} */
+/** @type {number} */
 const defaultRecursionDepth = $propagateRecursionDepth;
-/** @type {Boolean} */
+/** @type {boolean} */
 const defaultFilterByRegions = $propagateFilterByRegions;
 
-/** @type {Number?} updated by fetchSimilarityScoreRange */
+/** @type {Promise<Array<number?>>}. will be updated every time $selectedRegions changes */
+const similarityScoreRangePromise = fetchSimilarityScoreRange();
+
+/** @type {number?} ensures that $similarityScoreCutoff matches a value in similarityScoreRangePromise. updated by fetchSimilarityScoreRange */
 $: defaultSimilarityScoreCutoff = $similarityScoreCutoff || undefined
 
-/** @type {Promise<Array<Number?>>}. will be updated every time $selectedRegions changes */
-$: similarityScoreRangePromise = fetchSimilarityScoreRange($selectedRegions);
-
-/** @type {Number} */
+/** @type {number} */
 let innerWidth, innerHeight;
-$: mounted = false;
 $: wideDisplay = innerWidth > 1200;
-$: stickyTop = calcStickyTop(innerWidth, innerHeight, mounted);  // stickyTop will be recalculated on mount and on window resize
+$: stickyTop = calcStickyTop(innerWidth, innerHeight);  // recalculated on window resize
 
 ///////////////////////////////////////
 
-/**
- * reactive to changes in $selectedRegions
- * @returns {Promise<Array<Number?>>}
- */
-async function fetchSimilarityScoreRange(_selectedRegions={}) {
+/** @returns {Promise<Array<number?>>} */
+async function fetchSimilarityScoreRange() {
     let range = [];
-    let toRid = [];  // all regions for which similarities to the current witness were computed
-    if ( _selectedRegions[currentPageId] != null ) {
-        try {
-            toRid = Object.values(_selectedRegions[currentPageId]).map(r => r.id);
-        } catch(e) {
-            console.error("fetchSimilarityScoreRange: error retrieving regions", e);
-        }
-    }
-    return await fetch(`${baseUrl}similarity-score-range`,  {
-        method: "POST",
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken
-        },
-        body: JSON.stringify({ to_rid: toRid })
-    })
+    return await fetch(`${baseUrl}similarity-score-range`)
     .then(response => response.json())
     .then(data => {
         range = [data.min, data.max];
@@ -133,11 +120,6 @@ const setComparedRegions = (e) => {
     selectedRegions.set(newSelectedRegions);
 }
 
-///////////////////////////////////////
-
-onMount(() => {
-    mounted = true
-});
 </script>
 
 

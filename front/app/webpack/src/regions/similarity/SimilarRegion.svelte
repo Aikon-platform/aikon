@@ -14,18 +14,17 @@
     const baseUrl = windowUrl.origin;
     const pathUrl = windowUrl.pathname;
 
-    export let  qImg;
-    export let  sImg;
-    export let  qRegions;
-    export let  sRegions;
-    export let  score = 0;
-    export let  category = null;
-    export let  users = [];
-    export let  isManual;
+    export let qImg;
+    export let sImg;
+    export let qRegions;
+    export let sRegions;
+    export let score = 0;
+    export let category = null;
+    export let users = [];
+    export let isManual;
     export let similarityType;
 
     const { getRegionsInfo, comparedRegions } = similarityStore;
-    const similarityPropagatedContext = getContext("similarityPropagatedContext") || false;
 
     $: selectedCategory = category;
     $: isSelectedByUser = users.includes(Number(userId)) || false;
@@ -66,7 +65,7 @@
                 ? 'Propagated match'
                 : 'Correspondance propagée'
             }</b>`;
-        return similarityPropagatedContext
+        return similarityType === 3
             ? fetch(`${baseUrl}${pathUrl}get_regions_title/${regionRef}`)
                 .then(r => r.json())
                 .then(r => formatter(r.title))
@@ -113,8 +112,8 @@
 
     /**
      * save the new RegionPair.category to database (RegionPair.category)
-     * if `similarityPropagatedContext===true`, the whole RegionPair will be created
-     * and saved to database: the current regionpair doesn't exist in database.
+     * if `similarityType===3` (propagated match), the RegionPair does not exist in the DB.
+     * setting the region will create the RegionPair and and save it to database
      */
     async function categorize(category) {
         console.log("categorize called !")

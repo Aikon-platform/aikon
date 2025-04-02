@@ -16,21 +16,25 @@
 
     let propagatedMatchesPromise;
 
-    setContext("similarityPropagatedContext", true);  // bool. true if it's a propagated similarity match, false if it's any other match
+    /** @type {PropagateParamsType|undefined}*/
+    let oldPropagateParams;
+
+    $: currentRegionIds = Object.values($selectedRegions[currentPageId] || {}).map(r => r.id)
+
+    /** @type {boolean} true if the child component inherits from PropagatedMatches, false otherwise. */
+    setContext("similarityPropagatedContext", true);
 
     ////////////////////////////////////
 
     /**
-     * @param {boolean} filterByRegions
      * @param {number[]} recursionDepth
-     * @param {RegionsType} selection
      */
-    const getPropagatedMatches = async (filterByRegions, recursionDepth, selection) =>
+    const getPropagatedMatches = async (recursionDepth) =>
         fetch(`${baseUrl}propagated-matches/${qImg}`, {
             method: "POST",
             body: JSON.stringify({
-                regionsIds: Object.values(selection[currentPageId] || {}).map(r => r.id),
-                filterByRegions: filterByRegions,
+                regionsIds: [],
+                filterByRegions: false,
                 recursionDepth: recursionDepth
             }),
             headers: {
@@ -43,22 +47,31 @@
         .catch(e => {
             console.error("PropagatedMatches.getPropagatedMatches:", e);
             return []
-        })
+        });
 
-        propagateParams.subscribe((newPropagateParams) => {
-            propagatedMatchesPromise = getPropagatedMatches(
-                newPropagateParams.propagateFilterByRegions,
-                newPropagateParams.propagateRecursionDepth,
-                $selectedRegions
-            )
-        })
-        selectedRegions.subscribe((newSelectedRegions) => {
-            propagatedMatchesPromise = getPropagatedMatches(
-                $propagateParams.propagateFilterByRegions,
-                $propagateParams.propagateRecursionDepth,
-                newSelectedRegions
-            )
-        })
+    ////////////////////////////////////
+
+    propagateParams.subscribe((newPropagateParams) => {
+        let newDepth = newPropagateParams.propagateRecursionDepth,
+            oldDepth = oldPropagateParams?.propagateRecursionDepth,
+            sameDepth =
+                Array.isArray(newDepth) && Array.isArray(oldDepth)
+                && newDepth.length===oldDepth.length
+                && newDepth.every((e, idx) => e === oldDepth[idx]||undefined);
+        if ( !sameDepth ) {
+            propagatedMatchesPromise =
+                getPropagatedMatches(newPropagateParams.propagateRecursionDepth);
+        }
+        oldPropagateParams = newPropagateParams;
+    })
+
+    // selectedRegions.subscribe((newSelectedRegions) => {
+    //     propagatedMatchesPromise = getPropagatedMatches(
+    //         $propagateParams.propagateFilterByRegions,
+    //         $propagateParams.propagateRecursionDepth,
+    //         newSelectedRegions
+    //     )
+    // })
 </script>
 
 <div class="block matches-suggestion-wrapper">

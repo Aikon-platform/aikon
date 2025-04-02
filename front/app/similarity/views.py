@@ -202,29 +202,17 @@ def get_similarity_score_range(
     request, wid: int, rid: int | None = None
 ) -> JsonResponse:
     """
-    return a [minScore, maxScore] for similarities of `wid`
-    - an optional `to_rid` is specified in the body: an array of regions the match images
-        must belong to. if `to_rid` is None, the min/max scores for all regions is returned.
+    return a [minScore, maxScore] for all similarities of `wid`
     """
     from django.db.models import Max, Min
 
-    if request.method != "POST":
-        return JsonResponse({"error": "Invalid request method"}, status=400)
     try:
-        to_rid = []
-        if request.body and len(request.body):
-            data = json.loads(request.body)
-            to_rid = data.get("to_rid", [])
-
-        q1 = Q(img_1__startswith=f"wit{wid}") & ~Q(score=None)
-        q2 = Q(img_2__startswith=f"wit{wid}") & ~Q(score=None)
-        if len(to_rid):
-            q1 &= Q(regions_id_2__in=to_rid)
-            q2 &= Q(regions_id_1__in=to_rid)
-        q = RegionPair.objects.filter((q1) | (q2))
+        q = RegionPair.objects.filter(
+            (Q(img_1__startswith=f"wit{wid}") & ~Q(score=None))
+            | (Q(img_2__startswith=f"wit{wid}") & ~Q(score=None))
+        )
         _min = q.aggregate(Min("score"))["score__min"]
         _max = q.aggregate(Max("score"))["score__max"]
-
         return JsonResponse({"min": _min, "max": _max})
 
     except json.JSONDecodeError:
@@ -355,7 +343,8 @@ def get_propagated_matches(
         data = json.loads(request.body)
         filter_by_regions: bool = data.get("filterByRegions")
         id_regions_array: List[int] = data.get("regionsIds", [])
-        recursion_depth: List[int] = data.get("recursionDepth", [])
+        max_recursion_depth = data.get("recursionDepth", 5)
+        recursion_depth = [MIN_DEPTH, max_recursion_depth]
         recursion_depth = (
             sorted(
                 # recursion_depth measures recursion counting 1 as the 1st element, while here 0 is the 1st element.
