@@ -5,6 +5,7 @@
 
     import { appLang, csrfToken } from '../../constants.js';
     import { similarityStore } from "./similarityStore";
+    import { newAndOld } from "../../utils";
 
     /** @typedef {import("./similarityStore").PropagateParamsType} PropagateParamsType */
 
@@ -18,8 +19,8 @@
 
     let propagatedMatchesPromise;
 
-    /** @type {PropagateParamsType|undefined}*/
-    let oldPropagateParams;
+    /** @type {NewAndOld<PropagateParamsType>}*/
+    let newAndOldPropagateParams = newAndOld;
 
     /** @type {boolean} true if the child component inherits from PropagatedMatches, false otherwise. */
     setContext("similarityPropagatedContext", true);
@@ -52,17 +53,16 @@
     ////////////////////////////////////
 
     propagateParams.subscribe((newPropagateParams) => {
-        let newDepth = newPropagateParams.propagateRecursionDepth,
-            oldDepth = oldPropagateParams?.propagateRecursionDepth,
-            sameDepth =
-                Array.isArray(newDepth) && Array.isArray(oldDepth)
-                && newDepth.length===oldDepth.length
-                && newDepth.every((e, idx) => e === oldDepth[idx]||undefined);
-        if ( !sameDepth ) {
+        newAndOld
+            .set(newPropagateParams.propagateRecursionDepth)
+            .setCompareFn((x, y) =>
+                Array.isArray(x) && Array.isArray(y)
+                && x.length===y.length
+                && x.every((e, idx) => e === y[idx]||undefined));
+        if ( !newAndOld.same() ) {
             propagatedMatchesPromise =
                 getPropagatedMatches(newPropagateParams.propagateRecursionDepth);
         }
-        oldPropagateParams = newPropagateParams;
     })
 
 </script>

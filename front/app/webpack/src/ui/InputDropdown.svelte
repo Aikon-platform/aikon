@@ -73,7 +73,10 @@ const dispatch = createEventDispatcher();
 const htmlId = `input-dropdown-select-${window.crypto.randomUUID()}`;
 const counterHtmlId = `input-dropdown-counter-${window.crypto.randomUUID()}`;
 const selectAllValue = `select-all-${window.crypto.randomUUID()}`;  // the value of "(un)select all" option is an UUID to ensure that the value is not a duplicate of an other item in `choices`
-const unSelectAllValue = `unselect-all-${window.crypto.randomUUID()}`
+const unSelectAllValue = `unselect-all-${window.crypto.randomUUID()}`;
+
+/** @type {boolean} when true, this will block the dispatch of `updateValues` to parent. */
+let blockEmit = false;
 
 /** @type {DropdownChoice.value[]} */
 $: selectedValues = start || [];
@@ -135,6 +138,9 @@ const formatChoices = (arr, _selectAll) =>
 const onAddItem = (e, allChoices, choicesObj) => {
     let localSelectedValues = [...selectedValues];  // avoid triggering side effects of `selectedValues`
     if (e.detail.value === selectAllValue) {
+        blockEmit = true;
+        setTimeout(() => blockEmit = false, 500);
+
         // set `selectedValues` + unselect all previous choices and reselect all choices except the Select/Unselect ones.
         allChoices = allChoices.map(c =>
             c.value !== selectAllValue && c.value !== unSelectAllValue
@@ -164,7 +170,9 @@ const onAddItem = (e, allChoices, choicesObj) => {
 
     // see docstring: when clicking on "Select All", further deduplication is needed
     selectedValues = [...new Set(localSelectedValues)];
-    dispatch("updateValues", selectedValues);
+    if ( !blockEmit ) {
+        dispatch("updateValues", selectedValues);
+    }
 };
 
 const onRemoveItem = (e) => {

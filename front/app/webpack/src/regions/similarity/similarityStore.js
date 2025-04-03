@@ -1,4 +1,4 @@
-import { derived, get, writable, Writable } from 'svelte/store';
+import { derived, get, writable } from 'svelte/store';
 import { errorMsg, initPagination, loading, pageUpdate } from "../../utils.js";
 import { csrfToken } from "../../constants.js";
 
@@ -63,52 +63,52 @@ function createSimilarityStore() {
     const currentPage = writable(1);
 
     // todo empty selected regions if not in compared regions
-    /** @type {Writable<ComparedRegionsType>} */
+    /** @type {writable<ComparedRegionsType>} */
     const comparedRegions = writable({});
 
-    /** @type {Writable<SelectedRegionsType>} */
+    /** @type {writable<SelectedRegionsType>} */
     const selectedRegions = writable(JSON.parse(localStorage.getItem("selectedRegions")) || emptySelection);
     selectedRegions.subscribe((value) => localStorage.setItem("selectedRegions", JSON.stringify(value)));
 
-    /** @type {Writable<number[]>} */
+    /** @type {writable<number[]>} */
     const excludedCategories = writable(JSON.parse(localStorage.getItem("excludedCategories")) || []);
     excludedCategories.subscribe((value) => localStorage.setItem("excludedCategories", JSON.stringify(value)));
 
-    /** @type {Writable<number?>} RegionPairs below this score will be hidden from the user */
+    /** @type {writable<number?>} RegionPairs below this score will be hidden from the user */
     const similarityScoreCutoff = writable(JSON.parse(localStorage.getItem("similarityScoreCutoff")) || undefined);
     similarityScoreCutoff.subscribe((value) => {
         // since the 1st value is undefined, we need to ensure we're not writing this to localStorage
         if (value!=null) localStorage.setItem("similarityScoreCutoff", JSON.stringify(value))
     });
 
-    /** @type {Writable<number[]>} */
+    /** @type {writable<number[]>} */
     const propagateRecursionDepth = writable(JSON.parse(localStorage.getItem("propagateRecursionDepth")) || allowedPropagateDepthRange[1]);
     propagateRecursionDepth.subscribe((value) => localStorage.setItem("propagateRecursionDepth", JSON.stringify(value)));
 
-    /** @type {Writable<Boolean>} */
+    /** @type {writable<Boolean>} */
     const propagateFilterByRegions = writable(JSON.parse(localStorage.getItem("propagateFilterByRegions")) || false);
     propagateFilterByRegions.subscribe((value) => localStorage.setItem("propagateFilterByRegions", JSON.stringify(value)));
 
-    /** @type {Writable<PropagateParamsType>} no localStorage syncing since individual stores are aldready synced */
+    /** @type {writable<PropagateParamsType>} no localStorage syncing since individual stores are aldready synced */
     const propagateParams = derived([propagateRecursionDepth, propagateFilterByRegions], ([$propagateRecursionDepth, $propagateFilterByRegions]) => ({
         propagateRecursionDepth: $propagateRecursionDepth,
         propagateFilterByRegions: $propagateFilterByRegions
     }));
 
-    /** @type {Writable<SimilarityParamsType>} no localStorage syncing since individual stores are aldready synced */
+    /** @type {writable<SimilarityParamsType>} no localStorage syncing since individual stores are aldready synced */
     const similarityParams = derived([excludedCategories, selectedRegions, similarityScoreCutoff], ([$excludedCategories, $selectedRegions, $similarityScoreCutoff]) => ({
         excludedCategories: $excludedCategories,
         regions: $selectedRegions,
         similarityScoreCutoff: $similarityScoreCutoff
     }));
 
-    /** @type {Writable<SimilarityToolbarParamsType>} no localStorage syncing since individual stores are aldready synced */
+    /** @type {writable<SimilarityToolbarParamsType>} no localStorage syncing since individual stores are aldready synced */
     const similarityToolbarParams = derived([propagateParams, similarityParams], ([$propagateParams, $similarityParams]) => ({
         propagate: $propagateParams,
         similarity: $similarityParams
     }));
 
-    /** @type {Writable<string[]|[]>} query image names for the current witness */
+    /** @type {writable<string[]|[]>} query image names for the current witness */
     const qImgs = writable([]);
     const pageQImgs = writable([]);
 

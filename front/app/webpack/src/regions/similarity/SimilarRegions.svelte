@@ -17,6 +17,14 @@
 
     const isPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagation, false otherwise
     const currentPageId = window.location.pathname.match(/\d+/g).join('-');
+    const waitText =
+        appLang === 'en' && !isPropagatedContext
+        ? 'Retrieving similar regions...'
+        : appLang === 'fr' && !isPropagatedContext
+        ? 'Récupération des régions similaires...'
+        : appLang === 'en' && isPropagatedContext
+        ? "Retrieving propagated regions..."
+        : "Récupération de similarités propagées...";
 
     $: noRegionsSelected =
         Object.values($selectedRegions).length === 0
@@ -99,48 +107,43 @@
     }
 </script>
 
-{#await sImgsPromise}
-    <div class="faded is-center">
-        { appLang === 'en' && !isPropagatedContext
-        ? 'Retrieving similar regions...'
-        : appLang === 'fr' && !isPropagatedContext
-        ? 'Récupération des régions similaires...'
-        : appLang === 'en' && isPropagatedContext
-        ? "Retrieving propagated regions..."
-        : "Récupération de similarités propagées..."
-        }
-    </div>
-{:then simImgs}
-    {#each simImgs as [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]}
-        {#if displaySimImg(
-            score,
-            sRegions,
-            category,
-            users,
-            $selectedRegions,
-            $excludedCategories,
-            $similarityScoreCutoff,
-            $propagateFilterByRegions
-        )}
-            <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual} {similarityType}/>
-        {/if}
-    {:else}
-        {#if noRegionsSelected }
-            <div class="faded is-center">
-                {appLang === 'en' ? 'No document selected. Select one to display results.' : 'Aucun document sélectionné. Sélectionnez-en un pour afficher les résultats.'}
-            </div>
+{#if sImgsPromise}
+    {#await sImgsPromise}
+        <div class="faded is-center">{waitText}</div>
+    {:then simImgs}
+        {#each simImgs as [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]}
+            {#if displaySimImg(
+                score,
+                sRegions,
+                category,
+                users,
+                $selectedRegions,
+                $excludedCategories,
+                $similarityScoreCutoff,
+                $propagateFilterByRegions
+            )}
+                <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual} {similarityType}/>
+            {/if}
         {:else}
-            <div class="faded is-center">
-                {appLang === 'en' ? 'No similar regions' : 'Pas de régions similaires'}
-            </div>
-        {/if}
-    {/each}
-{:catch error}
-    <div class="faded is-center">
-        {
-            appLang === 'en' ?
-            `Error when retrieving similar regions: ${error}` :
-            `Erreur de recupération des régions similaires: ${error}`
-        }
-    </div>
-{/await}
+            {#if noRegionsSelected }
+                <div class="faded is-center">
+                    {appLang === 'en' ? 'No document selected. Select one to display results.' : 'Aucun document sélectionné. Sélectionnez-en un pour afficher les résultats.'}
+                </div>
+            {:else}
+                <div class="faded is-center">
+                    {appLang === 'en' ? 'No similar regions' : 'Pas de régions similaires'}
+                </div>
+            {/if}
+        {/each}
+    {:catch error}
+        <div class="faded is-center">
+            {
+                appLang === 'en' ?
+                `Error when retrieving similar regions: ${error}` :
+                `Erreur de recupération des régions similaires: ${error}`
+            }
+        </div>
+    {/await}
+{:else}
+    <div class="faded is-center">{waitText}</div>
+{/if}
