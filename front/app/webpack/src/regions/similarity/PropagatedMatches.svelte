@@ -6,6 +6,8 @@
     import { appLang, csrfToken } from '../../constants.js';
     import { similarityStore } from "./similarityStore";
 
+    /** @typedef {import("./similarityStore").PropagateParamsType} PropagateParamsType */
+
     ////////////////////////////////////
 
     export let qImg;
@@ -18,8 +20,6 @@
 
     /** @type {PropagateParamsType|undefined}*/
     let oldPropagateParams;
-
-    $: currentRegionIds = Object.values($selectedRegions[currentPageId] || {}).map(r => r.id)
 
     /** @type {boolean} true if the child component inherits from PropagatedMatches, false otherwise. */
     setContext("similarityPropagatedContext", true);
@@ -65,13 +65,6 @@
         oldPropagateParams = newPropagateParams;
     })
 
-    // selectedRegions.subscribe((newSelectedRegions) => {
-    //     propagatedMatchesPromise = getPropagatedMatches(
-    //         $propagateParams.propagateFilterByRegions,
-    //         $propagateParams.propagateRecursionDepth,
-    //         newSelectedRegions
-    //     )
-    // })
 </script>
 
 <div class="block matches-suggestion-wrapper">

@@ -14,14 +14,23 @@
     const baseUrl = windowUrl.origin;
     const pathUrl = windowUrl.pathname;
 
+    /** @type {string} */
     export let qImg;
+    /** @type {string} */
     export let sImg;
+    /** @type {number} */
     export let qRegions;
+    /** @type {number} */
     export let sRegions;
+    /** @type {number} */
     export let score = 0;
+    /** @type {number?} */
     export let category = null;
+    /** @type {number?[]} */
     export let users = [];
+    /** @type {boolean} */
     export let isManual;
+    /** @type {number} */
     export let similarityType;
 
     const { getRegionsInfo, comparedRegions } = similarityStore;

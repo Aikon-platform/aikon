@@ -3,6 +3,8 @@
     import SimilarRegions from "./SimilarRegions.svelte";
     import { similarityStore } from "./similarityStore.js";
 
+    /** @typedef {import("./similarityStore").SelectedRegionsType} SelectedRegionsType*/
+
     export let qImg;
     let sImgsPromise;
 
