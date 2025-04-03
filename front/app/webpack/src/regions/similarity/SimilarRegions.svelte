@@ -40,7 +40,7 @@
     const isAboveCutoff = (simImgScore, cutoff) =>
         cutoff === undefined
         ? true
-        : simImgScore != null && number(simImgScore) >= cutoff;
+        : simImgScore != null && Number(simImgScore) >= cutoff;
 
     /**
      * @param {number} simImgCategory

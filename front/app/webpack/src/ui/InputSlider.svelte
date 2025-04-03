@@ -18,6 +18,10 @@ import 'nouislider/dist/nouislider.css';
 
 import TooltipGeneric from "./TooltipGeneric.svelte";
 
+import { newAndOld } from "../utils";
+
+/** @typedef {import("../utils").NewAndOldType} NewAndOldType */
+
 //////////////////////////////////////////////
 
 /**
@@ -50,16 +54,16 @@ const dispatch = createEventDispatcher();
 const sliderHtmlId = `slider-${window.crypto.randomUUID()}`;
 const isRange = Array.isArray(start) && start.length === 2 && start.every(n => !isNaN(parseFloat(n)));  // true if Number, Number
 const handleTooltips = [];
-const oldSelectedVal = {
-    isRange: isRange,
-    data: start
-};
 const handleHtmlIds = isRange
     ? [ `noUi-handle-${window.crypto.randomUUID()}`,
         `noUi-handle-${window.crypto.randomUUID()}` ]
     : [ `noUi-handle-${window.crypto.randomUUID()}` ];
 
-/** @type {SelectedValType} */
+// TODO replace the 2 variables below by newAndOld.
+const oldSelectedVal = {
+    isRange: isRange,
+    data: start
+};
 $: selectedVal = {
     isRange: isRange,
     data: start

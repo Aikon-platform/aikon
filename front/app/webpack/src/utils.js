@@ -157,26 +157,27 @@ export async function deleteRecord(recordId, recordType){
 
 
 /**
- * @typedef newAndOld
+ * @typedef NewAndOldType
  *    an object that tracks changes to another object.
  * @type {Object}
  * @property {Any} _new
  *    internal new value
  * @property {Any} _old
  *      internal old value
- * @property {(Any, Any) => boolean} _compareFn
+ * @property {(x:Any, y:Any) => boolean} _compareFn
  *      a function that takes _new, _old as its arguments and returns `true` if _new is same as _old.
- * @property {(Any) => this} set
+ * @property {(x:Any) => this} set
  *      define the newest object and unpade the old one
- * @property {(void) => Any} get
+ * @property {() => Any} get
  *      get the new object
- * @property {(Any) => this} setCompareFn
+ * @property {(x:Any) => this} setCompareFn
  *      define the comparion function. defining this function allows to have some custom way to check if `_new` and `_old` are different (i.e., deep equality in case of objects)
  * @property {Array<Any>} getNewAndOld
  *      get a pair of [New, Old]
  * @property {() => boolean} same
  *      using this._compareFn, returns a boolean indicating that _new is the same as _old. defined as a function rather than as an attribute to ensure that `same` is always run on the latest [New, Old] pair.
  */
+/** @type {NewAndOldType} */
 export const newAndOld = {
     _new: undefined,
     _old: undefined,
@@ -186,8 +187,22 @@ export const newAndOld = {
         this._new = _new;
         return this;
     },
-    setCompareFn (_compareFn) { this._compareFn = _compareFn; return this; },
+    setCompareFn (_compareFn) {
+        this._compareFn = _compareFn;
+        return this;
+    },
     get () { return this._new },
     getNewAndOld () {return [this._new, this._old]},
     same () { return this._compareFn(this._new, this._old) }
 }
+
+
+/**
+ * @param {Any | Array<Any>} x: an array of hashable values
+ * @param {Any | Array<Any>} y: an array of hashable values
+ * @returns {boolean} true if the arrays are the same
+ */
+export const sameArrayScalar = (x, y) =>
+    Array.isArray(x) && Array.isArray(y)
+    && x.length===y.length
+    && x.every((e, idx) => e === y[idx]||undefined);

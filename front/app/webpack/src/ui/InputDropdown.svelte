@@ -1,5 +1,10 @@
 <!-- a svelte implementation of Choices.js.
 
+    emits:
+    - `updateValues`
+        @type {Array<Any>}
+        the array of selected values
+
     it handles
     - single and multi-choice dropdowns,
     - pre-selected choices
@@ -10,15 +15,18 @@
 
     restrictions:
     - it is synchronous (no async data fetching)
+    - values in each `choices` and `start` objects MUST be scalable to allow comparisons
     - it does not handle updates to props update. tried to fix this
         several times and it is REALLY difficult to avoid weird feedback
         loops where updates in InputDropdown will trigger the parent to update
         the choices props, thus re-modifying InputDropdown.
-    - when passing a `start`, the values
-        each item of `start` and `choices`
-        (type DropdownChoice.value) must be hashable
-        so that values in `start` can be matched
-        with `choices` items.
+
+    good to know:
+    - this component provides a "selectAll" props. choices.js handles this by
+        adding all choices one by one, which creates a lot of intermediate states
+        on this component. to mitigate this, when `selectAll` is clicked,
+        the emitting of events is blocked for a `ispatchLockDuration` ms.
+        `bufferedDispatch` handles the lifecycle.
 -->
 
 <script>
@@ -28,10 +36,13 @@ import Choices from "choices.js";
 import "choices.js/public/assets/styles/choices.css";
 
 import { appLang } from "../constants";
+import { newAndOld, sameArrayScalar } from "../utils";
 
 import TooltipGeneric from "./TooltipGeneric.svelte";
 
 /////////////////////////////////////////////////////
+
+/** @typedef {import("../utils").NewAndOldType} NewAndOldType */
 
 /**
  * @typedef DropdownChoice
@@ -68,21 +79,42 @@ export let title = undefined;
 /** @type {Boolean} if True, extra "Select All" and "Unselect All" options will be preprended to `choices`. clicking on them will (un)select all choices. by default, true for multi-choice, false for single-choice */
 export let selectAll = multiple ? true : false;
 
-const dispatch = createEventDispatcher();
-
 const htmlId = `input-dropdown-select-${window.crypto.randomUUID()}`;
 const counterHtmlId = `input-dropdown-counter-${window.crypto.randomUUID()}`;
 const selectAllValue = `select-all-${window.crypto.randomUUID()}`;  // the value of "(un)select all" option is an UUID to ensure that the value is not a duplicate of an other item in `choices`
 const unSelectAllValue = `unselect-all-${window.crypto.randomUUID()}`;
+const dispatchLockDuration = 250;
 
-/** @type {boolean} when true, this will block the dispatch of `updateValues` to parent. */
-let blockEmit = false;
+const dispatch = createEventDispatcher();
 
-/** @type {DropdownChoice.value[]} */
+/** @type {NewAndOldType<Array>} */
+const newAndOldSelectedValues = newAndOld.setCompareFn(sameArrayScalar);
+
+/** @type {Array} array of DropdownChoiceItem.value */
 $: selectedValues = start || [];
-$: displayCountTooltip = false;
+
+/** @type {Array} temprarily toggled in `useDispatchLock`. when true, will block all requests */
+$: dispatchLock = false;
+
+// dispatching of selected elements to the parent component happens when `selectedValues` is updated and `dispatchLock` is set to false. this avoids intermediate calls to `dispatch` when selecting all elements.
+$: bufferedDispatch(selectedValues, dispatchLock);
 
 /////////////////////////////////////////////////////
+
+const useDispatchLock = () => {
+    dispatchLock = true;
+    setTimeout(() => dispatchLock = false, dispatchLockDuration);
+}
+
+const bufferedDispatch = (_selectedValues, _dispatchLock) => {
+    if ( !_dispatchLock ) {
+        newAndOldSelectedValues.set(_selectedValues);
+        console.log(_dispatchLock, newAndOldSelectedValues.same(), newAndOldSelectedValues.getNewAndOld());
+        if ( !newAndOldSelectedValues.same()  ) {
+            dispatch("updateValues", selectedValues);
+        }
+    }
+};
 
 const toIconify = (iconifyId) => `<span class="iconify" data-icon=${iconifyId}/>`;
 
@@ -106,8 +138,9 @@ const maybeAddSelectAllAndCopy = (arr, _selectAll) =>
     : [...arr];
 
 /**
- * generate a random UUID + add the icon. [...arr] copies instead of modifying in place.
+ * generate a random UUID + add the icon + add select all/remove all options. [...arr] copies instead of modifying in place.
  * @param {DropdownChoiceArray} arr
+ * @param {boolean} _selectAll
  */
 const formatChoices = (arr, _selectAll) =>
     maybeAddSelectAllAndCopy(arr, _selectAll)
@@ -121,16 +154,21 @@ const formatChoices = (arr, _selectAll) =>
     });
 
 /**
- * emit "updateValues" when adding an item. this also handles "Select All" and "Unselect All" cases.
+ * update the global `choicesObj` and set `selectedValues`, which will trigger
+ * a dispatch of `updateValues` (see `bufferedDispatch`).
+ * this also handles "Select All" and "Unselect All" cases.
  *
- * things get weird when `selectAll` is true and the "Select All" button is clicked:
+ * things get weird when the props `selectAll` is true and the "Select All" button is clicked:
  * - "select all" clicked
  *      => `onAddItem`  called
- *          => "select all" and any other items that were previously selected are programatically removed from the select items (to avoid emitting them to the parent)
+ *          => "select all" and any other items that were previously selected are programatically removed from the select items
  *              => `onRemoveItem` called, once per item to remove
  *          => all objects from `allChoices` are programatically added
  *              => `onAddItem` called, once per item in `allChoices`. but then, the `selectAllValue===false` branch is called, unlike in the original `onAddItem`
- * => in practice, onAddItem will add all items twice, hence the use of [...new Set()] to deduplicate.
+ * => in practice, onAddItem will add all items twice. to mitigate this, when clicking on `Select All`,
+ *  - [...new Set()] is used to deduplicate `localSelectedValues`.
+ *  - `dispatchLock` is used to block all the `dispatch("updateValues")` that would be called when adding each individual item to `localSelectedValues`, until all items have been added
+ *  - `bufferedDispatch()` will be called to `dispatch("updateValues")`, one `dispatchLock` is freed and all items have been added.
  * @param {Object} e
  * @param {DropdownChoiceArray} allChoices
  * @param {Choices} choicesObj
@@ -138,17 +176,16 @@ const formatChoices = (arr, _selectAll) =>
 const onAddItem = (e, allChoices, choicesObj) => {
     let localSelectedValues = [...selectedValues];  // avoid triggering side effects of `selectedValues`
     if (e.detail.value === selectAllValue) {
-        blockEmit = true;
-        setTimeout(() => blockEmit = false, 500);
-
+        useDispatchLock();
         // set `selectedValues` + unselect all previous choices and reselect all choices except the Select/Unselect ones.
         allChoices = allChoices.map(c =>
-            c.value !== selectAllValue && c.value !== unSelectAllValue
-            ? ({ ...c, selected: true })
-            : ({ ...c, selected: false })
+            [selectAllValue, unSelectAllValue].includes(c.value)
+            ? ({ ...c, selected: false })
+            : ({ ...c, selected: true })
         );
         choicesObj
             .removeActiveItems()
+            .clearChoices(true, true)  // removes all choices, selected or not. without that, `setValue` will extend existing choices with allChoices instead of replacing.
             .setValue(allChoices)
             .hideDropdown();
         localSelectedValues = [...new Set(
@@ -167,22 +204,17 @@ const onAddItem = (e, allChoices, choicesObj) => {
             ? [...localSelectedValues, e.detail.value]
             : [e.detail.value];
     }
-
-    // see docstring: when clicking on "Select All", further deduplication is needed
     selectedValues = [...new Set(localSelectedValues)];
-    if ( !blockEmit ) {
-        dispatch("updateValues", selectedValues);
-    }
 };
 
 const onRemoveItem = (e) => {
     selectedValues = selectedValues.filter(s => s !== e.detail.value);
-    dispatch("updateValues", selectedValues);
 }
 
 
 /**
  * @param {DropdownChoiceArray} allChoices: all the available choices
+ * @param {boolean} _selectAll
  */
 function initChoices(allChoices, _selectAll) {
     // all items in allChoices with `selected: true` will be automatically pre-selected as items.
