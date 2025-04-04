@@ -171,6 +171,7 @@ export async function deleteRecord(recordId, recordType){
  * @property {() => boolean} same
  *      using this._compareFn, returns a boolean indicating that _new is the same as _old. defined as a function rather than as an attribute to ensure that `same` is always run on the latest [New, Old] pair.
  */
+// TODO create a custom event that emits when the value changes ? https://stackoverflow.com/a/62984915
 /** @returns {NewAndOldType} */
 export function createNewAndOld() {
     let _new = undefined;

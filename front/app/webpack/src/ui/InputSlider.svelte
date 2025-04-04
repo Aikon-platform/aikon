@@ -77,11 +77,15 @@ const numRound = n => Number((n).toFixed(roundTo))
  * @param {Number[]|Number} val: if isRange, then array of 2 values. else, 1 value.
  * @param {"update"|"set"} caller: on which event the function is called: `newAndOldSelectedVal` is only updated on set.
  */
-const updateSelectedVal = (val, caller) => {
+const updateSelectedValAndDispatch = (val, caller) => {
     val = Array.isArray(val) ? val.map(numRound) : numRound(val);
     selectedVal = val;
     if (caller==="set") {
         newAndOldSelectedVal.set(val);
+        if ( !newAndOldSelectedVal.same() ) {
+            console.log("dispatch", newAndOldSelectedVal.get());
+            dispatch("updateSlider", newAndOldSelectedVal.get());
+        }
     }
 }
 
@@ -106,14 +110,11 @@ function initSlider() {
     // `selectedVal` is updated on update, and the parent component receives a new value on set.
     slider.noUiSlider.on("update", () => {
         newVal = slider.noUiSlider.get(true);
-        updateSelectedVal(newVal, "update");
+        updateSelectedValAndDispatch(newVal, "update");
     });
     slider.noUiSlider.on("set", () => {
         newVal = slider.noUiSlider.get(true)
-        updateSelectedVal(newVal, "set");
-        if ( !newAndOldSelectedVal.same() ) {
-            dispatch("updateSlider", newAndOldSelectedVal.get());
-        }
+        updateSelectedValAndDispatch(newVal, "set");
     });
 }
 

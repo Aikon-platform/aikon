@@ -7,16 +7,18 @@
  */
 
 import { derived } from "svelte/store";
+import { slide } from 'svelte/transition';
 
 import { similarityStore } from "./similarityStore.js";
 import * as cat from './similarityCategory';
-import { appLang, csrfToken } from "../../constants.js";
+import { appLang } from "../../constants.js";
 import { shorten } from "../../utils.js";
 
 import InputSlider from "../../ui/InputSlider.svelte";
 import InputToggleCheckbox from "../../ui/InputToggleCheckbox.svelte";
 import InputDropdown from "../../ui/InputDropdown.svelte";
 import IconTooltip from "../../ui/IconTooltip.svelte";
+import TooltipGeneric from "../../ui/TooltipGeneric.svelte";
 
 ///////////////////////////////////////
 
@@ -74,7 +76,23 @@ let innerWidth, innerHeight;
 $: wideDisplay = innerWidth > 1200;
 $: stickyTop = calcStickyTop(innerWidth, innerHeight);  // recalculated on window resize
 
+$: toolbarExpanded = false;
+$: toggleToolbarText =
+    appLang === "fr" && toolbarExpanded
+    ? "Refermer le menu de recherche"
+    : appLang === "fr" && !toolbarExpanded
+    ? "Ouvrir le menu de recherche"
+    : appLang === "en" && toolbarExpanded
+    ? "Collapse the toolbar"
+    : "Expand the toolbar";
+
 ///////////////////////////////////////
+
+
+const toggleToolbarExpanded = () => toolbarExpanded = !toolbarExpanded;
+
+const calcStickyTop = () =>
+    document.querySelector("#nav-actions")?.offsetHeight;
 
 /** @returns {Promise<Array<number?>>} */
 async function fetchSimilarityScoreRange() {
@@ -101,13 +119,9 @@ async function fetchSimilarityScoreRange() {
     })
 }
 
-const calcStickyTop = () =>
-    document.querySelector("#nav-actions")?.offsetHeight;
-
-
-const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail.data);
+const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail);
 const setExcludedCategories = (e) => excludedCategories.set(e.detail);
-const setPropagateRecursionDepth = (e) => propagateRecursionDepth.set(e.detail.data);
+const setPropagateRecursionDepth = (e) => propagateRecursionDepth.set(e.detail);
 const setPropagateFilterByRegions = (e) => propagateFilterByRegions.set(e.detail);
 const setComparedRegions = (e) => {
     const selectedRegionsIds = e.detail;
@@ -129,6 +143,95 @@ const setComparedRegions = (e) => {
      style="{ stickyTop ? `top: ${stickyTop}px` : '' }"
 >
     <form class="ctrl">
+        <div class="ctrl-base">
+            <div class="ctrl-block-wrapper">
+                <div class="ctrl-block">
+                    <div class="ctrl-block-inputs">
+                        <div class="ctrl-input">
+                            {#if Object.keys($comparedRegionsChoices).length}
+                                <InputDropdown choices={$comparedRegionsChoices}
+                                            multiple={true}
+                                            placeholder="..."
+                                            start={defaultRegions}
+                                            lightDisplay={true}
+                                            title={appLang==="fr" ? "Régions sélectionnées" : "Selected regions"}
+                                            selectAll={true}
+                                            on:updateValues={setComparedRegions}
+                                ></InputDropdown>
+                            {/if}
+                        </div>
+                        <div class="ctrl-input">
+                            {#await similarityScoreRangePromise then similarityScoreRange}
+                                {#if similarityScoreRange.length}
+                                    <InputSlider title={ appLang==="fr" ? "Score minimal" : "Minimal score" }
+                                                minVal={similarityScoreRange[0]}
+                                                maxVal={similarityScoreRange[1]}
+                                                start={defaultSimilarityScoreCutoff || similarityScoreRange[0]}
+                                                roundTo={3}
+                                                on:updateSlider={setSimilarityScoreCutoff}
+                                    ></InputSlider>
+                                {/if}
+                            {/await}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {#if toolbarExpanded }
+            <div transition:slide={{axis: "y"}}
+                 class="ctrl-extra">
+                <div class="ctrl-block-wrapper">
+                    <div class="ctrl-block">
+                        <div class="ctrl-block-title">
+                            <span class="tag is-link">Similarity</span>
+                        </div>
+                        <div class="ctrl-block-inputs">
+                            <div class="ctrl-input">
+                                <InputDropdown choices={categoriesChoices}
+                                            multiple={true}
+                                            placeholder="..."
+                                            start={defaultExcludedCategories}
+                                            lightDisplay={true}
+                                            title={appLang==="fr" ? "Catégories masquées" : "Hidden categories"}
+                                            selectAll={true}
+                                            on:updateValues={setExcludedCategories}
+                                ></InputDropdown>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ctrl-block-wrapper">
+                    <div class="ctrl-block">
+                        <div class="ctrl-block-title">
+                            <span class="tag is-link mr-1">Propagation</span>
+                            <IconTooltip iconifyIcon="material-symbols:help-outline"
+                                        altText={ appLang==="en" ? "Display help" : "Afficher une explication"}
+                                        tooltipText={tooltipText}
+                            ></IconTooltip>
+                        </div>
+                        <div class="ctrl-block-inputs">
+                            <div class="ctrl-input">
+                                <InputSlider title={ appLang==="fr" ? "Profondeur de récursion" : "Recursion depth" }
+                                            minVal={allowedPropagateDepthRange[0]}
+                                            maxVal={allowedPropagateDepthRange[1]}
+                                            start={defaultRecursionDepth}
+                                            step={1}
+                                            on:updateSlider={setPropagateRecursionDepth}
+                                ></InputSlider>
+                            </div>
+                            <div class="ctrl-input">
+                                <InputToggleCheckbox checkboxLabel="Filter by region"
+                                                    on:updateChecked={setPropagateFilterByRegions}
+                                                    start={defaultFilterByRegions}
+                                                    buttonDisplay={true}
+                                ></InputToggleCheckbox>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {/if}
+        <!--
         <div class="ctrl-inputs columns">
             <div class="ctrl-block-wrapper column { wideDisplay ? 'is-three-fifths' : 'is-half' }">
                 <div class="ctrl-block ctrl-similarity">
@@ -208,6 +311,22 @@ const setComparedRegions = (e) => {
                 </div>
             </div>
         </div>
+        -->
+        <div class="ctrl-toggle">
+            <button on:click|preventDefault={toggleToolbarExpanded}>
+                <span style={`transform: rotate(${toolbarExpanded ? "180" : "0"}deg)`}
+                      title={toggleToolbarText}
+                ><svg style={`transform: rotate(${toolbarExpanded ? "180" : "0"}deg)`}
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                ><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v18m0 0l8.5-8.5M12 21l-8.5-8.5"
+                ></path></svg>`
+                </span>
+                <TooltipGeneric tooltipText={toggleToolbarText}></TooltipGeneric>
+            </button>
+        </div>
     </form>
 </div>
 
@@ -226,8 +345,78 @@ const setComparedRegions = (e) => {
     border: solid 1px var(--bulma-border);
     border-radius: 0 0 var(--bulma-burger-border-radius) var(--bulma-burger-border-radius);
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
 }
+.ctrl-base {
+
+}
+.ctrl-block-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-bottom: solid 1px var(--bulma-border);
+}
+.ctrl-block {
+    width: 70%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    /*margin: 10px 20px;*/
+    margin: 5px;
+}
+.ctrl-extra .ctrl-block {
+    width: 100%;
+    display: grid;
+    grid-template-rows: 100%;
+    grid-template-columns: 13% 87%;
+}
+.ctrl-block-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ctrl-block-inputs {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: start;
+    width: 100%;
+    margin: 5px 0;
+}
+.ctrl-block-inputs:has(> :last-child:nth-child(1)) {
+    /** .ctrl-block-inputs contains only 1 child */
+    align-items: flex-start;
+}
+.ctrl-input {
+    width: 100%;
+    max-width: max(350px, 30vw);
+    margin: 0 20px;
+}
+.ctrl-input:nth-child(1) {
+    margin-left: 0;
+}
+.ctrl-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ctrl-toggle > button {
+    border: var(--default-border);
+    border-radius: 2rem;
+    height: 40px;
+    width: 40px;
+    position: relative;
+    transform: translateY(50%);
+}
+.ctrl-toggle > button svg {
+    height: 100%;
+    transition: transform .3s;
+}
+
+/*
 .ctrl-inputs {
     flex-grow: 2;
     margin-inline-start: 0;
@@ -265,4 +454,5 @@ const setComparedRegions = (e) => {
 :global(.ctrl-block-inputs .slider-outer-wrapper) {
     margin-bottom: 0;
 }
+*/
 </style>
