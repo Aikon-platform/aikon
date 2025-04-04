@@ -9,6 +9,10 @@
 
     restrictions:
     - updates to props are not handled.
+
+    good to know:
+    - thanks to `createNewAndOld`, values are only emitted when there's
+        a change between the previously set value and the newly set value.
 -->
 <script>
 import { onMount, onDestroy, createEventDispatcher } from "svelte";
@@ -18,19 +22,16 @@ import 'nouislider/dist/nouislider.css';
 
 import TooltipGeneric from "./TooltipGeneric.svelte";
 
-import { newAndOld } from "../utils";
+import { createNewAndOld, equalArrayShallow } from "../utils";
 
 /** @typedef {import("../utils").NewAndOldType} NewAndOldType */
 
 //////////////////////////////////////////////
 
 /**
- * @typedef SelectedValType:
+ * @type {Number|Number[]} SelectedValType:
  *      the currently selected value(s) on the slider. data structure
- *      changes slightly depending on if we're building a 1-input or 2-input slider.
- * @type {Object}
- * @property {Boolean} isRange
- * @property {Number|Number[]} val:
+ *      changes slightly depending on if we're building a 1-input or 2-input slider:
  *      Number if not isRange, [Number, Number] otherwise.
  */
 
@@ -59,55 +60,42 @@ const handleHtmlIds = isRange
         `noUi-handle-${window.crypto.randomUUID()}` ]
     : [ `noUi-handle-${window.crypto.randomUUID()}` ];
 
-// TODO replace the 2 variables below by newAndOld.
-const oldSelectedVal = {
-    isRange: isRange,
-    data: start
-};
-$: selectedVal = {
-    isRange: isRange,
-    data: start
-};
-$: updateHandleTooltip(selectedVal);  // run updateHandleTooltip when `selectedVal` changes
+/** @type {NewAndOldType} tracks changes on "set" */
+const newAndOldSelectedVal = createNewAndOld();
+newAndOldSelectedVal.setCompareFn(isRange ? equalArrayShallow : (x,y) => numRound(x)===numRound(y));
+newAndOldSelectedVal.set(start);
+
+// tracks changes on "update"
+$: selectedVal = start;
+$: updateHandleTooltip(selectedVal);
 
 //////////////////////////////////////////////
 
 const numRound = n => Number((n).toFixed(roundTo))
 
-/** @param {Number[]|Number}: if isRange, then array of 2 values. else, 1 value. */
-const updateSelectedRange = (val) => {
-    oldSelectedVal.data = selectedVal.data || undefined;
-    selectedVal = {
-        isRange: isRange,
-        data: Array.isArray(val) ? val.map(numRound) : numRound(val)
-    };
+/**
+ * @param {Number[]|Number} val: if isRange, then array of 2 values. else, 1 value.
+ * @param {"update"|"set"} caller: on which event the function is called: `newAndOldSelectedVal` is only updated on set.
+ */
+const updateSelectedVal = (val, caller) => {
+    val = Array.isArray(val) ? val.map(numRound) : numRound(val);
+    selectedVal = val;
+    if (caller==="set") {
+        newAndOldSelectedVal.set(val);
+    }
 }
 
 // update the `TooltipGeneric.tooltipText` prop when selectedVal is updated.
-function updateHandleTooltip() {
-    if (
-        isRange
-        && handleTooltips.length
-        && selectedVal.data[0] !== oldSelectedVal.data[0]
-    ) {
-        handleTooltips[0].$set({ tooltipText: selectedVal.data[0] })
-    } else if (
-        isRange
-        && handleTooltips.length
-        && selectedVal.data[1] !== oldSelectedVal.data[1]
-    ) {
-        handleTooltips[1].$set({ tooltipText: selectedVal.data[1] })
-    } else if (
-        !isRange
-        && handleTooltips.length
-        && selectedVal.data !== oldSelectedVal.data
-    ) {
-        handleTooltips[0].$set({ tooltipText: selectedVal.data })
+function updateHandleTooltip(_selectedVal) {
+    if ( handleTooltips.length ) {
+        handleTooltips.map((tooltip, idx) =>
+            tooltip.$set({ tooltipText: isRange ? _selectedVal[idx] : _selectedVal }));
     }
 }
 
 function initSlider() {
     const slider = document.getElementById(sliderHtmlId);
+    let newVal;
     noUiSlider.create(slider, {
         start: start,
         step: step,
@@ -117,12 +105,15 @@ function initSlider() {
     });
     // `selectedVal` is updated on update, and the parent component receives a new value on set.
     slider.noUiSlider.on("update", () => {
-        let newVal = slider.noUiSlider.get(true);
-        updateSelectedRange(newVal);
+        newVal = slider.noUiSlider.get(true);
+        updateSelectedVal(newVal, "update");
     });
     slider.noUiSlider.on("set", () => {
-        // let newVal = slider.noUiSlider.get(true);
-        dispatch("updateSlider", selectedVal);
+        newVal = slider.noUiSlider.get(true)
+        updateSelectedVal(newVal, "set");
+        if ( !newAndOldSelectedVal.same() ) {
+            dispatch("updateSlider", newAndOldSelectedVal.get());
+        }
     });
 }
 
@@ -133,8 +124,8 @@ function initHandleTooltips() {
             target: document.getElementById(handleHtmlId),
             props:
                 isRange
-                ? { tooltipText: idx===0 ? selectedVal.data[0] : selectedVal.data[1] }
-                : { tooltipText: selectedVal.data }
+                ? { tooltipText: selectedVal[idx] }
+                : { tooltipText: selectedVal }
         }));
     })
 }
@@ -147,14 +138,15 @@ onMount(() => {
 })
 onDestroy(() => {
     // very dirty destroy
-    if (document.getElementById(sliderHtmlId))
+    if (document.getElementById(sliderHtmlId)) {
         document.getElementById(sliderHtmlId).innerHTML = "";
+    }
 })
 </script>
 
 
 <div>
-    <span>{title} ({selectedVal.data})</span>
+    <span>{title} ({selectedVal})</span>
     <div class="slider-outer-wrapper is-flex flex-direction-row">
         <span class="range-marker">{ minVal }</span>
         <div class="slider-wrapper">

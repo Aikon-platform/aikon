@@ -160,49 +160,40 @@ export async function deleteRecord(recordId, recordType){
  * @typedef NewAndOldType
  *    an object that tracks changes to another object.
  * @type {Object}
- * @property {Any} _new
- *    internal new value
- * @property {Any} _old
- *      internal old value
- * @property {(x:Any, y:Any) => boolean} _compareFn
- *      a function that takes _new, _old as its arguments and returns `true` if _new is same as _old.
- * @property {(x:Any) => this} set
+ * @property {(x:Any) => void} set
  *      define the newest object and unpade the old one
  * @property {() => Any} get
  *      get the new object
- * @property {(x:Any) => this} setCompareFn
+ * @property {(x:Any) => void} setCompareFn
  *      define the comparion function. defining this function allows to have some custom way to check if `_new` and `_old` are different (i.e., deep equality in case of objects)
- * @property {Array<Any>} getNewAndOld
+ * @property {() => Array<Any>} getNewAndOld
  *      get a pair of [New, Old]
  * @property {() => boolean} same
  *      using this._compareFn, returns a boolean indicating that _new is the same as _old. defined as a function rather than as an attribute to ensure that `same` is always run on the latest [New, Old] pair.
  */
-/** @type {NewAndOldType} */
-export const newAndOld = {
-    _new: undefined,
-    _old: undefined,
-    _compareFn (_new, _old) { return _new === _old },
-    set (_new) {
-        this._old = this._new;
-        this._new = _new;
-        return this;
-    },
-    setCompareFn (_compareFn) {
-        this._compareFn = _compareFn;
-        return this;
-    },
-    get () { return this._new },
-    getNewAndOld () {return [this._new, this._old]},
-    same () { return this._compareFn(this._new, this._old) }
+/** @returns {NewAndOldType} */
+export function createNewAndOld() {
+    let _new = undefined;
+    let _old = undefined;
+    let _compareFn = (_new, _old) => _new === _old;
+    return {
+        set: (newVal) => {
+            _old = _new;
+            _new = newVal;
+        },
+        setCompareFn: (newCompareFn) => _compareFn = newCompareFn,
+        get: () => _new,
+        getNewAndOld: () => [_new, _old],
+        same: () => _compareFn(_new, _old)
+    }
 }
-
 
 /**
  * @param {Any | Array<Any>} x: an array of hashable values
  * @param {Any | Array<Any>} y: an array of hashable values
  * @returns {boolean} true if the arrays are the same
  */
-export const sameArrayScalar = (x, y) =>
+export const equalArrayShallow = (x, y) =>
     Array.isArray(x) && Array.isArray(y)
     && x.length===y.length
     && x.every((e, idx) => e === y[idx]||undefined);

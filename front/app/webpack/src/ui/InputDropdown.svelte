@@ -36,7 +36,7 @@ import Choices from "choices.js";
 import "choices.js/public/assets/styles/choices.css";
 
 import { appLang } from "../constants";
-import { newAndOld, sameArrayScalar } from "../utils";
+import { createNewAndOld, equalArrayShallow } from "../utils";
 
 import TooltipGeneric from "./TooltipGeneric.svelte";
 
@@ -87,8 +87,9 @@ const dispatchLockDuration = 250;
 
 const dispatch = createEventDispatcher();
 
-/** @type {NewAndOldType<Array>} */
-const newAndOldSelectedValues = newAndOld.setCompareFn(sameArrayScalar);
+/** @type {NewAndOldType} */
+const newAndOldSelectedValues = createNewAndOld();
+newAndOldSelectedValues.setCompareFn(equalArrayShallow);
 
 /** @type {Array} array of DropdownChoiceItem.value */
 $: selectedValues = start || [];
@@ -109,7 +110,6 @@ const useDispatchLock = () => {
 const bufferedDispatch = (_selectedValues, _dispatchLock) => {
     if ( !_dispatchLock ) {
         newAndOldSelectedValues.set(_selectedValues);
-        console.log(_dispatchLock, newAndOldSelectedValues.same(), newAndOldSelectedValues.getNewAndOld());
         if ( !newAndOldSelectedValues.same()  ) {
             dispatch("updateValues", selectedValues);
         }
@@ -154,9 +154,7 @@ const formatChoices = (arr, _selectAll) =>
     });
 
 /**
- * update the global `choicesObj` and set `selectedValues`, which will trigger
- * a dispatch of `updateValues` (see `bufferedDispatch`).
- * this also handles "Select All" and "Unselect All" cases.
+ * update the global `choicesObj` and set `selectedValues`, which will trigger a dispatch of `updateValues` (see `bufferedDispatch`). this also handles "Select All" and "Unselect All" cases.
  *
  * things get weird when the props `selectAll` is true and the "Select All" button is clicked:
  * - "select all" clicked
@@ -272,9 +270,6 @@ onMount(() => {
 })
 
 onDestroy(() => {
-    // const choicesTarget = document.getElementById(htmlId);
-    // choicesTarget.removeEventListener("addItem", onAddItem);
-    // choicesTarget.removeEventListener("removeItem", onRemoveItem);
 })
 </script>
 
