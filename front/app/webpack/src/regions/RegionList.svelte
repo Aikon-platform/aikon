@@ -155,4 +155,8 @@
         padding-top: 5em;
         margin-top: -5em;
     }
+    #nav-actions .panel-tabs {
+        margin-inline-start: 0;
+        margin-top: 0;
+    }
 </style>

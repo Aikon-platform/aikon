@@ -139,7 +139,8 @@ const setComparedRegions = (e) => {
 
 <svelte:window bind:innerWidth bind:innerHeight></svelte:window>
 
-<div class="ctrl-wrapper is-flex is-justify-content-center is-align-items-center"
+<div class="ctrl-wrapper is-flex is-justify-content-center is-align-items-center
+            { toolbarExpanded ? 'toolbar-expanded' : 'toolbar-collapsed' }"
      style="{ stickyTop ? `top: ${stickyTop}px` : '' }"
 >
     <form class="ctrl">
@@ -183,7 +184,7 @@ const setComparedRegions = (e) => {
                 <div class="ctrl-block-wrapper">
                     <div class="ctrl-block">
                         <div class="ctrl-block-title">
-                            <span class="tag is-link">Similarity</span>
+                            <span class="tag is-medium is-link">Similarity</span>
                         </div>
                         <div class="ctrl-block-inputs">
                             <div class="ctrl-input">
@@ -203,7 +204,7 @@ const setComparedRegions = (e) => {
                 <div class="ctrl-block-wrapper">
                     <div class="ctrl-block">
                         <div class="ctrl-block-title">
-                            <span class="tag is-link mr-1">Propagation</span>
+                            <span class="tag is-medium is-link mr-1">Propagation</span>
                             <IconTooltip iconifyIcon="material-symbols:help-outline"
                                         altText={ appLang==="en" ? "Display help" : "Afficher une explication"}
                                         tooltipText={tooltipText}
@@ -313,17 +314,17 @@ const setComparedRegions = (e) => {
         </div>
         -->
         <div class="ctrl-toggle">
-            <button on:click|preventDefault={toggleToolbarExpanded}>
-                <span style={`transform: rotate(${toolbarExpanded ? "180" : "0"}deg)`}
-                      title={toggleToolbarText}
-                ><svg style={`transform: rotate(${toolbarExpanded ? "180" : "0"}deg)`}
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                ><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v18m0 0l8.5-8.5M12 21l-8.5-8.5"
-                ></path></svg>`
-                </span>
+            <button on:click|preventDefault={toggleToolbarExpanded}
+                    class="button is-link"
+            >
+                <svg style={`transform: rotate(${toolbarExpanded ? "180" : "0"}deg)`}
+                     xmlns="http://www.w3.org/2000/svg"
+                     width="24"
+                     height="24"
+                     viewBox="0 0 24 24"
+                >
+                    <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v18m0 0l8.5-8.5M12 21l-8.5-8.5"></path>
+                </svg>
                 <TooltipGeneric tooltipText={toggleToolbarText}></TooltipGeneric>
             </button>
         </div>
@@ -341,11 +342,21 @@ const setComparedRegions = (e) => {
     z-index: 2;
 }
 .ctrl {
+    position: absolute;
+    top: 0;
     width: 100%;
+    background-color: var(--bulma-body-background-color);
     border: solid 1px var(--bulma-border);
     border-radius: 0 0 var(--bulma-burger-border-radius) var(--bulma-burger-border-radius);
+    box-shadow: 0 3px;
     display: flex;
     flex-direction: column;
+}
+.toolbar-collapsed .ctrl {
+    box-shadow: var(--bulma-border-weak) 0 3px;
+}
+.toolbar-expanded .ctrl {
+    box-shadow: var(--bulma-border-active) 0 3px;
 }
 .ctrl-base {
 
@@ -371,12 +382,13 @@ const setComparedRegions = (e) => {
     width: 100%;
     display: grid;
     grid-template-rows: 100%;
-    grid-template-columns: 13% 87%;
+    grid-template-columns: 1fr 5.7fr; /** make items seem horizontally centered with .ctrl-base .ctrl-block */
 }
 .ctrl-block-title {
     display: flex;
     align-items: center;
     justify-content: center;
+    margin: 1em 0;
 }
 .ctrl-block-inputs {
     display: flex;
@@ -399,6 +411,7 @@ const setComparedRegions = (e) => {
     margin-left: 0;
 }
 .ctrl-toggle {
+    height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -409,11 +422,10 @@ const setComparedRegions = (e) => {
     height: 40px;
     width: 40px;
     position: relative;
-    transform: translateY(50%);
 }
 .ctrl-toggle > button svg {
     height: 100%;
-    transition: transform .3s;
+    transition: transform .5s;
 }
 
 /*
