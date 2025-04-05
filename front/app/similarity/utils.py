@@ -260,7 +260,7 @@ def score_file_to_db(file_path):
                         regions_id_1=ref_1.split("_anno")[1],
                         regions_id_2=ref_2.split("_anno")[1],
                         is_manual=False,
-                        # algorithm=algo,
+                        similarity_type=1,
                         category_x=[],
                     )
                 )
@@ -273,7 +273,13 @@ def score_file_to_db(file_path):
         with transaction.atomic():
             RegionPair.objects.bulk_update_or_create(
                 pairs_to_update,
-                ["score", "regions_id_1", "regions_id_2", "is_manual"],
+                [
+                    "score",
+                    "regions_id_1",
+                    "regions_id_2",
+                    "is_manual",
+                    "similarity_type",
+                ],
                 ["img_1", "img_2"],
                 "score",
             )
@@ -540,17 +546,20 @@ def load_similarity(pair):
 
 
 def reset_similarity(regions: Regions):
+    import shutil
+
     regions_id = regions.id
     try:
         regions_ref = regions.get_ref()
     except Exception as e:
         log(f"[reset_similarity] Failed to retrieve region ref for id {regions_id}", e)
         return False
-
     for file in os.listdir(SCORES_PATH):
         if regions_ref in file:
             try:
                 os.remove(os.path.join(SCORES_PATH, file))
+            except IsADirectoryError:
+                shutil.rmtree(os.path.join(SCORES_PATH, file))
             except OSError as e:
                 log(f"[reset_similarity] Error removing file {file}", e)
 

@@ -244,13 +244,6 @@ def get_propagated_matches(
             img_1_from_2 = img_1_from_2.filter(Q(regions_id_1__in=_id_regions_array))
         return [r[0] for r in list(img_2_from_1.union(img_1_from_2).all())]
 
-    # THE CAUSE OF ALL MY SUFFERING
-    # # ensures that the RegionPairs (img1, img2) and (OG_IMG_ID, img2) don't exist in the db
-    # def has_direct_relationship(img1: str, img2: str) -> bool:
-    #     return RegionPair.objects.filter(
-    #         (Q(img_1=img1) & Q(img_2=img2)) | (Q(img_1=img2) & Q(img_2=img1))
-    #     ).exists()
-
     def has_direct_relationship_to_og(img_id: str) -> bool:
         return RegionPair.objects.filter(
             (Q(img_1=OG_IMG_ID) & Q(img_2=img_id))
@@ -528,11 +521,6 @@ def save_category(request):
     """
     if request.method == "POST":
         data = json.loads(request.body)
-        print(
-            "****************************",
-            json.dumps(data, indent=4),
-            "****************************",
-        )
 
         img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
         category = data.get("category")
