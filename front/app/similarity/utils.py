@@ -301,13 +301,20 @@ def get_region_pairs_with(q_img, regions_ids, include_self=False, strict=False):
     :param strict: bool, ensures that `regions_ids` is used to filter the similarity image, not the query image (`q_img`): the matched image's regions, must be in `regions_ids`
     :return: list of RegionPair objects
     """
-    if not strict:
-        query = Q(img_1=q_img) | Q(img_2=q_img)
-        query &= Q(regions_id_1__in=regions_ids) | Q(regions_id_2__in=regions_ids)
-    else:
-        query = (Q(img_1=q_img) & Q(regions_id_2__in=regions_ids)) | (
-            Q(img_2=q_img) & Q(regions_id_1__in=regions_ids)
-        )
+    # TODO debug strict mode / see how necessary it is
+    # if not strict:
+    #     query = (
+    #         (Q(img_1=q_img) | Q(img_2=q_img)) &
+    #         (Q(regions_id_1__in=regions_ids) | Q(regions_id_2__in=regions_ids))
+    #     )
+    # else:
+    #     query = (
+    #         (Q(img_1=q_img) & Q(regions_id_2__in=regions_ids))
+    #         | (Q(img_2=q_img) & Q(regions_id_1__in=regions_ids)
+    #     ))
+    query = (Q(img_1=q_img) | Q(img_2=q_img)) & (
+        Q(regions_id_1__in=regions_ids) | Q(regions_id_2__in=regions_ids)
+    )
 
     if not include_self:
         query &= ~Q(regions_id_1=F("regions_id_2"))
@@ -425,7 +432,7 @@ def get_best_pairs(
     user_id: int = None,
 ) -> List[Set[RegionPairTuple]]:
     """
-    Process RegionPair objects and return a structured dictionary.
+    Process RegionPair objects and return a list.
 
     :param region_pairs: List of RegionPair objects
     :param q_img: Query image name
@@ -443,11 +450,9 @@ def get_best_pairs(
         if pair.category not in excluded_categories:
             pair_data = pair.get_info(q_img)
             pair_ref = pair.get_ref()
-
             if pair_ref in added_pairs:
                 continue
             added_pairs.add(pair_ref)
-
             if (
                 pair.is_manual
                 or pair.similarity_type == 2
@@ -458,7 +463,6 @@ def get_best_pairs(
                 propagated_pairs.append(pair_data)
             else:
                 auto_pairs.append(pair_data)
-
     auto_pairs.sort(key=lambda x: x[0], reverse=True)
     return manual_pairs + propagated_pairs + auto_pairs[:topk]
 
@@ -572,3 +576,16 @@ def reset_similarity(regions: Regions):
         log(f"[reset_similarity] Error deleting pairs with region id {regions_id}", e)
 
     return True
+
+
+def regions_from_img(q_img: str) -> int:
+    """
+    retrieve the regions id (member of `RegionPair.(regions_id_1|regions_id_2)`)
+    for an image q_img (member of `RegionPair.(img_1|img_2)`).
+    union.first() raises an error so we run 2 queries instead
+    """
+    q1 = RegionPair.objects.values_list("regions_id_1").filter(img_1=q_img).first()
+    if q1:
+        return q1[0]
+    q2 = RegionPair.objects.values_list("regions_id_2").filter(img_2=q_img).first()
+    return q2[0]

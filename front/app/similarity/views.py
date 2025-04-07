@@ -31,6 +31,7 @@ from app.similarity.utils import (
     get_matched_regions,
     get_all_pairs,
     reset_similarity,
+    regions_from_img,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
@@ -181,12 +182,14 @@ def get_compared_regions(request, wid, rid=None):
 
         # Fetch all similar regions in one query
         sim_regions = Regions.objects.filter(id__in=all_region_ids)
+
         compared_regions = dict(
             sorted(
                 {r.get_ref(): r.get_json() for r in sim_regions}.items(),
                 key=lambda x: sort_key(x[0]),
             )
         )
+
         # if there's no similarities retrieved at all, avoid returning the region itself
         if len(list(compared_regions.keys())) == 0:
             return JsonResponse({})
@@ -228,7 +231,7 @@ def get_propagated_matches(
     returns JSONified RegionPair tuples
     """
     OG_IMG_ID = img_id
-    MAX_DEPTH = 5
+    MAX_DEPTH = 6
     MIN_DEPTH = 1
     RECURSION_DEPTH = [MIN_DEPTH, MAX_DEPTH]
 
@@ -271,11 +274,6 @@ def get_propagated_matches(
                 continue
             queried.add(match)
 
-            ## THIS WILL AWAYS BE FALSE since we're only comparing relations
-            ## of depth 1, which have aldready been logged in database...
-            # if has_direct_relationship(q_img, match):
-            #     matches.append((match, depth))
-
             if match != q_img and match != OG_IMG_ID:
                 # has_direct_relationship_to_og should always return true if depth==1 (q_img==OG_IMG_ID),
                 # so we only run "has_direct_relationship_to_og" if depth > 1.
@@ -294,26 +292,14 @@ def get_propagated_matches(
                     if not any(m[0] == match for m in matches)
                 ]
             )
-
         return matches
 
-    def regions_from_img(q_img: str) -> int:
-        # union.first() raises an error so we run 2 queries instead
-        q1 = RegionPair.objects.values_list("regions_id_1").filter(img_1=q_img).first()
-        if q1:
-            return q1[0]
-        q2 = RegionPair.objects.values_list("regions_id_2").filter(img_2=q_img).first()
-        return q2[0]
-
-    def remove_min_depth(
+    def propagated_to_regionpair_json(
+        q_img: str,
         _propagated: List[Tuple[str, int]],
         _recursion_depth: List[int] = RECURSION_DEPTH,
-    ) -> List[int]:
-        return [p_img for (p_img, depth) in _propagated if depth > _recursion_depth[0]]
-
-    def propagated_to_regionpair_json(
-        q_img, _propagated: List[str]
     ) -> List[RegionPairTuple]:
+        """remove matches that are below min recursion depth + reformat"""
         q_img_regions = regions_from_img(q_img)
         return [
             RegionPair(
@@ -327,7 +313,8 @@ def get_propagated_matches(
                 score=None,
                 similarity_type=3,
             ).get_info()
-            for p_img in _propagated
+            for (p_img, depth) in _propagated
+            if depth > _recursion_depth[0]
         ]
 
     if request.method != "POST":
@@ -336,16 +323,8 @@ def get_propagated_matches(
         data = json.loads(request.body)
         filter_by_regions: bool = data.get("filterByRegions")
         id_regions_array: List[int] = data.get("regionsIds", [])
-        max_recursion_depth = data.get("recursionDepth", 5)
+        max_recursion_depth = data.get("recursionDepth", MAX_DEPTH)
         recursion_depth = [MIN_DEPTH, max_recursion_depth]
-        recursion_depth = (
-            sorted(
-                # recursion_depth measures recursion counting 1 as the 1st element, while here 0 is the 1st element.
-                [r - 1 for r in recursion_depth]
-            )
-            if isinstance(recursion_depth, list) and len(recursion_depth) == 2
-            else [MIN_DEPTH, MAX_DEPTH]
-        )
         id_regions_array = (
             id_regions_array
             if filter_by_regions
@@ -357,7 +336,7 @@ def get_propagated_matches(
         propagated = propagate(
             img_id, _id_regions_array=id_regions_array, _recursion_depth=recursion_depth
         )
-        propagated = remove_min_depth(propagated, recursion_depth)
+
         return JsonResponse(
             propagated_to_regionpair_json(img_id, propagated), safe=False
         )
@@ -519,14 +498,24 @@ def save_category(request):
     also used to save propagated regionpairs to database
     when those are categorized by the user
     """
-    if request.method == "POST":
+    from django.db.utils import IntegrityError
+
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=4050)
+
+    try:
         data = json.loads(request.body)
 
+        # img_1 and img_2 are sorted by witness ID.
+        # regions_ids are retrieved programatically instead of from
+        # `data` because retrieving from `data` may lead to
+        # inconsistencies (regions not aligned with their image),
+        # especially in the case of propagated regions.
         img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
         category = data.get("category")
         category_x = data.get("category_x", [])
-        regions_id_1 = data.get("regions_id_1")
-        regions_id_2 = data.get("regions_id_2")
+        regions_id_1 = regions_from_img(img_1)  # data.get("regions_id_2")
+        regions_id_2 = regions_from_img(img_2)  # data.get("regions_id_2")
         is_manual = data.get("is_manual")
         similarity_type = data.get("similarity_type", 1)
         score = data.get("score")
@@ -537,7 +526,7 @@ def save_category(request):
             regions_id_1=int(regions_id_1),
             regions_id_2=int(regions_id_2),
         )
-        region_pair.score = int(score) if score else None
+        region_pair.score = float(score) if score else None
         region_pair.category = int(category) if category else None
         region_pair.category_x = sorted(category_x)
         region_pair.is_manual = is_manual if is_manual else False
@@ -551,6 +540,10 @@ def save_category(request):
         return JsonResponse(
             {"status": "success", "message": "Existing region pair updated"}, status=200
         )
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
 @user_passes_test(is_superuser)

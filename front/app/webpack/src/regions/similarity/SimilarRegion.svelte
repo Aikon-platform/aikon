@@ -125,9 +125,7 @@
      * setting the region will create the RegionPair and and save it to database
      */
     async function categorize(category) {
-        console.log("categorize called !")
         updateCategory(category);
-        console.log(toRegionPair());
         try {
             const response = await fetch(`${baseUrl}/${appName}/save-category`, {
                 method: 'POST',
@@ -141,8 +139,6 @@
                 console.error(`Error: Network response was not ok`);
                 // unselect category
                 updateCategory(category);
-            } else {
-                response.json().then(data => console.log("categorize success response", data))
             }
         } catch (error) {
             console.error('Error:', error);

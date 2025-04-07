@@ -340,6 +340,7 @@ const setComparedRegions = (e) => {
     position: sticky;
     background-color: var(--bulma-body-background-color);
     z-index: 2;
+    margin-bottom: max(15vh, 200px);
 }
 .ctrl {
     position: absolute;

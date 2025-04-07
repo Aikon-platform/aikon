@@ -14,9 +14,6 @@
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentPageId = window.location.pathname.match(/\d+/g).join("-");
 
-    let totalQueries = 0;
-    $: console.log(`totalQueries: ${totalQueries}`);
-
     /////////////////////////////////////////////
 
     /**
@@ -32,8 +29,6 @@
      * @param {SelectedRegionsType} selection
      */
     async function fetchSImgs(qImg, selection) {
-        totalQueries += 1;
-
         const regionsIds = getRegionsIds(selection);
         if (regionsIds.length === 0) {
             return {};

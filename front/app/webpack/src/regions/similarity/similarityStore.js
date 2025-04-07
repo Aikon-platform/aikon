@@ -135,7 +135,6 @@ function createSimilarityStore() {
                             return obj
                         }, {});
                         _selectedRegions[currentPageId] = filtered;
-                        console.log("filtered", filtered);
                 }
                 return _selectedRegions;
             });
