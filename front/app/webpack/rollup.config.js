@@ -47,7 +47,9 @@ export default [
             css({ output: 'regionList.css' }),
             resolve({
                 browser: true,
-                dedupe: ['svelte']
+                dedupe: ['svelte'],
+                exportConditions: ['svelte'],
+                extensions: ['.svelte']
             }),
             commonjs(),
             !production && livereload('public'),
@@ -74,7 +76,9 @@ export default [
             css({ output: 'recordList.css' }),
             resolve({
                 browser: true,
-                dedupe: ['svelte']
+                dedupe: ['svelte'],
+                exportConditions: ['svelte'],
+                extensions: ['.svelte']
             }),
             commonjs(),
             !production && livereload('public'),

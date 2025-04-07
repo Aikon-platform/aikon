@@ -1,8 +1,24 @@
+from __future__ import annotations  # for a reference to RegionPair from RegionPair
+
+from typing import List, Literal, NamedTuple
+
 from django.contrib.postgres.fields import ArrayField
 from django.db import models, connection
 from django.db.models import Q, F
 
 from app.webapp.models.utils.functions import get_fieldname
+
+
+class RegionPairTuple(NamedTuple):
+    score: float
+    q_img: str
+    s_img: str
+    q_regions: int
+    s_regions: int
+    category: int
+    category_x: List[int]
+    is_manual: bool
+    similarity_type: int
 
 
 def get_name(fieldname, plural=False):
@@ -122,6 +138,13 @@ class RegionPair(models.Model):
     Is this pair manually added by a user or automatically generated (ie from a score file)
     """
     is_manual = models.BooleanField(max_length=150, null=True, default=False)
+    """
+    Type of similarity. This should replace `is_manual` in the long run
+    1 = automatic / computed similarity
+    2 = manual similarity
+    3 = propagated similarity
+    """
+    similarity_type = models.IntegerField(blank=True, null=True, default=1)
 
     # TODO: consider removing the following fields to reduce overhead
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
@@ -129,7 +152,7 @@ class RegionPair(models.Model):
 
     objects = RegionPairManager()
 
-    def get_info(self, q_img=None):
+    def get_info(self, q_img=None) -> RegionPairTuple:
         if q_img is None:
             q_img = self.img_1
         s_img = self.img_2 if self.img_1 == q_img else self.img_1
@@ -145,6 +168,7 @@ class RegionPair(models.Model):
             self.category,
             self.category_x or [],
             self.is_manual,
+            self.similarity_type,
         )
 
     def get_ref(self):
