@@ -139,7 +139,7 @@ function createSimilarityStore() {
                 return _selectedRegions;
             });
         }
-        const getImgsResponse = async () => {
+        const getQueryImages = async () => {
             const imgsResponse = await fetch(`${baseUrl}query-images`);
             const imgsData = await imgsResponse.json();
             if (imgsData.length > 0) {
@@ -151,7 +151,7 @@ function createSimilarityStore() {
         loading.set(true);
         try {
             // Promise.all => parallelize async queries
-            await Promise.all([ getComparedRegions(), getImgsResponse() ]);
+            await Promise.all([ getComparedRegions(), getQueryImages() ]);
         } catch (err) {
             console.error('Error:', err);
             errorMsg.set(err.message);

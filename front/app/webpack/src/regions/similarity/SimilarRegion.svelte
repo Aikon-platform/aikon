@@ -150,6 +150,8 @@
 
 
 <div>
+    <!-- TODO remove selection outline from SimilarRegion in similarities
+        (selecting a Region has no effect on "Selection") -->
     {#await getDesc() then desc}
         <Region {item} size={256} {desc} isSquare={false}/>
     {/await}
