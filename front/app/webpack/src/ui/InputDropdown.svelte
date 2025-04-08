@@ -18,9 +18,9 @@
     - it does not handle updates to props update
 
     good to know:
-    - this component provides a "selectAll" props. choices.js handles this by adding all `choicesItems` one by one, which creates a lot of intermediate states on this component. to mitigate this, when `selectAll` is clicked, the emitting of events is blocked for a `ispatchLockDuration` ms. `bufferedDispatch` handles the lifecycle.
-    - the use of global variables/objects are reduced to a strict minimum to simplifiy the flow, but are still necessary
     - `structuredClone()` MUST be used to deep-copy props and objects passed from a function to another. otherwise, it will cause VERY WEIRD SIDE EFFECTS (modifying data in the parent component that is received as a props in this component...)
+    - the use of global variables/objects are reduced to a strict minimum to simplifiy the flow, but are still necessary
+    - this component provides a "selectAll" props. choices.js handles this by adding all `choicesItems` one by one, which creates a lot of intermediate states on this component. to mitigate this, when `selectAll` is clicked, the emitting of events is blocked for a `ispatchLockDuration` ms. `bufferedDispatch` handles the lifecycle.
 -->
 
 <script>
