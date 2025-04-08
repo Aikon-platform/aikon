@@ -79,7 +79,7 @@ export function parseData(elementId) {
     return JSON.parse(document.getElementById(elementId).textContent);
 }
 
-export function showMessage(msg, title = null, confirm = false) {
+export function showMessage(msg, title = null, confirm = false, bonusHTML = "") {
     return new Promise((resolve) => {
         const msgModal = document.getElementById("msg-modal");
         if (msgModal) {
@@ -91,7 +91,7 @@ export function showMessage(msg, title = null, confirm = false) {
             if (title) {
                 document.getElementById("modal-title").innerHTML = title;
             }
-            document.getElementById("modal-body").innerHTML = msg;
+            document.getElementById("modal-body").innerHTML = msg + bonusHTML;
             document.getElementById("hidden-msg-btn").click();
 
             const cancelBtn = document.getElementById("cancel-btn");
