@@ -15,8 +15,7 @@ cleanup() {
 
 trap cleanup INT TERM HUP
 
-read -s -p "Enter your sudo password: " PASSWORD
-echo
+get_password && echo || exit
 
 color_echo blue "STARTING FRONT..."
 (cd "$FRONT_DIR" && START_MODE="CHILD" bash run.sh "$PASSWORD") &

@@ -11,10 +11,8 @@ declare -a PIDS=()
 source "$FRONT_DIR/app/config/.env"
 source "$FRONT_DIR/scripts/utils.sh"
 
-if [ -z "$PASSWORD" ]; then
-    read -s -p "Enter your sudo password: " PASSWORD
-    echo
-fi
+
+get_password && echo || exit
 
 # Cleanup function if running standalone
 if [ "$START_MODE" != "CHILD" ]; then
