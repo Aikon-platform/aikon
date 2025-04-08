@@ -302,17 +302,17 @@ urlpatterns += [
         f"{APP_NAME}/witness/<int:wid>/json", get_json_witness, name="get_json_witness"
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/json/regions",
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/json/extracted-regions",
         get_json_regions,
         name="get_json_regions",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/json/similarities",
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/json/similarities",
         get_json_simil,
         name="get_json_simil",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/json/vectorized-images",
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/json/vectorized-images",
         get_json_vecto,
         name="get_json_vecto",
     ),
