@@ -373,8 +373,8 @@ def get_json_regions(request, wid, rid):
 
 def get_json_simil(request, wid, rid):
     if request.method == "GET":
-
-        # Inspiré de get_similar_views dans similarity/views.py
+        # Partly taken from 'get_similar_images' in 'similarity/views.py'
+        # Ideally, these 2 methods should be factorized further
         try:
             q_imgs_set = set()
             keys = [
@@ -431,40 +431,38 @@ def get_json_simil(request, wid, rid):
             return JsonResponse({"error": f"An error occurred: {str(e)}"}, status=500)
 
 
+def create_json_vecto_element(svg_filename, subfolder_name=None):
+    svg_fullpath = (
+        f"{SVG_PATH}/{subfolder_name}/{svg_filename}"
+        if subfolder_name
+        else f"{SVG_PATH}/{svg_filename}"
+    )
+    filename = subfolder_name + svg_filename if subfolder_name else svg_filename
+    parsed = parse_img_ref(svg_filename)
+    with open(svg_fullpath, "r", encoding="utf-8") as f:
+        return {
+            "filename": filename,
+            "img_url": f"{CANTALOUPE_APP_URL}/iiif/2/wit{parsed['wit']}_img{parsed['digit']}_{parsed['canvas']}.jpg/{','.join(parsed['coord'])}/full/0/default.jpg",
+            "svg": f.read(),
+        }
+
+
 def get_json_vecto(request, wid, rid):
     if request.method == "GET":
-        # Repris de get_vectorized_images dans vectorization/views.py
+        # Inspired from 'get_vectorized_images' in 'vectorization/views.py'
         q_r = get_object_or_404(Regions, pk=rid)
-        v_imgs = {}
-        # Mirroring what happens with vectorization view: first look in folder named after regions_ref, then try with digit_ref
+        v_imgs = []
+
+        # Mirroring what happens with vectorization view:
+        # First look in folder named after regions_ref, then try with digit_ref
         try:
             r_ref = q_r.get_ref()
-            v_imgs = []
-
             for file in get_files_in_dir(f"{SVG_PATH}/{r_ref}"):
-                file_path = f"{SVG_PATH}/{r_ref}/{file}"
-                with open(file_path, "r", encoding="utf-8") as f:
-                    folder_and_file = f"{r_ref}/{file}"
-                    v_imgs.append(
-                        {
-                            "filename": folder_and_file,
-                            "img_url": f"{CANTALOUPE_APP_URL}/iiif/2/{folder_and_file[:-4]}/full/0/default.jpg",
-                            "svg": f.read(),
-                        }
-                    )
+                v_imgs.append(create_json_vecto_element(file, r_ref))
         except ValueError:
             digit_ref = q_r.get_ref().split("_anno")[0]
-            v_imgs = []
             for file_path in get_files_with_prefix(SVG_PATH, digit_ref):
-                parsed = parse_img_ref(file_path)
-                with open(f"{SVG_PATH}/{file_path}", "r", encoding="utf-8") as f:
-                    v_imgs.append(
-                        {
-                            "filename": file_path,
-                            "img_url": f"{CANTALOUPE_APP_URL}/iiif/2/wit{parsed['wit']}_img{parsed['digit']}_{parsed['canvas']}.jpg/{','.join(parsed['coord'])}/full/0/default.jpg",
-                            "svg": f.read(),
-                        }
-                    )
+                v_imgs.append(create_json_vecto_element(file_path))
 
         return JsonResponse(v_imgs, safe=False)
 
