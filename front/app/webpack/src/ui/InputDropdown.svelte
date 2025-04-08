@@ -93,7 +93,7 @@ const newAndOldSelectedValues = createNewAndOld();
 newAndOldSelectedValues.setCompareFn(equalArrayShallow);
 
 /** @type {Array} array of DropdownChoiceItem.value */
-$: selectedValues = [];   // start || [];
+$: selectedValues = [];
 
 /** @type {Array} temprarily toggled in `useDispatchLock`. when true, will block all requests */
 $: dispatchLock = false;
