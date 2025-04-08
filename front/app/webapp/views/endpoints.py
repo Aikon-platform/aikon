@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.cache import cache_page
 from django.db.models import F
 
-from app.config.settings import APP_URL, APP_NAME
+from app.config.settings import APP_URL, APP_NAME, CANTALOUPE_APP_URL
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions
@@ -33,6 +33,7 @@ from app.similarity.utils import (
     get_region_pairs_with,
     get_compared_regions_ids,
     get_regions_q_imgs,
+    parse_img_ref,
 )
 from app.vectorization.const import SVG_PATH
 
@@ -316,42 +317,34 @@ def get_json_witness(request, wid):
             )
         }
 
-        w_processes = {"extracted_regions": {}, "vectorizations": {}}
-        # 3 : Régions (URL d'endpoint)
-        w_processes[
-            "extracted_regions"
-        ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/json/regions"
-
-        # 4 : Similarités (URL d'endpoint)
-        w_processes[
-            "similarities"
-        ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/json/similarities"
-
-        # 5 : Vectorisations (URL d'endpoint existant)
-        w_processes[
-            "vectorizations"
-        ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/json/vectorized-images"
-
-        return JsonResponse(
-            w_json | w_digits_manifs | {"treatments": w_processes}, safe=False
-        )
-
-
-def get_json_regions(request, wid):
-    if request.method == "GET":
-        witness = get_object_or_404(Witness, id=wid)
         w_regions = witness.get_regions()
-        result = {}
+        w_reg_processes = {}
         try:
             for r in w_regions:
-                imgs = set()
-                imgs.update(get_regions_q_imgs(r.id, wid))
-                result[r.id] = {
-                    "manifest": get_object_or_404(Regions, pk=r.id).gen_manifest_url(),
-                    "iiif_crops": list(imgs),
-                }
+                reg_raw_json = r.to_json()
+                del reg_raw_json["class"]
+                del reg_raw_json["type"]
+                w_reg_processes[r.id] = reg_raw_json
+                w_reg_processes[r.id]["annotations"] = json.loads(
+                    get_canvas_regions(request, wid, r.id).content.decode()
+                )
+                w_reg_processes[r.id]["treatments"] = {}
+                # 3 : Régions (URL d'endpoint)
+                w_reg_processes[r.id]["treatments"][
+                    "extracted_regions"
+                ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/extracted-regions"
+                # 4 : Similarités (URL d'endpoint)
+                w_reg_processes[r.id]["treatments"][
+                    "similarities"
+                ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/similarities"
+                # 5 : Vectorisations (URL d'endpoint existant)
+                w_reg_processes[r.id]["treatments"][
+                    "vectorizations"
+                ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/vectorized-images"
 
-            return JsonResponse(result, safe=False)
+            return JsonResponse(
+                w_json | w_digits_manifs | {"regions": w_reg_processes}, safe=False
+            )
 
         except (json.JSONDecodeError, ValueError) as e:
             return JsonResponse({"error": f"Invalid data: {str(e)}"}, status=400)
@@ -359,15 +352,27 @@ def get_json_regions(request, wid):
             return JsonResponse({"error": f"An error occurred: {str(e)}"}, status=500)
 
 
-def get_json_simil(request, wid):
+def get_json_regions(request, wid, rid):
     if request.method == "GET":
-        witness = get_object_or_404(Witness, id=wid)
-        q_regions = witness.get_regions()
+        result = {}
 
-        if not len(q_regions):
-            return JsonResponse(
-                {"error": f"No regions found for this witness #{wid}"}, status=400
-            )
+        imgs = set()
+        imgs.update(get_regions_q_imgs(rid, wid))
+        annos = (
+            get_regions_annotations(
+                regions=get_object_or_404(Regions, id=rid), as_json=True, r_annos={}
+            ),
+        )
+        result = {
+            "manifest": get_object_or_404(Regions, pk=rid).gen_manifest_url(),
+            "extracted_crops": annos,
+        }
+
+        return JsonResponse(result, safe=False)
+
+
+def get_json_simil(request, wid, rid):
+    if request.method == "GET":
 
         # Inspiré de get_similar_views dans similarity/views.py
         try:
@@ -382,14 +387,12 @@ def get_json_simil(request, wid):
                 "category_x",
                 "manual",
             ]
-            for q_r in q_regions:
-                q_imgs_set.update(get_regions_q_imgs(q_r.id, wid))
 
+            q_imgs_set.update(get_regions_q_imgs(rid, wid))
             q_imgs = sorted(list(q_imgs_set))
 
             regions_ids = []
-            for q_r in q_regions:
-                regions_ids += get_compared_regions_ids(q_r.id)
+            regions_ids += get_compared_regions_ids(rid)
 
             result = {}
             for q_img in q_imgs:
@@ -400,28 +403,25 @@ def get_json_simil(request, wid):
 
                 # Process pairs for each q_region
                 result[q_img] = []
-                for q_r in q_regions:
+                pairs = [
+                    pair
+                    for pair in all_pairs
+                    if pair.regions_id_1 == rid or pair.regions_id_2 == rid
+                ]
+                if rid not in regions_ids:
                     pairs = [
-                        pair
-                        for pair in all_pairs
-                        if pair.regions_id_1 == q_r.id or pair.regions_id_2 == q_r.id
+                        pair for pair in pairs if pair.regions_id_1 != pair.regions_id_2
                     ]
-                    if q_r.id not in regions_ids:
-                        pairs = [
-                            pair
-                            for pair in pairs
-                            if pair.regions_id_1 != pair.regions_id_2
-                        ]
 
-                    best_pairs = get_best_pairs(
-                        q_img,
-                        pairs,
-                        excluded_categories=[],
-                        topk=-1,
-                        user_id=request.user.id,
-                    )
-                    dict_pairs = [dict((zip(keys, p))) for p in best_pairs]
-                    result[q_img].extend(dict_pairs)
+                best_pairs = get_best_pairs(
+                    q_img,
+                    pairs,
+                    excluded_categories=[],
+                    topk=-1,
+                    user_id=request.user.id,
+                )
+                dict_pairs = [dict((zip(keys, p))) for p in best_pairs]
+                result[q_img].extend(dict_pairs)
 
             return JsonResponse(result, safe=False)
 
@@ -431,42 +431,40 @@ def get_json_simil(request, wid):
             return JsonResponse({"error": f"An error occurred: {str(e)}"}, status=500)
 
 
-def get_json_vecto(request, wid):
+def get_json_vecto(request, wid, rid):
     if request.method == "GET":
-        # repris de get_vectorized_images dans vectorization/views.py
-        witness = get_object_or_404(Witness, id=wid)
-        q_regions = witness.get_regions()
+        # Repris de get_vectorized_images dans vectorization/views.py
+        q_r = get_object_or_404(Regions, pk=rid)
         v_imgs = {}
-        for q_r in q_regions:
-            try:
-                r_ref = q_r.get_ref()
-                v_imgs[q_r.id] = []
+        # Mirroring what happens with vectorization view: first look in folder named after regions_ref, then try with digit_ref
+        try:
+            r_ref = q_r.get_ref()
+            v_imgs = []
 
-                for file in get_files_in_dir(f"{SVG_PATH}/{r_ref}"):
-                    file_path = f"{SVG_PATH}/{r_ref}/{file}"
-                    print(file_path)
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        v_imgs[q_r.id].append(
-                            {"filename": f"{r_ref}/{file}", "svg": f.read()}
-                        )
-
-            except ValueError:
-                digit_ref = q_r.get_ref().split("_anno")[0]
-                v_imgs[q_r.id] = []
-                for file_path in get_files_with_prefix(SVG_PATH, digit_ref):
-                    print(file_path)
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        v_imgs[q_r.id].append({"filename": file_path, "svg": f.read()})
-            # try:
-            #     r_ref = q_r.get_ref()
-            #     v_imgs[q_r.id] = set()
-            #     v_imgs[q_r.id].update(
-            #         f"{r_ref}{file}" for file in get_files_in_dir(f"{SVG_PATH}/{r_ref}")
-            #     )
-            # except ValueError:
-            #     digit_ref = q_r.get_ref().split("_anno")[0]
-            #     v_imgs[q_r.id].update(get_files_with_prefix(SVG_PATH, digit_ref))
-            # v_imgs[q_r.id] = list(v_imgs[q_r.id])
+            for file in get_files_in_dir(f"{SVG_PATH}/{r_ref}"):
+                file_path = f"{SVG_PATH}/{r_ref}/{file}"
+                with open(file_path, "r", encoding="utf-8") as f:
+                    folder_and_file = f"{r_ref}/{file}"
+                    v_imgs.append(
+                        {
+                            "filename": folder_and_file,
+                            "img_url": f"{CANTALOUPE_APP_URL}/iiif/2/{folder_and_file[:-4]}/full/0/default.jpg",
+                            "svg": f.read(),
+                        }
+                    )
+        except ValueError:
+            digit_ref = q_r.get_ref().split("_anno")[0]
+            v_imgs = []
+            for file_path in get_files_with_prefix(SVG_PATH, digit_ref):
+                parsed = parse_img_ref(file_path)
+                with open(f"{SVG_PATH}/{file_path}", "r", encoding="utf-8") as f:
+                    v_imgs.append(
+                        {
+                            "filename": file_path,
+                            "img_url": f"{CANTALOUPE_APP_URL}/iiif/2/wit{parsed['wit']}_img{parsed['digit']}_{parsed['canvas']}.jpg/{','.join(parsed['coord'])}/full/0/default.jpg",
+                            "svg": f.read(),
+                        }
+                    )
 
         return JsonResponse(v_imgs, safe=False)
 
