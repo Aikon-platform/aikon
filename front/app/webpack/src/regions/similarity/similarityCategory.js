@@ -50,8 +50,15 @@ export const hideSvg = `<svg class="svg-icon" xmlns="http://www.w3.org/2000/svg"
                 <path d="M 39 56 L 57 38" fill="none" stroke="#ffffff" stroke-width="3" stroke-miterlimit="10"/>
             </svg>`;
 
+export const validateSvg = `<svg class="svg-icon" width="60" height="67" viewBox="0 0 60 67" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M52.7 9H7.01001C4.24306 9 2 11.2431 2 14.01V59.7C2 62.4669 4.24306 64.71 7.01001 64.71H52.7C55.467 64.71 57.71 62.4669 57.71 59.7V14.01C57.71 11.2431 55.467 9 52.7 9Z" stroke="currentColor" stroke-width="3"/>
+        <line x1="2.32933" y1="35.9793" x2="24.1517" y2="57.8017" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        <line x1="24.1516" y1="57.8016" x2="57.2284" y2="24.7248" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+    </svg>`;
+
 export const exactLabel = appLang === 'en' ?  "overall visual matches" : "correspondances visuelles globales";
 export const partialLabel = appLang === 'en' ?  "visual matches on part of the image": "correspondances visuelles sur une partie de l'image";
 export const semanticLabel = appLang === 'en' ?  "semantic and non-visual matches" : "correspondances sémantiques et non-visuelle";
 export const noLabel = appLang === 'en' ?  "regions without match" : "régions sans correspondance";
 export const userLabel = appLang === 'en' ?  "user specific category" : "correspondances spécifiques à l'utilisateur";
+export const validateLabel = appLang==="en" ? "validate the match" : "valider la correspondance";
