@@ -42,7 +42,7 @@
         exportDiv.appendChild(jsonBtn);
         exportDiv.appendChild(zipBtn);
 
-        await showMessage(msg, "Export", false, "<br/>"+exportDiv.outerHTML)
+        await showMessage(msg+"<br/>"+exportDiv.outerHTML, "Export", false, )
     }
 </script>
 

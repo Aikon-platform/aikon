@@ -666,3 +666,14 @@ def get_summary(elements):
 def is_in_group(creator, current_user):
     groups = list(creator.groups.all())
     return current_user.groups.filter(name__in=groups).exists()
+
+
+def parse_img_ref(img_string):
+    # wit<id>_<digit><id>_<canvas_nb>_<x>,<y>,<h>,<w>.jpg
+    wit, digit, canvas, coord = img_string.split("_")
+    return {
+        "wit": extract_nb(wit),
+        "digit": extract_nb(digit),
+        "canvas": canvas,
+        "coord": coord.split(".")[0].split(","),
+    }
