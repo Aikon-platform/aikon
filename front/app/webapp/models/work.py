@@ -81,7 +81,7 @@ class Work(AbstractSearchableModel):
         return reverse("admin:webapp_work_change", args=[self.id])
 
     def get_absolute_view_url(self):
-        query_params = {"contents__work": f"{self.id}", "filter": "recent"}
+        query_params = {"contents__work": f"{self.id}"}
 
         base_url = reverse("webapp:work_view", args=[self.id])
         query_string = urlencode(query_params)

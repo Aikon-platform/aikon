@@ -85,7 +85,7 @@ class Series(AbstractSearchableModel):
         return reverse("admin:webapp_series_change", args=[self.id])
 
     def get_absolute_view_url(self):
-        query_params = {"edition": f"{self.id}", "filter": "recent"}
+        query_params = {"series": f"{self.id}"}
 
         base_url = reverse("webapp:series_view", args=[self.id])
         query_string = urlencode(query_params)

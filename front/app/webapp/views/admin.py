@@ -314,6 +314,7 @@ class WorkView(AbstractRecordView):
         context["view_title"] = (
             f"“{work}” witnesses" if APP_LANG == "en" else f"Témoins de « {work} »"
         )
+        context["edit_url"] = work.get_absolute_edit_url()
 
         for witness in work.get_witnesses():
             witnesses.setdefault(witness.id, witness.to_json())
@@ -348,6 +349,7 @@ class SeriesView(AbstractRecordView):
         context["view_title"] = (
             f"“{series}” volumes" if APP_LANG == "en" else f"Volumes de « {series} »"
         )
+        context["edit_url"] = series.get_absolute_edit_url()
 
         for witness in series.get_witnesses():
             witnesses.setdefault(witness.id, witness.to_json())
