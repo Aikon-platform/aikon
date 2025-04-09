@@ -228,12 +228,38 @@ def get_propagated_matches(
     request, wid: int | None = None, rid: int | None = None, img_id: str = ""
 ) -> JsonResponse:
     """
-    returns JSONified RegionPair tuples
+    formal definition:
+    `imgA <exactMatch> imgB`, `imgB <exactMatch> imgC`, `imgC <exactMatch> (imgD, imgE)`
+    => `imgA <propagatedMatch> (imgC, imgD, imgE)`
+
+    in other words, given an image `q_img`, a propagated match `p_img` satisfies both conditions:
+    - `q_img` not an exact match of `p_img`
+    - `p_img` and `q_img` are connected by a chain of intermediate exact matches
+        - the number of intermediate exact matches between `q_img` and `p_img` is defined, see `RECURSION_DEPTH`
+
+    helpful definitions:
+    - matches are defined by rows of the `RegionPair` sql table, which describes relations between 2 images `img_1` and `img_2`. relations are undirected (`img1->img2 == img2->img1`)
+    - `RegionPair` stores exact matches and other types of matches => an exact match is a special type of match => exact matches are a subset of `RegionPair`
+    - an exact match is a relation `(imgA, imgB)` where `RegionPair.category==1`
+
+    process:
+    - propagate() : recursively build a list of `(p_img, depth)`
+    - propagated_to_regionpair() : filter out results and jsonify results as RegionPairs (tuples of `(query_img, propagated_img)`)
+
+    :returns: JSONified RegionPair tuples
     """
+    exact_match_a = RegionPair.objects.values_list("img_2").filter(
+        Q(img_1=OG_IMG_ID) & Q(category=1)
+    )
+    exact_match_b = RegionPair.objects.values_list("img_1").filter(
+        Q(img_2=OG_IMG_ID) & Q(category=1)
+    )
+
     OG_IMG_ID = img_id
     MAX_DEPTH = 6
     MIN_DEPTH = 1
     RECURSION_DEPTH = [MIN_DEPTH, MAX_DEPTH]
+    EXACT_MATCHES = list(set(rp[0] for rp in exact_match_a.union(exact_match_b).all()))
 
     def get_direct_pairs(q_img: str, _id_regions_array: List[int] = []) -> List[str]:
         img_2_from_1 = RegionPair.objects.values_list("img_2").filter(
@@ -247,51 +273,60 @@ def get_propagated_matches(
             img_1_from_2 = img_1_from_2.filter(Q(regions_id_1__in=_id_regions_array))
         return [r[0] for r in list(img_2_from_1.union(img_1_from_2).all())]
 
-    def has_direct_relationship_to_og(img_id: str) -> bool:
-        return RegionPair.objects.filter(
-            (Q(img_1=OG_IMG_ID) & Q(img_2=img_id))
-            | (Q(img_1=img_id) & Q(img_2=OG_IMG_ID))
-        ).exists()
-
     def propagate(
-        q_img: str,
-        _id_regions_array: List[int] = [],
-        _recursion_depth: List[int] = RECURSION_DEPTH,
-        queried: Set[str] | None = None,
-        depth: int = 0,
+        q_img: str,  # query image
+        _id_regions_array: List[int] = [],  # regions to filter by (currently unused)
+        _recursion_depth: List[int] = RECURSION_DEPTH,  # [min, max] allowed recursion
+        queried: Set[str]
+        | None = None,  # list of images used as query images at previous steps
+        depth: int = 0,  # depth of current step
+        matches: List[
+            Tuple[str, int]
+        ] = [],  # output variable. List[Tuple[MatchImage, Depth]]
     ) -> List[Tuple[str, int]]:
 
+        # validate depth
         if queried is None:
             queried = set([q_img])
+        else:
+            queried.add(q_img)
         if depth >= _recursion_depth[1]:
             return []
         depth += 1
 
+        # extract `direct_pairs` (exact matches to q_img)
         direct_pairs = get_direct_pairs(q_img, _id_regions_array)
-        matches = []
-        for match in direct_pairs:
-            if match in queried:
-                continue
-            queried.add(match)
 
-            if match != q_img and match != OG_IMG_ID:
-                # has_direct_relationship_to_og should always return true if depth==1 (q_img==OG_IMG_ID),
-                # so we only run "has_direct_relationship_to_og" if depth > 1.
-                if depth == 1:
-                    matches.append((match, depth))
-                elif depth > 1 and not has_direct_relationship_to_og(match):
-                    matches.append((match, depth))
+        # process each new match
+        for new_match in direct_pairs:
 
-            sub_matches = propagate(
-                match, _id_regions_array, _recursion_depth, queried, depth
-            )
-            matches.extend(
-                [
-                    (match, depth)
-                    for (match, depth) in sub_matches
-                    if not any(m[0] == match for m in matches)
-                ]
-            )
+            if (
+                new_match
+                not in queried  # `new_match` has not been used as a query image at a previous step
+                and new_match != q_img  # `new_match` is not the same as `q_img`
+                and new_match
+                != OG_IMG_ID  # `new_match` is not the same as `OG_IMG_ID` (the original query image)
+                and not any(
+                    m[0] == new_match for m in matches
+                )  # `new_match` has not been extracted at a previous step
+                and (
+                    depth
+                    == 1  # depth==1: this is the 1st step => include all images (at the 1st step, this algorithm will only retrieve `EXACT_MATCHES`). these will be removed in `propagated_to_regionpair_json`
+                    or new_match
+                    not in EXACT_MATCHES  # depth > 1: all next steps => ensure new_match is not an exact match of `OG_IMG_ID`
+                )
+            ):
+                # add the new match to the list of matches
+                matches.append((new_match, depth))
+                # run the next step
+                matches = propagate(
+                    new_match,
+                    _id_regions_array,
+                    _recursion_depth,
+                    queried,
+                    depth,
+                    matches,
+                )
         return matches
 
     def propagated_to_regionpair_json(
@@ -336,7 +371,6 @@ def get_propagated_matches(
         propagated = propagate(
             img_id, _id_regions_array=id_regions_array, _recursion_depth=recursion_depth
         )
-
         return JsonResponse(
             propagated_to_regionpair_json(img_id, propagated), safe=False
         )
