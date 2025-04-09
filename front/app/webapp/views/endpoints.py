@@ -6,7 +6,12 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.cache import cache_page
 from django.db.models import F
 
-from app.config.settings import APP_URL, APP_NAME, CANTALOUPE_APP_URL
+from app.config.settings import (
+    APP_URL,
+    APP_NAME,
+    CANTALOUPE_APP_URL,
+    ADDITIONAL_MODULES,
+)
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions
@@ -16,6 +21,7 @@ from app.webapp.utils.functions import (
     zip_img,
     get_files_in_dir,
     get_files_with_prefix,
+    parse_img_ref,
 )
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.utils.iiif.annotation import (
@@ -27,15 +33,6 @@ from app.webapp.utils.regions import create_empty_regions
 from app.webapp.tasks import generate_all_json
 from webapp.utils.paths import REGIONS_PATH
 from webapp.utils.tasking import create_doc_set
-
-from app.similarity.utils import (
-    get_best_pairs,
-    get_region_pairs_with,
-    get_compared_regions_ids,
-    get_regions_q_imgs,
-    parse_img_ref,
-)
-from app.vectorization.const import SVG_PATH
 
 """
 VIEWS THAT SERVE AS ENDPOINTS
@@ -287,7 +284,7 @@ def get_json_witness(request, wid):
     if request.method == "GET":
         witness = get_object_or_404(Witness, id=wid)
 
-        # 1 : JSON descriptif existant
+        # Existing JSON metadata
         w_json_raw = witness.json
         fields = {
             "id",
@@ -302,13 +299,8 @@ def get_json_witness(request, wid):
         }
         w_json = {k: v for k, v in w_json_raw.items() if k in fields}
 
-        # 2 : Digitizations (sous forme de manifests)
+        # Digitizations data (as manifests)
         w_digits_ids = witness.get_digits()
-        test = Digitization.objects.filter(id__in=w_digits_ids)
-        test1 = Digitization.objects.filter(id__in=w_digits_ids).values_list(
-            "id", "manifest"
-        )
-        test2 = Digitization.objects.filter(id__in=w_digits_ids).values()
         w_digits_manifs = {
             "digitizations": dict(
                 Digitization.objects.filter(id__in=w_digits_ids)
@@ -325,22 +317,25 @@ def get_json_witness(request, wid):
                 del reg_raw_json["class"]
                 del reg_raw_json["type"]
                 w_reg_processes[r.id] = reg_raw_json
-                w_reg_processes[r.id]["annotations"] = json.loads(
-                    get_canvas_regions(request, wid, r.id).content.decode()
-                )
                 w_reg_processes[r.id]["treatments"] = {}
-                # 3 : Régions (URL d'endpoint)
-                w_reg_processes[r.id]["treatments"][
-                    "extracted_regions"
-                ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/extracted-regions"
-                # 4 : Similarités (URL d'endpoint)
-                w_reg_processes[r.id]["treatments"][
-                    "similarities"
-                ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/similarities"
-                # 5 : Vectorisations (URL d'endpoint existant)
-                w_reg_processes[r.id]["treatments"][
-                    "vectorizations"
-                ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/vectorized-images"
+
+                # 3 : Regions/annotations data (endpoint URL)
+                if "regions" in ADDITIONAL_MODULES:
+                    w_reg_processes[r.id]["treatments"][
+                        "extracted_regions"
+                    ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/extracted-regions"
+
+                # 4 : Similarity data (endpoint URL)
+                if "similarity" in ADDITIONAL_MODULES:
+                    w_reg_processes[r.id]["treatments"][
+                        "similarities"
+                    ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/similarities"
+
+                # 5 : Vectorizations (endpoint URL)
+                if "vectorization" in ADDITIONAL_MODULES:
+                    w_reg_processes[r.id]["treatments"][
+                        "vectorizations"
+                    ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/vectorized-images"
 
             return JsonResponse(
                 w_json | w_digits_manifs | {"regions": w_reg_processes}, safe=False
@@ -355,13 +350,8 @@ def get_json_witness(request, wid):
 def get_json_regions(request, wid, rid):
     if request.method == "GET":
         result = {}
-
-        imgs = set()
-        imgs.update(get_regions_q_imgs(rid, wid))
-        annos = (
-            get_regions_annotations(
-                regions=get_object_or_404(Regions, id=rid), as_json=True, r_annos={}
-            ),
+        annos = get_regions_annotations(
+            regions=get_object_or_404(Regions, id=rid), as_json=True
         )
         result = {
             "manifest": get_object_or_404(Regions, pk=rid).gen_manifest_url(),
@@ -372,9 +362,16 @@ def get_json_regions(request, wid, rid):
 
 
 def get_json_simil(request, wid, rid):
+    from app.similarity.utils import (
+        get_best_pairs,
+        get_region_pairs_with,
+        get_compared_regions_ids,
+        get_regions_q_imgs,
+        get_pairs_for_regions,
+    )
+
     if request.method == "GET":
         # Partly taken from 'get_similar_images' in 'similarity/views.py'
-        # Ideally, these 2 methods should be factorized further
         try:
             q_imgs_set = set()
             keys = [
@@ -403,15 +400,7 @@ def get_json_simil(request, wid, rid):
 
                 # Process pairs for each q_region
                 result[q_img] = []
-                pairs = [
-                    pair
-                    for pair in all_pairs
-                    if pair.regions_id_1 == rid or pair.regions_id_2 == rid
-                ]
-                if rid not in regions_ids:
-                    pairs = [
-                        pair for pair in pairs if pair.regions_id_1 != pair.regions_id_2
-                    ]
+                pairs = get_pairs_for_regions(all_pairs, rid, regions_ids)
 
                 best_pairs = get_best_pairs(
                     q_img,
@@ -432,6 +421,8 @@ def get_json_simil(request, wid, rid):
 
 
 def create_json_vecto_element(svg_filename, subfolder_name=None):
+    from app.vectorization.const import SVG_PATH
+
     svg_fullpath = (
         f"{SVG_PATH}/{subfolder_name}/{svg_filename}"
         if subfolder_name
@@ -448,6 +439,8 @@ def create_json_vecto_element(svg_filename, subfolder_name=None):
 
 
 def get_json_vecto(request, wid, rid):
+    from app.vectorization.const import SVG_PATH
+
     if request.method == "GET":
         # Inspired from 'get_vectorized_images' in 'vectorization/views.py'
         q_r = get_object_or_404(Regions, pk=rid)
