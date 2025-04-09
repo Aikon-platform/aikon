@@ -1,8 +1,7 @@
 <!-- a svelte implementation of Choices.js.
 
     emits:
-    - `updateValues`
-        @type {Array<Any>}
+    - `updateValues` @type {Array<Any>}
         the array of selected values
 
     it handles
@@ -15,18 +14,13 @@
 
     restrictions:
     - it is synchronous (no async data fetching)
-    - values in each `choices` and `start` objects MUST be scalable to allow comparisons
-    - it does not handle updates to props update. tried to fix this
-        several times and it is REALLY difficult to avoid weird feedback
-        loops where updates in InputDropdown will trigger the parent to update
-        the choices props, thus re-modifying InputDropdown.
+    - values in each `choicesItems` and `start` objects MUST be hashable to allow comparisons
+    - it does not handle updates to props update
 
     good to know:
-    - this component provides a "selectAll" props. choices.js handles this by
-        adding all choices one by one, which creates a lot of intermediate states
-        on this component. to mitigate this, when `selectAll` is clicked,
-        the emitting of events is blocked for a `ispatchLockDuration` ms.
-        `bufferedDispatch` handles the lifecycle.
+    - `structuredClone()` MUST be used to deep-copy props and objects passed from a function to another. otherwise, it will cause VERY WEIRD SIDE EFFECTS (modifying data in the parent component that is received as a props in this component...)
+    - the use of global variables/objects are reduced to a strict minimum to simplifiy the flow, but are still necessary
+    - this component provides a "selectAll" props. choices.js handles this by adding all `choicesItems` one by one, which creates a lot of intermediate states on this component. to mitigate this, when `selectAll` is clicked, the emitting of events is blocked for a `ispatchLockDuration` ms. `bufferedDispatch` handles the lifecycle.
 -->
 
 <script>
@@ -46,12 +40,16 @@ import TooltipGeneric from "./TooltipGeneric.svelte";
 
 /**
  * @typedef DropdownChoice
- *    structure of the "choices"
- * @property {Any} value
- * @property {String} label
- * @property {String?} group: group name for nested selects
- * @property {String?} prefix: string, svg or iconify identifier prefix a dropdown item
- * @property {'text'|'iconify'|'svg'?} prefixType:
+ *      structure of the "choicesItems"
+ * @property {any} value
+ *      a HASHABLE value (string, number...). internal data emitted to parent component
+ * @property {string} label
+ *      value displaye to the user
+ * @property {string?} group
+ *      group name for nested selects
+ * @property {string?} prefix
+ *      string, svg or iconify identifier prefix a dropdown item
+ * @property {'text'|'iconify'|'svg'?} prefixType
  *      - 'text': prefix will be displayed as a string literal
  *      - 'iconfify': prefix will be treated as an iconify id and the corresponding icon will be displayed
  *      - 'svg': prefix is an svg and will be rendered
@@ -63,7 +61,7 @@ import TooltipGeneric from "./TooltipGeneric.svelte";
  */
 
 /** @type {DropdownChoiceArray} */
-export let choices;
+export let choicesItems;
 /** @type {DropdownChoice.value[]} the items selected by default, represented as an array of DropdownChoice.value */
 export let start = [];
 /** @type {Boolean} */
@@ -76,7 +74,7 @@ export let lightDisplay = false;
 export let placeholder = appLang === "fr" ? "Sélectionner une valeur" : "Select a value";
 /** @type {String?} */
 export let title = undefined;
-/** @type {Boolean} if True, extra "Select All" and "Unselect All" options will be preprended to `choices`. clicking on them will (un)select all choices. by default, true for multi-choice, false for single-choice */
+/** @type {Boolean} if True, extra "Select All" and "Unselect All" options will be preprended to `choicesItems`. clicking on them will (un)select all choicesItems. by default, true for multi-choice, false for single-choice */
 export let selectAll = multiple ? true : false;
 
 const htmlId = `input-dropdown-select-${window.crypto.randomUUID()}`;
@@ -87,21 +85,25 @@ const dispatchLockDuration = 250;
 
 const dispatch = createEventDispatcher();
 
+/** @type {Choices} defined in `initChoices()` */
+let choicesObj;
+
 /** @type {NewAndOldType} */
 const newAndOldSelectedValues = createNewAndOld();
 newAndOldSelectedValues.setCompareFn(equalArrayShallow);
 
 /** @type {Array} array of DropdownChoiceItem.value */
-$: selectedValues = start || [];
+$: selectedValues = [];
 
 /** @type {Array} temprarily toggled in `useDispatchLock`. when true, will block all requests */
 $: dispatchLock = false;
 
-// dispatching of selected elements to the parent component happens when `selectedValues` is updated and `dispatchLock` is set to false. this avoids intermediate calls to `dispatch` when selecting all elements.
+/** dispatching of selected elements to the parent component happens when `selectedValues` is updated and `dispatchLock` is set to false. this avoids intermediate calls to `dispatch` when selecting all elements. */
 $: bufferedDispatch(selectedValues, dispatchLock);
 
 /////////////////////////////////////////////////////
 
+/** block all dispatches of `updateValues` for `dispatchLockDuration` */
 const useDispatchLock = () => {
     dispatchLock = true;
     setTimeout(() => dispatchLock = false, dispatchLockDuration);
@@ -125,7 +127,7 @@ const prefixToHtml = (prefix, prefixType) =>
     }</span>`
     : "";
 
-const maybeAddSelectAllAndCopy = (arr, _selectAll) =>
+const maybeAddSelectAllAndCopy = (_choicesItems, _selectAll) =>
     _selectAll
     ? [
         {
@@ -134,16 +136,12 @@ const maybeAddSelectAllAndCopy = (arr, _selectAll) =>
         }, {
             value: unSelectAllValue,
             label: `<b>${appLang==="fr" ? "Tout retirer" : "Remove all"}</b>`
-        }, ...arr]
-    : [...arr];
+        }, ..._choicesItems
+    ]
+    : _choicesItems;
 
-/**
- * generate a random UUID + add the icon + add select all/remove all options. [...arr] copies instead of modifying in place.
- * @param {DropdownChoiceArray} arr
- * @param {boolean} _selectAll
- */
-const formatChoices = (arr, _selectAll) =>
-    maybeAddSelectAllAndCopy(arr, _selectAll)
+const formatChoices = (_choicesItems, _selectAll) =>
+    maybeAddSelectAllAndCopy(_choicesItems, _selectAll)
     .map(el => {
         el.id = `dropdown-choice-${window.crypto.randomUUID()}`;;
         el.label = `<span>
@@ -154,78 +152,99 @@ const formatChoices = (arr, _selectAll) =>
     });
 
 /**
- * update the global `choicesObj` and set `selectedValues`, which will trigger a dispatch of `updateValues` (see `bufferedDispatch`). this also handles "Select All" and "Unselect All" cases.
+ * define the original `selectedValues` and pre-process `_choicesItems` (there is no global `choicesItems` to avoid confusion with the `choicesItems` props, which MUST NOT be changed to avoid side effects)
+ * @param {DropdownChoiceArray} _choicesItems
+ * @param {any[]} _start
+ * @param {boolean} _selectedAll
+ */
+function initData(_choicesItems, _start, _selectAll) {
+    _choicesItems = structuredClone(_choicesItems);
+    _start = structuredClone(_start);
+    // all items in _choicesItems with `selected: true` will be automatically pre-selected.
+    _choicesItems = formatChoices(_choicesItems, _selectAll).map(c =>
+        _start.includes(c.value)
+        ? ({ ...c, selected: true })
+        : ({ ...c, selected: false })
+    )
+    selectedValues = _start
+    return _choicesItems;
+}
+
+/**
+ * update `_selectedValues` (local copy of `selectedValues`, which tracks all selected values). this also handles "Select All" and "Unselect All" cases.
  *
  * things get weird when the props `selectAll` is true and the "Select All" button is clicked:
  * - "select all" clicked
  *      => `onAddItem`  called
  *          => "select all" and any other items that were previously selected are programatically removed from the select items
  *              => `onRemoveItem` called, once per item to remove
- *          => all objects from `allChoices` are programatically added
- *              => `onAddItem` called, once per item in `allChoices`. but then, the `selectAllValue===false` branch is called, unlike in the original `onAddItem`
+ *          => all objects from `_choicesItems` are programatically added
+ *              => `onAddItem` called, once per item in `_choicesItems`. but then, the `selectAllValue===false` branch is called, unlike in the original `onAddItem`
  * => in practice, onAddItem will add all items twice. to mitigate this, when clicking on `Select All`,
  *  - [...new Set()] is used to deduplicate `localSelectedValues`.
  *  - `dispatchLock` is used to block all the `dispatch("updateValues")` that would be called when adding each individual item to `localSelectedValues`, until all items have been added
- *  - `bufferedDispatch()` will be called to `dispatch("updateValues")`, one `dispatchLock` is freed and all items have been added.
- * @param {Object} e
- * @param {DropdownChoiceArray} allChoices
- * @param {Choices} choicesObj
+ *  - `bufferedDispatch()` will be triggered when reassigning `selectedValues`. it will `dispatch("updateValues")`, once `dispatchLock` is freed and all items have been added.
+ * @param {Object} e: the svelte event
+ * @param {Choices} _choicesObj
+ * @param {DropdownChoiceArray} _choicesItems
+ * @param {any[]} _selectedValues
+ * @param {string} _selectAllValue
+ * @param {string} _unSelectAllValue
+ * @returns {any[]} : the updated _selectedValues
  */
-const onAddItem = (e, allChoices, choicesObj) => {
-    let localSelectedValues = [...selectedValues];  // avoid triggering side effects of `selectedValues`
-    if (e.detail.value === selectAllValue) {
+const onAddItem = (e, _choicesObj, _choicesItems, _selectedValues, _selectAllValue, _unSelectAllValue) => {
+    _selectedValues = structuredClone(_selectedValues);
+    _choicesItems = structuredClone(_choicesItems);
+    if (e.detail.value === _selectAllValue) {
         useDispatchLock();
         // set `selectedValues` + unselect all previous choices and reselect all choices except the Select/Unselect ones.
-        allChoices = allChoices.map(c =>
-            [selectAllValue, unSelectAllValue].includes(c.value)
+        _choicesItems = _choicesItems.map(c =>
+            [_selectAllValue, _unSelectAllValue].includes(c.value)
             ? ({ ...c, selected: false })
             : ({ ...c, selected: true })
         );
-        choicesObj
+        _choicesObj
             .removeActiveItems()
-            .clearChoices(true, true)  // removes all choices, selected or not. without that, `setValue` will extend existing choices with allChoices instead of replacing.
-            .setValue(allChoices)
+            .clearChoices(true, true)  // removes all choices, selected or not. without that, `setValue` will extend existing choices with _choicesItems instead of replacing.
+            .setValue(_choicesItems)
             .hideDropdown();
-        localSelectedValues = [...new Set(
-            allChoices
+        _selectedValues = [...new Set(
+            _choicesItems
             .filter(c => c.selected===true)
             .map(c => c.value)
         )];
-    } else if (e.detail.value === unSelectAllValue) {
-        choicesObj
+    } else if (e.detail.value === _unSelectAllValue) {
+        _choicesObj
             .removeActiveItems()
             .hideDropdown();
-        localSelectedValues = [];
+        _selectedValues = [];
     } else {
-        localSelectedValues =
+        _selectedValues =
             multiple===true
-            ? [...localSelectedValues, e.detail.value]
+            ? [..._selectedValues, e.detail.value]
             : [e.detail.value];
     }
-    selectedValues = [...new Set(localSelectedValues)];
+    return [...new Set(_selectedValues)];
 };
 
-const onRemoveItem = (e) => {
-    selectedValues = selectedValues.filter(s => s !== e.detail.value);
-}
-
+/**
+ * @param {Object} e: the svelte event
+ * @param {any[]} _selectedValues
+ * @returns {any[]} : the updated _selectedValues
+ */
+const onRemoveItem = (e, _selectedValues) =>
+    structuredClone(_selectedValues).filter(s => s !== e.detail.value);
 
 /**
- * @param {DropdownChoiceArray} allChoices: all the available choices
+ * @param {DropdownChoiceArray} _choicesItems: all the available choices
  * @param {boolean} _selectAll
  */
-function initChoices(allChoices, _selectAll) {
-    // all items in allChoices with `selected: true` will be automatically pre-selected as items.
-    allChoices = formatChoices(allChoices, _selectAll).map(c =>
-        start.includes(c.value)
-        ? ({ ...c, selected: true })
-        : ({ ...c, selected: false })
-    )
-
+function initChoices(_choicesItems, _selectAll) {
     const choicesTarget = document.getElementById(htmlId);
-    const choicesObj = new Choices(choicesTarget, {
+
+    choicesObj = new Choices(choicesTarget, {
         items: [],
-        choices: allChoices,
+        choices: _choicesItems,
         addChoices: false,
         addItems: false,
         removeItems: true,
@@ -259,17 +278,25 @@ function initChoices(allChoices, _selectAll) {
             : `Only ${maxItemCount} items can be added`
     })
 
-    choicesTarget.addEventListener("addItem", (e) => onAddItem(e, allChoices, choicesObj));
-    choicesTarget.addEventListener("removeItem", (e) => onRemoveItem(e))
+    // reassigning `selectedValues` will trigger a dispatch of `updateValues` (see `bufferedDispatch`)
+    choicesTarget.addEventListener("addItem", (e) => {
+        selectedValues = onAddItem(e, choicesObj, _choicesItems, selectedValues, selectAllValue, unSelectAllValue)
+    });
+    choicesTarget.addEventListener("removeItem", (e) => {
+        selectedValues = onRemoveItem(e, selectedValues)
+    })
 }
 
 /////////////////////////////////////////////////////
 
 onMount(() => {
-    initChoices(choices, selectAll);
+    const _choicesItems = initData(choicesItems, start, selectAll);
+    initChoices(_choicesItems, selectAll);
 })
 
 onDestroy(() => {
+    choicesObj.destroy();
+    choicesObj = undefined;
 })
 </script>
 

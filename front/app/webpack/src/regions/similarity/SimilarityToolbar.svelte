@@ -56,15 +56,6 @@ const comparedRegionsChoices = derived(comparedRegions, (($comparedRegions) =>
         label: shorten(region.title.replace(/^[^|]+/, ""))
     }))));
 
-/** @type {number[]}: category values */
-const defaultExcludedCategories = $excludedCategories;
-/** @type {string[]}: regions IDs */
-const defaultRegions = Object.keys($selectedRegions[currentPageId] || {});
-/** @type {number} */
-const defaultRecursionDepth = $propagateRecursionDepth;
-/** @type {boolean} */
-const defaultFilterByRegions = $propagateFilterByRegions;
-
 /** @type {Promise<Array<number?>>}. will be updated every time $selectedRegions changes */
 const similarityScoreRangePromise = fetchSimilarityScoreRange();
 
@@ -73,7 +64,6 @@ $: defaultSimilarityScoreCutoff = $similarityScoreCutoff || undefined
 
 /** @type {number} */
 let innerWidth, innerHeight;
-$: wideDisplay = innerWidth > 1200;
 $: stickyTop = calcStickyTop(innerWidth, innerHeight);  // recalculated on window resize
 
 $: toolbarExpanded = false;
@@ -150,10 +140,10 @@ const setComparedRegions = (e) => {
                     <div class="ctrl-block-inputs">
                         <div class="ctrl-input">
                             {#if Object.keys($comparedRegionsChoices).length}
-                                <InputDropdown choices={$comparedRegionsChoices}
+                                <InputDropdown choicesItems={$comparedRegionsChoices}
                                             multiple={true}
                                             placeholder="..."
-                                            start={defaultRegions}
+                                            start={Object.keys($selectedRegions[currentPageId] || {})}
                                             lightDisplay={true}
                                             title={appLang==="fr" ? "Régions sélectionnées" : "Selected regions"}
                                             selectAll={true}
@@ -188,10 +178,10 @@ const setComparedRegions = (e) => {
                         </div>
                         <div class="ctrl-block-inputs">
                             <div class="ctrl-input">
-                                <InputDropdown choices={categoriesChoices}
+                                <InputDropdown choicesItems={categoriesChoices}
                                             multiple={true}
                                             placeholder="..."
-                                            start={defaultExcludedCategories}
+                                            start={$excludedCategories}
                                             lightDisplay={true}
                                             title={appLang==="fr" ? "Catégories masquées" : "Hidden categories"}
                                             selectAll={true}
@@ -215,7 +205,7 @@ const setComparedRegions = (e) => {
                                 <InputSlider title={ appLang==="fr" ? "Profondeur de récursion" : "Recursion depth" }
                                             minVal={allowedPropagateDepthRange[0]}
                                             maxVal={allowedPropagateDepthRange[1]}
-                                            start={defaultRecursionDepth}
+                                            start={$propagateRecursionDepth}
                                             step={1}
                                             on:updateSlider={setPropagateRecursionDepth}
                                 ></InputSlider>
@@ -223,96 +213,17 @@ const setComparedRegions = (e) => {
                             <div class="ctrl-input">
                                 <InputToggleCheckbox checkboxLabel="Filter by region"
                                                     on:updateChecked={setPropagateFilterByRegions}
-                                                    start={defaultFilterByRegions}
+                                                    start={$propagateFilterByRegions}
                                                     buttonDisplay={true}
                                 ></InputToggleCheckbox>
                             </div>
+
+
                         </div>
                     </div>
                 </div>
             </div>
         {/if}
-        <!--
-        <div class="ctrl-inputs columns">
-            <div class="ctrl-block-wrapper column { wideDisplay ? 'is-three-fifths' : 'is-half' }">
-                <div class="ctrl-block ctrl-similarity">
-                    <div class="ctrl-block-title column is-2">
-                        <span>Similarity</span>
-                    </div>
-                    <div class="ctrl-block-inputs column is-10 columns is-vcentered { wideDisplay ? '' : 'is-multiline' }">
-                        <div class="column { wideDisplay ? 'mb-2 is-one-third' : '' }">
-                            {#if Object.keys($comparedRegionsChoices).length}
-                                <InputDropdown choices={$comparedRegionsChoices}
-                                               multiple={true}
-                                               placeholder="..."
-                                               start={defaultRegions}
-                                               lightDisplay={true}
-                                               title={appLang==="fr" ? "Régions sélectionnées" : "Selected regions"}
-                                               selectAll={true}
-                                               on:updateValues={setComparedRegions}
-                                ></InputDropdown>
-                            {/if}
-                        </div>
-                        <div class="column { wideDisplay ? 'mb-2 is-one-third' : '' }">
-                            <InputDropdown choices={categoriesChoices}
-                                           multiple={true}
-                                           placeholder="..."
-                                           start={defaultExcludedCategories}
-                                           lightDisplay={true}
-                                           title={appLang==="fr" ? "Catégories masquées" : "Hidden categories"}
-                                           selectAll={true}
-                                           on:updateValues={setExcludedCategories}
-                            ></InputDropdown>
-                        </div>
-                        <div class="column { wideDisplay ? 'is-one-third' : '' }">
-                            {#await similarityScoreRangePromise then similarityScoreRange}
-                                {#if similarityScoreRange.length}
-                                    <InputSlider title={ appLang==="fr" ? "Score minimal" : "Minimal score" }
-                                                 minVal={similarityScoreRange[0]}
-                                                 maxVal={similarityScoreRange[1]}
-                                                 start={defaultSimilarityScoreCutoff || similarityScoreRange[0]}
-                                                 roundTo={3}
-                                                 on:updateSlider={setSimilarityScoreCutoff}
-                                    ></InputSlider>
-                                {/if}
-                            {/await}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="ctrl-block-wrapper column { wideDisplay ? 'is-two-fifths' : 'is-half' }">
-                <div class="ctrl-block ctrl-propagation">
-                    <div class="ctrl-block-title column is-2">
-                        <span class="mr-1">Propagation</span>
-                        <IconTooltip iconifyIcon="material-symbols:help-outline"
-                                    altText={ appLang==="en" ? "Display help" : "Afficher une explication"}
-                                    tooltipText={tooltipText}
-                        ></IconTooltip>
-
-                    </div>
-                    <div class="ctrl-block-inputs column is-10 columns { wideDisplay ? '' : 'is-multiline' }">
-                        <div class="column { wideDisplay ? 'is-two-thirds' : 'is-full' }">
-                            <InputSlider title={ appLang==="fr" ? "Profondeur de récursion" : "Recursion depth" }
-                                         minVal={allowedPropagateDepthRange[0]}
-                                         maxVal={allowedPropagateDepthRange[1]}
-                                         start={defaultRecursionDepth}
-                                         step={1}
-                                         on:updateSlider={setPropagateRecursionDepth}
-                            ></InputSlider>
-                        </div>
-                        <div class="column is-flex is-align-items-center
-                                    { wideDisplay ? 'is-one-third is-justify-content-center' : 'is-full is-justify-content-start' }">
-                            <InputToggleCheckbox checkboxLabel="Filter by region"
-                                                 on:updateChecked={setPropagateFilterByRegions}
-                                                 start={defaultFilterByRegions}
-                                                 buttonDisplay={true}
-                            ></InputToggleCheckbox>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        -->
         <div class="ctrl-toggle">
             <button on:click|preventDefault={toggleToolbarExpanded}
                     class="button is-link"
@@ -400,7 +311,7 @@ const setComparedRegions = (e) => {
     margin: 5px 0;
 }
 .ctrl-block-inputs:has(> :last-child:nth-child(1)) {
-    /** .ctrl-block-inputs contains only 1 child */
+    /** rule for .ctrl-block-inputs that contain only 1 child */
     align-items: flex-start;
 }
 .ctrl-input {
@@ -428,44 +339,4 @@ const setComparedRegions = (e) => {
     height: 100%;
     transition: transform .5s;
 }
-
-/*
-.ctrl-inputs {
-    flex-grow: 2;
-    margin-inline-start: 0;
-    margin-inline-end: 0;
-}
-.ctrl-block-wrapper {
-    margin: 12px 0;
-}
-.ctrl-block-wrapper:last-child {
-    border-left: var(--default-border);
-}
-.ctrl-block {
-    margin: 0;
-}
-.ctrl-block-title, .ctrl-block-inputs {
-    margin-inline-start: 0;
-}
-.ctrl-block-title {
-    min-width: 100px;
-}
-.ctrl-propagation > .ctrl-block-title {
-    display: flex;
-    justify-content: start;
-    align-items: center;
-}
-.ctrl-block-title > span {
-    font-weight: bold;
-}
-.ctrl-block-inputs {
-    width: 100%;
-}
-.ctrl-block-inputs > * {
-    height: fit-content;
-}
-:global(.ctrl-block-inputs .slider-outer-wrapper) {
-    margin-bottom: 0;
-}
-*/
 </style>
