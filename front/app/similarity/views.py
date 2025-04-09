@@ -301,16 +301,6 @@ def get_propagated_matches(
         """remove matches that are exact matches to `OG_IMG_ID` and format the results"""
         q_img_regions = regions_from_img(OG_IMG_ID)
         exact_matches_by_regions = get_direct_pairs(OG_IMG_ID, _id_regions_array)
-        print(
-            "\n_id_regions_array",
-            _id_regions_array,
-            "\nexact_matches_by_regions",
-            exact_matches_by_regions,
-            "\n_propagated",
-            _propagated,
-            "\nfiltered propagated",
-            [p_img for p_img in _propagated if p_img not in exact_matches_by_regions],
-        )
         return [
             RegionPair(
                 img_1=OG_IMG_ID,

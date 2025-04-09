@@ -90,11 +90,11 @@
             return true
         } else {
             // the commented filter seems useless ?
-            let inSelectedRegions =
-                // _propagateFilterByRegions
-                // ? isInSelectedRegions(simImgRegions, _selectedRegions)
-                // : true;
-                true;
+            let inSelectedRegions = true;
+            // let inSelectedRegions =
+            //     _propagateFilterByRegions
+            //     ? isInSelectedRegions(simImgRegions, _selectedRegions)
+            //     : true;
             return (
                 isAboveCutoff(simImgScore, _similarityScoreCutoff)
                 && isNotInExcludedCategories(simImgCategory, usersCategory, _excludedCategories)

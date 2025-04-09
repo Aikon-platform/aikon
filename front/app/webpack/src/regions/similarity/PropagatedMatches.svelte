@@ -54,12 +54,8 @@
      * @param {PropagateParamsType} _propagateParams
      * @param {number[]|[]} selectedRegionsForWitness regions to filter by
      */
-    const getPropagatedMatches = async (_propagateParams, selectedRegionsForWitness) => {
-        console.log(selectedRegionsForWitness, $selectedRegions,
-                    _propagateParams.propagateFilterByRegions,
-                    _propagateParams.propagateRecursionDepth);
-
-        return fetch(`${baseUrl}propagated-matches/${qImg}`, {
+    const getPropagatedMatches = async (_propagateParams, selectedRegionsForWitness) =>
+        fetch(`${baseUrl}propagated-matches/${qImg}`, {
             method: "POST",
             body: JSON.stringify({
                 regionsIds: selectedRegionsForWitness,
@@ -76,7 +72,6 @@
             console.error("PropagatedMatches.getPropagatedMatches:", e);
             return []
         });
-    }
 
     ////////////////////////////////////
 
