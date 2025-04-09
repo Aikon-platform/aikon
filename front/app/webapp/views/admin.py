@@ -290,6 +290,32 @@ class TreatmentView(AbstractRecordView):
     template_name = "webapp/treatment.html"
     fields = []
 
+    def get_view_title(self):
+        return (
+            f"{self.model._meta.verbose_name} results"
+            if APP_LANG == "en"
+            else f"Résultats du {self.model._meta.verbose_name.lower()}"
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        treatment = self.get_record()
+
+        context["treatment_id"] = treatment.id
+        context["task_type"] = treatment.task_type
+        context["treatment_status"] = treatment.status
+
+        documents = {}
+        for document in treatment.get_objects():
+            documents.setdefault(
+                f"{document._meta.verbose_name} #{document.id}", document.to_json()
+            )
+
+        context["documents"] = documents
+
+        return context
+
 
 class WorkList(AbstractRecordList):
     model = Work
@@ -315,11 +341,6 @@ class WorkView(AbstractRecordView):
             f"“{work}” witnesses" if APP_LANG == "en" else f"Témoins de « {work} »"
         )
         context["edit_url"] = work.get_absolute_edit_url()
-
-        for witness in work.get_witnesses():
-            witnesses.setdefault(witness.id, witness.to_json())
-
-        context["witnesses"] = witnesses
         context["type"] = self.model._meta.verbose_name.lower()
         context["model_name"] = "witness"
 
@@ -350,11 +371,6 @@ class SeriesView(AbstractRecordView):
             f"“{series}” volumes" if APP_LANG == "en" else f"Volumes de « {series} »"
         )
         context["edit_url"] = series.get_absolute_edit_url()
-
-        for witness in series.get_witnesses():
-            witnesses.setdefault(witness.id, witness.to_json())
-
-        context["witnesses"] = witnesses
         context["type"] = self.model._meta.verbose_name.lower()
         context["model_name"] = "witness"
 
