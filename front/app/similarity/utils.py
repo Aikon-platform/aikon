@@ -25,7 +25,7 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
-from app.webapp.utils.functions import extract_nb, sort_key
+from app.webapp.utils.functions import sort_key
 from app.webapp.utils.logger import log
 from app.webapp.views import check_ref
 from config.settings import APP_LANG
@@ -354,6 +354,26 @@ def get_matched_regions(q_img: str, s_regions_id: int):
     )
 
 
+def get_pairs_for_regions(unfiltered_pairs, q_rid, regions_ids):
+    """For a given regions identifier, filters a list of pairs that relates to it, then
+    keeps only those pertaining to the selected comparison regions.
+
+    :param unfiltered_pairs: list of RegionPair objects
+    :param q_rid: in - id of the Regions object currently analyzed
+    :param regions_ids: list[int] - ids of the Regions objects to be linked by pairs to the Regions identified by q_rid
+    :return: list of RegionPair objects with one end from the Regions  identifier by q_rid and one end from any Regions identified by regions_ids
+    """
+    pairs = [
+        pair
+        for pair in unfiltered_pairs
+        if pair.regions_id_1 == q_rid or pair.regions_id_2 == q_rid
+    ]
+    if q_rid not in regions_ids:
+        pairs = [pair for pair in pairs if pair.regions_id_1 != pair.regions_id_2]
+
+    return pairs
+
+
 def delete_pairs_with_regions(regions_id: int):
     RegionPair.objects.filter(
         Q(regions_id_1=regions_id) | Q(regions_id_2=regions_id)
@@ -491,17 +511,6 @@ def validate_img_ref(img_string):
     # wit<id>_<digit><id>_<canvas_nb>_<x>,<y>,<h>,<w>
     pattern = r"^wit\d+_[a-zA-Z]{3}\d+_\d+_\d+,\d+,\d+,\d+$"
     return bool(re.match(pattern, img_string))
-
-
-def parse_img_ref(img_string):
-    # wit<id>_<digit><id>_<canvas_nb>_<x>,<y>,<h>,<w>.jpg
-    wit, digit, canvas, coord = img_string.split("_")
-    return {
-        "wit": extract_nb(wit),
-        "digit": extract_nb(digit),
-        "canvas": canvas,
-        "coord": coord.split(".")[0].split(","),
-    }
 
 
 def doc_pairs(doc_ids: list):
