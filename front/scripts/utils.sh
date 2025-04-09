@@ -233,7 +233,11 @@ get_default_val() {
         default_val="https://"$(get_env_value "PROD_URL" "$FRONT_ENV")
 
     elif [ "$param" = "CANTALOUPE_IMG" ]; then
-        default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img"
+        if [ "$OS" = "Linux" ]; then
+            default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img/"
+        else
+            default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img"
+        fi
 
     elif [ "$param" = "CANTALOUPE_PORT" ]; then
         default_val=$(get_env_value "CANTALOUPE_PORT" "$FRONT_ENV")
