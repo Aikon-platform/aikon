@@ -204,14 +204,12 @@ function createSimilarityStore() {
 
     // without `qImgs`, `setPageQImgs` may run before qImgs has been defined
     const setPageQImgs = derived([currentPage, qImgs], ([$currentPage, $qImgs]) =>
-        (async () => updatePageQImgs($currentPage, $qImgs))()
-    );
+        (async () => updatePageQImgs($currentPage, $qImgs))());
 
     function updatePageQImgs(pageNb, _qImgs) {
         const start = (pageNb - 1) * pageLength;
         const end = start + pageLength;
         const currentQImgs = _qImgs.slice(start, end);
-        pageQImgs.set(currentQImgs);
         return currentQImgs;
     }
 

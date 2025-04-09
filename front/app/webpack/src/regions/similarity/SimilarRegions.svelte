@@ -87,17 +87,14 @@
         _propagateFilterByRegions
     ) => {
         if ( isPropagatedContext ) {
-            // apply `_propagateFilterByRegions` if this component inherits from PropagatedMatches.svelte
-            return _propagateFilterByRegions
-                ? isInSelectedRegions(simImgRegions, _selectedRegions)
-                : true;
-        }
-        else {
-            // `inSelectedRegions` will only have an effect on regions where `similarityType===3` (propagated matches that inherit from SimilarityMatches)
+            return true
+        } else {
+            // the commented filter seems useless ?
             let inSelectedRegions =
-                _propagateFilterByRegions
-                ? isInSelectedRegions(simImgRegions, _selectedRegions)
-                : true;
+                // _propagateFilterByRegions
+                // ? isInSelectedRegions(simImgRegions, _selectedRegions)
+                // : true;
+                true;
             return (
                 isAboveCutoff(simImgScore, _similarityScoreCutoff)
                 && isNotInExcludedCategories(simImgCategory, usersCategory, _excludedCategories)
