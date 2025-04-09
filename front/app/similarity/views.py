@@ -274,16 +274,21 @@ def get_propagated_matches(
         return [r[0] for r in list(img_2_from_1.union(img_1_from_2).all())]
 
     def propagate(
-        q_img: str,  # query image
-        _id_regions_array: List[int] = [],  # regions to filter by (currently unused)
-        _recursion_depth: List[int] = RECURSION_DEPTH,  # [min, max] allowed recursion
-        queried: Set[str]
-        | None = None,  # list of images used as query images at previous steps
-        depth: int = 0,  # depth of current step
-        matches: List[
-            Tuple[str, int]
-        ] = [],  # output variable. List[Tuple[MatchImage, Depth]]
+        q_img: str,
+        _id_regions_array: List[int] = [],
+        _recursion_depth: List[int] = RECURSION_DEPTH,
+        queried: Set[str] | None = None,
+        depth: int = 0,
+        matches: List[Tuple[str, int]] = [],
     ) -> List[Tuple[str, int]]:
+        """
+        :param q_img: query image
+        :param _id_regions_array: regions to filter by (currently unused)
+        :param _recursion_depth: [min, max] allowed recursion
+        :param queried: list of images used as query images at previous steps
+        :param depth: depth of current step
+        :param matches: output results. list of (MatchImage, Depth)
+        """
 
         # validate depth
         if queried is None:
@@ -301,19 +306,19 @@ def get_propagated_matches(
         for new_match in direct_pairs:
 
             if (
-                new_match
-                not in queried  # `new_match` has not been used as a query image at a previous step
-                and new_match != q_img  # `new_match` is not the same as `q_img`
-                and new_match
-                != OG_IMG_ID  # `new_match` is not the same as `OG_IMG_ID` (the original query image)
-                and not any(
-                    m[0] == new_match for m in matches
-                )  # `new_match` has not been extracted at a previous step
+                # `new_match` has not been used as a query image at a previous step
+                new_match not in queried
+                # `new_match` is not the same as `q_img`
+                and new_match != q_img
+                # `new_match` is not the same as `OG_IMG_ID` (the original query image)
+                and new_match != OG_IMG_ID
+                # `new_match` has not been extracted at a previous step
+                and not any(m[0] == new_match for m in matches)
                 and (
-                    depth
-                    == 1  # depth==1: this is the 1st step => include all images (at the 1st step, this algorithm will only retrieve `EXACT_MATCHES`). these will be removed in `propagated_to_regionpair_json`
-                    or new_match
-                    not in EXACT_MATCHES  # depth > 1: all next steps => ensure new_match is not an exact match of `OG_IMG_ID`
+                    # depth==1: this is the 1st step => include all images (at the 1st step, this algorithm will only retrieve `EXACT_MATCHES`). these will be removed in `propagated_to_regionpair_json`
+                    depth == 1
+                    # depth > 1: all next steps => ensure new_match is not an exact match of `OG_IMG_ID`
+                    or new_match not in EXACT_MATCHES
                 )
             ):
                 # add the new match to the list of matches
