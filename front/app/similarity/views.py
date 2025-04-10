@@ -298,7 +298,12 @@ def get_propagated_matches(
     def propagated_to_regionpair_json(
         _propagated: List[Tuple[str, int]], _id_regions_array: List[int] = []
     ) -> List[RegionPairTuple]:
-        """remove matches that are exact matches to `OG_IMG_ID` and format the results"""
+        """
+        - remove matches that are
+            - exact matches to `OG_IMG_ID`
+            - propagations that have aldready been saved to database
+        - format the results
+        """
         q_img_regions = regions_from_img(OG_IMG_ID)
         exact_matches_by_regions = get_direct_pairs(OG_IMG_ID, _id_regions_array)
         propagation_2_from_1 = RegionPair.objects.values_list("img_2").filter(
