@@ -63,6 +63,17 @@ get_os() {
 export OS
 OS=$(get_os)
 
+# gets a password and validates it by running a dummy cmd.
+# parent process must call the function with `get_password || exit` to exit the script if `PASSWORD` is invalid
+get_password() {
+    if [ -z "$PASSWORD" ]; then
+        read -s -p "Enter your sudo password: " PASSWORD;
+        sudo -k && echo "$PASSWORD" | sudo -S whoami &> /dev/null && exit_code=0 || exit_code=1;
+        if [ ! "$exit_code" -eq 0 ]; then echo "Invalid sudo password. Exiting..."; fi
+        return "$exit_code"
+    fi
+}
+
 fresh_shell() {
     # reset exported variables
     if [ "$OS" = "Linux" ]; then

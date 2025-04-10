@@ -22,6 +22,7 @@ from app.webapp.models.regions import Regions
 from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2
+from app.config.settings import APP_LANG
 
 
 class AbstractView(LoginRequiredMixin, View):
@@ -289,6 +290,32 @@ class TreatmentView(AbstractRecordView):
     template_name = "webapp/treatment.html"
     fields = []
 
+    def get_view_title(self):
+        return (
+            f"{self.model._meta.verbose_name} results"
+            if APP_LANG == "en"
+            else f"Résultats du {self.model._meta.verbose_name.lower()}"
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        treatment = self.get_record()
+
+        context["treatment_id"] = treatment.id
+        context["task_type"] = treatment.task_type
+        context["treatment_status"] = treatment.status
+
+        documents = {}
+        for document in treatment.get_objects():
+            documents.setdefault(
+                f"{document._meta.verbose_name} #{document.id}", document.to_json()
+            )
+
+        context["documents"] = documents
+
+        return context
+
 
 class WorkList(AbstractRecordList):
     model = Work
@@ -296,6 +323,26 @@ class WorkList(AbstractRecordList):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["search_fields"] = WorkFilter().to_form_fields()
+
+        return context
+
+
+class WorkView(AbstractRecordView):
+    model = Work
+    template_name = "webapp/list.html"
+    fields = []
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        work = self.get_record()
+        witnesses = {}
+        context["view_title"] = (
+            f"“{work}” witnesses" if APP_LANG == "en" else f"Témoins de « {work} »"
+        )
+        context["edit_url"] = work.get_absolute_edit_url()
+        context["type"] = self.model._meta.verbose_name.lower()
+        context["model_name"] = "witness"
 
         return context
 
@@ -310,6 +357,26 @@ class SeriesList(AbstractRecordList):
         return context
 
 
+class SeriesView(AbstractRecordView):
+    model = Series
+    template_name = "webapp/list.html"
+    fields = []
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        series = self.get_record()
+        witnesses = {}
+        context["view_title"] = (
+            f"“{series}” volumes" if APP_LANG == "en" else f"Volumes de « {series} »"
+        )
+        context["edit_url"] = series.get_absolute_edit_url()
+        context["type"] = self.model._meta.verbose_name.lower()
+        context["model_name"] = "witness"
+
+        return context
+
+
 class DocumentSetList(AbstractRecordList):
     model = DocumentSet
 
@@ -318,6 +385,16 @@ class DocumentSetList(AbstractRecordList):
         context["search_fields"] = DocumentSetFilter().to_form_fields()
 
         return context
+
+
+class DocumentSetView(AbstractRecordView):
+    model = DocumentSet
+    template_name = "webapp/document_set.html"
+    fields = []
+
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     context["urls"] = self.get_record().get_treated_url()
 
 
 # TODO RegionsSetList

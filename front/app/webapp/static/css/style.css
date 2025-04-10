@@ -4,6 +4,8 @@
     --bulma-body-family: "Fira Sans", sans-serif;
     --default-color: hsl(229, 68%, 46%);
     --accent-grey: hsl(0, 0%, 14%);
+    --default-transition: ease-in-out .3s;
+    --default-border: solid 1px var(--bulma-border);
 }
 
 @media (prefers-color-scheme: dark) {}
@@ -288,6 +290,8 @@ td.is-fullwidth {
     --deleted-text: var(--bulma-danger-dark);
     /*--darkened-bg: var(--selected);*/
     /*--hairline-color: var(--bulma-border);*/
+    --bulma-shadow: 0 0 0 var(--contrasted), 0 0 0 1px var(--contrasted);
+    --bulma-box-hover-shadow: 0 0 0 var(--contrasted), 0 0 0 2px var(--contrasted);
 }
 
 [data-theme="light"] {

@@ -1,65 +1,169 @@
 <script>
-    import {appLang, csrfToken} from '../../constants';
+    import { getContext } from "svelte";
+
+    import { appLang } from '../../constants';
     import { similarityStore } from "./similarityStore.js";
-    const { selectedRegions, excludedCategories } = similarityStore;
     import SimilarRegion from "./SimilarRegion.svelte";
 
     export let qImg;
-    const baseUrl = `${window.location.origin}${window.location.pathname}`;
+    export let sImgsPromise;
+
+    const {
+        selectedRegions,
+        excludedCategories,
+        similarityScoreCutoff,
+        propagateFilterByRegions
+    } = similarityStore;
+
+    const isPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagation, false otherwise
     const currentPageId = window.location.pathname.match(/\d+/g).join('-');
+    const waitText =
+        appLang === 'en' && !isPropagatedContext
+        ? 'Retrieving similar regions...'
+        : appLang === 'fr' && !isPropagatedContext
+        ? 'Récupération des régions similaires...'
+        : appLang === 'en' && isPropagatedContext
+        ? "Retrieving propagated regions..."
+        : "Récupération de similarités propagées...";
 
-    async function fetchSImgs(qImg, selection, excludedCategories) {
-        const regionsIds = Object.values(selection).map(r => r.id);
-        if (regionsIds.length === 0) {
-            return {};
-        }
+    $: noRegionsSelected =
+        Object.values($selectedRegions).length === 0
+        || $selectedRegions[currentPageId] === undefined
+        || !Object.keys($selectedRegions[currentPageId]).length;
 
-        const response = await fetch(
-            `${baseUrl}similar-images`,
-            {
-                method: "POST",
-                body: JSON.stringify({
-                    regionsIds: Object.values(selection[currentPageId]).map(r => r.id),
-                    qImg: qImg,
-                    topk: 10, // TODO retrieve this value from the user
-                    excludedCategories: excludedCategories
-                }),
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-            }
-        );
-        return await response.json()
-    }
+    /** @type {Array<{uuid:string, data: Array}>} all similarity images, defined when sImgsPromise is resolved */
+    $: allSImgs = [];
+    sImgsPromise.then((res) => { allSImgs = res.map(el => ({
+        uuid: window.crypto.randomUUID(),
+        data: el}))
+    });
 
-    $: sImgsPromise = fetchSImgs(qImg, $selectedRegions, $excludedCategories);
+    /** @type {Array<{uuid:string, data: Array}>} allSImgs filtered by displaySimImg */
+    $: filteredSImgs = filterSImgs(
+            allSImgs,
+            $selectedRegions,
+            $excludedCategories,
+            $similarityScoreCutoff,
+            $propagateFilterByRegions
+    );
+
+
+    //////////////////////////////
+
+    /**
+     * @param {number|string} simImgScore
+     * @param {number} cutoff
+     */
+    const isAboveCutoff = (simImgScore, cutoff) =>
+        cutoff === undefined
+        ? true
+        : simImgScore != null && Number(simImgScore) >= cutoff;
+
+    /**
+     * @param {number} simImgCategory
+     * @param {Array<number>} usersCategory
+     * @param {Array<number>} _excludedCategories
+     */
+    const isNotInExcludedCategories = (simImgCategory, usersCategory, _excludedCategories) =>
+        !_excludedCategories.includes(simImgCategory);
+
+    /**
+     * NOTE: the filtered images won't be updated if the user
+     * sets a category on a `SimilarRegion` until the next refresh
+     * expected behaviour
+     *      the user sets a category => filters are
+     *      recomputed and if the `SimilarRegion` belongs to one of
+     *      $exludedCategories, the image is hidden for coherence.
+     * current behaviour
+     *      categories set in `SimilarRegion` won't affect the
+     *      filtering done by displaySimImg until the next reload.
+     * explanation
+     *      fixing this would ask to re-fetch `sImgsPromise` from the
+     *      backend: when setting a category in `SimilarRegion`, the
+     *      database is updated, the object in `SimilarRegion` is
+     *      updated, but the update is not transmitted to the parent
+     *      (aka, the current component)
+     *
+     * @returns {boolean}
+     */
+    const displaySimImg = (
+        simImgScore,
+        simImgRegions,
+        simImgCategory,
+        usersCategory,
+        _selectedRegions,
+        _excludedCategories,
+        _similarityScoreCutoff,
+        _propagateFilterByRegions
+    ) => isPropagatedContext
+        ? true
+        : isAboveCutoff(simImgScore, _similarityScoreCutoff)
+            && isNotInExcludedCategories(simImgCategory, usersCategory, _excludedCategories);
+
+
+    /**  run `displaySimImg` to filter `_allSimgs` */
+    const filterSImgs = (_allSImgs, _selectedRegions, _excludedCategories, _similarityScoreCutoff, _propagateFilterByRegions) =>
+        _allSImgs.filter(({uuid, data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]}) =>
+            displaySimImg(
+                score,
+                sRegions,
+                category,
+                users,
+                _selectedRegions,
+                _excludedCategories,
+                _similarityScoreCutoff,
+                _propagateFilterByRegions
+            ));
+
 </script>
 
-{#await sImgsPromise}
-    <div class="faded is-center">
-        {appLang === 'en' ? 'Retrieving similar regions...' : 'Récupération des régions similaires...'}
-    </div>
-{:then simImgs}
-    {#each simImgs as [score, _, sImg, qRegions, sRegions, category, users, isManual]}
-        <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual}/>
-    {:else}
-        {#if Object.values($selectedRegions).length === 0}
-            <div class="faded is-center">
-                {appLang === 'en' ? 'No document selected' : 'Aucun document sélectionné'}
+{#if sImgsPromise}
+    {#await sImgsPromise}
+        <div class="faded is-center">{waitText}</div>
+    {:then _}
+        <div>
+            <span class="m-2">{filteredSImgs.length} {
+                isPropagatedContext && appLang==="fr" && filteredSImgs.length > 1
+                ? "similarités propagées"
+                : isPropagatedContext && appLang==="fr" && filteredSImgs.length <= 1
+                ? "similarité propagée"
+                : isPropagatedContext && appLang==="en" && filteredSImgs.length > 1
+                ? "propagated matches"
+                : isPropagatedContext && appLang==="en" && filteredSImgs.length <= 1
+                ? "propagated match"
+                : !isPropagatedContext && appLang==="fr" && filteredSImgs.length > 1
+                ? "images similaires"
+                : !isPropagatedContext && appLang==="fr" && filteredSImgs.length <= 1
+                ? "image similaire"
+                : !isPropagatedContext && appLang==="en" && filteredSImgs.length > 1
+                ? "similar images"
+                : "similar image"
+            }</span>
+            <div class="grid m-2 is-gap-2">
+                {#each filteredSImgs as {uuid, data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]} (uuid)}
+                    <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual} {similarityType}/>
+                {:else}
+                    {#if noRegionsSelected }
+                        <div class="faded is-center">
+                            {appLang === 'en' ? 'No document selected. Select one to display results.' : 'Aucun document sélectionné. Sélectionnez-en un pour afficher les résultats.'}
+                        </div>
+                    {:else}
+                        <div class="faded is-center">
+                            {appLang === 'en' ? 'No similar regions' : 'Pas de régions similaires'}
+                        </div>
+                    {/if}
+                {/each}
             </div>
-        {:else}
-            <div class="faded is-center">
-                {appLang === 'en' ? 'No similar regions' : 'Pas de régions similaires'}
-            </div>
-        {/if}
-    {/each}
-{:catch error}
-    <div class="faded is-center">
-        {
-            appLang === 'en' ?
-            `Error when retrieving similar regions: ${error}` :
-            `Erreur de recupération des régions similaires: ${error}`
-        }
-    </div>
-{/await}
+        </div>
+    {:catch error}
+        <div class="faded is-center">
+            {
+                appLang === 'en' ?
+                `Error when retrieving similar regions: ${error}` :
+                `Erreur de recupération des régions similaires: ${error}`
+            }
+        </div>
+    {/await}
+{:else}
+    <div class="faded is-center">{waitText}</div>
+{/if}

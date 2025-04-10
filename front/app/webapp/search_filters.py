@@ -18,6 +18,7 @@ from app.webapp.models.edition import Edition, get_name as edition_name
 from app.webapp.models.language import Language
 from app.webapp.models.person import Person
 from app.webapp.models.place import Place
+from app.webapp.models.regions import Regions
 from app.webapp.models.series import Series, get_name as series_name
 from app.webapp.models.tag import Tag
 from app.webapp.models.treatment import Treatment, get_name as treatment_name
@@ -131,6 +132,9 @@ class WitnessFilter(RecordFilter):
     place = ModelChoiceFilter(
         queryset=ConservationPlace.objects.all(),
     )
+    series = ModelChoiceFilter(
+        queryset=Series.objects.all(),
+    )
     contents__lang = ModelMultipleChoiceFilter(
         queryset=Language.objects.all(),
         null_value=None,
@@ -153,6 +157,7 @@ class WitnessFilter(RecordFilter):
             "id_nb": ["icontains"],
             "place": ["exact"],
             "edition": ["exact"],
+            "series": ["exact"],
             "contents__work": ["exact"],
             "contents__work__author": ["exact"],
             "contents__lang": ["exact"],
@@ -166,6 +171,7 @@ class WitnessFilter(RecordFilter):
             "edition__name": edition_name("name"),
             "edition__place": edition_name("pub_place"),
             "edition__publisher": edition_name("publisher"),
+            "series": series_name("Series"),
             "contents__work": work_name("Work"),
             "contents__work__title": work_name("title"),
             "contents__work__author": work_name("author"),
@@ -314,4 +320,16 @@ class DigitizationFilter(RecordFilter):
             "witness": digitization_name("Witness"),
             "is_open": digitization_name("is_open"),
             "digit_type": digitization_name("type"),
+        }
+
+
+class RegionsFilter(RecordFilter):
+    digitization = ModelChoiceFilter(
+        queryset=Digitization.objects.all(),
+    )
+
+    class Meta:
+        model = Regions
+        fields = {
+            "digitization": ["exact"],
         }

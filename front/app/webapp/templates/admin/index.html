@@ -3,7 +3,7 @@
 
 {% block content %}
 
-    <div style="margin-bottom: 2%; margin-top: 2%;">
+    <div class="mt-1">
         <p class="is-size-1 has-text-weight-light">
             {% if APP_LANG == "en" %}
                 {{ APP_NAME|upper }} Admin Home
@@ -14,93 +14,22 @@
     </div>
 
     <div class="columns is-fluid">
-        <!-- Sidebar -->
-        <div class="column is-2">
-            <aside class="menu">
-                <p class="menu-label">Actions</p>
-                <ul class="menu-list is-capitalized">
-                    <a href="{% url 'admin:webapp_witness_add' %}">
-                        <span class="icon-text">
-                            <span class="icon"><i class="fas fa-plus-circle"></i></span>
-                            {% if APP_LANG == "en" %}Add{% else %}Ajouter un{% endif %} {{ WIT }}
-                        </span>
-                    </a>
-                    <a href="{% url 'admin:webapp_series_add' %}">
-                        <span class="icon-text">
-                            <span class="icon"><i class="fas fa-plus-circle"></i></span>
-                            {% if APP_LANG == "en" %}Add{% else %}Ajouter une{% endif %} {{ SER }}
-                        </span>
-                    </a>
-                </ul>
-            </aside>
-        </div>
-
-        <!-- Main content -->
-        <div class="column is-6">
-            <div class="block">
-                <p class="box is-contrasted mgt-medium">
-                    {% if APP_LANG == "en" %}Welcome to the administrative interface, {{ user.first_name }} {{ user.last_name }}!
-                    {% else %}Bienvenue sur l'interface administrateur, {{ user.first_name }} {{ user.last_name }} !{% endif %}
-                </p>
-            </div>
-
-            <div class="block box mg-medium p-5 has-background-link-light">
-                <div class="box is-contrasted" style="width: 100%; overflow-x: auto;">
-                    <table class="table is-capitalized is-fullwidth is-contrasted" id="main_entities">
-                        <thead>
-                        <tr class="table-header">
-                            <th colspan="3">{% if APP_LANG == "en" %}Main Entities{% else %}Entités{% endif %}</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% include "includes/admin_row.html" with entity_title=WIT entity_name="witness" %}
-                        {% include "includes/admin_row.html" with entity_title=SER entity_name="series" %}
-                        {% include "includes/admin_row.html" with entity_title=WORK entity_name="work" %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="block box mg-medium p-5 has-background-link-light">
-                <div class="box is-contrasted" style="width: 100%; overflow-x: auto;">
-                    <table class="table is-capitalized is-fullwidth is-contrasted" id="main_entities">
-                        <thead>
-                        <tr class="table-header">
-                            <th colspan="3">{% if APP_LANG == "en" %}My Tasks{% else %}Mes tâches{% endif %}</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                            {% include "includes/admin_row.html" with entity_title=TRMT entity_name="treatment" %}
-                            {% include "includes/admin_row.html" with entity_title=SET entity_name="document_set" %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
         <div class="column is-4">
-            <div class="box is-contrasted ml-5">
-                <p class="is-size-4 has-text-weight-light">
-                    {% if APP_LANG == "en" %}Dear user,{% else %}Cher utilisateur,{% endif %}
-                </p>
-                {% if user.username == "guest" %}
-                    <p>
-                        {% if APP_LANG == "en" %}You are in connected as guest with limited access to the platform. If you wish to obtain an account, please <a href="mailto:{{ CONTACT_MAIL }}">contact the administrators</a>.
-                        {% else %}Vous êtes connecté en tant qu'invité, avec un accès limité à la plateforme. Si vous souhaitez obtenir un compte, merci de <a href="mailto:{{ CONTACT_MAIL }}">contacter les administrateurs</a>.{% endif %}
-                    </p>
-                {% else %}
-                    <p>
-                        {% if APP_LANG == "en" %}This version of the website is still a work in progress. Don't hesitate to <a href="mailto:{{ CONTACT_MAIL }}">give us feedback</a>.
-                        {% else %}Ce site est encore en cours de développement. N'hésitez pas à <a href="mailto:{{ CONTACT_MAIL }}">nous contacter</a> pour faire des retours.{% endif %}
-                    </p>
-                {% endif %}
-                <p>
-                    {% if APP_LANG == "en" %}Enjoy testing {{APP_NAME|upper}}!
-                    {% else %}Bonne navigation !{% endif %}
-                </p>
-                <p style="text-align: right;">
-                    {% if APP_LANG == "fr" %}La {% endif %}DH Team
-                </p>
-            </div>
+            {% include "includes/admin_row.html" with entity_title=WIT entity_desc=WIT_DESC icon=True %}
+        </div>
+        <div class="column is-4">
+            {% include "includes/admin_row.html" with entity_title=SER entity_desc=SER_DESC icon=True %}
+        </div>
+        <div class="column is-4">
+            {% include "includes/admin_row.html" with entity_title=WORK entity_desc=WORK_DESC icon=True %}
+        </div>
+    </div>
+    <div class="columns is-fluid">
+        <div class="column is-6">
+            {% include "includes/admin_row.html" with entity_title=SET entity_set="document_set" entity_desc=SET_DESC %}
+        </div>
+        <div class="column is-6">
+            {% include "includes/admin_row.html" with entity_title=TRMT entity_desc=TRMT_DESC %}
         </div>
     </div>
 {% endblock %}
