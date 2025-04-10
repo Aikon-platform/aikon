@@ -210,6 +210,7 @@ function createSimilarityStore() {
         const start = (pageNb - 1) * pageLength;
         const end = start + pageLength;
         const currentQImgs = _qImgs.slice(start, end);
+        pageQImgs.set(currentQImgs);
         return currentQImgs;
     }
 

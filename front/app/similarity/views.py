@@ -301,6 +301,15 @@ def get_propagated_matches(
         """remove matches that are exact matches to `OG_IMG_ID` and format the results"""
         q_img_regions = regions_from_img(OG_IMG_ID)
         exact_matches_by_regions = get_direct_pairs(OG_IMG_ID, _id_regions_array)
+        propagation_2_from_1 = RegionPair.objects.values_list("img_2").filter(
+            Q(img_1=OG_IMG_ID) & Q(similarity_type=3)
+        )
+        propagation_1_from_2 = RegionPair.objects.values_list("img_1").filter(
+            Q(img_2=OG_IMG_ID) & Q(similarity_type=3)
+        )
+        saved_propagations = [
+            row[0] for row in propagation_1_from_2.union(propagation_2_from_1)
+        ]
         return [
             RegionPair(
                 img_1=OG_IMG_ID,
@@ -314,7 +323,9 @@ def get_propagated_matches(
                 similarity_type=3,
             ).get_info()
             for p_img in _propagated
-            if p_img not in exact_matches_by_regions and p_img != OG_IMG_ID
+            if p_img not in exact_matches_by_regions
+            and p_img not in saved_propagations
+            and p_img != OG_IMG_ID
         ]
 
     if request.method != "POST":
