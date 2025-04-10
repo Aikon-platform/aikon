@@ -130,6 +130,6 @@ def gen_manifest_json(obj, version=None):
     import json
 
     manifest = json.loads(manifest.toString())
-    manifest["@context"] = f"{APP_URL}/context.json"
+    # manifest["@context"] = f"{APP_URL}/context.json"
 
     return manifest
