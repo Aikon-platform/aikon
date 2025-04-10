@@ -83,7 +83,6 @@ const updateSelectedValAndDispatch = (val, caller) => {
     if (caller==="set") {
         newAndOldSelectedVal.set(val);
         if ( !newAndOldSelectedVal.same() ) {
-            console.log("dispatch", newAndOldSelectedVal.get());
             dispatch("updateSlider", newAndOldSelectedVal.get());
         }
     }

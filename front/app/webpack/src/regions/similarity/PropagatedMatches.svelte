@@ -1,5 +1,6 @@
 <script>
     import { setContext } from "svelte";
+    import { derived } from "svelte/store";
 
     import SimilarRegions from "./SimilarRegions.svelte";
 
@@ -8,6 +9,7 @@
     import { createNewAndOld, equalArrayShallow } from "../../utils";
 
     /** @typedef {import("./similarityStore").PropagateParamsType} PropagateParamsType */
+    /** @typedef {import("./similarityStore").SelectedRegionsType} SelectedRegionsType */
     /** @typedef {import("../../utils").NewAndOldType} NewAndOldType */
 
     ////////////////////////////////////
@@ -22,7 +24,16 @@
 
     /** @type {NewAndOldType}*/
     const newAndOldPropagateParams = createNewAndOld();
-    newAndOldPropagateParams.setCompareFn(equalArrayShallow);
+    newAndOldPropagateParams.setCompareFn((x,y) =>
+        [x,y].every(_ =>
+            _ && _.hasOwnProperty("propagateRecursionDepth") && _.hasOwnProperty("propagateFilterByRegions"))
+        ? x.propagateRecursionDepth === y.propagateRecursionDepth
+            && x.propagateFilterByRegions === y.propagateFilterByRegions
+        : false
+    );
+    /** @type {NewAndOldType} */
+    const newAndOldSelectedRegions = createNewAndOld();
+    newAndOldSelectedRegions.setCompareFn(equalArrayShallow);
 
     /** @type {boolean} true if the child component inherits from PropagatedMatches, false otherwise. */
     setContext("similarityPropagatedContext", true);
@@ -30,21 +41,31 @@
     ////////////////////////////////////
 
     /**
-     * @param {number[]} recursionDepth
+     * extract regions ids for the selected regions of the current witness
+     * @type {SelectedRegionsType} _selectedRegions
+     * @returns {number[]|[]} the IDs of each regions
      */
-    const getPropagatedMatches = async (recursionDepth) =>
+    const getRegionsIds = (_selectedRegions) =>
+        Object.keys(_selectedRegions).includes(currentPageId)
+        ? Object.values(_selectedRegions[currentPageId]).map(v => v.id)
+        : [];
+
+    /**
+     * @param {PropagateParamsType} _propagateParams
+     * @param {number[]|[]} regionsForWitness regions to filter by
+     */
+    const getPropagatedMatches = async (_propagateParams, regionsForWitness) =>
         fetch(`${baseUrl}propagated-matches/${qImg}`, {
             method: "POST",
             body: JSON.stringify({
-                regionsIds: [],
-                filterByRegions: false,
-                recursionDepth: recursionDepth
+                regionsIds: regionsForWitness,
+                filterByRegions: _propagateParams.propagateFilterByRegions,
+                recursionDepth: _propagateParams.propagateRecursionDepth
             }),
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
-            },
-
+            }
         })
         .then(r => r.json())
         .catch(e => {
@@ -54,12 +75,19 @@
 
     ////////////////////////////////////
 
+    // for some reason, grouping `propagateParams` and `selectedRegions` in a single derived doesn't work, so we use 2 subscribes instead
     propagateParams.subscribe((newPropagateParams) => {
-        newAndOldPropagateParams
-            .set(newPropagateParams.propagateRecursionDepth);
+        newAndOldPropagateParams.set(newPropagateParams);
         if ( !newAndOldPropagateParams.same() ) {
             propagatedMatchesPromise =
-                getPropagatedMatches(newPropagateParams.propagateRecursionDepth);
+                getPropagatedMatches(newAndOldPropagateParams.get(), getRegionsIds($selectedRegions));
+        }
+    })
+    selectedRegions.subscribe((newSelectedRegions) => {
+        newAndOldSelectedRegions.set(getRegionsIds(newSelectedRegions));
+        if ( $propagateParams.propagateFilterByRegions === true && !newAndOldSelectedRegions.same() ) {
+            propagatedMatchesPromise =
+                getPropagatedMatches($propagateParams, newAndOldSelectedRegions.get());
         }
     })
 
@@ -68,6 +96,7 @@
 <div class="block matches-suggestion-wrapper">
     <div class="matches-suggestion">
         <div class="block">
+            <!--
             {#await propagatedMatchesPromise then propagatedImgs}
                 {#if appLang==="fr"}
                     {propagatedImgs.length} {propagatedImgs.length > 1 ? "similarités propagées" : "similarité propagée" }
@@ -75,13 +104,11 @@
                     {propagatedImgs.length} propagated match{propagatedImgs.length > 1 ? "es" : "" }
                 {/if}
             {/await}
+            -->
         </div>
-        <div class="grid is-gap-2">
-            <SimilarRegions qImg={qImg}
-                           sImgsPromise={propagatedMatchesPromise}
-                           displayType="suggestionMatches"
-            ></SimilarRegions>
-        </div>
+        <SimilarRegions qImg={qImg}
+                       sImgsPromise={propagatedMatchesPromise}
+        ></SimilarRegions>
     </div>
 </div>
 

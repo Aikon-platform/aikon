@@ -301,20 +301,14 @@ def get_region_pairs_with(q_img, regions_ids, include_self=False, strict=False):
     :param strict: bool, ensures that `regions_ids` is used to filter the similarity image, not the query image (`q_img`): the matched image's regions, must be in `regions_ids`
     :return: list of RegionPair objects
     """
-    # TODO debug strict mode / see how necessary it is
-    # if not strict:
-    #     query = (
-    #         (Q(img_1=q_img) | Q(img_2=q_img)) &
-    #         (Q(regions_id_1__in=regions_ids) | Q(regions_id_2__in=regions_ids))
-    #     )
-    # else:
-    #     query = (
-    #         (Q(img_1=q_img) & Q(regions_id_2__in=regions_ids))
-    #         | (Q(img_2=q_img) & Q(regions_id_1__in=regions_ids)
-    #     ))
-    query = (Q(img_1=q_img) | Q(img_2=q_img)) & (
-        Q(regions_id_1__in=regions_ids) | Q(regions_id_2__in=regions_ids)
-    )
+    if not strict:
+        query = (Q(img_1=q_img) | Q(img_2=q_img)) & (
+            Q(regions_id_1__in=regions_ids) | Q(regions_id_2__in=regions_ids)
+        )
+    else:
+        query = (Q(img_1=q_img) & Q(regions_id_2__in=regions_ids)) | (
+            Q(img_2=q_img) & Q(regions_id_1__in=regions_ids)
+        )
 
     if not include_self:
         query &= ~Q(regions_id_1=F("regions_id_2"))
@@ -443,16 +437,21 @@ def get_best_pairs(
     """
     manual_pairs = []
     propagated_pairs = []  # propagated pairs that have been saved to database
+    annotated_pairs = []  # where category is not null
     auto_pairs = []
+    nomatch_pairs = []  # category == 4
     added_pairs = set()
 
     for pair in region_pairs:
         if pair.category not in excluded_categories:
+
             pair_data = pair.get_info(q_img)
             pair_ref = pair.get_ref()
+
             if pair_ref in added_pairs:
                 continue
             added_pairs.add(pair_ref)
+
             if (
                 pair.is_manual
                 or pair.similarity_type == 2
@@ -461,10 +460,22 @@ def get_best_pairs(
                 manual_pairs.append(pair_data)
             elif pair.similarity_type == 3:
                 propagated_pairs.append(pair_data)
+            elif pair.category == 4:
+                nomatch_pairs.append(pair_data)
+            elif pair.category is not None:
+                annotated_pairs.append(pair_data)
             else:
                 auto_pairs.append(pair_data)
+
+    annotated_pairs.sort(key=lambda x: x[5])  # sort by category number, ascending
     auto_pairs.sort(key=lambda x: x[0], reverse=True)
-    return manual_pairs + propagated_pairs + auto_pairs[:topk]
+    return (
+        manual_pairs
+        + propagated_pairs
+        + annotated_pairs
+        + auto_pairs[:topk]
+        + nomatch_pairs
+    )
 
 
 def validate_img_ref(img_string):

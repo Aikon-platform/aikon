@@ -35,10 +35,7 @@
 
     const { getRegionsInfo, comparedRegions } = similarityStore;
 
-    $: selectedCategory = category;
-    $: isSelectedByUser = users.includes(Number(userId)) || false;
-
-    ////////////////////////////////////////////
+    const isPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagation, false otherwise
 
     const [wit, digit, canvas, xyhw] = sImg.split('.')[0].split('_');
     const item = {
@@ -52,12 +49,19 @@
     }
     const regionRef = `${wit}_${digit}`;
 
+    $: selectedCategory = category;
+    $: isSelectedByUser = users.includes(Number(userId)) || false;
+
     ////////////////////////////////////////////
 
     /**
      * if the current SimilarRegion is a propagation, then
      * `similarityStore.comparedRegions` may not contain the `regions`.
      * in that case, we fetch the title from the backend.
+     * @returns {Promise<string>}
+     *      if `!isPropagatedContext` the result could be synchronous, but
+     *      it is returned as a promise to provide the same async interface
+     *      for both branches
      */
     async function getDesc() {
         const formatter = (title) =>
@@ -74,7 +78,7 @@
                 ? 'Propagated match'
                 : 'Correspondance propagée'
             }</b>`;
-        return similarityType === 3
+        return isPropagatedContext===true
             ? fetch(`${baseUrl}${pathUrl}get_regions_title/${regionRef}`)
                 .then(r => r.json())
                 .then(r => formatter(r.title))
@@ -82,7 +86,7 @@
                     console.error("SimilarRegion.getDesc()", e);
                     return formatter(appLang === "fr" ? "Titre inconnu" : "Unknown title");
                 })
-            : formatter(getRegionsInfo(regionRef).title);
+            : Promise.resolve(formatter(getRegionsInfo(regionRef).title));
     }
 
     function updateCurrentUsers(_users) {
@@ -152,9 +156,7 @@
 <div>
     <!-- TODO remove selection outline from SimilarRegion in similarities
         (selecting a Region has no effect on "Selection") -->
-    {#await getDesc() then desc}
-        <Region {item} size={256} {desc} isSquare={false}/>
-    {/await}
+    <Region {item} size={256} descPromise={getDesc()} isSquare={false}/>
     <div class="tags has-addons is-dark is-center">
         <span class="tag is-hoverable pl-4 pr-3 py-4" class:is-selected={selectedCategory === 1}
               on:click={() => categorize(1)} on:keyup={null}
