@@ -18,6 +18,7 @@ from django.core.cache import cache
 
 from app.similarity.const import SCORES_PATH
 from app.config.settings import APP_URL, APP_NAME
+from app.similarity.models.region_pair import RegionPair, RegionPairTuple
 from app.similarity.models.region_pair import RegionPair
 from app.similarity.tasks import delete_api_similarity
 from app.webapp.models.digitization import Digitization
@@ -259,7 +260,7 @@ def score_file_to_db(file_path):
                         regions_id_1=ref_1.split("_anno")[1],
                         regions_id_2=ref_2.split("_anno")[1],
                         is_manual=False,
-                        # algorithm=algo,
+                        similarity_type=1,
                         category_x=[],
                     )
                 )
@@ -272,7 +273,13 @@ def score_file_to_db(file_path):
         with transaction.atomic():
             RegionPair.objects.bulk_update_or_create(
                 pairs_to_update,
-                ["score", "regions_id_1", "regions_id_2", "is_manual"],
+                [
+                    "score",
+                    "regions_id_1",
+                    "regions_id_2",
+                    "is_manual",
+                    "similarity_type",
+                ],
                 ["img_1", "img_2"],
                 "score",
             )
@@ -284,17 +291,24 @@ def score_file_to_db(file_path):
     return True
 
 
-def get_region_pairs_with(q_img, regions_ids, include_self=False):
+def get_region_pairs_with(q_img, regions_ids, include_self=False, strict=False):
     """
     Retrieve all RegionPair records containing the given query image name
 
     :param q_img: str, the image name to look for
     :param regions_ids: list, ids of regions that should be included in the pairs (regions_id_1 or regions_id_2)
     :param include_self: bool, if we consider comparisons of the region with itself
+    :param strict: bool, ensures that `regions_ids` is used to filter the similarity image, not the query image (`q_img`): the matched image's regions, must be in `regions_ids`
     :return: list of RegionPair objects
     """
-    query = Q(img_1=q_img) | Q(img_2=q_img)
-    query &= Q(regions_id_1__in=regions_ids) | Q(regions_id_2__in=regions_ids)
+    if not strict:
+        query = (Q(img_1=q_img) | Q(img_2=q_img)) & (
+            Q(regions_id_1__in=regions_ids) | Q(regions_id_2__in=regions_ids)
+        )
+    else:
+        query = (Q(img_1=q_img) & Q(regions_id_2__in=regions_ids)) | (
+            Q(img_2=q_img) & Q(regions_id_1__in=regions_ids)
+        )
 
     if not include_self:
         query &= ~Q(regions_id_1=F("regions_id_2"))
@@ -410,9 +424,9 @@ def get_best_pairs(
     excluded_categories: List[int],
     topk: int,
     user_id: int = None,
-) -> List[Set[Tuple[str, float, int, List[int]]]]:
+) -> List[Set[RegionPairTuple]]:
     """
-    Process RegionPair objects and return a structured dictionary.
+    Process RegionPair objects and return a list.
 
     :param region_pairs: List of RegionPair objects
     :param q_img: Query image name
@@ -422,25 +436,46 @@ def get_best_pairs(
     :return: List with structured data
     """
     manual_pairs = []
+    propagated_pairs = []  # propagated pairs that have been saved to database
+    annotated_pairs = []  # where category is not null
     auto_pairs = []
+    nomatch_pairs = []  # category == 4
     added_pairs = set()
 
     for pair in region_pairs:
         if pair.category not in excluded_categories:
-            pair_data = pair.get_info(q_img)
 
+            pair_data = pair.get_info(q_img)
             pair_ref = pair.get_ref()
+
             if pair_ref in added_pairs:
                 continue
             added_pairs.add(pair_ref)
 
-            if pair.is_manual or (pair.category_x and user_id in pair.category_x):
+            if (
+                pair.is_manual
+                or pair.similarity_type == 2
+                or (pair.category_x and user_id in pair.category_x)
+            ):
                 manual_pairs.append(pair_data)
+            elif pair.similarity_type == 3:
+                propagated_pairs.append(pair_data)
+            elif pair.category == 4:
+                nomatch_pairs.append(pair_data)
+            elif pair.category is not None:
+                annotated_pairs.append(pair_data)
             else:
                 auto_pairs.append(pair_data)
 
+    annotated_pairs.sort(key=lambda x: x[5])  # sort by category number, ascending
     auto_pairs.sort(key=lambda x: x[0], reverse=True)
-    return manual_pairs + auto_pairs[:topk]
+    return (
+        manual_pairs
+        + propagated_pairs
+        + annotated_pairs
+        + auto_pairs[:topk]
+        + nomatch_pairs
+    )
 
 
 def validate_img_ref(img_string):
@@ -526,17 +561,20 @@ def load_similarity(pair):
 
 
 def reset_similarity(regions: Regions):
+    import shutil
+
     regions_id = regions.id
     try:
         regions_ref = regions.get_ref()
     except Exception as e:
         log(f"[reset_similarity] Failed to retrieve region ref for id {regions_id}", e)
         return False
-
     for file in os.listdir(SCORES_PATH):
         if regions_ref in file:
             try:
                 os.remove(os.path.join(SCORES_PATH, file))
+            except IsADirectoryError:
+                shutil.rmtree(os.path.join(SCORES_PATH, file))
             except OSError as e:
                 log(f"[reset_similarity] Error removing file {file}", e)
 
@@ -549,3 +587,16 @@ def reset_similarity(regions: Regions):
         log(f"[reset_similarity] Error deleting pairs with region id {regions_id}", e)
 
     return True
+
+
+def regions_from_img(q_img: str) -> int:
+    """
+    retrieve the regions id (member of `RegionPair.(regions_id_1|regions_id_2)`)
+    for an image q_img (member of `RegionPair.(img_1|img_2)`).
+    union.first() raises an error so we run 2 queries instead
+    """
+    q1 = RegionPair.objects.values_list("regions_id_1").filter(img_1=q_img).first()
+    if q1:
+        return q1[0]
+    q2 = RegionPair.objects.values_list("regions_id_2").filter(img_2=q_img).first()
+    return q2[0]

@@ -1,6 +1,6 @@
 x-proxy-settings: &proxy-settings
-  HTTP_PROXY: ${HTTP_PROXY}
-  HTTPS_PROXY: ${HTTPS_PROXY}
+  HTTP_PROXY: ${HTTP_PROXY:-}
+  HTTPS_PROXY: ${HTTPS_PROXY:-}
   NO_PROXY: "localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.aikon_network"
 
 services:
@@ -82,8 +82,8 @@ services:
     env_file:
       - ./.env
     volumes:
-#        - ${DATA_FOLDER}/sas:/sas/data
         - ../sas:/sas
+        - ${DATA_FOLDER}/sas:/sas/data
     ports:
       - "${SAS_PORT:-8888}:8888"
     networks:

@@ -154,3 +154,47 @@ export async function getSuccess(url) {
 export async function deleteRecord(recordId, recordType){
     return getSuccess(`/${appName}/${recordType.toLowerCase()}/${recordId}/delete`);
 }
+
+
+/**
+ * @typedef NewAndOldType
+ *    an object that tracks changes to another object.
+ * @type {Object}
+ * @property {(x:Any) => void} set
+ *      define the newest object and unpade the old one
+ * @property {() => Any} get
+ *      get the new object
+ * @property {(x:Any) => void} setCompareFn
+ *      define the comparion function. defining this function allows to have some custom way to check if `_new` and `_old` are different (i.e., deep equality in case of objects)
+ * @property {() => Array<Any>} getNewAndOld
+ *      get a pair of [New, Old]
+ * @property {() => boolean} same
+ *      using this._compareFn, returns a boolean indicating that _new is the same as _old. defined as a function rather than as an attribute to ensure that `same` is always run on the latest [New, Old] pair.
+ */
+// TODO create a custom event that emits when the value changes ? https://stackoverflow.com/a/62984915
+/** @returns {NewAndOldType} */
+export function createNewAndOld() {
+    let _new = undefined;
+    let _old = undefined;
+    let _compareFn = (_new, _old) => _new === _old;
+    return {
+        set: (newVal) => {
+            _old = _new;
+            _new = newVal;
+        },
+        setCompareFn: (newCompareFn) => _compareFn = newCompareFn,
+        get: () => _new,
+        getNewAndOld: () => [_new, _old],
+        same: () => _compareFn(_new, _old)
+    }
+}
+
+/**
+ * @param {Any | Array<Any>} x: an array of hashable values
+ * @param {Any | Array<Any>} y: an array of hashable values
+ * @returns {boolean} true if the arrays are the same
+ */
+export const equalArrayShallow = (x, y) =>
+    Array.isArray(x) && Array.isArray(y)
+    && x.length===y.length
+    && x.every((e, idx) => e === y[idx]||undefined);

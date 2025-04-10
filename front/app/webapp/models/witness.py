@@ -157,9 +157,11 @@ class Witness(AbstractSearchableModel):
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
-    def get_absolute_url(self):
+    def get_absolute_edit_url(self):
         return reverse("admin:webapp_witness_change", args=[self.id])
-        # return reverse("webapp:witness_view", args=[self.id])
+
+    def get_absolute_view_url(self):
+        return reverse("webapp:witness_regions_view", args=[self.id])
 
     def to_json(self, reindex=True):
         # TODO create to_json template in a Abstract class
@@ -180,7 +182,8 @@ class Witness(AbstractSearchableModel):
                 "img": self.get_img(only_first=True),
                 "user_id": user.id if user else 0,
                 "user": user.__str__() if user else NO_USER,
-                "url": self.get_absolute_url(),
+                "edit_url": self.get_absolute_edit_url(),
+                "view_url": self.get_absolute_view_url(),
                 "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),
                 "is_public": self.is_public,
                 "metadata": {

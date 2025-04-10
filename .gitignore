@@ -80,3 +80,7 @@ node_modules/
 
 front/celery/celerybeat-schedule.db
 front/celerybeat-schedule.db
+run_api.sh
+run_frontend.sh
+run_main.sh
+.vscode

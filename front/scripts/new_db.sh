@@ -9,7 +9,7 @@
 SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"
 
-source "$SCRIPT_DIR"/functions.sh
+source "$SCRIPT_DIR"/utils.sh
 
 APP_ENV="$APP_ROOT"/app/config/.env
 # Load environment variables from .env file
@@ -31,6 +31,12 @@ db_name=${1:-${POSTGRES_DB}_2}
 db_sql_file=$2
 db_user=${POSTGRES_USER:-admin}
 db_psw=${POSTGRES_PASSWORD:-dummy_password}
+
+if [[ "$DOCKER" = "True" ]]; then
+    db_host="db"
+else
+    db_host="localhost"
+fi
 
 create_user() {
     sql_arr=( "CREATE USER $db_user WITH PASSWORD '$db_psw';"
@@ -91,9 +97,9 @@ if [ -z "$db_sql_file" ]; then
     $manage createsuperuser --noinput
     # $manage createsuperuser --username="$db_user" --email="$CONTACT_MAIL"
 else
-    psql -h localhost -d "$db_name" -U "$db_user" -f "$db_sql_file" || echo "‼️ Failed to import SQL data ‼️"
+    psql -h "$db_host" -d "$db_name" -U "$db_user" -f "$db_sql_file" || echo "‼️ Failed to import SQL data ‼️"
 fi
 
-color_echo blue '\nConnect to app using:'
+color_echo blue '\nConnect to django app using:'
 echo -e "          👤 $db_user"
 echo -e "          🔑 $POSTGRES_PASSWORD"

@@ -238,9 +238,16 @@ urlpatterns += [
         f"{APP_NAME}/treatment/<str:id>", TreatmentView.as_view(), name="treatment_view"
     ),
     path(f"{APP_NAME}/work/", WorkList.as_view(), name="work_list"),
+    path(f"{APP_NAME}/work/<str:id>", WorkView.as_view(), name="work_view"),
     path(f"{APP_NAME}/series/", SeriesList.as_view(), name="series_list"),
+    path(f"{APP_NAME}/series/<str:id>", SeriesView.as_view(), name="series_view"),
     path(
         f"{APP_NAME}/document-set/", DocumentSetList.as_view(), name="document_set_list"
+    ),
+    path(
+        f"{APP_NAME}/document-set/<str:id>",
+        DocumentSetView.as_view(),
+        name="document_set_view",
     ),
 ]
 
@@ -302,6 +309,7 @@ urlpatterns += [
     path("search/series/", search_series, name="search-series"),
     path("search/documentset/", search_document_set, name="search-document-sets"),
     path("search/digitization/", search_digitizations, name="search-digitizations"),
+    path("search/regions/", search_regions, name="search-regions"),
     path("search/json-generation/", json_regeneration, name="regenerate_json"),
 ]
 
@@ -311,6 +319,12 @@ urlpatterns += [
     path("superadmin/works/", list_works, name="list-works"),
 ]
 
+# DIRTY FIX FOR SAS 😡
+urlpatterns += [
+    path("context.json", iiif_context, name="iiif-context"),
+]
+
+# TEST VIEWS
 urlpatterns += [
     path(
         f"{APP_NAME}/test",

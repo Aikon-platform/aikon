@@ -12,9 +12,6 @@ FP = os.path.abspath(__file__)  # directory of the current file
 SCRIPTS_DIR = os.path.abspath(os.path.dirname(__file__))
 FRONT_DIR = os.path.abspath(os.path.join(SCRIPTS_DIR, ".."))
 APP_DIR = os.path.abspath(os.path.join(FRONT_DIR, "app"))
-R_BASE = os.path.abspath(os.path.join(APP_DIR, "requirements-base.txt"))
-R_DEV = os.path.abspath(os.path.join(APP_DIR, "requirements-dev.txt"))
-R_PROD = os.path.abspath(os.path.join(APP_DIR, "requirements-prod.txt"))
 
 
 def requirements_file_parser(
@@ -44,11 +41,10 @@ def requirements_file_parser(
     return requirements
 
 
-def get_issues(mode: str) -> None:
+def get_issues(reqfile: str | os.PathLike) -> None:
     """
     print all installation errors in the terminal
     """
-    reqfile = R_BASE if mode == "base" else R_DEV if mode == "base" else R_PROD
     requirements = requirements_file_parser(reqfile)
 
     count = 0
@@ -72,18 +68,26 @@ def get_issues(mode: str) -> None:
     return
 
 
+def get_file(fp: str) -> os.PathLike:
+    fp = os.path.abspath(fp)
+    if not os.path.isfile(fp):
+        raise FileNotFoundError(
+            f"\n\t>>> requirements file not found: {fp}\n\t>>> exiting..."
+        )
+    return fp
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         "get_package_issues",
-        description="find packages in the requirements file missing "
-        "from the current venv or with a dependency conflict",
+        description="find packages in a requirements file missing from your current venv or with a dependency conflict",
     )
     parser.add_argument(
-        "-m",
-        "--mode",
-        choices=["base", "dev", "prod"],
+        "-f",
+        "--file",
         required=True,
-        help="specify the build for which you want to test requirements",
+        help="the requirements file you want to test",
     )
     args = parser.parse_args()
-    get_issues(args.mode)
+    reqfile = get_file(args.file)
+    get_issues(reqfile)

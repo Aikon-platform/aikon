@@ -6,6 +6,9 @@
     import { appLang, csrfToken } from "../../constants";
     import { manifestToMirador, refToIIIF, showMessage } from "../../utils.js";
 
+    import SimilarityMatches from "./SimilarityMatches.svelte";
+    import PropagatedMatches from "./PropagatedMatches.svelte";
+
     export let qImg;
     let sImg = "";
     const [wit, digit, canvas, xyhw] = qImg.split('.')[0].split('_');
@@ -43,6 +46,7 @@
                 body: JSON.stringify({
                     'q_img': qImg.replace('.jpg', ''),
                     's_img': sImg,
+                    'similarity_type': 2
                 })
             });
 
@@ -165,9 +169,10 @@
     </th>
     <td class="p-5 is-fullwidth">
         <div class="fixed-grid has-5-cols">
-            <div class="grid is-gap-2">
-                <slot/>
-            </div>
+            <SimilarityMatches {qImg}></SimilarityMatches>
+        </div>
+        <div class="fixed-grid has-5-cols">
+            <PropagatedMatches {qImg}></PropagatedMatches>
         </div>
     </td>
 </tr>
