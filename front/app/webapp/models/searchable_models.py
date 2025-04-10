@@ -31,7 +31,10 @@ class AbstractSearchableModel(models.Model):
         null=True,
     )
 
-    def get_absolute_url(self):
+    def get_absolute_edit_url(self):
+        raise NotImplementedError("Subclasses must implement this method")
+
+    def get_absolute_view_url(self):
         raise NotImplementedError("Subclasses must implement this method")
 
     def to_json(self, reindex=True):
@@ -43,7 +46,8 @@ class AbstractSearchableModel(models.Model):
                     "type": get_fieldname(self.__class__.__name__),
                     "title": "",
                     "updated_at": None,
-                    "url": self.get_absolute_url(),
+                    "edit_url": self.get_absolute_edit_url(),
+                    "view_url": self.get_absolute_view_url(),
                     "user": "Unknown user",
                     "user_id": 0,
                 }
