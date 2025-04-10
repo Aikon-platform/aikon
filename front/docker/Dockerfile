@@ -5,11 +5,6 @@ FROM ubuntu:22.04
 ARG USERID
 ARG PORT
 
-#ENV HTTP_PROXY=http://proxy.enpc.fr:3128
-#ENV HTTPS_PROXY=http://proxy.enpc.fr:3128
-ENV http_proxy=http://proxy.enpc.fr:3128
-ENV https_proxy=http://proxy.enpc.fr:3128
-
 ENV USER=aikon
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/home/${USER}
