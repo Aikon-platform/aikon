@@ -52,13 +52,13 @@
 
     /**
      * @param {PropagateParamsType} _propagateParams
-     * @param {number[]|[]} selectedRegionsForWitness regions to filter by
+     * @param {number[]|[]} regionsForWitness regions to filter by
      */
-    const getPropagatedMatches = async (_propagateParams, selectedRegionsForWitness) =>
+    const getPropagatedMatches = async (_propagateParams, regionsForWitness) =>
         fetch(`${baseUrl}propagated-matches/${qImg}`, {
             method: "POST",
             body: JSON.stringify({
-                regionsIds: selectedRegionsForWitness,
+                regionsIds: regionsForWitness,
                 filterByRegions: _propagateParams.propagateFilterByRegions,
                 recursionDepth: _propagateParams.propagateRecursionDepth
             }),
@@ -85,7 +85,7 @@
     })
     selectedRegions.subscribe((newSelectedRegions) => {
         newAndOldSelectedRegions.set(getRegionsIds(newSelectedRegions));
-        if ( !newAndOldSelectedRegions.same() ) {
+        if ( $propagateParams.propagateFilterByRegions === true && !newAndOldSelectedRegions.same() ) {
             propagatedMatchesPromise =
                 getPropagatedMatches($propagateParams, newAndOldSelectedRegions.get());
         }
@@ -96,6 +96,7 @@
 <div class="block matches-suggestion-wrapper">
     <div class="matches-suggestion">
         <div class="block">
+            <!--
             {#await propagatedMatchesPromise then propagatedImgs}
                 {#if appLang==="fr"}
                     {propagatedImgs.length} {propagatedImgs.length > 1 ? "similarités propagées" : "similarité propagée" }
@@ -103,13 +104,11 @@
                     {propagatedImgs.length} propagated match{propagatedImgs.length > 1 ? "es" : "" }
                 {/if}
             {/await}
+            -->
         </div>
-        <div class="grid is-gap-2">
-            <SimilarRegions qImg={qImg}
-                           sImgsPromise={propagatedMatchesPromise}
-                           displayType="suggestionMatches"
-            ></SimilarRegions>
-        </div>
+        <SimilarRegions qImg={qImg}
+                       sImgsPromise={propagatedMatchesPromise}
+        ></SimilarRegions>
     </div>
 </div>
 

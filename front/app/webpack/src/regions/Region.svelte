@@ -7,11 +7,23 @@
     const { clipBoard } = regionsStore;
     import { appLang } from '../constants';
 
+    /** @type {object}*/
     export let item;
-    $: isCopied = item.ref === $clipBoard;
-    export let isSquare = true;
+    /** @type {boolean}*/
+        export let isSquare = true;
+    /** @type {number}*/
     export let height = isSquare ? 96 : 140;
+    /** @type {string}*/
     export let desc = item.title;
+    /** @type {Promise<string>?}*/
+    export let descPromise = undefined;
+
+    $: isCopied = item.ref === $clipBoard;
+
+    // if `descPromise` is passed, wait for resolution to update `desc`
+    if (descPromise) {
+        descPromise.then((res) => desc = res);
+    }
 </script>
 
 <div class="region is-center {$isSelected(item) ? 'checked' : ''}" transition:fade={{ duration: 500 }}>
