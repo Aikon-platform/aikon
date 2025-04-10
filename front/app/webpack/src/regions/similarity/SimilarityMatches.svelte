@@ -31,7 +31,7 @@
     async function fetchSImgs(qImg, selection) {
         const regionsIds = getRegionsIds(selection);
         if (regionsIds.length === 0) {
-            return {};
+            return [];
         }
         const response = await fetch(`${baseUrl}similar-images`, {
             method: "POST",
@@ -55,8 +55,9 @@
     });
 </script>
 
-<div class="grid is-gap-2">
-    <SimilarRegions {qImg} {sImgsPromise} displayType="similarityMatches"
+<div>
+    <SimilarRegions {qImg}
+                    {sImgsPromise}
     ></SimilarRegions>
 </div>
 
