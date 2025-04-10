@@ -55,6 +55,7 @@ Please refer to [front/README](https://github.com/Aikon-platform/discover-api/bl
     author={
         Ségolène Albouy,
         Jade Norindr,
+        Paul Kervegan,
         Fouad Aouinti,
         Clara Grometto,
         Robin Champenois,

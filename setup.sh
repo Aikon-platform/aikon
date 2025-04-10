@@ -22,11 +22,24 @@ else
     exit 1
 fi
 
+INSTALL_MODE="full_install"
+choose_install_mode() {
+    color_echo blue "Do you want to run a full install or a quick install (skips defining basic env variables, perfect for dev)?"
+    options=("quick install" "full install")
+    answer=$(printf "%s\n" "${options[@]}" | fzy)
+    INSTALL_MODE="${answer/ /_}"  # "quick_install" or "full_install", will default to "full_install"
+    export INSTALL_MODE="$INSTALL_MODE"
+    echo ""
+    color_echo cyan "Running a $answer! 🚀"
+    echo ""
+}
+choose_install_mode
+
 if [ ! -d "$API_DIR" ]; then
     git submodule init
     git submodule update
 else
-    color_echo blue "Do you want to init the api/ submodule (⚠️  this will checkout from your current API branch to a detached head, resetting all changes made to the API)?"
+    color_echo blue "Do you want to init the api/ submodule (⚠️ this will checkout from your current API branch to a detached head, resetting all changes made to the API)?"
     options=("yes" "no")
     answer=$(printf "%s\n" "${options[@]}" | fzy)
     if [ "$answer" = "yes" ]; then
@@ -40,12 +53,14 @@ echo_title "AIKON BUNDLE INSTALL"
 color_echo green "Front installation..."
 cd "$FRONT_DIR";
 
-if ! bash "$FRONT_SETUP"; then
-    color_echo red "AIKON setup encountered an error"
-    exit 1
-fi
+# if ! bash "$FRONT_SETUP"; then
+#     color_echo red "AIKON setup encountered an error"
+#     exit 1
+# fi
 
 color_echo green "API installation..."
+source "$FRONT_ENV"
+
 cd "$API_DIR"
 
 if ! bash "$API_SETUP"; then
@@ -62,7 +77,6 @@ echo_title "🎉 FRONT & API ARE SET UP! 🎉"
 color_echo blue "\nYou can now run the app and API with: "
 color_echo green "          $ bash run.sh"
 
-source "$FRONT_ENV"
 color_echo blue '\nConnect to app using:'
 echo -e "          👤 $POSTGRES_USER"
 echo -e "          🔑 $POSTGRES_PASSWORD"

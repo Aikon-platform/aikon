@@ -25,4 +25,7 @@ Get an SSL certificate and key for your domain and save it.
 On first build, you will be prompted to fill up environment values
 ```bash
 cd aikon/front/docker
+bash docker.sh build
 ```
+
+The `init.sh` script will create configuration files and persistent storage directories.

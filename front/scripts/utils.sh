@@ -175,10 +175,10 @@ prompt_user() {
         prompt="Enter value"
     fi
 
-    prompt="$prompt [Space for empty value]"
+    prompt="$prompt [x for empty value]"
     read -p "$env_var $desc"$'\n'"$prompt: " value </dev/tty
 
-    if [ "$value" = " " ]; then
+    if [ "$value" = "x" ]; then
         export new_value=""  # if user entered a space character, return empty value
     else
         export new_value="${value:-$default_val}"
@@ -244,7 +244,11 @@ get_default_val() {
         default_val="https://"$(get_env_value "PROD_URL" "$FRONT_ENV")
 
     elif [ "$param" = "CANTALOUPE_IMG" ]; then
-        default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img"
+        if [ "$OS" = "Linux" ]; then
+            default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img/"
+        else
+            default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img"
+        fi
 
     elif [ "$param" = "CANTALOUPE_PORT" ]; then
         default_val=$(get_env_value "CANTALOUPE_PORT" "$FRONT_ENV")
@@ -291,7 +295,7 @@ update_env() {
             elif [ -n "${!param}" ]; then
                 # If variable is already set in the current shell, use it as default
                 new_value="${!param}"
-            elif is_in_default_params "$param" && [ -n "$default_val" ]; then
+            elif is_in_default_params "$param"; then
                 # If param is in default params, use default value if it exists
                 new_value="$default_val"
             else
@@ -320,8 +324,17 @@ setup_env() {
         cp "$env_file" "${env_file}.backup"
         cp "$template_file" "$env_file"
     else
-        color_echo yellow "\n$env_file is up-to-date, skipping..."
-        export_env "$env_file"
+        options=("yes" "no")
+
+        color_echo yellow "\n$env_file is up-to-date. Do you want to regenerate it again?"
+        answer=$(printf "%s\n" "${options[@]}" | fzy)
+        if [ "$answer" = "yes" ]; then
+            rm "${template_file}.hash"
+            setup_env $env_file
+            exit 0
+        fi
+        color_echo cyan "\nSkipping..."
+        export_env "$env_file" "${DEFAULT_PARAMS[@]}"
         exit 0
     fi
 

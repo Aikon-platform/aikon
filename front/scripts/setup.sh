@@ -3,7 +3,10 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 FRONT_DIR="$(dirname "$SCRIPT_DIR")"
 
+INSTALL_MODE=${INSTALL_MODE:-"full_install"}
 source "$SCRIPT_DIR"/utils.sh
+
+color_echo cyan "Running a $INSTALL_MODE for the front app! 🚀"
 
 run_script() {
     local script_name="$1"
@@ -32,19 +35,6 @@ else
     color_echo red "Unsupported OS: $OS"
     exit 1
 fi
-
-INSTALL_MODE="full_install"
-choose_install_mode() {
-    color_echo blue "Do you want to run a full install or a quick install (skips defining basic env variables, perfect for dev)?"
-    options=("quick install" "full install")
-    answer=$(printf "%s\n" "${options[@]}" | fzy)
-    INSTALL_MODE="${answer/ /_}"  # "quick_install" or "full_install", will default to "full_install"
-    export INSTALL_MODE="$INSTALL_MODE"
-    echo ""
-    color_echo cyan "Running a $answer! 🚀"
-    echo ""
-}
-choose_install_mode
 
 run_script setup_system_packages.sh "System package install"
 run_script setup_venv.sh "Virtual environment initialization"
