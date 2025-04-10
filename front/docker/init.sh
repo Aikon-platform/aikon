@@ -4,6 +4,8 @@ FRONT_ROOT="$(dirname "$DOCKER_DIR")"
 source "$FRONT_ROOT/scripts/utils.sh"
 export INSTALL_MODE="full_install"
 
+# TODO use aikon-demo check for .env modification
+
 # if docker/.env does not exist, create it
 if [ ! -f "$FRONT_ROOT/docker/.env" ]; then
     echo_title "DOCKER ENVIRONMENT VARIABLES"

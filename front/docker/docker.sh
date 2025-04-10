@@ -28,6 +28,10 @@ update_containers() {
     build_containers
 }
 
+log_containers() {
+    docker compose logs -f
+}
+
 case "$1" in
     start)
         start_containers
@@ -49,8 +53,11 @@ case "$1" in
         build_containers
         start_containers
         ;;
+    log)
+        log_containers
+        ;;
     *)
-        echo "Usage: $0 {start|stop|restart|update|build}"
+        echo "Usage: $0 {start|stop|restart|update|build|log}"
         exit 1
 esac
 
