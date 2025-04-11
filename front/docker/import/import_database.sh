@@ -1,7 +1,5 @@
-echo_title "ORIGINAL DATABASE DUMP"
-
 source "$TARGET_APP_ROOT/scripts/utils.sh"
-
+echo_title "ORIGINAL DATABASE DUMP"
 source "$SOURCE_ENV_FILE"
 
 DB_HOST=${DB_HOST:-localhost}
