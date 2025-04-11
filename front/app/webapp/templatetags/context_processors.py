@@ -8,6 +8,7 @@ from app.config.settings import (
     CONTACT_MAIL,
     ADDITIONAL_MODULES,
     APP_LOGO,
+    DOCKER,
 )
 from app.webapp.utils.constants import (
     APP_NAME_UPPER,
@@ -47,9 +48,9 @@ def global_variables(request):
         "CONTACT_MAIL": CONTACT_MAIL,
         "WEBAPP_NAME": WEBAPP_NAME,
         "COPYRIGHT": COPYRIGHT,
-        "SAS_APP_URL": SAS_APP_URL,
+        "SAS_APP_URL": f"{APP_URL}/sas" if DOCKER else SAS_APP_URL,
         "APP_URL": APP_URL,
-        "CANTALOUPE_APP_URL": CANTALOUPE_APP_URL,
+        "CANTALOUPE_APP_URL": APP_URL if DOCKER else CANTALOUPE_APP_URL,
         "MS_ABBR": MS_ABBR,
         "VOL_ABBR": VOL_ABBR,
         "WIT_ABBR": WIT_ABBR,
