@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("webapp", "0019_treatment_api_parameters_alter_treatment_task_type"),
+        ("webapp", "0013_alter_documentset_options_treatment_api_parameters_and_more"),
     ]
 
     operations = [
