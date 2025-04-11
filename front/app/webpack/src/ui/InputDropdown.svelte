@@ -127,7 +127,7 @@ const prefixToHtml = (prefix, prefixType) =>
     }</span>`
     : "";
 
-const maybeAddSelectAllAndCopy = (_choicesItems, _selectAll) =>
+const maybeAddSelectAll = (_choicesItems, _selectAll) =>
     _selectAll
     ? [
         {
@@ -141,7 +141,7 @@ const maybeAddSelectAllAndCopy = (_choicesItems, _selectAll) =>
     : _choicesItems;
 
 const formatChoices = (_choicesItems, _selectAll) =>
-    maybeAddSelectAllAndCopy(_choicesItems, _selectAll)
+    maybeAddSelectAll(_choicesItems, _selectAll)
     .map(el => {
         el.id = `dropdown-choice-${window.crypto.randomUUID()}`;;
         el.label = `<span>
