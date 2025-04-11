@@ -459,3 +459,18 @@ cleanup_pids() {
 
     return 0
 }
+
+ask() {
+    options=("yes" "no")
+    color_echo blue "$1"
+    answer=$(printf "%s\n" "${options[@]}" | fzy)
+    echo ""
+    if [ "$answer" = "no" ]; then
+        exit 1
+    fi
+}
+
+error() {
+    color_echo red "$1"
+    exit 1
+}
