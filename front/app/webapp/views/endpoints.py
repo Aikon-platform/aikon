@@ -4,13 +4,25 @@ from pathlib import Path
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.cache import cache_page
+from django.db.models import F
 
+from app.config.settings import (
+    APP_URL,
+    APP_NAME,
+    CANTALOUPE_APP_URL,
+    ADDITIONAL_MODULES,
+)
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, PAGE_LEN
-from app.webapp.utils.functions import zip_img
+from app.webapp.utils.functions import (
+    zip_img,
+    get_files_in_dir,
+    get_files_with_prefix,
+    parse_img_ref,
+)
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.utils.iiif.annotation import (
     get_regions_annotations,
@@ -267,3 +279,211 @@ def iiif_context(request):
 
     except Exception as e:
         return JsonResponse({"error": f"Unable to load IIIF context: {e}"}, status=500)
+
+
+def get_json_witness(request, wid):
+    if request.method == "GET":
+        witness = get_object_or_404(Witness, id=wid)
+
+        if witness.is_public:
+            # Existing JSON metadata
+            w_json_raw = witness.json
+            fields = {
+                "id",
+                "img",
+                "iiif",
+                "user",
+                "user_id",
+                "title",
+                "metadata",
+                "is_public",
+                "updated_at",
+            }
+            w_json = {k: v for k, v in w_json_raw.items() if k in fields}
+
+            # Digitizations data (as manifests)
+            w_digits_ids = witness.get_digits()
+            w_digits_manifs = {
+                "digitizations": dict(
+                    Digitization.objects.filter(id__in=w_digits_ids)
+                    .annotate(manifest_json=F("json__url"))
+                    .values_list("id", "manifest_json")
+                )
+            }
+
+            w_regions = witness.get_regions()
+            w_reg_processes = {}
+            try:
+                for r in w_regions:
+                    reg_raw_json = r.to_json()
+                    del reg_raw_json["class"]
+                    del reg_raw_json["type"]
+                    w_reg_processes[r.id] = reg_raw_json
+                    w_reg_processes[r.id]["treatments"] = {}
+
+                    # 3 : Regions/annotations data (endpoint URL)
+                    if "regions" in ADDITIONAL_MODULES:
+                        w_reg_processes[r.id]["treatments"][
+                            "extracted_regions"
+                        ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/extracted-regions"
+
+                    # 4 : Similarity data (endpoint URL)
+                    if "similarity" in ADDITIONAL_MODULES:
+                        w_reg_processes[r.id]["treatments"][
+                            "similarities"
+                        ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/similarities"
+
+                    # 5 : Vectorizations (endpoint URL)
+                    if "vectorization" in ADDITIONAL_MODULES:
+                        w_reg_processes[r.id]["treatments"][
+                            "vectorizations"
+                        ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/vectorized-images"
+
+                return JsonResponse(
+                    w_json | w_digits_manifs | {"regions": w_reg_processes}, safe=False
+                )
+
+            except (json.JSONDecodeError, ValueError) as e:
+                return JsonResponse({"error": f"Invalid data: {str(e)}"}, status=400)
+            except Exception as e:
+                return JsonResponse(
+                    {"error": f"An error occurred: {str(e)}"}, status=500
+                )
+        else:
+            return JsonResponse({})
+
+
+def get_json_regions(request, wid, rid):
+    if request.method == "GET":
+        result = {}
+        witness = get_object_or_404(Witness, id=wid)
+        if witness.is_public:
+            annos = get_regions_annotations(regions=get_object_or_404(Regions, id=rid))
+            result = {
+                "manifest": get_object_or_404(Regions, pk=rid).gen_manifest_url(),
+                "extracted_crops": annos,
+            }
+
+        return JsonResponse(result, safe=False)
+
+
+def get_json_simil(request, wid, rid):
+    from app.similarity.utils import (
+        get_best_pairs,
+        get_region_pairs_with,
+        get_compared_regions_ids,
+        get_regions_q_imgs,
+        get_pairs_for_regions,
+    )
+
+    if request.method == "GET":
+        witness = get_object_or_404(Witness, id=wid)
+        if witness.is_public:
+            # Partly taken from 'get_similar_images' in 'similarity/views.py'
+            try:
+                q_imgs_set = set()
+                keys = [
+                    "score",
+                    "img1",
+                    "img2",
+                    "regions1",
+                    "regions2",
+                    "category",
+                    "category_x",
+                    "manual",
+                ]
+
+                q_imgs_set.update(get_regions_q_imgs(rid, wid))
+                q_imgs = sorted(list(q_imgs_set))
+
+                regions_ids = []
+                regions_ids += get_compared_regions_ids(rid)
+
+                result = {}
+                for q_img in q_imgs:
+                    if not regions_ids or not q_img:
+                        return JsonResponse({})
+
+                    all_pairs = get_region_pairs_with(
+                        q_img, regions_ids, include_self=True
+                    )
+
+                    # Process pairs for each q_region
+                    result[q_img] = []
+                    pairs = get_pairs_for_regions(all_pairs, rid, regions_ids)
+
+                    best_pairs = get_best_pairs(
+                        q_img,
+                        pairs,
+                        excluded_categories=[],
+                        user_id=request.user.id,
+                        export=True,
+                    )
+                    dict_pairs = [dict((zip(keys, p))) for p in best_pairs]
+                    result[q_img].extend(dict_pairs)
+
+                return JsonResponse(result, safe=False)
+
+            except (json.JSONDecodeError, ValueError) as e:
+                return JsonResponse({"error": f"Invalid data: {str(e)}"}, status=400)
+            except Exception as e:
+                return JsonResponse(
+                    {"error": f"An error occurred: {str(e)}"}, status=500
+                )
+        else:
+            return JsonResponse({})
+
+
+def create_json_vecto_element(svg_filename, subfolder_name=None):
+    from app.vectorization.const import SVG_PATH
+
+    svg_fullpath = (
+        f"{SVG_PATH}/{subfolder_name}/{svg_filename}"
+        if subfolder_name
+        else f"{SVG_PATH}/{svg_filename}"
+    )
+    filename = subfolder_name + svg_filename if subfolder_name else svg_filename
+    parsed = parse_img_ref(svg_filename)
+    with open(svg_fullpath, "r", encoding="utf-8") as f:
+        return {
+            "filename": filename,
+            "img_url": f"{CANTALOUPE_APP_URL}/iiif/2/wit{parsed['wit']}_img{parsed['digit']}_{parsed['canvas']}.jpg/{','.join(parsed['coord'])}/full/0/default.jpg",
+            "svg": f.read(),
+        }
+
+
+def get_json_vecto(request, wid, rid):
+    from app.vectorization.const import SVG_PATH
+
+    if request.method == "GET":
+        witness = get_object_or_404(Witness, id=wid)
+        if witness.is_public:
+            # Inspired from 'get_vectorized_images' in 'vectorization/views.py'
+            q_r = get_object_or_404(Regions, pk=rid)
+            v_imgs = []
+
+            # Mirroring what happens with vectorization view:
+            # First look in folder named after regions_ref, then try with digit_ref
+            try:
+                r_ref = q_r.get_ref()
+                for file in get_files_in_dir(f"{SVG_PATH}/{r_ref}"):
+                    v_imgs.append(create_json_vecto_element(file, r_ref))
+            except ValueError:
+                digit_ref = q_r.get_ref().split("_anno")[0]
+                for file_path in get_files_with_prefix(SVG_PATH, digit_ref):
+                    v_imgs.append(create_json_vecto_element(file_path))
+
+            return JsonResponse(v_imgs, safe=False)
+        else:
+            return JsonResponse({})
+
+
+def get_json_document_set(request, dsid):
+    if request.method == "GET":
+        doc_set = get_object_or_404(DocumentSet, id=dsid)
+        ds_data = {
+            w.id: f"{APP_URL}/{APP_NAME}/witness/{w.id}/json"
+            for w in doc_set.all_witnesses()
+            if w.is_public
+        }
+        return JsonResponse(ds_data, safe=False)

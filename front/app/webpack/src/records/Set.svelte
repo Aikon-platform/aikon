@@ -1,7 +1,9 @@
 <script>
     import Item from "./Item.svelte";
+	import Modal from '../Modal.svelte';
     import {selectionStore} from "../selection/selectionStore.js";
-    import {appLang} from "../constants.js";
+    import {appLang, appName} from "../constants.js";
+    import { showMessage } from "../utils";
     const { isSetSelected } = selectionStore;
     export let item;
     export let recordsStore;
@@ -17,7 +19,34 @@
         if (status === 'SUCCESS') return 'is-success';
         return 'is-dark';
     }
+
+    async function showExport(item) {
+        let msg = appLang === 'en' ?
+            'You can export the contents of this set as a ZIP archive or reach our JSON API.' :
+            'Vous pouvez exporter le contenu de cet ensemble en archive ZIP ou interroger notre API JSON.'
+
+        let exportDiv = document.createElement("div");
+        exportDiv.style = "display: flex; gap: 1rem; align-items: center; justify-content: center; margin-top: 1em;"
+        let jsonBtn = document.createElement("a");
+        jsonBtn.classList.add("button", "is-link");
+        jsonBtn.innerHTML = "<span>"+(appLang === 'en' ? 'JSON API' : 'API JSON')+"</span>";
+        jsonBtn.href = `/${appName}/document-set/${item.id}/json`
+        jsonBtn.target = "_blank"
+
+        let zipBtn = document.createElement("a");
+        zipBtn.classList.add("button", "is-link");
+        zipBtn.innerHTML = "<span>ZIP</span>";
+        zipBtn.href = `/${appName}/document-set/${item.id}/zip`
+        zipBtn.target = "_blank"
+
+        exportDiv.appendChild(jsonBtn);
+        exportDiv.appendChild(zipBtn);
+
+        await showMessage(msg+"<br/>"+exportDiv.outerHTML, "Export", false, )
+    }
 </script>
+
+<Modal/>
 
 <Item {item} {recordsStore}>
     <div slot="buttons">
@@ -35,6 +64,13 @@
                 {/if}
             </svg>
         </button>
+        <button class="button is-link" class:is-inverted={setSelected} on:click={() => showExport(item)}>
+            <span>
+                <i class="fa-solid fa-file-export"></i>
+                {appLang === 'en' ? 'Export' : 'Exporter'}
+            </span>
+        </button>
+
     </div>
 
     <!-- TODO add way to make selection public-->
