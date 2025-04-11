@@ -9,6 +9,8 @@
         }
     };
 
+    const onClose = (e) => dispatch("closeModal");
+
     onMount(() => {
         document.addEventListener("keyup", onKeyDown);
     })
@@ -22,15 +24,11 @@
      class="modal is-active">
     <div class="modal-background"></div>
     <div class="modal-content"></div>
-    <button class="modal-close is-large" aria-label="close"></button>
+    <button class="modal-close is-large"
+            aria-label="close"
+            on:click={onClose}
+    ></button>
 </div>
 
 <style>
-    .modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-    }
 </style>

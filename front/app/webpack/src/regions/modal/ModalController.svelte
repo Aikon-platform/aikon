@@ -4,6 +4,7 @@
 
     import TooltipGeneric from "../../ui/TooltipGeneric.svelte";
     import ModalWrapper from "./ModalWrapper.svelte";
+    import { destroy_block } from "svelte/internal";
 
     //////////////////////////////////////////
 
@@ -16,11 +17,31 @@
 
     /** @type {boolean} when true, display the modal */
     $: displayModal = false;
+    /** @type {SvelteComponent?} */
+    $: modal = mountModal(displayModal, modal);
 
     //////////////////////////////////////////
 
+    /** mounting of the `ModalWrapper` is done in an imperative way and not in the template: this allows us to insert the modal at the end of the html `body` to ensure the modal is not shadowed by other elts */
+    const mountModal = (_displayModal, _modal) => {;
+        if (_displayModal) {
+            _modal = new ModalWrapper({
+                target: document.querySelector("body"),
+                props: {
+                    mainImg: mainImg,
+                    compareImg: compareImg
+                }
+            })
+            _modal.$on("closeModal", onCloseModal);
+        } else if (!_displayModal && modal!=null ) {
+            _modal.$destroy();
+        }
+        return _modal;
+    }
+
     const onClick = (e) => displayModal = !displayModal;
     const onCloseModal = (e) => displayModal = false;
+
 </script>
 
 
@@ -39,10 +60,6 @@
             <path d="M17.9529 23.85L36.2928 5.85001" stroke="black" stroke-width="3" stroke-miterlimit="10"/>
         </svg>
     </button>
-
-    {#if displayModal}
-        <ModalWrapper on:closeModal={onCloseModal}></ModalWrapper>
-    {/if}
 </div>
 
 
