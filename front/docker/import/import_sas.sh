@@ -1,6 +1,5 @@
-echo_title "SAS ANNOTATIONS DUPLICATION"
-
 source "$TARGET_APP_ROOT/scripts/utils.sh"
+echo_title "SAS ANNOTATIONS DUPLICATION"
 
 SOURCE_SAS_DIR="$SOURCE_APP_ROOT/sas/data"
 if [ ! -d "$SOURCE_SAS_DIR" ]; then
