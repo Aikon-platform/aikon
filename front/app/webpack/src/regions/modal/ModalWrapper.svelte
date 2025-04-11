@@ -3,7 +3,7 @@
     - different components are displayed depending on the context in which this component is used:
         - for "normal" regions, only RegionModal will be used
         - for similarities, `RegionModal`, `SimilarityModal`, `QueryExpansionModal` will be used
-    - `allowedViewIds` defines which views (aka, components) can be used in this modal, based on the props passed to it. each view is identified by a unique string. (the props are used to determine the context: are we in a Similarity or a normal region ?)
+    - `allowedViewIds` defines which views (aka, components) can be used in this modal, based on the props passed to it. each view is identified by a unique string.
     - `currentViewId` is a value of `allowedViewIds`
     - other data variables are derived from `allowedViewIds`: they are objects or arrays which contain and a reference to a value of `allowedViewIds` and extra data for a specific view (i.e. a component reference).
     - tabs allow to switch between components. internally, `toggleView` will set a new `currentViewId`, which, by side-effect, will render a new component
@@ -38,7 +38,7 @@
         label:
             viewId==="expansion" && appLang==="fr"
             ? "Expansion de requête"
-            : viewId==="main" && appLang==="en"
+            : viewId==="expansion" && appLang==="en"
             ? "Query expansion"
             : viewId==="similarity" && appLang==="fr"
             ? "Similarité"
@@ -50,7 +50,7 @@
     }));
 
     /** @type {{ [ViewIdType]: SvelteComponent }} viewId mapped to the relevant component instance */
-    let viewComponents = {};
+    const viewComponents = {};
     allowedViewIds.map((viewId) =>
         viewComponents[viewId] =
             viewId==="expansion"
@@ -59,6 +59,16 @@
             ? SimilarityModal
             : RegionModal
     );
+
+    const viewProps = {};
+    allowedViewIds.map((viewId) =>
+        viewProps[viewId] =
+            viewId==="expansion"
+            ? {compareImg: compareImg, mainImg: mainImg}
+            : viewId==="similarity"
+            ? {compareImg: compareImg, mainImg: mainImg}
+            : {mainImg: mainImg}
+    )
 
     /** @type {ViewIdType} */
     $: currentViewId = allowedViewIds[0];
@@ -101,17 +111,24 @@
                 </ul>
             </div>
 
-            <div class="modal-content-wrapper">
-                <svelte:component this={viewComponents[currentViewId] || null}></svelte:component>
+            <div class="m-4 modal-content-wrapper">
+                <svelte:component this={viewComponents[currentViewId] || null}
+                                  {...viewProps[currentViewId] || {}}
+                ></svelte:component>
             </div>
+
         </div>
     </div>
     <button class="modal-close is-large"
             aria-label="close"
             on:click={onClose}
     ></button>
-
 </div>
 
 <style>
+    .modal-inner {
+        background-color: var(--bulma-body-background-color);
+        border: var(--default-border);
+        border-radius: 1rem;
+    }
 </style>

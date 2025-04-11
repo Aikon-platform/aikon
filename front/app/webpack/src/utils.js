@@ -52,7 +52,7 @@ export function pageUpdate(pageNb, pageWritable, urlParam) {
     }
 }
 
-export function refToIIIF(imgRef = null, coord= "full", size="full") {
+export function refToIIIF(imgRef=null, coord="full", size="full") {
     // imgRef can be like "wit<id>_<digit><id>_<page_nb>.jpg" or "wit<id>_<digit><id>_<page_nb>_<x,y,h,w>.jpg"
     if (!imgRef) {
         return "https://placehold.co/96x96/png?text=No+image";
