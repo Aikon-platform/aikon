@@ -444,7 +444,7 @@ def get_best_pairs(
     excluded_categories: List[int],
     topk: int,
     user_id: int = None,
-    export: bool = False
+    export: bool = False,
 ) -> List[Set[RegionPairTuple]]:
     """
     Process RegionPair objects and return a list.
@@ -463,7 +463,7 @@ def get_best_pairs(
     auto_pairs = []
     nomatch_pairs = []  # category == 4
     added_pairs = set()
-    export_pairs = []   # pairs for export: all in big a single big list
+    export_pairs = []  # pairs for export: all in big a single big list
 
     for pair in region_pairs:
         if pair.category not in excluded_categories:
@@ -494,8 +494,9 @@ def get_best_pairs(
                     auto_pairs.append(pair_data)
 
     if export:
+        export_pairs.sort(key=lambda x: x[0], reverse=True)
         return export_pairs
-    
+
     annotated_pairs.sort(key=lambda x: x[5])  # sort by category number, ascending
     auto_pairs.sort(key=lambda x: x[0], reverse=True)
     return (
