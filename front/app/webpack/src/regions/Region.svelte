@@ -9,16 +9,30 @@
 
     import ModalController from "./modal/ModalController.svelte";
 
-    /** @type {object}*/
+    /**
+     * @typedef {RegionItemType}
+     * @type {object}
+     * @property {string} id
+     * @property {string} img
+     * @property {string} title
+     * @property {string} xywh
+     * @property {string} canvas
+     * @property {string} ref
+     * @property {string} type
+     */
+
+    /** @type {RegionItemType} */
     export let item;
     /** @type {boolean}*/
-        export let isSquare = true;
+    export let isSquare = true;
     /** @type {number}*/
     export let height = isSquare ? 96 : 140;
     /** @type {string}*/
     export let desc = item.title;
     /** @type {Promise<string>?}*/
     export let descPromise = undefined;
+    /** @type {string?} used to pass the props `SimilarRegion.qImg` to `ModalController.compareImg`, undefined if `Region` doesn't inherit from `SimilarRegion` */
+    export let compareImg = undefined;
 
     $: isCopied = item.ref === $clipBoard;
 
@@ -53,7 +67,9 @@
                 {/if}
             </span>
         </button>
-        <ModalController mainImg={item.img}></ModalController>
+        <ModalController mainImg={item.img}
+                         compareImg={compareImg}
+        ></ModalController>
     </div>
 </div>
 

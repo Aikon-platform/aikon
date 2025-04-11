@@ -8,6 +8,8 @@
 
     import Region from "../Region.svelte";
 
+    /** @typedef {import("../Region.svelte").RegionItemType} RegionItemType */
+
     ////////////////////////////////////////////
 
     const windowUrl = new URL(window.location.href)
@@ -38,6 +40,8 @@
     const isPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagation, false otherwise
 
     const [wit, digit, canvas, xyhw] = sImg.split('.')[0].split('_');
+
+    /** @type {RegionItemType} */
     const item = {
         id: sImg, // note for normal regions, it is their SAS annotation id: used for region selection
         img: sImg,
@@ -156,7 +160,12 @@
 <div>
     <!-- TODO remove selection outline from SimilarRegion in similarities
         (selecting a Region has no effect on "Selection") -->
-    <Region {item} size={256} descPromise={getDesc()} isSquare={false}/>
+    <Region {item}
+            size={256}
+            descPromise={getDesc()}
+            isSquare={false}
+            compareImg={qImg}
+    />
     <div class="tags has-addons is-dark is-center">
         <span class="tag is-hoverable pl-4 pr-3 py-4" class:is-selected={selectedCategory === 1}
               on:click={() => categorize(1)} on:keyup={null}
