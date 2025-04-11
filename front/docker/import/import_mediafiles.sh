@@ -1,6 +1,8 @@
 echo_title "MEDIAFILES LINKING"
 source "$DOCKER_DIR/.env"
 
+source "$TARGET_APP_ROOT/scripts/utils.sh"
+
 DOCKER_ENV_FILE="$DOCKER_DIR/.env"
 if [ ! -f "$DOCKER_ENV_FILE" ]; then
     error "Environment file not found at $DOCKER_ENV_FILE"
