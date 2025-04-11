@@ -1,8 +1,8 @@
 <!--
     general functionning:
     - different components are displayed depending on the context in which this component is used:
-        - for "normal" regions, only RegionModal will be used
-        - for similarities, `RegionModal`, `SimilarityModal`, `QueryExpansionModal` will be used
+        - for "normal" regions, only ModalRegion will be used
+        - for similarities, `ModalRegion`, `ModalSimilarity`, `ModalQueryExpansion` will be used
     - `allowedViewIds` defines which views (aka, components) can be used in this modal, based on the props passed to it. each view is identified by a unique string.
     - `currentViewId` is a value of `allowedViewIds`
     - other data variables are derived from `allowedViewIds`: they are objects or arrays which contain and a reference to a value of `allowedViewIds` and extra data for a specific view (i.e. a component reference).
@@ -13,9 +13,9 @@
 
     import { appLang } from "../../constants.js";
 
-    import RegionModal from "./RegionModal.svelte";
-    import SimilarityModal from "./SimilarityModal.svelte";
-    import QueryExpansionModal from "./QueryExpansionModal.svelte";
+    import ModalRegion from "./ModalRegion.svelte";
+    import ModalSimilarity from "./ModalSimilarity.svelte";
+    import ModalQueryExpansion from "./ModalQueryExpansion.svelte";
 
     /** @typedef {"main"|"similarity"|"expansion"} ViewIdType */
 
@@ -54,10 +54,10 @@
     allowedViewIds.map((viewId) =>
         viewComponents[viewId] =
             viewId==="expansion"
-            ? QueryExpansionModal
+            ? ModalQueryExpansion
             : viewId==="similarity"
-            ? SimilarityModal
-            : RegionModal
+            ? ModalSimilarity
+            : ModalRegion
     );
 
     const viewProps = {};

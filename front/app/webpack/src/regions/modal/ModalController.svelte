@@ -3,7 +3,7 @@
     import { eyeSvg } from "./utils.js";
 
     import TooltipGeneric from "../../ui/TooltipGeneric.svelte";
-    import ModalWrapper from "./ModalWrapper.svelte";
+    import ModalBase from "./ModalBase.svelte";
     import { destroy_block } from "svelte/internal";
 
     //////////////////////////////////////////
@@ -22,10 +22,10 @@
 
     //////////////////////////////////////////
 
-    /** mounting of the `ModalWrapper` is done in an imperative way and not in the template: this allows us to insert the modal at the end of the html `body` to ensure the modal is not shadowed by other elts */
+    /** mounting of the `ModalBase` is done in an imperative way and not in the template: this allows us to insert the modal at the end of the html `body` to ensure the modal is not shadowed by other elts */
     const mountModal = (_displayModal, _modal) => {;
         if (_displayModal) {
-            _modal = new ModalWrapper({
+            _modal = new ModalBase({
                 target: document.querySelector("body"),
                 props: {
                     mainImg: mainImg,
