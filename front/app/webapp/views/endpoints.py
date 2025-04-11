@@ -280,6 +280,7 @@ def iiif_context(request):
     except Exception as e:
         return JsonResponse({"error": f"Unable to load IIIF context: {e}"}, status=500)
 
+
 def get_json_witness(request, wid):
     if request.method == "GET":
         witness = get_object_or_404(Witness, id=wid)
@@ -415,8 +416,9 @@ def get_json_simil(request, wid, rid):
                         q_img,
                         pairs,
                         excluded_categories=[],
-                        topk=-1,
                         user_id=request.user.id,
+                        topk=None,
+                        export=True,
                     )
                     dict_pairs = [dict((zip(keys, p))) for p in best_pairs]
                     result[q_img].extend(dict_pairs)
