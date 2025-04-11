@@ -18,18 +18,18 @@ class Migration(migrations.Migration):
                 blank=True, null=True, verbose_name="JSON representation"
             ),
         ),
-        migrations.AddField(
-            model_name="digitization",
-            name="source",
-            field=models.ForeignKey(
-                blank=True,
-                help_text="Exemple : Gallica.",
-                null=True,
-                on_delete=django.db.models.deletion.SET_NULL,
-                to="webapp.digitizationsource",
-                verbose_name="Source de la numérisation",
-            ),
-        ),
+        # migrations.AddField(
+        #     model_name="digitization",
+        #     name="source",
+        #     field=models.ForeignKey(
+        #         blank=True,
+        #         help_text="Exemple : Gallica.",
+        #         null=True,
+        #         on_delete=django.db.models.deletion.SET_NULL,
+        #         to="webapp.digitizationsource",
+        #         verbose_name="Source de la numérisation",
+        #     ),
+        # ),
         migrations.AlterField(
             model_name="treatment",
             name="notify_email",

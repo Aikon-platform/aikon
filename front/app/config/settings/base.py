@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 ] + ADDITIONAL_MODULES
 
 hosts = ENV.list("ALLOWED_HOSTS", default=[]) + [ENV.str("PROD_URL", default="")]
+hosts += ["cvhasic.huma-num.fr"]  # dev host
 hosts += ["web"]  # for docker nginx service
 https_hosts = [f"https://{host}" for host in hosts]
 wildcard_hosts = [f"https://*.{host}" for host in hosts if "." in host]
