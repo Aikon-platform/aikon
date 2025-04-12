@@ -1,5 +1,6 @@
 source "$TARGET_APP_ROOT/scripts/utils.sh"
 echo_title "MEDIAFILES LINKING"
+source "$SOURCE_ENV_FILE"
 source "$DOCKER_DIR/.env"
 
 DOCKER_ENV_FILE="$DOCKER_DIR/.env"

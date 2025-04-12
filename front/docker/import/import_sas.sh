@@ -1,5 +1,6 @@
 source "$TARGET_APP_ROOT/scripts/utils.sh"
 echo_title "SAS ANNOTATIONS DUPLICATION"
+source "$DOCKER_DIR/.env"
 
 SOURCE_SAS_DIR="$SOURCE_APP_ROOT/sas/data"
 if [ ! -d "$SOURCE_SAS_DIR" ]; then
@@ -7,8 +8,9 @@ if [ ! -d "$SOURCE_SAS_DIR" ]; then
 fi
 TARGET_SAS_DIR="$DATA_FOLDER/sas"
 if [ ! -d "$TARGET_SAS_DIR" ]; then
-    mkdir -p "$TARGET_SAS_DIR" || error "Failed to create SAS data directory"
-    chmod 755 "$TARGET_SAS_DIR"
+#     mkdir -p "$TARGET_SAS_DIR" || error "Failed to create SAS data directory"
+#     chmod 755 "$TARGET_SAS_DIR"
+    error "SAS data directory not found at $TARGET_SAS_DIR"
 fi
 
 color_echo cyan "Source SAS directory: $SOURCE_SAS_DIR"
@@ -35,11 +37,11 @@ sleep 10
 
 color_echo cyan "Content of $TARGET_SAS_DIR"
 SAS_VOLUME_FILES=$(ls -A "$TARGET_SAS_DIR")
-ls "$SAS_VOLUME_FILES"
+echo "$SAS_VOLUME_FILES"
 
 color_echo cyan "Content of $SAS_CONTAINER:/sas/data"
 SAS_DOCKER_FILES=$(docker exec -i "$SAS_CONTAINER" ls -A /sas/data)
-ls "$SAS_DOCKER_FILES"
+echo "$SAS_DOCKER_FILES"
 
 # if [ ! "$SAS_VOLUME_FILES" = "$SAS_DOCKER_FILES" ]; then
 #     color_echo yellow "Content of SAS container data does not match mounted volume. Copying data into container..."
