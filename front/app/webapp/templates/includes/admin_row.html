@@ -1,12 +1,7 @@
 {% load static shared_tags %}
 
-{% get_add_url entity_title as add_url %}
-{% get_list_url entity_title as list_url %}
-
-{% if entity_set %}
-    {% get_list_url entity_set as list_url %}
-{% endif %}
-
+{% get_add_url entity as add_url %}
+{% get_list_url entity as list_url %}
 
 <div class="block box mg-medium p-5 m-4" style="height:90%;">
     <div class="content is-center">
@@ -16,8 +11,7 @@
         {% endif %}
         <p class="is-size-7">{{ entity_desc }}</p>
         <div class="buttons is-center">
-            {% if entity_set %}
-            {% else %}
+            {% if entity != "document_set" %}
             <a href="{{ add_url }}" class="button is-ghost">
                 <span class="icon-text">
                     <span class="icon"><i class="fas fa-plus-circle"></i></span>

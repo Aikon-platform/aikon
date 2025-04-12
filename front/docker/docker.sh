@@ -11,25 +11,27 @@ DOCKER_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 # initialize the .env files and data folder permissions on first initialization
 bash "$DOCKER_DIR"/init.sh
 
+container=${2:-""}
+
 build_containers() {
-    docker compose build
+    docker compose build $container
 }
 
 stop_containers() {
-    docker compose down
+    docker compose down $container
 }
 
 start_containers() {
-    docker compose up -d
+    docker compose up -d $container
 }
 
 update_containers() {
     git pull
-    build_containers
+    build_containers $container
 }
 
 log_containers() {
-    docker compose logs -f
+    docker compose logs -f $container
 }
 
 case "$1" in
@@ -57,7 +59,7 @@ case "$1" in
         log_containers
         ;;
     *)
-        echo "Usage: $0 {start|stop|restart|update|build|log}"
+        echo "Usage: $0 {start|stop|restart|update|build|log} [container_name]"
         exit 1
 esac
 
