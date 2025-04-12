@@ -119,6 +119,36 @@ def js(obj):
 
 
 @register.simple_tag
+def get_url(entity, action="add"):
+    """
+    Generate an add URL for an entity by checking multiple URL patterns.
+    Returns the first valid URL or an empty string if none found.
+    """
+    webapp_action = "create" if action == "add" else "list"
+    url_patterns = [
+        f"webapp:{entity}_{webapp_action}",
+        f"admin:webapp_{entity}_{action}",
+        f"admin:auth_{entity}_{action}",
+    ]
+
+    for pattern in url_patterns:
+        url = check_url(pattern)
+        if url:
+            return url
+    return ""
+
+
+@register.simple_tag
+def get_add_url(entity):
+    return get_url(entity, "add")
+
+
+@register.simple_tag
+def get_list_url(entity):
+    return get_url(entity, "changelist")
+
+
+@register.simple_tag
 def check_url(*args, **kwargs):
     try:
         return reverse(*args, **kwargs)
