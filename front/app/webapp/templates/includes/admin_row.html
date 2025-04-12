@@ -7,7 +7,7 @@
     <div class="content is-center">
         <h3 class="is-center is-capitalized">{{ entity_title }}</h3>
         {% if icon %}
-            <img src="{% static 'img/'|add:entity_title|add:'.svg' %}" onerror="this.onerror=null;this.style.display='none';src='';this.class='';" class="image is-center is-128x128 mb-5" style="filter:invert(.7);" alt="{{ entity_title }} icon"/>
+            <img src="{% static 'img/'|add:entity|add:'.svg' %}" onerror="this.onerror=null;this.style.display='none';src='';this.class='';" class="image is-center is-128x128 mb-5" style="filter:invert(.7);" alt="{{ entity_title }} icon"/>
         {% endif %}
         <p class="is-size-7">{{ entity_desc }}</p>
         <div class="buttons is-center">
