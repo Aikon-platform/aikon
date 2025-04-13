@@ -51,7 +51,7 @@ services:
 
   redis:
     image: redis:6
-    command: redis-server --port ${REDIS_PORT:-6379}
+    command: redis-server --port ${REDIS_PORT:-6379} --loglevel warning
     volumes:
       - redisdata:/data
     env_file:

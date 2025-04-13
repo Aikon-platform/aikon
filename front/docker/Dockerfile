@@ -33,7 +33,8 @@ RUN apt-get update && apt-get install -y \
     ghostscript \
     python3.10 \
     python3.10-venv \
-    python3-pip
+    python3-pip \
+    postgresql-client
 
 WORKDIR /home/${USER}
 
