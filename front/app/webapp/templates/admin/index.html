@@ -15,18 +15,18 @@
 
     <div class="columns is-fluid">
         <div class="column is-4">
-            {% include "includes/admin_row.html" with entity_title=WIT entity_desc=WIT_DESC icon=True %}
+            {% include "includes/admin_row.html" with entity="witness" entity_title=WIT entity_desc=WIT_DESC icon=True %}
         </div>
         <div class="column is-4">
-            {% include "includes/admin_row.html" with entity_title=SER entity_desc=SER_DESC icon=True %}
+            {% include "includes/admin_row.html" with entity="series" entity_title=SER entity_desc=SER_DESC icon=True %}
         </div>
         <div class="column is-4">
-            {% include "includes/admin_row.html" with entity_title=WORK entity_desc=WORK_DESC icon=True %}
+            {% include "includes/admin_row.html" with entity="work" entity_title=WORK entity_desc=WORK_DESC icon=True %}
         </div>
     </div>
     <div class="columns is-fluid">
         <div class="column is-6">
-            {% include "includes/admin_row.html" with entity_title=SET entity_set="document_set" entity_desc=SET_DESC %}
+            {% include "includes/admin_row.html" with entity="document_set" entity_title=SET entity_desc=SET_DESC %}
         </div>
         <div class="column is-6">
             {% include "includes/admin_row.html" with entity_title=TRMT entity_desc=TRMT_DESC %}

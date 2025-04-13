@@ -1,4 +1,6 @@
+source "$TARGET_APP_ROOT/scripts/utils.sh"
 echo_title "SAS ANNOTATIONS DUPLICATION"
+source "$DOCKER_DIR/.env"
 
 SOURCE_SAS_DIR="$SOURCE_APP_ROOT/sas/data"
 if [ ! -d "$SOURCE_SAS_DIR" ]; then
@@ -6,47 +8,43 @@ if [ ! -d "$SOURCE_SAS_DIR" ]; then
 fi
 TARGET_SAS_DIR="$DATA_FOLDER/sas"
 if [ ! -d "$TARGET_SAS_DIR" ]; then
-    mkdir -p "$TARGET_SAS_DIR" || error "Failed to create SAS data directory"
-    chmod 755 "$TARGET_SAS_DIR"
+#     mkdir -p "$TARGET_SAS_DIR" || error "Failed to create SAS data directory"
+#     chmod 755 "$TARGET_SAS_DIR"
+    error "SAS data directory not found at $TARGET_SAS_DIR"
 fi
 
 color_echo cyan "Source SAS directory: $SOURCE_SAS_DIR"
 color_echo cyan "Target SAS directory: $TARGET_SAS_DIR"
 
-# if [ "$SOURCE_SAS_DIR" = "$TARGET_SAS_DIR" ]; then
-#     color_echo yellow "Source and destination SAS directories match! No need to copy data."
-# else
-#     SOURCE_SIZE=$(du -s "$SOURCE_SAS_DIR" | awk '{print $1}')
-#     TARGET_SIZE=$(du -s "$TARGET_SAS_DIR" | awk '{print $1}')
-#
-#     if [ -d "$TARGET_SAS_DIR" ] && [ $SOURCE_SIZE -eq $TARGET_SIZE ]; then
-#         color_echo yellow "Source and target SAS directories have similar sizes. Skipping copy."
-#     else
-#         color_echo yellow "Rsyncing existing SAS data from $SOURCE_SAS_DIR to $TARGET_SAS_DIR"
-#         rsync -av --progress "$SOURCE_SAS_DIR/" "$TARGET_SAS_DIR/" || error "Failed to copy SAS data"
-#     fi
-# fi
+if [ "$SOURCE_SAS_DIR" = "$TARGET_SAS_DIR" ]; then
+    color_echo yellow "Source and destination SAS directories match! No need to copy data."
+else
+    SOURCE_SIZE=$(du -s "$SOURCE_SAS_DIR" | awk '{print $1}')
+    TARGET_SIZE=$(du -s "$TARGET_SAS_DIR" | awk '{print $1}')
+
+    if [ -d "$TARGET_SAS_DIR" ] && [ $SOURCE_SIZE -eq $TARGET_SIZE ]; then
+        color_echo yellow "Source and target SAS directories have similar sizes. Skipping copy."
+    else
+        color_echo yellow "Rsyncing existing SAS data from $SOURCE_SAS_DIR to $TARGET_SAS_DIR"
+        rsync -av --progress "$SOURCE_SAS_DIR/" "$TARGET_SAS_DIR/" || error "Failed to copy SAS data"
+    fi
+fi
 
 ask "Do you want to check that annotations are well accessed by SAS container?"
 docker start $SAS_CONTAINER || error "Failed to start SAS container"
 color_echo yellow "Waiting for SAS container to start..."
 sleep 10
 
-SAS_VOLUME_FILES=$(ls -A "$SOURCE_SAS_DIR" 2>/dev/null | wc -l)
-SAS_DOCKER_FILES=$(docker exec -i "$SAS_CONTAINER" ls -A /sas/data 2>/dev/null | wc -l)
+color_echo cyan "Content of $TARGET_SAS_DIR"
+SAS_VOLUME_FILES=$(ls -A "$TARGET_SAS_DIR")
+echo "$SAS_VOLUME_FILES"
 
-if [ ! "$SAS_DOCKER_FILES" -eq "$SAS_VOLUME_FILES" ]; then
-    color_echo yellow "Content of SAS container data does not match mounted volume. Copying data into container..."
+color_echo cyan "Content of $SAS_CONTAINER:/sas/data"
+SAS_DOCKER_FILES=$(docker exec -i "$SAS_CONTAINER" ls -A /sas/data)
+echo "$SAS_DOCKER_FILES"
 
-#     TAR_FILE="/tmp/sas_data_$TIMESTAMP.tar"
-#     tar -cf "$TAR_FILE" -C "$TARGET_SAS_DIR" . || error "Failed to create tar file of SAS data"
-#
-#     docker cp "$TAR_FILE" "$SAS_CONTAINER:/tmp/sas_data.tar" || error "Failed to copy tar file to container"
-#     docker exec -i "$SAS_CONTAINER" mkdir -p /sas/data
-#     docker exec -i "$SAS_CONTAINER" tar -xf /tmp/sas_data.tar -C /sas/data || error "Failed to extract tar file in container"
-#
-#     rm "$TAR_FILE"
-#     docker exec -i "$SAS_CONTAINER" rm /tmp/sas_data.tar
-    find "$SOURCE_SAS_DIR" -type f -print0 | tar -c --null -T - | docker exec -i "$SAS_CONTAINER" tar -x -C /sas/data
-    color_echo yellow "SAS data copied to container successfully"
-fi
+# if [ ! "$SAS_VOLUME_FILES" = "$SAS_DOCKER_FILES" ]; then
+#     color_echo yellow "Content of SAS container data does not match mounted volume. Copying data into container..."
+#     find "$TARGET_SAS_DIR" -type f -print0 | tar -c --null -T - | docker exec -i "$SAS_CONTAINER" tar -x -C /sas/data
+#     color_echo yellow "SAS data copied to container successfully"
+# fi
