@@ -1,8 +1,8 @@
 <script>
-    import { getContext } from "svelte";
+    import {getContext} from "svelte";
 
-    import { appLang } from '../../constants';
-    import { similarityStore } from "./similarityStore.js";
+    import {appLang} from '../../constants';
+    import {similarityStore} from "./similarityStore.js";
     import SimilarRegion from "./SimilarRegion.svelte";
 
     export let qImg;
@@ -19,12 +19,12 @@
     const currentPageId = window.location.pathname.match(/\d+/g).join('-');
     const waitText =
         appLang === 'en' && !isPropagatedContext
-        ? 'Retrieving similar regions...'
-        : appLang === 'fr' && !isPropagatedContext
-        ? 'Récupération des régions similaires...'
-        : appLang === 'en' && isPropagatedContext
-        ? "Retrieving propagated regions..."
-        : "Récupération de similarités propagées...";
+            ? 'Retrieving similar regions...'
+            : appLang === 'fr' && !isPropagatedContext
+                ? 'Récupération des régions similaires...'
+                : appLang === 'en' && isPropagatedContext
+                    ? "Retrieving propagated regions..."
+                    : "Récupération de similarités propagées...";
 
     $: noRegionsSelected =
         Object.values($selectedRegions).length === 0
@@ -33,18 +33,20 @@
 
     /** @type {Array<{uuid:string, data: Array}>} all similarity images, defined when sImgsPromise is resolved */
     $: allSImgs = [];
-    sImgsPromise.then((res) => { allSImgs = res.map(el => ({
-        uuid: window.crypto.randomUUID(),
-        data: el}))
+    sImgsPromise.then((res) => {
+        allSImgs = res.map(el => ({
+            uuid: window.crypto.randomUUID(),
+            data: el
+        }))
     });
 
     /** @type {Array<{uuid:string, data: Array}>} allSImgs filtered by displaySimImg */
     $: filteredSImgs = filterSImgs(
-            allSImgs,
-            $selectedRegions,
-            $excludedCategories,
-            $similarityScoreCutoff,
-            $propagateFilterByRegions
+        allSImgs,
+        $selectedRegions,
+        $excludedCategories,
+        $similarityScoreCutoff,
+        $propagateFilterByRegions
     );
 
 
@@ -56,8 +58,8 @@
      */
     const isAboveCutoff = (simImgScore, cutoff) =>
         cutoff === undefined
-        ? true
-        : simImgScore != null && Number(simImgScore) >= cutoff;
+            ? true
+            : simImgScore != null && Number(simImgScore) >= cutoff;
 
     /**
      * @param {number} simImgCategory
@@ -98,12 +100,15 @@
     ) => isPropagatedContext
         ? true
         : isAboveCutoff(simImgScore, _similarityScoreCutoff)
-            && isNotInExcludedCategories(simImgCategory, usersCategory, _excludedCategories);
+        && isNotInExcludedCategories(simImgCategory, usersCategory, _excludedCategories);
 
 
     /**  run `displaySimImg` to filter `_allSimgs` */
     const filterSImgs = (_allSImgs, _selectedRegions, _excludedCategories, _similarityScoreCutoff, _propagateFilterByRegions) =>
-        _allSImgs.filter(({uuid, data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]}) =>
+        _allSImgs.filter(({
+                              uuid,
+                              data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]
+                          }) =>
             displaySimImg(
                 score,
                 sRegions,
@@ -115,6 +120,24 @@
                 _propagateFilterByRegions
             ));
 
+    const getSimilarityLabel = (isPropagated, lang, count) => {
+        const isPlural = count > 1;
+
+        if (isPropagated) {
+            if (lang === "fr") {
+                return isPlural ? "similarités propagées" : "similarité propagée";
+            } else {
+                return isPlural ? "propagated matches" : "propagated match";
+            }
+        } else {
+            if (lang === "fr") {
+                return isPlural ? "images similaires" : "image similaire";
+            } else {
+                return isPlural ? "similar images" : "similar image";
+            }
+        }
+    };
+
 </script>
 
 {#if sImgsPromise}
@@ -122,25 +145,12 @@
         <div class="faded is-center">{waitText}</div>
     {:then _}
         <div>
-            <span class="m-2">{filteredSImgs.length} {
-                isPropagatedContext && appLang==="fr" && filteredSImgs.length > 1
-                ? "similarités propagées"
-                : isPropagatedContext && appLang==="fr" && filteredSImgs.length <= 1
-                ? "similarité propagée"
-                : isPropagatedContext && appLang==="en" && filteredSImgs.length > 1
-                ? "propagated matches"
-                : isPropagatedContext && appLang==="en" && filteredSImgs.length <= 1
-                ? "propagated match"
-                : !isPropagatedContext && appLang==="fr" && filteredSImgs.length > 1
-                ? "images similaires"
-                : !isPropagatedContext && appLang==="fr" && filteredSImgs.length <= 1
-                ? "image similaire"
-                : !isPropagatedContext && appLang==="en" && filteredSImgs.length > 1
-                ? "similar images"
-                : "similar image"
-            }</span>
-            <div class="grid m-2 is-gap-2">
-                {#each filteredSImgs as {uuid, data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]} (uuid)}
+            <span class="m-2">{filteredSImgs.length} {getSimilarityLabel(isPropagatedContext, appLang, filteredSImgs.length)}</span>
+            <div class="m-2 is-gap-2" class:grid={filteredSImgs.length > 0}>
+                {#each filteredSImgs as {
+                    uuid,
+                    data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]
+                } (uuid)}
                     <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual} {similarityType}/>
                 {:else}
                     {#if noRegionsSelected }
@@ -159,8 +169,8 @@
         <div class="faded is-center">
             {
                 appLang === 'en' ?
-                `Error when retrieving similar regions: ${error}` :
-                `Erreur de recupération des régions similaires: ${error}`
+                    `Error when retrieving similar regions: ${error}` :
+                    `Erreur de recupération des régions similaires: ${error}`
             }
         </div>
     {/await}
