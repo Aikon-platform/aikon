@@ -47,8 +47,8 @@ if [ ! -d "$DATA_FOLDER" ]; then
     sudo chmod -R 775 "$DATA_FOLDER"
 fi
 
-if [ ! -d $MEDIA_DIR ]; then
-    chown -R "$USERID:$USERID" $MEDIA_DIR
+if [ ! -d "$DATA_FOLDER"/mediafiles ]; then
+    chown -R "$USERID:$USERID" "$DATA_FOLDER"/mediafiles
 fi
 
 if [ ! -d "$DATA_FOLDER"/sas ]; then
