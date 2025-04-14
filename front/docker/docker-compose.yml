@@ -33,6 +33,7 @@ services:
 
   db:
     image: postgres:14
+    command: postgres -p ${DB_PORT:-5432}
     volumes:
       - pgdata:/var/lib/postgresql/data
     env_file:
@@ -43,14 +44,14 @@ services:
       - "${DB_PORT:-5432}:${DB_PORT:-5432}"
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER} -p $${DB_PORT:-5432}" ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:6
-    command: redis-server --port ${REDIS_PORT:-6379}
+    command: redis-server --port ${REDIS_PORT:-6379} --loglevel warning
     volumes:
       - redisdata:/data
     env_file:

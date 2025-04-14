@@ -4,7 +4,7 @@
 set -e
 
 IMPORT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-DOCKER_DIR="$(dirname "$IMPORT_DIR")"
+export DOCKER_DIR="$(dirname "$IMPORT_DIR")"
 export TARGET_APP_ROOT="$(dirname "$DOCKER_DIR")"
 
 source "$TARGET_APP_ROOT/scripts/utils.sh"
@@ -14,6 +14,7 @@ if [ "$1" != "" ]; then
 else
     read -p "Enter the path to source app root: " SOURCE_APP_ROOT
 fi
+export SOURCE_APP_ROOT
 
 if [ ! -d "$SOURCE_APP_ROOT" ]; then
     error "The provided directory does not exist: $SOURCE_APP_ROOT"
