@@ -36,8 +36,6 @@
 
     $: isCopied = item.ref === $clipBoard;
 
-    console.log(">>>", item);
-
     // if `descPromise` is passed, wait for resolution to update `desc`
     if (descPromise) {
         descPromise.then((res) => desc = res);

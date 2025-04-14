@@ -49,7 +49,7 @@ import TooltipGeneric from "./TooltipGeneric.svelte";
  *      group name for nested selects
  * @property {string?} prefix
  *      string, svg or iconify identifier prefix a dropdown item
- * @property {'text'|'iconify'|'svg'?} prefixType
+ * @property {'text'|'iconify'|'svg'|null} prefixType
  *      - 'text': prefix will be displayed as a string literal
  *      - 'iconfify': prefix will be treated as an iconify id and the corresponding icon will be displayed
  *      - 'svg': prefix is an svg and will be rendered

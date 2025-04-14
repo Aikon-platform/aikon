@@ -5,7 +5,7 @@
 
     number of inputs is determined by data passed to the props `start`:
     - if 1 number is provided, InputSlider is a 1-input slider.
-    - if an array of [Number, Number] is provided, it's a 2-input slider.
+    - if an array of [number, number] is provided, it's a 2-input slider.
 
     restrictions:
     - updates to props are not handled.
@@ -29,31 +29,33 @@ import { createNewAndOld, equalArrayShallow } from "../utils";
 //////////////////////////////////////////////
 
 /**
- * @type {Number|Number[]} SelectedValType:
+ * @type {number|number[]} SelectedValType:
  *      the currently selected value(s) on the slider. data structure
  *      changes slightly depending on if we're building a 1-input or 2-input slider:
- *      Number if not isRange, [Number, Number] otherwise.
+ *      number if not isRange, [number, number] otherwise.
  */
 
-/** @type {Number} */
+/** @type {number} */
 export let minVal;
-/** @type {Number} */
+/** @type {number} */
 export let maxVal;
-/** @type {Number|Number[]} : default, pre-selecteed values. if 1 value is provided, then it's a single input slider. if an array of 2 values are provided, it's a min/max 2 input range slider */
+/** @type {number|number[]} : default, pre-selecteed values. if 1 value is provided, then it's a single input slider. if an array of 2 values are provided, it's a min/max 2 input range slider */
 export let start;
-/** @type {Number?} */
+/** @type {number?} */
 export let step = undefined;
-/** @type {Number?} number of floating points to keep after the decimal */
+/** @type {number?} number of floating points to keep after the decimal */
 export let roundTo = 2;
-/** @type {String?} title to give to the slider */
+/** @type {string?} title to give to the slider */
 export let title = "";
+/** @type {boolean} if true, emit on set + on update. else, emit only on set */
+export let emitOnUpdate = false;
 
 //////////////////////////////////////////////
 
 const dispatch = createEventDispatcher();
 
 const sliderHtmlId = `slider-${window.crypto.randomUUID()}`;
-const isRange = Array.isArray(start) && start.length === 2 && start.every(n => !isNaN(parseFloat(n)));  // true if Number, Number
+const isRange = Array.isArray(start) && start.length === 2 && start.every(n => !isNaN(parseFloat(n)));  // true if number, number
 const handleTooltips = [];
 const handleHtmlIds = isRange
     ? [ `noUi-handle-${window.crypto.randomUUID()}`,
@@ -65,7 +67,7 @@ const newAndOldSelectedVal = createNewAndOld();
 newAndOldSelectedVal.setCompareFn(isRange ? equalArrayShallow : (x,y) => numRound(x)===numRound(y));
 newAndOldSelectedVal.set(start);
 
-// tracks changes on "update"
+/** @type {number} tracks changes on "update" */
 $: selectedVal = start;
 $: updateHandleTooltip(selectedVal);
 
@@ -74,17 +76,20 @@ $: updateHandleTooltip(selectedVal);
 const numRound = n => Number((n).toFixed(roundTo))
 
 /**
- * @param {Number[]|Number} val: if isRange, then array of 2 values. else, 1 value.
+ * @param {number[]|number} val: if isRange, then array of 2 values. else, 1 value.
  * @param {"update"|"set"} caller: on which event the function is called: `newAndOldSelectedVal` is only updated on set.
  */
 const updateSelectedValAndDispatch = (val, caller) => {
-    val = Array.isArray(val) ? val.map(numRound) : numRound(val);
-    selectedVal = val;
-    if (caller==="set") {
-        newAndOldSelectedVal.set(val);
+    const updateHook = (_val) => {
+        newAndOldSelectedVal.set(_val);
         if ( !newAndOldSelectedVal.same() ) {
             dispatch("updateSlider", newAndOldSelectedVal.get());
         }
+    }
+    val = Array.isArray(val) ? val.map(numRound) : numRound(val);
+    selectedVal = val;
+    if (caller==="set" || (caller==="update" && emitOnUpdate)) {
+        updateHook(val)
     }
 }
 
