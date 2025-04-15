@@ -1,179 +1,187 @@
 <script>
-    import {getContext} from "svelte";
+    import { getContext } from "svelte";
 
-    import {appLang} from '../../constants';
-    import {similarityStore} from "./similarityStore.js";
-    import SimilarRegion from "./SimilarRegion.svelte";
+    import { similarityStore } from './similarityStore.js';
+    import { extractNb } from '../../utils.js';
+    import { userId, appLang, csrfToken, regionsType, appName } from '../../constants';
+    import { exactSvg, partialSvg, semanticSvg, noSvg, userSvg, validateSvg } from './similarityCategory';
 
+    import Region from "../Region.svelte";
+
+    ////////////////////////////////////////////
+
+    const windowUrl = new URL(window.location.href)
+    const baseUrl = windowUrl.origin;
+    const pathUrl = windowUrl.pathname;
+
+    /** @type {string} */
     export let qImg;
-    export let sImgsPromise;
+    /** @type {string} */
+    export let sImg;
+    /** @type {number} */
+    export let qRegions;
+    /** @type {number} */
+    export let sRegions;
+    /** @type {number} */
+    export let score = 0;
+    /** @type {number?} */
+    export let category = null;
+    /** @type {number?[]} */
+    export let users = [];
+    /** @type {boolean} */
+    export let isManual;
+    /** @type {number} */
+    export let similarityType;
 
-    const {
-        selectedRegions,
-        excludedCategories,
-        similarityScoreCutoff,
-        propagateFilterByRegions
-    } = similarityStore;
+    const { getRegionsInfo, comparedRegions } = similarityStore;
 
     const isPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagation, false otherwise
-    const currentPageId = window.location.pathname.match(/\d+/g).join('-');
-    const waitText =
-        appLang === 'en' && !isPropagatedContext
-            ? 'Retrieving similar regions...'
-            : appLang === 'fr' && !isPropagatedContext
-                ? 'Récupération des régions similaires...'
-                : appLang === 'en' && isPropagatedContext
-                    ? "Retrieving propagated regions..."
-                    : "Récupération de similarités propagées...";
 
-    $: noRegionsSelected =
-        Object.values($selectedRegions).length === 0
-        || $selectedRegions[currentPageId] === undefined
-        || !Object.keys($selectedRegions[currentPageId]).length;
+    const [wit, digit, canvas, xyhw] = sImg.split('.')[0].split('_');
+    const item = {
+        id: sImg, // note for normal regions, it is their SAS annotation id: used for region selection
+        img: sImg,
+        title: `Canvas ${canvas} - ${xyhw} - ${appLang === 'en' ? 'Witness' : 'Témoin'} #${extractNb(wit)}`,
+        xywh: xyhw,
+        canvas: canvas,
+        ref: sImg.replace('.jpg', ''),
+        type: regionsType
+    }
+    const regionRef = `${wit}_${digit}`;
 
-    /** @type {Array<{uuid:string, data: Array}>} all similarity images, defined when sImgsPromise is resolved */
-    $: allSImgs = [];
-    sImgsPromise.then((res) => {
-        allSImgs = res.map(el => ({
-            uuid: window.crypto.randomUUID(),
-            data: el
-        }))
-    });
+    $: selectedCategory = category;
+    $: isSelectedByUser = users.includes(Number(userId)) || false;
 
-    /** @type {Array<{uuid:string, data: Array}>} allSImgs filtered by displaySimImg */
-    $: filteredSImgs = filterSImgs(
-        allSImgs,
-        $selectedRegions,
-        $excludedCategories,
-        $similarityScoreCutoff,
-        $propagateFilterByRegions
-    );
-
-
-    //////////////////////////////
+    ////////////////////////////////////////////
 
     /**
-     * @param {number|string} simImgScore
-     * @param {number} cutoff
+     * if the current SimilarRegion is a propagation, then
+     * `similarityStore.comparedRegions` may not contain the `regions`.
+     * in that case, we fetch the title from the backend.
+     * @returns {Promise<string>}
+     *      if `!isPropagatedContext` the result could be synchronous, but
+     *      it is returned as a promise to provide the same async interface
+     *      for both branches
      */
-    const isAboveCutoff = (simImgScore, cutoff) =>
-        cutoff === undefined
-            ? true
-            : simImgScore != null && Number(simImgScore) >= cutoff;
+    async function getDesc() {
+        const formatter = (title) =>
+            `${title}<br>
+            Page ${parseInt(canvas)}<br>
+            <b>${
+                !isNaN(parseFloat(score)) && similarityType === 1
+                ? `Score: ${score}`
+                : similarityType === 2 && appLang === 'en'
+                ? 'Manual similarity'
+                : similarityType === 2 && appLang === 'fr'
+                ? 'Correspondance manuelle'
+                : similarityType === 3 && appLang === 'en'
+                ? 'Propagated match'
+                : 'Correspondance propagée'
+            }</b>`;
+        return isPropagatedContext===true
+            ? fetch(`${baseUrl}${pathUrl}get_regions_title/${regionRef}`)
+                .then(r => r.json())
+                .then(r => formatter(r.title))
+                .catch(e => {
+                    console.error("SimilarRegion.getDesc()", e);
+                    return formatter(appLang === "fr" ? "Titre inconnu" : "Unknown title");
+                })
+            : Promise.resolve(formatter(getRegionsInfo(regionRef).title));
+    }
 
-    /**
-     * @param {number} simImgCategory
-     * @param {Array<number>} usersCategory
-     * @param {Array<number>} _excludedCategories
-     */
-    const isNotInExcludedCategories = (simImgCategory, usersCategory, _excludedCategories) =>
-        !_excludedCategories.includes(simImgCategory);
-
-    /**
-     * NOTE: the filtered images won't be updated if the user
-     * sets a category on a `SimilarRegion` until the next refresh
-     * expected behaviour
-     *      the user sets a category => filters are
-     *      recomputed and if the `SimilarRegion` belongs to one of
-     *      $exludedCategories, the image is hidden for coherence.
-     * current behaviour
-     *      categories set in `SimilarRegion` won't affect the
-     *      filtering done by displaySimImg until the next reload.
-     * explanation
-     *      fixing this would ask to re-fetch `sImgsPromise` from the
-     *      backend: when setting a category in `SimilarRegion`, the
-     *      database is updated, the object in `SimilarRegion` is
-     *      updated, but the update is not transmitted to the parent
-     *      (aka, the current component)
-     *
-     * @returns {boolean}
-     */
-    const displaySimImg = (
-        simImgScore,
-        simImgRegions,
-        simImgCategory,
-        usersCategory,
-        _selectedRegions,
-        _excludedCategories,
-        _similarityScoreCutoff,
-        _propagateFilterByRegions
-    ) => isPropagatedContext
-        ? true
-        : isAboveCutoff(simImgScore, _similarityScoreCutoff)
-        && isNotInExcludedCategories(simImgCategory, usersCategory, _excludedCategories);
-
-
-    /**  run `displaySimImg` to filter `_allSimgs` */
-    const filterSImgs = (_allSImgs, _selectedRegions, _excludedCategories, _similarityScoreCutoff, _propagateFilterByRegions) =>
-        _allSImgs.filter(({
-                              uuid,
-                              data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]
-                          }) =>
-            displaySimImg(
-                score,
-                sRegions,
-                category,
-                users,
-                _selectedRegions,
-                _excludedCategories,
-                _similarityScoreCutoff,
-                _propagateFilterByRegions
-            ));
-
-    const getSimilarityLabel = (isPropagated, lang, count) => {
-        const isPlural = count > 1;
-
-        if (isPropagated) {
-            if (lang === "fr") {
-                return isPlural ? "similarités propagées" : "similarité propagée";
-            } else {
-                return isPlural ? "propagated matches" : "propagated match";
-            }
-        } else {
-            if (lang === "fr") {
-                return isPlural ? "images similaires" : "image similaire";
-            } else {
-                return isPlural ? "similar images" : "similar image";
-            }
+    function updateCurrentUsers(_users) {
+        _users = _users.slice();  // copy `_users`
+        let userIndex = _users.indexOf(Number(userId));
+        if ( isSelectedByUser && userIndex === -1  ) {
+            _users.push(Number(userId));
+        } else if ( !isSelectedByUser && userIndex !== -1 ) {
+            _users.splice(userIndex, 1);
         }
+        return _users;
     };
 
+    // format the current SimilarRegion to send to the backend
+    const toRegionPair = () => ({
+        img_1: qImg,
+        img_2: sImg,
+        regions_id_1: qRegions,
+        regions_id_2: sRegions,
+        score: score,
+        category: selectedCategory,
+        category_x: updateCurrentUsers(users),
+        is_manual: isManual || similarityType === 2,
+        similarity_type: similarityType
+    })
+
+    function updateCategory(category) {
+        if (category === 5) {
+            isSelectedByUser = !isSelectedByUser;
+        } else {
+            selectedCategory = selectedCategory === category ? null : category;
+        }
+    }
+
+    ////////////////////////////////////////////
+
+    /**
+     * save the new RegionPair.category to database (RegionPair.category)
+     * if `similarityType===3` (propagated match), the RegionPair does not exist in the DB.
+     * setting the region will create the RegionPair and and save it to database
+     */
+    async function categorize(category) {
+        updateCategory(category);
+        try {
+            const response = await fetch(`${baseUrl}/${appName}/save-category`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(toRegionPair())
+            });
+            if (!response.ok) {
+                console.error(`Error: Network response was not ok`);
+                // unselect category
+                updateCategory(category);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            // unselect category
+            updateCategory(category);
+        }
+    }
 </script>
 
-{#if sImgsPromise}
-    {#await sImgsPromise}
-        <div class="faded is-center">{waitText}</div>
-    {:then _}
-        <div>
-            <span class="m-2">{filteredSImgs.length} {getSimilarityLabel(isPropagatedContext, appLang, filteredSImgs.length)}</span>
-            <div class="m-2 is-gap-2" class:grid={filteredSImgs.length > 0}>
-                {#each filteredSImgs as {
-                    uuid,
-                    data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]
-                } (uuid)}
-                    <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual} {similarityType}/>
-                {:else}
-                    {#if noRegionsSelected }
-                        <div class="faded is-center">
-                            {appLang === 'en' ? 'No document selected. Select one to display results.' : 'Aucun document sélectionné. Sélectionnez-en un pour afficher les résultats.'}
-                        </div>
-                    {:else}
-                        <div class="faded is-center">
-                            {appLang === 'en' ? 'No similar regions' : 'Pas de régions similaires'}
-                        </div>
-                    {/if}
-                {/each}
-            </div>
-        </div>
-    {:catch error}
-        <div class="faded is-center">
-            {
-                appLang === 'en' ?
-                    `Error when retrieving similar regions: ${error}` :
-                    `Erreur de recupération des régions similaires: ${error}`
-            }
-        </div>
-    {/await}
-{:else}
-    <div class="faded is-center">{waitText}</div>
-{/if}
+
+<div>
+    <!-- TODO remove selection outline from SimilarRegion in similarities
+        (selecting a Region has no effect on "Selection") -->
+    <Region {item} size={256} descPromise={getDesc()} isSquare={false}/>
+    <div class="tags has-addons is-dark is-center">
+        <span class="tag is-hoverable pl-4 pr-3 py-4" class:is-selected={selectedCategory === 1}
+              on:click={() => categorize(1)} on:keyup={null}
+              title="{appLang === 'en' ? 'Exact match' : 'Correspondance exacte'}">
+            {@html exactSvg}
+        </span>
+        <span class="tag is-hoverable py-4 px-3" class:is-selected={selectedCategory === 2}
+              on:click={() => categorize(2)} on:keyup={null}
+              title="{appLang === 'en' ? 'Partial match' : 'Correspondance partielle'}">
+            {@html partialSvg}
+        </span>
+        <span class="tag is-hoverable py-4 px-3" class:is-selected={selectedCategory === 3}
+              on:click={() => categorize(3)} on:keyup={null}
+              title="{appLang === 'en' ? 'Semantic match' : 'Correspondance sémantique'}">
+            {@html semanticSvg}
+        </span>
+        <span class="tag is-hoverable py-4 px-3" class:is-selected={selectedCategory === 4}
+              on:click={() => categorize(4)} on:keyup={null}
+              title="{appLang === 'en' ? 'No match' : 'Aucune correspondance'}">
+            {@html noSvg}
+        </span>
+        <span class="tag is-hoverable pl-3 pr-4 py-4" class:is-selected={isSelectedByUser}
+              on:click={() => categorize(5)} on:keyup={null}
+              title="{appLang === 'en' ? 'User match' : 'Correspondance utilisateur'}">
+            {@html userSvg}
+        </span>
+    </div>
+</div>
