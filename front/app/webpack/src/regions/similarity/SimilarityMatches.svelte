@@ -27,6 +27,7 @@
      * retrieve similar images to `qImg`
      * @param {String} qImg
      * @param {SelectedRegionsType} selection
+     * @returns {Promise<array>}
      */
     async function fetchSImgs(qImg, selection) {
         const regionsIds = getRegionsIds(selection);
