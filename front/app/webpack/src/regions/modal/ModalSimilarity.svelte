@@ -1,6 +1,8 @@
 <script>
     import { refToIIIF } from "../../utils";
     import { appLang } from "../../constants.js";
+    import { setContext } from 'svelte';
+    import { writable } from 'svelte/store';
 
     import InputToggleCheckbox from "../../ui/InputToggleCheckbox.svelte";
     import InputDropdown from "../../ui/InputDropdown.svelte";
@@ -49,6 +51,10 @@
     let overlayTranslate = [0,0];
     const startOverlayTranslate = structuredClone(overlayTranslate);
 
+    /** @type {writable} set a new value to trigger an update in child components */
+    const resetTrigger = writable(window.crypto.randomUUID());
+    setContext("resetTrigger", resetTrigger);
+
     $: cssTransforms = `translate(${overlayTranslate[0]-50}%, ${overlayTranslate[1]}%)
                         rotate(${overlayRotation}deg)
                         scale(${overlayFlip.map((x) => x * (overlayScale/100)).join()})`;
@@ -67,7 +73,7 @@
 
     const updateOverlayScale = (e) => overlayScale = e.detail;
 
-    // reassignment is necessary to redefine`cssTransforms`
+    // reassignment is necessary to redefine `cssTransforms`
     const updateOverlayTranslateX = (e) => overlayTranslate = [ e.detail, overlayTranslate[1] ];
 
     const updateOverlayTranslateY = (e) => overlayTranslate = [ overlayTranslate[0], e.detail ];
@@ -90,6 +96,7 @@
         overlayScale = startOverlayScale;
         overlayFlip = startOverlayFlip;
         overlayTranslate = startOverlayTranslate;
+        resetTrigger.set(window.crypto.randomUUID());
     }
 </script>
 
@@ -132,7 +139,7 @@
                         <div class="column is-one-third">
                             <InputSlider minVal={0}
                                         maxVal={1}
-                                        start={overlayOpacity}
+                                        start={startOverlayOpacity}
                                         emitOnUpdate={true}
                                         title={appLang==="fr" ? "Opacité" : "Opacity"}
                                         on:updateSlider={updateOverlayOpacity}
@@ -141,7 +148,7 @@
                         <div class="column is-one-third">
                             <InputSlider minVal={0}
                                         maxVal={360}
-                                        start={overlayRotation}
+                                        start={startOverlayRotation}
                                         step={1}
                                         emitOnUpdate={true}
                                         title="Rotation"
@@ -152,7 +159,7 @@
                             <InputSlider minVal={0}
                                         maxVal={200}
                                         step={1}
-                                        start={overlayScale}
+                                        start={startOverlayScale}
                                         emitOnUpdate={true}
                                         title={appLang==="fr" ? "Redimensionner" : "Scale"}
                                         on:updateSlider={updateOverlayScale}
@@ -162,7 +169,7 @@
                             <InputSlider minVal={-100}
                                         maxVal={100}
                                         step={1}
-                                        start={overlayTranslate[0]}
+                                        start={startOverlayTranslate[0]}
                                         emitOnUpdate={true}
                                         title={appLang==="fr" ? "Translation horizontale" : "Horizontal translate"}
                                         on:updateSlider={updateOverlayTranslateX}
@@ -172,7 +179,7 @@
                             <InputSlider minVal={-100}
                                         maxVal={100}
                                         step={1}
-                                        start={overlayTranslate[1]}
+                                        start={startOverlayTranslate[1]}
                                         emitOnUpdate={true}
                                         title={appLang==="fr" ? "Translation verticale" : "Vertical translate"}
                                         on:updateSlider={updateOverlayTranslateY}
