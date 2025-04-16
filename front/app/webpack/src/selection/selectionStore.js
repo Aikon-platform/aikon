@@ -124,9 +124,9 @@ function createSelectionStore() {
             selectedIds[modelName] = Object.keys(records);
         });
 
-        const endpoint = set.id !== null ? `${set.id}/change` : "add";
+        const endpoint = set.id !== null ? `${set.id}/edit` : "new";
 
-        fetch(`${window.location.origin}/${appName}/${modelName}/${endpoint}`, {
+        fetch(`${window.location.origin}/${modelName}/${endpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

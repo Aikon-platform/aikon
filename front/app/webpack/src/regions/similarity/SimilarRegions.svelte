@@ -75,7 +75,7 @@
 
     /**
      * @param {number|string} simImgScore
-     * @param {number} cutoff
+     * @param {number} cutoff
      */
     const isAboveCutoff = (simImgScore, cutoff) =>
         cutoff === undefined
@@ -128,6 +128,24 @@
             )
         );
 
+    const getSimilarityLabel = (isPropagated, count) => {
+        const isPlural = count > 1;
+
+        if (isPropagated) {
+            if (appLang === "fr") {
+                return isPlural ? "similarités propagées" : "similarité propagée";
+            } else {
+                return isPlural ? "propagated matches" : "propagated match";
+            }
+        } else {
+            if (appLang === "fr") {
+                return isPlural ? "images similaires" : "image similaire";
+            } else {
+                return isPlural ? "similar images" : "similar image";
+            }
+        }
+    };
+
 </script>
 
 {#if sImgsPromise && loadingStatus==="loading"}
@@ -142,24 +160,8 @@
     }</div>
 {:else if loadingStatus==="loaded"}
     <div>
-        <span class="m-2">{filteredSImgs.length} {
-            isPropagatedContext && appLang==="fr" && filteredSImgs.length > 1
-            ? "similarités propagées"
-            : isPropagatedContext && appLang==="fr" && filteredSImgs.length <= 1
-            ? "similarité propagée"
-            : isPropagatedContext && appLang==="en" && filteredSImgs.length > 1
-            ? "propagated matches"
-            : isPropagatedContext && appLang==="en" && filteredSImgs.length <= 1
-            ? "propagated match"
-            : !isPropagatedContext && appLang==="fr" && filteredSImgs.length > 1
-            ? "images similaires"
-            : !isPropagatedContext && appLang==="fr" && filteredSImgs.length <= 1
-            ? "image similaire"
-            : !isPropagatedContext && appLang==="en" && filteredSImgs.length > 1
-            ? "similar images"
-            : "similar image"
-        }</span>
-        <div class="grid m-2 is-gap-2">
+        <span class="m-2">{filteredSImgs.length} {getSimilarityLabel(isPropagatedContext, filteredSImgs.length)}</span>
+        <div class="m-2 is-gap-2" class:grid={filteredSImgs.length > 0}>
             {#each filteredSImgs as {uuid, data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]} (uuid)}
                 <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual} {similarityType}/>
             {:else}
