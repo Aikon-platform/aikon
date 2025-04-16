@@ -32,29 +32,37 @@ services:
     restart: unless-stopped
 
   db:
-    image: postgres:13
+    image: postgres:14
+    command: postgres -p ${DB_PORT:-5432}
     volumes:
       - pgdata:/var/lib/postgresql/data
     env_file:
       - ../app/config/.env
     networks:
       - aikon_network
+    ports:
+      - "${DB_PORT:-5432}:${DB_PORT:-5432}"
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER} -p $${DB_PORT:-5432}" ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:6
+    command: redis-server --port ${REDIS_PORT:-6379} --loglevel warning
     volumes:
       - redisdata:/data
+    env_file:
+      - ../app/config/.env
     networks:
       - aikon_network
+    ports:
+      - "${REDIS_PORT:-6379}:${REDIS_PORT:-6379}"
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: [ "CMD", "redis-cli", "-p", "${REDIS_PORT:-6379}", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -66,7 +74,7 @@ services:
     env_file:
       - ./.env
     ports:
-      - "${CANTALOUPE_PORT:-8182}:8182"
+      - "${CANTALOUPE_PORT:-8182}:${CANTALOUPE_PORT:-8182}"
     volumes:
       - ${DATA_FOLDER}:/data
     networks:
@@ -85,7 +93,7 @@ services:
         - ../sas:/sas
         - ${DATA_FOLDER}/sas:/sas/data
     ports:
-      - "${SAS_PORT:-8888}:8888"
+      - "${SAS_PORT:-8888}:${SAS_PORT:-8888}"
     networks:
       - aikon_network
     environment:
@@ -94,8 +102,9 @@ services:
   nginx:
     image: nginx:latest
     env_file:
-      - ../app/config/.env
+#      - ../app/config/.env
       - ./.env
+      - ../app/config/.env
     ports:
       - "${NGINX_PORT:-8080}:${NGINX_PORT:-8080}"
     environment:

@@ -244,11 +244,12 @@ get_default_val() {
         default_val="https://"$(get_env_value "PROD_URL" "$FRONT_ENV")
 
     elif [ "$param" = "CANTALOUPE_IMG" ]; then
-        if [ "$OS" = "Linux" ]; then
-            default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img/"
-        else
-            default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img"
-        fi
+        default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img/"
+        # if [ "$OS" = "Linux" ]; then
+        #     default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img/"
+        # else
+        #     default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img"
+        # fi
 
     elif [ "$param" = "CANTALOUPE_PORT" ]; then
         default_val=$(get_env_value "CANTALOUPE_PORT" "$FRONT_ENV")
@@ -458,4 +459,19 @@ cleanup_pids() {
     fi
 
     return 0
+}
+
+ask() {
+    options=("yes" "no")
+    color_echo blue "$1"
+    answer=$(printf "%s\n" "${options[@]}" | fzy)
+    echo ""
+    if [ "$answer" = "no" ]; then
+        exit 1
+    fi
+}
+
+error() {
+    color_echo red "$1"
+    exit 1
 }

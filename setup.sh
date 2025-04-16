@@ -9,12 +9,11 @@ FRONT_SETUP="$FRONT_DIR/scripts/setup.sh"
 API_SETUP="$API_DIR/setup.sh"
 source "$FRONT_DIR"/scripts/utils.sh
 
-read -s -p "Enter your sudo password: " SUDO_PSW
-export SUDO_PSW=$SUDO_PSW
+get_password && echo || exit
 
 color_echo blue "\nInstalling prompt utility fzy..."
 if [ "$OS" = "Linux" ]; then
-    sudo apt install fzy
+    echo "$PASSWORD" | sudo -S apt install fzy
 elif [ "$OS" = "Mac" ]; then
     brew install fzy
 else
@@ -27,7 +26,7 @@ choose_install_mode() {
     color_echo blue "Do you want to run a full install or a quick install (skips defining basic env variables, perfect for dev)?"
     options=("quick install" "full install")
     answer=$(printf "%s\n" "${options[@]}" | fzy)
-    INSTALL_MODE="${answer/ /_}"  # "quick_install" or "full_install", will default to "full_install"
+    INSTALL_MODE="$+{answer/ /_}"  # "quick_install" or "full_install", will default to "full_install"
     export INSTALL_MODE="$INSTALL_MODE"
     echo ""
     color_echo cyan "Running a $answer! 🚀"
@@ -53,10 +52,10 @@ echo_title "AIKON BUNDLE INSTALL"
 color_echo green "Front installation..."
 cd "$FRONT_DIR";
 
-# if ! bash "$FRONT_SETUP"; then
-#     color_echo red "AIKON setup encountered an error"
-#     exit 1
-# fi
+if ! bash "$FRONT_SETUP"; then
+    color_echo red "AIKON setup encountered an error"
+    exit 1
+fi
 
 color_echo green "API installation..."
 source "$FRONT_ENV"
