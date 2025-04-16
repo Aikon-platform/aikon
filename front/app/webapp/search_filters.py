@@ -7,6 +7,7 @@ from django_filters.filters import (
     ModelMultipleChoiceFilter,
     RangeFilter,
     CharFilter,
+    OrderingFilter,
 )
 from django.forms.models import ModelChoiceIteratorValue
 
@@ -47,6 +48,21 @@ class RecordFilter(FilterSet):
         self.custom_labels = getattr(self.Meta, "labels", {})
         self.search_fields = ["json"]
         self.filters["search"] = self.create_search_filter()
+
+        # if not hasattr(self, 'ordering'):
+        #     ordering_fields = getattr(self.Meta, "ordering_fields", ["updated_at", "-updated_at"])
+        #     ordering_labels = getattr(self.Meta, "ordering_labels", {
+        #         "updated_at": "Modification Date (oldest first)" if APP_LANG == "en" else "Date de modification (plus ancien)",
+        #         "-updated_at": "Modification Date (newest first)" if APP_LANG == "en" else "Date de modification (plus récent)",
+        #     })
+        #
+        #     self.filters["ordering"] = OrderingFilter(
+        #         fields=ordering_fields,
+        #         field_labels=ordering_labels,
+        #         label="Sort by" if APP_LANG == "en" else "Trier par",
+        #     )
+        if hasattr(self, "queryset") and hasattr(self.queryset.model, "updated_at"):
+            self.queryset = self.queryset.order_by("-updated_at")
 
     @staticmethod
     def get_choices(model):
@@ -132,9 +148,9 @@ class WitnessFilter(RecordFilter):
     place = ModelChoiceFilter(
         queryset=ConservationPlace.objects.all(),
     )
-    series = ModelChoiceFilter(
-        queryset=Series.objects.all(),
-    )
+    # series = ModelChoiceFilter(
+    #     queryset=Series.objects.all(),
+    # )
     contents__lang = ModelMultipleChoiceFilter(
         queryset=Language.objects.all(),
         null_value=None,
@@ -157,7 +173,7 @@ class WitnessFilter(RecordFilter):
             "id_nb": ["icontains"],
             "place": ["exact"],
             "edition": ["exact"],
-            "series": ["exact"],
+            # "series": ["exact"],
             "contents__work": ["exact"],
             "contents__work__author": ["exact"],
             "contents__lang": ["exact"],
@@ -171,7 +187,7 @@ class WitnessFilter(RecordFilter):
             "edition__name": edition_name("name"),
             "edition__place": edition_name("pub_place"),
             "edition__publisher": edition_name("publisher"),
-            "series": series_name("Series"),
+            # "series": series_name("Series"),
             "contents__work": work_name("Work"),
             "contents__work__title": work_name("title"),
             "contents__work__author": work_name("author"),

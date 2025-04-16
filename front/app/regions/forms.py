@@ -4,6 +4,8 @@ from app.config.settings import APP_LANG
 from app.regions.const import MODULE_NAME
 from app.webapp.forms import get_available_models
 
+DEFAULT_MODEL = "illustration_extraction"
+
 
 class RegionsForm(forms.Form):
     class Meta:
@@ -16,8 +18,9 @@ class RegionsForm(forms.Form):
             if APP_LANG == "en"
             else "Modèle pour extraire des régions d'image dans le set de documents"
         ),
-        choices=[],  # dynamically set in __init__
-        widget=forms.RadioSelect,
+        choices=[("", "-")],  # dynamically set in __init__
+        initial=DEFAULT_MODEL,  # if not available, will default to first in list
+        # widget=forms.RadioSelect,
         required=True,
     )
 
