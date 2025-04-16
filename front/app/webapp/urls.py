@@ -321,6 +321,11 @@ urlpatterns += [
         get_json_document_set,
         name="get_json_document_set",
     ),
+    path(
+        f"{APP_NAME}/document-set/<int:dsid>/zip",
+        export_docset,
+        name="export_docset",
+    ),
 ]
 
 # SEARCH
