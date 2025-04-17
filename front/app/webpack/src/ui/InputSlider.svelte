@@ -2,17 +2,30 @@
     a slider with 1 or 2 inputs.
     - if there's only 1 input, it behaves like a normal `input @type="range"`
     - if there are 2 inputs, it's a range slider that allows to select a min/max.
+    - number of inputs is determined by data passed to the props `start`:
+        - if 1 number is provided, InputSlider is a 1-input slider.
+        - if an array of [number, number] is provided, it's a 2-input slider.
 
-    number of inputs is determined by data passed to the props `start`:
-    - if 1 number is provided, InputSlider is a 1-input slider.
-    - if an array of [number, number] is provided, it's a 2-input slider.
+    features:
+    - define min, max, start values, step, round floats
+    - emit on value update or on value set, thanks to props `emitOnUpdate`
+    - complete UI interface, with title, tooltips etc
+    - resetting the slider to its start state, using contexts (see below).
+
+    emits:
+    - "updateSlider" @type{number[]}. an array of 1 or 2 nu;bers, depending on if it's a 1 or 2 input slider
 
     restrictions:
     - updates to props are not handled.
 
     good to know:
-    - thanks to `createNewAndOld`, values are only emitted when there's
-        a change between the previously set value and the newly set value.
+    - thanks to `createNewAndOld`, values are only emitted when there's a change between the previously set value and the newly set value.
+    - how is value resetting handled ?
+        - an ancestor creates a `setContext` that holds a `writable`. by updating the `writable's` value, this component is reset
+        - if several instances of `InputSlider` inherit the same component, they will all be reset when the parent sets a new value on `resetTrigger`
+        - technical details: there are several more or less hacky patterns to trigger an update in a child component from the parent, from exporting a fumction in the child so that it can be called in the parent, to listening to prop changes, using stores etc (see: https://www.reddit.com/r/sveltejs/comments/np9qc0/send_event_from_a_parent_to_child/).
+             using the context API has the advantage of allowing to batch trigger functions in child components with a common ancestor: all child component auto-inherit from their ancestor's context, while instances of `InputSlider` inheriting from other compomnents will not be affected. this fits our use case: in forms, we want a single `reset` button to reset all form inputs at once.
+
 -->
 <script>
     import { onMount, onDestroy, createEventDispatcher, getContext } from "svelte";
@@ -67,15 +80,8 @@
     newAndOldSelectedVal.setCompareFn(isRange ? equalArrayShallow : (x,y) => numRound(x)===numRound(y));
     newAndOldSelectedVal.set(start);
 
-    /**
-     * @type {writable} this component expects `resetTrigger` to be a writable. it subscribes to this writable. when the value is updated, props are read back and slider is reset.
-     * NOTE:
-     * - if several instances of `InputSlider` inherit the same component, they will all be reset when the parent sets a new value on `resetTrigger`
-     * - technical details: there are several more or less hacky patterns to trigger an update in a child component from the parent, from exporting a fumction in the child so that it can be called in the parent, to listening to prop changes, using stores etc (see: https://www.reddit.com/r/sveltejs/comments/np9qc0/send_event_from_a_parent_to_child/).
-     *      using the context API has the advantage of allowing to batch trigger functions in child components with a common ancestor: all child component auto-inherit from their ancestor's context, while instances of `InputSlider` inheriting from other compomnents will not be affected. this fits our use case: in forms, we want a single `reset` button to reset all form inputs at once.
-     */
+    /** @type {writable} the `resetTrigger` context stores a writable. we subscribe to the writable, and when its value is updated, reset InputSlider */
     const resetTriggerContext = getContext("resetTrigger") || undefined;
-    // TODO: reset slider on new value
     resetTriggerContext?.subscribe(resetInputSlider);
 
     /** @type {number} tracks changes on "update" */
@@ -111,9 +117,7 @@
 
     function resetInputSlider() {
         const slider = document.getElementById(sliderHtmlId);
-        if ( slider?.noUiSlider ) {
-            slider.noUiSlider.reset();
-        }
+        if ( slider?.noUiSlider ) { slider.noUiSlider.reset(); }
     }
 
     function initSlider() {

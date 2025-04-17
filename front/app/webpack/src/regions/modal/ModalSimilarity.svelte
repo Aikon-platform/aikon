@@ -22,7 +22,6 @@
 
     /** @type {DropdownChoiceArray} */
     const flipChoices = [
-        { value:"n", label: "Normal" },
         { value:"h", label: appLang==="fr" ? "Basculer horizontalement" : "Flip horizontally" },
         { value:"v", label: appLang==="fr" ? "Basculer verticalement" : "Flip vertically" },
         { value:"hv", label: appLang==="fr" ? "Basculer horizontalement et verticalement" : "Flip horizontally and vertically" }
@@ -187,9 +186,9 @@
                         </div>
                         <div class="column is-one-third">
                             <InputDropdown choicesItems={flipChoices}
-                                        start={["n"]}
+                                        start={[]}
                                         lightDisplay={true}
-                                        placeholder="..."
+                                        placeholder={appLang==="fr" ? "Séléctionner" : "Select"}
                                         title={appLang==="fr" ? "Basculer" : "Flip"}
                                         on:updateValues={updateOverlayFlip}
                             ></InputDropdown>
