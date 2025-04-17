@@ -189,7 +189,6 @@
      * @param {boolean} _selectedAll
      */
     function resetInputDropdown(_choicesObj, _choicesItems, _start, _selectAll) {
-        console.log("resetInputDropdown");
         if ( _choicesObj ) {
             _choicesItems = initData(_choicesItems, _start, _selectAll);
             _choicesObj.clearStore().setChoices(_choicesItems);
