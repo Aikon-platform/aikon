@@ -24,8 +24,11 @@
         - an ancestor creates a `setContext` that holds a `writable`. by updating the `writable's` value, this component is reset
         - if several instances of `InputSlider` inherit the same component, they will all be reset when the parent sets a new value on `resetTrigger`
         - technical details: there are several more or less hacky patterns to trigger an update in a child component from the parent, from exporting a fumction in the child so that it can be called in the parent, to listening to prop changes, using stores etc (see: https://www.reddit.com/r/sveltejs/comments/np9qc0/send_event_from_a_parent_to_child/).
-             using the context API has the advantage of allowing to batch trigger functions in child components with a common ancestor: all child component auto-inherit from their ancestor's context, while instances of `InputSlider` inheriting from other compomnents will not be affected. this fits our use case: in forms, we want a single `reset` button to reset all form inputs at once.
-
+            using the context API has some advantages:
+                - you can batch trigger functions in child components with a common ancestor: all child component auto-inherit from their ancestor's context. this fits our use case: in forms, we want a single `reset` button to reset all form inputs at once.
+                - contrary to resetting using stores, resetting is isolated: several components can set their own `resetTrigger` contexts, and they will affect their descendant components only.`InputSlider` inheriting from other compomnents will not be affected.
+                - the context is just a trigger and is implementation independant. this means that the same trigger can be used to reset different inputs. in fact, `InputSlider`, `InputDropdown` and `InputToggleCheckbox` all use the sane `resetTrigger`
+                - the only problem will be if 2 ancestor components of a single input both call `setContext("resetTrigger")`. in those cases, the 2 ancestors will trigger a resetting of the same input,
 -->
 <script>
     import { onMount, onDestroy, createEventDispatcher, getContext } from "svelte";

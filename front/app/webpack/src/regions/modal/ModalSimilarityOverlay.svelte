@@ -43,7 +43,7 @@
 
     let currentlyResetting = false;
 
-    /** @type {writable} set a new value to trigger an update in child components */
+    /** @type {writable} set a new value to trigger an update in descendant form components that implement this behaviour */
     const resetTrigger = writable(window.crypto.randomUUID());
     setContext("resetTrigger", resetTrigger);
 
@@ -86,8 +86,8 @@
         overlayScale = startOverlayScale;
         overlayFlip = startOverlayFlip;
         overlayTranslate = startOverlayTranslate;
+        // c
         resetTrigger.set(window.crypto.randomUUID());
-
         // will set a css class which will animate resetting.
         currentlyResetting = true;
         setTimeout(() => currentlyResetting = false, 1000);
@@ -179,8 +179,7 @@
 </div>
 
 <style>
-
-.toolbar-wrapper {
+    .toolbar-wrapper {
         border-top: var(--default-border);
     }
     .toolbar-controls > .column {
