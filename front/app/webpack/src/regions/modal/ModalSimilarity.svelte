@@ -35,7 +35,7 @@
     const updateToggleOverlay = () => overlay = !overlay;
 </script>
 
-<div>
+<div class="modal-similarity">
     <div class="modal-similarity-images">
         {#if overlay}
             <ModalSimilarityOverlay  imgData={imgData}></ModalSimilarityOverlay>
@@ -53,6 +53,11 @@
 </div>
 
 <style>
+    .modal-similarity {
+        display: grid;
+        grid-template-columns: 100%;
+        grid-template-rows: 2fr 0fr;
+    }
     :global(.modal-similarity-images img) {
         object-fit: contain;
         max-height: 80%;

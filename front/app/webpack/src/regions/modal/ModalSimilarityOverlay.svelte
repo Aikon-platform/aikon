@@ -190,6 +190,9 @@
         min-height: 50vh;  /** dirty */
         max-height: 100%;
         overflow: scroll;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     .overlay-wrapper img {
         position: absolute;
