@@ -403,9 +403,9 @@
         padding: 1px;
         padding-bottom: 1px !important;
         min-height: 30px;
-        max-height: 40px;
+        max-height: 45px;
         overflow: scroll;
-        border: solid 1px var(--bulma-border);
+        border: var(--default-border);
         border-radius: var(--bulma-burger-border-radius);
     }
     /** selected item (single and multi) */

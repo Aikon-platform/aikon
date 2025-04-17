@@ -30,7 +30,7 @@
 
     const toggleOnClick = () => isChecked = !isChecked;
 
-    const resetInputCheckbox = () => {
+    function resetInputCheckbox() {
         const el = document.getElementById(htmlId);
         if (el) el.checked = start;
     }

@@ -126,6 +126,9 @@
 </div>
 
 <style>
+    .modal-content {
+        width: 80vw;
+    }
     .modal-inner {
         background-color: var(--bulma-body-background-color);
         border: var(--default-border);
