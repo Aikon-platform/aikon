@@ -67,10 +67,16 @@
     newAndOldSelectedVal.setCompareFn(isRange ? equalArrayShallow : (x,y) => numRound(x)===numRound(y));
     newAndOldSelectedVal.set(start);
 
-    /** @type {writable} this component expects `resetTrigger` to be a writable. it subscribes to this writable. when the value is updated, props are read back and slider is reset. NOTE: if several instances of `InputSlider` inherit the same component, they will all be reset when the parent sets a new value on `resetTrigger` */
+    /**
+     * @type {writable} this component expects `resetTrigger` to be a writable. it subscribes to this writable. when the value is updated, props are read back and slider is reset.
+     * NOTE:
+     * - if several instances of `InputSlider` inherit the same component, they will all be reset when the parent sets a new value on `resetTrigger`
+     * - technical details: there are several more or less hacky patterns to trigger an update in a child component from the parent, from exporting a fumction in the child so that it can be called in the parent, to listening to prop changes, using stores etc (see: https://www.reddit.com/r/sveltejs/comments/np9qc0/send_event_from_a_parent_to_child/).
+     *      using the context API has the advantage of allowing to batch trigger functions in child components with a common ancestor: all child component auto-inherit from their ancestor's context, while instances of `InputSlider` inheriting from other compomnents will not be affected. this fits our use case: in forms, we want a single `reset` button to reset all form inputs at once.
+     */
     const resetTriggerContext = getContext("resetTrigger") || undefined;
     // TODO: reset slider on new value
-    resetTriggerContext?.subscribe((newVal) => console.log("updqted", newVal));
+    resetTriggerContext?.subscribe(resetInputSlider);
 
     /** @type {number} tracks changes on "update" */
     $: selectedVal = start;
@@ -85,16 +91,13 @@
      * @param {"update"|"set"} caller: on which event the function is called: `newAndOldSelectedVal` is only updated on set.
      */
     const updateSelectedValAndDispatch = (val, caller) => {
-        const updateHook = (_val) => {
-            newAndOldSelectedVal.set(_val);
-            if ( !newAndOldSelectedVal.same() ) {
-                dispatch("updateSlider", newAndOldSelectedVal.get());
-            }
-        }
         val = Array.isArray(val) ? val.map(numRound) : numRound(val);
         selectedVal = val;
         if (caller==="set" || (caller==="update" && emitOnUpdate)) {
-            updateHook(val)
+            newAndOldSelectedVal.set(val);
+            if ( !newAndOldSelectedVal.same() ) {
+                dispatch("updateSlider", newAndOldSelectedVal.get());
+            }
         }
     }
 
@@ -103,6 +106,13 @@
         if ( handleTooltips.length ) {
             handleTooltips.map((tooltip, idx) =>
                 tooltip.$set({ tooltipText: isRange ? _selectedVal[idx] : _selectedVal }));
+        }
+    }
+
+    function resetInputSlider() {
+        const slider = document.getElementById(sliderHtmlId);
+        if ( slider?.noUiSlider ) {
+            slider.noUiSlider.reset();
         }
     }
 

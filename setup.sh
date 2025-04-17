@@ -26,7 +26,7 @@ choose_install_mode() {
     color_echo blue "Do you want to run a full install or a quick install (skips defining basic env variables, perfect for dev)?"
     options=("quick install" "full install")
     answer=$(printf "%s\n" "${options[@]}" | fzy)
-    INSTALL_MODE="$+{answer/ /_}"  # "quick_install" or "full_install", will default to "full_install"
+    INSTALL_MODE="${answer/ /_}"  # "quick_install" or "full_install", will default to "full_install"
     export INSTALL_MODE="$INSTALL_MODE"
     echo ""
     color_echo cyan "Running a $answer! 🚀"
