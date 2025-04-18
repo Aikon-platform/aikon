@@ -1,6 +1,8 @@
 import json
+import os
 from pathlib import Path
 from datetime import datetime
+from PIL import Image
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -329,6 +331,13 @@ def export_docset(request, dsid):
                             json.dumps(r_json),
                         )
                     )
+                    coco_r_json = gen_coco_data(w_json, r_json)
+                    file_contents.append(
+                        (
+                            f"witness{w.id}/regions{regions.id}/coco.json",
+                            json.dumps(coco_r_json),
+                        )
+                    )
 
                 # 3: Vectorizations (SVG+JSON)
                 if "vectorization" in ADDITIONAL_MODULES:
@@ -394,6 +403,52 @@ def iiif_context(request):
 
 
 ### DATA SHAPING ###
+
+
+def gen_coco_data(witness_data, regions_data):
+    """
+    Given resulting dicts from Regions and Witness data, shapes the Regions metadata as a COCO-formatted  object.
+    """
+    coco = {"images": [], "annotations": [], "categories": []}
+
+    for (did, manifest_url) in witness_data["digitizations"].items():
+        w = get_object_or_404(Witness, id=witness_data["id"])
+        imgs = w.get_imgs()
+        for path in imgs:
+            img = Image.open(f"{IMG_PATH}/{path}")
+            try:
+                h, w = int(img["height"]), int(img["width"])
+            except TypeError:
+                h, w = img.height, img.width
+            image_entry = {
+                "id": os.path.splitext(path)[0],
+                "file_name": path,
+                "width": w,
+                "height": h,
+            }
+            coco["images"].append(image_entry)
+
+    # Not exacttly sure what to do with categories
+    category_id = 1
+    coco["categories"].append({"id": category_id, "name": "Extracted region"})
+
+    crops = regions_data.get("extracted_crops", {})
+    for canvas_id, crop_dict in crops.items():
+        for crop_key, crop_data in crop_dict.items():
+            xyhw = list(map(int, crop_data["xyhw"]))
+            bbox = xyhw
+            area = bbox[2] * bbox[3]
+            annotation = {
+                "id": crop_data["id"],
+                "image_id": crop_data["img"],
+                "category_id": category_id,
+                "bbox": bbox,
+                "area": area,
+                "iscrowd": 0,
+            }
+            coco["annotations"].append(annotation)
+
+    return coco
 
 
 def get_region_data(wid, rid):
