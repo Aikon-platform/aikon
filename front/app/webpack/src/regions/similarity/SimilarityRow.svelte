@@ -10,12 +10,13 @@
     import PropagatedMatches from "./PropagatedMatches.svelte";
 
     export let qImg;
+
     let sImg = "";
     const [wit, digit, canvas, xyhw] = qImg.split('.')[0].split('_');
     const manifest = getContext('manifest');
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentPageId = window.location.pathname.match(/\d+/g).join('-');
-    const error_name = appLang === "en" ? "Error" : "Erreur";
+    const errorName = appLang === "en" ? "Error" : "Erreur";
 
     $: sLen = $selectedRegions.hasOwnProperty(currentPageId) ? Object.values($selectedRegions[currentPageId]).length : 0;
     $: hasNoMatch = false; // TODO HERE FIND A WAY TO SET NO MATCH FOR THIS Q REGIONS
@@ -56,7 +57,7 @@
                     appLang === "en" ?
                         "Problem with network, match was not added" :
                         "Problème de réseau, la correspondance n'a pas été ajoutée",
-                    error_name
+                    errorName
                 );
             }
 
@@ -66,7 +67,7 @@
                     appLang === "en" ?
                         `Request was unsuccessful, match was not added:<br>${data.error}` :
                         `La requête n'a pas abouti, la correspondance n'a pas été ajoutée :<br>${data.error}`,
-                    error_name
+                    errorName
                 );
                 return;
             }
@@ -80,7 +81,7 @@
                 appLang === "en" ?
                     `An error has occurred, match was not added:<br>${error}` :
                     `Une erreur s'est produite, la correspondance n'a pas été ajoutée :<br>${error}`,
-                error_name
+                errorName
             );
         }
     }
@@ -115,7 +116,7 @@
                 console.error(`Error: Network response was not ok`);
                 await showMessage(
                     appLang === "en" ? "Problem with network" : "Problème de réseau",
-                    error_name
+                    errorName
                 );
             }
 
@@ -127,7 +128,7 @@
                 appLang === "en" ?
                     `An error has occurred, request was unsuccessful:<br>${error}` :
                     `Une erreur s'est produite, la requête n'a pas abouti :<br>${error}`,
-                error_name
+                errorName
             );
         }
 

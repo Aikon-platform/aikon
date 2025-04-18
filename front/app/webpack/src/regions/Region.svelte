@@ -1,5 +1,7 @@
 <script>
+    import { getContext, setContext } from "svelte";
     import { fade } from 'svelte/transition';
+
     import { refToIIIF } from "../utils.js";
     import { selectionStore } from '../selection/selectionStore.js';
     const { isSelected } = selectionStore;
@@ -7,7 +9,7 @@
     const { clipBoard } = regionsStore;
     import { appLang } from '../constants';
 
-    import ModalController from "./modal/ModalController.svelte";
+    // import ModalController from "./modal/ModalController.svelte";
 
     /**
      * @typedef {RegionItemType}
@@ -34,12 +36,22 @@
     /** @type {string?} used to pass the props `SimilarRegion.qImg` to `ModalController.compareImg`, undefined if `Region` doesn't inherit from `SimilarRegion` */
     export let compareImg = undefined;
 
+    // MoalController is only mountd+imported if !isInModal to avoid a recursive component (Region could open a modal that could contain Region that could contain another modal). while there's no error, you do get a svelte/roillup warning and there probably will be side effects.
+    const isInModal = getContext("isInModal") || false;
+    let modalControllerComponent;
+    if ( !isInModal ) {
+        import("./modal/ModalController.svelte").then((res) => modalControllerComponent = res.default);
+    }
+
     $: isCopied = item.ref === $clipBoard;
 
     // if `descPromise` is passed, wait for resolution to update `desc`
     if (descPromise) {
         descPromise.then((res) => desc = res);
     }
+
+
+
 </script>
 
 <div class="region is-center {$isSelected(item) ? 'checked' : ''}" transition:fade={{ duration: 500 }}>
@@ -67,9 +79,12 @@
                 {/if}
             </span>
         </button>
-        <ModalController mainImg={item.img}
-                         compareImg={compareImg}
-        ></ModalController>
+        {#if modalControllerComponent}
+            <svelte:component this={modalControllerComponent}
+                              mainImg={item.img}
+                              compareImg={compareImg}
+            ></svelte:component>
+        {/if}
     </div>
 </div>
 

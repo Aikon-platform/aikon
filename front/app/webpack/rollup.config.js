@@ -34,9 +34,15 @@ export default [
         input: 'src/regions/region-list.js',
         output: {
             sourcemap: true,
+            /*
             format: 'iife',
+            */
+            format: "es",
             name: 'regionList',
+            /*
             file: '../webapp/static/svelte/regionList.js'
+            */
+            dir: '../webapp/static/svelte/regionList/',
         },
         plugins: [
             svelte({
