@@ -144,7 +144,7 @@
             </a>
 
             <!--TODO make image copyable-->
-            <img src="{refToIIIF(qImg, 'full', '250,')}" alt="Query region" class="mb-3 card">
+            <img src="{refToIIIF(qImg, 'full', '250,')}" alt="Query region" class="mb-3 card query-image">
 
 
             <div class="new-similarity control pt-2 is-center">
@@ -179,6 +179,9 @@
 </tr>
 
 <style>
+    .query-image {
+        max-height: 100%;
+    }
     .new-similarity {
         display: flex;
         gap: 0.5em;
