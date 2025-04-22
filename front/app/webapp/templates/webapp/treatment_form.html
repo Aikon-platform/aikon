@@ -51,15 +51,15 @@
         <div id="regions" class="task-form is-contrasted p-4 my-4 box">
             <h2 class="title is-spaced">
                 {% if APP_LANG == 'en' %}Extraction settings{% else %}Paramètres de l'extraction{% endif %}
-                {% include "includes/form/field_group.html" with included_fields="regions" %}
             </h2>
+            {% include "includes/form/field_group.html" with included_fields="regions" %}
         </div>
 
         <div id="vectorization" class="task-form is-contrasted p-4 my-4 box">
             <h2 class="title is-spaced">
                 {% if APP_LANG == 'en' %}Vectorization settings{% else %}Paramètres de la vectorisation{% endif %}
-                {% include "includes/form/field_group.html" with included_fields="vectorization" %}
             </h2>
+            {% include "includes/form/field_group.html" with included_fields="vectorization" %}
         </div>
 
         <p class="has-text-centered pt-3">

@@ -4,6 +4,8 @@ FRONT_ROOT="$(dirname "$DOCKER_DIR")"
 source "$FRONT_ROOT/scripts/utils.sh"
 export INSTALL_MODE="full_install"
 
+# TODO use aikon-demo check for .env modification
+
 # if docker/.env does not exist, create it
 if [ ! -f "$FRONT_ROOT/docker/.env" ]; then
     echo_title "DOCKER ENVIRONMENT VARIABLES"
@@ -45,8 +47,8 @@ if [ ! -d "$DATA_FOLDER" ]; then
     sudo chmod -R 775 "$DATA_FOLDER"
 fi
 
-if [ ! -d $MEDIA_DIR ]; then
-    chown -R "$USERID:$USERID" $MEDIA_DIR
+if [ ! -d "$DATA_FOLDER"/mediafiles ]; then
+    chown -R "$USERID:$USERID" "$DATA_FOLDER"/mediafiles
 fi
 
 if [ ! -d "$DATA_FOLDER"/sas ]; then
@@ -64,6 +66,8 @@ if [ ! -f "$FRONT_ROOT"/docker/nginx_conf ]; then
     sed_repl_inplace "s~NGINX_PORT~$NGINX_PORT~" "$NGINX_CONF"
     sed_repl_inplace "s~CANTALOUPE_PORT~$CANTALOUPE_PORT~" "$NGINX_CONF"
     sed_repl_inplace "s~SAS_PORT~$SAS_PORT~" "$NGINX_CONF"
+    sed_repl_inplace "s~DB_PORT~$DB_PORT~" "$NGINX_CONF"
+    sed_repl_inplace "s~REDIS_PORT~$REDIS_PORT~" "$NGINX_CONF"
     sed_repl_inplace "s~PROD_URL~$PROD_URL~" "$NGINX_CONF"
     sed_repl_inplace "s~SSL_CERTIFICATE~$SSL_CERTIFICATE~" "$NGINX_CONF"
     sed_repl_inplace "s~SSL_KEY~$SSL_KEY~" "$NGINX_CONF"

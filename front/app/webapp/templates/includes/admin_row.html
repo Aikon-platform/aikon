@@ -1,42 +1,17 @@
 {% load static shared_tags %}
 
-{% check_url 'webapp:'|add:entity_title|add:'_create' as add_url %}
-{% if add_url == '' %}
-    {% check_url 'admin:webapp_'|add:entity_title|add:'_add' as add_url %}
-{% endif %}
-{% if add_url == '' %}
-    {% check_url 'admin:auth_'|add:entity_title|add:'_add' as add_url %}
-{% endif %}
-
-{% check_url 'webapp:'|add:entity_title|add:'_list' as list_url %}
-{% if list_url == '' %}
-    {% check_url 'admin:webapp_'|add:entity_title|add:'_changelist' as list_url %}
-{% endif %}
-{% if list_url == '' %}
-    {% check_url 'admin:auth_'|add:entity_title|add:'_changelist' as list_url %}
-{% endif %}
-
-{% if entity_set %}
-    {% check_url 'webapp:'|add:entity_set|add:'_list' as list_url %}
-    {% if list_url == '' %}
-        {% check_url 'admin:webapp_'|add:entity_set|add:'_changelist' as list_url %}
-    {% endif %}
-    {% if list_url == '' %}
-        {% check_url 'admin:auth_'|add:entity_set|add:'_changelist' as list_url %}
-    {% endif %}
-{% endif %}
-
+{% get_add_url entity as add_url %}
+{% get_list_url entity as list_url %}
 
 <div class="block box mg-medium p-5 m-4" style="height:90%;">
     <div class="content is-center">
         <h3 class="is-center is-capitalized">{{ entity_title }}</h3>
         {% if icon %}
-            <img src="{% static 'img/'|add:entity_title|add:'.svg' %}" onerror="this.onerror=null;this.style.display='none';src='';this.class='';" class="image is-center is-128x128 mb-5" style="filter:invert(.7);" alt="{{ entity_title }} icon"/>
+            <img src="{% static 'img/'|add:entity|add:'.svg' %}" onerror="this.onerror=null;this.style.display='none';src='';this.class='';" class="image is-center is-128x128 mb-5" style="filter:invert(.7);" alt="{{ entity_title }} icon"/>
         {% endif %}
         <p class="is-size-7">{{ entity_desc }}</p>
         <div class="buttons is-center">
-            {% if entity_set %}
-            {% else %}
+            {% if entity != "document_set" %}
             <a href="{{ add_url }}" class="button is-ghost">
                 <span class="icon-text">
                     <span class="icon"><i class="fas fa-plus-circle"></i></span>

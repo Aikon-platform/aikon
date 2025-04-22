@@ -7,13 +7,27 @@ from app.similarity.const import MODULE_NAME
 from app.webapp.forms import FormConfig, get_available_models, SubForm
 
 
+AVAILABLE_SIMILARITY_ALGORITHMS = {
+    "cosine": (
+        "Similarity using cosine distance between feature vectors"
+        if APP_LANG == "en"
+        else "Similarité basée sur la distance cosinus entre les vecteurs de 'features'"
+    ),
+    "segswap": (
+        "Similarity using correspondence matching between part of images"
+        if APP_LANG == "en"
+        else "Similarité basée sur la correspondance entre les parties des images"
+    ),
+}
+
+
 class SimilarityForm(forms.Form):
     class Meta:
         fields = ("algorithm",)
 
     algorithm = forms.ChoiceField(
         choices=[("", "-")],  # Will be dynamically set in __init__
-        initial="",
+        initial="segswap",  # if segswap not available, will default to first in list
         label="Similarity Algorithm"
         if APP_LANG == "en"
         else "Algorithme de similarité",
@@ -184,20 +198,6 @@ class CosineSimilarityForm(SubForm, BaseFeatureExtractionForm):
 
 class SegSwapForm(SubForm, CosinePreprocessing):
     """Form for SegSwap-specific settings."""
-
-
-AVAILABLE_SIMILARITY_ALGORITHMS = {
-    "cosine": (
-        "Similarity using cosine distance between feature vectors"
-        if APP_LANG == "en"
-        else "Similarité basée sur la distance cosinus entre les vecteurs de 'features'"
-    ),
-    "segswap": (
-        "Similarity using correspondence matching between part of images"
-        if APP_LANG == "en"
-        else "Similarité basée sur la correspondance entre les parties des images"
-    ),
-}
 
 
 class SimilarityAlgorithm(Enum):

@@ -89,7 +89,11 @@ class Regions(AbstractSearchableModel):
         error = {"error": "Unable to create a valid manifest"}
         if manifest := gen_manifest_json(self, check_version(version)):
             try:
-                return manifest.toJSON(top=True)
+                return (
+                    manifest.toJSON(top=True)
+                    if hasattr(manifest, "toJSON")
+                    else manifest
+                )
             except StructuralError as e:
                 error["reason"] = f"{e}"
                 return error

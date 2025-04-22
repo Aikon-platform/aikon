@@ -33,7 +33,8 @@ RUN apt-get update && apt-get install -y \
     ghostscript \
     python3.10 \
     python3.10-venv \
-    python3-pip
+    python3-pip \
+    postgresql-client
 
 WORKDIR /home/${USER}
 
@@ -62,6 +63,7 @@ RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER
 # TODO staticfiles update + database migrations is not working
 COPY --chown=${USER} docker/manage.sh /home/aikon/manage.sh
 RUN chmod +x /home/aikon/manage.sh
+RUN /home/${USER}/manage.sh
 
 # Launch gunicorn
 CMD export LC_ALL=C.UTF-8 && export LANG=C.UTF-8 && \
