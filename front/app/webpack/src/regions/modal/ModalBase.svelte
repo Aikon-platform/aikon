@@ -140,6 +140,7 @@
         background-color: var(--bulma-body-background-color);
         border: var(--default-border);
         border-radius: 1rem;
+        overflow: scroll;
     }
     .modal-main-wrapper {
         height: 100%;

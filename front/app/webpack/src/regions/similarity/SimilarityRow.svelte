@@ -13,10 +13,12 @@
 
     let sImg = "";
     const [wit, digit, canvas, xyhw] = qImg.split('.')[0].split('_');
-    const manifest = getContext('manifest');
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentPageId = window.location.pathname.match(/\d+/g).join('-');
     const errorName = appLang === "en" ? "Error" : "Erreur";
+
+    const manifest = getContext('manifest');
+    const isInModal = getContext("isInModal") || false;
 
     $: sLen = $selectedRegions.hasOwnProperty(currentPageId) ? Object.values($selectedRegions[currentPageId]).length : 0;
     $: hasNoMatch = false; // TODO HERE FIND A WAY TO SET NO MATCH FOR THIS Q REGIONS
@@ -169,10 +171,10 @@
         </div>
     </th>
     <td class="p-5 is-fullwidth">
-        <div class="fixed-grid has-5-cols">
+        <div class="{ isInModal ? '' : 'fixed-grid has-5-cols'}">
             <SimilarityMatches {qImg}></SimilarityMatches>
         </div>
-        <div class="fixed-grid has-5-cols">
+        <div class="{ isInModal ? '' : 'fixed-grid has-5-cols'}">
             <PropagatedMatches {qImg}></PropagatedMatches>
         </div>
     </td>
@@ -180,7 +182,7 @@
 
 <style>
     .query-image {
-        max-height: 100%;
+        max-height: 60vh;
     }
     .new-similarity {
         display: flex;

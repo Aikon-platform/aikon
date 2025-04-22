@@ -27,7 +27,7 @@
 
 <div class="is-flex is-align-items-center is-justify-content-end">
     <a href={similarityViewUrl}>
-        <button class="button is-link">{ appLang==="fr" ? "Voir toutes les similarités pour ce document" : "View all similarities for this document"}</button>
+        <button class="button is-link is-small">{ appLang==="fr" ? "Voir toutes les similarités pour ce document" : "View all similarities for this document"}</button>
     </a>
 </div>
 <SimilarityRow qImg={mainImg}></SimilarityRow>
