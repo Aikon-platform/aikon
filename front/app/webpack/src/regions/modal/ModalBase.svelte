@@ -111,7 +111,9 @@
                 </ul>
             </div>
 
-            <div class="mb-4 ml-4 mr-4 modal-main-wrapper">
+            <div class="ml-4 mr-4 modal-main-wrapper"
+                 class:pb-4={ currentViewId==="main" }
+            >
                 <svelte:component this={viewComponents[currentViewId] || null}
                                   {...viewProps[currentViewId] || {}}
                 ></svelte:component>

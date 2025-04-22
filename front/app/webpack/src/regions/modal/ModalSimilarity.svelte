@@ -72,5 +72,6 @@
         max-height: 100%;
         max-width: 100%;
         z-index: 2;
+        padding: .25rem;
     }
 </style>

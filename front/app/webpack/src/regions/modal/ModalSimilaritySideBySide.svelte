@@ -19,15 +19,9 @@
                 ? "Query image"
                 : "Similarity"
             }</span>
-            <!--
-            <div class="img-wrapper">
-            -->
             <img src={imgData[imgDataKey].href}
-                     alt={imgData[imgDataKey].title}
-                >
-            <!--
-            </div>
-            -->
+                 alt={imgData[imgDataKey].title}
+            >
         </div>
     {/each}
 </div>
