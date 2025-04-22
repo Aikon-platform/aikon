@@ -187,6 +187,7 @@
     <style>
     .slider-outer-wrapper {
         margin: 10px;
+        margin-bottom: 0;
     }
     .slider-wrapper {
         min-height: 15px;
