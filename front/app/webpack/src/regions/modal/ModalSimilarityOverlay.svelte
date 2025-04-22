@@ -86,7 +86,7 @@
         overlayScale = startOverlayScale;
         overlayFlip = startOverlayFlip;
         overlayTranslate = startOverlayTranslate;
-        // c
+        // forme elements will be reset
         resetTrigger.set(window.crypto.randomUUID());
         // will set a css class which will animate resetting.
         currentlyResetting = true;
@@ -94,86 +94,84 @@
     }
 </script>
 
-<div>
-    <div class="overlay-wrapper">
-        <img class="compare-img"
-             src={imgData.queryImage.href}
-             alt={imgData.queryImage.title}
-        >
-        <img class="main-img"
-             class:overlay-reset={currentlyResetting}
-             src={imgData.similarityImage.href}
-             alt={imgData.similarityImage.title}
-             style:opacity={overlayOpacity}
-             style:transform={cssTransforms}
-        >
-    </div>
-    <div class="toolbar-wrapper">
-        <div class="toolbar-title"><strong>Transform query image</strong></div>
-        <div class="toolbar-controls columns is-3 is-multiline">
-            <div class="column is-one-quarter">
-                <InputSlider minVal={0}
-                            maxVal={1}
-                            start={startOverlayOpacity}
-                            emitOnUpdate={true}
-                            title={appLang==="fr" ? "Opacité" : "Opacity"}
-                            on:updateSlider={updateOverlayOpacity}
-                ></InputSlider>
-            </div>
-            <div class="column is-one-quarter">
-                <InputSlider minVal={0}
-                            maxVal={360}
-                            start={startOverlayRotation}
-                            step={1}
-                            emitOnUpdate={true}
-                            title="Rotation"
-                            on:updateSlider={updateOverlayRotation}
-                ></InputSlider>
-            </div>
-            <div class="column is-one-quarter">
-                <InputSlider minVal={0}
-                            maxVal={200}
-                            step={1}
-                            start={startOverlayScale}
-                            emitOnUpdate={true}
-                            title={appLang==="fr" ? "Redimensionner" : "Scale"}
-                            on:updateSlider={updateOverlayScale}
-                ></InputSlider>
-            </div>
-            <div class="column is-one-quarter">
-                <InputDropdown choicesItems={flipChoices}
-                            start={[]}
-                            lightDisplay={true}
-                            placeholder={appLang==="fr" ? "Séléctionner" : "Select"}
-                            title={appLang==="fr" ? "Basculer" : "Flip"}
-                            on:updateValues={updateOverlayFlip}
-                ></InputDropdown>
-            </div>
-            <div class="column is-one-third">
-                <InputSlider minVal={-100}
-                            maxVal={100}
-                            step={1}
-                            start={startOverlayTranslate[0]}
-                            emitOnUpdate={true}
-                            title={appLang==="fr" ? "Translation horizontale" : "Horizontal translate"}
-                            on:updateSlider={updateOverlayTranslateX}
-                ></InputSlider>
-            </div>
-            <div class="column is-one-third">
-                <InputSlider minVal={-100}
-                            maxVal={100}
-                            step={1}
-                            start={startOverlayTranslate[1]}
-                            emitOnUpdate={true}
-                            title={appLang==="fr" ? "Translation verticale" : "Vertical translate"}
-                            on:updateSlider={updateOverlayTranslateY}
-                ></InputSlider>
-            </div>
-            <div class="column is-one-third is-flex is-flex-direction-column is-justify-content-center is-align-items-flex-end">
-                <button class="button is-link"
-                        on:click={resetOverlayParams}
-                >{appLang==="fr" ? "Réinitialiser" : "Reset"}</button>
-            </div>
+<div class="overlay-wrapper">
+    <img class="compare-img"
+         src={imgData.queryImage.href}
+         alt={imgData.queryImage.title}
+    >
+    <img class="main-img"
+         class:overlay-reset={currentlyResetting}
+         src={imgData.similarityImage.href}
+         alt={imgData.similarityImage.title}
+         style:opacity={overlayOpacity}
+         style:transform={cssTransforms}
+    >
+</div>
+<div class="toolbar-wrapper">
+    <div class="toolbar-title"><strong>Transform query image</strong></div>
+    <div class="toolbar-controls columns is-3 is-multiline">
+        <div class="column is-one-quarter">
+            <InputSlider minVal={0}
+                        maxVal={1}
+                        start={startOverlayOpacity}
+                        emitOnUpdate={true}
+                        title={appLang==="fr" ? "Opacité" : "Opacity"}
+                        on:updateSlider={updateOverlayOpacity}
+            ></InputSlider>
+        </div>
+        <div class="column is-one-quarter">
+            <InputSlider minVal={0}
+                        maxVal={360}
+                        start={startOverlayRotation}
+                        step={1}
+                        emitOnUpdate={true}
+                        title="Rotation"
+                        on:updateSlider={updateOverlayRotation}
+            ></InputSlider>
+        </div>
+        <div class="column is-one-quarter">
+            <InputSlider minVal={0}
+                        maxVal={200}
+                        step={1}
+                        start={startOverlayScale}
+                        emitOnUpdate={true}
+                        title={appLang==="fr" ? "Redimensionner" : "Scale"}
+                        on:updateSlider={updateOverlayScale}
+            ></InputSlider>
+        </div>
+        <div class="column is-one-quarter">
+            <InputDropdown choicesItems={flipChoices}
+                        start={[]}
+                        lightDisplay={true}
+                        placeholder={appLang==="fr" ? "Séléctionner" : "Select"}
+                        title={appLang==="fr" ? "Basculer" : "Flip"}
+                        on:updateValues={updateOverlayFlip}
+            ></InputDropdown>
+        </div>
+        <div class="column is-one-third">
+            <InputSlider minVal={-100}
+                        maxVal={100}
+                        step={1}
+                        start={startOverlayTranslate[0]}
+                        emitOnUpdate={true}
+                        title={appLang==="fr" ? "Translation horizontale" : "Horizontal translate"}
+                        on:updateSlider={updateOverlayTranslateX}
+            ></InputSlider>
+        </div>
+        <div class="column is-one-third">
+            <InputSlider minVal={-100}
+                        maxVal={100}
+                        step={1}
+                        start={startOverlayTranslate[1]}
+                        emitOnUpdate={true}
+                        title={appLang==="fr" ? "Translation verticale" : "Vertical translate"}
+                        on:updateSlider={updateOverlayTranslateY}
+            ></InputSlider>
+        </div>
+        <div class="column is-one-third is-flex is-flex-direction-column is-justify-content-center is-align-items-flex-end">
+            <button class="button is-link"
+                    on:click={resetOverlayParams}
+            >{appLang==="fr" ? "Réinitialiser" : "Reset"}</button>
         </div>
     </div>
 </div>
@@ -187,8 +185,11 @@
     }
     .overlay-wrapper {
         position: relative;
-        min-height: 50vh;  /** dirty */
+        /*
+        min-height: 50vh;
         max-height: 100%;
+        */
+        height: 100%;
         overflow: scroll;
         display: flex;
         align-items: center;

@@ -111,7 +111,7 @@
                 </ul>
             </div>
 
-            <div class="m-4 modal-content-wrapper">
+            <div class="mb-4 ml-4 mr-4 modal-main-wrapper">
                 <svelte:component this={viewComponents[currentViewId] || null}
                                   {...viewProps[currentViewId] || {}}
                 ></svelte:component>
@@ -128,10 +128,18 @@
 <style>
     .modal-content {
         width: 80vw;
+        height: 80vh;
     }
     .modal-inner {
+        height: 100%;
+        display: grid;
+        grid-template-columns: 100%;
+        grid-template-rows: 10% 90%;
         background-color: var(--bulma-body-background-color);
         border: var(--default-border);
         border-radius: 1rem;
+    }
+    .modal-main-wrapper {
+        height: 100%;
     }
 </style>

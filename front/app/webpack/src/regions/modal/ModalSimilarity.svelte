@@ -36,7 +36,7 @@
 </script>
 
 <div class="modal-similarity">
-    <div class="modal-similarity-images">
+    <div class="modal-similarity-images {overlay ? 'overlay-wrapper' : 'side-by-side-wrapper'}">
         {#if overlay}
             <ModalSimilarityOverlay  imgData={imgData}></ModalSimilarityOverlay>
         {:else}
@@ -56,12 +56,21 @@
     .modal-similarity {
         display: grid;
         grid-template-columns: 100%;
-        grid-template-rows: 2fr 0fr;
+        height: 100%;
+        max-height: 100%;
+        grid-template-rows: 90% 10%;
+    }
+    .modal-similarity-images.overlay-wrapper {
+        display: grid;
+        grid-template-rows: 1fr 0fr;
+    }
+    :global(.modal-similarity-images > *) {
+        height: 100%;
     }
     :global(.modal-similarity-images img) {
         object-fit: contain;
-        max-height: 80%;
-        max-width: 80%;
+        max-height: 100%;
+        max-width: 100%;
         z-index: 2;
     }
 </style>

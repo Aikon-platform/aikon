@@ -10,18 +10,18 @@
 
 </script>
 
-<div>
-    <div class="is-flex is-justify-content-center is-align-items-center">
-        <img src={mainImgHref}
-             alt="Main view of region {mainImg}"
-        >
-    </div>
+<div class="img-wrapper is-flex is-justify-content-center is-align-items-center">
+    <img src={mainImgHref}
+         alt="Main view of region {mainImg}"
+    >
 </div>
 
 <style>
+    .img-wrapper {
+        height: 100%;
+        width: 100%;
+    }
     img {
-        object-fit: contain;
-        max-height: 80%;
-        max-width: 80%;
+        height: 100%;
     }
 </style>

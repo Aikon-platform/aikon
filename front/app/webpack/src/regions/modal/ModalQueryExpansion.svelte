@@ -25,13 +25,11 @@
     }
 </script>
 
-<div>
-    <div class="is-flex is-align-items-center is-justify-content-end">
-        <a href={similarityViewUrl}>
-            <button class="button is-link">{ appLang==="fr" ? "Voir toutes les similarités pour ce document" : "View all similarities for this document"}</button>
-        </a>
-    </div>
-    <SimilarityRow qImg={mainImg}></SimilarityRow>
+<div class="is-flex is-align-items-center is-justify-content-end">
+    <a href={similarityViewUrl}>
+        <button class="button is-link">{ appLang==="fr" ? "Voir toutes les similarités pour ce document" : "View all similarities for this document"}</button>
+    </a>
 </div>
+<SimilarityRow qImg={mainImg}></SimilarityRow>
 
 <style></style>
