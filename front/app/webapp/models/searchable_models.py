@@ -72,10 +72,8 @@ class AbstractSearchableModel(models.Model):
 @receiver(post_save)
 def generate_json(sender, instance, **kwargs):
     if isinstance(instance, AbstractSearchableModel):
-        try:
-            json_data = instance.to_json()
-            type(instance).objects.filter(pk=instance.pk.__str__()).update(
-                json=json_data
-            )
-        except Exception as e:
-            log(f"[generate_json] Error on json generation", e)
+        from app.webapp.tasks import generate_record_json
+
+        generate_record_json.delay(
+            model_name=type(instance).__name__, record_id=instance.pk.__str__()
+        )

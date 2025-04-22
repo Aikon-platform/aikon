@@ -121,6 +121,9 @@ def get_files_with_prefix(
     :param ext: File extension to filter by (default: None)
     :return: A single filename (if only_one is True), a list of filenames, or None if no matches found
     """
+    if not os.path.exists(path):
+        return [] if not only_one else None
+
     with os.scandir(path) as entries:
         if only_one:
             for entry in entries:
@@ -262,9 +265,28 @@ def pdf_to_img(pdf_name, dpi=MAX_RES):
     pdf_path = f"{MEDIA_DIR}/{pdf_name}"
     pdf_name = Path(pdf_name).stem
     try:
-        command = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
-        subprocess.run(command, shell=True, check=True)
+        if not os.path.exists(pdf_path):
+            log(f"[pdf_to_img] PDF file not found: {pdf_path}")
+            return
 
+        cmd = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
+        res = subprocess.run(
+            cmd, shell=True, check=True, timeout=500, capture_output=True, text=True
+        )
+
+        if res.returncode != 0:
+            dpi = int(dpi * 0.5)
+            size = int(MAX_SIZE * 0.8)
+            cmd = f"pdftoppm -jpeg -r {dpi} -scale-to {size} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
+            log(
+                f"[pdf_to_img] Failed to convert {pdf_name}.pdf: {res.stderr}\nUsing fallback command: {cmd}"
+            )
+            res = subprocess.run(cmd, shell=True, check=True, timeout=600)
+
+        return res.returncode == 0
+    except subprocess.TimeoutExpired:
+        log(f"[pdf_to_img] Command timed out for {pdf_name}.pdf")
+        return False
     except Exception as e:
         log(
             f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e} ({e.__class__.__name__})"

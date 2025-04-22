@@ -88,6 +88,24 @@ def launch_task(treatment):
         )
 
 
+def generate_record_json(model_name, record_id):
+    """
+    Generate JSON for a searchable record.
+    """
+    from app.webapp.utils.logger import log
+
+    model_class = apps.get_model("webapp", model_name)
+    try:
+        instance = model_class.objects.get(pk=record_id)
+        json_data = instance.to_json()
+        model_class.objects.filter(pk=record_id).update(json=json_data)
+    except Exception as e:
+        log(
+            f"[generate_record_json] Error on json generation for {model_name} #{record_id}",
+            e,
+        )
+
+
 @celery_app.task
 def test(log_msg):
     from app.webapp.utils.logger import log
