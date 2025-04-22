@@ -254,12 +254,12 @@ urlpatterns += [
 # ENDPOINTS
 urlpatterns += [
     path(
-        f"{APP_NAME}/document-set/add",
+        f"document-set/new",
         save_document_set,
         name="new-document-set",
     ),
     path(
-        f"{APP_NAME}/document-set/<int:dsid>/change",
+        f"document-set/<int:dsid>/edit",
         save_document_set,
         name="change-document-set",
     ),

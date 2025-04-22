@@ -8,6 +8,7 @@ from app.config.settings import (
     CONTACT_MAIL,
     ADDITIONAL_MODULES,
     APP_LOGO,
+    DOCKER,
 )
 from app.webapp.utils.constants import (
     APP_NAME_UPPER,
