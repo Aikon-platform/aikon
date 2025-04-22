@@ -122,6 +122,12 @@ class Regions(AbstractSearchableModel):
             return True
         return False
 
+    def svg_paths(self):
+        # TODO save SVG in different folders
+        from app.vectorization.const import SVG_PATH
+
+        return glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")
+
     def is_vectorized(self):
         """
         :return: True if the region has vectorizations, False otherwise
