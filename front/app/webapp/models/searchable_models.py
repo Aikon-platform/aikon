@@ -63,6 +63,9 @@ class AbstractSearchableModel(models.Model):
             return json_data
         return self.json
 
+    def is_key_defined(self, key):
+        return not (not self.json or key not in self.json or not self.json[key])
+
     @classmethod
     def regenerate_all_json(cls):
         for obj in cls.objects.all():
@@ -72,8 +75,15 @@ class AbstractSearchableModel(models.Model):
 @receiver(post_save)
 def generate_json(sender, instance, **kwargs):
     if isinstance(instance, AbstractSearchableModel):
-        from app.webapp.tasks import generate_record_json
-
-        generate_record_json.delay(
-            model_name=type(instance).__name__, record_id=instance.pk.__str__()
-        )
+        # from app.webapp.tasks import generate_record_json
+        # generate_record_json.apply_async(
+        #     args=[type(instance).__name__, instance.pk.__str__()],
+        #     countdown=2  # 2-second delay to ensure record is saved in db
+        # )
+        try:
+            json_data = instance.to_json()
+            type(instance).objects.filter(pk=instance.pk.__str__()).update(
+                json=json_data
+            )
+        except Exception as e:
+            log(f"[generate_json] Error on json generation", e)
