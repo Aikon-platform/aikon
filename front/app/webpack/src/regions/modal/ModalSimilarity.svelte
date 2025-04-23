@@ -6,21 +6,27 @@
     import ModalSimilarityOverlay from "./ModalSimilarityOverlay.svelte";
     import ModalSimilaritySideBySide from "./ModalSimilaritySideBySide.svelte";
 
-    /** @typedef {import("./types.js").SimilarityImgDataType} SimilarityImgDataType */
+    /** @typedef {import("../types.js").RegionItemType} RegionItemType */
+    /** @typedef {import("./types.js").SimilarityOverlayType} SimilarityOverlayType */
+    /** @typedef {import("./types.js").SimilaritySideBySideType} SimilaritySideBySideType */
 
     /////////////////////////////////////////////
 
-    /** @type {string} */
-    export let mainImg;
-    /** @type {string} */
-    export let compareImg;
+    /** @type {RegionItemType} */
+    export let mainImgItem;
+    /** @type {RegionItemType} */
+    export let compareImgItem;
 
-    /** @type {SimilarityImgDataType} */
-    const imgData = {
-        similarityImage: { href: refToIIIF(mainImg), title: makeAlt(mainImg) },
-        queryImage: { href: refToIIIF(compareImg), title: makeAlt(compareImg) }
+    /** @type {SimilarityOverlayType} */
+    const imgDataOverlay = {
+        similarityImage: { href: refToIIIF(mainImgItem.img), title: makeAlt(mainImgItem.title) },
+        queryImage: { href: refToIIIF(compareImgItem.img), title: makeAlt(compareImgItem.title) }
     }
-
+    /** @type {SimilaritySideBySideType} */
+    const imgDataSideBySide = {
+        similarityImage: mainImgItem,
+        queryImage: compareImgItem
+    }
     /** @type {boolean} */
     let overlay = false;
 
@@ -38,9 +44,9 @@
 <div class="modal-similarity">
     <div class="modal-similarity-images {overlay ? 'overlay-wrapper' : 'side-by-side-wrapper'}">
         {#if overlay}
-            <ModalSimilarityOverlay  imgData={imgData}></ModalSimilarityOverlay>
+            <ModalSimilarityOverlay imgData={imgDataOverlay}></ModalSimilarityOverlay>
         {:else}
-            <ModalSimilaritySideBySide imgData={imgData}></ModalSimilaritySideBySide>
+            <ModalSimilaritySideBySide imgData={imgDataSideBySide}></ModalSimilaritySideBySide>
         {/if}
     </div>
     <div>

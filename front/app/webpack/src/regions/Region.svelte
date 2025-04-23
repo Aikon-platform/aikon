@@ -11,52 +11,41 @@
 
     /** @typedef {import("./types.js").RegionItemType} RegionItemType */
 
+    /////////////////////////////////////////////
+
     /** @type {RegionItemType} */
     export let item;
-    /** @type {"square"|"full"|"normal"}
-     *      `normal`: a small non-squre card
-     *      `square : will enforce the display to be a small square card
-     *      `full`  : the image will be in full size
-     */
-    export let displayType = "square";
-    // /** @type {boolean} */
-    // export let isSquare = true;
-    // /** @type {boolean} should not be used in conjunction with isSquare */
-    // export let isFull = false;
-
     /** @type {Promise<string>?} */
     export let descPromise = undefined;
-    /** @type {number|string} either a dimension in pixels, or the "full" keyword used by the IIIF image api */
-    export let height =
-        displayType==="full"
-        ? "full"
-        : displayType==="square"
-        ? 96
-        : 140;
-    /** @type {string?} used to pass the props `SimilarRegion.qImg` to `ModalController.compareImg`, undefined if `Region` doesn't inherit from `SimilarRegion` */
-    export let compareImg = undefined;
+    /** @type {boolean} enforce a small square display. if `height==="full"`, will be switched to `false`. see below */
+    export let isSquare = true;
+    /** @type {number|"full"} either a dimension in pixels, or the "full" keyword used by the IIIF image api */
+    export let height = isSquare ? 96 : 140;
 
-    /** @type {string}*/
-    let desc;
-    if (descPromise) {
-        descPromise.then((res) => desc = res);
-    } else {
-        desc = item.title;
-    }
+    if ( height==="full" ) { isSquare = false }
 
+    /////////////////////////////////////////////
+
+    /** @type {RegionItemType?} defined in `SimilarityRow`. in descendants of `SimilarityRow`, `Region` displays siilarity images. this context stores the query image to pass it to `ModalController` */
     const compareImgItem = getContext("qImgMetadata") || undefined;
 
-    // MoalController is only mountd+imported if !isInModal to avoid a recursive component (Region could open a modal that could contain Region that could contain another modal). while there's no error, you do get a svelte/roillup warning and there probably will be side effects.
+    // `ModalController` is only mounted+imported if `!isInModal` to avoid a recursive component (`Region` could open a modal that could contain Region that could contain another modal). while there's no error, you do get a svelte/roillup warning and there probably will be side effects.
     const isInModal = getContext("isInModal") || false;
     let modalControllerComponent;
     if ( !isInModal ) {
         import("./modal/ModalController.svelte").then((res) => modalControllerComponent = res.default);
     }
 
+    /** @type {string}*/
+    let desc  = item.title;
+    if (descPromise) {
+        descPromise.then((res) => desc = res);
+    }
+
     const imgSrc = refToIIIF(
         item.img,
         item.xyhw,
-        displayType==="full" ? height : displayType==="square" ? `${height},` : `,${height}`
+        height==="full" ? height : isSquare ? `${height},` : `,${height}`
     )
 
     $: isCopied = item.ref === $clipBoard;
@@ -64,9 +53,9 @@
 
 <div class="region is-center {$isSelected(item) ? 'checked' : ''}"
      transition:fade={{ duration: 500 }}
-     style={displayType==="full" ? "height: 100%" : ""}
+     style={height==="full" ? "height: 100%" : ""}
 >
-    <figure class="image card region-image {displayType==="square" ? 'is-96x96' : ''}"
+    <figure class="image card region-image {isSquare ? 'is-96x96' : ''}"
             tabindex="-1"
             style={
                 height==="full"
@@ -91,7 +80,7 @@
             </svg>
             <span class="tooltip">
                 {#if isCopied}
-                    {appLang === 'en' ? "Copied!" : 'Copié !'}
+                    {appLang === 'en' ? "Copied!" : 'Copié !'}
                 {:else}
                     {appLang === 'en' ? "Copy ID" : "Copier l'ID"}
                 {/if}
@@ -99,8 +88,6 @@
         </button>
         {#if modalControllerComponent}
             <svelte:component this={modalControllerComponent}
-                              mainImg={item.img}
-                              compareImg={compareImg}
                               mainImgItem={item}
                               compareImgItem={compareImgItem}
             ></svelte:component>

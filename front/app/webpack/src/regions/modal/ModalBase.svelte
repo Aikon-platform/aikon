@@ -5,9 +5,10 @@
         - for similarities, `ModalRegion`, `ModalSimilarity`, `ModalQueryExpansion` will be used
     - `allowedViewIds` defines which views (aka, components) can be used in this modal, based on the props passed to it. each view is identified by a unique string.
     - `currentViewId` is a value of `allowedViewIds`
-    - other data variables are derived from `allowedViewIds`: they are objects or arrays which contain and a reference to a value of `allowedViewIds` and extra data for a specific view (i.e. a component reference).
-    - tabs allow to switch between components. internally, `toggleView` will set a new `currentViewId`, which, by side-effect, will render a new component
+    - other data variables are derived from `allowedViewIds`: they are objects or arrays which map a reference to a value of `allowedViewIds` to extra data for a specific view (i.e. a component reference).
+    - tabs allow to switch between components. internally, `toggleView` will set a new `currentViewId`, which, by side-effects, will render a new component
 -->
+
 <script>
     import { onMount, onDestroy, createEventDispatcher } from "svelte";
 
@@ -20,9 +21,6 @@
 
     //////////////////////////////////////////////////
 
-    export let mainImg;
-    export let compareImg;
-
     /** @type {RegionItemType} */
     export let mainImgItem;
     /** @type {RegionItemType} */
@@ -32,7 +30,7 @@
 
     /** @type {ViewIdType[]} */
     const allowedViewIds =
-        compareImg || compareImgItem
+        compareImgItem
         ? [ "main", "similarity", "expansion" ]
         : [ "main" ];
 
@@ -58,19 +56,17 @@
      * by default, only ModalRegion is defined. other components qre imported aynchronously, after which viewComponents is updated
      */
     const viewComponents = { main: ModalRegion };
-    if ( compareImg || compareImgItem ) {
+    if ( compareImgItem ) {
         Promise.all([
-            import("./ModalSimilarity.svelte"),
-            import("./ModalQueryExpansion.svelte"),
-        ]).then(([resModalSimilarity, resModalQueryExpansion]) => {
-            let ModalSimilarity = resModalSimilarity.default;
-            let ModalQueryExpansion = resModalQueryExpansion.default;
+            import("./ModalSimilarity.svelte").then(res => res.default),
+            import("./ModalQueryExpansion.svelte").then(res => res.default),
+        ]).then(([modalSimilarityComponent, modalQueryExpansionComponent]) => {
             allowedViewIds.map((viewId) =>
                 viewComponents[viewId] =
                     viewId==="expansion"
-                    ? ModalQueryExpansion
+                    ? modalQueryExpansionComponent
                     : viewId==="similarity"
-                    ? ModalSimilarity
+                    ? modalSimilarityComponent
                     : ModalRegion
             );
         })
@@ -80,12 +76,11 @@
     allowedViewIds.map((viewId) =>
         viewProps[viewId] =
             viewId==="expansion"
-            ? {compareImg: compareImg, mainImg: mainImg}
+            ? {mainImgItem: mainImgItem}
             : viewId==="similarity"
             ? {compareImgItem: compareImgItem, mainImgItem: mainImgItem}
-            : {mainImgItem: mainImgItem}// {mainImg: mainImg}
+            : {mainImgItem: mainImgItem}
     )
-    console.log(viewProps);
 
     /** @type {ViewIdType} */
     $: currentViewId = allowedViewIds[0];
@@ -94,9 +89,9 @@
 
     const toggleView = (viewId) => currentViewId = viewId;
 
-    const onKeyDown = (e) => { if (key==="Escape") dispatch("closeModal") };
+    const onKeyDown = () => { if (key==="Escape") dispatch("closeModal") };
 
-    const onClose = (e) => dispatch("closeModal");
+    const onClose = () => dispatch("closeModal");
 
     //////////////////////////////////////////////////
 

@@ -154,9 +154,8 @@
         (selecting a Region has no effect on "Selection") -->
     <Region {item}
             size={256}
+            isSquare={false}
             descPromise={getDesc()}
-            displayType="normal"
-            compareImg={qImg}
     />
     <div class="tags has-addons is-dark is-center">
         <span class="tag is-hoverable pl-4 pr-3 py-4" class:is-selected={selectedCategory === 1}

@@ -31,7 +31,7 @@
             {#each Object.entries($pageRegions) as [canvasNb, items]}
                 <RegionsRow canvasImg={toImgName(canvasNb)} {canvasNb}>
                     {#each Object.values(items) as item (item.id)}
-                        <Region {item} displayType="square"/>
+                        <Region {item} isSquare={true} />
                     {/each}
                 </RegionsRow>
             {/each}

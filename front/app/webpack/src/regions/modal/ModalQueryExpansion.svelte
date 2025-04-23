@@ -3,13 +3,15 @@
 
     import SimilarityRow from "../similarity/SimilarityRow.svelte";
 
+    /** @typedef {import("../types.js").RegionItemType} RegionItemType */
+
     ////////////////////////////////////////
 
-    /** @type {string} */
-    export let mainImg;
+    /** @type {RegionItemType} */
+    export let mainImgItem;
 
     /** @type {string} */
-    const mainImgWitnessId = mainImg.match(/wit(\d+)/)[1]
+    const mainImgWitnessId = mainImgItem.img.match(/wit(\d+)/)[1]
 
     const similarityViewUrl = buildRedirectionUrl()
 
@@ -30,6 +32,6 @@
         <button class="button is-link is-small">{ appLang==="fr" ? "Voir toutes les similarités pour ce document" : "View all similarities for this document"}</button>
     </a>
 </div>
-<SimilarityRow qImg={mainImg}></SimilarityRow>
+<SimilarityRow qImg={mainImgItem.img}></SimilarityRow>
 
 <style></style>

@@ -1,5 +1,6 @@
 <script>
     import { appLang } from "../../constants.js";
+    import Region from "../Region.svelte";
 
     /** @typedef {import("./types.js").SimilarityImgDataType} SimilarityImgDataType */
 
@@ -19,9 +20,9 @@
                 ? "Query image"
                 : "Similarity"
             }</span>
-            <img src={imgData[imgDataKey].href}
-                 alt={imgData[imgDataKey].title}
-            >
+            <Region item={imgData[imgDataKey]}
+                    height="full"
+            ></Region>
         </div>
     {/each}
 </div>

@@ -9,7 +9,7 @@
 
 <div class="img-wrapper">
     <Region item={mainImgItem}
-            displayType="full"
+            height="full"
     ></Region>
 </div>
 

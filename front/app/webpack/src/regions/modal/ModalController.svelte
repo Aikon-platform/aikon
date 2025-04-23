@@ -1,3 +1,40 @@
+<!-- about the Modal submodule im general:
+
+    structure
+    ---------
+    Region: displays a region, or part of a document
+    |__ModalController: a button that opens/closes the modal
+       |__ModalBase:  wrapper component: the modal itself + tabs to switch between inner components + the inner component being displayed
+          |__<other child components. only 1 of those is displayed at a time, and the tabs allow to switch between them.>
+
+    props
+    -----
+    `mainImgItem` is needed. `compareImgItem` is optional.
+    if used, will indicate that we are in a similarity context.
+
+    complexity
+    ----------
+    - the complexitiy is that `Region`is a component that is used in
+        different parts of the app, and a Region can have different
+        meaning depending on where it's used. i.e, `Region` is used
+        in `PageRegions` (to display regions of a document), and
+        `SimilarRegions` (to display a similarity to a query image),
+        in turn, ModalBase contains displays components depending on
+        this context: for similarities, `ModalSimilarity` and
+        `ModalQueryExpansion` will be used, for example.
+    - the props passed to `ModalController` are used to determine the
+        context that we're in. if `compareImgItem` is used, we're in a
+        similarity regions and will display the similarity modal components.
+    - a second small complexity is that `ModalQueryExpansion` contains
+        `SimilarityRow` which has for descendent `Region`
+        => Region recursively contains itself
+        => we use the `isInModal` context to block some of the `Region`'s
+            functionnality when inside the modal.
+
+    in theory, ModalBase could be extensed to be used in other contexts, i.e for
+    vectorizations.
+-->
+
 <script>
     import { setContext } from "svelte";
 
@@ -6,14 +43,13 @@
     import TooltipGeneric from "../../ui/TooltipGeneric.svelte";
     import ModalBase from "./ModalBase.svelte";
 
+    /** @typedef {import("../types.js").RegionItemType} RegionItemType */
+
     //////////////////////////////////////////
 
-    /** @type {string} a value of RegionPair.img_(1|2): the "main" image to display */
-    export let mainImg;
-    /** @type {string?} a value of RegionPair.img_(1|2): an optional image to compare mainImg with (if mainImg is a similarity image, compareImg would be the query image) */
-    export let compareImg = undefined;
-
+    /** @type {RegionItemType} */
     export let mainImgItem = undefined;
+    /** @type {RegionItemType} */
     export let compareImgItem = undefined;
 
     //`Region.svelte` is parent of `ModalController.svelte` and `ModalController` has for descendant `Region,svelte` => weird recursion in which a region contains a modal which could contain a region which could contain a modal.
@@ -37,8 +73,6 @@
             _modal = new ModalBase({
                 target: document.querySelector("body"),
                 props: {
-                    mainImg: mainImg,
-                    compareImg: compareImg,
                     mainImgItem: mainImgItem,
                     compareImgItem: compareImgItem,
                 }
