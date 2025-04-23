@@ -5,6 +5,7 @@
     import { extractNb } from '../../utils.js';
     import { userId, appLang, csrfToken, regionsType, appName } from '../../constants';
     import { exactSvg, partialSvg, semanticSvg, noSvg, userSvg, validateSvg } from './similarityCategory';
+    import { toRegionItem } from "../utils.js";
 
     import Region from "../Region.svelte";
 
@@ -36,22 +37,13 @@
     export let similarityType;
 
     const { getRegionsInfo, comparedRegions } = similarityStore;
-
     const isPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagation, false otherwise
 
-    const [wit, digit, canvas, xyhw] = sImg.split('.')[0].split('_');
+    const [wit, digit, canvas, xywh] = sImg.split('.')[0].split('_');
+    const regionRef = `${wit}_${digit}`;
 
     /** @type {RegionItemType} */
-    const item = {
-        id: sImg, // note for normal regions, it is their SAS annotation id: used for region selection
-        img: sImg,
-        title: `Canvas ${canvas} - ${xyhw} - ${appLang === 'en' ? 'Witness' : 'Témoin'} #${extractNb(wit)}`,
-        xywh: xyhw,
-        canvas: canvas,
-        ref: sImg.replace('.jpg', ''),
-        type: regionsType
-    }
-    const regionRef = `${wit}_${digit}`;
+    const item = toRegionItem(sImg, wit, xywh, canvas)
 
     $: selectedCategory = category;
     $: isSelectedByUser = users.includes(Number(userId)) || false;

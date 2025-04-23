@@ -1,18 +1,23 @@
 <script>
-    import { getContext } from 'svelte';
+    import { setContext, getContext } from 'svelte';
     import { fade } from 'svelte/transition';
     import { similarityStore } from "./similarityStore.js";
     const { selectedRegions } = similarityStore;
     import { appLang, csrfToken } from "../../constants";
     import { manifestToMirador, refToIIIF, showMessage } from "../../utils.js";
+    import { toRegionItem } from "../utils.js";
 
     import SimilarityMatches from "./SimilarityMatches.svelte";
     import PropagatedMatches from "./PropagatedMatches.svelte";
 
+    /** @typedef {import("../types.js").RegionItemType} RegionItemType */
+
+    ////////////////////////////////////////////////
+
     export let qImg;
 
     let sImg = "";
-    const [wit, digit, canvas, xyhw] = qImg.split('.')[0].split('_');
+    const [wit, digit, canvas, xywh] = qImg.split('.')[0].split('_');
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentPageId = window.location.pathname.match(/\d+/g).join('-');
     const errorName = appLang === "en" ? "Error" : "Erreur";
@@ -22,6 +27,11 @@
 
     $: sLen = $selectedRegions.hasOwnProperty(currentPageId) ? Object.values($selectedRegions[currentPageId]).length : 0;
     $: hasNoMatch = false; // TODO HERE FIND A WAY TO SET NO MATCH FOR THIS Q REGIONS
+
+    /** @type {RegionItemType} used by region/modal */
+    setContext("qImgMetadata", toRegionItem(qImg, wit, xywh, canvas));
+
+    ////////////////////////////////////////////////
 
     function check_region_ref(region_ref) {
         region_ref = region_ref.replace('.jpg', '');

@@ -9,26 +9,16 @@
     const { clipBoard } = regionsStore;
     import { appLang } from '../constants';
 
-    // import ModalController from "./modal/ModalController.svelte";
-
-    /**
-     * @typedef {RegionItemType}
-     * @type {object}
-     * @property {string} id
-     * @property {string} img
-     * @property {string} title
-     * @property {string} xywh
-     * @property {string} canvas
-     * @property {string} ref
-     * @property {string} type
-     */
+    /** @typedef {import("./types.js").RegionItemType} RegionItemType */
 
     /** @type {RegionItemType} */
     export let item;
     /** @type {boolean}*/
     export let isSquare = true;
-    /** @type {number}*/
-    export let height = isSquare ? 96 : 140;
+    /** @type {boolean} should not be used in conjunction with isSquare */
+    export let isFull = false;
+    /** @type {number|string} either a dimension in pixels, or the "full" keyword used by the IIIF image api */
+    export let height = isFull ? "full" : isSquare ? 96 : 140;
     /** @type {string}*/
     export let desc = item.title;
     /** @type {Promise<string>?}*/
@@ -55,9 +45,12 @@
 </script>
 
 <div class="region is-center {$isSelected(item) ? 'checked' : ''}" transition:fade={{ duration: 500 }}>
-    <figure class="image card region-image {isSquare ? 'is-96x96' : ''}" tabindex="-1" style="height: {height}px; min-width: {height}px;"
+    <figure class="image card region-image {isSquare ? 'is-96x96' : ''}"
+            tabindex="-1"
+            style="height: {height}px; min-width: {height}px;"
             on:click={() => selectionStore.toggle(item)} on:keyup={() => null}>
-        <img class="region-img" src="{refToIIIF(item.img, item.xyhw, isSquare ? '96,' : `,${height}`)}" alt="Extracted region"/>
+        <img class="region-img" src="{refToIIIF(item.img, item.xyhw, isSquare ? '96,' : `,${height}`)}"
+             alt="Extracted region"/>
         <div class="overlay is-center">
             <span class="overlay-desc">{@html desc}</span>
         </div>
