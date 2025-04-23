@@ -22,7 +22,6 @@
         const u = new URL(window.location.origin);
         u.pathname = `${new URL(window.location).pathname.split("/")[1]}/witness/${mainImgWitnessId}/regions/`
         u.searchParams.set("tab", "similarity");
-        console.log(u);
         return u.href;
     }
 </script>

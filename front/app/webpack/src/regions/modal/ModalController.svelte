@@ -11,9 +11,14 @@
     -----
     `mainImgItem` is needed. `compareImgItem` is optional.
     if used, will indicate that we are in a similarity context.
+    - for all regions, `mainImgItem` holds info for the image
+        displayed in the parent `Region`.
+    - for similarities, `compareImgItem` contains data on the
+        query image, and `mainImgItem` is the similarity in the
+        `Region` was clicked.
 
-    complexity
-    ----------
+    important to know
+    -----------------
     - the complexitiy is that `Region`is a component that is used in
         different parts of the app, and a Region can have different
         meaning depending on where it's used. i.e, `Region` is used
@@ -48,7 +53,7 @@
     //////////////////////////////////////////
 
     /** @type {RegionItemType} */
-    export let mainImgItem = undefined;
+    export let mainImgItem;
     /** @type {RegionItemType} */
     export let compareImgItem = undefined;
 

@@ -53,10 +53,6 @@
 
     /////////////////////////////////////////////
 
-    const makeAlt = (title) => appLang==="fr"
-        ? `Vue principale de la région ${title}`
-        : `Main view of region ${title}`;
-
     const updateOverlayOpacity = (e) => overlayOpacity = e.detail;
 
     const updateOverlayRotation = (e) => overlayRotation = e.detail;
