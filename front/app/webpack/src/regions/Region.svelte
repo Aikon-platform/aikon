@@ -13,18 +13,38 @@
 
     /** @type {RegionItemType} */
     export let item;
-    /** @type {boolean}*/
-    export let isSquare = true;
-    /** @type {boolean} should not be used in conjunction with isSquare */
-    export let isFull = false;
-    /** @type {number|string} either a dimension in pixels, or the "full" keyword used by the IIIF image api */
-    export let height = isFull ? "full" : isSquare ? 96 : 140;
-    /** @type {string}*/
-    export let desc = item.title;
-    /** @type {Promise<string>?}*/
+    /** @type {"square"|"full"|"normal"}
+     *      `normal`: a small non-squre card
+     *      `square : will enforce the display to be a small square card
+     *      `full`  : the image will be in full size
+     */
+    export let displayType = "square";
+    // /** @type {boolean} */
+    // export let isSquare = true;
+    // /** @type {boolean} should not be used in conjunction with isSquare */
+    // export let isFull = false;
+
+    /** @type {Promise<string>?} */
     export let descPromise = undefined;
+    /** @type {number|string} either a dimension in pixels, or the "full" keyword used by the IIIF image api */
+    export let height =
+        displayType==="full"
+        ? "full"
+        : displayType==="square"
+        ? 96
+        : 140;
     /** @type {string?} used to pass the props `SimilarRegion.qImg` to `ModalController.compareImg`, undefined if `Region` doesn't inherit from `SimilarRegion` */
     export let compareImg = undefined;
+
+    /** @type {string}*/
+    let desc;
+    if (descPromise) {
+        descPromise.then((res) => desc = res);
+    } else {
+        desc = item.title;
+    }
+
+    const compareImgItem = getContext("qImgMetadata") || undefined;
 
     // MoalController is only mountd+imported if !isInModal to avoid a recursive component (Region could open a modal that could contain Region that could contain another modal). while there's no error, you do get a svelte/roillup warning and there probably will be side effects.
     const isInModal = getContext("isInModal") || false;
@@ -33,23 +53,28 @@
         import("./modal/ModalController.svelte").then((res) => modalControllerComponent = res.default);
     }
 
+    const imgSrc = refToIIIF(
+        item.img,
+        item.xyhw,
+        displayType==="full" ? height : displayType==="square" ? `${height},` : `,${height}`
+    )
+
     $: isCopied = item.ref === $clipBoard;
-
-    // if `descPromise` is passed, wait for resolution to update `desc`
-    if (descPromise) {
-        descPromise.then((res) => desc = res);
-    }
-
-
-
 </script>
 
-<div class="region is-center {$isSelected(item) ? 'checked' : ''}" transition:fade={{ duration: 500 }}>
-    <figure class="image card region-image {isSquare ? 'is-96x96' : ''}"
+<div class="region is-center {$isSelected(item) ? 'checked' : ''}"
+     transition:fade={{ duration: 500 }}
+     style={displayType==="full" ? "height: 100%" : ""}
+>
+    <figure class="image card region-image {displayType==="square" ? 'is-96x96' : ''}"
             tabindex="-1"
-            style="height: {height}px; min-width: {height}px;"
+            style={
+                height==="full"
+                ? "height: 100%"
+                : `height: ${height}px; min-width: ${height}px`
+            }
             on:click={() => selectionStore.toggle(item)} on:keyup={() => null}>
-        <img class="region-img" src="{refToIIIF(item.img, item.xyhw, isSquare ? '96,' : `,${height}`)}"
+        <img class="region-img" src={imgSrc}
              alt="Extracted region"/>
         <div class="overlay is-center">
             <span class="overlay-desc">{@html desc}</span>
@@ -76,6 +101,8 @@
             <svelte:component this={modalControllerComponent}
                               mainImg={item.img}
                               compareImg={compareImg}
+                              mainImgItem={item}
+                              compareImgItem={compareImgItem}
             ></svelte:component>
         {/if}
     </div>
@@ -92,6 +119,7 @@
     figure {
         transition: outline 0.1s ease-out;
         outline: 0 solid var(--bulma-link);
+        margin-bottom: calc(var(--bulma-block-spacing)/2);  /** divide default margin bottom by 2 */
         /*overflow: hidden;*/
     }
     .checked > figure {
@@ -108,6 +136,7 @@
         display: flex;
         justify-content: center;
         align-items: center;
+        max-height: 100%;
     }
     .tooltip {
         visibility: hidden;

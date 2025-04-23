@@ -155,7 +155,7 @@
     <Region {item}
             size={256}
             descPromise={getDesc()}
-            isSquare={false}
+            displayType="normal"
             compareImg={qImg}
     />
     <div class="tags has-addons is-dark is-center">

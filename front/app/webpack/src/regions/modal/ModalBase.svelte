@@ -14,8 +14,8 @@
     import { appLang } from "../../constants.js";
 
     import ModalRegion from "./ModalRegion.svelte";
-    import ModalSimilarity from "./ModalSimilarity.svelte";
-    import ModalQueryExpansion from "./ModalQueryExpansion.svelte";
+    // import ModalSimilarity from "./ModalSimilarity.svelte";
+    // import ModalQueryExpansion from "./ModalQueryExpansion.svelte";
 
     /** @typedef {"main"|"similarity"|"expansion"} ViewIdType */
 
@@ -24,11 +24,14 @@
     export let mainImg;
     export let compareImg;
 
+    export let mainImgItem;
+    export let compareImgItem;
+
     const dispatch = createEventDispatcher();
 
     /** @type {ViewIdType[]} */
     const allowedViewIds =
-        mainImg && compareImg
+        compareImg || compareImgItem
         ? [ "main", "similarity", "expansion" ]
         : [ "main" ];
 
@@ -51,14 +54,30 @@
 
     /** @type {{ [ViewIdType]: SvelteComponent }} viewId mapped to the relevant component instance */
     const viewComponents = {};
-    allowedViewIds.map((viewId) =>
-        viewComponents[viewId] =
-            viewId==="expansion"
-            ? ModalQueryExpansion
-            : viewId==="similarity"
-            ? ModalSimilarity
-            : ModalRegion
-    );
+
+    let ModalSimilarity;
+    let ModalQueryExpansion;
+    let importFinished = false;
+
+    // dynamically import the components if they are neededm and then populate `allowedViewIds`
+    if ( compareImg || compareImgItem ) {
+        Promise.all([
+            import("./ModalSimilarity.svelte"),
+            import("./ModalQueryExpansion.svelte"),
+        ]).then(([resModalSimilarity, resModalQueryExpansion]) => {
+            ModalSimilarity = resModalSimilarity.default;
+            ModalQueryExpansion = resModalQueryExpansion.default;
+
+            allowedViewIds.map((viewId) =>
+                viewComponents[viewId] =
+                    viewId==="expansion"
+                    ? ModalQueryExpansion
+                    : viewId==="similarity"
+                    ? ModalSimilarity
+                    : ModalRegion
+            );
+        })
+    }
 
     const viewProps = {};
     allowedViewIds.map((viewId) =>
@@ -67,8 +86,9 @@
             ? {compareImg: compareImg, mainImg: mainImg}
             : viewId==="similarity"
             ? {compareImg: compareImg, mainImg: mainImg}
-            : {mainImg: mainImg}
+            : {mainImgItem: mainImgItem}// {mainImg: mainImg}
     )
+    console.log(viewProps);
 
     /** @type {ViewIdType} */
     $: currentViewId = allowedViewIds[0];

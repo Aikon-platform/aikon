@@ -13,6 +13,9 @@
     /** @type {string?} a value of RegionPair.img_(1|2): an optional image to compare mainImg with (if mainImg is a similarity image, compareImg would be the query image) */
     export let compareImg = undefined;
 
+    export let mainImgItem = undefined;
+    export let compareImgItem = undefined;
+
     //`Region.svelte` is parent of `ModalController.svelte` and `ModalController` has for descendant `Region,svelte` => weird recursion in which a region contains a modal which could contain a region which could contain a modal.
     // => `isInModal` context avoids this recursion by only implementing `ModalController` in `Region` if `getContext(isInModal)===false`
     setContext("isInModal", true);
@@ -35,7 +38,9 @@
                 target: document.querySelector("body"),
                 props: {
                     mainImg: mainImg,
-                    compareImg: compareImg
+                    compareImg: compareImg,
+                    mainImgItem: mainImgItem,
+                    compareImgItem: compareImgItem,
                 }
             })
             _modal.$on("closeModal", onCloseModal);
