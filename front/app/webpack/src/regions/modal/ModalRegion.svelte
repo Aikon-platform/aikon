@@ -1,27 +1,12 @@
 <script>
-    import { refToIIIF } from "../../utils";
-
     import Region from "../Region.svelte";
 
-    ////////////////////////////////////////
+    /** @typedef {import("../types.js").RegionItemType} RegionItemType */
 
-    /** @type {string} */
-    export let mainImg;
+    /** @type {RegionItemType} */
     export let mainImgItem;
-
-    console.log(">>>", mainImgItem);
-
-    const mainImgHref = refToIIIF(mainImg);
-
 </script>
 
-<!--
-<div class="img-wrapper is-flex is-justify-content-center is-align-items-center">
-    <img src={mainImgHref}
-         alt="Main view of region {mainImg}"
-    >
-</div>
--->
 <div class="img-wrapper">
     <Region item={mainImgItem}
             displayType="full"
@@ -32,8 +17,5 @@
     .img-wrapper {
         height: 100%;
         width: 100%;
-    }
-    img {
-        height: 100%;
     }
 </style>

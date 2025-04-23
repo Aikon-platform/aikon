@@ -14,9 +14,8 @@
     import { appLang } from "../../constants.js";
 
     import ModalRegion from "./ModalRegion.svelte";
-    // import ModalSimilarity from "./ModalSimilarity.svelte";
-    // import ModalQueryExpansion from "./ModalQueryExpansion.svelte";
 
+    /** @typedef {import("../types.js").RegionItemType} RegionItemType */
     /** @typedef {"main"|"similarity"|"expansion"} ViewIdType */
 
     //////////////////////////////////////////////////
@@ -24,7 +23,9 @@
     export let mainImg;
     export let compareImg;
 
+    /** @type {RegionItemType} */
     export let mainImgItem;
+    /** @type {RegionItemType} */
     export let compareImgItem;
 
     const dispatch = createEventDispatcher();
@@ -52,22 +53,18 @@
             : "Main view"
     }));
 
-    /** @type {{ [ViewIdType]: SvelteComponent }} viewId mapped to the relevant component instance */
-    const viewComponents = {};
-
-    let ModalSimilarity;
-    let ModalQueryExpansion;
-    let importFinished = false;
-
-    // dynamically import the components if they are neededm and then populate `allowedViewIds`
+    /**
+     * @type {{ [ViewIdType]: SvelteComponent }} viewId mapped to the relevant component instance.
+     * by default, only ModalRegion is defined. other components qre imported aynchronously, after which viewComponents is updated
+     */
+    const viewComponents = { main: ModalRegion };
     if ( compareImg || compareImgItem ) {
         Promise.all([
             import("./ModalSimilarity.svelte"),
             import("./ModalQueryExpansion.svelte"),
         ]).then(([resModalSimilarity, resModalQueryExpansion]) => {
-            ModalSimilarity = resModalSimilarity.default;
-            ModalQueryExpansion = resModalQueryExpansion.default;
-
+            let ModalSimilarity = resModalSimilarity.default;
+            let ModalQueryExpansion = resModalQueryExpansion.default;
             allowedViewIds.map((viewId) =>
                 viewComponents[viewId] =
                     viewId==="expansion"
@@ -85,7 +82,7 @@
             viewId==="expansion"
             ? {compareImg: compareImg, mainImg: mainImg}
             : viewId==="similarity"
-            ? {compareImg: compareImg, mainImg: mainImg}
+            ? {compareImgItem: compareImgItem, mainImgItem: mainImgItem}
             : {mainImgItem: mainImgItem}// {mainImg: mainImg}
     )
     console.log(viewProps);
