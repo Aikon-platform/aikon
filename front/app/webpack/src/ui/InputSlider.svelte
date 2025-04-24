@@ -27,7 +27,7 @@
             using the context API has some advantages:
                 - you can batch trigger functions in child components with a common ancestor: all child component auto-inherit from their ancestor's context. this fits our use case: in forms, we want a single `reset` button to reset all form inputs at once.
                 - contrary to resetting using stores, resetting is isolated: several components can set their own `resetTrigger` contexts, and they will affect their descendant components only.`InputSlider` inheriting from other compomnents will not be affected.
-                - the context is just a trigger and is implementation independant. this means that the same trigger can be used to reset different inputs. in fact, `InputSlider`, `InputDropdown` and `InputToggleCheckbox` all use the sane `resetTrigger`
+                - the context is just a trigger and is implementation independant. this means that the same trigger can be used to reset different inputs. in fact, `InputSlider`, `InputDropdown` and `InputToggle` all use the sane `resetTrigger`
                 - the only problem will be if 2 ancestor components of a single input both call `setContext("resetTrigger")`. in those cases, the 2 ancestors will trigger a resetting of the same input,
 -->
 <script>

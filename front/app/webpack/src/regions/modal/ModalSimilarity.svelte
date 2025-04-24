@@ -2,7 +2,7 @@
     import { refToIIIF } from "../../utils";
     import { appLang } from "../../constants.js";
 
-    import InputToggleCheckbox from "../../ui/InputToggleCheckbox.svelte";
+    import InputToggle from "../../ui/InputToggle.svelte";
     import ModalSimilarityOverlay from "./ModalSimilarityOverlay.svelte";
     import ModalSimilaritySideBySide from "./ModalSimilaritySideBySide.svelte";
 
@@ -50,11 +50,11 @@
         {/if}
     </div>
     <div>
-        <InputToggleCheckbox start={false}
-                             buttonDisplay={true}
-                             checkboxLabel={appLang==="en" ? "Overlay view" : "Vue superposée"}
-                             on:updateChecked={updateToggleOverlay}
-        ></InputToggleCheckbox>
+        <InputToggle start={false}
+                     buttonDisplay={true}
+                     toggleLabel={appLang==="en" ? "Overlay view" : "Vue superposée"}
+                     on:updateChecked={updateToggleOverlay}
+        ></InputToggle>
     </div>
 </div>
 

@@ -11,13 +11,13 @@
     ///////////////////////////////////////////
 
     /** @type {String} */
-    export let checkboxLabel;
+    export let toggleLabel;
     /** @type {Boolean} default value */
     export let start = false;
     /** @type {Boolean} button-like styling */
     export let buttonDisplay = false;
 
-    const htmlId = `input-input-checkbox-wrapper-${window.crypto.randomUUID()}`;
+    const htmlId = `input-toggle-${window.crypto.randomUUID()}`;
     const dispatch = createEventDispatcher(resetInputCheckbox);
 
     const resetTriggerContext = getContext("resetTrigger") || undefined;
@@ -31,41 +31,26 @@
     const toggleOnClick = () => isChecked = !isChecked;
 
     function resetInputCheckbox() {
-        const el = document.getElementById(htmlId);
-        if (el) el.checked = start;
+        isChecked = start;
     }
 </script>
 
-<div class="input-checkbox-wrapper
-            { buttonDisplay ? 'button is-clickable' : 'is-flex is-align-items-center is-justify-content-center' }
-            { isChecked ? 'is-checked' : '' }"
+<button id={htmlId}
+        name={htmlId}
+        class="input-checkbox-wrapper
+               is-flex is-align-items-center-is-justify-content-center p-2 pl-3 pr-3
+               { buttonDisplay ? 'button is-clickable' : '' }
+               { isChecked ? 'is-checked' : '' }"
+        aria-label={toggleLabel}
+        on:click|preventDefault={toggleOnClick}
 >
-    <span class="switch-wrapper">
-        <span class="switch">
-            <span class="switch-control">
-                {#if start===true }
-                    <input type="checkbox"
-                           class="is-clickable"
-                           id={htmlId}
-                           name={htmlId}
-                           on:click={toggleOnClick}
-                           checked
-                    />
-                {:else}
-                    <input type="checkbox"
-                           class="is-clickable"
-                           id={htmlId}
-                           name={htmlId}
-                           on:click={toggleOnClick}
-                     />
-                {/if}
-            </span>
+    <span class="switch mr-2">
+        <span class="switch-control">
+            <span class="switch-spot"></span>
         </span>
     </span>
-    <label for={htmlId}
-           class="is-clickable"
-    >{checkboxLabel}</label>
-</div>
+    <span class="label">{toggleLabel}</span>
+</button>
 
 <style>
     .input-checkbox-wrapper {
@@ -81,8 +66,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 5px;
-        transform: background-color 0.7s;
     }
     .switch-control {
         background-color: white;
@@ -92,7 +75,7 @@
         height: 16px;
         width: 16px;
         transform: translateX(-60%);
-        transition: transform var(--default-transition);
+        transition: transform .3s;
     }
     .is-checked .switch {
         background-color: var(--bulma-link);
@@ -100,12 +83,7 @@
     .is-checked .switch-control {
         transform: translateX(55%);
     }
-    .input-checkbox-wrapper input {
-        opacity: 0;
-        height: 100%;
-        width: 100%;
-    }
-    .input-checkbox-wrapper label {
+    .input-checkbox-wrapper .label {
         font-weight: var(--bulma-body-weight);
     }
 </style>
