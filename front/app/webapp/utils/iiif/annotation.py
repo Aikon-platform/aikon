@@ -18,6 +18,8 @@ from app.config.settings import (
     APP_NAME,
     APP_URL,
     ADDITIONAL_MODULES,
+    SAS_PORT,
+    DOCKER,
 )
 from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, flatten_dict
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
@@ -25,6 +27,7 @@ from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.regions import get_file_regions
 
 IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
+SAS_APP_URL = f"http://sas:{SAS_PORT}" if DOCKER else SAS_APP_URL
 
 
 def get_manifest_annotations(
