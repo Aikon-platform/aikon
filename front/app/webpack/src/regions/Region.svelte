@@ -73,7 +73,7 @@
             <span class="overlay-desc">{@html desc}</span>
         </div>
     </figure>
-    <div class="region-btn">
+    <div class="region-btn ml-1">
         <button class="button tag" on:click={() => regionsStore.copyRef(item.ref)}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
                 {#if isCopied}
@@ -126,8 +126,25 @@
         position: relative;
         display: flex;
         justify-content: center;
-        align-items: center;
+        align-items: start;
         max-height: 100%;
+    }
+    .region-btn {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-around;
+    }
+    .region-btn > * {
+        width: 100%;
+    }
+    .region-btn > :first-child {
+        margin-bottom: .5em;
+    }
+    .region-btn >.button:hover .tooltip {
+        visibility: visible;
+        opacity: 1;
     }
     .tooltip {
         visibility: hidden;
@@ -143,21 +160,5 @@
         transform: translateX(-50%);
         opacity: 0;
         transition: opacity 0.3s;
-    }
-    .region-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-around;
-    }
-    .region-btn > * {
-        width: 100%;
-    }
-    .region-btn > :first-child {
-        margin-bottom: .5em;
-    }
-    .region-btn >.button:hover .tooltip {
-        visibility: visible;
-        opacity: 1;
     }
 </style>

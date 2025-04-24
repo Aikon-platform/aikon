@@ -6,13 +6,6 @@ svg {
 .card {
     overflow: hidden;
 }
-.region-btn {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    z-index: 1;
-    padding: 0.5em;
-}
 .overlay {
     position: absolute;
     top: 0;
