@@ -1,3 +1,4 @@
+import { appLang } from "../../constants.js";
 import { similarityStore } from './similarityStore.js';
 
 const { getRegionsInfo } = similarityStore;

@@ -1,2 +1,2 @@
-export{P as default}from"./region-list-6dce0e7e.js";
+export{P as default}from"./region-list-a3c1b23e.js";
 //# sourceMappingURL=region-list.js.map
