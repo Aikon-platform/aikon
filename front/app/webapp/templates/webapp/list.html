@@ -23,6 +23,14 @@
     {% else %}
         <h1 class="is-title is-size-2 py-3">
             {{ view_title }}
+            {% if edit_url %}
+                <a href="{{ edit_url }}" class="edit-btn button is-small is-rounded is-link px-3 ml-3 mt-3" title='Edit'>
+                    <span class="iconify" data-icon="entypo:edit"/>
+                    <span class="ml-2">
+                        {% if APP_LANG == "en" %}Edit{% else %}Éditer{% endif %} {{ type }}
+                    </span>
+                </a>
+            {% endif %}
         </h1>
     {% endif %}
 

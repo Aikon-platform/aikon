@@ -4,6 +4,7 @@ import environ
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/app/config/.env")
+DOCKER = ENV.bool("DOCKER", default=False)
 
 INSTALLED_APPS = [
     'django.contrib.auth',
@@ -18,7 +19,7 @@ DATABASES = {
         "NAME": ENV("POSTGRES_DB"),
         "USER": ENV("POSTGRES_USER"),
         "PASSWORD": ENV("POSTGRES_PASSWORD"),
-        "HOST": ENV("DB_HOST"),
+        "HOST": "db" if DOCKER else "localhost",
         "PORT": ENV("DB_PORT"),
     }
 }

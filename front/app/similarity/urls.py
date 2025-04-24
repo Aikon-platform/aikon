@@ -27,6 +27,26 @@ urlpatterns = [
         name="witness-compared-regions",
     ),
     path(
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/similarity-score-range",
+        get_similarity_score_range,
+        name="similarity-score-range",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/similarity-score-range",
+        get_similarity_score_range,
+        name="witness-similarity-score-range",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/propagated-matches/<str:img_id>",
+        get_propagated_matches,
+        name="propagated-regions",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/propagated-matches/<str:img_id>",
+        get_propagated_matches,
+        name="propagated-regions",
+    ),
+    path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/query-images",
         get_query_images,
         name="query-images",
@@ -45,6 +65,16 @@ urlpatterns = [
         f"{APP_NAME}/witness/<int:wid>/regions/similar-images",
         get_similar_images,
         name="witness-similar-region",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/get_regions_title/<str:regions_ref>",
+        get_regions_title_by_ref,
+        name="get-regions-title-by-ref",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/get_regions_title/<str:regions_ref>",
+        get_regions_title_by_ref,
+        name="get-regions-title-regions-by-ref",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/add-region-pair",
@@ -82,7 +112,6 @@ urlpatterns = [
         remove_incorrect_pairs,
         name="remove-incorrect-pairs",
     ),
-    # path(f"{APP_NAME}/similarity/delete-all", delete_all_regions_pairs, name="delete-pairs"),
     path(
         f"{APP_NAME}/similarity/reset/<int:rid>",
         reset_regions_similarity,
@@ -93,4 +122,5 @@ urlpatterns = [
         reset_regions_similarity,
         name="reset-all-similarity",
     ),
+    # path(f"{APP_NAME}/similarity/delete-all", delete_all_regions_pairs, name="delete-pairs"),
 ]

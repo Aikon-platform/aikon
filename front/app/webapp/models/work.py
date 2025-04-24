@@ -1,5 +1,6 @@
 from django.db import models
 from django.urls import reverse
+from django.utils.http import urlencode
 
 from app.webapp.models.language import Language
 from app.webapp.models.place import Place
@@ -76,9 +77,16 @@ class Work(AbstractSearchableModel):
         blank=True,
     )
 
-    def get_absolute_url(self):
+    def get_absolute_edit_url(self):
         return reverse("admin:webapp_work_change", args=[self.id])
-        # return reverse("webapp:work_view", args=[self.id])
+
+    def get_absolute_view_url(self):
+        query_params = {"contents__work": f"{self.id}"}
+
+        base_url = reverse("webapp:work_view", args=[self.id])
+        query_string = urlencode(query_params)
+
+        return f"{base_url}?{query_string}"
 
     def to_json(self, reindex=True):
         place = self.place
@@ -90,7 +98,8 @@ class Work(AbstractSearchableModel):
                 "type": get_name("Work"),
                 # "user": self.user.__str__(),
                 # "user_id": self.user.id,
-                "url": self.get_absolute_url(),
+                "edit_url": self.get_absolute_edit_url(),
+                "view_url": self.get_absolute_view_url(),
                 "title": self.__str__(),
                 "metadata": {
                     get_name("dates"): format_dates(self.date_min, self.date_max),

@@ -1,10 +1,7 @@
 x-proxy-settings: &proxy-settings
-  HTTP_PROXY: "http://proxy.enpc.fr:3128/"
-  HTTPS_PROXY: "http://proxy.enpc.fr:3128/"
-  http_proxy: "http://proxy.enpc.fr:3128/"
-  https_proxy: "http://proxy.enpc.fr:3128/"
+  HTTP_PROXY: ${HTTP_PROXY:-}
+  HTTPS_PROXY: ${HTTPS_PROXY:-}
   NO_PROXY: "localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.aikon_network"
-  no_proxy: "localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.aikon_network"
 
 services:
   web:
@@ -35,29 +32,37 @@ services:
     restart: unless-stopped
 
   db:
-    image: postgres:13
+    image: postgres:14
+    command: postgres -p ${DB_PORT:-5432}
     volumes:
       - pgdata:/var/lib/postgresql/data
     env_file:
       - ../app/config/.env
     networks:
       - aikon_network
+    ports:
+      - "${DB_PORT:-5432}:${DB_PORT:-5432}"
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready" ]
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER} -p $${DB_PORT:-5432}" ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:6
+    command: redis-server --port ${REDIS_PORT:-6379} --loglevel warning
     volumes:
       - redisdata:/data
+    env_file:
+      - ../app/config/.env
     networks:
       - aikon_network
+    ports:
+      - "${REDIS_PORT:-6379}:${REDIS_PORT:-6379}"
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: [ "CMD", "redis-cli", "-p", "${REDIS_PORT:-6379}", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -69,7 +74,7 @@ services:
     env_file:
       - ./.env
     ports:
-      - "${CANTALOUPE_PORT:-8182}:8182"
+      - "${CANTALOUPE_PORT:-8182}:${CANTALOUPE_PORT:-8182}"
     volumes:
       - ${DATA_FOLDER}:/data
     networks:
@@ -85,10 +90,10 @@ services:
     env_file:
       - ./.env
     volumes:
-#        - ${DATA_FOLDER}/sas:/sas/data
         - ../sas:/sas
+        - ${DATA_FOLDER}/sas:/sas/data
     ports:
-      - "${SAS_PORT:-8888}:8888"
+      - "${SAS_PORT:-8888}:${SAS_PORT:-8888}"
     networks:
       - aikon_network
     environment:
@@ -97,14 +102,18 @@ services:
   nginx:
     image: nginx:latest
     env_file:
-      - ../app/config/.env
+#      - ../app/config/.env
       - ./.env
+      - ../app/config/.env
     ports:
       - "${NGINX_PORT:-8080}:${NGINX_PORT:-8080}"
     environment:
       <<: *proxy-settings
       PROD_URL: ${PROD_URL:-localhost}
       NGINX_PORT: ${NGINX_PORT:-8080}
+#      - PROD_URL=${PROD_URL:-localhost}
+#      - NGINX_PORT=${NGINX_PORT:-8080}
+#      - NO_PROXY=localhost,127.0.0.1,web,sas,cantaloupe,.aikon_network
     volumes:
       - ./nginx_conf:/etc/nginx/nginx.conf:ro
       - ../app/staticfiles:/home/aikon/app/staticfiles:ro

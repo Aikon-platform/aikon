@@ -1,0 +1,19 @@
+{% extends "admin/base_site.html" %}
+{% load shared_tags static %}
+
+{% block title %}{{ view_title }}{% endblock %}
+
+{% block extrahead %}{% endblock %}
+
+{% block content %}
+    <div class="container px-5">
+        <h1 class="is-title is-size-2 py-3">
+            {{ view_title }}
+        </h1>
+        <div class="container">
+            {{ instance }}
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}{% endblock %}

@@ -16,13 +16,13 @@ temp_pathname =
 # !! Configures the HTTP server. (Standalone mode only.)
 http.enabled = true
 http.host = 0.0.0.0
-http.port = HTTP_PORT
+http.port = CANTALOUPE_PORT
 http.http2.enabled = false
 
 # !! Configures the HTTPS server. (Standalone mode only.)
 https.enabled = false
 https.host = 0.0.0.0
-https.port = HTTPS_PORT
+https.port = CANTALOUPE_PORT_HTTPS
 # Secure HTTP/2 requires Java 9 or later.
 https.http2.enabled = false
 
@@ -39,7 +39,7 @@ http.accept_queue_limit =
 # Base URI to use for internal links, such as Link headers and JSON-LD
 # @id values, in a reverse-proxy context. This should only be used when
 # X-Forwarded-* headers cannot be used instead. (See the user manual.)
-base_uri = BASE_URI
+base_uri = CANTALOUPE_BASE_URI
 
 # Normally, slashes in a URI path component must be percent-encoded as
 # "%2F". If your proxy is not able to pass these through without decoding,
@@ -146,7 +146,7 @@ FilesystemSource.lookup_strategy = BasicLookupStrategy
 
 # Server-side path that will be prefixed to the identifier in the URL.
 # Trailing slash is important!
-FilesystemSource.BasicLookupStrategy.path_prefix = FILE_SYSTEM_SOURCE
+FilesystemSource.BasicLookupStrategy.path_prefix = CANTALOUPE_IMG
 
 # Server-side path or extension that will be suffixed to the identifier in
 # the URL.
@@ -703,12 +703,12 @@ log.application.ConsoleAppender.enabled = true
 
 # N.B.: Don't enable FileAppender and RollingFileAppender simultaneously!
 log.application.FileAppender.enabled = false
-log.application.FileAppender.pathname = LOG_PATH/application.log
+log.application.FileAppender.pathname = CANTALOUPE_DIR/application.log
 
 log.application.RollingFileAppender.enabled = false
-log.application.RollingFileAppender.pathname = LOG_PATH/application.log
+log.application.RollingFileAppender.pathname = CANTALOUPE_DIR/application.log
 log.application.RollingFileAppender.policy = TimeBasedRollingPolicy
-log.application.RollingFileAppender.TimeBasedRollingPolicy.filename_pattern = LOG_PATH/application-%d{yyyy-MM-dd}.log
+log.application.RollingFileAppender.TimeBasedRollingPolicy.filename_pattern = CANTALOUPE_DIR/application-%d{yyyy-MM-dd}.log
 log.application.RollingFileAppender.TimeBasedRollingPolicy.max_history = 30
 
 # See the "SyslogAppender" section for a list of facilities:
@@ -727,12 +727,12 @@ log.application.SyslogAppender.facility = LOCAL0
 
 # N.B.: Don't enable FileAppender and RollingFileAppender simultaneously!
 log.error.FileAppender.enabled = false
-log.error.FileAppender.pathname = LOG_PATH/error.log
+log.error.FileAppender.pathname = CANTALOUPE_DIR/error.log
 
 log.error.RollingFileAppender.enabled = false
-log.error.RollingFileAppender.pathname = LOG_PATH/error.log
+log.error.RollingFileAppender.pathname = CANTALOUPE_DIR/error.log
 log.error.RollingFileAppender.policy = TimeBasedRollingPolicy
-log.error.RollingFileAppender.TimeBasedRollingPolicy.filename_pattern = LOG_PATH/error-%d{yyyy-MM-dd}.log
+log.error.RollingFileAppender.TimeBasedRollingPolicy.filename_pattern = CANTALOUPE_DIR/error-%d{yyyy-MM-dd}.log
 log.error.RollingFileAppender.TimeBasedRollingPolicy.max_history = 30
 
 #----------------------------------------
@@ -743,14 +743,14 @@ log.access.ConsoleAppender.enabled = false
 
 # N.B.: Don't enable FileAppender and RollingFileAppender simultaneously!
 log.access.FileAppender.enabled = false
-log.access.FileAppender.pathname = LOG_PATH/access.log
+log.access.FileAppender.pathname = CANTALOUPE_DIR/access.log
 
 # RollingFileAppender is an alternative to using something like
 # FileAppender + logrotate.
 log.access.RollingFileAppender.enabled = false
-log.access.RollingFileAppender.pathname = LOG_PATH/access.log
+log.access.RollingFileAppender.pathname = CANTALOUPE_DIR/access.log
 log.access.RollingFileAppender.policy = TimeBasedRollingPolicy
-log.access.RollingFileAppender.TimeBasedRollingPolicy.filename_pattern = LOG_PATH/access-%d{yyyy-MM-dd}.log
+log.access.RollingFileAppender.TimeBasedRollingPolicy.filename_pattern = CANTALOUPE_DIR/access-%d{yyyy-MM-dd}.log
 log.access.RollingFileAppender.TimeBasedRollingPolicy.max_history = 30
 
 # See the "SyslogAppender" section for a list of facilities:

@@ -8,6 +8,7 @@ from app.config.settings import (
     CONTACT_MAIL,
     ADDITIONAL_MODULES,
     APP_LOGO,
+    DOCKER,
 )
 from app.webapp.utils.constants import (
     APP_NAME_UPPER,
@@ -30,6 +31,7 @@ from app.webapp.models.utils.constants import (
     WPR_ABBR,
     CATEGORY_INFO,
     ENTITY_NAMES,
+    ENTITY_DESC,
 )
 
 
@@ -66,4 +68,4 @@ def global_variables(request):
         "PAGE_LEN": PAGE_LEN,
     }
 
-    return {**constants, **ENTITY_NAMES}
+    return {**constants, **ENTITY_NAMES, **ENTITY_DESC}

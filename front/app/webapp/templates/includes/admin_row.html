@@ -1,37 +1,30 @@
-{% load shared_tags %}
+{% load static shared_tags %}
 
-{% check_url 'webapp:'|add:entity_name|add:'_create' as add_url %}
-{% if add_url == '' %}
-    {% check_url 'admin:webapp_'|add:entity_name|add:'_add' as add_url %}
-{% endif %}
-{% if add_url == '' %}
-    {% check_url 'admin:auth_'|add:entity_name|add:'_add' as add_url %}
-{% endif %}
+{% get_add_url entity as add_url %}
+{% get_list_url entity as list_url %}
 
-{% check_url 'webapp:'|add:entity_name|add:'_list' as list_url %}
-{% if list_url == '' %}
-    {% check_url 'admin:webapp_'|add:entity_name|add:'_changelist' as list_url %}
-{% endif %}
-{% if list_url == '' %}
-    {% check_url 'admin:auth_'|add:entity_name|add:'_changelist' as list_url %}
-{% endif %}
-
-<tr>
-    <td>{{ entity_title }}</td>
-    <td>
-        <a href="{{ add_url }}">
-            <span class="icon-text">
-                <span class="icon"><i class="fas fa-plus-circle"></i></span>
-                {% if APP_LANG == "en" %}Add{% else %}Ajouter{% endif %}
-            </span>
-        </a>
-    </td>
-    <td>
-        <a href="{{ list_url }}">
-        <span class="icon-text">
-            <span class="icon"><i class="fas fa-list-ul"></i></span>
-            {% if APP_LANG == "en" %}List{% else %}Liste{% endif %}
-        </span>
-        </a>
-    </td>
-</tr>
+<div class="block box mg-medium p-5 m-4" style="height:90%;">
+    <div class="content is-center">
+        <h3 class="is-center is-capitalized">{{ entity_title }}</h3>
+        {% if icon %}
+            <img src="{% static 'img/'|add:entity|add:'.svg' %}" onerror="this.onerror=null;this.style.display='none';src='';this.class='';" class="image is-center is-128x128 mb-5" style="filter:invert(.7);" alt="{{ entity_title }} icon"/>
+        {% endif %}
+        <p class="is-size-7">{{ entity_desc }}</p>
+        <div class="buttons is-center">
+            {% if entity != "document_set" %}
+            <a href="{{ add_url }}" class="button is-ghost">
+                <span class="icon-text">
+                    <span class="icon"><i class="fas fa-plus-circle"></i></span>
+                    {% if APP_LANG == "en" %}Add{% else %}Ajouter{% endif %}
+                </span>
+            </a>
+            {% endif %}
+            <a href="{{ list_url }}" class="button is-ghost">
+                <span class="icon-text">
+                    <span class="icon"><i class="fas fa-list-ul"></i></span>
+                    {% if APP_LANG == "en" %}List{% else %}Liste{% endif %}
+                </span>
+            </a>
+        </div>
+    </div>
+</div>
