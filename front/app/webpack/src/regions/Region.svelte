@@ -1,5 +1,5 @@
 <script>
-    import { getContext, setContext } from "svelte";
+    import { getContext } from "svelte";
     import { fade } from 'svelte/transition';
 
     import { refToIIIF } from "../utils.js";
@@ -29,14 +29,18 @@
     /** @type {RegionItemType?} defined in `SimilarityRow`. in descendants of `SimilarityRow`, `Region` displays siilarity images. this context stores the query image to pass it to `ModalController` */
     const compareImgItem = getContext("qImgMetadata") || undefined;
 
-    // `ModalController` is only mounted+imported if `!isInModal` to avoid a recursive component (`Region` could open a modal that could contain Region that could contain another modal). while there's no error, you do get a svelte/roillup warning and there probably will be side effects.
     const isInModal = getContext("isInModal") || false;
+
+    // disable transitions in modals. else, the new element is mounted before the previous one is unmoumnted, and it makes a buggy display
+    const transitionDuration = isInModal ? 0 : 500;
+
+    // `ModalController` is only mounted+imported if `!isInModal` to avoid a recursive component (`Region` could open a modal that could contain Region that could contain another modal). while there's no error, you do get a svelte/roillup warning and there probably will be side effects.
     let modalControllerComponent;
     if ( !isInModal ) {
         import("./modal/ModalController.svelte").then((res) => modalControllerComponent = res.default);
     }
 
-    /** @type {string}*/
+    /** @type {string} */
     let desc  = item.title;
     if (descPromise) {
         descPromise.then((res) => desc = res);
@@ -52,7 +56,7 @@
 </script>
 
 <div class="region is-center {$isSelected(item) ? 'checked' : ''}"
-     transition:fade={{ duration: 500 }}
+     transition:fade={{ duration: transitionDuration }}
      style={height==="full" ? "height: 100%" : ""}
 >
     <figure class="image card region-image {isSquare ? 'is-96x96' : ''}"

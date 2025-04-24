@@ -1,10 +1,9 @@
 <script>
     import { setContext, getContext } from "svelte";
-    import { derived } from "svelte/store";
 
     import SimilarRegions from "./SimilarRegions.svelte";
 
-    import { appLang, csrfToken } from '../../constants.js';
+    import { csrfToken } from '../../constants.js';
     import { similarityStore } from "./similarityStore";
     import { createNewAndOld, equalArrayShallow } from "../../utils";
 
@@ -99,17 +98,6 @@
 
 <div class="block matches-suggestion-wrapper">
     <div class="matches-suggestion">
-        <div class="block">
-            <!--
-            {#await propagatedMatchesPromise then propagatedImgs}
-                {#if appLang==="fr"}
-                    {propagatedImgs.length} {propagatedImgs.length > 1 ? "similarités propagées" : "similarité propagée" }
-                {:else}
-                    {propagatedImgs.length} propagated match{propagatedImgs.length > 1 ? "es" : "" }
-                {/if}
-            {/await}
-            -->
-        </div>
         <SimilarRegions qImg={qImg}
                        sImgsPromise={propagatedMatchesPromise}
         ></SimilarRegions>
