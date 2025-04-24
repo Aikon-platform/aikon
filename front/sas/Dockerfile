@@ -18,7 +18,7 @@ RUN mkdir -p /root/.m2 && \
                <id>proxy</id> \
                <active>true</active> \
                <protocol>http</protocol> \
-               <host>proxy.enpc.fr</host> \
+               <host>195.221.193.15</host> \
                <port>3128</port> \
            </proxy> \
        </proxies> \
