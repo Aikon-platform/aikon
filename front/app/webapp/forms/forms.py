@@ -35,7 +35,7 @@ def get_available_models(task_name):
         models = response.json()
     except Exception as e:
         fetch_error = (
-            f"Unable to fetch available models: {e}"
+            f"Unable to fetch available models at {API_URL}/{task_name}/models: {e}"
             if APP_LANG == "en"
             else f"Impossible de récupérer les modèles disponibles : {e}"
         )
