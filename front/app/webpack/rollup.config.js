@@ -35,14 +35,8 @@ export default [
         input: 'src/regions/region-list.js',
         output: {
             sourcemap: true,
-            /*
-            format: 'iife',
-            */
             format: "es",
             name: 'regionList',
-            /*
-            file: '../webapp/static/svelte/regionList.js'
-            */
             dir: '../webapp/static/svelte/regionList/',
         },
         plugins: [
@@ -61,7 +55,10 @@ export default [
             commonjs(),
             !production && livereload('public'),
             production && terser(),
-            del({ targets: ["../webapp/static/svelte/*"], force: true })  // with ES directory exports, filenames end with a hash and thus new files are created at each build rather than overwriting the old files => delete the whole `svelte/`  dir before running rollup
+            del({
+                targets: ["../webapp/static/svelte/*"],
+                force: true
+            })  // with ES directory exports, filenames end with a hash and thus new files are created at each build rather than overwriting the old files => delete the whole `svelte/`  dir before running rollup
         ],
         watch: {
             clearScreen: false
