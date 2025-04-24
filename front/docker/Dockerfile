@@ -17,6 +17,9 @@ SHELL ["/bin/bash", "-c"]
 ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+RUN echo 'Acquire::http::Proxy "http://195.221.193.4:3142";' > /etc/apt/apt.conf.d/proxy.conf && \
+    echo 'Acquire::https::Proxy "http://195.221.193.4:3142";' >> /etc/apt/apt.conf.d/proxy.conf
+
 RUN apt-get update && apt-get install -y \
     wget \
     unzip \
