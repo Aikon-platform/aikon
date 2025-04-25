@@ -1,6 +1,7 @@
 from glob import glob
 from functools import partial
 from iiif_prezi.factory import StructuralError
+from celery import chain
 
 from django.utils.safestring import mark_safe
 from django.core.validators import FileExtensionValidator
@@ -47,6 +48,7 @@ from app.webapp.tasks import (
     convert_pdf_to_img,
     convert_temp_to_img,
     extract_images_from_iiif_manifest,
+    update_image_json,
 )
 
 ALLOWED_EXT = ["jpg", "jpeg", "png", "tif"]
@@ -72,7 +74,8 @@ def get_name(fieldname, plural=False):
 
 
 def no_save(instance, original_filename):
-    # NOTE here, digit_id is not yet set, digit files are renamed after with rename_files()
+    # NOTE here, digit_id is not yet set, digit files are renamed afterwards
+    #  inside temp_to_img() with digit.get_file_path()
     return f"{instance.get_relative_path()}/to_delete.txt"
 
 
@@ -406,7 +409,6 @@ class Digitization(AbstractSearchableModel):
             return
 
         if not self.id:
-            # TODO check to not relaunch regions if the digit didn't change
             # If the instance is being saved for the first time, save it in order to have an id
             super().save(*args, **kwargs)
 
@@ -434,16 +436,27 @@ class Digitization(AbstractSearchableModel):
 def digitization_post_save(sender, instance, created, **kwargs):
     if created:
         digit_type = instance.get_digit_abbr()
+
         if digit_type == PDF_ABBR:
-            convert_pdf_to_img.delay(instance.get_file_path(is_abs=False))
+            chain(
+                convert_pdf_to_img.s(instance.get_file_path(is_abs=False)),
+                update_image_json.s(instance.id),
+            ).apply_async(
+                countdown=1
+            )  # small delay to ensure the file is saved
 
         elif digit_type == IMG_ABBR:
-            convert_temp_to_img.delay(instance)
+            chain(
+                convert_temp_to_img.s(instance), update_image_json.s(instance.id)
+            ).apply_async(countdown=1)
 
         elif digit_type == MAN_ABBR:
-            extract_images_from_iiif_manifest.delay(
-                instance.manifest, instance.get_ref(), instance
-            )
+            chain(
+                extract_images_from_iiif_manifest.s(
+                    instance.manifest, instance.get_ref(), instance
+                ),
+                update_image_json.s(instance.id),
+            ).apply_async(countdown=1)
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance

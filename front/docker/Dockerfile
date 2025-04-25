@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     ffmpeg \
     libsm6 \
+    libmagic1 \
     libxext6 \
     libpq-dev \
     build-essential \

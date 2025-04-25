@@ -1,10 +1,11 @@
 import datetime
-import fnmatch
+import magic
 import io
 import json
 import os
 import re
 import zipfile
+import imagesize
 from pathlib import Path
 from typing import Optional, List
 from urllib.parse import urlparse
@@ -121,6 +122,9 @@ def get_files_with_prefix(
     :param ext: File extension to filter by (default: None)
     :return: A single filename (if only_one is True), a list of filenames, or None if no matches found
     """
+    if not os.path.exists(path):
+        return [] if not only_one else None
+
     with os.scandir(path) as entries:
         if only_one:
             for entry in entries:
@@ -192,7 +196,46 @@ def get_file_ext(filepath):
     return filename if ext else None, ext[1:] if ext else None
 
 
+Image.MAX_IMAGE_PIXELS = 200000000
+
+
+def check_image(file_path, max_size=10, max_pixels=Image.MAX_IMAGE_PIXELS):
+    if not os.path.exists(file_path):
+        return False, "File does not exist"
+
+    file_size = os.path.getsize(file_path) / (1024 * 1024)
+    if file_size > max_size:
+        return False, f"File too large: {file_size:.2f}MB (max: {max_size}MB)"
+
+    try:
+        mime = magic.Magic(mime=True)
+        file_type = mime.from_file(file_path)
+        if not file_type.startswith("image/"):
+            return False, f"Not an image file: {file_type}"
+    except Exception as e:
+        return False, f"Error determining file type: {e}"
+
+    try:
+        width, height = imagesize.get(file_path)
+        pixels = width * height
+        if pixels > max_pixels:
+            return False, f"Image too large: {width}x{height} ({pixels} pixels)"
+        return True, {
+            "width": width,
+            "height": height,
+            "format": file_type,
+            "size_mb": file_size,
+        }
+    except Exception as e:
+        return False, f"Error determining image dimensions: {e}"
+
+
 def to_jpg(image, new_filename=None):
+    is_valid, info = check_image(image)
+    if not is_valid:
+        log(f"[to_jpg] {info}")
+        return False
+
     try:
         return save_img(Image.open(image), new_filename or image.name)
     except Exception as e:
@@ -251,6 +294,8 @@ def temp_to_img(digit):
 
     except Exception as e:
         log(f"[process_images] Failed to process images:\n{e} ({e.__class__.__name__})")
+        return False
+    return True
 
 
 def pdf_to_img(pdf_name, dpi=MAX_RES):
@@ -262,13 +307,33 @@ def pdf_to_img(pdf_name, dpi=MAX_RES):
     pdf_path = f"{MEDIA_DIR}/{pdf_name}"
     pdf_name = Path(pdf_name).stem
     try:
-        command = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
-        subprocess.run(command, shell=True, check=True)
+        if not os.path.exists(pdf_path):
+            log(f"[pdf_to_img] PDF file not found: {pdf_path}")
+            return False
 
+        cmd = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
+        res = subprocess.run(
+            cmd, shell=True, check=True, timeout=500, capture_output=True, text=True
+        )
+
+        if res.returncode != 0:
+            dpi = int(dpi * 0.5)
+            size = int(MAX_SIZE * 0.8)
+            cmd = f"pdftoppm -jpeg -r {dpi} -scale-to {size} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
+            log(
+                f"[pdf_to_img] Failed to convert {pdf_name}.pdf: {res.stderr}\nUsing fallback command: {cmd}"
+            )
+            res = subprocess.run(cmd, shell=True, check=True, timeout=600)
+
+        return res.returncode == 0
+    except subprocess.TimeoutExpired:
+        log(f"[pdf_to_img] Command timed out for {pdf_name}.pdf")
+        return False
     except Exception as e:
         log(
             f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e} ({e.__class__.__name__})"
         )
+        return False
 
 
 def get_pdf_imgs(pdf_list):

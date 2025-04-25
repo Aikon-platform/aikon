@@ -89,6 +89,50 @@ def launch_task(treatment):
 
 
 @celery_app.task
+def generate_record_json(model_name, record_id):
+    """
+    Generate JSON for a searchable record.
+    """
+    from app.webapp.utils.logger import log
+
+    model_class = apps.get_model("webapp", model_name)
+    try:
+        instance = model_class.objects.get(pk=record_id)
+        json_data = instance.to_json()
+        model_class.objects.filter(pk=record_id).update(json=json_data)
+    except Exception as e:
+        log(
+            f"[generate_record_json] Error on json generation for {model_name} #{record_id}",
+            e,
+        )
+
+
+@celery_app.task
+def update_image_json(success, digit_id):
+    """Update Witness and Digitization JSON after image post-processing"""
+    from app.webapp.utils.logger import log
+
+    if not success:
+        return False
+
+    try:
+        from app.webapp.models.digitization import Digitization
+
+        digitization = Digitization.objects.get(id=digit_id)
+        if not digitization.is_key_defined("imgs"):
+            digitization.get_json(reindex=True)
+
+        witness = digitization.witness
+        if not witness.is_key_defined("img"):
+            witness.get_json(reindex=True)
+
+        return True
+    except Exception as e:
+        log(f"[update_image_json] Error updating JSON after processing", e)
+        return False
+
+
+@celery_app.task
 def test(log_msg):
     from app.webapp.utils.logger import log
 
