@@ -41,6 +41,14 @@
 <RecordSearch {recordsStore} {searchFields}/>
 
 {#if !modelTitle.includes('set') && addPermission}
+    <!-- <span class="is-right">
+        <a href="{addUrl}" class="button is-rounded is-primary mb-4"
+        title='{appLang === "en" ? "Import" : "Importer"}'>
+            <i class="fa-solid fa-file-import"></i>
+            <span>{appLang === 'en' ? "Import" : "Importer"}</span>
+        </a>
+    </span> -->
+
     <span class="is-right">
         <a href="{addUrl}" class="button is-rounded is-primary mb-4"
            title='{appLang === "en" ? "Add" : "Ajouter"}'>
