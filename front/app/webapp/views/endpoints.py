@@ -36,10 +36,7 @@ from app.webapp.utils.logger import log
 from app.webapp.utils.paths import (
     MEDIA_DIR,
     IMG_PATH,
-    MEDIA_DIR,
-    IMG_DIR,
     REGIONS_PATH,
-    PDF_DIR,
 )
 from app.webapp.utils.regions import create_empty_regions
 from app.webapp.tasks import generate_all_json
@@ -271,7 +268,7 @@ def export_docset(request, dsid):
     |-- [Witness: one folder each]
     |   |-- metadata.json
     |   |-- [digitizations]
-    |   |   |   |-- [each digit file]
+    |   |   |   |-- [each digit file (images + original format)]
     |   |-- [Regions: one folder each]
     |   |   |-- [annotations]
     |   |   |   |-- manifest.json
@@ -287,28 +284,37 @@ def export_docset(request, dsid):
         file_contents = []
         for w in doc_set.all_witnesses():
             # 1: Witness data (JSON)
+            # TODO: If witness is private, check if witness made by user of the same group
             w_json = get_witness_data(w, json_cascade=False)
             file_contents.append((f"witness{w.id}/metadata.json", json.dumps(w_json)))
 
             # 1.5: Digitizations (pdf/img/json?)
             w_digits_ids = w.get_digits()
             for d in w_digits_ids:
+                # Digits always have image files whatever the type
+                img_files = d.get_imgs()
+                for img in img_files:
+                    with open(f"{IMG_PATH}/{img}", "rb") as i:
+                        file_contents.append(
+                            (f"witness{w.id}/digitizations/{img}", i.read())
+                        )
                 did = d.id
                 digit_type = d.get_digit_abbr()
                 if digit_type == PDF_ABBR:
-                    with open(f"{MEDIA_DIR}/{PDF_DIR}/{d.pdf.path}", "rb") as p:
+                    with open(f"{d.pdf.path}", "rb") as p:
                         file_contents.append(
-                            (f"witness{w.id}/digitizations/{d.pdf.path}"), p.read()
-                        )
-                elif digit_type == IMG_ABBR:
-                    img_files = d.get_imgs()
-                    for img in img_files:
-                        with open(f"{IMG_PATH}/{img}", "rb") as i:
-                            file_contents.append(
-                                (f"witness{w.id}/digitizations/{img}", i.read())
+                            (
+                                f"witness{w.id}/digitizations/{d.pdf.path.split('/')[-1]}",
+                                p.read(),
                             )
+                        )
                 elif digit_type == MAN_ABBR:
-                    pass
+                    file_contents.append(
+                        (
+                            f"witness{w.id}/digitizations/manifest.json",
+                            d.gen_manifest_json(),
+                        )
+                    )
 
             r_list = w.get_regions()
             for regions in r_list:
