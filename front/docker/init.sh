@@ -6,18 +6,21 @@ export INSTALL_MODE="full_install"
 
 # TODO use aikon-demo check for .env modification
 
-# if docker/.env does not exist, create it
-if [ ! -f "$FRONT_ROOT/docker/.env" ]; then
-    echo_title "DOCKER ENVIRONMENT VARIABLES"
-    setup_env "$DOCKER_DIR/.env"
-    export MEDIA_DIR="$DATA_FOLDER/mediafiles"
-fi
-
 # if ../app/config/.env does not exist, create it
 if [ ! -f "$FRONT_ROOT"/app/config/.env ]; then
     echo_title "DJANGO APP ENVIRONMENT VARIABLES"
     update_app_env "$FRONT_ROOT/app/config/.env"
 fi
+source "$FRONT_ROOT"/app/config/.env
+
+# if docker/.env does not exist, create it
+if [ ! -f "$FRONT_ROOT/docker/.env" ]; then
+    echo_title "DOCKER ENVIRONMENT VARIABLES"
+    # TODO make sure all ports defined in .env are copied to docker/.env
+    setup_env "$DOCKER_DIR/.env"
+    export MEDIA_DIR="$DATA_FOLDER/mediafiles"
+fi
+source "$DOCKER_DIR/.env"
 
 # if ../cantaloupe/.env does not exist, create it
 CANTALOUPE_DIR="$FRONT_ROOT"/cantaloupe
@@ -34,9 +37,6 @@ if [ ! -f "$FRONT_ROOT/app/logs/app_log.log" ]; then
     touch "$FRONT_ROOT/app/logs/iiif.log"
     chown -R "$USERID:$USERID" "$FRONT_ROOT"/app/logs
 fi
-
-source "$FRONT_ROOT"/app/config/.env
-source "$DOCKER_DIR/.env"
 
 # if $DATA_FOLDER does not exist
 if [ ! -d "$DATA_FOLDER" ]; then
@@ -56,21 +56,28 @@ if [ ! -d "$DATA_FOLDER"/sas ]; then
     chown -R "$USERID":"$USERID" "$DATA_FOLDER"/sas
 fi
 
+setup_nginx_conf() {
+    local conf_file="$1"
+    cp "$conf_file.template" "$conf_file"
+
+    sed_repl_inplace "s~DJANGO_PORT~$DJANGO_PORT~" "$conf_file"
+    sed_repl_inplace "s~NGINX_PORT~$NGINX_PORT~" "$conf_file"
+    sed_repl_inplace "s~CANTALOUPE_PORT~$CANTALOUPE_PORT~" "$conf_file"
+    sed_repl_inplace "s~SAS_PORT~$SAS_PORT~" "$conf_file"
+    sed_repl_inplace "s~DB_PORT~$DB_PORT~" "$conf_file"
+    sed_repl_inplace "s~REDIS_PORT~$REDIS_PORT~" "$conf_file"
+    sed_repl_inplace "s~PROD_URL~$PROD_URL~" "$conf_file"
+    sed_repl_inplace "s~SSL_CERTIFICATE~$SSL_CERTIFICATE~" "$conf_file"
+    sed_repl_inplace "s~SSL_KEY~$SSL_KEY~" "$conf_file"
+}
+
 # if nginx.conf does not exist, create it
 if [ ! -f "$FRONT_ROOT"/docker/nginx.conf ]; then
     echo_title "NGINX CONFIGURATION"
-    NGINX_CONF="$DOCKER_DIR/nginx.conf"
-    cp "$NGINX_CONF.template" "$NGINX_CONF"
-
-    sed_repl_inplace "s~DJANGO_PORT~$DJANGO_PORT~" "$NGINX_CONF"
-    sed_repl_inplace "s~NGINX_PORT~$NGINX_PORT~" "$NGINX_CONF"
-    sed_repl_inplace "s~CANTALOUPE_PORT~$CANTALOUPE_PORT~" "$NGINX_CONF"
-    sed_repl_inplace "s~SAS_PORT~$SAS_PORT~" "$NGINX_CONF"
-    sed_repl_inplace "s~DB_PORT~$DB_PORT~" "$NGINX_CONF"
-    sed_repl_inplace "s~REDIS_PORT~$REDIS_PORT~" "$NGINX_CONF"
-    sed_repl_inplace "s~PROD_URL~$PROD_URL~" "$NGINX_CONF"
-    sed_repl_inplace "s~SSL_CERTIFICATE~$SSL_CERTIFICATE~" "$NGINX_CONF"
-    sed_repl_inplace "s~SSL_KEY~$SSL_KEY~" "$NGINX_CONF"
+    setup_nginx_conf "$DOCKER_DIR/nginx.conf"
+    setup_nginx_conf "$DOCKER_DIR/nginx_external.conf"
+    setup_nginx_conf "$DOCKER_DIR/nginx_ssl.conf"
+    setup_nginx_conf "$DOCKER_DIR/nginx_reverse_proxy.conf"
 fi
 
 # TODO redis password
