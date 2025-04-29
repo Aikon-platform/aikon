@@ -46,6 +46,11 @@ LOGGING.update(
                 "level": "ERROR",
                 "propagate": True,
             },
+            "django.security.DisallowedHost": {
+                "handlers": ["mail_admins"],
+                "level": "CRITICAL",
+                "propagate": False,
+            },
         },
     }
 )
