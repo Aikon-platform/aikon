@@ -56,10 +56,10 @@ if [ ! -d "$DATA_FOLDER"/sas ]; then
     chown -R "$USERID":"$USERID" "$DATA_FOLDER"/sas
 fi
 
-# if nginx_conf does not exist, create it
-if [ ! -f "$FRONT_ROOT"/docker/nginx_conf ]; then
+# if nginx.conf does not exist, create it
+if [ ! -f "$FRONT_ROOT"/docker/nginx.conf ]; then
     echo_title "NGINX CONFIGURATION"
-    NGINX_CONF="$DOCKER_DIR/nginx_conf"
+    NGINX_CONF="$DOCKER_DIR/nginx.conf"
     cp "$NGINX_CONF.template" "$NGINX_CONF"
 
     sed_repl_inplace "s~DJANGO_PORT~$DJANGO_PORT~" "$NGINX_CONF"

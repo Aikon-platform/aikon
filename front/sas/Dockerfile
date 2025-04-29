@@ -6,6 +6,10 @@ WORKDIR /sas
 ENV USER=aikon
 ENV SAS_PORT=${SAS_PORT:-8888}
 
+RUN echo 'Acquire::http::Proxy "http://195.221.193.15:3128";' > /etc/apt/apt.conf.d/proxy.conf && \
+    echo 'Acquire::https::Proxy "http://195.221.193.15:3128";' >> /etc/apt/apt.conf.d/proxy.conf && \
+    echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99disable-compressors && \
+    echo 'APT::Get::AllowUnauthenticated "true";' >> /etc/apt/apt.conf.d/99disable-compressors
 RUN apt-get update && apt-get install -y maven
 
 #COPY proxy.xml /root/.m2/settings.xml
