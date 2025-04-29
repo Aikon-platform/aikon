@@ -1,7 +1,7 @@
 import os
 import django
 from django.contrib.auth import get_user_model
-from app.config.settings import ENV
+from app.config.settings import ENV, EMAIL_HOST_USER
 
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.config.settings")
@@ -11,7 +11,7 @@ django.setup()
 def create_superuser():
     User = get_user_model()
     username = ENV.str("POSTGRES_USER", default="")
-    email = ENV.str("CONTACT_MAIL", default="")
+    email = ENV.str("CONTACT_EMAIL", default=EMAIL_HOST_USER)
     password = ENV.str("POSTGRES_PASSWORD", default="")
 
     try:

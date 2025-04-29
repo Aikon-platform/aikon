@@ -19,7 +19,7 @@ $manage migrate
 # User = get_user_model();
 # username = '$POSTGRES_USER';
 # if not User.objects.filter(username=username).exists():
-#     User.objects.create_superuser(username, '$CONTACT_MAIL', '$POSTGRES_PASSWORD');
+#     User.objects.create_superuser(username, '$EMAIL_HOST_USER', '$POSTGRES_PASSWORD');
 #     print('Superuser created.');
 # else:
 #     print('Superuser already exists.');
