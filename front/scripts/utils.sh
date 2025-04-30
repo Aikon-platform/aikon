@@ -475,3 +475,22 @@ error() {
     color_echo red "$1"
     exit 1
 }
+
+run_script() {
+    local script_name="$1"
+    local description="$2"
+    local script_dir=${3:-${SCRIPT_DIR}}
+    options=("yes" "no")
+
+    color_echo blue "Do you want to run $description?"
+    answer=$(printf "%s\n" "${options[@]}" | fzy)
+    echo ""
+    if [ "$answer" = "yes" ]; then
+        bash "$script_dir/$script_name" \
+        && color_echo green "$description completed successfully" \
+        || color_echo red "$description failed with exit code. Continuing..."
+    else
+        color_echo cyan "Skipping $description"
+    fi
+    echo ""
+}
