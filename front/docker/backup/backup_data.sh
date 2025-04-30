@@ -10,24 +10,14 @@ DB_PASSWORD="${POSTGRES_PASSWORD?Error: POSTGRES_PASSWORD must be set in .env}"
 DB_NAME="${POSTGRES_DB?Error: POSTGRES_DB must be set in .env}"
 DB_PORT="${DB_PORT:-5432}"
 
-DATA_BACKUP_DIR="${DATA_BACKUP?Error: DATA_BACKUP directory must be set in .env}"
-# if [[ -z "$DATA_BACKUP_DIR" ]]; then
-#     read -p "Enter the full path where backups should be created: " DATA_BACKUP_DIR
-#     if [[ -z "$DATA_BACKUP_DIR" ]]; then
-#         echo "Error: Backup directory path cannot be empty."
-#         exit 1
-#     fi
-# fi
-
-if [[ ! -d "$DATA_BACKUP_DIR" ]]; then
-    echo "Error: Backup data directory '$DATA_BACKUP_DIR' does not exist."
+if [[ ! -d "$DATA_BACKUP" ]]; then
+    echo "Error: Backup data directory '$DATA_BACKUP' does not exist."
     echo "Please create it or correct the DATA_BACKUP variable in your .env file."
     exit 1
 fi
 
 TIMESTAMP=$(date +%Y-%m-%d_%H-%M)
-BACKUP_FILE="$DATA_BACKUP_DIR/db_backup_${DB_NAME}_${TIMESTAMP}.dump"
-
+BACKUP_FILE="$DATA_BACKUP/db_backup_${DB_NAME}_${TIMESTAMP}.dump"
 
 DB_CONTAINER=$(docker compose -f "$DOCKER_DIR/docker-compose.yml" ps -q db)
 if [[ -z "$DB_CONTAINER" ]]; then
@@ -64,9 +54,4 @@ fi
 
 # # Removing backup older than 7 days
 # DAYS_TO_KEEP=7
-# find "$DATA_BACKUP_DIR" -name "db_backup_*.dump" -type f -mtime +"$DAYS_TO_KEEP" -print -delete
-
-# Import SQL data
-# docker volume rm docker_pgdata
-# docker cp $DB_CONTAINER $SQL_DUMP ./
-# docker exec -i $DB_CONTAINER psql -U $DB_USER -d $DB_NAME < $SQL_DUMP
+# find "$DATA_BACKUP" -name "db_backup_*.dump" -type f -mtime +"$DAYS_TO_KEEP" -print -delete
