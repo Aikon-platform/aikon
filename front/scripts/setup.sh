@@ -8,23 +8,23 @@ source "$SCRIPT_DIR"/utils.sh
 
 color_echo cyan "Running a $INSTALL_MODE for the front app! 🚀"
 
-run_script() {
-    local script_name="$1"
-    local description="$2"
-    options=("yes" "no")
-
-    color_echo blue "Do you want to run $description?"
-    answer=$(printf "%s\n" "${options[@]}" | fzy)
-    echo ""
-    if [ "$answer" = "yes" ]; then
-        bash "$SCRIPT_DIR/$script_name" \
-        && color_echo green "$description completed successfully" \
-        || color_echo red "$description failed with exit code. Continuing..."
-    else
-        color_echo cyan "Skipping $description"
-    fi
-    echo ""
-}
+# run_script() {
+#     local script_name="$1"
+#     local description="$2"
+#     options=("yes" "no")
+#
+#     color_echo blue "Do you want to run $description?"
+#     answer=$(printf "%s\n" "${options[@]}" | fzy)
+#     echo ""
+#     if [ "$answer" = "yes" ]; then
+#         bash "$SCRIPT_DIR/$script_name" \
+#         && color_echo green "$description completed successfully" \
+#         || color_echo red "$description failed with exit code. Continuing..."
+#     else
+#         color_echo cyan "Skipping $description"
+#     fi
+#     echo ""
+# }
 
 color_echo blue "\nInstalling prompt utility fzy..."
 if [ "$OS" = "Linux" ]; then
