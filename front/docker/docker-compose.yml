@@ -19,9 +19,6 @@ services:
       - ./.env
     environment:
       <<: *proxy-settings
-#      - HTTP_PROXY
-#      - HTTPS_PROXY
-#      - NO_PROXY=localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.aikon_network
     ports:
       - "${DJANGO_PORT}:8000"
     depends_on:
@@ -90,8 +87,8 @@ services:
     env_file:
       - ./.env
     volumes:
-        - ../sas:/sas
-        - ${DATA_FOLDER}/sas:/sas/data
+        - ../sas:/sas # data/ already exists inside sas/ folder
+        - ${DATA_FOLDER}/sas:/sas/data # to override it with custom, define it afterward
     ports:
       - "${SAS_PORT:-8888}:${SAS_PORT:-8888}"
     networks:
@@ -102,7 +99,6 @@ services:
   nginx:
     image: nginx:latest
     env_file:
-#      - ../app/config/.env
       - ./.env
       - ../app/config/.env
     ports:
@@ -111,11 +107,8 @@ services:
       <<: *proxy-settings
       PROD_URL: ${PROD_URL:-localhost}
       NGINX_PORT: ${NGINX_PORT:-8080}
-#      - PROD_URL=${PROD_URL:-localhost}
-#      - NGINX_PORT=${NGINX_PORT:-8080}
-#      - NO_PROXY=localhost,127.0.0.1,web,sas,cantaloupe,.aikon_network
     volumes:
-      - ./nginx_conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ../app/staticfiles:/home/aikon/app/staticfiles:ro
       - ${DATA_FOLDER}:/data:ro
       - /etc/ssl:/etc/ssl:ro

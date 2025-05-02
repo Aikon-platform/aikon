@@ -19,13 +19,18 @@ def iiif_to_img(manifest_url, digit_ref, digit):
     """
     Extract all images from an IIIF manifest
     """
-    downloader = IIIFDownloader(manifest_url, digit_ref)
-    downloader.run()
+    try:
+        downloader = IIIFDownloader(manifest_url, digit_ref)
+        downloader.run()
 
-    if lic := downloader.original_license:
-        license_url = get_license_url(lic)
-        attribution = downloader.attribution or "Unknown attribution"
-        digit.add_info(license_url, attribution)
+        if lic := downloader.original_license:
+            license_url = get_license_url(lic)
+            attribution = downloader.attribution or "Unknown attribution"
+            digit.add_info(license_url, attribution)
+    except Exception:
+        return False
+
+    return True
 
 
 def save_failed_img(image):
