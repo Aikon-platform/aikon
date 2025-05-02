@@ -58,7 +58,7 @@ RUN touch /home/${USER}/app/logs/iiif.log && chown ${USER}:${USER} /home/${USER}
 RUN touch /home/${USER}/app/logs/download.log && chown ${USER}:${USER} /home/${USER}/app/logs/download.log
 
 #EXPOSE ${PORT}
-EXPORT 8000 # PORT is only used as outside port in docker-compose
+EXPOSE 8000 # PORT is only used as outside port in docker-compose
 
 RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER}/app/staticfiles
 
