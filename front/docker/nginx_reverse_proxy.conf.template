@@ -1,13 +1,17 @@
 server {
     listen 80;
     server_name PROD_URL;
-    client_max_body_size 5000M;
+    client_max_body_size NGINX_MAX_BODY_SIZE;
 
     location / {
-        proxy_pass         http://localhost:NGINX_PORT;  # HTTP, not HTTPS
-        proxy_set_header   Host              $host;
-        proxy_set_header   X-Real-IP         $remote_addr;
-        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header   X-Forwarded-Proto https;      # requests come via HTTPS
+        proxy_pass              http://localhost:NGINX_PORT;  # HTTP, not HTTPS
+        proxy_set_header        Host              $host;
+        proxy_set_header        X-Real-IP         $remote_addr;
+        proxy_set_header        X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header        X-Forwarded-Proto https;      # requests come via HTTPS
+        proxy_connect_timeout   NGINX_TIMEOUT;
+        proxy_send_timeout      NGINX_TIMEOUT;
+        proxy_read_timeout      NGINX_TIMEOUT;
+        send_timeout            NGINX_TIMEOUT;
     }
 }
