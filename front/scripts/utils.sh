@@ -359,7 +359,9 @@ update_app_env() {
 
     media_dir=$(get_env_value "MEDIA_DIR" "$env_file")
     default_media_dir="$FRONT_ROOT"/app/mediafiles
-    if [ "$media_dir" != "$default_media_dir" ]; then
+
+    is_docker=$(get_env_value "DOCKER" "$env_file")
+    if [ "$media_dir" != "$default_media_dir" ] && [ "$is_docker" != "True" ]; then
         # when choosing a nonstandard media directory, copy the structure from the default media directory
         cp -r "$default_media_dir" "$media_dir"
     fi
