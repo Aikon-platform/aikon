@@ -47,16 +47,17 @@ if [ ! -d "$DATA_FOLDER" ]; then
     sudo chmod -R 775 "$DATA_FOLDER"
 fi
 
-if [ ! -d "$DATA_FOLDER"/mediafiles ]; then
+if [ ! -d "$DATA_FOLDER/mediafiles" ]; then
+    mkdir -p "$DATA_FOLDER"/mediafiles
     chown -R "$USERID:$USERID" "$DATA_FOLDER"/mediafiles
 fi
 
-if [ ! -d "$DATA_FOLDER"/sas ]; then
-    mkdir -p "$DATA_FOLDER"/sas
-    chown -R "$USERID":"$USERID" "$DATA_FOLDER"/sas
+if [ ! -d "$DATA_FOLDER/sas" ]; then
+    mkdir -p "$DATA_FOLDER/sas"
+    chown -R "$USERID":"$USERID" "$DATA_FOLDER/sas"
 fi
 
-setup_nginx_conf() {
+generate_conf() {
     local conf_file="$1"
     cp "$conf_file.template" "$conf_file"
 
@@ -69,15 +70,22 @@ setup_nginx_conf() {
     sed_repl_inplace "s~PROD_URL~$PROD_URL~" "$conf_file"
     sed_repl_inplace "s~SSL_CERTIFICATE~$SSL_CERTIFICATE~" "$conf_file"
     sed_repl_inplace "s~SSL_KEY~$SSL_KEY~" "$conf_file"
+    sed_repl_inplace "s~NGINX_MAX_BODY_SIZE~$NGINX_MAX_BODY_SIZE~" "$conf_file"
+    sed_repl_inplace "s~NGINX_TIMEOUT~$NGINX_TIMEOUT~" "$conf_file"
 }
 
 # if nginx.conf does not exist, create it
-if [ ! -f "$FRONT_ROOT"/docker/nginx.conf ]; then
-    echo_title "NGINX CONFIGURATION"
-    setup_nginx_conf "$DOCKER_DIR/nginx.conf"
-    setup_nginx_conf "$DOCKER_DIR/nginx_external.conf"
-    setup_nginx_conf "$DOCKER_DIR/nginx_ssl.conf"
-    setup_nginx_conf "$DOCKER_DIR/nginx_reverse_proxy.conf"
+if [ ! -f "$DOCKER_DIR/nginx.conf" ]; then
+    echo_title "GENERATE NGINX CONFIGURATION"
+    generate_conf "$DOCKER_DIR/nginx.conf"
+    generate_conf "$DOCKER_DIR/nginx_external.conf"
+    generate_conf "$DOCKER_DIR/nginx_ssl.conf"
+    generate_conf "$DOCKER_DIR/nginx_reverse_proxy.conf"
+fi
+
+if [ ! -f "$DOCKER_DIR/supervisord.conf" ]; then
+    echo_title "GENERATE SUPERVISOR CONFIGURATION"
+    generate_conf "$DOCKER_DIR/supervisord.conf"
 fi
 
 # TODO redis password

@@ -68,6 +68,8 @@ services:
     build:
       context: ..
       dockerfile: cantaloupe/Dockerfile
+      args:
+        CANTALOUPE_PORT: ${CANTALOUPE_PORT}
     env_file:
       - ./.env
     ports:
@@ -84,6 +86,8 @@ services:
     build:
       context: ..
       dockerfile: sas/Dockerfile
+      args:
+        SAS_PORT: ${SAS_PORT}
     env_file:
       - ./.env
     volumes:
