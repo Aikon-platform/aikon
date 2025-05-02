@@ -62,7 +62,6 @@ function createSimilarityStore() {
 
     const currentPage = writable(1);
 
-    // todo empty selected regions if not in compared regions
     /** @type {writable<ComparedRegionsType>} */
     const comparedRegions = writable({});
 
