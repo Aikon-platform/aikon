@@ -3,6 +3,7 @@ FROM ubuntu:22.04
 
 # Use args passed in the build command and retrieved from docker/.env
 ARG USERID
+# probably useless
 ARG PORT
 
 ENV USER=aikon
@@ -68,12 +69,11 @@ RUN touch /home/${USER}/app/logs/app_log.log && chown ${USER}:${USER} /home/${US
 RUN touch /home/${USER}/app/logs/iiif.log && chown ${USER}:${USER} /home/${USER}/app/logs/iiif.log
 RUN touch /home/${USER}/app/logs/download.log && chown ${USER}:${USER} /home/${USER}/app/logs/download.log
 
-# Must match the PORT in docker.sh
-EXPOSE ${PORT}
+#EXPOSE ${PORT} # PORT is only used as outside port in docker-compose
+EXPOSE 8000
 
 RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER}/app/staticfiles
 
-# TODO staticfiles update + database migrations is not working
 COPY --chown=${USER} docker/manage.sh /home/aikon/manage.sh
 RUN chmod +x /home/aikon/manage.sh
 RUN /home/${USER}/manage.sh

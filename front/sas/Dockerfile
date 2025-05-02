@@ -28,10 +28,13 @@ RUN mkdir -p /root/.m2 && \
        </proxies> \
     </settings>' > /root/.m2/settings.xml
 
-COPY --chown=${USER} sas /sas
-
-RUN chmod +x /sas/start.sh
-
 EXPOSE ${SAS_PORT:-8888}
 
+COPY --chown=${USER} sas /sas
+RUN chmod +x /sas/start.sh
 CMD ["/sas/start.sh"]
+
+# maybe no need to run last three commands if this is added to docker-compose
+# working_dir: /sas
+# command: mvn jetty:run -Djetty.port=${SAS_PORT:-8888}
+# sas content would be directly mounted using volumes directive

@@ -19,9 +19,6 @@ services:
       - ./.env
     environment:
       <<: *proxy-settings
-#      - HTTP_PROXY
-#      - HTTPS_PROXY
-#      - NO_PROXY=localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.aikon_network
     ports:
       - "${DJANGO_PORT}:8000"
     depends_on:
@@ -71,6 +68,8 @@ services:
     build:
       context: ..
       dockerfile: cantaloupe/Dockerfile
+      args:
+        CANTALOUPE_PORT: ${CANTALOUPE_PORT}
     env_file:
       - ./.env
     ports:
@@ -87,6 +86,8 @@ services:
     build:
       context: ..
       dockerfile: sas/Dockerfile
+      args:
+        SAS_PORT: ${SAS_PORT}
     env_file:
       - ./.env
     volumes:
@@ -102,7 +103,6 @@ services:
   nginx:
     image: nginx:latest
     env_file:
-#      - ../app/config/.env
       - ./.env
       - ../app/config/.env
     ports:
@@ -111,9 +111,6 @@ services:
       <<: *proxy-settings
       PROD_URL: ${PROD_URL:-localhost}
       NGINX_PORT: ${NGINX_PORT:-8080}
-#      - PROD_URL=${PROD_URL:-localhost}
-#      - NGINX_PORT=${NGINX_PORT:-8080}
-#      - NO_PROXY=localhost,127.0.0.1,web,sas,cantaloupe,.aikon_network
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ../app/staticfiles:/home/aikon/app/staticfiles:ro
