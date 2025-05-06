@@ -4,13 +4,14 @@ from django.apps import apps
 
 from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.utils.constants import MAX_RES
-from app.webapp.utils.functions import pdf_to_img, temp_to_img
+from app.webapp.utils.functions import temp_to_img
 from app.webapp.utils.iiif.download import iiif_to_img
+from webapp.utils.pdf import pdf_2_img
 
 
 @celery_app.task
 def convert_pdf_to_img(pdf_name, dpi=MAX_RES):
-    return pdf_to_img(pdf_name, dpi=dpi)
+    return pdf_2_img(pdf_name, dpi=dpi)
 
 
 @celery_app.task
@@ -108,17 +109,21 @@ def generate_record_json(model_name, record_id):
 
 
 @celery_app.task
-def update_image_json(success, digit_id):
+def update_image_json(img_list, digit_id):
     """Update Witness and Digitization JSON after image post-processing"""
     from app.webapp.utils.logger import log
 
-    if not success:
+    if not img_list:
         return False
 
     try:
         from app.webapp.models.digitization import Digitization
 
         digitization = Digitization.objects.get(id=digit_id)
+
+        # TODO once every task function for each of the digit types returns the list of images, use
+        # digitization.add_imgs(img_list)
+
         if not digitization.is_key_defined("imgs"):
             digitization.get_json(reindex=True)
 

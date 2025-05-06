@@ -85,15 +85,16 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         for module in ADDITIONAL_MODULES:
             self.actions += [f"compute_{module}"]
 
-    ordering = ("id", "place__name")
+    # ordering = ("id", "place__name")
+    #
+    # # Filters options in the sidebar
+    # list_filter = (
+    #     "type",
+    #     "digitizations__is_open",
+    #     "contents__tags__label",
+    #     "digitizations__regions__is_validated",
+    # )
 
-    # Filters options in the sidebar
-    list_filter = (
-        "type",
-        "digitizations__is_open",
-        "contents__tags__label",
-        "digitizations__regions__is_validated",
-    )
     # Attributes to be excluded from the form fields
     exclude = ("slug", "created_at", "updated_at")
 

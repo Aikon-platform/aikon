@@ -57,6 +57,11 @@ class AbstractSearchableModel(models.Model):
             return None
 
     def get_json(self, reindex=False):
+        """
+        Get the JSON representation of the object.
+        If reindex is True or json property hasn't been generated yet,
+        generate the JSON and update the database.
+        """
         if not self.json or reindex:
             json_data = self.to_json(reindex=True)
             type(self).objects.filter(pk=self.pk.__str__()).update(json=json_data)

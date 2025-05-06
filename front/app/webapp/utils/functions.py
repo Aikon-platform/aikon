@@ -298,64 +298,6 @@ def temp_to_img(digit):
     return True
 
 
-def pdf_to_img(pdf_name, dpi=MAX_RES):
-    """
-    Convert the PDF file to JPEG images
-    """
-    import subprocess
-
-    pdf_path = f"{MEDIA_DIR}/{pdf_name}"
-    pdf_name = Path(pdf_name).stem
-    try:
-        if not os.path.exists(pdf_path):
-            log(f"[pdf_to_img] PDF file not found: {pdf_path}")
-            return False
-
-        cmd = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
-        res = subprocess.run(
-            cmd, shell=True, check=True, timeout=500, capture_output=True, text=True
-        )
-
-        if res.returncode != 0:
-            dpi = int(dpi * 0.5)
-            size = int(MAX_SIZE * 0.8)
-            cmd = f"pdftoppm -jpeg -r {dpi} -scale-to {size} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
-            log(
-                f"[pdf_to_img] Failed to convert {pdf_name}.pdf: {res.stderr}\nUsing fallback command: {cmd}"
-            )
-            res = subprocess.run(cmd, shell=True, check=True, timeout=600)
-
-        return res.returncode == 0
-    except subprocess.TimeoutExpired:
-        log(f"[pdf_to_img] Command timed out for {pdf_name}.pdf")
-        return False
-    except Exception as e:
-        log(
-            f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e} ({e.__class__.__name__})"
-        )
-        return False
-
-
-def get_pdf_imgs(pdf_list):
-    if type(pdf_list) != list:
-        pdf_list = [pdf_list]
-
-    img_list = []
-    for pdf_name in pdf_list:
-        pdf_reader = PyPDF2.PdfFileReader(
-            open(f"{MEDIA_DIR}/{PDF_DIR}/{pdf_name}", "rb")
-        )
-        for img_nb in range(1, pdf_reader.numPages + 1):
-            img_list.append(
-                # name all the pdf images according to the format: "pdf_name_0001.jpg"
-                pdf_name.replace(
-                    ".pdf", f"_{img_nb:04d}.jpg"
-                )  # TODO: here it is retrieving only 4 digits
-            )
-
-    return img_list
-
-
 def credentials(url, auth_user, auth_passwd):
     """
     Basic authentication HTTP request

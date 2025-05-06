@@ -211,6 +211,12 @@ class Digitization(AbstractSearchableModel):
         # NOTE: might result in returning None even though there are images (but not the first one)
         return bool(get_first_img(self.get_ref()))
 
+    def add_imgs(self, imgs):
+        if not self.is_key_defined("imgs"):
+            self.json["imgs"] = []
+        self.json["imgs"].extend(imgs)
+        self.update(json=self.json)
+
     def has_digit(self):
         # if there is either a pdf/manifest/img associated with the digitization
         return bool(self.pdf or self.manifest or self.images)
