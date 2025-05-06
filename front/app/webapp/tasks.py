@@ -122,14 +122,13 @@ def update_image_json(img_list, digit_id):
         digitization = Digitization.objects.get(id=digit_id)
 
         # TODO once every task function for each of the digit types returns the list of images, use
-        # digitization.add_imgs(img_list)
-
-        if not digitization.is_key_defined("imgs"):
-            digitization.get_json(reindex=True)
+        digitization.add_imgs(img_list)
 
         witness = digitization.witness
         if not witness.is_key_defined("img"):
-            witness.get_json(reindex=True)
+            witness.json["img"] = witness.get_img(only_first=True)
+            witness.update(json=witness.json)
+            # witness.get_json(reindex=True)
 
         return True
     except Exception as e:
@@ -150,3 +149,11 @@ def periodic_tasks(sender, **kwargs):
         crontab(hour=str(3), minute=str(0)),  # Run every day at 3:00 AM
         generate_all_json.s(),
     )
+
+
+def convert_digitization(digitization_id):
+    from app.webapp.models.digitization import Digitization
+    from app.webapp.utils.logger import log
+
+    digitization = Digitization.objects.get(id=digitization_id)
+    # TODO

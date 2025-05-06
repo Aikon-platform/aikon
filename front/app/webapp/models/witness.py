@@ -163,7 +163,7 @@ class Witness(AbstractSearchableModel):
     def get_absolute_view_url(self):
         return reverse("webapp:witness_regions_view", args=[self.id])
 
-    def to_json(self, reindex=True):
+    def to_json(self, reindex=True, no_img=False):
         # TODO create to_json template in a Abstract class
         buttons = {"regions": reverse("webapp:witness_regions_view", args=[self.id])}
 
@@ -179,7 +179,7 @@ class Witness(AbstractSearchableModel):
                 "regions": [region.id for region in self.get_regions()],
                 "iiif": [digit.manifest_link(inline=True) for digit in digits],
                 "title": self.__str__(),
-                "img": self.get_img(only_first=True),
+                "img": "" if no_img else self.get_img(only_first=True),
                 "user_id": user.id if user else 0,
                 "user": user.__str__() if user else NO_USER,
                 "edit_url": self.get_absolute_edit_url(),

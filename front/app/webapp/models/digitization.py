@@ -212,9 +212,15 @@ class Digitization(AbstractSearchableModel):
         return bool(get_first_img(self.get_ref()))
 
     def add_imgs(self, imgs):
+        if type(imgs) is not list:
+            self.get_json(reindex=True)
+            return
+
         if not self.is_key_defined("imgs"):
             self.json["imgs"] = []
         self.json["imgs"].extend(imgs)
+        self.json["img_nb"] = len(self.json["imgs"])
+        self.json["zeros"] = self.img_zeros(self.json["imgs"][0])
         self.update(json=self.json)
 
     def has_digit(self):
@@ -225,9 +231,10 @@ class Digitization(AbstractSearchableModel):
         # get the number of images for a digitization
         return get_nb_of_files(IMG_PATH, self.get_ref()) or 0
 
-    def img_zeros(self):
+    def img_zeros(self, first_img=None):
         # get the number of digits for the images of this digitization (to know number of trailing zeros)
-        first_img = get_first_img(self.get_ref())
+        if not first_img:
+            first_img = get_first_img(self.get_ref())
         if not first_img:
             return 0
         return len(first_img.split("_")[-1].split(".")[0])
@@ -308,9 +315,9 @@ class Digitization(AbstractSearchableModel):
         type(self).objects.filter(pk=self.pk.__str__()).update(json=json_data)
         return self.json
 
-    def to_json(self, reindex=True):
+    def to_json(self, reindex=True, no_img=False):
         djson = self.json or {}
-        imgs = djson.get("imgs", self.get_imgs(check_in_dir=True))
+        imgs = [] if no_img else djson.get("imgs", self.get_imgs(check_in_dir=True))
         # zeros = len(imgs[0].split("_")[-1].split(".")[0])
         return {
             "id": self.id,
@@ -321,7 +328,7 @@ class Digitization(AbstractSearchableModel):
             "url": self.gen_manifest_url(),
             "imgs": imgs,
             "img_nb": djson.get("img_nb", len(imgs)),
-            "zeros": djson.get("zeros", self.img_zeros()),
+            "zeros": 0 if no_img else djson.get("zeros", self.img_zeros()),
         }
 
     def get_metadata(self):
