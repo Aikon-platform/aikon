@@ -10,6 +10,8 @@ DOCKER_ENV="$DOCKER_DIR/.env"
 update_app_env "$FRONT_ENV" || error "Failed to setup $FRONT_ENV."
 source "$FRONT_ENV"
 
+# TODO: make internal port constant and have only external PORTS (i.e only ports defined in docker/.env mutable)
+# TODO: make FRONT_ENV ports hard coded when docker is enabled
 setup_env "$DOCKER_ENV" || error "Failed to setup $DOCKER_ENV."
 source "$DOCKER_ENV"
 
