@@ -1,4 +1,5 @@
 from celery.schedules import crontab
+from celery import chain
 from app.config.celery import celery_app
 from django.apps import apps
 
@@ -6,6 +7,7 @@ from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.utils.constants import MAX_RES
 from app.webapp.utils.functions import temp_to_img
 from app.webapp.utils.iiif.download import iiif_to_img
+from webapp.models.utils.constants import PDF_ABBR, IMG_ABBR, MAN_ABBR
 from webapp.utils.pdf import pdf_2_img
 
 
@@ -151,9 +153,37 @@ def periodic_tasks(sender, **kwargs):
     )
 
 
-def convert_digitization(digitization_id):
+@celery_app.task
+def convert_digitization(digit_id):
     from app.webapp.models.digitization import Digitization
-    from app.webapp.utils.logger import log
 
-    digitization = Digitization.objects.get(id=digitization_id)
-    # TODO
+    try:
+        instance = Digitization.objects.get(id=digit_id)
+        digit_type = instance.get_digit_abbr()
+
+        if digit_type == PDF_ABBR:
+            return chain(
+                convert_pdf_to_img.s(instance.get_file_path(is_abs=False)),
+                update_image_json.s(instance.id),
+            ).apply_async(
+                countdown=1
+            )  # small delay to ensure the file is saved
+
+        elif digit_type == IMG_ABBR:
+            return chain(
+                convert_temp_to_img.s(instance), update_image_json.s(instance.id)
+            ).apply_async(countdown=1)
+
+        elif digit_type == MAN_ABBR:
+            return chain(
+                extract_images_from_iiif_manifest.s(
+                    instance.manifest, instance.get_ref(), instance
+                ),
+                update_image_json.s(instance.id),
+            ).apply_async(countdown=1)
+        return f"No processing needed for digitization #{digit_id}"
+
+    except Digitization.DoesNotExist:
+        return f"Error: Digitization #{digit_id} does not exist"
+    except Exception as e:
+        return f"Error converting digitization {digit_id}: {e}"

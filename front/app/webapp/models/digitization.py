@@ -448,28 +448,9 @@ class Digitization(AbstractSearchableModel):
 @receiver(post_save, sender=Digitization)
 def digitization_post_save(sender, instance, created, **kwargs):
     if created:
-        digit_type = instance.get_digit_abbr()
+        from app.webapp.tasks import convert_digitization
 
-        if digit_type == PDF_ABBR:
-            chain(
-                convert_pdf_to_img.s(instance.get_file_path(is_abs=False)),
-                update_image_json.s(instance.id),
-            ).apply_async(
-                countdown=1
-            )  # small delay to ensure the file is saved
-
-        elif digit_type == IMG_ABBR:
-            chain(
-                convert_temp_to_img.s(instance), update_image_json.s(instance.id)
-            ).apply_async(countdown=1)
-
-        elif digit_type == MAN_ABBR:
-            chain(
-                extract_images_from_iiif_manifest.s(
-                    instance.manifest, instance.get_ref(), instance
-                ),
-                update_image_json.s(instance.id),
-            ).apply_async(countdown=1)
+        convert_digitization.delay(instance.id)
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance

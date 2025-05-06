@@ -52,20 +52,6 @@ def convert_batch(
                 max_size,
             )
             result_files = future.result(timeout=timeout)
-    except concurrent.futures.TimeoutError:
-        log(f"Batch processing timed out ({start}-{end}), trying with lower DPI")
-        if dpi > 150:
-            return _process_batch(
-                pdf_path,
-                start,
-                end,
-                output_dir,
-                img_prefix,
-                dpi // 2,
-                ext,
-                quality,
-                max_size,
-            )
     except Exception as e:
         log(f"Batch processing failed ({start}-{end})", exception=e)
         if dpi > 150:
@@ -75,7 +61,7 @@ def convert_batch(
                 end,
                 output_dir,
                 img_prefix,
-                dpi // 2,
+                int(dpi * 0.6),
                 ext,
                 quality,
                 max_size,
