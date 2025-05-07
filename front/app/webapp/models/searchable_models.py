@@ -79,6 +79,11 @@ class AbstractSearchableModel(models.Model):
     def is_key_defined(self, key):
         return not (not self.json or key not in self.json or not self.json[key])
 
+    def get_key_value(self, key, default=None):
+        if self.is_key_defined(key):
+            return self.json[key]
+        return default
+
     @classmethod
     def regenerate_all_json(cls):
         for obj in cls.objects.all():

@@ -5,9 +5,9 @@ from django.apps import apps
 
 from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.utils.constants import MAX_RES
-from app.webapp.utils.functions import temp_to_img
 from app.webapp.utils.iiif.download import iiif_to_img
 from webapp.models.utils.constants import PDF_ABBR, IMG_ABBR, MAN_ABBR
+from webapp.utils.paths import MEDIA_DIR, IMG_PATH
 from webapp.utils.pdf import pdf_2_img
 
 
@@ -18,6 +18,8 @@ def convert_pdf_to_img(pdf_name, dpi=MAX_RES):
 
 @celery_app.task
 def convert_temp_to_img(digit):
+    from app.webapp.utils.functions import temp_to_img
+
     return temp_to_img(digit)
 
 
@@ -113,29 +115,21 @@ def generate_record_json(model_name, record_id):
 @celery_app.task
 def update_image_json(img_list, digit_id):
     """Update Witness and Digitization JSON after image post-processing"""
-    from app.webapp.utils.logger import log
-
     if not img_list:
         return False
 
     try:
         from app.webapp.models.digitization import Digitization
 
-        digitization = Digitization.objects.get(id=digit_id)
+        digit = Digitization.objects.get(id=digit_id)
+        digit.update_imgs_json(img_list)
 
-        # TODO once every task function for each of the digit types returns the list of images, use
-        digitization.add_imgs(img_list)
-
-        witness = digitization.witness
-        if not witness.is_key_defined("img"):
-            witness.json["img"] = witness.get_img(only_first=True)
-            witness.update(json=witness.json)
-            # witness.get_json(reindex=True)
+        witness = digit.witness
+        witness.get_json(reindex=True)
 
         return True
     except Exception as e:
-        log(f"[update_image_json] Error updating JSON after processing", e)
-        return False
+        return f"[update_image_json] Error updating JSON image property after processing: {e}"
 
 
 @celery_app.task
@@ -187,3 +181,35 @@ def convert_digitization(digit_id):
         return f"Error: Digitization #{digit_id} does not exist"
     except Exception as e:
         return f"Error converting digitization {digit_id}: {e}"
+
+
+@celery_app.task
+def delete_digitization(digit_ref, other_media):
+    from app.webapp.utils.functions import delete_files, get_files_with_prefix
+
+    try:
+        img_files = get_files_with_prefix(IMG_PATH, digit_ref, f"{IMG_PATH}/")
+        delete_files(img_files)
+        if other_media:
+            delete_files(other_media, MEDIA_DIR)
+
+        return f"Successfully deleted files associated to Digitization #{digit_ref}"
+
+    except Exception as e:
+        return f"Error converting digitization {digit_ref}: {e}"
+
+
+@celery_app.task
+def delete_regions(regions_ids):
+    from app.webapp.models.regions import Regions
+    from app.webapp.utils.iiif.annotation import destroy_regions
+
+    for regions_id in regions_ids:
+        try:
+            regions = Regions.objects.get(id=regions_id)
+            destroy_regions(regions)
+        except Regions.DoesNotExist:
+            return f"Error: Regions #{regions_ids} does not exist"
+        except Exception as e:
+            return f"Error deleting Regions {regions_ids}: {e}"
+    return f"Successfully deleted regions {regions_ids}"

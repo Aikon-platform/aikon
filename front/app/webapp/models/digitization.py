@@ -1,3 +1,4 @@
+import os
 from glob import glob
 from functools import partial
 from iiif_prezi.factory import StructuralError
@@ -44,12 +45,7 @@ from app.webapp.utils.paths import (
     REGIONS_PATH,
     PDF_DIR,
 )
-from app.webapp.tasks import (
-    convert_pdf_to_img,
-    convert_temp_to_img,
-    extract_images_from_iiif_manifest,
-    update_image_json,
-)
+from webapp.utils.paths import TMP_PATH
 
 ALLOWED_EXT = ["jpg", "jpeg", "png", "tif"]
 
@@ -211,18 +207,6 @@ class Digitization(AbstractSearchableModel):
         # NOTE: might result in returning None even though there are images (but not the first one)
         return bool(get_first_img(self.get_ref()))
 
-    def add_imgs(self, imgs):
-        if type(imgs) is not list:
-            self.get_json(reindex=True)
-            return
-
-        if not self.is_key_defined("imgs"):
-            self.json["imgs"] = []
-        self.json["imgs"].extend(imgs)
-        self.json["img_nb"] = len(self.json["imgs"])
-        self.json["zeros"] = self.img_zeros(self.json["imgs"][0])
-        self.update(json=self.json)
-
     def has_digit(self):
         # if there is either a pdf/manifest/img associated with the digitization
         return bool(self.pdf or self.manifest or self.images)
@@ -294,11 +278,33 @@ class Digitization(AbstractSearchableModel):
                     return imgs
 
         prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
-        path = f"{IMG_PATH}/" if is_abs else ""
-        imgs = sorted(get_files_with_prefix(IMG_PATH, prefix, path, only_one))
+        img_dir = TMP_PATH if temp else IMG_PATH
+        path = f"{img_dir}/" if is_abs else ""
+        imgs = sorted(get_files_with_prefix(img_dir, prefix, path, only_one))
         if not temp:
             self.update_json(imgs)
         return imgs
+
+    def update_imgs_json(self, imgs):
+        """
+        Add or update the properties related to images in the JSON representation of the digitization.
+        :param imgs: list of image filenames (⚠ no absolute path!)
+        """
+        if type(imgs) is not list:
+            imgs = get_files_with_prefix(IMG_PATH, f"{self.get_ref()}_", "")
+
+        if not self.is_key_defined("imgs"):
+            self.json["imgs"] = []
+
+        # only unique filenames
+        all_imgs = sorted(
+            list(set([os.path.basename(img) for img in self.json["imgs"] + imgs]))
+        )
+
+        self.json["imgs"] = all_imgs
+        self.json["img_nb"] = len(self.json["imgs"])
+        self.json["zeros"] = self.img_zeros(self.json["imgs"][0])
+        self.update(json=self.json)
 
     def update_json(self, imgs):
         json_data = {
@@ -456,18 +462,15 @@ def digitization_post_save(sender, instance, created, **kwargs):
 # Receive the pre_delete signal and delete the file associated with the model instance
 @receiver(pre_delete, sender=Digitization)
 def pre_delete_digit(sender, instance: Digitization, **kwargs):
-    # Used to delete digit files and regions
+    from app.webapp.tasks import delete_digitization
+
     other_media = instance.pdf.name if instance.digit_type == PDF_ABBR else None
-    remove_digitization(instance, other_media)
-    return
+    delete_digitization.delay(instance.get_ref(), other_media)
 
+    # NOTE do not work because manifest_url uses the digitization id
+    # from app.webapp.tasks import delete_regions
+    # delete_regions.delay([r.id for r in instance.get_regions()])
 
-def remove_digitization(digit: Digitization, other_media=None):
     from app.webapp.utils.iiif.annotation import destroy_regions
 
-    for regions in digit.get_regions():
-        destroy_regions(regions)
-
-    delete_files(digit.get_imgs(is_abs=True, check_in_dir=True))
-    if other_media:
-        delete_files(other_media, MEDIA_DIR)
+    [destroy_regions(r) for r in instance.get_regions()]

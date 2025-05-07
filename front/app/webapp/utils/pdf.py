@@ -90,25 +90,27 @@ def _process_batch(
 
             page = doc[page_idx]
             output_filename = f"{img_prefix}_{page_idx + 1:04d}.{ext}"
-            output_path = output_dir / output_filename
 
             matrix = calculate_matrix(page, dpi, max_size)
             pixmap = page.get_pixmap(matrix=matrix, alpha=False)
 
             if ext.lower() in ["jpg", "jpeg"]:
-                pixmap.save(str(output_path), output=ext.lower(), jpg_quality=quality)
+                pixmap.save(
+                    f"{output_dir}/{output_filename}",
+                    output=ext.lower(),
+                    jpg_quality=quality,
+                )
             else:
-                pixmap.save(str(output_path), output=ext.lower())
+                pixmap.save(f"{output_dir}/{output_filename}", output=ext.lower())
 
-            result_files.append(str(output_path))
-
+            result_files.append(output_filename)
     return result_files
 
 
 def convert_pdf(
     pdf_path: Path,
     page_range: Optional[Tuple[int, int]] = None,
-    output_dir: Path = BASE_DIR / IMG_PATH,
+    output_dir: Path = IMG_PATH,
     img_prefix: Optional[str] = None,
     dpi: int = MAX_RES,
     ext: str = "jpg",
@@ -172,7 +174,7 @@ def convert_pdf(
 
 def pdf_2_img(
     pdf_path: str,
-    output_dir: str = BASE_DIR / IMG_PATH,
+    output_dir: Path = IMG_PATH,
     dpi: int = MAX_RES,
     ext: str = "jpg",
     max_size: int = MAX_SIZE,
