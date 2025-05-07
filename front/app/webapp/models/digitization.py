@@ -1,6 +1,8 @@
+import os
 from glob import glob
 from functools import partial
 from iiif_prezi.factory import StructuralError
+from celery import chain
 
 from django.utils.safestring import mark_safe
 from django.core.validators import FileExtensionValidator
@@ -43,11 +45,7 @@ from app.webapp.utils.paths import (
     REGIONS_PATH,
     PDF_DIR,
 )
-from app.webapp.tasks import (
-    convert_pdf_to_img,
-    convert_temp_to_img,
-    extract_images_from_iiif_manifest,
-)
+from webapp.utils.paths import TMP_PATH
 
 ALLOWED_EXT = ["jpg", "jpeg", "png", "tif"]
 
@@ -72,7 +70,8 @@ def get_name(fieldname, plural=False):
 
 
 def no_save(instance, original_filename):
-    # NOTE here, digit_id is not yet set, digit files are renamed after with rename_files()
+    # NOTE here, digit_id is not yet set, digit files are renamed afterwards
+    #  inside temp_to_img() with digit.get_file_path()
     return f"{instance.get_relative_path()}/to_delete.txt"
 
 
@@ -216,9 +215,10 @@ class Digitization(AbstractSearchableModel):
         # get the number of images for a digitization
         return get_nb_of_files(IMG_PATH, self.get_ref()) or 0
 
-    def img_zeros(self):
+    def img_zeros(self, first_img=None):
         # get the number of digits for the images of this digitization (to know number of trailing zeros)
-        first_img = get_first_img(self.get_ref())
+        if not first_img:
+            first_img = get_first_img(self.get_ref())
         if not first_img:
             return 0
         return len(first_img.split("_")[-1].split(".")[0])
@@ -278,11 +278,33 @@ class Digitization(AbstractSearchableModel):
                     return imgs
 
         prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
-        path = f"{IMG_PATH}/" if is_abs else ""
-        imgs = sorted(get_files_with_prefix(IMG_PATH, prefix, path, only_one))
+        img_dir = TMP_PATH if temp else IMG_PATH
+        path = f"{img_dir}/" if is_abs else ""
+        imgs = sorted(get_files_with_prefix(img_dir, prefix, path, only_one))
         if not temp:
             self.update_json(imgs)
         return imgs
+
+    def update_imgs_json(self, imgs):
+        """
+        Add or update the properties related to images in the JSON representation of the digitization.
+        :param imgs: list of image filenames (⚠ no absolute path!)
+        """
+        if type(imgs) is not list:
+            imgs = get_files_with_prefix(IMG_PATH, f"{self.get_ref()}_", "")
+
+        if not self.is_key_defined("imgs"):
+            self.json["imgs"] = []
+
+        # only unique filenames
+        all_imgs = sorted(
+            list(set([os.path.basename(img) for img in self.json["imgs"] + imgs]))
+        )
+
+        self.json["imgs"] = all_imgs
+        self.json["img_nb"] = len(self.json["imgs"])
+        self.json["zeros"] = self.img_zeros(self.json["imgs"][0])
+        self.update(json=self.json)
 
     def update_json(self, imgs):
         json_data = {
@@ -299,9 +321,9 @@ class Digitization(AbstractSearchableModel):
         type(self).objects.filter(pk=self.pk.__str__()).update(json=json_data)
         return self.json
 
-    def to_json(self, reindex=True):
+    def to_json(self, reindex=True, no_img=False):
         djson = self.json or {}
-        imgs = djson.get("imgs", self.get_imgs(check_in_dir=True))
+        imgs = [] if no_img else djson.get("imgs", self.get_imgs(check_in_dir=True))
         # zeros = len(imgs[0].split("_")[-1].split(".")[0])
         return {
             "id": self.id,
@@ -312,7 +334,7 @@ class Digitization(AbstractSearchableModel):
             "url": self.gen_manifest_url(),
             "imgs": imgs,
             "img_nb": djson.get("img_nb", len(imgs)),
-            "zeros": djson.get("zeros", self.img_zeros()),
+            "zeros": 0 if no_img else djson.get("zeros", self.img_zeros()),
         }
 
     def get_metadata(self):
@@ -406,7 +428,6 @@ class Digitization(AbstractSearchableModel):
             return
 
         if not self.id:
-            # TODO check to not relaunch regions if the digit didn't change
             # If the instance is being saved for the first time, save it in order to have an id
             super().save(*args, **kwargs)
 
@@ -433,34 +454,23 @@ class Digitization(AbstractSearchableModel):
 @receiver(post_save, sender=Digitization)
 def digitization_post_save(sender, instance, created, **kwargs):
     if created:
-        digit_type = instance.get_digit_abbr()
-        if digit_type == PDF_ABBR:
-            convert_pdf_to_img.delay(instance.get_file_path(is_abs=False))
+        from app.webapp.tasks import convert_digitization
 
-        elif digit_type == IMG_ABBR:
-            convert_temp_to_img.delay(instance)
-
-        elif digit_type == MAN_ABBR:
-            extract_images_from_iiif_manifest.delay(
-                instance.manifest, instance.get_ref(), instance
-            )
+        convert_digitization.delay(instance.id)
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance
 @receiver(pre_delete, sender=Digitization)
 def pre_delete_digit(sender, instance: Digitization, **kwargs):
-    # Used to delete digit files and regions
+    from app.webapp.tasks import delete_digitization
+
     other_media = instance.pdf.name if instance.digit_type == PDF_ABBR else None
-    remove_digitization(instance, other_media)
-    return
+    delete_digitization.delay(instance.get_ref(), other_media)
 
+    # NOTE do not work because manifest_url uses the digitization id
+    # from app.webapp.tasks import delete_regions
+    # delete_regions.delay([r.id for r in instance.get_regions()])
 
-def remove_digitization(digit: Digitization, other_media=None):
     from app.webapp.utils.iiif.annotation import destroy_regions
 
-    for regions in digit.get_regions():
-        destroy_regions(regions)
-
-    delete_files(digit.get_imgs(is_abs=True, check_in_dir=True))
-    if other_media:
-        delete_files(other_media, MEDIA_DIR)
+    [destroy_regions(r) for r in instance.get_regions()]

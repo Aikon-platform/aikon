@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PASSWORD="$1"
+SUDO_PSW="$1"
 FRONT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 BIN="$FRONT_DIR"/venv/bin
 SCHEDULE_FILE="$FRONT_DIR/celery/celerybeat-schedule"
@@ -17,7 +17,7 @@ get_password && echo || exit
 # Cleanup function if running standalone
 if [ "$START_MODE" != "CHILD" ]; then
     cleanup() {
-        cleanup_pids "${PIDS[*]}" "celery|runserver|cantaloupe|jetty" "$PASSWORD"
+        cleanup_pids "${PIDS[*]}" "celery|runserver|cantaloupe|jetty" "$SUDO_PSW"
         exit 0
     }
 
@@ -36,7 +36,7 @@ PIDS+=($CELERY_BEAT_PID)
 DJANGO_PID=$!
 PIDS+=($DJANGO_PID)
 
-echo "$PASSWORD" | sudo -S java -Dcantaloupe.config="$FRONT_DIR"/cantaloupe/cantaloupe.properties -Xmx2g -jar "$FRONT_DIR"/cantaloupe/cantaloupe-4.1.11.war > /dev/null 2>&1 &
+echo "$SUDO_PSW" | sudo -S java -Dcantaloupe.config="$FRONT_DIR"/cantaloupe/cantaloupe.properties -Xmx2g -jar "$FRONT_DIR"/cantaloupe/cantaloupe-4.1.11.war > /dev/null 2>&1 &
 CANTALOUPE_PID=$!
 PIDS+=($CANTALOUPE_PID)
 

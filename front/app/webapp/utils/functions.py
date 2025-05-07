@@ -1,10 +1,11 @@
 import datetime
-import fnmatch
+import magic
 import io
 import json
 import os
 import re
 import zipfile
+import imagesize
 from pathlib import Path
 from typing import Optional, List
 from urllib.parse import urlparse
@@ -28,13 +29,11 @@ from app.config.settings import APP_NAME, APP_LANG, CANTALOUPE_APP_URL
 from app.webapp.models.utils.constants import DATE_ERROR, IMG
 from app.webapp.utils.paths import (
     BASE_DIR,
-    MEDIA_DIR,
     IMG_PATH,
-    PDF_DIR,
 )
 from app.vectorization.const import SVG_PATH
-from app.webapp.utils.constants import MAX_SIZE, MAX_RES
-from app.webapp.utils.logger import log, console
+from app.webapp.utils.constants import MAX_SIZE
+from app.webapp.utils.logger import log
 
 
 def cls(obj):
@@ -121,6 +120,9 @@ def get_files_with_prefix(
     :param ext: File extension to filter by (default: None)
     :return: A single filename (if only_one is True), a list of filenames, or None if no matches found
     """
+    if not os.path.exists(path):
+        return [] if not only_one else None
+
     with os.scandir(path) as entries:
         if only_one:
             for entry in entries:
@@ -192,7 +194,46 @@ def get_file_ext(filepath):
     return filename if ext else None, ext[1:] if ext else None
 
 
+Image.MAX_IMAGE_PIXELS = 200000000
+
+
+def check_image(file_path, max_size=10, max_pixels=Image.MAX_IMAGE_PIXELS):
+    if not os.path.exists(file_path):
+        return False, "File does not exist"
+
+    file_size = os.path.getsize(file_path) / (1024 * 1024)
+    if file_size > max_size:
+        return False, f"File too large: {file_size:.2f}MB (max: {max_size}MB)"
+
+    try:
+        mime = magic.Magic(mime=True)
+        file_type = mime.from_file(file_path)
+        if not file_type.startswith("image/"):
+            return False, f"Not an image file: {file_type}"
+    except Exception as e:
+        return False, f"Error determining file type: {e}"
+
+    try:
+        width, height = imagesize.get(file_path)
+        pixels = width * height
+        if pixels > max_pixels:
+            return False, f"Image too large: {width}x{height} ({pixels} pixels)"
+        return True, {
+            "width": width,
+            "height": height,
+            "format": file_type,
+            "size_mb": file_size,
+        }
+    except Exception as e:
+        return False, f"Error determining image dimensions: {e}"
+
+
 def to_jpg(image, new_filename=None):
+    is_valid, info = check_image(image)
+    if not is_valid:
+        log(f"[to_jpg] {info}")
+        return False
+
     try:
         return save_img(Image.open(image), new_filename or image.name)
     except Exception as e:
@@ -203,7 +244,7 @@ def to_jpg(image, new_filename=None):
 def save_img(
     img: Image,
     img_filename,
-    img_path=BASE_DIR / IMG_PATH,
+    img_path=IMG_PATH,
     max_dim=MAX_SIZE,
     img_format="JPEG",
 ):
@@ -216,7 +257,7 @@ def save_img(
             img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
 
         img.save(img_path / f"{filename}.jpg", format=img_format)
-        return img
+        return f"{filename}.jpg"
     except Exception as e:
         log("Failed to save img as JPEG", e)
         return False
@@ -237,6 +278,7 @@ def rename_file(old_path, new_path):
 
 
 def temp_to_img(digit):
+    img_filenames = []
     try:
         delete_files(f"{IMG_PATH}/to_delete.txt")
 
@@ -244,51 +286,17 @@ def temp_to_img(digit):
         for i, img_path in enumerate(
             digit.get_imgs(is_abs=True, temp=True, check_in_dir=True)
         ):
-            to_jpg(img_path, digit.get_file_path(i=i + 1))
+            img_filename = to_jpg(img_path, digit.get_file_path(i=i + 1))
+            if img_filename:
+                img_filenames.append(img_filename)
             delete_files(img_path)
-        # TODO change to have list of image name
+        # TODO change to have list of image names
         digit.images.name = f"{i + 1} {IMG} uploaded.jpg"
 
     except Exception as e:
-        log(f"[process_images] Failed to process images:\n{e} ({e.__class__.__name__})")
-
-
-def pdf_to_img(pdf_name, dpi=MAX_RES):
-    """
-    Convert the PDF file to JPEG images
-    """
-    import subprocess
-
-    pdf_path = f"{MEDIA_DIR}/{pdf_name}"
-    pdf_name = Path(pdf_name).stem
-    try:
-        command = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
-        subprocess.run(command, shell=True, check=True)
-
-    except Exception as e:
-        log(
-            f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e} ({e.__class__.__name__})"
-        )
-
-
-def get_pdf_imgs(pdf_list):
-    if type(pdf_list) != list:
-        pdf_list = [pdf_list]
-
-    img_list = []
-    for pdf_name in pdf_list:
-        pdf_reader = PyPDF2.PdfFileReader(
-            open(f"{MEDIA_DIR}/{PDF_DIR}/{pdf_name}", "rb")
-        )
-        for img_nb in range(1, pdf_reader.numPages + 1):
-            img_list.append(
-                # name all the pdf images according to the format: "pdf_name_0001.jpg"
-                pdf_name.replace(
-                    ".pdf", f"_{img_nb:04d}.jpg"
-                )  # TODO: here it is retrieving only 4 digits
-            )
-
-    return img_list
+        log(f"[process_images] Failed to process images", exception=e)
+        return False
+    return img_filenames
 
 
 def credentials(url, auth_user, auth_passwd):
@@ -614,7 +622,7 @@ def delete_files(filenames, directory=IMG_PATH):
         filenames = [filenames]
 
     for file in filenames:
-        file_path = os.path.join(directory, file)
+        file_path = file if os.path.isabs(file) else os.path.join(directory, file)
         if os.path.exists(file_path):
             try:
                 os.remove(file_path)

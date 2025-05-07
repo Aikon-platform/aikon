@@ -1,8 +1,12 @@
 # Deploy AIKON using Docker 🐳
 
+For in-depth instructions: [Complete deploy documentation](https://github.com/Aikon-platform/aikon/wiki/Docker-deploy)
+
 ## Pre-requisites
 - [Docker](https://docs.docker.com/engine/install/ubuntu/)
-- [Python ==3.10](https://tutorpython.com/install-python-3-10-on-ubuntu-22-04)
+- [Python == 3.10](https://tutorpython.com/install-python-3-10-on-ubuntu-22-04)
+- [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- [Nginx](https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-ubuntu-22-04)
 
 ### Git initialization
 Configure SSH connexion to GitHub for user:
@@ -21,7 +25,6 @@ id -u ${USER} # Get uid of user (to be used in docker/.env)
 Get an SSL certificate and key for your domain and save it.
 
 ## Build 📦
-
 On first build, you will be prompted to fill up environment values
 ```bash
 cd aikon/front/docker

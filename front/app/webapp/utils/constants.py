@@ -37,7 +37,8 @@ MAX_ROWS = 10
 
 # Maximal size for image download
 MAX_SIZE = 2500
-MAX_RES = 500
+MAX_RES = 300
+MAX_QUAL = 95
 
 # Length of a list page
 PAGE_LEN = 25

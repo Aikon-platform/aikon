@@ -9,9 +9,9 @@ install_packages() {
         sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
         sudo apt update
         sudo apt-get install wget ca-certificates
-        sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql poppler-utils redis-server ghostscript
+        sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql poppler-utils redis-server ghostscript libmagic1
     elif [ "$OS" = "Mac" ]; then
-        brew install wget ca-certificates postgresql maven nginx libpq poppler redis ghostscript
+        brew install wget ca-certificates postgresql maven nginx libpq poppler redis ghostscript libmagic
         brew services start postgresql
         brew services start redis
     else

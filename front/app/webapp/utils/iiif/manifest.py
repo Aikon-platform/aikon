@@ -52,7 +52,7 @@ def process_images(obj, seq, version=None):
     class_name = obj.__class__.__name__
 
     try:
-        imgs = obj.get_imgs()
+        imgs = obj.get_imgs(is_abs=False)
         if len(imgs) == 0:
             log(f"[process_images] No images for {class_name} n°{obj.id}")
             return False
