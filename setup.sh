@@ -9,12 +9,11 @@ FRONT_SETUP="$FRONT_DIR/scripts/setup.sh"
 API_SETUP="$API_DIR/setup.sh"
 source "$FRONT_DIR"/scripts/utils.sh
 
-read -s -p "Enter your sudo password: " SUDO_PSW
-export SUDO_PSW=$SUDO_PSW
+get_password && echo || exit
 
 color_echo blue "\nInstalling prompt utility fzy..."
 if [ "$OS" = "Linux" ]; then
-    sudo apt install fzy
+    echo "$PASSWORD" | sudo -S apt install fzy
 elif [ "$OS" = "Mac" ]; then
     brew install fzy
 else
@@ -53,10 +52,10 @@ echo_title "AIKON BUNDLE INSTALL"
 color_echo green "Front installation..."
 cd "$FRONT_DIR";
 
-# if ! bash "$FRONT_SETUP"; then
-#     color_echo red "AIKON setup encountered an error"
-#     exit 1
-# fi
+if ! bash "$FRONT_SETUP"; then
+    color_echo red "AIKON setup encountered an error"
+    exit 1
+fi
 
 color_echo green "API installation..."
 source "$FRONT_ENV"

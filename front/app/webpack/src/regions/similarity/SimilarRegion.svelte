@@ -1,12 +1,15 @@
 <script>
-    import { getContext } from "svelte";
+    import { getContext, setContext } from "svelte";
 
-    import { similarityStore } from './similarityStore.js';
-    import { extractNb } from '../../utils.js';
-    import { userId, appLang, csrfToken, regionsType, appName } from '../../constants';
-    import { exactSvg, partialSvg, semanticSvg, noSvg, userSvg, validateSvg } from './similarityCategory';
+    import { userId, appLang, csrfToken, appName } from '../../constants';
+    import { exactSvg, partialSvg, semanticSvg, noSvg, userSvg } from './similarityCategory';
+    import { toRegionItem } from "../utils.js";
+    import { getDesc } from "./utils.js";
 
     import Region from "../Region.svelte";
+
+    /** @typedef {import("../types.js").RegionItemType} RegionItemType */
+    /** @typedef {import("./types.js").SimilarityPairType} SimilarityPairType */
 
     ////////////////////////////////////////////
 
@@ -33,61 +36,31 @@
     /** @type {number} */
     export let similarityType;
 
-    const { getRegionsInfo, comparedRegions } = similarityStore;
-
     const isPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagation, false otherwise
 
-    const [wit, digit, canvas, xyhw] = sImg.split('.')[0].split('_');
-    const item = {
-        id: sImg, // note for normal regions, it is their SAS annotation id: used for region selection
-        img: sImg,
-        title: `Canvas ${canvas} - ${xyhw} - ${appLang === 'en' ? 'Witness' : 'Témoin'} #${extractNb(wit)}`,
-        xywh: xyhw,
-        canvas: canvas,
-        ref: sImg.replace('.jpg', ''),
-        type: regionsType
-    }
+    const [wit, digit, canvas, xywh] = sImg.split('.')[0].split('_');
     const regionRef = `${wit}_${digit}`;
+
+    /** @type {RegionItemType} */
+    const item = toRegionItem(sImg, wit, xywh, canvas)
 
     $: selectedCategory = category;
     $: isSelectedByUser = users.includes(Number(userId)) || false;
 
-    ////////////////////////////////////////////
+    /** @type {SimilarityPairType} we set the whole similarity pair as a context object so that it can be used by the descendant ModalSimilarity and its descendants if needed */
+    setContext("similarityPair", {
+        qImg: qImg,
+        sImg: sImg,
+        qRegions: qRegions,
+        sRegions: sRegions,
+        score: score,
+        category: category,
+        users: users,
+        isManual: isManual,
+        similarityType: similarityType,
+    })
 
-    /**
-     * if the current SimilarRegion is a propagation, then
-     * `similarityStore.comparedRegions` may not contain the `regions`.
-     * in that case, we fetch the title from the backend.
-     * @returns {Promise<string>}
-     *      if `!isPropagatedContext` the result could be synchronous, but
-     *      it is returned as a promise to provide the same async interface
-     *      for both branches
-     */
-    async function getDesc() {
-        const formatter = (title) =>
-            `${title}<br>
-            Page ${parseInt(canvas)}<br>
-            <b>${
-                !isNaN(parseFloat(score)) && similarityType === 1
-                ? `Score: ${score}`
-                : similarityType === 2 && appLang === 'en'
-                ? 'Manual similarity'
-                : similarityType === 2 && appLang === 'fr'
-                ? 'Correspondance manuelle'
-                : similarityType === 3 && appLang === 'en'
-                ? 'Propagated match'
-                : 'Correspondance propagée'
-            }</b>`;
-        return isPropagatedContext===true
-            ? fetch(`${baseUrl}${pathUrl}get_regions_title/${regionRef}`)
-                .then(r => r.json())
-                .then(r => formatter(r.title))
-                .catch(e => {
-                    console.error("SimilarRegion.getDesc()", e);
-                    return formatter(appLang === "fr" ? "Titre inconnu" : "Unknown title");
-                })
-            : Promise.resolve(formatter(getRegionsInfo(regionRef).title));
-    }
+    ////////////////////////////////////////////
 
     function updateCurrentUsers(_users) {
         _users = _users.slice();  // copy `_users`
@@ -156,7 +129,11 @@
 <div>
     <!-- TODO remove selection outline from SimilarRegion in similarities
         (selecting a Region has no effect on "Selection") -->
-    <Region {item} size={256} descPromise={getDesc()} isSquare={false}/>
+    <Region {item}
+            size={256}
+            isSquare={false}
+            descPromise={getDesc(regionRef, similarityType, score, canvas, baseUrl, pathUrl, isPropagatedContext)}
+            />
     <div class="tags has-addons is-dark is-center">
         <span class="tag is-hoverable pl-4 pr-3 py-4" class:is-selected={selectedCategory === 1}
               on:click={() => categorize(1)} on:keyup={null}

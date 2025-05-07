@@ -1,24 +1,37 @@
 <script>
-    import { getContext } from 'svelte';
+    import { setContext, getContext } from 'svelte';
     import { fade } from 'svelte/transition';
     import { similarityStore } from "./similarityStore.js";
     const { selectedRegions } = similarityStore;
     import { appLang, csrfToken } from "../../constants";
     import { manifestToMirador, refToIIIF, showMessage } from "../../utils.js";
+    import { toRegionItem } from "../utils.js";
 
     import SimilarityMatches from "./SimilarityMatches.svelte";
     import PropagatedMatches from "./PropagatedMatches.svelte";
 
+    /** @typedef {import("../types.js").RegionItemType} RegionItemType */
+
+    ////////////////////////////////////////////////
+
     export let qImg;
+
     let sImg = "";
-    const [wit, digit, canvas, xyhw] = qImg.split('.')[0].split('_');
-    const manifest = getContext('manifest');
+    const [wit, digit, canvas, xywh] = qImg.split('.')[0].split('_');
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentPageId = window.location.pathname.match(/\d+/g).join('-');
-    const error_name = appLang === "en" ? "Error" : "Erreur";
+    const errorName = appLang === "en" ? "Error" : "Erreur";
+
+    const manifest = getContext('manifest');
+    const isInModal = getContext("isInModal") || false;
 
     $: sLen = $selectedRegions.hasOwnProperty(currentPageId) ? Object.values($selectedRegions[currentPageId]).length : 0;
     $: hasNoMatch = false; // TODO HERE FIND A WAY TO SET NO MATCH FOR THIS Q REGIONS
+
+    /** @type {RegionItemType} used by region/modal */
+    setContext("qImgMetadata", toRegionItem(qImg, wit, xywh, canvas));
+
+    ////////////////////////////////////////////////
 
     function check_region_ref(region_ref) {
         region_ref = region_ref.replace('.jpg', '');
@@ -56,7 +69,7 @@
                     appLang === "en" ?
                         "Problem with network, match was not added" :
                         "Problème de réseau, la correspondance n'a pas été ajoutée",
-                    error_name
+                    errorName
                 );
             }
 
@@ -66,7 +79,7 @@
                     appLang === "en" ?
                         `Request was unsuccessful, match was not added:<br>${data.error}` :
                         `La requête n'a pas abouti, la correspondance n'a pas été ajoutée :<br>${data.error}`,
-                    error_name
+                    errorName
                 );
                 return;
             }
@@ -80,7 +93,7 @@
                 appLang === "en" ?
                     `An error has occurred, match was not added:<br>${error}` :
                     `Une erreur s'est produite, la correspondance n'a pas été ajoutée :<br>${error}`,
-                error_name
+                errorName
             );
         }
     }
@@ -115,7 +128,7 @@
                 console.error(`Error: Network response was not ok`);
                 await showMessage(
                     appLang === "en" ? "Problem with network" : "Problème de réseau",
-                    error_name
+                    errorName
                 );
             }
 
@@ -127,7 +140,7 @@
                 appLang === "en" ?
                     `An error has occurred, request was unsuccessful:<br>${error}` :
                     `Une erreur s'est produite, la requête n'a pas abouti :<br>${error}`,
-                error_name
+                errorName
             );
         }
 
@@ -143,7 +156,7 @@
             </a>
 
             <!--TODO make image copyable-->
-            <img src="{refToIIIF(qImg, 'full', '250,')}" alt="Query region" class="mb-3 card">
+            <img src="{refToIIIF(qImg, 'full', '250,')}" alt="Query region" class="mb-3 card query-image">
 
 
             <div class="new-similarity control pt-2 is-center">
@@ -168,16 +181,19 @@
         </div>
     </th>
     <td class="p-5 is-fullwidth">
-        <div class="fixed-grid has-5-cols">
+        <div class="{ isInModal ? '' : 'fixed-grid has-5-cols'}">
             <SimilarityMatches {qImg}></SimilarityMatches>
         </div>
-        <div class="fixed-grid has-5-cols">
+        <div class="{ isInModal ? '' : 'fixed-grid has-5-cols'}">
             <PropagatedMatches {qImg}></PropagatedMatches>
         </div>
     </td>
 </tr>
 
 <style>
+    .query-image {
+        max-height: 60vh;
+    }
     .new-similarity {
         display: flex;
         gap: 0.5em;

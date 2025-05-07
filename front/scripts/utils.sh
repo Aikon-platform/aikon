@@ -64,13 +64,17 @@ export OS
 OS=$(get_os)
 
 # gets a password and validates it by running a dummy cmd.
-# parent process must call the function with `get_password || exit` to exit the script if `PASSWORD` is invalid
+# parent process must call the function with `get_password || exit` to exit the script if `SUDO_PSW` is invalid
 get_password() {
-    if [ -z "$PASSWORD" ]; then
-        read -s -p "Enter your sudo password: " PASSWORD;
-        sudo -k && echo "$PASSWORD" | sudo -S whoami &> /dev/null && exit_code=0 || exit_code=1;
-        if [ ! "$exit_code" -eq 0 ]; then echo "Invalid sudo password. Exiting..."; fi
-        return "$exit_code"
+    if [ -z "$SUDO_PSW" ]; then
+        read -s -p "Enter your sudo password: " SUDO_PSW
+        echo
+        echo "$SUDO_PSW" | sudo -S whoami > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            echo "Invalid sudo password. Exiting..."
+            return 1
+        fi
+        return 0
     fi
 }
 
@@ -274,6 +278,7 @@ update_env_var() {
 }
 
 export_env() {
+    local env_file=$1
     set -a # Turn on allexport mode
     source "$env_file"
     set +a # Turn off allexport mode
@@ -325,18 +330,18 @@ setup_env() {
         cp "$env_file" "${env_file}.backup"
         cp "$template_file" "$env_file"
     else
-        options=("yes" "no")
-
-        color_echo yellow "\n$env_file is up-to-date. Do you want to regenerate it again?"
-        answer=$(printf "%s\n" "${options[@]}" | fzy)
-        if [ "$answer" = "yes" ]; then
-            rm "${template_file}.hash"
-            setup_env $env_file
-            exit 0
-        fi
+        # options=("yes" "no")
+        #
+        # color_echo yellow "\n$env_file is up-to-date. Do you want to regenerate it again?"
+        # answer=$(printf "%s\n" "${options[@]}" | fzy)
+        # if [ "$answer" = "yes" ]; then
+        #     rm "${template_file}.hash"
+        #     setup_env $env_file
+        #     return 0
+        # fi
         color_echo cyan "\nSkipping..."
-        export_env "$env_file" "${DEFAULT_PARAMS[@]}"
-        exit 0
+        export_env "$env_file"
+        return 0
     fi
 
     if [ -z "$INSTALL_MODE" ]; then
@@ -358,7 +363,9 @@ update_app_env() {
 
     media_dir=$(get_env_value "MEDIA_DIR" "$env_file")
     default_media_dir="$FRONT_ROOT"/app/mediafiles
-    if [ "$media_dir" != "$default_media_dir" ]; then
+
+    is_docker=$(get_env_value "DOCKER" "$env_file")
+    if [ "$media_dir" != "$default_media_dir" ] && [ "$is_docker" != "True" ]; then
         # when choosing a nonstandard media directory, copy the structure from the default media directory
         cp -r "$default_media_dir" "$media_dir"
     fi
@@ -367,20 +374,26 @@ update_app_env() {
 setup_cantaloupe() {
     export INSTALL_MODE=${1:-$INSTALL_MODE}
     cantaloupe_dir=${2:-$FRONT_ROOT/cantaloupe}
-    default_params=("CANTALOUPE_BASE_URI" "CANTALOUPE_IMG" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "CANTALOUPE_DIR")
-    setup_env "$cantaloupe_dir"/.env
+    local default_params=("CANTALOUPE_BASE_URI" "CANTALOUPE_IMG" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "CANTALOUPE_DIR")
+    setup_env "$cantaloupe_dir"/.env "${default_params[@]}" || return 1
 
     config_cantaloupe="$cantaloupe_dir"/cantaloupe.properties
-    cp "$config_cantaloupe.template" $config_cantaloupe
 
     chmod +x "$cantaloupe_dir"/start.sh
     source "$cantaloupe_dir"/.env
 
-    sed_repl_inplace "s~CANTALOUPE_BASE_URI~$CANTALOUPE_BASE_URI~" "$config_cantaloupe"
-    sed_repl_inplace "s~CANTALOUPE_IMG~$CANTALOUPE_IMG~" "$config_cantaloupe"
-    sed_repl_inplace "s~CANTALOUPE_PORT~$CANTALOUPE_PORT~" "$config_cantaloupe"
-    sed_repl_inplace "s~CANTALOUPE_PORT_HTTPS~$CANTALOUPE_PORT_HTTPS~" "$config_cantaloupe"
-    sed_repl_inplace "s~CANTALOUPE_DIR~$CANTALOUPE_DIR~" "$config_cantaloupe"
+    if [ ! -f "$config_cantaloupe" ] || ! check_template_hash "$config_cantaloupe.template"; then
+         cp "$config_cantaloupe.template" "$config_cantaloupe"
+
+         sed_repl_inplace "s~CANTALOUPE_BASE_URI~$CANTALOUPE_BASE_URI~" "$config_cantaloupe"
+         sed_repl_inplace "s~CANTALOUPE_IMG~$CANTALOUPE_IMG~" "$config_cantaloupe"
+         sed_repl_inplace "s~CANTALOUPE_PORT~$CANTALOUPE_PORT~" "$config_cantaloupe"
+         sed_repl_inplace "s~CANTALOUPE_PORT_HTTPS~$CANTALOUPE_PORT_HTTPS~" "$config_cantaloupe"
+         sed_repl_inplace "s~CANTALOUPE_DIR~$CANTALOUPE_DIR~" "$config_cantaloupe"
+         store_template_hash "$config_cantaloupe.template"
+    else
+         color_echo green "$config_cantaloupe is up-to-date."
+    fi
 }
 
 get_child_pids() {
