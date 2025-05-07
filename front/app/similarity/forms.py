@@ -90,13 +90,14 @@ class SimilarityForm(forms.Form):
             parameters.update(
                 {
                     "segswap_prefilter": self.cleaned_data.get(
-                        f"{algorithm}_cosine_preprocessing", True
+                        f"{algorithm}_{algorithm}_cosine_preprocessing", True
                     ),
                     "segswap_n": self.cleaned_data.get(
-                        f"{algorithm}_cosine_n_filter", 0
+                        f"{algorithm}_{algorithm}_cosine_n_filter", 0
                     ),
                 }
             )
+            print(parameters)
 
         # NOTE for watermarks only
         # if parameters.get("use_transpositions"):
