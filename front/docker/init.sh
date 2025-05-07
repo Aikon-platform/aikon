@@ -4,14 +4,14 @@ FRONT_ROOT="$(dirname "$DOCKER_DIR")"
 source "$FRONT_ROOT/scripts/utils.sh"
 export INSTALL_MODE="full_install"
 
-get_password && echo || exit
-
 FRONT_ENV="$FRONT_ROOT/app/config/.env"
 DOCKER_ENV="$DOCKER_DIR/.env"
 
 update_app_env "$FRONT_ENV" || error "Failed to setup $FRONT_ENV."
 source "$FRONT_ENV"
 
+# TODO: make internal port constant and have only external PORTS (i.e only ports defined in docker/.env mutable)
+# TODO: make FRONT_ENV ports hard coded when docker is enabled
 setup_env "$DOCKER_ENV" || error "Failed to setup $DOCKER_ENV."
 source "$DOCKER_ENV"
 
@@ -19,6 +19,7 @@ setup_cantaloupe "quick_install"
 
 # if app/logs/app_log.log does not exist, create it
 if [ ! -f "$FRONT_ROOT/app/logs/app_log.log" ]; then
+    get_password && echo || exit
     color_echo yellow "Log file creation"
     touch "$FRONT_ROOT/app/logs/app_log.log"
     touch "$FRONT_ROOT/app/logs/download.log"
@@ -28,6 +29,7 @@ fi
 
 # if $DATA_FOLDER does not exist
 if [ ! -d "$DATA_FOLDER" ]; then
+    get_password && echo || exit
     color_echo yellow "Creation of $DATA_FOLDER"
     # Create $DATA_FOLDER folder with right permissions for user $USERID
     sudo mkdir -p "$DATA_FOLDER"
@@ -36,11 +38,13 @@ if [ ! -d "$DATA_FOLDER" ]; then
 fi
 
 if [ ! -d "$DATA_FOLDER/mediafiles" ]; then
+    get_password && echo || exit
     sudo mkdir -p "$DATA_FOLDER"/mediafiles
     sudo chown -R "$USERID:$USERID" "$DATA_FOLDER"/mediafiles
 fi
 
 if [ ! -d "$DATA_FOLDER/sas" ]; then
+    get_password && echo || exit
     sudo mkdir -p "$DATA_FOLDER/sas"
     sudo chown -R "$USERID":"$USERID" "$DATA_FOLDER/sas"
 fi

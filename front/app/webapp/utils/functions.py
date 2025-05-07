@@ -29,13 +29,11 @@ from app.config.settings import APP_NAME, APP_LANG, CANTALOUPE_APP_URL
 from app.webapp.models.utils.constants import DATE_ERROR, IMG
 from app.webapp.utils.paths import (
     BASE_DIR,
-    MEDIA_DIR,
     IMG_PATH,
-    PDF_DIR,
 )
 from app.vectorization.const import SVG_PATH
-from app.webapp.utils.constants import MAX_SIZE, MAX_RES
-from app.webapp.utils.logger import log, console
+from app.webapp.utils.constants import MAX_SIZE
+from app.webapp.utils.logger import log
 
 
 def cls(obj):
@@ -246,7 +244,7 @@ def to_jpg(image, new_filename=None):
 def save_img(
     img: Image,
     img_filename,
-    img_path=BASE_DIR / IMG_PATH,
+    img_path=IMG_PATH,
     max_dim=MAX_SIZE,
     img_format="JPEG",
 ):
@@ -259,7 +257,7 @@ def save_img(
             img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
 
         img.save(img_path / f"{filename}.jpg", format=img_format)
-        return img
+        return f"{filename}.jpg"
     except Exception as e:
         log("Failed to save img as JPEG", e)
         return False
@@ -280,6 +278,7 @@ def rename_file(old_path, new_path):
 
 
 def temp_to_img(digit):
+    img_filenames = []
     try:
         delete_files(f"{IMG_PATH}/to_delete.txt")
 
@@ -287,73 +286,17 @@ def temp_to_img(digit):
         for i, img_path in enumerate(
             digit.get_imgs(is_abs=True, temp=True, check_in_dir=True)
         ):
-            to_jpg(img_path, digit.get_file_path(i=i + 1))
+            img_filename = to_jpg(img_path, digit.get_file_path(i=i + 1))
+            if img_filename:
+                img_filenames.append(img_filename)
             delete_files(img_path)
-        # TODO change to have list of image name
+        # TODO change to have list of image names
         digit.images.name = f"{i + 1} {IMG} uploaded.jpg"
 
     except Exception as e:
-        log(f"[process_images] Failed to process images:\n{e} ({e.__class__.__name__})")
+        log(f"[process_images] Failed to process images", exception=e)
         return False
-    return True
-
-
-def pdf_to_img(pdf_name, dpi=MAX_RES):
-    """
-    Convert the PDF file to JPEG images
-    """
-    import subprocess
-
-    pdf_path = f"{MEDIA_DIR}/{pdf_name}"
-    pdf_name = Path(pdf_name).stem
-    try:
-        if not os.path.exists(pdf_path):
-            log(f"[pdf_to_img] PDF file not found: {pdf_path}")
-            return False
-
-        cmd = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
-        res = subprocess.run(
-            cmd, shell=True, check=True, timeout=500, capture_output=True, text=True
-        )
-
-        if res.returncode != 0:
-            dpi = int(dpi * 0.5)
-            size = int(MAX_SIZE * 0.8)
-            cmd = f"pdftoppm -jpeg -r {dpi} -scale-to {size} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
-            log(
-                f"[pdf_to_img] Failed to convert {pdf_name}.pdf: {res.stderr}\nUsing fallback command: {cmd}"
-            )
-            res = subprocess.run(cmd, shell=True, check=True, timeout=600)
-
-        return res.returncode == 0
-    except subprocess.TimeoutExpired:
-        log(f"[pdf_to_img] Command timed out for {pdf_name}.pdf")
-        return False
-    except Exception as e:
-        log(
-            f"[pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e} ({e.__class__.__name__})"
-        )
-        return False
-
-
-def get_pdf_imgs(pdf_list):
-    if type(pdf_list) != list:
-        pdf_list = [pdf_list]
-
-    img_list = []
-    for pdf_name in pdf_list:
-        pdf_reader = PyPDF2.PdfFileReader(
-            open(f"{MEDIA_DIR}/{PDF_DIR}/{pdf_name}", "rb")
-        )
-        for img_nb in range(1, pdf_reader.numPages + 1):
-            img_list.append(
-                # name all the pdf images according to the format: "pdf_name_0001.jpg"
-                pdf_name.replace(
-                    ".pdf", f"_{img_nb:04d}.jpg"
-                )  # TODO: here it is retrieving only 4 digits
-            )
-
-    return img_list
+    return img_filenames
 
 
 def credentials(url, auth_user, auth_passwd):
@@ -679,7 +622,7 @@ def delete_files(filenames, directory=IMG_PATH):
         filenames = [filenames]
 
     for file in filenames:
-        file_path = os.path.join(directory, file)
+        file_path = file if os.path.isabs(file) else os.path.join(directory, file)
         if os.path.exists(file_path):
             try:
                 os.remove(file_path)

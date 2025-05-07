@@ -67,10 +67,14 @@ OS=$(get_os)
 # parent process must call the function with `get_password || exit` to exit the script if `SUDO_PSW` is invalid
 get_password() {
     if [ -z "$SUDO_PSW" ]; then
-        read -s -p "Enter your sudo password: " SUDO_PSW;
-        sudo -k && echo "$SUDO_PSW" | sudo -S whoami &> /dev/null && exit_code=0 || exit_code=1;
-        if [ ! "$exit_code" -eq 0 ]; then echo "Invalid sudo password. Exiting..."; fi
-        return "$exit_code"
+        read -s -p "Enter your sudo password: " SUDO_PSW
+        echo
+        echo "$SUDO_PSW" | sudo -S whoami > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            echo "Invalid sudo password. Exiting..."
+            return 1
+        fi
+        return 0
     fi
 }
 

@@ -18,10 +18,11 @@ IMG_DIR = "img"
 LOG_DIR = "logs"
 PDF_DIR = "pdf"
 REGIONS_DIR = "regions"
+TMP_DIR = "tmp"
 
 # Media file paths
-IMG_PATH = f"{MEDIA_DIR}/{IMG_DIR}"
-REGIONS_PATH = f"{MEDIA_DIR}/{REGIONS_DIR}"
-LOG_PATH = f"{BASE_DIR}/{LOG_DIR}/app_log.log"
-IIIF_LOG_PATH = f"{BASE_DIR}/{LOG_DIR}/iiif.log"
-DOWNLOAD_LOG_PATH = f"{BASE_DIR}/{LOG_DIR}/download.log"
+IMG_PATH = Path(f"{MEDIA_DIR}/{IMG_DIR}")
+REGIONS_PATH = Path(f"{MEDIA_DIR}/{REGIONS_DIR}")
+LOG_PATH = Path(f"{BASE_DIR}/{LOG_DIR}/app_log.log")
+DOWNLOAD_LOG_PATH = Path(f"{BASE_DIR}/{LOG_DIR}/download.log")
+TMP_PATH = Path(f"{MEDIA_DIR}/{TMP_DIR}")
