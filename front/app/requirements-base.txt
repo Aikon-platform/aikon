@@ -41,7 +41,7 @@ packaging==21.3
 pdf2image==1.16.2
 pikepdf==6.2.0
 Pillow>=10.3.0
-psutils>=7.0.0
+psutils
 #psycopg2==2.9.3
 psycopg2-binary==2.9.10
 pycparser==2.21
