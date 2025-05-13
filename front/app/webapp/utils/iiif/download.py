@@ -19,13 +19,18 @@ def iiif_to_img(manifest_url, digit_ref, digit):
     """
     Extract all images from an IIIF manifest
     """
-    downloader = IIIFDownloader(manifest_url, digit_ref)
-    downloader.run()
+    try:
+        downloader = IIIFDownloader(manifest_url, digit_ref)
+        downloader.run()
 
-    if lic := downloader.original_license:
-        license_url = get_license_url(lic)
-        attribution = downloader.attribution or "Unknown attribution"
-        digit.add_info(license_url, attribution)
+        if lic := downloader.original_license:
+            license_url = get_license_url(lic)
+            attribution = downloader.attribution or "Unknown attribution"
+            digit.add_info(license_url, attribution)
+    except Exception:
+        return False
+
+    return downloader.imgs
 
 
 def save_failed_img(image):
@@ -39,6 +44,7 @@ def save_failed_img(image):
             response.raw.decode_content = True
             img = Image.open(response.raw)
             save_img(img, img_name)
+            # TODO update json property afterwards
 
     except (RequestException, ProtocolError, Timeout, Exception) as e:
         shutil.copyfile(
@@ -62,7 +68,7 @@ class IIIFDownloader:
     ):
         self.manifest_url = manifest_url
         self.manifest_id = witness_ref  # Prefix to be used for img filenames
-        self.manifest_dir_path = BASE_DIR / IMG_PATH
+        self.manifest_dir_path = IMG_PATH
 
         # self.size = self.get_formatted_size(width, height)
         self.max_dim = max_dim  # Maximal height in px
@@ -75,6 +81,7 @@ class IIIFDownloader:
         # Save the license given in the original manifest if possible
         self.original_license = ""
         self.attribution = ""
+        self.imgs = []
 
     def run(self):
         manifest = get_json(self.manifest_url)
@@ -84,7 +91,9 @@ class IIIFDownloader:
             self.get_attribution(manifest)
 
             for rsrc in self.get_iiif_resources(manifest):
-                self.save_iiif_img(rsrc, i)
+                img_filename = self.save_iiif_img(rsrc, i)
+                if img_filename:
+                    self.imgs.append(img_filename)
                 i += 1
 
             if DOWNLOAD_LOG_PATH:
@@ -97,7 +106,7 @@ class IIIFDownloader:
                     save_failed_img(image)
 
             # NOTE to create manifests out of images URL
-            # with open(BASE_DIR / IMG_PATH / f"{self.manifest_id}.txt", "a") as f:
+            # with open(IMG_PATH / f"{self.manifest_id}.txt", "a") as f:
             #     for img_rsrc in get_iiif_resources(manifest, True):
             #         f.write(
             #             f"{get_height(img_rsrc)} {get_width(img_rsrc)} {get_id(img_rsrc)}\n"
@@ -167,8 +176,9 @@ class IIIFDownloader:
                     time.sleep(self.sleep)
                     if size == f_size:
                         size = self.get_reduced_size(img_rsrc)
-                        self.save_iiif_img(img_rsrc, i, self.get_formatted_size(size))
-                        return
+                        return self.save_iiif_img(
+                            img_rsrc, i, self.get_formatted_size(size)
+                        )
                     else:
                         shutil.copyfile(
                             f"{BASE_DIR}/webapp/static/img/placeholder.jpg",
@@ -176,24 +186,25 @@ class IIIFDownloader:
                         )
                         download_log(img_name, img_url)
                         log(f"[save_iiif_img] {iiif_url} is not a valid img file", e)
-                        return
+                        return img_name
                 except (IOError, OSError) as e:
                     if size == "full":
                         size = self.get_reduced_size(img_rsrc)
-                        self.save_iiif_img(img_rsrc, i, self.get_formatted_size(size))
-                        return
+                        return self.save_iiif_img(
+                            img_rsrc, i, self.get_formatted_size(size)
+                        )
                     else:
                         log(
                             f"[save_iiif_img] {iiif_url} is a truncated or corrupted image",
                             e,
                         )
-                        return
+                        return None
                 return save_img(img, img_name)
 
         except (RequestException, ProtocolError, Timeout, ConnectionError) as e:
             download_log(img_name, img_url)
             log(f"[save_iiif_img] Failed to download image from {iiif_url}", e)
-            return False
+            return None
 
     def get_img_rsrc(self, iiif_img):
         try:

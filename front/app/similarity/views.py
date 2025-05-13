@@ -32,6 +32,7 @@ from app.similarity.utils import (
     get_all_pairs,
     reset_similarity,
     regions_from_img,
+    get_pairs_for_regions,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
@@ -125,15 +126,7 @@ def get_similar_images(request, wid, rid=None):
         # Process pairs for each q_region
         result = []
         for q_r in q_regions:
-            pairs = [
-                pair
-                for pair in all_pairs
-                if pair.regions_id_1 == q_r.id or pair.regions_id_2 == q_r.id
-            ]
-            if q_r.id not in regions_ids:
-                pairs = [
-                    pair for pair in pairs if pair.regions_id_1 != pair.regions_id_2
-                ]
+            pairs = get_pairs_for_regions(all_pairs, q_r.id, regions_ids)
 
             result.extend(
                 get_best_pairs(

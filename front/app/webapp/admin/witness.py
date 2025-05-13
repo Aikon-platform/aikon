@@ -28,7 +28,9 @@ from app.webapp.utils.iiif.annotation import (
     get_images_annotations,
     get_training_regions,
 )
-from app.webapp.utils.paths import IMG_PATH
+from app.webapp.utils.paths import IMG_PATH, BASE_DIR
+from webapp.utils.logger import log
+from webapp.utils.paths import MEDIA_DIR, TMP_PATH
 
 
 def no_regions_message(request):
@@ -85,15 +87,16 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         for module in ADDITIONAL_MODULES:
             self.actions += [f"compute_{module}"]
 
-    ordering = ("id", "place__name")
+    # ordering = ("id", "place__name")
+    #
+    # # Filters options in the sidebar
+    # list_filter = (
+    #     "type",
+    #     "digitizations__is_open",
+    #     "contents__tags__label",
+    #     "digitizations__regions__is_validated",
+    # )
 
-    # Filters options in the sidebar
-    list_filter = (
-        "type",
-        "digitizations__is_open",
-        "contents__tags__label",
-        "digitizations__regions__is_validated",
-    )
     # Attributes to be excluded from the form fields
     exclude = ("slug", "created_at", "updated_at")
 
@@ -130,6 +133,8 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         # called on submission of form
         if not obj.user:
             obj.user = request.user
+
+        # save Witness to get its ID
         obj.save()
 
         flash_msg = ""
@@ -138,24 +143,26 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         for nb in range(0, 4):
             digit_id = request.POST.get(f"digitizations-{nb}-id", None)
             if digit_id:
-                # TODO! don't save again digit that were already treated
+                # don't save again a digit that was already treated
                 continue
+
             digit_type = request.POST.get(f"digitizations-{nb}-digit_type", None)
-            files = request.FILES.getlist(f"digitizations-{nb}-images")
+            if not digit_type:
+                continue
 
             flash_msg = (
                 "The image conversion process is underway. Please wait a few moments."
                 if APP_LANG == "en"
-                else "Le processus de téléchargement est en cours. Veuillez patienter quelques instants."
+                else "Le processus de traitement des images est en cours. Veuillez patienter quelques instants."
             )
 
-            if len(files):  # if images were uploaded
-                sorted_files = sorted(files, key=lambda f: f.name)
-
-                for i, file in enumerate(sorted_files):
+            imgs_files = request.FILES.getlist(f"digitizations-{nb}-images")
+            if len(imgs_files):
+                for i, file in enumerate(sorted(imgs_files, key=lambda f: f.name)):
+                    TMP_PATH.mkdir(exist_ok=True)
                     filename, ext = get_file_ext(file.name)
                     with open(
-                        f"{IMG_PATH}/temp_{obj.get_ref()}_{digit_type}_{str(i).zfill(4)}.{ext}",
+                        f"{TMP_PATH}/temp_{obj.get_ref()}_{digit_type}_{str(i).zfill(4)}.{ext}",
                         "wb",
                     ) as saved_file:
                         saved_file.write(file.read())
@@ -342,6 +349,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                 or obj.user == request.user
                 or is_in_group(request.user, obj.user)
             )
+        return False
 
     def has_view_permission(self, request, obj=None):
         if obj:
@@ -350,6 +358,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
                 or obj.is_public
                 or is_in_group(request.user, obj.user)
             )
+        return False
 
 
 class WitnessInline(nested_admin.NestedStackedInline):
@@ -372,12 +381,11 @@ class WitnessInline(nested_admin.NestedStackedInline):
                 or obj.user == request.user
                 or is_in_group(request.user, obj.user)
             )
-        else:
-            return (
-                request.user.is_superuser
-                or obj.user == request.user
-                or is_in_group(request.user, obj.user)
-            )
+        return (
+            request.user.is_superuser
+            or obj.user == request.user
+            or is_in_group(request.user, obj.user)
+        )
 
     def has_view_permission(self, request, obj=None):
         if obj:
@@ -386,8 +394,7 @@ class WitnessInline(nested_admin.NestedStackedInline):
                 or obj.is_public
                 or is_in_group(request.user, obj.user)
             )
-        else:
-            return True
+        return True
 
     def has_add_permission(self, request, obj=None):
         if obj and obj.user:
@@ -396,5 +403,4 @@ class WitnessInline(nested_admin.NestedStackedInline):
                 or obj.is_public
                 or is_in_group(request.user, obj.user)
             )
-        else:
-            return True
+        return True

@@ -30,6 +30,7 @@ app/mediafiles/svg/*
 !app/mediafiles/svg/.gitkeep
 app/mediafiles/picture/*
 !app/mediafiles/picture/.gitkeep
+app/mediafiles/tmp/
 
 # Django migration files (to be generated on prod - even if this is bad)
 #app/webapp/migrations/0*
@@ -141,3 +142,7 @@ scripts/*.sql
 scripts/.pgpass
 
 docker/nginx.conf
+docker/nginx_external.conf
+docker/nginx_reverse_proxy.conf
+docker/nginx_ssl.conf
+docker/supervisord.conf
