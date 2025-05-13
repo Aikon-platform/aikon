@@ -15,7 +15,7 @@ import { appLang } from "../../constants.js";
 import { shorten } from "../../utils.js";
 
 import InputSlider from "../../ui/InputSlider.svelte";
-import InputToggleCheckbox from "../../ui/InputToggleCheckbox.svelte";
+import InputToggle from "../../ui/InputToggle.svelte";
 import InputDropdown from "../../ui/InputDropdown.svelte";
 import IconTooltip from "../../ui/IconTooltip.svelte";
 import TooltipGeneric from "../../ui/TooltipGeneric.svelte";
@@ -211,11 +211,11 @@ const setComparedRegions = (e) => {
                                 ></InputSlider>
                             </div>
                             <div class="ctrl-input">
-                                <InputToggleCheckbox checkboxLabel="Filter by region"
-                                                    on:updateChecked={setPropagateFilterByRegions}
-                                                    start={$propagateFilterByRegions}
-                                                    buttonDisplay={true}
-                                ></InputToggleCheckbox>
+                                <InputToggle toggleLabel="Filter by region"
+                                             on:updateChecked={setPropagateFilterByRegions}
+                                             start={$propagateFilterByRegions}
+                                             buttonDisplay={true}
+                                ></InputToggle>
                             </div>
 
 
