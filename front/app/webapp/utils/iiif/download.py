@@ -44,6 +44,7 @@ def save_failed_img(image):
             response.raw.decode_content = True
             img = Image.open(response.raw)
             save_img(img, img_name)
+            # TODO update json property afterwards
 
     except (RequestException, ProtocolError, Timeout, Exception) as e:
         shutil.copyfile(
