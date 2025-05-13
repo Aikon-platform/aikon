@@ -11,11 +11,11 @@
 -->
 
 <script>
-import TooltipGeneric from "./TooltipGeneric.svelte";
+    import TooltipGeneric from "./TooltipGeneric.svelte";
 
-export let iconifyIcon,
-           altText,
-           tooltipText;
+    export let iconifyIcon,
+               altText,
+               tooltipText;
 </script>
 
 
@@ -30,11 +30,11 @@ export let iconifyIcon,
 </div>
 
 <style>
-.icon-tooltip > button {
-    position: relative;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
+    .icon-tooltip > button {
+        position: relative;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
 </style>

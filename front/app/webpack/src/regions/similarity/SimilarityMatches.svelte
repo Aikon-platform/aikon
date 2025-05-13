@@ -1,4 +1,6 @@
 <script>
+    import { onMount, getContext } from "svelte";
+
     import { csrfToken } from "../../constants";
     import SimilarRegions from "./SimilarRegions.svelte";
     import { similarityStore } from "./similarityStore.js";
@@ -10,18 +12,23 @@
     export let qImg;
     let sImgsPromise;
 
-    const { selectedRegions } = similarityStore;
+    const isInModal = getContext("isInModal") || false;
+    const { selectedRegions, comparedRegions } = similarityStore;
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentPageId = window.location.pathname.match(/\d+/g).join("-");
 
     /////////////////////////////////////////////
 
     /**
+     * if `_isInModal`, we retrieve similarities for all possible regions. else, only for regions defined by the user.
      * @param {SelectedRegionsType} selection
+     * @param {boolean} _isInModal
      * @returns {number[]}
      */
-    const getRegionsIds = (selection) =>
-        Object.values(selection[currentPageId] || {}).map(r => r.id);
+    const getRegionsIds = (selection, _isInModal) =>
+        _isInModal
+        ? Object.keys($comparedRegions).map((k) => $comparedRegions[k].id)
+        : Object.values(selection[currentPageId] || {}).map(r => r.id);
 
     /**
      * retrieve similar images to `qImg`
@@ -29,8 +36,8 @@
      * @param {SelectedRegionsType} selection
      * @returns {Promise<array>}
      */
-    async function fetchSImgs(qImg, selection) {
-        const regionsIds = getRegionsIds(selection);
+    async function fetchSImgs(qImg, selection, _isInModal) {
+        const regionsIds = getRegionsIds(selection, _isInModal);
         if (regionsIds.length === 0) {
             return [];
         }
@@ -51,9 +58,15 @@
 
     /////////////////////////////////////////////
 
-    selectedRegions.subscribe((newSelectedRegions) => {
-        sImgsPromise = fetchSImgs(qImg, newSelectedRegions);
-    });
+    // in modals, we retrieve similarities for all possible regions. outside of modals, we retrieve similarities only for the user-defined regions.
+    // => if !isInModal, listening to changes of `selectedRegions` is useless.
+    if ( isInModal ) {
+        sImgsPromise = fetchSImgs(qImg, $selectedRegions, isInModal);
+    } else {
+        selectedRegions.subscribe((newSelectedRegions) => {
+            sImgsPromise = fetchSImgs(qImg, newSelectedRegions, isInModal);
+        });
+    }
 </script>
 
 <div>

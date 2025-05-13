@@ -6,7 +6,7 @@ logfile_maxbytes=0
 pidfile=/tmp/supervisord.pid
 
 [program:gunicorn]
-command=/home/aikon/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:8000 --timeout 150 app.config.wsgi:application
+command=/home/aikon/venv/bin/gunicorn --workers 4 --bind 0.0.0.0:DJANGO_PORT --timeout NGINX_TIMEOUT app.config.wsgi:application
 directory=/home/aikon/app
 user=aikon
 autostart=true

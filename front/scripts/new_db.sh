@@ -91,11 +91,11 @@ if [ -z "$db_sql_file" ]; then
     export DJANGO_SUPERUSER_USERNAME
     DJANGO_SUPERUSER_USERNAME=$(get_env_value "POSTGRES_USER" "$APP_ENV")
     export DJANGO_SUPERUSER_EMAIL
-    DJANGO_SUPERUSER_EMAIL=$(get_env_value "CONTACT_MAIL" "$APP_ENV")
+    DJANGO_SUPERUSER_EMAIL=$(get_env_value "EMAIL_HOST_USER" "$APP_ENV")
     export DJANGO_SUPERUSER_PASSWORD
     DJANGO_SUPERUSER_PASSWORD=$(get_env_value "POSTGRES_PASSWORD" "$APP_ENV")
     $manage createsuperuser --noinput
-    # $manage createsuperuser --username="$db_user" --email="$CONTACT_MAIL"
+    # $manage createsuperuser --username="$db_user" --email="$EMAIL_HOST_USER"
 else
     psql -h "$db_host" -d "$db_name" -U "$db_user" -f "$db_sql_file" || echo "‼️ Failed to import SQL data ‼️"
 fi

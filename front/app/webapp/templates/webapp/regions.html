@@ -7,7 +7,7 @@
 
 {% block extrahead %}
     <link rel="stylesheet" href="{% static 'css/regions.css' %}">
-    <link rel="stylesheet" href="{% static 'svelte/regionList.css' %}">
+    <link rel="stylesheet" href="{% static 'svelte/regionList/regionList.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -48,5 +48,10 @@
         const nbOfPages = {% if img_nb %}{{img_nb}}{% else %}0{% endif %};
         const trailingZeros = {% if img_zeros %}{{img_zeros}}{% else %}0{% endif %};
     </script>
+    <!--
     <script src="{% static 'svelte/regionList.js' %}"></script>
+    -->
+    <script type="module"
+            src="{% static 'svelte/regionList/region-list.js' %}"
+    ></script>
 {% endblock %}

@@ -148,9 +148,9 @@ class WitnessFilter(RecordFilter):
     place = ModelChoiceFilter(
         queryset=ConservationPlace.objects.all(),
     )
-    # series = ModelChoiceFilter(
-    #     queryset=Series.objects.all(),
-    # )
+    series = ModelChoiceFilter(
+        queryset=Series.objects.all(),
+    )
     contents__lang = ModelMultipleChoiceFilter(
         queryset=Language.objects.all(),
         null_value=None,
@@ -173,7 +173,7 @@ class WitnessFilter(RecordFilter):
             "id_nb": ["icontains"],
             "place": ["exact"],
             "edition": ["exact"],
-            # "series": ["exact"],
+            "series": ["exact"],
             "contents__work": ["exact"],
             "contents__work__author": ["exact"],
             "contents__lang": ["exact"],
@@ -187,7 +187,7 @@ class WitnessFilter(RecordFilter):
             "edition__name": edition_name("name"),
             "edition__place": edition_name("pub_place"),
             "edition__publisher": edition_name("publisher"),
-            # "series": series_name("Series"),
+            "series": series_name("Series"),
             "contents__work": work_name("Work"),
             "contents__work__title": work_name("title"),
             "contents__work__author": work_name("author"),

@@ -1,5 +1,7 @@
 <script>
+    import { getContext } from "svelte";
     import { fade } from 'svelte/transition';
+
     import { refToIIIF } from "../utils.js";
     import { selectionStore } from '../selection/selectionStore.js';
     const { isSelected } = selectionStore;
@@ -7,49 +9,96 @@
     const { clipBoard } = regionsStore;
     import { appLang } from '../constants';
 
-    /** @type {object}*/
+    /** @typedef {import("./types.js").RegionItemType} RegionItemType */
+
+    /////////////////////////////////////////////
+
+    /** @type {RegionItemType} */
     export let item;
-    /** @type {boolean}*/
-        export let isSquare = true;
-    /** @type {number}*/
-    export let height = isSquare ? 96 : 140;
-    /** @type {string}*/
-    export let desc = item.title;
-    /** @type {Promise<string>?}*/
+    /** @type {Promise<string>?} */
     export let descPromise = undefined;
+    /** @type {boolean} enforce a small square display. if `height==="full"`, will be switched to `false`. see below */
+    export let isSquare = true;
+    /** @type {number|"full"} either a dimension in pixels, or the "full" keyword used by the IIIF image api */
+    export let height = isSquare ? 96 : 140;
 
-    $: isCopied = item.ref === $clipBoard;
+    if ( height==="full" ) { isSquare = false }
 
-    // if `descPromise` is passed, wait for resolution to update `desc`
+    /////////////////////////////////////////////
+
+    /** @type {RegionItemType?} defined in `SimilarityRow`. in descendants of `SimilarityRow`, `Region` displays siilarity images. this context stores the query image to pass it to `ModalController` */
+    const compareImgItem = getContext("qImgMetadata") || undefined;
+
+    const isInModal = getContext("isInModal") || false;
+
+    // disable transitions in modals. else, the new element is mounted before the previous one is unmoumnted, and it makes a buggy display
+    const transitionDuration = isInModal ? 0 : 500;
+
+    // `ModalController` is only mounted+imported if `!isInModal` to avoid a recursive component (`Region` could open a modal that could contain Region that could contain another modal). while there's no error, you do get a svelte/roillup warning and there probably will be side effects.
+    let modalControllerComponent;
+    if ( !isInModal ) {
+        import("./modal/ModalController.svelte").then((res) => modalControllerComponent = res.default);
+    }
+
+    /** @type {string} */
+    let desc  = item.title;
     if (descPromise) {
         descPromise.then((res) => desc = res);
     }
+
+    const imgSrc = refToIIIF(
+        item.img,
+        item.xyhw,
+        height==="full" ? height : isSquare ? `${height},` : `,${height}`
+    )
+
+    $: isCopied = item.ref === $clipBoard;
 </script>
 
-<div class="region is-center {$isSelected(item) ? 'checked' : ''}" transition:fade={{ duration: 500 }}>
-    <figure class="image card region-image {isSquare ? 'is-96x96' : ''}" tabindex="-1" style="height: {height}px; min-width: {height}px;"
+<div class="region is-center {$isSelected(item) ? 'checked' : ''}"
+     transition:fade={{ duration: transitionDuration }}
+     style={height==="full" ? "height: 100%" : ""}
+>
+    <figure class="image card region-image {isSquare ? 'is-96x96' : ''}"
+            tabindex="-1"
+            style={
+                height==="full"
+                ? "height: 100%"
+                : `height: ${height}px; min-width: ${height}px`
+            }
             on:click={() => selectionStore.toggle(item)} on:keyup={() => null}>
-        <img class="region-img" src="{refToIIIF(item.img, item.xyhw, isSquare ? '96,' : `,${height}`)}" alt="Extracted region"/>
+        <img class="region-img" src={imgSrc}
+             alt="Extracted region"/>
         <div class="overlay is-center">
             <span class="overlay-desc">{@html desc}</span>
         </div>
     </figure>
-    <button class="button region-btn tag" on:click={() => regionsStore.copyRef(item.ref)}>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
-            {#if isCopied}
-                <path d="M208 0H332.1c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9V336c0 26.5-21.5 48-48 48H208c-26.5 0-48-21.5-48-48V48c0-26.5 21.5-48 48-48zM48 128h80v64H64V448H256V416h64v48c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V176c0-26.5 21.5-48 48-48z"/>
-            {:else}
-                <path d="M384 336H192c-8.8 0-16-7.2-16-16V64c0-8.8 7.2-16 16-16l140.1 0L400 115.9V320c0 8.8-7.2 16-16 16zM192 384H384c35.3 0 64-28.7 64-64V115.9c0-12.7-5.1-24.9-14.1-33.9L366.1 14.1c-9-9-21.2-14.1-33.9-14.1H192c-35.3 0-64 28.7-64 64V320c0 35.3 28.7 64 64 64zM64 128c-35.3 0-64 28.7-64 64V448c0 35.3 28.7 64 64 64H256c35.3 0 64-28.7 64-64V416H272v32c0 8.8-7.2 16-16 16H64c-8.8 0-16-7.2-16-16V192c0-8.8 7.2-16 16-16H96V128H64z"/>
-            {/if}
-        </svg>
-        <span class="tooltip">
-            {#if isCopied}
-                {appLang === 'en' ? "Copied!" : 'Copié !'}
-            {:else}
-                {appLang === 'en' ? "Copy ID" : "Copier l'ID"}
-            {/if}
-        </span>
-    </button>
+    <div class="region-btn ml-1">
+        {#if !isInModal }
+            <button class="button tag" on:click={() => regionsStore.copyRef(item.ref)}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+                    {#if isCopied}
+                        <path d="M208 0H332.1c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9V336c0 26.5-21.5 48-48 48H208c-26.5 0-48-21.5-48-48V48c0-26.5 21.5-48 48-48zM48 128h80v64H64V448H256V416h64v48c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V176c0-26.5 21.5-48 48-48z"/>
+                    {:else}
+                        <path d="M384 336H192c-8.8 0-16-7.2-16-16V64c0-8.8 7.2-16 16-16l140.1 0L400 115.9V320c0 8.8-7.2 16-16 16zM192 384H384c35.3 0 64-28.7 64-64V115.9c0-12.7-5.1-24.9-14.1-33.9L366.1 14.1c-9-9-21.2-14.1-33.9-14.1H192c-35.3 0-64 28.7-64 64V320c0 35.3 28.7 64 64 64zM64 128c-35.3 0-64 28.7-64 64V448c0 35.3 28.7 64 64 64H256c35.3 0 64-28.7 64-64V416H272v32c0 8.8-7.2 16-16 16H64c-8.8 0-16-7.2-16-16V192c0-8.8 7.2-16 16-16H96V128H64z"/>
+                    {/if}
+                </svg>
+                <span class="tooltip">
+                    {#if isCopied}
+                        {appLang === 'en' ? "Copied!" : 'Copié !'}
+                    {:else}
+                        {appLang === 'en' ? "Copy ID" : "Copier l'ID"}
+                    {/if}
+                </span>
+            </button>
+        {/if}
+        {#if modalControllerComponent}
+            <svelte:component this={modalControllerComponent}
+                              mainImgItem={item}
+                              compareImgItem={compareImgItem}
+            ></svelte:component>
+        {/if}
+    </div>
 </div>
 
 <style>
@@ -63,6 +112,7 @@
     figure {
         transition: outline 0.1s ease-out;
         outline: 0 solid var(--bulma-link);
+        margin-bottom: calc(var(--bulma-block-spacing)/2);  /** divide default margin bottom by 2 */
         /*overflow: hidden;*/
     }
     .checked > figure {
@@ -78,7 +128,25 @@
         position: relative;
         display: flex;
         justify-content: center;
+        align-items: start;
+        max-height: 100%;
+    }
+    .region-btn {
+        position: relative;
+        display: flex;
+        flex-direction: column;
         align-items: center;
+        justify-content: space-around;
+    }
+    .region-btn > * {
+        width: 100%;
+    }
+    .region-btn > :first-child {
+        margin-bottom: .5em;
+    }
+    .region-btn >.button:hover .tooltip {
+        visibility: visible;
+        opacity: 1;
     }
     .tooltip {
         visibility: hidden;
@@ -94,9 +162,5 @@
         transform: translateX(-50%);
         opacity: 0;
         transition: opacity 0.3s;
-    }
-    .region-btn:hover .tooltip {
-        visibility: visible;
-        opacity: 1;
     }
 </style>

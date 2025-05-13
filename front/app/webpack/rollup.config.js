@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import del from 'rollup-plugin-delete'
 import svelte from 'rollup-plugin-svelte';
 import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
@@ -34,9 +35,9 @@ export default [
         input: 'src/regions/region-list.js',
         output: {
             sourcemap: true,
-            format: 'iife',
+            format: "es",
             name: 'regionList',
-            file: '../webapp/static/svelte/regionList.js'
+            dir: '../webapp/static/svelte/regionList/',
         },
         plugins: [
             svelte({
@@ -53,7 +54,11 @@ export default [
             }),
             commonjs(),
             !production && livereload('public'),
-            production && terser()
+            production && terser(),
+            del({
+                targets: ["../webapp/static/svelte/*"],
+                force: true
+            })  // with ES directory exports, filenames end with a hash and thus new files are created at each build rather than overwriting the old files => delete the whole `svelte/`  dir before running rollup
         ],
         watch: {
             clearScreen: false

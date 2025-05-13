@@ -52,7 +52,7 @@ export function pageUpdate(pageNb, pageWritable, urlParam) {
     }
 }
 
-export function refToIIIF(imgRef = null, coord= "full", size="full") {
+export function refToIIIF(imgRef=null, coord="full", size="full") {
     // imgRef can be like "wit<id>_<digit><id>_<page_nb>.jpg" or "wit<id>_<digit><id>_<page_nb>_<x,y,h,w>.jpg"
     if (!imgRef) {
         return "https://placehold.co/96x96/png?text=No+image";
@@ -188,6 +188,35 @@ export function createNewAndOld() {
         same: () => _compareFn(_new, _old)
     }
 }
+
+/**
+ *
+ * @typedef {LoadStateType}
+ *      an object to manage a "loading" state, useful when doing async queries
+ * @type {object}
+ * @property {() => void} setLoading
+ * @property {() => void} setLoaded: loading finished without error
+ * @property {() => void} setError: error in loading
+ * @property {() => 0|1|-1} get: returns the load state as a number code. 0 = "loading", 1 = "loaded", -1 = "error"
+ * @property {() => "loading"|"loaded"|"error"} getString: returns the load state as a string
+ */
+export function createLoadState() {
+    /** @type {0|1|-1} 0="loading", 1="loaded", -1="error" */
+    let _state = 0;
+    return {
+        setLoading: () => _state = 0,
+        setLoaded: () => _state = 1,
+        setError: () => _state = -1,
+        get: () => _state,
+        getString: () =>
+            _state===0
+            ? "loading"
+            : _state===1
+            ? "loaded"
+            : "error"
+    }
+}
+
 
 /**
  * @param {Any | Array<Any>} x: an array of hashable values
