@@ -5,7 +5,7 @@ from django import forms
 from app.config.settings import APP_LANG
 from app.similarity.const import MODULE_NAME
 from app.webapp.forms import FormConfig, get_available_models, SubForm
-
+from app.webapp.utils.logger import log
 
 AVAILABLE_SIMILARITY_ALGORITHMS = {
     "cosine": (
@@ -68,8 +68,14 @@ class SimilarityForm(forms.Form):
                 self.add_error(f"{algorithm}_{field}", error)
             return cleaned_data
 
+        # cleaned_data.update(
+        #     {f"{algorithm}_{field}": value for field, value in algo_form.data.items()}
+        # )
         cleaned_data.update(
-            {f"{algorithm}_{field}": value for field, value in algo_form.data.items()}
+            {
+                field: True if value == "on" else value
+                for field, value in algo_form.data.items()
+            }
         )
         return cleaned_data
 
@@ -81,7 +87,7 @@ class SimilarityForm(forms.Form):
         parameters = {}
         for name in self.algorithm_forms[algorithm].fields:
             api_param = name.replace(f"{algorithm}_", "")
-            parameters[api_param] = self.cleaned_data.get(f"{algorithm}_{name}")
+            parameters[api_param] = self.cleaned_data.get(name)
 
         parameters["algorithm"] = algorithm
 
@@ -93,7 +99,7 @@ class SimilarityForm(forms.Form):
                         f"{algorithm}_cosine_preprocessing", True
                     ),
                     "segswap_n": self.cleaned_data.get(
-                        f"{algorithm}_cosine_n_filter", 0
+                        f"{algorithm}_cosine_n_filter", 10
                     ),
                 }
             )

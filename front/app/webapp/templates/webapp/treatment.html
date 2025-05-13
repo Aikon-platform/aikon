@@ -18,9 +18,9 @@
             <span class="tag px-2 py-1 ml-5 is-rounded is-info">{{ task_type }} #{{ treatment_id }}</span>
         {% endif %}
 
-        <div class="columns is-fluid mt-2">
+        <div class="grid mt-2 is-col-min-10">
             {% for key, value in documents.items %}
-                <div class="card column is-4 p-4 m-3 is-flex is-flex-direction-column">
+                <div class="card cell is-flex is-flex-direction-column p-4 m-1">
                     <div class="mb-3">
                         <span class="tag is-rounded is-accent">{{ value.class }} #{{ value.id }}</span>
                         <span class="title is-6">{{ value.title }}</span>
