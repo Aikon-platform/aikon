@@ -92,7 +92,7 @@ class Series(AbstractSearchableModel):
 
         return f"{base_url}?{query_string}"
 
-    def to_json(self, reindex=True):
+    def to_json(self, reindex=True, no_img=False):
         library = self.place
         pub_place = self.get_edition_place()
         publisher = self.get_publisher()

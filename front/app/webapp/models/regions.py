@@ -126,6 +126,12 @@ class Regions(AbstractSearchableModel):
             return True
         return False
 
+    def svg_paths(self):
+        # TODO save SVG in different folders
+        from app.vectorization.const import SVG_PATH
+
+        return glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")
+
     def is_vectorized(self):
         """
         :return: True if the region has vectorizations, False otherwise
@@ -161,7 +167,11 @@ class Regions(AbstractSearchableModel):
             return metadata
         return {}
 
-    def to_json(self, reindex=True):
+    def to_json(self, reindex=True, no_img=False):
+        """
+        Do not take into account no_img for regions because there is no post_save task as for Digitization
+        to fill image related properties
+        """
         rjson = {} if reindex else self.json or {}
         digit = self.get_digit()
 

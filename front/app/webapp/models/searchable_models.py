@@ -37,7 +37,12 @@ class AbstractSearchableModel(models.Model):
     def get_absolute_view_url(self):
         raise NotImplementedError("Subclasses must implement this method")
 
-    def to_json(self, reindex=True):
+    def to_json(self, reindex=True, no_img=False):
+        """
+        reindex and no_img are used in subclasses to_json methods
+        reindex: force recomputing all properties, even the one that require intensive computation
+        no_img: if True, do not index image related property
+        """
         try:
             return json_encode(
                 {
@@ -56,7 +61,15 @@ class AbstractSearchableModel(models.Model):
             log(f"[to_json] Error", e)
             return None
 
+    def update(self, **kwargs):
+        type(self).objects.filter(pk=self.pk.__str__()).update(**kwargs)
+
     def get_json(self, reindex=False):
+        """
+        Get the JSON representation of the object.
+        If reindex is True or json property hasn't been generated yet,
+        generate the JSON and update the database.
+        """
         if not self.json or reindex:
             json_data = self.to_json(reindex=True)
             type(self).objects.filter(pk=self.pk.__str__()).update(json=json_data)
@@ -65,6 +78,11 @@ class AbstractSearchableModel(models.Model):
 
     def is_key_defined(self, key):
         return not (not self.json or key not in self.json or not self.json[key])
+
+    def get_key_value(self, key, default=None):
+        if self.is_key_defined(key):
+            return self.json[key]
+        return default
 
     @classmethod
     def regenerate_all_json(cls):
@@ -81,7 +99,7 @@ def generate_json(sender, instance, **kwargs):
         #     countdown=2  # 2-second delay to ensure record is saved in db
         # )
         try:
-            json_data = instance.to_json()
+            json_data = instance.to_json(no_img=True)
             type(instance).objects.filter(pk=instance.pk.__str__()).update(
                 json=json_data
             )

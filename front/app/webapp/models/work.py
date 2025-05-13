@@ -88,7 +88,7 @@ class Work(AbstractSearchableModel):
 
         return f"{base_url}?{query_string}"
 
-    def to_json(self, reindex=True):
+    def to_json(self, reindex=True, no_img=False):
         place = self.place
         author = self.author
         return json_encode(

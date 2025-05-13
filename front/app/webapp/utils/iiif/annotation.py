@@ -27,7 +27,7 @@ from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.regions import get_file_regions
 
 IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
-#SAS_APP_URL = f"http://sas:{SAS_PORT}" if DOCKER else SAS_APP_URL
+# SAS_APP_URL = f"http://sas:{SAS_PORT}"
 
 
 def get_manifest_annotations(
@@ -554,23 +554,15 @@ def get_canvas_lists(digit: Digitization, all_img=False):
     return canvases
 
 
-def get_indexed_annotations(regions: Regions):
-    # not used
-    annotations = {}
-    for canvas_nb, _ in get_canvas_list(regions):
-        annotations[canvas_nb] = get_indexed_canvas_annotations(regions, canvas_nb)
-    return annotations
-
-
 def get_indexed_canvas_annotations(regions: Regions, canvas_nb):
+    canvas_url = f"{SAS_APP_URL}/annotation/search?uri={regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
     try:
-        response = urlopen(
-            f"{SAS_APP_URL}/annotation/search?uri={regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
-        )
-        return json.loads(response.read())
+        response = requests.get(canvas_url)
+        response.raise_for_status()
+        return response.json()
     except Exception as e:
         log(
-            f"[get_indexed_canvas_annotations] Could not retrieve annotation for regions #{regions.id}",
+            f"[get_indexed_canvas_annotations] Could not retrieve annotation for {canvas_url}",
             e,
         )
         return []

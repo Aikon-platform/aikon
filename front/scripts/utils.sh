@@ -67,10 +67,14 @@ OS=$(get_os)
 # parent process must call the function with `get_password || exit` to exit the script if `SUDO_PSW` is invalid
 get_password() {
     if [ -z "$SUDO_PSW" ]; then
-        read -s -p "Enter your sudo password: " SUDO_PSW;
-        sudo -k && echo "$SUDO_PSW" | sudo -S whoami &> /dev/null && exit_code=0 || exit_code=1;
-        if [ ! "$exit_code" -eq 0 ]; then echo "Invalid sudo password. Exiting..."; fi
-        return "$exit_code"
+        read -s -p "Enter your sudo password: " SUDO_PSW
+        echo
+        echo "$SUDO_PSW" | sudo -S whoami > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            echo "Invalid sudo password. Exiting..."
+            return 1
+        fi
+        return 0
     fi
 }
 
@@ -350,16 +354,18 @@ setup_env() {
 
 update_app_env() {
     env_file=${1:-$FRONT_ENV}
-    default_params=("DEBUG" "C_FORCE_ROOT" "MEDIA_DIR" "CONTACT_MAIL" "POSTGRES_DB" "POSTGRES_USER"
+    default_params=("DEBUG" "C_FORCE_ROOT" "MEDIA_DIR" "POSTGRES_DB" "POSTGRES_USER"
         "DB_PORT" "API_PORT" "ALLOWED_HOSTS" "SAS_USERNAME" "SAS_PORT" "SAS_PASSWORD" "SECRET_KEY" "FRONT_PORT"
         "PROD_API_URL" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "REDIS_HOST" "REDIS_PORT" "REDIS_PASSWORD"
-        "EMAIL_HOST" "EMAIL_HOST_USER" "EMAIL_HOST_PASSWORD" "DEFAULT_FROM_EMAIL" "APP_LOGO" "HTTP_PROXY" "HTTPS_PROXY")
+        "EMAIL_HOST" "EMAIL_HOST_USER" "EMAIL_HOST_PASSWORD" "APP_LOGO" "HTTP_PROXY" "HTTPS_PROXY")
 
     setup_env "$env_file" "${default_params[@]}"
 
     media_dir=$(get_env_value "MEDIA_DIR" "$env_file")
     default_media_dir="$FRONT_ROOT"/app/mediafiles
-    if [ "$media_dir" != "$default_media_dir" ]; then
+
+    is_docker=$(get_env_value "DOCKER" "$env_file")
+    if [ "$media_dir" != "$default_media_dir" ] && [ "$is_docker" != "True" ]; then
         # when choosing a nonstandard media directory, copy the structure from the default media directory
         cp -r "$default_media_dir" "$media_dir"
     fi
