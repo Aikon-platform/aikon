@@ -155,7 +155,7 @@ class Treatment(AbstractSearchableModel):
             urls = [f"{url}?tab={tabs[self.task_type]}" for url in urls]
         return urls
 
-    def to_json(self, reindex=True):
+    def to_json(self, reindex=True, no_img=False):
         try:
             user = self.requested_by
             doc_set = self.document_set
@@ -347,7 +347,12 @@ class Treatment(AbstractSearchableModel):
         """
         Handle the end of the task
         """
-        log(data.get("error", "Unknown error"), exception=exception)
+        err = data.get("error", "Unknown error")
+        log(
+            f"[on_task_error] Task #{self.id} failed because of:\n{err}",
+            exception=exception,
+        )
+        # TODO save error message to be displayed on the task list page (on hover on the error pill)
 
         if completed:
             self.terminate_task(
@@ -358,11 +363,10 @@ class Treatment(AbstractSearchableModel):
 
         if request:
             flash_msg = (
-                f"The requested task encountered an error during execution."
-                f"\n{data.get('error', 'Unknown error')}"
+                f"The requested task encountered an error during execution." f"\n{err}"
                 if APP_LANG == "en"
                 else f"La tâche demandée a rencontré une erreur lors de son exécution."
-                f"\n{data.get('error', 'Unknown error')}"
+                f"\n{err}"
             )
             messages.warning(request, flash_msg)
 
@@ -395,7 +399,7 @@ class Treatment(AbstractSearchableModel):
             except Exception as e:
                 if not DEBUG:
                     log(
-                        f"[treatment_email] Unable to send confirmation email for {self.requested_by.email}",
+                        f"[treatment_email] Unable to send confirmation email for {self.requested_by.email}\n\n{email}",
                         e,
                     )
 

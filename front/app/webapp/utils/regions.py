@@ -13,7 +13,7 @@ from app.webapp.utils.paths import REGIONS_PATH
 
 
 def get_file_regions(regions: Regions):
-    json_file = Path(REGIONS_PATH) / f"{regions.get_ref()}.json"
+    json_file = REGIONS_PATH / f"{regions.get_ref()}.json"
     if json_file.exists():
         try:
             with open(json_file, "rb") as f:
@@ -21,7 +21,7 @@ def get_file_regions(regions: Regions):
         except Exception:
             return None, None
 
-    txt_file = Path(REGIONS_PATH) / f"{regions.get_ref()}.txt"
+    txt_file = REGIONS_PATH / f"{regions.get_ref()}.txt"
     if txt_file.exists():
         try:
             with open(txt_file, "r") as f:
