@@ -148,9 +148,9 @@ class WitnessFilter(RecordFilter):
     place = ModelChoiceFilter(
         queryset=ConservationPlace.objects.all(),
     )
-    # series = ModelChoiceFilter(
-    #     queryset=Series.objects.all(),
-    # )
+    series = ModelChoiceFilter(
+        queryset=Series.objects.all(),
+    )
     contents__lang = ModelMultipleChoiceFilter(
         queryset=Language.objects.all(),
         null_value=None,
