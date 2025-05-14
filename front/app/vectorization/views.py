@@ -247,7 +247,8 @@ def get_vectorized_images(request, wid, rid=None):
             try:
                 r_ref = q_r.get_ref()
                 v_imgs.update(
-                    f"{r_ref}{file}" for file in get_files_in_dir(f"{SVG_PATH}/{r_ref}")
+                    f"{r_ref}/{file}"
+                    for file in get_files_in_dir(f"{SVG_PATH}/{r_ref}")
                 )
             except ValueError:
                 # if there is no folder named after regions_ref, try with digit_ref
