@@ -268,7 +268,7 @@ class Digitization(AbstractSearchableModel):
             return get_first_img(self.get_ref())
         return self.get_imgs(is_abs, only_one=True)
 
-    def get_imgs(self, is_abs=False, temp=False, only_one=False, check_in_dir=False):
+    def get_imgs(self, is_abs=False, temp=False, only_one=False, check_in_dir=True):
         if not check_in_dir and not temp:
             if self.json and "imgs" in self.json:
                 imgs = self.json["imgs"]
