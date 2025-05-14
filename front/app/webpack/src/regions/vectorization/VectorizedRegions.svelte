@@ -6,7 +6,7 @@
 
     export let svgPath;
     export let width = 200;
-    const [wit, digit, canvas, xywh] = svgPath.replace(".svg", "").replace(".jpg", "").split("_");
+    const [wit, digit, canvas, xywh] = svgPath.split("/")[1].replace(".svg", "").replace(".jpg", "").split("_");
     const img = refToIIIF(`${wit}_${digit}_${canvas}`, xywh, `${width},`);
 
     let isHovered = false;
