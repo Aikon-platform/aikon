@@ -545,9 +545,7 @@ def get_canvas_list(regions: Regions, all_img=False):
     if not data:
         log(f"[get_canvas_list] No regions file for regions #{regions.id}")
         # return [(int(img.split("_")[-1].split(".")[0]), img) for img in imgs]
-        return {
-            "error": "The regions file was not yet generated",
-        }
+        return canvases
 
     if anno_format == "txt":
         for line in data:
