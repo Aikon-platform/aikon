@@ -245,6 +245,7 @@ def unindex_annotation(annotation_id):
     delete_url = (
         f"{SAS_APP_URL}/annotation/destroy?uri={http_sas}/annotation/{annotation_id}"
     )
+    # TODO delete regions_pairs associated with the annotation if similarity module is enabled?
     try:
         response = requests.delete(delete_url)
         if response.status_code == 204:
@@ -503,10 +504,10 @@ def index_manifest_in_sas(manifest_url, reindex=False):
 
 def get_canvas_list(regions: Regions, all_img=False):
     """
-    Get the list of canvases that have been annotated associated to their images names
+    Get the list of canvases that have been annotated associated with their images names
     [
-        (canvas_nb, img_name),
-        (canvas_nb, img_name),
+        (canvas_nb, img_name.jpg),
+        (canvas_nb, img_name.jpg),
         ...
     ]
     """
@@ -521,7 +522,7 @@ def get_canvas_list(regions: Regions, all_img=False):
     indexed_annos = get_manifest_annotations(regions.get_ref(), False)
 
     # canvas_imgs =  { canvas_nb: img_name, canvas_nb: img_name, ... }
-    canvas_imgs = {int(i.split("_")[-1].split(".")[0]): i.split(".")[0] for i in imgs}
+    canvas_imgs = {int(i.split("_")[-1].split(".")[0]): i for i in imgs}
     # list of canvas number containing annotations
     annotated_canvas_nb = set(
         [
@@ -536,14 +537,10 @@ def get_canvas_list(regions: Regions, all_img=False):
     if canvases:
         return canvases
 
-    # Fallback to annotation file if no annotations were found
-
-    # TODO do not rely on annotation file to retrieve canvas,
-    #  use http://localhost:8888/search-api/{regions_ref}/search
+    # Fallback to annotation file if no annotations were found in SAS
     data, anno_format = get_file_regions(regions)
     if not data:
         log(f"[get_canvas_list] No regions file for regions #{regions.id}")
-        # return [(int(img.split("_")[-1].split(".")[0]), img) for img in imgs]
         return canvases
 
     if anno_format == "txt":
