@@ -61,8 +61,26 @@ export function refToIIIF(imgRef=null, coord="full", size="full") {
     if (imgRef.length < 3) {
         return "https://placehold.co/96x96/png?text=No+image";
     }
+
     const imgCoord = imgRef[imgRef.length -1].includes(",") ? imgRef.pop().replace(".jpg", "") : coord;
     const imgName = imgRef.join("_").replace(".jpg", "");
+
+    /*if (size !== "full" && imgCoord !== "full") {
+        let [_, __, crop_h, crop_w] = String(imgCoord).split(",").map(Number);
+        let [size_h, size_w] = size.split(",").map(Number);
+
+        if (size_h && size_h > crop_h) {
+            size_h = Math.min(parseInt(size_h), parseInt(crop_h));
+        }
+        if (size_w && size_w > crop_w){
+            size_w = Math.min(parseInt(size_w), parseInt(crop_w));
+        }
+        // width and height of the crop cannot exceed the size of whole image
+        // to obtain original image size, we could request ${getCantaloupeUrl()}/iiif/2/${imgName}.jpg/info.json
+        // to retrieve info["width"] and info["height"] to be used instead of crop_h / crop_w
+
+        size = `${size_h},${size_w}`;
+    }*/
 
     return `${getCantaloupeUrl()}/iiif/2/${imgName}.jpg/${imgCoord}/${size}/0/default.jpg`;
 }
