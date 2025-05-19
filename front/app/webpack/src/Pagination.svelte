@@ -7,10 +7,11 @@
     export let nbOfItems;
     export let pageLength = pageSize;
     $: maxPage = pageLength < pageSize ? 1 : Math.ceil(nbOfItems / pageLength);
+    $: multiplePages = maxPage > 1 || nbOfItems > pageLength
     // todo fix maxPage that can be undefined / Nan
 </script>
 
-{#if maxPage > 1 || nbOfItems > pageLength}
+{#if multiplePages}
 <nav class="pagination is-centered mb-2" aria-label="pagination">
     <ul class="pagination-list ml-0">
         {#if $currentPage > 1}
@@ -35,6 +36,6 @@
     </ul>
 </nav>
 {/if}
-<div class="is-size-7 is-center mb-4">
+<div class="is-size-7 is-center mb-4 {!multiplePages ? 'mt-4' : ''}">
     {$currentPage * pageLength - pageLength + 1} - {Math.min($currentPage * pageLength, nbOfItems)} / {nbOfItems}
 </div>

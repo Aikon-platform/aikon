@@ -1,4 +1,6 @@
 import datetime
+import shutil
+
 import magic
 import io
 import json
@@ -624,12 +626,30 @@ def delete_files(filenames, directory=IMG_PATH):
     for file in filenames:
         file_path = file if os.path.isabs(file) else os.path.join(directory, file)
         if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except Exception as e:
-                log(f"[delete_files] Error deleting {file_path}", e)
+            delete_path(file_path)
         else:
-            print(f"[delete_files] File not found: {file_path}")
+            log(f"[delete_files] File not found: {file_path}")
+    return True
+
+
+def delete_path(path: Path) -> bool:
+    """
+    Delete a file or directory
+
+    Returns True if the path existed and was deleted, False otherwise
+    """
+    try:
+        if path.is_file():
+            path.unlink()
+        elif path.is_dir():
+            shutil.rmtree(path)
+    except Exception:
+        try:
+            os.chmod(path, 0o777)  # Change permissions to allow deletion
+            os.remove(path)
+        except Exception as e:
+            log(f"[delete_path] Error deleting {path}", e)
+            return False
     return True
 
 

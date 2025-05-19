@@ -1,7 +1,7 @@
 <script>
     import { setContext } from 'svelte';
     import { fade } from 'svelte/transition';
-    import { refToIIIF, loading } from "../utils.js";
+    import {refToIIIF, loading} from "../utils.js";
     import { appLang, regionsType, modules } from '../constants';
 
     import { selectionStore } from '../selection/selectionStore.js';
@@ -65,7 +65,7 @@
 
 <SelectionBtn {selectionLength}/>
 
-<div id="nav-actions" class="mb-5">
+<div id="nav-actions">
     <div class="actions grid">
         <div class="cell is-left is-middle">
             <RegionsBtn {baseUrl} {currentRegionId} {currentLayout}/>
@@ -90,7 +90,7 @@
 </div>
 
 {#if currentLayout === "all"}
-    <div class="grid is-gap-2">
+    <div class="grid is-gap-2 mt-5">
         {#await fetchAll}
             <div class="faded is-center">
                 {appLang === 'en' ? 'Retrieving regions...' : 'Récupération des régions...'}
