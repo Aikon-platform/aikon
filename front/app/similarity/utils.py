@@ -25,7 +25,7 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
-from app.webapp.utils.functions import sort_key
+from app.webapp.utils.functions import sort_key, delete_path
 from app.webapp.utils.logger import log
 from app.webapp.views import check_ref
 from config.settings import APP_LANG
@@ -125,7 +125,9 @@ def process_results(data, completed=True):
             score_file = Path(f"{SCORES_PATH}/{regions_ref_pair}/{param_hash}.json")
             os.makedirs(f"{SCORES_PATH}/{regions_ref_pair}", exist_ok=True)
             if score_file.exists():
-                continue
+                # This check should be made when starting the task not now
+                log(f"File {score_file} already exists, overriding its content")
+                # continue
 
             with open(score_file, "wb") as f:
                 json_content["result_url"] = score_url
@@ -136,6 +138,7 @@ def process_results(data, completed=True):
             continue
 
         try:
+            # process_similarity_file task calls score_file_to_db()
             process_similarity_file.delay(str(score_file))
         except Exception as e:
             log(f"Could not process similarity scores from {score_url}", e)
@@ -147,6 +150,7 @@ def prepare_document(document: Witness | Digitization | Regions, **kwargs):
     regions = document.get_regions() if hasattr(document, "get_regions") else [document]
 
     if not regions:
+        # TODO should task be canceled because one of the document has no extraction??
         raise ValueError(
             f"“{document}” has no extracted regions for which to calculate similarity scores"
             if APP_LANG == "en"
@@ -179,7 +183,6 @@ def load_scores(score_path: Path):
     return None
 
 
-@lru_cache(maxsize=None)
 def load_json_file(score_path):
     try:
         with open(score_path, "rb") as f:
@@ -197,7 +200,6 @@ def load_json_file(score_path):
     return None
 
 
-@lru_cache(maxsize=None)
 def load_npy_file(score_path):
     try:
         return np.load(score_path, allow_pickle=True)
@@ -580,8 +582,6 @@ def load_similarity(pair):
 
 
 def reset_similarity(regions: Regions):
-    import shutil
-
     regions_id = regions.id
     try:
         regions_ref = regions.get_ref()
@@ -590,12 +590,10 @@ def reset_similarity(regions: Regions):
         return False
     for file in os.listdir(SCORES_PATH):
         if regions_ref in file:
-            try:
-                os.remove(os.path.join(SCORES_PATH, file))
-            except IsADirectoryError:
-                shutil.rmtree(os.path.join(SCORES_PATH, file))
-            except OSError as e:
-                log(f"[reset_similarity] Error removing file {file}", e)
+            file_path = Path(SCORES_PATH) / file
+            success = delete_path(file_path)
+            if not success:
+                log(f"[reset_similarity] Failed to delete file {file_path}")
 
     # TODO retrieve info on the algorithm and feature network used (in json score files)
     delete_api_similarity.delay(regions.get_ref(), algorithm=None, feat_net=None)

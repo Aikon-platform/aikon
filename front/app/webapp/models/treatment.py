@@ -101,6 +101,7 @@ class Treatment(AbstractSearchableModel):
     treated_objects = models.JSONField(blank=True, null=True)
     api_tracking_id = models.UUIDField(null=True, editable=False)
     api_parameters = models.JSONField(blank=True, null=True)
+    info = models.TextField(blank=True, null=True)
 
     _internal_save = False
 
@@ -177,6 +178,7 @@ class Treatment(AbstractSearchableModel):
                     "cancel_url": self.get_cancel_url(),
                     "query_parameters": self.get_query_parameters(),
                     "api_tracking_id": self.api_tracking_id,
+                    "info": self.info or "",
                     "selection": {
                         "id": doc_set.id if doc_set else None,
                         "type": "Treatment",
@@ -352,12 +354,11 @@ class Treatment(AbstractSearchableModel):
             f"[on_task_error] Task #{self.id} failed because of:\n{err}",
             exception=exception,
         )
-        # TODO save error message to be displayed on the task list page (on hover on the error pill)
 
         if completed:
             self.terminate_task(
                 "ERROR",
-                error=data.get("error", "Unknown error"),
+                error=err,
                 notify=data.get("notify"),
             )
 
@@ -370,14 +371,15 @@ class Treatment(AbstractSearchableModel):
             )
             messages.warning(request, flash_msg)
 
-    def terminate_task(
-        self, status="SUCCESS", error=None, message="No information", notify=True
-    ):
+    def terminate_task(self, status="SUCCESS", error=None, message=None, notify=True):
         """
         Called when the task is finished
         """
         self.status = status
         self.is_finished = True
+        if error or message:
+            self.info = f"{error or message}"
+
         self.save()
 
         if notify and self.notify_email:
@@ -425,6 +427,7 @@ class Treatment(AbstractSearchableModel):
                 },
                 completed=is_finished,
             )
+        return True
 
 
 @receiver(post_save, sender=Treatment)

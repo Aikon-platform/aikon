@@ -1,6 +1,8 @@
 import os
 from glob import glob
 from functools import partial
+from typing import Optional, List
+
 from iiif_prezi.factory import StructuralError
 from celery import chain
 
@@ -211,17 +213,24 @@ class Digitization(AbstractSearchableModel):
         # if there is either a pdf/manifest/img associated with the digitization
         return bool(self.pdf or self.manifest or self.images)
 
-    def img_nb(self):
+    def img_nb(self, check_in_dir=False):
         # get the number of images for a digitization
+        if not check_in_dir:
+            if img_nb := self.get_key_value("img_nb"):
+                return img_nb
+
         return get_nb_of_files(IMG_PATH, self.get_ref()) or 0
 
-    def img_zeros(self, first_img=None):
+    def img_zeros(self, first_img_filename=None, check_in_dir=False):
         # get the number of digits for the images of this digitization (to know number of trailing zeros)
-        if not first_img:
-            first_img = get_first_img(self.get_ref())
-        if not first_img:
+        if not first_img_filename:
+            if not check_in_dir:
+                if zero_nb := self.get_key_value("zeros"):
+                    return zero_nb
+            first_img_filename = get_first_img(self.get_ref())
+        if not first_img_filename:
             return 0
-        return len(first_img.split("_")[-1].split(".")[0])
+        return len(first_img_filename.split("_")[-1].split(".")[0])
 
     def has_vectorization(self):
         # TODO check how to handle this with additional modules
@@ -250,7 +259,7 @@ class Digitization(AbstractSearchableModel):
         return glob(f"{SVG_PATH}/{self.get_ref()}_*.svg")
 
     def has_all_vectorizations(self):
-        # if there is as much svg files as there are regions in the current digitization
+        # if there are as many svg files as there are regions in the current digitization
         if len(self.svg_paths()) == self.count_annotations():
             return True
         return False
@@ -270,12 +279,8 @@ class Digitization(AbstractSearchableModel):
 
     def get_imgs(self, is_abs=False, temp=False, only_one=False, check_in_dir=False):
         if not check_in_dir and not temp:
-            if self.json and "imgs" in self.json:
-                imgs = self.json["imgs"]
-                if len(imgs) != 0:
-                    if only_one:
-                        return imgs[0]
-                    return imgs
+            if imgs := self.get_key_value("imgs"):
+                return imgs[0] if only_one else imgs
 
         prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
         img_dir = TMP_PATH if temp else IMG_PATH
@@ -306,7 +311,9 @@ class Digitization(AbstractSearchableModel):
         self.json["zeros"] = self.img_zeros(self.json["imgs"][0])
         self.update(json=self.json)
 
-    def update_json(self, imgs):
+    def update_json(self, imgs=Optional[List[str]]):
+        if not imgs:
+            imgs = self.get_imgs(check_in_dir=True)
         json_data = {
             "id": self.id,
             "title": self.__str__(),
@@ -316,15 +323,14 @@ class Digitization(AbstractSearchableModel):
             "url": self.gen_manifest_url(),
             "imgs": imgs,
             "img_nb": len(imgs),
-            "zeros": self.img_zeros(),
+            "zeros": self.img_zeros(imgs[0] if imgs else 0),
         }
         type(self).objects.filter(pk=self.pk.__str__()).update(json=json_data)
         return self.json
 
     def to_json(self, reindex=True, no_img=False):
         djson = self.json or {}
-        imgs = [] if no_img else djson.get("imgs", self.get_imgs(check_in_dir=True))
-        # zeros = len(imgs[0].split("_")[-1].split(".")[0])
+        imgs = djson.get("imgs", [] if no_img else self.get_imgs(check_in_dir=True))
         return {
             "id": self.id,
             "title": self.__str__(),
@@ -334,7 +340,9 @@ class Digitization(AbstractSearchableModel):
             "url": self.gen_manifest_url(),
             "imgs": imgs,
             "img_nb": djson.get("img_nb", len(imgs)),
-            "zeros": 0 if no_img else djson.get("zeros", self.img_zeros()),
+            "zeros": djson.get(
+                "zeros", 0 if no_img else self.img_zeros(check_in_dir=reindex)
+            ),
         }
 
     def get_metadata(self):
