@@ -19,7 +19,6 @@ from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import sort_key
 from app.webapp.utils.logger import log
-from app.webapp.utils.iiif import parse_ref
 from app.similarity.utils import (
     send_request,
     check_computed_pairs,
@@ -32,7 +31,6 @@ from app.similarity.utils import (
     get_all_pairs,
     reset_similarity,
     regions_from_img,
-    get_pairs_for_regions,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
@@ -112,38 +110,34 @@ def get_similar_images(request, wid, rid=None):
 
     try:
         data = json.loads(request.body.decode("utf-8"))
-        regions_ids = list(data.get("regionsIds", []))
+        q_regions_ids = [q_r.id for q_r in q_regions]
+        t_regions_ids = list(data.get("regionsIds", []))
         q_img = str(data.get("qImg", ""))
         topk = min(max(int(data.get("topk", 10)), 1), 20)
 
-        if not regions_ids or not q_img:
+        if not t_regions_ids or not q_img:
             return JsonResponse({})
 
-        all_pairs = get_region_pairs_with(
-            q_img, regions_ids, include_self=True, strict=True
+        pairs = get_region_pairs_with(
+            q_img,
+            query_regions_ids=q_regions_ids,
+            target_regions_ids=t_regions_ids,
         )
 
-        # Process pairs for each q_region
-        result = []
-        for q_r in q_regions:
-            pairs = get_pairs_for_regions(all_pairs, q_r.id, regions_ids)
-
-            result.extend(
-                get_best_pairs(
-                    q_img,
-                    pairs,
-                    excluded_categories=[],
-                    topk=topk,
-                    user_id=request.user.id,
-                )
-            )
+        result = get_best_pairs(
+            q_img,
+            pairs,
+            excluded_categories=set(),
+            topk=topk,
+            user_id=request.user.id,
+        )
 
         return JsonResponse(result, safe=False)
 
     except (json.JSONDecodeError, ValueError) as e:
-        return JsonResponse({"error": f"Invalid data: {str(e)}"}, status=400)
+        return JsonResponse({"error": f"Invalid data: {e}"}, status=400)
     except Exception as e:
-        return JsonResponse({"error": f"An error occurred: {str(e)}"}, status=500)
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
 def get_compared_regions(request, wid, rid=None):
@@ -183,7 +177,7 @@ def get_compared_regions(request, wid, rid=None):
             )
         )
 
-        # if there's no similarities retrieved at all, avoid returning the region itself
+        # if there is no similarity retrieved at all, avoid returning the region itself
         if len(list(compared_regions.keys())) == 0:
             return JsonResponse({})
         return JsonResponse(OrderedDict({**current_regions, **compared_regions}))
@@ -294,7 +288,7 @@ def get_propagated_matches(
         """
         - remove matches that are
             - exact matches to `OG_IMG_ID`
-            - propagations that have aldready been saved to database
+            - propagations that have already been saved to database
         - format the results
         """
         q_img_regions = regions_from_img(OG_IMG_ID)
@@ -354,7 +348,11 @@ def get_propagated_matches(
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
-def get_regions(img_1, img_2, wid, rid):
+def get_regions(img_1, img_2, wid, rid=None):
+    """
+    Get the ids of the regions that correspond to the two images.
+    """
+
     def get_digit_id(img):
         return int(re.findall(r"\d+", img)[1])
 
@@ -427,6 +425,8 @@ def add_region_pair(request, wid, rid=None):
         )
 
         if not created:
+            region_pair.similarity_type = 2
+            region_pair.is_manual = True
             if region_pair.category_x is None:
                 region_pair.category_x = [request.user.id]
             elif request.user.id not in region_pair.category_x:
@@ -438,7 +438,7 @@ def add_region_pair(request, wid, rid=None):
         )
         return JsonResponse(
             {
-                "success": "Region pair added successfully",
+                "success": f"Region pair {'created' if created else 'updated'} successfully",
                 "s_regions": s_regions.get_json(),
                 "created": created,
             }

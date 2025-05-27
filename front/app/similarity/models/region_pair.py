@@ -113,8 +113,8 @@ class RegionPair(models.Model):
             f"{self.img_1} (#{self.regions_id_1}) | {self.img_2} (#{self.regions_id_2})"
         )
 
-    img_1 = models.CharField(max_length=150)
-    img_2 = models.CharField(max_length=150)
+    img_1 = models.CharField(max_length=150)  # ⚠️ must end with .jpg
+    img_2 = models.CharField(max_length=150)  # ⚠️ must end with .jpg
     regions_id_1 = models.IntegerField()
     regions_id_2 = models.IntegerField()
 
@@ -160,7 +160,7 @@ class RegionPair(models.Model):
         s_regions = self.regions_id_2 if self.img_1 == q_img else self.regions_id_1
 
         return (
-            self.score or 0,
+            self.score or 0.0,
             q_img,
             s_img,
             q_regions,
