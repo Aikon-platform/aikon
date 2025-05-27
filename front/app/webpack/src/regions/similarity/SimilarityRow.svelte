@@ -145,6 +145,9 @@
         }
 
     }
+
+    // TODO make it more responsive
+    $: matchClasses = window.innerWidth < 1500 ? 'fixed-grid has-4-cols' : 'fixed-grid has-5-cols';
 </script>
 
 <tr>
@@ -181,10 +184,10 @@
         </div>
     </th>
     <td class="p-5 is-fullwidth">
-        <div class="{ isInModal ? '' : 'fixed-grid has-5-cols'}">
+        <div class="{ isInModal ? '' : matchClasses}">
             <SimilarityMatches {qImg}></SimilarityMatches>
         </div>
-        <div class="{ isInModal ? '' : 'fixed-grid has-5-cols'}">
+        <div class="{ isInModal ? '' : matchClasses}">
             <PropagatedMatches {qImg}></PropagatedMatches>
         </div>
     </td>

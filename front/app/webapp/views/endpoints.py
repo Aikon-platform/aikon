@@ -477,7 +477,6 @@ def get_similarity_data(witness: Witness, region_id: str, user_id: int = None) -
         get_region_pairs_with,
         get_compared_regions_ids,
         get_regions_q_imgs,
-        get_pairs_for_regions,
     )
 
     q_imgs_set = set()
@@ -497,19 +496,21 @@ def get_similarity_data(witness: Witness, region_id: str, user_id: int = None) -
 
     regions_ids = get_compared_regions_ids(region_id)
 
+    if not regions_ids:
+        return {}
+
     result = {}
     for q_img in q_imgs:
-        if not regions_ids or not q_img:
-            continue
-
-        all_pairs = get_region_pairs_with(q_img, regions_ids, include_self=True)
-
-        pairs = get_pairs_for_regions(all_pairs, region_id, regions_ids)
+        pairs = get_region_pairs_with(
+            q_img,
+            query_regions_ids=[region_id],
+            target_regions_ids=regions_ids,
+        )
 
         best_pairs = get_best_pairs(
             q_img,
             pairs,
-            excluded_categories=[],
+            excluded_categories=set(),
             user_id=user_id,
             topk=None,
             export=True,
