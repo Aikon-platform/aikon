@@ -94,7 +94,7 @@
     <div class="toolbar-wrapper is-flex is-flex-direction-column is-justify-content-center is-align-items-center">
         <div class="toolbar">
             <div class="toolbar-title mt-0 mb-2">
-                <strong>Transform query image</strong>
+                <strong>{appLang === "en" ? "Query image transformation" : "Modification de l'image requête"}</strong>
             </div>
             <div class="toolbar-controls is-flex is-flex-direction-column is-align-items-start is-justify-content-center">
                 <div class="">
@@ -150,7 +150,7 @@
                     <InputDropdown choicesItems={flipChoices}
                                 start={[]}
                                 lightDisplay={true}
-                                placeholder={appLang==="fr" ? "Séléctionner" : "Select"}
+                                placeholder={appLang==="fr" ? "Sélectionner" : "Select"}
                                 title={appLang==="fr" ? "Basculer" : "Flip"}
                                 on:updateValues={updateOverlayFlip}
                     ></InputDropdown>

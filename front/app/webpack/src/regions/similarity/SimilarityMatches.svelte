@@ -34,6 +34,7 @@
      * retrieve similar images to `qImg`
      * @param {String} qImg
      * @param {SelectedRegionsType} selection
+     * @param {boolean} _isInModal
      * @returns {Promise<array>}
      */
     async function fetchSImgs(qImg, selection, _isInModal) {
@@ -46,7 +47,7 @@
             body: JSON.stringify({
                 regionsIds: regionsIds,
                 qImg: qImg,
-                topk: 10, // TODO retrieve this value from the user
+                topk: 12, // TODO retrieve this value from the user
             }),
             headers: {
                 "Content-Type": "application/json",
@@ -70,9 +71,7 @@
 </script>
 
 <div>
-    <SimilarRegions {qImg}
-                    {sImgsPromise}
-    ></SimilarRegions>
+    <SimilarRegions {qImg} {sImgsPromise}></SimilarRegions>
 </div>
 
 <style>

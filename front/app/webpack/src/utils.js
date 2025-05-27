@@ -70,10 +70,10 @@ export function refToIIIF(imgRef=null, coord="full", size="full") {
         let [size_h, size_w] = size.split(",").map(Number);
 
         if (size_h && size_h > crop_h) {
-            size_h = Math.min(parseInt(size_h), parseInt(crop_h));
+            size_h = Math.min(size_h, crop_h);
         }
         if (size_w && size_w > crop_w){
-            size_w = Math.min(parseInt(size_w), parseInt(crop_w));
+            size_w = Math.min(size_w, crop_w);
         }
         // width and height of the crop cannot exceed the size of whole image
         // to obtain original image size, we could request ${getCantaloupeUrl()}/iiif/2/${imgName}.jpg/info.json
