@@ -15,9 +15,10 @@
     import { appLang } from "../../constants.js";
 
     import ModalRegion from "./ModalRegion.svelte";
+    import ModalContext from "./ModalContext.svelte";
 
     /** @typedef {import("../types.js").RegionItemType} RegionItemType */
-    /** @typedef {"main"|"similarity"|"expansion"} ViewIdType */
+    /** @typedef {"main"|"context"|"similarity"|"expansion"} ViewIdType */
 
     //////////////////////////////////////////////////
 
@@ -31,8 +32,8 @@
     /** @type {ViewIdType[]} */
     const allowedViewIds =
         compareImgItem
-        ? [ "main", "similarity", "expansion" ]
-        : [ "main" ];
+        ? [ "main", "context", "similarity", "expansion" ]
+        : [ "main", "context" ];
 
     /** @type { {id:ViewIdType, label:string}[] } */
     const viewTabs = allowedViewIds.map((viewId) => ({
@@ -46,6 +47,10 @@
             ? "Comparaison"
             : viewId==="similarity" && appLang==="en"
             ? "Comparison"
+            : viewId==="context" && appLang==="fr"
+            ? "Contexte"
+            : viewId==="context" && appLang==="en"
+            ? "Context"
             : viewId==="main" && appLang==="fr"
             ? "Vue principale"
             : "Main view"
@@ -55,7 +60,10 @@
      * @type {{ [ViewIdType]: SvelteComponent }} viewId mapped to the relevant component instance.
      * by default, only ModalRegion is defined. other components qre imported aynchronously, after which viewComponents is updated
      */
-    const viewComponents = { main: ModalRegion };
+    const viewComponents = {
+        main: ModalRegion,
+        context: ModalContext
+    };
     if ( compareImgItem ) {
         Promise.all([
             import("./ModalSimilarity.svelte").then(res => res.default),
@@ -75,9 +83,7 @@
     const viewProps = {};
     allowedViewIds.map((viewId) =>
         viewProps[viewId] =
-            viewId==="expansion"
-            ? {mainImgItem: mainImgItem}
-            : viewId==="similarity"
+            viewId==="similarity"
             ? {compareImgItem: compareImgItem, mainImgItem: mainImgItem}
             : {mainImgItem: mainImgItem}
     )
