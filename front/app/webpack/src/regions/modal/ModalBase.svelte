@@ -15,10 +15,10 @@
     import { appLang } from "../../constants.js";
 
     import ModalRegion from "./ModalRegion.svelte";
-    import ModalContext from "./ModalContext.svelte";
+    import ModalPage from "./ModalPage.svelte";
 
     /** @typedef {import("../types.js").RegionItemType} RegionItemType */
-    /** @typedef {"main"|"context"|"similarity"|"expansion"} ViewIdType */
+    /** @typedef {"main"|"page"|"similarity"|"expansion"} ViewIdType */
 
     //////////////////////////////////////////////////
 
@@ -32,8 +32,8 @@
     /** @type {ViewIdType[]} */
     const allowedViewIds =
         compareImgItem
-        ? [ "main", "context", "similarity", "expansion" ]
-        : [ "main", "context" ];
+        ? [ "main", "page", "similarity", "expansion" ]
+        : [ "main", "page" ];
 
     /** @type { {id:ViewIdType, label:string}[] } */
     const viewTabs = allowedViewIds.map((viewId) => ({
@@ -47,10 +47,10 @@
             ? "Comparaison"
             : viewId==="similarity" && appLang==="en"
             ? "Comparison"
-            : viewId==="context" && appLang==="fr"
-            ? "Contexte"
-            : viewId==="context" && appLang==="en"
-            ? "Context"
+            : viewId==="page" && appLang==="fr"
+            ? "Vue de la page"
+            : viewId==="page" && appLang==="en"
+            ? "Page view"
             : viewId==="main" && appLang==="fr"
             ? "Vue principale"
             : "Main view"
@@ -62,7 +62,7 @@
      */
     const viewComponents = {
         main: ModalRegion,
-        context: ModalContext
+        page: ModalPage
     };
     if ( compareImgItem ) {
         Promise.all([
@@ -84,8 +84,8 @@
     allowedViewIds.map((viewId) =>
         viewProps[viewId] =
             viewId==="similarity"
-            ? {compareImgItem: compareImgItem, mainImgItem: mainImgItem}
-            : {mainImgItem: mainImgItem}
+            ? { compareImgItem: compareImgItem, mainImgItem: mainImgItem }
+            : { mainImgItem: mainImgItem }
     )
 
     /** @type {ViewIdType} */

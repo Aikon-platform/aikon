@@ -48,7 +48,7 @@
 
     const imgSrc = refToIIIF(
         item.img,
-        item.xyhw,
+        item.xywh,
         height==="full" ? height : isSquare ? `${height},` : `,${height}`
     )
 

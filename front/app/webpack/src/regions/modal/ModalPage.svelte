@@ -1,8 +1,6 @@
 <script>
     import { refToIIIF, refToIIIFInfo } from "../../utils.js";
 
-    import Region from "../Region.svelte";
-
     /** @typedef {import("../types.js").RegionItemType} RegionItemType */
 
     /** @type {RegionItemType} */
@@ -12,14 +10,14 @@
     const iiifInfoUrl = refToIIIFInfo(mainImgItem.img);
 
     // fetch full image dimensions in the image's info.json, then convert in relative coordinates
-    //NOTE the coordinates in `mainImgItem.xyhw` are actually expressed in `xywh`, the key sent by Django simply has the wrong name.
+    //NOTE the coordinates in `mainImgItem.xywh` are actually expressed in `xywh`, the key sent by Django simply has the wrong name.
     const xywhRelPromise = fetch(iiifInfoUrl)
         .then(r => r.json())
         .then(data => [
-            Number(mainImgItem.xyhw[0]) / data.width,
-            Number(mainImgItem.xyhw[1]) / data.height,
-            Number(mainImgItem.xyhw[2]) / data.width,
-            Number(mainImgItem.xyhw[3]) / data.height
+            Number(mainImgItem.xywh[0]) / data.width,
+            Number(mainImgItem.xywh[1]) / data.height,
+            Number(mainImgItem.xywh[2]) / data.width,
+            Number(mainImgItem.xywh[3]) / data.height
         ].map(x => x*100));
 
 </script>
