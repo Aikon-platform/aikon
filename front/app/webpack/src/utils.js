@@ -52,19 +52,24 @@ export function pageUpdate(pageNb, pageWritable, urlParam) {
     }
 }
 
+/** return the root IIIF URL: cantaloupe URL + image name, without any of the IIIF params */
+export function refToIIIFRoot(imgRef=null) {
+    return `${getCantaloupeUrl(imgRef)}/iiif/2/${imgRef.replace(".jpg", "")}.jpg`;
+}
+
 export function refToIIIF(imgRef=null, coord="full", size="full") {
     // imgRef can be like "wit<id>_<digit><id>_<page_nb>.jpg" or "wit<id>_<digit><id>_<page_nb>_<x,y,h,w>.jpg"
-    if (!imgRef) {
+    if (!imgRef || imgRef.length < 3) {
         return "https://placehold.co/96x96/png?text=No+image";
     }
-    imgRef = imgRef.split("_");
-    if (imgRef.length < 3) {
-        return "https://placehold.co/96x96/png?text=No+image";
-    }
-    const imgCoord = imgRef[imgRef.length -1].includes(",") ? imgRef.pop().replace(".jpg", "") : coord;
-    const imgName = imgRef.join("_").replace(".jpg", "");
+    const imgRoot = refToIIIFRoot(imgRef);
+    const imgRefArr = imgRef.split("_");
+    const imgCoord = imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : coord;
+    return `${imgRoot}/${imgCoord}/${size}/0/default.jpg`;
+}
 
-    return `${getCantaloupeUrl()}/iiif/2/${imgName}.jpg/${imgCoord}/${size}/0/default.jpg`;
+export function refToIIIFInfo(imgRef=null) {
+    return `${refToIIIFRoot(imgRef)}/info.json`;
 }
 
 export function manifestToMirador(manifest = null, canvasNb = 1) {
