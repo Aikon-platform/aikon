@@ -69,14 +69,18 @@
             import("./ModalSimilarity.svelte").then(res => res.default),
             import("./ModalQueryExpansion.svelte").then(res => res.default),
         ]).then(([modalSimilarityComponent, modalQueryExpansionComponent]) => {
-            allowedViewIds.map((viewId) =>
-                viewComponents[viewId] =
-                    viewId==="expansion"
-                    ? modalQueryExpansionComponent
-                    : viewId==="similarity"
-                    ? modalSimilarityComponent
-                    : ModalRegion
-            );
+            // we loop over `allowedViewIds`, but check that those haven't been aldready mapped to a component in `viewComponents`. else, we risk overwriting the component
+            const predefinedViews = Object.keys(viewComponents);
+            allowedViewIds
+                .filter(viewId => !predefinedViews.includes(viewId))
+                .map((viewId) =>
+                    viewComponents[viewId] =
+                        viewId==="expansion"
+                        ? modalQueryExpansionComponent
+                        : viewId==="similarity"
+                        ? modalSimilarityComponent
+                        : ModalRegion
+                );
         })
     }
 
