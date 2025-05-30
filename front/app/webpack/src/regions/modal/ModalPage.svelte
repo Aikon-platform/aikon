@@ -9,8 +9,9 @@
     const fullPageUrl = refToIIIF(mainImgItem.img, "full", "full");
     const iiifInfoUrl = refToIIIFInfo(mainImgItem.img);
 
+    console.log(">>>>>>", mainImgItem, fullPageUrl);
+
     // fetch full image dimensions in the image's info.json, then convert in relative coordinates
-    //NOTE the coordinates in `mainImgItem.xywh` are actually expressed in `xywh`, the key sent by Django simply has the wrong name.
     const xywhRelPromise = fetch(iiifInfoUrl)
         .then(r => r.json())
         .then(data => [
