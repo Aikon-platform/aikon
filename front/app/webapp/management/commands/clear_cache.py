@@ -1,8 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.core.cache import cache
 
-cache.clear()
-
 
 class Command(BaseCommand):
     help = "Clear all cache"
