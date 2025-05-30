@@ -412,26 +412,33 @@ def add_region_pair(request, wid, rid=None):
 
         regions_1, regions_2 = get_regions(img_1, img_2, wid, rid)
 
-        region_pair, created = RegionPair.objects.get_or_create(
-            img_1=f"{img_1}.jpg",
-            img_2=f"{img_2}.jpg",
-            defaults={
-                # if the pair doesn't exist, create it with those values
-                "regions_id_1": regions_1,
-                "regions_id_2": regions_2,
-                "is_manual": True,
-                "similarity_type": 2,
-            },
-        )
+        if not regions_1 or not regions_2:
+            return JsonResponse({"error": "Unable to find regions"}, status=404)
 
-        if not created:
+        try:
+            region_pair = RegionPair.objects.get(
+                img_1=f"{img_1}.jpg", img_2=f"{img_2}.jpg"
+            )
+            created = False
             region_pair.similarity_type = 2
             region_pair.is_manual = True
+
             if region_pair.category_x is None:
                 region_pair.category_x = [request.user.id]
             elif request.user.id not in region_pair.category_x:
                 region_pair.category_x.append(request.user.id)
             region_pair.save()
+        except RegionPair.DoesNotExist:
+            region_pair = RegionPair.objects.create(
+                img_1=f"{img_1}.jpg",
+                img_2=f"{img_2}.jpg",
+                regions_id_1=regions_1,
+                regions_id_2=regions_2,
+                is_manual=True,
+                similarity_type=2,
+                category_x=[request.user.id],
+            )
+            created = True
 
         s_regions = get_object_or_404(
             Regions, id=regions_2 if q_img == img_1 else regions_1
@@ -440,7 +447,15 @@ def add_region_pair(request, wid, rid=None):
             {
                 "success": f"Region pair {'created' if created else 'updated'} successfully",
                 "s_regions": s_regions.get_json(),
-                "created": created,
+                "pair_info": {
+                    "img_1": region_pair.img_1,
+                    "img_2": region_pair.img_2,
+                    "regions_id_1": region_pair.regions_id_1,
+                    "regions_id_2": region_pair.regions_id_2,
+                    "category": region_pair.category,
+                    "user_ids": region_pair.category_x,
+                    "type": region_pair.similarity_type,
+                },
             }
         )
 

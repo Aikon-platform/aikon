@@ -15,58 +15,6 @@ def get_digit_id(img):
     return int(re.findall(r"\d+", img)[1])
 
 
-# class Command(BaseCommand):
-#     help = "Correct incorrect RegionPair entries in the database"
-#
-#     def handle(self, *args, **options):
-#         pairs = RegionPair.objects.all()
-#
-#         for pair in pairs:
-#             img_1 = pair.img_1
-#             img_2 = pair.img_2
-#
-#             if not img_1.endswith(".jpg"):
-#                 pair.img_1 = f"{img_1}.jpg"
-#
-#             if not img_2.endswith(".jpg"):
-#                 pair.img_2 = f"{img_2}.jpg"
-#
-#             digit_1 = Digitization.objects.get(id=get_digit_id(img_1))
-#             regions_1_ids = [r.id for r in digit_1.get_regions()]
-#
-#             digit_2 = Digitization.objects.get(id=get_digit_id(img_2))
-#             regions_2_ids = [r.id for r in digit_2.get_regions()]
-#
-#             pair.regions_id_1 = self.correct_regions_id(
-#                 pair.id, pair.regions_id_1, regions_1_ids, pair.regions_id_2
-#             )
-#             pair.regions_id_2 = self.correct_regions_id(
-#                 pair.id, pair.regions_id_2, regions_2_ids, pair.regions_id_1
-#             )
-#
-#             pair.save()
-#
-#     def correct_regions_id(self, pair_id, pair_region_id, digit_regions_ids, pair_region_id2):
-#         """
-#         Fix the regions_id by checking if it exists in the digitization's regions.
-#         If not, return the first region ID from the digitization's regions.
-#         """
-#         if pair_region_id not in digit_regions_ids:
-#             self.stdout.write(
-#                 self.style.WARNING(
-#                     f"RegionPair #{pair_id}: regions_id_1 {pair_region_id} not in {digit_regions_ids}"
-#                 )
-#             )
-#             if pair_region_id2 in digit_regions_ids:
-#                 self.stdout.write(f"RegionPair #{pair_id}: mixed up regions ids")
-#                 pair_region_id = pair_region_id2
-#             else:
-#                 self.stdout.write(f"RegionPair #{pair_id}: incorrect regions_id_1")
-#                 pair_region_id = digit_regions_ids[0]
-#
-#         return pair_region_id
-
-
 class Command(BaseCommand):
     help = "Correct incorrect RegionPair entries in the database"
 
@@ -77,8 +25,10 @@ class Command(BaseCommand):
             "fixed_jpg_extension": 0,
             "fixed_region_ids": 0,
             "swapped_regions": 0,
+            "deleted_pairs": 0,
             "errors": 0,
             "duplicates_found": 0,
+            "ids_to_delete": [],
         }
 
         pairs = RegionPair.objects.all()
@@ -96,7 +46,7 @@ class Command(BaseCommand):
             except Exception as e:
                 stats["errors"] += 1
                 self.stdout.write(
-                    self.style.ERROR(f"Error with RegionPair #{pair.id}: {str(e)}")
+                    self.style.ERROR(f"Error with RegionPair #{pair.id}: {e}")
                 )
 
         self._find_duplicates(stats)
@@ -106,6 +56,7 @@ class Command(BaseCommand):
     def _process_pair(self, pair, stats):
         """Process a single RegionPair"""
         changes_made = False
+        pair_id = pair.id
 
         # Fix missing .jpg extension
         if not pair.img_1.endswith(".jpg"):
@@ -130,7 +81,6 @@ class Command(BaseCommand):
             )
 
             if existing:
-                pair_id = pair.id
                 self.stdout.write(
                     self.style.WARNING(
                         f"Pair #{pair.id}: Would create duplicate with #{existing.id}. "
@@ -156,15 +106,18 @@ class Command(BaseCommand):
                 # Delete the duplicate
                 pair.delete()
                 stats["duplicates_found"] += 1
+                stats["deleted_pairs"] += 1
                 self.stdout.write(f"  - Deleted duplicate pair #{pair_id}")
                 return  # Skip the rest of processing for this pair
 
         if not digit_id_1 or not digit_id_2:
             self.stdout.write(
                 self.style.ERROR(
-                    f"Pair #{pair.id}: Could not extract digit IDs from paths"
+                    f"Pair #{pair_id}: Could not extract digit IDs from img names"
                 )
             )
+            stats["ids_to_delete"].append(pair_id)
+            # TODO delete?
             return
 
         # Get valid region IDs for each digitization
@@ -177,6 +130,8 @@ class Command(BaseCommand):
                     f"Pair #{pair.id}: Digitization {digit_id_1} not found"
                 )
             )
+            stats["ids_to_delete"].append(pair_id)
+            # TODO delete? check for other witness digitizations?
             return
 
         try:
@@ -188,6 +143,8 @@ class Command(BaseCommand):
                     f"Pair #{pair.id}: Digitization {digit_id_2} not found"
                 )
             )
+            stats["ids_to_delete"].append(pair_id)
+            # TODO delete? check for other witness digitizations?
             return
 
         # Check if regions are swapped
@@ -270,6 +227,7 @@ class Command(BaseCommand):
             self.stdout.write(
                 "  RegionPair.objects.filter(id__in=[...duplicate_ids...]).delete()"
             )
+            stats["ids_to_delete"].extend(dup[0] for dup in duplicates)
 
     def _print_summary(self, stats):
         """Print summary statistics"""
@@ -281,6 +239,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Fixed invalid region IDs:  {stats['fixed_region_ids']}")
         self.stdout.write(f"Fixed swapped regions:     {stats['swapped_regions']}")
         self.stdout.write(f"Duplicates found:          {stats['duplicates_found']}")
+        self.stdout.write(f"Deleted pairs:             {stats['deleted_pairs']}")
         self.stdout.write(f"Errors encountered:        {stats['errors']}")
         self.stdout.write("=" * 60)
 
@@ -289,6 +248,13 @@ class Command(BaseCommand):
             + stats["fixed_region_ids"]
             + stats["swapped_regions"]
         )
+
+        if stats["ids_to_delete"]:
+            self.stdout.write(
+                self.style.ERROR(
+                    f"\n⚠️ The following pairs have invalid digitizations and should be deleted: {stats['ids_to_delete']}"
+                )
+            )
 
         if total_fixes > 0:
             self.stdout.write(
