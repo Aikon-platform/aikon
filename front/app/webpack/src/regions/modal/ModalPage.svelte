@@ -1,33 +1,39 @@
 <script>
     import { refToIIIF, refToIIIFInfo } from "../../utils.js";
 
+    import { appLang } from "../../constants.js";
+
     /** @typedef {import("../types.js").RegionItemType} RegionItemType */
+
+    //////////////////////////////////////////////
 
     /** @type {RegionItemType} */
     export let mainImgItem;
 
     const fullPageUrl = refToIIIF(mainImgItem.img, "full", "full");
     const iiifInfoUrl = refToIIIFInfo(mainImgItem.img);
-
-    console.log(">>>>>>", mainImgItem, fullPageUrl);
+    const xywh = mainImgItem.xywh.map(Number);
 
     // fetch full image dimensions in the image's info.json, then convert in relative coordinates
     const xywhRelPromise = fetch(iiifInfoUrl)
         .then(r => r.json())
         .then(data => [
-            Number(mainImgItem.xywh[0]) / data.width,
-            Number(mainImgItem.xywh[1]) / data.height,
-            Number(mainImgItem.xywh[2]) / data.width,
-            Number(mainImgItem.xywh[3]) / data.height
+            xywh[0] / data.width,
+            xywh[1] / data.height,
+            xywh[2] / data.width,
+            xywh[3] / data.height
         ].map(x => x*100));
-
 </script>
 
 <div class="modal-context-outer pb-4">
     <div class="modal-context-wrapper">
         <img class="card modal-context-full-page"
              src={fullPageUrl}
-             alt="full page stuff"
+             alt={
+                appLang==="fr"
+                ? "Vue de la page d'où la région est extraite"
+                : "View of the page the region is extracted from"
+            }
         >
         {#await xywhRelPromise then xywhRel}
             <div class="modal-context-bbox"
@@ -35,6 +41,11 @@
                  style:top="{xywhRel[1]}%"
                  style:width="{xywhRel[2]}%"
                  style:height="{xywhRel[3]}%"
+                 aria-description={
+                    appLang==="fr"
+                    ? "Position de la région extraite sur la page"
+                    : "Position of the extracted region on the page"
+                }
             ></div>
         {/await}
     </div>

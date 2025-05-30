@@ -78,26 +78,12 @@ export function refToIIIF(imgRef=null, coord="full", size="full") {
         return "https://placehold.co/96x96/png?text=No+image";
     }
     const imgRefArr = imgRef.split("_");
-    // const imgCoord =
-    //     coord!=="full"
-    //     ? imgRefArr[imgRefArr.length -1].includes(",")
-    //     ? imgRefArr.pop().replace(".jpg", "")
-    //     : coord
-    //     : full;
     const imgCoord =
         coord
         ? coord
         : imgRefArr[imgRefArr.length -1].includes(",")
         ? imgRefArr.pop().replace(".jpg", "")
         : "full";
-    // const imgCoord = imgRefArr[imgRefArr.length -1].includes(",")
-    //  ? imgRefArr.pop().replace(".jpg", "")
-    //  : coord;
-    console.log("\n>>> imgRef   :", imgRef,
-                "\n>>> coord    :", coord,
-                "\n>>> imgCoord :", imgCoord,
-                "\n>>> imgRoot  :", imgRoot,
-                "\n>>> ret      :", `${imgRoot}/${imgCoord}/${size}/0/default.jpg`);
     return `${imgRoot}/${imgCoord}/${size}/0/default.jpg`;
 }
 
