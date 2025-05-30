@@ -35,7 +35,7 @@ fi
 
 docker exec \
   -e PGPASSWORD="$DB_PASSWORD" \
-  "$DB_CONTAINER_ID" \
+  "$DB_CONTAINER" \
   pg_dump \
     -U "$DB_USER" \
     -d "$DB_NAME" \

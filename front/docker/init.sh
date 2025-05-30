@@ -19,8 +19,8 @@ setup_cantaloupe "quick_install"
 
 # if app/logs/app_log.log does not exist, create it
 if [ ! -f "$FRONT_ROOT/app/logs/app_log.log" ]; then
+    color_echo yellow "Log file creation (your password is required to set permissions)"
     get_password && echo || exit
-    color_echo yellow "Log file creation"
     touch "$FRONT_ROOT/app/logs/app_log.log"
     touch "$FRONT_ROOT/app/logs/download.log"
     touch "$FRONT_ROOT/app/logs/iiif.log"
@@ -29,8 +29,8 @@ fi
 
 # if $DATA_FOLDER does not exist
 if [ ! -d "$DATA_FOLDER" ]; then
+    color_echo yellow "Creation of $DATA_FOLDER folder (your password is required to set permissions)"
     get_password && echo || exit
-    color_echo yellow "Creation of $DATA_FOLDER"
     # Create $DATA_FOLDER folder with right permissions for user $USERID
     sudo mkdir -p "$DATA_FOLDER"
     sudo chown -R "$USERID:$USERID" "$DATA_FOLDER"
@@ -38,14 +38,23 @@ if [ ! -d "$DATA_FOLDER" ]; then
 fi
 
 if [ ! -d "$DATA_FOLDER/mediafiles" ]; then
+    color_echo yellow "Creation of $DATA_FOLDER/mediafiles folder (your password is required to set permissions)"
     get_password && echo || exit
     sudo mkdir -p "$DATA_FOLDER"/mediafiles
     sudo chown -R "$USERID:$USERID" "$DATA_FOLDER"/mediafiles
 fi
 
 if [ ! -d "$DATA_FOLDER/sas" ]; then
+    color_echo yellow "Creation of $DATA_FOLDER/sas folder (your password is required to set permissions)"
     get_password && echo || exit
     sudo mkdir -p "$DATA_FOLDER/sas"
+    sudo chown -R "$USERID":"$USERID" "$DATA_FOLDER/sas"
+fi
+
+if [ ! -d "$DATA_BACKUP" ]; then
+    color_echo yellow "Creation of $DATA_BACKUP folder (your password is required to set permissions)"
+    get_password && echo || exit
+    sudo mkdir -p "$DATA_BACKUP"
     sudo chown -R "$USERID":"$USERID" "$DATA_FOLDER/sas"
 fi
 
