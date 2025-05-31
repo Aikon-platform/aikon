@@ -152,14 +152,14 @@ class RegionPair(models.Model):
 
     objects = RegionPairManager()
 
-    def get_info(self, q_img=None) -> RegionPairTuple:
+    def get_info(self, q_img=None, as_json=False) -> RegionPairTuple | dict:
         if q_img is None:
             q_img = self.img_1
         s_img = self.img_2 if self.img_1 == q_img else self.img_1
         q_regions = self.regions_id_1 if self.img_1 == q_img else self.regions_id_2
         s_regions = self.regions_id_2 if self.img_1 == q_img else self.regions_id_1
 
-        return (
+        info = (
             self.score or 0.0,
             q_img,
             s_img,
@@ -170,6 +170,19 @@ class RegionPair(models.Model):
             self.is_manual,
             self.similarity_type,
         )
+        if as_json:
+            return {
+                "score": info[0],
+                "q_img": info[1],
+                "s_img": info[2],
+                "q_regions": info[3],
+                "s_regions": info[4],
+                "category": info[5],
+                "category_x": info[6],
+                "is_manual": info[7],
+                "similarity_type": info[8],
+            }
+        return info
 
     def get_ref(self):
         return "-".join(sorted([self.img_1, self.img_2]))

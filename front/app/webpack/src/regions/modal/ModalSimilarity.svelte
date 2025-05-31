@@ -19,8 +19,8 @@
 
     /** @type {SimilarityOverlayType} */
     const imgDataOverlay = {
-        similarityImage: { href: refToIIIF(mainImgItem.img), title: makeAlt(mainImgItem.title) },
-        queryImage: { href: refToIIIF(compareImgItem.img), title: makeAlt(compareImgItem.title) }
+        similarityImage: { href: refToIIIF(mainImgItem.img, mainImgItem.img.split("_").pop()), title: makeAlt(mainImgItem.title) },
+        queryImage: { href: refToIIIF(compareImgItem.img, compareImgItem.img.split("_").pop()), title: makeAlt(compareImgItem.title) }
     }
     /** @type {SimilaritySideBySideType} */
     const imgDataSideBySide = {
