@@ -25,6 +25,7 @@ class Command(BaseCommand):
             "fixed_jpg_extension": 0,
             "fixed_region_ids": 0,
             "swapped_regions": 0,
+            "swapped_alphabetical": 0,
             "deleted_pairs": 0,
             "errors": 0,
             "duplicates_found": 0,
@@ -67,6 +68,26 @@ class Command(BaseCommand):
         if not pair.img_2.endswith(".jpg"):
             pair.img_2 = f"{pair.img_2}.jpg"
             stats["fixed_jpg_extension"] += 1
+            changes_made = True
+
+        def sort_key(s):
+            return [
+                int(part) if part.isdigit() else part for part in re.split("(\d+)", s)
+            ]
+
+        # Check if images need to be swapped for alphabetical order
+        sorted_imgs = sorted([pair.img_1, pair.img_2], key=sort_key)
+        if [pair.img_1, pair.img_2] != sorted_imgs:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Pair #{pair.id}: Images not in alphabetical order. "
+                    f"Swapping {pair.img_1} <-> {pair.img_2}"
+                )
+            )
+            # Swap images and their corresponding regions
+            pair.img_1, pair.img_2 = pair.img_2, pair.img_1
+            pair.regions_id_1, pair.regions_id_2 = pair.regions_id_2, pair.regions_id_1
+            stats["swapped_alphabetical"] += 1
             changes_made = True
 
         digit_id_1 = get_digit_id(pair.img_1)
@@ -237,6 +258,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Total pairs processed:     {stats['total_pairs']}")
         self.stdout.write(f"Fixed .jpg extensions:     {stats['fixed_jpg_extension']}")
         self.stdout.write(f"Fixed invalid region IDs:  {stats['fixed_region_ids']}")
+        self.stdout.write(f"Fixed alphabetical order:  {stats['swapped_alphabetical']}")
         self.stdout.write(f"Fixed swapped regions:     {stats['swapped_regions']}")
         self.stdout.write(f"Duplicates found:          {stats['duplicates_found']}")
         self.stdout.write(f"Deleted pairs:             {stats['deleted_pairs']}")

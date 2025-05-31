@@ -22,7 +22,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        regions_id = options.get("regions_id")
+        regions_id = options.get("regions")
         process_all = options.get("all")
 
         if regions_id:
