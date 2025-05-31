@@ -169,24 +169,24 @@ def get_regions_annotations(
                 )
                 continue
 
-            xyhw = on_value.split("xywh=")[1]
+            xywh = on_value.split("xywh=")[1]
             if as_json:
                 img = f"{img_name}_{canvas.zfill(nb_len)}"
                 aid = anno["@id"].split("/")[-1]
 
                 r_annos[canvas][aid] = {
                     "id": aid,
-                    "ref": f"{img}_{xyhw}",
+                    "ref": f"{img}_{xywh}",
                     "class": "Region",
                     "type": get_name("Regions"),
-                    "title": region_title(canvas, xyhw),
-                    "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
+                    "title": region_title(canvas, xywh),
+                    "url": gen_iiif_url(img, res=f"{xywh}/full/0"),
                     "canvas": canvas,
-                    "xyhw": xyhw.split(","),
+                    "xywh": xywh.split(","),
                     "img": img,
                 }
             else:
-                r_annos.append((canvas, xyhw, f"{img_name}_{canvas.zfill(nb_len)}"))
+                r_annos.append((canvas, xywh, f"{img_name}_{canvas.zfill(nb_len)}"))
         except Exception as e:
             log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
             continue
