@@ -313,7 +313,8 @@ class Digitization(AbstractSearchableModel):
 
     def update_json(self, imgs=Optional[List[str]]):
         if not imgs:
-            imgs = self.get_imgs(check_in_dir=True)
+            imgs = sorted(get_files_with_prefix(IMG_PATH, f"{self.get_ref()}_", ""))
+
         json_data = {
             "id": self.id,
             "title": self.__str__(),

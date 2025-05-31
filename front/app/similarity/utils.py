@@ -647,9 +647,60 @@ def regions_from_img(q_img: str) -> int:
     retrieve the regions id (member of `RegionPair.(regions_id_1|regions_id_2)`)
     for an image q_img (member of `RegionPair.(img_1|img_2)`).
     union.first() raises an error so we run 2 queries instead
+    returns the ID of the regions object associated with the image.
     """
+    if not q_img.endswith(".jpg"):
+        q_img = f"{q_img}.jpg"
+
     q1 = RegionPair.objects.values_list("regions_id_1").filter(img_1=q_img).first()
     if q1:
         return q1[0]
     q2 = RegionPair.objects.values_list("regions_id_2").filter(img_2=q_img).first()
-    return q2[0]
+    if q2:
+        return q2[0]
+
+    def get_digit_id(img):
+        return int(re.findall(r"\d+", img)[1])
+
+    def get_digit_regions_id(digit_id):
+        try:
+            digit = Digitization.objects.get(id=digit_id)
+        except Digitization.DoesNotExist:
+            log(
+                f"[get_regions_from_digit] Digitization with id {digit_id} does not exist"
+            )
+            digit = None
+        regions = list(digit.get_regions() if digit else [])
+        if not regions:
+            regions = Regions.objects.create(
+                digitization=digit,
+                model="manual",
+            )
+        else:
+            regions = regions[0]
+        return regions.id
+
+    return get_digit_regions_id(get_digit_id(q_img))
+
+
+def get_regions_from_imgs(img_1, img_2, wid, rid=None):
+    """
+    Get the ids of the regions that correspond to the two images.
+    """
+    if img_1.startswith(f"wit{wid}"):
+        regions_1 = rid or regions_from_img(img_1)
+        regions_2 = regions_from_img(img_2)
+    else:
+        regions_1 = regions_from_img(img_1)
+        regions_2 = rid or regions_from_img(img_2)
+
+    return regions_1, regions_2
+
+
+def add_user_to_category_x(region_pair: RegionPair, user_id: int):
+    if region_pair.category_x is None:
+        region_pair.category_x = [user_id]
+    elif user_id not in region_pair.category_x:
+        region_pair.category_x.append(user_id)
+
+    return region_pair
