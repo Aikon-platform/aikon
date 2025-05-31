@@ -52,19 +52,43 @@ export function pageUpdate(pageNb, pageWritable, urlParam) {
     }
 }
 
+/** extract image name by removing crop info and adding `.jpg` at the end */
+function refToIIIFName(imgRef=null) {
+    imgRef = imgRef.split("_");
+    return imgRef.length < 3
+        ? undefined
+        : `${imgRef.slice(0,3).join("_").replace(".jpg", "")}.jpg`;
+}
+
+/** return the root IIIF URL: cantaloupe URL + image name, without any of the IIIF params */
+export function refToIIIFRoot(imgRef=null) {
+    const imgName = refToIIIFName(imgRef);
+    return imgName === undefined
+        ? undefined
+        : `${getCantaloupeUrl()}/iiif/2/${imgName}`;
+}
+
 export function refToIIIF(imgRef=null, coord="full", size="full") {
     // imgRef can be like "wit<id>_<digit><id>_<page_nb>.jpg" or "wit<id>_<digit><id>_<page_nb>_<x,y,h,w>.jpg"
-    if (!imgRef) {
+    if (!imgRef ) {
         return "https://placehold.co/96x96/png?text=No+image";
     }
-    imgRef = imgRef.split("_");
-    if (imgRef.length < 3) {
+    const imgRoot = refToIIIFRoot(imgRef);
+    if ( imgRoot===undefined ) {
         return "https://placehold.co/96x96/png?text=No+image";
     }
-    const imgCoord = imgRef[imgRef.length -1].includes(",") ? imgRef.pop().replace(".jpg", "") : coord;
-    const imgName = imgRef.join("_").replace(".jpg", "");
+    const imgRefArr = imgRef.split("_");
+    const imgCoord =
+        coord
+        ? coord
+        : imgRefArr[imgRefArr.length -1].includes(",")
+        ? imgRefArr.pop().replace(".jpg", "")
+        : "full";
+    return `${imgRoot}/${imgCoord}/${size}/0/default.jpg`;
+}
 
-    return `${getCantaloupeUrl()}/iiif/2/${imgName}.jpg/${imgCoord}/${size}/0/default.jpg`;
+export function refToIIIFInfo(imgRef=null) {
+    return `${refToIIIFRoot(imgRef)}/info.json`;
 }
 
 export function manifestToMirador(manifest = null, canvasNb = 1) {

@@ -120,7 +120,7 @@
                 {#each Object.entries(selectedRegions) as [id, meta]}
                     <div class="selection cell">
                         <figure class="image is-64x64 card">
-                            <img src="{refToIIIF(meta.img, meta.xyhw, '96,')}" alt="Extracted region"/>
+                            <img src="{refToIIIF(meta.img, meta.xywh, '96,')}" alt="Extracted region"/>
                             <div class="overlay is-center">
                                 <span class="overlay-desc">{meta.title}</span>
                             </div>

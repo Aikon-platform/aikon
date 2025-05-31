@@ -441,8 +441,8 @@ def gen_coco_data(witness_data, regions_data):
     crops = regions_data.get("extracted_crops", {})
     for canvas_id, crop_dict in crops.items():
         for crop_key, crop_data in crop_dict.items():
-            xyhw = list(map(int, crop_data["xyhw"]))
-            bbox = xyhw
+            xywh = list(map(int, crop_data["xywh"]))
+            bbox = xywh
             area = bbox[2] * bbox[3]
             annotation = {
                 "id": crop_data["id"],
