@@ -160,7 +160,7 @@ class RegionPair(models.Model):
         s_regions = self.regions_id_2 if self.img_1 == q_img else self.regions_id_1
 
         info = (
-            self.score or 0.0,
+            self.score,
             q_img,
             s_img,
             q_regions,
