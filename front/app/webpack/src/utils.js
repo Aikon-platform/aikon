@@ -94,9 +94,9 @@ export function refToIIIF(imgRef=null, coord="full", size="full") {
         size = `${size_h},${size_w}`;
     }*/
 
-    // const imgRefArr = imgRef.split("_");
+    const imgRefArr = imgRef.split("_");
     // const imgCoord = coord ? coord : imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : "full";
-    const imgCoord = imgRef[imgRef.length -1].includes(",") ? imgRef.pop().replace(".jpg", "") : coord;
+    const imgCoord = imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : coord;
     return `${imgRoot}/${imgCoord}/${size}/0/default.jpg`;
 }
 
@@ -198,7 +198,7 @@ export async function deleteRecord(recordId, recordType){
  *    an object that tracks changes to another object.
  * @type {Object}
  * @property {(x:Any) => void} set
- *      define the newest object and an update the old one
+ *      define the newest object and update the old one
  * @property {() => Any} get
  *      get the new object
  * @property {(x:Any) => void} setCompareFn
