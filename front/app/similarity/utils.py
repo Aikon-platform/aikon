@@ -683,20 +683,6 @@ def regions_from_img(q_img: str) -> int:
     return get_digit_regions_id(get_digit_id(q_img))
 
 
-def get_regions_from_imgs(img_1, img_2, wid, rid=None):
-    """
-    Get the ids of the regions that correspond to the two images.
-    """
-    if img_1.startswith(f"wit{wid}"):
-        regions_1 = rid or regions_from_img(img_1)
-        regions_2 = regions_from_img(img_2)
-    else:
-        regions_1 = regions_from_img(img_1)
-        regions_2 = rid or regions_from_img(img_2)
-
-    return regions_1, regions_2
-
-
 def add_user_to_category_x(region_pair: RegionPair, user_id: int):
     if region_pair.category_x is None:
         region_pair.category_x = [user_id]
