@@ -27,7 +27,6 @@ from app.similarity.utils import (
     get_all_pairs,
     reset_similarity,
     regions_from_img,
-    get_regions_from_imgs,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
@@ -367,6 +366,14 @@ def add_region_pair(request, wid, rid=None):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
+    def add_jpg(img: str) -> str:
+        """
+        Ensure the image reference ends with .jpg
+        """
+        if not img.endswith(".jpg"):
+            return f"{img}.jpg"
+        return img
+
     try:
         data = json.loads(request.body)
         q_img, s_img = data.get("q_img"), data.get("s_img")
@@ -375,29 +382,28 @@ def add_region_pair(request, wid, rid=None):
             raise ValidationError("Invalid image string format")
 
         img_1, img_2 = sorted([q_img, s_img], key=sort_key)
+        img_1, img_2 = add_jpg(img_1), add_jpg(img_2)
 
-        regions_1, regions_2 = get_regions_from_imgs(img_1, img_2, wid, rid)
-
+        # todo use rid if defined?
+        regions_1, regions_2 = regions_from_img(img_1), regions_from_img(img_2)
         if not regions_1 or not regions_2:
             return JsonResponse({"error": "Unable to find regions"}, status=404)
 
         try:
-            region_pair = RegionPair.objects.get(
-                img_1=f"{img_1}.jpg", img_2=f"{img_2}.jpg"
-            )
+            region_pair = RegionPair.objects.get(img_1=img_1, img_2=img_2)
             created = False
             region_pair.similarity_type = 2
             region_pair.is_manual = True
 
-            if int(region_pair.score) == 0:
+            if region_pair.score == 0 or region_pair.score == 0.0:
                 region_pair.score = None
 
             region_pair = add_user_to_category_x(region_pair, request.user.id)
             region_pair.save()
         except RegionPair.DoesNotExist:
             region_pair = RegionPair.objects.create(
-                img_1=f"{img_1}.jpg",
-                img_2=f"{img_2}.jpg",
+                img_1=img_1,
+                img_2=img_2,
                 regions_id_1=regions_1,
                 regions_id_2=regions_2,
                 score=None,
@@ -414,7 +420,7 @@ def add_region_pair(request, wid, rid=None):
             {
                 "success": f"Region pair {'created' if created else 'updated'} successfully",
                 "s_regions": s_regions.get_json(),
-                "pair_info": region_pair.get_info(q_img, as_json=True),
+                "pair_info": region_pair.get_info(as_json=True),
             }
         )
 
