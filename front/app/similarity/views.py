@@ -389,6 +389,9 @@ def add_region_pair(request, wid, rid=None):
             region_pair.similarity_type = 2
             region_pair.is_manual = True
 
+            if int(region_pair.score) == 0:
+                region_pair.score = None
+
             region_pair = add_user_to_category_x(region_pair, request.user.id)
             region_pair.save()
         except RegionPair.DoesNotExist:
@@ -397,6 +400,7 @@ def add_region_pair(request, wid, rid=None):
                 img_2=f"{img_2}.jpg",
                 regions_id_1=regions_1,
                 regions_id_2=regions_2,
+                score=None,
                 is_manual=True,
                 similarity_type=2,
                 category_x=[request.user.id],
