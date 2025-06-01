@@ -26,6 +26,7 @@ class Command(BaseCommand):
             "fixed_region_ids": 0,
             "swapped_regions": 0,
             "swapped_alphabetical": 0,
+            "score_zero": 0,
             "deleted_pairs": 0,
             "errors": 0,
             "duplicates_found": 0,
@@ -140,6 +141,15 @@ class Command(BaseCommand):
             stats["ids_to_delete"].append(pair_id)
             # TODO delete?
             return
+
+        # Check if scores are zero
+        if pair.score == 0:
+            self.stdout.write(
+                self.style.WARNING(f"Pair #{pair.id}: Score is zero, setting to None")
+            )
+            pair.score = None
+            stats["score_zero"] += 1
+            changes_made = True
 
         # Get valid region IDs for each digitization
         try:
@@ -259,6 +269,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Fixed .jpg extensions:     {stats['fixed_jpg_extension']}")
         self.stdout.write(f"Fixed invalid region IDs:  {stats['fixed_region_ids']}")
         self.stdout.write(f"Fixed alphabetical order:  {stats['swapped_alphabetical']}")
+        self.stdout.write(f"Score set to None:         {stats['score_zero']}")
         self.stdout.write(f"Fixed swapped regions:     {stats['swapped_regions']}")
         self.stdout.write(f"Duplicates found:          {stats['duplicates_found']}")
         self.stdout.write(f"Deleted pairs:             {stats['deleted_pairs']}")
