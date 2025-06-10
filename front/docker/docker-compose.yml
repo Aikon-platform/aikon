@@ -81,6 +81,7 @@ services:
     environment:
       <<: *proxy-settings
     user: root
+    restart: unless-stopped
 
   sas:
     build:
@@ -99,6 +100,7 @@ services:
       - aikon_network
     environment:
       <<: *proxy-settings
+    restart: unless-stopped
 
   nginx:
     image: nginx:latest

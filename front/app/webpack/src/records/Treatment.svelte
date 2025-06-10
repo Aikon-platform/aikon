@@ -57,7 +57,7 @@
         {#if task_status === "SUCCESS"}
             <span class="tag is-success p-1 mb-1">{task_status}</span>
         {:else if task_status === ("ERROR" || "CANCELLED")}
-            <span class="tag is-danger p-1 mb-1">{task_status}</span>
+            <span class="tag is-danger p-1 mb-1" title="{item.info || 'Unknown error'}">{task_status}</span>
         {:else}
             <span class="tag is-info p-1 mb-1">{task_status}</span>
         {/if}

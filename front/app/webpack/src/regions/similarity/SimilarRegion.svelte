@@ -137,27 +137,27 @@
     />
     {#if !isInModal }
         <div class="tags has-addons is-dark is-center">
-            <span class="tag is-hoverable pl-4 pr-3 py-4" class:is-selected={selectedCategory === 1}
+            <span class="tag is-hoverable pl-3 pr-2 py-4" class:is-selected={selectedCategory === 1}
                   on:click={() => categorize(1)} on:keyup={null}
                   title="{appLang === 'en' ? 'Exact match' : 'Correspondance exacte'}">
                 {@html exactSvg}
             </span>
-            <span class="tag is-hoverable py-4 px-3" class:is-selected={selectedCategory === 2}
+            <span class="tag is-hoverable py-4 px-2" class:is-selected={selectedCategory === 2}
                   on:click={() => categorize(2)} on:keyup={null}
                   title="{appLang === 'en' ? 'Partial match' : 'Correspondance partielle'}">
                 {@html partialSvg}
             </span>
-            <span class="tag is-hoverable py-4 px-3" class:is-selected={selectedCategory === 3}
+            <span class="tag is-hoverable py-4 px-2" class:is-selected={selectedCategory === 3}
                   on:click={() => categorize(3)} on:keyup={null}
                   title="{appLang === 'en' ? 'Semantic match' : 'Correspondance sémantique'}">
                 {@html semanticSvg}
             </span>
-            <span class="tag is-hoverable py-4 px-3" class:is-selected={selectedCategory === 4}
+            <span class="tag is-hoverable py-4 px-2" class:is-selected={selectedCategory === 4}
                   on:click={() => categorize(4)} on:keyup={null}
                   title="{appLang === 'en' ? 'No match' : 'Aucune correspondance'}">
                 {@html noSvg}
             </span>
-            <span class="tag is-hoverable pl-3 pr-4 py-4" class:is-selected={isSelectedByUser}
+            <span class="tag is-hoverable pl-2 pr-3 py-4" class:is-selected={isSelectedByUser}
                   on:click={() => categorize(5)} on:keyup={null}
                   title="{appLang === 'en' ? 'User match' : 'Correspondance utilisateur'}">
                 {@html userSvg}
