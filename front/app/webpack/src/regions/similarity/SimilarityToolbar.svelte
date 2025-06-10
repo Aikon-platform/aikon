@@ -19,6 +19,7 @@ import InputToggle from "../../ui/InputToggle.svelte";
 import InputDropdown from "../../ui/InputDropdown.svelte";
 import IconTooltip from "../../ui/IconTooltip.svelte";
 import TooltipGeneric from "../../ui/TooltipGeneric.svelte";
+import {onMount} from "svelte";
 
 ///////////////////////////////////////
 
@@ -31,6 +32,34 @@ const  {
     propagateFilterByRegions,
     allowedPropagateDepthRange
 } = similarityStore;
+
+
+function updateNavActionsHeight() {
+    const navActions = document.getElementById("nav-actions");
+    if (navActions) {
+        document.documentElement.style.setProperty('--nav-actions-height', `${navActions.offsetHeight}px`);
+    }
+}
+let resizeObserver;
+onMount(() => {
+    updateNavActionsHeight();
+
+    resizeObserver = new ResizeObserver(() => {
+        updateNavActionsHeight();
+    });
+
+    const navActions = document.getElementById("nav-actions");
+    if (navActions) {
+        resizeObserver.observe(navActions);
+    }
+
+    return () => {
+        if (resizeObserver && navActions) {
+            resizeObserver.unobserve(navActions);
+            resizeObserver.disconnect();
+        }
+    };
+});
 
 const currentPageId = window.location.pathname.match(/\d+/g).join('-');
 const baseUrl = `${window.location.origin}${window.location.pathname}`;
@@ -62,10 +91,6 @@ const similarityScoreRangePromise = fetchSimilarityScoreRange();
 /** @type {number?} ensures that $similarityScoreCutoff matches a value in similarityScoreRangePromise. updated by fetchSimilarityScoreRange */
 $: defaultSimilarityScoreCutoff = $similarityScoreCutoff || undefined
 
-/** @type {number} */
-let innerWidth, innerHeight;
-$: stickyTop = calcStickyTop(innerWidth, innerHeight);  // recalculated on window resize
-
 $: toolbarExpanded = false;
 $: toggleToolbarText =
     appLang === "fr" && toolbarExpanded
@@ -80,9 +105,6 @@ $: toggleToolbarText =
 
 
 const toggleToolbarExpanded = () => toolbarExpanded = !toolbarExpanded;
-
-const calcStickyTop = () =>
-    document.querySelector("#nav-actions")?.offsetHeight;
 
 /** @returns {Promise<Array<number?>>} */
 async function fetchSimilarityScoreRange() {
@@ -123,16 +145,13 @@ const setComparedRegions = (e) => {
     })
     selectedRegions.set(newSelectedRegions);
 }
-
 </script>
 
+<svelte:window/>
 
-<svelte:window bind:innerWidth bind:innerHeight></svelte:window>
+<div id="similarity-toolbar" class="ctrl-wrapper is-flex is-justify-content-center is-align-items-center
+     { toolbarExpanded ? 'toolbar-expanded' : 'toolbar-collapsed' }">
 
-<div class="ctrl-wrapper is-flex is-justify-content-center is-align-items-center
-            { toolbarExpanded ? 'toolbar-expanded' : 'toolbar-collapsed' }"
-     style="{ stickyTop ? `top: ${stickyTop}px` : '' }"
->
     <form class="ctrl">
         <div class="ctrl-base">
             <div class="ctrl-block-wrapper">
@@ -141,13 +160,13 @@ const setComparedRegions = (e) => {
                         <div class="ctrl-input">
                             {#if Object.keys($comparedRegionsChoices).length}
                                 <InputDropdown choicesItems={$comparedRegionsChoices}
-                                            multiple={true}
-                                            placeholder="..."
-                                            start={Object.keys($selectedRegions[currentPageId] || {})}
-                                            lightDisplay={true}
-                                            title={appLang==="fr" ? "Régions sélectionnées" : "Selected regions"}
-                                            selectAll={true}
-                                            on:updateValues={setComparedRegions}
+                                    multiple={true}
+                                    placeholder="..."
+                                    start={Object.keys($selectedRegions[currentPageId] || {})}
+                                    lightDisplay={true}
+                                    title={appLang==="fr" ? "Régions sélectionnées" : "Selected regions"}
+                                    selectAll={true}
+                                    on:updateValues={setComparedRegions}
                                 ></InputDropdown>
                             {/if}
                         </div>
@@ -155,11 +174,11 @@ const setComparedRegions = (e) => {
                             {#await similarityScoreRangePromise then similarityScoreRange}
                                 {#if similarityScoreRange.length}
                                     <InputSlider title={ appLang==="fr" ? "Score minimal" : "Minimal score" }
-                                                minVal={similarityScoreRange[0]}
-                                                maxVal={similarityScoreRange[1]}
-                                                start={defaultSimilarityScoreCutoff || similarityScoreRange[0]}
-                                                roundTo={3}
-                                                on:updateSlider={setSimilarityScoreCutoff}
+                                        minVal={similarityScoreRange[0]}
+                                        maxVal={similarityScoreRange[1]}
+                                        start={defaultSimilarityScoreCutoff || similarityScoreRange[0]}
+                                        roundTo={3}
+                                        on:updateSlider={setSimilarityScoreCutoff}
                                     ></InputSlider>
                                 {/if}
                             {/await}
@@ -179,13 +198,13 @@ const setComparedRegions = (e) => {
                         <div class="ctrl-block-inputs">
                             <div class="ctrl-input">
                                 <InputDropdown choicesItems={categoriesChoices}
-                                            multiple={true}
-                                            placeholder="..."
-                                            start={$excludedCategories}
-                                            lightDisplay={true}
-                                            title={appLang==="fr" ? "Catégories masquées" : "Hidden categories"}
-                                            selectAll={true}
-                                            on:updateValues={setExcludedCategories}
+                                    multiple={true}
+                                    placeholder="..."
+                                    start={$excludedCategories}
+                                    lightDisplay={true}
+                                    title={appLang==="fr" ? "Catégories masquées" : "Hidden categories"}
+                                    selectAll={true}
+                                    on:updateValues={setExcludedCategories}
                                 ></InputDropdown>
                             </div>
                         </div>
@@ -196,28 +215,27 @@ const setComparedRegions = (e) => {
                         <div class="ctrl-block-title">
                             <span class="tag is-medium is-link mr-1">Propagation</span>
                             <IconTooltip iconifyIcon="material-symbols:help-outline"
-                                        altText={ appLang==="en" ? "Display help" : "Afficher une explication"}
-                                        tooltipText={tooltipText}
+                                altText={ appLang==="en" ? "Display help" : "Afficher une explication"}
+                                tooltipText={tooltipText}
                             ></IconTooltip>
                         </div>
                         <div class="ctrl-block-inputs">
                             <div class="ctrl-input">
                                 <InputSlider title={ appLang==="fr" ? "Profondeur de récursion" : "Recursion depth" }
-                                            minVal={allowedPropagateDepthRange[0]}
-                                            maxVal={allowedPropagateDepthRange[1]}
-                                            start={$propagateRecursionDepth}
-                                            step={1}
-                                            on:updateSlider={setPropagateRecursionDepth}
+                                    minVal={allowedPropagateDepthRange[0]}
+                                    maxVal={allowedPropagateDepthRange[1]}
+                                    start={$propagateRecursionDepth}
+                                    step={1}
+                                    on:updateSlider={setPropagateRecursionDepth}
                                 ></InputSlider>
                             </div>
                             <div class="ctrl-input">
                                 <InputToggle toggleLabel="Filter by region"
-                                             on:updateChecked={setPropagateFilterByRegions}
-                                             start={$propagateFilterByRegions}
-                                             buttonDisplay={true}
+                                     on:updateChecked={setPropagateFilterByRegions}
+                                     start={$propagateFilterByRegions}
+                                     buttonDisplay={true}
                                 ></InputToggle>
                             </div>
-
 
                         </div>
                     </div>
@@ -244,14 +262,16 @@ const setComparedRegions = (e) => {
 
 
 <style>
+#similarity-toolbar {
+    top: var(--nav-actions-height);
+}
 .ctrl-wrapper {
     width: 100%;
-    height: 100%;
-    margin: 0 0 5vh;
+    height: auto;
     position: sticky;
     background-color: var(--bulma-body-background-color);
     z-index: 2;
-    margin-bottom: max(15vh, 200px);
+    margin: 0 0 max(10vh, 150px);
 }
 .ctrl {
     position: absolute;
@@ -265,13 +285,12 @@ const setComparedRegions = (e) => {
     flex-direction: column;
 }
 .toolbar-collapsed .ctrl {
-    box-shadow: var(--bulma-border-weak) 0 3px;
+    /*box-shadow: var(--bulma-border-weak) 0 3px;*/
+    box-shadow: none;
 }
 .toolbar-expanded .ctrl {
-    box-shadow: var(--bulma-border-active) 0 3px;
-}
-.ctrl-base {
-
+    /*box-shadow: var(--bulma-border-active) 0 3px;*/
+    box-shadow: none;
 }
 .ctrl-block-wrapper {
     width: 100%;

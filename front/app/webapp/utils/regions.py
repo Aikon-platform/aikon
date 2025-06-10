@@ -28,6 +28,7 @@ def get_file_regions(regions: Regions):
                 return [line.strip() for line in f.readlines()], "txt"
         except Exception:
             return None, None
+    log(f"[get_file_regions] Neither {json_file} nor {txt_file} exists")
     return None, None
 
 

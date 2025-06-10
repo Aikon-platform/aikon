@@ -70,20 +70,33 @@ export function refToIIIFRoot(imgRef=null) {
 
 export function refToIIIF(imgRef=null, coord="full", size="full") {
     // imgRef can be like "wit<id>_<digit><id>_<page_nb>.jpg" or "wit<id>_<digit><id>_<page_nb>_<x,y,h,w>.jpg"
-    if (!imgRef ) {
+    if (!imgRef) {
         return "https://placehold.co/96x96/png?text=No+image";
     }
     const imgRoot = refToIIIFRoot(imgRef);
-    if ( imgRoot===undefined ) {
+    if (imgRoot === undefined) {
         return "https://placehold.co/96x96/png?text=No+image";
     }
+    /*if (size !== "full" && imgCoord !== "full") {
+        let [_, __, crop_h, crop_w] = String(imgCoord).split(",").map(Number);
+        let [size_h, size_w] = size.split(",").map(Number);
+
+        if (size_h && size_h > crop_h) {
+            size_h = Math.min(size_h, crop_h);
+        }
+        if (size_w && size_w > crop_w){
+            size_w = Math.min(size_w, crop_w);
+        }
+        // width and height of the crop cannot exceed the size of whole image
+        // to obtain original image size, we could request ${getCantaloupeUrl()}/iiif/2/${imgName}.jpg/info.json
+        // to retrieve info["width"] and info["height"] to be used instead of crop_h / crop_w
+
+        size = `${size_h},${size_w}`;
+    }*/
+
     const imgRefArr = imgRef.split("_");
-    const imgCoord =
-        coord
-        ? coord
-        : imgRefArr[imgRefArr.length -1].includes(",")
-        ? imgRefArr.pop().replace(".jpg", "")
-        : "full";
+    // const imgCoord = coord ? coord : imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : "full";
+    const imgCoord = imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : coord;
     return `${imgRoot}/${imgCoord}/${size}/0/default.jpg`;
 }
 
@@ -185,11 +198,11 @@ export async function deleteRecord(recordId, recordType){
  *    an object that tracks changes to another object.
  * @type {Object}
  * @property {(x:Any) => void} set
- *      define the newest object and unpade the old one
+ *      define the newest object and update the old one
  * @property {() => Any} get
  *      get the new object
  * @property {(x:Any) => void} setCompareFn
- *      define the comparion function. defining this function allows to have some custom way to check if `_new` and `_old` are different (i.e., deep equality in case of objects)
+ *      define the comparison function. defining this function allows to have some custom way to check if `_new` and `_old` are different (i.e., deep equality in case of objects)
  * @property {() => Array<Any>} getNewAndOld
  *      get a pair of [New, Old]
  * @property {() => boolean} same
