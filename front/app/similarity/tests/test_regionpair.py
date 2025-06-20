@@ -6,6 +6,7 @@
 
 import csv
 import ast
+import json
 import pathlib
 from datetime import datetime
 from typing import List, Dict
@@ -47,7 +48,7 @@ def clean_data(data: List) -> Dict:
 
 class RegionPairTestCase(TestCase):
     def setUp(self):
-        self.c = Client()
+        self.client = Client()
         data = clean_data(DATA)
         for row in data:
             RegionPair.objects.create(**row)
@@ -55,7 +56,7 @@ class RegionPairTestCase(TestCase):
     def test_sort_key(self):
         a = "wit76_pdf76_0319_628,2234,455,191.jpg"
         b = "wit247_man247_0141_1114,1459,249,300.jpg"
-        c = "wit247_man01_0141_1114,1459,249,300.jpg"
+        c = "wit247_man0001_0141_1114,1459,249,300.jpg"
         l1 = [a, b]
         l2 = [b, a]
         l3 = [c, a, b]
@@ -66,6 +67,37 @@ class RegionPairTestCase(TestCase):
         self.assertEqual(l2_sorted[0], a)
         self.assertEqual(l1_sorted, l2_sorted)
         self.assertEqual(l3_sorted, [a, c, b])
+
+    def test_add_region_pair(self):
+        # TODO
+        pass
+
+    # see: https://docs.djangoproject.com/en/5.2/topics/testing/tools/#making-requests
+    def test_save_category(self):
+        rp = RegionPair.objects.first()
+        rp_id = rp.id
+        row_count_pre_update = RegionPair.objects.count()
+
+        # assert that a new row is not created when saving the swapped version of rp (img_1,img_2) <=> (img_2,img_1)
+        cat = 3  # meow
+        rp_update = rp.get_dict()
+        rp_update["img_1"] = rp.img_2
+        rp_update["img_2"] = rp.img_1
+        rp_update["category"] = cat
+        # TODO find proper URL
+        self.client.post(
+            "/save-category",
+            headers={"Content-Type": "application/json"},
+            data=rp_update,
+        )
+
+        row_count_post_update = RegionPair.objects.count()
+        rp_update_cat = RegionPair.objects.get(pk=rp_id).category
+        self.assertEqual(rp_update_cat, cat)
+
+    def test_process_similarity_file(self):
+        # TODO
+        pass
 
     def tearDown(self):
         """"""
