@@ -342,7 +342,7 @@ def get_regions_pairs(regions_id: int):
 
 def get_matched_regions(q_img: str, s_regions_id: int):
     """
-    Retrieve all RegionPair records containing the given query image name and the given regions_id
+    Retrieve all RegionPair records containing the given query image name and the given s_regions_id
     if q_img is in img_1, then s_regions_id should be in regions_id_2 and vice versa
     :param q_img: str, the image name to look for
     :param s_regions_id: int, the regions_id to look for
