@@ -13,6 +13,7 @@ from typing import List, Dict
 from django.test import TestCase, Client
 
 from ..models.region_pair import RegionPair
+from ...webapp.utils.functions import sort_key
 
 DATA_FILE = pathlib.Path(__file__).parent.resolve() / "data_regionpair.csv"
 
@@ -41,7 +42,6 @@ def clean_data(data: List) -> Dict:
             if len(row["category_x"])
             else []
         )
-        print(">>>", row)
     return data
 
 
@@ -51,10 +51,21 @@ class RegionPairTestCase(TestCase):
         data = clean_data(DATA)
         for row in data:
             RegionPair.objects.create(**row)
-        print(len(RegionPair.objects.all()))
 
-    def test_(self):
-        print("ḧellooooooooooooooooooooooooooo")
+    def test_sort_key(self):
+        a = "wit76_pdf76_0319_628,2234,455,191.jpg"
+        b = "wit247_man247_0141_1114,1459,249,300.jpg"
+        c = "wit247_man01_0141_1114,1459,249,300.jpg"
+        l1 = [a, b]
+        l2 = [b, a]
+        l3 = [c, a, b]
+        l1_sorted = sorted(l1, key=sort_key)
+        l2_sorted = sorted(l2, key=sort_key)
+        l3_sorted = sorted(l3, key=sort_key)
+        self.assertEqual(l1_sorted[1], b)
+        self.assertEqual(l2_sorted[0], a)
+        self.assertEqual(l1_sorted, l2_sorted)
+        self.assertEqual(l3_sorted, [a, c, b])
 
     def tearDown(self):
         """"""
