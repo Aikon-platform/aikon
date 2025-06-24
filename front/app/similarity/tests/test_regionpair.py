@@ -26,6 +26,7 @@ with open(DATA_FILE, mode="r") as fh:
     DATA = [row for row in reader]
 
 
+# take the CSV file and process it so that it can be saved to database
 def clean_data(data: List) -> Dict:
     def row_to_obj(row: List) -> Dict:
         return {h: r for (h, r) in zip(HEADERS, row)}
@@ -80,21 +81,29 @@ class RegionPairTestCase(TestCase):
         rp_id = rp.id
         row_count_pre_update = RegionPair.objects.count()
 
-        # assert that a new row is not created when saving the swapped version of rp (img_1,img_2) <=> (img_2,img_1)
+        # assert that the existing row is updated (and that a new row is not created) when saving the swapped version of rp (img_1,img_2) <=> (img_2,img_1)
+        self.assertEqual(
+            [rp.img_1, rp.img_2], sorted([rp.img_1, rp.img_2], key=sort_key)
+        )  # just to be certain that  rp.img_1 < rp.img_2
         cat = 3  # meow
         rp_update = rp.get_dict()
+        # request to save the swapped version of rp, that aldready exists in the database. this should lead in just updating rp.
         rp_update["img_1"] = rp.img_2
         rp_update["img_2"] = rp.img_1
         rp_update["category"] = cat
-        self.client.post(
+        r = self.client.post(
             reverse("similarity:save-category"),
             content_type="application/json",
             data=rp_update,
         )
         row_count_post_update = RegionPair.objects.count()
         rp_update_cat = RegionPair.objects.get(pk=rp_id).category
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(
+            json.loads(r.content)["message"], "Existing region pair updated"
+        )
         self.assertEqual(rp_update_cat, cat)
-        self.assertEqual(row_count_post_update, 1)
+        self.assertEqual(row_count_post_update, row_count_pre_update)
 
     def test_process_similarity_file(self):
         # TODO
