@@ -505,10 +505,8 @@ def save_category(request):
     also used to save propagated regionpairs to database
     when those are categorized by the user
     """
-    from django.db.utils import IntegrityError
-
     if request.method != "POST":
-        return JsonResponse({"error": "Invalid request method"}, status=4050)
+        return JsonResponse({"error": "Invalid request method"}, status=400)
 
     try:
         data = json.loads(request.body)

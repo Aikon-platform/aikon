@@ -12,8 +12,10 @@ from datetime import datetime
 from typing import List, Dict
 
 from django.test import TestCase, Client
+from django.urls import reverse
 
 from ..models.region_pair import RegionPair
+from ...config.settings.base import APP_NAME
 from ...webapp.utils.functions import sort_key
 
 DATA_FILE = pathlib.Path(__file__).parent.resolve() / "data_regionpair.csv"
@@ -84,13 +86,11 @@ class RegionPairTestCase(TestCase):
         rp_update["img_1"] = rp.img_2
         rp_update["img_2"] = rp.img_1
         rp_update["category"] = cat
-        # TODO find proper URL
         self.client.post(
-            "/save-category",
-            headers={"Content-Type": "application/json"},
+            reverse("similarity:save-category"),
+            content_type="application/json",
             data=rp_update,
         )
-
         row_count_post_update = RegionPair.objects.count()
         rp_update_cat = RegionPair.objects.get(pk=rp_id).category
         self.assertEqual(rp_update_cat, cat)
