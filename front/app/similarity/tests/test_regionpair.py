@@ -94,6 +94,7 @@ class RegionPairTestCase(TestCase):
         row_count_post_update = RegionPair.objects.count()
         rp_update_cat = RegionPair.objects.get(pk=rp_id).category
         self.assertEqual(rp_update_cat, cat)
+        self.assertEqual(row_count_post_update, 1)
 
     def test_process_similarity_file(self):
         # TODO
