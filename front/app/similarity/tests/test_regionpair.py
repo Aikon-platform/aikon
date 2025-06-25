@@ -60,6 +60,7 @@ class RegionPairTestCase(TestCase):
         self.client = Client()
         data = clean_data(DATA)
         # TODO cascade to copy related tables (by hand or programatically)
+        # + rerun the tests fromn faulty database rows in RegionPair
         # RegionPair => Region => Digitization // nullable fields : => Witness => Place
         #                                      // nullable fields : => Source
         print(
