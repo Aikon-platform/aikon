@@ -8,47 +8,58 @@ import csv
 import ast
 import json
 import pathlib
+import subprocess
 from typing import Literal
 from datetime import datetime
 from collections.abc import Callable
 
+from django.db import connection
 from django.db.models import Q
 from django.urls import reverse
 from django.test import TestCase, Client
 
 from ..models.region_pair import RegionPair
-from ...config.settings.base import APP_NAME
+from ...config.settings.base import APP_NAME, DATABASES
 from ...webapp.utils.functions import sort_key
 
-DATA_FILE = pathlib.Path(__file__).parent.resolve() / "data_regionpair.csv"
+FOLDER = pathlib.Path(__file__).parent.resolve()
 
-with open(DATA_FILE, mode="r") as fh:
-    reader = csv.reader(fh, delimiter=",", quotechar='"')
-    HEADERS = next(reader)
-    DATA = [row for row in reader]
+psql_cmd = lambda tblname, csvfile: (
+    f'PGPASSWORD="{DATABASES["default"]["PASSWORD"]}" \
+    psql -U "{DATABASES["default"]["USER"]}" \
+         -d "{DATABASES["test"]["NAME"]}" \
+         -c "\copy {tblname} FROM \'{csvfile}\' WITH DELIMITER E\'\\t\'"'
+)
 
-
-# take the CSV file and process it so that it can be saved to database
-def clean_data(data: list[str]) -> dict:
-    def row_to_obj(row: list) -> dict:
-        return {h: r for (h, r) in zip(HEADERS, row)}
-
-    data = [row_to_obj(row) for row in DATA]
-    for row in data:
-        for k in ["regions_id_1", "regions_id_2", "category", "similarity_type"]:
-            row[k] = int(row[k]) if len(row[k]) else None
-        for k in ["created_at", "updated_at"]:
-            row[k] = (
-                datetime.strptime(row[k], r"%Y/%m/%d %H:%M:%S") if len(row[k]) else None
-            )
-        row["score"] = float(row["score"]) if len(row["score"]) else None
-        row["is_manual"] = True if row["is_manual"] == "t" else False
-        row["category_x"] = (
-            [int(x) for x in set(ast.literal_eval(row["category_x"]))]
-            if len(row["category_x"])
-            else []
-        )
-    return data
+# DATA_FILE = FOLDER / "data_regionpair.csv"
+#
+# with open(DATA_FILE, mode="r") as fh:
+#     reader = csv.reader(fh, delimiter=",", quotechar='"')
+#     HEADERS = next(reader)
+#     DATA = [row for row in reader]
+#
+#
+# # take the CSV file and process it so that it can be saved to database
+# def clean_data(data: list[str]) -> dict:
+#     def row_to_obj(row: list) -> dict:
+#         return {h: r for (h, r) in zip(HEADERS, row)}
+#
+#     data = [row_to_obj(row) for row in DATA]
+#     for row in data:
+#         for k in ["regions_id_1", "regions_id_2", "category", "similarity_type"]:
+#             row[k] = int(row[k]) if len(row[k]) else None
+#         for k in ["created_at", "updated_at"]:
+#             row[k] = (
+#                 datetime.strptime(row[k], r"%Y/%m/%d %H:%M:%S") if len(row[k]) else None
+#             )
+#         row["score"] = float(row["score"]) if len(row["score"]) else None
+#         row["is_manual"] = True if row["is_manual"] == "t" else False
+#         row["category_x"] = (
+#             [int(x) for x in set(ast.literal_eval(row["category_x"]))]
+#             if len(row["category_x"])
+#             else []
+#         )
+#     return data
 
 
 def get_cat(pk) -> int:
@@ -58,19 +69,34 @@ def get_cat(pk) -> int:
 class RegionPairTestCase(TestCase):
     def setUp(self):
         self.client = Client()
-        data = clean_data(DATA)
-        # TODO cascade to copy related tables (by hand or programatically)
-        # + rerun the tests fromn faulty database rows in RegionPair
-        # RegionPair => Region => Digitization // nullable fields : => Witness => Place
-        #                                      // nullable fields : => Source
-        print(
-            set(
-                [row["regions_id_1"] for row in data]
-                + [row["regions_id_2"] for row in data]
-            )
-        )
-        for row in data:
-            RegionPair.objects.create(**row)
+        # data = clean_data(DATA)
+        # for row in data:
+        #     RegionPair.objects.create(**row)
+
+        tblname_to_csvfile = [
+            ("webapp_place", FOLDER / "data_place.csv"),
+            ("webapp_edition", FOLDER / "data_edition.csv"),
+            ("webapp_witness", FOLDER / "data_witness.csv"),
+            # ( "webapp_digitization", FOLDER / "data_digitization.csv" ),
+            # ( "webapp_regions", FOLDER / "data_regions.csv" ),
+            # ( "webapp_regionpair", FOLDER / "data_regionpair.csv" ),
+        ]
+        for (tblname, csvfile) in tblname_to_csvfile:
+            cmd = psql_cmd(tblname, csvfile)
+            print(cmd)
+            try:
+                subprocess.run(cmd, shell=True, check=True, capture_output=True)
+            except subprocess.CalledProcessError as e:
+                print(">>> ERR", e.stderr)
+                print(">>> OUT", e.stdout)
+                print("###############################")
+        # with connection.cursor() as cursor:
+        #     #TODO add `GRANT pg_read_server_files TO admin` in db setup;
+        #     #NOTE in case of errors, run: `chmod a+rw data_*` !
+        #     cursor.execute(f"COPY webapp_regionpair   FROM './data_regionpair.csv' ")
+        #     cursor.execute(f"COPY webapp_regions      FROM './data_regions.csv' ")
+        #     cursor.execute(f"COPY webapp_digitization FROM './data_digitization.csv' ")
+        #     cursor.execute(f"COPY webapp_witness      FROM './data_witness.csv' ")
 
     @staticmethod
     def getcount():
