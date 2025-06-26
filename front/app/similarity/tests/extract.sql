@@ -90,9 +90,9 @@ CREATE TEMPORARY VIEW pl AS
     );
 
 -- run exports
-\copy ( SELECT * FROM rp ) TO './data_regionpair.csv';
-\copy ( SELECT * FROM rg ) TO './data_regions.csv';
-\copy ( SELECT * FROM dg ) TO './data_digitization.csv';
-\copy ( SELECT * FROM wt ) TO './data_witness.csv';
-\copy ( SELECT * FROM ed ) TO './data_edition.csv';
-\copy ( SELECT * FROM pl ) TO './data_place.csv';
+\copy ( SELECT * FROM rp ) TO './webapp_regionpair.csv' WITH (FORMAT CSV, HEADER);
+\copy ( SELECT * FROM rg ) TO './webapp_regions.csv' WITH (FORMAT CSV, HEADER);
+\copy ( SELECT * FROM dg ) TO './webapp_digitization.csv' WITH (FORMAT CSV, HEADER);
+\copy ( SELECT * FROM wt ) TO './webapp_witness.csv' WITH (FORMAT CSV, HEADER);
+\copy ( SELECT * FROM ed ) TO './webapp_edition.csv' WITH (FORMAT CSV, HEADER);
+\copy ( SELECT * FROM pl ) TO './webapp_place.csv' WITH (FORMAT CSV, HEADER);

@@ -4,6 +4,7 @@
 # >>> ALTER USER admin CREATEDB;   # grant db creation privileges to user admin.
 
 
+import os
 import csv
 import ast
 import json
@@ -13,90 +14,119 @@ from typing import Literal
 from datetime import datetime
 from collections.abc import Callable
 
+import pandas as pd
+import numpy as np
+
 from django.db import connection
 from django.db.models import Q
 from django.urls import reverse
 from django.test import TestCase, Client
 
 from ..models.region_pair import RegionPair
+from ...webapp.models.regions import Regions
 from ...config.settings.base import APP_NAME, DATABASES
 from ...webapp.utils.functions import sort_key
 
 FOLDER = pathlib.Path(__file__).parent.resolve()
 
-psql_cmd = lambda tblname, csvfile: (
+# NOTE order is important to avoid sql integrity errors !
+TBL_TO_CSV = [
+    # ("webapp_place", FOLDER / "webapp_place.csv"),
+    # ("webapp_edition", FOLDER / "webapp_edition.csv"),
+    # ("webapp_witness", FOLDER / "webapp_witness.csv"),
+    # ( "webapp_digitization", FOLDER / "webapp_digitization.csv" ),
+    ("webapp_regions", FOLDER / "webapp_regions.csv"),
+    ("webapp_regionpair", FOLDER / "webapp_regionpair.csv"),
+]
+
+# returns the header of sql table `tblname`
+psql_cmd_header = lambda tblname: (
     f'PGPASSWORD="{DATABASES["default"]["PASSWORD"]}" \
     psql -U "{DATABASES["default"]["USER"]}" \
          -d "{DATABASES["test"]["NAME"]}" \
-         -c "\copy {tblname} FROM \'{csvfile}\' WITH DELIMITER E\'\\t\'"'
+         -c "\copy ( SELECT * FROM {tblname} LIMIT 0 ) TO STDOUT WITH (FORMAT CSV, HEADER)"'
 )
 
-# DATA_FILE = FOLDER / "data_regionpair.csv"
-#
-# with open(DATA_FILE, mode="r") as fh:
-#     reader = csv.reader(fh, delimiter=",", quotechar='"')
-#     HEADERS = next(reader)
-#     DATA = [row for row in reader]
-#
-#
-# # take the CSV file and process it so that it can be saved to database
-# def clean_data(data: list[str]) -> dict:
-#     def row_to_obj(row: list) -> dict:
-#         return {h: r for (h, r) in zip(HEADERS, row)}
-#
-#     data = [row_to_obj(row) for row in DATA]
-#     for row in data:
-#         for k in ["regions_id_1", "regions_id_2", "category", "similarity_type"]:
-#             row[k] = int(row[k]) if len(row[k]) else None
-#         for k in ["created_at", "updated_at"]:
-#             row[k] = (
-#                 datetime.strptime(row[k], r"%Y/%m/%d %H:%M:%S") if len(row[k]) else None
-#             )
-#         row["score"] = float(row["score"]) if len(row["score"]) else None
-#         row["is_manual"] = True if row["is_manual"] == "t" else False
-#         row["category_x"] = (
-#             [int(x) for x in set(ast.literal_eval(row["category_x"]))]
-#             if len(row["category_x"])
-#             else []
-#         )
-#     return data
+# populates sql table `tblname` with data from `csvfile`
+psql_cmd_copy = lambda tblname, csvfile: (
+    f'PGPASSWORD="{DATABASES["default"]["PASSWORD"]}" \
+    psql -U "{DATABASES["default"]["USER"]}" \
+         -d "{DATABASES["test"]["NAME"]}" \
+         -c "\copy {tblname} FROM \'{csvfile}\' WITH (FORMAT CSV, HEADER MATCH)"'
+)
 
 
-def get_cat(pk) -> int:
-    ...
+def get_csvfile_from_tblname(tblname: str) -> os.PathLike | None:
+    for _tblname, _csvfile in TBL_TO_CSV:
+        if tblname == _tblname:
+            return _csvfile
+    raise ValueError(
+        f"invalid table name '{tblname}'. allowed values are {list(t for (t,c) in TBL_TO_CSV)}"
+    )
+
+
+# load sql exports as dataframes, clean them and write them. returns a copy of `TBL_TO_CSV` with file paths updates to point to the cleaned files.
+def clean_data() -> tuple[str, os.PathLike]:
+    # table name mapped to array of columns to empty
+    tbl_to_csv_local = []
+    empty = {"webapp_regions": ["digitization_id"]}
+    retype = {
+        "webapp_regionpair": {"category": "int"},
+    }
+    csvfile = get_csvfile_from_tblname("webapp_regions")
+    for idx, (tblname, csvfile) in enumerate(TBL_TO_CSV):
+        # clean the csv (mainly perform type conversions and empty unnecessary foreign keys)
+        df = pd.read_csv(csvfile)
+        if tblname in empty:
+            df[empty[tblname]] = np.nan
+        if tblname in retype:
+            for col, newtype in retype[tblname].items():
+                if newtype == "int":
+                    df[col] = df[col].astype(
+                        "Int64"
+                    )  # integer+nan columns are converted to float by default (since nan is a float) => reconvert them to int
+                else:
+                    raise NotImplementedError(f"no conversion for {newtype}")
+
+        # load the column names in the test database as a list of strings
+        cmd = psql_cmd_header(tblname)
+        out = subprocess.run(cmd, shell=True, check=True, capture_output=True)
+        db_header = out.stdout.decode("utf-8").replace(
+            "\n", ""
+        )  # convert to str + strip the trailing newline
+        db_header = db_header.split(",")
+
+        # reorder columns in `df` to match `db_header`
+        assert len(df.columns) == len(db_header), set(db_header).difference(df.columns)
+        df = df.reindex(columns=db_header)
+
+        # write to file and build tbl_to_csv_local
+        fn_out = f"{os.path.basename(csvfile).replace('.csv', '')}_clean.csv"  # webapp_regions.csv => webapp_regions_clean.csv
+        dir_out = csvfile.parent.resolve()
+        csvfile_out = dir_out / fn_out
+        df.to_csv(csvfile_out, sep=",", header=True, index=False, na_rep="")
+        tbl_to_csv_local.append((tblname, csvfile_out))
+
+    return tbl_to_csv_local
 
 
 class RegionPairTestCase(TestCase):
-    def setUp(self):
-        self.client = Client()
-        # data = clean_data(DATA)
-        # for row in data:
-        #     RegionPair.objects.create(**row)
+    @classmethod
+    def setUpTestData(cls):
+        """populate the db. runs only 1 time for the whole test case, instead of `setUp` which runs once per test"""
+        tbl_to_csv_local = clean_data()
 
-        tblname_to_csvfile = [
-            ("webapp_place", FOLDER / "data_place.csv"),
-            ("webapp_edition", FOLDER / "data_edition.csv"),
-            ("webapp_witness", FOLDER / "data_witness.csv"),
-            # ( "webapp_digitization", FOLDER / "data_digitization.csv" ),
-            # ( "webapp_regions", FOLDER / "data_regions.csv" ),
-            # ( "webapp_regionpair", FOLDER / "data_regionpair.csv" ),
-        ]
-        for (tblname, csvfile) in tblname_to_csvfile:
-            cmd = psql_cmd(tblname, csvfile)
-            print(cmd)
+        for (tblname, csvfile) in tbl_to_csv_local:
+            cmd = psql_cmd_copy(tblname, csvfile)
             try:
+                # NOTE other option to populate the test db would be to implement this:
+                # https://github.com/chrisdev/django-pandas/issues/125
                 subprocess.run(cmd, shell=True, check=True, capture_output=True)
             except subprocess.CalledProcessError as e:
-                print(">>> ERR", e.stderr)
-                print(">>> OUT", e.stdout)
-                print("###############################")
-        # with connection.cursor() as cursor:
-        #     #TODO add `GRANT pg_read_server_files TO admin` in db setup;
-        #     #NOTE in case of errors, run: `chmod a+rw data_*` !
-        #     cursor.execute(f"COPY webapp_regionpair   FROM './data_regionpair.csv' ")
-        #     cursor.execute(f"COPY webapp_regions      FROM './data_regions.csv' ")
-        #     cursor.execute(f"COPY webapp_digitization FROM './data_digitization.csv' ")
-        #     cursor.execute(f"COPY webapp_witness      FROM './data_witness.csv' ")
+                raise ValueError(f"ERROR MESSAGE: {e.stderr.decode('utf-8')}")
+
+    def setUp(self):
+        self.client = Client()
 
     @staticmethod
     def getcount():
