@@ -14,28 +14,18 @@ the process is somewhat convoluted since we need to use a replication of a datab
 # >>> sudo -u postgres psql        # bash login to psql as postgres
 # >>> ALTER USER admin CREATEDB;   # grant db creation privileges to user admin.
 
-import os
-import csv
-import ast
-import json
 import pathlib
 import subprocess
 from typing import Literal
-from datetime import datetime
-from collections.abc import Callable
 
-import numpy as np
-import pandas as pd
-
-from django.db import connection
 from django.db.models import Q
 from django.urls import reverse
 from django.test import TestCase, Client
 
 from ..models.region_pair import RegionPair
-from ...webapp.models.regions import Regions
-from ...config.settings.base import APP_NAME, DATABASES
 from ...webapp.utils.functions import sort_key
+from .helpers import clean_data, psql_cmd_copy
+
 
 FOLDER = pathlib.Path(__file__).parent.resolve()
 
@@ -49,82 +39,12 @@ TBL_TO_CSV = [
     ("webapp_regionpair", FOLDER / "webapp_regionpair.csv"),
 ]
 
-# returns the header of sql table `tblname`
-psql_cmd_header = lambda tblname: (
-    f'PGPASSWORD="{DATABASES["default"]["PASSWORD"]}" \
-    psql -U "{DATABASES["default"]["USER"]}" \
-         -d "{DATABASES["test"]["NAME"]}" \
-         -c "\copy ( SELECT * FROM {tblname} LIMIT 0 ) TO STDOUT WITH (FORMAT CSV, HEADER)"'
-)
-
-# populates sql table `tblname` with data from `csvfile`
-psql_cmd_copy = lambda tblname, csvfile: (
-    f'PGPASSWORD="{DATABASES["default"]["PASSWORD"]}" \
-    psql -U "{DATABASES["default"]["USER"]}" \
-         -d "{DATABASES["test"]["NAME"]}" \
-         -c "\copy {tblname} FROM \'{csvfile}\' WITH (FORMAT CSV, HEADER MATCH)"'
-)
-
-
-def get_csvfile_from_tblname(tblname: str) -> os.PathLike | None:
-    for _tblname, _csvfile in TBL_TO_CSV:
-        if tblname == _tblname:
-            return _csvfile
-    raise ValueError(
-        f"invalid table name '{tblname}'. allowed values are {list(t for (t,c) in TBL_TO_CSV)}"
-    )
-
-
-# load sql exports as dataframes, clean them and write them. returns a copy of `TBL_TO_CSV` with file paths updates to point to the cleaned files.
-def clean_data() -> tuple[str, os.PathLike]:
-    tbl_to_csv_local = []  # output
-    # table name mapped to array of columns to empty
-    empty = {"webapp_regions": ["digitization_id"]}
-    # table name mapped to column name mapped to type to retype to
-    retype = {
-        "webapp_regionpair": {"category": "int"},
-    }
-    for idx, (tblname, csvfile) in enumerate(TBL_TO_CSV):
-        # clean the csv (mainly perform type conversions and empty unnecessary foreign keys)
-        df = pd.read_csv(csvfile)
-        if tblname in empty:
-            df[empty[tblname]] = np.nan
-        if tblname in retype:
-            for col, newtype in retype[tblname].items():
-                if newtype == "int":
-                    df[col] = df[col].astype(
-                        "Int64"
-                    )  # integer+nan columns in `csvfile` are converted to float by default (since nan is a float) => reconvert them to int
-                else:
-                    raise NotImplementedError(f"no conversion for {newtype}")
-
-        # load the column names in the test database as a list of strings
-        cmd = psql_cmd_header(tblname)
-        out = subprocess.run(cmd, shell=True, check=True, capture_output=True)
-        db_header = out.stdout.decode("utf-8").replace(
-            "\n", ""
-        )  # convert to str + strip the trailing newline
-        db_header = db_header.split(",")
-
-        # reorder columns in `df` to match `db_header`
-        assert len(df.columns) == len(db_header), set(db_header).difference(df.columns)
-        df = df.reindex(columns=db_header)
-
-        # write to file and build tbl_to_csv_local
-        fn_out = f"{os.path.basename(csvfile).replace('.csv', '')}_clean.csv"  # webapp_regions.csv => webapp_regions_clean.csv
-        dir_out = csvfile.parent.resolve()
-        csvfile_out = dir_out / fn_out
-        df.to_csv(csvfile_out, sep=",", header=True, index=False, na_rep="")
-        tbl_to_csv_local.append((tblname, csvfile_out))
-
-    return tbl_to_csv_local
-
 
 class RegionPairTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         """populate the db. runs only 1 time for the whole test case, instead of `setUp` which runs once per test"""
-        tbl_to_csv_local = clean_data()
+        tbl_to_csv_local = clean_data(TBL_TO_CSV)
 
         for (tblname, csvfile) in tbl_to_csv_local:
             cmd = psql_cmd_copy(tblname, csvfile)
@@ -160,7 +80,7 @@ class RegionPairTestCase(TestCase):
         matches = RegionPair.objects.filter(
             # we do bidirectionnal query instead of using sort_key to ensure there's only 1 row matching img_tuple
             (Q(img_1=img_1) & Q(img_2=img_2))
-            | (Q(img_1=img_2) & Q(img_1=img_1))
+            | (Q(img_1=img_2) & Q(img_1=img_1))  # pyright: ignore
         )
         self.assertEqual(matches.count(), 1)
         return matches.first()
@@ -169,7 +89,7 @@ class RegionPairTestCase(TestCase):
         self,
         method: Literal["get", "post"],
         operation: Literal["create", "update"],
-        request_kwargs: dict[str | int],
+        request_kwargs: dict,
         img_tuple: tuple[str, str],
     ):
         """
@@ -189,7 +109,7 @@ class RegionPairTestCase(TestCase):
         assert_rowcount = (
             self.assertEqual if operation == "update" else self.assertNotEqual
         )
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.status_code, 200)  # pyright: ignore
         assert_rowcount(rowcount_pre_update, rowcount_post_update)
         row_post_update = self.get_row_and_assert(img_tuple=img_tuple)
 
@@ -218,7 +138,6 @@ class RegionPairTestCase(TestCase):
         assert that the existing row is updated (and that a new row is not created)
         """
         rp = RegionPair.objects.first()
-        rp_id = rp.id
         img_tuple = (rp.img_1, rp.img_2)
 
         cat = 3  # meow
