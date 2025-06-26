@@ -1,8 +1,18 @@
+"""
+test the writing/updating of RegionPair objects.
+
+the process is somewhat convoluted since we need to use a replication of a database to work with:
+- read the csv files in `TBL_TO_CSV` as pandas dfs
+- clean and retype them. mostly, we empty optional foreign keys to avoid having to replicate tons of tables
+- save the dfs as csvs
+- populate the database using psql's `\copy` (native postgres COPY demands rights and other weird things, so we use psql as a subprocess instead: it doesn't require the sqme authorizations)
+- run the tests (finally !)
+"""
+
 # NOTE `admin` postgres user needs persmission to create and drop a database
 # if you get an error when running tests, do:
 # >>> sudo -u postgres psql        # bash login to psql as postgres
 # >>> ALTER USER admin CREATEDB;   # grant db creation privileges to user admin.
-
 
 import os
 import csv
@@ -14,8 +24,8 @@ from typing import Literal
 from datetime import datetime
 from collections.abc import Callable
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from django.db import connection
 from django.db.models import Q
@@ -67,13 +77,13 @@ def get_csvfile_from_tblname(tblname: str) -> os.PathLike | None:
 
 # load sql exports as dataframes, clean them and write them. returns a copy of `TBL_TO_CSV` with file paths updates to point to the cleaned files.
 def clean_data() -> tuple[str, os.PathLike]:
+    tbl_to_csv_local = []  # output
     # table name mapped to array of columns to empty
-    tbl_to_csv_local = []
     empty = {"webapp_regions": ["digitization_id"]}
+    # table name mapped to column name mapped to type to retype to
     retype = {
         "webapp_regionpair": {"category": "int"},
     }
-    csvfile = get_csvfile_from_tblname("webapp_regions")
     for idx, (tblname, csvfile) in enumerate(TBL_TO_CSV):
         # clean the csv (mainly perform type conversions and empty unnecessary foreign keys)
         df = pd.read_csv(csvfile)
@@ -84,7 +94,7 @@ def clean_data() -> tuple[str, os.PathLike]:
                 if newtype == "int":
                     df[col] = df[col].astype(
                         "Int64"
-                    )  # integer+nan columns are converted to float by default (since nan is a float) => reconvert them to int
+                    )  # integer+nan columns in `csvfile` are converted to float by default (since nan is a float) => reconvert them to int
                 else:
                     raise NotImplementedError(f"no conversion for {newtype}")
 
@@ -128,6 +138,9 @@ class RegionPairTestCase(TestCase):
     def setUp(self):
         self.client = Client()
 
+    def tearDown(self):
+        """"""
+
     @staticmethod
     def getcount():
         return RegionPair.objects.count()
@@ -154,18 +167,18 @@ class RegionPairTestCase(TestCase):
 
     def assert_create_or_update(
         self,
-        method: Literal["get", "post"],  # http method
-        operation: Literal[
-            "create", "update"
-        ],  # the type of operation. if "create", a new row is created, otherwise it's updated. modifies the types of tests being run.
-        request_kwargs: dict[str | int],  # parameters of the django client query
-        # category_expected: int,                  # the new category that should have been updated
-        img_tuple: tuple[
-            str, str
-        ],  # tuple of (img_1, img_2) to fetch the created or updated row
+        method: Literal["get", "post"],
+        operation: Literal["create", "update"],
+        request_kwargs: dict[str | int],
+        img_tuple: tuple[str, str],
     ):
         """
         abstract function to test different types of regionpair creations and updates
+
+        :param method: http method
+        :param operation: the type of operation. if "create", a new row is created, otherwise it's updated. modifies the types of tests being run
+        :param request kwargs: parameters of the django client query
+        :param img_tuple: tuple of (img_1, img_2) used to fetch the created or updated row
         """
         request_func = self.client.get if method == "get" else self.client.post
         rowcount_pre_update = self.getcount()
@@ -261,6 +274,3 @@ class RegionPairTestCase(TestCase):
     def test_process_similarity_file(self):
         # TODO
         pass
-
-    def tearDown(self):
-        """"""
