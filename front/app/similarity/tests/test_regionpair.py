@@ -31,12 +31,12 @@ FOLDER = pathlib.Path(__file__).parent.resolve()
 
 # NOTE order is important to avoid sql integrity errors !
 TBL_TO_CSV = [
-    # ("webapp_place", FOLDER / "webapp_place.csv"),
-    # ("webapp_edition", FOLDER / "webapp_edition.csv"),
-    # ("webapp_witness", FOLDER / "webapp_witness.csv"),
-    # ( "webapp_digitization", FOLDER / "webapp_digitization.csv" ),
-    ("webapp_regions", FOLDER / "webapp_regions.csv"),
-    ("webapp_regionpair", FOLDER / "webapp_regionpair.csv"),
+    # ("webapp_place", FOLDER / "data" "webapp_place.csv"),
+    # ("webapp_edition", FOLDER / "data" "webapp_edition.csv"),
+    # ("webapp_witness", FOLDER / "data" "webapp_witness.csv"),
+    # ( "webapp_digitization", FOLDER / "data" "webapp_digitization.csv" ),
+    ("webapp_regions", FOLDER / "data" / "webapp_regions.csv"),
+    ("webapp_regionpair", FOLDER / "data" / "webapp_regionpair.csv"),
 ]
 
 

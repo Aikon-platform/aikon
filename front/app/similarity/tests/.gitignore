@@ -1,1 +1,3 @@
-*_clean.csv
+**/*_clean.csv
+
+.env
