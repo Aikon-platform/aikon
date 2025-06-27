@@ -194,47 +194,32 @@ class RegionPairTestCase(TestCase):
             do_query(img_tuple, wid, rid, "update")
 
         # test 2: create a new row
-        wid_1 = Witness.objects.order_by("id").first().id  # pyright: ignore
-        wid_2 = (
-            Witness.objects.order_by("id")
-            .reverse()[0]
-            .id  # pyright: ignore ; reverse[)].id = take last item
+        # we create the new row by img_1, img_2 from 2 rows that have not been compared.
+        rp_1 = RegionPair.objects.order_by("id").first()
+        # all rows with a relation to rp_1.img_1
+        rels_to_rp_1 = RegionPair.objects.values_list("id").filter(
+            Q(img_1=rp_1.img_1) | Q(img_2=rp_1.img_1)
         )
-        digit_1 = (
-            Digitization.objects.filter(witness_id=wid_1)
-            .order_by("id")
-            .first()
-            .id  # pyright: ignore
-        )
-        digit_2 = (
-            Digitization.objects.filter(witness_id=wid_2)
+        print(rels_to_rp_1)
+        rp_2 = (
+            RegionPair.objects.filter(~Q(id__in=rels_to_rp_1))
             .order_by("id")
             .reverse()[0]
-            .id  # pyright: ignore
         )
-        rid_1 = (
-            Regions.objects.filter(digitization_id=digit_1)
-            .order_by("id")
-            .first()
-            .id  # pyright: ignore
-        )
-        rid_2 = (
-            Regions.objects.filter(digitization_id=digit_2)  # pyright: ignore
-            .order_by("id")
-            .reverse()[0]
-            .id
-        )
-        # 2nd attempt: take 2 images that have not been compared in RegionPair add extract wid, rid and did from them
+        img_1 = rp_1.img_1
+        rid_1 = rp_1.regions_id_1
+        wid_1 = int(re.search(r"^wit(\d+)", img_1)[1])
+        img_2 = rp_2.img_2
+        rid_2 = rp_2.regions_id_2
+        wid_2 = int(re.search(r"^wit(\d+)", img_2)[1])
+
         # rp_1 = RegionPair.objects.filter(img_1__like=f"wid{wid_1}*").first()
         # rp_2 = RegionPair.objects.filter(
         #     ~Q(img_1=rp_1.img_1) & ~Q(img_2=rp_1.img_2) & ~Q(img_1=rp_1.img_2) & ~Q(img_2=rp_1.img_1)
         # ).reverse()[0]
         # print(">>> rp_2", rp_2)
 
-        img_tuple = (
-            f"wit{wid_1}_pdf{rid_1}_666_1,2,3,4",
-            f"wit{wid_2}_pdf{rid_2}_999_1,2,3,4",
-        )
+        img_tuple = tuple(img.replace(".jpg", "") for img in (img_1, img_2))
         do_query(img_tuple, wid_1, rid_1, "create")
 
         # test 3: expected failure
