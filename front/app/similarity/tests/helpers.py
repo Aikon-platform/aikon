@@ -1,27 +1,66 @@
 import os
-from pathlib import Path
+import pathlib
 import subprocess
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+from django.contrib.auth.models import User
+
 from ...config.settings.base import DATABASES
+
+FOLDER = pathlib.Path(__file__).parent.resolve()
+
+# NOTE order is important to avoid sql integrity errors !
+TBL_TO_CSV = [
+    ("webapp_place", FOLDER / "data" / "webapp_place.csv"),
+    ("webapp_edition", FOLDER / "data" / "webapp_edition.csv"),
+    ("webapp_witness", FOLDER / "data" / "webapp_witness.csv"),
+    ("webapp_digitization", FOLDER / "data" / "webapp_digitization.csv"),
+    ("webapp_regions", FOLDER / "data" / "webapp_regions.csv"),
+    ("webapp_regionpair", FOLDER / "data" / "webapp_regionpair.csv"),
+]
+
+PSQL_BASE = f'PGPASSWORD="{DATABASES["default"]["PASSWORD"]}" \
+    psql -U "{DATABASES["default"]["USER"]}" \
+         -d "{DATABASES["test"]["NAME"]}" '
+
 
 # returns the header of sql table `tblname`
 psql_cmd_header = lambda tblname: (
-    f'PGPASSWORD="{DATABASES["default"]["PASSWORD"]}" \
-    psql -U "{DATABASES["default"]["USER"]}" \
-         -d "{DATABASES["test"]["NAME"]}" \
-         -c "\copy ( SELECT * FROM {tblname} LIMIT 0 ) TO STDOUT WITH (FORMAT CSV, HEADER)"'
+    PSQL_BASE
+    + f'-c "\copy ( SELECT * FROM {tblname} LIMIT 0 ) TO STDOUT WITH (FORMAT CSV, HEADER)"'
 )
 
 # populates sql table `tblname` with data from `csvfile`
 psql_cmd_copy = lambda tblname, csvfile: (
-    f'PGPASSWORD="{DATABASES["default"]["PASSWORD"]}" \
-    psql -U "{DATABASES["default"]["USER"]}" \
-         -d "{DATABASES["test"]["NAME"]}" \
-         -c "\copy {tblname} FROM \'{csvfile}\' WITH (FORMAT CSV, HEADER MATCH)"'
+    PSQL_BASE
+    + f"-c \"\copy {tblname} FROM '{csvfile}' WITH (FORMAT CSV, HEADER MATCH)\""
 )
+
+
+def run_subprocess(cmd) -> str | None:
+    try:
+        out = subprocess.run(cmd, shell=True, check=True, capture_output=True)
+        return out.stdout.decode("utf-8")
+    except subprocess.CalledProcessError as e:
+        raise ValueError(f"ERROR MESSAGE: {e.stderr.decode('utf-8')}")
+
+
+def create_user() -> int:
+    """
+    create a user and return its ID. yes, it is necessary to use PSQL: when creating it through Django,
+    it appears in Django but PSQL queries to populate the rest of the database cannot access the user for some obscure reason.
+    """
+    cmd = (
+        PSQL_BASE
+        + "-c \"INSERT INTO auth_user (password, username, first_name, last_name, email, date_joined, is_superuser, is_staff, is_active) \
+           VALUES ('a very safe password', 'janedoe', 'jane', 'doe', 'jane.doe@test.com', '2025-04-16 11:34:21.401134+00', false, false, false); \
+           COMMIT;\""
+    )
+    run_subprocess(cmd)
+    return User.objects.filter(email="jane.doe@test.com").first().id
 
 
 def get_csvfile_from_tblname(
@@ -36,19 +75,53 @@ def get_csvfile_from_tblname(
 
 
 # load sql exports as dataframes, clean them and write them. returns a copy of `tbl_to_csv` with file paths updates to point to the cleaned files.
-def clean_data(tbl_to_csv: list[tuple[str, Path]]) -> list[tuple[str, Path]]:
-    tbl_to_csv_local = []  # output
+def clean_data(tbl_list: list[str], id_user=int) -> list[tuple[str, Path]]:
+    # TBL_TO_CSV with only entries that are in tbl_list
+    tbl_to_csv_local = [
+        (tblname, csvfile) for tblname, csvfile in TBL_TO_CSV if tblname in tbl_list
+    ]
+    tbl_to_csv_out = []  # output
     # table name mapped to array of columns to empty
-    empty = {"webapp_regions": ["digitization_id"]}
+    empty = {
+        "webapp_regions": ["digitization_id"],
+        "webapp_digitization": ["source_id"],
+        "webapp_witness": ["edition_id", "series_id", "place_id"],
+    }
+    # fill a column with a default value
+    # mostly, django `blank=True` gets translated as `NOT NULL` in SQL, and empty fields in the CSV get translated as by psql's `\copy` as NULL => fill with empty space
+    # structure: { "table_name": {"columnname": ["value", True|False]} }
+    # if the boolean is True, replace all values in the col. else, replace only empty values
+    default = {
+        "webapp_digitization": {
+            "manifest": [" ", False],
+            "images": [" ", False],
+            "pdf": [" ", False],
+        },
+        "webapp_witness": {
+            "user_id": [id_user, True],
+            "notes": [" ", False],
+            "link": [" ", False],
+        },
+    }
     # table name mapped to column name mapped to type to retype to
     retype = {
         "webapp_regionpair": {"category": "int"},
+        "webapp_digitization": {"witness_id": "int"},
+        "webapp_witness": {
+            "user_id": "int",
+            "place_id": "int",
+            "volume_nb": "int",
+            "nb_pages": "int",
+        },
     }
-    for tblname, csvfile in tbl_to_csv:
+    for tblname, csvfile in tbl_to_csv_local:
         # clean the csv (mainly perform type conversions and empty unnecessary foreign keys)
         df = pd.read_csv(csvfile)
         if tblname in empty:
             df[empty[tblname]] = np.nan
+        if tblname in default:
+            for col, (val, replace_all) in default[tblname].items():
+                df[col] = val if replace_all else df[col].fillna(val)
         if tblname in retype:
             for col, newtype in retype[tblname].items():
                 if newtype == "int":
@@ -57,11 +130,13 @@ def clean_data(tbl_to_csv: list[tuple[str, Path]]) -> list[tuple[str, Path]]:
                     )  # integer+nan columns in `csvfile` are converted to float by default (since nan is a float) => reconvert them to int
                 else:
                     raise NotImplementedError(f"no conversion for {newtype}")
+        print("*" * 80)
+        print(tblname)
+        print("*" * 80)
 
         # load the column names in the test database as a list of strings
         cmd = psql_cmd_header(tblname)
-        out = subprocess.run(cmd, shell=True, check=True, capture_output=True)
-        db_header = out.stdout.decode("utf-8").replace(
+        db_header = run_subprocess(cmd).replace(
             "\n", ""
         )  # convert to str + strip the trailing newline
         db_header = db_header.split(",")
@@ -70,11 +145,14 @@ def clean_data(tbl_to_csv: list[tuple[str, Path]]) -> list[tuple[str, Path]]:
         assert len(df.columns) == len(db_header), set(db_header).difference(df.columns)
         df = df.reindex(columns=db_header)
 
+        print(">>> DF COLUMNS", df.columns)
+        print("<<< DB COLUMNS", db_header)
+
         # write to file and build tbl_to_csv_local
         fn_out = f"{os.path.basename(csvfile).replace('.csv', '')}_clean.csv"  # webapp_regions.csv => webapp_regions_clean.csv
         dir_out = csvfile.parent.resolve()  # pyright:ignore
         csvfile_out = dir_out / fn_out
         df.to_csv(csvfile_out, sep=",", header=True, index=False, na_rep="")
-        tbl_to_csv_local.append((tblname, csvfile_out))
-
-    return tbl_to_csv_local
+        tbl_to_csv_out.append((tblname, csvfile_out))
+        print("###", (tblname, csvfile_out))
+    return tbl_to_csv_out

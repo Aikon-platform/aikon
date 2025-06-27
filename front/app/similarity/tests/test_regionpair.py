@@ -14,46 +14,38 @@ the process is somewhat convoluted since we need to use a replication of a datab
 # >>> sudo -u postgres psql        # bash login to psql as postgres
 # >>> ALTER USER admin CREATEDB;   # grant db creation privileges to user admin.
 
-import pathlib
 import subprocess
 from typing import Literal
 
 from django.db.models import Q
 from django.urls import reverse
 from django.test import TestCase, Client
+from django.contrib.auth.models import User
 
 from ..models.region_pair import RegionPair
 from ...webapp.utils.functions import sort_key
-from .helpers import clean_data, psql_cmd_copy
-
-
-FOLDER = pathlib.Path(__file__).parent.resolve()
-
-# NOTE order is important to avoid sql integrity errors !
-TBL_TO_CSV = [
-    # ("webapp_place", FOLDER / "data" "webapp_place.csv"),
-    # ("webapp_edition", FOLDER / "data" "webapp_edition.csv"),
-    # ("webapp_witness", FOLDER / "data" "webapp_witness.csv"),
-    # ( "webapp_digitization", FOLDER / "data" "webapp_digitization.csv" ),
-    ("webapp_regions", FOLDER / "data" / "webapp_regions.csv"),
-    ("webapp_regionpair", FOLDER / "data" / "webapp_regionpair.csv"),
-]
+from .helpers import clean_data, psql_cmd_copy, run_subprocess, create_user
 
 
 class RegionPairTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         """populate the db. runs only 1 time for the whole test case, instead of `setUp` which runs once per test"""
-        tbl_to_csv_local = clean_data(TBL_TO_CSV)
+
+        user_id = create_user()
+        tbl_to_csv_local = clean_data(
+            [
+                "webapp_digitization",
+                "webapp_regions",
+                "webapp_regionpair",
+                "webapp_witness",
+            ],
+            user_id,  # pyright:ignore
+        )
 
         for (tblname, csvfile) in tbl_to_csv_local:
             cmd = psql_cmd_copy(tblname, csvfile)
-            try:
-                # NOTE other option to populate the test db would be to implement this:
-                # https://github.com/chrisdev/django-pandas/issues/125
-                subprocess.run(cmd, shell=True, check=True, capture_output=True)
-            except subprocess.CalledProcessError as e:
-                raise ValueError(f"ERROR MESSAGE: {e.stderr.decode('utf-8')}")
+            run_subprocess(cmd)
 
     def setUp(self):
         self.client = Client()

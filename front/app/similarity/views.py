@@ -400,6 +400,7 @@ def get_regions_title_by_ref(request, wid, rid=None, regions_ref: str | None = N
 
 
 def add_region_pair(request, wid, rid=None):
+    print(">>> add_region_pair : A")
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
@@ -412,7 +413,9 @@ def add_region_pair(request, wid, rid=None):
 
         img_1, img_2 = sorted([q_img, s_img], key=sort_key)
 
+        print(">>> add_region_pair : B")
         regions_1, regions_2 = get_regions(img_1, img_2, wid, rid)
+        print(">>> add_region_pair : C")
 
         region_pair, created = RegionPair.objects.get_or_create(
             img_1=f"{img_1}.jpg",
@@ -449,6 +452,7 @@ def add_region_pair(request, wid, rid=None):
     except ValidationError as e:
         return JsonResponse({"error": str(e)}, status=400)
     except Exception as e:
+        print(">>> add_region_pair : OH, NO", e)
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
