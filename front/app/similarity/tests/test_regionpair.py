@@ -1,4 +1,4 @@
-"""
+r"""
 test the writing/updating of RegionPair objects.
 
 the process is somewhat convoluted since we need to use a replication of a database to work with:

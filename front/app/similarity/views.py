@@ -204,7 +204,7 @@ def get_similarity_score_range(
 
     try:
         q = RegionPair.objects.filter(
-            (Q(img_1__startswith=f"wit{wid}") & ~Q(score=None))
+            (Q(img_1__startswith=f"wit{wid}") & ~Q(score=None))  # pyright: ignore
             | (Q(img_2__startswith=f"wit{wid}") & ~Q(score=None))
         )
         _min = q.aggregate(Min("score"))["score__min"]
@@ -265,7 +265,7 @@ def get_propagated_matches(
         _recursion_depth: List[int] = RECURSION_DEPTH,
         depth: int = 0,
         matches: Set[str] = set(),
-    ) -> List[str]:
+    ) -> Set[str]:
         """
         :param q_img: query image
         :param _id_regions_array: regions to filter by
@@ -289,7 +289,7 @@ def get_propagated_matches(
         return matches
 
     def propagated_to_regionpair_json(
-        _propagated: List[Tuple[str, int]], _id_regions_array: List[int] = []
+        _propagated: Set[str], _id_regions_array: List[int] = []
     ) -> List[RegionPairTuple]:
         """
         - remove matches that are
@@ -384,7 +384,7 @@ def get_regions(img_1, img_2, wid, rid):
     return regions_1, regions_2
 
 
-def get_regions_title_by_ref(request, wid, rid=None, regions_ref: str = None):
+def get_regions_title_by_ref(request, wid, rid=None, regions_ref: str | None = None):
     try:
         regions = Regions.objects.filter(json__ref__startswith=regions_ref).first()
         if regions is None:
