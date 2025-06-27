@@ -25,9 +25,9 @@ if [ ! -f "$SQL_SCRIPT" ]; then
 	exit 1;
 fi
 
-[ ! -d "$FOLDER_OUT" ] && mkdir "$FOLDER_OUT";
-
 source "$ENVPATH"
+
+[ ! -d "$FOLDER_OUT" ] && mkdir "$FOLDER_OUT";
 
 sudo docker cp "$SQL_SCRIPT" "$DB_DOCKER":/
 sudo docker exec -it "$DB_DOCKER" psql -U "$PG_USER" -d "$PG_DB" -p "$PG_PORT" -f "./extract.sql"  # ./extract.sql = position of the file in the docker.
