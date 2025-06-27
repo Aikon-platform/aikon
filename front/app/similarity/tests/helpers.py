@@ -26,7 +26,6 @@ PSQL_BASE = f'PGPASSWORD="{DATABASES["default"]["PASSWORD"]}" \
     psql -U "{DATABASES["default"]["USER"]}" \
          -d "{DATABASES["test"]["NAME"]}" '
 
-
 # returns the header of sql table `tblname`
 psql_cmd_header = lambda tblname: (
     PSQL_BASE
@@ -40,12 +39,12 @@ psql_cmd_copy = lambda tblname, csvfile: (
 )
 
 
-def run_subprocess(cmd) -> str | None:
+def run_subprocess(cmd) -> str:
     try:
         out = subprocess.run(cmd, shell=True, check=True, capture_output=True)
         return out.stdout.decode("utf-8")
     except subprocess.CalledProcessError as e:
-        raise ValueError(f"ERROR MESSAGE: {e.stderr.decode('utf-8')}")
+        raise Exception(f"ERROR MESSAGE: {e.stderr.decode('utf-8')}")
 
 
 def create_user() -> int:
@@ -83,7 +82,6 @@ def clean_data(tbl_list: list[str], id_user=int) -> list[tuple[str, Path]]:
     tbl_to_csv_out = []  # output
     # table name mapped to array of columns to empty
     empty = {
-        "webapp_regions": ["digitization_id"],
         "webapp_digitization": ["source_id"],
         "webapp_witness": ["edition_id", "series_id", "place_id"],
     }
@@ -130,9 +128,6 @@ def clean_data(tbl_list: list[str], id_user=int) -> list[tuple[str, Path]]:
                     )  # integer+nan columns in `csvfile` are converted to float by default (since nan is a float) => reconvert them to int
                 else:
                     raise NotImplementedError(f"no conversion for {newtype}")
-        print("*" * 80)
-        print(tblname)
-        print("*" * 80)
 
         # load the column names in the test database as a list of strings
         cmd = psql_cmd_header(tblname)
@@ -145,14 +140,10 @@ def clean_data(tbl_list: list[str], id_user=int) -> list[tuple[str, Path]]:
         assert len(df.columns) == len(db_header), set(db_header).difference(df.columns)
         df = df.reindex(columns=db_header)
 
-        print(">>> DF COLUMNS", df.columns)
-        print("<<< DB COLUMNS", db_header)
-
         # write to file and build tbl_to_csv_local
         fn_out = f"{os.path.basename(csvfile).replace('.csv', '')}_clean.csv"  # webapp_regions.csv => webapp_regions_clean.csv
         dir_out = csvfile.parent.resolve()  # pyright:ignore
         csvfile_out = dir_out / fn_out
         df.to_csv(csvfile_out, sep=",", header=True, index=False, na_rep="")
         tbl_to_csv_out.append((tblname, csvfile_out))
-        print("###", (tblname, csvfile_out))
     return tbl_to_csv_out

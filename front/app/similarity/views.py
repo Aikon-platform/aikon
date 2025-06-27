@@ -434,6 +434,8 @@ def add_region_pair(request, wid, rid=None):
                 region_pair.category_x = [request.user.id]
             elif request.user.id not in region_pair.category_x:
                 region_pair.category_x.append(request.user.id)
+            region_pair.is_manual = True
+            region_pair.similarity_type = 2
             region_pair.save()
 
         s_regions = get_object_or_404(

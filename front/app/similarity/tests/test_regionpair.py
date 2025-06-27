@@ -14,15 +14,17 @@ the process is somewhat convoluted since we need to use a replication of a datab
 # >>> sudo -u postgres psql        # bash login to psql as postgres
 # >>> ALTER USER admin CREATEDB;   # grant db creation privileges to user admin.
 
-import subprocess
+import re
 from typing import Literal
 
 from django.db.models import Q
 from django.urls import reverse
 from django.test import TestCase, Client
-from django.contrib.auth.models import User
 
 from ..models.region_pair import RegionPair
+from ...webapp.models.regions import Regions
+from ...webapp.models.witness import Witness
+from ...webapp.models.digitization import Digitization
 from ...webapp.utils.functions import sort_key
 from .helpers import clean_data, psql_cmd_copy, run_subprocess, create_user
 
@@ -72,7 +74,7 @@ class RegionPairTestCase(TestCase):
         matches = RegionPair.objects.filter(
             # we do bidirectionnal query instead of using sort_key to ensure there's only 1 row matching img_tuple
             (Q(img_1=img_1) & Q(img_2=img_2))
-            | (Q(img_1=img_2) & Q(img_1=img_1))  # pyright: ignore
+            | (Q(img_1=img_2) & Q(img_2=img_1))  # pyright: ignore
         )
         self.assertEqual(matches.count(), 1)
         return matches.first()
@@ -152,33 +154,56 @@ class RegionPairTestCase(TestCase):
         """
         test similarity.views.add_region_pair
         """
-        # example payload : {'q_img': 'wit3_pdf8_01_122,286,220,1128', 's_img': 'wit3_pdf8_01_1363,299,202,1111', 'similarity_type': 2}
-
-        # test 1: update an existing row (we run 2 tests, one where img_tuple is swapped and one where it isn't)
-        rp = RegionPair.objects.first()
-        for img_tuple in [(rp.img_1, rp.img_2), (rp.img_2, rp.img_1)]:
-            img_tuple = tuple(
-                img.replace(".jpg", "") for img in img_tuple
-            )  # strip extension
+        # function concentrating a single query and all its tests
+        def do_query(
+            img_tuple_noext: tuple[str, str],  # no extension !
+            wid: int,
+            rid: int,
+            operation: Literal["create", "update"],
+        ) -> None:
+            img_tuple_withext = tuple(f"{i}.jpg" for i in img_tuple_noext)
+            # example payload : {'q_img': 'wit3_pdf8_01_122,286,220,1128', 's_img': 'wit3_pdf8_01_1363,299,202,1111', 'similarity_type': 2}
             payload = {
-                "q_img": img_tuple[0],
-                "s_img": img_tuple[1],
+                "q_img": img_tuple_noext[0],
+                "s_img": img_tuple_noext[1],
                 "similarity_type": 2,
             }
             request_kwargs = {
                 "path": reverse(
-                    "similarity:add-witness-region-pair", kwargs={"wid": 1}
+                    "similarity:add-region-pair", kwargs={"wid": wid, "rid": rid}
                 ),
                 "content_type": "application/json",
                 "data": payload,
             }
             rp_post_update = self.assert_create_or_update(
-                "post", "update", request_kwargs, img_tuple
+                "post", operation, request_kwargs, img_tuple_withext  # pyright: ignore
             )
             self.assertEqual(rp_post_update.is_manual, True)
-            self.assertEqual(rp_post_update.similarity_type, True)
+            self.assertEqual(rp_post_update.similarity_type, 2)
+            return
+
+        # test 1: update an existing row (we run 2 tests, one where img_tuple is swapped and one where it isn't)
+        rp = RegionPair.objects.first()
+        for img_tuple, rid in [
+            ((rp.img_1, rp.img_2), rp.regions_id_1),
+            ((rp.img_2, rp.img_1), rp.regions_id_2),
+        ]:
+            # add-region-pair expects image ids without file extension
+            img_tuple = tuple(img.replace(".jpg", "") for img in img_tuple)
+            wid = int(re.search(r"^wit(\d+)", img_tuple[0])[1])  # pyright: ignore
+            do_query(img_tuple, wid, rid, "update")
 
         # test 2: create a new row
+        wid_1 = Witness.objects.order_by("id").first().id  # pyright: ignore
+        wid_2 = Witness.objects.order_by("id").reverse()[0].id  # pyright: ignore
+        valid_digitization_id = Digitization.objects.values_list("id").filter(
+            witness_id=wid_1
+        )  # pyright: ignore
+        rid = (
+            Regions.objects.filter(digitization_id__in=valid_digitization_id).first().id
+        )  # pyright: ignore
+        img_tuple = (f"wit{wid_1}_pdf999_666_1,2,3,4", f"wit{wid_2}_pdf666_999_1,2,3,4")
+        do_query(img_tuple, wid_1, rid, "create")
 
         # test 3: expected failure
 
