@@ -78,6 +78,13 @@ def fix_id_autoincrement(tbl_list: list[str]) -> None:
     - psql only copies the data into the database, and does not update the ID's autoincrements.
     in turn, when we create new rows after the initial `\copy`, PostgreSQL will start incrementing ids from 1, even if there are aldready rows in the database, causing integrity errors (duplicate IDs).
     => this function fixes the issue by ensuring autoincrements start at MAX(id).
+
+    NOTE since IDs are postgreSQL identity columns and not sequences, we can't use Django's built in `sqlsequencereset`: https://docs.djangoproject.com/en/3.1/ref/django-admin/#sqlsequencereset
+
+    see:
+    - https://forum.djangoproject.com/t/django-unit-tests-raising-duplicate-key-constraint-errors-on-object-creation/13268
+    - https://dba.stackexchange.com/questions/292617/restarting-identity-columns-in-postgresql
+    - https://forum.djangoproject.com/t/django-db-utils-integrityerror-duplicate-key-value-violates-unique-key-constraint/15625
     """
     stmt = (
         lambda tblname: f"\"SELECT setval( pg_get_serial_sequence('{tblname}', 'id'), coalesce(MAX(id), 1) ) FROM {tblname};\""

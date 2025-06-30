@@ -22,9 +22,6 @@ from django.urls import reverse
 from django.test import TestCase, Client
 
 from ..models.region_pair import RegionPair
-from ...webapp.models.regions import Regions
-from ...webapp.models.witness import Witness
-from ...webapp.models.digitization import Digitization
 from ...webapp.utils.functions import sort_key
 from .helpers import (
     clean_data,
@@ -202,7 +199,7 @@ class RegionPairTestCase(TestCase):
             do_query(img_tuple, wid, rid, "update")
 
         # test 2: create a new row
-        # we create the new row by fetching (img_1,img_2). we select img_1 from the 1st row in RegionPair and then selecting img_2 from a row that has no comparison to img_1
+        # to create a new row, we must select a tuple (img_1, img_2) that is not in the database. we select img_1 from the 1st row in RegionPair and then selecting img_2 from a row that has no comparison to img_1
         rp_1 = RegionPair.objects.order_by("id").first()
         # all rows with a relation to rp_1.img_1
         rels_to_rp_1 = RegionPair.objects.values_list("id").filter(
@@ -227,6 +224,7 @@ class RegionPairTestCase(TestCase):
             0,
         )
 
+        # test that row creation works
         img_tuple = tuple(img.replace(".jpg", "") for img in (img_1, img_2))
         do_query(img_tuple, wid_1, rid_1, "create")
 
