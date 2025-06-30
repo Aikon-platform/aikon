@@ -26,7 +26,13 @@ from ...webapp.models.regions import Regions
 from ...webapp.models.witness import Witness
 from ...webapp.models.digitization import Digitization
 from ...webapp.utils.functions import sort_key
-from .helpers import clean_data, psql_cmd_copy, run_subprocess, create_user
+from .helpers import (
+    clean_data,
+    psql_cmd_copy,
+    run_subprocess,
+    create_user,
+    fix_id_autoincrement,
+)
 
 
 class RegionPairTestCase(TestCase):
@@ -34,20 +40,22 @@ class RegionPairTestCase(TestCase):
     def setUpTestData(cls):
         """populate the db. runs only 1 time for the whole test case, instead of `setUp` which runs once per test"""
 
+        tbl_list = [
+            "webapp_digitization",
+            "webapp_regions",
+            "webapp_regionpair",
+            "webapp_witness",
+        ]
         user_id = create_user()
         tbl_to_csv_local = clean_data(
-            [
-                "webapp_digitization",
-                "webapp_regions",
-                "webapp_regionpair",
-                "webapp_witness",
-            ],
+            tbl_list,
             user_id,  # pyright:ignore
         )
 
         for (tblname, csvfile) in tbl_to_csv_local:
             cmd = psql_cmd_copy(tblname, csvfile)
             run_subprocess(cmd)
+        fix_id_autoincrement(tbl_list)
 
     def setUp(self):
         self.client = Client()
@@ -194,30 +202,30 @@ class RegionPairTestCase(TestCase):
             do_query(img_tuple, wid, rid, "update")
 
         # test 2: create a new row
-        # we create the new row by img_1, img_2 from 2 rows that have not been compared.
+        # we create the new row by fetching (img_1,img_2). we select img_1 from the 1st row in RegionPair and then selecting img_2 from a row that has no comparison to img_1
         rp_1 = RegionPair.objects.order_by("id").first()
         # all rows with a relation to rp_1.img_1
         rels_to_rp_1 = RegionPair.objects.values_list("id").filter(
             Q(img_1=rp_1.img_1) | Q(img_2=rp_1.img_1)
         )
-        print(rels_to_rp_1)
         rp_2 = (
             RegionPair.objects.filter(~Q(id__in=rels_to_rp_1))
             .order_by("id")
             .reverse()[0]
         )
         img_1 = rp_1.img_1
-        rid_1 = rp_1.regions_id_1
-        wid_1 = int(re.search(r"^wit(\d+)", img_1)[1])
         img_2 = rp_2.img_2
-        rid_2 = rp_2.regions_id_2
-        wid_2 = int(re.search(r"^wit(\d+)", img_2)[1])
+        rid_1 = rp_1.regions_id_1
+        wid_1 = int(re.search(r"^wit(\d+)", img_1)[1])  # pyright: ignore
 
-        # rp_1 = RegionPair.objects.filter(img_1__like=f"wid{wid_1}*").first()
-        # rp_2 = RegionPair.objects.filter(
-        #     ~Q(img_1=rp_1.img_1) & ~Q(img_2=rp_1.img_2) & ~Q(img_1=rp_1.img_2) & ~Q(img_2=rp_1.img_1)
-        # ).reverse()[0]
-        # print(">>> rp_2", rp_2)
+        # assert that (img_1, img_2) does not exist in the db
+        self.assertEqual(
+            RegionPair.objects.filter(
+                (Q(img_1=img_1) & Q(img_2=img_2))  # pyright: ignore
+                | (Q(img_1=img_2) & Q(img_2=img_1))
+            ).count(),
+            0,
+        )
 
         img_tuple = tuple(img.replace(".jpg", "") for img in (img_1, img_2))
         do_query(img_tuple, wid_1, rid_1, "create")

@@ -380,7 +380,6 @@ def get_regions(img_1, img_2, wid, rid):
         regions_1 = get_regions_from_digit(digit_1)
         witness = get_object_or_404(Witness, id=wid)
         regions_2 = rid or witness.get_regions()[0].id
-
     return regions_1, regions_2
 
 
@@ -400,7 +399,6 @@ def get_regions_title_by_ref(request, wid, rid=None, regions_ref: str | None = N
 
 
 def add_region_pair(request, wid, rid=None):
-    print(">>> add_region_pair : A")
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
@@ -412,11 +410,13 @@ def add_region_pair(request, wid, rid=None):
             raise ValidationError("Invalid image string format")
 
         img_1, img_2 = sorted([q_img, s_img], key=sort_key)
+        print(">>> add_region_pair : A _ img_pair", img_1, img_2)
 
         print(">>> add_region_pair : B")
         regions_1, regions_2 = get_regions(img_1, img_2, wid, rid)
-        print(">>> add_region_pair : C")
+        print(">>> add_region_pair : C _ regions", regions_1, regions_2)
 
+        print(RegionPair.objects.values_list("id").order_by("id").all()[:10])
         region_pair, created = RegionPair.objects.get_or_create(
             img_1=f"{img_1}.jpg",
             img_2=f"{img_2}.jpg",
@@ -428,6 +428,7 @@ def add_region_pair(request, wid, rid=None):
                 "similarity_type": 2,
             },
         )
+        print(">>> add_region_pair : D _ created", created)
 
         if not created:
             if region_pair.category_x is None:

@@ -62,6 +62,32 @@ def create_user() -> int:
     return User.objects.filter(email="jane.doe@test.com").first().id
 
 
+# def reindex():
+#     cmd = PSQL_BASE + '-c "SELECT setval(\'django_content_type_id_seq\', (SELECT MAX(id) FROM django_content_type));"'
+#     out = run_subprocess(cmd)
+#     print(out)
+
+
+def fix_id_autoincrement(tbl_list: list[str]) -> None:
+    """
+    force update the autoincrements on all ID columns in tbl_list tables.
+
+    NOTE this is very convoluted BUT:
+    we create rows using PSQL's \copy, which means:
+    - data insertion is done outside of Django
+    - psql only copies the data into the database, and does not update the ID's autoincrements.
+    in turn, when we create new rows after the initial `\copy`, PostgreSQL will start incrementing ids from 1, even if there are aldready rows in the database, causing integrity errors (duplicate IDs).
+    => this function fixes the issue by ensuring autoincrements start at MAX(id).
+    """
+    stmt = (
+        lambda tblname: f"\"SELECT setval( pg_get_serial_sequence('{tblname}', 'id'), coalesce(MAX(id), 1) ) FROM {tblname};\""
+    )
+    for tblname in tbl_list:
+        cmd = f"{PSQL_BASE} -c {stmt(tblname)}"
+        run_subprocess(cmd)
+    return
+
+
 def get_csvfile_from_tblname(
     tblname: str, tbl_to_csv: list[tuple[str, os.PathLike]]
 ) -> os.PathLike | None:
@@ -137,8 +163,16 @@ def clean_data(tbl_list: list[str], id_user=int) -> list[tuple[str, Path]]:
         db_header = db_header.split(",")
 
         # reorder columns in `df` to match `db_header`
-        assert len(df.columns) == len(db_header), set(db_header).difference(df.columns)
+        assert len(df.columns) == len(
+            db_header
+        ), f"faulty columns: {set(db_header).difference(df.columns)}"
         df = df.reindex(columns=db_header)
+
+        # mul = 100 * 100
+        # df.id = df.id * mul
+        # for col in df.columns:
+        #     if col.endswith("_id") and col != "user_id":
+        #         df[col] = df[col] * mul
 
         # write to file and build tbl_to_csv_local
         fn_out = f"{os.path.basename(csvfile).replace('.csv', '')}_clean.csv"  # webapp_regions.csv => webapp_regions_clean.csv
