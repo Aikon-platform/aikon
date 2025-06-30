@@ -228,7 +228,7 @@ class RegionPairTestCase(TestCase):
         img_tuple = tuple(img.replace(".jpg", "") for img in (img_1, img_2))
         do_query(img_tuple, wid_1, rid_1, "create")
 
-        # test 3: expected failure
+        return
 
     def test_process_similarity_file(self):
         # TODO
