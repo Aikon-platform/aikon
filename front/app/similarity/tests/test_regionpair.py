@@ -88,7 +88,7 @@ class RegionPairTestCase(TestCase):
     def assert_create_or_update(
         self,
         method: Literal["get", "post"],
-        operation: Literal["create", "update"],
+        operation: Literal["create", "update", "delete"],
         request_kwargs: dict,
         img_tuple: tuple[str, str],
     ):
@@ -101,18 +101,22 @@ class RegionPairTestCase(TestCase):
         :param img_tuple: tuple of (img_1, img_2) used to fetch the created or updated row
         """
         request_func = self.client.get if method == "get" else self.client.post
+
         rowcount_pre_update = self.getcount()
-
         r = request_func(**request_kwargs)
-
         rowcount_post_update = self.getcount()
-        assert_rowcount = (
-            self.assertEqual if operation == "update" else self.assertNotEqual
-        )
-        self.assertEqual(r.status_code, 200)  # pyright: ignore
-        assert_rowcount(rowcount_pre_update, rowcount_post_update)
-        row_post_update = self.get_row_and_assert(img_tuple=img_tuple)
 
+        self.assertEqual(r.status_code, 200)  # pyright: ignore
+        comp = (
+            rowcount_pre_update < rowcount_post_update
+            if operation == "create"
+            else rowcount_pre_update == rowcount_post_update
+            if operation == "update"
+            else rowcount_pre_update > rowcount_post_update
+        )
+        self.assertTrue(comp)
+
+        row_post_update = self.get_row_and_assert(img_tuple)
         return row_post_update
 
     def test_sort_key(self):
@@ -235,7 +239,32 @@ class RegionPairTestCase(TestCase):
         """
         test similarity.utils.score_file_to_db
         """
-        score_file_path = generate_score_file()
+        score_file_path, (rid_1, rid_2), nb_pairs_written = generate_score_file()
 
-        # print(f"\n".join(f"+++ {a} _ {b}" for (a,b) in RegionPair.objects.values_list("regions_id_1", "regions_id_2").distinct()))
-        score_file_to_db
+        try:
+            rowcount_pre_update = self.getcount()
+
+            # 1: assert number of rows
+            score_file_to_db(score_file_path)
+            rowcount_post_update = self.getcount()
+            self.assertEqual(
+                rowcount_post_update - rowcount_pre_update, nb_pairs_written
+            )
+
+            # 2: assert sort_key has worked
+            pairs_written = RegionPair.objects.values_list("img_1", "img_2").filter(
+                (Q(regions_id_1=rid_1) & Q(regions_id_2=rid_2))  # pyright: ignore
+                | (Q(regions_id_1=rid_2) & Q(regions_id_2=rid_1))
+            )
+            self.assertTrue(
+                all(
+                    list(img_tuple) == sorted(img_tuple, key=sort_key)
+                    for img_tuple in pairs_written
+                )
+            )
+
+        # cleanup: delete test files
+        finally:
+            score_file_path.unlink()
+            score_file_path.parent.resolve().rmdir()
+        return

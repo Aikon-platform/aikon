@@ -4,6 +4,7 @@ import json
 import random
 import pathlib
 import subprocess
+from uuid import uuid4
 from pathlib import Path
 from itertools import product
 
@@ -15,7 +16,7 @@ from django.contrib.auth.models import User
 
 from ..models.region_pair import RegionPair
 from ...webapp.models.regions import Regions
-from ...config.settings.base import DATABASES
+from ...config.settings.base import DATABASES, MEDIA_ROOT
 
 
 FOLDER = pathlib.Path(__file__).parent.resolve()
@@ -46,6 +47,7 @@ SIMILARITY_JSON = {
         "transpositions": ["none"],
     },
     "pairs": [],  # results
+    "result_url": "",
 }
 
 PSQL_BASE = f'PGPASSWORD="{DATABASES["default"]["PASSWORD"]}" \
@@ -195,12 +197,6 @@ def clean_data(tbl_list: list[str], id_user=int) -> list[tuple[str, Path]]:
         ), f"faulty columns: {set(db_header).difference(df.columns)}"
         df = df.reindex(columns=db_header)
 
-        # mul = 100 * 100
-        # df.id = df.id * mul
-        # for col in df.columns:
-        #     if col.endswith("_id") and col != "user_id":
-        #         df[col] = df[col] * mul
-
         # write to file and build tbl_to_csv_local
         fn_out = f"{os.path.basename(csvfile).replace('.csv', '')}_clean.csv"  # webapp_regions.csv => webapp_regions_clean.csv
         dir_out = csvfile.parent.resolve()  # pyright:ignore
@@ -210,26 +206,32 @@ def clean_data(tbl_list: list[str], id_user=int) -> list[tuple[str, Path]]:
     return tbl_to_csv_out
 
 
-def generate_score_file() -> Path:
+def generate_score_file() -> tuple[Path, tuple[int, int], int]:
     """
     generate a score file containing the cartesian product of all images within 2 randomly selected regions extractions
 
-    :returns: the path to the score file.
+    :returns:
+        the path to the score file
+        the processed regions
+        the number of similarity pairs with a positive score in the json file (only positive scores are written to the db)
     """
-    out = FOLDER / "data" / "similarity_results.json"
-    similarity_json_local = SIMILARITY_JSON
+    similarity_json_local = SIMILARITY_JSON.copy()
 
     # 1: find 2 regions that have not been previously compared
     rid_compared_all = RegionPair.objects.values_list(
         "regions_id_1", "regions_id_2"
     ).distinct()
 
-    rid_list = RegionPair.objects.values_list("regions_id_1", flat=True).union(
-        RegionPair.objects.values_list("regions_id_2", flat=True)
+    rid_list = list(
+        RegionPair.objects.values_list("regions_id_1", flat=True).union(
+            RegionPair.objects.values_list("regions_id_2", flat=True)
+        )
     )
     rid_1 = None
     not_compared = []  # all regions to which rid_1 has not been compared
-    for rid in rid_list:
+    for rid in random.sample(
+        rid_list, k=len(rid_list)
+    ):  # sample() shuffles the items of rid_list in random order
         compared = set(
             [c[0] for c in rid_compared_all if c[1] == rid]
             + [c[1] for c in rid_compared_all if c[0] == rid]
@@ -263,7 +265,7 @@ def generate_score_file() -> Path:
     assert len(img_1_list + img_2_list) == len(set(img_1_list + img_2_list))
 
     # cartesian product of all images in img_1_list and img_2_list
-    rels = list(product(img_1_list, img_2_list))
+    pairs = list(product(img_1_list, img_2_list))
 
     # 3: fetch the region's UID (format `wit\d+_(pdf|iiif|zip)\d+_anno\d+`)
     get_regions_uid = lambda _rid: Regions.objects.get(id=_rid).json["ref"]
@@ -307,7 +309,7 @@ def generate_score_file() -> Path:
                 make_image(img_id, regions_uid)
             )
 
-    # replace img_id in rels with index of image in similarity_json_local["index"]["images"]
+    # replace img_id in pairs with index of image in similarity_json_local["index"]["images"]
     def img_id_to_index(img_id):
         img_id_noext = img_id.replace(".jpg", "")
         for idx, img in enumerate(similarity_json_local["index"]["images"]):
@@ -317,15 +319,34 @@ def generate_score_file() -> Path:
             f"could not find {img_id} in `similarity_json_local['index']['images']`"
         )
 
-    for rel in rels:
-        rel = tuple(img_id_to_index(img_id) for img_id in rel)
-        rel = (
-            rel if random.random() < 0.5 else (rel[1], rel[0])
-        )  # randomly permutate order of 2 elts in rel
+    for pair in pairs:
+        pair = tuple(img_id_to_index(img_id) for img_id in pair)
+        pair = (
+            # randomly permutate order of the 2 elts in pair to ensure that the test file is messy, to see if `sort_key` will fix regions order
+            pair
+            if random.random() < 0.5
+            else (pair[1], pair[0])
+        )
         score = random.random()
-        similarity_json_local["pairs"].append([rel[0], rel[1], score, 0, 0])
+        similarity_json_local["pairs"].append([pair[0], pair[1], score, 0, 0])
 
-    with open(out, mode="w") as fh:
+    similarity_json_local[
+        "result_url"
+    ] = f"http://example.com/similarity/{uuid4()}~{SIMILARITY_JSON['parameters']['algorithm']}-{regions_uid_1}-{regions_uid_2}/result"
+    print(">>>", similarity_json_local["result_url"])
+
+    # score_file_to_db relies on this path, so it must follow expected conventions
+    folder_out = (
+        Path(MEDIA_ROOT) / "similarity" / f"{regions_uid_1}-{regions_uid_2}"
+    )  # pyright: ignore
+    fp_out = folder_out / "test_similarity_results.json"
+    folder_out.mkdir(exist_ok=True)
+    with open(fp_out, mode="w") as fh:
         json.dump(similarity_json_local, fh)
 
-    return out
+    # retrieve pairs with a positive score (in practice, all random.random() returns numbers >=0.)
+    nb_pairs_written = len(
+        [pair for pair in similarity_json_local["pairs"] if pair[2] > 0]
+    )
+
+    return fp_out, (rid_1, rid_2), nb_pairs_written  # pyright: ignore
