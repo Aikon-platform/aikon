@@ -243,13 +243,10 @@ def generate_score_file() -> Path:
     rid_2 = not_compared[random.randint(0, len(not_compared) - 1)]
 
     # just to be sure that rid_1 and rid_2 have not been compared
-    assert (
-        RegionPair.objects.filter(
-            (Q(regions_id_1=rid_1) & Q(regions_id_2=rid_2))  # pyright: ignore
-            | (Q(regions_id_1=rid_2) & Q(regions_id_2=rid_1))
-        ).count()
-        == 0
+    _filter = (Q(regions_id_1=rid_1) & Q(regions_id_2=rid_2)) | (  # pyright: ignore
+        Q(regions_id_1=rid_2) & Q(regions_id_2=rid_1)
     )
+    assert RegionPair.objects.filter(_filter).count() == 0
 
     # 2: get all images for rid_1, rid_2 + make a cartesian product of those images. this product will be considered the similarities between img_1_list and img_2_list
     get_img_list = (
