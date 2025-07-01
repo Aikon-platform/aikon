@@ -4,8 +4,7 @@ test the writing/updating of RegionPair objects.
 the process is somewhat convoluted since we need to use a replication of a database to work with:
 - read the csv files in `TBL_TO_CSV` as pandas dfs
 - clean and retype them. mostly, we empty optional foreign keys to avoid having to replicate tons of tables
-- save the dfs as csvs
-- populate the database using psql's `\copy` (native postgres COPY demands rights and other weird things, so we use psql as a subprocess instead: it doesn't require the sqme authorizations)
+- populate the database using psql's `\copy` (native postgres COPY demands rights and other weird things, so we use psql as a subprocess instead: it doesn't require the same authorizations)
 - run the tests (finally !)
 """
 
