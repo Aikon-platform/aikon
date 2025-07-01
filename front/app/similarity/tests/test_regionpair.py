@@ -14,6 +14,7 @@ the process is somewhat convoluted since we need to use a replication of a datab
 # >>> ALTER USER admin CREATEDB;   # grant db creation privileges to user admin.
 
 import re
+import random
 from typing import Literal
 
 from django.db.models import Q
@@ -72,9 +73,13 @@ class RegionPairTestCase(TestCase):
         """
         return RegionPair.objects.get(pk=pk).category
 
-    def get_row_and_assert(self, img_tuple: tuple[str, str]) -> RegionPair:
+    def get_row_and_assert(
+        self, img_tuple: tuple[str, str], row_exists=True
+    ) -> RegionPair | None:
         """
-        img_tuple is a tuple of (img_1, img_2). assert there's only 1 row matching this tuple and return it
+        img_tuple is a tuple of (img_1, img_2).
+        - if `row_exists`, assert there's only 1 row matching this tuple and return it
+        - else, assert no rows match this tuple
         """
         img_1, img_2 = img_tuple
         matches = RegionPair.objects.filter(
@@ -82,18 +87,29 @@ class RegionPairTestCase(TestCase):
             (Q(img_1=img_1) & Q(img_2=img_2))
             | (Q(img_1=img_2) & Q(img_2=img_1))  # pyright: ignore
         )
-        self.assertEqual(matches.count(), 1)
-        return matches.first()
+        if row_exists:
+            self.assertEqual(matches.count(), 1)
+            return matches.first()
+        else:
+            self.assertEqual(matches.count(), 0)
+            return None
 
-    def assert_create_or_update(
+    def save_category_kwargs(self, payload):
+        return {
+            "path": reverse("similarity:save-category"),
+            "content_type": "application/json",
+            "data": payload,
+        }
+
+    def assert_modifs(
         self,
         method: Literal["get", "post"],
         operation: Literal["create", "update", "delete"],
         request_kwargs: dict,
         img_tuple: tuple[str, str],
-    ):
+    ) -> RegionPair | None:
         """
-        abstract function to test different types of regionpair creations and updates
+        abstract function to test different types of regionpair create, update and delete
 
         :param method: http method
         :param operation: the type of operation. if "create", a new row is created, otherwise it's updated. modifies the types of tests being run
@@ -116,8 +132,64 @@ class RegionPairTestCase(TestCase):
         )
         self.assertTrue(comp)
 
-        row_post_update = self.get_row_and_assert(img_tuple)
-        return row_post_update
+        if operation != "delete":
+            row_post_update = self.get_row_and_assert(img_tuple, True)
+            return row_post_update
+        else:
+            self.get_row_and_assert(img_tuple, False)
+        return
+
+    def assert_save_category(
+        self, payload, operation=["create", "update", "delete"]
+    ) -> RegionPair | None:
+        """
+        abstract function to test similarity.views.save_category
+        """
+        cat = payload["category"]
+        img_tuple = (payload["img_1"], payload["img_2"])
+        request_kwargs = self.save_category_kwargs(payload)
+        rp_post_update = self.assert_modifs(
+            "post", operation, request_kwargs, img_tuple
+        )
+
+        if operation != "delete":
+            self.assertEqual(cat, self.getcat(pk=rp_post_update.id))
+        return rp_post_update
+
+    def get_new_regionpair(self) -> tuple[tuple[str, int, int], tuple[str, int, int]]:
+        """
+        to create a new row, we must select a tuple (img_1, img_2) that is not in the database.
+        we select img_1 from a random RegionPair row and then selecting img_2 from a row that has no comparison to img_1
+        """
+        get_wid = lambda img_id: int(
+            re.search(r"^wit(\d+)", img_id)[1]  # pyright: ignore
+        )
+
+        choices = RegionPair.objects.values_list("id", flat=True)
+        rp_1 = RegionPair.objects.get(id=random.choice(choices))
+        img_1 = rp_1.img_1
+        rid_1 = rp_1.regions_id_1
+        wid_1 = get_wid(img_1)
+
+        # all rows with a relation to `img_1`
+        rels_to_rp_1 = RegionPair.objects.values_list("id").filter(
+            Q(img_1=rp_1.img_1) | Q(img_2=rp_1.img_1)
+        )
+
+        rp_2 = RegionPair.objects.filter(~Q(id__in=rels_to_rp_1)).order_by("id").first()
+        img_2 = rp_2.img_2
+        rid_2 = rp_2.regions_id_2
+        wid_2 = get_wid(img_2)
+
+        # assert that (img_1, img_2) does not exist in the db
+        self.assertEqual(
+            RegionPair.objects.filter(
+                (Q(img_1=img_1) & Q(img_2=img_2))  # pyright: ignore
+                | (Q(img_1=img_2) & Q(img_2=img_1))
+            ).count(),
+            0,
+        )
+        return (img_1, rid_1, wid_1), (img_2, rid_2, wid_2)
 
     def test_sort_key(self):
         a = "wit76_pdf76_0319_628,2234,455,191.jpg"
@@ -136,7 +208,7 @@ class RegionPairTestCase(TestCase):
 
     def test_save_category(self):
         """
-        test similarity.views.save_category
+        test similarity.views.save_category (not for propagations)
 
         we take the first regionpair row and request to save a swapped version of it: (img_1,img_2) is in the db, we save (img_2,img_1).
         assert that the existing row is updated (and that a new row is not created)
@@ -150,15 +222,43 @@ class RegionPairTestCase(TestCase):
         payload["img_1"] = img_tuple[1]
         payload["img_2"] = img_tuple[0]
         payload["category"] = cat
-        request_kwargs = {
-            "path": reverse("similarity:save-category"),
-            "content_type": "application/json",
-            "data": payload,
-        }
-        rp_post_update = self.assert_create_or_update(
-            "post", "update", request_kwargs, img_tuple
+        self.assert_save_category(payload, "update")
+        return
+
+    def test_save_category_propagation(self):
+        """
+        test similarity.views.save_category for propagations.
+
+        expected behaviour:
+        - if the propagation does not exist in the database and the user annotates it, add the row to the db and update the category
+        - if the propagation exists in the db, is annotated and the user removes the annotation, delete the row from the db
+        """
+        (img_1, rid_1, wid_1), (img_2, rid_2, _) = self.get_new_regionpair()
+
+        # test 1: add the new pair to the db by setting its `RegionPair.category`
+        # `rp` has the same defaults as what is sent by `get_propagated_matches`, expect that `category=1`: `rp` has been annotated by the user
+        rp_dict = RegionPair(
+            img_1=img_1,
+            img_2=img_2,
+            regions_id_1=rid_1,
+            regions_id_2=rid_2,
+            score=None,
+            is_manual=False,
+            similarity_type=3,  # it's a propagation
+            category_x=[],
+            category=1,
+        ).get_dict()
+
+        rp = self.assert_save_category(rp_dict, "create")
+        print(">>>>", rp)
+
+        # test 2: remove the pair  to the dbby unsetting its `RegionPair.category`
+        rp.category = (
+            None  # pyright: ignore. setting the category as None must delete the row
         )
-        self.assertEqual(cat, self.getcat(pk=rp_post_update.id))
+        # TODO implement actual behaviour
+        # self.assert_save_category(rp.get_dict(), "delete")
+        return
 
     def test_add_region_pair(self):
         """
@@ -185,11 +285,11 @@ class RegionPairTestCase(TestCase):
                 "content_type": "application/json",
                 "data": payload,
             }
-            rp_post_update = self.assert_create_or_update(
+            rp_post_update = self.assert_modifs(
                 "post", operation, request_kwargs, img_tuple_withext  # pyright: ignore
             )
-            self.assertEqual(rp_post_update.is_manual, True)
-            self.assertEqual(rp_post_update.similarity_type, 2)
+            self.assertEqual(rp_post_update.is_manual, True)  # pyright: ignore
+            self.assertEqual(rp_post_update.similarity_type, 2)  # pyright: ignore
             return
 
         # test 1: update an existing row (we run 2 tests, one where img_tuple is swapped and one where it isn't)
@@ -204,34 +304,9 @@ class RegionPairTestCase(TestCase):
             do_query(img_tuple, wid, rid, "update")
 
         # test 2: create a new row
-        # to create a new row, we must select a tuple (img_1, img_2) that is not in the database. we select img_1 from the 1st row in RegionPair and then selecting img_2 from a row that has no comparison to img_1
-        rp_1 = RegionPair.objects.order_by("id").first()
-        # all rows with a relation to rp_1.img_1
-        rels_to_rp_1 = RegionPair.objects.values_list("id").filter(
-            Q(img_1=rp_1.img_1) | Q(img_2=rp_1.img_1)
-        )
-        rp_2 = (
-            RegionPair.objects.filter(~Q(id__in=rels_to_rp_1))
-            .order_by("id")
-            .reverse()[0]
-        )
-        img_1 = rp_1.img_1
-        img_2 = rp_2.img_2
-        rid_1 = rp_1.regions_id_1
-        wid_1 = int(re.search(r"^wit(\d+)", img_1)[1])  # pyright: ignore
-
-        # assert that (img_1, img_2) does not exist in the db
-        self.assertEqual(
-            RegionPair.objects.filter(
-                (Q(img_1=img_1) & Q(img_2=img_2))  # pyright: ignore
-                | (Q(img_1=img_2) & Q(img_2=img_1))
-            ).count(),
-            0,
-        )
-
-        # test that row creation works
+        (img_1, rid_1, wid_1), (img_2, _, _) = self.get_new_regionpair()
         img_tuple = tuple(img.replace(".jpg", "") for img in (img_1, img_2))
-        do_query(img_tuple, wid_1, rid_1, "create")
+        do_query(img_tuple, wid_1, rid_1, "create")  # pyright: ignore
 
         return
 
