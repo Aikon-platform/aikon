@@ -20,6 +20,7 @@ from django.db.models import Q
 from django.urls import reverse
 from django.test import TestCase, Client
 
+from ..utils import score_file_to_db
 from ..models.region_pair import RegionPair
 from ...webapp.utils.functions import sort_key
 from .helpers import (
@@ -28,6 +29,7 @@ from .helpers import (
     run_subprocess,
     create_user,
     fix_id_autoincrement,
+    generate_score_file,
 )
 
 
@@ -229,6 +231,11 @@ class RegionPairTestCase(TestCase):
 
         return
 
-    def test_process_similarity_file(self):
-        # TODO
-        pass
+    def test_score_file_to_db(self):
+        """
+        test similarity.utils.score_file_to_db
+        """
+        score_file_path = generate_score_file()
+
+        # print(f"\n".join(f"+++ {a} _ {b}" for (a,b) in RegionPair.objects.values_list("regions_id_1", "regions_id_2").distinct()))
+        score_file_to_db

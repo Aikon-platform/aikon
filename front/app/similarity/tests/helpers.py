@@ -1,14 +1,22 @@
+import re
 import os
+import json
+import random
 import pathlib
 import subprocess
 from pathlib import Path
+from itertools import product
 
 import numpy as np
 import pandas as pd
 
+from django.db.models import Q
 from django.contrib.auth.models import User
 
+from ..models.region_pair import RegionPair
+from ...webapp.models.regions import Regions
 from ...config.settings.base import DATABASES
+
 
 FOLDER = pathlib.Path(__file__).parent.resolve()
 
@@ -21,6 +29,24 @@ TBL_TO_CSV = [
     ("webapp_regions", FOLDER / "data" / "webapp_regions.csv"),
     ("webapp_regionpair", FOLDER / "data" / "webapp_regionpair.csv"),
 ]
+
+# similarity results json file.
+SIMILARITY_JSON = {
+    "parameters": {
+        "algorithm": "cosine",
+        "topk": 20,
+        "feat_net": "dino_deitsmall16_pretrain",
+        "segswap_prefilter": True,
+        "segswap_n": 10,
+        "raw_transpositions": ["none"],
+    },
+    "index": {
+        "sources": {},  # metadata for regions extraction
+        "images": [],  # index of all images + their metadata
+        "transpositions": ["none"],
+    },
+    "pairs": [],  # results
+}
 
 PSQL_BASE = f'PGPASSWORD="{DATABASES["default"]["PASSWORD"]}" \
     psql -U "{DATABASES["default"]["USER"]}" \
@@ -60,12 +86,6 @@ def create_user() -> int:
     )
     run_subprocess(cmd)
     return User.objects.filter(email="jane.doe@test.com").first().id
-
-
-# def reindex():
-#     cmd = PSQL_BASE + '-c "SELECT setval(\'django_content_type_id_seq\', (SELECT MAX(id) FROM django_content_type));"'
-#     out = run_subprocess(cmd)
-#     print(out)
 
 
 def fix_id_autoincrement(tbl_list: list[str]) -> None:
@@ -188,3 +208,127 @@ def clean_data(tbl_list: list[str], id_user=int) -> list[tuple[str, Path]]:
         df.to_csv(csvfile_out, sep=",", header=True, index=False, na_rep="")
         tbl_to_csv_out.append((tblname, csvfile_out))
     return tbl_to_csv_out
+
+
+def generate_score_file() -> Path:
+    """
+    generate a score file containing the cartesian product of all images within 2 randomly selected regions extractions
+
+    :returns: the path to the score file.
+    """
+    out = FOLDER / "data" / "similarity_results.json"
+    similarity_json_local = SIMILARITY_JSON
+
+    # 1: find 2 regions that have not been previously compared
+    rid_compared_all = RegionPair.objects.values_list(
+        "regions_id_1", "regions_id_2"
+    ).distinct()
+
+    rid_list = RegionPair.objects.values_list("regions_id_1", flat=True).union(
+        RegionPair.objects.values_list("regions_id_2", flat=True)
+    )
+    rid_1 = None
+    not_compared = []  # all regions to which rid_1 has not been compared
+    for rid in rid_list:
+        compared = set(
+            [c[0] for c in rid_compared_all if c[1] == rid]
+            + [c[1] for c in rid_compared_all if c[0] == rid]
+        )
+        not_compared = [
+            _rid for _rid in rid_list if _rid not in compared and _rid != rid
+        ]
+        if len(not_compared):
+            rid_1 = rid
+            break
+    rid_2 = not_compared[random.randint(0, len(not_compared) - 1)]
+
+    # just to be sure that rid_1 and rid_2 have not been compared
+    assert (
+        RegionPair.objects.filter(
+            (Q(regions_id_1=rid_1) & Q(regions_id_2=rid_2))  # pyright: ignore
+            | (Q(regions_id_1=rid_2) & Q(regions_id_2=rid_1))
+        ).count()
+        == 0
+    )
+
+    # 2: get all images for rid_1, rid_2 + make a cartesian product of those images. this product will be considered the similarities between img_1_list and img_2_list
+    get_img_list = (
+        lambda _rid: RegionPair.objects.values_list("img_1", flat=True)
+        .filter(regions_id_1=_rid)
+        .union(
+            RegionPair.objects.values_list("img_2", flat=True).filter(regions_id_2=_rid)
+        )
+    )
+    img_1_list = list(get_img_list(rid_1))
+    img_2_list = list(get_img_list(rid_2))
+
+    # assert there are no duplicates in img_1_list and img_2_list (theoretically there are none)
+    assert len(img_1_list + img_2_list) == len(set(img_1_list + img_2_list))
+
+    # cartesian product of all images in img_1_list and img_2_list
+    rels = list(product(img_1_list, img_2_list))
+
+    # 3: fetch the region's UID (format `wit\d+_(pdf|iiif|zip)\d+_anno\d+`)
+    get_regions_uid = lambda _rid: Regions.objects.get(id=_rid).json["ref"]
+    regions_uid_1 = get_regions_uid(rid_1)
+    regions_uid_2 = get_regions_uid(rid_2)
+
+    # 4: build and write a similarity results file
+    make_source = lambda regions_uid: {
+        "uid": regions_uid,
+        "type": "url_list",
+        "src": f"http://example.com/{regions_uid}/list",
+        "metadata": {"src": f"http://example.com/{regions_uid}/list"},
+    }
+    for regions_uid in [regions_uid_1, regions_uid_2]:
+        similarity_json_local["index"]["sources"][regions_uid] = make_source(
+            regions_uid
+        )
+
+    def img_id_to_iiif(img_id):
+        img_id = img_id.replace(".jpg", "")
+        img_name = (
+            re.search(r"^wit\d+_[a-z]+\d+_\d+", img_id)[0] + ".jpg"
+        )  # pyright: ignore
+        bbox = re.search(r"(\d+,?){4}$", img_id)[0]  # pyright: ignore
+        return f"http://example.com/iiif/1/{img_name}/{bbox}/full/0/default.jpg"
+
+    make_image = lambda img_id, regions_uid: {
+        "id": img_id.replace(".jpg", ""),
+        "src": img_id_to_iiif(img_id),
+        "path": f"images/{img_id}",
+        "metadata": None,
+        "doc_uid": regions_uid,
+    }
+
+    for (img_list, regions_uid) in [
+        (img_1_list, regions_uid_1),
+        (img_2_list, regions_uid_2),
+    ]:
+        for img_id in img_list:
+            similarity_json_local["index"]["images"].append(
+                make_image(img_id, regions_uid)
+            )
+
+    # replace img_id in rels with index of image in similarity_json_local["index"]["images"]
+    def img_id_to_index(img_id):
+        img_id_noext = img_id.replace(".jpg", "")
+        for idx, img in enumerate(similarity_json_local["index"]["images"]):
+            if img["id"] == img_id_noext:
+                return idx
+        raise ValueError(
+            f"could not find {img_id} in `similarity_json_local['index']['images']`"
+        )
+
+    for rel in rels:
+        rel = tuple(img_id_to_index(img_id) for img_id in rel)
+        rel = (
+            rel if random.random() < 0.5 else (rel[1], rel[0])
+        )  # randomly permutate order of 2 elts in rel
+        score = random.random()
+        similarity_json_local["pairs"].append([rel[0], rel[1], score, 0, 0])
+
+    with open(out, mode="w") as fh:
+        json.dump(similarity_json_local, fh)
+
+    return out
