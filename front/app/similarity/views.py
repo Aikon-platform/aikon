@@ -510,9 +510,10 @@ def get_query_images(request, wid, rid=None):
 
 def save_category(request):
     """
-    save category on an existing region pair.
-    also used to save propagated region pairs to database when those are categorized by the user.
-    if the user removes a category from a propagation that is saved in the database, the propagation is deleted from the database.
+    save category on a region pair.
+    - if it is a normal similarity (not a propagation), update the category and save.
+    - if a propagation does not exist in the database and the user annotates it, add the row to the db and update the category
+    - if the propagation exists in the db, is annotated and the user removes the annotation, delete the row from the db
     """
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
@@ -536,15 +537,15 @@ def save_category(request):
             "regions_id_2": regions_id_2,
         }
 
-        to_delete = similarity_type == 3 and category == None
+        to_delete = (
+            similarity_type == 3 and category == None
+        )  # propagation without category => delete
 
         try:
             region_pair = RegionPair.objects.get(**rp_filter_data)
             created = False
         except RegionPair.DoesNotExist:
-            region_pair = region_pair = (
-                None if to_delete else RegionPair(**rp_filter_data)
-            )
+            region_pair = None if to_delete else RegionPair(**rp_filter_data)
             created = True
 
         if to_delete:
@@ -553,7 +554,7 @@ def save_category(request):
                 message = f"Deleted {d[0]} region pair(s)."
                 pair_info = region_pair.get_info(as_json=True)
             else:  # the region_pair does not exist, so no need to delete it. (should never happen)
-                message = "Region pair does not exist in database and did not need do ne deleted."
+                message = "Region pair does not exist in database and did not need do be deleted."
                 pair_info = {}
             return JsonResponse(
                 {

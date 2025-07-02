@@ -260,14 +260,17 @@ class RegionPairTestCase(TestCase):
             category_x=[],
             category=1,
         ).get_dict()
-
         rp = self.assert_save_category(rp_dict, "create")
+        self.assertEqual(rp.category, 1)
 
-        # test 2: remove the pair by unsetting its `RegionPair.category`
-        rp.category = (
-            None  # pyright: ignore . setting the category as None must delete the row
-        )
-        print(rp, rp.category_x)
+        # test 2: update the pair added in test 1 by setting a new category
+        rp.category = 3
+        rp = self.assert_save_category(rp.get_dict(), "update")
+        self.assertEqual(rp.category, 3)
+
+        # test 3: remove the pair by unsetting its `RegionPair.category`
+        # setting the category as None is expected to delete the row
+        rp.category = None  # pyright: ignore
         self.assert_save_category(rp.get_dict(), "delete")
 
         self.assert_extensions()
