@@ -121,15 +121,20 @@ class RegionPairTestCase(TestCase):
         method: Literal["get", "post"],
         operation: Literal["create", "update", "delete"],
         request_kwargs: dict,
-        img_tuple: tuple[str, str],
+        n_rows_affected: int = 1,
     ) -> RegionPair | None:
         """
-        abstract function to test different types of regionpair create, update and delete
+        abstract function to test http requests that create, update or delete regionpair row(s)
+
+        if n_rows_affected==1, only 1 row is affected.
+        if n_rows_affected>1, `n_rows_affected` rows are affected by the change
+        no effect when operation=="update".
 
         :param method: http method
         :param operation: the type of operation. if "create", a new row is created, otherwise it's updated. modifies the types of tests being run
         :param request kwargs: parameters of the django client query
         :param img_tuple: tuple of (img_1, img_2) used to fetch the created or updated row
+        :param n_rows_affected: absolute number of rows expected to be affected by the function.
         """
         request_func = self.client.get if method == "get" else self.client.post
 
@@ -138,15 +143,36 @@ class RegionPairTestCase(TestCase):
         rowcount_post_update = self.getcount()
 
         self.assertEqual(r.status_code, 200)  # pyright: ignore
+        affected = rowcount_post_update - rowcount_pre_update
         comp = (
-            rowcount_pre_update < rowcount_post_update
+            affected > 0
             if operation == "create"
-            else rowcount_pre_update == rowcount_post_update
+            else affected == 0
             if operation == "update"
-            else rowcount_pre_update > rowcount_post_update
+            else affected < 0
         )
         self.assertTrue(comp)
+        if operation != "update":
+            self.assertEqual(abs(affected), n_rows_affected)
+        return
 
+    def assert_modifs_one(
+        self,
+        method: Literal["get", "post"],
+        operation: Literal["create", "update", "delete"],
+        request_kwargs: dict,
+        img_tuple: tuple[str, str],
+    ) -> RegionPair | None:
+        """
+        assert modifications one 1 row alone
+        """
+        n_rows_affected = 1
+        self.assert_modifs(
+            method,
+            operation,
+            request_kwargs,
+            n_rows_affected,
+        )
         if operation != "delete":
             row_post_update = self.get_row_and_assert(img_tuple, True)
             return row_post_update
@@ -163,7 +189,7 @@ class RegionPairTestCase(TestCase):
         cat = payload["category"]
         img_tuple = (payload["img_1"], payload["img_2"])
         request_kwargs = self.save_category_kwargs(payload)
-        rp_post_update = self.assert_modifs(
+        rp_post_update = self.assert_modifs_one(
             "post", operation, request_kwargs, img_tuple
         )
 
@@ -268,11 +294,10 @@ class RegionPairTestCase(TestCase):
         self.assertEqual(rp.category, 1)
 
         # test 2: update the pair added in test 1 by setting a new category
+        # do permutations between img_1 and img_2 just to be sure there aren't errors on that end
         img_1, img_2 = rp.img_1, rp.img_2
         rp.category = 3
-        rp.img_1 = (
-            img_2  # do permutations just to be sure there aren't errors on that end
-        )
+        rp.img_1 = img_2
         rp.img_2 = img_1
         rp = self.assert_save_category(rp.get_dict(), "update")
         self.assertEqual(rp.category, 3)
@@ -312,7 +337,7 @@ class RegionPairTestCase(TestCase):
                 "content_type": "application/json",
                 "data": payload,
             }
-            rp_post_update = self.assert_modifs(
+            rp_post_update = self.assert_modifs_one(
                 "post", operation, request_kwargs, img_tuple  # pyright: ignore
             )
             self.assertEqual(rp_post_update.is_manual, True)  # pyright: ignore
@@ -334,6 +359,41 @@ class RegionPairTestCase(TestCase):
         do_query(img_tuple, wid_1, rid_1, "create")  # pyright: ignore
         self.assert_extensions()
 
+        return
+
+    def test_no_match(self):
+        """
+        test similarity.views.no_match
+        """
+        rp = self.get_random_row()
+        img_1 = rp.img_1
+        wid_1 = int(re.search(r"^wit(\d+)", img_1)[1])  # pyright: ignore
+        rid_1 = rp.regions_id_1
+        rid_2 = rp.regions_id_2
+
+        # the rows that will be affected by the update
+        filter_affected = (
+            Q(img_1=img_1) & Q(regions_id_2=rid_2)
+        ) | (  # pyright: ignore
+            Q(img_2=img_1) & Q(regions_id_1=rid_2)
+        )
+
+        n_rows_affected = RegionPair.objects.filter(filter_affected).count()
+
+        payload = {"q_img": img_1, "s_regions": rid_2}
+        request_kwargs = {
+            "path": reverse("similarity:no-match", kwargs={"wid": wid_1, "rid": rid_1}),
+            "content_type": "application/json",
+            "data": payload,
+        }
+
+        # "update": no_match only updates the rows with a new category instead of deleting the rows
+        self.assert_modifs("post", "update", request_kwargs, n_rows_affected)
+        # all affected rows have category 4
+        self.assertEqual(
+            RegionPair.objects.filter(filter_affected & Q(category=4)).count(),
+            n_rows_affected,
+        )
         return
 
     def test_score_file_to_db(self):
@@ -370,8 +430,3 @@ class RegionPairTestCase(TestCase):
             score_file_path.unlink()
             score_file_path.parent.resolve().rmdir()
         return
-
-    def test_no_match(self):
-        """
-        test similarity.views.no_match
-        """

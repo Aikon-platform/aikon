@@ -300,7 +300,7 @@ def get_propagated_matches(
             row[0] for row in propagation_1_from_2.union(propagation_2_from_1)
         ]
         return [
-            RegionPair(
+            RegionPair(  # pyright: ignore
                 img_1=OG_IMG_ID,
                 img_2=p_img,
                 regions_id_1=q_img_regions,
