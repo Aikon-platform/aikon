@@ -101,6 +101,16 @@ class RegionPairTestCase(TestCase):
             "data": payload,
         }
 
+    def assert_extensions(self):
+        """all RegionPair.(img_1|img_2) must finish with .jpg"""
+        self.assertEqual(
+            RegionPair.objects.filter(
+                Q(img_1__endswith=".jpg") | Q(img_2__endswith=".jpg")
+            ).count(),
+            RegionPair.objects.count(),
+        )
+        return
+
     def assert_modifs(
         self,
         method: Literal["get", "post"],
@@ -205,6 +215,7 @@ class RegionPairTestCase(TestCase):
         self.assertEqual(l2_sorted[0], a)
         self.assertEqual(l1_sorted, l2_sorted)
         self.assertEqual(l3_sorted, [a, c, b])
+        return
 
     def test_save_category(self):
         """
@@ -223,6 +234,7 @@ class RegionPairTestCase(TestCase):
         payload["img_2"] = img_tuple[0]
         payload["category"] = cat
         self.assert_save_category(payload, "update")
+        self.assert_extensions()
         return
 
     def test_save_category_propagation(self):
@@ -257,6 +269,7 @@ class RegionPairTestCase(TestCase):
         )
         # TODO implement actual behaviour
         # self.assert_save_category(rp.get_dict(), "delete")
+        self.assert_extensions()
         return
 
     def test_add_region_pair(self):
@@ -265,16 +278,15 @@ class RegionPairTestCase(TestCase):
         """
         # function concentrating a single query and all its tests
         def do_query(
-            img_tuple_noext: tuple[str, str],  # no extension !
+            img_tuple: tuple[str, str],  # with extension !
             wid: int,
             rid: int,
             operation: Literal["create", "update"],
         ) -> None:
-            img_tuple_withext = tuple(f"{i}.jpg" for i in img_tuple_noext)
             # example payload : {'q_img': 'wit3_pdf8_01_122,286,220,1128', 's_img': 'wit3_pdf8_01_1363,299,202,1111', 'similarity_type': 2}
             payload = {
-                "q_img": img_tuple_noext[0],
-                "s_img": img_tuple_noext[1],
+                "q_img": img_tuple[0].replace(".jpg", ""),
+                "s_img": img_tuple[1].replace(".jpg", ""),
                 "similarity_type": 2,
             }
             request_kwargs = {
@@ -285,7 +297,7 @@ class RegionPairTestCase(TestCase):
                 "data": payload,
             }
             rp_post_update = self.assert_modifs(
-                "post", operation, request_kwargs, img_tuple_withext  # pyright: ignore
+                "post", operation, request_kwargs, img_tuple  # pyright: ignore
             )
             self.assertEqual(rp_post_update.is_manual, True)  # pyright: ignore
             self.assertEqual(rp_post_update.similarity_type, 2)  # pyright: ignore
@@ -297,15 +309,14 @@ class RegionPairTestCase(TestCase):
             ((rp.img_1, rp.img_2), rp.regions_id_1),
             ((rp.img_2, rp.img_1), rp.regions_id_2),
         ]:
-            # add-region-pair expects image ids without file extension
-            img_tuple = tuple(img.replace(".jpg", "") for img in img_tuple)
             wid = int(re.search(r"^wit(\d+)", img_tuple[0])[1])  # pyright: ignore
             do_query(img_tuple, wid, rid, "update")
 
         # test 2: create a new row
         (img_1, rid_1, wid_1), (img_2, _, _) = self.get_new_regionpair()
-        img_tuple = tuple(img.replace(".jpg", "") for img in (img_1, img_2))
+        img_tuple = (img_1, img_2)
         do_query(img_tuple, wid_1, rid_1, "create")  # pyright: ignore
+        self.assert_extensions()
 
         return
 
@@ -336,6 +347,7 @@ class RegionPairTestCase(TestCase):
                     for img_tuple in pairs_written
                 )
             )
+            self.assert_extensions()
 
         # cleanup: delete test files
         finally:
