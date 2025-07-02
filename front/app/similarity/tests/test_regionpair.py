@@ -373,10 +373,8 @@ class RegionPairTestCase(TestCase):
 
         # the rows that will be affected by the update
         filter_affected = (
-            Q(img_1=img_1) & Q(regions_id_2=rid_2)
-        ) | (  # pyright: ignore
-            Q(img_2=img_1) & Q(regions_id_1=rid_2)
-        )
+            Q(img_1=img_1) & Q(regions_id_2=rid_2)  # pyright: ignore
+        ) | (Q(img_2=img_1) & Q(regions_id_1=rid_2))
 
         n_rows_affected = RegionPair.objects.filter(filter_affected).count()
 
