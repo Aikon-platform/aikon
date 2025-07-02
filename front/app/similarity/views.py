@@ -462,13 +462,16 @@ def add_region_pair(request, wid, rid=None):
 
 
 def no_match(request, wid, rid=None):
+    """remove all regionpairs contain q_img image id and the regions id specified in `s_regions`."""
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
     try:
         data = json.loads(request.body)
         q_img = data.get("q_img")
-        s_regions = data.get("s_regions")
+        s_regions = data.get(
+            "s_regions"
+        )  # always a scalar: this function can only be used on a single region
         pairs = get_matched_regions(q_img, s_regions)
         for pair in pairs:
             pair.category = 4

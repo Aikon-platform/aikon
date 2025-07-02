@@ -73,6 +73,11 @@ class RegionPairTestCase(TestCase):
         """
         return RegionPair.objects.get(pk=pk).category
 
+    @staticmethod
+    def get_random_row() -> RegionPair:
+        choices = RegionPair.objects.values_list("id", flat=True)
+        return RegionPair.objects.get(id=random.choice(choices))
+
     def get_row_and_assert(
         self, img_tuple: tuple[str, str], row_exists=True
     ) -> RegionPair | None:
@@ -175,8 +180,7 @@ class RegionPairTestCase(TestCase):
             re.search(r"^wit(\d+)", img_id)[1]  # pyright: ignore
         )
 
-        choices = RegionPair.objects.values_list("id", flat=True)
-        rp_1 = RegionPair.objects.get(id=random.choice(choices))
+        rp_1 = self.get_random_row()
         img_1 = rp_1.img_1
         rid_1 = rp_1.regions_id_1
         wid_1 = get_wid(img_1)
@@ -199,7 +203,7 @@ class RegionPairTestCase(TestCase):
             ).count(),
             0,
         )
-        return (img_1, rid_1, wid_1), (img_2, rid_2, wid_2)
+        return (img_1, rid_1, wid_1), (img_2, rid_2, wid_2)  # pyright: ignore
 
     def test_sort_key(self):
         a = "wit76_pdf76_0319_628,2234,455,191.jpg"
@@ -224,7 +228,7 @@ class RegionPairTestCase(TestCase):
         we take the first regionpair row and request to save a swapped version of it: (img_1,img_2) is in the db, we save (img_2,img_1).
         assert that the existing row is updated (and that a new row is not created)
         """
-        rp = RegionPair.objects.first()
+        rp = self.get_random_row()
         img_tuple = (rp.img_1, rp.img_2)
 
         cat = 3  # meow
@@ -264,16 +268,21 @@ class RegionPairTestCase(TestCase):
         self.assertEqual(rp.category, 1)
 
         # test 2: update the pair added in test 1 by setting a new category
-        rp.category = 3
         img_1, img_2 = rp.img_1, rp.img_2
-        rp.img_1 = img_2
+        rp.category = 3
+        rp.img_1 = (
+            img_2  # do permutations just to be sure there aren't errors on that end
+        )
         rp.img_2 = img_1
         rp = self.assert_save_category(rp.get_dict(), "update")
         self.assertEqual(rp.category, 3)
 
         # test 3: remove the pair by unsetting its `RegionPair.category`
         # setting the category as None is expected to delete the row
+        img_1, img_2 = rp.img_1, rp.img_2
         rp.category = None  # pyright: ignore
+        rp.img_1 = img_2
+        rp.img_2 = img_1
         self.assert_save_category(rp.get_dict(), "delete")
 
         self.assert_extensions()
@@ -311,7 +320,7 @@ class RegionPairTestCase(TestCase):
             return
 
         # test 1: update an existing row (we run 2 tests, one where img_tuple is swapped and one where it isn't)
-        rp = RegionPair.objects.first()
+        rp = self.get_random_row()
         for img_tuple, rid in [
             ((rp.img_1, rp.img_2), rp.regions_id_1),
             ((rp.img_2, rp.img_1), rp.regions_id_2),
@@ -361,3 +370,8 @@ class RegionPairTestCase(TestCase):
             score_file_path.unlink()
             score_file_path.parent.resolve().rmdir()
         return
+
+    def test_no_match(self):
+        """
+        test similarity.views.no_match
+        """
