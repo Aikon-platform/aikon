@@ -74,13 +74,13 @@
     //////////////////////////////
 
     /**
+     * Returns true if the similarity image score is above the cutoff,
+     * or if the score is null (for manual pairs),
+     * or if the cutoff is undefined
      * @param {number|string} simImgScore
      * @param {number} cutoff
      */
-    const isAboveCutoff = (simImgScore, cutoff) =>
-        cutoff === undefined
-        ? true
-        : simImgScore != null && Number(simImgScore) >= cutoff;
+    const isAboveCutoff = (simImgScore, cutoff) => simImgScore === null || cutoff === undefined || Number(simImgScore) >= cutoff;
 
     /**
      * @param {number} simImgCategory

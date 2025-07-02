@@ -9,7 +9,7 @@ source "$FRONT_DIR/scripts/utils.sh"
 declare -a ALL_PIDS=()
 
 cleanup() {
-    cleanup_pids "${ALL_PIDS[*]}" "celery|dramatiq|flask|runserver|cantaloupe|jetty" "$PASSWORD"
+    cleanup_pids "${ALL_PIDS[*]}" "celery|dramatiq|flask|runserver|cantaloupe|jetty|multiprocessing" "$PASSWORD"
     exit 0
 }
 

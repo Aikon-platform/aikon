@@ -333,7 +333,6 @@ def generate_score_file() -> tuple[Path, tuple[int, int], int]:
     similarity_json_local[
         "result_url"
     ] = f"http://example.com/similarity/{uuid4()}~{SIMILARITY_JSON['parameters']['algorithm']}-{regions_uid_1}-{regions_uid_2}/result"
-    print(">>>", similarity_json_local["result_url"])
 
     # score_file_to_db relies on this path, so it must follow expected conventions
     folder_out = (

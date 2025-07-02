@@ -41,7 +41,6 @@ class Command(BaseCommand):
             self.process_witness(witness_id)
         elif process_all:
             self.process_all_witnesses()
-        # TODO add all witness reconvert
 
     def process_digitization(self, digitization_id):
         """Process a single digitization"""

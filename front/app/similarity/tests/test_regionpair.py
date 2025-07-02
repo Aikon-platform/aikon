@@ -250,7 +250,6 @@ class RegionPairTestCase(TestCase):
         ).get_dict()
 
         rp = self.assert_save_category(rp_dict, "create")
-        print(">>>>", rp)
 
         # test 2: remove the pair  to the dbby unsetting its `RegionPair.category`
         rp.category = (
