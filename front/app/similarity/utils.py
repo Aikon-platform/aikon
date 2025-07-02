@@ -678,7 +678,7 @@ def regions_from_img(q_img: str) -> int:
             )
         else:
             regions = regions[0]
-        return regions.id
+        return int(regions.id)
 
     return get_digit_regions_id(get_digit_id(q_img))
 
@@ -688,5 +688,5 @@ def add_user_to_category_x(region_pair: RegionPair, user_id: int):
         region_pair.category_x = [user_id]
     elif user_id not in region_pair.category_x:
         region_pair.category_x.append(user_id)
-
+    region_pair.category_x = [c for c in region_pair.category_x if c is not None]
     return region_pair

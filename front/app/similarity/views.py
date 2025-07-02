@@ -511,8 +511,8 @@ def get_query_images(request, wid, rid=None):
 def save_category(request):
     """
     save category on an existing region pair.
-    also used to save propagated region pairs to database
-    when those are categorized by the user
+    also used to save propagated region pairs to database when those are categorized by the user.
+    if the user removes a category from a propagation that is saved in the database, the propagation is deleted from the database.
     """
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
@@ -521,26 +521,55 @@ def save_category(request):
         data = json.loads(request.body)
 
         # img_1 and img_2 are sorted by witness ID.
-        # regions_ids are retrieved programmatically instead of from
-        # `data` because retrieving from `data` may lead to
-        # inconsistencies (regions not aligned with their image),
-        # especially in the case of propagated regions.
+        # regions_ids are retrieved programmatically instead of from `data` because retrieving from `data` may lead to inconsistencies (regions not aligned with their image), especially in the case of propagated regions.
         img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
         category = data.get("category")
-        regions_id_1 = regions_from_img(img_1)  # data.get("regions_id_2")
-        regions_id_2 = regions_from_img(img_2)  # data.get("regions_id_2")
+        category = int(data.get("category")) if category else None
+        regions_id_1 = regions_from_img(img_1)
+        regions_id_2 = regions_from_img(img_2)
+        similarity_type = int(data.get("similarity_type", 1))
 
-        region_pair, created = RegionPair.objects.get_or_create(
-            img_1=img_1,
-            img_2=img_2,
-            regions_id_1=int(regions_id_1),
-            regions_id_2=int(regions_id_2),
-        )
+        rp_filter_data = {
+            "img_1": img_1,
+            "img_2": img_2,
+            "regions_id_1": regions_id_1,
+            "regions_id_2": regions_id_2,
+        }
+
+        to_delete = similarity_type == 3 and category == None
+
+        try:
+            region_pair = RegionPair.objects.get(**rp_filter_data)
+            created = False
+        except RegionPair.DoesNotExist:
+            region_pair = region_pair = (
+                None if to_delete else RegionPair(**rp_filter_data)
+            )
+            created = True
+
+        if to_delete:
+            if region_pair is not None:
+                d = region_pair.delete()
+                message = f"Deleted {d[0]} region pair(s)."
+                pair_info = region_pair.get_info(as_json=True)
+            else:  # the region_pair does not exist, so no need to delete it. (should never happen)
+                message = "Region pair does not exist in database and did not need do ne deleted."
+                pair_info = {}
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "message": message,
+                    "pair_info": pair_info,
+                },
+                status=200,
+            )
+
+        # region_pair will ailzays be defined: it should only be None if to_delete is true but the region_pair does not exist in the DB
         region_pair.score = (region_pair.score or None) if not created else None
-        region_pair.category = int(category) if category else None
-        region_pair = add_user_to_category_x(region_pair, request.user.id)
+        region_pair.category = category
         region_pair.is_manual = data.get("is_manual", False)
-        region_pair.similarity_type = int(data.get("similarity_type", 1))
+        region_pair.similarity_type = similarity_type
+        region_pair = add_user_to_category_x(region_pair, request.user.id)
         region_pair.save()
 
         if created:

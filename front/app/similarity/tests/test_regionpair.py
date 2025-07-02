@@ -147,7 +147,7 @@ class RegionPairTestCase(TestCase):
             return row_post_update
         else:
             self.get_row_and_assert(img_tuple, False)
-        return
+            return
 
     def assert_save_category(
         self, payload, operation=["create", "update", "delete"]
@@ -263,12 +263,13 @@ class RegionPairTestCase(TestCase):
 
         rp = self.assert_save_category(rp_dict, "create")
 
-        # test 2: remove the pair  to the dbby unsetting its `RegionPair.category`
+        # test 2: remove the pair by unsetting its `RegionPair.category`
         rp.category = (
-            None  # pyright: ignore. setting the category as None must delete the row
+            None  # pyright: ignore . setting the category as None must delete the row
         )
-        # TODO implement actual behaviour
-        # self.assert_save_category(rp.get_dict(), "delete")
+        print(rp, rp.category_x)
+        self.assert_save_category(rp.get_dict(), "delete")
+
         self.assert_extensions()
         return
 
