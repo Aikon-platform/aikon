@@ -265,6 +265,9 @@ class RegionPairTestCase(TestCase):
 
         # test 2: update the pair added in test 1 by setting a new category
         rp.category = 3
+        img_1, img_2 = rp.img_1, rp.img_2
+        rp.img_1 = img_2
+        rp.img_2 = img_1
         rp = self.assert_save_category(rp.get_dict(), "update")
         self.assertEqual(rp.category, 3)
 
