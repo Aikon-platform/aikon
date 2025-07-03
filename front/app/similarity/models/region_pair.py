@@ -184,8 +184,7 @@ class RegionPair(models.Model):
             }
         return info
 
-    def get_dict(self) -> Dict:
-        # NOTE not a duplicate of get_info(..., as_json=True) : the dict keys are different
+    def to_dict(self) -> dict:
         return {
             "img_1": self.img_1,
             "img_2": self.img_2,

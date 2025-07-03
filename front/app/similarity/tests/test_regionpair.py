@@ -258,7 +258,7 @@ class RegionPairTestCase(TestCase):
         img_tuple = (rp.img_1, rp.img_2)
 
         cat = 3  # meow
-        payload = rp.get_dict()
+        payload = rp.to_dict()
         # request to save the swapped version of rp, that aldready exists in the database. this should lead in just updating rp.
         payload["img_1"] = img_tuple[1]
         payload["img_2"] = img_tuple[0]
@@ -289,7 +289,7 @@ class RegionPairTestCase(TestCase):
             similarity_type=3,  # it's a propagation
             category_x=[],
             category=1,
-        ).get_dict()
+        ).to_dict()
         rp = self.assert_save_category(rp_dict, "create")
         self.assertEqual(rp.category, 1)
 
@@ -299,7 +299,7 @@ class RegionPairTestCase(TestCase):
         rp.category = 3
         rp.img_1 = img_2
         rp.img_2 = img_1
-        rp = self.assert_save_category(rp.get_dict(), "update")
+        rp = self.assert_save_category(rp.to_dict(), "update")
         self.assertEqual(rp.category, 3)
 
         # test 3: remove the pair by unsetting its `RegionPair.category`
@@ -308,7 +308,7 @@ class RegionPairTestCase(TestCase):
         rp.category = None  # pyright: ignore
         rp.img_1 = img_2
         rp.img_2 = img_1
-        self.assert_save_category(rp.get_dict(), "delete")
+        self.assert_save_category(rp.to_dict(), "delete")
 
         self.assert_extensions()
         return
