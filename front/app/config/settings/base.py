@@ -164,7 +164,8 @@ DATABASES = {
         "PASSWORD": ENV.str("POSTGRES_PASSWORD", default=""),
         "HOST": "db" if DOCKER else "localhost",
         "PORT": ENV.str("DB_PORT", default=5432),
-    }
+    },
+    "test": {"NAME": f"test_{ENV.str('POSTGRES_DB', default='')}"},
 }
 
 # Password validation
