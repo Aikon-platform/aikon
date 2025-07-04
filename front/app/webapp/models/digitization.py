@@ -4,11 +4,10 @@ from functools import partial
 from typing import Optional, List
 
 from iiif_prezi.factory import StructuralError
-from celery import chain
 
 from django.utils.safestring import mark_safe
 from django.core.validators import FileExtensionValidator
-from django.db import models
+from django.db import models, transaction
 from django.db.models.signals import pre_delete, post_save
 from django.dispatch.dispatcher import receiver
 
@@ -465,7 +464,7 @@ def digitization_post_save(sender, instance, created, **kwargs):
     if created:
         from app.webapp.tasks import convert_digitization
 
-        convert_digitization.delay(instance.id)
+        transaction.on_commit(lambda: convert_digitization.delay(instance.id))
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance
