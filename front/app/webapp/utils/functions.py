@@ -270,7 +270,7 @@ def rename_file(old_path, new_path):
         log(f"[rename_file] {old_path} does not exist")
         return False
     if os.path.exists(new_path):
-        log(f"[rename_file] {new_path} already exists")
+        log(f"[rename_file] {new_path} already exists, overriding its content")
     try:
         os.rename(old_path, new_path)
     except Exception as e:
