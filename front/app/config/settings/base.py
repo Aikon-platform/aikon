@@ -66,6 +66,9 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
 ]
 
+DATA_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024  # 500MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024  # 500MB
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -83,11 +86,16 @@ LOGGING = {
     "loggers": {
         "django": {
             "handlers": ["console"],
-            "level": "WARNING",
+            "level": "DEBUG",
         },
         "celery": {
             "handlers": ["console"],
-            "level": "WARNING",
+            "level": "DEBUG",
+            "propagate": True,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "DEBUG",
             "propagate": True,
         },
     },
