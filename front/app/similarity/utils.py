@@ -332,7 +332,7 @@ def get_regions_pairs(regions_id: int):
 
 def get_matched_regions(q_img: str, s_regions_id: int):
     """
-    Retrieve all RegionPair records containing the given query image name and the given regions_id
+    Retrieve all RegionPair records containing the given query image name and the given s_regions_id
     if q_img is in img_1, then s_regions_id should be in regions_id_2 and vice versa
     :param q_img: str, the image name to look for
     :param s_regions_id: int, the regions_id to look for
@@ -678,7 +678,7 @@ def regions_from_img(q_img: str) -> int:
             )
         else:
             regions = regions[0]
-        return regions.id
+        return int(regions.id)
 
     return get_digit_regions_id(get_digit_id(q_img))
 
@@ -688,5 +688,5 @@ def add_user_to_category_x(region_pair: RegionPair, user_id: int):
         region_pair.category_x = [user_id]
     elif user_id not in region_pair.category_x:
         region_pair.category_x.append(user_id)
-
+    region_pair.category_x = [c for c in region_pair.category_x if c is not None]
     return region_pair
