@@ -473,8 +473,8 @@ def get_best_pairs(
     q_img: str,
     region_pairs: List[RegionPair],
     excluded_categories: Set[int],
-    topk: int = None,
-    user_id: int = None,
+    topk: int | None = None,
+    user_id: int | None = None,
     export: bool = False,
 ) -> List[Set[RegionPairTuple]]:
     """
@@ -492,21 +492,26 @@ def get_best_pairs(
     propagated_pairs = []  # propagated pairs that have been saved to database
     categorized_pairs = []  # where category is not null
     auto_pairs = []
+    auto_pairs_no_score = []
     nomatch_pairs = []  # category == 4
     added_images = set()
     export_pairs = []  # pairs for export: all in big a single big list
+    export_pairs_no_score = []  # pairs for export without a score
 
     for pair in region_pairs:
         # [score, img1, img2, regions_id1, regions_id2, category, is_manual, similarity_type]
         pair_data = pair.get_info(q_img)
         if pair_data[2] in added_images:
-            # Note: first duplicate wins. Higher-priority pairs (e.g., manual) appearing later
+            # NOTE: first duplicate wins. Higher-priority pairs (e.g., manual) appearing later
             #    will be discarded if lower-priority pairs (e.g., auto) were seen first.
             continue
         added_images.add(pair_data[2])
 
         if export:
-            export_pairs.append(pair_data)
+            if pair.score is not None:
+                export_pairs.append(pair_data)
+            else:
+                export_pairs_no_score.append(pair_data)
             continue
 
         if pair.category in excluded_categories:
@@ -524,17 +529,26 @@ def get_best_pairs(
             nomatch_pairs.append(pair_data)
         elif pair.category is not None:
             categorized_pairs.append(pair_data)
-        else:
+        elif pair.score is not None:
             auto_pairs.append(pair_data)
+        else:
+            auto_pairs_no_score.append(pair_data)
 
     if export:
-        export_pairs.sort(key=lambda x: x[0], reverse=True)
-        return export_pairs
+        # sort by score, descending, finish with pairs with no score.
+        return (
+            sorted(export_pairs, key=lambda x: x[0], reverse=True)
+            + export_pairs_no_score
+        )
 
     categorized_pairs.sort(key=lambda x: x[5])  # sort by category number, ascending
-    auto_pairs.sort(key=lambda x: x[0], reverse=True)  # sort by score, descending
 
-    if topk and len(auto_pairs) > topk:
+    # sort by score, descending, finish with pairs with no score.
+    auto_pairs = (
+        sorted(auto_pairs, key=lambda x: x[0], reverse=True) + auto_pairs_no_score
+    )
+
+    if topk:
         auto_pairs = auto_pairs[:topk]
 
     return (
