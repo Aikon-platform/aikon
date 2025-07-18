@@ -529,36 +529,31 @@ def save_category(request):
         img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
         category = data.get("category")
         category = int(data.get("category")) if category else None
-        regions_id_1 = regions_from_img(img_1)
-        regions_id_2 = regions_from_img(img_2)
         similarity_type = int(data.get("similarity_type", 1))
 
-        rp_filter_data = {
+        query_filter = {
             "img_1": img_1,
             "img_2": img_2,
-            "regions_id_1": regions_id_1,
-            "regions_id_2": regions_id_2,
+            # "regions_id_1": regions_id_1,
+            # "regions_id_2": regions_id_2,
         }
 
         to_delete = (
             similarity_type == 3 and category == None
         )  # propagation without category => delete
 
-        try:
-            region_pair = RegionPair.objects.get(**rp_filter_data)
-            created = False
-        except RegionPair.DoesNotExist:
-            region_pair = None if to_delete else RegionPair(**rp_filter_data)
-            created = True
-
         if to_delete:
-            if region_pair is not None:
-                d = region_pair.delete()
-                message = f"Deleted {d[0]} region pair(s)."
+            try:
+                region_pair = RegionPair.objects.get(
+                    **query_filter,
+                )
+                region_pair.delete()
+                message = f"Deleted 1 propagated region pair"
                 pair_info = region_pair.get_info(as_json=True)
-            else:  # the region_pair does not exist, so no need to delete it. (should never happen)
-                message = "Region pair does not exist in database and did not need do be deleted."
+            except RegionPair.DoesNotExist:
+                message = "Region pair does not exist thus was not deleted"
                 pair_info = {}
+
             return JsonResponse(
                 {
                     "status": "success",
@@ -568,31 +563,37 @@ def save_category(request):
                 status=200,
             )
 
-        # region_pair will ailzays be defined: it should only be None if to_delete is true but the region_pair does not exist in the DB
-        region_pair.score = (region_pair.score or None) if not created else None
-        region_pair.category = category
-        region_pair.is_manual = data.get("is_manual", False)
-        region_pair.similarity_type = similarity_type
+        regions_id_1 = regions_from_img(img_1)
+        regions_id_2 = regions_from_img(img_2)
+
+        region_pair, created = RegionPair.objects.update_or_create(
+            **query_filter,
+            defaults={
+                "regions_id_1": regions_id_1,
+                "regions_id_2": regions_id_2,
+                "category": category,
+                "is_manual": data.get("is_manual", False),
+                "similarity_type": similarity_type,
+            },
+        )
         region_pair = add_user_to_category_x(region_pair, request.user.id)
         region_pair.save()
 
-        if created:
-            return JsonResponse(
-                {
-                    "status": "success",
-                    "message": f"New region pair #{region_pair.id} created",
-                    "pair_info": region_pair.get_info(as_json=True),
-                },
-                status=200,
-            )
+        message = (
+            f"New region pair #{region_pair.id} created"
+            if created
+            else f"Existing region pair #{region_pair.id} updated"
+        )
+
         return JsonResponse(
             {
                 "status": "success",
-                "message": f"Existing region pair #{region_pair.id} updated",
+                "message": message,
                 "pair_info": region_pair.get_info(as_json=True),
             },
             status=200,
         )
+
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
