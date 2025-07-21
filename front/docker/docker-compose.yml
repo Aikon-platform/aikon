@@ -19,6 +19,8 @@ services:
       - ./.env
     environment:
       <<: *proxy-settings
+    extra_hosts:
+      - "smtp.gmail.com:74.125.206.109"
     ports:
       - "${DJANGO_PORT}:8000"
     depends_on:
