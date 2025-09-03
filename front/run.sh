@@ -17,7 +17,7 @@ get_password && echo || exit
 # Cleanup function if running standalone
 if [ "$START_MODE" != "CHILD" ]; then
     cleanup() {
-        cleanup_pids "${PIDS[*]}" "celery|runserver|cantaloupe|jetty" "$SUDO_PSW"
+        cleanup_pids "${PIDS[*]}" "celery|runserver|cantaloupe|jetty|multiprocessing" "$SUDO_PSW"
         exit 0
     }
 

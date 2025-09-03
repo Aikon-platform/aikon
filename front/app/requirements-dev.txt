@@ -2,3 +2,4 @@
 django-debug-toolbar>=4.4.6
 django-livereload-server==0.4
 pre-commit==2.19.0
+pandas==2.3.0

@@ -37,9 +37,6 @@ http {
 
         client_max_body_size NGINX_MAX_BODY_SIZE;
 
-        access_log  /var/log/nginx/access.log  debug_log;
-        error_log   /var/log/nginx/error.log    warn;
-
         proxy_connect_timeout       NGINX_TIMEOUT;
         proxy_send_timeout          NGINX_TIMEOUT;
         proxy_read_timeout          NGINX_TIMEOUT;

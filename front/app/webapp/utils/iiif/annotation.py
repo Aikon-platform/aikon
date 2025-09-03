@@ -169,24 +169,24 @@ def get_regions_annotations(
                 )
                 continue
 
-            xyhw = on_value.split("xywh=")[1]
+            xywh = on_value.split("xywh=")[1]
             if as_json:
                 img = f"{img_name}_{canvas.zfill(nb_len)}"
                 aid = anno["@id"].split("/")[-1]
 
                 r_annos[canvas][aid] = {
                     "id": aid,
-                    "ref": f"{img}_{xyhw}",
+                    "ref": f"{img}_{xywh}",
                     "class": "Region",
                     "type": get_name("Regions"),
-                    "title": region_title(canvas, xyhw),
-                    "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
+                    "title": region_title(canvas, xywh),
+                    "url": gen_iiif_url(img, res=f"{xywh}/full/0"),
                     "canvas": canvas,
-                    "xyhw": xyhw.split(","),
+                    "xywh": xywh.split(","),
                     "img": img,
                 }
             else:
-                r_annos.append((canvas, xyhw, f"{img_name}_{canvas.zfill(nb_len)}"))
+                r_annos.append((canvas, xywh, f"{img_name}_{canvas.zfill(nb_len)}"))
         except Exception as e:
             log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
             continue
@@ -245,6 +245,7 @@ def unindex_annotation(annotation_id):
     delete_url = (
         f"{SAS_APP_URL}/annotation/destroy?uri={http_sas}/annotation/{annotation_id}"
     )
+    # TODO delete regions_pairs associated with the annotation if similarity module is enabled?
     try:
         response = requests.delete(delete_url)
         if response.status_code == 204:
@@ -502,22 +503,45 @@ def index_manifest_in_sas(manifest_url, reindex=False):
 
 
 def get_canvas_list(regions: Regions, all_img=False):
+    """
+    Get the list of canvases that have been annotated associated with their images names
+    [
+        (canvas_nb, img_name.jpg),
+        (canvas_nb, img_name.jpg),
+        ...
+    ]
+    """
     imgs = regions.get_imgs()
 
     if all_img:
         # Display all images associated to the digitization, even if no regions were extracted
         return [(int(img.split("_")[-1].split(".")[0]), img) for img in imgs]
 
-    # TODO do not rely on annotation file to retrieve canvas,
-    #  use http://localhost:8888/search-api/{regions_ref}/search
+    canvases = []
+
+    indexed_annos = get_manifest_annotations(regions.get_ref(), False)
+
+    # canvas_imgs =  { canvas_nb: img_name, canvas_nb: img_name, ... }
+    canvas_imgs = {int(i.split("_")[-1].split(".")[0]): i for i in imgs}
+    # list of canvas number containing annotations
+    annotated_canvas_nb = set(
+        [
+            int(a.get("on", "").split("/canvas/c")[1].split(".json")[0])
+            for a in indexed_annos
+        ]
+    )
+
+    for canvas_nb in annotated_canvas_nb:
+        canvases.append((canvas_nb, canvas_imgs[canvas_nb]))
+
+    if canvases:
+        return canvases
+
+    # Fallback to annotation file if no annotations were found in SAS
     data, anno_format = get_file_regions(regions)
     if not data:
         log(f"[get_canvas_list] No regions file for regions #{regions.id}")
-        return {
-            "error": "the regions file was not yet generated"
-        }  # TODO find a way to display error msg
-
-    canvases = []
+        return canvases
 
     if anno_format == "txt":
         for line in data:

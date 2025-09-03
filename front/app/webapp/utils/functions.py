@@ -1,4 +1,6 @@
 import datetime
+import shutil
+
 import magic
 import io
 import json
@@ -268,7 +270,7 @@ def rename_file(old_path, new_path):
         log(f"[rename_file] {old_path} does not exist")
         return False
     if os.path.exists(new_path):
-        log(f"[rename_file] {new_path} already exists")
+        log(f"[rename_file] {new_path} already exists, overriding its content")
     try:
         os.rename(old_path, new_path)
     except Exception as e:
@@ -624,12 +626,30 @@ def delete_files(filenames, directory=IMG_PATH):
     for file in filenames:
         file_path = file if os.path.isabs(file) else os.path.join(directory, file)
         if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except Exception as e:
-                log(f"[delete_files] Error deleting {file_path}", e)
+            delete_path(file_path)
         else:
-            print(f"[delete_files] File not found: {file_path}")
+            log(f"[delete_files] File not found: {file_path}")
+    return True
+
+
+def delete_path(path: Path) -> bool:
+    """
+    Delete a file or directory
+
+    Returns True if the path existed and was deleted, False otherwise
+    """
+    try:
+        if path.is_file():
+            path.unlink()
+        elif path.is_dir():
+            shutil.rmtree(path)
+    except Exception:
+        try:
+            os.chmod(path, 0o777)  # Change permissions to allow deletion
+            os.remove(path)
+        except Exception as e:
+            log(f"[delete_path] Error deleting {path}", e)
+            return False
     return True
 
 
@@ -639,14 +659,32 @@ def validate_dates(date_min, date_max):
         raise ValidationError(DATE_ERROR)
 
 
-def truncate_words(text, max_length):
+def truncate_words(text, max_words):
     words = text.split()
-    if len(words) > 2 * max_length:  # Check if the text is longer than 2*TRUNCATEWORDS
-        return " ".join(words[:max_length] + ["..."] + words[-max_length:])
+    if len(words) > 2 * max_words:  # Check if the text is longer than 2*TRUNCATEWORDS
+        return " ".join(words[:max_words] + ["…"] + words[-max_words:])
     return text
 
 
-def sort_key(s):
+def truncate_char(text, max_length):
+    if len(text) > max_length:  # Check if the text is longer than 2*TRUNCATECHAR
+        return text[: max_length - 1] + "…"
+    return text
+
+
+def sort_key(s: str) -> List[str | int]:
+    """
+    sorting key for witness and regions ids: used in `sorted()` functions to sort list of region ids or image ids alphabetically
+
+    :example:
+    >>> sort_key("wit1_pdf3_anno2")
+    ... ['wit', 1, '_pdf', 3, '_anno', 2, '']
+
+    >>> sort_key("wit3_pdf8_01_122,286,220,1128")
+    ... ['wit', 3, '_pdf', 8, '_', 1, '_', 122, ',', 286, ',', 220, ',', 1128, '']
+
+    :returns: a list where numbers in string `s` are converted to ints for comparison. non-number characters are kept as strings
+    """
     return [int(part) if part.isdigit() else part for part in re.split("(\d+)", s)]
 
 
