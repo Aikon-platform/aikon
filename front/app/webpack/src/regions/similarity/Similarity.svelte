@@ -1,6 +1,6 @@
 <script>
     import { onMount } from 'svelte';
-    import {appLang, modules} from '../../constants';
+    import { appLang, modules } from '../../constants';
     import { similarityStore } from './similarityStore.js';
     // const fetchSimilarityScoreRange = similarityStore.fetchSimilarityScoreRange;
     import {errorMsg, loading} from "../../utils.js";

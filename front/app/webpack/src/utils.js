@@ -79,7 +79,7 @@ export function refToIIIF(imgRef=null, coord="full", size="full") {
     }
 
     const
-        imgRefArr = imgRef.split("_");
+        imgRefArr = imgRef.split("_"),
         // WARNING: parenthesis matter here
         imgCoord = coord || (
             imgRefArr.at(-1).includes(",")

@@ -161,8 +161,12 @@ def get_compared_regions(request, wid, rid=None):
             for id1, id2 in pairs:
                 all_region_ids.add(id2 if id1 == q_r.id else id1)
 
+        # NOTE this is disabled because it causes the Svelte `SimilarityToolbar`
+        # to disappear if the only similarity a witnesd has is to itself (a<->a).
+        # removing this causes no bug when tested with no similarity, similarity to self, similarity to self and others.
+        # seems like this function is only used in webpack: similarityStore.createSimilarityStore.fetchSImilarity()`, so it should have no side effects.
         # Remove the original region IDs from the set
-        all_region_ids -= set(q_r.id for q_r in q_regions)
+        # all_region_ids -= set(q_r.id for q_r in q_regions)
 
         # Fetch all similar regions in one query
         sim_regions = Regions.objects.filter(id__in=all_region_ids)
