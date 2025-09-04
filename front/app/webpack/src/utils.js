@@ -96,7 +96,13 @@ export function refToIIIF(imgRef=null, coord="full", size="full") {
 
     const imgRefArr = imgRef.split("_");
     // const imgCoord = coord ? coord : imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : "full";
-    const imgCoord = imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : coord;
+    // const imgCoord = imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : coord;
+    const imgCoord = coord || (
+        imgRefArr.at(-1).includes(",")
+        ? imgRefArr.at(-1).replace(".jpg", "")
+        : "full"
+    )
+    console.log(imgRef, coord, size, imgCoord);
     return `${imgRoot}/${imgCoord}/${size}/0/default.jpg`;
 }
 
