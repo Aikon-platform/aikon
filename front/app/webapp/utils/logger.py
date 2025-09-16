@@ -76,34 +76,33 @@ class Logger:
     }
 
     def __init__(self, log_dir: Union[str, Path]):
-        """
-        Initialize the logger with a directory for log files
-
-        Args:
-            log_dir: Directory where log files will be stored
-        """
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
         self.compact = False
-
         self.error_log = self.log_dir / "error.log"
         self.download_log = self.log_dir / "download.log"
 
-        # Setup logging
         self.logger = logging.getLogger("aikon")
+
+        if self.logger.handlers:
+            return
         self.logger.setLevel(logging.INFO)
+        self.logger.propagate = False
 
         for log_file in [self.error_log, self.download_log]:
             if not os.path.exists(log_file):
                 with open(log_file, "x") as _:
                     pass
 
+        # File handler for errors
         fh = logging.FileHandler(self.error_log)
         fh.setLevel(logging.ERROR)
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        fh.setFormatter(formatter)
         self.logger.addHandler(fh)
 
-        # Only write info messages to console
+        # Console handler for info
         ch = logging.StreamHandler()
         ch.setLevel(logging.INFO)
         self.logger.addHandler(ch)
@@ -229,21 +228,31 @@ class Logger:
                 f.write(pprint(content))
 
 
-# Create a global logger instance
-logger = Logger(f"{BASE_DIR}/{LOG_DIR}")
+_logger_instance = None
+
+
+def get_logger():
+    global _logger_instance
+    if _logger_instance is None:
+        _logger_instance = Logger(f"{BASE_DIR}/{LOG_DIR}")
+    return _logger_instance
+
+
+logger = get_logger()
 
 
 def log(msg, exception: Exception = None, msg_type=None):
+    current_logger = get_logger()
     if exception:
-        logger.error(msg, exception=exception)
+        current_logger.error(msg, exception=exception)
         return
-    logger.log(msg, msg_type=msg_type)
+    current_logger.log(msg, msg_type=msg_type)
 
 
 def console(msg="🚨🚨🚨", msg_type=None):
-    print(pprint(msg))
-    logger.log(msg, msg_type=msg_type)
+    # print(pprint(msg))
+    get_logger().log(msg, msg_type=msg_type)
 
 
 def download_log(img_name, img_url):
-    logger.log_failed_download(img_name, img_url)
+    get_logger().log_failed_download(img_name, img_url)
