@@ -63,6 +63,7 @@ If you find this work useful, please consider citing:
         Aouinti, Fouad and
         Delanaux, Rémy and
         Champenois, Robin and
+        Grometto, Clara and
         Lazaris, Stavros and
         Guilbaud, Alexandre and
         Husson, Matthieu and
