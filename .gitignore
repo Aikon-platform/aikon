@@ -3,6 +3,7 @@
 
 # Environment variables
 .env
+.pgpass
 
 # Virtual environments
 .env/
