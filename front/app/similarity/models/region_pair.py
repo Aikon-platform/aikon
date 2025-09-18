@@ -184,5 +184,18 @@ class RegionPair(models.Model):
             }
         return info
 
+    def to_dict(self) -> dict:
+        return {
+            "img_1": self.img_1,
+            "img_2": self.img_2,
+            "regions_id_1": self.regions_id_1,
+            "regions_id_2": self.regions_id_2,
+            "score": float(self.score) if self.score is not None else None,
+            "category": int(self.category) if self.category is not None else None,
+            "category_x": [int(c) for c in self.category_x],
+            "is_manual": self.is_manual,
+            "similarity_type": int(self.similarity_type),
+        }
+
     def get_ref(self):
         return "-".join(sorted([self.img_1, self.img_2]))

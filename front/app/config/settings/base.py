@@ -66,6 +66,9 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
 ]
 
+DATA_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024  # 500MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024  # 500MB
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -83,11 +86,16 @@ LOGGING = {
     "loggers": {
         "django": {
             "handlers": ["console"],
-            "level": "WARNING",
+            "level": "DEBUG",
         },
         "celery": {
             "handlers": ["console"],
-            "level": "WARNING",
+            "level": "DEBUG",
+            "propagate": True,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "DEBUG",
             "propagate": True,
         },
     },
@@ -156,7 +164,8 @@ DATABASES = {
         "PASSWORD": ENV.str("POSTGRES_PASSWORD", default=""),
         "HOST": "db" if DOCKER else "localhost",
         "PORT": ENV.str("DB_PORT", default=5432),
-    }
+    },
+    "test": {"NAME": f"test_{ENV.str('POSTGRES_DB', default='')}"},
 }
 
 # Password validation
