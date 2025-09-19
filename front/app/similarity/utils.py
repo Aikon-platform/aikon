@@ -139,7 +139,9 @@ def process_results(data, completed=True):
             os.makedirs(f"{SCORES_PATH}/{regions_ref_pair}", exist_ok=True)
             if score_file.exists():
                 # This check should be made when starting the task not now
-                log(f"File {score_file} already exists, overriding its content")
+                log(
+                    f"[process_results] File {score_file} already exists, overriding its content"
+                )
                 # continue
 
             with open(score_file, "wb") as f:
@@ -147,14 +149,20 @@ def process_results(data, completed=True):
                 f.write(orjson.dumps(json_content))
 
         except Exception as e:
-            log(f"Could not download similarity scores from {score_url}", e)
+            log(
+                f"[process_results] Could not download similarity scores from {score_url}",
+                e,
+            )
             continue
 
         try:
             # process_similarity_file task calls score_file_to_db()
             process_similarity_file.delay(str(score_file))
         except Exception as e:
-            log(f"Could not process similarity scores from {score_url}", e)
+            log(
+                f"[process_results] Could not process similarity scores from {score_url}",
+                e,
+            )
             raise e
     return
 
@@ -302,7 +310,9 @@ def score_file_to_db(file_path):
         log(f"[score_file_to_db] error while adding pairs to db {pair_ref}", e)
         return False
 
-    log(f"Processed {len(pair_scores)} images pairs from {pair_ref}")
+    log(
+        f"Processed {len(pair_scores)} images pairs from {pair_ref}", msg_type="success"
+    )
     return True
 
 
