@@ -33,120 +33,69 @@ IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
 def get_manifest_annotations(
     regions_ref, only_ids=True, min_c: int = None, max_c: int = None
 ):
-    manifest_annotations = []
-    sas_urls = [f"http://sas:{SAS_PORT}", SAS_APP_URL] if DOCKER else [SAS_APP_URL]
-
-    for sas_url in sas_urls:
-        next_page = f"{sas_url}/search-api/{regions_ref}/search"
-
+    manifest_annotations, response = [], ""
+    next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search"
+    while next_page:
         try:
-            while next_page:
-                response = requests.get(next_page, timeout=30)
+            response = requests.get(next_page)
+            annotations = response.json()
 
-                if response.status_code != 200:
-                    log(
-                        f"[get_manifest_annotations] SAS returned {response.status_code} for {next_page}"
-                    )
-                    break
+            if response.status_code != 200:
+                log(
+                    f"[get_manifest_annotations] Failed to get annotations from SAS for {next_page}: {response.status_code}"
+                )
+                return []
 
-                content_type = response.headers.get("content-type", "")
-                if "application/json" not in content_type:
-                    log(
-                        f"[get_manifest_annotations] Non-JSON response from {next_page}: {response.text[:200]}"
-                    )
-                    break
+            resources = annotations.get("resources", [])
+            if not resources:
+                break
 
-                annotations = response.json()
-                resources = annotations.get("resources", [])
-                if not resources:
-                    break
+            # if only a certain range is needed (do not work because the annotations are sorted alphabetically by canvas number)
+            # TODO change the SAS code to add canvas number in the annotation metadata
+            #  AND/OR sort the annotations by canvas number
+            # if min_c is not None:
+            #     first_canvas = int(
+            #         resources[0]["on"].split("/canvas/c")[1].split(".json")[0]
+            #     )
+            #     last_canvas = int(
+            #         resources[-1]["on"].split("/canvas/c")[1].split(".json")[0]
+            #     )
+            #
+            #     if max_c is not None and first_canvas > max_c:
+            #         break
+            #
+            #     # Skip this page if the entire range is outside min_c and max_c
+            #     if last_canvas < min_c:
+            #         next_page = annotations.get("next")
+            #         continue
 
-                if only_ids:
-                    manifest_annotations.extend(
-                        annotation["@id"] for annotation in resources
-                    )
-                else:
-                    manifest_annotations.extend(resources)
+            if only_ids:
+                manifest_annotations.extend(
+                    annotation["@id"] for annotation in annotations["resources"]
+                )
+            else:
+                manifest_annotations.extend(annotations["resources"])
 
-                next_page = annotations.get("next")
-                log(f"[get_manifest_annotations] Next > {next_page}")
+            next_page = annotations.get("next")
+            if next_page:
+                next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search?{next_page.split('?')[1]}"
 
-            if manifest_annotations:
-                return manifest_annotations
-
-        except requests.exceptions.Timeout:
-            log(f"[get_manifest_annotations] Timeout for {sas_url}")
-            continue
         except requests.exceptions.JSONDecodeError as e:
+            log(f"[get_manifest_annotations] JSON decode error for {next_page}")
+            log(response.text, exception=e)
+            return manifest_annotations
+        except requests.exceptions.RequestException as e:
             log(
-                f"[get_manifest_annotations] JSON decode error for {sas_url}: {response.text[:200]}"
-            )
-            continue
-        except Exception as e:
-            log(
-                f"[get_manifest_annotations] Failed to retrieve annotations from {sas_url}",
+                f"[get_manifest_annotations] Failed to retrieve annotations for {next_page}",
                 e,
             )
-            continue
-
-    log(f"[get_manifest_annotations] All SAS URLs failed for {regions_ref}")
-
-    # next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search"
-    # while next_page:
-    #     try:
-    #         response = requests.get(next_page)
-    #         annotations = response.json()
-    #
-    #         if response.status_code != 200:
-    #             log(
-    #                 f"[get_manifest_annotations] Failed to get annotations from SAS for {regions_ref}: {response.status_code}"
-    #             )
-    #             return []
-    #
-    #         resources = annotations.get("resources", [])
-    #         if not resources:
-    #             break
-    #
-    #         # if only a certain range is needed (do not work because the annotations are sorted alphabetically by canvas number)
-    #         # TODO change the SAS code to add canvas number in the annotation metadata
-    #         #  AND/OR sort the annotations by canvas number
-    #         # if min_c is not None:
-    #         #     first_canvas = int(
-    #         #         resources[0]["on"].split("/canvas/c")[1].split(".json")[0]
-    #         #     )
-    #         #     last_canvas = int(
-    #         #         resources[-1]["on"].split("/canvas/c")[1].split(".json")[0]
-    #         #     )
-    #         #
-    #         #     if max_c is not None and first_canvas > max_c:
-    #         #         break
-    #         #
-    #         #     # Skip this page if the entire range is outside min_c and max_c
-    #         #     if last_canvas < min_c:
-    #         #         next_page = annotations.get("next")
-    #         #         continue
-    #
-    #         if only_ids:
-    #             manifest_annotations.extend(
-    #                 annotation["@id"] for annotation in annotations["resources"]
-    #             )
-    #         else:
-    #             manifest_annotations.extend(annotations["resources"])
-    #
-    #         next_page = annotations.get("next")
-    #
-    #     except requests.exceptions.RequestException as e:
-    #         log(
-    #             f"[get_manifest_annotations] Failed to retrieve annotations for {next_page}",
-    #             e,
-    #         )
-    #         return []
-    #     except Exception as e:
-    #         log(
-    #             f"[get_manifest_annotations] Failed to parse annotations for {next_page}",
-    #             e,
-    #         )
-    #         return []
+            return manifest_annotations
+        except Exception as e:
+            log(
+                f"[get_manifest_annotations] Failed to parse annotations for {next_page}",
+                e,
+            )
+            return manifest_annotations
     return manifest_annotations
 
 
