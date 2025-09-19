@@ -55,7 +55,7 @@ If you find this work useful, please consider citing:
 
 ```bibtex
 @article{albouy2025aikon,
-    title={{AIKON : A Modular Computer Vision Platform for Historical Corpora}},
+    title={{AIKON: A Modular Computer Vision Platform for Historical Corpora}},
     author={
         Albouy, Ségolène and
         Norindr, Somkeo and
