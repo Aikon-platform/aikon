@@ -302,7 +302,7 @@ def score_file_to_db(file_path):
         log(f"[score_file_to_db] error while adding pairs to db {pair_ref}", e)
         return False
 
-    log(f"Processed {len(pair_scores)} pairs from {pair_ref}")
+    log(f"Processed {len(pair_scores)} images pairs from {pair_ref}")
     return True
 
 
