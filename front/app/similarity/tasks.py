@@ -23,6 +23,6 @@ def delete_api_similarity(regions_ref, algorithm=None, feat_net=None):
         "feat_net": feat_net,
     }
 
-    response = requests.post(f"{API_URL}/regions/{regions_ref}/delete", params=args)
+    response = requests.post(f"{API_URL}/similarity/{regions_ref}/delete", params=args)
     response.raise_for_status()
     return response.json()

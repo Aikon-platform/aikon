@@ -35,7 +35,7 @@ fi
 
 docker exec \
   -e PGPASSWORD="$DB_PASSWORD" \
-  "$DB_CONTAINER_ID" \
+  "$DB_CONTAINER" \
   pg_dump \
     -U "$DB_USER" \
     -d "$DB_NAME" \
@@ -50,7 +50,10 @@ if [[ $DUMP_STATUS -ne 0 ]]; then
     # remove potentially incomplete backup file
     rm -f "$BACKUP_FILE"
     echo "Error: pg_dump failed with status $DUMP_STATUS." > "$BACKUP_FILE"
+    exit
 fi
+
+echo "Database backup created at: $BACKUP_FILE"
 
 # # Removing backup older than 7 days
 # DAYS_TO_KEEP=7

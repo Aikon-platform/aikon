@@ -19,6 +19,7 @@ from app.config.settings import (
     APP_URL,
     ADDITIONAL_MODULES,
     SAS_PORT,
+    DOCKER,
 )
 from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, flatten_dict
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
@@ -32,9 +33,8 @@ IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
 def get_manifest_annotations(
     regions_ref, only_ids=True, min_c: int = None, max_c: int = None
 ):
-    manifest_annotations = []
+    manifest_annotations, response = [], ""
     next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search"
-
     while next_page:
         try:
             response = requests.get(next_page)
@@ -42,7 +42,7 @@ def get_manifest_annotations(
 
             if response.status_code != 200:
                 log(
-                    f"[get_manifest_annotations] Failed to get annotations from SAS for {regions_ref}: {response.status_code}"
+                    f"[get_manifest_annotations] Failed to get annotations from SAS for {next_page}: {response.status_code}"
                 )
                 return []
 
@@ -77,20 +77,25 @@ def get_manifest_annotations(
                 manifest_annotations.extend(annotations["resources"])
 
             next_page = annotations.get("next")
+            if next_page:
+                next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search?{next_page.split('?')[1]}"
 
+        except requests.exceptions.JSONDecodeError as e:
+            log(f"[get_manifest_annotations] JSON decode error for {next_page}")
+            log(response.text, exception=e)
+            return manifest_annotations
         except requests.exceptions.RequestException as e:
             log(
                 f"[get_manifest_annotations] Failed to retrieve annotations for {next_page}",
                 e,
             )
-            return []
+            return manifest_annotations
         except Exception as e:
             log(
                 f"[get_manifest_annotations] Failed to parse annotations for {next_page}",
                 e,
             )
-            return []
-
+            return manifest_annotations
     return manifest_annotations
 
 
@@ -129,10 +134,6 @@ def get_regions_annotations(
         r_annos = {} if as_json else []
 
     regions_ref = regions.get_ref()
-    annos = get_manifest_annotations(regions_ref, False, min_c, max_c)
-    if len(annos) == 0:
-        return r_annos
-
     img_name = regions_ref.split("_anno")[0]
     nb_len = get_img_nb_len(img_name)
 
@@ -141,6 +142,9 @@ def get_regions_annotations(
         max_c = max_c or regions.get_json()["img_nb"]
         r_annos = {str(c): {} for c in range(min_c, max_c + 1)}
 
+    annos = get_manifest_annotations(regions_ref, False, min_c, max_c)
+    if len(annos) == 0:
+        return r_annos
     for anno in annos:
         try:
             on_value = anno["on"]
@@ -169,24 +173,24 @@ def get_regions_annotations(
                 )
                 continue
 
-            xyhw = on_value.split("xywh=")[1]
+            xywh = on_value.split("xywh=")[1]
             if as_json:
                 img = f"{img_name}_{canvas.zfill(nb_len)}"
                 aid = anno["@id"].split("/")[-1]
 
                 r_annos[canvas][aid] = {
                     "id": aid,
-                    "ref": f"{img}_{xyhw}",
+                    "ref": f"{img}_{xywh}",
                     "class": "Region",
                     "type": get_name("Regions"),
-                    "title": region_title(canvas, xyhw),
-                    "url": gen_iiif_url(img, res=f"{xyhw}/full/0"),
+                    "title": region_title(canvas, xywh),
+                    "url": gen_iiif_url(img, res=f"{xywh}/full/0"),
                     "canvas": canvas,
-                    "xyhw": xyhw.split(","),
+                    "xywh": xywh.split(","),
                     "img": img,
                 }
             else:
-                r_annos.append((canvas, xyhw, f"{img_name}_{canvas.zfill(nb_len)}"))
+                r_annos.append((canvas, xywh, f"{img_name}_{canvas.zfill(nb_len)}"))
         except Exception as e:
             log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
             continue
@@ -245,6 +249,7 @@ def unindex_annotation(annotation_id):
     delete_url = (
         f"{SAS_APP_URL}/annotation/destroy?uri={http_sas}/annotation/{annotation_id}"
     )
+    # TODO delete regions_pairs associated with the annotation if similarity module is enabled?
     try:
         response = requests.delete(delete_url)
         if response.status_code == 204:
@@ -502,22 +507,45 @@ def index_manifest_in_sas(manifest_url, reindex=False):
 
 
 def get_canvas_list(regions: Regions, all_img=False):
+    """
+    Get the list of canvases that have been annotated associated with their images names
+    [
+        (canvas_nb, img_name.jpg),
+        (canvas_nb, img_name.jpg),
+        ...
+    ]
+    """
     imgs = regions.get_imgs()
 
     if all_img:
         # Display all images associated to the digitization, even if no regions were extracted
         return [(int(img.split("_")[-1].split(".")[0]), img) for img in imgs]
 
-    # TODO do not rely on annotation file to retrieve canvas,
-    #  use http://localhost:8888/search-api/{regions_ref}/search
+    canvases = []
+
+    indexed_annos = get_manifest_annotations(regions.get_ref(), False)
+
+    # canvas_imgs =  { canvas_nb: img_name, canvas_nb: img_name, ... }
+    canvas_imgs = {int(i.split("_")[-1].split(".")[0]): i for i in imgs}
+    # list of canvas number containing annotations
+    annotated_canvas_nb = set(
+        [
+            int(a.get("on", "").split("/canvas/c")[1].split(".json")[0])
+            for a in indexed_annos
+        ]
+    )
+
+    for canvas_nb in annotated_canvas_nb:
+        canvases.append((canvas_nb, canvas_imgs[canvas_nb]))
+
+    if canvases:
+        return canvases
+
+    # Fallback to annotation file if no annotations were found in SAS
     data, anno_format = get_file_regions(regions)
     if not data:
         log(f"[get_canvas_list] No regions file for regions #{regions.id}")
-        return {
-            "error": "the regions file was not yet generated"
-        }  # TODO find a way to display error msg
-
-    canvases = []
+        return canvases
 
     if anno_format == "txt":
         for line in data:

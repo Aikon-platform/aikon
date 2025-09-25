@@ -145,6 +145,9 @@
         }
 
     }
+
+    // TODO make it more responsive
+    $: matchClasses = window.innerWidth < 1500 ? 'fixed-grid has-4-cols' : 'fixed-grid has-5-cols';
 </script>
 
 <tr>
@@ -156,7 +159,7 @@
             </a>
 
             <!--TODO make image copyable-->
-            <img src="{refToIIIF(qImg, 'full', '250,')}" alt="Query region" class="mb-3 card query-image">
+            <img src="{refToIIIF(qImg, qImg.split("_").pop(), '250,')}" alt="Query region" class="mb-3 card query-image">
 
 
             <div class="new-similarity control pt-2 is-center">
@@ -181,10 +184,10 @@
         </div>
     </th>
     <td class="p-5 is-fullwidth">
-        <div class="{ isInModal ? '' : 'fixed-grid has-5-cols'}">
+        <div class="{ isInModal ? '' : matchClasses}">
             <SimilarityMatches {qImg}></SimilarityMatches>
         </div>
-        <div class="{ isInModal ? '' : 'fixed-grid has-5-cols'}">
+        <div class="{ isInModal ? '' : matchClasses}">
             <PropagatedMatches {qImg}></PropagatedMatches>
         </div>
     </td>

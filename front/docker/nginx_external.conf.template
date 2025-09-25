@@ -8,6 +8,9 @@ server {
     listen                      443 ssl;
     server_name                 PROD_URL;
 
+    access_log                  /var/log/nginx/aikon_access.log   combined;
+    error_log                   /var/log/nginx/aikon_error.log    debug;
+
     ssl_certificate             SSL_CERTIFICATE;
     ssl_certificate_key         SSL_KEY;
 

@@ -15,9 +15,10 @@
     import { appLang } from "../../constants.js";
 
     import ModalRegion from "./ModalRegion.svelte";
+    import ModalPage from "./ModalPage.svelte";
 
     /** @typedef {import("../types.js").RegionItemType} RegionItemType */
-    /** @typedef {"main"|"similarity"|"expansion"} ViewIdType */
+    /** @typedef {"main"|"page"|"similarity"|"expansion"} ViewIdType */
 
     //////////////////////////////////////////////////
 
@@ -31,8 +32,8 @@
     /** @type {ViewIdType[]} */
     const allowedViewIds =
         compareImgItem
-        ? [ "main", "similarity", "expansion" ]
-        : [ "main" ];
+        ? [ "main", "page", "similarity", "expansion" ]
+        : [ "main", "page" ];
 
     /** @type { {id:ViewIdType, label:string}[] } */
     const viewTabs = allowedViewIds.map((viewId) => ({
@@ -46,6 +47,10 @@
             ? "Comparaison"
             : viewId==="similarity" && appLang==="en"
             ? "Comparison"
+            : viewId==="page" && appLang==="fr"
+            ? "Vue de la page"
+            : viewId==="page" && appLang==="en"
+            ? "Page view"
             : viewId==="main" && appLang==="fr"
             ? "Vue principale"
             : "Main view"
@@ -55,31 +60,36 @@
      * @type {{ [ViewIdType]: SvelteComponent }} viewId mapped to the relevant component instance.
      * by default, only ModalRegion is defined. other components qre imported aynchronously, after which viewComponents is updated
      */
-    const viewComponents = { main: ModalRegion };
+    const viewComponents = {
+        main: ModalRegion,
+        page: ModalPage
+    };
     if ( compareImgItem ) {
         Promise.all([
             import("./ModalSimilarity.svelte").then(res => res.default),
             import("./ModalQueryExpansion.svelte").then(res => res.default),
         ]).then(([modalSimilarityComponent, modalQueryExpansionComponent]) => {
-            allowedViewIds.map((viewId) =>
-                viewComponents[viewId] =
-                    viewId==="expansion"
-                    ? modalQueryExpansionComponent
-                    : viewId==="similarity"
-                    ? modalSimilarityComponent
-                    : ModalRegion
-            );
+            // we loop over `allowedViewIds`, but check that those haven't been aldready mapped to a component in `viewComponents`. else, we risk overwriting the component
+            const predefinedViews = Object.keys(viewComponents);
+            allowedViewIds
+                .filter(viewId => !predefinedViews.includes(viewId))
+                .map((viewId) =>
+                    viewComponents[viewId] =
+                        viewId==="expansion"
+                        ? modalQueryExpansionComponent
+                        : viewId==="similarity"
+                        ? modalSimilarityComponent
+                        : ModalRegion
+                );
         })
     }
 
     const viewProps = {};
     allowedViewIds.map((viewId) =>
         viewProps[viewId] =
-            viewId==="expansion"
-            ? {mainImgItem: mainImgItem}
-            : viewId==="similarity"
-            ? {compareImgItem: compareImgItem, mainImgItem: mainImgItem}
-            : {mainImgItem: mainImgItem}
+            viewId==="similarity"
+            ? { compareImgItem: compareImgItem, mainImgItem: mainImgItem }
+            : { mainImgItem: mainImgItem }
     )
 
     /** @type {ViewIdType} */
