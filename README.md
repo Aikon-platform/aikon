@@ -1,10 +1,12 @@
 # <img alt="Aikon logo" src="https://raw.githubusercontent.com/Aikon-platform/aikon/refs/heads/main/front/app/webapp/static/favicon.ico" height="50" width="auto" style="display: inline; margin-bottom:-10px;"> AIKON platform
 
-**[Aikon](https://aikon-platform.github.io/)** is a modular research platform designed to empower humanities scholars
-in leveraging artificial intelligence and computer vision methods for analyzing large-scale heritage collections.
-It offers a user-friendly interface for visualizing, extracting, and analyzing illustrations from historical documents,
-fostering interdisciplinary collaboration and sustainability across digital humanities projects.
-Aikon's adaptable architecture supports all projects involving visual materials.
+**[Aikon](https://aikon-platform.github.io/)** is a modular computer vision platform that enables historians to build, process, and analyze
+visual corpora at scale. The platform guides users through a complete workflow from corpus construction
+to algorithmic processing and result validation, without requiring technical expertise. Built on IIIF
+standards and featuring a flexible data model, Aikon supports collaborative research while maintaining
+full user control over automatic processing. Its modular architecture allows easy integration of new
+computer vision algorithms and visualization tools, making it adaptable to diverse research needs across
+historical document analysis.
 
 <img src="https://aikon-platform.github.io/aikon-platform.png" alt="" height="500" width="auto">
 
@@ -49,22 +51,29 @@ Please refer to [front/README](https://github.com/Aikon-platform/discover-api/bl
 - **EiDA** [ANR-22-CE38-0014](https://anr.fr/Projet-ANR-22-CE38-0014): EdIter et analyser les Diagrammes astronomiques historiques avec l’intelligence Artificielle
 - **DISCOVER** project [ERC-101076028](https://cordis.europa.eu/project/id/101076028): Discovering and Analyzing Visual Structures
 
+If you find this work useful, please consider citing:
+
 ```bibtex
-@misc{albouy2024aikon,
-    title={AIKON: a computer vision platform for the Digital Humanities},
+@article{albouy2025aikon,
+    title={{AIKON: A Modular Computer Vision Platform for Historical Corpora}},
     author={
-        Ségolène Albouy,
-        Jade Norindr,
-        Paul Kervegan,
-        Fouad Aouinti,
-        Clara Grometto,
-        Robin Champenois,
-        Alexandre Guilbaud,
-        Stavros Lazaris,
-        Matthieu Husson,
-        Mathieu Aubry
+        Albouy, Ségolène and
+        Norindr, Somkeo and
+        Kervegan, Paul and
+        Aouinti, Fouad and
+        Delanaux, Rémy and
+        Champenois, Robin and
+        Grometto, Clara and
+        Lazaris, Stavros and
+        Guilbaud, Alexandre and
+        Husson, Matthieu and
+        Aubry, Mathieu
     },
-    url={https://github.com/Aikon-platform/aikon},
-    year={2024}
+    url={https://hal.science/hal-05248250},
+    year={2025},
+    month={Sep},
+    number={hal-05248250},
+    journal={HAL Pre-Print},
+    keyword={Digital Humanities, Computer Vision, Historical Documents, Visual Analysis},
 }
 ```

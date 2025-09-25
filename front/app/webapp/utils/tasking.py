@@ -226,7 +226,10 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
             documents.extend(prepare_document(record, **parameters))
 
         if documents:
-            log(f"[prepare_request] Found {len(documents)} documents to process.")
+            uids = [d.get("uid", "UID") for d in documents]
+            log(
+                f"[prepare_request] Found {len(documents)} documents to process: {', '.join(uids)}"
+            )
 
             return {
                 "experiment_id": str(treatment_id),
