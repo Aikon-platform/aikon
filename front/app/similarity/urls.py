@@ -123,4 +123,14 @@ urlpatterns = [
         name="reset-all-similarity",
     ),
     # path(f"{APP_NAME}/similarity/delete-all", delete_all_regions_pairs, name="delete-pairs"),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/pairs",
+        get_regions_pairs,
+        name="regions-pairs",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/pairs",
+        get_regions_pairs,
+        name="witness-regions-pairs",
+    ),
 ]
