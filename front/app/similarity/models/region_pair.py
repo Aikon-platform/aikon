@@ -192,7 +192,7 @@ class RegionPair(models.Model):
             "regions_id_2": self.regions_id_2,
             "score": float(self.score) if self.score is not None else None,
             "category": int(self.category) if self.category is not None else None,
-            "category_x": [int(c) for c in self.category_x],
+            "category_x": [int(c) for c in self.category_x or []],
             "is_manual": self.is_manual,
             "similarity_type": int(self.similarity_type),
         }
