@@ -726,6 +726,9 @@ def get_regions_pairs(request, wid, rid=None):
     1. if rid is provided, return all pairs for this region
     2. if rid is not provided, return all pairs for all regions of the witness
 
+    if witnessIds or regionsIds are provided, return only pairs where regions_id_1 AND regions_id_2 are in the list of q_regions
+    otherwise, return pairs where regions_id_1 OR regions_id_2 are in the list of q_regions
+
     additional URL arguments can be passed in the URL
     - minScore: float, minimum score to filter pairs
     - maxScore: float, maximum score to filter pairs
@@ -751,35 +754,35 @@ def get_regions_pairs(request, wid, rid=None):
     max_score = request.GET.get("maxScore", None)
     topk = request.GET.get("topk", None)
     category = request.GET.get("category", None)
-    regions_ids = request.GET.get("regionsIds", "")
-    witness_ids = request.GET.get("witnessIds", "")
+    regions_ids = request.GET.get("regionsIds", [])
+    witness_ids = request.GET.get("witnessIds", [])
     exclude_self = request.GET.get("excludeSelf", "false").lower() == "true"
+
+    q_regions = set()
 
     if regions_ids:
         try:
-            regions_ids = [int(rid) for rid in regions_ids.split(",")]
+            q_regions.update(int(rid) for rid in regions_ids.split(","))
         except ValueError:
             return JsonResponse({"error": "Invalid regionsIds parameter"}, status=400)
-    else:
-        regions_ids = []
 
     if witness_ids:
         witness_ids = witness_ids.split(",")
         try:
             for wid in witness_ids:
                 witness = get_object_or_404(Witness, id=int(wid))
-                regions_ids.extend([r.id for r in witness.get_regions()])
+                q_regions.update(r.id for r in witness.get_regions())
         except ValueError:
             return JsonResponse({"error": "Invalid witnessIds parameter"}, status=400)
 
-    regions_ids.extend([r.id for r in regions])
+    q_regions.update(r.id for r in regions)
 
     if witness_ids or regions_ids:
         # get all pairs where regions_id_1 AND regions_id_2 are in q_regions ids
-        query = Q(regions_id_1__in=regions_ids) & Q(regions_id_2__in=regions_ids)
+        query = Q(regions_id_1__in=q_regions) & Q(regions_id_2__in=q_regions)
     else:
         # get all pairs where regions_id_1 OR regions_id_2 are in q_regions ids
-        query = Q(regions_id_1__in=regions_ids) | Q(regions_id_2__in=regions_ids)
+        query = Q(regions_id_1__in=q_regions) | Q(regions_id_2__in=q_regions)
 
     if min_score is not None:
         try:
@@ -793,9 +796,21 @@ def get_regions_pairs(request, wid, rid=None):
         except ValueError:
             return JsonResponse({"error": "Invalid maxScore parameter"}, status=400)
 
+    try:
+        topk = int(topk)
+    except TypeError:
+        topk = None
+
     if exclude_self:
         query &= ~Q(regions_id_1=F("regions_id_2"))
-        print(query)
+        # if exclude_self, we need to exclude regions from the same witness
+        # same_witness_regions = set()
+        # for r in Regions.objects.filter(id__in=q_regions).select_related('witness'):
+        #     witness_regions = r.witness.get_regions()
+        #     if len(witness_regions) > 1:
+        #         same_witness_regions.update([wr.id for wr in witness_regions])
+        # if same_witness_regions:
+        #     query &= ~(Q(regions_id_1__in=same_witness_regions) & Q(regions_id_2__in=same_witness_regions))
 
     if category is not None:
         try:
@@ -804,16 +819,18 @@ def get_regions_pairs(request, wid, rid=None):
             return JsonResponse({"error": "Invalid category parameter"}, status=400)
 
     try:
-        pairs = RegionPair.objects.filter(query)
-        if not pairs:
+        pairs = RegionPair.objects.filter(query).order_by(
+            F("score").desc(nulls_first=True)
+        )
+        if not pairs.exists():
             return JsonResponse(
-                {"error": f"No pairs containing for query {query}"}, status=200
+                {"message": f"No pairs found matching the criteria {query}"}, status=200
             )
 
-        pairs = [p.to_dict() for p in list(pairs)]
-        pairs.sort(key=lambda x: (x["score"] is not None, x["score"]), reverse=True)
-        if topk:
+        if topk is not None:
             pairs = pairs[:topk]
+
+        pairs = [p.to_dict() for p in pairs]
 
         return JsonResponse(pairs, status=200, safe=False)
     except Exception as e:
