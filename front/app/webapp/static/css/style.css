@@ -307,7 +307,7 @@ td.is-fullwidth {
     --contrasted: #25272f;
     --accent: hsla(0, 0%, 100%, 0.05);
     --selected: #000528;
-    --selected-text: #4258ff;;
+    --selected-text: #4258ff;
     --deleted: var(--bulma-danger-dark);
     --deleted-text: var(--bulma-danger-light);
 }
