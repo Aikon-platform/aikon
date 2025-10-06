@@ -66,6 +66,9 @@ class RecordFilter(FilterSet):
                 self.filters["id"] = CharFilter(
                     field_name="id", lookup_expr="exact", label="ID"
                 )
+                self.filters["ids"] = CharFilter(
+                    method="filter_by_ids", label="IDs (comma-separated)"
+                )
 
             if hasattr(self.queryset.model, "updated_at"):
                 self.queryset = self.queryset.order_by("-updated_at")
