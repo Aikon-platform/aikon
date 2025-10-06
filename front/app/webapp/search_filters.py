@@ -43,6 +43,8 @@ QS_MODELS = {
 
 
 class RecordFilter(FilterSet):
+    id = CharFilter(field_name="id", lookup_expr="exact", label="ID")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.custom_labels = getattr(self.Meta, "labels", {})
