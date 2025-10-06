@@ -43,8 +43,6 @@ QS_MODELS = {
 
 
 class RecordFilter(FilterSet):
-    id = CharFilter(field_name="id", lookup_expr="exact", label="ID")
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.custom_labels = getattr(self.Meta, "labels", {})
@@ -63,8 +61,14 @@ class RecordFilter(FilterSet):
         #         field_labels=ordering_labels,
         #         label="Sort by" if APP_LANG == "en" else "Trier par",
         #     )
-        if hasattr(self, "queryset") and hasattr(self.queryset.model, "updated_at"):
-            self.queryset = self.queryset.order_by("-updated_at")
+        if hasattr(self, "queryset"):
+            if hasattr(self.queryset.model, "id"):
+                self.filters["id"] = CharFilter(
+                    field_name="id", lookup_expr="exact", label="ID"
+                )
+
+            if hasattr(self.queryset.model, "updated_at"):
+                self.queryset = self.queryset.order_by("-updated_at")
 
     @staticmethod
     def get_choices(model):
