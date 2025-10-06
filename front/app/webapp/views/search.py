@@ -24,7 +24,7 @@ def paginated_records(request, records):
     }
 
 
-# @require_GET
+@require_GET
 def search_witnesses(request):
     current_user = request.user
 
@@ -41,7 +41,7 @@ def search_witnesses(request):
     return JsonResponse(paginated_records(request, witness_filter.qs))
 
 
-# @require_GET
+@require_GET
 def search_treatments(request):
     user = request.user
     treatment_list = Treatment.objects.all().order_by("-requested_on")
@@ -52,19 +52,19 @@ def search_treatments(request):
     return JsonResponse(paginated_records(request, treatment_filter.qs))
 
 
-# @require_GET
+@require_GET
 def search_works(request):
     work_filter = WorkFilter(request.GET, queryset=Work.objects.order_by("id"))
     return JsonResponse(paginated_records(request, work_filter.qs))
 
 
-# @require_GET
+@require_GET
 def search_series(request):
     series_filter = SeriesFilter(request.GET, queryset=Series.objects.order_by("id"))
     return JsonResponse(paginated_records(request, series_filter.qs))
 
 
-# @require_GET
+@require_GET
 def search_digitizations(request):
     digitization_filter = DigitizationFilter(
         request.GET, queryset=Digitization.objects.order_by("id")
@@ -72,7 +72,7 @@ def search_digitizations(request):
     return JsonResponse(paginated_records(request, digitization_filter.qs))
 
 
-# @require_GET
+@require_GET
 def search_regions(request):
     regions_filter = RegionsFilter(request.GET, queryset=Regions.objects.order_by("id"))
     return JsonResponse(paginated_records(request, regions_filter.qs))
@@ -83,7 +83,7 @@ class ArrayLength(models.Func):
     output_field = IntegerField()
 
 
-# @require_GET
+@require_GET
 def search_document_set(request):
     user = request.user
 
