@@ -723,3 +723,10 @@ def parse_img_ref(img_string):
         "canvas": canvas,
         "coord": coord.split(".")[0].split(","),
     }
+
+
+def cast(val, to_type):
+    try:
+        return to_type(val)
+    except (ValueError, TypeError):
+        return val
