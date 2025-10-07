@@ -13,7 +13,7 @@ from app.config.settings import (
 from app.webapp.utils.iiif import IIIF_ICON
 
 
-def regions_btn(obj, action="view"):
+def region_extraction_btn(obj, action="view"):
     """
     obj: RegionExtraction | Digitization
     """
@@ -74,7 +74,7 @@ def gen_btn(obj, action="view"):
     obj: RegionExtraction | Digitization
     """
     if action == "no_manifest" or action == "no_regions" or action == "no_digit":
-        return mark_safe(regions_btn(obj, action))
+        return mark_safe(region_extraction_btn(obj, action))
 
     is_regions = True
     if action == "regions":
@@ -88,14 +88,14 @@ def gen_btn(obj, action="view"):
             f"<span class='ml-2'>{title.upper()}</span></a>"
         )
     # if action == "regions" or action == "vectors":
-    #     return mark_safe(f"<br>{regions_btn(obj, action)}")
+    #     return mark_safe(f"<br>{region_extraction_btn(obj, action)}")
 
     # if action == "auto-view":
     #     digit_id = obj.id if cls(obj) == Digitization else obj.get_digit().id
     #     download_url = f"{APP_URL}/{APP_NAME}/iiif/digit-regions/{digit_id}"
     #     regions_type = "TXT"
     #     version = None if cls(obj) == Digitization else MANIFEST_V1
-    #     is_regions = obj.has_regions() if cls(obj) == Digitization else True
+    #     is_regions = obj.has_region_extraction() if cls(obj) == Digitization else True
     # else:
     #     download_url = f"{SAS_APP_URL}/search-api/{obj.get_ref()}/search/"
     #     regions_type = "JSON"
@@ -114,7 +114,7 @@ def gen_btn(obj, action="view"):
 
     return mark_safe(
         # todo: do a method of RegionExtraction and Digitization instead?
-        f"{get_link_manifest(obj, version)}<br>{regions_btn(obj, action)}<br>{download}"
+        f"{get_link_manifest(obj, version)}<br>{region_extraction_btn(obj, action)}<br>{download}"
     )
 
 

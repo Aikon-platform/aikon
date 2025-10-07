@@ -199,14 +199,14 @@ class RegionExtraction(AbstractSearchableModel):
         return []
 
     def view_btn(self):
-        from app.webapp.utils.iiif.gen_html import regions_btn
+        from app.webapp.utils.iiif.gen_html import region_extraction_btn
 
         action = "final" if self.is_validated else "edit"
-        btn = regions_btn(
+        btn = region_extraction_btn(
             self, action if self.has_region_extraction() else "no_region_extraction"
         )
 
         if len(self.get_computed_pairs()) != 0:
-            btn += regions_btn(self, "similarity")
+            btn += region_extraction_btn(self, "similarity")
 
         return mark_safe(btn)

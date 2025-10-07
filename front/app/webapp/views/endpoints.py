@@ -38,7 +38,7 @@ from app.webapp.utils.paths import (
     IMG_PATH,
     REGIONS_PATH,
 )
-from app.webapp.utils.regions import create_empty_regions
+from app.webapp.utils.regionextraction import create_empty_region_extraction
 from app.webapp.tasks import generate_all_json
 from webapp.utils.paths import REGIONS_PATH
 from webapp.utils.tasking import create_doc_set
@@ -196,7 +196,7 @@ def create_manual_regions(request, wid, did=None, rid=None):
                 {"error": "No digitization available for this witness"}, status=500
             )
 
-        regions = create_empty_regions(digit)
+        regions = create_empty_region_extraction(digit)
         if not regions:
             return JsonResponse({"error": "Unable to create regions"}, status=500)
         return JsonResponse(
@@ -210,7 +210,7 @@ def create_manual_regions(request, wid, did=None, rid=None):
 
 def delete_regions(request, rid):
     from app.webapp.tasks import delete_annotations
-    from app.regions.tasks import delete_api_regions
+    from app.regionextraction.tasks import delete_api_region_extraction
 
     if request.method == "DELETE":
         regions = get_object_or_404(RegionExtraction, id=rid)
@@ -221,7 +221,9 @@ def delete_regions(request, rid):
 
             Path(f"{REGIONS_PATH}/{regions.get_ref()}.json").unlink(missing_ok=True)
 
-            delete_api_regions.delay(regions.get_digit().get_ref(), regions.model)
+            delete_api_region_extraction.delay(
+                regions.get_digit().get_ref(), regions.model
+            )
 
             try:
                 # Delete the regions record in the database

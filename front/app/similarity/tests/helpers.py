@@ -15,7 +15,7 @@ from django.db.models import Q
 from django.contrib.auth.models import User
 
 from ..models.region_pair import RegionPair
-from ...webapp.models.regionextraction import Regions
+from ...webapp.models.regionextraction import RegionExtraction
 from ...config.settings.base import DATABASES, MEDIA_ROOT
 
 
@@ -268,7 +268,7 @@ def generate_score_file() -> tuple[Path, tuple[int, int], int]:
     pairs = list(product(img_1_list, img_2_list))
 
     # 3: fetch the region's UID (format `wit\d+_(pdf|iiif|zip)\d+_anno\d+`)
-    get_regions_uid = lambda _rid: Regions.objects.get(id=_rid).json["ref"]
+    get_regions_uid = lambda _rid: RegionExtraction.objects.get(id=_rid).json["ref"]
     regions_uid_1 = get_regions_uid(rid_1)
     regions_uid_2 = get_regions_uid(rid_2)
 

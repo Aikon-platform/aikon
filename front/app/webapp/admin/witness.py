@@ -268,15 +268,15 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             return
 
         img_urls = []
-        has_regions = False
+        has_region_extraction = False
         for witness in queryset.exclude():
             regions_wit = []
             for regions in witness.get_regions():
-                has_regions = True
+                has_region_extraction = True
                 regions_wit.extend(get_images_annotations(regions))
             img_urls.extend(regions_wit)
 
-        if not has_regions:
+        if not has_region_extraction:
             no_regions_message(request)
             return
 
@@ -292,14 +292,14 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             return
 
         dirnames_contents = {}
-        has_regions = False
+        has_region_extraction = False
         for wit in queryset.exclude():
             dirnames_contents[wit.get_ref()] = []
             for regions in wit.get_regions():
                 dirnames_contents[wit.get_ref()].extend(get_training_regions(regions))
-                has_regions = True
+                has_region_extraction = True
 
-        if not has_regions:
+        if not has_region_extraction:
             no_regions_message(request)
             return
 

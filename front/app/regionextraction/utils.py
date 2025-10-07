@@ -2,7 +2,7 @@ import re
 import requests
 
 from app.regionextraction.const import EXTRACTOR_MODEL
-from app.regionextraction.tasks import process_regions_file
+from app.regionextraction.tasks import process_region_extraction_file
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regionextraction import RegionExtraction
 from app.webapp.models.witness import Witness
@@ -97,7 +97,7 @@ def process_results(data, completed=True):
 
         try:
             model_name = result_url.split("/")[-1].split("+")[0] or EXTRACTOR_MODEL
-            process_regions_file.delay(json_content, digit_id, model_name)
+            process_region_extraction_file.delay(json_content, digit_id, model_name)
         except Exception as e:
             log(f"Could not process annotation from {result_url}", e)
             raise e

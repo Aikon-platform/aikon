@@ -321,8 +321,8 @@ class Witness(AbstractSearchableModel):
             )
         return imgs
 
-    def has_regions(self):
-        return any(digit.has_regions() for digit in self.get_digits())
+    def has_region_extraction(self):
+        return any(digit.has_region_extraction() for digit in self.get_digits())
 
     def get_works(self):
         return list(

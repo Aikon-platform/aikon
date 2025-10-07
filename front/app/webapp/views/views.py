@@ -136,7 +136,7 @@ def manifest_regions(request, version, regions_ref):
 #     digit = get_object_or_404(Digitization, pk=digit_id)
 #     regions = []
 #     for region in digit.get_regions():
-#         regions.extend(get_regions_img(region))
+#         regions.extend(get_region_extraction_img(region))
 #     return list_to_txt(regions, digit.get_ref())
 
 
@@ -144,7 +144,7 @@ def manifest_regions(request, version, regions_ref):
 #     wit = get_object_or_404(Witness, pk=wit_id)
 #     regions = []
 #     for region in wit.get_regions():
-#         regions.extend(get_regions_img(region))
+#         regions.extend(get_region_extraction_img(region))
 #     return list_to_txt(regions, wit.get_ref())
 
 

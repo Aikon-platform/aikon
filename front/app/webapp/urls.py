@@ -50,7 +50,7 @@ urlpatterns = [
     ),
     path(
         f"{APP_NAME}/<str:regions_ref>/list/",
-        get_regions_img_list,
+        get_region_extraction_img_list,
         name="regions-list",
     ),
     # TODO add f"{APP_NAME}/witness/<int:wit_id>/regions/<int:regions_id>/list/",

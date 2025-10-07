@@ -100,7 +100,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
             if obj.has_digit():
                 # if the digitization is associated with a pdf/manifest/img but no images on the server
                 return gen_btn(obj, "no_digit")
-            # if not obj.has_regions():
+            # if not obj.has_region_extraction():
             #     return gen_btn(Digitization.objects.filter(pk=obj.id).first(), "view")
 
             # digit_btn = []
@@ -112,11 +112,11 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
     @admin.display(description=get_name("view_regions"))
     def view_regions(self, obj: Digitization):
-        if obj.id and obj.has_images() and obj.has_regions():
-            regions_btn = []
+        if obj.id and obj.has_images() and obj.has_region_extraction():
+            region_extraction_btn = []
             for regions in obj.get_regions():
-                regions_btn.append(gen_btn(regions, "regions"))
-            return mark_safe("<br>".join(regions_btn))
+                region_extraction_btn.append(gen_btn(regions, "regions"))
+            return mark_safe("<br>".join(region_extraction_btn))
         return "-"
 
     def get_fields(self, request, obj: Digitization = None):
@@ -124,7 +124,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
         if obj and obj.has_images():
             fields.append("view_digit")
-            if obj.has_regions():
+            if obj.has_region_extraction():
                 fields.append("view_regions")
 
         return fields

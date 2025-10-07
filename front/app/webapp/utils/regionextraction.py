@@ -12,7 +12,7 @@ from app.webapp.utils.logger import log
 from app.webapp.utils.paths import REGIONS_PATH
 
 
-def get_file_regions(regions: RegionExtraction):
+def get_file_region_extraction(regions: RegionExtraction):
     json_file = REGIONS_PATH / f"{regions.get_ref()}.json"
     if json_file.exists():
         try:
@@ -28,12 +28,12 @@ def get_file_regions(regions: RegionExtraction):
                 return [line.strip() for line in f.readlines()], "txt"
         except Exception:
             return None, None
-    log(f"[get_file_regions] Neither {json_file} nor {txt_file} exists")
+    log(f"[get_file_region_extraction] Neither {json_file} nor {txt_file} exists")
     return None, None
 
 
-def get_regions_img(regions: RegionExtraction):
-    data, anno_format = get_file_regions(regions)
+def get_region_extraction_img(regions: RegionExtraction):
+    data, anno_format = get_file_region_extraction(regions)
     if data is None:
         return []
 
@@ -60,13 +60,13 @@ def get_regions_img(regions: RegionExtraction):
     return imgs
 
 
-def create_empty_regions(digit: Digitization):
+def create_empty_region_extraction(digit: Digitization):
     from app.webapp.utils.iiif.annotation import index_manifest_in_sas
 
     imgs = digit.get_imgs()
     if len(imgs) == 0:
         log(
-            f"[create_empty_regions] Digit #{digit.id} has no images",
+            f"[create_empty_region_extraction] Digit #{digit.id} has no images",
         )
         return False
 
@@ -74,7 +74,7 @@ def create_empty_regions(digit: Digitization):
         regions = RegionExtraction.objects.create(digitization=digit, model="Manual")
     except Exception as e:
         log(
-            f"[create_empty_regions] Unable to create new Regions for digit #{digit.id} in the database",
+            f"[create_empty_region_extraction] Unable to create new RegionExtraction for digit #{digit.id} in the database",
             e,
         )
         return False
@@ -87,15 +87,15 @@ def create_empty_regions(digit: Digitization):
         success = index_manifest_in_sas(regions.gen_manifest_url(version=MANIFEST_V2))
         if not success:
             log(
-                f"[create_empty_regions] unable to index manifest in SAS for Regions #{regions.id}."
-                f"Deleting Regions record.",
+                f"[create_empty_region_extraction] unable to index manifest in SAS for RegionExtraction #{regions.id}."
+                f"Deleting RegionExtraction record.",
             )
             regions.delete()
             return False
     except Exception as e:
         log(
-            f"[create_empty_regions] Error when indexing manifest in SAS for Regions #{regions.id}."
-            f"Deleting Regions record.",
+            f"[create_empty_region_extraction] Error when indexing manifest in SAS for RegionExtraction #{regions.id}."
+            f"Deleting RegionExtraction record.",
             e,
         )
         regions.delete()

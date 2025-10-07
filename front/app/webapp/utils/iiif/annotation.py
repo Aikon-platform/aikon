@@ -24,7 +24,7 @@ from app.config.settings import (
 from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, flatten_dict
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
 from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
-from app.webapp.utils.regions import get_file_regions
+from app.webapp.utils.regionextraction import get_file_region_extraction
 
 IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
 # SAS_APP_URL = f"http://sas:{SAS_PORT}"
@@ -300,7 +300,7 @@ def get_annotations_per_canvas(
     """
     to_include = lambda canvas: int(canvas) > last_canvas or canvas == specific_canvas
 
-    data, anno_format = get_file_regions(region)
+    data, anno_format = get_file_region_extraction(region)
 
     if data is None:
         log(
@@ -552,7 +552,7 @@ def get_canvas_list(regions: RegionExtraction, all_img=False):
         return canvases
 
     # Fallback to annotation file if no annotations were found in SAS
-    data, anno_format = get_file_regions(regions)
+    data, anno_format = get_file_region_extraction(regions)
     if not data:
         log(f"[get_canvas_list] No regions file for regions #{regions.id}")
         return canvases
@@ -701,7 +701,7 @@ def check_indexation(regions: RegionExtraction, reindex=False):
     Check if the number of generated annotations is the same as the number of indexed annotations
     If not, unindex all annotations and (if reindex=True) reindex the regions
     """
-    data, anno_format = get_file_regions(regions)
+    data, anno_format = get_file_region_extraction(regions)
 
     if not data:
         return False

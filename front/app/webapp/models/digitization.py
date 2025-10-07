@@ -54,7 +54,7 @@ ALLOWED_EXT = ["jpg", "jpeg", "png", "tif"]
 def get_name(fieldname, plural=False):
     fields = {
         "view_digit": {"en": "visualize", "fr": "visualiser"},
-        "view_regions": {"en": "regions", "fr": "régions"},
+        "view_region_extraction": {"en": "extracted region", "fr": "régions extraites"},
         "is_validated": {"en": "validate regions", "fr": "valider les régions"},
         "is_validated_info": {
             "en": "regions will no longer be editable",
@@ -159,8 +159,8 @@ class Digitization(AbstractSearchableModel):
         # Returns "img" / "pdf" / "man"
         return str(self.digit_type)
 
-    def get_regions(self):
-        return self.regions.all()
+    def get_region_extractions(self):
+        return self.regionextractions.all()
 
     # def get_treatments(self):
     #     return self.treatments.all()
@@ -190,16 +190,16 @@ class Digitization(AbstractSearchableModel):
         nb = f"_{i:04d}" if i else ""
         return f"{path}/{self.get_ref()}{nb}.{ext or self.get_ext()}"
 
-    def get_regions_filenames(self):
-        regions_files = []
-        for regions in self.get_regions():
-            regions_files.append(regions.get_ref())
-        return regions_files
+    def get_region_extraction_filenames(self):
+        region_extraction_files = []
+        for region_extraction in self.get_region_extractions():
+            region_extraction_files.append(region_extraction.get_ref())
+        return region_extraction_files
 
-    def has_regions(self):
-        # if there is at least one regions file named after the current digitization
+    def has_region_extraction(self):
+        # if there is at least one region extraction file named after the current digitization
         if len(glob(f"{REGIONS_PATH}/{self.get_ref()}_*")):
-            # TODO check self.get_regions()
+            # TODO check self.get_region_extractions()
             return True
         return False
 
@@ -246,8 +246,8 @@ class Digitization(AbstractSearchableModel):
         from app.webapp.utils.iiif.annotation import total_annotations
 
         count = 0
-        for regions in self.get_regions():
-            count += total_annotations(regions)
+        for region_extraction in self.get_region_extractions():
+            count += total_annotations(region_extraction)
 
         return count
 
@@ -267,7 +267,7 @@ class Digitization(AbstractSearchableModel):
         """
         :return: True if all regions have vectorizations, False otherwise
         """
-        return all(region.is_vectorized() for region in self.get_regions())
+        return all(region.is_vectorized() for region in self.get_region_extractions())
 
     ####### WORK IN PROGRESS
 
@@ -388,14 +388,19 @@ class Digitization(AbstractSearchableModel):
 
         # NOTE methods to be used inside list columns of witnesses
 
-    def regions_btn(self):
+    def region_extraction_btn(self):
         # To display a button in the list of witnesses to know if regions were extracted or not
-        return "<br>".join(regions.view_btn() for regions in self.get_regions())
+        return "<br>".join(
+            region_extraction.view_btn()
+            for region_extraction in self.get_region_extractions()
+        )
 
     def digit_btn(self):
-        from app.webapp.utils.iiif.gen_html import regions_btn
+        from app.webapp.utils.iiif.gen_html import region_extraction_btn
 
-        return mark_safe(regions_btn(self, "view")) if self.has_images() else ""
+        return (
+            mark_safe(region_extraction_btn(self, "view")) if self.has_images() else ""
+        )
 
     # def add_source(self, source):
     #     # from app.webapp.models.digitization_source import DigitizationSource
@@ -408,10 +413,10 @@ class Digitization(AbstractSearchableModel):
 
     def view_btn(self):
         iiif_link = f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"
-        regions = self.get_regions()
+        regions = self.get_region_extractions()
         if len(regions) == 0:
             return f"{iiif_link}<br>{self.digit_btn()}"
-        return f"{iiif_link}<br>{self.regions_btn()}"
+        return f"{iiif_link}<br>{self.region_extraction_btn()}"
         # return f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"
 
     def manifest_link(self, inline=False):
@@ -477,8 +482,8 @@ def pre_delete_digit(sender, instance: Digitization, **kwargs):
 
     # NOTE do not work because manifest_url uses the digitization id
     # from app.webapp.tasks import delete_regions
-    # delete_regions.delay([r.id for r in instance.get_regions()])
+    # delete_regions.delay([r.id for r in instance.get_region_extractions()])
 
     from app.webapp.utils.iiif.annotation import destroy_regions
 
-    [destroy_regions(r) for r in instance.get_regions()]
+    [destroy_regions(r) for r in instance.get_region_extractions()]

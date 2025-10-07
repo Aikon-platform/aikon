@@ -12,7 +12,7 @@ class Command(BaseCommand):
             "--regions",
             "-r",
             type=int,
-            help="ID of the Regions to clear the cache",
+            help="ID of the RegionExtraction to clear the cache",
         )
         group.add_argument(
             "--all",
