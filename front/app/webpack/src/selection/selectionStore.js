@@ -10,14 +10,14 @@ function createSelectionStore() {
         "title": appLang === "en" ? "Document set" : "Set de documents", // <string>
         "selected": {}, // <{model_name: {record_id: {record_meta}, record_id: {record_meta}}, model_name: {...}, ...}>
     }
-    const regionsSetTemplate = {
+    const regionSetTemplate = {
         "id": null, // <null|regions_set_id>
-        "type": "regionsSet",
-        "title": appLang === "en" ? "Regions set" : "Set de régions", // <string>
+        "type": "regionSet",
+        "title": appLang === "en" ? "Region set" : "Set de régions", // <string>
         "selected": {} // <{regionsType: {record_id: {record_meta}, record_id: {record_meta}, ...}}>
     }
     const selectedRecords = JSON.parse(localStorage.getItem("documentSet")) || docSetTemplate;
-    const selectedRegions = JSON.parse(localStorage.getItem("regionsSet")) || regionsSetTemplate;
+    const selectedRegions = JSON.parse(localStorage.getItem("regionSet")) || regionSetTemplate;
     const selection = writable({
         records: selectedRecords,
         regions: selectedRegions
@@ -171,7 +171,7 @@ function createSelectionStore() {
 
     function unloadSet(selection, set) {
         const isRegion = set.class.toLowerCase().includes("regions");
-        selection[isRegion ? "regions" : "records"] = isRegion ? regionsSetTemplate : docSetTemplate;
+        selection[isRegion ? "regions" : "records"] = isRegion ? regionSetTemplate : docSetTemplate;
         store(selection[isRegion ? "regions" : "records"]);
         return selection;
     }
@@ -185,7 +185,7 @@ function createSelectionStore() {
         subscribe,
         save: (isRegion) => update(selection => save(selection, isRegion)),
         empty: (isRegion) => update(selection => {
-            selection[isRegion ? "regions" : "records"] = isRegion ? regionsSetTemplate : docSetTemplate;
+            selection[isRegion ? "regions" : "records"] = isRegion ? regionSetTemplate : docSetTemplate;
             store(selection[isRegion ? "regions" : "records"]);
             return selection
         }),

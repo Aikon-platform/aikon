@@ -21,7 +21,7 @@ from app.config.settings import APP_URL, APP_NAME
 from app.similarity.models.region_pair import RegionPair, RegionPairTuple
 from app.similarity.tasks import delete_api_similarity
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.regions import Regions
+from app.webapp.models.regionextraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
 from app.webapp.utils.functions import sort_key, delete_path
@@ -166,7 +166,7 @@ def process_results(data, completed=True):
     return
 
 
-def prepare_document(document: Witness | Digitization | Regions, **kwargs):
+def prepare_document(document: Witness | Digitization | RegionExtraction, **kwargs):
     regions = document.get_regions() if hasattr(document, "get_regions") else [document]
 
     if not regions:
@@ -399,9 +399,9 @@ def get_pairs_for_regions(unfiltered_pairs, q_rid, regions_ids):
     keeps only those pertaining to the selected comparison regions.
 
     :param unfiltered_pairs: list of RegionPair objects
-    :param q_rid: in - id of the Regions object currently analyzed
-    :param regions_ids: list[int] - ids of the Regions objects to be linked by pairs to the Regions identified by q_rid
-    :return: list of RegionPair objects with one end from the Regions  identifier by q_rid and one end from any Regions identified by regions_ids
+    :param q_rid: in - id of the RegionExtraction object currently analyzed
+    :param regions_ids: list[int] - ids of the RegionExtraction objects to be linked by pairs to the RegionExtraction identified by q_rid
+    :return: list of RegionPair objects with one end from the RegionExtraction  identifier by q_rid and one end from any RegionExtraction identified by regions_ids
     """
     pairs = [
         pair
@@ -613,11 +613,11 @@ def get_compared_regions_refs(regions_ref):
     return refs
 
 
-def get_compared_regions(regions: Regions):
+def get_compared_regions(regions: RegionExtraction):
     refs = get_compared_regions_refs(regions.get_ref())
     return [
         region
-        for (passed, region) in [check_ref(ref, "Regions") for ref in refs]
+        for (passed, region) in [check_ref(ref, "RegionExtraction") for ref in refs]
         if passed
     ]
 
@@ -640,7 +640,7 @@ def load_similarity(pair):
         return pair, None
 
 
-def reset_similarity(regions: Regions):
+def reset_similarity(regions: RegionExtraction):
     regions_id = regions.id
     try:
         regions_ref = regions.get_ref()
@@ -695,7 +695,7 @@ def regions_from_img(q_img: str) -> int:
             digit = None
         regions = list(digit.get_regions() if digit else [])
         if not regions:
-            regions = Regions.objects.create(
+            regions = RegionExtraction.objects.create(
                 digitization=digit,
                 model="manual",
             )

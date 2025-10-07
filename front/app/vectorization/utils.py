@@ -8,7 +8,7 @@ import requests
 from app.config.settings import APP_URL, APP_NAME
 from app.vectorization.const import VECTO_MODEL_EPOCH, SVG_PATH
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.regions import Regions
+from app.webapp.models.regionextraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
 
@@ -102,7 +102,7 @@ def process_results(data, completed=True):
         return True
 
 
-def prepare_document(document: Witness | Digitization | Regions, **kwargs):
+def prepare_document(document: Witness | Digitization | RegionExtraction, **kwargs):
     if document.is_vectorized():
         raise ValueError(
             f"“{document}” is already vectorized"
@@ -132,7 +132,7 @@ def delete_and_relaunch_request(regions):
     tasking.task_request("vectorization", regions, None, endpoint="delete_and_relaunch")
 
 
-def reset_vectorization(regions: Regions):
+def reset_vectorization(regions: RegionExtraction):
     try:
         svg_dir = os.path.join(SVG_PATH, regions.get_ref())
         if os.path.exists(svg_dir):
@@ -142,7 +142,7 @@ def reset_vectorization(regions: Regions):
         log(f"[reset_vectorization] Folder {svg_dir} does not exist")
     except Exception as e:
         log(
-            f"[reset_vectorization] Error removing SVG folder for Regions #{regions.id}",
+            f"[reset_vectorization] Error removing SVG folder for RegionExtraction #{regions.id}",
             e,
         )
         return False

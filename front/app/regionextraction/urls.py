@@ -2,7 +2,7 @@ from django.urls import path
 
 from app.config.settings import APP_NAME
 
-from app.regions.views import *
+from app.regionextraction.views import *
 
 app_name = "regions"
 

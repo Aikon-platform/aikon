@@ -15,7 +15,7 @@ from django.db.models import Q
 from django.contrib.auth.models import User
 
 from ..models.region_pair import RegionPair
-from ...webapp.models.regions import Regions
+from ...webapp.models.regionextraction import Regions
 from ...config.settings.base import DATABASES, MEDIA_ROOT
 
 

@@ -6,7 +6,7 @@ function createRegionsStore() {
 
     const currentPage = writable(1);
     const allRegions = writable({});
-    const pageRegions = writable({});
+    const pageRegionExtraction = writable({});
     const clipBoard = writable("");
 
     initPagination(currentPage, "p");
@@ -38,7 +38,7 @@ function createRegionsStore() {
         (async () => {
             const response = await fetch(`${baseUrl}canvas?p=${$currentPage}`);
             const data = await response.json();
-            pageRegions.set(data);
+            pageRegionExtraction.set(data);
             return data;
         })());
 
@@ -51,7 +51,7 @@ function createRegionsStore() {
             delete regions[regionId];
             return { ...regions };
         });
-        pageRegions.update(currentPageRegions => {
+        pageRegionExtraction.update(currentPageRegions => {
             for (const canvasNb in currentPageRegions) {
                 if (currentPageRegions[canvasNb][regionId]) {
                     const { [regionId]: _, ...rest } = currentPageRegions[canvasNb];
@@ -65,7 +65,7 @@ function createRegionsStore() {
 
     return {
         currentPage,
-        pageRegions,
+        pageRegionExtraction,
         allRegions,
         fetchPages,
         fetchAll,

@@ -19,7 +19,7 @@ from app.webapp.models.edition import Edition, get_name as edition_name
 from app.webapp.models.language import Language
 from app.webapp.models.person import Person
 from app.webapp.models.place import Place
-from app.webapp.models.regions import Regions
+from app.webapp.models.regionextraction import RegionExtraction
 from app.webapp.models.series import Series, get_name as series_name
 from app.webapp.models.tag import Tag
 from app.webapp.models.treatment import Treatment, get_name as treatment_name
@@ -339,13 +339,13 @@ class DigitizationFilter(RecordFilter):
         }
 
 
-class RegionsFilter(RecordFilter):
+class RegionExtractionFilter(RecordFilter):
     digitization = ModelChoiceFilter(
         queryset=Digitization.objects.all(),
     )
 
     class Meta:
-        model = Regions
+        model = RegionExtraction
         fields = {
             "digitization": ["exact"],
         }

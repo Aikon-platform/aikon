@@ -5,14 +5,14 @@ from app.config.settings import (
     CANTALOUPE_APP_URL,
 )
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.regions import Regions
+from app.webapp.models.regionextraction import RegionExtraction
 from app.webapp.utils.constants import MANIFEST_V2
 
 from app.webapp.utils.logger import log
 from app.webapp.utils.paths import REGIONS_PATH
 
 
-def get_file_regions(regions: Regions):
+def get_file_regions(regions: RegionExtraction):
     json_file = REGIONS_PATH / f"{regions.get_ref()}.json"
     if json_file.exists():
         try:
@@ -32,7 +32,7 @@ def get_file_regions(regions: Regions):
     return None, None
 
 
-def get_regions_img(regions: Regions):
+def get_regions_img(regions: RegionExtraction):
     data, anno_format = get_file_regions(regions)
     if data is None:
         return []
@@ -71,7 +71,7 @@ def create_empty_regions(digit: Digitization):
         return False
 
     try:
-        regions = Regions.objects.create(digitization=digit, model="Manual")
+        regions = RegionExtraction.objects.create(digitization=digit, model="Manual")
     except Exception as e:
         log(
             f"[create_empty_regions] Unable to create new Regions for digit #{digit.id} in the database",

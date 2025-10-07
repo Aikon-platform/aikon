@@ -27,9 +27,9 @@
     const newAndOldPropagateParams = createNewAndOld();
     newAndOldPropagateParams.setCompareFn((x,y) =>
         [x,y].every(_ =>
-            _ && _.hasOwnProperty("propagateRecursionDepth") && _.hasOwnProperty("propagateFilterByRegions"))
+            _ && _.hasOwnProperty("propagateRecursionDepth") && _.hasOwnProperty("propagateFilterByRegionExtraction"))
         ? x.propagateRecursionDepth === y.propagateRecursionDepth
-            && x.propagateFilterByRegions === y.propagateFilterByRegions
+            && x.propagateFilterByRegionExtraction === y.propagateFilterByRegionExtraction
         : false
     );
     /** @type {NewAndOldType} */
@@ -62,7 +62,7 @@
             method: "POST",
             body: JSON.stringify({
                 regionsIds: _isInModal ? [] : regionsForWitness,
-                filterByRegions: _isInModal ? false : _propagateParams.propagateFilterByRegions,
+                filterByRegionExtraction: _isInModal ? false : _propagateParams.propagateFilterByRegionExtraction,
                 recursionDepth: _propagateParams.propagateRecursionDepth
             }),
             headers: {
@@ -88,7 +88,7 @@
     })
     selectedRegions.subscribe((newSelectedRegions) => {
         newAndOldSelectedRegions.set(getRegionsIds(newSelectedRegions));
-        if ( $propagateParams.propagateFilterByRegions === true && !newAndOldSelectedRegions.same() ) {
+        if ( $propagateParams.propagateFilterByRegionExtraction === true && !newAndOldSelectedRegions.same() ) {
             propagatedMatchesPromise =
                 getPropagatedMatches($propagateParams, newAndOldSelectedRegions.get(), isInModal);
         }

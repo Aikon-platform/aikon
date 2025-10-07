@@ -22,7 +22,7 @@
     - the complexitiy is that `Region`is a component that is used in
         different parts of the app, and a Region can have different
         meaning depending on where it's used. i.e, `Region` is used
-        in `PageRegions` (to display regions of a document), and
+        in `PageRegionExtraction` (to display regions of a document), and
         `SimilarRegions` (to display a similarity to a query image),
         in turn, ModalBase contains displays components depending on
         this context: for similarities, `ModalSimilarity` and

@@ -8,7 +8,7 @@ from urllib.request import urlopen
 import requests
 from PIL import Image
 
-from app.webapp.models.regions import Regions, get_name
+from app.webapp.models.regionextraction import RegionExtraction, get_name
 from app.webapp.models.digitization import Digitization
 
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
@@ -127,7 +127,11 @@ def has_annotation(regions_ref):
 
 
 def get_regions_annotations(
-    regions: Regions, as_json=False, r_annos=None, min_c: int = None, max_c: int = None
+    regions: RegionExtraction,
+    as_json=False,
+    r_annos=None,
+    min_c: int = None,
+    max_c: int = None,
 ):
     # TODO improve efficiency: too slow for witness with a lot of annotations (because it parse all annotations)
     if r_annos is None:
@@ -182,7 +186,7 @@ def get_regions_annotations(
                     "id": aid,
                     "ref": f"{img}_{xywh}",
                     "class": "Region",
-                    "type": get_name("Regions"),
+                    "type": get_name("RegionExtraction"),
                     "title": region_title(canvas, xywh),
                     "url": gen_iiif_url(img, res=f"{xywh}/full/0"),
                     "canvas": canvas,
@@ -198,7 +202,7 @@ def get_regions_annotations(
     return r_annos
 
 
-def index_regions(regions: Regions):
+def index_regions(regions: RegionExtraction):
     if not index_manifest_in_sas(regions.gen_manifest_url(version=MANIFEST_V2), True):
         return
 
@@ -226,14 +230,16 @@ def reindex_file(filename):
         # if there is no regions_id in the ref, pass
         return False, a_ref
     regions_id = ref["regions"][1]
-    regions = Regions.objects.filter(pk=regions_id).first()
+    regions = RegionExtraction.objects.filter(pk=regions_id).first()
     if not regions:
         digit = Digitization.objects.filter(pk=ref["digit"][1]).first()
         if not digit:
             # if there is no digit corresponding to the ref, pass
             return False, a_ref
-        # create new Regions record if none existing
-        regions = Regions(id=regions_id, digitization=digit, model="CHANGE THIS VALUE")
+        # create new RegionExtraction record if none existing
+        regions = RegionExtraction(
+            id=regions_id, digitization=digit, model="CHANGE THIS VALUE"
+        )
         regions.save()
 
     from app.webapp.tasks import reindex_from_file
@@ -263,7 +269,7 @@ def unindex_annotation(annotation_id):
     return False
 
 
-def index_annotations_on_canvas(regions: Regions, canvas_nb):
+def index_annotations_on_canvas(regions: RegionExtraction, canvas_nb):
     # this url (view canvas_annotations()) is calling format_canvas_annotations(),
     # thus returning formatted annotations for each canvas
     formatted_annos = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions.get_ref()}/list/anno-{canvas_nb}.json"
@@ -281,7 +287,9 @@ def index_annotations_on_canvas(regions: Regions, canvas_nb):
         return
 
 
-def get_annotations_per_canvas(region: Regions, last_canvas=0, specific_canvas=""):
+def get_annotations_per_canvas(
+    region: RegionExtraction, last_canvas=0, specific_canvas=""
+):
     """
     Returns a dict with the text annotation file info:
     { "canvas1": [ coord1, coord2 ], "canvas2": [], "canvas3": [ coord1 ] }
@@ -295,7 +303,9 @@ def get_annotations_per_canvas(region: Regions, last_canvas=0, specific_canvas="
     data, anno_format = get_file_regions(region)
 
     if data is None:
-        log(f"[get_annotations_per_canvas] No annotation file for Regions #{region.id}")
+        log(
+            f"[get_annotations_per_canvas] No annotation file for RegionExtraction #{region.id}"
+        )
         return {}
 
     annotated_canvases = {}
@@ -343,7 +353,7 @@ def get_annotations_per_canvas(region: Regions, last_canvas=0, specific_canvas="
     )
 
 
-def format_canvas_annotations(regions: Regions, canvas_nb):
+def format_canvas_annotations(regions: RegionExtraction, canvas_nb):
     canvas_annotations = get_annotations_per_canvas(
         regions, specific_canvas=str(canvas_nb)
     )
@@ -363,7 +373,7 @@ def format_canvas_annotations(regions: Regions, canvas_nb):
     }
 
 
-def format_annotation(regions: Regions, canvas_nb, xywh):
+def format_annotation(regions: RegionExtraction, canvas_nb, xywh):
     base_url = regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)
     x, y, w, h = xywh
 
@@ -506,7 +516,7 @@ def index_manifest_in_sas(manifest_url, reindex=False):
     return True
 
 
-def get_canvas_list(regions: Regions, all_img=False):
+def get_canvas_list(regions: RegionExtraction, all_img=False):
     """
     Get the list of canvases that have been annotated associated with their images names
     [
@@ -581,7 +591,7 @@ def get_canvas_lists(digit: Digitization, all_img=False):
     return canvases
 
 
-def get_indexed_canvas_annotations(regions: Regions, canvas_nb):
+def get_indexed_canvas_annotations(regions: RegionExtraction, canvas_nb):
     canvas_url = f"{SAS_APP_URL}/annotation/search?uri={regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
     try:
         response = requests.get(canvas_url)
@@ -618,7 +628,7 @@ def get_id_from_annotation(sas_annotation):
         return ""
 
 
-def formatted_annotations(regions: Regions):
+def formatted_annotations(regions: RegionExtraction):
     canvas_annotations = []
     annotation_ids = []
 
@@ -649,7 +659,7 @@ def formatted_annotations(regions: Regions):
     return annotation_ids, canvas_annotations
 
 
-def total_annotations(regions: Regions):
+def total_annotations(regions: RegionExtraction):
     response = requests.get(f"{SAS_APP_URL}/search-api/{regions.get_ref()}/search")
     res = response.json()
     try:
@@ -670,7 +680,7 @@ def total_annotations(regions: Regions):
         return total_sas_anno_count
 
 
-def create_list_annotations(regions: Regions):
+def create_list_annotations(regions: RegionExtraction):
     # TODO mutualize
     _, all_regions = formatted_annotations(regions)
     all_crops = [
@@ -686,7 +696,7 @@ def create_list_annotations(regions: Regions):
     return anno_refs
 
 
-def check_indexation(regions: Regions, reindex=False):
+def check_indexation(regions: RegionExtraction, reindex=False):
     """
     Check if the number of generated annotations is the same as the number of indexed annotations
     If not, unindex all annotations and (if reindex=True) reindex the regions
@@ -745,12 +755,12 @@ def check_indexation(regions: Regions, reindex=False):
             unindex_annotation(sas_annotation_id)
         if reindex:
             if index_regions(regions):
-                log(f"[check_indexation] Regions #{regions.id} were reindexed")
+                log(f"[check_indexation] RegionExtraction #{regions.id} were reindexed")
                 return True
     return True
 
 
-def get_images_annotations(regions: Regions):
+def get_images_annotations(regions: RegionExtraction):
     # Used to export images annotations
     imgs = []
 
@@ -770,12 +780,12 @@ def get_images_annotations(regions: Regions):
     return imgs
 
 
-# def unindex_manifest(regions: Regions):
+# def unindex_manifest(regions: RegionExtraction):
 #     # DO NOT WORK
 #     response = requests.delete(f"{SAS_APP_URL}/manifests/{regions.get_ref()}")
 #     if response.status_code != 200:
 #         log(
-#             f"[unindex_manifest] Failed to un-index manifest for Regions #{regions.id}. "
+#             f"[unindex_manifest] Failed to un-index manifest for RegionExtraction #{regions.id}. "
 #             f"Status code: {response.status_code} / {response.text}"
 #         )
 #         return False
@@ -799,7 +809,7 @@ def unindex_regions(regions_ref, manifest_url):
     return True
 
 
-def destroy_regions(regions: Regions):
+def destroy_regions(regions: RegionExtraction):
     manifest_url = regions.gen_manifest_url(version=MANIFEST_V2)
     regions_ref = regions.get_ref()
 
@@ -826,7 +836,7 @@ def destroy_regions(regions: Regions):
     return unindex_regions(regions_ref, manifest_url)
 
 
-def get_training_regions(regions: Regions):
+def get_training_regions(regions: RegionExtraction):
     # Returns a list of tuples [(file_name, file_content), (...)]
     filenames_contents = []
     for canvas_nb, img_file in get_canvas_list(regions):
@@ -854,7 +864,9 @@ def process_regions(
 ):
     try:
         # TODO add step to check if regions weren't generated before for the same model
-        regions, is_new = Regions.objects.get_or_create(digitization=digit, model=model)
+        regions, is_new = RegionExtraction.objects.get_or_create(
+            digitization=digit, model=model
+        )
     except Exception as e:
         log(
             f"[process_regions] Failed to create regions record for digit #{digit.id}",
@@ -866,7 +878,7 @@ def process_regions(
     if not is_new and Path(anno_file).exists():
         # necessary check because regions are sent twice (once for PROGRESS event, then when SUCCESS event)
         log(
-            f"[process_regions] Regions for Digit #{digit.id} already exists with same model, skipping",
+            f"[process_regions] RegionExtraction for Digit #{digit.id} already exists with same model, skipping",
         )
         return False
 
@@ -892,7 +904,7 @@ def process_regions(
     return True
 
 
-def get_regions_urls(regions: Regions):
+def get_regions_urls(regions: RegionExtraction):
     """
     {
         "wit1_man191_0009_166,1325,578,516": ""https://eida.obspm.fr/iiif/2/wit1_man191_0009.jpg/166,1325,578,516/full/0/default.jpg"",

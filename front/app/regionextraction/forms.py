@@ -1,13 +1,13 @@
 from django import forms
 
 from app.config.settings import APP_LANG
-from app.regions.const import MODULE_NAME
+from app.regionextraction.const import MODULE_NAME
 from app.webapp.forms import get_available_models
 
 DEFAULT_MODEL = "illustration_extraction"
 
 
-class RegionsForm(forms.Form):
+class RegionExtractionForm(forms.Form):
     class Meta:
         fields = ("model",)
 

@@ -5,7 +5,7 @@ from config.settings import API_URL
 
 @celery_app.task
 def process_regions_file(file_content, digit_id, model):
-    from app.webapp.models.regions import Digitization
+    from app.webapp.models.regionextraction import Digitization
     from app.webapp.utils.iiif.annotation import process_regions
 
     digitization = Digitization.objects.filter(pk=digit_id).first()

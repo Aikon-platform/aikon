@@ -74,7 +74,9 @@ def search_digitizations(request):
 
 @require_GET
 def search_regions(request):
-    regions_filter = RegionsFilter(request.GET, queryset=Regions.objects.order_by("id"))
+    regions_filter = RegionExtractionFilter(
+        request.GET, queryset=RegionExtraction.objects.order_by("id")
+    )
     return JsonResponse(paginated_records(request, regions_filter.qs))
 
 

@@ -29,7 +29,7 @@ $(function() {
         deleteAllRegions(allRegions ?? []);
     });
 
-    $("#validate_regions").click(function() {
-        validateRegions();
+    $("#validate_region_extraction").click(function() {
+        validateRegionExtraction();
     });
 });

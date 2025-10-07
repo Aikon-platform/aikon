@@ -17,7 +17,7 @@ from app.config.settings import (
 )
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.regions import Regions
+from app.webapp.models.regionextraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.models.utils.constants import PDF_ABBR, MAN_ABBR, IMG_ABBR
 from app.webapp.utils.constants import MANIFEST_V2, PAGE_LEN
@@ -118,7 +118,7 @@ def save_document_set(request, dsid=None):
 
 def get_canvas_regions(request, wid, rid):
     # TODO mutualize with get_canvas_witness_regions
-    regions = get_object_or_404(Regions, id=rid)
+    regions = get_object_or_404(RegionExtraction, id=rid)
     p_nb = int(request.GET.get("p", 0))
     max_canvas = regions.get_json()["img_nb"]
     if p_nb > 0:
@@ -173,7 +173,7 @@ def get_canvas_witness_regions(request, wid):
 def create_manual_regions(request, wid, did=None, rid=None):
     if request.method == "POST":
         if rid:
-            regions = get_object_or_404(Regions, id=rid)
+            regions = get_object_or_404(RegionExtraction, id=rid)
             return JsonResponse(
                 {
                     "regions_id": regions.id,
@@ -213,7 +213,7 @@ def delete_regions(request, rid):
     from app.regions.tasks import delete_api_regions
 
     if request.method == "DELETE":
-        regions = get_object_or_404(Regions, id=rid)
+        regions = get_object_or_404(RegionExtraction, id=rid)
         try:
             delete_annotations.delay(
                 regions.get_ref(), regions.gen_manifest_url(version=MANIFEST_V2)
@@ -232,7 +232,9 @@ def delete_regions(request, rid):
                     status=400,
                 )
 
-            return JsonResponse({"message": "Regions deletion requested"}, status=204)
+            return JsonResponse(
+                {"message": "RegionExtraction deletion requested"}, status=204
+            )
         except Exception as e:
             log(f"[delete_regions] Error sending deletion task for regions #{rid}", e)
             return JsonResponse(
@@ -269,7 +271,7 @@ def export_docset(request, dsid):
     |   |-- metadata.json
     |   |-- [digitizations]
     |   |   |   |-- [each digit file (images + original format)]
-    |   |-- [Regions: one folder each]
+    |   |-- [RegionExtraction: one folder each]
     |   |   |-- [annotations]
     |   |   |   |-- manifest.json
     |   |   |   |-- annotations.json
@@ -413,7 +415,7 @@ def iiif_context(request):
 
 def gen_coco_data(witness_data, regions_data):
     """
-    Given resulting dicts from Regions and Witness data, shapes the Regions metadata as a COCO-formatted  object.
+    Given resulting dicts from RegionExtraction and Witness data, shapes the RegionExtraction metadata as a COCO-formatted  object.
     """
     coco = {"images": [], "annotations": [], "categories": []}
 
@@ -462,10 +464,10 @@ def get_region_data(wid, rid):
     witness = get_object_or_404(Witness, id=wid)
     if witness.is_public:
         annos = get_regions_annotations(
-            regions=get_object_or_404(Regions, id=rid), as_json=True
+            regions=get_object_or_404(RegionExtraction, id=rid), as_json=True
         )
         result = {
-            "manifest": get_object_or_404(Regions, pk=rid).gen_manifest_url(),
+            "manifest": get_object_or_404(RegionExtraction, pk=rid).gen_manifest_url(),
             "extracted_crops": annos,
         }
     return result
@@ -558,7 +560,7 @@ def get_witness_data(witness, json_cascade=True):
         w_reg_processes[r.id]["treatments"] = {}
 
         if json_cascade:
-            # 3 : Regions/annotations data (endpoint URL)
+            # 3 : RegionExtraction/annotations data (endpoint URL)
             if "regions" in ADDITIONAL_MODULES:
                 w_reg_processes[r.id]["treatments"][
                     "extracted_regions"
@@ -601,7 +603,7 @@ def get_vecto_data(rid, include_svg=True):
     # Inspired from 'get_vectorized_images' in 'vectorization/views.py'
     from app.vectorization.const import SVG_PATH
 
-    q_r = get_object_or_404(Regions, pk=rid)
+    q_r = get_object_or_404(RegionExtraction, pk=rid)
     v_imgs = []
     # Mirroring what happens with vectorization view:
     # First look in folder named after regions_ref, then try with digit_ref

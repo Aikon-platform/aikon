@@ -30,7 +30,7 @@ import { csrfToken } from "../../constants.js";
 /**
  * @typedef PropagateParamsType
  * @property {number} propagateRecursionDepth
- * @property {boolean} propagateFilterByRegions
+ * @property {boolean} propagateFilterByRegionExtraction
  */
 /**
  * @typedef SimilarityParamsType
@@ -85,13 +85,13 @@ function createSimilarityStore() {
     propagateRecursionDepth.subscribe((value) => localStorage.setItem("propagateRecursionDepth", JSON.stringify(value)));
 
     /** @type {writable<Boolean>} */
-    const propagateFilterByRegions = writable(JSON.parse(localStorage.getItem("propagateFilterByRegions")) || false);
-    propagateFilterByRegions.subscribe((value) => localStorage.setItem("propagateFilterByRegions", JSON.stringify(value)));
+    const propagateFilterByRegionExtraction = writable(JSON.parse(localStorage.getItem("propagateFilterByRegionExtraction")) || false);
+    propagateFilterByRegionExtraction.subscribe((value) => localStorage.setItem("propagateFilterByRegionExtraction", JSON.stringify(value)));
 
     /** @type {writable<PropagateParamsType>} no localStorage syncing since individual stores are aldready synced */
-    const propagateParams = derived([propagateRecursionDepth, propagateFilterByRegions], ([$propagateRecursionDepth, $propagateFilterByRegions]) => ({
+    const propagateParams = derived([propagateRecursionDepth, propagateFilterByRegionExtraction], ([$propagateRecursionDepth, $propagateFilterByRegionExtraction]) => ({
         propagateRecursionDepth: $propagateRecursionDepth,
-        propagateFilterByRegions: $propagateFilterByRegions
+        propagateFilterByRegionExtraction: $propagateFilterByRegionExtraction
     }));
 
     /** @type {writable<SimilarityParamsType>} no localStorage syncing since individual stores are aldready synced */
@@ -231,7 +231,7 @@ function createSimilarityStore() {
         pageQImgs,
         selectedRegions,
         propagateRecursionDepth,
-        propagateFilterByRegions,
+        propagateFilterByRegionExtraction,
         similarityToolbarParams,
         propagateParams,
         similarityScoreCutoff,

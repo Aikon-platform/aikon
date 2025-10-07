@@ -287,9 +287,9 @@ class Witness(AbstractSearchableModel):
         # for digit in self.get_digits():
         #     regions.extend(digit.get_regions())
         # return regions
-        from app.webapp.models.regions import Regions
+        from app.webapp.models.regionextraction import RegionExtraction
 
-        return Regions.objects.filter(digitization__witness=self).distinct()
+        return RegionExtraction.objects.filter(digitization__witness=self).distinct()
 
     def has_images(self):
         if self.pk is None:

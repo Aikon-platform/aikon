@@ -22,9 +22,9 @@
     /** @type {string} */
     export let sImg;
     /** @type {number} */
-    export let qRegions;
+    export let qRegionExtraction;
     /** @type {number} */
-    export let sRegions;
+    export let sRegionExtraction;
     /** @type {number} */
     export let score = 0;
     /** @type {number?} */
@@ -52,8 +52,8 @@
     setContext("similarityPair", {
         qImg: qImg,
         sImg: sImg,
-        qRegions: qRegions,
-        sRegions: sRegions,
+        qRegionExtraction: qRegionExtraction,
+        sRegionExtraction: sRegionExtraction,
         score: score,
         category: category,
         users: users,
@@ -78,8 +78,8 @@
     const toRegionPair = () => ({
         img_1: qImg,
         img_2: sImg,
-        regions_id_1: qRegions,
-        regions_id_2: sRegions,
+        regions_id_1: qRegionExtraction,
+        regions_id_2: sRegionExtraction,
         score: score,
         category: selectedCategory,
         category_x: updateCurrentUsers(users),

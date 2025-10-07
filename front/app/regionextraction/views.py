@@ -10,7 +10,7 @@ from app.webapp.utils.tasking import (
 )
 from app.webapp.views import is_superuser, check_ref
 
-from app.regions.utils import regions_request
+from app.regionextraction.utils import regions_request
 
 
 @user_passes_test(is_superuser)

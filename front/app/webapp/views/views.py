@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.regions import Regions, check_version
+from app.webapp.models.regionextraction import RegionExtraction, check_version
 from app.webapp.models.digitization import Digitization
 from app.config.settings import API_URL
 from app.webapp.models.treatment import Treatment
@@ -99,11 +99,11 @@ def check_ref(obj_ref, obj="Digitization"):
         return True, digit
 
     regions_id = ref["regions"][1]
-    regions = Regions.objects.filter(pk=regions_id).first()
+    regions = RegionExtraction.objects.filter(pk=regions_id).first()
     if not regions:
         return False, {"response": f"No regions matching the id #{regions_id}"}
 
-    if obj == "Regions":
+    if obj == "RegionExtraction":
         if obj_ref != regions.get_ref():
             return False, {
                 "response": f"Wrong info given in reference for regions #{regions_id}",
@@ -125,7 +125,7 @@ def manifest_digitization(request, digit_ref):
 
 def manifest_regions(request, version, regions_ref):
     # TODO make difference if witness is not public
-    passed, regions = check_ref(regions_ref, "Regions")
+    passed, regions = check_ref(regions_ref, "RegionExtraction")
     if not passed:
         return JsonResponse(regions, safe=False)
 

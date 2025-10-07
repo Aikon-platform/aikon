@@ -14,10 +14,10 @@
     import SelectionBtn from "../selection/SelectionBtn.svelte";
     import Modal from "../Modal.svelte";
     import ExtractionButtons from "./ExtractionButtons.svelte";
-    import RegionsBtn from "./RegionsBtn.svelte";
+    import RegionExtractionBtn from "./RegionsBtn.svelte";
     import ActionButtons from "./ActionButtons.svelte";
     import Similarity from "./similarity/Similarity.svelte";
-    import PageRegions from "./PageRegions.svelte";
+    import PageRegionExtraction from "./PageRegions.svelte";
     import SelectionModal from "../selection/SelectionModal.svelte";
     import Vectorization from "./vectorization/Vectorization.svelte";
 
@@ -68,7 +68,7 @@
 <div id="nav-actions">
     <div class="actions grid">
         <div class="cell is-left is-middle">
-            <RegionsBtn {baseUrl} {currentRegionId} {currentLayout}/>
+            <RegionExtractionBtn {baseUrl} {currentRegionId} {currentLayout}/>
         </div>
         {#if ["all", "page"].includes(currentLayout)}
             <div class="cell" transition:fade={{ duration: 500 }}>
@@ -106,7 +106,7 @@
         {/await}
     </div>
 {:else if currentLayout === "page"}
-    <PageRegions/>
+    <PageRegionExtraction/>
 {:else if currentLayout === "similarity"}
     <Similarity/>
 {:else if currentLayout === "vectorization"}

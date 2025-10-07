@@ -11,7 +11,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from app.config.settings import SAS_APP_URL, DEBUG, SAS_USERNAME, SAS_PASSWORD
 from app.webapp.templatetags.filters import jpg_to_none
 
-from app.webapp.models.regions import Regions
+from app.webapp.models.regionextraction import RegionExtraction
 from app.webapp.models.witness import Witness
 
 from app.webapp.utils.functions import (
@@ -78,7 +78,7 @@ def smash_and_relaunch_vectorization(request, regions_ref):
     Delete the imgs in the API from the repo corresponding to doc_id + relaunch vectorization
     TODO rename and simplify
     """
-    passed, regions = check_ref(regions_ref, "Regions")
+    passed, regions = check_ref(regions_ref, "RegionExtraction")
     if not passed:
         return JsonResponse(regions)
 
@@ -116,7 +116,7 @@ def send_vectorization(request, regions_ref):
     To relaunch vectorization request in case the automatic process has failed
     """
 
-    passed, regions = check_ref(regions_ref, "Regions")
+    passed, regions = check_ref(regions_ref, "RegionExtraction")
     if not passed:
         return JsonResponse(regions)
 
@@ -147,7 +147,7 @@ def send_vectorization(request, regions_ref):
 @login_required
 def show_vectorization(request, regions_ref):
     # TODO check if it is used
-    passed, regions = check_ref(regions_ref, "Regions")
+    passed, regions = check_ref(regions_ref, "RegionExtraction")
     if not passed:
         return JsonResponse(regions)
 
@@ -193,7 +193,7 @@ def export_all_images_and_svgs(request, witness_id):
 
 @login_required
 def export_regions_images_and_svgs(request, regions_id):
-    regions = get_object_or_404(Regions, id=regions_id)
+    regions = get_object_or_404(RegionExtraction, id=regions_id)
     return export_common_logic([regions])
 
 
@@ -236,7 +236,7 @@ def export_selected_imgs_and_svgs(request):
 
 def get_vectorized_images(request, wid, rid=None):
     if rid is not None:
-        q_regions = [get_object_or_404(Regions, id=rid)]
+        q_regions = [get_object_or_404(RegionExtraction, id=rid)]
     else:
         witness = get_object_or_404(Witness, id=wid)
         q_regions = witness.get_regions()
@@ -266,22 +266,22 @@ def get_vectorized_images(request, wid, rid=None):
 @user_passes_test(is_superuser)
 def reset_regions_vectorization(request, rid=None):
     if rid:
-        regions = get_object_or_404(Regions, id=rid)
+        regions = get_object_or_404(RegionExtraction, id=rid)
         if reset_vectorization(regions):
             return JsonResponse(
-                {"message": f"Regions #{rid} vectorization has been deleted"}
+                {"message": f"RegionExtraction #{rid} vectorization has been deleted"}
             )
         return JsonResponse(
-            {"error": f"Regions #{rid} vectorization couldn't been deleted"}
+            {"error": f"RegionExtraction #{rid} vectorization couldn't been deleted"}
         )
 
-    all_regions = Regions.objects.all()
+    all_regions = RegionExtraction.objects.all()
     deleted_vectorization = []
     for regions in all_regions:
         if reset_vectorization(regions):
             deleted_vectorization.append(regions.id)
     return JsonResponse(
         {
-            "message": f"Regions {', '.join(map(str, deleted_vectorization))} have been deleted"
+            "message": f"RegionExtraction {', '.join(map(str, deleted_vectorization))} have been deleted"
         }
     )

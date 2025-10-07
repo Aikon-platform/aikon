@@ -29,7 +29,7 @@ const  {
     excludedCategories,
     similarityScoreCutoff,
     propagateRecursionDepth,
-    propagateFilterByRegions,
+    propagateFilterByRegionExtraction,
     allowedPropagateDepthRange
 } = similarityStore;
 
@@ -134,7 +134,7 @@ async function fetchSimilarityScoreRange() {
 const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail);
 const setExcludedCategories = (e) => excludedCategories.set(e.detail);
 const setPropagateRecursionDepth = (e) => propagateRecursionDepth.set(e.detail);
-const setPropagateFilterByRegions = (e) => propagateFilterByRegions.set(e.detail);
+const setPropagateFilterByRegions = (e) => propagateFilterByRegionExtraction.set(e.detail);
 const setComparedRegions = (e) => {
     const selectedRegionsIds = e.detail;
     const newSelectedRegions = { [currentPageId] : {} }
@@ -232,7 +232,7 @@ const setComparedRegions = (e) => {
                             <div class="ctrl-input">
                                 <InputToggle toggleLabel="Filter by region"
                                      on:updateChecked={setPropagateFilterByRegions}
-                                     start={$propagateFilterByRegions}
+                                     start={$propagateFilterByRegionExtraction}
                                      buttonDisplay={true}
                                 ></InputToggle>
                             </div>

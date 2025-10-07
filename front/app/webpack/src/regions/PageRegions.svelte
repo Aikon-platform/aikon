@@ -1,10 +1,10 @@
 <script>
     import { getContext } from 'svelte';
     import { regionsStore } from "./regionsStore.js";
-    const { pageRegions, fetchPages } = regionsStore;
+    const { pageRegionExtraction, fetchPages } = regionsStore;
     import Region from "./Region.svelte";
     import Pagination from "../Pagination.svelte";
-    import RegionsRow from "./RegionsRow.svelte";
+    import RegionExtractionRow from "./RegionsRow.svelte";
     import Table from "../Table.svelte";
     import ExtractionButtons from "./ExtractionButtons.svelte";
     import { appLang } from '../constants';
@@ -27,13 +27,13 @@
             {appLang === 'en' ? 'Retrieving paginated regions...' : 'Récupération des pages...'}
         </tr>
     {:then _}
-        {#if Object.values($pageRegions).length > 0}
-            {#each Object.entries($pageRegions) as [canvasNb, items]}
-                <RegionsRow canvasImg={toImgName(canvasNb)} {canvasNb}>
+        {#if Object.values($pageRegionExtraction).length > 0}
+            {#each Object.entries($pageRegionExtraction) as [canvasNb, items]}
+                <RegionExtractionRow canvasImg={toImgName(canvasNb)} {canvasNb}>
                     {#each Object.values(items) as item (item.id)}
                         <Region {item} isSquare={true} />
                     {/each}
-                </RegionsRow>
+                </RegionExtractionRow>
             {/each}
         {:else}
             <tr>

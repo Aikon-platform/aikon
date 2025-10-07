@@ -358,7 +358,7 @@ class Digitization(AbstractSearchableModel):
         return metadata
 
     def gen_manifest_url(self, only_base=False, version=None):
-        # usage of version parameter to copy parameters of Regions.gen_manifest_url()
+        # usage of version parameter to copy parameters of RegionExtraction.gen_manifest_url()
         base_url = f"{APP_URL}/{APP_NAME}/iiif/{self.get_ref()}"
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 

@@ -12,7 +12,7 @@
         selectedRegions,
         excludedCategories,
         similarityScoreCutoff,
-        propagateFilterByRegions
+        propagateFilterByRegionExtraction
     } = similarityStore;
 
     const isPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagation, false otherwise
@@ -32,12 +32,12 @@
     /** @type {Array<{uuid:string, data: Array}>} all similarity images, defined sImgsPromise is resolved and then updated each time a new `sImgsPromise` is passed by the parent */
     $: allSImgs = [];
 
-    /** @type {Array<{uuid:string, data: Array}>} allSImgs filtered by displaySimImg, updated when one of `allSImgs`, `$excludedCategories`, `$similarityScoreCutoff`, `$propagateFilterByRegions` are updated */
+    /** @type {Array<{uuid:string, data: Array}>} allSImgs filtered by displaySimImg, updated when one of `allSImgs`, `$excludedCategories`, `$similarityScoreCutoff`, `$propagateFilterByRegionExtraction` are updated */
     $: filteredSImgs = filterSImgs(
         allSImgs,
         $excludedCategories,
         $similarityScoreCutoff,
-        $propagateFilterByRegions
+        $propagateFilterByRegionExtraction
     );
 
     /**
@@ -108,7 +108,7 @@
         usersCategory,
         _excludedCategories,
         _similarityScoreCutoff,
-        _propagateFilterByRegions
+        _propagateFilterByRegionExtraction
     ) => isPropagatedContext
         ? true
         : isAboveCutoff(simImgScore, _similarityScoreCutoff)
@@ -116,15 +116,15 @@
 
 
     /**  run `displaySimImg` to filter `_allSimgs` */
-    const filterSImgs = (_allSImgs, _excludedCategories, _similarityScoreCutoff, _propagateFilterByRegions) =>
-        _allSImgs.filter(({uuid, data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]}) =>
+    const filterSImgs = (_allSImgs, _excludedCategories, _similarityScoreCutoff, _propagateFilterByRegionExtraction) =>
+        _allSImgs.filter(({uuid, data: [score, _, sImg, qRegionExtraction, sRegionExtraction, category, users, isManual, similarityType]}) =>
             displaySimImg(
                 score,
                 category,
                 users,
                 _excludedCategories,
                 _similarityScoreCutoff,
-                _propagateFilterByRegions
+                _propagateFilterByRegionExtraction
             )
         );
 
@@ -162,8 +162,8 @@
     <div>
         <span class="m-2">{filteredSImgs.length} {getSimilarityLabel(isPropagatedContext, filteredSImgs.length)}</span>
         <div class="m-2 is-gap-2" class:grid={filteredSImgs.length > 0}>
-            {#each filteredSImgs as {uuid, data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]} (uuid)}
-                <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual} {similarityType}/>
+            {#each filteredSImgs as {uuid, data: [score, _, sImg, qRegionExtraction, sRegionExtraction, category, users, isManual, similarityType]} (uuid)}
+                <SimilarRegion {qImg} {sImg} {score} {qRegionExtraction} {sRegionExtraction} {category} {users} {isManual} {similarityType}/>
             {:else}
                 {#if noRegionsSelected }
                     <div class="faded is-center">

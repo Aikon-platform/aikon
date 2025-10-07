@@ -32,7 +32,7 @@ function capitalize(s) {
     return s[0].toUpperCase() + s.slice(1);
 }
 
-function getRegionsRef() {
+function getRegionExtractionRef() {
     const currentUrl = getUrl();
     if (currentUrl.includes("show")){
         const parts = currentUrl.split("/show")[0].split("/");
@@ -128,9 +128,9 @@ function deleteAllRegions(allRegions) {
     }
 }
 
-function validateRegions(regions_ref = null) {
+function validateRegionExtraction(regions_ref = null) {
     if (!regions_ref) {
-        regions_ref = getRegionsRef();
+        regions_ref = getRegionExtractionRef();
         if (!regions_ref) {
             console.log("No region reference")
             return

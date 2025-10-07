@@ -222,12 +222,12 @@ urlpatterns += [
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/",
-        RegionsView.as_view(),
+        RegionExtractionView.as_view(),
         name="regions_view",
     ),
     path(
         f"{APP_NAME}/witness/<int:id>/regions/",
-        WitnessRegionsView.as_view(),
+        WitnessRegionExtractionView.as_view(),
         name="witness_regions_view",
     ),
     path(f"{APP_NAME}/treatment/", TreatmentList.as_view(), name="treatment_list"),

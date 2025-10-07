@@ -6,7 +6,7 @@
     export let currentRegionId;
     export let baseUrl;
 
-    async function manualRegions() {
+    async function manualRegionExtraction() {
         const wlo = `${window.location.origin}/${appName}`
         let url = `${wlo}/witness/${witness.id}/regions/add`;
         if (witness.regions.length === 1 || currentRegionId){
@@ -40,7 +40,7 @@
             window.location.href = `${baseUrl.split('regions/')[0]}regions/${res.regions_id}`;
         }
     }
-    async function automaticRegions() {
+    async function automaticRegionExtraction() {
         const url = `${window.location.origin}/${appName}/witness/${witness.id}/regions/extract`;
         const response = await withLoading(() => fetch(url, {
             method: "POST",
@@ -73,7 +73,7 @@
 <!--TODO handle multiple digitization for a single witness-->
 
 <div class="is-center buttons is-centered pt-5">
-    <button class="button is-link" on:click={manualRegions}>
+    <button class="button is-link" on:click={manualRegionExtraction}>
         {appLang === 'en' ? 'Manually annotate' : 'Annoter manuellement'}
     </button>
     <!--TODO make it work-->
@@ -82,7 +82,7 @@
     <!--    </button>-->
     {#if modules.includes("regions")}
         <!--TODO make this button disappear if a task is already triggered for this witness ?-->
-        <button class="button is-link is-inverted" on:click={automaticRegions}>
+        <button class="button is-link is-inverted" on:click={automaticRegionExtraction}>
             {appLang === 'en' ? 'Automatic region extraction' : 'Extraction automatique des régions'}
         </button>
     {/if}
