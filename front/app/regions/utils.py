@@ -1,8 +1,8 @@
 import re
 import requests
 
-from app.regionextraction.const import EXTRACTOR_MODEL
-from app.regionextraction.tasks import process_region_extraction_file
+from app.regions.const import EXTRACTOR_MODEL
+from app.regions.tasks import process_region_extraction_file
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regionextraction import RegionExtraction
 from app.webapp.models.witness import Witness

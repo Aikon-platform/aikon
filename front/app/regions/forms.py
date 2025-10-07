@@ -1,7 +1,7 @@
 from django import forms
 
 from app.config.settings import APP_LANG
-from app.regionextraction.const import MODULE_NAME
+from app.regions.const import MODULE_NAME
 from app.webapp.forms import get_available_models
 
 DEFAULT_MODEL = "illustration_extraction"

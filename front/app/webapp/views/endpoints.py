@@ -210,7 +210,7 @@ def create_manual_regions(request, wid, did=None, rid=None):
 
 def delete_regions(request, rid):
     from app.webapp.tasks import delete_annotations
-    from app.regionextraction.tasks import delete_api_region_extraction
+    from app.regions.tasks import delete_api_region_extraction
 
     if request.method == "DELETE":
         regions = get_object_or_404(RegionExtraction, id=rid)

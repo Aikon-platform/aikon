@@ -10,11 +10,11 @@ from app.webapp.utils.tasking import (
 )
 from app.webapp.views import is_superuser, check_ref
 
-from app.regionextraction.utils import regions_request
+from app.regions.utils import regions_request
 
 
 @user_passes_test(is_superuser)
-def send_regions_extraction(request, digit_ref):
+def send_region_extraction(request, digit_ref):
     """
     To relaunch regions extraction in case the automatic extraction failed
     """
@@ -43,9 +43,9 @@ def send_regions_extraction(request, digit_ref):
 
 
 @require_POST
-def witness_regions_extraction(request, wit_id):
+def witness_region_extraction(request, wit_id):
     """
-    To launch regions extraction for a specific witness
+    To launch region extraction for a specific witness
     """
     from app.webapp.models.witness import Witness
 
@@ -78,7 +78,7 @@ def witness_regions_extraction(request, wit_id):
 
 
 @csrf_exempt
-def receive_regions_notification(request):
+def receive_region_extraction_notification(request):
     """
     Receive results and notification from the API
     """

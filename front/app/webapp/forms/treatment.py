@@ -3,7 +3,7 @@ from django import forms
 
 from app.config.settings import ADDITIONAL_MODULES
 from app.similarity.forms import SimilarityForm
-from app.regionextraction.forms import RegionExtractionForm
+from app.regions.forms import RegionExtractionForm
 from app.vectorization.forms import VectorizationForm
 from app.webapp.forms import SEARCH_MSG
 from app.webapp.models.treatment import Treatment
