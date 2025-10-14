@@ -367,3 +367,7 @@ td.is-fullwidth {
     margin: 0 !important;
     font-size: 1rem !important;
 }
+
+.body-content {
+    max-width: 90vw;
+}

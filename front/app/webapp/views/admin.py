@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.views.generic import CreateView, TemplateView, View, UpdateView
+from django.views.generic import CreateView, TemplateView, View, UpdateView, DetailView
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 
@@ -62,30 +62,33 @@ class AbstractView(LoginRequiredMixin, View):
         return "Placeholder title"
 
 
-class AbstractRecordView(AbstractView, CreateView):
+class AbstractRecordView(AbstractView, DetailView):
     # f"{APP_NAME}/<record_name>/<int:id>/"
-    # we use f"{APP_NAME}-admin/webapp/<record_name>/<int:id>/change/
     template_name = "webapp/view.html"
     pk_url_kwarg = "id"
+    context_object_name = "instance"
 
     def get_view_title(self):
+        if record := self.get_record():
+            return f"{record}"
         return f"View {self.model._meta.verbose_name}"
 
     def get_success_url(self):
         return reverse(f"{self.model._meta.name}_list")
 
     def get_record(self):
-        return get_object_or_404(self.model, pk=self.kwargs.get(self.pk_url_kwarg))
+        if self.pk_url_kwarg in self.kwargs:
+            return get_object_or_404(self.model, pk=self.kwargs[self.pk_url_kwarg])
+        return None
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        if "id" in self.kwargs:
-            kwargs["instance"] = self.get_record()
+        kwargs["instance"] = self.get_record()
         return kwargs
 
 
-class AbstractRecordCreate(AbstractRecordView, CreateView):
-    # NOT USED
+class AbstractRecordCreate(AbstractView, CreateView):
+    # only used for Treatment
     # f"{APP_NAME}/<record_name>/add/"
     template_name = "webapp/form.html"
 
@@ -407,9 +410,12 @@ class DocumentSetView(AbstractRecordView):
     template_name = "webapp/document_set.html"
     fields = []
 
-    # def get_context_data(self, **kwargs):
-    #     context = super().get_context_data(**kwargs)
-    #     context["urls"] = self.get_record().get_treated_url()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # context["urls"] = self.get_record().get_treated_url()
+
+        print(context)
+        return context
 
 
 # TODO RegionsSetList
