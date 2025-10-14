@@ -12,7 +12,7 @@ from app.webapp.models.digitization import Digitization
 from app.config.settings import API_URL
 from app.webapp.models.treatment import Treatment
 from app.webapp.utils.iiif import parse_ref
-from app.webapp.utils.paths import MEDIA_DIR
+from app.webapp.utils.paths import MEDIA_PATH
 
 
 def admin_app(request):
@@ -153,9 +153,9 @@ def rgpd(request):
 
 
 def legacy_manifest(request, old_id):
-    if not os.path.isfile(f"{MEDIA_DIR}/manifest/{old_id}.json"):
+    if not os.path.isfile(f"{MEDIA_PATH}/manifest/{old_id}.json"):
         return JsonResponse({})
-    with open(f"{MEDIA_DIR}/manifest/{old_id}.json", "r") as manifest:
+    with open(f"{MEDIA_PATH}/manifest/{old_id}.json", "r") as manifest:
         return JsonResponse(json.loads(manifest.read()))
 
 

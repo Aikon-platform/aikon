@@ -34,9 +34,8 @@ from app.webapp.utils.iiif.annotation import (
 )
 from app.webapp.utils.logger import log
 from app.webapp.utils.paths import (
-    MEDIA_DIR,
     IMG_PATH,
-    REGIONS_PATH,
+    MEDIA_PATH,
 )
 from app.webapp.utils.regions import create_empty_regions
 from app.webapp.tasks import generate_all_json
@@ -382,7 +381,7 @@ def export_docset(request, dsid):
 @cache_page(60 * 60 * 24)  # Cache for 24h
 def iiif_context(request):
     try:
-        context_path = Path(MEDIA_DIR) / "context.json"
+        context_path = MEDIA_PATH / "context.json"
         if not context_path.exists():
             import requests
 

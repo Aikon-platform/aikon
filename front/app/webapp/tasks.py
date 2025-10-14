@@ -7,7 +7,7 @@ from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.utils.constants import MAX_RES
 from app.webapp.utils.iiif.download import iiif_to_img
 from webapp.models.utils.constants import PDF_ABBR, IMG_ABBR, MAN_ABBR
-from webapp.utils.paths import MEDIA_DIR, IMG_PATH
+from webapp.utils.paths import MEDIA_PATH, IMG_PATH
 from webapp.utils.pdf import pdf_2_img
 
 
@@ -191,7 +191,7 @@ def delete_digitization(digit_ref, other_media):
         img_files = get_files_with_prefix(IMG_PATH, digit_ref, f"{IMG_PATH}/")
         delete_files(img_files)
         if other_media:
-            delete_files(other_media, MEDIA_DIR)
+            delete_files(other_media, MEDIA_PATH)
 
         return f"Successfully deleted files associated to Digitization #{digit_ref}"
 
