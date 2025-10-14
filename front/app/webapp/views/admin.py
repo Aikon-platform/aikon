@@ -24,8 +24,15 @@ from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2
 from app.config.settings import APP_LANG
 
+##########################################################
+#                       ADMIN VIEWS                      #
+# For record creation, modification, listing and details #
+##########################################################
+
 
 class AbstractView(LoginRequiredMixin, View):
+    """Base view for all other record views to inherit from"""
+
     model = None
     template_name = None
 
@@ -56,6 +63,8 @@ class AbstractView(LoginRequiredMixin, View):
 
 
 class AbstractRecordView(AbstractView, CreateView):
+    # f"{APP_NAME}/<record_name>/<int:id>/"
+    # we use f"{APP_NAME}-admin/webapp/<record_name>/<int:id>/change/
     template_name = "webapp/view.html"
     pk_url_kwarg = "id"
 
@@ -76,6 +85,8 @@ class AbstractRecordView(AbstractView, CreateView):
 
 
 class AbstractRecordCreate(AbstractRecordView, CreateView):
+    # NOT USED
+    # f"{APP_NAME}/<record_name>/add/"
     template_name = "webapp/form.html"
 
     def get_view_title(self):
@@ -90,6 +101,8 @@ class AbstractRecordCreate(AbstractRecordView, CreateView):
 
 
 class AbstractRecordUpdate(AbstractRecordView, UpdateView):
+    # f"{APP_NAME}/<record_name>/<int:id>/change/"
+    # we use f"{APP_NAME}-admin/webapp/<record_name>/<int:id>/change/
     template_name = "webapp/form.html"
 
     def get_view_title(self):
@@ -101,6 +114,7 @@ class AbstractRecordUpdate(AbstractRecordView, UpdateView):
 
 
 class AbstractRecordList(AbstractView, TemplateView):
+    # f"{APP_NAME}/<record_name>/"
     template_name = "webapp/list.html"
 
     def get_view_title(self):
@@ -267,6 +281,7 @@ class TreatmentCreate(AbstractRecordCreate):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # TODO when relaunching task, prefill with previous values
         # context["record_name"] = self.model._meta.verbose_name.lower()
         # context["model_name"] = str(
         #         getattr(self, "model_name", self.model._meta.model_name)
