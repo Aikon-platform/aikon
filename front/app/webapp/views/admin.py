@@ -165,7 +165,7 @@ class WitnessRegionExtractionView(AbstractRecordView):
 
         witness = self.get_record()
         context["view_title"] = (
-            f"“{witness}” regions"
+            f"“{witness}” region extractions"
             if APP_LANG == "en"
             else f"Images extraites de « {witness} »"
         )
