@@ -8,6 +8,7 @@
 
     const store = createDocumentSetStore();
     const { availableCorpora } = store;
+    let activeTab = 0;
 
     $: availableCorpus = $availableCorpora.reduce((acc, name) => {
         acc[name] = name;
@@ -19,7 +20,7 @@
     }
 </script>
 
-<Layout>
+<Layout bind:activeTab>
     <div slot="sidebar">
         <Sidebar
             {availableCorpus}
@@ -29,7 +30,20 @@
         />
     </div>
 
-    <div slot="content">
+    <div slot="tabs" let:activeTab>
+        <div class="tabs">
+            <ul>
+                <li class:is-active={activeTab === 0}>
+                    <a on:click={() => activeTab = 0}>Regions Network</a>
+                </li>
+                <li class:is-active={activeTab === 1}>
+                    <a on:click={() => activeTab = 1}>Documents Network</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div slot="content" let:activeTab>
         {#if $store.loading}
             <progress class="progress is-primary" max="100">Loading...</progress>
         {:else if $store.error}
@@ -37,19 +51,21 @@
                 <div class="message-body">{$store.error}</div>
             </article>
         {:else if $store.data}
-            <NetworkVisualization
-                data={$store.data}
-                corpus={$store.corpus}
-                metadata={$store.metadata}
-                type="regions"
-            />
-
-            <NetworkVisualization
-                data={$store.data}
-                corpus={$store.corpus}
-                metadata={$store.metadata}
-                type="documents"
-            />
+            {#if activeTab === 0}
+                <NetworkVisualization
+                    data={$store.data}
+                    corpus={$store.corpus}
+                    metadata={$store.metadata}
+                    type="regions"
+                />
+            {:else}
+                <NetworkVisualization
+                    data={$store.data}
+                    corpus={$store.corpus}
+                    metadata={$store.metadata}
+                    type="documents"
+                />
+            {/if}
         {/if}
     </div>
 </Layout>
