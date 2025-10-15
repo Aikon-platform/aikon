@@ -410,12 +410,11 @@ class DocumentSetView(AbstractRecordView):
     template_name = "webapp/document_set.html"
     fields = []
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # context["urls"] = self.get_record().get_treated_url()
-
-        print(context)
-        return context
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     # context["urls"] = self.get_record().get_treated_url()
+    #
+    #     return context
 
 
 # TODO RegionsSetList

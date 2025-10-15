@@ -1,32 +1,13 @@
 <script>
-    let sidebarWidth = 300;
-    let isResizing = false;
-
-    function startResize() {
-        isResizing = true;
-    }
-
-    function handleResize(e) {
-        if (!isResizing) return;
-        sidebarWidth = Math.max(200, Math.min(e.clientX, 600));
-    }
-
-    function stopResize() {
-        isResizing = false;
-    }
+    export let sidebarWidth = "25%";
+    export const layoutHeight = "90vh";
 </script>
 
-<svelte:window
-    on:mousemove={handleResize}
-    on:mouseup={stopResize}
-/>
-
-<div class="layout">
-    <aside class="sidebar" style="width: {sidebarWidth}px">
+<div class="layout" style="height: {layoutHeight};">
+    <aside class="sidebar" style="width: {sidebarWidth}; height: {layoutHeight};">
         <slot name="sidebar"/>
     </aside>
 
-    <div class="resizer" on:mousedown={startResize}/>
 
     <main class="content">
         <slot name="content"/>
@@ -36,35 +17,21 @@
 <style>
     .layout {
         display: flex;
-        /*position: fixed;*/
-        /*min-height: 95vh;*/
-        /*left: 0;*/
-        /*right: 0;*/
-        height: 100vh;
-        flex-direction: row;
-        justify-content: left;
-        overflow: hidden;
     }
 
     .sidebar {
         flex-shrink: 0;
         overflow-y: auto;
-        border-right: 1px solid var(--bulma-border);
-        background-color: var(--bulma-scheme-main-bis);
+        border-right: 1px solid var(--bulma-border-weak);
+        background-color: var(--bulma-black-bis);
+        left: 0;
+        position: absolute;
+        min-width: 250px;
+        max-width: 400px;
     }
 
     .content {
         flex: 1;
         overflow-y: auto;
-    }
-
-    .resizer {
-        width: 4px;
-        cursor: col-resize;
-        background-color: transparent;
-    }
-
-    .resizer:hover {
-        background-color: var(--bulma-link);
     }
 </style>

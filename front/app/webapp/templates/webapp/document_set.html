@@ -34,8 +34,8 @@
 {% block extra_js %}
     {% if instance %}
         <script>
-            const documentSet = {{ instance.to_json|js|safe }};
+            const docSet = {{ instance.to_json|js|safe }};
         </script>
-        <script type="module" src="{% static 'svelte/documentSet.js' %}"></script>
+        <script src="{% static 'svelte/documentSet.js' %}"></script>
     {% endif %}
 {% endblock %}
