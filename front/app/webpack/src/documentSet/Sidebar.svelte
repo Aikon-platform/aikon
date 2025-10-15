@@ -12,7 +12,7 @@
     }
 </script>
 
-<div class="box m-4">
+<div class="m-4">
     <h2 class="title is-5">Corpus Selection</h2>
 
     <div class="field">

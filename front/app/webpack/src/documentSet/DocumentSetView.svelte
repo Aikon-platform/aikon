@@ -45,7 +45,7 @@
 
     <div slot="content" let:activeTab>
         {#if $store.loading}
-            <progress class="progress is-primary" max="100">Loading...</progress>
+            <progress class="progress is-link" max="100">Loading...</progress>
         {:else if $store.error}
             <article class="message is-danger">
                 <div class="message-body">{$store.error}</div>

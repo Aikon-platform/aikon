@@ -6,6 +6,113 @@
 {% block extrahead %}
     <link rel="stylesheet" href="{% static 'css/regions.css' %}">
     <link rel="stylesheet" href="{% static 'svelte/documentSet.css' %}">
+    <style>
+    .network-svg {
+        display: block;
+        width: 90%;
+        height: 60vh;
+        overflow: hidden;
+        margin-bottom: 1.5rem !important;
+        margin-top: 1.5rem !important;
+        border: 1px solid var(--bulma-border-weak);
+        border-radius: .75rem;
+    }
+
+    .link {
+        stroke: #999;
+        stroke-opacity: 0.6;
+    }
+
+    .node {
+        stroke: #fff;
+        stroke-width: 1.5;
+        cursor: pointer;
+        transition: stroke-width 0.2s;
+    }
+
+    .node:hover {
+        stroke-width: 3;
+    }
+
+    .node.selected {
+        stroke: #002924;
+        stroke-width: 5;
+    }
+
+    .selection-rect {
+        fill: hsla(233, 100%, 63%, 0.2);
+        stroke: var(--bulma-link);
+        stroke-width: 3;
+    }
+
+    .toggle-button {
+        margin-bottom: 1rem;
+    }
+
+    .selection-panel {
+        margin-top: 1.5rem;
+    }
+
+    .selection-panel h3 {
+        margin-bottom: 1rem;
+    }
+
+    .images-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .card {
+        border: 1px solid var(--bulma-border-weak);
+        border-radius: 4px;
+        padding: 1rem;
+        width: 200px;
+    }
+
+    .card img {
+        width: 100%;
+        height: auto;
+        display: block;
+        border-radius: 4px;
+    }
+
+    .card-info {
+        margin-top: 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .legend-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.25rem 0;
+    }
+
+    .legend-color {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 2px solid var(--bulma-border-weak);
+        box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+
+    .legend-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .node-label {
+        user-select: none;
+    }
+    </style>
 {% endblock %}
 
 {% block content %}

@@ -1,1 +1,2 @@
-.layout.svelte-1um427v{display:flex}.sidebar.svelte-1um427v{flex-shrink:0;overflow-y:auto;border-right:1px solid var(--bulma-border-weak);background-color:var(--bulma-black-bis);left:0;position:absolute;min-width:250px;max-width:400px}.content.svelte-1um427v{flex:1;overflow-y:auto}
+.layout.svelte-1qb3b6g{display:flex}.sidebar.svelte-1qb3b6g{flex-shrink:0;overflow-y:auto;border-right:1px solid var(--bulma-border-weak);background-color:var(--bulma-black-bis);left:0;position:absolute;min-width:250px;max-width:400px;z-index:2}.main-content.svelte-1qb3b6g{flex:1;overflow-y:auto;right:0;position:absolute;display:flex;flex-direction:column}.content-area.svelte-1qb3b6g{flex:1;overflow-y:auto;padding:2% 5% 2% 1%}
+.visualization-container.svelte-2n3wgu{min-height:600px}

@@ -10,7 +10,7 @@
     </aside>
 
 
-    <main class="main-content" style="width: {102-sidebarWidth}%; height: {layoutHeight};">
+    <main class="main-content" style="width: {100-sidebarWidth}%; height: {layoutHeight};">
         <nav class="tabs-bar">
             <slot name="tabs" {activeTab}/>
         </nav>

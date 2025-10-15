@@ -1,16 +1,10 @@
 <script>
     import * as d3 from 'd3';
-    import { onMount } from 'svelte';
+    import {createEventDispatcher} from 'svelte';
 
-    let mounted = false;
-    onMount(() => {
-        mounted = true;
-    })
-
-    import {createDocumentSetStore} from "./documentSetStore.js";
-
+    import { createDocumentSetStore } from "./documentSetStore.js";
     const docSetStore = createDocumentSetStore();
-    const {regionMetadata} = docSetStore;
+    const { regionMetadata } = docSetStore;
 
     export let data = null;
     export let corpus = null;
@@ -19,7 +13,7 @@
 
     let container;
 
-    $: if (data && corpus && container && mounted) {
+    $: if (data && corpus && container) {
         renderVisualization();
     }
 
@@ -64,8 +58,7 @@
             event.subject.fx = null;
             event.subject.fy = null;
         }
-
-        return {dragstarted, dragged, dragended};
+        return { dragstarted, dragged, dragended };
     }
 
     function generateDistinctColor(str) {
@@ -239,7 +232,7 @@
             .html(selectMode);
 
         const svg = container.append("svg")
-            .attr("class", "network-svg")
+            .attr("class", "network-svg box py-5")
             .attr("width", width)
             .attr("height", height)
             .attr("viewBox", [0, 0, width, height]);
@@ -625,8 +618,10 @@
             .html(selectMode);
 
         const svg = container.append("svg")
-            .attr("class", "network-svg");
-        // const svg = container.append("svg");
+            .attr("class", "network-svg box py-5")
+            .attr("width", width)
+            .attr("height", height)
+            .attr("viewBox", [0, 0, width, height]);
 
         const g = svg.append("g");
 
@@ -745,7 +740,7 @@
     }
 </script>
 
-<div>
+<div class="box">
     <h2 class="title is-3 has-text-link">
         {type === "regions" ? "Images network" : "Witness network"}
     </h2>
