@@ -1,15 +1,15 @@
 <script>
-    export let sidebarWidth = "25%";
+    export let sidebarWidth = "25";
     export const layoutHeight = "90vh";
 </script>
 
 <div class="layout" style="height: {layoutHeight};">
-    <aside class="sidebar" style="width: {sidebarWidth}; height: {layoutHeight};">
+    <aside class="sidebar" style="width: {sidebarWidth}%; height: {layoutHeight};">
         <slot name="sidebar"/>
     </aside>
 
 
-    <main class="content">
+    <main class="main-content" style="width: {100-sidebarWidth}%; height: {layoutHeight};">
         <slot name="content"/>
     </main>
 </div>
@@ -30,8 +30,11 @@
         max-width: 400px;
     }
 
-    .content {
+    .main-content {
         flex: 1;
         overflow-y: auto;
+        right: 0;
+        position: absolute;
+        padding: 2% 5% 2% 1%;
     }
 </style>
