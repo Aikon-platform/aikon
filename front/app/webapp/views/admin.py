@@ -19,6 +19,7 @@ from app.webapp.search_filters import (
 from app.webapp.forms import *
 from app.webapp.forms.treatment import TreatmentForm
 from app.webapp.models.regions import Regions
+from app.webapp.models.digitization import Digitization
 from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2
@@ -117,11 +118,6 @@ class AbstractRecordList(AbstractView, TemplateView):
         return context
 
 
-class WitnessView(AbstractRecordView):
-    model = Witness
-    form_class = WitnessForm
-
-
 class WitnessCreate(AbstractRecordCreate):
     model = Witness
     form_class = WitnessForm
@@ -138,6 +134,43 @@ class WitnessList(AbstractRecordList):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["search_fields"] = WitnessFilter().to_form_fields()
+
+        return context
+
+
+class WitnessView(AbstractRecordView):
+    # f"witness/<int:wid>/"
+    # display Witness metadata
+    model = Witness
+    template_name = "webapp/witness.html"
+    pk_url_kwarg = "id"
+    fields = []
+
+    def get_view_title(self):
+        return (
+            f"Visualiser le {self.model._meta.verbose_name.lower()}"
+            if APP_LANG == "en"
+            else f"View {self.model._meta.verbose_name.lower()}"
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["regions_ids"] = []
+        context["is_validated"] = True
+        context["img_nb"] = None
+
+        witness = self.get_record()
+        context["view_title"] = f"{witness}" if APP_LANG == "en" else f"{witness}"
+
+        context["witness"] = witness.get_json(reindex=True)
+
+        context["manifests"] = []
+
+        for did in context["witness"]["digits"]:
+            digit = Digitization.objects.get(pk=did)
+            # context["digits_ids"].append(did)
+            context["manifest"] = digit.gen_manifest_url(version=MANIFEST_V2)
+            context["manifests"].append(digit.gen_manifest_url(version=MANIFEST_V2))
 
         return context
 

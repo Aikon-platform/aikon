@@ -35,6 +35,7 @@ def get_name(fieldname, plural=False):
     fields = {
         "id_nb": {"en": "identification number", "fr": "cote"},
         "nb_pages": {"en": "number of pages/folios", "fr": "nombre de pages/folios"},
+        "notes": {"en": "additional notes", "fr": "informations complémentaires"},
         "link": {
             "en": "external link (online catalog, etc.)",
             "fr": "lien externe (catalogue en ligne, etc.)",
@@ -167,7 +168,6 @@ class Witness(AbstractSearchableModel):
         return reverse("webapp:witness_regions_view", args=[self.id])
 
     def to_json(self, reindex=True, no_img=False):
-        # TODO create to_json template in a Abstract class
         buttons = {"regions": reverse("webapp:witness_regions_view", args=[self.id])}
 
         digits = self.get_digits()
@@ -201,9 +201,35 @@ class Witness(AbstractSearchableModel):
                     get_name("page_nb"): self.get_page(),
                     get_name("Language"): self.get_lang_names(),
                 },
+                "metadata_full": self.get_wit_metadata(),
                 "buttons": buttons,
             }
         )
+
+    def get_wit_metadata(self):
+        metadata = {}
+
+        wit = {
+            get_name("type"): self.get_type(),
+            get_name("page_nb"): self.get_page(),
+        }
+
+        if note := self.notes:
+            metadata[get_name("notes")] = note
+
+        if link := self.link:
+            metadata[get_name("link")] = link
+
+        metadata["wit"] = wit
+
+        if contents := self.get_contents():
+            metadata["contents"] = []
+
+            for content in contents:
+                content_dict = content.get_metadata()
+                metadata["contents"].append(content_dict)
+
+        return metadata
 
     def get_type(self):
         # NOTE should be returning "letterpress" (tpr) / "woodblock" (wpr) / "manuscript" (ms)
@@ -218,6 +244,12 @@ class Witness(AbstractSearchableModel):
             if self.nb_pages
             else "-"
         )
+
+    def get_notes(self):
+        return f"{self.notes}" if self.notes else "-"
+
+    def get_link(self):
+        return f"{self.link}" if self.link else "-"
 
     def is_validated(self):
         for regions in self.get_regions():

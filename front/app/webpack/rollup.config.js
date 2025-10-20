@@ -92,5 +92,34 @@ export default [
         watch: {
             clearScreen: false
         }
+    },
+    {
+        input: 'src/witness/witness.js',
+        output: {
+            sourcemap: true,
+            format: 'es',
+            name: 'witnessView',
+            dir: '../webapp/static/svelte/witnessView/',
+        },
+        plugins: [
+            svelte({
+                compilerOptions: {
+                    dev: !production
+                }
+            }),
+            css({ output: 'witness.css' }),
+            resolve({
+                browser: true,
+                dedupe: ['svelte'],
+                exportConditions: ['svelte'],
+                extensions: ['.svelte']
+            }),
+            commonjs(),
+            !production && livereload('public'),
+            production && terser()
+        ],
+        watch: {
+            clearScreen: false
+        }
     }
 ];
