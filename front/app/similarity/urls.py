@@ -134,7 +134,7 @@ urlpatterns = [
         name="witness-regions-pairs",
     ),
     path(
-        f"{APP_NAME}/document-set/<int:dsid>/pairs",
+        f"document-set/<int:dsid>/pairs",
         get_document_set_pairs,
         name="document-set-pairs",
     ),

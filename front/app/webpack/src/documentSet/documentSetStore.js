@@ -7,29 +7,26 @@ function imageToPage(imgName) {
     return parseInt(parts[parts.length - 2]);
 }
 
-export function createDocumentSetStore() {
+export function createDocumentSetStore(documentSetId) {
     const error = writable(null);
-
-    const corpusStats = derived(
-        [allPairs, regionsMetadata],
-        ([$allPairs, $regionsMetadata]) => {
-            // todo link-count, node-count, doc-count, category count
-            return {};
-        }
-    );
 
     // TODO add
     //  regionsImages
     //  regions list
     //  region to color
 
-    const allPairs = writable({});
+    const allPairs = writable([]);
     const regionsMetadata = writable({});
     const imageIndex = writable(new Map());
 
     const fetchPairs = (async () => {
         const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs`);
         const data = await response.json();
+        if (!response.ok) {
+            error.set(`Failed to fetch document set pairs: HTTP ${response.status} for ${appUrl}/document-set/${documentSetId}/pairs`);
+            return;
+        }
+
         const pairs = data.map(pair => ({
             ...pair,
             page_1: imageToPage(pair.img_1),
@@ -39,13 +36,12 @@ export function createDocumentSetStore() {
         }));
 
         allPairs.set(pairs);
-
         const index = new Map();
         const regionIds = new Set();
 
         pairs.forEach(pair => {
             for (const key of ['1', '2']) {
-                regionIds.add(pair[`regions_${key}`]);
+                regionIds.add(pair[`regions_id_${key}`]);
                 const imgKey = `img_${key}`;
                 if (!index.has(pair[imgKey])) index.set(pair[imgKey], []);
                 index.get(pair[imgKey]).push(pair);
@@ -60,8 +56,6 @@ export function createDocumentSetStore() {
             info.color = generateColor(i);
             regionsMetadata.update(m => ({...m, [regionIdsArray[i]]: info}));
         }
-
-        return data;
     })();
 
     async function getRegionsInfo(regionId) {
@@ -75,7 +69,7 @@ export function createDocumentSetStore() {
             url: ""
         };
         try {
-            const response = await fetch(`${BASE_URL}search/regions/?id=${regionId}`);
+            const response = await fetch(`${appUrl}/search/regions/?id=${regionId}`);
             if (!response.ok) {
                 error.set(`Failed to fetch region info: HTTP ${response.status}`);
                 throw new Error(`HTTP ${response.status}`)
@@ -101,7 +95,7 @@ export function createDocumentSetStore() {
             regionInfo.img_nb = region.img_nb;
             regionInfo.url = region.url;
         } catch (e) {
-            error.set(`Error fetching region extraction metadata ${regionId}: ${e}`);
+            error.set(`Error fetching region extraction metadata #${regionId}: ${e}`);
         }
         return regionInfo;
     }
@@ -110,25 +104,22 @@ export function createDocumentSetStore() {
         const info = {};
         for (let pair of $allPairs) {
             for (const key of ['1', '2']) {
-                const regionKey = `regions_${key}`;
-                const imgKey = `img_${key}`;
-                const pageKey = `page_${key}`;
-
+                const regionKey = `regions_id_${key}`;
                 const regionsId = pair[regionKey];
                 if (!info.hasOwnProperty(regionsId)) {
                     info[regionsId] = {
                         title: $metadata[regionsId]?.title || "",
                         witnessId: $metadata[regionsId]?.witnessId || null,
-                        images: [pair[imgKey]],
-                        pages: [pair[pageKey]],
+                        images: [pair[`img_${key}`]],
+                        pages: [pair[`page_${key}`]],
                         color: null,
                     };
                 } else {
-                    if (!info[regionsId].images.includes(pair[imgKey])) {
-                        info[regionsId].images.push(pair[imgKey]);
+                    if (!info[regionsId].images.includes(pair[`img_${key}`])) {
+                        info[regionsId].images.push(pair[`img_${key}`]);
                     }
-                    if (!info[regionsId].pages.includes(pair[pageKey])) {
-                        info[regionsId].pages.push(pair[pageKey]);
+                    if (!info[regionsId].pages.includes(pair[`page_${key}`])) {
+                        info[regionsId].pages.push(pair[`page_${key}`]);
                     }
                 }
             }
@@ -226,6 +217,120 @@ export function createDocumentSetStore() {
             links,
         };
     });
+
+    function generateDistinctColor(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            hash = hash & hash;
+        }
+
+        const goldenRatio = 0.618033988749895;
+        const hue = ((hash * goldenRatio) % 1) * 360;
+        const saturation = 65 + (hash % 20);
+        const lightness = 80 + (hash % 10);
+
+        return `hsl(${Math.floor(hue)}, ${saturation}%, ${lightness}%)`;
+    }
+
+    function buildAlignedImageMatrix(selectionOrder, regionImages, data) {
+        const regions = [...selectionOrder];
+
+        const getRegionImagesMap = (regionId) => {
+            const map = new Map();
+            regionImages.get(regionId).forEach(imgData => {
+                map.set(imgData.img, {page: imgData.page, img: imgData.img});
+            });
+            return map;
+        };
+
+        const regionImagesMap = new Map(regions.map(r => [r, getRegionImagesMap(r)]));
+        const rows = [];
+        const globalProcessed = new Map(regions.map(r => [r, new Set()]));
+
+        const findConnectedImages = (regionId, img, targetRegion) => {
+            const connected = [];
+            data.forEach(pair => {
+                const [r1, r2] = [pair.regions_id_1, pair.regions_id_2];
+                const [i1, i2] = [pair.img_1, pair.img_2];
+
+                if ((r1 === regionId && i1 === img && r2 === targetRegion) ||
+                    (r2 === regionId && i2 === img && r1 === targetRegion)) {
+                    const targetImg = r1 === targetRegion ? i1 : i2;
+                    if (regionImagesMap.get(targetRegion).has(targetImg)) {
+                        connected.push(regionImagesMap.get(targetRegion).get(targetImg));
+                    }
+                }
+            });
+            return connected;
+        };
+
+        const buildRowFromSeed = (seedRegion, seedImg) => {
+            const visited = new Map([[seedRegion, seedImg.img]]);
+            const queue = [{region: seedRegion, img: seedImg, path: {[seedRegion]: seedImg}}];
+            const completedPaths = [];
+
+            while (queue.length > 0) {
+                const {region, img, path} = queue.shift();
+                const currentIndex = regions.indexOf(region);
+
+                if (currentIndex === regions.length - 1) {
+                    completedPaths.push(path);
+                    continue;
+                }
+
+                const nextRegion = regions[currentIndex + 1];
+                const connected = findConnectedImages(region, img.img, nextRegion);
+
+                if (connected.length > 0) {
+                    connected.forEach(nextImg => {
+                        queue.push({
+                            region: nextRegion,
+                            img: nextImg,
+                            path: {...path, [nextRegion]: nextImg}
+                        });
+                    });
+                } else if (Object.keys(path).length > 0) {
+                    completedPaths.push(path);
+                }
+            }
+
+            return completedPaths;
+        };
+
+        regions.forEach(regionId => {
+            const images = Array.from(regionImagesMap.get(regionId).values())
+                .sort((a, b) => a.page - b.page);
+
+            images.forEach(imgData => {
+                if (globalProcessed.get(regionId).has(imgData.img)) return;
+
+                const paths = buildRowFromSeed(regionId, imgData);
+
+                if (paths.length > 0) {
+                    paths.forEach(path => {
+                        Object.entries(path).forEach(([r, img]) => {
+                            globalProcessed.get(Number(r)).add(img.img);
+                        });
+                        rows.push(path);
+                    });
+                } else {
+                    globalProcessed.get(regionId).add(imgData.img);
+                    rows.push({[regionId]: imgData});
+                }
+            });
+        });
+
+        return {regions, rows};
+    }
+
+    //  const docSetStats = derived(
+    //     [allPairs, regionsMetadata],
+    //     ([$allPairs, $regionsMetadata]) => {
+    //         // todo link-count, node-count, doc-count, category count
+    //         return {};
+    //     }
+    // );
 
     return {
         imageNetwork,

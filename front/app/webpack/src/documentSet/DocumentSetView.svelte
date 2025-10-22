@@ -2,32 +2,24 @@
     import Layout from '../Layout.svelte';
     import Sidebar from './Sidebar.svelte';
     import NetworkVisualization from './NetworkVisualization.svelte';
-    import { createDocumentSetStore } from './documentSetStore.js';
+    import {createDocumentSetStore} from './documentSetStore.js';
 
     export let docSet;
 
-    const store = createDocumentSetStore();
-    const { availableCorpora } = store;
+    const {
+        imageNetwork,
+        documentNetwork,
+        regionsMetadata,
+        fetchPairs,
+        error
+    } = createDocumentSetStore(docSet.id);
     let activeTab = 0;
 
-    $: availableCorpus = $availableCorpora.reduce((acc, name) => {
-        acc[name] = name;
-        return acc;
-    }, {});
-
-    async function handleCorpusSelect(event) {
-        await store.loadCorpus(event.detail.name);
-    }
 </script>
 
 <Layout bind:activeTab>
     <div slot="sidebar">
-        <Sidebar
-            {availableCorpus}
-            selectedCorpus={$store.selectedCorpus}
-            corpusStats={$store.stats}
-            on:corpusSelect={handleCorpusSelect}
-        />
+        <Sidebar corpusStats={null} {docSet}/>
     </div>
 
     <div slot="tabs" let:activeTab>
@@ -44,28 +36,20 @@
     </div>
 
     <div slot="content" let:activeTab>
-        {#if $store.loading}
-            <progress class="progress is-link" max="100">Loading...</progress>
-        {:else if $store.error}
+        {#if $error}
             <article class="message is-danger">
-                <div class="message-body">{$store.error}</div>
+                <div class="message-body">{$error}</div>
             </article>
-        {:else if $store.data}
-            {#if activeTab === 0}
-                <NetworkVisualization
-                    data={$store.data}
-                    corpus={$store.corpus}
-                    metadata={$store.metadata}
-                    type="regions"
-                />
-            {:else}
-                <NetworkVisualization
-                    data={$store.data}
-                    corpus={$store.corpus}
-                    metadata={$store.metadata}
-                    type="documents"
-                />
-            {/if}
+        {:else}
+            {#await fetchPairs}
+                <progress class="progress is-link" max="100">Loading...</progress>
+            {:then _}
+                {#if activeTab === 0}
+                    <NetworkVisualization networkData={$imageNetwork} metadata={$regionsMetadata} type="images"/>
+                {:else}
+                    <NetworkVisualization networkData={$documentNetwork} metadata={$regionsMetadata} type="documents"/>
+                {/if}
+            {/await}
         {/if}
     </div>
 </Layout>
