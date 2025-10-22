@@ -1,16 +1,16 @@
 <script>
     import * as d3 from 'd3';
-    import { onMount } from 'svelte';
+    import { createDocumentSetStore } from './documentSetStore.js';
+    import {onMount} from 'svelte';
+
+    const store = createDocumentSetStore();
+    const { imageNetwork, error } = store;
 
     let mounted = false;
-    onMount(() => {
+    onMount(async () => {
+        await store.fetchPairs;
         mounted = true;
-    })
-
-    import {createDocumentSetStore} from "./documentSetStore.js";
-
-    const docSetStore = createDocumentSetStore();
-    const {regionMetadata} = docSetStore;
+    });
 
     export let data = null;
     export let corpus = null;
@@ -18,16 +18,14 @@
     const BASE_URL = "https://iscd.huma-num.fr/";
 
     let container;
-
-    $: if (data && corpus && container && mounted) {
-        renderVisualization();
-    }
+    let networkDiv;
 
     function renderVisualization() {
         if (type === "regions") {
-            createNetworkGraph(container, data, corpus);
+            // $: if ($imageNetwork && networkDiv) {}
+            createImageNetwork(networkDiv, $imageNetwork);
         } else if (type === "documents") {
-            createMatrixGraph(container, data, corpus);
+            createDocumentNetwork(container, data, corpus);
         }
     }
 
@@ -174,7 +172,8 @@
         return {regions, rows};
     }
 
-    function createMatrixGraph(div, data, corpus) {
+
+    function createDocumentNetwork(div, data, corpus) {
         const width = 954;
         const height = 600;
 
@@ -195,7 +194,7 @@
             regionConnections.set(key, (regionConnections.get(key) || 0) + 1);
         });
 
-        const regions = Array.from(regionImages.keys()).map(id => ({id}));
+        const nodes = Array.from(regionImages.keys()).map(id => ({id}));
         const links = [];
 
         regionConnections.forEach((count, key) => {
@@ -219,9 +218,8 @@
             .domain([1, d3.max(links, d => d.count)])
             .range([200, 50]);
 
-        const simulation = d3.forceSimulation(regions)
-            .force("link", d3.forceLink(links)
-                .id(d => d.id)
+        const simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(links).id(d => d.id)
                 .distance(d => linkDistanceScale(d.count))
                 .strength(d => linkStrengthScale(d.count))
             )
@@ -249,10 +247,9 @@
         const selectionManager = createSelectionManager({
             svg,
             g,
-            nodes: regions,
+            nodes: nodes,
             onSelectionChange: (selected, order) => {
-                node
-                    .classed("selected", d => selected.has(d.id));
+                node.classed("selected", d => selected.has(d.id));
                 updateSelection(order);
             }
         });
@@ -278,23 +275,23 @@
 
         const node = g.append("g")
             .selectAll("circle")
-            .data(regions)
+            .data(nodes)
             .join("circle")
             .attr("class", "node")
             .attr("r", 32)
             .attr("fill", d => colorScale(d.id));
 
-        const label = g.append("g")
-            .selectAll("text")
-            .data(regions)
-            .join("text")
-            .text(d => d.id)
-            .attr("class", "node-label")
-            .attr("font-size", "12px")
-            .attr("text-anchor", "middle")
-            .attr("dy", "0.35em")
-            .attr("fill", "white")
-            .attr("pointer-events", "none");
+        // const label = g.append("g")
+        //     .selectAll("text")
+        //     .data(nodes)
+        //     .join("text")
+        //     .text(d => d.id)
+        //     .attr("class", "node-label")
+        //     .attr("font-size", "12px")
+        //     .attr("text-anchor", "middle")
+        //     .attr("dy", "0.35em")
+        //     .attr("fill", "white")
+        //     .attr("pointer-events", "none");
 
         const selectionDiv = container.append("div")
             .attr("class", "selection-panel");
@@ -564,129 +561,9 @@
         return colors;
     }
 
-    function createNetworkGraph(div, data, corpus) {
-        const nodes = new Map();
-        const imageIndex = new Map();
-        const links = [];
-        const width = 954;
-        const height = 600;
-
-        data.forEach(d => {
-            if (!nodes.has(d.img_1)) {
-                nodes.set(d.img_1, {
-                    id: d.img_1,
-                    regionId: d.regions_id_1,
-                    page: d.page_1
-                });
-            }
-            if (!nodes.has(d.img_2)) {
-                nodes.set(d.img_2, {
-                    id: d.img_2,
-                    regionId: d.regions_id_2,
-                    page: d.page_2
-                });
-            }
-
-            if (!imageIndex.has(d.img_1)) imageIndex.set(d.img_1, []);
-            if (!imageIndex.has(d.img_2)) imageIndex.set(d.img_2, []);
-
-            imageIndex.get(d.img_1).push(d);
-            imageIndex.get(d.img_2).push(d);
-
-            links.push({
-                source: d.img_1,
-                target: d.img_2,
-                score: d.score,
-                category: d.category
-            });
-        });
-
-        const nodesArray = Array.from(nodes.values());
-        const regionCount = Object.values(corpus).reduce((count, wit) =>
-            count + Object.keys(wit).length, 0
-        );
-        const colorScale = d3.scaleOrdinal(generateColors(regionCount));
-
-        createLegend('regions-info', nodesArray, colorScale, corpus);
-
-        const simulation = d3.forceSimulation(nodesArray)
-            .force("link", d3.forceLink(links).id(d => d.id).distance(d => 500 / (d.score ?? 10)).strength(d => (d.score ?? 10) / 100))
-            .force("charge", d3.forceManyBody().strength(-300))
-            .force("center", d3.forceCenter(width / 2, height / 2))
-            .force("collision", d3.forceCollide().radius(35));
-
-        const container = d3.select(div);
-
-        const clickMode = "<span class='icon px-4'><i class='fas fa-hand-pointer'></i></span> Switch to click mode"
-        const selectMode = "<span class='icon px-4'><i class='fas fa-crop-alt'></i></span> Switch to selection mode"
-
-        const toggleButton = container.append("button")
-            .attr("class", "toggle-button button is-small is-link")
-            .html(selectMode);
-
-        const svg = container.append("svg")
-            .attr("class", "network-svg");
-        // const svg = container.append("svg");
-
-        const g = svg.append("g");
-
-        const selectionManager = createSelectionManager({
-            svg,
-            g,
-            nodes: nodesArray,
-            onSelectionChange: (selected) => {
-                node.classed("selected", d => selected.has(d.id));
-                updateSelection(nodesArray.filter(d => selected.has(d.id)));
-            }
-        });
-
-        toggleButton.on("click", function () {
-            const active = selectionManager.toggleSelectionMode();
-            d3.select(this)
-                .html(active ? clickMode : selectMode)
-                .classed("active", active);
-        });
-
-        svg.call(d3.zoom()
-            .scaleExtent([0.1, 10])
-            .filter(() => !selectionManager.isSelectionMode())
-            .on("zoom", ({transform}) => g.attr("transform", transform)));
-
-        const link = g.append("g")
-            .selectAll("line")
-            .data(links)
-            .join("line")
-            .attr("class", "link")
-            .attr("stroke-width", d => (d.score ?? 10) / 5);
-
-        const node = g.append("g")
-            .selectAll("circle")
-            .data(nodesArray)
-            .join("circle")
-            .attr("class", "node")
-            .attr("r", 32)
-            .attr("fill", d => colorScale(d.regionId));
-
-        selectionManager.setupNodeClick(node);
-        selectionManager.setupDrag(node, {
-            start: dragstarted,
-            drag: dragged,
-            end: dragended
-        });
-
-        node.append("title")
-            .text(d => `Region: ${d.regionId}\nPage: ${d.page}`);
-
-        const selectionDiv = container.append("div")
-            .attr("class", "selection-panel");
-
-        selectionDiv.append("h3").attr("class", "title is-5")
-            .text("Selected Nodes");
-
-        const imagesContainer = selectionDiv.append("div")
-            .attr("class", "images-container");
-
-        function updateSelection(selectedData) {
+    function createImageNetwork(div, networkData) {
+        function updateSelection(selectedData, selectionDiv) {
+            const imagesContainer = selectionDiv.append("div").attr("class", "images-container");
             const cards = imagesContainer.selectAll(".card")
                 .data(selectedData, d => d.id);
 
@@ -704,44 +581,7 @@
                 .html(d => `<strong>Region:</strong> ${d.regionId}<br><strong>Page:</strong> ${d.page}`);
         }
 
-        // const handlers = createSimulationHandlers(simulation);
-        //
-        // selectionManager.setupDrag(node, {
-        //     start: handlers.dragstarted,
-        //     drag: handlers.dragged,
-        //     end: handlers.dragended
-        // });
-        //
-        // simulation.on("tick", () => handlers.tick(link, node));
-
-        simulation.on("tick", () => {
-            link
-                .attr("x1", d => d.source.x)
-                .attr("y1", d => d.source.y)
-                .attr("x2", d => d.target.x)
-                .attr("y2", d => d.target.y);
-
-            node
-                .attr("cx", d => d.x)
-                .attr("cy", d => d.y);
-        });
-
-        function dragstarted(event) {
-            if (!event.active) simulation.alphaTarget(0.3).restart();
-            event.subject.fx = event.subject.x;
-            event.subject.fy = event.subject.y;
-        }
-
-        function dragged(event) {
-            event.subject.fx = event.x;
-            event.subject.fy = event.y;
-        }
-
-        function dragended(event) {
-            if (!event.active) simulation.alphaTarget(0);
-            event.subject.fx = null;
-            event.subject.fy = null;
-        }
+        createNetwork(div, networkData.nodes, networkData.links, updateSelection);
     }
 </script>
 

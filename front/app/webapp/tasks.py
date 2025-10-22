@@ -33,7 +33,8 @@ def reindex_from_file(regions_id):
     from app.webapp.models.regions import Regions
     from app.webapp.utils.iiif.annotation import check_indexation
 
-    regions = Regions.objects.filter(pk=regions_id).first()
+    # regions = Regions.objects.filter(pk=regions_id).first()
+    regions = Regions.objects.get(pk=regions_id)
     return check_indexation(regions, True)
 
 
@@ -42,7 +43,8 @@ def delete_regions_and_annotations(regions_id):
     from app.webapp.models.regions import Regions
     from app.webapp.utils.iiif.annotation import destroy_regions
 
-    regions = Regions.objects.filter(pk=regions_id).first()
+    # regions = Regions.objects.filter(pk=regions_id).first()
+    regions = Regions.objects.get(pk=regions_id)
     return destroy_regions(regions)
 
 
@@ -104,6 +106,7 @@ def generate_record_json(model_name, record_id):
     try:
         instance = model_class.objects.get(pk=record_id)
         json_data = instance.to_json()
+        # bypass saving logic
         model_class.objects.filter(pk=record_id).update(json=json_data)
     except Exception as e:
         log(

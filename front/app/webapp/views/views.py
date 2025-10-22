@@ -86,7 +86,8 @@ def check_ref(obj_ref, obj="Digitization"):
         }
 
     digit_id = ref["digit"][1]
-    digit = Digitization.objects.filter(pk=digit_id).first()
+    # digit = Digitization.objects.filter(pk=digit_id).first()
+    digit = Digitization.objects.get(pk=digit_id)
     if not digit:
         return False, {"response": f"No digitization matching the id #{digit_id}"}
 
@@ -99,7 +100,8 @@ def check_ref(obj_ref, obj="Digitization"):
         return True, digit
 
     regions_id = ref["regions"][1]
-    regions = Regions.objects.filter(pk=regions_id).first()
+    # regions = Regions.objects.filter(pk=regions_id).first()
+    regions = Regions.objects.get(pk=regions_id)
     if not regions:
         return False, {"response": f"No regions matching the id #{regions_id}"}
 

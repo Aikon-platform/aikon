@@ -226,9 +226,11 @@ def reindex_file(filename):
         # if there is no regions_id in the ref, pass
         return False, a_ref
     regions_id = ref["regions"][1]
-    regions = Regions.objects.filter(pk=regions_id).first()
+    # regions = Regions.objects.filter(pk=regions_id).first()
+    regions = Regions.objects.get(pk=regions_id)
     if not regions:
-        digit = Digitization.objects.filter(pk=ref["digit"][1]).first()
+        # digit = Digitization.objects.filter(pk=ref["digit"][1]).first()
+        digit = Digitization.objects.get(pk=ref["digit"][1])
         if not digit:
             # if there is no digit corresponding to the ref, pass
             return False, a_ref
