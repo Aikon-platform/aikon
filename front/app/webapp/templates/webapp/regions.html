@@ -7,51 +7,111 @@
 
 {% block extrahead %}
     <link rel="stylesheet" href="{% static 'css/regions.css' %}">
+    <link rel="stylesheet" href="{% static 'svelte/witnessView/witness.css' %}">
     <link rel="stylesheet" href="{% static 'svelte/regionList/regionList.css' %}">
+    <style>
+        #left-panel {
+            flex: 0 0 30%;
+            min-width: 15%;
+            max-width: 70%;
+            height: 80vh;
+        }
+
+        #right-panel {
+            min-width: 29%;
+            max-width: 84%;
+            height: 80vh;
+        }
+
+        .resizer {
+            width: 3px;
+            height: 80vh;
+            cursor: ew-resize;
+            background-color: var(--bulma-border);
+            margin: 0 5px;
+        }
+
+        .resizing {
+            user-select: none;
+            cursor: ew-resize;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-    <h1 class="is-title is-size-2 py-3" style="z-index: 5">
-        {{ view_title }}
-        <a href="{{ witness.edit_url }}" class="edit-btn button is-small is-rounded is-link px-3 ml-3 mt-3" title='Edit'>
-            <span class="iconify" data-icon="entypo:edit"/>
-            <span class="ml-2">
-                {% if APP_LANG == "en" %}Edit witness{% else %}Éditer le témoin{% endif %}
-            </span>
-        </a>
-    </h1>
+<div class="columns" id="columns" style="height: 80vh;">
+    <div class="column" id="left-panel">
+        <div id="witness-panel"></div>
+    </div>
 
-    {# if there is at least one digitization for the current witness #}
-    {% if witness.img %}
-    <div>
-        <div id="region-list"></div>
+    <div class="resizer" id="handle"></div>
+
+    <div class="column" id="right-panel">
+        {% if witness.img %}
+            <div id="region-list"></div>
+        {% else %}
+            <div class="notification is-warning">
+                <p>
+                    {% if APP_LANG == "en" %}
+                        This witness has no digitization yet
+                    {% else %}
+                        Ce témoin ne dispose pas de numérisation
+                    {% endif %}
+                </p>
+            </div>
+        {% endif %}
     </div>
-    {% else %}
-    <div class="notification is-warning">
-        <p>
-            {% if APP_LANG == "en" %}
-                This witness has no digitization yet
-            {% else %}
-                Ce témoin ne dispose pas de numérisation
-            {% endif %}
-        </p>
-    </div>
-    {% endif %}
+</div>
 {% endblock %}
 
 {% block extra_js %}
-    <script>
-        const witness = {{ witness|js|safe }};
-        const manifest = "{{ manifest }}";
-        const imgPrefix = "{{ img_prefix }}";
-        const isValidated = {% if is_validated %}true{% else %}false{% endif %};
-        const nbOfPages = {% if img_nb %}{{img_nb}}{% else %}0{% endif %};
-        const trailingZeros = {% if img_zeros %}{{img_zeros}}{% else %}0{% endif %};
-    </script>
-    <!--
-    <script src="{% static 'svelte/regionList.js' %}"></script>
-    -->
-    <script type="module"
-            src="{% static 'svelte/regionList/region-list.js' %}"
-    ></script>
+<script>
+    const witness = {{ witness|js|safe }};
+    const manifest = "{{ manifest }}";
+    const manifests = {{ manifests|js|safe }};
+    const imgPrefix = "{{ img_prefix }}";
+    const isValidated = {% if is_validated %}true{% else %}false{% endif %};
+    const nbOfPages = {% if img_nb %}{{img_nb}}{% else %}0{% endif %};
+    const trailingZeros = {% if img_zeros %}{{img_zeros}}{% else %}0{% endif %};
+    const viewTitle = "{{ view_title }}";
+    const editUrl = "{{ witness.edit_url }}";
+</script>
+
+<script type="module" src="{% static 'svelte/regionList/region-list.js' %}"></script>
+<script type="module" src="{% static 'svelte/witnessView/witness.js' %}"></script>
+
+<script>
+    const handle = document.getElementById("handle");
+    const leftPanel = document.getElementById("left-panel");
+    const rightPanel = document.getElementById("right-panel");
+
+    let x, widthLeft, widthRight;
+
+    handle.addEventListener("mousedown", (e) => {
+        x = e.clientX;
+        widthLeft = leftPanel.offsetWidth;
+        widthRight = rightPanel.offsetWidth;
+        document.body.classList.add("resizing");
+
+        document.addEventListener("mousemove", resizeColumns);
+        document.addEventListener("mouseup", stop);
+    });
+
+    function resizeColumns(e) {
+        const dx = e.clientX - x;
+        const container = document.getElementById("columns").offsetWidth;
+
+        let newWidthLeft = ((widthLeft + dx) / container) * 100;
+        let newWidthRight = ((widthRight - dx) / container) * 100;
+
+        leftPanel.style.flex = `0 0 ${newWidthLeft}%`;
+        rightPanel.style.flex = `0 0 ${newWidthRight}%`;
+    }
+
+    function stop() {
+        document.body.classList.remove("resizing");
+        document.removeEventListener("mousemove", resizeColumns);
+        document.removeEventListener("mouseup", stop);
+    }
+</script>
 {% endblock %}

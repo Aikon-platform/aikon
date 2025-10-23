@@ -5,6 +5,7 @@ const regionApp = new RegionList({
     props: {
         witness,
         manifest,
+        manifests,
         isValidated,
         imgPrefix,
         nbOfPages,

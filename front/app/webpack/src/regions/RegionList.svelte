@@ -20,8 +20,10 @@
     import PageRegions from "./PageRegions.svelte";
     import SelectionModal from "../selection/SelectionModal.svelte";
     import Vectorization from "./vectorization/Vectorization.svelte";
+    import Viewer from "../witness/WitnessViewer.svelte";
 
     export let manifest = '';
+    export let manifests = [];
     export let isValidated = false;
     export let imgPrefix = '';
     export let nbOfPages = 1;
@@ -43,13 +45,14 @@
     const currentRegionId = parseInt(baseUrl.split('regions/')[1].replace("/", ""));
 
     const layouts = {
+        viewer: { text: appLang === 'en' ? 'Viewer' : 'Visionneuse' },
         all: { text: appLang === 'en' ? 'All regions' : 'Toutes les régions' },
         page: { text: appLang === 'en' ? 'Per page' : 'Par page' },
     }
     if (modules.includes("similarity")) layouts.similarity = { text: appLang === 'en' ? 'Similarity' : 'Similarité' }
     if (modules.includes("vectorization")) layouts.vectorization = { text: appLang === 'en' ? 'Vectorization' : 'Vectorisation' }
 
-    $: currentLayout = new URLSearchParams(window.location.search).get("tab") ?? "all";
+    $: currentLayout = new URLSearchParams(window.location.search).get("tab") ?? "viewer";
 
     function changeLayout(layout) {
         currentLayout = layout;
@@ -65,53 +68,63 @@
 
 <SelectionBtn {selectionLength}/>
 
-<div id="nav-actions">
-    <div class="actions grid">
-        <div class="cell is-left is-middle">
-            <RegionsBtn {baseUrl} {currentRegionId} {currentLayout}/>
-        </div>
-        {#if ["all", "page"].includes(currentLayout)}
-            <div class="cell" transition:fade={{ duration: 500 }}>
-                <ActionButtons/>
-            </div>
-        {/if}
-    </div>
-
-    <div class="tabs is-centered">
-        <ul class="panel-tabs">
-            {#each Object.entries(layouts) as [layout, meta]}
-                <li class:is-active={layout === currentLayout}
-                    on:click={() => changeLayout(layout)} on:keyup={() => null}>
-                    <a href={null}>{meta.text}</a>
-                </li>
-            {/each}
-        </ul>
-    </div>
+<div class="tabs is-boxed">
+    <ul class="panel-tabs">
+        {#each Object.entries(layouts) as [layout, meta]}
+            <li class:is-active={layout === currentLayout}
+                on:click={() => changeLayout(layout)} on:keyup={() => null}>
+                <a href={null}>{meta.text}</a>
+            </li>
+        {/each}
+    </ul>
 </div>
 
-{#if currentLayout === "all"}
-    <div class="grid is-gap-2 mt-5">
-        {#await fetchAll}
-            <div class="faded is-center">
-                {appLang === 'en' ? 'Retrieving regions...' : 'Récupération des régions...'}
-            </div>
-        {:then _}
-            {#each Object.values($allRegions) as item (item.id)}
-                <Region {item}/>
-            {:else}
-                <ExtractionButtons {currentRegionId} {baseUrl}/>
-            {/each}
-        {:catch error}
-            <div>Error when retrieving regions: {error}</div>
-        {/await}
-    </div>
-{:else if currentLayout === "page"}
-    <PageRegions/>
-{:else if currentLayout === "similarity"}
-    <Similarity/>
-{:else if currentLayout === "vectorization"}
-    <Vectorization/>
-{/if}
+<div class="tab-content">
+    {#if ["all", "page", "similarity", "vectorization"].includes(currentLayout)}
+        <div id="nav-actions">
+                <div class="actions grid">
+                    <div class="cell is-left is-middle">
+                        <RegionsBtn {baseUrl} {currentRegionId} {currentLayout} />
+                    </div>
+                    {#if ["all", "page"].includes(currentLayout)}
+                        <div class="cell" transition:fade={{ duration: 500 }}>
+                            <ActionButtons />
+                        </div>
+                    {/if}
+                </div>
+        </div>
+    {/if}
+
+    {#if currentLayout === "viewer"}
+        <Viewer {manifests} />
+
+    {:else if currentLayout === "all"}
+        <div class="grid is-gap-2 mt-5">
+            {#await fetchAll}
+                <div class="faded is-center">
+                    {appLang === "en" ? "Retrieving regions..." : "Récupération des régions..."}
+                </div>
+            {:then _}
+                {#each Object.values($allRegions) as item (item.id)}
+                    <Region {item} />
+                {:else}
+                    <ExtractionButtons {currentRegionId} {baseUrl} />
+                {/each}
+            {:catch error}
+                <div>Error when retrieving regions: {error}</div>
+            {/await}
+        </div>
+
+    {:else if currentLayout === "page"}
+        <PageRegions />
+
+    {:else if currentLayout === "similarity"}
+        <Similarity />
+
+    {:else if currentLayout === "vectorization"}
+        <Vectorization />
+    {/if}
+</div>
 
 <SelectionModal isRegion={true} {selectionLength}>
     {#if areSelectedRegions}
@@ -139,24 +152,31 @@
 </SelectionModal>
 
 <style>
-    .selection {
-        position: relative;
-        width: 64px;
-    }
-    .overlay {
-        font-size: 50%;
-    }
-    #nav-actions {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-        background-color: var(--bulma-body-background-color);
-        box-shadow: var(--bulma-body-background-color) 0 0 25px;
-        padding-top: 5em;
-        margin-top: -5em;
-    }
-    #nav-actions .panel-tabs {
-        margin-inline-start: 0;
-        margin-top: 0;
-    }
+  .tab-content {
+    overflow-y: auto;
+    height: calc(80vh - 80px);
+  }
+
+  .selection {
+    position: relative;
+    width: 64px;
+  }
+
+  .panel-tabs {
+    margin-inline-start: 0;
+    margin-top: 0;
+  }
+
+  .overlay {
+    font-size: 50%;
+  }
+
+  #nav-actions {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: var(--bulma-body-background-color);
+    box-shadow: var(--bulma-body-background-color) 0 0 25px;
+    margin-bottom: 1rem;
+  }
 </style>
