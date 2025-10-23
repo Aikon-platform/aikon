@@ -62,7 +62,7 @@
 
 <style>
 .panel {
-    height: 80vh;
+    height: 90vh;
     overflow-y: auto;
 }
 

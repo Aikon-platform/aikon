@@ -21,6 +21,7 @@
     import SelectionModal from "../selection/SelectionModal.svelte";
     import Vectorization from "./vectorization/Vectorization.svelte";
     import Viewer from "../witness/WitnessViewer.svelte";
+    import WitnessBtn from "../witness/WitnessBtn.svelte";
 
     export let manifest = '';
     export let manifests = [];
@@ -80,7 +81,7 @@
 </div>
 
 <div class="tab-content">
-    {#if ["all", "page", "similarity", "vectorization"].includes(currentLayout)}
+    {#if ["viewer", "all", "page", "similarity", "vectorization"].includes(currentLayout)}
         <div id="nav-actions">
                 <div class="actions grid">
                     <div class="cell is-left is-middle">
@@ -90,13 +91,17 @@
                         <div class="cell" transition:fade={{ duration: 500 }}>
                             <ActionButtons />
                         </div>
+                    {:else if ["viewer"].includes(currentLayout)}
+                        <div class="cell is-right">
+                            <WitnessBtn {manifests} />
+                        </div>
                     {/if}
                 </div>
         </div>
     {/if}
 
     {#if currentLayout === "viewer"}
-        <Viewer {manifests} />
+        <Viewer />
 
     {:else if currentLayout === "all"}
         <div class="grid is-gap-2 mt-5">
@@ -154,7 +159,7 @@
 <style>
   .tab-content {
     overflow-y: auto;
-    height: calc(80vh - 80px);
+    height: calc(90vh - 80px);
   }
 
   .selection {

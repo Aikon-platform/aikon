@@ -71,7 +71,7 @@
 
 <div>
     {#if currentRegionId}
-        {#if ["all", "page"].includes(currentLayout)}
+        {#if ["viewer", "all", "page"].includes(currentLayout)}
             <button on:click={deleteRegions} class="tag is-danger">
                 {appLang === "en" ? "Delete regions record" : "Supprimer l'intégralité des régions"}
             </button>
