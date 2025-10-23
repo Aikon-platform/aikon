@@ -1,38 +1,17 @@
 <script>
-    import {appLang, modules} from "../constants.js";
-
     export let viewTitle = "";
     export let witness = {};
     export let editUrl = "";
-    export let manifests = [];
 
-    const layouts = {
-        viewer: { text: appLang === 'en' ? 'Viewer' : 'Visionneuse' },
-        all: { text: appLang === 'en' ? 'All regions' : 'Toutes les régions' },
-        page: { text: appLang === 'en' ? 'Per page' : 'Par page' },
-    }
-    if (modules.includes("similarity")) layouts.similarity = { text: appLang === 'en' ? 'Similarity' : 'Similarité' }
-    if (modules.includes("vectorization")) layouts.vectorization = { text: appLang === 'en' ? 'Vectorization' : 'Vectorisation' }
+    let openContents = new Set();
 
-    $: currentLayout = new URLSearchParams(window.location.search).get("tab") ?? "viewer";
-
-    function changeLayout(layout) {
-        currentLayout = layout;
-        const url = new URL(window.location);
-        url.searchParams.set("tab", layout);
-        window.history.pushState({}, "", url);
-    }
-
-    let manifest = manifests?.[0] || "";
-
-    function selectManifest(e) {
-        manifest = e.target.value;
-        const event = new CustomEvent("selectManifest", {
-            detail: {
-                manifest: manifest
-            },
-        });
-        window.dispatchEvent(event);
+    function showContent(id) {
+        if (openContents.has(id)) {
+            openContents.delete(id);
+        } else {
+            openContents.add(id);
+        }
+        openContents = new Set(openContents);
     }
 </script>
 
@@ -42,31 +21,12 @@
             {viewTitle}
             <a
                 href={editUrl}
-                class="edit-btn button is-small is-rounded is-link px-4 ml-3 mt-3"
+                class="edit-btn button is-small is-rounded is-link px-3 ml-2 mt-1"
                 title="Edit"
             >
                 <span class="iconify" data-icon="entypo:edit"></span>
             </a>
         </h2>
-
-        {#if manifests.length > 0}
-            <div class="field selector">
-                <label for="digit" class="label">
-                    {appLang === 'en' ? "Digitization" : 'Numérisation'}
-                </label>
-                <div id="digit" class="control">
-                    <div class="select is-small">
-                        <select bind:value={manifest} on:change={selectManifest}>
-                            {#each manifests as manifest}
-                                <option value={manifest}>
-                                    {manifest}
-                                </option>
-                            {/each}
-                        </select>
-                    </div>
-                </div>
-            </div>
-        {/if}
 
         {#each Object.entries(witness.metadata_full.wit) as [key, value]}
             <span class="witness-key">{key}</span><br />
@@ -75,13 +35,24 @@
 
         {#if witness.metadata_full.contents?.length}
             <h3 class="title is-5 mb-3">Contents</h3>
-            {#each witness.metadata_full.contents as content}
+
+            {#each witness.metadata_full.contents as content, id}
                 <div class="mb-3">
-                    <span class="witness-key">{content.title}</span>
-                    {#if content.content}
-                        {#each Object.entries(content.content) as [key, value]}
-                            <div class="witness-value"><b>{key}:</b> {value}</div>
-                        {/each}
+                    <div
+                        class="is-flex is-justify-content-space-between is-clickable witness-key"
+                        on:click={() => showContent(id)}
+                        on:keypress={() => showContent(id)}
+                    >
+                        {content.title}
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+
+                    {#if openContents.has(id)}
+                        <div class="mt-2 pl-3">
+                            {#each Object.entries(content.content) as [key, value]}
+                                <div class="witness-value"><b>{key}:</b> {value}</div>
+                            {/each}
+                        </div>
                     {/if}
                 </div>
             {/each}

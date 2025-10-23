@@ -1,38 +1,56 @@
 <script>
-  import { onMount } from "svelte";
-  import { manifestToMirador } from "../utils.js";
-  import { appLang } from "../constants";
+    import { onMount } from "svelte";
+    import { manifestToMirador } from "../utils.js";
+    import { appLang } from "../constants";
 
-  export let manifests = [];
+    export let manifests = [];
 
-  let iframeSrc = "";
+    let manifest = manifests?.[0] || "";
 
-  onMount(() => {
-    if (manifests.length > 0) {
-      iframeSrc = manifestToMirador(manifests[0]);
+    function selectManifest(e) {
+        manifest = e.target.value;
+        const event = new CustomEvent("selectManifest", {
+            detail: {
+                manifest: manifest
+            },
+        });
+        window.dispatchEvent(event);
     }
-    window.addEventListener("selectManifest", (e) => {
-      iframeSrc = manifestToMirador(e.detail.manifest);
+
+    let iframeSrc = "";
+
+    onMount(() => {
+        if (manifests.length > 0) {
+            iframeSrc = manifestToMirador(manifests[0]);
+        }
+        window.addEventListener("selectManifest", (e) => {
+            iframeSrc = manifestToMirador(e.detail.manifest);
+        });
     });
-  });
 </script>
 
-{#if iframeSrc}
-  <iframe
+{#if manifests.length > 0}
+    <div class="field selector is-flex">
+        <label for="digit" class="label">
+            {appLang === 'en' ? "Digitization" : 'Numérisation'}
+        </label>
+        <div id="digit" class="control pl-3">
+            <div class="select is-small">
+                <select bind:value={manifest} on:change={selectManifest}>
+                    {#each manifests as manifest}
+                        <option value={manifest}>
+                            {manifest}
+                        </option>
+                    {/each}
+                </select>
+            </div>
+        </div>
+    </div>
+{/if}
+
+<iframe
     src={iframeSrc}
-    style="width: 100%; height: 100%; border: none;"
+    style="width: 100%; height: 90%; border: none;"
     title="Mirador viewer"
     allowfullscreen
-  ></iframe>
-{:else}
-  <div class="has-text-centered p-6">
-    <progress class="progress is-small is-primary" max="100">
-      {appLang === 'en' ? 'Loading...' : "Chargement..."}
-    </progress>
-    <p>
-      {appLang === 'en'
-        ? 'Loading witness digitization...'
-        : "Chargement de la numérisation..."}
-    </p>
-  </div>
-{/if}
+></iframe>
