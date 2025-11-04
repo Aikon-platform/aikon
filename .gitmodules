@@ -1,6 +1,3 @@
 [submodule "api"]
 	path = api
 	url = git@github.com:Aikon-platform/aikon-api.git
-[submodule "front/annotations/aiiinotate"]
-	path = front/annotations/aiiinotate
-	url = git@github.com:Aikon-platform/aiiinotate.git
