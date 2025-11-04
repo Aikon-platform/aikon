@@ -99,54 +99,45 @@
 
     const toggleView = (viewId) => currentViewId = viewId;
 
-    const onKeyDown = () => { if (key==="Escape") dispatch("closeModal") };
+    const onKeyUp = (e) => { if (e.key === "Escape") dispatch("closeModal") };
 
     const onClose = () => dispatch("closeModal");
 
     //////////////////////////////////////////////////
 
     onMount(() => {
-        document.addEventListener("keyup", onKeyDown);
+        document.addEventListener("keyup", onKeyUp);
     })
     onDestroy(() => {
-        document.removeEventListener("keydown", onKeyDown);
+        document.removeEventListener("keydown", onKeyUp);
     })
 </script>
 
 
-<div id="region-modal-wrapper"
-     class="modal is-active">
-    <div class="modal-background"></div>
+<div id="region-modal-wrapper" class="modal is-active">
+    <div class="modal-background" on:click={onClose} on:keyup={onKeyUp}/>
     <div class="modal-content">
         <div class="modal-inner">
-
-            <div class="tabs is-centered">
+            <div class="tabs is-centered" style="height: fit-content;">
                 <ul>
                     {#each viewTabs as { id, label }}
                         <li class={id===currentViewId ? "is-active": ""}>
                             <!-- svelte-ignore a11y-invalid-attribute -->
-                            <a on:click|preventDefault={() => toggleView(id)}
-                               href=""
-                            >{ label }</a>
+                            <a on:click|preventDefault={() => toggleView(id)} href="">
+                                { label }
+                            </a>
                         </li>
                     {/each}
                 </ul>
             </div>
 
-            <div class="ml-4 mr-4 modal-main-wrapper"
-                 class:pb-4={ currentViewId==="main" }
-            >
-                <svelte:component this={viewComponents[currentViewId] || null}
-                                  {...viewProps[currentViewId] || {}}
-                ></svelte:component>
+            <div class="ml-4 mr-4 modal-main-wrapper" class:pb-4={ currentViewId==="main" }>
+                <svelte:component this={viewComponents[currentViewId] || null} {...viewProps[currentViewId] || {}}/>
             </div>
 
         </div>
     </div>
-    <button class="modal-close is-large"
-            aria-label="close"
-            on:click={onClose}
-    ></button>
+    <button on:click={onClose} class="modal-close is-large" aria-label="close"/>
 </div>
 
 <style>

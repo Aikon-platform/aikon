@@ -1,123 +1,49 @@
 <script>
     import { onMount, onDestroy } from 'svelte';
     import { createNetwork } from './network.js';
+    import Region from "../regions/Region.svelte";
+
+    const width = 954;
+    const height = 600;
 
     export let networkData;
     export let metadata;
-    export let type = "regions";
+    export let type;
+    export let selectedNodes;
+    export let updateSelectedNodes;
 
     let networkInstance;
     let container;
 
-    $: if (networkData && container) {
-        networkInstance = renderVisualization();
+    $: if ($networkData && $networkData.nodes.length > 0 && container) {
+        renderVisualization();
+        console.log($networkData);
     }
 
     function renderVisualization() {
+        if (networkInstance) {
+            networkInstance.destroy();
+        }
+
         if (type === "images") {
-            // $: if ($imageNetwork && container) {}
-            return createImageNetwork(container, networkData);
+            networkInstance = createImageNetwork(container, $networkData);
         } else if (type === "documents") {
-            // $: if ($documentNetwork && container) {}
-            // return createDocumentNetwork(container, networkData);
+            networkInstance = createDocumentNetwork(container, $networkData);
         }
     }
 
     function createDocumentNetwork(div, networkData) {
-        function updateSelection(selectionOrder, selectionDiv) {
-            // const imagesContainer = selectionDiv.append("div");
-            // imagesContainer.selectAll("*").remove();
-            //
-            // if (selectionOrder.length === 0) return;
-            //
-            // const {regions, rows} = buildAlignedImageMatrix(selectionOrder, regionImages, data);
-            //
-            // const imageOccurrences = new Map();
-            // rows.forEach(rowData => {
-            //     Object.values(rowData).forEach(imgData => {
-            //         const count = imageOccurrences.get(imgData.img) || 0;
-            //         imageOccurrences.set(imgData.img, count + 1);
-            //     });
-            // });
-            //
-            // const imageColorMap = new Map();
-            // const getImageColor = (imgUrl) => {
-            //     if (imageOccurrences.get(imgUrl) === 1) {
-            //         return "white";
-            //     }
-            //     if (!imageColorMap.has(imgUrl)) {
-            //         imageColorMap.set(imgUrl, generateDistinctColor(imgUrl));
-            //     }
-            //     return imageColorMap.get(imgUrl);
-            // };
-            //
-            // const table = imagesContainer.append("table")
-            //     .attr("class", "table is-bordered is-fullwidth");
-            //
-            // const thead = table.append("thead");
-            // const headerRow = thead.append("tr");
-            //
-            // regions.forEach(regionId => {
-            //     headerRow.append("th")
-            //         .attr("class", "has-text-centered has-text-white")
-            //         .style("background", colorScale(regionId))
-            //         .text(`Region ${regionId}`);
-            // });
-            //
-            // const tbody = table.append("tbody");
-            //
-            // rows.forEach(rowData => {
-            //     const row = tbody.append("tr");
-            //
-            //     regions.forEach(regionId => {
-            //         const cell = row.append("td")
-            //             .attr("class", "has-text-centered")
-            //             .style("vertical-align", "top")
-            //             .style("background", rowData[regionId] ? getImageColor(rowData[regionId].img) : "white");
-            //
-            //         if (rowData[regionId]) {
-            //             const imgUrl = rowData[regionId].img;
-            //
-            //             cell.append("img")
-            //                 .attr("src", imgUrl)
-            //                 .style("width", "200px")
-            //                 .style("height", "auto")
-            //                 .style("display", "block")
-            //                 .style("margin", "0 auto");
-            //
-            //             cell.append("div")
-            //                 .attr("class", "has-text-grey-dark mt-2")
-            //                 .style("font-size", "12px")
-            //                 .text(`Page ${rowData[regionId].page}`);
-            //         }
-            //     });
-            // });
+        function onSelectionChange(selectedData) {
+            updateSelectedNodes(selectedData);
         }
-        return createNetwork(div, networkData.nodes, networkData.links, updateSelection);
+        return createNetwork(div, networkData.nodes, networkData.links, onSelectionChange);
     }
 
     function createImageNetwork(div, networkData) {
-        function updateSelection(selectedData, selectionDiv) {
-            // TODO make update selection interact with store + use svelte component to render selected images
-            const imagesContainer = selectionDiv.append("div").attr("class", "images-container");
-            const cards = imagesContainer.selectAll(".card")
-                .data(selectedData, d => d.id);
-
-            cards.exit().remove();
-
-            const cardsEnter = cards.enter()
-                .append("div")
-                .attr("class", "card");
-
-            cardsEnter.append("img")
-                .attr("src", d => d.id);
-
-            cardsEnter.append("div")
-                .attr("class", "card-info")
-                .html(d => `<strong>Region:</strong> ${d.regionId}<br><strong>Page:</strong> ${d.page}`);
+        function onSelectionChange(selectedData) {
+            updateSelectedNodes(selectedData);
         }
-
-        return createNetwork(div, networkData.nodes, networkData.links, updateSelection);
+        return createNetwork(div, networkData.nodes, networkData.links, onSelectionChange);
     }
 
     onDestroy(() => {
@@ -127,14 +53,31 @@
 
 <div>
     <h2 class="title is-3 has-text-link">
-        {type === "regions" ? "Images network" : "Witness network"}
+        {type === "images" ? "Image regions network" : "Witness network"}
     </h2>
 
     <div bind:this={container} class="visualization-container"></div>
+
+    {#if $selectedNodes.length > 0}
+        <div class="selected-panel box mt-4">
+            <h3 class="title is-5">Selected Nodes ({$selectedNodes.length})</h3>
+            <div class="images-grid">
+                {#each $selectedNodes as node (node.id)}
+                    <Region item="{node}" selectable={false} copyable={false}/>
+                {/each}
+            </div>
+        </div>
+    {/if}
 </div>
 
 <style>
-    .visualization-container {
-        min-height: 600px;
+    .selected-panel {
+        background-color: var(--bulma-scheme-main-bis);
+    }
+
+    .images-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1rem;
     }
 </style>

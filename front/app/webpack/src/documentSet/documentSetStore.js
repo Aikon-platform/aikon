@@ -1,6 +1,6 @@
 import {derived, get, writable} from 'svelte/store';
 import {extractNb, refToIIIF} from "../utils.js";
-import { appUrl } from "../constants.js";
+import {appUrl, regionsType} from "../constants.js";
 
 function imageToPage(imgName) {
     const parts = imgName.split('_');
@@ -9,52 +9,76 @@ function imageToPage(imgName) {
 
 export function createDocumentSetStore(documentSetId) {
     const error = writable(null);
+    const category = writable(1);
+    const selectedNodes = writable([]);
+
+    function updateSelectedNodes(nodesArray) {
+        selectedNodes.set(nodesArray);
+    }
 
     // TODO add
     //  regionsImages
     //  regions list
     //  region to color
 
+    // /** @type {Writable<RegionItemType[]>} */
     const allPairs = writable([]);
     const regionsMetadata = writable({});
     const imageIndex = writable(new Map());
 
     const fetchPairs = (async () => {
-        const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs`);
-        const data = await response.json();
-        if (!response.ok) {
-            error.set(`Failed to fetch document set pairs: HTTP ${response.status} for ${appUrl}/document-set/${documentSetId}/pairs`);
-            return;
-        }
-
-        const pairs = data.map(pair => ({
-            ...pair,
-            page_1: imageToPage(pair.img_1),
-            img_1: refToIIIF(pair.img_1),
-            page_2: imageToPage(pair.img_2),
-            img_2: refToIIIF(pair.img_2)
-        }));
-
-        allPairs.set(pairs);
-        const index = new Map();
-        const regionIds = new Set();
-
-        pairs.forEach(pair => {
-            for (const key of ['1', '2']) {
-                regionIds.add(pair[`regions_id_${key}`]);
-                const imgKey = `img_${key}`;
-                if (!index.has(pair[imgKey])) index.set(pair[imgKey], []);
-                index.get(pair[imgKey]).push(pair);
+        try {
+            const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${get(category)}`);
+            if (!response.ok) {
+                error.set(`Failed to fetch document set pairs: HTTP ${response.status}`);
+                return;
             }
-        });
 
-        imageIndex.set(index);
+            const data = await response.json();
 
-        const regionIdsArray = [...regionIds];
-        for (let i = 0; i < regionIdsArray.length; i++) {
-            const info = await getRegionsInfo(regionIdsArray[i]);
-            info.color = generateColor(i);
-            regionsMetadata.update(m => ({...m, [regionIdsArray[i]]: info}));
+            const pairs = data.map(pair => {
+                for (const key of ['1', '2']) {
+                    const pairImg = pair[`img_${key}`];
+                    const imgParts = pairImg.split("_");
+                    pair = {
+                        ...pair,
+                        [`img_${key}`]: refToIIIF(pair.img_1),
+                        [`id_${key}`]: pairImg,
+                        [`page_${key}`]: imageToPage(pairImg),
+                        [`ref_${key}`]: `${imgParts.slice(0,3).join("_").replace(".jpg", "")}.jpg`,
+                        [`coord_${key}`]: imgParts.slice(3).join("_").replace(".jpg", ""),
+                    };
+                }
+                return pair
+            });
+
+            allPairs.set(pairs);
+
+            const index = new Map();
+            const regionIds = new Set();
+
+            pairs.forEach(pair => {
+                for (const key of ['1', '2']) {
+                    regionIds.add(pair[`regions_id_${key}`]);
+                    const imgKey = `img_${key}`;
+                    if (!index.has(pair[imgKey])) index.set(pair[imgKey], []);
+                    index.get(pair[imgKey]).push(pair);
+                }
+            });
+
+            imageIndex.set(index);
+
+            const regionIdsArray = [...regionIds];
+            const metadataPromises = regionIdsArray.map(async (regionId, i) => {
+                const info = await getRegionsInfo(regionId);
+                info.color = generateColor(i);
+                return [regionId, info];
+            });
+
+            const metadataEntries = await Promise.all(metadataPromises);
+            regionsMetadata.set(Object.fromEntries(metadataEntries));
+        } catch (e) {
+            error.set(`Error fetching pairs: ${e.message}`);
         }
     })();
 
@@ -147,11 +171,17 @@ export function createDocumentSetStore(documentSetId) {
             for (const key of ['1', '2']) {
                 const regionKey = `regions_id_${key}`;
                 if (!nodes.has(pair[`img_${key}`])) {
+                    const regionId = pair[regionKey];
                     nodes.set(pair[`img_${key}`], {
                         id: pair[`img_${key}`],
-                        regionId: pair[regionKey],
-                        page: pair[`page_${key}`],
-                        color: $regionsInfo[pair[regionKey]]?.color || "#888888"
+                        img: pair[`ref_${key}`],
+                        regionId: regionId,
+                        canvas: pair[`page_${key}`],
+                        title: `Region ${regionId}<br/>Page ${pair[`page_${key}`]}`,
+                        color: $regionsInfo[regionId]?.color || "#888888",
+                        ref: pair[`id_${key}`],
+                        type: regionsType,
+                        xywh: pair[`coord_${key}`].split(",")
                     });
                 }
             }
@@ -180,8 +210,8 @@ export function createDocumentSetStore(documentSetId) {
 
             if (!documentImgs.has(r1)) documentImgs.set(r1, []);
             if (!documentImgs.has(r2)) documentImgs.set(r2, []);
-            documentImgs.get(r1).push({img: pair.img_1, page: pair.page_1, pair});
-            documentImgs.get(r2).push({img: pair.img_2, page: pair.page_2, pair});
+            documentImgs.get(r1).push({img: pair.img_1, canvas: pair.page_1, pair});
+            documentImgs.get(r2).push({img: pair.img_2, canvas: pair.page_2, pair});
 
             const key = r1 < r2 ? `${r1}-${r2}` : `${r2}-${r1}`;
             const existing = connectedDocuments.get(key);
@@ -339,6 +369,9 @@ export function createDocumentSetStore(documentSetId) {
         regionsMetadata,
         allPairs,
         fetchPairs,
-        error
+        error,
+        category,
+        selectedNodes,
+        updateSelectedNodes,
     };
 }

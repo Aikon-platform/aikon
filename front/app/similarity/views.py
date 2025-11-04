@@ -805,6 +805,11 @@ def get_document_set_pairs(request, dsid=None):
         )
 
     try:
+        cat = int(request.GET.get("category", None))
+    except TypeError:
+        cat = None
+
+    try:
         pairs = filter_pairs(
             regions_ids,
             exclusive=True,
@@ -812,7 +817,7 @@ def get_document_set_pairs(request, dsid=None):
             max_score=request.GET.get("maxScore", None),
             topk=request.GET.get("topk", None),
             exclude_self=request.GET.get("excludeSelf", "false").lower() == "true",
-            category=request.GET.get("category", None),
+            category=cat,
         )
         return JsonResponse(pairs, status=200, safe=False)
     except Exception as e:

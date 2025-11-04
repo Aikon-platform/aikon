@@ -13,8 +13,7 @@ function createSelectionManager(options) {
     const selectedNodes = new Set();
     const selectionOrder = [];
     let selectionMode = false;
-    let selectionRect = null;
-    let selectionStart = null;
+
 
     function toggleSelectionMode() {
         selectionMode = !selectionMode;
@@ -40,13 +39,14 @@ function createSelectionManager(options) {
         onSelectionChange(selectedNodes, selectionOrder);
     }
 
+    let selectionStart = null;
+    let selectionRect = null;
     svg.on("mousedown", function (event) {
         if (!selectionMode) return;
         event.preventDefault();
 
         const [x, y] = d3.pointer(event, g.node());
         selectionStart = {x, y};
-
         selectionRect = g.append("rect")
             .attr("class", "selection-rect")
             .attr("x", x)
@@ -157,7 +157,7 @@ function createSimulationHandlers(simulation, link, node, label) {
     return {dragstarted, dragged, dragended};
 }
 
-// 1. createLegend
+// TODO 1. createLegend
 // const colorScale = d3.scaleOrdinal(generateColors(regionCount));
 // createLegend('regions-info', nodesArray, colorScale, corpus);
 
@@ -167,31 +167,33 @@ function createSimulationHandlers(simulation, link, node, label) {
 // dans store
 // aussi faire que colorScale ce soit accessible de store
 
-// TODO faire que updateSelection embed son imageContainer
-
 function processSelection(nodes, selected, order) {
-    if (type === "images"){
-        return nodes.filter(d => selected.has(d.id))
-    }
-    return order;
+    return nodes.filter(d => selected.has(d.id));
 }
 
-export function createNetwork(div, nodes, links, updateSelection) {
+export function createNetwork(div, nodes, links, onSelectionChange) {
     const width = 954;
     const height = 600;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    nodes.forEach(node => {
+        node.x = centerX;
+        node.y = centerY;
+    });
 
     const linkStrengthScale = d3.scaleLinear()
-        .domain([1, d3.max(links, d => d.count)])
+        .domain([1, d3.max(links, d => d.count) || 1])
         .range([0.3, 1]);
 
     const linkDistanceScale = d3.scaleLinear()
-        .domain([1, d3.max(links, d => d.count)])
+        .domain([1, d3.max(links, d => d.count) || 1])
         .range([200, 50]);
 
     const simulation = d3.forceSimulation(nodes)
         .force("link", d3.forceLink(links).id(d => d.id)
-            .distance(d => linkDistanceScale(d.count))
-            .strength(d => linkStrengthScale(d.count))
+            .distance(d => linkDistanceScale(d.count || 1))
+            .strength(d => linkStrengthScale(d.count || 1))
         )
         .force("charge", d3.forceManyBody().strength(-750))
         .force("center", d3.forceCenter(width / 2, height / 2))
@@ -213,21 +215,14 @@ export function createNetwork(div, nodes, links, updateSelection) {
 
     const g = svg.append("g");
 
-    const selectionDiv = container.append("div")
-        .attr("class", "selection-panel");
-
-    selectionDiv.append("h3").attr("class", "title is-5")
-        .text("Selected Nodes");
-        // MATRIX
-        //.text("Selected Witnesses");
-
     const selectionManager = createSelectionManager({
         svg,
         g,
         nodes: nodes,
         onSelectionChange: (selected, order) => {
             node.classed("selected", d => selected.has(d.id));
-            updateSelection(processSelection(nodes, selected, order), selectionDiv);
+            const selectedNodesArray = processSelection(nodes, selected, order);
+            onSelectionChange(selectedNodesArray);
         }
     });
 
@@ -259,8 +254,7 @@ export function createNetwork(div, nodes, links, updateSelection) {
         .attr("fill", d => d.color);
 
     // TODO improve labels
-    node.append("title")
-        .text(d => `Region: ${d.regionId}\nPage: ${d.page}`);
+    node.append("title").text(d => `Region: ${d.regionId}\nPage: ${d.page}`);
 
     const {dragstarted, dragged, dragended} = createSimulationHandlers(simulation, link, node, null);
 

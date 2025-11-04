@@ -8,9 +8,7 @@
 </script>
 
 <div class="img-wrapper">
-    <Region item={mainImgItem}
-            height="full"
-    ></Region>
+    <Region item={mainImgItem} height="full"/>
 </div>
 
 <style>

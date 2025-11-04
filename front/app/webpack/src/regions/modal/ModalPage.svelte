@@ -72,6 +72,6 @@
     }
     .modal-context-bbox {
         position: absolute;
-        border: 2px solid red;
+        border: 3px solid var(--bulma-link);
     }
 </style>

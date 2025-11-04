@@ -126,15 +126,9 @@
     }
 </script>
 
-
 <div>
-    <!-- TODO remove selection outline from SimilarRegion in similarities
-        (selecting a Region has no effect on "Selection") -->
-    <Region {item}
-            size={256}
-            isSquare={false}
-            descPromise={getDesc(regionRef, similarityType, score, canvas, baseUrl, pathUrl, isPropagatedContext)}
-    />
+    <Region {item} size={256} selectable={false} isSquare={false}
+            descPromise={getDesc(regionRef, similarityType, score, canvas, baseUrl, pathUrl, isPropagatedContext)}/>
     {#if !isInModal }
         <div class="tags has-addons is-dark is-center">
             <span class="tag is-hoverable pl-3 pr-2 py-4" class:is-selected={selectedCategory === 1}

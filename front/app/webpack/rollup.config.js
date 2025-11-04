@@ -70,7 +70,8 @@ export default [
             sourcemap: true,
             format: 'iife',
             name: 'recordList',
-            file: '../webapp/static/svelte/recordList.js'
+            file: '../webapp/static/svelte/recordList.js',
+            inlineDynamicImports: true
         },
         plugins: [
             svelte({
@@ -99,7 +100,8 @@ export default [
             sourcemap: true,
             format: 'iife',
             name: 'documentSet',
-            file: '../webapp/static/svelte/documentSet.js'
+            file: '../webapp/static/svelte/documentSet.js',
+            inlineDynamicImports: true
         },
         plugins: [
             svelte({

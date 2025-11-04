@@ -3,7 +3,6 @@
     import Sidebar from './Sidebar.svelte';
     import NetworkVisualization from './NetworkVisualization.svelte';
     import {createDocumentSetStore} from './documentSetStore.js';
-
     export let docSet;
 
     const {
@@ -11,10 +10,11 @@
         documentNetwork,
         regionsMetadata,
         fetchPairs,
-        error
+        error,
+        selectedNodes,
+        updateSelectedNodes
     } = createDocumentSetStore(docSet.id);
     let activeTab = 0;
-
 </script>
 
 <Layout bind:activeTab>
@@ -45,9 +45,21 @@
                 <progress class="progress is-link" max="100">Loading...</progress>
             {:then _}
                 {#if activeTab === 0}
-                    <NetworkVisualization networkData={$imageNetwork} metadata={$regionsMetadata} type="images"/>
+                    <NetworkVisualization
+                        networkData={imageNetwork}
+                        metadata={regionsMetadata}
+                        type="images"
+                        {selectedNodes}
+                        {updateSelectedNodes}
+                    />
                 {:else}
-                    <NetworkVisualization networkData={$documentNetwork} metadata={$regionsMetadata} type="documents"/>
+                    <NetworkVisualization
+                        networkData={documentNetwork}
+                        metadata={regionsMetadata}
+                        type="documents"
+                        {selectedNodes}
+                        {updateSelectedNodes}
+                    />
                 {/if}
             {/await}
         {/if}
