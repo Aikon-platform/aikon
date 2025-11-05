@@ -15,7 +15,7 @@
             <slot name="tabs" {activeTab}/>
         </nav>
 
-        <div class="content-area">
+        <div class="content-area pl-5">
             <slot name="content" {activeTab}/>
         </div>
     </main>
@@ -30,16 +30,11 @@
     .sidebar {
         flex-shrink: 0;
         border-right: 1px solid var(--bulma-border-weak);
-        background-color: var(--bulma-black-bis);
+        background-color: var(--bulma-scheme-main-bis);
         min-width: 250px;
         max-width: 400px;
         z-index: 2;
     }
-    /*.sidebar {*/
-    /*    overflow-y: auto;*/
-    /*    left: 0;*/
-    /*    position: absolute;*/
-    /*}*/
 
     .main-content {
         flex: 1;
@@ -47,11 +42,6 @@
         flex-direction: column;
         min-height: 0;
     }
-    /*.main-content {*/
-    /*    overflow-y: auto;*/
-    /*    right: 0;*/
-    /*    position: absolute;*/
-    /*}*/
 
     .tabs-bar {
         overflow-x: auto;
@@ -59,10 +49,6 @@
         flex-shrink: 0;
         white-space: nowrap;
     }
-     /*.tabs-bar {*/
-    /*    !*border-bottom: 1px solid var(--bulma-border);*!*/
-    /*    !*padding: 0 5% 0 1%;*!*/
-    /*}*/
 
     .tabs-bar::-webkit-scrollbar {
         height: 6px;
@@ -82,9 +68,4 @@
         padding: 2% 5% 2% 1%;
         overflow: visible;
     }
-    /*.content-area {*/
-    /*    flex: 1;*/
-    /*    overflow-y: auto;*/
-    /*    padding: 2% 5% 2% 1%;*/
-    /*}*/
 </style>

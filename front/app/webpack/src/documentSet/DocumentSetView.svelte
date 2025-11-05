@@ -9,17 +9,20 @@
         imageNetwork,
         documentNetwork,
         regionsMetadata,
+        docSetStats,
         fetchPairs,
         error,
         selectedNodes,
         updateSelectedNodes
     } = createDocumentSetStore(docSet.id);
     let activeTab = 0;
+
+    $: visualizationTitle = activeTab === 0 ? "Image regions network" : "Witness network";
 </script>
 
 <Layout bind:activeTab>
     <div slot="sidebar">
-        <Sidebar corpusStats={null} {docSet}/>
+        <Sidebar {docSetStats} {regionsMetadata} {docSet}/>
     </div>
 
     <div slot="tabs" let:activeTab>
@@ -44,23 +47,14 @@
             {#await fetchPairs}
                 <progress class="progress is-link" max="100">Loading...</progress>
             {:then _}
-                {#if activeTab === 0}
+                <div>
+                    <h2 class="title is-3 has-text-link">{visualizationTitle}</h2>
                     <NetworkVisualization
-                        networkData={imageNetwork}
-                        metadata={regionsMetadata}
-                        type="images"
+                        networkData={activeTab === 0 ? imageNetwork : documentNetwork}
                         {selectedNodes}
                         {updateSelectedNodes}
                     />
-                {:else}
-                    <NetworkVisualization
-                        networkData={documentNetwork}
-                        metadata={regionsMetadata}
-                        type="documents"
-                        {selectedNodes}
-                        {updateSelectedNodes}
-                    />
-                {/if}
+                </div>
             {/await}
         {/if}
     </div>

@@ -354,19 +354,49 @@ export function createDocumentSetStore(documentSetId) {
         return {regions, rows};
     }
 
-    //  const docSetStats = derived(
-    //     [allPairs, regionsMetadata],
-    //     ([$allPairs, $regionsMetadata]) => {
-    //         // todo link-count, node-count, doc-count, category count
-    //         return {};
-    //     }
-    // );
+    const docSetStats = derived(
+        [allPairs, regionsMetadata, imageNetwork, documentNetwork],
+        ([$allPairs, $regionsMetadata, $imageNetwork, $documentNetwork]) => {
+            const witnesses = new Set();
+            const categories = {};
+            let totalScore = 0;
+            let scoredPairs = 0;
+
+            $allPairs.forEach(pair => {
+                Object.values($regionsMetadata).forEach(meta => {
+                    if (meta.witnessId) witnesses.add(meta.witnessId);
+                });
+
+                if (pair.category) {
+                    categories[pair.category] = (categories[pair.category] || 0) + 1;
+                }
+
+                if (pair.score != null) {
+                    totalScore += pair.score;
+                    scoredPairs++;
+                }
+            });
+
+            return {
+                regions: Object.keys($regionsMetadata).length,
+                witnesses: witnesses.size,
+                pairs: $allPairs.length,
+                imageNodes: $imageNetwork.nodes.length,
+                imageLinks: $imageNetwork.links.length,
+                docNodes: $documentNetwork.nodes.length,
+                docLinks: $documentNetwork.links.length,
+                avgScore: scoredPairs > 0 ? (totalScore / scoredPairs).toFixed(2) : null,
+                categories
+            };
+        }
+    );
 
     return {
         imageNetwork,
         documentNetwork,
         regionsInfo,
         regionsMetadata,
+        docSetStats,
         allPairs,
         fetchPairs,
         error,

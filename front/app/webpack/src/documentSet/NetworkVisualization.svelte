@@ -2,18 +2,18 @@
     import { onMount, onDestroy } from 'svelte';
     import { createNetwork } from './network.js';
     import Region from "../regions/Region.svelte";
+    import { appLang } from '../constants.js';
 
     const width = 954;
     const height = 600;
 
     export let networkData;
-    export let metadata;
-    export let type;
     export let selectedNodes;
     export let updateSelectedNodes;
 
     let networkInstance;
     let container;
+    let selectionMode = false;
 
     $: if ($networkData && $networkData.nodes.length > 0 && container) {
         renderVisualization();
@@ -25,25 +25,22 @@
             networkInstance.destroy();
         }
 
-        if (type === "images") {
-            networkInstance = createImageNetwork(container, $networkData);
-        } else if (type === "documents") {
-            networkInstance = createDocumentNetwork(container, $networkData);
-        }
-    }
-
-    function createDocumentNetwork(div, networkData) {
         function onSelectionChange(selectedData) {
             updateSelectedNodes(selectedData);
         }
-        return createNetwork(div, networkData.nodes, networkData.links, onSelectionChange);
+        networkInstance = createNetwork(
+            container,
+            $networkData.nodes,
+            $networkData.links,
+            onSelectionChange,
+            (mode) => { selectionMode = mode; }
+        );
     }
 
-    function createImageNetwork(div, networkData) {
-        function onSelectionChange(selectedData) {
-            updateSelectedNodes(selectedData);
+    function toggleSelectionMode() {
+        if (networkInstance) {
+            selectionMode = networkInstance.toggleSelectionMode();
         }
-        return createNetwork(div, networkData.nodes, networkData.links, onSelectionChange);
     }
 
     onDestroy(() => {
@@ -52,15 +49,20 @@
 </script>
 
 <div>
-    <h2 class="title is-3 has-text-link">
-        {type === "images" ? "Image regions network" : "Witness network"}
-    </h2>
+    <button class="toggle-button button is-small is-link mb-3"
+        class:is-active={selectionMode}
+        on:click={toggleSelectionMode}>
+        <span class="icon px-4">
+            <i class="fas fa-{selectionMode ? 'hand-pointer' : 'crop-alt'}"></i>
+        </span>
+        Switch to {selectionMode ? 'click' : 'selection'} mode
+    </button>
 
     <div bind:this={container} class="visualization-container"></div>
 
     {#if $selectedNodes.length > 0}
         <div class="selected-panel box mt-4">
-            <h3 class="title is-5">Selected Nodes ({$selectedNodes.length})</h3>
+            <h3 class="title is-5">{appLang === "en" ? 'Selected nodes' : 'Nœuds sélectionnés'} ({$selectedNodes.length})</h3>
             <div class="selected-nodes grid is-gap-2 mt-5">
                 {#each $selectedNodes as node (node.id)}
                     <Region item="{node}" selectable={false} copyable={false}/>

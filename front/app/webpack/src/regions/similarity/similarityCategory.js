@@ -62,3 +62,26 @@ export const semanticLabel = appLang === 'en' ?  "semantic and non-visual matche
 export const noLabel = appLang === 'en' ?  "regions without match" : "régions sans correspondance";
 export const userLabel = appLang === 'en' ?  "user specific category" : "correspondances spécifiques à l'utilisateur";
 export const validateLabel = appLang==="en" ? "validate the match" : "valider la correspondance";
+
+export const categoryInfo = {
+    1: {
+        title: exactLabel,
+        svg: exactSvg,
+    },
+    2: {
+        title: partialLabel,
+        svg: partialSvg,
+    },
+    3: {
+        title: semanticLabel,
+        svg: semanticSvg,
+    },
+    4: {
+        title: noLabel,
+        svg: noSvg,
+    },
+    5: {
+        title: userLabel,
+        svg: userSvg,
+    }
+};

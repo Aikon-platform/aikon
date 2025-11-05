@@ -71,6 +71,7 @@
         object-fit: contain;
         max-height: 100%;
         max-width: 100%;
+        height: 100%;
     }
     .modal-context-bbox {
         position: absolute;
