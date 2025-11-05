@@ -21,7 +21,7 @@ export function createDocumentSetStore(documentSetId) {
     //  regions list
     //  region to color
 
-    // /** @type {Writable<RegionItemType[]>} */
+    /** @type {Writable<RegionItemType[]>} */
     const allPairs = writable([]);
     const regionsMetadata = writable({});
     const imageIndex = writable(new Map());
@@ -42,7 +42,7 @@ export function createDocumentSetStore(documentSetId) {
                     const imgParts = pairImg.split("_");
                     pair = {
                         ...pair,
-                        [`img_${key}`]: refToIIIF(pair.img_1),
+                        [`img_${key}`]: refToIIIF(pairImg), // TODO improve because refToIIIF is effectively combination of ref and coord
                         [`id_${key}`]: pairImg,
                         [`page_${key}`]: imageToPage(pairImg),
                         [`ref_${key}`]: `${imgParts.slice(0,3).join("_").replace(".jpg", "")}.jpg`,
@@ -83,6 +83,7 @@ export function createDocumentSetStore(documentSetId) {
     })();
 
     async function getRegionsInfo(regionId) {
+        // TODO move this into regionStore
         let regionInfo = {
             title: `Region Extraction ${regionId}`,
             ref: "",
@@ -381,10 +382,17 @@ export function createDocumentSetStore(documentSetId) {
                 regions: Object.keys($regionsMetadata).length,
                 witnesses: witnesses.size,
                 pairs: $allPairs.length,
-                imageNodes: $imageNetwork.nodes.length,
-                imageLinks: $imageNetwork.links.length,
-                docNodes: $documentNetwork.nodes.length,
-                docLinks: $documentNetwork.links.length,
+                stats:
+                [
+                    {
+                        nodes: $imageNetwork.nodes.length,
+                        links: $imageNetwork.links.length,
+                    },
+                    {
+                        nodes: $documentNetwork.nodes.length,
+                        links: $documentNetwork.links.length,
+                    }
+                ],
                 avgScore: scoredPairs > 0 ? (totalScore / scoredPairs).toFixed(2) : null,
                 categories
             };

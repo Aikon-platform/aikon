@@ -3,6 +3,7 @@
     import Sidebar from './Sidebar.svelte';
     import NetworkVisualization from './NetworkVisualization.svelte';
     import {createDocumentSetStore} from './documentSetStore.js';
+    import NetworkInfo from "./NetworkInfo.svelte";
     export let docSet;
 
     const {
@@ -22,7 +23,24 @@
 
 <Layout bind:activeTab>
     <div slot="sidebar">
-        <Sidebar {docSetStats} {regionsMetadata} {docSet}/>
+        <Sidebar {docSetStats} {regionsMetadata} {docSet}>
+            <div slot="datavizInfo">
+                {#if activeTab === 0}
+                    <p>The Regions Network visualizes the relationships between image regions across different witnesses in the document set. Each node represents an image region, and edges indicate similarity or connections based on predefined criteria.</p>
+                    <ul>
+                        <li>Nodes: Image regions from various witnesses.</li>
+                        <li>Edges: Similarity links between regions.</li>
+                    </ul>
+                {:else}
+                    <p>The Documents Network illustrates the connections between different witnesses in the document set. Each node represents a witness, and edges denote relationships based on shared content or other relevant factors.</p>
+                    <ul>
+                        <li>Nodes: Witnesses in the document set.</li>
+                        <li>Edges: Relationships based on shared content.</li>
+                    </ul>
+                {/if}
+                <NetworkInfo {activeTab} {docSetStats}/>
+            </div>
+        </Sidebar>
     </div>
 
     <div slot="tabs" let:activeTab>

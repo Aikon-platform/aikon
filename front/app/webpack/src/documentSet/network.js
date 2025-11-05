@@ -250,51 +250,6 @@ function createSimulationHandlers(simulation, link, node, label) {
     return {dragstarted, dragged, dragended};
 }
 
-// TODO 1. createLegend
-// const colorScale = d3.scaleOrdinal(generateColors(regionCount));
-// createLegend('regions-info', nodesArray, colorScale, corpus);
-
-// const regionCount = Object.values(corpus).reduce((count, wit) =>
-//         count + Object.keys(wit).length, 0
-//     );
-// dans store
-// aussi faire que colorScale ce soit accessible de store
-
 function processSelection(nodes, selected, order) {
     return nodes.filter(d => selected.has(d.id));
 }
-
-
-
-// function createLegend(containerId, nodesArray, colorScale) {
-//     const container = d3.select(`#${containerId}`);
-//     container.html('');
-//
-//     const regionIds = [...new Set(nodesArray.map(d => d.regionId))].sort((a, b) => a - b);
-//
-//     const legend = container.append('div')
-//         .attr('class', 'box');
-//
-//     legend.append('h3')
-//         .attr('class', 'title is-6')
-//         .text('Region Extractions');
-//
-//     const list = legend.append('div')
-//         .attr('class', 'legend-list');
-//
-//     regionIds.forEach(regionId => {
-//         const metadata = $regionMetadata.get(regionId);
-//         if (!metadata) return;
-//
-//         const item = list.append('div')
-//             .attr('class', 'legend-item');
-//
-//         item.append('span')
-//             .attr('class', 'legend-color')
-//             .style('background-color', colorScale(regionId));
-//
-//         item.append('span')
-//             .attr('class', 'legend-label')
-//             .html(`<a href="${BASE_URL}vhs/witness/${metadata.witnessId}/regions/${regionId}" target="_blank">${metadata.witTitle}</a>`);
-//     });
-// }
