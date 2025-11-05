@@ -26,10 +26,10 @@
         <div class="tabs">
             <ul>
                 <li class:is-active={activeTab === 0}>
-                    <a on:click={() => activeTab = 0}>Regions Network</a>
+                    <a on:click={() => activeTab = 0} href="{null}">Regions Network</a>
                 </li>
                 <li class:is-active={activeTab === 1}>
-                    <a on:click={() => activeTab = 1}>Documents Network</a>
+                    <a on:click={() => activeTab = 1} href="{null}">Documents Network</a>
                 </li>
             </ul>
         </div>

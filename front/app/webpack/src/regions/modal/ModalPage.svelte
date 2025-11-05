@@ -7,6 +7,8 @@
 
     //////////////////////////////////////////////
 
+    // TODO fix because somehow this is not working when opened in the context of the similarity view
+
     /** @type {RegionItemType} */
     export let mainImgItem;
 

@@ -61,7 +61,7 @@
     {#if $selectedNodes.length > 0}
         <div class="selected-panel box mt-4">
             <h3 class="title is-5">Selected Nodes ({$selectedNodes.length})</h3>
-            <div class="images-grid">
+            <div class="selected-nodes grid is-gap-2 mt-5">
                 {#each $selectedNodes as node (node.id)}
                     <Region item="{node}" selectable={false} copyable={false}/>
                 {/each}
@@ -75,9 +75,7 @@
         background-color: var(--bulma-scheme-main-bis);
     }
 
-    .images-grid {
-        display: grid;
+    .selected-nodes {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 1rem;
     }
 </style>

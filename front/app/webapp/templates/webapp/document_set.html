@@ -6,6 +6,7 @@
 {% block extrahead %}
     <link rel="stylesheet" href="{% static 'css/regions.css' %}">
     <link rel="stylesheet" href="{% static 'svelte/documentSet.css' %}">
+    <link rel="stylesheet" href="{% static 'svelte/regionList/regionList.css' %}">
     <style>
     .network-svg {
         display: block;
@@ -47,39 +48,6 @@
 
     .toggle-button {
         margin-bottom: 1rem;
-    }
-
-    .selection-panel {
-        margin-top: 1.5rem;
-    }
-
-    .selection-panel h3 {
-        margin-bottom: 1rem;
-    }
-
-    .images-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-
-    .card {
-        border: 1px solid var(--bulma-border-weak);
-        border-radius: 4px;
-        padding: 1rem;
-        width: 200px;
-    }
-
-    .card img {
-        width: 100%;
-        height: auto;
-        display: block;
-        border-radius: 4px;
-    }
-
-    .card-info {
-        margin-top: 0.75rem;
-        font-size: 0.875rem;
     }
 
     .legend-list {

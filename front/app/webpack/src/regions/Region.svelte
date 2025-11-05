@@ -95,9 +95,6 @@
         {#if modalControllerComponent}
             <svelte:component this={modalControllerComponent} mainImgItem={item} compareImgItem={compareImgItem}/>
         {/if}
-        <!--{#if !isInModal}-->
-        <!--    <ModalController mainImgItem={item} compareImgItem={compareImgItem}/>-->
-        <!--{/if}-->
     </div>
 </div>
 
