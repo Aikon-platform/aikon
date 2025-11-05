@@ -1,0 +1,20 @@
+{
+  "name": "annotations",
+  "version": "1.0.0",
+  "description": "management of IIIF annotations for Aikon: this is a bundle of mirador, mirador-annotations-editor and aiiinotate",
+  "scripts": {
+    "start": "rm -rf dist .parcel-cache && parcel index.html",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "iiif"
+  ],
+  "author": "",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "aiiinotate": "^0.2.7",
+    "mirador": "^4.0.0",
+    "mirador-annotation-editor": "^1.1.4",
+    "parcel": "^2.16.1"
+  }
+}
