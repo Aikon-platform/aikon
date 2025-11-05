@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "management of IIIF annotations for Aikon: this is a bundle of mirador, mirador-annotations-editor and aiiinotate",
   "scripts": {
-    "start": "rm -rf dist .parcel-cache && parcel index.html",
+    "start": "bash scripts/run.sh",
+    "setup": "bash scripts/setup.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

@@ -7,4 +7,4 @@ console.log(Mae);
 
 const config = { id: "miradorRoot" };
 
-// Mirador.viewer(config)
+Mirador.viewer(config)
