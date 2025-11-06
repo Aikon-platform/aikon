@@ -11,20 +11,31 @@ export function createDocumentSetStore(documentSetId) {
     const error = writable(null);
     const selectedCategories = writable([1]);
     const selectedNodes = writable([]);
+    const activeRegions = writable(new Set());
+    /** @type {Writable<RegionItemType[]>} */
+    const allPairs = writable([]);
+    const regionsMetadata = writable({});
+    const imageIndex = writable(new Map());
 
     function updateSelectedNodes(nodesArray) {
         selectedNodes.set(nodesArray);
     }
 
+    function toggleRegion(regionId) {
+        activeRegions.update(regions => {
+            const newRegions = new Set(regions);
+            if (newRegions.has(regionId)) {
+                newRegions.delete(regionId);
+            } else {
+                newRegions.add(regionId);
+            }
+            return newRegions;
+        });
+    }
+
     // TODO add
     //  regionsImages
     //  regions list
-    //  region to color
-
-    /** @type {Writable<RegionItemType[]>} */
-    const allPairs = writable([]);
-    const regionsMetadata = writable({});
-    const imageIndex = writable(new Map());
 
     const fetchPairs = derived(selectedCategories, ($selectedCategories, set) => {
         (async () => {
@@ -77,6 +88,8 @@ export function createDocumentSetStore(documentSetId) {
 
                 const metadataEntries = await Promise.all(metadataPromises);
                 regionsMetadata.set(Object.fromEntries(metadataEntries));
+
+                activeRegions.set(new Set(regionIdsArray));
 
                 allPairs.set(pairs);
                 set(true);
@@ -213,6 +226,24 @@ export function createDocumentSetStore(documentSetId) {
         return {
             nodes: Array.from(nodes.values()),
             links,
+        };
+    });
+
+    const filteredImageNetwork = derived([imageNetwork, activeRegions], ([$imageNetwork, $activeRegions]) => {
+        const filteredNodes = $imageNetwork.nodes.filter(node =>
+            $activeRegions.has(node.regionId)
+        );
+
+        const nodeIds = new Set(filteredNodes.map(n => n.id));
+
+        const filteredLinks = $imageNetwork.links.filter(link =>
+            nodeIds.has(link.source.id || link.source) &&
+            nodeIds.has(link.target.id || link.target)
+        );
+
+        return {
+            nodes: filteredNodes,
+            links: filteredLinks
         };
     });
 
@@ -401,11 +432,11 @@ export function createDocumentSetStore(documentSetId) {
                 pairs: $allPairs.length,
                 stats:
                 [
-                    {
+                    {   // activeTab = 0
                         nodes: $imageNetwork.nodes.length,
                         links: $imageNetwork.links.length,
                     },
-                    {
+                    {   // activeTab = 1
                         nodes: $documentNetwork.nodes.length,
                         links: $documentNetwork.links.length,
                     }
@@ -417,7 +448,7 @@ export function createDocumentSetStore(documentSetId) {
     );
 
     return {
-        imageNetwork,
+        imageNetwork: filteredImageNetwork,
         documentNetwork,
         regionsInfo,
         regionsMetadata,
@@ -429,5 +460,7 @@ export function createDocumentSetStore(documentSetId) {
         toggleCategory,
         selectedNodes,
         updateSelectedNodes,
+        activeRegions,
+        toggleRegion,
     };
 }

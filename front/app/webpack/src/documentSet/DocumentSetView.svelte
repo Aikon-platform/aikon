@@ -20,7 +20,9 @@
         selectedNodes,
         updateSelectedNodes,
         selectedCategories,
-        toggleCategory
+        toggleCategory,
+        activeRegions,
+        toggleRegion,
     } = createDocumentSetStore(docSet.id);
 
     /**
@@ -49,7 +51,7 @@
 
 <Layout bind:activeTab>
     <div slot="sidebar">
-        <Sidebar {docSetStats} {regionsMetadata} {docSet} {selectedCategories} {toggleCategory}>
+        <Sidebar {docSetStats} {regionsMetadata} {docSet} {selectedCategories} {toggleCategory} {activeRegions} {toggleRegion}>
             <div slot="datavizInfo">
                 {#if activeTab === 0}
                     <p>The Regions Network visualizes the relationships between image regions across different witnesses in the document set.
