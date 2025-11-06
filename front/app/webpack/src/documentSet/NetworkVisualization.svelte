@@ -10,6 +10,7 @@
     export let networkData;
     export let selectedNodes;
     export let updateSelectedNodes;
+    export let activeTab;
 
     let networkInstance;
     let container;
@@ -17,9 +18,10 @@
 
     $: hasNodes = $networkData && $networkData.nodes.length > 0;
 
-    $: if (hasNodes && container) {
+    $: hasNodes = $networkData && $networkData.nodes.length > 0;
+
+    $: if (hasNodes && container && activeTab !== undefined) {
         renderVisualization();
-        console.log($networkData);
     }
 
     function renderVisualization() {
@@ -30,13 +32,20 @@
         function onSelectionChange(selectedData) {
             updateSelectedNodes(selectedData);
         }
+
         networkInstance = createNetwork(
             container,
             $networkData.nodes,
             $networkData.links,
+            $networkData.stats,
             onSelectionChange,
             (mode) => { selectionMode = mode; }
         );
+
+        selectionMode = activeTab === 0;
+        if (selectionMode) {
+            networkInstance.toggleSelectionMode();
+        }
     }
 
     function toggleSelectionMode() {
@@ -54,9 +63,15 @@
     <button class="toggle-button button is-small is-link mb-3"
         class:is-active={selectionMode}
         on:click={toggleSelectionMode}>
-        <span class="icon px-4">
-            <i class="fas fa-{selectionMode ? 'hand-pointer' : 'crop-alt'}"></i>
-        </span>
+        {#if selectionMode}
+            <span class="icon px-4">
+                <i class="fas fa-hand-pointer"></i>
+            </span>
+        {:else}
+            <span class="icon px-4">
+                <i class="fas fa-crop-alt"></i>
+            </span>
+        {/if}
         Switch to {selectionMode ? 'click' : 'selection'} mode
     </button>
 

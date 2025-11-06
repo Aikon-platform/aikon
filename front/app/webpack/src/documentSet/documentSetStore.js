@@ -1,10 +1,109 @@
-import {derived, get, writable} from 'svelte/store';
+import {derived, writable} from 'svelte/store';
 import {extractNb, refToIIIF} from "../utils.js";
 import {appUrl, regionsType} from "../constants.js";
 
 function imageToPage(imgName) {
-    const parts = imgName.split('_');
-    return parseInt(parts[parts.length - 2]);
+    return parseInt(imgName.split('_').at(-2));
+}
+
+function generateColor(index) {
+    const goldenAngle = 137.5;
+    const saturations = [85, 70, 60];
+    const lightnesses = [50, 65, 40];
+    const hue = (index * goldenAngle) % 360;
+    const saturation = saturations[index % saturations.length];
+    const lightness = lightnesses[Math.floor(index / saturations.length) % lightnesses.length];
+    return `hsl(${Math.floor(hue)}, ${saturation}%, ${lightness}%)`;
+}
+
+function processPair(pair) {
+    const result = {...pair};
+    for (const key of ['1', '2']) {
+        const pairImg = pair[`img_${key}`];
+        const imgParts = pairImg.split("_");
+        result[`img_${key}`] = refToIIIF(pairImg);
+        result[`id_${key}`] = pairImg;
+        result[`page_${key}`] = imageToPage(pairImg);
+        result[`ref_${key}`] = `${imgParts.slice(0,3).join("_").replace(".jpg", "")}.jpg`;
+        result[`coord_${key}`] = imgParts.slice(3).join("_").replace(".jpg", "");
+    }
+    return result;
+}
+
+function computeNetworkStats(pairs, regionsInfo) {
+    const imageNodes = new Map();
+    const documentNodes = new Map();
+    const imageScoreSums = new Map();
+    const documentPairs = new Map();
+    const imageDegrees = new Map();
+
+    let minScore = Infinity;
+    let maxScore = -Infinity;
+    let totalScore = 0;
+    let scoredCount = 0;
+    const categories = {};
+
+    pairs.forEach(pair => {
+        const {img_1, img_2, regions_id_1: r1, regions_id_2: r2, score, category} = pair;
+
+        if (score != null) {
+            if (score < minScore) minScore = score;
+            if (score > maxScore) maxScore = score;
+            totalScore += score;
+            scoredCount++;
+
+            imageScoreSums.set(img_1, (imageScoreSums.get(img_1) || 0) + score);
+            imageScoreSums.set(img_2, (imageScoreSums.get(img_2) || 0) + score);
+        }
+
+        imageDegrees.set(img_1, (imageDegrees.get(img_1) || 0) + 1);
+        imageDegrees.set(img_2, (imageDegrees.get(img_2) || 0) + 1);
+
+        categories[category ?? 0] = (categories[category ?? 0] || 0) + 1;
+
+        for (const [img, rid, key] of [[img_1, r1, '1'], [img_2, r2, '2']]) {
+            if (!imageNodes.has(img)) {
+                imageNodes.set(img, {
+                    id: img,
+                    img: pair[`ref_${key}`],
+                    regionId: rid,
+                    canvas: pair[`page_${key}`],
+                    color: regionsInfo[rid]?.color || "#888888",
+                    ref: pair[`id_${key}`],
+                    type: regionsType,
+                    xywh: pair[`coord_${key}`].split(",")
+                });
+            }
+
+            if (!documentNodes.has(rid)) {
+                documentNodes.set(rid, []);
+            }
+            documentNodes.get(rid).push({img, canvas: pair[`page_${key}`], pair});
+        }
+
+        const key = r1 < r2 ? `${r1}-${r2}` : `${r2}-${r1}`;
+        const existing = documentPairs.get(key);
+        documentPairs.set(key, {
+            count: (existing?.count || 0) + 1,
+            score: (existing?.score || 0) + (score ?? 0)
+        });
+    });
+
+    const scoreSums = Array.from(imageScoreSums.values());
+    const minScoreSum = Math.min(...scoreSums);
+    const maxScoreSum = Math.max(...scoreSums);
+
+    return {
+        imageNodes,
+        documentNodes,
+        documentPairs,
+        imageScoreSums,
+        imageDegrees,
+        scoreRange: {min: minScore, max: maxScore},
+        scoreSumRange: {min: minScoreSum, max: maxScoreSum},
+        avgScore: scoredCount > 0 ? totalScore / scoredCount : null,
+        categories
+    };
 }
 
 export function createDocumentSetStore(documentSetId) {
@@ -12,440 +111,203 @@ export function createDocumentSetStore(documentSetId) {
     const selectedCategories = writable([1]);
     const selectedNodes = writable([]);
     const activeRegions = writable(new Set());
-    /** @type {Writable<RegionItemType[]>} */
     const allPairs = writable([]);
     const regionsMetadata = writable({});
     const imageIndex = writable(new Map());
+    const networkStats = writable(null);
 
-    function updateSelectedNodes(nodesArray) {
-        selectedNodes.set(nodesArray);
+    async function getRegionsInfo(regionId) {
+        try {
+            const response = await fetch(`${appUrl}/search/regions/?id=${regionId}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const {results} = await response.json();
+            if (!results?.length) return {title: `Region Extraction ${regionId}`};
+
+            const region = results[0];
+            const [, ...titleParts] = region.title.split(" | ");
+            const [wit, digit] = (region.ref || "_").split("_");
+
+            return {
+                title: titleParts.join(" | "),
+                ref: region.ref,
+                witnessId: extractNb(wit),
+                digitizationRef: digit,
+                zeros: region.zeros,
+                img_nb: region.img_nb,
+                url: region.url
+            };
+        } catch (e) {
+            error.set(`Error fetching region #${regionId}: ${e.message}`);
+            return {title: `Region Extraction ${regionId}`};
+        }
     }
-
-    function toggleRegion(regionId) {
-        activeRegions.update(regions => {
-            const newRegions = new Set(regions);
-            if (newRegions.has(regionId)) {
-                newRegions.delete(regionId);
-            } else {
-                newRegions.add(regionId);
-            }
-            return newRegions;
-        });
-    }
-
-    // TODO add
-    //  regionsImages
-    //  regions list
 
     const fetchPairs = derived(selectedCategories, ($selectedCategories, set) => {
         (async () => {
             try {
                 const cats = $selectedCategories.join(',');
                 const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${cats}`);
-                if (!response.ok) {
-                    error.set(`Failed to fetch document set pairs: HTTP ${response.status}`);
-                    return;
-                }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const data = await response.json();
-
-                const pairs = data.map(pair => {
-                    for (const key of ['1', '2']) {
-                        const pairImg = pair[`img_${key}`];
-                        const imgParts = pairImg.split("_");
-                        pair = {
-                            ...pair,
-                            [`img_${key}`]: refToIIIF(pairImg), // TODO improve because refToIIIF is effectively combination of ref and coord
-                            [`id_${key}`]: pairImg,
-                            [`page_${key}`]: imageToPage(pairImg),
-                            [`ref_${key}`]: `${imgParts.slice(0,3).join("_").replace(".jpg", "")}.jpg`,
-                            [`coord_${key}`]: imgParts.slice(3).join("_").replace(".jpg", ""),
-                        };
-                    }
-                    return pair
-                });
+                const pairs = data.map(processPair);
 
                 const index = new Map();
                 const regionIds = new Set();
 
                 pairs.forEach(pair => {
                     for (const key of ['1', '2']) {
-                        regionIds.add(pair[`regions_id_${key}`]);
-                        const imgKey = `img_${key}`;
-                        if (!index.has(pair[imgKey])) index.set(pair[imgKey], []);
-                        index.get(pair[imgKey]).push(pair);
+                        const rid = pair[`regions_id_${key}`];
+                        const img = pair[`img_${key}`];
+                        regionIds.add(rid);
+                        if (!index.has(img)) index.set(img, []);
+                        index.get(img).push(pair);
                     }
                 });
 
-                imageIndex.set(index);
-
                 const regionIdsArray = [...regionIds];
-                const metadataPromises = regionIdsArray.map(async (regionId, i) => {
-                    const info = await getRegionsInfo(regionId);
-                    info.color = generateColor(i);
-                    return [regionId, info];
-                });
+                const metadataEntries = await Promise.all(
+                    regionIdsArray.map(async (rid, i) => {
+                        const info = await getRegionsInfo(rid);
+                        info.color = generateColor(i);
+                        return [rid, info];
+                    })
+                );
 
-                const metadataEntries = await Promise.all(metadataPromises);
-                regionsMetadata.set(Object.fromEntries(metadataEntries));
+                const metadata = Object.fromEntries(metadataEntries);
+                const stats = computeNetworkStats(pairs, metadata);
 
+                regionsMetadata.set(metadata);
+                imageIndex.set(index);
+                networkStats.set(stats);
                 activeRegions.set(new Set(regionIdsArray));
-
                 allPairs.set(pairs);
                 set(true);
             } catch (e) {
                 error.set(`Error fetching pairs: ${e.message}`);
                 set(false);
             }
-         })();
+        })();
     });
 
-    function toggleCategory(categoryId) {
-        selectedCategories.update(cats => {
-            const index = cats.indexOf(categoryId);
-            if (index > -1) {
-                return cats.filter(c => c !== categoryId);
-            }
-            return [...cats, categoryId].sort((a, b) => a - b);
-        });
-    }
+    const regionsInfo = derived([networkStats, regionsMetadata], ([$stats, $metadata]) => {
+        if (!$stats) return {};
 
-    async function getRegionsInfo(regionId) {
-        // TODO move this into regionStore
-        let regionInfo = {
-            title: `Region Extraction ${regionId}`,
-            ref: "",
-            witnessId: null,
-            digitizationRef: "",
-            zeros: 0,
-            img_nb: 0,
-            url: ""
-        };
-        try {
-            const response = await fetch(`${appUrl}/search/regions/?id=${regionId}`);
-            if (!response.ok) {
-                error.set(`Failed to fetch region info: HTTP ${response.status}`);
-                throw new Error(`HTTP ${response.status}`)
-            }
-            const data = await response.json();
-
-            if (!data.hasOwnProperty("results") || data.results.length === 0) {
-                error.set(`No Region Extraction #${regionId}`);
-                return regionInfo;
-            }
-            const region = data.results[0];
-            let title = region.title.split(" | ");
-            title.shift();
-            regionInfo.title = title.join(" | ");
-
-            if (region.hasOwnProperty("ref")) {
-                regionInfo.ref = region.ref;
-                const [wit, digit] = region.ref.split("_");
-                regionInfo.witnessId = extractNb(wit);
-                regionInfo.digitizationRef = digit;
-            }
-            regionInfo.zeros = region.zeros;
-            regionInfo.img_nb = region.img_nb;
-            regionInfo.url = region.url;
-        } catch (e) {
-            error.set(`Error fetching region extraction metadata #${regionId}: ${e}`);
-        }
-        return regionInfo;
-    }
-
-    const regionsInfo = derived([allPairs, regionsMetadata], ([$allPairs, $metadata]) => {
         const info = {};
-        for (let pair of $allPairs) {
-            for (const key of ['1', '2']) {
-                const regionKey = `regions_id_${key}`;
-                const regionsId = pair[regionKey];
-                if (!info.hasOwnProperty(regionsId)) {
-                    info[regionsId] = {
-                        title: $metadata[regionsId]?.title || "",
-                        witnessId: $metadata[regionsId]?.witnessId || null,
-                        images: [pair[`img_${key}`]],
-                        pages: [pair[`page_${key}`]],
-                        color: $metadata[regionsId]?.color || null,
-                    };
-                } else {
-                    if (!info[regionsId].images.includes(pair[`img_${key}`])) {
-                        info[regionsId].images.push(pair[`img_${key}`]);
-                    }
-                    if (!info[regionsId].pages.includes(pair[`page_${key}`])) {
-                        info[regionsId].pages.push(pair[`page_${key}`]);
-                    }
-                }
-            }
-        }
+        $stats.documentNodes.forEach((imgData, rid) => {
+            const images = [...new Set(imgData.map(d => d.img))];
+            const pages = [...new Set(imgData.map(d => d.canvas))].sort((a,b) => a-b);
+
+            info[rid] = {
+                title: $metadata[rid]?.title || "",
+                witnessId: $metadata[rid]?.witnessId || null,
+                images,
+                pages,
+                color: $metadata[rid]?.color || null,
+            };
+        });
         return info;
     });
 
-    function generateColor(index) {
-        const goldenAngle = 137.5;
-        const saturations = [85, 70, 60];
-        const lightnesses = [50, 65, 40];
+    const imageNetwork = derived([allPairs, networkStats, regionsInfo], ([$pairs, $stats]) => {
+        if (!$stats) return {nodes: [], links: []};
 
-        const hue = (index * goldenAngle) % 360;
-        const saturation = saturations[index % saturations.length];
-        const lightness = lightnesses[Math.floor(index / saturations.length) % lightnesses.length];
+        const links = $pairs.map(pair => ({
+            source: pair.img_1,
+            target: pair.img_2,
+            score: pair.score,
+            category: pair.category,
+            width: (pair.score ?? 10) / 5
+        }));
 
-        return `hsl(${Math.floor(hue)}, ${saturation}%, ${lightness}%)`;
-    }
-
-    const imageNetwork = derived([allPairs, regionsInfo], ([$allPairs, $regionsInfo]) => {
-        const nodes = new Map();
-        const links = [];
-
-        $allPairs.forEach(pair => {
-            for (const key of ['1', '2']) {
-                const regionKey = `regions_id_${key}`;
-                if (!nodes.has(pair[`img_${key}`])) {
-                    const regionId = pair[regionKey];
-                    nodes.set(pair[`img_${key}`], {
-                        id: pair[`img_${key}`],
-                        img: pair[`ref_${key}`],
-                        regionId: regionId,
-                        canvas: pair[`page_${key}`],
-                        title: `Region ${regionId}<br/>Page ${pair[`page_${key}`]}`,
-                        color: $regionsInfo[regionId]?.color || "#888888",
-                        ref: pair[`id_${key}`],
-                        type: regionsType,
-                        xywh: pair[`coord_${key}`].split(",")
-                    });
-                }
-            }
-
-            links.push({
-                source: pair.img_1,
-                target: pair.img_2,
-                score: pair.score,
-                category: pair.category,
-                width: (pair.score ?? 10) / 5
-            });
-        });
         return {
-            nodes: Array.from(nodes.values()),
+            nodes: Array.from($stats.imageNodes.values()),
             links,
+            stats: {
+                scoreRange: $stats.scoreRange,
+                scoreSumRange: $stats.scoreSumRange,
+                scoreSums: $stats.imageScoreSums,
+                degrees: $stats.imageDegrees
+            }
         };
     });
 
-    const filteredImageNetwork = derived([imageNetwork, activeRegions], ([$imageNetwork, $activeRegions]) => {
-        const filteredNodes = $imageNetwork.nodes.filter(node =>
-            $activeRegions.has(node.regionId)
+    const filteredImageNetwork = derived([imageNetwork, activeRegions], ([$network, $active]) => {
+        const nodes = $network.nodes.filter(n => $active.has(n.regionId));
+        const nodeIds = new Set(nodes.map(n => n.id));
+        const links = $network.links.filter(l =>
+            nodeIds.has(l.source.id || l.source) &&
+            nodeIds.has(l.target.id || l.target)
         );
 
-        const nodeIds = new Set(filteredNodes.map(n => n.id));
-
-        const filteredLinks = $imageNetwork.links.filter(link =>
-            nodeIds.has(link.source.id || link.source) &&
-            nodeIds.has(link.target.id || link.target)
-        );
-
-        return {
-            nodes: filteredNodes,
-            links: filteredLinks
-        };
+        return {...$network, nodes, links};
     });
 
-    const documentNetwork = derived([allPairs, regionsInfo], ([$allPairs, $regionsInfo]) => {
-        const connectedDocuments = new Map();
-        const documentImgs = new Map();
+    const documentNetwork = derived([networkStats, regionsInfo], ([$stats, $regionsInfo]) => {
+        if (!$stats) return {nodes: [], links: []};
 
-        $allPairs.forEach(pair => {
-            const r1 = pair.regions_id_1;
-            const r2 = pair.regions_id_2;
-
-            if (!documentImgs.has(r1)) documentImgs.set(r1, []);
-            if (!documentImgs.has(r2)) documentImgs.set(r2, []);
-            documentImgs.get(r1).push({img: pair.img_1, canvas: pair.page_1, pair});
-            documentImgs.get(r2).push({img: pair.img_2, canvas: pair.page_2, pair});
-
-            const key = r1 < r2 ? `${r1}-${r2}` : `${r2}-${r1}`;
-            const existing = connectedDocuments.get(key);
-            connectedDocuments.set(key, {
-                count: (existing?.count || 0) + 1,
-                score: (existing?.score || 0) + (pair.score ?? 0)
-            });
-        });
-        const nodes = Array.from(documentImgs.keys()).map(id => ({
+        const nodes = Array.from($stats.documentNodes.keys()).map(id => ({
             id,
             title: $regionsInfo[id]?.title || `Region ${id}`,
             color: $regionsInfo[id]?.color || "#888888",
-            size: documentImgs.get(id).length
+            size: $stats.documentNodes.get(id).length
         }));
 
-        const links = [];
-        let maxCount = 1;
-        for (const {count} of connectedDocuments.values()) {
-            if (count > maxCount) maxCount = count;
-        }
-        connectedDocuments.forEach(({count, score}, key) => {
+        const maxCount = Math.max(...Array.from($stats.documentPairs.values()).map(d => d.count), 1);
+
+        const links = Array.from($stats.documentPairs.entries()).map(([key, {count, score}]) => {
             const [source, target] = key.split('-').map(Number);
-            links.push({
+            return {
                 source,
                 target,
                 count,
                 width: 1 + (count / maxCount) * 9,
                 score: count > 0 ? score / count : 0
-            });
+            };
         });
+
+        return {nodes, links};
+    });
+
+    const docSetStats = derived([allPairs, regionsMetadata, networkStats], ([$pairs, $metadata, $stats]) => {
+        if (!$stats) return null;
+
+        const witnesses = new Set(
+            Object.values($metadata)
+                .map(m => m.witnessId)
+                .filter(Boolean)
+        );
+
         return {
-            nodes,
-            links,
+            regions: Object.keys($metadata).length,
+            witnesses: witnesses.size,
+            pairs: $pairs.length,
+            avgScore: $stats.avgScore?.toFixed(2) || null,
+            categories: $stats.categories,
+            stats: [
+                {nodes: $stats.imageNodes.size, links: $pairs.length},
+                {nodes: $stats.documentNodes.size, links: $stats.documentPairs.size}
+            ]
         };
     });
 
-    function generateDistinctColor(str) {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            hash = str.charCodeAt(i) + ((hash << 5) - hash);
-            hash = hash & hash;
-        }
-
-        const goldenRatio = 0.618033988749895;
-        const hue = ((hash * goldenRatio) % 1) * 360;
-        const saturation = 65 + (hash % 20);
-        const lightness = 80 + (hash % 10);
-
-        return `hsl(${Math.floor(hue)}, ${saturation}%, ${lightness}%)`;
-    }
-
-    function buildAlignedImageMatrix(selectionOrder, regionImages, data) {
-        const regions = [...selectionOrder];
-
-        const getRegionImagesMap = (regionId) => {
-            const map = new Map();
-            regionImages.get(regionId).forEach(imgData => {
-                map.set(imgData.img, {page: imgData.page, img: imgData.img});
-            });
-            return map;
-        };
-
-        const regionImagesMap = new Map(regions.map(r => [r, getRegionImagesMap(r)]));
-        const rows = [];
-        const globalProcessed = new Map(regions.map(r => [r, new Set()]));
-
-        const findConnectedImages = (regionId, img, targetRegion) => {
-            const connected = [];
-            data.forEach(pair => {
-                const [r1, r2] = [pair.regions_id_1, pair.regions_id_2];
-                const [i1, i2] = [pair.img_1, pair.img_2];
-
-                if ((r1 === regionId && i1 === img && r2 === targetRegion) ||
-                    (r2 === regionId && i2 === img && r1 === targetRegion)) {
-                    const targetImg = r1 === targetRegion ? i1 : i2;
-                    if (regionImagesMap.get(targetRegion).has(targetImg)) {
-                        connected.push(regionImagesMap.get(targetRegion).get(targetImg));
-                    }
-                }
-            });
-            return connected;
-        };
-
-        const buildRowFromSeed = (seedRegion, seedImg) => {
-            const visited = new Map([[seedRegion, seedImg.img]]);
-            const queue = [{region: seedRegion, img: seedImg, path: {[seedRegion]: seedImg}}];
-            const completedPaths = [];
-
-            while (queue.length > 0) {
-                const {region, img, path} = queue.shift();
-                const currentIndex = regions.indexOf(region);
-
-                if (currentIndex === regions.length - 1) {
-                    completedPaths.push(path);
-                    continue;
-                }
-
-                const nextRegion = regions[currentIndex + 1];
-                const connected = findConnectedImages(region, img.img, nextRegion);
-
-                if (connected.length > 0) {
-                    connected.forEach(nextImg => {
-                        queue.push({
-                            region: nextRegion,
-                            img: nextImg,
-                            path: {...path, [nextRegion]: nextImg}
-                        });
-                    });
-                } else if (Object.keys(path).length > 0) {
-                    completedPaths.push(path);
-                }
-            }
-
-            return completedPaths;
-        };
-
-        regions.forEach(regionId => {
-            const images = Array.from(regionImagesMap.get(regionId).values())
-                .sort((a, b) => a.page - b.page);
-
-            images.forEach(imgData => {
-                if (globalProcessed.get(regionId).has(imgData.img)) return;
-
-                const paths = buildRowFromSeed(regionId, imgData);
-
-                if (paths.length > 0) {
-                    paths.forEach(path => {
-                        Object.entries(path).forEach(([r, img]) => {
-                            globalProcessed.get(Number(r)).add(img.img);
-                        });
-                        rows.push(path);
-                    });
-                } else {
-                    globalProcessed.get(regionId).add(imgData.img);
-                    rows.push({[regionId]: imgData});
-                }
-            });
+    function toggleCategory(categoryId) {
+        selectedCategories.update(cats => {
+            const index = cats.indexOf(categoryId);
+            return index > -1
+                ? cats.filter(c => c !== categoryId)
+                : [...cats, categoryId].sort((a, b) => a - b);
         });
-
-        return {regions, rows};
     }
 
-    const docSetStats = derived(
-        [allPairs, regionsMetadata, imageNetwork, documentNetwork],
-        ([$allPairs, $regionsMetadata, $imageNetwork, $documentNetwork]) => {
-            const witnesses = new Set();
-            const categories = {};
-            let totalScore = 0;
-            let scoredPairs = 0;
-
-            $allPairs.forEach(pair => {
-                Object.values($regionsMetadata).forEach(meta => {
-                    if (meta.witnessId) witnesses.add(meta.witnessId);
-                });
-
-                if (pair.category) {
-                    categories[pair.category] = (categories[pair.category] || 0) + 1;
-                } else {
-                    categories[0] = (categories[0] || 0) + 1;
-                }
-
-                if (pair.score != null) {
-                    totalScore += pair.score;
-                    scoredPairs++;
-                }
-            });
-
-            return {
-                regions: Object.keys($regionsMetadata).length,
-                witnesses: witnesses.size,
-                pairs: $allPairs.length,
-                stats:
-                [
-                    {   // activeTab = 0
-                        nodes: $imageNetwork.nodes.length,
-                        links: $imageNetwork.links.length,
-                    },
-                    {   // activeTab = 1
-                        nodes: $documentNetwork.nodes.length,
-                        links: $documentNetwork.links.length,
-                    }
-                ],
-                avgScore: scoredPairs > 0 ? (totalScore / scoredPairs).toFixed(2) : null,
-                categories
-            };
-        }
-    );
+    function toggleRegion(regionId) {
+        activeRegions.update(regions => {
+            const newRegions = new Set(regions);
+            newRegions.has(regionId) ? newRegions.delete(regionId) : newRegions.add(regionId);
+            return newRegions;
+        });
+    }
 
     return {
         imageNetwork: filteredImageNetwork,
@@ -459,8 +321,10 @@ export function createDocumentSetStore(documentSetId) {
         selectedCategories,
         toggleCategory,
         selectedNodes,
-        updateSelectedNodes,
+        updateSelectedNodes: (nodes) => selectedNodes.set(nodes),
         activeRegions,
         toggleRegion,
+        imageIndex,
+        networkStats
     };
 }

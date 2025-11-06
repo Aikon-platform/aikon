@@ -73,7 +73,7 @@
         </Sidebar>
     </div>
 
-    <div slot="tabs" let:activeTab>
+    <div slot="tabs">
         <div class="tabs">
             <ul>
                 <li class:is-active={activeTab === 0}>
@@ -86,7 +86,7 @@
         </div>
     </div>
 
-    <div slot="content" let:activeTab>
+    <div slot="content">
         {#if $error}
             <article class="message is-danger">
                 <div class="message-body">{$error}</div>
@@ -101,6 +101,7 @@
                         networkData={activeTab === 0 ? imageNetwork : documentNetwork}
                         {selectedNodes}
                         {updateSelectedNodes}
+                        {activeTab}
                     />
                 </div>
             {/await}

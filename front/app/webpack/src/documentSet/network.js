@@ -1,14 +1,5 @@
 import * as d3 from 'd3';
 
-function minMaxScores(links) {
-    const scores = links.map(d => d.score).filter(s => s != null);
-    if (scores.length === 0) return { min: 0, max: 1 };
-    return {
-        min: Math.min(...scores),
-        max: Math.max(...scores)
-    };
-}
-
 function calculateLinkStrength(link, scoreRange) {
     let baseScore = link.score != null ? link.score : 0;
 
@@ -35,21 +26,12 @@ function calculateLinkDistance(strength) {
     return 30 + (2 - strength) * 100;
 }
 
-function calculateDegrees(nodes, links) {
-    const degrees = new Map(nodes.map(n => [n.id, 0]));
-    links.forEach(l => {
-        degrees.set(l.source.id || l.source, (degrees.get(l.source.id || l.source) || 0) + 1);
-        degrees.set(l.target.id || l.target, (degrees.get(l.target.id || l.target) || 0) + 1);
-    });
-    return degrees;
+function normalizeRadius(scoreSum, minSum, maxSum, minRadius = 10, maxRadius = 75) {
+    if (maxSum === minSum) return (minRadius + maxRadius) / 2;
+    return minRadius + ((scoreSum - minSum) / (maxSum - minSum)) * (maxRadius - minRadius);
 }
 
-function normalizeRadius(degree, minDegree, maxDegree, minRadius = 16, maxRadius = 48) {
-    if (maxDegree === minDegree) return (minRadius + maxRadius) / 2;
-    return minRadius + ((degree - minDegree) / (maxDegree - minDegree)) * (maxRadius - minRadius);
-}
-
-export function createNetwork(div, nodes, links, onSelectionChange, onModeChange = null) {
+export function createNetwork(div, nodes, links, stats = null, onSelectionChange, onModeChange = null) {
     const width = 954;
     const height = 600;
     const centerX = width / 2;
@@ -61,18 +43,33 @@ export function createNetwork(div, nodes, links, onSelectionChange, onModeChange
     });
 
     const validLinks = links.filter(link => link.category !== 4);
-    validLinks.forEach(link => {
-        link.strength = calculateLinkStrength(link, minMaxScores(validLinks));
-        link.distance = calculateLinkDistance(link.strength);
-    });
 
-    const degrees = calculateDegrees(nodes, validLinks);
-    const degreeValues = Array.from(degrees.values());
+    if (stats?.scoreRange) {
+        validLinks.forEach(link => {
+            link.strength = calculateLinkStrength(link, stats.scoreRange);
+            link.distance = calculateLinkDistance(link.strength);
+        });
+    } else {
+        validLinks.forEach(link => {
+            link.strength = 0.5;
+            link.distance = 150;
+        });
+    }
 
-    nodes.forEach(node => {
-        node.degree = degrees.get(node.id);
-        node.radius = normalizeRadius(node.degree, Math.min(...degreeValues), Math.max(...degreeValues));
-    });
+    if (stats?.scoreSums) {
+        nodes.forEach(node => {
+            const scoreSum = stats.scoreSums.get(node.id) || 0;
+            const degree = stats.degrees?.get(node.id) || 0;
+            node.scoreSum = scoreSum;
+            node.degree = degree;
+            node.radius = normalizeRadius(scoreSum, stats.scoreSumRange.min, stats.scoreSumRange.max);
+        });
+    } else {
+        nodes.forEach(node => {
+            node.radius = 32;
+            node.degree = 0;
+        });
+    }
 
     const simulation = d3.forceSimulation(nodes)
         .force("link", d3.forceLink(validLinks).id(d => d.id)
@@ -110,7 +107,12 @@ export function createNetwork(div, nodes, links, onSelectionChange, onModeChange
         .attr("r", d => d.radius)
         .attr("fill", d => d.color);
 
-    node.append("title").text(d => `Region: ${d.regionId}\nPage: ${d.canvas}\nConnections: ${d.degree}`);
+    node.append("title").text(d => {
+        let text = `Region: ${d.regionId}\nPage: ${d.canvas || d.page}`;
+        if (d.degree) text += `\nConnections: ${d.degree}`;
+        if (d.scoreSum) text += `\nTotal score: ${d.scoreSum.toFixed(2)}`;
+        return text;
+    });
 
     const selectionManager = createSelectionManager({
         svg,
