@@ -6,6 +6,9 @@
     export let regionsMetadata = null;
     export let docSet = null;
 
+    export let selectedCategories;
+    export let toggleCategory;
+
     console.log(docSetStats, docSet, $regionsMetadata);
     $: regionsList = regionsMetadata ? Object.entries($regionsMetadata) : [];
 </script>
@@ -30,11 +33,18 @@
                             <p class="title is-5">{$docSetStats.pairs}</p>
                         </div>
                     </div>
+                    <div class="level-item has-text-centered">
+                        <div>
+                            <p class="heading">Images</p>
+                            <p class="title is-5">{$docSetStats.stats[0].nodes}</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="legend-list">
                     {#each regionsList as [id, meta]}
                         <div class="legend-item">
+                            <span class="legend-image"><!--IMAGE NUMBER--></span>
                             <span class="legend-color" style="background-color: {meta.color};"></span>
                             <span class="legend-label">
                                 <a href={`${appUrl}/${appName}/witness/${meta.witnessId}/regions/${id}`} target="_blank">
@@ -48,26 +58,29 @@
 
             <hr>
 
-            <div class="py-2">
-                <h3 class="title">
-                    {appLang === 'en' ? 'Visualisation information' : 'Informations sur la visualisation'}
-                </h3>
-                <slot name="datavizInfo"/>
-            </div>
-
-            <hr>
-
             <div class="pt-2">
                 <h3 class="title">
                     {appLang === 'en' ? 'Similarity categories' : 'Catégories de similarité'}
                 </h3>
                 <div class="tags">
-                    <CategoryButton category={parseInt(1)}/> {$docSetStats.categories[1] || 0}<br>
-                    <CategoryButton category={parseInt(2)}/> {$docSetStats.categories[2] || 0}<br>
-                    <CategoryButton category={parseInt(3)}/> {$docSetStats.categories[3] || 0}<br>
-                    <CategoryButton category={parseInt(4)}/> {$docSetStats.categories[4] || 0}<br>
-                    <CategoryButton category={parseInt(5)}/> {$docSetStats.categories[5] || 0}<br>
+                    {#each [0, 1, 2, 3, 4, 5] as cat}
+                        <CategoryButton
+                            category={cat}
+                            isSelected={$selectedCategories.includes(cat)}
+                            toggle={toggleCategory}
+                        />
+                        {$docSetStats.categories[cat] || 0}<br>
+                    {/each}
                 </div>
+            </div>
+
+            <hr>
+
+            <div class="py-2">
+                <h3 class="title">
+                    {appLang === 'en' ? 'Visualisation information' : 'Informations sur la visualisation'}
+                </h3>
+                <slot name="datavizInfo"/>
             </div>
         </div>
     {/if}
@@ -80,6 +93,10 @@
         gap: 0.5rem;
     }
 
+    .legend-image {
+        /* ADD  STYLE */
+    }
+
     .legend-item {
         display: flex;
         align-items: center;
@@ -88,8 +105,8 @@
     }
 
     .legend-color {
-        width: 24px;
-        height: 24px;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
         box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
         flex-shrink: 0;

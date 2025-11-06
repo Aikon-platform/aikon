@@ -716,7 +716,7 @@ def add_user_to_category_x(region_pair: RegionPair, user_id: int):
 
 
 def filter_pairs(
-    regions_ids, exclusive, min_score, max_score, topk, exclude_self, category
+    regions_ids, exclusive, min_score, max_score, topk, exclude_self, categories
 ):
     if exclusive:
         # get all pairs where regions_id_1 AND regions_id_2 are in q_regions ids
@@ -742,8 +742,16 @@ def filter_pairs(
         # if same_witness_regions:
         #     query &= ~(Q(regions_id_1__in=same_witness_regions) & Q(regions_id_2__in=same_witness_regions))
 
-    if category is not None:
-        query &= Q(category=int(category))
+    if categories:
+        has_no_category = 0 in categories
+        real_categories = [c for c in categories if c != 0]
+
+        if has_no_category and real_categories:
+            query &= Q(category__in=real_categories) | Q(category__isnull=True)
+        elif has_no_category:
+            query &= Q(category__isnull=True)
+        elif real_categories:
+            query &= Q(category__in=real_categories)
 
     pairs = RegionPair.objects.filter(query).order_by(F("score").desc(nulls_first=True))
     if not pairs.exists():

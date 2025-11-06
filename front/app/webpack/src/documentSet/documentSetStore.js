@@ -9,7 +9,7 @@ function imageToPage(imgName) {
 
 export function createDocumentSetStore(documentSetId) {
     const error = writable(null);
-    const category = writable(1);
+    const selectedCategories = writable([1]);
     const selectedNodes = writable([]);
 
     function updateSelectedNodes(nodesArray) {
@@ -26,61 +26,76 @@ export function createDocumentSetStore(documentSetId) {
     const regionsMetadata = writable({});
     const imageIndex = writable(new Map());
 
-    const fetchPairs = (async () => {
-        try {
-            const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${get(category)}`);
-            if (!response.ok) {
-                error.set(`Failed to fetch document set pairs: HTTP ${response.status}`);
-                return;
+    const fetchPairs = derived(selectedCategories, ($selectedCategories, set) => {
+        (async () => {
+            try {
+                const cats = $selectedCategories.join(',');
+                const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${cats}`);
+                if (!response.ok) {
+                    error.set(`Failed to fetch document set pairs: HTTP ${response.status}`);
+                    return;
+                }
+
+                const data = await response.json();
+
+                const pairs = data.map(pair => {
+                    for (const key of ['1', '2']) {
+                        const pairImg = pair[`img_${key}`];
+                        const imgParts = pairImg.split("_");
+                        pair = {
+                            ...pair,
+                            [`img_${key}`]: refToIIIF(pairImg), // TODO improve because refToIIIF is effectively combination of ref and coord
+                            [`id_${key}`]: pairImg,
+                            [`page_${key}`]: imageToPage(pairImg),
+                            [`ref_${key}`]: `${imgParts.slice(0,3).join("_").replace(".jpg", "")}.jpg`,
+                            [`coord_${key}`]: imgParts.slice(3).join("_").replace(".jpg", ""),
+                        };
+                    }
+                    return pair
+                });
+
+                const index = new Map();
+                const regionIds = new Set();
+
+                pairs.forEach(pair => {
+                    for (const key of ['1', '2']) {
+                        regionIds.add(pair[`regions_id_${key}`]);
+                        const imgKey = `img_${key}`;
+                        if (!index.has(pair[imgKey])) index.set(pair[imgKey], []);
+                        index.get(pair[imgKey]).push(pair);
+                    }
+                });
+
+                imageIndex.set(index);
+
+                const regionIdsArray = [...regionIds];
+                const metadataPromises = regionIdsArray.map(async (regionId, i) => {
+                    const info = await getRegionsInfo(regionId);
+                    info.color = generateColor(i);
+                    return [regionId, info];
+                });
+
+                const metadataEntries = await Promise.all(metadataPromises);
+                regionsMetadata.set(Object.fromEntries(metadataEntries));
+
+                allPairs.set(pairs);
+                set(true);
+            } catch (e) {
+                error.set(`Error fetching pairs: ${e.message}`);
+                set(false);
             }
+         })();
+    });
 
-            const data = await response.json();
-
-            const pairs = data.map(pair => {
-                for (const key of ['1', '2']) {
-                    const pairImg = pair[`img_${key}`];
-                    const imgParts = pairImg.split("_");
-                    pair = {
-                        ...pair,
-                        [`img_${key}`]: refToIIIF(pairImg), // TODO improve because refToIIIF is effectively combination of ref and coord
-                        [`id_${key}`]: pairImg,
-                        [`page_${key}`]: imageToPage(pairImg),
-                        [`ref_${key}`]: `${imgParts.slice(0,3).join("_").replace(".jpg", "")}.jpg`,
-                        [`coord_${key}`]: imgParts.slice(3).join("_").replace(".jpg", ""),
-                    };
-                }
-                return pair
-            });
-
-            allPairs.set(pairs);
-
-            const index = new Map();
-            const regionIds = new Set();
-
-            pairs.forEach(pair => {
-                for (const key of ['1', '2']) {
-                    regionIds.add(pair[`regions_id_${key}`]);
-                    const imgKey = `img_${key}`;
-                    if (!index.has(pair[imgKey])) index.set(pair[imgKey], []);
-                    index.get(pair[imgKey]).push(pair);
-                }
-            });
-
-            imageIndex.set(index);
-
-            const regionIdsArray = [...regionIds];
-            const metadataPromises = regionIdsArray.map(async (regionId, i) => {
-                const info = await getRegionsInfo(regionId);
-                info.color = generateColor(i);
-                return [regionId, info];
-            });
-
-            const metadataEntries = await Promise.all(metadataPromises);
-            regionsMetadata.set(Object.fromEntries(metadataEntries));
-        } catch (e) {
-            error.set(`Error fetching pairs: ${e.message}`);
-        }
-    })();
+    function toggleCategory(categoryId) {
+        selectedCategories.update(cats => {
+            const index = cats.indexOf(categoryId);
+            if (index > -1) {
+                return cats.filter(c => c !== categoryId);
+            }
+            return [...cats, categoryId].sort((a, b) => a - b);
+        });
+    }
 
     async function getRegionsInfo(regionId) {
         // TODO move this into regionStore
@@ -137,7 +152,7 @@ export function createDocumentSetStore(documentSetId) {
                         witnessId: $metadata[regionsId]?.witnessId || null,
                         images: [pair[`img_${key}`]],
                         pages: [pair[`page_${key}`]],
-                        color: null,
+                        color: $metadata[regionsId]?.color || null,
                     };
                 } else {
                     if (!info[regionsId].images.includes(pair[`img_${key}`])) {
@@ -370,6 +385,8 @@ export function createDocumentSetStore(documentSetId) {
 
                 if (pair.category) {
                     categories[pair.category] = (categories[pair.category] || 0) + 1;
+                } else {
+                    categories[0] = (categories[0] || 0) + 1;
                 }
 
                 if (pair.score != null) {
@@ -408,7 +425,8 @@ export function createDocumentSetStore(documentSetId) {
         allPairs,
         fetchPairs,
         error,
-        category,
+        selectedCategories,
+        toggleCategory,
         selectedNodes,
         updateSelectedNodes,
     };

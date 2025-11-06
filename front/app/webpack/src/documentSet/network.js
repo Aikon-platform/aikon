@@ -1,5 +1,40 @@
 import * as d3 from 'd3';
 
+function normalizeScores(links) {
+    const scores = links.map(d => d.score).filter(s => s != null);
+    if (scores.length === 0) return { min: 0, max: 1 };
+    return {
+        min: Math.min(...scores),
+        max: Math.max(...scores)
+    };
+}
+
+function calculateLinkStrength(link, scoreRange) {
+    let baseScore = link.score != null ? link.score : 0;
+
+    if (scoreRange.max > scoreRange.min) {
+        baseScore = (baseScore - scoreRange.min) / (scoreRange.max - scoreRange.min);
+    }
+
+    let strength = baseScore;
+
+    if (link.category === 1) {
+        strength = baseScore + 1.0;
+    } else if (link.category === 2) {
+        strength = baseScore + 0.5;
+    } else if (link.category === 3 || link.category === 5) {
+        strength = baseScore + 0.125;
+    } else if (link.category === 4) {
+        strength = Math.max(0.01, baseScore - 1.0);
+    }
+
+    return Math.max(0.01, Math.min(strength, 2));
+}
+
+function calculateLinkDistance(strength) {
+    return 30 + (2 - strength) * 100;
+}
+
 export function createNetwork(div, nodes, links, onSelectionChange, onModeChange = null) {
     const width = 954;
     const height = 600;
@@ -11,18 +46,19 @@ export function createNetwork(div, nodes, links, onSelectionChange, onModeChange
         node.y = centerY;
     });
 
-    const linkStrengthScale = d3.scaleLinear()
-        .domain([1, d3.max(links, d => d.count) || 1])
-        .range([0.3, 1]);
+    const validLinks = links.filter(link => link.category !== 4);
 
-    const linkDistanceScale = d3.scaleLinear()
-        .domain([1, d3.max(links, d => d.count) || 1])
-        .range([100, 30]);
+    const scoreRange = normalizeScores(validLinks);
+
+    validLinks.forEach(link => {
+        link.strength = calculateLinkStrength(link, scoreRange);
+        link.distance = calculateLinkDistance(link.strength);
+    });
 
     const simulation = d3.forceSimulation(nodes)
-        .force("link", d3.forceLink(links).id(d => d.id)
-            .distance(d => linkDistanceScale(d.count || 1))
-            .strength(d => linkStrengthScale(d.count || 1))
+        .force("link", d3.forceLink(validLinks).id(d => d.id)
+            .distance(d => d.distance)
+            .strength(d => d.strength * 0.7)
         )
         .force("charge", d3.forceManyBody().strength(-300))
         .force("center", d3.forceCenter(centerX, centerY).strength(0.1))
@@ -41,10 +77,11 @@ export function createNetwork(div, nodes, links, onSelectionChange, onModeChange
 
     const link = g.append("g")
         .selectAll("line")
-        .data(links)
+        .data(validLinks)
         .join("line")
         .attr("class", "link")
-        .attr("stroke-width", d => d.width * 2);
+        .attr("stroke-width", d => Math.max(0.5, d.strength * 2))
+        .attr("stroke-opacity", d => Math.max(0.2, d.strength * 0.5));
 
     const node = g.append("g")
         .selectAll("circle")

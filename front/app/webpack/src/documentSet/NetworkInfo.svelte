@@ -14,8 +14,20 @@
     </div>
     <div class="level-item">
         <div>
-            <p class="heading">{appLang === 'en' ? 'Links' : 'Liens'}</p>
+            <p class="heading">{appLang === 'en' ? 'Edges' : 'Liens'}</p>
             <p class="title is-5">{$docSetStats.stats[activeTab].links}</p>
+        </div>
+    </div>
+    <div class="level-item">
+        <div>
+            <p class="heading">Clusters</p>
+            <p class="title is-5">0</p>
+        </div>
+    </div>
+    <div class="level-item">
+        <div>
+            <p class="heading">{appLang === 'en' ? 'Connectivity' : 'Connectivité'}</p>
+            <p class="title is-5">0</p>
         </div>
     </div>
 </div>

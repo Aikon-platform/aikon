@@ -735,7 +735,7 @@ def get_regions_pairs(request, wid, rid=None):
     - minScore: float, minimum score to filter pairs
     - maxScore: float, maximum score to filter pairs
     - topk: int, maximum number of pairs to return
-    - category: int, filter pairs by category
+    - category: list[int], filter pairs by category
     - regionsIds: list of int, filter pairs by regions ids
     - witnessIds: list of int, filter pairs by witness ids
     - excludeSelf: bool, if true, filter out pairs where both regions_1 and regions_2 are the same
@@ -781,7 +781,7 @@ def get_regions_pairs(request, wid, rid=None):
             max_score=request.GET.get("maxScore", None),
             topk=request.GET.get("topk", None),
             exclude_self=request.GET.get("excludeSelf", "false").lower() == "true",
-            category=request.GET.get("category", None),
+            categories=request.GET.get("category", []),
         )
         return JsonResponse(pairs, status=200, safe=False)
     except Exception as e:
@@ -804,10 +804,12 @@ def get_document_set_pairs(request, dsid=None):
             {"error": f"No regions found for this document set #{dsid}"}, status=400
         )
 
+    categories = request.GET.get("category", None)
     try:
-        cat = int(request.GET.get("category", None))
-    except TypeError:
-        cat = None
+        if categories:
+            categories = [int(c.strip()) for c in categories.split(",")]
+    except (TypeError, ValueError):
+        categories = None
 
     try:
         pairs = filter_pairs(
@@ -817,7 +819,7 @@ def get_document_set_pairs(request, dsid=None):
             max_score=request.GET.get("maxScore", None),
             topk=request.GET.get("topk", None),
             exclude_self=request.GET.get("excludeSelf", "false").lower() == "true",
-            category=cat,
+            categories=categories,
         )
         return JsonResponse(pairs, status=200, safe=False)
     except Exception as e:

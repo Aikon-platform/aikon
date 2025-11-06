@@ -15,7 +15,9 @@
     let container;
     let selectionMode = false;
 
-    $: if ($networkData && $networkData.nodes.length > 0 && container) {
+    $: hasNodes = $networkData && $networkData.nodes.length > 0;
+
+    $: if (hasNodes && container) {
         renderVisualization();
         console.log($networkData);
     }
