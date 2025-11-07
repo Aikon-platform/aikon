@@ -49,18 +49,11 @@
                         {@const regionId = parseInt(id)}
                         {@const isActive = $activeRegions.has(regionId)}
                         <div class="legend-item" class:inactive={!isActive}>
-                            <span class="legend-image"><!--IMAGE NUMBER--></span>
-                            <span
-                                class="legend-color"
-                                class:clickable={true}
-                                class:inactive={!isActive}
+                            <span class="legend-nb"><!--IMAGE NUMBER--></span>
+                            <span class="legend-color clickable" class:inactive={!isActive}
                                 style="background-color: {isActive ? meta.color : '#999'};"
-                                on:click={() => toggleRegion(regionId)}
-                                on:keydown={(e) => e.key === 'Enter' && toggleRegion(regionId)}
-                                role="button"
-                                tabindex="0"
-                                aria-label="Toggle region {meta.title}"
-                            ></span>
+                                on:click={() => toggleRegion(regionId)} on:keydown={null}
+                                role="button" tabindex="0" aria-label="Toggle region {meta.title}"/>
                             <span class="legend-label">
                                 <a href={`${appUrl}/${appName}/witness/${meta.witnessId}/regions/${id}`} target="_blank">
                                     {meta.title}
@@ -84,7 +77,7 @@
                             isSelected={$selectedCategories.includes(cat)}
                             toggle={toggleCategory}
                         />
-                        {$docSetStats.categories[cat] || 0}<br>
+                        {$docSetStats.categories[cat] || 0}
                     {/each}
                 </div>
             </div>
@@ -108,7 +101,7 @@
         gap: 0.5rem;
     }
 
-    .legend-image {
+    .legend-nb {
         /* ADD  STYLE */
     }
 

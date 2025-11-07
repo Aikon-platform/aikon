@@ -16,11 +16,7 @@
     let container;
     let selectionMode = false;
 
-    $: hasNodes = $networkData && $networkData.nodes.length > 0;
-
-    $: hasNodes = $networkData && $networkData.nodes.length > 0;
-
-    $: if (hasNodes && container && activeTab !== undefined) {
+    $: if ($networkData && container) {
         renderVisualization();
     }
 
