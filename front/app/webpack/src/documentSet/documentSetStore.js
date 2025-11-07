@@ -309,6 +309,97 @@ export function createDocumentSetStore(documentSetId) {
         });
     }
 
+    function buildAlignedImageMatrix(selectionOrder, regionImages, data) {
+        const regions = [...selectionOrder];
+
+        const getRegionImagesMap = (regionId) => {
+            const map = new Map();
+            regionImages.get(regionId).forEach(imgData => {
+                map.set(imgData.img, {page: imgData.page, img: imgData.img});
+            });
+            return map;
+        };
+
+        const regionImagesMap = new Map(regions.map(r => [r, getRegionImagesMap(r)]));
+        const rows = [];
+        const globalProcessed = new Map(regions.map(r => [r, new Set()]));
+
+        const findConnectedImages = (regionId, img, targetRegion) => {
+            const connected = [];
+            data.forEach(pair => {
+                const [r1, r2] = [pair.regions_id_1, pair.regions_id_2];
+                const [i1, i2] = [pair.img_1, pair.img_2];
+
+                if ((r1 === regionId && i1 === img && r2 === targetRegion) ||
+                    (r2 === regionId && i2 === img && r1 === targetRegion)) {
+                    const targetImg = r1 === targetRegion ? i1 : i2;
+                    if (regionImagesMap.get(targetRegion).has(targetImg)) {
+                        connected.push(regionImagesMap.get(targetRegion).get(targetImg));
+                    }
+                }
+            });
+            return connected;
+        };
+
+        const buildRowFromSeed = (seedRegion, seedImg) => {
+            const visited = new Map([[seedRegion, seedImg.img]]);
+            const queue = [{region: seedRegion, img: seedImg, path: {[seedRegion]: seedImg}}];
+            const completedPaths = [];
+
+            while (queue.length > 0) {
+                const {region, img, path} = queue.shift();
+                const currentIndex = regions.indexOf(region);
+
+                if (currentIndex === regions.length - 1) {
+                    completedPaths.push(path);
+                    continue;
+                }
+
+                const nextRegion = regions[currentIndex + 1];
+                const connected = findConnectedImages(region, img.img, nextRegion);
+
+                if (connected.length > 0) {
+                    connected.forEach(nextImg => {
+                        queue.push({
+                            region: nextRegion,
+                            img: nextImg,
+                            path: {...path, [nextRegion]: nextImg}
+                        });
+                    });
+                } else if (Object.keys(path).length > 0) {
+                    completedPaths.push(path);
+                }
+            }
+
+            return completedPaths;
+        };
+
+        regions.forEach(regionId => {
+            const images = Array.from(regionImagesMap.get(regionId).values())
+                .sort((a, b) => a.page - b.page);
+
+            images.forEach(imgData => {
+                if (globalProcessed.get(regionId).has(imgData.img)) return;
+
+                const paths = buildRowFromSeed(regionId, imgData);
+
+                if (paths.length > 0) {
+                    paths.forEach(path => {
+                        Object.entries(path).forEach(([r, img]) => {
+                            globalProcessed.get(Number(r)).add(img.img);
+                        });
+                        rows.push(path);
+                    });
+                } else {
+                    globalProcessed.get(regionId).add(imgData.img);
+                    rows.push({[regionId]: imgData});
+                }
+            });
+        });
+
+        return {regions, rows};
+    }
+
     return {
         imageNetwork: filteredImageNetwork,
         documentNetwork,
@@ -325,6 +416,7 @@ export function createDocumentSetStore(documentSetId) {
         activeRegions,
         toggleRegion,
         imageIndex,
-        networkStats
+        networkStats,
+        buildAlignedImageMatrix
     };
 }

@@ -10,20 +10,8 @@
 
     $: visualizationTitle = activeTab === 0 ? "Image regions network" : "Witness network";
 
-    const {
-        imageNetwork,
-        documentNetwork,
-        regionsMetadata,
-        docSetStats,
-        fetchPairs,
-        error,
-        selectedNodes,
-        updateSelectedNodes,
-        selectedCategories,
-        toggleCategory,
-        activeRegions,
-        toggleRegion,
-    } = createDocumentSetStore(docSet.id);
+    const documentSetStore = createDocumentSetStore(docSet.id);
+    const { fetchPairs, error } = documentSetStore;
 
     /**
     import { onMount } from 'svelte';
@@ -51,7 +39,8 @@
 
 <Layout bind:activeTab>
     <div slot="sidebar">
-        <Sidebar {docSetStats} {regionsMetadata} {docSet} {selectedCategories} {toggleCategory} {activeRegions} {toggleRegion}>
+<!--        <Sidebar {docSetStats} {regionsMetadata} {docSet} {selectedCategories} {toggleCategory} {activeRegions} {toggleRegion}>-->
+        <Sidebar {docSet} {documentSetStore}>
             <div slot="datavizInfo">
                 {#if activeTab === 0}
                     <p>The Regions Network visualizes the relationships between image regions across different witnesses in the document set.
@@ -68,7 +57,7 @@
                         <li>Edges: Relationships based on shared content.</li>
                     </ul>
                 {/if}
-                <NetworkInfo {activeTab} {docSetStats}/>
+                <NetworkInfo {activeTab} {documentSetStore}/>
             </div>
         </Sidebar>
     </div>
@@ -97,12 +86,7 @@
             {:then _}
                 <div>
                     <h2 class="title is-3 has-text-link">{visualizationTitle}</h2>
-                    <NetworkVisualization
-                        networkData={activeTab === 0 ? imageNetwork : documentNetwork}
-                        {selectedNodes}
-                        {updateSelectedNodes}
-                        {activeTab}
-                    />
+                    <NetworkVisualization {documentSetStore} type={activeTab === 0 ? 'image' : 'document'}/>
                 </div>
             {/await}
         {/if}

@@ -2,15 +2,16 @@
     import {appLang, appUrl, appName, model2title} from '../constants.js';
     import CategoryButton from "../regions/similarity/CategoryButton.svelte";
 
-    export let docSetStats = null;
-    export let regionsMetadata = null;
     export let docSet = null;
-
-    export let selectedCategories;
-    export let toggleCategory;
-
-    export let activeRegions;
-    export let toggleRegion;
+    export let documentSetStore;
+    const {
+        docSetStats,
+        regionsMetadata,
+        selectedCategories,
+        toggleCategory,
+        activeRegions,
+        toggleRegion
+    } = documentSetStore;
 
     console.log(docSetStats, docSet, $regionsMetadata);
     $: regionsList = regionsMetadata ? Object.entries($regionsMetadata) : [];

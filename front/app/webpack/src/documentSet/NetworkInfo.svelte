@@ -2,7 +2,8 @@
     import {appLang} from "../constants.js";
 
     export let activeTab = 0;
-    export let docSetStats;
+    export let documentSetStore;
+    const { docSetStats } = documentSetStore;
 </script>
 
 <div class="level has-text-centered">

@@ -2,19 +2,26 @@
     import { onMount, onDestroy } from 'svelte';
     import { createNetwork } from './network.js';
     import Region from "../regions/Region.svelte";
+    import AlignedMatrix from './AlignedMatrix.svelte';
     import { appLang } from '../constants.js';
 
     const width = 954;
     const height = 600;
 
-    export let networkData;
-    export let selectedNodes;
-    export let updateSelectedNodes;
-    export let activeTab;
+    export let type = 'image';
+    export let documentSetStore;
+    const {
+        imageNetwork,
+        documentNetwork,
+        selectedNodes,
+        updateSelectedNodes,
+    } = documentSetStore;
 
     let networkInstance;
     let container;
     let selectionMode = false;
+
+    $: networkData = type === 'image' ? imageNetwork : documentNetwork;
 
     $: if ($networkData && container) {
         renderVisualization();
@@ -38,7 +45,7 @@
             (mode) => { selectionMode = mode; }
         );
 
-        selectionMode = activeTab === 0;
+        selectionMode = type === 'image';
         if (selectionMode) {
             networkInstance.toggleSelectionMode();
         }
@@ -74,14 +81,18 @@
     <div bind:this={container} class="visualization-container"></div>
 
     {#if $selectedNodes.length > 0}
+        {#if type === 'image'}
         <div class="selected-panel box mt-4">
-            <h3 class="title is-5">{appLang === "en" ? 'Selected nodes' : 'Nœuds sélectionnés'} ({$selectedNodes.length})</h3>
+            <h3 class="title is-5">{appLang === "en" ? 'Selected regions' : 'Régions sélectionnées'} ({$selectedNodes.length})</h3>
             <div class="selected-nodes grid is-gap-2 mt-5">
                 {#each $selectedNodes as node (node.id)}
                     <Region item="{node}" selectable={false} copyable={false}/>
                 {/each}
             </div>
         </div>
+        {:else if type === 'document'}
+            <AlignedMatrix selectedDocuments={$selectedNodes} {documentSetStore}/>
+        {/if}
     {/if}
 </div>
 
