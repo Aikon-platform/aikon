@@ -1,25 +1,13 @@
 import * as d3 from 'd3';
 
 function calculateLinkStrength(link, scoreRange) {
-    let baseScore = link.score != null ? link.score : 0;
+    const weightedScore = link.weightedScore ?? 0;
 
     if (scoreRange.max > scoreRange.min) {
-        baseScore = (baseScore - scoreRange.min) / (scoreRange.max - scoreRange.min);
+        return (weightedScore - scoreRange.min) / (scoreRange.max - scoreRange.min);
     }
 
-    let strength = baseScore;
-
-    if (link.category === 1) { // exact match
-        strength = baseScore + 1.0;
-    } else if (link.category === 2) { // partial match
-        strength = baseScore + 0.5;
-    } else if (link.category === 3 || link.category === 5) { // partial and user match
-        strength = baseScore + 0.125;
-    } else if (link.category === 4) { // no match
-        strength = Math.max(0.01, baseScore - 1.0);
-    }
-
-    return Math.max(0.01, Math.min(strength, 2));
+    return 0.5;
 }
 
 function calculateLinkDistance(strength) {
@@ -38,7 +26,7 @@ function normalizeLinkStrength(scoreSum, minSum, maxSum) {
 
 function initializeImageNetwork(nodes, links, stats) {
     links.forEach(link => {
-        link.strength = calculateLinkStrength(link, stats.scoreRange);
+        link.strength = calculateLinkStrength(link, stats.weightedScoreRange);
         link.distance = calculateLinkDistance(link.strength);
     });
 
@@ -96,7 +84,7 @@ export function createNetwork(div, nodes, links, stats = null, onSelectionChange
 
     const validLinks = links.filter(link => link.category !== 4);
 
-    if (type === 'image' && stats?.scoreRange) {
+    if (type === 'image' && stats?.weightedScoreRange) {
         initializeImageNetwork(nodes, validLinks, stats);
     } else if (type === 'document' && stats?.imageCountRange) {
         initializeDocumentNetwork(nodes, validLinks, stats);

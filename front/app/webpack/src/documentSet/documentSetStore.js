@@ -43,7 +43,9 @@ export function createDocumentSetStore(documentSetId) {
      * {
      *     documentStats: Map<"regionId1-regionId2", {count, score}>,
      *     imageStats: Map<imgId, {score, count}>,
+     *     docPairStats: Map<"regionId1-regionId2", {count, score}>,
      *     scoreRange: {min, max},
+     *     weightedScoreRange: {min, max},
      *     scoreSumRange: {min, max},
      *     totalScores: number,
      *     scoredCount: number,
@@ -63,6 +65,15 @@ export function createDocumentSetStore(documentSetId) {
      */
     const documentNodes = writable(new Map());
 
+    function calculateWeightedScore(score, category) {
+        const baseScore = score ?? 0;
+        if (category === 1) return baseScore + 1.0;
+        if (category === 2) return baseScore + 0.5;
+        if (category === 3 || category === 5) return baseScore + 0.125;
+        if (category === 4) return Math.max(0.01, baseScore - 1.0);
+        return Math.max(0.01, baseScore);
+    }
+
     const fetchPairs = derived(selectedCategories, ($selectedCategories, set) => {
         (async () => {
             try {
@@ -78,7 +89,9 @@ export function createDocumentSetStore(documentSetId) {
                 const stats = {
                     documentStats: new Map(),
                     imageStats: new Map(),
+                    docPairStats: new Map(),
                     scoreRange: {min: Infinity, max: -Infinity},
+                    weightedScoreRange: {min: Infinity, max: -Infinity},
                     scoreSumRange: {min: null, max: null},
                     totalScores: 0,
                     scoredCount: 0,
@@ -174,18 +187,24 @@ export function createDocumentSetStore(documentSetId) {
      * }
      */
     function processPair(pair, context) {
-        const {index, documentMap, imageMap, pairStats} = context;
+        const {index, documentMap, imageMap, stats} = context;
         const score = pair.score ?? null;
         const category = pair.category ?? 0;
+        const weightedScore = calculateWeightedScore(score, category);
+
+        pair.weightedScore = weightedScore;
 
         if (score != null) {
-            if (score < pairStats.scoreRange.min) pairStats.scoreRange.min = score;
-            if (score > pairStats.scoreRange.max) pairStats.scoreRange.max = score;
-            pairStats.totalScores += score;
-            pairStats.scoredCount++;
+            if (score < stats.scoreRange.min) stats.scoreRange.min = score;
+            if (score > stats.scoreRange.max) stats.scoreRange.max = score;
         }
 
-        pairStats.categories[category] = (pairStats.categories[category] || 0) + 1;
+        if (weightedScore < stats.weightedScoreRange.min) stats.weightedScoreRange.min = weightedScore;
+        if (weightedScore > stats.weightedScoreRange.max) stats.weightedScoreRange.max = weightedScore;
+
+        stats.totalScores += weightedScore;
+        stats.scoredCount++;
+        stats.categories[category] = (stats.categories[category] || 0) + 1;
 
         for (const key of ['1', '2']) {
             const imgKey = pair[`img_${key}`];
@@ -209,7 +228,7 @@ export function createDocumentSetStore(documentSetId) {
                     regionId: rid,
                     canvas: imgPage,
                     color: null,
-                    ref: imgRef, // for compatibility with RegionItemType
+                    ref: imgRef,
                     type: regionsType,
                     xywh: pair[`coord_${key}`].split(","),
                 });
@@ -222,25 +241,31 @@ export function createDocumentSetStore(documentSetId) {
                     images: [],
                 });
             }
-            documentMap.get(rid).images.push({id: imgId, canvas: imgPage, pair}) // TODO do we need to store pair here?
+            documentMap.get(rid).images.push({id: imgId, canvas: imgPage, pair})
             documentMap.get(rid).imageCount++;
 
             if (!index.has(imgId)) index.set(imgId, []);
             index.get(imgId).push(pair);
 
-            const existing = pairStats.imageStats.get(imgId);
-            pairStats.imageStats.set(imgId, {
-                score: (existing?.score || 0) + (score ?? 0),
+            const existing = stats.imageStats.get(imgId);
+            stats.imageStats.set(imgId, {
+                score: (existing?.score || 0) + weightedScore,
                 count: (existing?.count || 0) + 1,
             })
         }
 
         const {regions_id_1: r1, regions_id_2: r2} = pair;
-        const key = r1 < r2 ? `${r1}-${r2}` : `${r2}-${r1}`;
-        const existing = pairStats.documentStats.get(key);
-        pairStats.documentStats.set(key, {
-            score: (existing?.score || 0) + (score ?? 0),
-            count: (existing?.count || 0) + 1,
+        const docKey = r1 < r2 ? `${r1}-${r2}` : `${r2}-${r1}`;
+        const existingDoc = stats.documentStats.get(docKey);
+        stats.documentStats.set(docKey, {
+            score: (existingDoc?.score || 0) + weightedScore,
+            count: (existingDoc?.count || 0) + 1,
+        });
+
+        const existingPair = stats.docPairStats.get(docKey);
+        stats.docPairStats.set(docKey, {
+            score: (existingPair?.score || 0) + weightedScore,
+            count: (existingPair?.count || 0) + 1,
         });
 
         return pair;
@@ -280,6 +305,7 @@ export function createDocumentSetStore(documentSetId) {
             source: pair.id_1,
             target: pair.id_2,
             score: pair.score,
+            weightedScore: pair.weightedScore,
             category: pair.category,
             width: (pair.score ?? 10) / 5
         }));
@@ -289,6 +315,7 @@ export function createDocumentSetStore(documentSetId) {
             links,
             stats: {
                 scoreRange: $stats.scoreRange,
+                weightedScoreRange: $stats.weightedScoreRange,
                 scoreSumRange: $stats.scoreSumRange,
                 imageStats: $stats.imageStats
             }
