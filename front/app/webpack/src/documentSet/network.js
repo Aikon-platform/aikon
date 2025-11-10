@@ -265,12 +265,12 @@ function createSelectionManager(options) {
         nodes.forEach(d => {
             const pos = getNodePosition(d);
             if (pos.x >= x1 && pos.x <= x2 && pos.y >= y1 && pos.y <= y2) {
-                newNodes.push(getNodeId(d));
+                newNodes.push({id: getNodeId(d), y: pos.y});
             }
         });
 
-        newNodes.sort((a, b) => a - b);
-        newNodes.forEach(id => {
+        newNodes.sort((a, b) => a.y - b.y);
+        newNodes.forEach(({id}) => {
             selectedNodes.add(id);
             selectionOrder.push(id);
         });
@@ -342,5 +342,6 @@ function createSimulationHandlers(simulation, link, node, label) {
 }
 
 function processSelection(nodes, selected, order) {
-    return nodes.filter(d => selected.has(d.id));
+    const nodeMap = new Map(nodes.map(n => [n.id, n]));
+    return order.map(id => nodeMap.get(id)).filter(Boolean);
 }

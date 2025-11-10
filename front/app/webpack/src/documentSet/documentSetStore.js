@@ -75,9 +75,9 @@ export function createDocumentSetStore(documentSetId) {
                 const index = new Map();
                 const documentMap = new Map();
                 const imageMap = new Map();
-                const pairStats = {
+                const stats = {
                     documentStats: new Map(),
-                    imageStats: new Map(), // TODO replace usages of imageScoreSums and imageDegrees with this
+                    imageStats: new Map(),
                     scoreRange: {min: Infinity, max: -Infinity},
                     scoreSumRange: {min: null, max: null},
                     totalScores: 0,
@@ -86,12 +86,12 @@ export function createDocumentSetStore(documentSetId) {
                     categories: {}
                 }
 
-                const context = {index, documentMap, imageMap, pairStats};
+                const context = {index, documentMap, imageMap, stats};
                 const pairs = data.map(pair => processPair(pair, context));
 
-                const scoreSums = Array.from(pairStats.imageStats.values()).map(s => s.score);
-                pairStats.scoreSumRange = {min: Math.min(...scoreSums), max: Math.max(...scoreSums)}
-                pairStats.avgScore = pairStats.scoredCount > 0 ? pairStats.totalScores / pairStats.scoredCount : null;
+                const scoreSums = Array.from(stats.imageStats.values()).map(s => s.score);
+                stats.scoreSumRange = {min: Math.min(...scoreSums), max: Math.max(...scoreSums)}
+                stats.avgScore = stats.scoredCount > 0 ? stats.totalScores / stats.scoredCount : null;
 
                 const regionIds = Array.from(documentMap.keys());
                 await Promise.all(
@@ -120,7 +120,7 @@ export function createDocumentSetStore(documentSetId) {
                 });
 
                 imagePairIndex.set(index);
-                networkStats.set(pairStats);
+                networkStats.set(stats);
                 activeRegions.set(new Set(regionIds));
                 allPairs.set(pairs);
                 documentNodes.set(documentMap);
@@ -133,6 +133,9 @@ export function createDocumentSetStore(documentSetId) {
             }
         })();
     });
+
+    // TODO compute weighted score with category for pairs
+    // TODO
 
     /**
      * @param pair : similarity pair to update
@@ -383,48 +386,59 @@ export function createDocumentSetStore(documentSetId) {
         if (!firstDoc?.images) return {regions: orderedSelection, rows: []};
 
         const findPairs = (imgId, sourceRegionId, targetRegionId) => {
-            return allPairs
-                .filter(p =>
-                    (p.id_1 === imgId && p.regions_id_1 === sourceRegionId && p.regions_id_2 === targetRegionId) ||
-                    (p.id_2 === imgId && p.regions_id_2 === sourceRegionId && p.regions_id_1 === targetRegionId)
-                )
-                .map(p => ({
-                    id: p.id_1 === imgId ? p.id_2 : p.id_1,
-                    page: p.id_1 === imgId ? p.page_2 : p.page_1
-                }));
+            const results = [];
+            for (const p of allPairs) {
+                if (p.id_1 === imgId && p.regions_id_1 === sourceRegionId && p.regions_id_2 === targetRegionId) {
+                    results.push({id: p.id_2, page: p.page_2});
+                } else if (p.id_2 === imgId && p.regions_id_2 === sourceRegionId && p.regions_id_1 === targetRegionId) {
+                    results.push({id: p.id_1, page: p.page_1});
+                }
+            }
+            return results;
         };
 
         const firstImages = [...firstDoc.images].sort((a, b) => a.canvas - b.canvas);
         const allRows = [];
 
         for (const firstImg of firstImages) {
-            const buildPaths = (colIdx, currentPath) => {
-                if (colIdx >= orderedSelection.length) {
-                    return [currentPath];
-                }
+            let currentRows = [{[firstRegionId]: {id: firstImg.id, page: firstImg.canvas}}];
 
+            for (let colIdx = 1; colIdx < orderedSelection.length; colIdx++) {
                 const targetRegionId = orderedSelection[colIdx];
-                const paths = [];
+                const nextRows = [];
 
-                for (let srcIdx = 0; srcIdx < colIdx; srcIdx++) {
-                    const sourceRegionId = orderedSelection[srcIdx];
-                    const sourceImg = currentPath[sourceRegionId];
+                for (const row of currentRows) {
+                    const allPairsFound = [];
 
-                    if (sourceImg) {
-                        const pairs = findPairs(sourceImg.id, sourceRegionId, targetRegionId);
-                        for (const pair of pairs) {
-                            const newPath = {...currentPath, [targetRegionId]: pair};
-                            paths.push(...buildPaths(colIdx + 1, newPath));
+                    for (let srcIdx = 0; srcIdx < colIdx; srcIdx++) {
+                        const sourceRegionId = orderedSelection[srcIdx];
+                        if (row[sourceRegionId]) {
+                            const pairs = findPairs(row[sourceRegionId].id, sourceRegionId, targetRegionId);
+                            allPairsFound.push(...pairs);
+                        }
+                    }
+
+                    if (allPairsFound.length === 0) {
+                        nextRows.push(row);
+                    } else {
+                        const uniquePairs = new Map();
+                        allPairsFound.forEach(p => {
+                            if (!uniquePairs.has(p.id)) {
+                                uniquePairs.set(p.id, p);
+                            }
+                        });
+
+                        for (const pair of uniquePairs.values()) {
+                            const newRow = {...row, [targetRegionId]: pair};
+                            nextRows.push(newRow);
                         }
                     }
                 }
 
-                paths.push(...buildPaths(colIdx + 1, currentPath));
-                return paths;
-            };
+                currentRows = nextRows;
+            }
 
-            const initialPath = {[firstRegionId]: {id: firstImg.id, page: firstImg.canvas}};
-            allRows.push(...buildPaths(1, initialPath));
+            allRows.push(...currentRows);
         }
 
         const rows = [];

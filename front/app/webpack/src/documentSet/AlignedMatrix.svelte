@@ -31,8 +31,6 @@
     $: if (selectedDocuments.length > 0 && $imageNodes && $documentNodes && $allPairs) {
         const selectionOrder = selectedDocuments.map(n => n.id);
         matrixData = buildAlignedImageMatrix(selectionOrder, $documentNodes, $allPairs);
-
-        console.log({selectionOrder, $documentNodes, $allPairs});
     } else {
         matrixData = null;
     }
