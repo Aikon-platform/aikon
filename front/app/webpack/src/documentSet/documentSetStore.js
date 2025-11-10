@@ -390,7 +390,8 @@ export function createDocumentSetStore(documentSetId) {
             categories: $stats.categories,
             stats: [
                 {nodes: $imageNodes.size, links: $pairs.length},
-                {nodes: $docNodes.size, links: $stats.documentStats.size}
+                {nodes: $docNodes.size, links: $stats.documentStats.size},
+                {nodes: $docNodes.size, links: $stats.docPairStats.size}
             ]
         };
     });

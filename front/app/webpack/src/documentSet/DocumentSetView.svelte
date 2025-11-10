@@ -2,13 +2,14 @@
     import Layout from '../Layout.svelte';
     import Sidebar from './Sidebar.svelte';
     import NetworkVisualization from './NetworkVisualization.svelte';
+    import DocumentMatrix from './DocumentMatrix.svelte';
     import {createDocumentSetStore} from './documentSetStore.js';
     import NetworkInfo from "./NetworkInfo.svelte";
     export let docSet;
 
     let activeTab = 0;
 
-    $: visualizationTitle = activeTab === 0 ? "Image regions network" : "Witness network";
+    $: visualizationTitle = activeTab === 0 ? "Image regions network" : activeTab === 1 ? "Witness network" : "Document Matrix";
 
     const documentSetStore = createDocumentSetStore(docSet.id);
     const { fetchPairs, error } = documentSetStore;
@@ -48,12 +49,19 @@
                         <li>Nodes: Image regions from various witnesses.</li>
                         <li>Edges: Similarity links between regions.</li>
                     </ul>
-                {:else}
+                {:else if activeTab === 1}
                     <p>The Documents Network illustrates the connections between different witnesses in the document set.
                         Each node represents a witness, and edges denote relationships based on shared content or other relevant factors.</p>
                     <ul>
                         <li>Nodes: Witnesses in the document set.</li>
                         <li>Edges: Relationships based on shared content.</li>
+                    </ul>
+                {:else}
+                    <p>La matrice de documents visualise les scores de similarité globaux entre tous les documents du corpus.
+                        Cliquez sur une cellule pour voir les détails des similarités entre pages.</p>
+                    <ul>
+                        <li>Matrice : Scores normalisés entre documents (0-100).</li>
+                        <li>Scatter plot : Similarités détaillées par page.</li>
                     </ul>
                 {/if}
                 <NetworkInfo {activeTab} {documentSetStore}/>
@@ -70,6 +78,9 @@
                 <li class:is-active={activeTab === 1}>
                     <a on:click={() => activeTab = 1} href="{null}">Documents Network</a>
                 </li>
+                <li class:is-active={activeTab === 2}>
+                    <a on:click={() => activeTab = 2} href="{null}">Document Matrix</a>
+                </li>
             </ul>
         </div>
     </div>
@@ -85,7 +96,11 @@
             {:then _}
                 <div>
                     <h2 class="title is-3 has-text-link">{visualizationTitle}</h2>
-                    <NetworkVisualization {documentSetStore} type={activeTab === 0 ? 'image' : 'document'}/>
+                    {#if activeTab === 2}
+                        <DocumentMatrix {documentSetStore}/>
+                    {:else}
+                        <NetworkVisualization {documentSetStore} type={activeTab === 0 ? 'image' : 'document'}/>
+                    {/if}
                 </div>
             {/await}
         {/if}
