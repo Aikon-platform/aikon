@@ -42,7 +42,8 @@
             $networkData.links,
             $networkData.stats,
             onSelectionChange,
-            (mode) => { selectionMode = mode; }
+            (mode) => { selectionMode = mode; },
+            type
         );
 
         selectionMode = type === 'image';

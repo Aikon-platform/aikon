@@ -1,6 +1,7 @@
 <script>
     import {appLang, appUrl, appName, model2title} from '../constants.js';
     import CategoryButton from "../regions/similarity/CategoryButton.svelte";
+    import LegendItem from "./LegendItem.svelte";
 
     export let docSet = null;
     export let documentSetStore;
@@ -13,8 +14,7 @@
         toggleRegion
     } = documentSetStore;
 
-    console.log(docSetStats, docSet, $regionsMetadata);
-    $: regionsList = regionsMetadata ? Object.entries($regionsMetadata) : [];
+    // console.log($docSetStats, docSet, $regionsMetadata);
 </script>
 
 <div class="m-4 py-5 px-4">
@@ -46,21 +46,9 @@
                 </div>
 
                 <div class="legend-list">
-                    {#each regionsList as [id, meta]}
-                        {@const regionId = parseInt(id)}
-                        {@const isActive = $activeRegions.has(regionId)}
-                        <div class="legend-item" class:inactive={!isActive}>
-                            <span class="legend-nb"><!--IMAGE NUMBER--></span>
-                            <span class="legend-color clickable" class:inactive={!isActive}
-                                style="background-color: {isActive ? meta.color : '#999'};"
-                                on:click={() => toggleRegion(regionId)} on:keydown={null}
-                                role="button" tabindex="0" aria-label="Toggle region {meta.title}"/>
-                            <span class="legend-label">
-                                <a href={`${appUrl}/${appName}/witness/${meta.witnessId}/regions/${id}`} target="_blank">
-                                    {meta.title}
-                                </a>
-                            </span>
-                        </div>
+                    {#each Object.entries($regionsMetadata || {}) as [id, meta]}
+                        <LegendItem id={id} meta={meta} isActive={$activeRegions.has(parseInt(id))}
+                                    toggle={() => toggleRegion(parseInt(id))}/>
                     {/each}
                 </div>
             </div>
@@ -100,43 +88,5 @@
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
-    }
-
-    .legend-nb {
-        /* ADD  STYLE */
-    }
-
-    .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.25rem 0;
-        transition: opacity 0.2s;
-    }
-
-    .legend-item.inactive {
-        opacity: 0.5;
-    }
-
-    .legend-color {
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
-        flex-shrink: 0;
-        transition: all 0.2s;
-    }
-
-    .legend-color.clickable {
-        cursor: pointer;
-    }
-
-    .legend-color.clickable:hover {
-        transform: scale(1.2);
-        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
-    }
-
-    .legend-color.inactive {
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 </style>

@@ -7,6 +7,7 @@
 
     export let selectable = true;
     export let copyable = true;
+    export let borderColor = null;
 
     import { selectionStore } from '../selection/selectionStore.js';
     const { isSelected } = selectionStore;
@@ -21,11 +22,11 @@
     export let item;
     /** @type {Promise<string>?} TODO CHANGE THAT */
     export let descPromise = undefined;
-    /** @type {boolean} enforce a small square display. if `height==="full"`, will be switched to `false`. see below */
+    /** @type {boolean} enforce a small square display. if `height === "full"`, will be switched to `false`. see below */
     export let isSquare = true;
     /** @type {number|"full"} either a dimension in pixels, or the "full" keyword used by the IIIF image api */
     export let height = isSquare ? 96 : 140;
-    if ( height==="full" ) { isSquare = false }
+    if ( height === "full" ) { isSquare = false }
 
     /////////////////////////////////////////////
     /** @type {RegionItemType?} defined in `SimilarityRow`.
@@ -63,10 +64,10 @@
 
 <div class="region is-center {selectable && $isSelected(item) ? 'checked' : ''}"
      transition:fade={{ duration: transitionDuration }}
-     style={height==="full" ? "height: 100%" : ""}
+     style="{height==='full' ? 'height: 100%' : ''}"
 >
     <figure class="image card region-image {isSquare ? 'is-96x96' : ''}" tabindex="-1"
-            style={height==="full" ? "height: 100%" : `height: ${height}px; min-width: ${height}px`}
+            style="{height==='full' ? 'height: 100%' : `height: ${height}px; min-width: ${height}px`}; {borderColor ? `border: 5px solid ${borderColor};` : ''}"
             on:click={() => selectable ? selectionStore.toggle(item) : null} on:keyup={() => null}>
         <img class="region-img" src={imgSrc} alt="Extracted region"/>
         <div class="overlay is-center">

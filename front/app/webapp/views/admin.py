@@ -3,6 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.core.exceptions import PermissionDenied
 from django.views.generic import CreateView, TemplateView, View, UpdateView, DetailView
 from django.shortcuts import get_object_or_404, redirect
+from django.http import Http404
 from django.urls import reverse
 
 from app.similarity.forms import AVAILABLE_SIMILARITY_ALGORITHMS
@@ -68,6 +69,21 @@ class AbstractRecordView(AbstractView, DetailView):
     pk_url_kwarg = "id"
     context_object_name = "instance"
 
+    def get_object(self, queryset=None):
+        # TODO change that because of ID == UUID
+        try:
+            pk = int(self.kwargs[self.pk_url_kwarg])
+        except (KeyError, ValueError):
+            raise Http404("Invalid ID")
+
+        if queryset is None:
+            queryset = self.get_queryset()
+
+        return get_object_or_404(queryset, pk=pk)
+
+    def get_record(self):
+        return getattr(self, "object", None) or self.get_object()
+
     def get_view_title(self):
         if record := self.get_record():
             return f"{record}"
@@ -75,11 +91,6 @@ class AbstractRecordView(AbstractView, DetailView):
 
     def get_success_url(self):
         return reverse(f"{self.model._meta.name}_list")
-
-    def get_record(self):
-        if self.pk_url_kwarg in self.kwargs:
-            return get_object_or_404(self.model, pk=self.kwargs[self.pk_url_kwarg])
-        return None
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

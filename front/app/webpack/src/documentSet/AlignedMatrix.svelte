@@ -1,13 +1,15 @@
 <script>
+    import Region from "../regions/Region.svelte";
+    import LegendItem from "./LegendItem.svelte";
+
     export let selectedDocuments = [];
     export let documentSetStore;
     const {
         networkStats,
         allPairs,
-        regionsInfo,
-        buildAlignedImageMatrix
+        buildAlignedImageMatrix,
+        regionsMetadata
     } = documentSetStore;
-
 
     function generateDistinctColor(str) {
         let hash = 0;
@@ -30,15 +32,17 @@
         const selectionOrder = selectedDocuments.map(n => n.id);
         const regionImages = $networkStats.documentNodes;
         matrixData = buildAlignedImageMatrix(selectionOrder, regionImages, $allPairs);
+
+        console.log(matrixData, selectedDocuments, $networkStats, $allPairs);
     } else {
         matrixData = null;
     }
 
     function getImageColor(regionData, imageOccurrences) {
-        if (!regionData) return "white";
+        if (!regionData) return undefined;
         const imgUrl = regionData.img;
 
-        if (imageOccurrences.get(imgUrl) === 1) return "white";
+        if (imageOccurrences.get(imgUrl) === 1) return undefined;
         if (!imageColorMap.has(imgUrl)) {
             imageColorMap.set(imgUrl, generateDistinctColor(imgUrl));
         }
@@ -63,13 +67,12 @@
     <h3 class="title is-5">Aligned Documents</h3>
 
     <div class="table-container">
-        <table class="table is-bordered is-fullwidth">
-            <thead>
+        <table class="table is-fullwidth">
+            <thead class="region-header">
                 <tr>
                     {#each matrixData.regions as regionId}
-                        <th class="has-text-centered has-text-white"
-                            style="background: {$regionsInfo[regionId]?.color || '#888888'}">
-                            {$regionsInfo[regionId]?.title || `Region ${regionId}`}
+                        <th class="is-vcentered">
+                            <LegendItem id={regionId} meta={$regionsMetadata[regionId] || {}} clickable={false}/>
                         </th>
                     {/each}
                 </tr>
@@ -78,13 +81,11 @@
                 {#each matrixData.rows as rowData}
                     <tr>
                         {#each matrixData.regions as regionId}
-                            <td class="has-text-centered" style="vertical-align: top; background: {getImageColor(rowData[regionId], imageOccurrences)}">
+                            <td class="has-text-centered" style="vertical-align: top;">
                                 {#if rowData[regionId]}
-                                    <img src={rowData[regionId].img} alt="Region {regionId}"
-                                         style="width: 200px; height: auto; display: block; margin: 0 auto;">
-                                    <div class="has-text-grey-dark mt-2" style="font-size: 12px">
-                                        Page {rowData[regionId].page}
-                                    </div>
+                                    {@const item = $networkStats.imageNodes.get(rowData[regionId].img)}
+                                    <Region {item} selectable={false} copyable={false} borderColor={getImageColor(rowData[regionId], imageOccurrences)} isSquare={false}/>
+                                    <div class="has-text-grey-dark mt-2">Page {rowData[regionId].page}</div>
                                 {/if}
                             </td>
                         {/each}
@@ -99,5 +100,13 @@
 <style>
     .table-container {
         overflow-x: auto;
+    }
+    table {
+        table-layout: fixed;
+    }
+    .region-header {
+        border-color: var(--bulma-table-cell-border-color);
+        border-style: var(--bulma-table-cell-border-style);
+        border-width: 0 0 2px;
     }
 </style>

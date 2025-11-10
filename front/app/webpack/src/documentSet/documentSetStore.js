@@ -21,7 +21,7 @@ function processPair(pair) {
     for (const key of ['1', '2']) {
         const pairImg = pair[`img_${key}`];
         const imgParts = pairImg.split("_");
-        result[`img_${key}`] = refToIIIF(pairImg);
+        result[`img_${key}`] = refToIIIF(pairImg); // TODO find a way to remove the need of reffToIIIF since it is basically the same as ref+coord
         result[`id_${key}`] = pairImg;
         result[`page_${key}`] = imageToPage(pairImg);
         result[`ref_${key}`] = `${imgParts.slice(0,3).join("_").replace(".jpg", "")}.jpg`;
@@ -43,6 +43,7 @@ function computeNetworkStats(pairs, regionsInfo) {
     let scoredCount = 0;
     const categories = {};
 
+    // NOTE third loop on pairs
     pairs.forEach(pair => {
         const {img_1, img_2, regions_id_1: r1, regions_id_2: r2, score, category} = pair;
 
@@ -79,6 +80,7 @@ function computeNetworkStats(pairs, regionsInfo) {
                 documentNodes.set(rid, []);
             }
             documentNodes.get(rid).push({img, canvas: pair[`page_${key}`], pair});
+            // NOTE regionsInfo could be set here
         }
 
         const key = r1 < r2 ? `${r1}-${r2}` : `${r2}-${r1}`;
@@ -151,11 +153,13 @@ export function createDocumentSetStore(documentSetId) {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const data = await response.json();
+                // NOTE first loop on pairs
                 const pairs = data.map(processPair);
 
                 const index = new Map();
                 const regionIds = new Set();
 
+                // NOTE second loop on pairs
                 pairs.forEach(pair => {
                     for (const key of ['1', '2']) {
                         const rid = pair[`regions_id_${key}`];
@@ -245,29 +249,48 @@ export function createDocumentSetStore(documentSetId) {
     });
 
     const documentNetwork = derived([networkStats, regionsInfo], ([$stats, $regionsInfo]) => {
-        if (!$stats) return {nodes: [], links: []};
+        if (!$stats) return {nodes: [], links: [], stats: null};
 
         const nodes = Array.from($stats.documentNodes.keys()).map(id => ({
             id,
             title: $regionsInfo[id]?.title || `Region ${id}`,
             color: $regionsInfo[id]?.color || "#888888",
-            size: $stats.documentNodes.get(id).length
+            imageCount: $stats.documentNodes.get(id).length
         }));
 
-        const maxCount = Math.max(...Array.from($stats.documentPairs.values()).map(d => d.count), 1);
+        const imageCounts = nodes.map(n => n.imageCount);
+        const minImageCount = Math.min(...imageCounts);
+        const maxImageCount = Math.max(...imageCounts);
+
+        const scoreSums = Array.from($stats.documentPairs.values()).map(d => d.score);
+        const minScoreSum = Math.min(...scoreSums);
+        const maxScoreSum = Math.max(...scoreSums);
 
         const links = Array.from($stats.documentPairs.entries()).map(([key, {count, score}]) => {
             const [source, target] = key.split('-').map(Number);
-            return {
-                source,
-                target,
-                count,
-                width: 1 + (count / maxCount) * 9,
-                score: count > 0 ? score / count : 0
-            };
+            return {source, target, count, scoreSum: score};
         });
 
-        return {nodes, links};
+        return {
+            nodes,
+            links,
+            stats: {
+                imageCountRange: {min: minImageCount, max: maxImageCount},
+                scoreSumRange: {min: minScoreSum, max: maxScoreSum}
+            }
+        };
+    });
+
+    const filteredDocumentNetwork = derived([documentNetwork, activeRegions], ([$network, $active]) => {
+        // TODO use filteredDocumentNetwork
+        const nodes = $network.nodes.filter(n => $active.has(n.regionId));
+        const nodeIds = new Set(nodes.map(n => n.id));
+        const links = $network.links.filter(l =>
+            nodeIds.has(l.source.id || l.source) &&
+            nodeIds.has(l.target.id || l.target)
+        );
+
+        return {...$network, nodes, links};
     });
 
     const docSetStats = derived([allPairs, regionsMetadata, networkStats], ([$pairs, $metadata, $stats]) => {
@@ -314,8 +337,8 @@ export function createDocumentSetStore(documentSetId) {
 
         const getRegionImagesMap = (regionId) => {
             const map = new Map();
-            regionImages.get(regionId).forEach(imgData => {
-                map.set(imgData.img, {page: imgData.page, img: imgData.img});
+            (regionImages.get(regionId) ?? []).forEach(imgData => {
+                map.set(imgData.img, {page: imgData.canvas, img: imgData.img});
             });
             return map;
         };

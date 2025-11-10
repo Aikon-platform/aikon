@@ -31,7 +31,59 @@ function normalizeRadius(scoreSum, minSum, maxSum, minRadius = 10, maxRadius = 7
     return minRadius + ((scoreSum - minSum) / (maxSum - minSum)) * (maxRadius - minRadius);
 }
 
-export function createNetwork(div, nodes, links, stats = null, onSelectionChange, onModeChange = null) {
+function normalizeLinkStrength(scoreSum, minSum, maxSum) {
+    if (maxSum === minSum) return 0.5;
+    return 0.1 + ((scoreSum - minSum) / (maxSum - minSum)) * 0.9;
+}
+
+function initializeImageNetwork(nodes, links, stats) {
+    links.forEach(link => {
+        link.strength = calculateLinkStrength(link, stats.scoreRange);
+        link.distance = calculateLinkDistance(link.strength);
+    });
+
+    nodes.forEach(node => {
+        const scoreSum = stats.scoreSums.get(node.id) || 0;
+        node.scoreSum = scoreSum;
+        node.degree = stats.degrees?.get(node.id) || 0;
+        node.radius = normalizeRadius(scoreSum, stats.scoreSumRange.min, stats.scoreSumRange.max);
+    });
+}
+
+function initializeDefaultNetwork(nodes, links) {
+    links.forEach(link => {
+        link.strength = 0.5;
+        link.distance = 150;
+    });
+
+    nodes.forEach(node => {
+        node.radius = 32;
+        node.degree = 0;
+    });
+}
+
+function initializeDocumentNetwork(nodes, links, stats) {
+    nodes.forEach(node => {
+        node.radius = normalizeRadius(
+            node.imageCount,
+            stats.imageCountRange.min,
+            stats.imageCountRange.max,
+            15,
+            60
+        );
+    });
+
+    links.forEach(link => {
+        link.strength = normalizeLinkStrength(
+            link.scoreSum,
+            stats.scoreSumRange.min,
+            stats.scoreSumRange.max
+        );
+        link.distance = calculateLinkDistance(link.strength);
+    });
+}
+
+export function createNetwork(div, nodes, links, stats = null, onSelectionChange, onModeChange = null, type = 'image') {
     const width = 954;
     const height = 600;
     const centerX = width / 2;
@@ -44,31 +96,12 @@ export function createNetwork(div, nodes, links, stats = null, onSelectionChange
 
     const validLinks = links.filter(link => link.category !== 4);
 
-    if (stats?.scoreRange) {
-        validLinks.forEach(link => {
-            link.strength = calculateLinkStrength(link, stats.scoreRange);
-            link.distance = calculateLinkDistance(link.strength);
-        });
+    if (type === 'image' && stats?.scoreRange) {
+        initializeImageNetwork(nodes, validLinks, stats);
+    } else if (type === 'document' && stats?.imageCountRange) {
+        initializeDocumentNetwork(nodes, validLinks, stats);
     } else {
-        validLinks.forEach(link => {
-            link.strength = 0.5;
-            link.distance = 150;
-        });
-    }
-
-    if (stats?.scoreSums) {
-        nodes.forEach(node => {
-            const scoreSum = stats.scoreSums.get(node.id) || 0;
-            const degree = stats.degrees?.get(node.id) || 0;
-            node.scoreSum = scoreSum;
-            node.degree = degree;
-            node.radius = normalizeRadius(scoreSum, stats.scoreSumRange.min, stats.scoreSumRange.max);
-        });
-    } else {
-        nodes.forEach(node => {
-            node.radius = 32;
-            node.degree = 0;
-        });
+        initializeDefaultNetwork(nodes, validLinks);
     }
 
     const simulation = d3.forceSimulation(nodes)
