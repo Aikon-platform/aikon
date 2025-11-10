@@ -5,7 +5,6 @@ from django import forms
 from app.config.settings import APP_LANG
 from app.similarity.const import MODULE_NAME
 from app.webapp.forms import FormConfig, get_available_models, SubForm
-from app.webapp.utils.logger import log
 
 AVAILABLE_SIMILARITY_ALGORITHMS = {
     "cosine": (

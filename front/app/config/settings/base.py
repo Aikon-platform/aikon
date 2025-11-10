@@ -1,5 +1,5 @@
 import environ
-from app.webapp.utils.paths import BASE_DIR, LOG_PATH, MEDIA_DIR, STATIC_DIR
+from app.webapp.utils.paths import BASE_DIR, MEDIA_DIR, STATIC_DIR
 
 ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")

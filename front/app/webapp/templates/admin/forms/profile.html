@@ -15,6 +15,7 @@
 {% endblock %}
 
 {% block content %}
+    <div class="body-content content p-5">
     <div class="container">
             {% if messages %}
                 {% for message in messages %}{% endfor %}
@@ -39,5 +40,6 @@
                 </div>
             </form>
         </div>
+    </div>
     </div>
 {% endblock %}

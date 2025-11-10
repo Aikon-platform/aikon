@@ -29,10 +29,12 @@ from app.similarity.utils import (
     reset_similarity,
     regions_from_img,
     add_user_to_category_x,
+    filter_pairs,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
 from app.webapp.models.digitization import Digitization
+from app.webapp.models.document_set import DocumentSet
 
 
 @user_passes_test(is_superuser)
@@ -733,7 +735,7 @@ def get_regions_pairs(request, wid, rid=None):
     - minScore: float, minimum score to filter pairs
     - maxScore: float, maximum score to filter pairs
     - topk: int, maximum number of pairs to return
-    - category: int, filter pairs by category
+    - category: list[int], filter pairs by category
     - regionsIds: list of int, filter pairs by regions ids
     - witnessIds: list of int, filter pairs by witness ids
     - excludeSelf: bool, if true, filter out pairs where both regions_1 and regions_2 are the same
@@ -750,16 +752,10 @@ def get_regions_pairs(request, wid, rid=None):
         )
 
     # get the url arguments
-    min_score = request.GET.get("minScore", None)
-    max_score = request.GET.get("maxScore", None)
-    topk = request.GET.get("topk", None)
-    category = request.GET.get("category", None)
     regions_ids = request.GET.get("regionsIds", [])
     witness_ids = request.GET.get("witnessIds", [])
-    exclude_self = request.GET.get("excludeSelf", "false").lower() == "true"
 
     q_regions = set()
-
     if regions_ids:
         try:
             q_regions.update(int(rid) for rid in regions_ids.split(","))
@@ -777,61 +773,54 @@ def get_regions_pairs(request, wid, rid=None):
 
     q_regions.update(r.id for r in regions)
 
-    if witness_ids or regions_ids:
-        # get all pairs where regions_id_1 AND regions_id_2 are in q_regions ids
-        query = Q(regions_id_1__in=q_regions) & Q(regions_id_2__in=q_regions)
-    else:
-        # get all pairs where regions_id_1 OR regions_id_2 are in q_regions ids
-        query = Q(regions_id_1__in=q_regions) | Q(regions_id_2__in=q_regions)
-
-    if min_score is not None:
-        try:
-            query &= Q(score__gte=float(min_score))
-        except ValueError:
-            return JsonResponse({"error": "Invalid minScore parameter"}, status=400)
-
-    if max_score is not None:
-        try:
-            query &= Q(score__lte=float(max_score))
-        except ValueError:
-            return JsonResponse({"error": "Invalid maxScore parameter"}, status=400)
-
     try:
-        topk = int(topk)
-    except TypeError:
-        topk = None
-
-    if exclude_self:
-        query &= ~Q(regions_id_1=F("regions_id_2"))
-        # if exclude_self, we need to exclude regions from the same witness
-        # same_witness_regions = set()
-        # for r in Regions.objects.filter(id__in=q_regions).select_related('witness'):
-        #     witness_regions = r.witness.get_regions()
-        #     if len(witness_regions) > 1:
-        #         same_witness_regions.update([wr.id for wr in witness_regions])
-        # if same_witness_regions:
-        #     query &= ~(Q(regions_id_1__in=same_witness_regions) & Q(regions_id_2__in=same_witness_regions))
-
-    if category is not None:
-        try:
-            query &= Q(category=int(category))
-        except ValueError:
-            return JsonResponse({"error": "Invalid category parameter"}, status=400)
-
-    try:
-        pairs = RegionPair.objects.filter(query).order_by(
-            F("score").desc(nulls_first=True)
+        pairs = filter_pairs(
+            regions_ids,
+            exclusive=(witness_ids or regions_ids),
+            min_score=request.GET.get("minScore", None),
+            max_score=request.GET.get("maxScore", None),
+            topk=request.GET.get("topk", None),
+            exclude_self=request.GET.get("excludeSelf", "false").lower() == "true",
+            categories=request.GET.get("category", []),
         )
-        if not pairs.exists():
-            return JsonResponse(
-                {"message": f"No pairs found matching the criteria {query}"}, status=200
-            )
+        return JsonResponse(pairs, status=200, safe=False)
+    except Exception as e:
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
-        if topk is not None:
-            pairs = pairs[:topk]
 
-        pairs = [p.to_dict() for p in pairs]
+def get_document_set_pairs(request, dsid=None):
+    if dsid is None:
+        return JsonResponse({"error": "No document set id provided"}, status=400)
 
+    document_set = DocumentSet.objects.get(id=dsid)
+    if document_set is None:
+        return JsonResponse(
+            {"error": f"Document set #{dsid} does not exist"}, status=400
+        )
+
+    regions_ids = document_set.get_regions(only_ids=True)
+    if not len(regions_ids):
+        return JsonResponse(
+            {"error": f"No regions found for this document set #{dsid}"}, status=400
+        )
+
+    categories = request.GET.get("category", None)
+    try:
+        if categories:
+            categories = [int(c.strip()) for c in categories.split(",")]
+    except (TypeError, ValueError):
+        categories = None
+
+    try:
+        pairs = filter_pairs(
+            regions_ids,
+            exclusive=True,
+            min_score=request.GET.get("minScore", None),
+            max_score=request.GET.get("maxScore", None),
+            topk=request.GET.get("topk", None),
+            exclude_self=request.GET.get("excludeSelf", "false").lower() == "true",
+            categories=categories,
+        )
         return JsonResponse(pairs, status=200, safe=False)
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)

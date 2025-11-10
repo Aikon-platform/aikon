@@ -227,9 +227,7 @@ export function createNewAndOld() {
 }
 
 /**
- *
- * @typedef {LoadStateType}
- *      an object to manage a "loading" state, useful when doing async queries
+ * @typedef {LoadStateType} an object to manage a "loading" state, useful when doing async queries
  * @type {object}
  * @property {() => void} setLoading
  * @property {() => void} setLoaded: loading finished without error
@@ -264,3 +262,18 @@ export const equalArrayShallow = (x, y) =>
     Array.isArray(x) && Array.isArray(y)
     && x.length===y.length
     && x.every((e, idx) => e === y[idx]||undefined);
+
+
+export function imageToPage(imgName) {
+    return parseInt(imgName.split('_').at(-2));
+}
+
+export function generateColor(index) {
+    const goldenAngle = 137.5;
+    const saturations = [85, 70, 60];
+    const lightnesses = [50, 65, 40];
+    const hue = (index * goldenAngle) % 360;
+    const saturation = saturations[index % saturations.length];
+    const lightness = lightnesses[Math.floor(index / saturations.length) % lightnesses.length];
+    return `hsl(${Math.floor(hue)}, ${saturation}%, ${lightness}%)`;
+}

@@ -8,3 +8,4 @@ from app.webapp.views.delete import *
 from app.webapp.views.autocomplete import *
 from app.webapp.views.regions import *
 from app.webapp.views.test import *
+from app.webapp.views.export import *
