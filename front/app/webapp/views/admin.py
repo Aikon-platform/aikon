@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
@@ -70,15 +72,16 @@ class AbstractRecordView(AbstractView, DetailView):
     context_object_name = "instance"
 
     def get_object(self, queryset=None):
-        # TODO change that because of ID == UUID
+        value = self.kwargs.get(self.pk_url_kwarg)
         try:
-            pk = int(self.kwargs[self.pk_url_kwarg])
-        except (KeyError, ValueError):
-            raise Http404("Invalid ID")
+            pk = int(value)
+        except (TypeError, ValueError):
+            try:
+                pk = UUID(value)
+            except (TypeError, ValueError):
+                raise Http404("Invalid ID format")
 
-        if queryset is None:
-            queryset = self.get_queryset()
-
+        queryset = queryset or self.get_queryset()
         return get_object_or_404(queryset, pk=pk)
 
     def get_record(self):
