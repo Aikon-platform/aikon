@@ -5,10 +5,10 @@
     export let selectedDocuments = [];
     export let documentSetStore;
     const {
-        networkStats,
-        allPairs,
         buildAlignedImageMatrix,
-        regionsMetadata
+        allPairs,
+        documentNodes,
+        imageNodes
     } = documentSetStore;
 
     function generateDistinctColor(str) {
@@ -28,25 +28,24 @@
 
     let matrixData = null;
 
-    $: if (selectedDocuments.length > 0 && $networkStats && $allPairs) {
+    $: if (selectedDocuments.length > 0 && $imageNodes && $documentNodes && $allPairs) {
         const selectionOrder = selectedDocuments.map(n => n.id);
-        const regionImages = $networkStats.documentNodes;
-        matrixData = buildAlignedImageMatrix(selectionOrder, regionImages, $allPairs);
+        matrixData = buildAlignedImageMatrix(selectionOrder, $documentNodes, $allPairs);
 
-        console.log(matrixData, selectedDocuments, $networkStats, $allPairs);
+        console.log({selectionOrder, $documentNodes, $allPairs});
     } else {
         matrixData = null;
     }
 
     function getImageColor(regionData, imageOccurrences) {
         if (!regionData) return undefined;
-        const imgUrl = regionData.img;
+        const imgId = regionData.id;
 
-        if (imageOccurrences.get(imgUrl) === 1) return undefined;
-        if (!imageColorMap.has(imgUrl)) {
-            imageColorMap.set(imgUrl, generateDistinctColor(imgUrl));
+        if (imageOccurrences.get(imgId) === 1) return undefined;
+        if (!imageColorMap.has(imgId)) {
+            imageColorMap.set(imgId, generateDistinctColor(imgId));
         }
-        return imageColorMap.get(imgUrl);
+        return imageColorMap.get(imgId);
     }
 
     const imageColorMap = new Map();
@@ -55,7 +54,7 @@
         const map = new Map();
         matrixData.rows.forEach(rowData => {
             Object.values(rowData).forEach(imgData => {
-                map.set(imgData.img, (map.get(imgData.img) || 0) + 1);
+                map.set(imgData.id, (map.get(imgData.id) || 0) + 1);
             });
         });
         return map;
@@ -72,7 +71,7 @@
                 <tr>
                     {#each matrixData.regions as regionId}
                         <th class="is-vcentered">
-                            <LegendItem id={regionId} meta={$regionsMetadata[regionId] || {}} clickable={false}/>
+                            <LegendItem id={regionId} meta={$documentNodes.get(regionId) || {}} clickable={false}/>
                         </th>
                     {/each}
                 </tr>
@@ -83,7 +82,7 @@
                         {#each matrixData.regions as regionId}
                             <td class="has-text-centered" style="vertical-align: top;">
                                 {#if rowData[regionId]}
-                                    {@const item = $networkStats.imageNodes.get(rowData[regionId].img)}
+                                    {@const item = $imageNodes.get(rowData[regionId].id)}
                                     <Region {item} selectable={false} copyable={false} borderColor={getImageColor(rowData[regionId], imageOccurrences)} isSquare={false}/>
                                     <div class="has-text-grey-dark mt-2">Page {rowData[regionId].page}</div>
                                 {/if}

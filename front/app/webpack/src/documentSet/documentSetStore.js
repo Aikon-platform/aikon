@@ -2,125 +2,6 @@ import {derived, writable} from 'svelte/store';
 import {extractNb, refToIIIFRoot, imageToPage, generateColor} from "../utils.js";
 import {appUrl, regionsType} from "../constants.js";
 
-/**
- * @param pair : similarity pair to update
- * {
- *      "img_1": "wit<id>_<digit><id>_<canvas_nb>_<coord>.jpg", "img_2": "wit<id>_<digit><id>_<canvas_nb>_<coord>.jpg",
- *      "regions_id_1": 1, "regions_id_2": 2,
- *      "score": 0.123, "category": 1, "category_x": [], "is_manual": false, "similarity_type": 1
- * }
- * @param index : map of imgId -> [pairs containing this imgId]
- * @param regionIds : set of region ids encountered
- * @returns { pair } with added fields:
- *  {
- *      "id_1": "<region_id>_wit<id>_<digit><id>_<canvas_nb>_<coord>.jpg", "id_2": "...",
- *      "img_1": "iiif url", "img_2": "iiif url",
- *      "page_1": <canvas_nb>, "page_2": <canvas_nb>,
- *      "ref_1": "wit<id>_<digit><id>_<canvas_nb>.jpg", "ref_2": "...",
- *      "coord_1": "<coord>", "coord_2": "<coord>",
- *      "img_1": "wit<id>_<digit><id>_<canvas_nb>_<coord>.jpg", "img_2": "wit<id>_<digit><id>_<canvas_nb>_<coord>.jpg",
- *      "regions_id_1": 1, "regions_id_2": 2, "score": 0.123, "category": 1, "category_x": [], "is_manual": false, "similarity_type": 1
- * }
- */
-function processPair(pair, index, regionIds) {
-    for (const key of ['1', '2']) {
-        const imgId = pair[`img_${key}`];
-        const rid = pair[`regions_id_${key}`];
-        const imgParts = imgId.split("_");
-        const imgRef = `${imgParts.slice(0,3).join("_").replace(".jpg", "")}.jpg`;
-        const imgCoord = imgParts.slice(3).join("_").replace(".jpg", "");
-
-        pair[`id_${key}`] = `${rid}_${imgId}`;
-        pair[`img_${key}`] = `${refToIIIFRoot(imgId)}/${imgCoord}/full/0/default.jpg`;
-        pair[`page_${key}`] = imageToPage(imgId);
-        pair[`ref_${key}`] = imgRef;
-        pair[`coord_${key}`] = imgCoord;
-
-        regionIds.add(rid);
-        if (!index.has(imgId)) index.set(imgId, []);
-        index.get(imgId).push(pair);
-    }
-    return pair;
-}
-
-function computeNetworkStats(pairs, regionsInfo) {
-    const imageNodes = new Map();
-    const documentNodes = new Map();
-    const imageScoreSums = new Map();
-    const documentPairs = new Map();
-    const imageDegrees = new Map();
-
-    let minScore = Infinity;
-    let maxScore = -Infinity;
-    let totalScore = 0;
-    let scoredCount = 0;
-    const categories = {};
-
-    // NOTE add this to process pair
-    pairs.forEach(pair => {
-        const {img_1, img_2, regions_id_1: r1, regions_id_2: r2, score, category} = pair;
-
-        if (score != null) {
-            if (score < minScore) minScore = score;
-            if (score > maxScore) maxScore = score;
-            totalScore += score;
-            scoredCount++;
-
-            imageScoreSums.set(img_1, (imageScoreSums.get(img_1) || 0) + score);
-            imageScoreSums.set(img_2, (imageScoreSums.get(img_2) || 0) + score);
-        }
-
-        imageDegrees.set(img_1, (imageDegrees.get(img_1) || 0) + 1);
-        imageDegrees.set(img_2, (imageDegrees.get(img_2) || 0) + 1);
-
-        categories[category ?? 0] = (categories[category ?? 0] || 0) + 1;
-
-        for (const [imgId, rid, key] of [[img_1, r1, '1'], [img_2, r2, '2']]) {
-            if (!imageNodes.has(imgId)) {
-                imageNodes.set(imgId, {
-                    id: imgId,
-                    img: pair[`ref_${key}`],
-                    imgUrl: pair[`imgUrl_${key}`],
-                    regionId: rid,
-                    canvas: pair[`page_${key}`],
-                    color: regionsInfo[rid]?.color || "#888888",
-                    ref: imgId,
-                    type: regionsType,
-                    xywh: pair[`coord_${key}`].split(",")
-                });
-            }
-
-            if (!documentNodes.has(rid)) {
-                documentNodes.set(rid, []);
-            }
-            documentNodes.get(rid).push({img: imgId, canvas: pair[`page_${key}`], pair});
-        }
-
-        const key = r1 < r2 ? `${r1}-${r2}` : `${r2}-${r1}`;
-        const existing = documentPairs.get(key);
-        documentPairs.set(key, {
-            count: (existing?.count || 0) + 1,
-            score: (existing?.score || 0) + (score ?? 0)
-        });
-    });
-
-    const scoreSums = Array.from(imageScoreSums.values());
-    const minScoreSum = Math.min(...scoreSums);
-    const maxScoreSum = Math.max(...scoreSums);
-
-    return {
-        imageNodes,
-        documentNodes,
-        documentPairs,
-        imageScoreSums,
-        imageDegrees,
-        scoreRange: {min: minScore, max: maxScore},
-        scoreSumRange: {min: minScoreSum, max: maxScoreSum},
-        avgScore: scoredCount > 0 ? totalScore / scoredCount : null,
-        categories
-    };
-}
-
 export function createDocumentSetStore(documentSetId) {
     const error = writable(null);
 
@@ -145,18 +26,14 @@ export function createDocumentSetStore(documentSetId) {
 
     /**
      * All RegionsPair objects loaded in the current context
-     *
+     *      // todo improve by indexing pairs by ids  Map<pairId, pairData>
      * @type {Writable<*[]>}
      */
     const allPairs = writable([]);
 
     /**
-     * { regionId: { region metadata }, ... }
-     */
-    const regionsMetadata = writable({});
-
-    /**
      * Image pair index: Map<imgId, [pairs containing this imgId]>
+     *     // todo improve by referencing pairs by id only Map<imgId, [pairIds]>
      * @type {Writable<Map<any, any>>}
      */
     const imagePairIndex = writable(new Map());
@@ -164,21 +41,207 @@ export function createDocumentSetStore(documentSetId) {
     /**
      * Computed network statistics
      * {
-     *     imageNodes: Map<imgId, nodeData>,
-     *     documentNodes: Map<regionId, [imgData, ...]>, // to delete
-     *     documentPairs: Map<"regionId1-regionId2", {count, score}>, // to delete
-     *     imageScoreSums: Map<imgId, totalScore>,
-     *     imageDegrees: Map<imgId, degree>,
+     *     documentStats: Map<"regionId1-regionId2", {count, score}>,
+     *     imageStats: Map<imgId, {score, count}>,
      *     scoreRange: {min, max},
      *     scoreSumRange: {min, max},
+     *     totalScores: number,
+     *     scoredCount: number,
      *     avgScore: number,
-     *     categories: { categoryId: count, ...
+     *     categories: { categoryId: count, ... }
      * }
      */
     const networkStats = writable(null);
 
-    // const imageNodes = writable({});
-    // const documentNodes = writable({});
+    /**
+     * Image nodes: Map<imgId, imageData>
+     */
+    const imageNodes = writable(new Map());
+
+    /**
+     * Document nodes: Map<regionId, regionData>
+     */
+    const documentNodes = writable(new Map());
+
+    const fetchPairs = derived(selectedCategories, ($selectedCategories, set) => {
+        (async () => {
+            try {
+                const cats = $selectedCategories.join(',');
+                const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${cats}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+
+                const index = new Map();
+                const documentMap = new Map();
+                const imageMap = new Map();
+                const pairStats = {
+                    documentStats: new Map(),
+                    imageStats: new Map(), // TODO replace usages of imageScoreSums and imageDegrees with this
+                    scoreRange: {min: Infinity, max: -Infinity},
+                    scoreSumRange: {min: null, max: null},
+                    totalScores: 0,
+                    scoredCount: 0,
+                    avgScore: null,
+                    categories: {}
+                }
+
+                const context = {index, documentMap, imageMap, pairStats};
+                const pairs = data.map(pair => processPair(pair, context));
+
+                const scoreSums = Array.from(pairStats.imageStats.values()).map(s => s.score);
+                pairStats.scoreSumRange = {min: Math.min(...scoreSums), max: Math.max(...scoreSums)}
+                pairStats.avgScore = pairStats.scoredCount > 0 ? pairStats.totalScores / pairStats.scoredCount : null;
+
+                const regionIds = Array.from(documentMap.keys());
+                await Promise.all(
+                    regionIds.map(async (rid, i) => {
+                        const info = await getRegionsInfo(rid);
+                        const color = generateColor(i);
+
+                        const node = documentMap.get(rid);
+                        Object.assign(node, {
+                            title: info.title,
+                            ref: info.ref,
+                            witnessId: info.witnessId,
+                            digitizationRef: info.digitizationRef,
+                            zeros: info.zeros,
+                            img_nb: info.img_nb,
+                            url: info.url,
+                            color
+                        });
+                    })
+                );
+
+                imageMap.forEach(imgData => {
+                    const doc = documentMap.get(imgData.regionId);
+                    imgData.color = doc?.color;
+                    imgData.title = (doc?.title || `Region ${imgData.regionId}`) + `<br>Page ${imgData.canvas}`;
+                });
+
+                imagePairIndex.set(index);
+                networkStats.set(pairStats);
+                activeRegions.set(new Set(regionIds));
+                allPairs.set(pairs);
+                documentNodes.set(documentMap);
+                imageNodes.set(imageMap);
+
+                set(true);
+            } catch (e) {
+                error.set(`Error fetching pairs: ${e.message}`);
+                set(false);
+            }
+        })();
+    });
+
+    /**
+     * @param pair : similarity pair to update
+     * {
+     *      "img_1": "wit<id>_<digit><id>_<canvas_nb>_<coord>.jpg",
+     *      "img_2": "wit<id>_<digit><id>_<canvas_nb>_<coord>.jpg",
+     *      "regions_id_1": 1,
+     *      "regions_id_2": 2,
+     *      "score": 0.123,
+     *      "category": 1,
+     *      "category_x": [],
+     *      "is_manual": false,
+     *      "similarity_type": 1
+     * }
+     * @param context
+     *
+     * @returns { pair } with added fields:
+     *  {
+     *      "id_1": "<region_id>_wit<id>_<digit><id>_<canvas_nb>_<coord>.jpg",
+     *      "id_2": "<region_id>_wit<id>_<digit><id>_<canvas_nb>_<coord>.jpg",
+     *      "regions_id_1": 1,
+     *      "regions_id_2": 2,
+     *      "img_1": "iiif url",
+     *      "img_2": "iiif url",
+     *      "page_1": <canvas_nb>,
+     *      "page_2": <canvas_nb>,
+     *      "ref_1": "wit<id>_<digit><id>_<canvas_nb>.jpg",
+     *      "ref_2": "wit<id>_<digit><id>_<canvas_nb>.jpg",
+     *      "coord_1": "<coord>",
+     *      "coord_2": "<coord>",
+     *      "score": 0.123,
+     *      "category": 1,
+     *      "category_x": [],
+     *      "is_manual": false,
+     *      "similarity_type": 1
+     * }
+     */
+    function processPair(pair, context) {
+        const {index, documentMap, imageMap, pairStats} = context;
+        const score = pair.score ?? null;
+        const category = pair.category ?? 0;
+
+        if (score != null) {
+            if (score < pairStats.scoreRange.min) pairStats.scoreRange.min = score;
+            if (score > pairStats.scoreRange.max) pairStats.scoreRange.max = score;
+            pairStats.totalScores += score;
+            pairStats.scoredCount++;
+        }
+
+        pairStats.categories[category] = (pairStats.categories[category] || 0) + 1;
+
+        for (const key of ['1', '2']) {
+            const imgKey = pair[`img_${key}`];
+            const rid = pair[`regions_id_${key}`];
+            const imgId = `${rid}_${imgKey}`;
+            const imgParts = imgKey.split("_");
+            const imgRef = `${imgParts.slice(0,3).join("_").replace(".jpg", "")}.jpg`;
+            const imgCoord = imgParts.slice(3).join("_").replace(".jpg", "");
+            const imgPage = imageToPage(imgKey);
+
+            pair[`id_${key}`] = imgId;
+            pair[`img_${key}`] = `${refToIIIFRoot(imgKey)}/${imgCoord}/full/0/default.jpg`;
+            pair[`page_${key}`] = imgPage;
+            pair[`ref_${key}`] = imgRef;
+            pair[`coord_${key}`] = imgCoord;
+
+            if (!imageMap.has(imgId)) {
+                imageMap.set(imgId, {
+                    id: imgId,
+                    img: imgRef,
+                    regionId: rid,
+                    canvas: imgPage,
+                    color: null,
+                    ref: imgRef, // for compatibility with RegionItemType
+                    type: regionsType,
+                    xywh: pair[`coord_${key}`].split(","),
+                });
+            }
+
+            if (!documentMap.has(rid)) {
+                documentMap.set(rid, {
+                    id: rid,
+                    imageCount: 0,
+                    images: [],
+                });
+            }
+            documentMap.get(rid).images.push({id: imgId, canvas: imgPage, pair}) // TODO do we need to store pair here?
+            documentMap.get(rid).imageCount++;
+
+            if (!index.has(imgId)) index.set(imgId, []);
+            index.get(imgId).push(pair);
+
+            const existing = pairStats.imageStats.get(imgId);
+            pairStats.imageStats.set(imgId, {
+                score: (existing?.score || 0) + (score ?? 0),
+                count: (existing?.count || 0) + 1,
+            })
+        }
+
+        const {regions_id_1: r1, regions_id_2: r2} = pair;
+        const key = r1 < r2 ? `${r1}-${r2}` : `${r2}-${r1}`;
+        const existing = pairStats.documentStats.get(key);
+        pairStats.documentStats.set(key, {
+            score: (existing?.score || 0) + (score ?? 0),
+            count: (existing?.count || 0) + 1,
+        });
+
+        return pair;
+    }
 
     async function getRegionsInfo(regionId) {
         try {
@@ -207,88 +270,30 @@ export function createDocumentSetStore(documentSetId) {
         }
     }
 
-    const fetchPairs = derived(selectedCategories, ($selectedCategories, set) => {
-        (async () => {
-            try {
-                const cats = $selectedCategories.join(',');
-                const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${cats}`);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-                const data = await response.json();
-                const index = new Map();
-                const regionIds = new Set();
-
-                const pairs = data.map(pair => processPair(pair, index, regionIds));
-
-                const regionIdsArray = [...regionIds];
-                const metadataEntries = await Promise.all(
-                    regionIdsArray.map(async (rid, i) => {
-                        const info = await getRegionsInfo(rid);
-                        info.color = generateColor(i);
-                        return [rid, info];
-                    })
-                );
-
-                const metadata = Object.fromEntries(metadataEntries);
-                const stats = computeNetworkStats(pairs, metadata);
-
-                regionsMetadata.set(metadata);
-                imagePairIndex.set(index);
-                networkStats.set(stats);
-                activeRegions.set(new Set(regionIdsArray));
-                allPairs.set(pairs);
-                set(true);
-            } catch (e) {
-                error.set(`Error fetching pairs: ${e.message}`);
-                set(false);
-            }
-        })();
-    });
-
-
-    const regionImageIndex = derived([networkStats, regionsMetadata], ([$stats, $metadata]) => {
-        if (!$stats) return {};
-
-        const info = {};
-        $stats.documentNodes.forEach((imgData, rid) => {
-            const images = [...new Set(imgData.map(d => d.img))];
-            const pages = [...new Set(imgData.map(d => d.canvas))].sort((a,b) => a-b);
-
-            info[rid] = {
-                title: $metadata[rid]?.title || "",
-                witnessId: $metadata[rid]?.witnessId || null,
-                images,
-                pages,
-                color: $metadata[rid]?.color || null,
-            };
-        });
-        return info;
-    });
-
-    const imageNetwork = derived([allPairs, networkStats], ([$pairs, $stats]) => {
+    const imageNetwork = derived([allPairs, imageNodes, networkStats], ([$pairs, $imageNodes, $stats]) => {
         if (!$stats) return {nodes: [], links: [], stats: null};
 
         const links = $pairs.map(pair => ({
-            source: pair.img_1,
-            target: pair.img_2,
+            source: pair.id_1,
+            target: pair.id_2,
             score: pair.score,
             category: pair.category,
             width: (pair.score ?? 10) / 5
         }));
 
         return {
-            nodes: Array.from($stats.imageNodes.values()),
+            nodes: Array.from($imageNodes.values()),
             links,
             stats: {
                 scoreRange: $stats.scoreRange,
                 scoreSumRange: $stats.scoreSumRange,
-                scoreSums: $stats.imageScoreSums,
-                degrees: $stats.imageDegrees
+                imageStats: $stats.imageStats
             }
         };
     });
 
     const filteredImageNetwork = derived([imageNetwork, activeRegions], ([$network, $active]) => {
+        // TODO recompute stats?
         const nodes = $network.nodes.filter(n => $active.has(n.regionId));
         const nodeIds = new Set(nodes.map(n => n.id));
         const links = $network.links.filter(l =>
@@ -299,25 +304,20 @@ export function createDocumentSetStore(documentSetId) {
         return {...$network, nodes, links};
     });
 
-    const documentNetwork = derived([networkStats, regionImageIndex], ([$stats, $regionImageIndex]) => {
-        if (!$stats) return {nodes: [], links: [], stats: null};
+    const documentNetwork = derived([networkStats, documentNodes], ([$stats, $docNodes]) => {
+        if (!$stats || !$docNodes) return {nodes: [], links: [], stats: null};
+        const nodes = Array.from($docNodes.values());
 
-        const nodes = Array.from($stats.documentNodes.keys()).map(id => ({
-            id,
-            title: $regionImageIndex[id]?.title || `Region ${id}`,
-            color: $regionImageIndex[id]?.color || "#888888",
-            imageCount: $stats.documentNodes.get(id).length
-        }));
-
+        // TODO compute min/max imageCount directly in processPair
         const imageCounts = nodes.map(n => n.imageCount);
         const minImageCount = Math.min(...imageCounts);
         const maxImageCount = Math.max(...imageCounts);
 
-        const scoreSums = Array.from($stats.documentPairs.values()).map(d => d.score);
+        const scoreSums = Array.from($stats.documentStats.values()).map(d => d.score);
         const minScoreSum = Math.min(...scoreSums);
         const maxScoreSum = Math.max(...scoreSums);
 
-        const links = Array.from($stats.documentPairs.entries()).map(([key, {count, score}]) => {
+        const links = Array.from($stats.documentStats.entries()).map(([key, {count, score}]) => {
             const [source, target] = key.split('-').map(Number);
             return {source, target, count, scoreSum: score};
         });
@@ -333,33 +333,34 @@ export function createDocumentSetStore(documentSetId) {
     });
 
     const filteredDocumentNetwork = derived([documentNetwork, activeRegions], ([$network, $active]) => {
-        // TODO use filteredDocumentNetwork
-        const nodes = $network.nodes.filter(n => $active.has(n.regionId));
-        const nodeIds = new Set(nodes.map(n => n.id));
-        const links = $network.links.filter(l =>
-            nodeIds.has(l.source.id || l.source) &&
-            nodeIds.has(l.target.id || l.target)
-        );
-
+        // TODO recompute stats?
+        const nodes = $network.nodes.filter(n => $active.has(n.id));
+        const activeIds = new Set(nodes.map(n => n.id));
+        const links = $network.links.filter(l => {
+            const srcId = l.source?.id ?? l.source;
+            const tgtId = l.target?.id ?? l.target;
+            return activeIds.has(srcId) && activeIds.has(tgtId);
+        });
         return {...$network, nodes, links};
     });
 
-    const docSetStats = derived([allPairs, regionsMetadata, networkStats], ([$pairs, $metadata, $stats]) => {
-        if (!$stats) return null;
+    // TODO maybe do not derive from that many stores but compute directly in fetchPairs
+    const docSetStats = derived([allPairs, imageNodes, documentNodes, networkStats], ([$pairs, $imageNodes, $docNodes, $stats]) => {
+        if (!$stats || !$docNodes) return null;
 
         const witnesses = new Set(
-            Object.values($metadata).map(m => m.witnessId).filter(Boolean)
+            Array.from($docNodes.values()).map(n => n.witnessId).filter(Boolean)
         );
 
         return {
-            regions: Object.keys($metadata).length,
+            regions: $docNodes.size,
             witnesses: witnesses.size,
             pairs: $pairs.length,
             avgScore: $stats.avgScore?.toFixed(2) || null,
             categories: $stats.categories,
             stats: [
-                {nodes: $stats.imageNodes.size, links: $pairs.length},
-                {nodes: $stats.documentNodes.size, links: $stats.documentPairs.size}
+                {nodes: $imageNodes.size, links: $pairs.length},
+                {nodes: $docNodes.size, links: $stats.documentStats.size}
             ]
         };
     });
@@ -368,103 +369,76 @@ export function createDocumentSetStore(documentSetId) {
      * returns {
      *      regions: [regionId1, regionId2 ...],           // ordered list of selected regions ids
      *      rows: [
-     *          { regionId1: image, regionId2: image },    // images contained in the same pairs across regions
-     *          { regionId1: pair }
+     *          { regionId1: img, regionId2: img },    // images contained in the same pairs across regions
+     *          { regionId1: img },
+     *          { regionId1: img, regionsId3: img },
      *      ]
      * }
      */
-    function buildAlignedImageMatrix(selectionOrder, regionImages, data) {
-        const regions = [...selectionOrder];
+    function buildAlignedImageMatrix(orderedSelection, documentNodes, allPairs) {
+        if (!orderedSelection.length) return {regions: [], rows: []};
 
-        const getRegionImagesMap = (regionId) => {
-            const map = new Map();
-            const regionData = regionImages.get(regionId);
-            if (!regionData) return map;
+        const firstRegionId = orderedSelection[0];
+        const firstDoc = documentNodes.get(firstRegionId);
+        if (!firstDoc?.images) return {regions: orderedSelection, rows: []};
 
-            regionData.forEach(imgData => {
-                map.set(imgData.img, {page: imgData.canvas, img: imgData.img});
-            });
-            return map;
+        const findPairs = (imgId, sourceRegionId, targetRegionId) => {
+            return allPairs
+                .filter(p =>
+                    (p.id_1 === imgId && p.regions_id_1 === sourceRegionId && p.regions_id_2 === targetRegionId) ||
+                    (p.id_2 === imgId && p.regions_id_2 === sourceRegionId && p.regions_id_1 === targetRegionId)
+                )
+                .map(p => ({
+                    id: p.id_1 === imgId ? p.id_2 : p.id_1,
+                    page: p.id_1 === imgId ? p.page_2 : p.page_1
+                }));
         };
 
-        const regionImagesMap = new Map(regions.map(r => [r, getRegionImagesMap(r)]));
-        const rows = [];
-        const globalProcessed = new Map(regions.map(r => [r, new Set()]));
+        const firstImages = [...firstDoc.images].sort((a, b) => a.canvas - b.canvas);
+        const allRows = [];
 
-        const findConnectedImages = (regionId, img, targetRegion) => {
-            const connected = [];
-            data.forEach(pair => {
-                const [r1, r2] = [pair.regions_id_1, pair.regions_id_2];
-                const [i1, i2] = [pair.img_1, pair.img_2];
+        for (const firstImg of firstImages) {
+            const buildPaths = (colIdx, currentPath) => {
+                if (colIdx >= orderedSelection.length) {
+                    return [currentPath];
+                }
 
-                if ((r1 === regionId && i1 === img && r2 === targetRegion) ||
-                    (r2 === regionId && i2 === img && r1 === targetRegion)) {
-                    const targetImg = r1 === targetRegion ? i1 : i2;
-                    if (regionImagesMap.get(targetRegion).has(targetImg)) {
-                        connected.push(regionImagesMap.get(targetRegion).get(targetImg));
+                const targetRegionId = orderedSelection[colIdx];
+                const paths = [];
+
+                for (let srcIdx = 0; srcIdx < colIdx; srcIdx++) {
+                    const sourceRegionId = orderedSelection[srcIdx];
+                    const sourceImg = currentPath[sourceRegionId];
+
+                    if (sourceImg) {
+                        const pairs = findPairs(sourceImg.id, sourceRegionId, targetRegionId);
+                        for (const pair of pairs) {
+                            const newPath = {...currentPath, [targetRegionId]: pair};
+                            paths.push(...buildPaths(colIdx + 1, newPath));
+                        }
                     }
                 }
-            });
-            return connected;
-        };
 
-        const buildRowFromSeed = (seedRegion, seedImg) => {
-            const visited = new Map([[seedRegion, seedImg.img]]);
-            const queue = [{region: seedRegion, img: seedImg, path: {[seedRegion]: seedImg}}];
-            const completedPaths = [];
+                paths.push(...buildPaths(colIdx + 1, currentPath));
+                return paths;
+            };
 
-            while (queue.length > 0) {
-                const {region, img, path} = queue.shift();
-                const currentIndex = regions.indexOf(region);
+            const initialPath = {[firstRegionId]: {id: firstImg.id, page: firstImg.canvas}};
+            allRows.push(...buildPaths(1, initialPath));
+        }
 
-                if (currentIndex === regions.length - 1) {
-                    completedPaths.push(path);
-                    continue;
-                }
+        const rows = [];
+        const seen = new Set();
 
-                const nextRegion = regions[currentIndex + 1];
-                const connected = findConnectedImages(region, img.img, nextRegion);
-
-                if (connected.length > 0) {
-                    connected.forEach(nextImg => {
-                        queue.push({
-                            region: nextRegion,
-                            img: nextImg,
-                            path: {...path, [nextRegion]: nextImg}
-                        });
-                    });
-                } else if (Object.keys(path).length > 0) {
-                    completedPaths.push(path);
-                }
+        for (const row of allRows) {
+            const key = orderedSelection.map(rid => row[rid]?.id || '').join('|');
+            if (!seen.has(key)) {
+                seen.add(key);
+                rows.push(row);
             }
+        }
 
-            return completedPaths;
-        };
-
-        regions.forEach(regionId => {
-            const images = Array.from(regionImagesMap.get(regionId).values())
-                .sort((a, b) => a.page - b.page);
-
-            images.forEach(imgData => {
-                if (globalProcessed.get(regionId).has(imgData.img)) return;
-
-                const paths = buildRowFromSeed(regionId, imgData);
-
-                if (paths.length > 0) {
-                    paths.forEach(path => {
-                        Object.entries(path).forEach(([r, img]) => {
-                            globalProcessed.get(Number(r)).add(img.img);
-                        });
-                        rows.push(path);
-                    });
-                } else {
-                    globalProcessed.get(regionId).add(imgData.img);
-                    rows.push({[regionId]: imgData});
-                }
-            });
-        });
-
-        return {regions, rows};
+        return {regions: orderedSelection, rows};
     }
 
     function toggleCategory(categoryId) {
@@ -487,13 +461,14 @@ export function createDocumentSetStore(documentSetId) {
     return {
         error,
         allPairs,
+        documentNodes,
+        imageNodes,
         fetchPairs,
         imageNetwork: filteredImageNetwork,
-        documentNetwork,
-        regionsMetadata,
-        docSetStats,
+        documentNetwork: filteredDocumentNetwork,
         selectedCategories,
-        networkStats,
+        docSetStats, // TODO check what is the difference with networkStats (merge?)
+        networkStats, // TODO check what is the difference with docSetStats (merge?)
         selectedNodes,
         activeRegions,
         updateSelectedNodes: (nodes) => selectedNodes.set(nodes),

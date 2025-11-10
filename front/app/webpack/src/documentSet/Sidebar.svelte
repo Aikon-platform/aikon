@@ -7,7 +7,7 @@
     export let documentSetStore;
     const {
         docSetStats,
-        regionsMetadata,
+        documentNodes,
         selectedCategories,
         toggleCategory,
         activeRegions,
@@ -44,7 +44,7 @@
                 </div>
 
                 <div class="legend-list">
-                    {#each Object.entries($regionsMetadata || {}) as [id, meta]}
+                    {#each Array.from($documentNodes || new Map()) as [id, meta]}
                         <LegendItem id={id} meta={meta} isActive={$activeRegions.has(parseInt(id))}
                                     toggle={() => toggleRegion(parseInt(id))}/>
                     {/each}

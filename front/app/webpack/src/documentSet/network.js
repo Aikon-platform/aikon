@@ -43,10 +43,10 @@ function initializeImageNetwork(nodes, links, stats) {
     });
 
     nodes.forEach(node => {
-        const scoreSum = stats.scoreSums.get(node.id) || 0;
-        node.scoreSum = scoreSum;
-        node.degree = stats.degrees?.get(node.id) || 0;
-        node.radius = normalizeRadius(scoreSum, stats.scoreSumRange.min, stats.scoreSumRange.max);
+        const imgStats = stats.imageStats.get(node.id) || {score: 0, count: 0};
+        node.scoreSum = imgStats.score;
+        node.degree = imgStats.count;
+        node.radius = normalizeRadius(imgStats.score, stats.scoreSumRange.min, stats.scoreSumRange.max);
     });
 }
 
