@@ -21,17 +21,23 @@ function createRegionsStore() {
     }
 
     const fetchAll = (async () => {
-        const response = await fetch(`${baseUrl}canvas`);
-        const data = await response.json();
-        let regions = {};
-        Object.values(data).forEach(canvases => {
-            Object.entries(canvases).forEach(([k, v]) => {
-                regions[k] = v;
+        try {
+            const response = await fetch(`${baseUrl}canvas`);
+            if (!response.ok) {
+                return {};
+            }
+            const data = await response.json();
+            let regions = {};
+            Object.values(data).forEach(canvases => {
+                Object.entries(canvases).forEach(([k, v]) => {
+                    regions[k] = v;
+                })
             })
-        })
-
-        allRegions.set(regions);
-        return data;
+            allRegions.set(regions);
+            return data;
+        } catch (error) {
+            return {};
+        }
     })();
 
     const fetchPages = derived(currentPage, ($currentPage) =>

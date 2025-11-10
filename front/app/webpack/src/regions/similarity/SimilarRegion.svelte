@@ -7,6 +7,7 @@
     import { getDesc } from "./utils.js";
 
     import Region from "../Region.svelte";
+    import CategoryButton from "./CategoryButton.svelte";
 
     /** @typedef {import("../types.js").RegionItemType} RegionItemType */
     /** @typedef {import("./types.js").SimilarityPairType} SimilarityPairType */
@@ -126,42 +127,16 @@
     }
 </script>
 
-
 <div>
-    <!-- TODO remove selection outline from SimilarRegion in similarities
-        (selecting a Region has no effect on "Selection") -->
-    <Region {item}
-            size={256}
-            isSquare={false}
-            descPromise={getDesc(regionRef, similarityType, score, canvas, baseUrl, pathUrl, isPropagatedContext)}
-    />
+    <Region {item} size={256} selectable={false} isSquare={false}
+            descPromise={getDesc(regionRef, similarityType, score, canvas, baseUrl, pathUrl, isPropagatedContext)}/>
     {#if !isInModal }
         <div class="tags has-addons is-dark is-center">
-            <span class="tag is-hoverable pl-3 pr-2 py-4" class:is-selected={selectedCategory === 1}
-                  on:click={() => categorize(1)} on:keyup={null}
-                  title="{appLang === 'en' ? 'Exact match' : 'Correspondance exacte'}">
-                {@html exactSvg}
-            </span>
-            <span class="tag is-hoverable py-4 px-2" class:is-selected={selectedCategory === 2}
-                  on:click={() => categorize(2)} on:keyup={null}
-                  title="{appLang === 'en' ? 'Partial match' : 'Correspondance partielle'}">
-                {@html partialSvg}
-            </span>
-            <span class="tag is-hoverable py-4 px-2" class:is-selected={selectedCategory === 3}
-                  on:click={() => categorize(3)} on:keyup={null}
-                  title="{appLang === 'en' ? 'Semantic match' : 'Correspondance sémantique'}">
-                {@html semanticSvg}
-            </span>
-            <span class="tag is-hoverable py-4 px-2" class:is-selected={selectedCategory === 4}
-                  on:click={() => categorize(4)} on:keyup={null}
-                  title="{appLang === 'en' ? 'No match' : 'Aucune correspondance'}">
-                {@html noSvg}
-            </span>
-            <span class="tag is-hoverable pl-2 pr-3 py-4" class:is-selected={isSelectedByUser}
-                  on:click={() => categorize(5)} on:keyup={null}
-                  title="{appLang === 'en' ? 'User match' : 'Correspondance utilisateur'}">
-                {@html userSvg}
-            </span>
+            <CategoryButton category={1} isSelected={selectedCategory === 1} toggle={categorize} padding="pl-3 pr-2"/>
+            <CategoryButton category={2} isSelected={selectedCategory === 2} toggle={categorize}/>
+            <CategoryButton category={3} isSelected={selectedCategory === 3} toggle={categorize}/>
+            <CategoryButton category={4} isSelected={selectedCategory === 4} toggle={categorize}/>
+            <CategoryButton category={5} isSelected={selectedCategory === 5} toggle={categorize} padding="pl-2 pr-3"/>
         </div>
     {/if}
 </div>

@@ -3,17 +3,87 @@
 
 {% block title %}{{ view_title }}{% endblock %}
 
-{% block extrahead %}{% endblock %}
+{% block extrahead %}
+    <link rel="stylesheet" href="{% static 'css/regions.css' %}">
+    <link rel="stylesheet" href="{% static 'svelte/documentSet.css' %}">
+    <link rel="stylesheet" href="{% static 'svelte/regionList/regionList.css' %}">
+    <style>
+    .network-svg {
+        display: block;
+        width: 90%;
+        height: 60vh;
+        overflow: hidden;
+        margin-bottom: 1.5rem !important;
+        margin-top: 1.5rem !important;
+        border: 1px solid var(--bulma-border-weak);
+        border-radius: .75rem;
+    }
 
-{% block content %}
-    <div class="container px-5">
-        <h1 class="is-title is-size-2 py-3">
-            {{ view_title }}
-        </h1>
-        <div class="container">
-            {{ instance }}
-        </div>
-    </div>
+    .link {
+        stroke: var(--bulma-body-color);
+        stroke-opacity: 1;
+    }
+
+    .node {
+        stroke: #fff;
+        stroke-width: 1.5;
+        cursor: pointer;
+        transition: stroke-width 0.2s;
+    }
+
+    .node:hover {
+        stroke-width: 3;
+    }
+
+    .node.selected {
+        stroke: var(--bulma-link);
+        stroke-width: 5;
+    }
+
+    .selection-rect {
+        fill: hsla(233, 100%, 63%, 0.2);
+        stroke: var(--bulma-link);
+        stroke-width: 3;
+    }
+
+    .toggle-button {
+        margin-bottom: 1rem;
+    }
+
+    .node-label {
+        user-select: none;
+    }
+    </style>
 {% endblock %}
 
-{% block extra_js %}{% endblock %}
+{% block content %}
+    {% if instance %}
+        <div id="document-set"></div>
+    {% else %}
+        <div class="container px-5">
+            <div class="container">
+                <h1 class="is-title is-size-2 py-3">
+                    {{ view_title }}
+                </h1>
+                <div class="notification is-warning">
+                    <p>
+                        {% if APP_LANG == "en" %}
+                            This identifier is not associated with any document set
+                        {% else %}
+                            Cet identifiant n'est associé à aucun set de documents
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+    {% if instance %}
+        <script>
+            const docSet = {{ instance.to_json|js|safe }};
+        </script>
+        <script src="{% static 'svelte/documentSet.js' %}"></script>
+    {% endif %}
+{% endblock %}

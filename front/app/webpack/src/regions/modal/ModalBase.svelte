@@ -1,12 +1,15 @@
 <!--
-    general functionning:
+    general functioning:
     - different components are displayed depending on the context in which this component is used:
         - for "normal" regions, only ModalRegion will be used
         - for similarities, `ModalRegion`, `ModalSimilarity`, `ModalQueryExpansion` will be used
-    - `allowedViewIds` defines which views (aka, components) can be used in this modal, based on the props passed to it. each view is identified by a unique string.
+    - `allowedViewIds` defines which views (aka, components) can be used in this modal,
+      based on the props passed to it. each view is identified by a unique string.
     - `currentViewId` is a value of `allowedViewIds`
-    - other data variables are derived from `allowedViewIds`: they are objects or arrays which map a reference to a value of `allowedViewIds` to extra data for a specific view (i.e. a component reference).
-    - tabs allow to switch between components. internally, `toggleView` will set a new `currentViewId`, which, by side-effects, will render a new component
+    - other data variables are derived from `allowedViewIds`: they are objects or arrays which map
+      a reference to a value of `allowedViewIds` to extra data for a specific view (i.e. a component reference).
+    - tabs allow to switch between components. internally, `toggleView` will set a new `currentViewId`,
+      which, by side-effects, will render a new component
 -->
 
 <script>
@@ -35,30 +38,23 @@
         ? [ "main", "page", "similarity", "expansion" ]
         : [ "main", "page" ];
 
+    const labels = {
+        expansion: { fr: "Expansion de requête", en: "Query expansion" },
+        similarity: { fr: "Comparaison", en: "Comparison" },
+        page: { fr: "Vue de la page", en: "Page view" },
+        main: { fr: "Vue principale", en: "Main view" }
+    };
+
     /** @type { {id:ViewIdType, label:string}[] } */
     const viewTabs = allowedViewIds.map((viewId) => ({
         id: viewId,
-        label:
-            viewId==="expansion" && appLang==="fr"
-            ? "Expansion de requête"
-            : viewId==="expansion" && appLang==="en"
-            ? "Query expansion"
-            : viewId==="similarity" && appLang==="fr"
-            ? "Comparaison"
-            : viewId==="similarity" && appLang==="en"
-            ? "Comparison"
-            : viewId==="page" && appLang==="fr"
-            ? "Vue de la page"
-            : viewId==="page" && appLang==="en"
-            ? "Page view"
-            : viewId==="main" && appLang==="fr"
-            ? "Vue principale"
-            : "Main view"
+        label: labels[viewId]?.[appLang] ?? "Main view"
     }));
 
     /**
      * @type {{ [ViewIdType]: SvelteComponent }} viewId mapped to the relevant component instance.
-     * by default, only ModalRegion is defined. other components qre imported aynchronously, after which viewComponents is updated
+     * by default, only ModalRegion is defined. other components qre imported asynchronously,
+     * after which viewComponents is updated
      */
     const viewComponents = {
         main: ModalRegion,
@@ -69,7 +65,8 @@
             import("./ModalSimilarity.svelte").then(res => res.default),
             import("./ModalQueryExpansion.svelte").then(res => res.default),
         ]).then(([modalSimilarityComponent, modalQueryExpansionComponent]) => {
-            // we loop over `allowedViewIds`, but check that those haven't been aldready mapped to a component in `viewComponents`. else, we risk overwriting the component
+            // we loop over `allowedViewIds`, but check that those haven't been already
+            // mapped to a component in `viewComponents`. else, we risk overwriting the component
             const predefinedViews = Object.keys(viewComponents);
             allowedViewIds
                 .filter(viewId => !predefinedViews.includes(viewId))
@@ -99,54 +96,45 @@
 
     const toggleView = (viewId) => currentViewId = viewId;
 
-    const onKeyDown = () => { if (key==="Escape") dispatch("closeModal") };
+    const onKeyUp = (e) => { if (e.key === "Escape") dispatch("closeModal") };
 
     const onClose = () => dispatch("closeModal");
 
     //////////////////////////////////////////////////
 
     onMount(() => {
-        document.addEventListener("keyup", onKeyDown);
+        document.addEventListener("keyup", onKeyUp);
     })
     onDestroy(() => {
-        document.removeEventListener("keydown", onKeyDown);
+        document.removeEventListener("keydown", onKeyUp);
     })
 </script>
 
 
-<div id="region-modal-wrapper"
-     class="modal is-active">
-    <div class="modal-background"></div>
+<div id="region-modal-wrapper" class="modal is-active">
+    <div class="modal-background" on:click={onClose} on:keyup={onKeyUp}/>
     <div class="modal-content">
         <div class="modal-inner">
-
-            <div class="tabs is-centered">
+            <div class="tabs is-centered" style="height: fit-content;">
                 <ul>
                     {#each viewTabs as { id, label }}
                         <li class={id===currentViewId ? "is-active": ""}>
                             <!-- svelte-ignore a11y-invalid-attribute -->
-                            <a on:click|preventDefault={() => toggleView(id)}
-                               href=""
-                            >{ label }</a>
+                            <a on:click|preventDefault={() => toggleView(id)} href="">
+                                { label }
+                            </a>
                         </li>
                     {/each}
                 </ul>
             </div>
 
-            <div class="ml-4 mr-4 modal-main-wrapper"
-                 class:pb-4={ currentViewId==="main" }
-            >
-                <svelte:component this={viewComponents[currentViewId] || null}
-                                  {...viewProps[currentViewId] || {}}
-                ></svelte:component>
+            <div class="ml-4 mr-4 modal-main-wrapper" class:pb-4={ currentViewId==="main" }>
+                <svelte:component this={viewComponents[currentViewId] || null} {...viewProps[currentViewId] || {}}/>
             </div>
 
         </div>
     </div>
-    <button class="modal-close is-large"
-            aria-label="close"
-            on:click={onClose}
-    ></button>
+    <button on:click={onClose} class="modal-close is-large" aria-label="close"/>
 </div>
 
 <style>
