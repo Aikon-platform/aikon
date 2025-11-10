@@ -1,5 +1,5 @@
 <script>
-    import { onMount, onDestroy } from 'svelte';
+    import { onDestroy } from 'svelte';
     import { createNetwork } from './network.js';
     import Region from "../regions/Region.svelte";
     import AlignedMatrix from './AlignedMatrix.svelte';
@@ -30,6 +30,7 @@
     function renderVisualization() {
         if (networkInstance) {
             networkInstance.destroy();
+            updateSelectedNodes([]);
         }
 
         function onSelectionChange(selectedData) {

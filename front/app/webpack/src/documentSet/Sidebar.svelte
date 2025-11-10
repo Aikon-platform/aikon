@@ -13,8 +13,6 @@
         activeRegions,
         toggleRegion
     } = documentSetStore;
-
-    // console.log($docSetStats, docSet, $regionsMetadata);
 </script>
 
 <div class="m-4 py-5 px-4">
@@ -60,7 +58,7 @@
                     {appLang === 'en' ? 'Similarity categories' : 'Catégories de similarité'}
                 </h3>
                 <div class="tags">
-                    {#each [0, 1, 2, 3, 4, 5] as cat}
+                    {#each [0, 1, 2, 3, 5] as cat}
                         <CategoryButton
                             category={cat}
                             isSelected={$selectedCategories.includes(cat)}

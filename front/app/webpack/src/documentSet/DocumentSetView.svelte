@@ -39,7 +39,6 @@
 
 <Layout bind:activeTab>
     <div slot="sidebar">
-<!--        <Sidebar {docSetStats} {regionsMetadata} {docSet} {selectedCategories} {toggleCategory} {activeRegions} {toggleRegion}>-->
         <Sidebar {docSet} {documentSetStore}>
             <div slot="datavizInfo">
                 {#if activeTab === 0}
