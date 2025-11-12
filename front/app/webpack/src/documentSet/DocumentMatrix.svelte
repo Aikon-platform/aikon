@@ -291,7 +291,7 @@
 
 <div class="document-matrix">
     <div class="matrix-panel">
-        <h3 class="title is-5">Document similarity matrice</h3>
+        <h3 class="title is-5">Document similarity matrix</h3>
         <div bind:this={matrixContainer} class="matrix-container"></div>
     </div>
 

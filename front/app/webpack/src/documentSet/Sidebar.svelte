@@ -2,50 +2,59 @@
     import {appLang, appUrl, appName, model2title} from '../constants.js';
     import CategoryButton from "../regions/similarity/CategoryButton.svelte";
     import LegendItem from "./LegendItem.svelte";
+    import {getContext} from "svelte";
 
     export let docSet = null;
     export let documentSetStore;
     const {
-        docSetStats,
+        docSetNumber,
         documentNodes,
         selectedCategories,
         toggleCategory,
-        activeRegions,
+        selectedRegions,
         toggleRegion
     } = documentSetStore;
+
+    const selectedDocuments = getContext('selectedDocuments');
 </script>
 
 <div class="m-4 py-5 px-4">
-    {#if $docSetStats}
+    {#if $docSetNumber}
         <div class="content is-small mt-4">
             <div class="pb-2">
                 <h1 class="title">
                     {docSet?.title}
                 </h1>
                 <div class="level">
-                    <div class="level-item has-text-centered">
-                        <div>
-                            <p class="heading">{model2title['Witness']}</p>
-                            <p class="title is-5">{$docSetStats.witnesses}</p>
-                        </div>
-                    </div>
+                    {#each ['Series', 'Witness', 'Work'] as model}
+                        {@const modelIds = Object.keys(selectedDocuments[model] || {})}
+                        {#if modelIds.length > 0}
+                            <div class="level-item has-text-centered">
+                                <div>
+                                    <p class="heading">{model2title[model]}</p>
+                                    <p class="title is-5">{modelIds.length || 0}</p>
+                                </div>
+                            </div>
+                        {/if}
+                    {/each}
+
                     <div class="level-item has-text-centered">
                         <div>
                             <p class="heading">{appLang === 'en' ? 'Pairs' : 'Paires'}</p>
-                            <p class="title is-5">{$docSetStats.pairs}</p>
+                            <p class="title is-5">{$docSetNumber.pairs || 0}</p>
                         </div>
                     </div>
                     <div class="level-item has-text-centered">
                         <div>
                             <p class="heading">Images</p>
-                            <p class="title is-5">{$docSetStats.stats[0].nodes}</p>
+                            <p class="title is-5">{$docSetNumber.images || 0}</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="legend-list">
                     {#each Array.from($documentNodes || new Map()) as [id, meta]}
-                        <LegendItem id={id} meta={meta} isActive={$activeRegions.has(parseInt(id))}
+                        <LegendItem id={id} meta={meta} isActive={$selectedRegions.has(parseInt(id))}
                                     toggle={() => toggleRegion(parseInt(id))}/>
                     {/each}
                 </div>
@@ -64,7 +73,7 @@
                             isSelected={$selectedCategories.includes(cat)}
                             toggle={toggleCategory}
                         />
-                        {$docSetStats.categories[cat] || 0}
+                        {$docSetNumber.categories[cat] || 0}
                     {/each}
                 </div>
             </div>

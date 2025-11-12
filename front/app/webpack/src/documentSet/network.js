@@ -1,77 +1,6 @@
 import * as d3 from 'd3';
 
-function calculateLinkStrength(link, scoreRange) {
-    const weightedScore = link.weightedScore ?? 0;
-
-    if (scoreRange.max > scoreRange.min) {
-        return (weightedScore - scoreRange.min) / (scoreRange.max - scoreRange.min);
-    }
-
-    return 0.5;
-}
-
-function calculateLinkDistance(strength) {
-    return 30 + (2 - strength) * 100;
-}
-
-function normalizeRadius(scoreSum, minSum, maxSum, minRadius = 10, maxRadius = 75) {
-    if (maxSum === minSum) return (minRadius + maxRadius) / 2;
-    return minRadius + ((scoreSum - minSum) / (maxSum - minSum)) * (maxRadius - minRadius);
-}
-
-function normalizeLinkStrength(scoreSum, minSum, maxSum) {
-    if (maxSum === minSum) return 0.5;
-    return 0.1 + ((scoreSum - minSum) / (maxSum - minSum)) * 0.9;
-}
-
-function initializeImageNetwork(nodes, links, stats) {
-    links.forEach(link => {
-        link.strength = calculateLinkStrength(link, stats.weightedScoreRange);
-        link.distance = calculateLinkDistance(link.strength);
-    });
-
-    nodes.forEach(node => {
-        const imgStats = stats.imageStats.get(node.id) || {score: 0, count: 0};
-        node.scoreSum = imgStats.score;
-        node.degree = imgStats.count;
-        node.radius = normalizeRadius(imgStats.score, stats.scoreSumRange.min, stats.scoreSumRange.max);
-    });
-}
-
-function initializeDefaultNetwork(nodes, links) {
-    links.forEach(link => {
-        link.strength = 0.5;
-        link.distance = 150;
-    });
-
-    nodes.forEach(node => {
-        node.radius = 32;
-        node.degree = 0;
-    });
-}
-
-function initializeDocumentNetwork(nodes, links, stats) {
-    nodes.forEach(node => {
-        node.radius = normalizeRadius(
-            node.imageCount,
-            stats.imageCountRange.min,
-            stats.imageCountRange.max,
-            15,
-            60
-        );
-    });
-
-    links.forEach(link => {
-        link.strength = normalizeLinkStrength(
-            link.scoreSum,
-            stats.scoreSumRange.min,
-            stats.scoreSumRange.max
-        );
-        link.distance = calculateLinkDistance(link.strength);
-    });
-}
-
-export function createNetwork(div, nodes, links, stats = null, onSelectionChange, onModeChange = null, type = 'image') {
+export function createNetwork(div, nodes, links = null, onSelectionChange, onModeChange = null, type = 'image') {
     const width = 954;
     const height = 600;
     const centerX = width / 2;
@@ -82,18 +11,8 @@ export function createNetwork(div, nodes, links, stats = null, onSelectionChange
         node.y = centerY;
     });
 
-    const validLinks = links.filter(link => link.category !== 4);
-
-    if (type === 'image' && stats?.weightedScoreRange) {
-        initializeImageNetwork(nodes, validLinks, stats);
-    } else if (type === 'document' && stats?.imageCountRange) {
-        initializeDocumentNetwork(nodes, validLinks, stats);
-    } else {
-        initializeDefaultNetwork(nodes, validLinks);
-    }
-
     const simulation = d3.forceSimulation(nodes)
-        .force("link", d3.forceLink(validLinks).id(d => d.id)
+        .force("link", d3.forceLink(links).id(d => d.id)
             .distance(d => d.distance)
             .strength(d => d.strength * 0.7)
         )
@@ -114,10 +33,10 @@ export function createNetwork(div, nodes, links, stats = null, onSelectionChange
 
     const link = g.append("g")
         .selectAll("line")
-        .data(validLinks)
+        .data(links)
         .join("line")
         .attr("class", "link")
-        .attr("stroke-width", d => Math.max(0.5, d.strength * 2))
+        .attr("stroke-width", d => Math.max(0.5, d.width * 2))
         .attr("stroke-opacity", d => Math.max(0.2, d.strength * 0.5));
 
     const node = g.append("g")
@@ -128,12 +47,7 @@ export function createNetwork(div, nodes, links, stats = null, onSelectionChange
         .attr("r", d => d.radius)
         .attr("fill", d => d.color);
 
-    node.append("title").text(d => {
-        let text = `Region: ${d.regionId}\nPage: ${d.canvas || d.page}`;
-        if (d.degree) text += `\nConnections: ${d.degree}`;
-        if (d.scoreSum) text += `\nTotal score: ${d.scoreSum.toFixed(2)}`;
-        return text;
-    });
+    node.append("title").text(d => d.label);
 
     const selectionManager = createSelectionManager({
         svg,
