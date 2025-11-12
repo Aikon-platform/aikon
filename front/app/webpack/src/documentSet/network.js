@@ -12,15 +12,15 @@ export function createNetwork(div, nodes, links = null, onSelectionChange, onMod
     });
 
     const simulation = d3.forceSimulation(nodes)
-        .force("link", d3.forceLink(links).id(d => d.id)
+        .force("link", d3.forceLink(links)
+            .id(d => d.id)
             .distance(d => d.distance)
-            .strength(d => d.strength * 0.7)
         )
-        .force("charge", d3.forceManyBody().strength(-300))
-        .force("center", d3.forceCenter(centerX, centerY).strength(0.1))
-        .force("collision", d3.forceCollide().radius(d => d.radius + 3))
-        .force("x", d3.forceX(centerX).strength(0.05))
-        .force("y", d3.forceY(centerY).strength(0.05));
+        .force("charge", d3.forceManyBody().strength(-250))
+        .force("center", d3.forceCenter(centerX, centerY).strength(0.7))
+        .force("collide", d3.forceCollide(d => d.radius + 10).strength(0.5))
+        .force("x", d3.forceX(centerX).strength(0.06))
+        .force("y", d3.forceY(centerY).strength(0.06));
 
     const container = d3.select(div);
 
@@ -36,8 +36,8 @@ export function createNetwork(div, nodes, links = null, onSelectionChange, onMod
         .data(links)
         .join("line")
         .attr("class", "link")
-        .attr("stroke-width", d => Math.max(0.5, d.width * 2))
-        .attr("stroke-opacity", d => Math.max(0.2, d.strength * 0.5));
+        .attr("stroke-width", d => d.width)
+        .attr("stroke-opacity", d => Math.max(0.2, d.strength));
 
     const node = g.append("g")
         .selectAll("circle")
@@ -62,7 +62,7 @@ export function createNetwork(div, nodes, links = null, onSelectionChange, onMod
 
     svg.call(d3.zoom()
         .scaleExtent([0.1, 10])
-        .filter(() => !selectionManager.isSelectionMode())
+        .filter(event => !selectionManager.isSelectionMode() || event.type === 'wheel')
         .on("zoom", ({transform}) => g.attr("transform", transform)));
 
     const {dragstarted, dragged, dragended} = createSimulationHandlers(simulation, link, node, null);

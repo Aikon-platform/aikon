@@ -328,35 +328,34 @@ export function createDocumentSetStore(documentSetId) {
         }
     }
 
-    function calculateLinkProps(link, range) {
+    function calculateLinkProps(score, range, minDistance = 10, maxDistance = 200, minWidth = 1, maxWidth = 25) {
         const {min, max} = range;
-        const score = link.score ?? 0;
         const strength = max > min ? (score - min) / (max - min) : 0.5;
-        const distance = 30 + (2 - strength) * 100;
-        const width = 1 + strength * 4;
+        const distance = maxDistance - strength * (maxDistance - minDistance);
+        const width = minWidth + strength * (maxWidth - minWidth);
         return {strength, distance, width};
     }
 
-    function normalizeRadius(score, range, minRadius = 10, maxRadius = 75) {
+    function normalizeRadius(count, range, minRadius = 10, maxRadius = 60) {
         const {min, max} = range;
         if (max === min) return (minRadius + maxRadius) / 2;
-        return minRadius + ((score - min) / (max - min)) * (maxRadius - minRadius);
+        return minRadius + ((count - min) / (max - min)) * (maxRadius - minRadius);
     }
 
-    const imageNetwork = derived([allPairs, imageNodes, imageStats], ([$pairs, $imageNodes, $stats]) => {
+    const imageNetwork = derived([allPairs, imageNodes, imageStats, pairStats], ([$pairs, $imageNodes, $stats, $pairStats]) => {
         const nodes = Array.from($imageNodes.values()).map(n => {
             const imgStats = $stats.scoreCount.get(n.id);
             const {count, score} = imgStats;
-            const label =  `Region: ${n.regionId}\nPage: ${n.canvas}\nConnections: ${count}\nTotal score: ${score}`;
+            const label = `Region: ${n.regionId}\nPage: ${n.canvas}\nConnections: ${count}\nTotal score: ${score}`;
             return {
                 ...n, // todo do we need to duplicate all image data here?
-                radius: normalizeRadius(imgStats.score, $stats.countRange),
+                radius: normalizeRadius(count, $stats.countRange),
                 label,
             };
         });
 
         const links = $pairs.map(pair => {
-            const {strength, distance, width} = calculateLinkProps(pair, $stats.scoreRange);
+            const {strength, distance, width} = calculateLinkProps(pair.weightedScore, $pairStats.scoreRange);
             return {
                 source: pair.id_1,
                 target: pair.id_2,
@@ -395,7 +394,7 @@ export function createDocumentSetStore(documentSetId) {
 
         const links = Array.from($docPairStats.scoreCount.entries()).map(([key, pairStat]) => {
             const [source, target] = key.split('-').map(Number);
-            const {strength, distance, width} = calculateLinkProps(pairStat.score, $stats.scoreRange);
+            const {strength, distance, width} = calculateLinkProps(pairStat.score, $docPairStats.scoreRange);
             return {
                 source, target, strength, distance, width
             };

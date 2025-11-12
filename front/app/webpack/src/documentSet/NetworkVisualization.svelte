@@ -37,13 +37,6 @@
             updateSelectedNodes(selectedData);
         }
 
-        console.log("imageNetwork computed:", {
-            nodeCount: $networkData.nodes.length,
-            linkCount: $networkData.links.length,
-            sampleNode: $networkData.nodes[0],
-            sampleLink: $networkData.links[0]
-        });
-
         networkInstance = createNetwork(
             container,
             $networkData.nodes,

@@ -4,38 +4,33 @@
 
     export let documentSetStore;
 
-    const { documentNodes, networkStats, allPairs } = documentSetStore;
+    const { documentNodes, docPairStats, allPairs } = documentSetStore;
 
     let matrixContainer;
     let scatterContainer;
     let selectedCell = null;
 
     $: documents = Array.from($documentNodes?.values() || []).slice(0, 25);
-    $: matrixData = buildMatrixData(documents, $networkStats);
+    $: matrixData = buildMatrixData(documents, $docPairStats.scoreCount);
     $: scatterData = selectedCell ? buildScatterData(selectedCell, $allPairs) : null;
 
-    function buildMatrixData(docs, stats) {
-        if (!docs.length || !stats) return { docs: [], matrix: [], max: 0 };
-
-        const docPairStats = stats.docPairStats;
+    function buildMatrixData(docs, scoreCount) {
         const matrix = [];
         let globalMax = 0;
 
-        // Calculer le max global pour la normalisation
-        docPairStats.forEach(({score}) => {
+        scoreCount.forEach(({score}) => {
             if (score > globalMax) globalMax = score;
         });
 
-        // Construire la matrice
         for (let i = 0; i < docs.length; i++) {
             const row = [];
             for (let j = 0; j < docs.length; j++) {
                 if (i === j) {
                     row.push({ score: globalMax, normalized: 100 }); // Diagonale = 100
                 } else {
-                    const key1 = `${docs[i].id}-${docs[j].id}`;
-                    const key2 = `${docs[j].id}-${docs[i].id}`;
-                    const stat = docPairStats.get(key1) || docPairStats.get(key2);
+                    const {r1, r2} = {r1: docs[i].id, r2: docs[j].id};
+                    const key = r1 < r2 ? `${r1}-${r2}` : `${r2}-${r1}`;
+                    const stat = scoreCount.get(key);
                     const score = stat?.score || 0;
                     const normalized = globalMax > 0 ? (score / globalMax) * 100 : 0;
                     row.push({ score, normalized });
@@ -50,7 +45,6 @@
     function buildScatterData(cell, pairs) {
         const { doc1, doc2 } = cell;
 
-        // Filtrer les paires concernant ces deux documents
         const relevantPairs = pairs.filter(p =>
             (p.regions_id_1 === doc1.id && p.regions_id_2 === doc2.id) ||
             (p.regions_id_2 === doc1.id && p.regions_id_1 === doc2.id)
@@ -58,7 +52,6 @@
 
         if (!relevantPairs.length) return null;
 
-        // Agréger par page
         const pageMap = new Map();
         let minScore = Infinity;
         let maxScore = -Infinity;
@@ -89,7 +82,6 @@
             if (score > maxScore) maxScore = score;
         });
 
-        // Calculer les moyennes
         const points = Array.from(pageMap.values()).map(({ page1, page2, scores, count }) => {
             const avgScore = scores.reduce((a, b) => a + b, 0) / count;
             return { page1, page2, score: avgScore, count };
@@ -116,7 +108,6 @@
         const g = svg.append('g')
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
-        // Cellules
         const rows = g.selectAll('.row')
             .data(data.matrix)
             .join('g')
@@ -164,7 +155,6 @@
                 renderMatrix(container, data);
             });
 
-        // Labels Y
         g.selectAll('.label-y')
             .data(data.docs)
             .join('text')
@@ -179,7 +169,6 @@
                 return label.length > 20 ? label.substring(0, 17) + '...' : label;
             });
 
-        // Labels X
         g.selectAll('.label-x')
             .data(data.docs)
             .join('text')
@@ -233,7 +222,6 @@
             .domain([0, maxPage1])
             .range([height, 0]);
 
-        // Axes
         g.append('g')
             .attr('transform', `translate(0,${height})`)
             .call(d3.axisBottom(xScale)
@@ -245,7 +233,6 @@
                 .ticks(Math.min(maxPage1 + 1, 10))
                 .tickFormat(d3.format('d')));
 
-        // Labels
         g.append('text')
             .attr('x', width / 2)
             .attr('y', height + 40)
@@ -261,7 +248,6 @@
             .attr('font-size', '12px')
             .text(`${data.doc1.title || `Doc ${data.doc1.id}`} (page)`);
 
-        // Points
         const scoreRange = data.maxScore - data.minScore;
 
         g.selectAll('.point')

@@ -10,7 +10,7 @@
 
     let activeTab = 0;
 
-    $: visualizationTitle = activeTab === 0 ? "Image regions network" : activeTab === 1 ? "Witness network" : "Document Matrix";
+    $: visualizationTitle = activeTab === 0 ? "Image regions network" : activeTab === 1 ? "Document network" : "Document Matrix";
 
     const documentSetStore = createDocumentSetStore(docSet.id);
     const { fetchPairs, error } = documentSetStore;
