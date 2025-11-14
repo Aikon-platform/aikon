@@ -1,4 +1,4 @@
-import {derived, writable} from 'svelte/store';
+import {derived, writable, get} from 'svelte/store';
 import {extractNb, refToIIIFRoot, imageToPage, generateColor} from "../utils.js";
 // import {appUrl, regionsType} from "../constants.js";
 // TO DELETE
@@ -15,19 +15,19 @@ export function createDocumentSetStore(documentSetId) {
 
     const selectedRegions = writable(new Set());
 
-    const threshold = 0.5;
+    const threshold = 0;
 
     /**
      * All RegionsPair objects loaded in the current context
-     *      // todo improve by indexing pairs by ids  Map<pairId, pairData>
      */
     const allPairs = writable([]);
 
-    /**
-     * Image pair index: Map<imgId, [pairs containing this imgId]>
-     *     // todo improve by referencing pairs by id only Map<imgId, [pairIds]>
-     */
-    const imagePairIndex = writable(new Map());
+
+    const pairIndex = writable({
+        byImage: new Map(),        // imgId -> [pairs]
+        byDocPair: new Map(),      // "r1-r2" -> [pairs]
+        byDoc: new Map(),          // regionId -> [pairs]
+    });
 
     /**
      * Image nodes: Map<imgId, imageData>
@@ -43,8 +43,8 @@ export function createDocumentSetStore(documentSetId) {
         return {
             count: 0,
             scoreCount: new Map(),
-            scoreRange: {min: Infinity, max: -Infinity},
-            countRange: {min: Infinity, max: -Infinity},
+            scoreRange: {min: Infinity, max: -Infinity, range: null},
+            countRange: {min: Infinity, max: -Infinity, range: null},
             links: 0,
             clusters: 0,
             connectivity: 0
@@ -56,7 +56,7 @@ export function createDocumentSetStore(documentSetId) {
     const imageStats = writable({});
     const docPairStats = writable({});
     const docSetNumber = writable({
-        regions: 0,
+        documents: 0,
         pairs: 0,
         images: 0,
         categories: {}
@@ -68,7 +68,10 @@ export function createDocumentSetStore(documentSetId) {
                 const cats = $selectedCategories.join(',');
 
                 // TO DELETE
-                const documentSetId = 413; // 414;
+                // const documentSetId = 413; // histoire naturelle
+                // const documentSetId = 414; // nicolas
+                // const documentSetId = 415; // physiologus
+                const documentSetId = 416; // de materia medica
                 // TO DELETE
 
                 const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${cats}`);
@@ -76,7 +79,7 @@ export function createDocumentSetStore(documentSetId) {
 
                 const data = await response.json();
 
-                const imgPairIdx = new Map();
+                const index = { byImage: new Map(), byDocPair: new Map(), byDoc: new Map(),}
                 const documentMap = new Map();
                 const imageMap = new Map();
 
@@ -87,7 +90,7 @@ export function createDocumentSetStore(documentSetId) {
                 const categories = {};
 
                 const context = {
-                    imgPairIdx,
+                    index,
                     documentMap,
                     imageMap,
                     pStats,
@@ -116,6 +119,11 @@ export function createDocumentSetStore(documentSetId) {
                 imgStats.links = imgStats.scoreCount.size;
                 docPStats.links = docPStats.scoreCount.size;
 
+                computeRange(pStats);
+                computeRange(docStats);
+                computeRange(imgStats);
+                computeRange(docPStats);
+
                 const regionIds = Array.from(documentMap.keys());
                 await Promise.all(
                     regionIds.map(async (rid, i) => {
@@ -143,13 +151,13 @@ export function createDocumentSetStore(documentSetId) {
                 });
 
                 docSetNumber.set({
-                    regions: regionIds.length,
+                    documents: regionIds.length,
                     pairs: pairs.length,
                     images: imgStats.count,
                     categories
                 });
 
-                imagePairIndex.set(imgPairIdx);
+                pairIndex.set(index);
                 pairStats.set(pStats);
                 documentStats.set(docStats);
                 imageStats.set(imgStats);
@@ -203,7 +211,7 @@ export function createDocumentSetStore(documentSetId) {
      * }
      */
     function processPair(pair, context) {
-        const {imgPairIdx, documentMap, imageMap, pStats, docStats, imgStats, docPStats, categories} = context;
+        const {index, documentMap, imageMap, pStats, docStats, imgStats, docPStats, categories} = context;
 
         const score = pair.score ?? null;
         const category = pair.category ?? 0;
@@ -247,34 +255,34 @@ export function createDocumentSetStore(documentSetId) {
             if (!documentMap.has(rid)) {
                 documentMap.set(rid, {
                     id: rid,
-                    imageCount: 0, // todo delete that because it is stored in docStats
-                    images: [], // TODO maybe remove complete pairs and only add reference to pair
+                    images: [],
                 });
             }
-            documentMap.get(rid).images.push({id: imgId, canvas: imgPage, pair})
-            documentMap.get(rid).imageCount++;
-
-            if (!imgPairIdx.has(imgId)) imgPairIdx.set(imgId, []);
-            imgPairIdx.get(imgId).push(pair);
+            documentMap.get(rid).images.push({id: imgId, canvas: imgPage})
 
             addToStats(imgStats, imgId, weightedScore);
             addToStats(docStats, rid, weightedScore);
+            addToIndex(index.byImage, imgId, pair);
+            addToIndex(index.byDoc, rid, pair);
         }
 
         const {regions_id_1: r1, regions_id_2: r2} = pair;
         const pairKey = r1 < r2 ? `${r1}-${r2}` : `${r2}-${r1}`;
         addToStats(docPStats, pairKey, weightedScore);
+        addToIndex(index.byDocPair, pairKey, pair);
 
         return pair;
     }
 
-    function calculateWeightedScore(score, category) {
+    function calculateWeightedScore(score, category, categoryWeights = {1: 1.0, 2: 0.5, 3: 0.125, 4: -1.0, 5: 0.125}) {
         const baseScore = score ?? 0;
-        if (category === 1) return baseScore + 1.0;
-        if (category === 2) return baseScore + 0.5;
-        if (category === 3 || category === 5) return baseScore + 0.125;
-        if (category === 4) return Math.max(0.01, baseScore - 1.0);
-        return Math.max(0.01, baseScore);
+        const weight = categoryWeights[category] ?? 0;
+        return Math.max(0.01, baseScore + baseScore * weight);
+    }
+
+    function computeRange(stats) {
+        stats.scoreRange.range = stats.scoreRange.max - stats.scoreRange.min;
+        stats.countRange.range = stats.countRange.max - stats.countRange.min;
     }
 
     function addToStats(stats, key, score) {
@@ -293,6 +301,11 @@ export function createDocumentSetStore(documentSetId) {
             score: accumulatedScore,
             count: count,
         });
+    }
+
+    function addToIndex(index, key, pair) {
+        if (!index.has(key)) index.set(key, []);
+        index.get(key).push(pair);
     }
 
     function addToScores(stats, score) {
@@ -328,28 +341,32 @@ export function createDocumentSetStore(documentSetId) {
         }
     }
 
-    function calculateLinkProps(score, range, minDistance = 10, maxDistance = 200, minWidth = 1, maxWidth = 25) {
-        const {min, max} = range;
-        const strength = max > min ? (score - min) / (max - min) : 0.5;
+    function calculateLinkProps(score, scoreRange, minDistance = 10, maxDistance = 200, minWidth = 1, maxWidth = 25) {
+        const {min, _, range} = scoreRange;
+        const strength = range === 0 ? 0.5 : (score - min) / range;
         const distance = maxDistance - strength * (maxDistance - minDistance);
         const width = minWidth + strength * (maxWidth - minWidth);
         return {strength, distance, width};
     }
 
-    function normalizeRadius(count, range, minRadius = 10, maxRadius = 60) {
-        const {min, max} = range;
-        if (max === min) return (minRadius + maxRadius) / 2;
-        return minRadius + ((count - min) / (max - min)) * (maxRadius - minRadius);
+    function normalizeRadius(count, countRange, minRadius = 10, maxRadius = 60) {
+        const {min, _, range} = countRange;
+        if (range === 0) return (minRadius + maxRadius) / 2;
+        return minRadius + ((count - min) / range) * (maxRadius - minRadius);
     }
 
-    const imageNetwork = derived([allPairs, imageNodes, imageStats, pairStats], ([$pairs, $imageNodes, $stats, $pairStats]) => {
+    const imageNetwork = derived(allPairs, ($pairs) => {
+        const $imageNodes = get(imageNodes);
+        const $stats = get(imageStats);
+        const $pairStats = get(pairStats)
+
         const nodes = Array.from($imageNodes.values()).map(n => {
             const imgStats = $stats.scoreCount.get(n.id);
             const {count, score} = imgStats;
             const label = `Region: ${n.regionId}\nPage: ${n.canvas}\nConnections: ${count}\nTotal score: ${score}`;
             return {
                 ...n, // todo do we need to duplicate all image data here?
-                radius: normalizeRadius(count, $stats.countRange),
+                radius: normalizeRadius(count, $stats.countRange), // TODO use score instead of count?
                 label,
             };
         });
@@ -380,7 +397,10 @@ export function createDocumentSetStore(documentSetId) {
         return {...$network, nodes, links};
     });
 
-    const documentNetwork = derived([docPairStats, documentNodes, documentStats], ([$docPairStats, $docNodes, $stats]) => {
+    const documentNetwork = derived([documentNodes], ([$docNodes]) => {
+        const $docPairStats = get(docPairStats);
+        const $stats = get(documentStats)
+
         const nodes = Array.from($docNodes.values()).map(n => {
             const docStats = $stats.scoreCount.get(n.id);
             const {count, score} = docStats;
@@ -419,29 +439,37 @@ export function createDocumentSetStore(documentSetId) {
      * returns {
      *      regions: [regionId1, regionId2 ...],           // ordered list of selected regions ids
      *      rows: [
-     *          { regionId1: img, regionId2: img },    // images contained in the same pairs across regions
+     *          { regionId1: img, regionId2: img },        // images contained in the same pairs across regions
      *          { regionId1: img },
      *          { regionId1: img, regionsId3: img },
      *      ]
      * }
      */
-    function buildAlignedImageMatrix(orderedSelection, documentNodes, allPairs) {
+    function buildAlignedImageMatrix(orderedSelection) {
         if (!orderedSelection.length) return {regions: [], rows: []};
 
+        const $documentNodes = get(documentNodes);
+        const $pairIndex = get(pairIndex);
+
         const firstRegionId = orderedSelection[0];
-        const firstDoc = documentNodes.get(firstRegionId);
+        const firstDoc = $documentNodes.get(firstRegionId);
         if (!firstDoc?.images) return {regions: orderedSelection, rows: []};
 
         const findPairs = (imgId, sourceRegionId, targetRegionId) => {
-            const results = [];
-            for (const p of allPairs) {
-                if (p.id_1 === imgId && p.regions_id_1 === sourceRegionId && p.regions_id_2 === targetRegionId) {
-                    results.push({id: p.id_2, page: p.page_2});
-                } else if (p.id_2 === imgId && p.regions_id_2 === sourceRegionId && p.regions_id_1 === targetRegionId) {
-                    results.push({id: p.id_1, page: p.page_1});
-                }
-            }
-            return results;
+            const {r1, r2} = {r1: sourceRegionId, r2: targetRegionId};
+            const pairKey = r1 < r2 ? `${r1}-${r2}` : `${r2}-${r1}`;
+            const pairs = $pairIndex.byDocPair.get(pairKey) || [];
+
+            return pairs
+                .map(p => {
+                    if (p.id_1 === imgId && p.regions_id_1 === sourceRegionId) {
+                        return {id: p.id_2, page: p.page_2};
+                    } else if (p.id_2 === imgId && p.regions_id_2 === sourceRegionId) {
+                        return {id: p.id_1, page: p.page_1};
+                    }
+                    return null;
+                })
+                .filter(Boolean);
         };
 
         const firstImages = [...firstDoc.images].sort((a, b) => a.canvas - b.canvas);
@@ -521,7 +549,7 @@ export function createDocumentSetStore(documentSetId) {
 
     return {
         error,
-        allPairs,
+        pairIndex,
         documentNodes,
         imageNodes,
         fetchPairs,

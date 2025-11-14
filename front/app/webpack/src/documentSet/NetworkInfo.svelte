@@ -5,7 +5,7 @@
     export let documentSetStore;
     const { imageStats, documentStats, docPairStats } = documentSetStore;
 
-    $: currentStats = activeTab === 0 ? imageStats : activeTab === 1 ? documentStats : docPairStats;
+    $: currentStats = activeTab === 0 ? $imageStats : activeTab === 1 ? $documentStats : $docPairStats;
 </script>
 
 <div class="level has-text-centered">
