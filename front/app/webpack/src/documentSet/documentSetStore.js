@@ -100,19 +100,20 @@ export function createDocumentSetStore(documentSetId) {
                     categories
                 };
 
-                const pairs = data.map(pair => {
+                const pairs = data.reduce((acc, pair) => {
                     if (pair.category === 4) {
-                        return null;
+                        return acc;
                     }
                     const score = pair.score ?? null;
                     if (score == null && pair.is_manual !== true) {
-                        return null;
+                        return acc;
                     }
                     if ($selectedCategories.includes(0) && pair.category === 0 && score < threshold) {
-                        return null;
+                        return acc;
                     }
-                    return processPair(pair, context)
-                });
+                    acc.push(processPair(pair, context));
+                    return acc;
+                }, []);
 
                 pStats.avgScore = pStats.count > 0 ? pStats.totalScore / pStats.count : 0;
                 docStats.links = docStats.scoreCount.size;
@@ -365,8 +366,8 @@ export function createDocumentSetStore(documentSetId) {
             const {count, score} = imgStats;
             const label = `Region: ${n.regionId}\nPage: ${n.canvas}\nConnections: ${count}\nTotal score: ${score}`;
             return {
-                ...n, // todo do we need to duplicate all image data here?
-                radius: normalizeRadius(count, $stats.countRange), // TODO use score instead of count?
+                ...n,
+                radius: normalizeRadius(score, $stats.scoreRange), // normalizeRadius(count, $stats.countRange)
                 label,
             };
         });
@@ -385,16 +386,31 @@ export function createDocumentSetStore(documentSetId) {
         return { nodes, links };
     });
 
-    const filteredImageNetwork = derived([imageNetwork, selectedRegions], ([$network, $active]) => {
+    function filterNetwork(network, activeRegions, keyRid="id") {
         // TODO recompute stats?
-        const nodes = $network.nodes.filter(n => $active.has(n.regionId));
-        const nodeIds = new Set(nodes.map(n => n.id));
-        const links = $network.links.filter(l =>
-            nodeIds.has(l.source.id || l.source) &&
-            nodeIds.has(l.target.id || l.target)
-        );
+        if (activeRegions.size === network.nodes.length) {
+            return network;
+        }
 
-        return {...$network, nodes, links};
+        const nodeIds = new Set()
+        const nodes = network.nodes.filter(n => {
+            if (activeRegions.has(n[keyRid])){
+                nodeIds.add(n.id);
+                return true;
+            }
+            return false;
+        });
+        const links = network.links.filter(l => {
+            const srcId = l.source?.id ?? l.source;
+            const tgtId = l.target?.id ?? l.target;
+            return nodeIds.has(srcId) && nodeIds.has(tgtId);
+        });
+
+        return {...network, nodes, links};
+    }
+
+    const filteredImageNetwork = derived([imageNetwork, selectedRegions], ([$network, $active]) => {
+        return filterNetwork($network, $active, "regionId");
     });
 
     const documentNetwork = derived([documentNodes], ([$docNodes]) => {
@@ -404,7 +420,7 @@ export function createDocumentSetStore(documentSetId) {
         const nodes = Array.from($docNodes.values()).map(n => {
             const docStats = $stats.scoreCount.get(n.id);
             const {count, score} = docStats;
-            const label =  `${n.title}\nPage: ${n.page}\nImage: ${count}\nTotal score: ${score}`;
+            const label =  `${n.title}\nImage: ${count}\nTotal score: ${score}`;
             return {
                 ...n, // todo do we need to duplicate all document data here?
                 radius: normalizeRadius(docStats.count, $stats.countRange),
@@ -424,24 +440,16 @@ export function createDocumentSetStore(documentSetId) {
     });
 
     const filteredDocumentNetwork = derived([documentNetwork, selectedRegions], ([$network, $active]) => {
-        // TODO recompute stats?
-        const nodes = $network.nodes.filter(n => $active.has(n.id));
-        const activeIds = new Set(nodes.map(n => n.id));
-        const links = $network.links.filter(l => {
-            const srcId = l.source?.id ?? l.source;
-            const tgtId = l.target?.id ?? l.target;
-            return activeIds.has(srcId) && activeIds.has(tgtId);
-        });
-        return {...$network, nodes, links};
+        return filterNetwork($network, $active);
     });
 
     /**
      * returns {
      *      regions: [regionId1, regionId2 ...],           // ordered list of selected regions ids
-     *      rows: [
-     *          { regionId1: img, regionId2: img },        // images contained in the same pairs across regions
-     *          { regionId1: img },
-     *          { regionId1: img, regionsId3: img },
+     *      rows: [                                        // images contained in the same pairs across regions
+     *          { regionId1: {id: img_id, page: page_nb}, regionId2: {id: img_id, page: page_nb} },
+     *          { regionId1: {id: img_id, page: page_nb} },
+     *          { regionId1: {id: img_id, page: page_nb}, regionsId3: {id: img_id, page: page_nb} },
      *      ]
      * }
      */

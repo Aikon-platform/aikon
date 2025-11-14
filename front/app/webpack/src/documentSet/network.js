@@ -1,33 +1,14 @@
 import * as d3 from 'd3';
 
-export function createNetwork(div, nodes, links = null, onSelectionChange, onModeChange = null, type = 'image') {
-    const width = 954;
-    const height = 600;
-    const centerX = width / 2;
-    const centerY = height / 2;
-
-    nodes.forEach(node => {
-        node.x = centerX;
-        node.y = centerY;
-    });
-
-    const simulation = d3.forceSimulation(nodes)
-        .force("link", d3.forceLink(links)
-            .id(d => d.id)
-            .distance(d => d.distance)
-        )
-        .force("charge", d3.forceManyBody().strength(-250))
-        .force("center", d3.forceCenter(centerX, centerY).strength(0.7))
-        .force("collide", d3.forceCollide(d => d.radius + 10).strength(0.5))
-        .force("x", d3.forceX(centerX).strength(0.06))
-        .force("y", d3.forceY(centerY).strength(0.06));
+export function createNetwork(div, nodes, links = null, onSelectionChange, onModeChange = null) {
+    const centerX = 400;
+    const centerY = 300;
 
     const container = d3.select(div);
 
-    const svg = container.append("svg")
-        .attr("class", "network-svg")
-        .attr("width", width).attr("height", height)
-        .attr("viewBox", [0, 0, width, height]);
+    const svg = container.append("svg").attr("class", "network-svg");
+    // const canvas = container.append("canvas").attr("class", "network-canvas");
+    // const ctx = canvas.node().getContext("2d");
 
     const g = svg.append("g");
 
@@ -48,6 +29,18 @@ export function createNetwork(div, nodes, links = null, onSelectionChange, onMod
         .attr("fill", d => d.color);
 
     node.append("title").text(d => d.label);
+
+    const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links)
+            .id(d => d.id)
+            .strength(d => d.strength)
+            .distance(d => d.distance)
+        )
+        .force("charge", d3.forceManyBody().strength(-250))
+        .force("center", d3.forceCenter(centerX, centerY).strength(0.7))
+        .force("collide", d3.forceCollide(d => d.radius + 10).strength(0.5))
+        .force("x", d3.forceX(centerX).strength(0.025))
+        .force("y", d3.forceY(centerY).strength(0.025));
 
     const selectionManager = createSelectionManager({
         svg,
@@ -209,7 +202,7 @@ function createSelectionManager(options) {
     };
 }
 
-function createSimulationHandlers(simulation, link, node, label) {
+function createSimulationHandlers(simulation, link, node) {
     simulation.on("tick", () => {
         link
             .attr("x1", d => d.source.x)
@@ -218,9 +211,6 @@ function createSimulationHandlers(simulation, link, node, label) {
             .attr("y2", d => d.target.y);
 
         node.attr("cx", d => d.x).attr("cy", d => d.y);
-        // if (label){
-        //     label.attr("x", d => d.x).attr("y", d => d.y);
-        // }
     });
 
     function dragstarted(event) {
