@@ -10,5 +10,5 @@ aiiinotate --env "$ENV_FILE" -- serve prod &
 
 rm -rf dist .parcel-cache && parcel src/index.html;
 
-# once the above command returns, kill aiiinotate.
+# once the above command returns, kill aiiinotate (MainThread = nodejs parent thread).
 kill $(pgrep MainThread);
