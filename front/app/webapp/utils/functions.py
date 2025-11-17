@@ -723,3 +723,16 @@ def parse_img_ref(img_string):
         "canvas": canvas,
         "coord": coord.split(".")[0].split(","),
     }
+
+
+def cast(val, to_type):
+    if val is None:
+        return None
+    try:
+        return to_type(val)
+    except (ValueError, TypeError):
+        if to_type == int:
+            return 0
+        elif to_type == float:
+            return 0.0
+        return None

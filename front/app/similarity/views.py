@@ -1,10 +1,11 @@
 import json
+import re
 from collections import OrderedDict
-from typing import List, Tuple, Set
+from typing import List, Set
 
-from django.db.models import Q, Count
+from django.db.models import Q, Count, F
 from django.http import JsonResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
 
@@ -27,10 +28,11 @@ from app.similarity.utils import (
     get_all_pairs,
     reset_similarity,
     regions_from_img,
+    add_user_to_category_x,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
-from similarity.utils import add_user_to_category_x
+from app.webapp.models.digitization import Digitization
 
 
 @user_passes_test(is_superuser)
@@ -375,7 +377,8 @@ def get_regions(img_1, img_2, wid, rid):
 
 
 def get_regions_title_by_ref(request, wid, rid=None, regions_ref: str | None = None):
-    # TODO this is very inefficient: desc generation should not create one DB query per crop, but once per regions_ref
+    # TODO this is VERY inefficient:
+    #   + desc generation should not create one DB query per crop, but once per regions_ref!
     #   + regions_ref contains the id of the regions which should be extracted
     try:
         regions = Regions.objects.filter(json__ref__startswith=regions_ref).first()
@@ -715,3 +718,120 @@ def remove_incorrect_pairs(request, mismatched=False, duplicate=False, swapped=T
             {"message": f"An error occurred while removing incorrect pairs: {e}"},
             status=500,
         )
+
+
+def get_regions_pairs(request, wid, rid=None):
+    """
+    Return all the region pairs for a given region id or witness id
+    1. if rid is provided, return all pairs for this region
+    2. if rid is not provided, return all pairs for all regions of the witness
+
+    if witnessIds or regionsIds are provided, return only pairs where regions_id_1 AND regions_id_2 are in the list of q_regions
+    otherwise, return pairs where regions_id_1 OR regions_id_2 are in the list of q_regions
+
+    additional URL arguments can be passed in the URL
+    - minScore: float, minimum score to filter pairs
+    - maxScore: float, maximum score to filter pairs
+    - topk: int, maximum number of pairs to return
+    - category: int, filter pairs by category
+    - regionsIds: list of int, filter pairs by regions ids
+    - witnessIds: list of int, filter pairs by witness ids
+    - excludeSelf: bool, if true, filter out pairs where both regions_1 and regions_2 are the same
+    """
+    if rid is not None:
+        regions = [get_object_or_404(Regions, id=rid)]
+    else:
+        witness = get_object_or_404(Witness, id=wid)
+        regions = witness.get_regions()
+
+    if not len(regions):
+        return JsonResponse(
+            {"error": f"No regions found for this witness #{wid}"}, status=400
+        )
+
+    # get the url arguments
+    min_score = request.GET.get("minScore", None)
+    max_score = request.GET.get("maxScore", None)
+    topk = request.GET.get("topk", None)
+    category = request.GET.get("category", None)
+    regions_ids = request.GET.get("regionsIds", [])
+    witness_ids = request.GET.get("witnessIds", [])
+    exclude_self = request.GET.get("excludeSelf", "false").lower() == "true"
+
+    q_regions = set()
+
+    if regions_ids:
+        try:
+            q_regions.update(int(rid) for rid in regions_ids.split(","))
+        except ValueError:
+            return JsonResponse({"error": "Invalid regionsIds parameter"}, status=400)
+
+    if witness_ids:
+        witness_ids = witness_ids.split(",")
+        try:
+            for wid in witness_ids:
+                witness = get_object_or_404(Witness, id=int(wid))
+                q_regions.update(r.id for r in witness.get_regions())
+        except ValueError:
+            return JsonResponse({"error": "Invalid witnessIds parameter"}, status=400)
+
+    q_regions.update(r.id for r in regions)
+
+    if witness_ids or regions_ids:
+        # get all pairs where regions_id_1 AND regions_id_2 are in q_regions ids
+        query = Q(regions_id_1__in=q_regions) & Q(regions_id_2__in=q_regions)
+    else:
+        # get all pairs where regions_id_1 OR regions_id_2 are in q_regions ids
+        query = Q(regions_id_1__in=q_regions) | Q(regions_id_2__in=q_regions)
+
+    if min_score is not None:
+        try:
+            query &= Q(score__gte=float(min_score))
+        except ValueError:
+            return JsonResponse({"error": "Invalid minScore parameter"}, status=400)
+
+    if max_score is not None:
+        try:
+            query &= Q(score__lte=float(max_score))
+        except ValueError:
+            return JsonResponse({"error": "Invalid maxScore parameter"}, status=400)
+
+    try:
+        topk = int(topk)
+    except TypeError:
+        topk = None
+
+    if exclude_self:
+        query &= ~Q(regions_id_1=F("regions_id_2"))
+        # if exclude_self, we need to exclude regions from the same witness
+        # same_witness_regions = set()
+        # for r in Regions.objects.filter(id__in=q_regions).select_related('witness'):
+        #     witness_regions = r.witness.get_regions()
+        #     if len(witness_regions) > 1:
+        #         same_witness_regions.update([wr.id for wr in witness_regions])
+        # if same_witness_regions:
+        #     query &= ~(Q(regions_id_1__in=same_witness_regions) & Q(regions_id_2__in=same_witness_regions))
+
+    if category is not None:
+        try:
+            query &= Q(category=int(category))
+        except ValueError:
+            return JsonResponse({"error": "Invalid category parameter"}, status=400)
+
+    try:
+        pairs = RegionPair.objects.filter(query).order_by(
+            F("score").desc(nulls_first=True)
+        )
+        if not pairs.exists():
+            return JsonResponse(
+                {"message": f"No pairs found matching the criteria {query}"}, status=200
+            )
+
+        if topk is not None:
+            pairs = pairs[:topk]
+
+        pairs = [p.to_dict() for p in pairs]
+
+        return JsonResponse(pairs, status=200, safe=False)
+    except Exception as e:
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
