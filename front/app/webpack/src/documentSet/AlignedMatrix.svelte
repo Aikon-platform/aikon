@@ -6,9 +6,8 @@
     export let documentSetStore;
     const {
         buildAlignedImageMatrix,
-        allPairs,
         documentNodes,
-        imageNodes
+        imageNodes,
     } = documentSetStore;
 
     function generateDistinctColor(str) {
@@ -28,9 +27,9 @@
 
     let matrixData = null;
 
-    $: if (selectedDocuments.length > 0 && $imageNodes && $documentNodes && $allPairs) {
+    $: if (selectedDocuments.length > 0 && $imageNodes && $documentNodes) {
         const selectionOrder = selectedDocuments.map(n => n.id);
-        matrixData = buildAlignedImageMatrix(selectionOrder, $documentNodes, $allPairs);
+        matrixData = buildAlignedImageMatrix(selectionOrder);
     } else {
         matrixData = null;
     }

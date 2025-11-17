@@ -1,124 +1,21 @@
 import * as d3 from 'd3';
 
-function calculateLinkStrength(link, scoreRange) {
-    const weightedScore = link.weightedScore ?? 0;
-
-    if (scoreRange.max > scoreRange.min) {
-        return (weightedScore - scoreRange.min) / (scoreRange.max - scoreRange.min);
-    }
-
-    return 0.5;
-}
-
-function calculateLinkDistance(strength) {
-    return 30 + (2 - strength) * 100;
-}
-
-function normalizeRadius(scoreSum, minSum, maxSum, minRadius = 10, maxRadius = 75) {
-    if (maxSum === minSum) return (minRadius + maxRadius) / 2;
-    return minRadius + ((scoreSum - minSum) / (maxSum - minSum)) * (maxRadius - minRadius);
-}
-
-function normalizeLinkStrength(scoreSum, minSum, maxSum) {
-    if (maxSum === minSum) return 0.5;
-    return 0.1 + ((scoreSum - minSum) / (maxSum - minSum)) * 0.9;
-}
-
-function initializeImageNetwork(nodes, links, stats) {
-    links.forEach(link => {
-        link.strength = calculateLinkStrength(link, stats.weightedScoreRange);
-        link.distance = calculateLinkDistance(link.strength);
-    });
-
-    nodes.forEach(node => {
-        const imgStats = stats.imageStats.get(node.id) || {score: 0, count: 0};
-        node.scoreSum = imgStats.score;
-        node.degree = imgStats.count;
-        node.radius = normalizeRadius(imgStats.score, stats.scoreSumRange.min, stats.scoreSumRange.max);
-    });
-}
-
-function initializeDefaultNetwork(nodes, links) {
-    links.forEach(link => {
-        link.strength = 0.5;
-        link.distance = 150;
-    });
-
-    nodes.forEach(node => {
-        node.radius = 32;
-        node.degree = 0;
-    });
-}
-
-function initializeDocumentNetwork(nodes, links, stats) {
-    nodes.forEach(node => {
-        node.radius = normalizeRadius(
-            node.imageCount,
-            stats.imageCountRange.min,
-            stats.imageCountRange.max,
-            15,
-            60
-        );
-    });
-
-    links.forEach(link => {
-        link.strength = normalizeLinkStrength(
-            link.scoreSum,
-            stats.scoreSumRange.min,
-            stats.scoreSumRange.max
-        );
-        link.distance = calculateLinkDistance(link.strength);
-    });
-}
-
-export function createNetwork(div, nodes, links, stats = null, onSelectionChange, onModeChange = null, type = 'image') {
-    const width = 954;
-    const height = 600;
-    const centerX = width / 2;
-    const centerY = height / 2;
-
-    nodes.forEach(node => {
-        node.x = centerX;
-        node.y = centerY;
-    });
-
-    const validLinks = links.filter(link => link.category !== 4);
-
-    if (type === 'image' && stats?.weightedScoreRange) {
-        initializeImageNetwork(nodes, validLinks, stats);
-    } else if (type === 'document' && stats?.imageCountRange) {
-        initializeDocumentNetwork(nodes, validLinks, stats);
-    } else {
-        initializeDefaultNetwork(nodes, validLinks);
-    }
-
-    const simulation = d3.forceSimulation(nodes)
-        .force("link", d3.forceLink(validLinks).id(d => d.id)
-            .distance(d => d.distance)
-            .strength(d => d.strength * 0.7)
-        )
-        .force("charge", d3.forceManyBody().strength(-300))
-        .force("center", d3.forceCenter(centerX, centerY).strength(0.1))
-        .force("collision", d3.forceCollide().radius(d => d.radius + 3))
-        .force("x", d3.forceX(centerX).strength(0.05))
-        .force("y", d3.forceY(centerY).strength(0.05));
+export function createSvg(div, nodes, links = null, onSelectionChange, onModeChange = null) {
+    const centerX = 400;
+    const centerY = 300;
 
     const container = d3.select(div);
 
-    const svg = container.append("svg")
-        .attr("class", "network-svg")
-        .attr("width", width).attr("height", height)
-        .attr("viewBox", [0, 0, width, height]);
-
+    const svg = container.append("svg").attr("class", "network-svg");
     const g = svg.append("g");
 
     const link = g.append("g")
         .selectAll("line")
-        .data(validLinks)
+        .data(links)
         .join("line")
         .attr("class", "link")
-        .attr("stroke-width", d => Math.max(0.5, d.strength * 2))
-        .attr("stroke-opacity", d => Math.max(0.2, d.strength * 0.5));
+        .attr("stroke-width", d => d.width)
+        .attr("stroke-opacity", d => Math.max(0.2, d.strength));
 
     const node = g.append("g")
         .selectAll("circle")
@@ -128,12 +25,19 @@ export function createNetwork(div, nodes, links, stats = null, onSelectionChange
         .attr("r", d => d.radius)
         .attr("fill", d => d.color);
 
-    node.append("title").text(d => {
-        let text = `Region: ${d.regionId}\nPage: ${d.canvas || d.page}`;
-        if (d.degree) text += `\nConnections: ${d.degree}`;
-        if (d.scoreSum) text += `\nTotal score: ${d.scoreSum.toFixed(2)}`;
-        return text;
-    });
+    node.append("title").text(d => d.label);
+
+    const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links)
+            .id(d => d.id)
+            .strength(d => d.strength)
+            .distance(d => d.distance)
+        )
+        .force("charge", d3.forceManyBody().strength(-250))
+        .force("center", d3.forceCenter(centerX, centerY).strength(0.7))
+        .force("collide", d3.forceCollide(d => d.radius + 10).strength(0.5))
+        .force("x", d3.forceX(centerX).strength(0.025))
+        .force("y", d3.forceY(centerY).strength(0.025));
 
     const selectionManager = createSelectionManager({
         svg,
@@ -148,7 +52,7 @@ export function createNetwork(div, nodes, links, stats = null, onSelectionChange
 
     svg.call(d3.zoom()
         .scaleExtent([0.1, 10])
-        .filter(() => !selectionManager.isSelectionMode())
+        .filter(event => !selectionManager.isSelectionMode() || event.type === 'wheel')
         .on("zoom", ({transform}) => g.attr("transform", transform)));
 
     const {dragstarted, dragged, dragended} = createSimulationHandlers(simulation, link, node, null);
@@ -295,7 +199,7 @@ function createSelectionManager(options) {
     };
 }
 
-function createSimulationHandlers(simulation, link, node, label) {
+function createSimulationHandlers(simulation, link, node) {
     simulation.on("tick", () => {
         link
             .attr("x1", d => d.source.x)
@@ -304,9 +208,6 @@ function createSimulationHandlers(simulation, link, node, label) {
             .attr("y2", d => d.target.y);
 
         node.attr("cx", d => d.x).attr("cy", d => d.y);
-        // if (label){
-        //     label.attr("x", d => d.x).attr("y", d => d.y);
-        // }
     });
 
     function dragstarted(event) {

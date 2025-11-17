@@ -10,19 +10,22 @@
         witnessId: 1
     };
     export let clickable = true;
+    export let onlyColor = false;
 </script>
 
 <div class="legend-item" class:inactive={!isActive}>
     <span class="legend-nb"><!--IMAGE NUMBER--></span>
     <span class="legend-color" class:inactive={!isActive} class:clickable={clickable}
-          aria-label="Toggle region {meta.title}"
+          aria-label="{meta.title}" title="{meta.title}"
           style="background-color: {isActive ? meta.color : '#999'};"
           on:click={toggle} on:keydown={null} role="button" tabindex="0" />
-    <span class="legend-label">
-        <a href={`${appUrl}/${appName}/witness/${meta.witnessId}/regions/${id}`} target="_blank">
-            {meta.title}
-        </a>
-    </span>
+    {#if !onlyColor}
+        <span class="legend-label">
+            <a href={`${appUrl}/${appName}/witness/${meta.witnessId}/regions/${id}`} target="_blank">
+                {meta.title}
+            </a>
+        </span>
+    {/if}
 </div>
 
 <style>

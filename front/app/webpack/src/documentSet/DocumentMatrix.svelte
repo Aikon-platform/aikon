@@ -1,44 +1,43 @@
 <script>
-    import { afterUpdate } from 'svelte';
     import * as d3 from 'd3';
+    import LegendItem from './LegendItem.svelte';
 
     export let documentSetStore;
 
-    const { documentNodes, networkStats, allPairs } = documentSetStore;
+    const { documentNodes, docPairStats, pairIndex } = documentSetStore;
 
     let matrixContainer;
     let scatterContainer;
     let selectedCell = null;
 
-    $: documents = Array.from($documentNodes?.values() || []).slice(0, 25);
-    $: matrixData = buildMatrixData(documents, $networkStats);
-    $: scatterData = selectedCell ? buildScatterData(selectedCell, $allPairs) : null;
+    $: documents = Array.from($documentNodes?.values() || []);
+    $: matrixData = buildMatrixData(documents, $docPairStats.scoreCount);
+    $: scatterData = selectedCell ? buildScatterData(selectedCell) : null;
 
-    function buildMatrixData(docs, stats) {
-        if (!docs.length || !stats) return { docs: [], matrix: [], max: 0 };
+    const cellSize = 30;
 
-        const docPairStats = stats.docPairStats;
+
+    // todo put that in docset store
+    function buildMatrixData(docs, scoreCount) {
         const matrix = [];
         let globalMax = 0;
 
-        // Calculer le max global pour la normalisation
-        docPairStats.forEach(({score}) => {
+        scoreCount.forEach(({score}) => {
             if (score > globalMax) globalMax = score;
         });
 
-        // Construire la matrice
         for (let i = 0; i < docs.length; i++) {
             const row = [];
             for (let j = 0; j < docs.length; j++) {
                 if (i === j) {
-                    row.push({ score: globalMax, normalized: 100 }); // Diagonale = 100
+                    row.push({ score: 0, normalized: 0, isDiagonal: true }); // Diagonale = 0
                 } else {
-                    const key1 = `${docs[i].id}-${docs[j].id}`;
-                    const key2 = `${docs[j].id}-${docs[i].id}`;
-                    const stat = docPairStats.get(key1) || docPairStats.get(key2);
+                    const {r1, r2} = {r1: docs[i].id, r2: docs[j].id};
+                    const key = r1 < r2 ? `${r1}-${r2}` : `${r2}-${r1}`;
+                    const stat = scoreCount.get(key);
                     const score = stat?.score || 0;
                     const normalized = globalMax > 0 ? (score / globalMax) * 100 : 0;
-                    row.push({ score, normalized });
+                    row.push({ score, normalized, isDiagonal: false });
                 }
             }
             matrix.push(row);
@@ -47,18 +46,14 @@
         return { docs, matrix, max: globalMax };
     }
 
-    function buildScatterData(cell, pairs) {
+    function buildScatterData(cell) {
         const { doc1, doc2 } = cell;
 
-        // Filtrer les paires concernant ces deux documents
-        const relevantPairs = pairs.filter(p =>
-            (p.regions_id_1 === doc1.id && p.regions_id_2 === doc2.id) ||
-            (p.regions_id_2 === doc1.id && p.regions_id_1 === doc2.id)
-        );
+        const pairKey = doc1.id < doc2.id ? `${doc1.id}-${doc2.id}` : `${doc2.id}-${doc1.id}`;
+        const relevantPairs = $pairIndex.byDocPair.get(pairKey) || [];
 
         if (!relevantPairs.length) return null;
 
-        // Agréger par page
         const pageMap = new Map();
         let minScore = Infinity;
         let maxScore = -Infinity;
@@ -76,6 +71,8 @@
                 score = p.weightedScore || 0;
             }
 
+            // TODO build page index inside store?
+
             const key = `${page1}-${page2}`;
             if (!pageMap.has(key)) {
                 pageMap.set(key, { page1, page2, scores: [], count: 0 });
@@ -89,7 +86,6 @@
             if (score > maxScore) maxScore = score;
         });
 
-        // Calculer les moyennes
         const points = Array.from(pageMap.values()).map(({ page1, page2, scores, count }) => {
             const avgScore = scores.reduce((a, b) => a + b, 0) / count;
             return { page1, page2, score: avgScore, count };
@@ -103,8 +99,7 @@
 
         d3.select(container).selectAll('*').remove();
 
-        const margin = { top: 100, right: 20, bottom: 20, left: 100 };
-        const cellSize = 30;
+        const margin = { top: 10, right: 20, bottom: 20, left: 10 };
         const width = data.docs.length * cellSize + margin.left + margin.right;
         const height = data.docs.length * cellSize + margin.top + margin.bottom;
 
@@ -116,7 +111,6 @@
         const g = svg.append('g')
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
-        // Cellules
         const rows = g.selectAll('.row')
             .data(data.matrix)
             .join('g')
@@ -131,6 +125,9 @@
             .attr('width', cellSize)
             .attr('height', cellSize)
             .attr('fill', d => {
+                if (d.isDiagonal) {
+                    return '#e0e0e0'; // Couleur grise pour la diagonale
+                }
                 const color = d3.hsl(233, 0.951, 0.52);
                 color.opacity = d.normalized / 100;
                 return color;
@@ -162,36 +159,6 @@
                     doc2: data.docs[d.col]
                 };
                 renderMatrix(container, data);
-            });
-
-        // Labels Y
-        g.selectAll('.label-y')
-            .data(data.docs)
-            .join('text')
-            .attr('class', 'label-y')
-            .attr('x', -5)
-            .attr('y', (d, i) => i * cellSize + cellSize / 2)
-            .attr('dy', '0.35em')
-            .attr('text-anchor', 'end')
-            .attr('font-size', '10px')
-            .text(d => {
-                const label = d.title || `Doc ${d.id}`;
-                return label.length > 20 ? label.substring(0, 17) + '...' : label;
-            });
-
-        // Labels X
-        g.selectAll('.label-x')
-            .data(data.docs)
-            .join('text')
-            .attr('class', 'label-x')
-            .attr('x', (d, i) => i * cellSize + cellSize / 2)
-            .attr('y', -5)
-            .attr('text-anchor', 'start')
-            .attr('font-size', '10px')
-            .attr('transform', (d, i) => `rotate(-45, ${i * cellSize + cellSize / 2}, -5)`)
-            .text(d => {
-                const label = d.title || `Doc ${d.id}`;
-                return label.length > 20 ? label.substring(0, 17) + '...' : label;
             });
     }
 
@@ -233,7 +200,6 @@
             .domain([0, maxPage1])
             .range([height, 0]);
 
-        // Axes
         g.append('g')
             .attr('transform', `translate(0,${height})`)
             .call(d3.axisBottom(xScale)
@@ -245,7 +211,6 @@
                 .ticks(Math.min(maxPage1 + 1, 10))
                 .tickFormat(d3.format('d')));
 
-        // Labels
         g.append('text')
             .attr('x', width / 2)
             .attr('y', height + 40)
@@ -261,7 +226,6 @@
             .attr('font-size', '12px')
             .text(`${data.doc1.title || `Doc ${data.doc1.id}`} (page)`);
 
-        // Points
         const scoreRange = data.maxScore - data.minScore;
 
         g.selectAll('.point')
@@ -272,34 +236,52 @@
             .attr('cy', d => yScale(d.page1))
             .attr('r', 5)
             .attr('fill', d3.hsl(233, 0.951, 0.52))
-            .attr('opacity', d => {
-                if (scoreRange === 0) return 0.55;
-                const normalized = (d.score - data.minScore) / scoreRange;
-                return 0.1 + normalized * 0.9;
-            });
+            .attr('opacity', d => opacity(d.score, {min: data.minScore, max: data.maxScore, range: scoreRange}));
     }
 
-    afterUpdate(() => {
-        if (matrixContainer && matrixData) {
-            renderMatrix(matrixContainer, matrixData);
-        }
-        if (scatterContainer && scatterData) {
-            renderScatter(scatterContainer, scatterData);
-        }
-    });
+    function opacity(score, scoreRange, minOpacity = 0.05, maxOpacity = 1) {
+        const {min, _, range} = scoreRange;
+        if (range === 0) return 0.55;
+        return minOpacity + Math.pow((score - min) / range, 3) * maxOpacity;
+    }
+
+    $: if (scatterContainer && scatterData) {
+        renderScatter(scatterContainer, scatterData);
+    }
+
+    $: if (matrixContainer && matrixData) {
+        renderMatrix(matrixContainer, matrixData);
+    }
 </script>
 
 <div class="document-matrix">
-    <div class="matrix-panel">
-        <h3 class="title is-5">Document similarity matrice</h3>
-        <div bind:this={matrixContainer} class="matrix-container"></div>
-    </div>
-
-    {#if selectedCell}
-        <div class="scatter-panel">
-            <h3 class="title is-5">Page similarity</h3>
-            <div bind:this={scatterContainer} class="scatter-container"></div>
+    {#if !documents.length}
+        <div class="notification is-info">
+            Aucun document disponible pour afficher la matrice de similarité.
         </div>
+    {:else}
+        <div class="matrix-panel">
+            <h3 class="title is-5">Similarity Matrix</h3>
+            <div class="matrix-wrapper">
+                <div class="matrix-content">
+                    <div class="row-headers">
+                        {#each documents as doc, i}
+                            <div class="row-header" style="height: {cellSize}px; line-height: {cellSize}px;">
+                                <LegendItem id={doc.id} meta={doc} onlyColor={true} clickable={false} />
+                            </div>
+                        {/each}
+                    </div>
+                    <div bind:this={matrixContainer} class="matrix-container"></div>
+                </div>
+            </div>
+        </div>
+
+        {#if selectedCell}
+            <div class="scatter-panel">
+                <h3 class="title is-5">Page-by-page similarity</h3>
+                <div bind:this={scatterContainer} class="scatter-container"></div>
+            </div>
+        {/if}
     {/if}
 </div>
 
@@ -309,7 +291,11 @@
         gap: 2rem;
         padding: 1rem;
         overflow-x: auto;
-        min-height: 600px;
+        height: 90vh;
+    }
+
+    .scatter-container {
+        height: 100%;
     }
 
     .matrix-panel {
@@ -322,10 +308,36 @@
         min-width: 400px;
     }
 
-    .matrix-container,
+    .matrix-wrapper {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .matrix-content {
+        display: flex;
+        align-items: flex-start;
+    }
+
+    .row-headers {
+        display: flex;
+        flex-direction: column;
+        margin-right: 0.5rem;
+        flex-shrink: 0;
+    }
+
+    .row-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-top: 20px;
+    }
+
+    .matrix-container {
+        flex: 1;
+    }
+
     .scatter-container {
         overflow: auto;
-        height: 100%;
     }
 
     :global(.cell:hover) {
