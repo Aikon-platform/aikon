@@ -2,6 +2,7 @@
     export let sidebarWidth = "25";
     export const layoutHeight = "90vh";
     export let activeTab = 0;
+    export let tabList = [];
 </script>
 
 <div class="layout" style="min-height: {layoutHeight};">
@@ -12,7 +13,19 @@
 
     <main class="main-content" style="width: {100-sidebarWidth}%; min-height: {layoutHeight};">
         <nav class="tabs-bar">
-            <slot name="tabs" {activeTab}/>
+            {#if $$slots.tabs}
+                <slot name="tabs" {activeTab}/>
+            {:else if tabList.length}
+                <div class="tabs">
+                    <ul>
+                        {#each tabList as tab, index}
+                            <li class:is-active={activeTab === index}>
+                                <a on:click={() => activeTab = index} href="{null}">{tab}</a>
+                            </li>
+                        {/each}
+                    </ul>
+                </div>
+            {/if}
         </nav>
 
         <div class="content-area pl-5">

@@ -1,4 +1,5 @@
 <script>
+    import { appLang } from '../constants';
     import Layout from '../Layout.svelte';
     import Sidebar from './Sidebar.svelte';
     import NetworkVisualization from './NetworkVisualization.svelte';
@@ -10,10 +11,15 @@
 
     let activeTab = 0;
 
-    $: visualizationTitle = activeTab === 0 ? "Image regions network" : activeTab === 1 ? "Document network" : "Document Matrix";
-
     const documentSetStore = createDocumentSetStore(docSet.id);
-    const { docSetNumber, error, fetchPairs } = documentSetStore;
+    const { error, fetchPairs } = documentSetStore;
+
+    const tabList = [
+        appLang === "en" ? "Image Network" : "Réseau d'images",
+        appLang === "en" ? "Document Network" : "Réseau de documents",
+        appLang === "en" ? "Document Matrix" : "Matrice de documents"
+    ];
+    $: visualizationTitle = tabList[activeTab];
 
     const selectedDocuments = docSet?.selection?.selected || {
         Witness: {},
@@ -50,7 +56,7 @@
     **/
 </script>
 
-<Layout bind:activeTab>
+<Layout bind:activeTab {tabList}>
     <div slot="sidebar">
         <Sidebar {docSet} {documentSetStore}>
             <div slot="datavizInfo">
@@ -79,22 +85,6 @@
                 <NetworkInfo {activeTab} {documentSetStore}/>
             </div>
         </Sidebar>
-    </div>
-
-    <div slot="tabs">
-        <div class="tabs">
-            <ul>
-                <li class:is-active={activeTab === 0}>
-                    <a on:click={() => activeTab = 0} href="{null}">Regions Network</a>
-                </li>
-                <li class:is-active={activeTab === 1}>
-                    <a on:click={() => activeTab = 1} href="{null}">Documents Network</a>
-                </li>
-                <li class:is-active={activeTab === 2}>
-                    <a on:click={() => activeTab = 2} href="{null}">Document Matrix</a>
-                </li>
-            </ul>
-        </div>
     </div>
 
     <div slot="content">

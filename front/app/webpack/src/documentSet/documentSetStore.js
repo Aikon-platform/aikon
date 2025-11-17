@@ -9,8 +9,6 @@ import {appUrl, regionsType} from "../constants.js";
 export function createDocumentSetStore(documentSetId) {
     const error = writable(null);
 
-    const loading = writable(false);
-
     const selectedCategories = writable([1]);
 
     const selectedNodes = writable([]);
@@ -110,8 +108,10 @@ export function createDocumentSetStore(documentSetId) {
                     if (score == null && pair.is_manual !== true) {
                         return acc;
                     }
-                    if ($selectedCategories.includes(0) && pair.category === 0 && score < threshold) {
-                        return acc;
+                    if ($selectedCategories.includes(0) && pair.category === 0) {
+                        if (pair.is_manual !== true && score < threshold) {
+                            return acc;
+                        }
                     }
                     acc.push(processPair(pair, context));
                     return acc;
