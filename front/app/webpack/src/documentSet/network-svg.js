@@ -1,15 +1,12 @@
 import * as d3 from 'd3';
 
-export function createNetwork(div, nodes, links = null, onSelectionChange, onModeChange = null) {
+export function createSvg(div, nodes, links = null, onSelectionChange, onModeChange = null) {
     const centerX = 400;
     const centerY = 300;
 
     const container = d3.select(div);
 
     const svg = container.append("svg").attr("class", "network-svg");
-    // const canvas = container.append("canvas").attr("class", "network-canvas");
-    // const ctx = canvas.node().getContext("2d");
-
     const g = svg.append("g");
 
     const link = g.append("g")

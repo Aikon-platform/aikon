@@ -21,16 +21,18 @@
             <p class="title is-5">{currentStats.links || 0}</p>
         </div>
     </div>
-    <div class="level-item">
-        <div>
-            <p class="heading">Clusters</p>
-            <p class="title is-5">{currentStats.clusters || 0}</p>
+    {#if currentStats?.clusters}
+        <div class="level-item">
+            <div>
+                <p class="heading">Clusters</p>
+                <p class="title is-5">{currentStats.clusters || 0}</p>
+            </div>
         </div>
-    </div>
+    {/if}
     <div class="level-item">
         <div>
-            <p class="heading">{appLang === 'en' ? 'Connectivity' : 'Connectivité'}</p>
-            <p class="title is-5">{currentStats.connectivity || 0}</p>
+            <p class="heading">{appLang === 'en' ? 'Density' : 'Densité'}</p>
+            <p class="title is-5">{currentStats?.density?.toFixed(3) || 0}</p>
         </div>
     </div>
 </div>

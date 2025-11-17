@@ -1,13 +1,15 @@
 import {derived, writable, get} from 'svelte/store';
 import {extractNb, refToIIIFRoot, imageToPage, generateColor} from "../utils.js";
-// import {appUrl, regionsType} from "../constants.js";
-// TO DELETE
-import {regionsType} from "../constants.js";
-const appUrl = "https://vhs.huma-num.fr";
-// TO DELETE
+import {appUrl, regionsType} from "../constants.js";
+// // TO DELETE
+// import {regionsType} from "../constants.js";
+// const appUrl = "https://vhs.huma-num.fr";
+// // TO DELETE
 
 export function createDocumentSetStore(documentSetId) {
     const error = writable(null);
+
+    const loading = writable(false);
 
     const selectedCategories = writable([1]);
 
@@ -47,7 +49,7 @@ export function createDocumentSetStore(documentSetId) {
             countRange: {min: Infinity, max: -Infinity, range: null},
             links: 0,
             clusters: 0,
-            connectivity: 0
+            density: 0
         };
     }
 
@@ -63,16 +65,16 @@ export function createDocumentSetStore(documentSetId) {
     });
 
     const fetchPairs = derived(selectedCategories, ($selectedCategories, set) => {
-        (async () => {
+        const promise = (async () => {
             try {
                 const cats = $selectedCategories.join(',');
 
-                // TO DELETE
-                // const documentSetId = 413; // histoire naturelle
-                // const documentSetId = 414; // nicolas
-                // const documentSetId = 415; // physiologus
-                const documentSetId = 416; // de materia medica
-                // TO DELETE
+                // // TO DELETE
+                // // const documentSetId = 413; // histoire naturelle
+                // // const documentSetId = 414; // nicolas
+                // // const documentSetId = 415; // physiologus
+                // const documentSetId = 416; // de materia medica
+                // // TO DELETE
 
                 const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${cats}`);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -116,9 +118,13 @@ export function createDocumentSetStore(documentSetId) {
                 }, []);
 
                 pStats.avgScore = pStats.count > 0 ? pStats.totalScore / pStats.count : 0;
-                docStats.links = docStats.scoreCount.size;
-                imgStats.links = imgStats.scoreCount.size;
+                docStats.links = Array.from(docPStats.scoreCount.entries()).length;
+                imgStats.links = pairs.length;
                 docPStats.links = docPStats.scoreCount.size;
+
+                computeDensity(docStats);
+                computeDensity(imgStats);
+                computeDensity(docPStats);
 
                 computeRange(pStats);
                 computeRange(docStats);
@@ -167,13 +173,11 @@ export function createDocumentSetStore(documentSetId) {
                 documentNodes.set(documentMap);
                 imageNodes.set(imageMap);
                 allPairs.set(pairs.filter(Boolean)); // todo find a way to be more efficient than this
-
-                set(true)
             } catch (e) {
                 error.set(`Error processing pairs: ${e.message}`);
-                set(false);
             }
         })();
+        set(promise)
     });
 
     /**
@@ -284,6 +288,11 @@ export function createDocumentSetStore(documentSetId) {
     function computeRange(stats) {
         stats.scoreRange.range = stats.scoreRange.max - stats.scoreRange.min;
         stats.countRange.range = stats.countRange.max - stats.countRange.min;
+    }
+
+    function computeDensity(stats) {
+        if (stats.links <= 0) return 0;
+        stats.density = (2 * stats.links) / (stats.count * (stats.count - 1));
     }
 
     function addToStats(stats, key, score) {

@@ -13,7 +13,7 @@
     $: visualizationTitle = activeTab === 0 ? "Image regions network" : activeTab === 1 ? "Document network" : "Document Matrix";
 
     const documentSetStore = createDocumentSetStore(docSet.id);
-    const { fetchPairs, error } = documentSetStore;
+    const { docSetNumber, error, fetchPairs } = documentSetStore;
 
     const selectedDocuments = docSet?.selection?.selected || {
         Witness: {},
@@ -104,11 +104,9 @@
             </article>
         {:else}
             {#await $fetchPairs}
-                <!-- TODO do not work on second load-->
                 <progress class="progress is-link" max="100">Loading...</progress>
-            {:then pairsCount}
-                {#if pairsCount === 0}
-                    <!-- TODO do not work -->
+            {:then pairCount}
+                {#if pairCount === 0}
                     <article class="message is-warning">
                         <div class="message-body">
                             No document pairs found for this configuration.
