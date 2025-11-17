@@ -1,12 +1,10 @@
 <script>
     import { onDestroy } from 'svelte';
-    import { createNetwork } from './network.js';
+    import { createCanvas } from './network-canvas.js';
+    import { createSvg } from './network-svg.js';
     import Region from "../regions/Region.svelte";
     import AlignedMatrix from './AlignedMatrix.svelte';
     import { appLang } from '../constants.js';
-
-    const width = 954;
-    const height = 600;
 
     export let type = 'image';
     export let documentSetStore;
@@ -20,6 +18,7 @@
     let networkInstance;
     let container;
     let selectionMode = false;
+    const render_threshold = 1000;
 
     $: networkData = type === 'image' ? imageNetwork : documentNetwork;
 
@@ -37,11 +36,12 @@
             updateSelectedNodes(selectedData);
         }
 
+        const createNetwork = $networkData.nodes.length < render_threshold ? createSvg : createCanvas;
+
         networkInstance = createNetwork(
             container,
             $networkData.nodes,
             $networkData.links,
-            $networkData.stats,
             onSelectionChange,
             (mode) => { selectionMode = mode; },
             type

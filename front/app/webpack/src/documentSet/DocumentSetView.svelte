@@ -5,14 +5,26 @@
     import DocumentMatrix from './DocumentMatrix.svelte';
     import {createDocumentSetStore} from './documentSetStore.js';
     import NetworkInfo from "./NetworkInfo.svelte";
+    import {setContext} from "svelte";
     export let docSet;
 
     let activeTab = 0;
 
-    $: visualizationTitle = activeTab === 0 ? "Image regions network" : activeTab === 1 ? "Witness network" : "Document Matrix";
+    $: visualizationTitle = activeTab === 0 ? "Image regions network" : activeTab === 1 ? "Document network" : "Document Matrix";
 
     const documentSetStore = createDocumentSetStore(docSet.id);
-    const { fetchPairs, error } = documentSetStore;
+    const { docSetNumber, error, fetchPairs } = documentSetStore;
+
+    const selectedDocuments = docSet?.selection?.selected || {
+        Witness: {},
+        Series: {},
+        Work: {}
+    };
+
+    setContext("selectedDocuments", selectedDocuments);
+    // setContext("witnessIds", Object.keys(selectedDocuments.Witness));
+    // setContext("workIds", Object.keys(selectedDocuments.Work));
+    // setContext("seriesIds", Object.keys(selectedDocuments.Series));
 
     /**
     import { onMount } from 'svelte';
@@ -93,15 +105,24 @@
         {:else}
             {#await $fetchPairs}
                 <progress class="progress is-link" max="100">Loading...</progress>
-            {:then _}
-                <div>
-                    <h2 class="title is-3 has-text-link">{visualizationTitle}</h2>
-                    {#if activeTab === 2}
-                        <DocumentMatrix {documentSetStore}/>
-                    {:else}
-                        <NetworkVisualization {documentSetStore} type={activeTab === 0 ? 'image' : 'document'}/>
-                    {/if}
-                </div>
+            {:then pairCount}
+                {#if pairCount === 0}
+                    <article class="message is-warning">
+                        <div class="message-body">
+                            No document pairs found for this configuration.
+                            Please adjust your selection criteria in the sidebar to include more documents or categories.
+                        </div>
+                    </article>
+                {:else}
+                    <div>
+                        <h2 class="title is-3 has-text-link">{visualizationTitle}</h2>
+                        {#if activeTab === 2}
+                            <DocumentMatrix {documentSetStore}/>
+                        {:else}
+                            <NetworkVisualization {documentSetStore} type={activeTab === 0 ? 'image' : 'document'}/>
+                        {/if}
+                    </div>
+                {/if}
             {/await}
         {/if}
     </div>

@@ -47,13 +47,12 @@
         import("./modal/ModalController.svelte").then((res) => modalControllerComponent = res.default);
     }
 
-    /** @type {string} */
-    let desc = item.title;
-    if (descPromise) {
+    $: desc = item.title;
+    $: if (descPromise) {
         descPromise.then((res) => desc = res);
     }
 
-    const imgSrc = refToIIIF(
+    $: imgSrc = refToIIIF(
         item.img,
         item.xywh,
         height === "full" ? height : isSquare ? `${height},` : `,${height}`
