@@ -301,6 +301,9 @@ update_env() {
             elif [ -n "${!param}" ]; then
                 # If variable is already set in the current shell, use it as default
                 new_value="${!param}"
+            elif [[ "$desc" =~ \#\s{0,}IGNORE\s{0,}$ ]]; then
+                # don't edit variables whose desc is "# IGNORE". these are derived env variables for Aiiinotate whose value depends on other env vars and that should not be edited.
+                new_value="$default_val"
             elif is_in_default_params "$param"; then
                 # If param is in default params, use default value if it exists
                 new_value="$default_val"
@@ -357,7 +360,9 @@ update_app_env() {
     default_params=("DEBUG" "C_FORCE_ROOT" "MEDIA_DIR" "POSTGRES_DB" "POSTGRES_USER"
         "DB_PORT" "API_PORT" "ALLOWED_HOSTS" "SAS_USERNAME" "SAS_PORT" "SAS_PASSWORD" "SECRET_KEY" "FRONT_PORT"
         "PROD_API_URL" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "REDIS_HOST" "REDIS_PORT" "REDIS_PASSWORD"
-        "EMAIL_HOST" "EMAIL_HOST_USER" "EMAIL_HOST_PASSWORD" "APP_LOGO" "HTTP_PROXY" "HTTPS_PROXY")
+        "EMAIL_HOST" "EMAIL_HOST_USER" "EMAIL_HOST_PASSWORD" "APP_LOGO" "HTTP_PROXY" "HTTPS_PROXY"
+        "MONGODB_HOST" "MONGODB_PORT" "AIIINOTATE_PORT" "AIIINOTATE_HOST" "MIRADOR_PORT" "MIRADOR_HOST"
+        "MIRADOR_SCHEME" "AIIINOTATE_SCHEME")
 
     setup_env "$env_file" "${default_params[@]}"
 

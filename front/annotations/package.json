@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "management of IIIF annotations for Aikon: this is a bundle of mirador, mirador-annotations-editor and aiiinotate",
   "scripts": {
-    "start": "bash scripts/run.sh",
+    "start-dev": "bash scripts/run.sh dev",
+    "start-prod": "bash scripts/run.sh prod",
     "setup": "bash scripts/setup.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -13,9 +14,12 @@
   "author": "",
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "aiiinotate": "^0.2.7",
+    "http-server": "^14.1.1",
     "mirador": "^4.0.0",
-    "mirador-annotation-editor": "^1.1.4",
+    "mirador-annotation-editor": "^1.1.6",
     "parcel": "^2.16.1"
+  },
+  "devDependencies": {
+    "aiiinotate": "^0.2.16"
   }
 }
