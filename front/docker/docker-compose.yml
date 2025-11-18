@@ -28,6 +28,45 @@ services:
       - aikon_network
     restart: unless-stopped
 
+  aiiinotate:
+    build:
+      context: .
+      dockerfile: Dockerfile-aiiinotate
+      args:
+        PORT: ${AIIINOTATE_PORT}
+    # TODO handle .env file
+    env_file:
+      - ./.env
+    ports:
+      - "${AIIINOTATE_PORT}:${AIIINOTATE_PORT}"
+    depends_on:
+      - mongo
+    networks:
+      - aikon_network
+    environment:
+      <<: *proxy-settings
+    restart: always
+
+  mirador:
+    build:
+      context: ../annotations/  # front/annotations
+      dockerfile: ../docker/Dockerfile-mirador  # front/docker/Dockerfile-mirador
+      args:
+        PORT: ${MIRADOR_PORT}
+    # TODO env file
+    env_file:
+      - ./.env
+    depends_on:
+      - mongo
+      - aiiinotate
+    ports:
+      - "${MIRADOR_PORT}:${MIRADOR_PORT}"
+    networks:
+      - aikon_network
+    environment:
+      <<: *proxy-settings
+    restart: always
+
   db:
     image: postgres:14
     command: postgres -p ${DB_PORT:-5432}
@@ -45,6 +84,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  mongo:
+    image: mongo:8
+    restart: always
+    networks:
+      - aikon_network
+    environment:
+      <<: *proxy-settings
 
   redis:
     image: redis:6
@@ -83,24 +130,24 @@ services:
     user: root
     restart: unless-stopped
 
-  sas:
-    build:
-      context: ..
-      dockerfile: sas/Dockerfile
-      args:
-        SAS_PORT: ${SAS_PORT}
-    env_file:
-      - ./.env
-    volumes:
-        - ../sas:/sas # data/ already exists inside sas/ folder
-        - ${DATA_FOLDER}/sas:/sas/data # to override it with custom, define it afterward
-    ports:
-      - "${SAS_PORT:-8888}:${SAS_PORT:-8888}"
-    networks:
-      - aikon_network
-    environment:
-      <<: *proxy-settings
-    restart: unless-stopped
+  # sas:
+  #   build:
+  #     context: ..
+  #     dockerfile: sas/Dockerfile
+  #     args:
+  #       SAS_PORT: ${SAS_PORT}
+  #   env_file:
+  #     - ./.env
+  #   volumes:
+  #       - ../sas:/sas # data/ already exists inside sas/ folder
+  #       - ${DATA_FOLDER}/sas:/sas/data # to override it with custom, define it afterward
+  #   ports:
+  #     - "${SAS_PORT:-8888}:${SAS_PORT:-8888}"
+  #   networks:
+  #     - aikon_network
+  #   environment:
+  #     <<: *proxy-settings
+  #   restart: unless-stopped
 
   nginx:
     image: nginx:latest
