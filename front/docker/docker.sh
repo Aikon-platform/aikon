@@ -14,24 +14,24 @@ bash "$DOCKER_DIR"/init.sh
 container=${2:-""}
 
 build_containers() {
-    docker compose build $container
+    docker compose build "$container"
 }
 
 stop_containers() {
-    docker compose down $container
+    docker compose down "$container"
 }
 
 start_containers() {
-    docker compose up -d $container
+    docker compose up -d "$container"
 }
 
 update_containers() {
     git pull
-    build_containers $container
+    build_containers "$container"
 }
 
 log_containers() {
-    docker compose logs -f $container
+    docker compose logs -f "$container"
 }
 
 case "$1" in

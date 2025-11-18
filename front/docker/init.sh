@@ -1,5 +1,7 @@
 #!/bin/env bash
 
+set -e
+
 DOCKER_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 FRONT_ROOT="$(dirname "$DOCKER_DIR")"
 
@@ -7,7 +9,39 @@ source "$FRONT_ROOT/scripts/utils.sh"
 export INSTALL_MODE="full_install"
 
 FRONT_ENV="$FRONT_ROOT/app/config/.env"
+FRONT_ENV_TEMPLATE="$FRONT_ROOT/app/config/.env.template"
 DOCKER_ENV="$DOCKER_DIR/.env"
+DOCKER_ENV_TEMPLATE="$DOCKER_DIR/.env"
+
+# backup DOCKER_ENV, copy the global .env to docker/ folder.
+if [ -f "$DOCKER_ENV" ]; then cp "$DOCKER_ENV" "$DOCKER_ENV.backup"; fi;
+if [ -f "$FRONT_ENV" ];
+then cp "$FRONT_ENV" "$DOCKER_ENV";
+else cp "$FRONT_ENV_TEMPLATE" "$DOCKER_ENV";
+fi
+
+# $DOCKER_ENV is now a copy of $FRONT_ENV. merge it with defaults defined in $DOCKER_ENV_TEMPLATE
+prev_line=""
+while IFS="" read -r line; do
+    if [[ $line =~ ^[^#]*= ]]; then
+        param=$(echo "$line" | cut -d'=' -f1)
+        val=$(echo "$line" | cut -d'=' -f2)
+        desc=$(get_env_desc "$line" "$prev_line")
+
+        # 1. $param is in $DOCKER_ENV => update with value in $DOCKER_ENV_TEMPLATE
+        if grep -Exq "^${param}=" "$DOCKER_ENV"; then
+            echo "hello $param"
+            sed_repl_inplace "s~^$param=.*$~$param=$val~" "$DOCKER_ENV";
+        # 2. $param is not in $DOCKER_ENV_TEMPLATE => append param, default value and description from $DOCKER_ENV_TEMPLATE to $DOCKER_ENV.
+        else
+            echo -e "\n# $desc\n$param=$val" >> "$DOCKER_ENV";
+        fi
+    fi;
+    prev_line="$line"
+done < "$DOCKER_ENV_TEMPLATE"
+exit 1
+
+# prompt user for the rest
 
 update_app_env "$FRONT_ENV" || error "Failed to setup $FRONT_ENV."
 source "$FRONT_ENV"
@@ -46,18 +80,18 @@ if [ ! -d "$DATA_FOLDER/mediafiles" ]; then
     sudo chown -R "$USERID:$USERID" "$DATA_FOLDER"/mediafiles
 fi
 
-if [ ! -d "$DATA_FOLDER/sas" ]; then
-    color_echo yellow "Creation of $DATA_FOLDER/sas folder (your password is required to set permissions)"
-    get_password && echo || exit
-    sudo mkdir -p "$DATA_FOLDER/sas"
-    sudo chown -R "$USERID":"$USERID" "$DATA_FOLDER/sas"
-fi
+# if [ ! -d "$DATA_FOLDER/sas" ]; then
+#     color_echo yellow "Creation of $DATA_FOLDER/sas folder (your password is required to set permissions)"
+#     get_password && echo || exit
+#     sudo mkdir -p "$DATA_FOLDER/sas"
+#     sudo chown -R "$USERID":"$USERID" "$DATA_FOLDER/sas"
+# fi
 
 if [ ! -d "$DATA_BACKUP" ]; then
     color_echo yellow "Creation of $DATA_BACKUP folder (your password is required to set permissions)"
     get_password && echo || exit
     sudo mkdir -p "$DATA_BACKUP"
-    sudo chown -R "$USERID":"$USERID" "$DATA_FOLDER/sas"
+    # sudo chown -R "$USERID":"$USERID" "$DATA_FOLDER/sas"
 fi
 
 generate_conf() {
@@ -76,7 +110,7 @@ generate_conf() {
         sed_repl_inplace "s~DJANGO_PORT~$DJANGO_PORT~" "$conf_file"
         sed_repl_inplace "s~NGINX_PORT~$NGINX_PORT~" "$conf_file"
         sed_repl_inplace "s~CANTALOUPE_PORT~$CANTALOUPE_PORT~" "$conf_file"
-        sed_repl_inplace "s~SAS_PORT~$SAS_PORT~" "$conf_file"
+        # sed_repl_inplace "s~SAS_PORT~$SAS_PORT~" "$conf_file"
         sed_repl_inplace "s~DB_PORT~$DB_PORT~" "$conf_file"
         sed_repl_inplace "s~REDIS_PORT~$REDIS_PORT~" "$conf_file"
         sed_repl_inplace "s~PROD_URL~$PROD_URL~" "$conf_file"
