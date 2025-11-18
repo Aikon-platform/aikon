@@ -1,13 +1,15 @@
 <script>
     import { getContext, setContext } from "svelte";
 
-    import { userId, appLang, csrfToken, appName } from '../../constants';
-    import { exactSvg, partialSvg, semanticSvg, noSvg, userSvg } from './similarityCategory';
+    import { userId, csrfToken, appName } from '../../constants';
     import { toRegionItem } from "../utils.js";
-    import { getDesc } from "./utils.js";
 
     import Region from "../Region.svelte";
     import CategoryButton from "./CategoryButton.svelte";
+    import {extractInt} from "../../utils.js";
+    import {similarityStore} from "./similarityStore.js";
+
+    const {comparedRegions} = similarityStore;
 
     /** @typedef {import("../types.js").RegionItemType} RegionItemType */
     /** @typedef {import("./types.js").SimilarityPairType} SimilarityPairType */
@@ -37,14 +39,20 @@
     /** @type {number} */
     export let similarityType;
 
-    const isPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagation, false otherwise
+    // const isPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagation, false otherwise
     const isInModal = getContext("isInModal") || false;
 
     const [wit, digit, canvas, xywh] = sImg.split('.')[0].split('_');
-    const regionRef = `${wit}_${digit}`;
+
+    const toTitledRegion = () => {
+        let item = toRegionItem(sImg, wit, xywh, canvas);
+        const sRef = `${wit}_${digit}_anno${sRegions}`;
+        item.title = `${$comparedRegions[sRef].title}<br/>Page ${extractInt(canvas)}<br/><b>Score: ${score}</b>`;
+        return item;
+    }
 
     /** @type {RegionItemType} */
-    const item = toRegionItem(sImg, wit, xywh, canvas)
+    const item = toTitledRegion();
 
     $: selectedCategory = category;
     $: isSelectedByUser = users.includes(Number(userId)) || false;
@@ -60,7 +68,7 @@
         users: users,
         isManual: isManual,
         similarityType: similarityType,
-    })
+    });
 
     ////////////////////////////////////////////
 
@@ -101,7 +109,7 @@
     /**
      * save the new RegionPair.category to database (RegionPair.category)
      * if `similarityType===3` (propagated match), the RegionPair does not exist in the DB.
-     * setting the region will create the RegionPair and and save it to database
+     * setting the region will create the RegionPair and save it to database
      */
     async function categorize(category) {
         updateCategory(category);
@@ -128,8 +136,7 @@
 </script>
 
 <div>
-    <Region {item} size={256} selectable={false} isSquare={false}
-            descPromise={getDesc(regionRef, similarityType, score, canvas, baseUrl, pathUrl, isPropagatedContext)}/>
+    <Region {item} size={256} selectable={false} isSquare={false}/>
     {#if !isInModal }
         <div class="tags has-addons is-dark is-center">
             <CategoryButton category={1} isSelected={selectedCategory === 1} toggle={categorize} padding="pl-3 pr-2"/>
