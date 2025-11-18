@@ -44,17 +44,14 @@
 <div class="modal-similarity">
     <div class="modal-similarity-images {overlay ? 'overlay-wrapper' : 'side-by-side-wrapper'}">
         {#if overlay}
-            <ModalSimilarityOverlay imgData={imgDataOverlay}></ModalSimilarityOverlay>
+            <ModalSimilarityOverlay imgData={imgDataOverlay}/>
         {:else}
-            <ModalSimilaritySideBySide imgData={imgDataSideBySide}></ModalSimilaritySideBySide>
+            <ModalSimilaritySideBySide imgData={imgDataSideBySide}/>
         {/if}
     </div>
     <div>
-        <InputToggle start={false}
-                     buttonDisplay={true}
-                     toggleLabel={appLang==="en" ? "Overlay view" : "Vue superposée"}
-                     on:updateChecked={updateToggleOverlay}
-        ></InputToggle>
+        <InputToggle start={false} buttonDisplay={true} on:updateChecked={updateToggleOverlay}
+                     toggleLabel={appLang==="en" ? "Overlay view" : "Vue superposée"}/>
     </div>
 </div>
 

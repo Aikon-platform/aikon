@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Optional, List
 from urllib.parse import urlparse
 
-import PyPDF2
 import requests
 from PIL import Image
 from django.core.exceptions import ValidationError

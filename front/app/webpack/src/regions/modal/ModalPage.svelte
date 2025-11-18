@@ -7,6 +7,8 @@
 
     //////////////////////////////////////////////
 
+    // TODO fix because somehow this is not working when opened in the context of the similarity view
+
     /** @type {RegionItemType} */
     export let mainImgItem;
 
@@ -69,9 +71,10 @@
         object-fit: contain;
         max-height: 100%;
         max-width: 100%;
+        height: 100%;
     }
     .modal-context-bbox {
         position: absolute;
-        border: 2px solid red;
+        border: 3px solid var(--bulma-link);
     }
 </style>

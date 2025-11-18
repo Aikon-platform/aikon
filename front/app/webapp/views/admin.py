@@ -1,8 +1,11 @@
+from uuid import UUID
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.views.generic import CreateView, TemplateView, View, UpdateView
+from django.views.generic import CreateView, TemplateView, View, UpdateView, DetailView
 from django.shortcuts import get_object_or_404, redirect
+from django.http import Http404
 from django.urls import reverse
 
 from app.similarity.forms import AVAILABLE_SIMILARITY_ALGORITHMS
@@ -25,8 +28,15 @@ from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2
 from app.config.settings import APP_LANG
 
+##########################################################
+#                       ADMIN VIEWS                      #
+# For record creation, modification, listing and details #
+##########################################################
+
 
 class AbstractView(LoginRequiredMixin, View):
+    """Base view for all other record views to inherit from"""
+
     model = None
     template_name = None
 
@@ -56,27 +66,45 @@ class AbstractView(LoginRequiredMixin, View):
         return "Placeholder title"
 
 
-class AbstractRecordView(AbstractView, CreateView):
+class AbstractRecordView(AbstractView, DetailView):
+    # f"{APP_NAME}/<record_name>/<int:id>/"
     template_name = "webapp/view.html"
     pk_url_kwarg = "id"
+    context_object_name = "instance"
+
+    def get_object(self, queryset=None):
+        value = self.kwargs.get(self.pk_url_kwarg)
+        try:
+            pk = int(value)
+        except (TypeError, ValueError):
+            try:
+                pk = UUID(value)
+            except (TypeError, ValueError):
+                raise Http404("Invalid ID format")
+
+        queryset = queryset or self.get_queryset()
+        return get_object_or_404(queryset, pk=pk)
+
+    def get_record(self):
+        return getattr(self, "object", None) or self.get_object()
 
     def get_view_title(self):
+        if record := self.get_record():
+            return f"{record}"
         return f"View {self.model._meta.verbose_name}"
 
     def get_success_url(self):
         return reverse(f"{self.model._meta.name}_list")
 
-    def get_record(self):
-        return get_object_or_404(self.model, pk=self.kwargs.get(self.pk_url_kwarg))
-
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        if "id" in self.kwargs:
-            kwargs["instance"] = self.get_record()
+        kwargs["instance"] = self.get_record()
         return kwargs
 
 
-class AbstractRecordCreate(AbstractRecordView, CreateView):
+class AbstractRecordCreate(AbstractView, CreateView):
+    # only used for Treatment
+    # f"{APP_NAME}/<record_name>/add/"
     template_name = "webapp/form.html"
 
     def get_view_title(self):
@@ -91,6 +119,8 @@ class AbstractRecordCreate(AbstractRecordView, CreateView):
 
 
 class AbstractRecordUpdate(AbstractRecordView, UpdateView):
+    # f"{APP_NAME}/<record_name>/<int:id>/change/"
+    # we use f"{APP_NAME}-admin/webapp/<record_name>/<int:id>/change/
     template_name = "webapp/form.html"
 
     def get_view_title(self):
@@ -102,6 +132,7 @@ class AbstractRecordUpdate(AbstractRecordView, UpdateView):
 
 
 class AbstractRecordList(AbstractView, TemplateView):
+    # f"{APP_NAME}/<record_name>/"
     template_name = "webapp/list.html"
 
     def get_view_title(self):
@@ -308,6 +339,7 @@ class TreatmentCreate(AbstractRecordCreate):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # TODO when relaunching task, prefill with previous values
         # context["record_name"] = self.model._meta.verbose_name.lower()
         # context["model_name"] = str(
         #         getattr(self, "model_name", self.model._meta.model_name)
@@ -435,7 +467,9 @@ class DocumentSetView(AbstractRecordView):
 
     # def get_context_data(self, **kwargs):
     #     context = super().get_context_data(**kwargs)
-    #     context["urls"] = self.get_record().get_treated_url()
+    #     # context["urls"] = self.get_record().get_treated_url()
+    #
+    #     return context
 
 
 # TODO RegionsSetList
