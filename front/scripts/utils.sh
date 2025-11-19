@@ -239,6 +239,27 @@ get_default_val() {
             default_val="localhost"
         fi
 
+    elif [ "$param" = "AIIINOTATE_HOST" ]; then
+        if [[ "$(get_env_value "DOCKER" "$FRONT_ENV")" = "True" ]]; then
+            default_val="aiiinotate"
+        else
+            default_val=127.0.0.1
+        fi
+
+    elif [ "$param" = "MIRADOR_HOST" ]; then
+        if [[ "$(get_env_value "DOCKER" "$FRONT_ENV")" = "True" ]]; then
+            default_val="mirador"
+        else
+            default_val=127.0.0.1
+        fi
+
+    elif [ "$param" = "MONGODB_HOST" ]; then
+        if [[ "$(get_env_value "DOCKER" "$FRONT_ENV")" = "True" ]]; then
+            default_val="mongo"
+        else
+            default_val=127.0.0.1
+        fi
+
     elif [ "$param" = "EMAIL_HOST_USER" ]; then
         app_name=$(get_env_value "APP_NAME" "$FRONT_ENV")
         app_name=${app_name:-"app"}
@@ -249,11 +270,6 @@ get_default_val() {
 
     elif [ "$param" = "CANTALOUPE_IMG" ]; then
         default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img/"
-        # if [ "$OS" = "Linux" ]; then
-        #     default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img/"
-        # else
-        #     default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img"
-        # fi
 
     elif [ "$param" = "CANTALOUPE_PORT" ]; then
         default_val=$(get_env_value "CANTALOUPE_PORT" "$FRONT_ENV")
