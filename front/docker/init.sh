@@ -56,7 +56,6 @@ while IFS="" read -r line; do
         full="# $desc\n$param=$val\n"
 
         if [[ "$desc" =~ ^\s*IGNORE\s*$ ]]; then
-            echo "jellooooo"
             env_ignore="$env_ignore\n$full"
         else
             env_default="$env_default\n$full"
