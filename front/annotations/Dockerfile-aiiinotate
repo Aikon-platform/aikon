@@ -5,6 +5,10 @@ FROM node:23.11
 ARG PORT
 ENV PORT=${PORT}
 
+# path to the .env file
+ARG ENV_PATH
+ENV ENV_PATH="$ENV_PATH"
+
 # set up environment
 ENV DIR=/aiiinotate
 ENV TERM=linux
@@ -13,7 +17,7 @@ SHELL ["/bin/bash", "-c"]
 # root of the app in the docker container
 WORKDIR $DIR
 # copy the docker .env in the docker container
-COPY ../.env $DIR/.env
+COPY "$ENV_PATH" $DIR/.env
 # for debug: install `iproute2` which provides CLI `ss` to monitor active ports
 RUN apt update && apt install iproute2 -y
 # create a npm package in $DIR to run aiiinotate from

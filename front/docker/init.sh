@@ -80,6 +80,9 @@ DOCKER_ENV="$DOCKER_DIR/.env"
 update_app_env "$FRONT_ENV" || error "Failed to setup $FRONT_ENV."
 source "$FRONT_ENV"
 
+# TODO: "# IGNORE" doesn't work,
+# TODO: see if *_HOST variables are renamed after their component name
+
 # TODO: make internal port constant and have only external PORTS (i.e only ports defined in docker/.env mutable)
 # TODO: make FRONT_ENV ports hard coded when docker is enabled
 setup_env "$DOCKER_ENV" || error "Failed to setup $DOCKER_ENV."

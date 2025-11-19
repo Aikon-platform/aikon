@@ -5,6 +5,10 @@ FROM node:23.11
 ARG PORT
 ENV PORT=PORT
 
+# path to the .env file
+ARG ENV_PATH
+ENV ENV_PATH="$ENV_PATH"
+
 # set up environment
 ENV DIR=/mirador
 ENV TERM=linux
@@ -14,8 +18,10 @@ SHELL ["/bin/bash", "-c"]
 WORKDIR $DIR
 # for debug: install `iproute2` which provides CLI `ss` to monitor active ports
 RUN apt update && apt install iproute2 -y
+# copy the .env
+COPY "$ENV_PATH" $DIR/.env
 # copy the package.json
-COPY ../package.json $DIR/package.json
+COPY ./package.json $DIR/package.json
 # install dependencies
 RUN npm i;
 # copy the entire root directory
