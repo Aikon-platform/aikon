@@ -32,13 +32,12 @@ services:
 
   aiiinotate:
     build:
-      context: .
-      dockerfile: Dockerfile-aiiinotate
+      context: ..
+      dockerfile: annotations/Dockerfile-aiiinotate
       args:
         PORT: ${AIIINOTATE_PORT}
-    # TODO handle .env file
     env_file:
-      - ./.env
+      - ../app/config/.env
     ports:
       - "${AIIINOTATE_PORT}:${AIIINOTATE_PORT}"
     depends_on:
@@ -51,13 +50,12 @@ services:
 
   mirador:
     build:
-      context: ../annotations/  # front/annotations
-      dockerfile: ../docker/Dockerfile-mirador  # front/docker/Dockerfile-mirador
+      context: ..
+      dockerfile: annotations/Dockerfile-mirador  # front/docker/Dockerfile-mirador
       args:
         PORT: ${MIRADOR_PORT}
-    # TODO env file
     env_file:
-      - ./.env
+      - ../app/config/.env
     depends_on:
       - aiiinotate
     ports:
