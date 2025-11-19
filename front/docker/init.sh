@@ -11,7 +11,7 @@ export INSTALL_MODE="full_install"
 FRONT_ENV="$FRONT_ROOT/app/config/.env"
 FRONT_ENV_TEMPLATE="$FRONT_ROOT/app/config/.env.template"
 DOCKER_ENV="$DOCKER_DIR/.env"
-DOCKER_ENV_TEMPLATE="$DOCKER_DIR/.env"
+DOCKER_ENV_TEMPLATE="$DOCKER_DIR/.env.template"
 
 # backup DOCKER_ENV, copy the global .env to docker/ folder.
 if [ -f "$DOCKER_ENV" ]; then cp "$DOCKER_ENV" "$DOCKER_ENV.backup"; fi;
@@ -20,26 +20,35 @@ then cp "$FRONT_ENV" "$DOCKER_ENV";
 else cp "$FRONT_ENV_TEMPLATE" "$DOCKER_ENV";
 fi
 
-# $DOCKER_ENV is now a copy of $FRONT_ENV. merge it with defaults defined in $DOCKER_ENV_TEMPLATE
+# $DOCKER_ENV is now a copy of $FRONT_ENV.
+# merge it with defaults defined in $DOCKER_ENV_TEMPLATE
 prev_line=""
+add_env=""
 while IFS="" read -r line; do
     if [[ $line =~ ^[^#]*= ]]; then
         param=$(echo "$line" | cut -d'=' -f1)
         val=$(echo "$line" | cut -d'=' -f2)
         desc=$(get_env_desc "$line" "$prev_line")
 
+        # TODO: the env merging kinda works but the .env generated is way too big => some stuff gets duplicated.
+
         # 1. $param is in $DOCKER_ENV => update with value in $DOCKER_ENV_TEMPLATE
         if grep -Exq "^${param}=" "$DOCKER_ENV"; then
-            echo "hello $param"
+            echo "+++ $param"
             sed_repl_inplace "s~^$param=.*$~$param=$val~" "$DOCKER_ENV";
         # 2. $param is not in $DOCKER_ENV_TEMPLATE => append param, default value and description from $DOCKER_ENV_TEMPLATE to $DOCKER_ENV.
         else
-            echo -e "\n# $desc\n$param=$val" >> "$DOCKER_ENV";
+            echo "--- $param"
+            # NOTE: the problem is here. some stuff that shouldn't be duplicated is duplicated.
+            add_env="$add_env\n# $desc\n$param=$val\n";
         fi
     fi;
     prev_line="$line"
 done < "$DOCKER_ENV_TEMPLATE"
+echo -e "$add_env" >> "$DOCKER_ENV"
 exit 1
+
+# TODO: move # IGNORE variables at the end of the script.
 
 # prompt user for the rest
 
