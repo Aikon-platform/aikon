@@ -30,8 +30,6 @@ while IFS="" read -r line; do
         val=$(echo "$line" | cut -d'=' -f2)
         desc=$(get_env_desc "$line" "$prev_line")
 
-        # TODO: the env merging kinda works but the .env generated is way too big => some stuff gets duplicated.
-
         # 1. $param is in $DOCKER_ENV => update with value in $DOCKER_ENV_TEMPLATE
         if grep -Eq "^${param}=" "$DOCKER_ENV"; then
             echo "+++ $param"
@@ -39,14 +37,34 @@ while IFS="" read -r line; do
         # 2. $param is not in $DOCKER_ENV_TEMPLATE => append param, default value and description from $DOCKER_ENV_TEMPLATE to $DOCKER_ENV.
         else
             echo "--- $param"
-            # NOTE: the problem is here. some stuff that shouldn't be duplicated is duplicated.
             add_env="$add_env\n# $desc\n$param=$val\n";
         fi
     fi;
     prev_line="$line"
 done < "$DOCKER_ENV_TEMPLATE"
-echo -e "$add_env"
 echo -e "$add_env" >> "$DOCKER_ENV"
+
+# place derived variables in $DOCKER_ENV at the end of the file
+prev_line=""
+env_default=""  # user-defined variables
+env_ignore=""  # variables derived from others that should not be edited
+while IFS="" read -r line; do
+    if [[ $line =~ ^[^#]*= ]]; then
+        param=$(echo "$line" | cut -d'=' -f1)
+        val=$(echo "$line" | cut -d'=' -f2)
+        desc=$(get_env_desc "$line" "$prev_line")
+        full="# $desc\n$param=$val\n"
+
+        if [[ "$desc" =~ ^\s*IGNORE\s*$ ]]; then
+            echo "jellooooo"
+            env_ignore="$env_ignore\n$full"
+        else
+            env_default="$env_default\n$full"
+        fi
+    fi
+    prev_line="$line"
+done < "$DOCKER_ENV"
+echo -e "$env_default$env_ignore" > "$DOCKER_ENV"
 exit 1
 
 # TODO: move # IGNORE variables at the end of the script.
