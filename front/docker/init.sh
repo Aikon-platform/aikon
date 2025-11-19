@@ -33,7 +33,7 @@ while IFS="" read -r line; do
         # TODO: the env merging kinda works but the .env generated is way too big => some stuff gets duplicated.
 
         # 1. $param is in $DOCKER_ENV => update with value in $DOCKER_ENV_TEMPLATE
-        if grep -Exq "^${param}=" "$DOCKER_ENV"; then
+        if grep -Eq "^${param}=" "$DOCKER_ENV"; then
             echo "+++ $param"
             sed_repl_inplace "s~^$param=.*$~$param=$val~" "$DOCKER_ENV";
         # 2. $param is not in $DOCKER_ENV_TEMPLATE => append param, default value and description from $DOCKER_ENV_TEMPLATE to $DOCKER_ENV.
@@ -45,6 +45,7 @@ while IFS="" read -r line; do
     fi;
     prev_line="$line"
 done < "$DOCKER_ENV_TEMPLATE"
+echo -e "$add_env"
 echo -e "$add_env" >> "$DOCKER_ENV"
 exit 1
 
