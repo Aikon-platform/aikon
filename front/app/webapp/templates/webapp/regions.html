@@ -11,6 +11,7 @@
 {% endblock %}
 
 {% block content %}
+    <div class="body-content content p-5">
     <h1 class="is-title is-size-2 py-3" style="z-index: 5">
         {{ view_title }}
         <a href="{{ witness.edit_url }}" class="edit-btn button is-small is-rounded is-link px-3 ml-3 mt-3" title='Edit'>
@@ -37,6 +38,7 @@
         </p>
     </div>
     {% endif %}
+    </div>
 {% endblock %}
 
 {% block extra_js %}
@@ -48,10 +50,5 @@
         const nbOfPages = {% if img_nb %}{{img_nb}}{% else %}0{% endif %};
         const trailingZeros = {% if img_zeros %}{{img_zeros}}{% else %}0{% endif %};
     </script>
-    <!--
-    <script src="{% static 'svelte/regionList.js' %}"></script>
-    -->
-    <script type="module"
-            src="{% static 'svelte/regionList/region-list.js' %}"
-    ></script>
+    <script type="module" src="{% static 'svelte/regionList/region-list.js' %}"></script>
 {% endblock %}

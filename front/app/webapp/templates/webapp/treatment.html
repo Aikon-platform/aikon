@@ -6,30 +6,32 @@
 {% block extrahead %}{% endblock %}
 
 {% block content %}
-    <div class="container px-5">
-        <h1 class="is-title is-size-2 mt-3 is-inline-block">
-            {{ view_title }}
-        </h1>
-        {% if treatment_status == 'SUCCESS' %}
-            <span class="tag px-2 py-1 ml-5 is-rounded is-success">{{ task_type }} #{{ treatment_id }}</span>
-        {% elif treatment_status == 'ERROR'  %}
-            <span class="tag px-2 py-1 ml-5 is-rounded is-danger">{{ task_type }} #{{ treatment_id }}</span>
-        {% else %}
-            <span class="tag px-2 py-1 ml-5 is-rounded is-info">{{ task_type }} #{{ treatment_id }}</span>
-        {% endif %}
+    <div class="body-content content p-5">
+        <div class="container px-5">
+            <h1 class="is-title is-size-2 mt-3 is-inline-block">
+                {{ view_title }}
+            </h1>
+            {% if treatment_status == 'SUCCESS' %}
+                <span class="tag px-2 py-1 ml-5 is-rounded is-success">{{ task_type }} #{{ treatment_id }}</span>
+            {% elif treatment_status == 'ERROR' %}
+                <span class="tag px-2 py-1 ml-5 is-rounded is-danger">{{ task_type }} #{{ treatment_id }}</span>
+            {% else %}
+                <span class="tag px-2 py-1 ml-5 is-rounded is-info">{{ task_type }} #{{ treatment_id }}</span>
+            {% endif %}
 
-        <div class="grid mt-2 is-col-min-10">
-            {% for key, value in documents.items %}
-                <div class="card cell is-flex is-flex-direction-column p-4 m-1">
-                    <div class="mb-3">
-                        <span class="tag is-rounded is-accent">{{ value.class }} #{{ value.id }}</span>
-                        <span class="title is-6">{{ value.title }}</span>
+            <div class="grid mt-2 is-col-min-10">
+                {% for key, value in documents.items %}
+                    <div class="card cell is-flex is-flex-direction-column p-4 m-1">
+                        <div class="mb-3">
+                            <span class="tag is-rounded is-accent">{{ value.class }} #{{ value.id }}</span>
+                            <span class="title is-6">{{ value.title }}</span>
+                        </div>
+                        <div class="has-text-centered mt-auto is-align-content-end">
+                            <a href="{{ value.view_url }}" class="button is-rounded is-link is-outlined">View result</a>
+                        </div>
                     </div>
-                    <div class="has-text-centered mt-auto is-align-content-end">
-                        <a href="{{ value.view_url }}" class="button is-rounded is-link is-outlined">View result</a>
-                    </div>
-                </div>
-            {% endfor %}
+                {% endfor %}
+            </div>
         </div>
     </div>
 {% endblock %}

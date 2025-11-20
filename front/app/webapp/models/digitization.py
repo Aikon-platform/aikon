@@ -41,7 +41,7 @@ from app.webapp.utils.functions import (
 )
 from app.webapp.utils.paths import (
     IMG_PATH,
-    MEDIA_DIR,
+    MEDIA_PATH,
     IMG_DIR,
     REGIONS_PATH,
     PDF_DIR,
@@ -183,7 +183,7 @@ class Digitization(AbstractSearchableModel):
         return IMG_DIR if self.digit_type == IMG_ABBR else PDF_DIR
 
     def get_absolute_path(self):
-        return f"{MEDIA_DIR}/{self.get_relative_path()}"
+        return f"{MEDIA_PATH}/{self.get_relative_path()}"
 
     def get_file_path(self, is_abs=True, i=None, ext=None):
         path = self.get_absolute_path() if is_abs else self.get_relative_path()

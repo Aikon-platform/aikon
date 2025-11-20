@@ -12,7 +12,7 @@ from app.webapp.models.digitization import Digitization
 from app.config.settings import API_URL
 from app.webapp.models.treatment import Treatment
 from app.webapp.utils.iiif import parse_ref
-from app.webapp.utils.paths import MEDIA_DIR
+from app.webapp.utils.paths import MEDIA_PATH
 
 
 def admin_app(request):
@@ -86,7 +86,8 @@ def check_ref(obj_ref, obj="Digitization"):
         }
 
     digit_id = ref["digit"][1]
-    digit = Digitization.objects.filter(pk=digit_id).first()
+    # digit = Digitization.objects.filter(pk=digit_id).first()
+    digit = Digitization.objects.get(pk=digit_id)
     if not digit:
         return False, {"response": f"No digitization matching the id #{digit_id}"}
 
@@ -99,7 +100,8 @@ def check_ref(obj_ref, obj="Digitization"):
         return True, digit
 
     regions_id = ref["regions"][1]
-    regions = Regions.objects.filter(pk=regions_id).first()
+    # regions = Regions.objects.filter(pk=regions_id).first()
+    regions = Regions.objects.get(pk=regions_id)
     if not regions:
         return False, {"response": f"No regions matching the id #{regions_id}"}
 
@@ -153,9 +155,9 @@ def rgpd(request):
 
 
 def legacy_manifest(request, old_id):
-    if not os.path.isfile(f"{MEDIA_DIR}/manifest/{old_id}.json"):
+    if not os.path.isfile(f"{MEDIA_PATH}/manifest/{old_id}.json"):
         return JsonResponse({})
-    with open(f"{MEDIA_DIR}/manifest/{old_id}.json", "r") as manifest:
+    with open(f"{MEDIA_PATH}/manifest/{old_id}.json", "r") as manifest:
         return JsonResponse(json.loads(manifest.read()))
 
 

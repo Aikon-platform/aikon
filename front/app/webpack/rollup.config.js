@@ -70,7 +70,8 @@ export default [
             sourcemap: true,
             format: 'iife',
             name: 'recordList',
-            file: '../webapp/static/svelte/recordList.js'
+            file: '../webapp/static/svelte/recordList.js',
+            inlineDynamicImports: true
         },
         plugins: [
             svelte({
@@ -79,6 +80,36 @@ export default [
                 }
             }),
             css({ output: 'recordList.css' }),
+            resolve({
+                browser: true,
+                dedupe: ['svelte'],
+                exportConditions: ['svelte'],
+                extensions: ['.svelte']
+            }),
+            commonjs(),
+            !production && livereload('public'),
+            production && terser()
+        ],
+        watch: {
+            clearScreen: false
+        }
+    },
+    {
+        input: 'src/documentSet/document-set.js',
+        output: {
+            sourcemap: true,
+            format: 'iife',
+            name: 'documentSet',
+            file: '../webapp/static/svelte/documentSet.js',
+            inlineDynamicImports: true
+        },
+        plugins: [
+            svelte({
+                compilerOptions: {
+                    dev: !production
+                }
+            }),
+            css({ output: 'documentSet.css' }),
             resolve({
                 browser: true,
                 dedupe: ['svelte'],
