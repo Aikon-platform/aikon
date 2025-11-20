@@ -379,9 +379,7 @@ def get_regions(img_1, img_2, wid, rid):
 
 
 def get_regions_title_by_ref(request, wid, rid=None, regions_ref: str | None = None):
-    # TODO this is VERY inefficient:
-    #   + desc generation should not create one DB query per crop, but once per regions_ref!
-    #   + regions_ref contains the id of the regions which should be extracted
+    # NOT USED anymore
     try:
         regions = Regions.objects.filter(json__ref__startswith=regions_ref).first()
         if regions is None:

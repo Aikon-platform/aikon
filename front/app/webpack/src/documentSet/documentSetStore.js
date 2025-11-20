@@ -68,10 +68,10 @@ export function createDocumentSetStore(documentSetId) {
                 const cats = $selectedCategories.join(',');
 
                 // // TO DELETE
-                // // const documentSetId = 413; // histoire naturelle
+                // const documentSetId = 413; // histoire naturelle
                 // // const documentSetId = 414; // nicolas
                 // // const documentSetId = 415; // physiologus
-                // const documentSetId = 416; // de materia medica
+                // // const documentSetId = 416; // de materia medica
                 // // TO DELETE
 
                 const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${cats}`);
@@ -351,7 +351,7 @@ export function createDocumentSetStore(documentSetId) {
         }
     }
 
-    function calculateLinkProps(score, scoreRange, minDistance = 10, maxDistance = 200, minWidth = 1, maxWidth = 25) {
+    function calculateLinkProps(score, scoreRange, minDistance = 10, maxDistance = 200, minWidth = 2, maxWidth = 25) {
         const {min, _, range} = scoreRange;
         const strength = range === 0 ? 0.5 : (score - min) / range;
         const distance = maxDistance - strength * (maxDistance - minDistance);

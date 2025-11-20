@@ -5,8 +5,6 @@
     import { refToIIIF } from "../utils.js";
     import { appLang } from '../constants';
 
-    export let selectable = true;
-    export let copyable = true;
     export let borderColor = null;
 
     import { selectionStore } from '../selection/selectionStore.js';
@@ -46,6 +44,9 @@
     if ( !isInModal ) {
         import("./modal/ModalController.svelte").then((res) => modalControllerComponent = res.default);
     }
+
+    export let selectable = !isInModal;
+    export let copyable = true;
 
     $: desc = item.title;
     $: if (descPromise) {

@@ -17,7 +17,11 @@ export function extractNb(str) {
     return str.match(/\d+/g).toString();
 }
 
-export function shorten(str, maxLen=100) {
+export function extractInt(str) {
+    return parseInt(extractNb(str), 10);
+}
+
+export function shorten(str, maxLen= 100) {
     // put '...' in between the 75% and last 25% characters if the string it too long
     const nthChar = Math.floor(maxLen * 0.75);
     return str.length > maxLen ? str.slice(0, nthChar) + '...' + str.slice(- maxLen + nthChar) : str;
