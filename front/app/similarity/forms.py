@@ -212,11 +212,11 @@ class SimilarityAlgorithm(Enum):
         description="Similarity using cosine distance between feature vectors",
         form_class=CosineSimilarityForm,
     )
-    segswap = FormConfig(
-        display_name="SegSwap",
-        description="Similarity using correspondence matching between part of images",
-        form_class=SegSwapForm,
-    )
+    # segswap = FormConfig(
+    #    display_name="SegSwap",
+    #    description="Similarity using correspondence matching between part of images",
+    #    form_class=SegSwapForm,
+    # )
 
     @property
     def config(self):

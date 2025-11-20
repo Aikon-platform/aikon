@@ -164,7 +164,7 @@ def get_compared_regions(request, wid, rid=None):
                 all_region_ids.add(id2 if id1 == q_r.id else id1)
 
         # Remove the original region IDs from the set
-        all_region_ids -= set(q_r.id for q_r in q_regions)
+        # all_region_ids -= set(q_r.id for q_r in q_regions)
 
         # Fetch all similar regions in one query
         sim_regions = Regions.objects.filter(id__in=all_region_ids)
