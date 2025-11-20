@@ -27,6 +27,9 @@ if [ ! -f "$FRONT_ROOT/app/logs/app_log.log" ]; then
     sudo chown -R "$USERID:$USERID" "$FRONT_ROOT"/app/logs
 fi
 
+DATA_FOLDER="/media/aikon"
+echo $DATA_FOLDER
+
 # if $DATA_FOLDER does not exist
 if [ ! -d "$DATA_FOLDER" ]; then
     color_echo yellow "Creation of $DATA_FOLDER folder (your password is required to set permissions)"
@@ -51,7 +54,7 @@ if [ ! -d "$DATA_FOLDER/sas" ]; then
     sudo chown -R "$USERID":"$USERID" "$DATA_FOLDER/sas"
 fi
 
-if [ ! -d "$DATA_BACKUP" ]; then
+if [ ! -z "$DATA_BACKUP" ] && [ ! -d "$DATA_BACKUP" ]; then
     color_echo yellow "Creation of $DATA_BACKUP folder (your password is required to set permissions)"
     get_password && echo || exit
     sudo mkdir -p "$DATA_BACKUP"
