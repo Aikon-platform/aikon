@@ -159,8 +159,7 @@
             </a>
 
             <!--TODO make image copyable-->
-            <img src="{refToIIIF(qImg, qImg.split("_").pop(), '250,')}" alt="Query region" class="mb-3 card query-image">
-
+            <img src="{refToIIIF(qImg, qImg.split('_').pop(), '250,')}" alt="Query region" class="mb-3 card query-image">
 
             <div class="new-similarity control pt-2 is-center">
                 <div class="tags has-addons" style="flex-wrap: nowrap">

@@ -9,13 +9,16 @@
 {% endblock %}
 
 {% block content %}
-    <div class="columns pt-4">
-        <div class="column is-half is-offset-one-quarter">
-            <h4 class="title notification is-danger">{{ error_title }}</h4>
-            <p>
-                <b>{{ error_code }} Error</b>:
-                {{ error_message }}
-            </p>
+    <div class="body-content content p-5">
+        <div class="columns pt-4">
+            <div class="column is-half is-offset-one-quarter">
+                <h4 class="title notification is-danger">{{ error_title }}</h4>
+                <p>
+                    <b>{{ error_code }} Error</b>:
+                    {{ error_message }}
+                </p>
+            </div>
         </div>
     </div>
+
 {% endblock %}

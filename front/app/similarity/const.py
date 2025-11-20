@@ -1,5 +1,5 @@
-from app.webapp.utils.paths import MEDIA_DIR
+from app.webapp.utils.paths import MEDIA_PATH
 
 MODULE_NAME = "similarity"
 SCORE_DIR = "similarity"
-SCORES_PATH = f"{MEDIA_DIR}/{SCORE_DIR}"
+SCORES_PATH = MEDIA_PATH / SCORE_DIR

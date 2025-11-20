@@ -9,7 +9,6 @@ ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
 
 # Directory names
-# TODO rename to MEDIA_PATH
 MEDIA_DIR = ENV(
     "MEDIA_DIR"
 )  # NOTE: this is an absolute path, containing already BASE_DIR
@@ -21,8 +20,9 @@ REGIONS_DIR = "regions"
 TMP_DIR = "tmp"
 
 # Media file paths
-IMG_PATH = Path(f"{MEDIA_DIR}/{IMG_DIR}")
-REGIONS_PATH = Path(f"{MEDIA_DIR}/{REGIONS_DIR}")
-LOG_PATH = Path(f"{BASE_DIR}/{LOG_DIR}/app_log.log")
-DOWNLOAD_LOG_PATH = Path(f"{BASE_DIR}/{LOG_DIR}/download.log")
-TMP_PATH = Path(f"{MEDIA_DIR}/{TMP_DIR}")
+MEDIA_PATH = Path(MEDIA_DIR)
+IMG_PATH = MEDIA_PATH / IMG_DIR
+REGIONS_PATH = MEDIA_PATH / REGIONS_DIR
+LOG_PATH = MEDIA_PATH / LOG_DIR / "app_log.log"
+DOWNLOAD_LOG_PATH = MEDIA_PATH / LOG_DIR / "download.log"
+TMP_PATH = MEDIA_PATH / TMP_DIR

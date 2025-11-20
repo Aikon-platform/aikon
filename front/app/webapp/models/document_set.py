@@ -5,7 +5,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import Q
 
-from app.webapp.models.content import Content
+from app.webapp.models.regions import Regions
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
 from app.webapp.models.series import Series
@@ -146,6 +146,16 @@ class DocumentSet(AbstractSearchableModel):
             witness_ids.update(additional_ids)
 
         return list(witness_ids)
+
+    def get_regions(self, only_ids):
+        witness_ids = self.all_witness_ids()
+        if only_ids:
+            return list(
+                Regions.objects.filter(
+                    digitization__witness_id__in=witness_ids
+                ).values_list("id", flat=True)
+            )
+        return list(Regions.objects.filter(digitization__witness_id__in=witness_ids))
 
     def get_document_metadata(self):
         def obj_meta(obj):
