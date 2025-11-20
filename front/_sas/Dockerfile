@@ -1,4 +1,4 @@
-FROM openjdk:11-jdk
+FROM eclipse-temurin:11-jdk
 #FROM maven:3.8-openjdk-11
 
 WORKDIR /sas
