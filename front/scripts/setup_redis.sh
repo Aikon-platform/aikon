@@ -50,6 +50,8 @@ redis_set_no_password() {
     redis_restart
 }
 
+# TODO remove REDIS_PASSWORD entirely
+
 # only runs if a redis password is defined
 if [ -n "$redis_psw" ]; then
     if [ "$INSTALL_MODE" = "quick_install" ]; then
@@ -59,7 +61,7 @@ if [ -n "$redis_psw" ]; then
         answer=$(printf "%s\n" "${options[@]}" | fzy)
         case $answer in
             "yes")
-                redis_set_password
+                redis_set_no_password
                 ;;
             "no")
                 redis_set_no_password

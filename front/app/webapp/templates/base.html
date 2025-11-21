@@ -79,46 +79,44 @@
 <body>
 {% include 'includes/navbar.html' %}
 
-<div class="wrapper container is-fluid">
-    <div class="content p-5" style="min-height: 80vh; max-width: 90vw">
-        {% if messages %}
-            <div class="container">
-                {% for message in messages %}
-                    {% if message.tags %}
-                        {% if message.tags == 'success' %}
-                            <div class="notification is-success is-light">
-                                {{ message|urlize }}
-                            </div>
-                        {% elif message.tags == 'info' %}
-                            <div class="notification is-info is-light">
-                                {{ message|urlize }}
-                            </div>
-                        {% elif message.tags == 'warning' %}
-                            <div class="notification is-warning is-light">
-                                {{ message|urlize }}
-                            </div>
-                        {% elif message.tags == 'error' %}
-                            <div class="notification is-danger is-light">
-                                {{ message|urlize }}
-                            </div>
-                        {% else %}
-                            <div class="notification is-light">
-                                {{ message|urlize }}
-                            </div>
-                        {% endif %}
+<div class="wrapper is-fluid" style="min-height: 80vh;">
+    {% if messages %}
+        <div class="body-content container">
+            {% for message in messages %}
+                {% if message.tags %}
+                    {% if message.tags == 'success' %}
+                        <div class="notification is-success is-light">
+                            {{ message|urlize }}
+                        </div>
+                    {% elif message.tags == 'info' %}
+                        <div class="notification is-info is-light">
+                            {{ message|urlize }}
+                        </div>
+                    {% elif message.tags == 'warning' %}
+                        <div class="notification is-warning is-light">
+                            {{ message|urlize }}
+                        </div>
+                    {% elif message.tags == 'error' %}
+                        <div class="notification is-danger is-light">
+                            {{ message|urlize }}
+                        </div>
                     {% else %}
                         <div class="notification is-light">
                             {{ message|urlize }}
                         </div>
                     {% endif %}
-                {% endfor %}
-            </div>
-        {% endif %}
+                {% else %}
+                    <div class="notification is-light">
+                        {{ message|urlize }}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
 
-        {% define "html" as context %}
-        {% block content %}{% endblock %}
+    {% define "html" as context %}
+    {% block content %}{% endblock %}
 
-    </div>
 </div>
 
 {% include 'includes/footer.html' %}
