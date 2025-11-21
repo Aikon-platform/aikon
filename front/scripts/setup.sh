@@ -25,7 +25,6 @@ run_script setup_cantaloupe.sh "Cantaloupe configuration"
 run_script setup_db.sh "Database generation"
 run_script setup_webpack.sh "Webpack initialization"
 run_script setup_redis.sh "Redis configuration"
-run_script setup_mongodb.sh "MongoDB installation"
 run_script setup_annotations.sh "Annotations module initialization"
 
 echo_title "🎉 DJANGO APP IS SET UP! 🎉"
