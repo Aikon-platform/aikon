@@ -26,7 +26,7 @@ run_script setup_db.sh "Database generation"
 run_script setup_webpack.sh "Webpack initialization"
 run_script setup_redis.sh "Redis configuration"
 run_script setup_mongodb.sh "MongoDB installation"
-# run_script setup_aiiinotate.sh "Aiiinotate initialization"
+run_script setup_annotations.sh "Annotations module initialization"
 
 echo_title "🎉 DJANGO APP IS SET UP! 🎉"
 color_echo blue "\nYou can now run the server with: "

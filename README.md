@@ -22,7 +22,7 @@ This repository contains the code for the frontend platform, as well as a submod
 
 ## Install 🛠️
 
-Please refer to [front/README](https://github.com/Aikon-platform/discover-api/blob/main/README.md) and [api/README](front/README.md) for detailed instructions (especially step-by-step install).
+Please refer to [front/README](front/README.md) and [api/README](https://github.com/Aikon-platform/aikon-api/blob/main/README.md) for detailed instructions (especially step-by-step install).
 
 1. To install the API and Front application inside the `front` and `api` folders, run:
     ```bash

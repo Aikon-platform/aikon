@@ -499,6 +499,25 @@ cleanup_pids() {
     return 0
 }
 
+check_file_exists() {
+    file="$1"
+    if [ ! -f "$file" ];
+    then echo "file does not exist. exiting... (at '$file')"; exit 1;
+    fi;
+}
+
+start_mongod() {
+    if [ "$OS" = "Linux" ]; then sudo systemctl start mongod;
+    else brew services start mongod
+    fi;
+}
+
+start_redis() {
+    if [ "$OS" = "Linux" ]; then sudo systemctl start redis-server
+    else brew services start redis
+    fi
+}
+
 ask() {
     options=("yes" "no")
     color_echo blue "$1"
