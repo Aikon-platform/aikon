@@ -18,6 +18,8 @@
 - **Geonames**:
     - Create an account on [Geonames](https://www.geonames.org/login) and activate it
 
+**NOTE**: AIKON requires  **MongoDB** and **Redis** and will install them if needed. User accounts and passwords are **NOT SUPPORTED** on Redis and MongoDB and should not be used with AIKON.
+
 ```bash
 git clone git@github.com:Aikon-platform/aikon.git
 cd aikon
