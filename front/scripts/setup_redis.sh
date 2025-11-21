@@ -6,4 +6,4 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source "$SCRIPT_DIR"/utils.sh
 
 echo_title "REDIS DATABASE INITIALIZATION"
-start_redis
+services_start

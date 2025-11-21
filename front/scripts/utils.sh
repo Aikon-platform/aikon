@@ -506,16 +506,31 @@ check_file_exists() {
     fi;
 }
 
-start_mongod() {
-    if [ "$OS" = "Linux" ]; then sudo systemctl start mongod;
-    else brew services start mongod
-    fi;
+services_manage() {
+    action="$1"  # start|stop|restart
+
+    if [ "$OS" = "Linux" ]; then
+        sudo systemctl "$action" redis-server
+        sudo systemctl "$action" mongod
+        sudo systemctl "$action" postgresql
+    else
+        brew services "$action" postgresql
+        brew services "$action" redis
+        brew services "$action" mongod
+    fi
 }
 
-start_redis() {
-    if [ "$OS" = "Linux" ]; then sudo systemctl start redis-server
-    else brew services start redis
-    fi
+# this has no effect if the services are aldready running.
+services_start() {
+    services_manage start
+}
+
+services_restart() {
+    services_manage restart
+}
+
+services_stop() {
+    services_manage stop
 }
 
 ask() {

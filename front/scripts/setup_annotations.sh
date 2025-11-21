@@ -8,6 +8,6 @@ source "$SCRIPT_DIR"/utils.sh;
 check_file_exists "$ENV_FILE"
 cd "$ANNOTATIONS_DIR";
 npm i;
-start_mongod;
+services_start;
 
 aiiinotate --env "$ENV_FILE" -- migrate apply;
