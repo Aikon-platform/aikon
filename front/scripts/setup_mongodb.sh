@@ -7,18 +7,21 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source "$SCRIPT_DIR/utils.sh";
 
+# float arithmetic comparison is not supported by bash and we need to use `bc`
+# usage: if float_comparison "a >= b"; then... ; fi
+float_comparison () {
+    expr="$1"
+    (( $(echo "$expr" |bc -l) ));
+}
+
 install_mongodb_ubuntu () {
 
-    sudo apt-get install gnupg curl
-
-    curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | \
-    sudo gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg \
-    --dearmor
-
-    # assert we have an 86 64 architecture
     if [ "$(arch)" != "x86_64" ];
     then echo "MongoDB only supports x86_64 architectures (yours is $(arch)). exiting..."; exit 1
     fi;
+
+    curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | \
+        sudo gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg --dearmor
 
     # fetch the release name. Mongo only supports LTS versions, so if the user's Ubuntu version is not LTS, we get the name of the last LTS released before the user's version.
     source "/etc/lsb-release"
@@ -35,7 +38,6 @@ install_mongodb_ubuntu () {
     echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu $DISTRIB/mongodb-org/8.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list
 
     sudo apt-get update
-
     sudo apt-get install -y mongodb-org
 }
 
@@ -46,16 +48,12 @@ install_mongodb_mac () {
     brew install mongodb-community@8.0;
 }
 
-if ! command -v mongod ; then
-    echo_title "INSTALL MONGODB"
-
-    if [ "$OS" = "Linux" ]; then
-        install_mongodb_ubuntu;
-        sudo systemctl start mongod;
-    elif [ "$OS" = "Mac" ]; then
-        install_mongodb_mac;
-        brew services start mongodb-community@8.0;
-    else echo "Unsupported OS: $OS"; exit 1;
-    fi;
-
+echo_title "MONGODB INSTALLATION"
+if [ "$OS" = "Linux" ]; then
+    install_mongodb_ubuntu;
+    sudo systemctl start mongod;
+elif [ "$OS" = "Mac" ]; then
+    install_mongodb_mac;
+    brew services start mongodb-community@8.0;
+else echo "Unsupported OS: $OS"; exit 1;
 fi;
