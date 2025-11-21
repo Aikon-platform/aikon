@@ -126,7 +126,6 @@ SAS_PORT = ENV.int("SAS_PORT", 8888)
 GEONAMES_USER = ENV.str("GEONAMES_USER", default="")
 
 SAS_USERNAME = ENV.str("SAS_USERNAME", default="")
-SAS_PASSWORD = ENV.str("SAS_PASSWORD", default="")
 
 ROOT_URLCONF = "config.urls"
 
@@ -219,13 +218,6 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240
 
 # Cross-Origin Resource Sharing (CORS) from any origin
 CORS_ALLOW_ALL_ORIGINS = True
-
-# # Celery settings TODO delete?
-# CELERY_BROKER_URL = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
-# CELERY_RESULT_BACKEND = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
-# CELERY_ACCEPT_CONTENT = ["json", "pickle"]
-# CELERY_TASK_SERIALIZER = "pickle"
-# CELERY_RESULT_SERIALIZER = "pickle"
 
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 
