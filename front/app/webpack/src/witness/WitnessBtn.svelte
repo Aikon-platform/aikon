@@ -13,7 +13,7 @@
     }
 </script>
 
-<div class="field selector is-flex">
+<div class="field selector is-flex is-right mb-2">
     <label for="digit" class="label">
         {appLang === 'en' ? "Digitization" : 'Numérisation'}
     </label>

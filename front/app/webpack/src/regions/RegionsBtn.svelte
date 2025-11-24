@@ -6,7 +6,7 @@
     const witness = getContext('witness');
     export let baseUrl = `${window.location.origin}${window.location.pathname}`;
     export let currentRegionId;
-    export let currentLayout;
+    export let activeTab;
 
     async function deleteRegions() {
         const confirmed = await showMessage(
@@ -71,11 +71,11 @@
 
 <div>
     {#if currentRegionId}
-        {#if ["viewer", "all", "page"].includes(currentLayout)}
+        {#if activeTab === 0 || activeTab === 1 || activeTab === 2 }
             <button on:click={deleteRegions} class="tag is-danger">
                 {appLang === "en" ? "Delete regions record" : "Supprimer l'intégralité des régions"}
             </button>
-        {:else if currentLayout === "similarity"}
+        {:else if activeTab === 3}
             <button on:click={deleteSimilarity} class="tag is-danger">
                 {appLang === "en" ? "Delete all regions similarity" : "Supprimer toutes les similarités du document"}
             </button>

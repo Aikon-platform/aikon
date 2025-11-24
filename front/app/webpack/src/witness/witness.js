@@ -1,24 +1,18 @@
-import WitnessViewer from "./WitnessViewer.svelte";
-import WitnessPanel from "./WitnessPanel.svelte";
+import WitnessView from "./WitnessView.svelte";
 
-const viewer = document.getElementById("witness-viewer");
-if (viewer) {
-  new WitnessViewer({
-    target: viewer,
-    props: {
-        manifests
-    },
-  });
-}
-
-const panel = new WitnessPanel({
-    target: document.getElementById("witness-panel"),
-    props: {
-      viewTitle,
-      witness,
-      editUrl,
-      manifests,
-    },
+const WitnessApp = new WitnessView({
+    target: document.getElementById('witness-view'),
+     props: {
+        viewTitle,
+        editUrl,
+        witness,
+        manifest,
+        manifests,
+        isValidated,
+        imgPrefix,
+        nbOfPages,
+        trailingZeros
+    }
 });
 
-export { panel, viewer };
+export default WitnessApp;

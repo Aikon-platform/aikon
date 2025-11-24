@@ -17,7 +17,7 @@
 
 <iframe
     src={iframeSrc}
-    style="width: 100%; height: 92%; border: none;"
+    style="width: 100%; height: 75vh; border: none;"
     title="Mirador viewer"
     allowfullscreen
 ></iframe>

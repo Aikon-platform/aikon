@@ -213,7 +213,6 @@ urlpatterns += [
 # ADMIN VIEWS
 urlpatterns += [
     path(f"{APP_NAME}/witness/", WitnessList.as_view(), name="witness_list"),
-    path(f"{APP_NAME}/witness/<int:id>/", WitnessView.as_view(), name="witness_view"),
     # path(f"{APP_NAME}/witness/add/", WitnessCreate.as_view(), name="witness_create"),
     path(
         f"{APP_NAME}/witness/<int:id>/change/",

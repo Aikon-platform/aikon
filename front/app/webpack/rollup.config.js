@@ -32,39 +32,6 @@ function serve() {
 
 export default [
     {
-        input: 'src/regions/region-list.js',
-        output: {
-            sourcemap: true,
-            format: "es",
-            name: 'regionList',
-            dir: '../webapp/static/svelte/regionList/',
-        },
-        plugins: [
-            svelte({
-                compilerOptions: {
-                    dev: !production
-                }
-            }),
-            css({ output: 'regionList.css' }),
-            resolve({
-                browser: true,
-                dedupe: ['svelte'],
-                exportConditions: ['svelte'],
-                extensions: ['.svelte']
-            }),
-            commonjs(),
-            !production && livereload('public'),
-            production && terser(),
-            del({
-                targets: ["../webapp/static/svelte/*"],
-                force: true
-            })  // with ES directory exports, filenames end with a hash and thus new files are created at each build rather than overwriting the old files => delete the whole `svelte/`  dir before running rollup
-        ],
-        watch: {
-            clearScreen: false
-        }
-    },
-    {
         input: 'src/records/record-list.js',
         output: {
             sourcemap: true,

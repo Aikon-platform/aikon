@@ -169,48 +169,11 @@ class WitnessList(AbstractRecordList):
         return context
 
 
-class WitnessView(AbstractRecordView):
-    # f"witness/<int:wid>/"
-    # display Witness metadata
-    model = Witness
-    template_name = "webapp/witness.html"
-    pk_url_kwarg = "id"
-    fields = []
-
-    def get_view_title(self):
-        return (
-            f"Visualiser le {self.model._meta.verbose_name.lower()}"
-            if APP_LANG == "en"
-            else f"View {self.model._meta.verbose_name.lower()}"
-        )
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["regions_ids"] = []
-        context["is_validated"] = True
-        context["img_nb"] = None
-
-        witness = self.get_record()
-        context["view_title"] = f"{witness}" if APP_LANG == "en" else f"{witness}"
-
-        context["witness"] = witness.get_json(reindex=True)
-
-        context["manifests"] = []
-
-        for did in context["witness"]["digits"]:
-            digit = Digitization.objects.get(pk=did)
-            # context["digits_ids"].append(did)
-            context["manifest"] = digit.gen_manifest_url(version=MANIFEST_V2)
-            context["manifests"].append(digit.gen_manifest_url(version=MANIFEST_V2))
-
-        return context
-
-
 class WitnessRegionsView(AbstractRecordView):
     # f"witness/<int:wid>/regions/"
     # display only all Regions objects for a given Witness
     model = Witness
-    template_name = "webapp/regions.html"
+    template_name = "webapp/witness.html"
     pk_url_kwarg = "id"
     fields = []
 
@@ -266,7 +229,7 @@ class RegionsView(AbstractRecordView):
     # f"witness/<int:wid>/regions/<int:rid>/"
     # display only one Regions object
     model = Regions
-    template_name = "webapp/regions.html"
+    template_name = "webapp/witness.html"
     fields = []
     pk_url_kwarg = "rid"
 
