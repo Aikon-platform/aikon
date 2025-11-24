@@ -8,9 +8,6 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 
 from app.webapp.models.regions import Regions
 from app.config.settings import (
-    SAS_APP_URL,
-    DEBUG,
-    SAS_USERNAME,
     LOGIN_URL,
 )
 from app.webapp.models.witness import Witness

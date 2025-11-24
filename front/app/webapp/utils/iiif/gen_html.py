@@ -5,7 +5,7 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2
 from app.webapp.utils.functions import get_icon, get_action, cls
 from app.config.settings import (
-    SAS_APP_URL,
+    AIIINOTATE_BASE_URL,
     APP_URL,
     APP_NAME,
     APP_LANG,
@@ -23,11 +23,11 @@ def regions_btn(obj, action="view"):
     if action == "view":
         icon = get_icon("eye")
         # The link redirects to Mirador with no regions (Digitization) or automatic regions (Regions)
-        link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V1)}"
+        link = f"{AIIINOTATE_BASE_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V1)}"
     elif action == "auto-view":
         icon = get_icon("eye")
         # The link redirects to Mirador with no regions (Digitization) or automatic regions (Regions)
-        link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V1)}"
+        link = f"{AIIINOTATE_BASE_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V1)}"
     # elif action == "edit":
     #     icon = get_icon("pen-to-square")
     #     # The link redirects to the edit regions page (show_regions() view DELETED)
@@ -35,7 +35,7 @@ def regions_btn(obj, action="view"):
     elif action == "final":
         icon = get_icon("check")
         # The link redirects to Mirador with corrected regions (Regions)
-        link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V2)}"
+        link = f"{AIIINOTATE_BASE_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V2)}"
     # elif action == "similarity":
     #     icon = get_icon("code-compare")
     #     link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-similarity"
@@ -97,12 +97,12 @@ def gen_btn(obj, action="view"):
     #     version = None if cls(obj) == Digitization else MANIFEST_V1
     #     is_regions = obj.has_regions() if cls(obj) == Digitization else True
     # else:
-    #     download_url = f"{SAS_APP_URL}/search-api/{obj.get_ref()}/search/"
+    #     download_url = f"{AIIINOTATE_BASE_URL}/search-api/{obj.get_ref()}/search/"
     #     regions_type = "JSON"
     #     version = MANIFEST_V2
     # else:
     #     return mark_safe("NOT SUPPOSED TO OCCUR")
-    download_url = f"{SAS_APP_URL}/search-api/{obj.get_ref()}/search/"
+    download_url = f"{AIIINOTATE_BASE_URL}/search-api/{obj.get_ref()}/search/"
     regions_type = "JSON"
     version = MANIFEST_V2
 

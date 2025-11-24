@@ -8,7 +8,6 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required, user_passes_test
 
-from app.config.settings import SAS_APP_URL, DEBUG, SAS_USERNAME
 from app.webapp.templatetags.filters import jpg_to_none
 
 from app.webapp.models.regions import Regions

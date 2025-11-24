@@ -1,5 +1,5 @@
 from app.config.settings import (
-    SAS_APP_URL,
+    AIIINOTATE_BASE_URL,
     APP_LANG,
     APP_URL,
     CANTALOUPE_APP_URL,
@@ -48,7 +48,7 @@ def global_variables(request):
         "CONTACT_MAIL": CONTACT_MAIL,
         "WEBAPP_NAME": WEBAPP_NAME,
         "COPYRIGHT": COPYRIGHT,
-        "SAS_APP_URL": SAS_APP_URL,
+        "AIIINOTATE_BASE_URL": AIIINOTATE_BASE_URL,
         "APP_URL": APP_URL,
         "CANTALOUPE_APP_URL": CANTALOUPE_APP_URL,
         "MS_ABBR": MS_ABBR,

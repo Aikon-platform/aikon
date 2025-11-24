@@ -8,10 +8,8 @@ API_URL = (
 )
 BASE_URL = f"https://{ENV.str('PROD_URL', default='')}"
 APP_URL = BASE_URL
-# CANTALOUPE_APP_URL = f"http://cantaloupe:{CANTALOUPE_PORT}" if DOCKER else BASE_URL
-# SAS_APP_URL = f"http://sas:{SAS_PORT}" if DOCKER else f"{BASE_URL}/sas"
 CANTALOUPE_APP_URL = BASE_URL
-SAS_APP_URL = f"{BASE_URL}/sas"
+AIIINOTATE_BASE_URL = f"{BASE_URL}/aiiinotate"
 
 if ENV.str("HTTPS_PROXY", default=""):
     PROXIES = {

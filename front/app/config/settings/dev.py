@@ -7,7 +7,7 @@ BASE_URL = f"http://localhost:{ENV('FRONT_PORT', default=8000)}"
 
 APP_URL = f"http://localhost:{APP_PORT}"
 CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
-SAS_APP_URL = f"http://localhost:{SAS_PORT}"
+AIIINOTATE_BASE_URL = ENV("AIIINOTATE_BASE_URL")
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
