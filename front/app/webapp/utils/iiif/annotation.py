@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import urlopen
+from typing import List, Dict
 
 import requests
 from PIL import Image
@@ -25,13 +26,15 @@ from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.regions import get_file_regions
 
 IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
+IIIF_SEARCH_VESION = 1
+IIIF_PRESENTATION_VERSION = 2
 
 
 def get_manifest_annotations(
     regions_ref, only_ids=True, min_c: int = None, max_c: int = None
 ):
     manifest_annotations, response = [], ""
-    next_page = f"{AIIINOTATE_BASE_URL}/search-api/{regions_ref}/search"
+    next_page = f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions_ref}/search"
     while next_page:
         try:
             response = requests.get(next_page)
@@ -75,7 +78,7 @@ def get_manifest_annotations(
 
             next_page = annotations.get("next")
             if next_page:
-                next_page = f"{AIIINOTATE_BASE_URL}/search-api/{regions_ref}/search?{next_page.split('?')[1]}"
+                next_page = f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions_ref}/search?{next_page.split('?')[1]}"
 
         except requests.exceptions.JSONDecodeError as e:
             log(f"[get_manifest_annotations] JSON decode error for {next_page}")
@@ -96,12 +99,13 @@ def get_manifest_annotations(
     return manifest_annotations
 
 
+# TODO PAUL: aiiinotate function for this
 def has_annotation(regions_ref):
     """
     Check if there are any annotations for the given regions reference.
     Returns True if at least one annotation is found, False otherwise.
     """
-    page = f"{AIIINOTATE_BASE_URL}/search-api/{regions_ref}/search"
+    page = f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions_ref}/search"
     try:
         response = requests.get(page)
         if response.status_code != 200:
@@ -199,19 +203,23 @@ def index_regions(regions: Regions):
     if not index_manifest_in_sas(regions.gen_manifest_url(version=MANIFEST_V2), True):
         return
 
-    canvases_to_annotate = get_annotations_per_canvas(regions)
+    canvases_to_annotate: Dict[str, List[int | None]] = get_annotations_per_canvas(
+        regions
+    )  # pyright: ignore
     if not bool(canvases_to_annotate):
         # if the annotation file is empty
         return True
 
     for c in canvases_to_annotate:
-        try:
-            index_annotations_on_canvas(regions, c)
-        except Exception as e:
-            log(
-                f"[index_regions] Problem indexing region #{regions.id} (canvas {c})",
-                e,
-            )
+        # only index canvases that have annotations
+        if len(canvases_to_annotate[c]) > 0:
+            try:
+                index_annotations_on_canvas(regions, c)
+            except Exception as e:
+                log(
+                    f"[index_regions] Problem indexing region #{regions.id} (canvas {c})",
+                    e,
+                )
 
     return True
 
@@ -242,10 +250,10 @@ def reindex_file(filename):
 
 
 def unindex_annotation(annotation_id):
-    http_sas = AIIINOTATE_BASE_URL.replace("https", "http")
+    http_aiiinotate = AIIINOTATE_BASE_URL.replace("https", "http")
 
     # annotation_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}
-    delete_url = f"{AIIINOTATE_BASE_URL}/annotation/destroy?uri={http_sas}/annotation/{annotation_id}"
+    delete_url = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/delete?uri={http_aiiinotate}/annotations/{IIIF_PRESENTATION_VERSION}/{annotation_id}"
     # TODO delete regions_pairs associated with the annotation if similarity module is enabled?
     try:
         response = requests.delete(delete_url)
@@ -264,13 +272,14 @@ def index_annotations_on_canvas(regions: Regions, canvas_nb):
     # this url (view canvas_annotations()) is calling format_canvas_annotations(),
     # thus returning formatted annotations for each canvas
     formatted_annos = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions.get_ref()}/list/anno-{canvas_nb}.json"
+    print(">>>> formatted_annos", formatted_annos)
     # POST request that index the annotations
-    response = urlopen(
-        f"{AIIINOTATE_BASE_URL}/annotation/populate",
-        urlencode({"uri": formatted_annos}).encode("ascii"),
+    response = requests.post(
+        f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/createMany",
+        json={"uri": formatted_annos},
     )
 
-    if response.status != 201:
+    if not response.ok:
         log(
             f"[index_annotations_on_canvas] Failed to index annotations. Status: {response.status_code}",
             response.text,
@@ -368,6 +377,8 @@ def format_annotation(regions: Regions, canvas_nb, xywh):
     height = h // 2
 
     annotation_id = regions.gen_annotation_id(canvas_nb)
+    canvas_id = f"{base_url}/canvas/c{canvas_nb}.json"
+    xywh = f"xywh={x},{y},{w},{h}"
     d = f"M{x} {y} h {width} v 0 h {width} v {height} v {height} h -{width} h -{width} v -{height}Z"
     r_id = f"rectangle_{annotation_id}"
     d_paper = "{&quot;strokeWidth&quot;:1,&quot;rotation&quot;:0,&quot;annotation&quot;:null,&quot;nonHoverStrokeColor&quot;:[&quot;Color&quot;,0,1,0],&quot;editable&quot;:true,&quot;deleteIcon&quot;:null,&quot;rotationIcon&quot;:null,&quot;group&quot;:null}"
@@ -389,7 +400,7 @@ def format_annotation(regions: Regions, canvas_nb, xywh):
     path = re.sub(r"\s+", " ", path).strip()
 
     return {
-        "@id": f"{AIIINOTATE_BASE_URL.replace('https', 'http')}/annotation/{annotation_id}",
+        "@id": f"{AIIINOTATE_BASE_URL.replace('https', 'http')}/annotations/{IIIF_PRESENTATION_VERSION}/{annotation_id}",
         "@type": "oa:Annotation",
         "dcterms:created": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "dcterms:modified": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
@@ -403,6 +414,7 @@ def format_annotation(regions: Regions, canvas_nb, xywh):
         ],
         "on": [
             {
+                "@id": f"{canvas_id}#{xywh}",
                 "@type": "oa:SpecificResource",
                 "within": {
                     "@id": f"{base_url}/manifest.json",
@@ -412,7 +424,7 @@ def format_annotation(regions: Regions, canvas_nb, xywh):
                     "@type": "oa:Choice",
                     "default": {
                         "@type": "oa:FragmentSelector",
-                        "value": f"xywh={x},{y},{w},{h}",
+                        "value": xywh,
                     },
                     "item": {
                         "@type": "oa:SvgSelector",
@@ -420,7 +432,7 @@ def format_annotation(regions: Regions, canvas_nb, xywh):
                     },
                 },
                 "full": f"{base_url}/canvas/c{canvas_nb}.json",
-            }
+            },
         ],
         "motivation": ["oa:commenting", "oa:tagging"],
         "@context": IIIF_CONTEXT,
@@ -463,7 +475,7 @@ def set_canvas(seq, canvas_nb, img_name, img, version=None):
 
 def get_indexed_manifests():
     try:
-        r = requests.get(f"{AIIINOTATE_BASE_URL}/manifests")
+        r = requests.get(f"{AIIINOTATE_BASE_URL}/manifests/2")
         manifests = r.json()["manifests"]
     except Exception as e:
         log(f"[get_indexed_manifests]: Failed to load indexed manifests in SAS", e)
@@ -487,7 +499,10 @@ def index_manifest_in_sas(manifest_url, reindex=False):
 
     try:
         # Index the manifest into SAS
-        r = requests.post(f"{AIIINOTATE_BASE_URL}/manifests", json=manifest_content)
+        r = requests.post(
+            f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}/create",
+            json=manifest_content,
+        )
         print(r)
         if r.status_code != 200:
             log(
@@ -579,7 +594,7 @@ def get_canvas_lists(digit: Digitization, all_img=False):
 
 
 def get_indexed_canvas_annotations(regions: Regions, canvas_nb):
-    canvas_url = f"{AIIINOTATE_BASE_URL}/annotation/search?uri={regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
+    canvas_url = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/search?uri={regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
     try:
         response = requests.get(canvas_url)
         response.raise_for_status()
@@ -648,7 +663,7 @@ def formatted_annotations(regions: Regions):
 
 def total_annotations(regions: Regions):
     response = requests.get(
-        f"{AIIINOTATE_BASE_URL}/search-api/{regions.get_ref()}/search"
+        f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions.get_ref()}/search"
     )
     res = response.json()
     try:

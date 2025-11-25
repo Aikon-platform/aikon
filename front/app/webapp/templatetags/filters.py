@@ -3,7 +3,7 @@ from django.forms import Textarea, SelectMultiple, Select, TypedChoiceField, Bou
 from django.template import Library
 from app.config.settings import (
     CANTALOUPE_APP_URL,
-    AIIINOTATE_BASE_URL,
+    MIRADOR_BASE_URL,
     APP_URL,
     APP_NAME,
 )
@@ -71,7 +71,7 @@ def ref_to_mirador(regions_refs, img_ref):
     regions_ref = [ref for ref in regions_refs if ref.startswith(digit_ref)][0]
     manifest = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions_ref}/manifest.json"
 
-    return f"{AIIINOTATE_BASE_URL}/index.html?iiif-content={manifest}&canvas={int(img_ref[-2])}"
+    return f"{MIRADOR_BASE_URL}/index.html?iiif-content={manifest}&canvas={int(img_ref[-2])}"
 
 
 @register.filter

@@ -10,7 +10,6 @@ from app.config.settings import (
     APP_URL,
     APP_NAME,
     APP_LANG,
-    AIIINOTATE_BASE_URL,
     MIRADOR_BASE_URL,
 )
 from app.similarity.const import SCORES_PATH

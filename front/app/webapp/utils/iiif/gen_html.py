@@ -49,7 +49,7 @@ def regions_btn(obj, action="view"):
         icon = get_icon("pen-to-square")
         link = f"{APP_URL}/{APP_NAME}/run-vectorization/{obj.get_ref()}"
     else:
-        # When the button is not supposed to redirects to anything
+        # When the button is not supposed to redirect to anything
         link = "#"
         btn = get_action(action, "upper")
         icon = get_icon("eye-slash")
@@ -102,7 +102,7 @@ def gen_btn(obj, action="view"):
     #     version = MANIFEST_V2
     # else:
     #     return mark_safe("NOT SUPPOSED TO OCCUR")
-    download_url = f"{AIIINOTATE_BASE_URL}/search-api/{obj.get_ref()}/search/"
+    download_url = f"{AIIINOTATE_BASE_URL}/search-api/2/{obj.get_ref()}/search/"
     regions_type = "JSON"
     version = MANIFEST_V2
 

@@ -49,7 +49,6 @@
         const isValidated = {% if is_validated %}true{% else %}false{% endif %};
         const nbOfPages = {% if img_nb %}{{img_nb}}{% else %}0{% endif %};
         const trailingZeros = {% if img_zeros %}{{img_zeros}}{% else %}0{% endif %};
-        console.log(">>> REGIONS.HTML", witness, manifest);
     </script>
     <script type="module" src="{% static 'svelte/regionList/region-list.js' %}"></script>
 {% endblock %}
