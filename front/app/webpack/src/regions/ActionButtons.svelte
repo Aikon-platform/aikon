@@ -10,6 +10,8 @@
     const manifest = getContext('manifest');
     const isValidated = getContext('isValidated');
 
+    console.log(">".repeat(10), manifest);
+
     $: selectionLength = $nbSelected(true);
     $: isEditMode = !isValidated;
     $: selectedRegions = $selected(true);
@@ -124,10 +126,13 @@
             <i class="fa-solid fa-rotate-right"></i>
             {appLang === 'en' ? 'Reload' : "Recharger"}
         </button>
-        <a class="tag is-link is-rounded mr-3" href="{manifestToMirador(manifest)}" target="_blank">
-            <i class="fa-solid fa-edit"></i>
-            {appLang === 'en' ? 'Go to editor' : "Aller à l'éditeur"}
-        </a>
+        <!-- when no regions extraction have been made, we hide the button: "Go to editor" redirects to a Mirador editor for a specific region extraction, which hasn't been created yet -->
+        {#if manifest.length}
+            <a class="tag is-link is-rounded mr-3" href="{manifestToMirador(manifest)}" target="_blank">
+                <i class="fa-solid fa-edit"></i>
+                {appLang === 'en' ? 'Go to editor' : "Aller à l'éditeur"}
+            </a>
+        {/if}
         <button class="tag is-danger is-rounded" on:click={deleteSelectedRegions}>
             <i class="fa-solid fa-trash"></i>
             {appLang === 'en' ? 'Delete selected regions' : 'Supprimer les régions sélectionnées'}

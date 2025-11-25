@@ -8,7 +8,7 @@ from app.config.settings import (
     CONTACT_MAIL,
     ADDITIONAL_MODULES,
     APP_LOGO,
-    DOCKER,
+    MIRADOR_BASE_URL,
 )
 from app.webapp.utils.constants import (
     APP_NAME_UPPER,
@@ -49,6 +49,7 @@ def global_variables(request):
         "WEBAPP_NAME": WEBAPP_NAME,
         "COPYRIGHT": COPYRIGHT,
         "AIIINOTATE_BASE_URL": AIIINOTATE_BASE_URL,
+        "MIRADOR_BASE_URL": MIRADOR_BASE_URL,
         "APP_URL": APP_URL,
         "CANTALOUPE_APP_URL": CANTALOUPE_APP_URL,
         "MS_ABBR": MS_ABBR,

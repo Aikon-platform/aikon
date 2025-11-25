@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { sasUrl, cantaloupeUrl, appName } from './constants';
+import { miradorUrl, cantaloupeUrl, appName } from './constants';
 
 export const loading = writable(false);
 export const errorMsg = writable("");
@@ -29,8 +29,8 @@ export function getCantaloupeUrl() {
     // return "https://vhs.huma-num.fr"
 }
 
-export function getSasUrl() {
-    return sasUrl ?? "http://localhost:3000";
+export function getMiradorUrl() {
+    return miradorUrl ?? "http://localhost:5555";
 }
 
 export function initPagination(pageWritable, urlParam) {
@@ -107,7 +107,7 @@ export function refToIIIFInfo(imgRef=null) {
 }
 
 export function manifestToMirador(manifest = null, canvasNb = 1) {
-    return `${getSasUrl()}/index.html?iiif-content=${manifest}&canvas=${canvasNb}`;
+    return `${getMiradorUrl()}/index.html?iiif-content=${manifest}&canvas=${canvasNb}`;
 }
 
 
