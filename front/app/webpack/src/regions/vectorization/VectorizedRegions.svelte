@@ -1,22 +1,42 @@
 <script>
     import { fade } from 'svelte/transition';
-    import { onMount } from 'svelte';
-    import {mediaPrefix } from "../../constants.js";
-    import {refToIIIF} from "../../utils.js";
+    import { onMount, getContext } from 'svelte';
+
+    import { mediaPrefix } from "../../constants.js";
+    import { refToIIIF } from "../../utils.js";
+
+    import { selectionStore } from "../../selection/selectionStore.js";
+    const { isSelected } = selectionStore;
+
+    import { regionsStore } from "../../regions/regionsStore.js";
+    const { clipBoard } = regionsStore;
 
     export let svgPath;
     export let width = 200;
+    export let fullWidth = false;
+    export let selectable = true;
+
     const [wit, digit, canvas, xywh] = svgPath.replace(".svg", "").split("_");
-    // const [wit, digit, canvas, xywh] = svgPath.split("/")[1].replace(".svg", "").replace(".jpg", "").split("_");
     const img = refToIIIF(`${wit}_${digit}_${canvas}`, xywh, `${width},`);
 
     let isHovered = false;
     let svgContent = '';
     let svgViewBox = '';
 
-    // TODO display name and canvas of the region
-    // TODO add button to access individual vectorization
-    // TODO add button to delete svg
+    const compareImgItem = getContext("qImgMetadata") || undefined;
+    const isInModal = getContext("isInModal") || false;
+    const transitionDuration = isInModal ? 0 : 500;
+
+    let modalControllerComponent;
+    if ( !isInModal ) {
+        import("../modal/ModalController.svelte").then((res) => modalControllerComponent = res.default);
+    }
+
+    let item = {
+        ref: svgPath,
+        img: `${wit}_${digit}_${canvas}`,
+        xywh
+    };
 
     onMount(async () => {
         const response = await fetch(`${mediaPrefix}svg/${svgPath}`);
@@ -25,15 +45,12 @@
         const parser = new DOMParser();
         const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
 
-        // Get the viewBox
         const svgElement = svgDoc.querySelector('svg');
         svgViewBox = svgElement.getAttribute('viewBox') || `0 0 ${svgElement.getAttribute('width')} ${svgElement.getAttribute('height')}`;
 
         svgDoc.querySelectorAll('image').forEach(img => img.remove());
 
-        // Ensure the SVG has a viewBox
         svgElement.setAttribute('viewBox', svgViewBox);
-        // Remove width and height attributes to allow proper scaling
         svgElement.removeAttribute('width');
         svgElement.removeAttribute('height');
 
@@ -41,37 +58,50 @@
     });
 </script>
 
-<div class="svg-regions is-center" transition:fade={{ duration: 500 }}
-     on:mouseenter={() => isHovered = true} on:mouseleave={() => isHovered = false}>
-    <figure class="image card region-image" style="width: {width}px; aspect-ratio: {svgViewBox ? svgViewBox.split(' ')[2] / svgViewBox.split(' ')[3] : 1};">
+<div class="region is-center {selectable && $isSelected(item) ? 'checked' : ''}"
+    transition:fade={{ duration: transitionDuration }}
+>
+    <figure class="image card region-image"
+        style="
+            width: {fullWidth ? '50%' : `${width}px`};
+            aspect-ratio:{svgViewBox ? svgViewBox.split(' ')[2] / svgViewBox.split(' ')[3] : 1};
+        "
+        on:click={() => selectable ? selectionStore.toggle(item) : null}
+        on:mouseenter={() => isHovered = true}
+        on:mouseleave={() => isHovered = false}
+    >
         <div class="svg-container">
             {#if !isHovered && svgContent}
                 {@html svgContent}
             {/if}
         </div>
-        <img src="{img}" alt="Extracted region"/>
+        <img class="region-img" src="{img}" alt="Extracted region"/>
     </figure>
+
+    <div class="region-btn ml-1">
+        {#if modalControllerComponent}
+            <svelte:component this={modalControllerComponent}
+                mainImgItem={item}
+                compareImgItem={compareImgItem}
+                svgItem={svgPath}
+            />
+        {/if}
+    </div>
 </div>
 
 <style>
-    .svg-regions {
+    .region {
+        cursor: pointer;
         position: relative;
         display: flex;
         justify-content: center;
-        align-items: center;
-        cursor: pointer;
-    }
-
-    .image {
-        position: relative;
-        width: 100%;
-        height: 100%;
+        align-items: start;
+        max-height: 100%;
     }
 
     .svg-container {
         position: absolute;
-        top: 0;
-        left: 0;
+        inset: 0;
         width: 100%;
         height: 100%;
     }
@@ -81,9 +111,22 @@
         height: 100%;
     }
 
-    img {
-        width: 100%;
+    .region-btn {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-around;
+    }
+
+    .region-image {
+        max-height: 100%;
+    }
+
+    .svg-container,
+    .region-img {
         height: 100%;
-        object-fit: cover;
+        width: auto;
+        object-fit: contain;
     }
 </style>

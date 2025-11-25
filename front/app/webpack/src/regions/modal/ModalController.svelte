@@ -56,6 +56,7 @@
     export let mainImgItem;
     /** @type {RegionItemType} */
     export let compareImgItem = undefined;
+    export let svgItem;
 
     //`Region.svelte` is parent of `ModalController.svelte` and `ModalController` has for descendant `Region,svelte` => weird recursion in which a region contains a modal which could contain a region which could contain a modal.
     // => `isInModal` context avoids this recursion by only implementing `ModalController` in `Region` if `getContext(isInModal)===false`
@@ -82,6 +83,7 @@
                 props: {
                     mainImgItem: mainImgItem,
                     compareImgItem: compareImgItem,
+                    svgItem: svgItem,
                 }
             })
             _modal.$on("closeModal", onCloseModal);

@@ -8,8 +8,6 @@
     let regionsRef = "";
 </script>
 
-<ExportButtons/>
-
 <Pagination store={vectorizationStore} nbOfItems={$vectImgs.length} {pageLength}/>
 
 <div class="grid is-gap-2 mx-5">

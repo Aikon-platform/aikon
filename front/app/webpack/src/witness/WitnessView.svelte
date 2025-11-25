@@ -24,6 +24,7 @@
     import Vectorization from "../regions/vectorization/Vectorization.svelte";
     import Viewer from "../witness/ViewerIframe.svelte";
     import WitnessBtn from "../witness/WitnessBtn.svelte";
+    import ExportButtons from "../regions/vectorization/ExportButtons.svelte";
 
     export let manifest = "";
     export let manifests = [];
@@ -86,9 +87,11 @@
                     </div>
                     <div class="cell">
                         {#if activeTab === 1 || activeTab === 2 }
-                                <ActionButtons />
+                            <ActionButtons />
                         {:else if activeTab === 0}
-                                <WitnessBtn {manifests} />
+                            <WitnessBtn {manifests} />
+                        {:else if activeTab === 4}
+                            <ExportButtons/>
                         {/if}
                     </div>
                 </div>
