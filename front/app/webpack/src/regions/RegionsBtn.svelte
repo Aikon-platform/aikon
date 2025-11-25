@@ -8,6 +8,8 @@
     export let currentRegionId;
     export let activeTab;
 
+    const allRegionsUrl = baseUrl.replace(/\/\d+\/?$/, "");
+
     async function deleteRegions() {
         const confirmed = await showMessage(
             appLang === "en" ? "Are you sure you want to delete this record?" : "Voulez-vous vraiment supprimer cet enregistrement ?",
@@ -71,9 +73,10 @@
 
 <div>
     {#if currentRegionId}
-        {#if activeTab === 0 || activeTab === 1 || activeTab === 2 }
+        {#if [1, 2].includes(activeTab) }
+            <a href="{allRegionsUrl}" class="tag is-dark mr-3 is-rounded">All regions</a>
             <button on:click={deleteRegions} class="tag is-danger">
-                {appLang === "en" ? "Delete regions record" : "Supprimer l'intégralité des régions"}
+                {appLang === "en" ? "Delete regions extraction record" : "Supprimer l'extraction de régions"}
             </button>
         {:else if activeTab === 3}
             <button on:click={deleteSimilarity} class="tag is-danger">
@@ -81,9 +84,11 @@
             </button>
         {/if}
     {:else}
-        {#each witness.regions as regionId}
-            <a href="{baseUrl}{regionId}" class="tag is-dark mr-3 is-rounded">Regions #{regionId}</a>
-        {/each}
-        <!--TODO add NEW REGIONS BUTTON (to create empty region in order to launch new automatic extraction)-->
+        {#if [1, 2, 3].includes(activeTab) }
+            {#each witness.regions as regionId}
+                <a href="{baseUrl}{regionId}" class="tag is-dark mr-3 is-rounded">Regions extraction #{regionId}</a>
+            {/each}
+            <!--TODO add NEW REGIONS BUTTON (to create empty region in order to launch new automatic extraction)-->
+        {/if}
     {/if}
 </div>

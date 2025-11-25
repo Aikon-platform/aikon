@@ -211,7 +211,7 @@ class WitnessRegionsView(AbstractRecordView):
             # TODO handle multiple manifest for multiple regions
 
             context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
-            # context["manifests"].append(regions.gen_manifest_url(version=MANIFEST_V2))
+            context["manifests"].append(regions.gen_manifest_url(version=MANIFEST_V2))
 
             context["img_prefix"] = regions.get_ref().split("_anno")[0]
             if context["img_nb"] is None:
