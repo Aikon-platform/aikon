@@ -10,6 +10,7 @@ BASE_URL = f"https://{ENV.str('PROD_URL', default='')}"
 APP_URL = BASE_URL
 CANTALOUPE_APP_URL = BASE_URL
 AIIINOTATE_BASE_URL = f"{BASE_URL}/aiiinotate"
+MIRADOR_BASE_URL = f"{BASE_URL}/mirador"
 
 if ENV.str("HTTPS_PROXY", default=""):
     PROXIES = {
