@@ -214,11 +214,11 @@ class Witness(AbstractSearchableModel):
             get_name("page_nb"): self.get_page(),
         }
 
-        if note := self.notes:
-            metadata[get_name("notes")] = note
+        if notes := self.notes:
+            wit[get_name("notes")] = notes
 
         if link := self.link:
-            metadata[get_name("link")] = link
+            wit[get_name("link")] = link
 
         metadata["wit"] = wit
 
@@ -228,6 +228,7 @@ class Witness(AbstractSearchableModel):
             for content in contents:
                 content_dict = content.get_metadata()
                 metadata["contents"].append(content_dict)
+        print(metadata)
 
         return metadata
 
