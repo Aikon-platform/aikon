@@ -7,6 +7,7 @@ from django.db import models, connection
 from django.db.models import Q, F
 
 from app.webapp.models.utils.functions import get_fieldname
+from app.webapp.utils.functions import cast
 
 
 class RegionPairTuple(NamedTuple):
@@ -190,11 +191,11 @@ class RegionPair(models.Model):
             "img_2": self.img_2,
             "regions_id_1": self.regions_id_1,
             "regions_id_2": self.regions_id_2,
-            "score": float(self.score) if self.score is not None else None,
-            "category": int(self.category) if self.category is not None else None,
-            "category_x": [int(c) for c in self.category_x],
+            "score": cast(self.score, float),
+            "category": cast(self.category, int),
+            "category_x": [int(c) for c in self.category_x or []],
             "is_manual": self.is_manual,
-            "similarity_type": int(self.similarity_type),
+            "similarity_type": cast(self.similarity_type, int),
         }
 
     def get_ref(self):

@@ -7,7 +7,7 @@ from typing import Tuple, List, Optional
 
 from webapp.utils.constants import MAX_RES, MAX_SIZE, MAX_QUAL
 from webapp.utils.logger import log
-from webapp.utils.paths import IMG_PATH, MEDIA_DIR, BASE_DIR
+from webapp.utils.paths import IMG_PATH, MEDIA_PATH
 
 
 def calculate_matrix(page: fitz.Page, dpi: int, max_size: int) -> fitz.Matrix:
@@ -184,7 +184,7 @@ def pdf_2_img(
 ) -> List[str]:
     start_time = time.time()
 
-    pdf_path = (Path(MEDIA_DIR) / pdf_path).resolve()
+    pdf_path = (MEDIA_PATH / pdf_path).resolve()
     if not pdf_path.exists() or not pdf_path.is_file():
         log(f"[pdf2img] PDF file not found: {pdf_path}")
         return []
@@ -216,47 +216,3 @@ def pdf_2_img(
     log(f"Conversion of {img_prefix} completed in {elapsed_time:.2f} seconds")
 
     return result_files
-
-
-def _pdf_to_img(pdf_name, dpi=MAX_RES, timeout=3600):
-    """
-    Convert the PDF file to JPEG images
-    NOTE old function, not used anymore
-    """
-    import subprocess
-
-    pdf_path = f"{MEDIA_DIR}/{pdf_name}"
-    pdf_name = Path(pdf_name).stem
-    try:
-        if not os.path.exists(pdf_path):
-            log(f"[_pdf_to_img] PDF file not found: {pdf_path}")
-            return False
-
-        cmd = f"pdftoppm -jpeg -r {dpi} -scale-to {MAX_SIZE} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
-        res = subprocess.run(
-            cmd,
-            shell=True,
-            check=True,
-            timeout=int(timeout * 0.8),
-            capture_output=True,
-            text=True,
-        )
-
-        if res.returncode != 0:
-            dpi = int(dpi * 0.5)
-            size = int(MAX_SIZE * 0.8)
-            cmd = f"pdftoppm -jpeg -r {dpi} -scale-to {size} {pdf_path} {IMG_PATH}/{pdf_name} -sep _ "
-            log(
-                f"[_pdf_to_img] Failed to convert {pdf_name}.pdf: {res.stderr}\nUsing fallback command: {cmd}"
-            )
-            res = subprocess.run(cmd, shell=True, check=True, timeout=int(timeout))
-
-        return res.returncode == 0
-    except subprocess.TimeoutExpired:
-        log(f"[_pdf_to_img] Command timed out for {pdf_name}.pdf")
-        return False
-    except Exception as e:
-        log(
-            f"[_pdf_to_img] Failed to convert {pdf_name}.pdf to images:\n{e} ({e.__class__.__name__})"
-        )
-        return False

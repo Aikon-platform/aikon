@@ -142,46 +142,6 @@ def get_regions_annotations(
         max_c = max_c or regions.get_json()["img_nb"]
         r_annos = {str(c): {} for c in range(min_c, max_c + 1)}
 
-    # try:
-    #     canvas_list = get_canvas_list(regions)
-    #     for canvas_nb, img_file in canvas_list:
-    #         if (max_c is not None and canvas_nb > max_c) or (min_c is not None and canvas_nb < min_c):
-    #             continue
-    #
-    #         canvas_str = str(canvas_nb)
-    #         if as_json and canvas_str not in r_annos:
-    #             continue
-    #
-    #         c_annotations = get_indexed_canvas_annotations(regions, canvas_nb)
-    #         for sas_anno in c_annotations:
-    #             try:
-    #                 xywh = get_coord_from_annotation(sas_anno)
-    #
-    #                 if as_json:
-    #                     aid = get_id_from_annotation(sas_anno)
-    #                     img = f"{img_name}_{canvas_str.zfill(nb_len)}"
-    #
-    #                     r_annos[canvas_str][aid] = {
-    #                         "id": aid,
-    #                         "ref": f"{img}_{xywh}",
-    #                         "class": "Region",
-    #                         "type": get_name("Regions"),
-    #                         "title": region_title(canvas_str, xywh),
-    #                         "url": gen_iiif_url(img, res=f"{xywh}/full/0"),
-    #                         "canvas": canvas_str,
-    #                         "xywh": xywh.split(","),
-    #                         "img": img,
-    #                     }
-    #                 else:
-    #                     r_annos.append((canvas_str, xywh, f"{img_name}_{canvas_str.zfill(nb_len)}"))
-    #
-    #             except Exception as e:
-    #                 log(f"[get_regions_annotations_robust]: Failed to parse annotation {sas_anno}", e)
-    #                 continue
-    #
-    # except Exception as e:
-    #     log(f"[get_regions_annotations_robust]: Failed to retrieve annotations for {regions_ref}", e)
-
     annos = get_manifest_annotations(regions_ref, False, min_c, max_c)
     if len(annos) == 0:
         return r_annos
@@ -266,9 +226,11 @@ def reindex_file(filename):
         # if there is no regions_id in the ref, pass
         return False, a_ref
     regions_id = ref["regions"][1]
-    regions = Regions.objects.filter(pk=regions_id).first()
+    # regions = Regions.objects.filter(pk=regions_id).first()
+    regions = Regions.objects.get(pk=regions_id)
     if not regions:
-        digit = Digitization.objects.filter(pk=ref["digit"][1]).first()
+        # digit = Digitization.objects.filter(pk=ref["digit"][1]).first()
+        digit = Digitization.objects.get(pk=ref["digit"][1])
         if not digit:
             # if there is no digit corresponding to the ref, pass
             return False, a_ref

@@ -17,14 +17,20 @@ export function extractNb(str) {
     return str.match(/\d+/g).toString();
 }
 
+export function extractInt(str) {
+    return parseInt(extractNb(str));
+}
+
 export function shorten(str, maxLen=100) {
-    // put '...' in between the 75% and last 25% characters oif the string it too long
+    // put '...' in between the 75% and last 25% characters if the string it too long
     const nthChar = Math.floor(maxLen * 0.75);
     return str.length > maxLen ? str.slice(0, nthChar) + '...' + str.slice(- maxLen + nthChar) : str;
 }
 
 export function getCantaloupeUrl() {
     return cantaloupeUrl ?? "http://localhost:8182";
+    // // TO DELETE
+    // return "https://vhs.huma-num.fr"
 }
 
 export function getSasUrl() {
@@ -68,7 +74,7 @@ export function refToIIIFRoot(imgRef=null) {
         : `${getCantaloupeUrl()}/iiif/2/${imgName}`;
 }
 
-export function refToIIIF(imgRef=null, coord="full", size="full") {
+export function refToIIIF(imgRef=null, coord=null, size="full") {
     // imgRef can be like "wit<id>_<digit><id>_<page_nb>.jpg" or "wit<id>_<digit><id>_<page_nb>_<x,y,h,w>.jpg"
     if (!imgRef) {
         return "https://placehold.co/96x96/png?text=No+image";
@@ -95,9 +101,10 @@ export function refToIIIF(imgRef=null, coord="full", size="full") {
     }*/
 
     const imgRefArr = imgRef.split("_");
-    // const imgCoord = coord ? coord : imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : "full";
-    const imgCoord = imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : coord;
-    return `${imgRoot}/${imgCoord}/${size}/0/default.jpg`;
+    if (coord !== "full") {
+        coord = imgRefArr[imgRefArr.length - 1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : "full";
+    }
+    return `${imgRoot}/${coord}/${size}/0/default.jpg`;
 }
 
 export function refToIIIFInfo(imgRef=null) {
@@ -227,9 +234,7 @@ export function createNewAndOld() {
 }
 
 /**
- *
- * @typedef {LoadStateType}
- *      an object to manage a "loading" state, useful when doing async queries
+ * @typedef {LoadStateType} an object to manage a "loading" state, useful when doing async queries
  * @type {object}
  * @property {() => void} setLoading
  * @property {() => void} setLoaded: loading finished without error
@@ -264,3 +269,18 @@ export const equalArrayShallow = (x, y) =>
     Array.isArray(x) && Array.isArray(y)
     && x.length===y.length
     && x.every((e, idx) => e === y[idx]||undefined);
+
+
+export function imageToPage(imgName) {
+    return parseInt(imgName.split('_').at(-2));
+}
+
+export function generateColor(index) {
+    const goldenAngle = 137.5;
+    const saturations = [85, 70, 60];
+    const lightnesses = [50, 65, 40];
+    const hue = (index * goldenAngle) % 360;
+    const saturation = saturations[index % saturations.length];
+    const lightness = lightnesses[Math.floor(index / saturations.length) % lightnesses.length];
+    return `hsl(${Math.floor(hue)}, ${saturation}%, ${lightness}%)`;
+}

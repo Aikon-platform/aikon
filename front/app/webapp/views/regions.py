@@ -11,7 +11,6 @@ from app.config.settings import (
     SAS_APP_URL,
     DEBUG,
     SAS_USERNAME,
-    SAS_PASSWORD,
     LOGIN_URL,
 )
 from app.webapp.models.witness import Witness
@@ -192,9 +191,6 @@ def populate_annotation(request, regions_id):
     """
     Populate annotation store from IIIF Annotation List
     """
-    if not DEBUG:
-        credentials(f"{SAS_APP_URL}/", SAS_USERNAME, SAS_PASSWORD)
-
     regions = get_object_or_404(Regions, pk=regions_id)
     return HttpResponse(status=200 if index_regions(regions) else 500)
 

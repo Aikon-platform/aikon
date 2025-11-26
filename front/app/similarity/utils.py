@@ -5,12 +5,11 @@ import re
 from enum import IntEnum
 
 import numpy as np
-from typing import Tuple, Set, List
+from typing import Set, List
 
 import orjson
 import requests
 from itertools import combinations_with_replacement
-from functools import lru_cache
 
 from pathlib import Path
 from django.db import transaction
@@ -139,7 +138,9 @@ def process_results(data, completed=True):
             os.makedirs(f"{SCORES_PATH}/{regions_ref_pair}", exist_ok=True)
             if score_file.exists():
                 # This check should be made when starting the task not now
-                log(f"File {score_file} already exists, overriding its content")
+                log(
+                    f"[process_results] File {score_file} already exists, overriding its content"
+                )
                 # continue
 
             with open(score_file, "wb") as f:
@@ -147,14 +148,20 @@ def process_results(data, completed=True):
                 f.write(orjson.dumps(json_content))
 
         except Exception as e:
-            log(f"Could not download similarity scores from {score_url}", e)
+            log(
+                f"[process_results] Could not download similarity scores from {score_url}",
+                e,
+            )
             continue
 
         try:
             # process_similarity_file task calls score_file_to_db()
             process_similarity_file.delay(str(score_file))
         except Exception as e:
-            log(f"Could not process similarity scores from {score_url}", e)
+            log(
+                f"[process_results] Could not process similarity scores from {score_url}",
+                e,
+            )
             raise e
     return
 
@@ -302,7 +309,9 @@ def score_file_to_db(file_path):
         log(f"[score_file_to_db] error while adding pairs to db {pair_ref}", e)
         return False
 
-    log(f"Processed {len(pair_scores)} pairs from {pair_ref}")
+    log(
+        f"Processed {len(pair_scores)} images pairs from {pair_ref}", msg_type="success"
+    )
     return True
 
 
@@ -704,3 +713,53 @@ def add_user_to_category_x(region_pair: RegionPair, user_id: int):
         region_pair.category_x.append(user_id)
     region_pair.category_x = [c for c in region_pair.category_x if c is not None]
     return region_pair
+
+
+def filter_pairs(
+    regions_ids, exclusive, min_score, max_score, topk, exclude_self, categories
+):
+    if exclusive:
+        # get all pairs where regions_id_1 AND regions_id_2 are in q_regions ids
+        query = Q(regions_id_1__in=regions_ids) & Q(regions_id_2__in=regions_ids)
+    else:
+        # get all pairs where regions_id_1 OR regions_id_2 are in regions_ids ids
+        query = Q(regions_id_1__in=regions_ids) | Q(regions_id_2__in=regions_ids)
+
+    if min_score is not None:
+        query &= Q(score__gte=float(min_score))
+
+    if max_score is not None:
+        query &= Q(score__lte=float(max_score))
+
+    if exclude_self:
+        query &= ~Q(regions_id_1=F("regions_id_2"))
+        # if exclude_self, we need to exclude regions from the same witness
+        # same_witness_regions = set()
+        # for r in Regions.objects.filter(id__in=regions_ids).select_related('witness'):
+        #     witness_regions = r.witness.get_regions()
+        #     if len(witness_regions) > 1:
+        #         same_witness_regions.update([wr.id for wr in witness_regions])
+        # if same_witness_regions:
+        #     query &= ~(Q(regions_id_1__in=same_witness_regions) & Q(regions_id_2__in=same_witness_regions))
+
+    if categories:
+        has_no_category = 0 in categories
+        real_categories = [c for c in categories if c != 0]
+
+        if has_no_category and real_categories:
+            query &= Q(category__in=real_categories) | Q(category__isnull=True)
+        elif has_no_category:
+            query &= Q(category__isnull=True)
+        elif real_categories:
+            query &= Q(category__in=real_categories)
+
+    pairs = RegionPair.objects.filter(query).order_by(F("score").desc(nulls_first=True))
+    if not pairs.exists():
+        log(f"[filter_pairs] No pairs found matching the criteria {query}")
+        return []
+
+    if topk is not None:
+        topk = int(topk)
+        pairs = pairs[:topk]
+
+    return [p.to_dict() for p in pairs]

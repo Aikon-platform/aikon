@@ -29,7 +29,8 @@
     /** @type {"loading"|"loaded"|"error"} updated when `sImgsPromise` is updated */
     $: loadingStatus = "loading";
 
-    /** @type {Array<{uuid:string, data: Array}>} all similarity images, defined sImgsPromise is resolved and then updated each time a new `sImgsPromise` is passed by the parent */
+    /** @type {Array<{uuid:string, data: [score, img1, img2, region_1, region_2, category, users, isManual, similarityType]}>}
+     * all similarity images, defined sImgsPromise is resolved and then updated each time a new `sImgsPromise` is passed by the parent */
     $: allSImgs = [];
 
     /** @type {Array<{uuid:string, data: Array}>} allSImgs filtered by displaySimImg, updated when one of `allSImgs`, `$excludedCategories`, `$similarityScoreCutoff`, `$propagateFilterByRegions` are updated */
@@ -94,7 +95,7 @@
      * NOTE: the filtered images won't be updated if the user sets a category on a `SimilarRegion` until the next refresh.
      *
      * expected behaviour:
-     *      the user sets a category => filters are recomputed and if the `SimilarRegion` belongs to one of $exludedCategories, the image is hidden for coherence.
+     *      the user sets a category => filters are recomputed and if the `SimilarRegion` belongs to one of $excludedCategories, the image is hidden for coherence.
      * current behaviour:
      *      categories set in `SimilarRegion` won't affect the filtering done by displaySimImg until the next reload.
      * explanation:
@@ -158,7 +159,7 @@
         ? "Retrieving propagated regions..."
         : "Récupération de similarités propagées..."
     }</div>
-{:else if loadingStatus==="loaded"}
+{:else if loadingStatus === "loaded"}
     <div>
         <span class="m-2">{filteredSImgs.length} {getSimilarityLabel(isPropagatedContext, filteredSImgs.length)}</span>
         <div class="m-2 is-gap-2" class:grid={filteredSImgs.length > 0}>

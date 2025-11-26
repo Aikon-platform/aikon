@@ -7,7 +7,7 @@ from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.utils.constants import MAX_RES
 from app.webapp.utils.iiif.download import iiif_to_img
 from webapp.models.utils.constants import PDF_ABBR, IMG_ABBR, MAN_ABBR
-from webapp.utils.paths import MEDIA_DIR, IMG_PATH
+from webapp.utils.paths import MEDIA_PATH, IMG_PATH
 from webapp.utils.pdf import pdf_2_img
 
 
@@ -33,7 +33,8 @@ def reindex_from_file(regions_id):
     from app.webapp.models.regions import Regions
     from app.webapp.utils.iiif.annotation import check_indexation
 
-    regions = Regions.objects.filter(pk=regions_id).first()
+    # regions = Regions.objects.filter(pk=regions_id).first()
+    regions = Regions.objects.get(pk=regions_id)
     return check_indexation(regions, True)
 
 
@@ -42,7 +43,8 @@ def delete_regions_and_annotations(regions_id):
     from app.webapp.models.regions import Regions
     from app.webapp.utils.iiif.annotation import destroy_regions
 
-    regions = Regions.objects.filter(pk=regions_id).first()
+    # regions = Regions.objects.filter(pk=regions_id).first()
+    regions = Regions.objects.get(pk=regions_id)
     return destroy_regions(regions)
 
 
@@ -104,6 +106,7 @@ def generate_record_json(model_name, record_id):
     try:
         instance = model_class.objects.get(pk=record_id)
         json_data = instance.to_json()
+        # bypass saving logic
         model_class.objects.filter(pk=record_id).update(json=json_data)
     except Exception as e:
         log(
@@ -191,7 +194,7 @@ def delete_digitization(digit_ref, other_media):
         img_files = get_files_with_prefix(IMG_PATH, digit_ref, f"{IMG_PATH}/")
         delete_files(img_files)
         if other_media:
-            delete_files(other_media, MEDIA_DIR)
+            delete_files(other_media, MEDIA_PATH)
 
         return f"Successfully deleted files associated to Digitization #{digit_ref}"
 

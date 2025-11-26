@@ -2,34 +2,36 @@
 {% load static shared_tags %}
 
 {% block content %}
+    <div class="body-content content p-5">
+        <div class="mt-1">
+            <p class="is-size-1 has-text-weight-light">
+                {% if APP_LANG == "en" %}
+                    {{ APP_NAME|upper }} Admin Home
+                {% else %}
+                    Accueil administrateur {{ APP_NAME|upper }}
+                {% endif %}
+            </p>
+        </div>
 
-    <div class="mt-1">
-        <p class="is-size-1 has-text-weight-light">
-            {% if APP_LANG == "en" %}
-                {{ APP_NAME|upper }} Admin Home
-            {% else %}
-                Accueil administrateur {{ APP_NAME|upper }}
-            {% endif %}
-        </p>
+        <div class="columns is-fluid">
+            <div class="column is-4">
+                {% include "includes/admin_row.html" with entity="witness" entity_title=WIT entity_desc=WIT_DESC icon=True %}
+            </div>
+            <div class="column is-4">
+                {% include "includes/admin_row.html" with entity="series" entity_title=SER entity_desc=SER_DESC icon=True %}
+            </div>
+            <div class="column is-4">
+                {% include "includes/admin_row.html" with entity="work" entity_title=WORK entity_desc=WORK_DESC icon=True %}
+            </div>
+        </div>
+        <div class="columns is-fluid">
+            <div class="column is-6">
+                {% include "includes/admin_row.html" with entity="document_set" entity_title=SET entity_desc=SET_DESC %}
+            </div>
+            <div class="column is-6">
+                {% include "includes/admin_row.html" with entity_title=TRMT entity_desc=TRMT_DESC %}
+            </div>
+        </div>
     </div>
 
-    <div class="columns is-fluid">
-        <div class="column is-4">
-            {% include "includes/admin_row.html" with entity="witness" entity_title=WIT entity_desc=WIT_DESC icon=True %}
-        </div>
-        <div class="column is-4">
-            {% include "includes/admin_row.html" with entity="series" entity_title=SER entity_desc=SER_DESC icon=True %}
-        </div>
-        <div class="column is-4">
-            {% include "includes/admin_row.html" with entity="work" entity_title=WORK entity_desc=WORK_DESC icon=True %}
-        </div>
-    </div>
-    <div class="columns is-fluid">
-        <div class="column is-6">
-            {% include "includes/admin_row.html" with entity="document_set" entity_title=SET entity_desc=SET_DESC %}
-        </div>
-        <div class="column is-6">
-            {% include "includes/admin_row.html" with entity_title=TRMT entity_desc=TRMT_DESC %}
-        </div>
-    </div>
 {% endblock %}
