@@ -16,13 +16,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.config.settings")
 
 REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
 REDIS_PORT = os.environ.get("REDIS_PORT", "6379")
-REDIS_PASSWORD = ENV.str("REDIS_PASSWORD", default="")
-
-import re
-
-REDIS_PASSWORD = re.sub(r"=$", "", REDIS_PASSWORD)  # dirty fix
-
-redis_prefix = f"redis://:{REDIS_PASSWORD}@" if REDIS_PASSWORD else "redis://"
 
 ADDITIONAL_MODULES = ENV.list("INSTALLED_APPS", default=[])
 
@@ -32,8 +25,8 @@ for module in ADDITIONAL_MODULES:
 
 celery_app = Celery(
     "config",
-    broker=f"{redis_prefix}{REDIS_HOST}:{REDIS_PORT}/0",
-    backend=f"{redis_prefix}{REDIS_HOST}:{REDIS_PORT}/0",
+    broker=f"redis://{REDIS_HOST}:{REDIS_PORT}/0",
+    backend=f"redis://{REDIS_HOST}:{REDIS_PORT}/0",
     imports=imported_tasks,
 )
 

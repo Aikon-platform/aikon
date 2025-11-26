@@ -354,9 +354,9 @@ setup_env() {
 
 update_app_env() {
     env_file=${1:-$FRONT_ENV}
-    default_params=("DEBUG" "C_FORCE_ROOT" "MEDIA_DIR" "POSTGRES_DB" "POSTGRES_USER"
-        "DB_PORT" "API_PORT" "ALLOWED_HOSTS" "SAS_USERNAME" "SAS_PORT" "SAS_PASSWORD" "SECRET_KEY" "FRONT_PORT"
-        "PROD_API_URL" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "REDIS_HOST" "REDIS_PORT" "REDIS_PASSWORD"
+    default_params=("TARGET" "DOCKER" "DEBUG" "C_FORCE_ROOT" "MEDIA_DIR" "POSTGRES_DB" "POSTGRES_USER"
+        "DB_PORT" "API_PORT" "ALLOWED_HOSTS" "SAS_USERNAME" "SAS_PORT" "SECRET_KEY" "FRONT_PORT"
+        "PROD_API_URL" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "REDIS_HOST" "REDIS_PORT"
         "EMAIL_HOST" "EMAIL_HOST_USER" "EMAIL_HOST_PASSWORD" "APP_LOGO" "HTTP_PROXY" "HTTPS_PROXY")
 
     setup_env "$env_file" "${default_params[@]}"
@@ -460,7 +460,9 @@ cleanup_pids() {
     if [ -n "$services" ]; then
         local remaining=$(ps aux | grep -E "$services" | grep -v grep | wc -l)
         if [ "$remaining" -gt 0 ]; then
-            color_echo red "⚠️ $remaining processes might still be running. You may need to manually kill them."
+            remaining_pids=$(ps u | grep -E "$services" | grep -v grep | awk '{print $2}' | tr '\n' ' ')
+            color_echo red "⚠️ $remaining process(es) might still be running. You may need to manually kill them."
+            color_echo red "❌ kill -9 $remaining_pids"
             ps aux | grep -E "$services" | grep -v grep
         elif [ "$pid_still_running" -eq 0 ]; then
             color_echo blue "All processes successfully terminated."

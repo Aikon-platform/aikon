@@ -8,6 +8,11 @@ from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
 from app.webapp.models.work import Work
 
+#######################################
+#            DELETE VIEWS             #
+# endpoints to erase database records #
+#######################################
+
 
 def delete_record(rec_id, rec_class):
     """

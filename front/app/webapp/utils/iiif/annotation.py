@@ -33,9 +33,8 @@ IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
 def get_manifest_annotations(
     regions_ref, only_ids=True, min_c: int = None, max_c: int = None
 ):
-    manifest_annotations = []
+    manifest_annotations, response = [], ""
     next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search"
-
     while next_page:
         try:
             response = requests.get(next_page)
@@ -43,7 +42,7 @@ def get_manifest_annotations(
 
             if response.status_code != 200:
                 log(
-                    f"[get_manifest_annotations] Failed to get annotations from SAS for {regions_ref}: {response.status_code}"
+                    f"[get_manifest_annotations] Failed to get annotations from SAS for {next_page}: {response.status_code}"
                 )
                 return []
 
@@ -78,20 +77,25 @@ def get_manifest_annotations(
                 manifest_annotations.extend(annotations["resources"])
 
             next_page = annotations.get("next")
+            if next_page:
+                next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search?{next_page.split('?')[1]}"
 
+        except requests.exceptions.JSONDecodeError as e:
+            log(f"[get_manifest_annotations] JSON decode error for {next_page}")
+            log(response.text, exception=e)
+            return manifest_annotations
         except requests.exceptions.RequestException as e:
             log(
                 f"[get_manifest_annotations] Failed to retrieve annotations for {next_page}",
                 e,
             )
-            return []
+            return manifest_annotations
         except Exception as e:
             log(
                 f"[get_manifest_annotations] Failed to parse annotations for {next_page}",
                 e,
             )
-            return []
-
+            return manifest_annotations
     return manifest_annotations
 
 
@@ -130,10 +134,6 @@ def get_regions_annotations(
         r_annos = {} if as_json else []
 
     regions_ref = regions.get_ref()
-    annos = get_manifest_annotations(regions_ref, False, min_c, max_c)
-    if len(annos) == 0:
-        return r_annos
-
     img_name = regions_ref.split("_anno")[0]
     nb_len = get_img_nb_len(img_name)
 
@@ -142,6 +142,9 @@ def get_regions_annotations(
         max_c = max_c or regions.get_json()["img_nb"]
         r_annos = {str(c): {} for c in range(min_c, max_c + 1)}
 
+    annos = get_manifest_annotations(regions_ref, False, min_c, max_c)
+    if len(annos) == 0:
+        return r_annos
     for anno in annos:
         try:
             on_value = anno["on"]
@@ -223,9 +226,11 @@ def reindex_file(filename):
         # if there is no regions_id in the ref, pass
         return False, a_ref
     regions_id = ref["regions"][1]
-    regions = Regions.objects.filter(pk=regions_id).first()
+    # regions = Regions.objects.filter(pk=regions_id).first()
+    regions = Regions.objects.get(pk=regions_id)
     if not regions:
-        digit = Digitization.objects.filter(pk=ref["digit"][1]).first()
+        # digit = Digitization.objects.filter(pk=ref["digit"][1]).first()
+        digit = Digitization.objects.get(pk=ref["digit"][1])
         if not digit:
             # if there is no digit corresponding to the ref, pass
             return False, a_ref

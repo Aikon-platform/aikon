@@ -61,8 +61,17 @@ class RecordFilter(FilterSet):
         #         field_labels=ordering_labels,
         #         label="Sort by" if APP_LANG == "en" else "Trier par",
         #     )
-        if hasattr(self, "queryset") and hasattr(self.queryset.model, "updated_at"):
-            self.queryset = self.queryset.order_by("-updated_at")
+        if hasattr(self, "queryset"):
+            if hasattr(self.queryset.model, "id"):
+                self.filters["id"] = CharFilter(
+                    field_name="id", lookup_expr="exact", label="ID"
+                )
+                self.filters["ids"] = CharFilter(
+                    method="filter_by_ids", label="IDs (comma-separated)"
+                )
+
+            if hasattr(self.queryset.model, "updated_at"):
+                self.queryset = self.queryset.order_by("-updated_at")
 
     @staticmethod
     def get_choices(model):
@@ -83,8 +92,11 @@ class RecordFilter(FilterSet):
 
     def to_form_fields(self):
         form_fields = []
+        excluded_fields = ["id", "ids"]
 
         for field_name, field in self.form.fields.items():
+            if field_name in excluded_fields:
+                continue
             label = self.custom_labels.get(field_name.replace("__icontains", ""))
 
             field_info = {
@@ -148,9 +160,9 @@ class WitnessFilter(RecordFilter):
     place = ModelChoiceFilter(
         queryset=ConservationPlace.objects.all(),
     )
-    series = ModelChoiceFilter(
-        queryset=Series.objects.all(),
-    )
+    # series = ModelChoiceFilter(
+    #     queryset=Series.objects.all(),
+    # )
     contents__lang = ModelMultipleChoiceFilter(
         queryset=Language.objects.all(),
         null_value=None,
@@ -173,7 +185,7 @@ class WitnessFilter(RecordFilter):
             "id_nb": ["icontains"],
             "place": ["exact"],
             "edition": ["exact"],
-            "series": ["exact"],
+            # "series": ["exact"],
             "contents__work": ["exact"],
             "contents__work__author": ["exact"],
             "contents__lang": ["exact"],

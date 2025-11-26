@@ -4,11 +4,10 @@ from functools import partial
 from typing import Optional, List
 
 from iiif_prezi.factory import StructuralError
-from celery import chain
 
 from django.utils.safestring import mark_safe
 from django.core.validators import FileExtensionValidator
-from django.db import models
+from django.db import models, transaction
 from django.db.models.signals import pre_delete, post_save
 from django.dispatch.dispatcher import receiver
 
@@ -42,7 +41,7 @@ from app.webapp.utils.functions import (
 )
 from app.webapp.utils.paths import (
     IMG_PATH,
-    MEDIA_DIR,
+    MEDIA_PATH,
     IMG_DIR,
     REGIONS_PATH,
     PDF_DIR,
@@ -184,7 +183,7 @@ class Digitization(AbstractSearchableModel):
         return IMG_DIR if self.digit_type == IMG_ABBR else PDF_DIR
 
     def get_absolute_path(self):
-        return f"{MEDIA_DIR}/{self.get_relative_path()}"
+        return f"{MEDIA_PATH}/{self.get_relative_path()}"
 
     def get_file_path(self, is_abs=True, i=None, ext=None):
         path = self.get_absolute_path() if is_abs else self.get_relative_path()
@@ -465,7 +464,7 @@ def digitization_post_save(sender, instance, created, **kwargs):
     if created:
         from app.webapp.tasks import convert_digitization
 
-        convert_digitization.delay(instance.id)
+        transaction.on_commit(lambda: convert_digitization.delay(instance.id))
 
 
 # Receive the pre_delete signal and delete the file associated with the model instance

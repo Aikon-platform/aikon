@@ -1,5 +1,5 @@
 import environ
-from app.webapp.utils.paths import BASE_DIR, LOG_PATH, MEDIA_DIR, STATIC_DIR
+from app.webapp.utils.paths import BASE_DIR, MEDIA_DIR, STATIC_DIR
 
 ENV = environ.Env()
 environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
@@ -66,6 +66,9 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
 ]
 
+DATA_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024  # 500MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 500 * 1024 * 1024  # 500MB
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -83,11 +86,16 @@ LOGGING = {
     "loggers": {
         "django": {
             "handlers": ["console"],
-            "level": "WARNING",
+            "level": "DEBUG",
         },
         "celery": {
             "handlers": ["console"],
-            "level": "WARNING",
+            "level": "DEBUG",
+            "propagate": True,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "DEBUG",
             "propagate": True,
         },
     },
@@ -118,7 +126,6 @@ SAS_PORT = ENV.int("SAS_PORT", 8888)
 GEONAMES_USER = ENV.str("GEONAMES_USER", default="")
 
 SAS_USERNAME = ENV.str("SAS_USERNAME", default="")
-SAS_PASSWORD = ENV.str("SAS_PASSWORD", default="")
 
 ROOT_URLCONF = "config.urls"
 
@@ -156,7 +163,8 @@ DATABASES = {
         "PASSWORD": ENV.str("POSTGRES_PASSWORD", default=""),
         "HOST": "db" if DOCKER else "localhost",
         "PORT": ENV.str("DB_PORT", default=5432),
-    }
+    },
+    "test": {"NAME": f"test_{ENV.str('POSTGRES_DB', default='')}"},
 }
 
 # Password validation
@@ -210,13 +218,6 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240
 
 # Cross-Origin Resource Sharing (CORS) from any origin
 CORS_ALLOW_ALL_ORIGINS = True
-
-# # Celery settings TODO delete?
-# CELERY_BROKER_URL = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
-# CELERY_RESULT_BACKEND = f"redis://:{ENV('REDIS_PASSWORD')}@localhost:6379/0"
-# CELERY_ACCEPT_CONTENT = ["json", "pickle"]
-# CELERY_TASK_SERIALIZER = "pickle"
-# CELERY_RESULT_SERIALIZER = "pickle"
 
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 

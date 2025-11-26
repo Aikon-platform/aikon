@@ -7,6 +7,7 @@ from django.db import models, connection
 from django.db.models import Q, F
 
 from app.webapp.models.utils.functions import get_fieldname
+from app.webapp.utils.functions import cast
 
 
 class RegionPairTuple(NamedTuple):
@@ -183,6 +184,19 @@ class RegionPair(models.Model):
                 "similarity_type": info[8],
             }
         return info
+
+    def to_dict(self) -> dict:
+        return {
+            "img_1": self.img_1,
+            "img_2": self.img_2,
+            "regions_id_1": self.regions_id_1,
+            "regions_id_2": self.regions_id_2,
+            "score": cast(self.score, float),
+            "category": cast(self.category, int),
+            "category_x": [int(c) for c in self.category_x or []],
+            "is_manual": self.is_manual,
+            "similarity_type": cast(self.similarity_type, int),
+        }
 
     def get_ref(self):
         return "-".join(sorted([self.img_1, self.img_2]))

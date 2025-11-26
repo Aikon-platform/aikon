@@ -13,6 +13,11 @@ from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MAX_ROWS
 from app.webapp.utils.functions import get_json
 
+##########################
+#   AUTOCOMPLETE VIEWS   #
+# used in form dropdowns #
+##########################
+
 
 class PlaceAutocomplete(autocomplete.Select2ListView):
     def get_list(self):

@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Optional, List
 from urllib.parse import urlparse
 
-import PyPDF2
 import requests
 from PIL import Image
 from django.core.exceptions import ValidationError
@@ -270,7 +269,7 @@ def rename_file(old_path, new_path):
         log(f"[rename_file] {old_path} does not exist")
         return False
     if os.path.exists(new_path):
-        log(f"[rename_file] {new_path} already exists")
+        log(f"[rename_file] {new_path} already exists, overriding its content")
     try:
         os.rename(old_path, new_path)
     except Exception as e:
@@ -672,7 +671,19 @@ def truncate_char(text, max_length):
     return text
 
 
-def sort_key(s):
+def sort_key(s: str) -> List[str | int]:
+    """
+    sorting key for witness and regions ids: used in `sorted()` functions to sort list of region ids or image ids alphabetically
+
+    :example:
+    >>> sort_key("wit1_pdf3_anno2")
+    ... ['wit', 1, '_pdf', 3, '_anno', 2, '']
+
+    >>> sort_key("wit3_pdf8_01_122,286,220,1128")
+    ... ['wit', 3, '_pdf', 8, '_', 1, '_', 122, ',', 286, ',', 220, ',', 1128, '']
+
+    :returns: a list where numbers in string `s` are converted to ints for comparison. non-number characters are kept as strings
+    """
     return [int(part) if part.isdigit() else part for part in re.split("(\d+)", s)]
 
 
@@ -711,3 +722,16 @@ def parse_img_ref(img_string):
         "canvas": canvas,
         "coord": coord.split(".")[0].split(","),
     }
+
+
+def cast(val, to_type):
+    if val is None:
+        return None
+    try:
+        return to_type(val)
+    except (ValueError, TypeError):
+        if to_type == int:
+            return 0
+        elif to_type == float:
+            return 0.0
+        return None

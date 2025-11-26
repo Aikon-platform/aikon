@@ -28,9 +28,7 @@ from app.webapp.utils.iiif.annotation import (
     get_images_annotations,
     get_training_regions,
 )
-from app.webapp.utils.paths import IMG_PATH, BASE_DIR
-from webapp.utils.logger import log
-from webapp.utils.paths import MEDIA_DIR, TMP_PATH
+from app.webapp.utils.paths import TMP_PATH
 
 
 def no_regions_message(request):

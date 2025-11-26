@@ -81,7 +81,10 @@ class Witness(AbstractSearchableModel):
             place = self.place.name if self.place else CONS_PLA_MSG
             return format_html(f"{wit_ref} | {place}")
 
-        return format_html(f"{self.edition.name}, {wit_ref}" if self.edition else title)
+        return format_html(
+            (f"{self.edition.name}, {wit_ref}" if self.edition else title)
+            or f"{get_name('Witness')} #{self.id}"
+        )
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
@@ -300,7 +303,7 @@ class Witness(AbstractSearchableModel):
         return any(digit.has_all_vectorizations() for digit in self.get_digits())
 
     def is_vectorized(self):
-        return any(digit.is_vectorized() for digit in self.get_digits())
+        return all(digit.is_vectorized() for digit in self.get_digits())
 
     def get_img(self, is_abs=False, only_first=False):
         # to get only one image of the witness

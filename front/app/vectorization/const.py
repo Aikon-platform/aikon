@@ -1,8 +1,8 @@
-from app.webapp.utils.paths import MEDIA_DIR
+from app.webapp.utils.paths import MEDIA_PATH
 
 MODULE_NAME = "vectorization"
 
 SVG_DIR = "svg"
-SVG_PATH = f"{MEDIA_DIR}/{SVG_DIR}"
+SVG_PATH = MEDIA_PATH / SVG_DIR
 
 VECTO_MODEL_EPOCH = "0045"
