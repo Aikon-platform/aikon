@@ -101,7 +101,7 @@ export function refToIIIF(imgRef=null, coord=null, size="full") {
     }*/
 
     const imgRefArr = imgRef.split("_");
-    if (coord !== "full") {
+    if (!coord) {
         coord = imgRefArr[imgRefArr.length - 1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : "full";
     }
     return `${imgRoot}/${coord}/${size}/0/default.jpg`;
