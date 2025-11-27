@@ -51,7 +51,7 @@ if [ ! -d "$DATA_FOLDER/sas" ]; then
     sudo chown -R "$USERID":"$USERID" "$DATA_FOLDER/sas"
 fi
 
-if [ ! -d "$DATA_BACKUP" ]; then
+if [ -n "$DATA_BACKUP" ] && [ ! -d "$DATA_BACKUP" ]; then
     color_echo yellow "Creation of $DATA_BACKUP folder (your password is required to set permissions)"
     get_password && echo || exit
     sudo mkdir -p "$DATA_BACKUP"
