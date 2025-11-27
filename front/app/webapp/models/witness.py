@@ -50,9 +50,10 @@ def get_name(fieldname, plural=False):
         },
         "volume": {"en": VOL, "fr": VOL},
         "series": {"en": SER, "fr": SER},
-        "title": {"en": "title of the volume", "fr": "titre du volume"},
+        "volume_title": {"en": "title of the volume", "fr": "titre du volume"},
         "is_public": {"en": "make it public", "fr": "rendre public"},
-        "number": {"en": "volume number", "fr": "numéro de volume"},
+        "volume_nb": {"en": "volume number", "fr": "numéro de volume"},
+        "edition": {"en": "edition", "fr": "édition"},
         "number_info": {
             "en": "number useful for classifying the different volumes of an edition, but not necessarily of historical value",
             "fr": "numéro utile pour classer les différents tomes d'une édition, mais qui n'a pas nécessairement de valeur historique",
@@ -140,13 +141,13 @@ class Witness(AbstractSearchableModel):
         null=True,
     )
     volume_title = models.CharField(
-        verbose_name=get_name("title"),
+        verbose_name=get_name("volume_title"),
         max_length=500,
         blank=True,
         null=True,
     )
     volume_nb = models.IntegerField(
-        verbose_name=get_name("number"),
+        verbose_name=get_name("volume_nb"),
         help_text=get_name("number_info"),
         blank=True,
         null=True,

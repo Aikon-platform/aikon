@@ -32,7 +32,6 @@
         data[key] = editedValue;
 
         const url = `${window.location.origin}/${appName}/witness/${witness.id}/update`;
-
         const response = await fetch(url, {
             method: "POST",
             headers: {
@@ -97,6 +96,7 @@
                         <span
                             class="editable-span"
                             on:click={() => editMetadata(key, value.value)}
+                            on:keydown={() => editMetadata(key, value.value)}
                         >
                             {value.value}
                         </span>
