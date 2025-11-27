@@ -19,7 +19,9 @@
       "buttons": {
         "regions": "/aikon/witness/1/regions/"
       },
-      "regions": [],
+      "regions": [
+        12
+      ],
       "user_id": 1,
       "edit_url": "/aikon-admin/webapp/witness/1/change/",
       "metadata": {

@@ -1,8 +1,11 @@
 import unittest
 
+from django.test import LiveServerTestCase
+
 from app.webapp.models.regions import Regions, get_name
 from app.webapp.models.digitization import Digitization
 
+from app.config.settings.base import APP_PORT
 from app.webapp.utils.iiif.annotation import (
     get_manifest_annotations,
     has_annotation,
@@ -34,16 +37,24 @@ from app.webapp.utils.iiif.annotation import (
     get_regions_urls,
 )
 
+# TODO use a test-specific aiiinotate database, migrate it and delete afterwards (can use a mongosh db.dropDatabase() command).
 
-class AnnotationsTestCase(unittest.TestCase):
-    # see front/app/webapp/fixtures
-    fixtures = ["Regions", "Digitization", "Witness"]
+
+class AnnotationsTestCase(LiveServerTestCase):
+    # force the use of APP_PORT for the LiveServerTestCase
+    port = APP_PORT
+    # fixtures are saved in front/app/webapp/fixtures
+    fixtures = ["Users", "Regions", "Digitization", "Witness"]
 
     def setUp(self):
         pass
 
     def test_blabla(self):
         print("blabla")
+
+    def test_index_regions(self):
+        test_regions = Regions.objects.first()
+        index_regions(test_regions)
 
     def tearDown(self):
         pass

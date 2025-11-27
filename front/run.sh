@@ -68,6 +68,8 @@ if [ "$TESTING" = false ]; then
     DJANGO_PID=$!
     PIDS+=($DJANGO_PID)
 else
+    # wait for other processes to have started
+    sleep 5
     "$BIN"/python app/manage.py test
 fi
 
