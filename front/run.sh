@@ -1,6 +1,19 @@
 #!/bin/env bash
 
 SUDO_PSW="$1"
+
+TESTING=false
+while getopts "t" flag; do
+    case "$flag" in
+        t)
+            TESTING=true;
+            break;;
+        *)
+            TESTING=false;
+            break;;
+    esac
+done
+
 FRONT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ENV_FILE="$FRONT_DIR/app/config/.env"
 BIN="$FRONT_DIR"/venv/bin
@@ -37,10 +50,6 @@ PIDS+=($CELERY_WORKER_PID)
 CELERY_BEAT_PID=$!
 PIDS+=($CELERY_BEAT_PID)
 
-"$BIN"/python app/manage.py runserver localhost:"$FRONT_PORT" &
-DJANGO_PID=$!
-PIDS+=($DJANGO_PID)
-
 echo "$SUDO_PSW" | sudo -S java -Dcantaloupe.config="$FRONT_DIR"/cantaloupe/cantaloupe.properties -Xmx2g -jar "$FRONT_DIR"/cantaloupe/cantaloupe-4.1.11.war > /dev/null 2>&1 &
 CANTALOUPE_PID=$!
 PIDS+=($CANTALOUPE_PID)
@@ -53,6 +62,14 @@ rm -rf "$ANNOTATIONS_DIR"/dist "$ANNOTATIONS_DIR"/.parcel-cache
 "$ANNOTATIONS_BIN"/parcel "$ANNOTATIONS_DIR"/src/index.html --port "$MIRADOR_PORT" &
 MIRADOR_PID=$!
 PIDS+=($MIRADOR_PID)
+
+if [ "$TESTING" = false ]; then
+    "$BIN"/python app/manage.py runserver localhost:"$FRONT_PORT" &
+    DJANGO_PID=$!
+    PIDS+=($DJANGO_PID)
+else
+    "$BIN"/python app/manage.py test
+fi
 
 color_echo cyan "Celery worker PID  $CELERY_WORKER_PID"
 color_echo cyan "C2elery beat PID    $CELERY_BEAT_PID"

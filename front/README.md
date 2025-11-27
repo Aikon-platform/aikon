@@ -156,6 +156,12 @@ You can now visit the app at [http://localhost:8000](http://localhost:8000) and 
 
 ### *For more documentation, see [docs folder](docs/)*
 
+## Testing 🧪
+
+```python
+bash ru.sh -t
+```
+
 ## Project 📜
 
 **[Aikon](https://aikon-platform.github.io/)** is a modular research platform designed to empower humanities scholars
