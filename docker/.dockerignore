@@ -1,0 +1,84 @@
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environment variables
+.env
+.pgpass
+
+# Virtual environments
+.env/
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Temporary outputs
+*/tmp/
+
+# Logs
+*.log
+*/stdout
+*/log
+*/error.log
+*/stdout.log
+
+# PyCharm
+.idea/
+
+# OS generated files
+*.swp
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# IPython
+profile_default/
+ipython_config.py
+
+# PEP 582
+__pypackages__/
+.webassets-cache
+
+# Webpack builds
+node_modules/
+
+front/celery/celerybeat-schedule.db
+front/celerybeat-schedule.db
+.vscode
