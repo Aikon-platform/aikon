@@ -43,7 +43,7 @@
         });
 
         if (!response.ok) {
-            alert("Error saving value");
+            alert("Error saving value!");
             return;
         }
 
@@ -79,17 +79,13 @@
                 <span class="witness-value">
                     {#if editedField === key}
                         {#if choices[key]}
-                            <select
-                                class="select is-small is-link"
-                                bind:value={editedValue}
-                                on:change={() => saveField(key)}
-                            >
-                                {#each choices[key] as option}
-                                    <option value={option.value}>
-                                        {option.label}
-                                    </option>
-                                {/each}
-                            </select>
+                            <div class="select is-small is-link">
+                                <select bind:value={editedValue} on:change={() => saveField(key)}>
+                                    {#each choices[key] as option}
+                                        <option value={option.value}>{option.label}</option>
+                                    {/each}
+                                </select>
+                            </div>
                         {:else}
                             <input
                                 class="input is-small"
@@ -100,7 +96,7 @@
                     {:else}
                         <span
                             class="editable-span"
-                            on:click={() => editMetadata(key, value)}
+                            on:click={() => editMetadata(key, value.value)}
                         >
                             {value.value}
                         </span>
