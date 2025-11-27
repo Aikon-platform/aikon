@@ -6,7 +6,7 @@ from uuid import uuid4
 from django.utils.safestring import mark_safe
 from django.db import models
 from iiif_prezi.factory import StructuralError
-from app.config.settings import APP_URL, APP_NAME, APP_LANG, SAS_APP_URL
+from app.config.settings import BASE_URL, APP_NAME, SAS_APP_URL
 from app.similarity.const import SCORES_PATH
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.searchable_models import AbstractSearchableModel
@@ -79,7 +79,7 @@ class Regions(AbstractSearchableModel):
             return None
 
         base_url = (
-            f"{APP_URL}/{APP_NAME}/iiif/{check_version(version)}/{self.get_ref()}"
+            f"{BASE_URL}/{APP_NAME}/iiif/{check_version(version)}/{self.get_ref()}"
         )
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 

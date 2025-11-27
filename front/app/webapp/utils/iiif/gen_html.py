@@ -6,7 +6,7 @@ from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2
 from app.webapp.utils.functions import get_icon, get_action, cls
 from app.config.settings import (
     SAS_APP_URL,
-    APP_URL,
+    BASE_URL,
     APP_NAME,
     APP_LANG,
 )
@@ -31,23 +31,23 @@ def regions_btn(obj, action="view"):
     # elif action == "edit":
     #     icon = get_icon("pen-to-square")
     #     # The link redirects to the edit regions page (show_regions() view DELETED)
-    #     link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show/"
+    #     link = f"{BASE_URL}/{APP_NAME}/{obj.get_ref()}/show/"
     elif action == "final":
         icon = get_icon("check")
         # The link redirects to Mirador with corrected regions (Regions)
         link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V2)}"
     # elif action == "similarity":
     #     icon = get_icon("code-compare")
-    #     link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-similarity"
+    #     link = f"{BASE_URL}/{APP_NAME}/{obj.get_ref()}/show-similarity"
     elif action == "regions":
         icon = get_icon("eye")
-        link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-all-regions"
+        link = f"{BASE_URL}/{APP_NAME}/{obj.get_ref()}/show-all-regions"
     elif action == "vectors":
         icon = get_icon("arrows")
-        link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-vectorization"
+        link = f"{BASE_URL}/{APP_NAME}/{obj.get_ref()}/show-vectorization"
     elif action == "vectorization":
         icon = get_icon("pen-to-square")
-        link = f"{APP_URL}/{APP_NAME}/run-vectorization/{obj.get_ref()}"
+        link = f"{BASE_URL}/{APP_NAME}/run-vectorization/{obj.get_ref()}"
     else:
         # When the button is not supposed to redirects to anything
         link = "#"

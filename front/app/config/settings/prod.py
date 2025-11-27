@@ -10,6 +10,7 @@ BASE_URL = f"https://{ENV.str('PROD_URL', default='')}"
 APP_URL = BASE_URL
 # CANTALOUPE_APP_URL = f"http://cantaloupe:{CANTALOUPE_PORT}" if DOCKER else BASE_URL
 # SAS_APP_URL = f"http://sas:{SAS_PORT}" if DOCKER else f"{BASE_URL}/sas"
+# NOTE Always use external URLs because SAS and Cantaloupe are used client side too
 CANTALOUPE_APP_URL = BASE_URL
 SAS_APP_URL = f"{BASE_URL}/sas"
 

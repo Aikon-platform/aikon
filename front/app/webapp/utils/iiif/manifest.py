@@ -7,7 +7,7 @@ from app.webapp.utils.constants import (
 )
 from app.webapp.utils.iiif import NO_LICENSE, get_license_url
 from app.webapp.utils.paths import IMG_PATH
-from app.config.settings import CANTALOUPE_APP_URL, APP_URL
+from app.config.settings import CANTALOUPE_APP_URL
 
 from app.webapp.utils.logger import console, log
 from app.webapp.utils.iiif.annotation import set_canvas

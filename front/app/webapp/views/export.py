@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import F
 
 from app.config.settings import (
-    APP_URL,
+    BASE_URL,
     APP_NAME,
     CANTALOUPE_APP_URL,
     ADDITIONAL_MODULES,
@@ -321,19 +321,19 @@ def get_witness_data(witness, json_cascade=True):
             if "regions" in ADDITIONAL_MODULES:
                 w_reg_processes[r.id]["treatments"][
                     "extracted_regions"
-                ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/extracted-regions"
+                ] = f"{BASE_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/extracted-regions"
 
             # 4 : Similarity data (endpoint URL)
             if "similarity" in ADDITIONAL_MODULES:
                 w_reg_processes[r.id]["treatments"][
                     "similarities"
-                ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/similarities"
+                ] = f"{BASE_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/similarities"
 
             # 5 : Vectorizations (endpoint URL)
             if "vectorization" in ADDITIONAL_MODULES:
                 w_reg_processes[r.id]["treatments"][
                     "vectorizations"
-                ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/vectorized-images"
+                ] = f"{BASE_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/vectorized-images"
 
     return w_json | w_digits_manifs | {"regions": w_reg_processes}
 
@@ -428,16 +428,16 @@ def get_json_vecto(request, wid, rid):
         if witness.is_public:
             result = get_vecto_data(rid, include_svg=True)
             return JsonResponse(result, safe=False)
-        else:
-            return JsonResponse({})
+    return JsonResponse({})
 
 
 def get_json_document_set(request, dsid):
+    ds_data = {}
     if request.method == "GET":
         doc_set = get_object_or_404(DocumentSet, id=dsid)
         ds_data = {
-            w.id: f"{APP_URL}/{APP_NAME}/witness/{w.id}/json"
+            w.id: f"{BASE_URL}/{APP_NAME}/witness/{w.id}/json"
             for w in doc_set.all_witnesses()
             if w.is_public
         }
-        return JsonResponse(ds_data, safe=False)
+    return JsonResponse(ds_data, safe=False)

@@ -11,7 +11,7 @@ from django.db import models, transaction
 from django.db.models.signals import pre_delete, post_save
 from django.dispatch.dispatcher import receiver
 
-from app.config.settings import APP_URL, APP_NAME
+from app.config.settings import BASE_URL, APP_NAME
 from app.webapp.models.digitization_source import DigitizationSource
 from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.models.utils.functions import get_fieldname
@@ -359,7 +359,7 @@ class Digitization(AbstractSearchableModel):
 
     def gen_manifest_url(self, only_base=False, version=None):
         # usage of version parameter to copy parameters of Regions.gen_manifest_url()
-        base_url = f"{APP_URL}/{APP_NAME}/iiif/{self.get_ref()}"
+        base_url = f"{BASE_URL}/{APP_NAME}/iiif/{self.get_ref()}"
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 
     def gen_manifest_json(self):

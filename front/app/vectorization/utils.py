@@ -5,7 +5,7 @@ from zipfile import ZipFile
 from stream_unzip import stream_unzip
 import requests
 
-from app.config.settings import APP_URL, APP_NAME
+from app.config.settings import BASE_URL, APP_NAME
 from app.vectorization.const import VECTO_MODEL_EPOCH, SVG_PATH
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
@@ -113,7 +113,7 @@ def prepare_document(document: Witness | Digitization | Regions, **kwargs):
     regions = document.get_regions() if hasattr(document, "get_regions") else [document]
 
     return [
-        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
+        {"type": "url_list", "src": f"{BASE_URL}/{APP_NAME}/{ref}/list", "uid": ref}
         for ref in [region.get_ref() for region in regions]
     ]
 

@@ -1,7 +1,7 @@
 from django.contrib.admin.widgets import RelatedFieldWidgetWrapper
-from django.forms import Textarea, SelectMultiple, Select, TypedChoiceField, BoundField
+from django.forms import Textarea, SelectMultiple, Select, BoundField
 from django.template import Library
-from app.config.settings import CANTALOUPE_APP_URL, SAS_APP_URL, APP_URL, APP_NAME
+from app.config.settings import CANTALOUPE_APP_URL, SAS_APP_URL, BASE_URL, APP_NAME
 from app.webapp.utils.constants import MANIFEST_V2, TRUNCATEWORDS_SIM
 import pprint
 import json
@@ -64,7 +64,7 @@ def ref_to_mirador(regions_refs, img_ref):
     digit_ref = "_".join(img_ref[0:1])
 
     regions_ref = [ref for ref in regions_refs if ref.startswith(digit_ref)][0]
-    manifest = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions_ref}/manifest.json"
+    manifest = f"{BASE_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions_ref}/manifest.json"
 
     return f"{SAS_APP_URL}/index.html?iiif-content={manifest}&canvas={int(img_ref[-2])}"
 

@@ -1,7 +1,7 @@
 from app.config.settings import (
     SAS_APP_URL,
     APP_LANG,
-    APP_URL,
+    BASE_URL,
     CANTALOUPE_APP_URL,
     APP_NAME,
     WEBAPP_NAME,
@@ -49,7 +49,7 @@ def global_variables(request):
         "WEBAPP_NAME": WEBAPP_NAME,
         "COPYRIGHT": COPYRIGHT,
         "SAS_APP_URL": SAS_APP_URL,
-        "APP_URL": APP_URL,
+        "APP_URL": BASE_URL,
         "CANTALOUPE_APP_URL": CANTALOUPE_APP_URL,
         "MS_ABBR": MS_ABBR,
         "VOL_ABBR": VOL_ABBR,

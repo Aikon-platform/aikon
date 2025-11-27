@@ -16,10 +16,8 @@ from app.config.settings import (
     CANTALOUPE_APP_URL,
     SAS_APP_URL,
     APP_NAME,
-    APP_URL,
+    BASE_URL,
     ADDITIONAL_MODULES,
-    SAS_PORT,
-    DOCKER,
 )
 from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, flatten_dict
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
@@ -268,7 +266,7 @@ def unindex_annotation(annotation_id):
 def index_annotations_on_canvas(regions: Regions, canvas_nb):
     # this url (view canvas_annotations()) is calling format_canvas_annotations(),
     # thus returning formatted annotations for each canvas
-    formatted_annos = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions.get_ref()}/list/anno-{canvas_nb}.json"
+    formatted_annos = f"{BASE_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions.get_ref()}/list/anno-{canvas_nb}.json"
     # POST request that index the annotations
     response = urlopen(
         f"{SAS_APP_URL}/annotation/populate",

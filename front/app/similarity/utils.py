@@ -17,7 +17,7 @@ from django.db.models import Q, F
 from django.core.cache import cache
 
 from app.similarity.const import SCORES_PATH
-from app.config.settings import APP_URL, APP_NAME
+from app.config.settings import BASE_URL, APP_NAME
 from app.similarity.models.region_pair import RegionPair, RegionPairTuple
 from app.similarity.tasks import delete_api_similarity
 from app.webapp.models.digitization import Digitization
@@ -178,7 +178,7 @@ def prepare_document(document: Witness | Digitization | Regions, **kwargs):
         )
 
     return [
-        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
+        {"type": "url_list", "src": f"{BASE_URL}/{APP_NAME}/{ref}/list", "uid": ref}
         for ref in [region.get_ref() for region in regions]
     ]
 

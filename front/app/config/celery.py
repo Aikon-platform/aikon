@@ -13,6 +13,7 @@ environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
 DEBUG = ENV.bool("DEBUG", default=True)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.config.settings")
+os.environ.setdefault("C_FORCE_ROOT", "True")
 
 REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
 REDIS_PORT = os.environ.get("REDIS_PORT", "6379")
