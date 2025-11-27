@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/env bash
 # Script to import database, mediafiles and SAS annotations into Docker containers
 
 set -e

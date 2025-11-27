@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/env bash
 
 # WHEN TO USE
 # Script to clear all migrations files and migration history from database

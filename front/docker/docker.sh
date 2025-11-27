@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/env bash
 
 # HOW TO USE
 # Inside the docker/ directory, run:

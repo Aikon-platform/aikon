@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/env bash
 
 SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"

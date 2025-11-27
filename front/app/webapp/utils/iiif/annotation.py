@@ -30,6 +30,8 @@ IIIF_SEARCH_VESION = 1
 IIIF_PRESENTATION_VERSION = 2
 
 
+# TODO PAUL: add `only_ids`functionnality on aiiinotate side
+# TODO PAUL: add `min_c` `max_c` on aiiinotate
 def get_manifest_annotations(
     regions_ref, only_ids=True, min_c: int = None, max_c: int = None
 ):
@@ -148,8 +150,11 @@ def get_regions_annotations(
         return r_annos
     for anno in annos:
         try:
-            on_value = anno["on"]
-            canvas = on_value.split("/canvas/c")[1].split(".json")[0]
+            on_value: List[Dict] = anno["on"]  # on is a list of SpecificResources
+            id_canvas = on_value[0]["full"]  # full ID of the target canvas
+            canvas = id_canvas.split("/canvas/c")[1].split(".json")[
+                0
+            ]  # string representation of the canvas number
             try:
                 canvas_num = int(canvas)
             except ValueError:
@@ -162,7 +167,6 @@ def get_regions_annotations(
             # DO NOT WORK since the annotations are sorted ALPHABETICALLY by canvas number
             # if max_c is not None and (canvas_num > max_c):
             #     break
-
             if (max_c is not None and canvas_num > max_c) or (
                 min_c is not None and canvas_num < min_c
             ):
@@ -174,7 +178,7 @@ def get_regions_annotations(
                 )
                 continue
 
-            xywh = on_value.split("xywh=")[1]
+            xywh = on_value[0]["selector"]["default"]["value"].replace("xywh=", "")
             if as_json:
                 img = f"{img_name}_{canvas.zfill(nb_len)}"
                 aid = anno["@id"].split("/")[-1]
@@ -272,7 +276,6 @@ def index_annotations_on_canvas(regions: Regions, canvas_nb):
     # this url (view canvas_annotations()) is calling format_canvas_annotations(),
     # thus returning formatted annotations for each canvas
     formatted_annos = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions.get_ref()}/list/anno-{canvas_nb}.json"
-    print(">>>> formatted_annos", formatted_annos)
     # POST request that index the annotations
     response = requests.post(
         f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/createMany",

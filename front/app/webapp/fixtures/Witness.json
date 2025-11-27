@@ -1,0 +1,110 @@
+[
+{
+  "model": "webapp.witness",
+  "pk": 1,
+  "fields": {
+    "json": {
+      "id": 1,
+      "img": "wit1_pdf1_0001.jpg",
+      "iiif": [
+        "<a href='http://localhost:8000/aikon/iiif/wit1_pdf1/manifest.json' target='_blank'><img alt='IIIF' src='/static/img/logo-iiif.png' style='height: 15px;'/></a>"
+      ],
+      "type": "Witness",
+      "user": "admin",
+      "class": "Witness",
+      "title": "iconologia1613sienne25p",
+      "digits": [
+        1
+      ],
+      "buttons": {
+        "regions": "/aikon/witness/1/regions/"
+      },
+      "regions": [],
+      "user_id": 1,
+      "edit_url": "/aikon-admin/webapp/witness/1/change/",
+      "metadata": {
+        "Work": "-",
+        "Dates": "-",
+        "Language": "-",
+        "Page number": "-",
+        "Creation place": "-",
+        "Identification number": "iconologia1613sienne25p"
+      },
+      "view_url": "/aikon/witness/1/regions/",
+      "is_public": false,
+      "updated_at": "2025-11-25 15:01"
+    },
+    "user": 1,
+    "type": "tpr",
+    "id_nb": "iconologia1613sienne25p",
+    "place": null,
+    "notes": "",
+    "nb_pages": null,
+    "page_type": "pag",
+    "is_public": false,
+    "link": "",
+    "slug": "iconologia1613sienne25p",
+    "edition": null,
+    "volume_title": null,
+    "volume_nb": null,
+    "series": null,
+    "created_at": "2025-11-25T15:01:45.277Z",
+    "updated_at": "2025-11-25T15:01:45.278Z"
+  }
+},
+{
+  "model": "webapp.witness",
+  "pk": 2,
+  "fields": {
+    "json": {
+      "id": 2,
+      "img": "wit2_pdf2_0001.jpg",
+      "iiif": [
+        "<a href='http://localhost:8000/aikon/iiif/wit2_pdf2/manifest.json' target='_blank'><img alt='IIIF' src='/static/img/logo-iiif.png' style='height: 15px;'/></a>"
+      ],
+      "type": "Witness",
+      "user": "admin",
+      "class": "Witness",
+      "title": "iconologia1645venise20p",
+      "digits": [
+        2
+      ],
+      "buttons": {
+        "regions": "/aikon/witness/2/regions/"
+      },
+      "regions": [
+        19
+      ],
+      "user_id": 1,
+      "edit_url": "/aikon-admin/webapp/witness/2/change/",
+      "metadata": {
+        "Work": "-",
+        "Dates": "-",
+        "Language": "-",
+        "Page number": "-",
+        "Creation place": "-",
+        "Identification number": "iconologia1645venise20p"
+      },
+      "view_url": "/aikon/witness/2/regions/",
+      "is_public": false,
+      "updated_at": "2025-11-25 15:18"
+    },
+    "user": 1,
+    "type": "tpr",
+    "id_nb": "iconologia1645venise20p",
+    "place": null,
+    "notes": "",
+    "nb_pages": null,
+    "page_type": "pag",
+    "is_public": false,
+    "link": "",
+    "slug": "iconologia1645venise20p",
+    "edition": null,
+    "volume_title": null,
+    "volume_nb": null,
+    "series": null,
+    "created_at": "2025-11-25T15:18:47.559Z",
+    "updated_at": "2025-11-25T15:18:47.559Z"
+  }
+}
+]

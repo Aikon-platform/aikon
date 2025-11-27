@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/env bash
 
 # HOW TO USE
 # Disable superuser identification for index-annotation view
