@@ -325,6 +325,16 @@ urlpatterns += [
         export_docset,
         name="export_docset",
     ),
+    path(
+        f"{APP_NAME}/witness/select",
+        witness_select_fields,
+        name="witness_select_fields",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/update",
+        witness_update,
+        name="witness_update",
+    ),
 ]
 
 # SEARCH

@@ -29,6 +29,7 @@ from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
 from app.webapp.utils.functions import get_icon, flatten, format_dates
 from app.webapp.utils.logger import log
+from webapp.models.utils.constants import MAP_PAGE_TYPE
 
 
 def get_name(fieldname, plural=False):
@@ -210,15 +211,25 @@ class Witness(AbstractSearchableModel):
         metadata = {}
 
         wit = {
-            get_name("type"): self.get_type(),
-            get_name("page_nb"): self.get_page(),
+            "type": self.get_type(),
+            "page_type": self.get_page_type(),
+            "nb_pages": self.get_page(),
+            "notes": self.get_notes(),
+            "link": self.get_link(),
         }
 
-        if notes := self.notes:
-            wit[get_name("notes")] = notes
+        if self.type != "ms":
+            wit["edition"] = self.get_edition()
+            wit["volume_nb"] = self.get_volume_nb()
+            wit["volume_title"] = self.get_volume_title()
 
-        if link := self.link:
-            wit[get_name("link")] = link
+        wit = {
+            key: {
+                "label": get_name(key),
+                "value": value,
+            }
+            for key, value in wit.items()
+        }
 
         metadata["wit"] = wit
 
@@ -228,29 +239,35 @@ class Witness(AbstractSearchableModel):
             for content in contents:
                 content_dict = content.get_metadata()
                 metadata["contents"].append(content_dict)
-        print(metadata)
-
         return metadata
 
     def get_type(self):
         # NOTE should be returning "letterpress" (tpr) / "woodblock" (wpr) / "manuscript" (ms)
         return MAP_WIT_TYPE[self.type]
 
+    def get_page_type(self):
+        return MAP_PAGE_TYPE[self.page_type]
+
     def get_ref(self):
         return f"wit{self.id}"
 
     def get_page(self):
-        return (
-            f"{self.nb_pages} {'ff' if self.page_type == FOL_ABBR else 'pp'}."
-            if self.nb_pages
-            else "-"
-        )
+        return f"{self.nb_pages}" if self.nb_pages else "-"
 
     def get_notes(self):
         return f"{self.notes}" if self.notes else "-"
 
     def get_link(self):
         return f"{self.link}" if self.link else "-"
+
+    def get_edition(self):
+        return f"{self.edition}" if self.edition else "-"
+
+    def get_volume_nb(self):
+        return f"{self.volume_nb}" if self.volume_nb else "-"
+
+    def get_volume_title(self):
+        return f"{self.volume_title}" if self.volume_title else "-"
 
     def is_validated(self):
         for regions in self.get_regions():
