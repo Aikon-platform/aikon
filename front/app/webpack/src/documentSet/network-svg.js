@@ -30,7 +30,7 @@ export function createSvg(div, nodes, links = null, onSelectionChange, onModeCha
     const simulation = d3.forceSimulation(nodes)
         .force("link", d3.forceLink(links)
             .id(d => d.id)
-            .strength(d => d.strength)
+            //.strength(d => d.strength)
             .distance(d => d.distance)
         )
         .force("charge", d3.forceManyBody().strength(-250))
