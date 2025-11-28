@@ -25,6 +25,8 @@
     const manifest = getContext('manifest');
     const isInModal = getContext("isInModal") || false;
 
+    const qImgIiifUrl = refToIIIF(qImg, qImg.split('_').at(-1), '250,');
+
     $: sLen = $selectedRegions.hasOwnProperty(currentPageId) ? Object.values($selectedRegions[currentPageId]).length : 0;
     $: hasNoMatch = false; // TODO HERE FIND A WAY TO SET NO MATCH FOR THIS Q REGIONS
 
@@ -159,7 +161,7 @@
             </a>
 
             <!--TODO make image copyable-->
-            <img src="{refToIIIF(qImg, qImg.split('_').pop(), '250,')}" alt="Query region" class="mb-3 card query-image">
+            <img src="{qImgIiifUrl}" alt="Query region" class="mb-3 card query-image">
 
             <div class="new-similarity control pt-2 is-center">
                 <div class="tags has-addons" style="flex-wrap: nowrap">
