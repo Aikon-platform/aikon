@@ -4,6 +4,8 @@ import { sasUrl, cantaloupeUrl, appName } from './constants';
 export const loading = writable(false);
 export const errorMsg = writable("");
 
+const isString = (x) => typeof x === 'string' || x instanceof String;
+
 export async function withLoading(asyncFunction) {
     loading.set(true);
     try {
@@ -75,6 +77,9 @@ export function refToIIIFRoot(imgRef=null) {
 }
 
 export function refToIIIF(imgRef=null, coord=null, size="full") {
+    // in some cases, coord is "x,y,w,h.jpg" => conveet to "x,y,w,h"
+    coord = isString(coord) ? coord.replace(".jpg", "") : coord;
+
     // imgRef can be like "wit<id>_<digit><id>_<page_nb>.jpg" or "wit<id>_<digit><id>_<page_nb>_<x,y,h,w>.jpg"
     if (!imgRef) {
         return "https://placehold.co/96x96/png?text=No+image";
