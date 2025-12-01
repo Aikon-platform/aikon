@@ -44,7 +44,8 @@ class AnnotationsTestCase(LiveServerTestCase):
     # force the use of APP_PORT for the LiveServerTestCase
     port = APP_PORT
     # fixtures are saved in front/app/webapp/fixtures
-    fixtures = ["Users", "Regions", "Digitization", "Witness"]
+    # fixtures = ["Users", "Regions", "Digitization", "Witness"]
+    fixtures = ["db_fixture"]
 
     def setUp(self):
         pass
