@@ -193,7 +193,7 @@ class RegionPair(models.Model):
             "regions_id_2": self.regions_id_2,
             "score": cast(self.score, float),
             "category": cast(self.category, int),
-            "category_x": [int(c) for c in self.category_x or []],
+            "category_x": [cast(c, int) for c in self.category_x or []],
             "is_manual": self.is_manual,
             "similarity_type": cast(self.similarity_type, int),
         }
