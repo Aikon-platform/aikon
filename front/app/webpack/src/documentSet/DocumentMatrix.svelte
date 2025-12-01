@@ -1,10 +1,11 @@
 <script>
     import * as d3 from 'd3';
     import LegendItem from './LegendItem.svelte';
+    import {shorten} from "../utils.js";
 
     export let documentSetStore;
 
-    const { documentNodes, docPairStats, pairIndex } = documentSetStore;
+    const { documentNodes, docPairStats, pairIndex, selectedCategories } = documentSetStore;
 
     let matrixContainer;
     let scatterContainer;
@@ -193,50 +194,73 @@
         const maxPage2 = Math.max(...data.points.map(p => p.page2), 0);
 
         const xScale = d3.scaleLinear()
-            .domain([0, maxPage2])
+            .domain([0, maxPage1])
             .range([0, width]);
 
         const yScale = d3.scaleLinear()
-            .domain([0, maxPage1])
+            .domain([0, maxPage2])
             .range([height, 0]);
 
         g.append('g')
             .attr('transform', `translate(0,${height})`)
             .call(d3.axisBottom(xScale)
-                .ticks(Math.min(maxPage2 + 1, 10))
+                .ticks(Math.min(maxPage1 + 1, 10))
                 .tickFormat(d3.format('d')));
 
         g.append('g')
             .call(d3.axisLeft(yScale)
-                .ticks(Math.min(maxPage1 + 1, 10))
+                .ticks(Math.min(maxPage2 + 1, 10))
                 .tickFormat(d3.format('d')));
 
-        g.append('text')
-            .attr('x', width / 2)
-            .attr('y', height + 40)
-            .attr('text-anchor', 'middle')
-            .attr('font-size', '12px')
-            .text(`${data.doc2.title || `Doc ${data.doc2.id}`} (page)`);
+        g.append('foreignObject')
+            .attr('x', 0)
+            .attr('y', height + 10)
+            .attr('width', width)
+            .attr('height', 50)
+            .append('xhtml:div')
+            .style('display', 'flex')
+            .style('align-items', 'center')
+            .style('justify-content', 'center')
+            .style('gap', '0.5rem')
+            .style('margin-top', '20px')
+            .html(`<span class="legend-color" style="background-color: ${data.doc1.color}; width: 12px; height: 12px; display: inline-block; border-radius: 50%;"></span>
+                <span style="font-size: 12px;">${shorten(data.doc1.title) || `Doc ${data.doc1.id}`} (page)</span>`);
 
-        g.append('text')
-            .attr('transform', 'rotate(-90)')
-            .attr('x', -height / 2)
-            .attr('y', -40)
-            .attr('text-anchor', 'middle')
-            .attr('font-size', '12px')
-            .text(`${data.doc1.title || `Doc ${data.doc1.id}`} (page)`);
+        g.append('foreignObject')
+            .attr('x', -margin.left + 5)
+            .attr('y', 0)
+            .attr('width', 50)
+            .attr('height', width)
+            .append('xhtml:div')
+            .style('display', 'flex')
+            .style('align-items', 'center')
+            .style('justify-content', 'center')
+            .style('gap', '0.5rem')
+            .style('transform', `rotate(-90deg) translateX(-${height/2}px)`)
+            .style('transform-origin', 'left top')
+            .style('white-space', 'nowrap')
+            //.style('height', '100%')
+            .html(`<span class="legend-color" style="background-color: ${data.doc2.color}; width: 12px; height: 12px; display: inline-block; border-radius: 50%;"></span>
+                <span style="font-size: 12px;">${shorten(data.doc2.title) || `Doc ${data.doc2.id}`} (page)</span>`);
 
         const scoreRange = data.maxScore - data.minScore;
 
         g.selectAll('.point')
             .data(data.points)
-            .join('circle')
+            .join('rect')
             .attr('class', 'point')
-            .attr('cx', d => xScale(d.page2))
-            .attr('cy', d => yScale(d.page1))
-            .attr('r', 5)
+            .attr('x', d => xScale(d.page1) - 4)
+            .attr('y', d => yScale(d.page2) - 4)
+            .attr('width', 8)
+            .attr('height', 8)
             .attr('fill', d3.hsl(233, 0.951, 0.52))
-            .attr('opacity', d => opacity(d.score, {min: data.minScore, max: data.maxScore, range: scoreRange}));
+            .attr('opacity', d => {
+                const categories = $selectedCategories || [];
+                if (categories.length === 1 && categories[0] === 1) {
+                    return 1;
+                }
+                return opacity(d.score, {min: data.minScore, max: data.maxScore, range: scoreRange});
+            });
     }
 
     function opacity(score, scoreRange, minOpacity = 0.05, maxOpacity = 1) {

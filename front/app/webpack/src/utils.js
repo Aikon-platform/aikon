@@ -21,7 +21,7 @@ export function extractInt(str) {
     return parseInt(extractNb(str), 10);
 }
 
-export function shorten(str, maxLen= 100) {
+export function shorten(str, maxLen=100) {
     // put '...' in between the 75% and last 25% characters if the string it too long
     const nthChar = Math.floor(maxLen * 0.75);
     return str.length > maxLen ? str.slice(0, nthChar) + '...' + str.slice(- maxLen + nthChar) : str;
@@ -74,7 +74,7 @@ export function refToIIIFRoot(imgRef=null) {
         : `${getCantaloupeUrl()}/iiif/2/${imgName}`;
 }
 
-export function refToIIIF(imgRef=null, coord="full", size="full") {
+export function refToIIIF(imgRef=null, coord=null, size="full") {
     // imgRef can be like "wit<id>_<digit><id>_<page_nb>.jpg" or "wit<id>_<digit><id>_<page_nb>_<x,y,h,w>.jpg"
     if (!imgRef) {
         return "https://placehold.co/96x96/png?text=No+image";
@@ -101,9 +101,10 @@ export function refToIIIF(imgRef=null, coord="full", size="full") {
     }*/
 
     const imgRefArr = imgRef.split("_");
-    // const imgCoord = coord ? coord : imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : "full";
-    const imgCoord = imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : coord;
-    return `${imgRoot}/${imgCoord}/${size}/0/default.jpg`;
+    if (!coord) {
+        coord = imgRefArr[imgRefArr.length - 1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : "full";
+    }
+    return `${imgRoot}/${coord}/${size}/0/default.jpg`;
 }
 
 export function refToIIIFInfo(imgRef=null) {
