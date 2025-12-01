@@ -46,8 +46,9 @@ ENV_FILES = {
         "REDIS_PORT": 6379,
         "GEONAMES_USER": "aikon",
         "PROD_URL": "app_name.domain-name.com",
-        "PROD_API_URL": "https://discover-api.enpc.com",
+        "PROD_API_URL": "api_name.domain-name.com",
         "REDIS_HOST": "redis",
+        "DEFAULT_FROM_EMAIL": "noreply@domain.com",
         "EMAIL_HOST": "smtp.gmail.com",
         "EMAIL_HOST_USER": "app_name@mail.com",
         "EMAIL_HOST_PASSWORD": "",
@@ -58,7 +59,7 @@ ENV_FILES = {
     "front/cantaloupe/.env": {
         "CANTALOUPE_PORT": 8182,
         "CANTALOUPE_PORT_HTTPS": 8183,
-        "CANTALOUPE_BASE_URI": "http://localhost:8182",
+        "CANTALOUPE_BASE_URI": "",
         "CANTALOUPE_IMG": "/absolute/path/to/project/mediafiles/img/",
         "CANTALOUPE_DIR": "/absolute/path/to/project/cantaloupe/",
     },
@@ -67,7 +68,7 @@ ENV_FILES = {
         "API_PORT": 5000,
         "DOCKER": True,
         "INSTALLED_APPS": "regions,similarity",
-        "PROD_URL": "app_name.domain-name.com",
+        "PROD_API_URL": "api_name.domain-name.com",
         "DATA_FOLDER": "data/",
         "YOLO_CONFIG_DIR": "data/yolotmp/",
     },
@@ -87,25 +88,7 @@ class EnvGenerator:
         self.prompt = prompt
         self.current_desc = ""
 
-    @staticmethod
-    def generate_secret(length: int = 50) -> str:
-        alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-        return "".join(secrets.choice(alphabet) for _ in range(length))
-
-    def generate_port(self, port):
-        try:
-            port = int(port)
-        except ValueError:
-            port = 1234
-
-        if not self.check_port_available(port):
-            port += 1
-            while not self.check_port_available(port):
-                port += 1
-        return port
-
     def load_template(self) -> None:
-        """Charge le template et génère les valeurs manquantes"""
         with open(self.template_path) as f:
             for line in f:
                 self.set_value(line)
@@ -134,18 +117,18 @@ class EnvGenerator:
             value = self.prompt_user(key, value)
         return value
 
-    def prompt_user(self, key: str, value: str) -> str:
-        prompt_msg = f"Enter value for {key}"
-        if self.current_desc:
-            prompt_msg += f" ({self.current_desc})"
-        prompt_msg += f" [default: {value}]: "
+    def prompt_user(self, key: str, value: str = None, desc: str = None) -> str:
+        prompt_msg = f"Enter value for {key} ({desc or self.current_desc})"
+        value = value or self.env_vars.get(key)
+        if value:
+            prompt_msg += f"\n[Press ENTER to keep: {value}]: "
         user_input = input(prompt_msg).strip()
 
         # TODO add keep empty option
         if user_input:
             value = user_input
 
-        # TODO ver
+        # TODO verify type?
         return value
 
     @staticmethod
@@ -155,63 +138,71 @@ class EnvGenerator:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex(("localhost", port)) != 0
 
+    @staticmethod
+    def generate_secret(length: int = 50) -> str:
+        alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+        return "".join(secrets.choice(alphabet) for _ in range(length))
+
+    def generate_port(self, port) -> int:
+        try:
+            port = int(port)
+        except ValueError:
+            port = 1234
+
+        if not self.check_port_available(port):
+            port += 1
+            while not self.check_port_available(port):
+                port += 1
+        return port
+
     def derive_values(self) -> None:
         mode = self.env_vars.get("SETUP_MODE", "local")
 
-        # Docker vs Local
         is_docker = self.env_vars.get("DOCKER", True)
         self.env_vars["DOCKER"] = str(is_docker)
         self.env_vars["TARGET"] = "prod" if mode == "prod" else "dev"
+        self.env_vars["DEBUG"] = "False" if mode == "prod" else "True"
 
-        # Debug mode
-        self.env_vars["DEBUG"] = "False" if mode == "production" else "True"
+        data_dir = Path(self.env_vars.get("DATA_DIR")).resolve()
+        # front media directory
+        self.env_vars["MEDIA_DIR"] = (
+            "/data/mediafiles" if is_docker else f"{data_dir}/mediafiles"
+        )
+        # api files
+        self.env_vars["DATA_FOLDER"] = "/data/api/" if is_docker else f"{data_dir}/api/"
+        self.env_vars["YOLO_CONFIG_DIR"] = (
+            "/data/yolotmp/" if is_docker else f"{data_dir}/yolotmp/"
+        )
+        self.env_vars["CANTALOUPE_IMG"] = f"{self.env_vars['MEDIA_DIR']}/img/"
 
-        # Hosts Redis/DB
-        if is_docker:
-            self.env_vars["REDIS_HOST"] = "redis"
-            self.env_vars["DB_HOST"] = "db"
-        else:
-            self.env_vars["REDIS_HOST"] = "localhost"
-            self.env_vars["DB_HOST"] = "localhost"
+        if mode == "prod":
+            self.env_vars["PROD_URL"] = self.prompt_user(
+                "PROD_URL", desc="URL for production front-end (without https://)"
+            )
+            self.env_vars["PROD_API_URL"] = self.prompt_user(
+                "PROD_API_URL", desc="URL for production API (with https://)"
+            )
+            self.env_vars["CANTALOUPE_BASE_URI"] = self.env_vars["PROD_URL"]
 
-        # Media directory
-        if not self.env_vars.get("MEDIA_DIR"):
-            if is_docker:
-                self.env_vars["MEDIA_DIR"] = "/data/mediafiles"
-            else:
-                self.env_vars["MEDIA_DIR"] = str(
-                    self.root / "front" / "app" / "mediafiles"
-                )
+            self.env_vars["EMAIL_HOST"] = self.prompt_user(
+                "EMAIL_HOST",
+                desc="SMTP server (https://github.com/Aikon-platform/aikon/wiki/Email-Setup#smtp-server-setup)",
+            )
+            self.env_vars["EMAIL_HOST_USER"] = self.prompt_user(
+                "EMAIL_HOST_USER",
+                desc="Email address (https://github.com/Aikon-platform/aikon/wiki/Email-Setup#smtp-server-setup)",
+            )
+            self.env_vars["EMAIL_HOST_PASSWORD"] = self.prompt_user(
+                "EMAIL_HOST_PASSWORD",
+                desc="Email password (https://github.com/Aikon-platform/aikon/wiki/Email-Setup#smtp-server-setup)",
+            )
+            self.env_vars["DEFAULT_FROM_EMAIL"] = self.prompt_user(
+                "DEFAULT_FROM_EMAIL",
+                desc="Address sending app emails (https://github.com/Aikon-platform/aikon/wiki/Email-Setup#smtp-server-setup)",
+            )
 
-        # API URL
-        if mode == "production":
-            prod_url = self.env_vars.get("PROD_URL", "")
-            self.env_vars["API_URL"] = f"https://{prod_url}" if prod_url else ""
-        else:
-            api_port = self.env_vars.get("API_PORT", "5001")
-            self.env_vars["API_URL"] = f"http://localhost:{api_port}"
-
-        # Cantaloupe
-        cantaloupe_img = self.env_vars["MEDIA_DIR"].rstrip("/") + "/img/"
-        self.env_vars["CANTALOUPE_IMG"] = cantaloupe_img
-
-        base_uri = self.env_vars.get("PROD_URL", "")
-        if mode == "production" and base_uri:
-            self.env_vars["CANTALOUPE_BASE_URI"] = f"https://{base_uri}"
-        else:
-            port = self.env_vars.get("CANTALOUPE_PORT", "8182")
-            self.env_vars["CANTALOUPE_BASE_URI"] = f"http://localhost:{port}"
-
-        # Celery
-        self.env_vars["C_FORCE_ROOT"] = "True"
-
-        # Data folder API
-        if is_docker:
-            self.env_vars["API_DATA_FOLDER"] = "/data/"
-            self.env_vars["YOLO_CONFIG_DIR"] = "/data/yolotmp/"
-        else:
-            self.env_vars["API_DATA_FOLDER"] = "data/"
-            self.env_vars["YOLO_CONFIG_DIR"] = "data/yolotmp/"
+        self.env_vars["REDIS_HOST"] = "redis" if is_docker else "localhost"
+        self.env_vars["DB_HOST"] = "db" if is_docker else "localhost"
 
     def write_env_file(self, path: Path, vars_subset: Optional[Dict] = None) -> None:
         vars_to_write = vars_subset or self.env_vars
