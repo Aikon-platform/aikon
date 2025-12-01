@@ -53,8 +53,8 @@
         }
     }
     async function deleteRegion(regionId) {
-        const HTTP_SAS = SAS_APP_URL.replace("https", "http");
-        const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${HTTP_SAS}/annotation/${regionId}`;
+        const HTTP_SAS = AIIINOTATE_BASE_URL.replace("https", "http");
+        const urlDelete = `${AIIINOTATE_BASE_URL}/annotation/destroy?uri=${HTTP_SAS}/annotation/${regionId}`;
 
         const response = await fetch(urlDelete, { method: "DELETE"});
 
