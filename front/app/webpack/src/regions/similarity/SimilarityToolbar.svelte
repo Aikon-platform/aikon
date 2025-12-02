@@ -7,7 +7,6 @@
  */
 
 import { derived } from "svelte/store";
-import { slide } from 'svelte/transition';
 
 import { similarityStore } from "./similarityStore.js";
 import * as cat from './similarityCategory';
@@ -18,8 +17,8 @@ import InputSlider from "../../ui/InputSlider.svelte";
 import InputToggle from "../../ui/InputToggle.svelte";
 import InputDropdown from "../../ui/InputDropdown.svelte";
 import IconTooltip from "../../ui/IconTooltip.svelte";
-import TooltipGeneric from "../../ui/TooltipGeneric.svelte";
 import {onMount} from "svelte";
+import Toolbar from "../../Toolbar.svelte";
 
 ///////////////////////////////////////
 
@@ -91,21 +90,6 @@ const similarityScoreRangePromise = fetchSimilarityScoreRange();
 /** @type {number?} ensures that $similarityScoreCutoff matches a value in similarityScoreRangePromise. updated by fetchSimilarityScoreRange */
 $: defaultSimilarityScoreCutoff = $similarityScoreCutoff || undefined
 
-$: toolbarExpanded = false;
-$: toggleToolbarText =
-    appLang === "fr" && toolbarExpanded
-    ? "Refermer le menu de recherche"
-    : appLang === "fr" && !toolbarExpanded
-    ? "Ouvrir le menu de recherche"
-    : appLang === "en" && toolbarExpanded
-    ? "Collapse the toolbar"
-    : "Expand the toolbar";
-
-///////////////////////////////////////
-
-
-const toggleToolbarExpanded = () => toolbarExpanded = !toolbarExpanded;
-
 /** @returns {Promise<Array<number?>>} */
 async function fetchSimilarityScoreRange() {
     let range = [];
@@ -149,149 +133,89 @@ const setComparedRegions = (e) => {
 
 <svelte:window/>
 
-<div id="similarity-toolbar" class="ctrl-wrapper is-flex is-justify-content-center is-align-items-center
-     { toolbarExpanded ? 'toolbar-expanded' : 'toolbar-collapsed' }">
-
-    <form class="ctrl">
-        <div class="ctrl-base">
-            <div class="ctrl-block-wrapper">
-                <div class="ctrl-block">
-                    <div class="ctrl-block-inputs">
-                        <div class="ctrl-input">
-                            {#if Object.keys($comparedRegionsChoices).length}
-                                <InputDropdown choicesItems={$comparedRegionsChoices}
-                                    multiple={true}
-                                    placeholder="..."
-                                    start={Object.keys($selectedRegions[currentPageId] || {})}
-                                    lightDisplay={true}
-                                    title={appLang==="fr" ? "Régions sélectionnées" : "Selected regions"}
-                                    selectAll={true}
-                                    on:updateValues={setComparedRegions}
-                                ></InputDropdown>
-                            {/if}
-                        </div>
-                        <div class="ctrl-input">
-                            {#await similarityScoreRangePromise then similarityScoreRange}
-                                {#if similarityScoreRange.length}
-                                    <InputSlider title={ appLang==="fr" ? "Score minimal" : "Minimal score" }
-                                        minVal={similarityScoreRange[0]}
-                                        maxVal={similarityScoreRange[1]}
-                                        start={defaultSimilarityScoreCutoff || similarityScoreRange[0]}
-                                        roundTo={3}
-                                        on:updateSlider={setSimilarityScoreCutoff}
-                                    ></InputSlider>
-                                {/if}
-                            {/await}
-                        </div>
+<Toolbar>
+    <div slot="toolbar-visible" class="ctrl-block-inputs">
+        <div class="ctrl-input">
+            {#if Object.keys($comparedRegionsChoices).length}
+                <InputDropdown choicesItems={$comparedRegionsChoices}
+                    multiple={true}
+                    placeholder="..."
+                    start={Object.keys($selectedRegions[currentPageId] || {})}
+                    lightDisplay={true}
+                    title={appLang==="fr" ? "Régions sélectionnées" : "Selected regions"}
+                    selectAll={true}
+                    on:updateValues={setComparedRegions}
+                />
+            {/if}
+        </div>
+        <div class="ctrl-input">
+            {#await similarityScoreRangePromise then similarityScoreRange}
+                {#if similarityScoreRange.length}
+                    <InputSlider title={ appLang==="fr" ? "Score minimal" : "Minimal score" }
+                        minVal={similarityScoreRange[0]}
+                        maxVal={similarityScoreRange[1]}
+                        start={defaultSimilarityScoreCutoff || similarityScoreRange[0]}
+                        roundTo={3}
+                        on:updateSlider={setSimilarityScoreCutoff}
+                    />
+                {/if}
+            {/await}
+        </div>
+    </div>
+    <svelte:fragment slot="toolbar-hidden">
+        <div class="ctrl-block-wrapper">
+            <div class="ctrl-block">
+                <div class="ctrl-block-title">
+                    <span class="tag is-medium is-link">Similarity</span>
+                </div>
+                <div class="ctrl-block-inputs">
+                    <div class="ctrl-input">
+                        <InputDropdown choicesItems={categoriesChoices}
+                            multiple={true}
+                            placeholder="..."
+                            start={$excludedCategories}
+                            lightDisplay={true}
+                            title={appLang==="fr" ? "Catégories masquées" : "Hidden categories"}
+                            selectAll={true}
+                            on:updateValues={setExcludedCategories}
+                        />
                     </div>
                 </div>
             </div>
         </div>
-        {#if toolbarExpanded }
-            <div transition:slide={{axis: "y"}}
-                 class="ctrl-extra">
-                <div class="ctrl-block-wrapper">
-                    <div class="ctrl-block">
-                        <div class="ctrl-block-title">
-                            <span class="tag is-medium is-link">Similarity</span>
-                        </div>
-                        <div class="ctrl-block-inputs">
-                            <div class="ctrl-input">
-                                <InputDropdown choicesItems={categoriesChoices}
-                                    multiple={true}
-                                    placeholder="..."
-                                    start={$excludedCategories}
-                                    lightDisplay={true}
-                                    title={appLang==="fr" ? "Catégories masquées" : "Hidden categories"}
-                                    selectAll={true}
-                                    on:updateValues={setExcludedCategories}
-                                ></InputDropdown>
-                            </div>
-                        </div>
-                    </div>
+        <div class="ctrl-block-wrapper">
+            <div class="ctrl-block">
+                <div class="ctrl-block-title">
+                    <span class="tag is-medium is-link mr-1">Propagation</span>
+                    <IconTooltip iconifyIcon="material-symbols:help-outline"
+                        altText={ appLang==="en" ? "Display help" : "Afficher une explication"}
+                        tooltipText={tooltipText}
+                    />
                 </div>
-                <div class="ctrl-block-wrapper">
-                    <div class="ctrl-block">
-                        <div class="ctrl-block-title">
-                            <span class="tag is-medium is-link mr-1">Propagation</span>
-                            <IconTooltip iconifyIcon="material-symbols:help-outline"
-                                altText={ appLang==="en" ? "Display help" : "Afficher une explication"}
-                                tooltipText={tooltipText}
-                            ></IconTooltip>
-                        </div>
-                        <div class="ctrl-block-inputs">
-                            <div class="ctrl-input">
-                                <InputSlider title={ appLang==="fr" ? "Profondeur de récursion" : "Recursion depth" }
-                                    minVal={allowedPropagateDepthRange[0]}
-                                    maxVal={allowedPropagateDepthRange[1]}
-                                    start={$propagateRecursionDepth}
-                                    step={1}
-                                    on:updateSlider={setPropagateRecursionDepth}
-                                ></InputSlider>
-                            </div>
-                            <div class="ctrl-input">
-                                <InputToggle toggleLabel="Filter by region"
-                                     on:updateChecked={setPropagateFilterByRegions}
-                                     start={$propagateFilterByRegions}
-                                     buttonDisplay={true}
-                                ></InputToggle>
-                            </div>
-
-                        </div>
+                <div class="ctrl-block-inputs">
+                    <div class="ctrl-input">
+                        <InputSlider title={ appLang==="fr" ? "Profondeur de récursion" : "Recursion depth" }
+                            minVal={allowedPropagateDepthRange[0]}
+                            maxVal={allowedPropagateDepthRange[1]}
+                            start={$propagateRecursionDepth}
+                            step={1}
+                            on:updateSlider={setPropagateRecursionDepth}
+                        />
+                    </div>
+                    <div class="ctrl-input">
+                        <InputToggle toggleLabel="Filter by region"
+                             on:updateChecked={setPropagateFilterByRegions}
+                             start={$propagateFilterByRegions}
+                             buttonDisplay={true}
+                        />
                     </div>
                 </div>
             </div>
-        {/if}
-        <div class="ctrl-toggle">
-            <button on:click|preventDefault={toggleToolbarExpanded}
-                    class="button is-link"
-            >
-                <svg style={`transform: rotate(${toolbarExpanded ? "180" : "0"}deg)`}
-                     xmlns="http://www.w3.org/2000/svg"
-                     width="24"
-                     height="24"
-                     viewBox="0 0 24 24"
-                >
-                    <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v18m0 0l8.5-8.5M12 21l-8.5-8.5"></path>
-                </svg>
-                <TooltipGeneric tooltipText={toggleToolbarText}></TooltipGeneric>
-            </button>
         </div>
-    </form>
-</div>
-
+    </svelte:fragment>
+</Toolbar>
 
 <style>
-#similarity-toolbar {
-    top: var(--nav-actions-height);
-}
-.ctrl-wrapper {
-    width: 100%;
-    height: auto;
-    position: sticky;
-    background-color: var(--bulma-body-background-color);
-    z-index: 2;
-    margin: 0 0 max(10vh, 150px);
-}
-.ctrl {
-    position: absolute;
-    top: 0;
-    width: 100%;
-    background-color: var(--bulma-body-background-color);
-    border: solid 1px var(--bulma-border);
-    border-radius: 0 0 var(--bulma-burger-border-radius) var(--bulma-burger-border-radius);
-    box-shadow: 0 3px;
-    display: flex;
-    flex-direction: column;
-}
-.toolbar-collapsed .ctrl {
-    /*box-shadow: var(--bulma-border-weak) 0 3px;*/
-    box-shadow: none;
-}
-.toolbar-expanded .ctrl {
-    /*box-shadow: var(--bulma-border-active) 0 3px;*/
-    box-shadow: none;
-}
 .ctrl-block-wrapper {
     width: 100%;
     display: flex;
@@ -306,20 +230,13 @@ const setComparedRegions = (e) => {
     flex-direction: row;
     align-items: center;
     justify-content: space-around;
-    /*margin: 10px 20px;*/
     margin: 5px;
-}
-.ctrl-extra .ctrl-block {
-    width: 100%;
-    display: grid;
-    grid-template-rows: 100%;
-    grid-template-columns: 1fr 5.7fr; /** make items seem horizontally centered with .ctrl-base .ctrl-block */
 }
 .ctrl-block-title {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 1em 0;
+    margin: 1em;
 }
 .ctrl-block-inputs {
     display: flex;
@@ -340,22 +257,5 @@ const setComparedRegions = (e) => {
 }
 .ctrl-input:nth-child(1) {
     margin-left: 0;
-}
-.ctrl-toggle {
-    height: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.ctrl-toggle > button {
-    border: var(--default-border);
-    border-radius: 2rem;
-    height: 40px;
-    width: 40px;
-    position: relative;
-}
-.ctrl-toggle > button svg {
-    height: 100%;
-    transition: transform .5s;
 }
 </style>

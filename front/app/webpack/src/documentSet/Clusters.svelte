@@ -2,23 +2,26 @@
     import Region from "../regions/Region.svelte";
     import Table from "../Table.svelte";
     import Row from "../Row.svelte";
-
     export let documentSetStore;
     const {
         imageClusters,
-        imageNodes
+        imageNodes,
     } = documentSetStore;
 
     $: onlyPartial = true;
     $: onlyNotValidated = true;
-    console.log($imageClusters);
 </script>
 
 <Table>
     {#each $imageClusters as cl (cl.id)}
         <Row>
             <svelte:fragment slot="row-header">
-                <!-- small network representation + if not fully connected, add validate button -->
+                <div class="cluster-info">
+                    <span class="cluster-size">{cl.size} images</span>
+                    {#if !cl.fullyConnected}
+                        <button class="button is-small is-warning">Validate</button>
+                    {/if}
+                </div>
             </svelte:fragment>
             <svelte:fragment slot="row-body">
                 {#each cl.members as imgId}
