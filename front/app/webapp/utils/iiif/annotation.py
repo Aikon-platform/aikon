@@ -270,7 +270,7 @@ def unindex_annotation(annotation_id):
     # TODO delete regions_pairs associated with the annotation if similarity module is enabled?
     try:
         response = requests.delete(delete_url)
-        if response.status_code == 204:
+        if response.status_code in [200, 204]:
             return True
         else:
             log(
@@ -487,8 +487,8 @@ def set_canvas(seq, canvas_nb, img_name, img, version=None):
 
 def get_indexed_manifests():
     try:
-        r = requests.get(f"{AIIINOTATE_BASE_URL}/manifests/2")
-        manifests = r.json()["manifests"]
+        r = requests.get(f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}")
+        manifests = r.json()["members"]
     except Exception as e:
         log(f"[get_indexed_manifests]: Failed to load indexed manifests in SAS", e)
         return False
