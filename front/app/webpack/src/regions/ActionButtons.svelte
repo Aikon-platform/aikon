@@ -1,6 +1,6 @@
 <script>
     import { getContext } from 'svelte';
-    import { manifestToMirador, showMessage, downloadBlob, withLoading } from "../utils.js";
+    import { manifestToMirador, showMessage, downloadBlob, withLoading, toAiiinotateAnnotationUrl } from "../utils.js";
     import { selectionStore } from "../selection/selectionStore.js";
     const { selected, nbSelected } = selectionStore;
     import { regionsStore } from './regionsStore.js';
@@ -8,9 +8,8 @@
     import { appName, appLang, regionsType, csrfToken } from '../constants';
 
     const manifest = getContext('manifest');
+    const manifestShortId = manifest.split("/").at(-2);
     const isValidated = getContext('isValidated');
-
-    console.log(">".repeat(10), manifest);
 
     $: selectionLength = $nbSelected(true);
     $: isEditMode = !isValidated;
@@ -53,12 +52,9 @@
         }
     }
     async function deleteRegion(regionId) {
-        const HTTP_SAS = AIIINOTATE_BASE_URL.replace("https", "http");
-        const urlDelete = `${AIIINOTATE_BASE_URL}/annotation/destroy?uri=${HTTP_SAS}/annotation/${regionId}`;
-
+        const urlDelete = `${AIIINOTATE_BASE_URL}/annotations/2/delete?uri=${toAiiinotateAnnotationUrl(manifestShortId, regionId)}`;
         const response = await fetch(urlDelete, { method: "DELETE"});
-
-        if (response.status !== 204) {
+        if (response.status > 299) {
             throw new Error(`Failed to delete ${urlDelete} due to ${response.status}: '${response.statusText}'`);
         }
     }

@@ -79,23 +79,6 @@ export function refToIIIF(imgRef=null, coord="full", size="full") {
     if (imgRoot === undefined) {
         return "https://placehold.co/96x96/png?text=No+image";
     }
-    /*if (size !== "full" && imgCoord !== "full") {
-        let [_, __, crop_h, crop_w] = String(imgCoord).split(",").map(Number);
-        let [size_h, size_w] = size.split(",").map(Number);
-
-        if (size_h && size_h > crop_h) {
-            size_h = Math.min(size_h, crop_h);
-        }
-        if (size_w && size_w > crop_w){
-            size_w = Math.min(size_w, crop_w);
-        }
-        // width and height of the crop cannot exceed the size of whole image
-        // to obtain original image size, we could request ${getCantaloupeUrl()}/iiif/2/${imgName}.jpg/info.json
-        // to retrieve info["width"] and info["height"] to be used instead of crop_h / crop_w
-
-        size = `${size_h},${size_w}`;
-    }*/
-
     const imgRefArr = imgRef.split("_");
     // const imgCoord = coord ? coord : imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : "full";
     const imgCoord = imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : coord;
@@ -110,6 +93,9 @@ export function manifestToMirador(manifest = null, canvasNb = 1) {
     return `${getMiradorUrl()}/index.html?iiif-content=${manifest}&canvas=${canvasNb}`;
 }
 
+export function toAiiinotateAnnotationUrl(manifestShortId, annotationShortId) {
+    return `${AIIINOTATE_BASE_URL}/data/2/${manifestShortId}/annotation/${annotationShortId}`
+}
 
 export function parseData(elementId) {
     if (!document.getElementById(elementId)) {
@@ -193,7 +179,6 @@ export async function getSuccess(url) {
 export async function deleteRecord(recordId, recordType){
     return getSuccess(`/${appName}/${recordType.toLowerCase()}/${recordId}/delete`);
 }
-
 
 /**
  * @typedef NewAndOldType

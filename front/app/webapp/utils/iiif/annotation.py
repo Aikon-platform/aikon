@@ -30,6 +30,11 @@ IIIF_SEARCH_VESION = 1
 IIIF_PRESENTATION_VERSION = 2
 
 
+def to_annotation_url(id_short_manifest, id_short_annotation: str) -> str:
+    """build an URL to an annotation based on its short ID (the unique part of the URL string)"""
+    return f"{AIIINOTATE_BASE_URL}/data/{IIIF_PRESENTATION_VERSION}/{id_short_manifest}/annotation/{id_short_annotation}"
+
+
 # TODO PAUL: add `only_ids`functionnality on aiiinotate side
 # TODO PAUL: add `min_c` `max_c` on aiiinotate
 def get_manifest_annotations(
@@ -257,7 +262,11 @@ def unindex_annotation(annotation_id):
     http_aiiinotate = AIIINOTATE_BASE_URL.replace("https", "http")
 
     # annotation_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}
-    delete_url = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/delete?uri={http_aiiinotate}/annotations/{IIIF_PRESENTATION_VERSION}/{annotation_id}"
+    annotation_url = to_annotation_url("", annotation_id).replace("https", "http")
+    print(">>>>>>>>>>>>>> HELLOOOOO")
+    print(">>>>>>>>>>>>>> ANNOTATION_ID ", annotation_id)
+    print(">>>>>>>>>>>>>> ANNOTATION_URL", annotation_url)
+    delete_url = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/delete?uri={annotation_url}"
     # TODO delete regions_pairs associated with the annotation if similarity module is enabled?
     try:
         response = requests.delete(delete_url)
