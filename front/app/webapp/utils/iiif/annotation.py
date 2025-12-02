@@ -49,7 +49,7 @@ def get_manifest_annotations(
 
             if response.status_code != 200:
                 log(
-                    f"[get_manifest_annotations] Failed to get annotations from SAS for {next_page}: {response.status_code}"
+                    f"[get_manifest_annotations] Failed to get annotations from aiiinotate for {next_page}: {response.status_code}"
                 )
                 return []
 
@@ -117,7 +117,7 @@ def has_annotation(regions_ref):
         response = requests.get(page)
         if response.status_code != 200:
             log(
-                f"[has_annotation] Failed to get annotations from SAS for {regions_ref}: {response.status_code}"
+                f"[has_annotation] Failed to get annotations from aiiinotate for {regions_ref}: {response.status_code}"
             )
             return False
 
@@ -209,7 +209,9 @@ def get_regions_annotations(
 
 
 def index_regions(regions: Regions):
-    if not index_manifest_in_sas(regions.gen_manifest_url(version=MANIFEST_V2), True):
+    if not index_manifest_in_aiiinotate(
+        regions.gen_manifest_url(version=MANIFEST_V2), True
+    ):
         return
 
     canvases_to_annotate: Dict[str, List[int | None]] = get_annotations_per_canvas(
@@ -259,13 +261,8 @@ def reindex_file(filename):
 
 
 def unindex_annotation(annotation_id):
-    http_aiiinotate = AIIINOTATE_BASE_URL.replace("https", "http")
-
     # annotation_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}
     annotation_url = to_annotation_url("", annotation_id).replace("https", "http")
-    print(">>>>>>>>>>>>>> HELLOOOOO")
-    print(">>>>>>>>>>>>>> ANNOTATION_ID ", annotation_id)
-    print(">>>>>>>>>>>>>> ANNOTATION_URL", annotation_url)
     delete_url = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/delete?uri={annotation_url}"
     # TODO delete regions_pairs associated with the annotation if similarity module is enabled?
     try:
@@ -490,12 +487,15 @@ def get_indexed_manifests():
         r = requests.get(f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}")
         manifests = r.json()["members"]
     except Exception as e:
-        log(f"[get_indexed_manifests]: Failed to load indexed manifests in SAS", e)
+        log(
+            f"[get_indexed_manifests]: Failed to load indexed manifests in aiiinotate",
+            e,
+        )
         return False
     return [m["@id"] for m in manifests]
 
 
-def index_manifest_in_sas(manifest_url, reindex=False):
+def index_manifest_in_aiiinotate(manifest_url, reindex=False):
     if not reindex:
         manifests = get_indexed_manifests()
         if manifests and manifest_url in manifests:
@@ -506,11 +506,14 @@ def index_manifest_in_sas(manifest_url, reindex=False):
         manifest = requests.get(manifest_url)
         manifest_content = manifest.json()
     except Exception as e:
-        log(f"[index_manifest_in_sas]: Failed to load manifest for {manifest_url}", e)
+        log(
+            f"[index_manifest_in_aiiinotate]: Failed to load manifest for {manifest_url}",
+            e,
+        )
         return False
 
     try:
-        # Index the manifest into SAS
+        # Index the manifest into aiiinotate
         r = requests.post(
             f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}/create",
             json=manifest_content,
@@ -518,12 +521,12 @@ def index_manifest_in_sas(manifest_url, reindex=False):
         print(r)
         if r.status_code != 200:
             log(
-                f"[index_manifest_in_sas] Failed to index manifest. Status code: {r.status_code}: {r.text}"
+                f"[index_manifest_in_aiiinotate]: Failed to index manifest. Status code: {r.status_code}: {r.text}"
             )
             return False
     except Exception as e:
         log(
-            f"[index_manifest_in_sas]: Failed to index manifest {manifest_url} in SAS",
+            f"[index_manifest_in_aiiinotate]: Failed to index manifest {manifest_url} in aiiinotate",
             e,
         )
         return False
@@ -565,7 +568,7 @@ def get_canvas_list(regions: Regions, all_img=False):
     if canvases:
         return canvases
 
-    # Fallback to annotation file if no annotations were found in SAS
+    # Fallback to annotation file if no annotations were found in aiiinotate
     data, anno_format = get_file_regions(regions)
     if not data:
         log(f"[get_canvas_list] No regions file for regions #{regions.id}")
@@ -627,7 +630,7 @@ def get_coord_from_annotation(sas_annotation):
         return ",".join(["0" if int(num) < 0 else num for num in coord.split(",")])
     except Exception as e:
         log(
-            f"[get_coord_from_annotation] Could not retrieve coord from SAS annotation",
+            f"[get_coord_from_annotation] Could not retrieve coord from aiiinotate annotation",
             e,
         )
         return "0,0,0,0"
@@ -638,7 +641,10 @@ def get_id_from_annotation(sas_annotation):
         # annotation_id => "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}"
         return sas_annotation["@id"].split("/")[-1]
     except Exception as e:
-        log(f"[get_id_from_annotation] Could not retrieve id from SAS annotation", e)
+        log(
+            f"[get_id_from_annotation] Could not retrieve id from aiiinotate annotation",
+            e,
+        )
         return ""
 
 
@@ -673,6 +679,7 @@ def formatted_annotations(regions: Regions):
     return annotation_ids, canvas_annotations
 
 
+# TODO POL: aiiinotate route for that
 def total_annotations(regions: Regions):
     response = requests.get(
         f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions.get_ref()}/search"
@@ -722,7 +729,7 @@ def check_indexation(regions: Regions, reindex=False):
     if not data:
         return False
 
-    if not index_manifest_in_sas(regions.gen_manifest_url(version=MANIFEST_V2)):
+    if not index_manifest_in_aiiinotate(regions.gen_manifest_url(version=MANIFEST_V2)):
         return False
 
     generated_annotations = 0
@@ -791,38 +798,64 @@ def get_images_annotations(regions: Regions):
                 ]
                 imgs.extend(canvas_imgs)
     except ValueError as e:
-        log(f"[get_images_annotations] Error when retrieving SAS annotations", e)
+        log(f"[get_images_annotations] Error when retrieving aiiinotate annotations", e)
 
     return imgs
 
 
-# def unindex_manifest(regions: Regions):
-#     # DO NOT WORK
-#     response = requests.delete(f"{AIIINOTATE_BASE_URL}/manifests/{regions.get_ref()}")
-#     if response.status_code != 200:
-#         log(
-#             f"[unindex_manifest] Failed to un-index manifest for Regions #{regions.id}. "
-#             f"Status code: {response.status_code} / {response.text}"
-#         )
-#         return False
-#     return True
+def unindex_manifest_in_aiiinotate(manifest_url: str):
+    response = requests.delete(
+        f"{AIIINOTATE_BASE_URL}/manifests/2/delete?uri={manifest_url}"
+    )
+    if response.status_code != 200:
+        log(
+            f"[unindex_manifest_in_aiiinotate]: Failed to un-index manifest with URL {manifest_url}. "
+            f"Status code: {response.status_code}. Error: {response.text}"
+        )
+        return False
+    log(f"[unindex_manifest_in_aiiinotate] unindexed manifest with ID {manifest_url}")
+    return True
 
 
-def unindex_regions(regions_ref, manifest_url):
-    index_manifest_in_sas(manifest_url)
-    sas_annotation_id = 0
+def unindex_annotations_for_canvas_in_aiiinotate(canvas_uri: str):
+    """"""
+
+
+def unindex_annotations_for_manifest_in_aiiinotate(manifest_url: str) -> bool:
+    """delete all annotations for a manifest"""
     try:
-        for sas_annotation in get_manifest_annotations(regions_ref):
-            sas_annotation_id = sas_annotation.split("/")[-1]
-            unindex_annotation(sas_annotation_id)
+        # manifest_url = http://slug/manifest_short_id/manifest.json => extract manifest.json
+        manifest_short_id = manifest_url.split("/")[-2]
+        url_delete = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/delete?manifestShortId={manifest_short_id}"
+        r = requests.delete(url_delete)
+        if not r.status_code in [200, 204]:
+            log(
+                f"[unindex_annotations_for_manifest]: Failed to remove annotations for manifest {manifest_url}. "
+                f"Status code: {r.status_code}. Error: {r.text}"
+            )
+            return False
+        deleted_count = r.json()["deletedCount"]
+        log(
+            f"[unindex_annotations_for_manifest_in_aiiinotate]: Removed {deleted_count} annotations"
+        )
     except Exception as e:
         log(
-            f"[unindex_regions] Failed to unindex SAS annotation #{sas_annotation_id}",
+            f"[unindex_annotations_for_manifest_in_aiiinotate]: Failed to remove annotations for manifest {manifest_url}",
             e,
         )
         return False
-
     return True
+
+
+def unindex_regions(regions_ref, manifest_url: str) -> bool:
+    """
+    main hook to delete aiiinotate data related to a regions extraction:
+    - remove all annotations related to that extraction
+    - remove the manifest related to that extraction
+    """
+    index_manifest_in_aiiinotate(manifest_url)
+    unindex_manifest_in_aiiinotate(manifest_url)
+    return unindex_annotations_for_manifest_in_aiiinotate(manifest_url)
 
 
 def destroy_regions(regions: Regions):

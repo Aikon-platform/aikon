@@ -241,7 +241,7 @@ def get_logger():
 logger = get_logger()
 
 
-def log(msg, exception: Exception = None, msg_type=None):
+def log(msg, exception: Exception | None = None, msg_type: str | None = None):
     current_logger = get_logger()
     if exception:
         current_logger.error(msg, exception=exception)
