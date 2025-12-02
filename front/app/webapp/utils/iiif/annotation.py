@@ -209,9 +209,7 @@ def get_regions_annotations(
 
 
 def index_regions(regions: Regions):
-    if not index_manifest_in_aiiinotate(
-        regions.gen_manifest_url(version=MANIFEST_V2), True
-    ):
+    if not index_manifest(regions.gen_manifest_url(version=MANIFEST_V2), True):
         return
 
     canvases_to_annotate: Dict[str, List[int | None]] = get_annotations_per_canvas(
@@ -495,7 +493,7 @@ def get_indexed_manifests():
     return [m["@id"] for m in manifests]
 
 
-def index_manifest_in_aiiinotate(manifest_url, reindex=False):
+def index_manifest(manifest_url, reindex=False):
     if not reindex:
         manifests = get_indexed_manifests()
         if manifests and manifest_url in manifests:
@@ -507,7 +505,7 @@ def index_manifest_in_aiiinotate(manifest_url, reindex=False):
         manifest_content = manifest.json()
     except Exception as e:
         log(
-            f"[index_manifest_in_aiiinotate]: Failed to load manifest for {manifest_url}",
+            f"[index_manifest]: Failed to load manifest for {manifest_url}",
             e,
         )
         return False
@@ -521,12 +519,12 @@ def index_manifest_in_aiiinotate(manifest_url, reindex=False):
         print(r)
         if r.status_code != 200:
             log(
-                f"[index_manifest_in_aiiinotate]: Failed to index manifest. Status code: {r.status_code}: {r.text}"
+                f"[index_manifest]: Failed to index manifest. Status code: {r.status_code}: {r.text}"
             )
             return False
     except Exception as e:
         log(
-            f"[index_manifest_in_aiiinotate]: Failed to index manifest {manifest_url} in aiiinotate",
+            f"[index_manifest]: Failed to index manifest {manifest_url} in aiiinotate",
             e,
         )
         return False
@@ -729,7 +727,7 @@ def check_indexation(regions: Regions, reindex=False):
     if not data:
         return False
 
-    if not index_manifest_in_aiiinotate(regions.gen_manifest_url(version=MANIFEST_V2)):
+    if not index_manifest(regions.gen_manifest_url(version=MANIFEST_V2)):
         return False
 
     generated_annotations = 0
@@ -803,25 +801,25 @@ def get_images_annotations(regions: Regions):
     return imgs
 
 
-def unindex_manifest_in_aiiinotate(manifest_url: str):
+def unindex_manifest(manifest_url: str):
     response = requests.delete(
         f"{AIIINOTATE_BASE_URL}/manifests/2/delete?uri={manifest_url}"
     )
     if response.status_code != 200:
         log(
-            f"[unindex_manifest_in_aiiinotate]: Failed to un-index manifest with URL {manifest_url}. "
+            f"[unindex_manifest]: Failed to un-index manifest with URL {manifest_url}. "
             f"Status code: {response.status_code}. Error: {response.text}"
         )
         return False
-    log(f"[unindex_manifest_in_aiiinotate] unindexed manifest with ID {manifest_url}")
+    log(f"[unindex_manifest] unindexed manifest with ID {manifest_url}")
     return True
 
 
-def unindex_annotations_for_canvas_in_aiiinotate(canvas_uri: str):
+def unindex_annotations_for_canvas(canvas_uri: str):
     """"""
 
 
-def unindex_annotations_for_manifest_in_aiiinotate(manifest_url: str) -> bool:
+def unindex_annotations_for_manifest(manifest_url: str) -> bool:
     """delete all annotations for a manifest"""
     try:
         # manifest_url = http://slug/manifest_short_id/manifest.json => extract manifest.json
@@ -835,12 +833,10 @@ def unindex_annotations_for_manifest_in_aiiinotate(manifest_url: str) -> bool:
             )
             return False
         deleted_count = r.json()["deletedCount"]
-        log(
-            f"[unindex_annotations_for_manifest_in_aiiinotate]: Removed {deleted_count} annotations"
-        )
+        log(f"[unindex_annotations_for_manifest]: Removed {deleted_count} annotations")
     except Exception as e:
         log(
-            f"[unindex_annotations_for_manifest_in_aiiinotate]: Failed to remove annotations for manifest {manifest_url}",
+            f"[unindex_annotations_for_manifest]: Failed to remove annotations for manifest {manifest_url}",
             e,
         )
         return False
@@ -853,9 +849,9 @@ def unindex_regions(regions_ref, manifest_url: str) -> bool:
     - remove all annotations related to that extraction
     - remove the manifest related to that extraction
     """
-    index_manifest_in_aiiinotate(manifest_url)
-    unindex_manifest_in_aiiinotate(manifest_url)
-    return unindex_annotations_for_manifest_in_aiiinotate(manifest_url)
+    index_manifest(manifest_url)
+    unindex_manifest(manifest_url)
+    return unindex_annotations_for_manifest(manifest_url)
 
 
 def destroy_regions(regions: Regions):
