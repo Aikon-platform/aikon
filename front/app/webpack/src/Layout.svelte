@@ -1,8 +1,22 @@
 <script>
     export let sidebarWidth = "25";
     export const layoutHeight = "90vh";
-    export let activeTab = 0;
-    export let tabList = [];
+    export let tabList = {};
+
+    let availableTabs = Object.keys(tabList);
+
+    $: activeTab = new URLSearchParams(window.location.search).get("tab") ?? availableTabs[0] ?? null;
+
+    function changeTab(tab) {
+        if (!availableTabs.includes(tab)) {
+            console.warn(`Tab "${tab}" is not available.`);
+            return;
+        }
+        activeTab = tab;
+        const url = new URL(window.location);
+        url.searchParams.set("tab", tab);
+        window.history.pushState({}, "", url);
+    }
 </script>
 
 <div class="layout" style="min-height: {layoutHeight};">
@@ -10,17 +24,16 @@
         <slot name="sidebar"/>
     </aside>
 
-
     <main class="main-content" style="width: {100-sidebarWidth}%; min-height: {layoutHeight};">
         <nav class="tabs-bar">
             {#if $$slots.tabs}
                 <slot name="tabs" {activeTab}/>
-            {:else if tabList.length}
+            {:else if Object.keys(tabList).length}
                 <div class="tabs">
                     <ul>
-                        {#each tabList as tab, index}
-                            <li class:is-active={activeTab === index}>
-                                <a on:click={() => activeTab = index} href="{null}">{tab}</a>
+                        {#each Object.entries(tabList) as [tabRef, tabTitle]}
+                            <li class:is-active={activeTab === tabRef}>
+                                <a on:click={() => changeTab(tabRef)} href="{null}">{tabTitle}</a>
                             </li>
                         {/each}
                     </ul>

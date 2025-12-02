@@ -11,6 +11,7 @@
 
     $: onlyPartial = true;
     $: onlyNotValidated = true;
+    console.log($imageClusters);
 </script>
 
 <Table>

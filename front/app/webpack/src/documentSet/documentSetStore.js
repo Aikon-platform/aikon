@@ -22,7 +22,6 @@ export function createDocumentSetStore(documentSetId) {
      */
     const allPairs = writable([]);
 
-
     const pairIndex = writable({
         byImage: new Map(),        // imgId -> [pairs]
         byDocPair: new Map(),      // "r1-r2" -> [pairs]
