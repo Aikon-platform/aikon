@@ -382,3 +382,8 @@ td.is-fullwidth {
     z-index: 5;
     position: relative;
 }
+
+.visible {
+    opacity: 1 !important;
+    visibility: visible !important;
+}

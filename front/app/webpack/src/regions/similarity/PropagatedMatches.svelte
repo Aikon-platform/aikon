@@ -98,18 +98,16 @@
 
 <div class="block matches-suggestion-wrapper">
     <div class="matches-suggestion">
-        <SimilarRegions qImg={qImg}
-                       sImgsPromise={propagatedMatchesPromise}
-        ></SimilarRegions>
+        <SimilarRegions qImg={qImg} sImgsPromise={propagatedMatchesPromise}/>
     </div>
 </div>
 
-<style type="text/css">
-.matches-suggestion-wrapper {
-    border: 1px solid var(--bulma-border);
-    border-radius: 1em;
-}
-.matches-suggestion {
-    margin: 1.5rem;
-}
+<style>
+    .matches-suggestion-wrapper {
+        border: 1px solid var(--bulma-border);
+        border-radius: 1em;
+    }
+    .matches-suggestion {
+        margin: 1.5rem;
+    }
 </style>

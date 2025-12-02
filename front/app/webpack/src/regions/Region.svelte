@@ -26,6 +26,8 @@
     export let height = isSquare ? 96 : 140;
     if ( height === "full" ) { isSquare = false }
 
+    export let toggleSelection = selectionStore.toggle;
+
     /////////////////////////////////////////////
     /** @type {RegionItemType?} defined in `SimilarityRow`.
      * In descendants of `SimilarityRow`, `Region` displays similarity images.
@@ -68,7 +70,7 @@
 >
     <figure class="image card region-image {isSquare ? 'is-96x96' : ''}" tabindex="-1"
             style="{height==='full' ? 'height: 100%' : `height: ${height}px; min-width: ${height}px`}; {borderColor ? `border: 5px solid ${borderColor};` : ''}"
-            on:click={() => selectable ? selectionStore.toggle(item) : null} on:keyup={() => null}>
+            on:click={() => selectable ? toggleSelection(item) : null} on:keyup={() => null}>
         <img class="region-img" src={imgSrc} alt="Extracted region"/>
         <div class="overlay is-center">
             <span class="overlay-desc">{@html desc}</span>

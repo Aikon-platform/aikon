@@ -28,13 +28,13 @@ export function shorten(str, maxLen=100) {
 }
 
 export function getCantaloupeUrl() {
-    return cantaloupeUrl ?? "http://localhost:8182";
-    // // TO DELETE
-    // return "https://vhs.huma-num.fr"
+    // return cantaloupeUrl ?? "http://localhost:8182";
+    // TO DELETE
+    return "https://vhs.huma-num.fr"
 }
 
 export function getSasUrl() {
-    return sasUrl ?? "http://localhost:3000";
+    return sasUrl ?? "http://localhost:8888";
 }
 
 export function initPagination(pageWritable, urlParam) {
@@ -283,4 +283,21 @@ export function generateColor(index) {
     const saturation = saturations[index % saturations.length];
     const lightness = lightnesses[Math.floor(index / saturations.length) % lightnesses.length];
     return `hsl(${Math.floor(hue)}, ${saturation}%, ${lightness}%)`;
+}
+
+export function getColNb(innerWidth=null) {
+    if (innerWidth < 600) {
+        return 1;
+    } else if (innerWidth < 800) {
+        return 2;
+    } else if (innerWidth < 1000) {
+        return 3;
+    } else if (innerWidth < 1200) {
+        return 4;
+    } else if (innerWidth < 1400) {
+        return 5;
+    } else if (innerWidth >= 1400) {
+        return 6;
+    }
+    return 4
 }

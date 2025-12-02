@@ -9,6 +9,7 @@
     const {
         docSetNumber,
         documentNodes,
+        imageClusters,
         selectedCategories,
         toggleCategory,
         selectedRegions,
@@ -48,6 +49,12 @@
                         <div>
                             <p class="heading">Images</p>
                             <p class="title is-5">{$docSetNumber.images || 0}</p>
+                        </div>
+                    </div>
+                    <div class="level-item has-text-centered">
+                        <div>
+                            <p class="heading">Clusters</p>
+                            <p class="title is-5">{$imageClusters.length || 0}</p>
                         </div>
                     </div>
                 </div>

@@ -1,10 +1,10 @@
 import {derived, writable, get} from 'svelte/store';
 import {extractNb, refToIIIFRoot, imageToPage, generateColor} from "../utils.js";
-import {appUrl, regionsType} from "../constants.js";
-// // TO DELETE
-// import {regionsType} from "../constants.js";
-// const appUrl = "https://vhs.huma-num.fr";
-// // TO DELETE
+// import {appUrl, regionsType} from "../constants.js";
+// TO DELETE
+import {regionsType} from "../constants.js";
+const appUrl = "https://vhs.huma-num.fr";
+// TO DELETE
 
 export function createDocumentSetStore(documentSetId) {
     const error = writable(null);
@@ -15,7 +15,7 @@ export function createDocumentSetStore(documentSetId) {
 
     const selectedRegions = writable(new Set());
 
-    const threshold = 0;
+    const threshold = writable(0.5);
 
     /**
      * All RegionsPair objects loaded in the current context
@@ -65,21 +65,20 @@ export function createDocumentSetStore(documentSetId) {
     const fetchPairs = derived(selectedCategories, ($selectedCategories, set) => {
         const promise = (async () => {
             try {
-                const cats = $selectedCategories.join(',');
-
-                // // TO DELETE
+                // TO DELETE
                 // const documentSetId = 413; // histoire naturelle
-                // // const documentSetId = 414; // nicolas
-                // // const documentSetId = 415; // physiologus
-                // // const documentSetId = 416; // de materia medica
-                // // TO DELETE
+                // const documentSetId = 414; // nicolas
+                // const documentSetId = 415; // physiologus
+                // const documentSetId = 416; // de materia medica
+                const documentSetId = 417; // traité de géométrie
+                // TO DELETE
 
-                const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${cats}`);
+                const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${$selectedCategories.join(',')}`);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const data = await response.json();
 
-                const index = { byImage: new Map(), byDocPair: new Map(), byDoc: new Map(),}
+                const index = { byImage: new Map(), byDocPair: new Map(), byDoc: new Map(), }
                 const documentMap = new Map();
                 const imageMap = new Map();
 
@@ -161,6 +160,7 @@ export function createDocumentSetStore(documentSetId) {
                     documents: regionIds.length,
                     pairs: pairs.length,
                     images: imgStats.count,
+                    clusters: null, // marker
                     categories
                 });
 
@@ -547,6 +547,66 @@ export function createDocumentSetStore(documentSetId) {
         return {regions: orderedSelection, rows};
     }
 
+    function findClusters(imgPairs, imageIds) {
+        const parent = new Map();
+
+        const find = (img) => {
+            if (!parent.has(img)) {
+                parent.set(img, img);
+                return img;
+            }
+            if (parent.get(img) !== img) {
+                parent.set(img, find(parent.get(img)));
+            }
+            return parent.get(img);
+        };
+
+        const union = (a, b) => {
+            const rootA = find(a);
+            const rootB = find(b);
+            if (rootA !== rootB) {
+                parent.set(rootB, rootA);
+            }
+        };
+
+        imgPairs.forEach(p => union(p.id_1, p.id_2));
+
+        const clusterMap = new Map();
+        imageIds.forEach(imgId => {
+            const root = find(imgId);
+            if (!clusterMap.has(root)) {
+                clusterMap.set(root, []);
+            }
+            clusterMap.get(root).push(imgId);
+        });
+
+        return Array.from(clusterMap.values())
+            .map((members, id) => {
+                const n = members.length;
+                const maxEdges = (n * (n - 1)) / 2;
+                const imageSet = new Set(members);
+                const actualLinks = imgPairs.filter(p =>
+                    imageSet.has(p.id_1) && imageSet.has(p.id_2)
+                ).length;
+
+                return {
+                    id,
+                    members,
+                    size: n,
+                    fullyConnected: actualLinks === maxEdges
+                };
+            })
+            .sort((a, b) => b.size - a.size);
+    }
+
+    /**
+     * Clusters { id, members: [imgId1, imgId2, ...], size, fullyConnected }
+     */
+    const imageClusters = derived(allPairs, ($pairs) => {
+        if (!$pairs.length) return [];
+        return findClusters($pairs, Array.from(get(imageNodes).keys()));
+    });
+
     function toggleCategory(categoryId) {
         selectedCategories.update(cats => {
             const index = cats.indexOf(categoryId);
@@ -583,6 +643,10 @@ export function createDocumentSetStore(documentSetId) {
         updateSelectedNodes: (nodes) => selectedNodes.set(nodes),
         toggleCategory,
         toggleRegion,
-        buildAlignedImageMatrix
+        buildAlignedImageMatrix,
+
+        threshold,
+        imageClusters,
+        setThreshold: (t) => threshold.set(t)
     };
 }

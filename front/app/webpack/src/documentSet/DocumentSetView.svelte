@@ -7,6 +7,7 @@
     import {createDocumentSetStore} from './documentSetStore.js';
     import NetworkInfo from "./NetworkInfo.svelte";
     import {setContext} from "svelte";
+    import Clusters from "./Clusters.svelte";
     export let docSet;
 
     let activeTab = 0;
@@ -17,7 +18,8 @@
     const tabList = [
         appLang === "en" ? "Image Network" : "Réseau d'images",
         appLang === "en" ? "Document Network" : "Réseau de documents",
-        appLang === "en" ? "Document Matrix" : "Matrice de documents"
+        appLang === "en" ? "Similarity Clusters" : "Groupe de similarités",
+        appLang === "en" ? "Document Matrix" : "Matrice de documents",
     ];
     $: visualizationTitle = tabList[activeTab];
 
@@ -106,10 +108,12 @@
                 {:else}
                     <div>
                         <h2 class="title is-3 has-text-link">{visualizationTitle}</h2>
-                        {#if activeTab === 2}
-                            <DocumentMatrix {documentSetStore}/>
-                        {:else}
+                        {#if activeTab === 0 || activeTab === 1}
                             <NetworkVisualization {documentSetStore} type={activeTab === 0 ? 'image' : 'document'}/>
+                        {:else if activeTab === 2}
+                            <Clusters {documentSetStore}/>
+                        {:else if activeTab === 3}
+                            <DocumentMatrix {documentSetStore}/>
                         {/if}
                     </div>
                 {/if}

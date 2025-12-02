@@ -41,7 +41,7 @@
         position: fixed;
         bottom: 0;
         right: 0;
-        z-index: 3;
+        z-index: 10;
     }
     #set-btn {
         border-radius: 0;
