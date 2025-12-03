@@ -440,6 +440,7 @@ def get_canvas_list(regions: Regions, all_img=False):
     return canvases
 
 
+# TODO PAUL: implement min_c/max_c on aiiinotate side
 def get_regions_annotations(
     regions: Regions,
     as_json=False,
@@ -482,6 +483,7 @@ def get_regions_annotations(
             # DO NOT WORK since the annotations are sorted ALPHABETICALLY by canvas number
             # if max_c is not None and (canvas_num > max_c):
             #     break
+
             if (max_c is not None and canvas_num > max_c) or (
                 min_c is not None and canvas_num < min_c
             ):
@@ -564,55 +566,14 @@ def total_annotations(regions_ref: str) -> int:
             e,
         )
         return 0
-    # response = requests.get(
-    #     f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions.get_ref()}/search"
-    # )
-    # res = response.json()
-    # try:
-    #     return res["within"]["total"]
-    # except KeyError:
-    #     total_sas_anno_count = 0
-    #
-    #     try:
-    #         for canvas_nb, _ in get_canvas_list(regions):
-    #             c_annotations = get_indexed_canvas_annotations(regions, canvas_nb)
-    #             total_sas_anno_count += len(c_annotations)
-    #     except ValueError as e:
-    #         log(
-    #             f"[count_total_annotations] Error when counting annotations (probably no annotation file)",
-    #             e,
-    #         )
-    #
-    #     return total_sas_anno_count
 
 
-# TODO PAUL: aiiinotate function for this
-def has_annotation(regions_ref: str):
+def has_annotation(regions_ref: str) -> bool:
     """
     Check if there are any annotations for the given regions reference.
     Returns True if at least one annotation is found, False otherwise.
     """
     return total_annotations(regions_ref) > 0
-    # page = f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions_ref}/search"
-    # try:
-    #     response = requests.get(page)
-    #     if response.status_code != 200:
-    #         log(
-    #             f"[has_annotation] Failed to get annotations from aiiinotate for {regions_ref}: {response.status_code}"
-    #         )
-    #         return False
-    #
-    #     annotations = response.json()
-    #     if annotations.get("resources", None):
-    #         return True
-    #
-    # except Exception as e:
-    #     log(
-    #         f"[has_annotation] Failed to parse annotations for {page}",
-    #         e,
-    #     )
-    #     return False
-    # return False
 
 
 def get_training_regions(regions: Regions):
@@ -940,7 +901,7 @@ def unindex_manifest(manifest_url: str) -> bool:
     return True
 
 
-# NOTE: hasn't been tested
+# NOT USED
 def unindex_annotations_for_canvas(canvas_uri: str) -> bool:
     """delete all annotations that have for target `canvas_uri`"""
     try:
