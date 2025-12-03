@@ -552,56 +552,67 @@ def get_indexed_canvas_annotations(regions: Regions, canvas_nb):
         return []
 
 
-# TODO POL: aiiinotate route for that
-def total_annotations(regions: Regions):
-    response = requests.get(
-        f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions.get_ref()}/search"
-    )
-    res = response.json()
+def total_annotations(regions_ref: str) -> int:
     try:
-        return res["within"]["total"]
-    except KeyError:
-        total_sas_anno_count = 0
-
-        try:
-            for canvas_nb, _ in get_canvas_list(regions):
-                c_annotations = get_indexed_canvas_annotations(regions, canvas_nb)
-                total_sas_anno_count += len(c_annotations)
-        except ValueError as e:
-            log(
-                f"[count_total_annotations] Error when counting annotations (probably no annotation file)",
-                e,
-            )
-
-        return total_sas_anno_count
+        r = requests.get(
+            f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/count?manifestShortId=${regions_ref}"
+        )
+        return r.json()["count"]
+    except Exception as e:
+        log(
+            f"[total_annotations]: Error when retrieving the number of annotations for regions ref '{regions_ref}'",
+            e,
+        )
+        return 0
+    # response = requests.get(
+    #     f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions.get_ref()}/search"
+    # )
+    # res = response.json()
+    # try:
+    #     return res["within"]["total"]
+    # except KeyError:
+    #     total_sas_anno_count = 0
+    #
+    #     try:
+    #         for canvas_nb, _ in get_canvas_list(regions):
+    #             c_annotations = get_indexed_canvas_annotations(regions, canvas_nb)
+    #             total_sas_anno_count += len(c_annotations)
+    #     except ValueError as e:
+    #         log(
+    #             f"[count_total_annotations] Error when counting annotations (probably no annotation file)",
+    #             e,
+    #         )
+    #
+    #     return total_sas_anno_count
 
 
 # TODO PAUL: aiiinotate function for this
-def has_annotation(regions_ref):
+def has_annotation(regions_ref: str):
     """
     Check if there are any annotations for the given regions reference.
     Returns True if at least one annotation is found, False otherwise.
     """
-    page = f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions_ref}/search"
-    try:
-        response = requests.get(page)
-        if response.status_code != 200:
-            log(
-                f"[has_annotation] Failed to get annotations from aiiinotate for {regions_ref}: {response.status_code}"
-            )
-            return False
-
-        annotations = response.json()
-        if annotations.get("resources", None):
-            return True
-
-    except Exception as e:
-        log(
-            f"[has_annotation] Failed to parse annotations for {page}",
-            e,
-        )
-        return False
-    return False
+    return total_annotations(regions_ref) > 0
+    # page = f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions_ref}/search"
+    # try:
+    #     response = requests.get(page)
+    #     if response.status_code != 200:
+    #         log(
+    #             f"[has_annotation] Failed to get annotations from aiiinotate for {regions_ref}: {response.status_code}"
+    #         )
+    #         return False
+    #
+    #     annotations = response.json()
+    #     if annotations.get("resources", None):
+    #         return True
+    #
+    # except Exception as e:
+    #     log(
+    #         f"[has_annotation] Failed to parse annotations for {page}",
+    #         e,
+    #     )
+    #     return False
+    # return False
 
 
 def get_training_regions(regions: Regions):

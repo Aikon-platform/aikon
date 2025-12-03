@@ -247,7 +247,7 @@ class Digitization(AbstractSearchableModel):
 
         count = 0
         for regions in self.get_regions():
-            count += total_annotations(regions)
+            count += total_annotations(regions.get_ref())
 
         return count
 

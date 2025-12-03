@@ -20,6 +20,6 @@
     "parcel": "^2.16.1"
   },
   "devDependencies": {
-    "aiiinotate": "^0.3.2"
+    "aiiinotate": "^0.4.0"
   }
 }
