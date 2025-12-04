@@ -1,5 +1,6 @@
 <script>
     import { appLang } from '../constants';
+    import { openModal } from '../utils';
     export let selectionLength = 0;
 
     let previousLength = selectionLength;
@@ -22,9 +23,7 @@
 </script>
 
 <div class="set-container">
-    <button id="set-btn"
-            class="button px-5 py-4 is-link js-modal-trigger"
-            data-target="selection-modal">
+    <button id="set-btn" class="button px-5 py-4 is-link" data-target="selection-modal" use:openModal>
         <span id="btn-content">
             <i class="fa-solid fa-book-bookmark"></i>
             {appLang === 'en' ? 'Selection' : 'Sélection'}

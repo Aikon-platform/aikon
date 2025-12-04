@@ -1,10 +1,11 @@
 <script>
     import { appLang } from './constants';
+    import { closeModal, openModal } from './utils.js';
 </script>
 
-<button id="hidden-msg-btn" class="js-modal-trigger" data-target="msg-modal" hidden/>
+<button id="hidden-msg-btn" use:openModal data-target="msg-modal" hidden/>
 
-<div id="msg-modal" class="modal fade" tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
+<div id="msg-modal" class="modal fade" use:closeModal tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
     <div id="modal-bkg" class="modal-background"/>
     <div class="modal-content">
         <div class="modal-card-head media mb-0">

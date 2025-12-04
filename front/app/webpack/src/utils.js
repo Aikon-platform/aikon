@@ -28,9 +28,9 @@ export function shorten(str, maxLen=100) {
 }
 
 export function getCantaloupeUrl() {
-    // return cantaloupeUrl ?? "http://localhost:8182";
-    // TO DELETE
-    return "https://vhs.huma-num.fr"
+    return cantaloupeUrl ?? "http://localhost:8182";
+    // // TO DELETE
+    // return "https://vhs.huma-num.fr"
 }
 
 export function getSasUrl() {
@@ -300,4 +300,42 @@ export function getColNb(innerWidth=null) {
         return 6;
     }
     return 4
+}
+
+export function closeModal(el) {
+    const closeElements = el.querySelectorAll(
+        '.modal-background, .modal-close, .modal-card-head .delete, .modal-card-foot .button-close'
+    );
+
+    const close = () => el.classList.remove('is-active');
+
+    closeElements.forEach(el => el.addEventListener('click', close));
+
+    const handleEscape = (e) => {
+        if (e.key === 'Escape' && el.classList.contains('is-active')) {
+            close();
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    return {
+        destroy() {
+            closeElements.forEach(el => el.removeEventListener('click', close));
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+}
+
+export function openModal(node) {
+    const open = () => {
+        const target = document.getElementById(node.dataset.target);
+        target?.classList.add('is-active');
+    };
+    node.addEventListener('click', open);
+
+    return {
+        destroy() {
+            node.removeEventListener('click', open);
+        }
+    };
 }

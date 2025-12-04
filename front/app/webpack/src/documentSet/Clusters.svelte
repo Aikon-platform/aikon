@@ -6,6 +6,7 @@
     import {appLang} from "../constants.js";
     import Pagination from "../Pagination.svelte";
     import RegionsSelectionModal from "../regions/RegionsSelectionModal.svelte";
+    import Modal from "../Modal.svelte";
 
     export let documentSetStore;
     const {

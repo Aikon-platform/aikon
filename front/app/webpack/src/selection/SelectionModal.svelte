@@ -1,4 +1,5 @@
 <script>
+    import { closeModal } from '../utils.js';
     import { selectionStore } from "./selectionStore.js";
     const { selectionTitle, updateTitle, save } = selectionStore;
     import SelectionFooter from "./SelectionFooter.svelte";
@@ -30,7 +31,7 @@
     }
 </script>
 
-<div id="selection-modal" class="modal fade" tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
+<div id="selection-modal" class="modal fade" use:closeModal tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
     <div class="modal-background"/>
     <div class="modal-content">
         <div class="modal-card-head media mb-0 is-middle">

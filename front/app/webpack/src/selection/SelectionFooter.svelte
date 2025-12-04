@@ -27,16 +27,14 @@
             </button>
         {/if}
         {#if !isRegion}
-            <a class="button is-link" href="/{appName}/document-set/{$selection(isRegion).id}/json" target="_blank">
+            <a class="button is-link is-dark" href="/{appName}/document-set/{$selection(isRegion).id}/json" target="_blank">
                 <span>
-                    <i class="fa-solid fa-file-export"></i>
-                    {appLang === 'en' ? 'JSON API' : 'API JSON'}
+                    <i class="fa-solid fa-file-export"></i> JSON
                 </span>
             </a>
-            <a class="button is-link" href="/{appName}/document-set/{$selection(isRegion).id}/zip" target="_blank">
+            <a class="button is-link is-dark" href="/{appName}/document-set/{$selection(isRegion).id}/zip" target="_blank">
                 <span>
-                    <i class="fa-solid fa-file-zipper"></i>
-                    {appLang === 'en' ? 'Export as ZIP' : 'Exporter en ZIP'}
+                    <i class="fa-solid fa-file-zipper"></i> ZIP
                 </span>
             </a>
         {/if}
