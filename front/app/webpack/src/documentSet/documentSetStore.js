@@ -1,5 +1,5 @@
 import {derived, writable, get} from 'svelte/store';
-import {extractNb, refToIIIFRoot, imageToPage, generateColor} from "../utils.js";
+import {extractNb, refToIIIFRoot, imageToPage, generateColor, initPagination, pageUpdate} from "../utils.js";
 // import {appUrl, regionsType} from "../constants.js";
 // TO DELETE
 import {regionsType} from "../constants.js";
@@ -16,6 +16,22 @@ export function createDocumentSetStore(documentSetId) {
     const selectedRegions = writable(new Set());
 
     const threshold = writable(0.5);
+
+    const pageLength = 10;
+    const currentPage = writable(1);
+
+    initPagination(currentPage, "p");
+
+    function handlePageUpdate(pageNb) {
+        pageUpdate(pageNb, currentPage, "p");
+    }
+
+    const paginatedClusters = derived([currentPage], ($currentPage) => {
+        const start = ($currentPage - 1) * pageLength;
+        const end = start + pageLength;
+        const $clusters = get(imageClusters);
+        return $clusters.slice(start, end);
+    });
 
     /**
      * All RegionsPair objects loaded in the current context
@@ -645,7 +661,11 @@ export function createDocumentSetStore(documentSetId) {
         buildAlignedImageMatrix,
 
         threshold,
+        paginatedClusters,
         imageClusters,
-        setThreshold: (t) => threshold.set(t)
+        setThreshold: (t) => threshold.set(t),
+        handlePageUpdate,
+        pageLength,
+        currentPage
     };
 }

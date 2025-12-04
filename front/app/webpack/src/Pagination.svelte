@@ -6,9 +6,8 @@
 
     export let nbOfItems;
     export let pageLength = pageSize;
-    $: maxPage = pageLength < pageSize ? 1 : Math.ceil(nbOfItems / pageLength);
+    $: maxPage = pageLength > 0 ? Math.ceil(nbOfItems / pageLength) : 1;
     $: multiplePages = maxPage > 1 || nbOfItems > pageLength
-    // todo fix maxPage that can be undefined / Nan
 </script>
 
 {#if multiplePages}

@@ -36,7 +36,7 @@ const  {
 function updateNavActionsHeight() {
     const navActions = document.getElementById("nav-actions");
     if (navActions) {
-        document.documentElement.style.setProperty('--nav-actions-height', `${navActions.offsetHeight}px`);
+        document.documentElement.style.setProperty('--top-offset', `${navActions.offsetHeight}px`);
     }
 }
 let resizeObserver;
@@ -162,11 +162,12 @@ const setComparedRegions = (e) => {
             {/await}
         </div>
     </div>
+
     <svelte:fragment slot="toolbar-hidden">
         <div class="ctrl-block-wrapper">
             <div class="ctrl-block">
                 <div class="ctrl-block-title">
-                    <span class="tag is-medium is-link">Similarity</span>
+                    <span class="tag is-medium is-link">{appLang === "en" ? "Similarity" : "Similarité"}</span>
                 </div>
                 <div class="ctrl-block-inputs">
                     <div class="ctrl-input">
@@ -188,13 +189,13 @@ const setComparedRegions = (e) => {
                 <div class="ctrl-block-title">
                     <span class="tag is-medium is-link mr-1">Propagation</span>
                     <IconTooltip iconifyIcon="material-symbols:help-outline"
-                        altText={ appLang==="en" ? "Display help" : "Afficher une explication"}
+                        altText={appLang === "en" ? "Display help" : "Afficher une explication"}
                         tooltipText={tooltipText}
                     />
                 </div>
                 <div class="ctrl-block-inputs">
                     <div class="ctrl-input">
-                        <InputSlider title={ appLang==="fr" ? "Profondeur de récursion" : "Recursion depth" }
+                        <InputSlider title={appLang === "fr" ? "Profondeur de récursion" : "Recursion depth"}
                             minVal={allowedPropagateDepthRange[0]}
                             maxVal={allowedPropagateDepthRange[1]}
                             start={$propagateRecursionDepth}
@@ -203,7 +204,7 @@ const setComparedRegions = (e) => {
                         />
                     </div>
                     <div class="ctrl-input">
-                        <InputToggle toggleLabel="Filter by region"
+                        <InputToggle toggleLabel={appLang === "en" ? "Filter by region" : "Filtrer par région"}
                              on:updateChecked={setPropagateFilterByRegions}
                              start={$propagateFilterByRegions}
                              buttonDisplay={true}

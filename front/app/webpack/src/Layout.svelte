@@ -5,6 +5,36 @@
 
     let availableTabs = Object.keys(tabList);
 
+    function updateTopOffset(element = null) {
+        if (!element) {
+            element = document.getElementById("navbar");
+        }
+        document.documentElement.style.setProperty('--top-offset', `${element.offsetHeight}px`);
+    }
+    updateTopOffset()
+
+    // import {onMount} from "svelte";
+    // let resizeObserver;
+    // onMount(() => {
+    //     const tabs = document.getElementById("tabs");
+    //     updateTopOffset(tabs);
+    //
+    //     resizeObserver = new ResizeObserver(() => {
+    //         updateTopOffset(tabs);
+    //     });
+    //
+    //     if (tabs) {
+    //         resizeObserver.observe(tabs);
+    //     }
+    //
+    //     return () => {
+    //         if (resizeObserver && tabs) {
+    //             resizeObserver.unobserve(tabs);
+    //             resizeObserver.disconnect();
+    //         }
+    //     };
+    // });
+
     $: activeTab = new URLSearchParams(window.location.search).get("tab") ?? availableTabs[0] ?? null;
 
     function changeTab(tab) {
@@ -25,7 +55,7 @@
     </aside>
 
     <main class="main-content" style="width: {100-sidebarWidth}%; min-height: {layoutHeight};">
-        <nav class="tabs-bar">
+        <nav id="tabs" class="tabs-bar">
             {#if $$slots.tabs}
                 <slot name="tabs" {activeTab}/>
             {:else if Object.keys(tabList).length}

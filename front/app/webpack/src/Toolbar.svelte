@@ -4,7 +4,7 @@
     import {appLang} from "./constants.js";
 
     $: toolbarExpanded = false;
-    let expandable = true;
+    export let expandable = true;
 
     const toolbarText = {
         true: {
@@ -51,7 +51,7 @@
 
 <style>
     #toolbar {
-        top: var(--nav-actions-height);
+        top: var(--top-offset);
     }
 
     .ctrl-wrapper {
