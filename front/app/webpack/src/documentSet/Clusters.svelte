@@ -5,6 +5,7 @@
     import Toolbar from "../Toolbar.svelte";
     import {appLang} from "../constants.js";
     import Pagination from "../Pagination.svelte";
+    import RegionsSelectionModal from "../regions/RegionsSelectionModal.svelte";
 
     export let documentSetStore;
     const {
@@ -13,6 +14,8 @@
         imageClusters,
         pageLength
     } = documentSetStore;
+
+    const fonction = () => console.log("prout");
 
     $: onlyPartial = true;
     $: onlyNotValidated = true;
@@ -23,27 +26,27 @@
             desc: appLang === 'en' ? 'Create a new validated cluster from the selected regions' : 'Créer un nouveau cluster valide à partir des régions sélectionnées',
             icon: 'fa-object-group',
             shortcut: 'Shift + C',
-            fct: () => null
+            fct: fonction
         },
         remove: {
             title: appLang === 'en' ? 'Remove from cluster' : 'Retirer du cluster',
             desc: appLang === 'en' ? 'Remove the selected regions from their cluster' : 'Retirer les régions sélectionnées de leur cluster',
             icon: 'fa-chain-broken',
             shortcut: 'Shift + D',
-            fct: () => null
+            fct: fonction
         },
         delete: {
             title: appLang === 'en' ? 'Delete regions' : 'Supprimer les régions',
             desc: appLang === 'en' ? 'Remove selected regions from the document' : 'Supprimer du document les régions sélectionnées',
             icon: 'fa-trash',
             shortcut: 'Shift + X',
-            fct: () => null
+            fct: fonction
         },
         validate: {
             title: appLang === 'en' ? 'Validate cluster' : 'Valider le cluster',
             desc: appLang === 'en' ? 'Set as exact match all the pairs of regions in the cluster' : 'Définir comme correspondance exacte toutes les paires de régions dans le cluster',
             icon: 'fa-check',
-            fct: () => null
+            fct: fonction
         },
         validated: {
             title: appLang === 'en' ? 'Validated cluster' : 'Cluster valide',
@@ -67,7 +70,7 @@
                 <div class="field has-addons">
                     {#each Object.values(globalActions) as action}
                         <p class="control">
-                            <button class="button pl-5" on:click={action.fct} title={action.desc}>
+                            <button class="button pl-5" on:click|preventDefault={action.fct} title={action.desc}>
                                 <span class="icon is-small"><i class="fas {action.icon}"/></span>
                                 {action.title}
                                 <span class="shortcut">{action.shortcut}</span>
@@ -81,6 +84,8 @@
 </Toolbar>
 
 <Pagination store={documentSetStore} nbOfItems={$imageClusters.length} {pageLength}/>
+
+<RegionsSelectionModal/>
 
 <Table>
     {#each $paginatedClusters as cl (cl.id)}

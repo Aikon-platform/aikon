@@ -1,25 +1,22 @@
 <script>
     import { setContext } from 'svelte';
     import { fade } from 'svelte/transition';
-    import {refToIIIF, loading} from "../utils.js";
-    import { appLang, regionsType, modules } from '../constants';
+    import { loading } from "../utils.js";
+    import { appLang, modules } from '../constants';
 
-    import { selectionStore } from '../selection/selectionStore.js';
-    const { selected } = selectionStore;
     import { regionsStore } from './regionsStore.js';
     const { allRegions, fetchAll } = regionsStore;
 
     import Loading from '../Loading.svelte';
     import Region from './Region.svelte';
-    import SelectionBtn from "../selection/SelectionBtn.svelte";
     import Modal from "../Modal.svelte";
     import ExtractionButtons from "./ExtractionButtons.svelte";
     import RegionsBtn from "./RegionsBtn.svelte";
     import ActionButtons from "./ActionButtons.svelte";
     import Similarity from "./similarity/Similarity.svelte";
     import PageRegions from "./PageRegions.svelte";
-    import SelectionModal from "../selection/SelectionModal.svelte";
     import Vectorization from "./vectorization/Vectorization.svelte";
+    import RegionsSelectionModal from "./RegionsSelectionModal.svelte";
 
     export let manifest = '';
     export let isValidated = false;
@@ -34,10 +31,6 @@
     setContext('imgPrefix', imgPrefix);
     setContext('manifest', manifest);
     setContext('isValidated', isValidated);
-
-    $: selectedRegions = $selected(true);
-    $: selectionLength = Object.keys(selectedRegions).length;
-    $: areSelectedRegions = selectionLength > 0;
 
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentRegionId = parseInt(baseUrl.split('regions/')[1].replace("/", ""));
@@ -63,7 +56,7 @@
 
 <Modal/>
 
-<SelectionBtn {selectionLength}/>
+<RegionsSelectionModal/>
 
 <div id="nav-actions">
     <div class="actions grid">
@@ -113,39 +106,7 @@
     <Vectorization/>
 {/if}
 
-<SelectionModal isRegion={true} {selectionLength}>
-    {#if areSelectedRegions}
-        <div class="fixed-grid has-6-cols">
-            <div class="grid is-gap-2">
-                {#each Object.entries(selectedRegions) as [id, meta]}
-                    <div class="selection cell">
-                        <figure class="image is-64x64 card">
-                            <img src="{refToIIIF(meta.img, meta.xywh, '96,')}" alt="Extracted region"/>
-                            <div class="overlay is-center">
-                                <span class="overlay-desc">{meta.title}</span>
-                            </div>
-                        </figure>
-                        <button class="delete region-btn" aria-label="remove from selection"
-                                on:click={() => selectionStore.remove(id, regionsType)}/>
-                    </div>
-                {/each}
-            </div>
-        </div>
-    {:else}
-        <div>
-            {appLang === 'en' ? 'No regions in selection' : 'Aucune région sélectionnée'}
-        </div>
-    {/if}
-</SelectionModal>
-
 <style>
-    .selection {
-        position: relative;
-        width: 64px;
-    }
-    .overlay {
-        font-size: 50%;
-    }
     #nav-actions {
         position: sticky;
         top: 0;
