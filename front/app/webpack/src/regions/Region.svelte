@@ -5,7 +5,7 @@
     import { refToIIIF } from "../utils.js";
     import { appLang } from '../constants';
 
-    export let selectionStore = regionsSelection;
+    export let selectionStore;
     const { isSelected } = selectionStore;
 
     import { regionsStore } from './regionsStore.js';

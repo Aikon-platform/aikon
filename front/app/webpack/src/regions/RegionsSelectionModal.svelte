@@ -1,14 +1,15 @@
 <script>
     import {refToIIIF} from "../utils.js";
-    import {appLang, regionsType} from "../constants.js";
+    import {appLang} from "../constants.js";
     import SelectionModal from "../selection/SelectionModal.svelte";
     import SelectionBtn from "../selection/SelectionBtn.svelte";
 
-    export let selectionStore = regionsSelection;
+    export let selectionStore;
     const { selected } = selectionStore;
 
     // $selected = {"Regions"/"Cluster" : [{S}, {E}, {L}, {E}, {C}, {T}, {I}, {O}, {N}]}
-    $: selectedRegions = Object.values($selected)[0] || {};
+    const selectionType = Object.keys($selected)[0];
+    $: selectedRegions = $selected[selectionType] || {};
     $: selectionLength = Object.keys(selectedRegions).length;
     $: areSelectedRegions = selectionLength > 0;
 </script>
@@ -28,7 +29,7 @@
                             </div>
                         </figure>
                         <button class="delete region-btn" aria-label="remove from selection"
-                                on:click={() => selectionStore.remove(id, regionsType)}/>
+                                on:click={() => selectionStore.remove(id, selectionType)}/>
                     </div>
                 {/each}
             </div>
@@ -44,6 +45,11 @@
     .selection {
         position: relative;
         width: 64px;
+    }
+    .selection .delete {
+        position: absolute;
+        top: -0.75rem;
+        right: -0.75rem;
     }
     .overlay {
         font-size: 50%;
