@@ -5,10 +5,9 @@
     import { refToIIIF } from "../utils.js";
     import { appLang } from '../constants';
 
-    export let borderColor = null;
-
-    import { selectionStore } from '../selection/selectionStore.js';
+    export let selectionStore = regionsSelection;
     const { isSelected } = selectionStore;
+
     import { regionsStore } from './regionsStore.js';
     const { clipBoard } = regionsStore;
 
@@ -18,13 +17,14 @@
 
     /** @type {RegionItemType} */
     export let item;
-    /** @type {Promise<string>?} TODO CHANGE THAT */
+    /** @type {Promise<string>?} */
     export let descPromise = undefined;
     /** @type {boolean} enforce a small square display. if `height === "full"`, will be switched to `false`. see below */
     export let isSquare = true;
     /** @type {number|"full"} either a dimension in pixels, or the "full" keyword used by the IIIF image api */
     export let height = isSquare ? 96 : 140;
     if ( height === "full" ) { isSquare = false }
+    export let borderColor = null;
 
     export let toggleSelection = selectionStore.toggle;
 

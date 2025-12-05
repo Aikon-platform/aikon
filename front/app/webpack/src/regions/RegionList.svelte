@@ -4,6 +4,7 @@
     import { loading } from "../utils.js";
     import { appLang, modules } from '../constants';
 
+    import { regionsSelection } from "../selection/selectionStore.js";
     import { regionsStore } from './regionsStore.js';
     const { allRegions, fetchAll } = regionsStore;
 
@@ -56,7 +57,7 @@
 
 <Modal/>
 
-<RegionsSelectionModal/>
+<RegionsSelectionModal selectionStore={regionsSelection}/>
 
 <div id="nav-actions">
     <div class="actions grid">
@@ -90,7 +91,7 @@
             </div>
         {:then _}
             {#each Object.values($allRegions) as item (item.id)}
-                <Region {item}/>
+                <Region {item} selectionStore={regionsSelection}/>
             {:else}
                 <ExtractionButtons {currentRegionId} {baseUrl}/>
             {/each}

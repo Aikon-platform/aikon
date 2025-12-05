@@ -6,7 +6,8 @@
     import {appLang} from "../constants.js";
     import Pagination from "../Pagination.svelte";
     import RegionsSelectionModal from "../regions/RegionsSelectionModal.svelte";
-    import Modal from "../Modal.svelte";
+
+    import { clusterSelection } from '../selection/selectionStore.js';
 
     export let documentSetStore;
     const {
@@ -86,7 +87,7 @@
 
 <Pagination store={documentSetStore} nbOfItems={$imageClusters.length} {pageLength}/>
 
-<RegionsSelectionModal/>
+<RegionsSelectionModal selectionStore={clusterSelection}/>
 
 <Table>
     {#each $paginatedClusters as cl (cl.id)}
@@ -108,7 +109,7 @@
             </svelte:fragment>
             <svelte:fragment slot="row-body">
                 {#each cl.members as imgId}
-                    <Region item={$imageNodes.get(imgId)} copyable={false}/>
+                    <Region item={$imageNodes.get(imgId)} copyable={false} selectionStore={clusterSelection}/>
                 {/each}
             </svelte:fragment>
         </Row>

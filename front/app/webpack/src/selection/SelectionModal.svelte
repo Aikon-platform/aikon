@@ -1,10 +1,9 @@
 <script>
     import { closeModal } from '../utils.js';
-    import { selectionStore } from "./selectionStore.js";
-    const { selectionTitle, updateTitle, save } = selectionStore;
     import SelectionFooter from "./SelectionFooter.svelte";
 
-    export let isRegion = false;
+    export let selectionStore;
+    const { selectionTitle, updateTitle, save } = selectionStore;
     export let selectionLength = false;
 
     let isEditing = false;
@@ -13,7 +12,7 @@
 
     function startEditing() {
         isEditing = true;
-        currentTitle = $selectionTitle(isRegion);
+        currentTitle = $selectionTitle;
         // todo display changes of the title on the Item component as well + in the selection record list as well
         setTimeout(() => titleInput && titleInput.focus(), 0);
     }
@@ -26,8 +25,8 @@
 
     function finishEditing() {
         isEditing = false;
-        updateTitle(currentTitle, isRegion);
-        save(isRegion);
+        updateTitle(currentTitle);
+        save();
     }
 </script>
 
@@ -47,7 +46,7 @@
                     />
                 {:else}
                     <span on:click={startEditing} on:keyup={null}>
-                        {$selectionTitle(isRegion)}
+                        {$selectionTitle}
                         <span class="pl-3 smaller has-text-link">
                             <i class="fas fa-edit"/>
                         </span>
@@ -60,7 +59,7 @@
         <section class="modal-card-body">
             <slot/>
         </section>
-        <SelectionFooter {isRegion}/>
+        <SelectionFooter {selectionStore}/>
     </div>
 </div>
 

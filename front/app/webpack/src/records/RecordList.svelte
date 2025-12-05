@@ -1,7 +1,9 @@
 <script>
     import Record from "./Record.svelte";
-    import { selectionStore } from "../selection/selectionStore.js";
-    const { selected, nbSelected } = selectionStore;
+
+    import {recordsSelection} from "../selection/selectionStore.js";
+    const { selected, nbSelected } = recordsSelection;
+
     import SelectionBtn from "../selection/SelectionBtn.svelte";
     import { appLang, appName, webappName, model2title, addPermission } from '../constants';
     import SelectionModal from "../selection/SelectionModal.svelte";
@@ -23,8 +25,8 @@
     const recordsStore = createRecordsStore(modelName);
     const { pageRecords, resultPage, resultNumber } = recordsStore;
 
-    $: selectedRecords = $selected(false);
-    $: selectionLength = $nbSelected(false);
+    $: selectedRecords = $selected;
+    $: selectionLength = $nbSelected;
 
     export let searchFields = [];
     // TODO make result count appear + filter name
@@ -87,8 +89,8 @@
     </div>
 {/await}
 
-<SelectionModal {selectionLength}>
-    {#each selectedRecords as [type, selectedItems]}
+<SelectionModal {selectionLength} selectionStore={recordsSelection}>
+    {#each Object.entries(selectedRecords) as [type, selectedItems]}
         {#if Object.values(selectedItems).length > 0 && type in model2title}
             <h3>{model2title[type]}</h3>
             <table class="table pl-2 is-fullwidth">
@@ -102,8 +104,7 @@
                             <a href="{meta.url}" target="_blank">{meta.title}</a>
                         </td>
                         <td class="is-narrow">
-                            <button class="delete" aria-label="close"
-                                    on:click={() => selectionStore.remove(id, type)}/>
+                            <button class="delete" aria-label="close" on:click={() => recordsSelection.remove(id, type)}/>
                         </td>
                     </tr>
                     <!--{:else}-->

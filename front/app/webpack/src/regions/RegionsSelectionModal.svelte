@@ -4,17 +4,18 @@
     import SelectionModal from "../selection/SelectionModal.svelte";
     import SelectionBtn from "../selection/SelectionBtn.svelte";
 
-    import { selectionStore } from '../selection/selectionStore.js';
-
+    export let selectionStore = regionsSelection;
     const { selected } = selectionStore;
-    $: selectedRegions = $selected(true);
+
+    // $selected = {"Regions"/"Cluster" : [{S}, {E}, {L}, {E}, {C}, {T}, {I}, {O}, {N}]}
+    $: selectedRegions = Object.values($selected)[0] || {};
     $: selectionLength = Object.keys(selectedRegions).length;
     $: areSelectedRegions = selectionLength > 0;
 </script>
 
 <SelectionBtn {selectionLength}/>
 
-<SelectionModal isRegion={true} {selectionLength}>
+<SelectionModal {selectionLength} {selectionStore}>
     {#if areSelectedRegions}
         <div class="fixed-grid has-6-cols">
             <div class="grid is-gap-2">

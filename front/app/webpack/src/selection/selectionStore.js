@@ -1,250 +1,190 @@
 import {derived, writable} from 'svelte/store';
-import {csrfToken, regionsType, appLang, appName} from '../constants';
+import {csrfToken, appLang} from '../constants';
 
+function createTypedSelectionStore(config) {
+    const {
+        type,
+        modelName,
+        defaultTitle,
+        extractMeta = (item) => item // by default, keep item as it is
+    } = config;
 
-function createSelectionStore() {
-    // TODO make isRegion a parameter or make everything modelName centered
-    const docSetTemplate = {
-        "id": null, // <null|document_set_id>
-        "type": "documentSet",
-        "title": appLang === "en" ? "Document set" : "Set de documents", // <string>
-        "selected": {}, // <{model_name: {record_id: {record_meta}, record_id: {record_meta}}, model_name: {...}, ...}>
-    }
-    const regionsSetTemplate = {
-        "id": null, // <null|regions_set_id>
-        "type": "regionsSet",
-        "title": appLang === "en" ? "Regions set" : "Set de régions", // <string>
-        "selected": {} // <{regionsType: {record_id: {record_meta}, record_id: {record_meta}, ...}}>
-    }
-    const selectedRecords = JSON.parse(localStorage.getItem("documentSet")) || docSetTemplate;
-    const selectedRegions = JSON.parse(localStorage.getItem("regionsSet")) || regionsSetTemplate;
-    const selection = writable({
-        records: selectedRecords,
-        regions: selectedRegions
-    });
-    const { subscribe, update, get } = selection;
+    const template = {
+        id: null,
+        type,
+        title: defaultTitle,
+        // <{model_name: {record_id: {record_meta}, record_id: {record_meta}}, model_name: {...}, ...}>
+        selected: {}
+    };
 
+    const initialData = JSON.parse(localStorage.getItem(type)) || template;
+    const selection = writable(initialData);
     const isSaved = writable(false);
 
-    function store(selection, saved= false) {
+    function store(data, saved = false) {
         isSaved.set(saved);
-        localStorage.setItem(selection.type, JSON.stringify(selection));
+        localStorage.setItem(type, JSON.stringify(data));
     }
 
-    function getSelected(selection, isRegion) {
-        return selection[isRegion ? "regions" : "records"]?.selected || {};
-    }
-    function filter(selection, isRegion = true) {
-        const selected = getSelected(selection, isRegion);
-        // TODO make usage more consistent
-        return isRegion ? selected[regionsType] ?? {} : Object.entries(selected);
-    }
-
-    // TODO add way to make selection public
-
-    function remove(selection, itemId, itemType) {
-        const isRegion = itemType === regionsType;
-        const key = isRegion ? "regions" : "records";
-        const set = selection[key];
-
-        const { [itemId]: _, ...rest } = set.selected[itemType];
-
-        selection[key] = {
-            ...set,
-            selected: {...set.selected, [itemType]: rest}
-        };
-
-        store(selection[key]);
-        return selection;
-    }
-
-    function removeAll(selection, itemIds, itemType) {
-        const isRegion = itemType === regionsType;
-        const key = isRegion ? "regions" : "records";
-        const set = selection[key];
-        let selected = set.selected[itemType];
-
-        if (!selected || !Object.keys(selected).length) return selection;
-
-        itemIds.forEach(itemId => {
-            delete selected[itemId];
-        });
-
-        selection[key] = {
-            ...set,
-            selected: {...set.selected, [itemType]: selected}
-        };
-
-        store(selection[key]);
-        return selection;
-    }
-
-    function add(selection, item, storing = true) {
-        const key = item.class === regionsType ? "regions" : "records";
-        const set = selection[key];
-        const selected = set.selected;
-
-        const itemMeta = item.class === regionsType ? item : {title: item.title, url: item.url};
-
-        selection[key] = {
-            ...set,
-            selected: {
-                ...selected,
-                [item.class]: {
-                    ...(selected[item.class] || {}),
-                    [item.id]: itemMeta
-                }
+    function save() {
+        selection.update(set => {
+            if (type !== 'documentSet') {
+                console.error("Document set management is the only type currently supported for saving.");
+                return set;
             }
-        };
 
-        if (storing) store(selection[key]);
-        return selection;
-    }
-    function addAll(selection, items) {
-        const isRegion = items[0].type === regionsType;
-        items.forEach(item => {
-            selection = add(selection, item, false)
-        });
+            const selectedIds = Object.fromEntries(
+                Object.entries(set.selected).map(([model, records]) =>
+                    [model, Object.keys(records)]
+                )
+            );
 
-        store(selection[isRegion ? "regions" : "records"]);
-        return selection;
-    }
-    function save(selection, isRegion) {
-        const modelName = isRegion ? "regions-set" : "document-set";
-        if (isRegion) {
-            window.alert("Region set management is not yet implemented");
-            // todo implement region set
-            return selection;
-        }
+            const endpoint = set.id ? `${set.id}/edit` : "new";
 
-        let set = selection[isRegion ? "regions" : "records"];
-
-        let selectedIds = {};
-        Object.entries(set.selected).forEach(([modelName, records]) => {
-            selectedIds[modelName] = Object.keys(records);
-        });
-
-        const endpoint = set.id !== null ? `${set.id}/edit` : "new";
-
-        fetch(`${window.location.origin}/${modelName}/${endpoint}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify({
-                'title': set.title,
-                'selection': set,
-                ...selectedIds
+            fetch(`${window.location.origin}/${modelName}/${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    title: set.title,
+                    selection: set,
+                    ...selectedIds
+                })
             })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (!data?.document_set_id) {
-                throw new Error('Failed to save selection');
-            }
-            update(currentSelection => {
-                const set = currentSelection[isRegion ? "regions" : "records"];
-                set.id = data.document_set_id;
-                set.title = data.document_set_title;
-                isSaved.set(true);
-                return currentSelection;
-            });
-            store(selection[isRegion ? "regions" : "records"], true);
-            // TODO if saved, btn for treatment
-        })
-        .catch(error => console.error('Error:', error));
+            .then(res => res.json())
+            .then(data => {
+                if (!data?.document_set_id) throw new Error('Failed to save');
+                selection.update(current => {
+                    current.id = data.document_set_id;
+                    current.title = data.document_set_title;
+                    store(current, true);
+                    return current;
+                });
+            })
+            .catch(err => console.error('Error:', err));
 
-        return selection;
-    }
-
-    function loadSet(selection, set) {
-        const key = set.class.toLowerCase().includes("regions") ? "regions" : "records";
-        if (set.selection.id === null) {
-            // TODO dirty fix to avoid null id
-            set.selection.id = set.id;
-        }
-        selection[key] = set.selection;
-        store(selection[key])
-        return selection;
-    }
-
-    function unloadSet(selection, set) {
-        const isRegion = set.class.toLowerCase().includes("regions");
-        selection[isRegion ? "regions" : "records"] = isRegion ? regionsSetTemplate : docSetTemplate;
-        store(selection[isRegion ? "regions" : "records"]);
-        return selection;
-    }
-
-    function isThisSetSelected(selection, set) {
-        const isRegion = set.class.toLowerCase().includes("regions");
-        return selection[isRegion ? "regions" : "records"].id === set.id
+            return set;
+        });
     }
 
     return {
-        subscribe,
-        save: (isRegion) => update(selection => save(selection, isRegion)),
-        empty: (isRegion) => update(selection => {
-            selection[isRegion ? "regions" : "records"] = isRegion ? regionsSetTemplate : docSetTemplate;
-            store(selection[isRegion ? "regions" : "records"]);
-            return selection
+        type,
+        subscribe: selection.subscribe,
+
+        add: (item) => selection.update(set => {
+            set.selected[item.class] = {
+                ...(set.selected[item.class] || {}),
+                [item.id]: extractMeta(item)
+            };
+            store(set);
+            return set;
         }),
-        removeAll: (itemIds, itemType) => update(selection => removeAll(selection, itemIds, itemType)),
-        remove: (itemId, itemType) => update(selection => remove(selection, itemId, itemType)),
-        addAll: (items) => update(selection => addAll(selection, items)),
-        add: (item) => update(selection => add(selection, item)),
-        toggle: (item) => update(selection => {
-            const selected = getSelected(selection, item.class === regionsType);
-            if (selected[item.class]?.[item.id]) {
-                return remove(selection, item.id, item.class);
+
+        addAll: (items) => selection.update(set => {
+            items.forEach(item => {
+                set.selected[item.class] = {
+                    ...(set.selected[item.class] || {}),
+                    [item.id]: extractMeta(item)
+                };
+            });
+            store(set);
+            return set;
+        }),
+
+        remove: (itemId, itemType) => selection.update(set => {
+            const {[itemId]: _, ...rest} = set.selected[itemType];
+            set.selected[itemType] = rest;
+            store(set);
+            return set;
+        }),
+
+        removeAll: (itemIds, itemType) => selection.update(set => {
+            itemIds.forEach(id => delete set.selected[itemType]?.[id]);
+            store(set);
+            return set;
+        }),
+
+        toggle: (item) => selection.update(set => {
+            if (set.selected[item.class]?.[item.id]) {
+                const {[item.id]: _, ...rest} = set.selected[item.class];
+                set.selected[item.class] = rest;
             } else {
-                return add(selection, item);
+                set.selected[item.class] = {
+                    ...(set.selected[item.class] || {}),
+                    [item.id]: extractMeta(item)
+                };
             }
+            store(set);
+            return set;
         }),
-        updateTitle: (newTitle, isRegion) => update(selection => {
-            const key = isRegion ? "regions" : "records";
-            selection[key] = { ...selection[key], title: newTitle };
-            store(selection[key], true);
-            return selection;
+
+        empty: () => selection.update(() => {
+            const newSet = {...template};
+            store(newSet);
+            return newSet;
         }),
-        // REACTIVE STATEMENT
+
+        updateTitle: (title) => selection.update(set => {
+            set.title = title;
+            store(set, true);
+            return set;
+        }),
+
+        loadSet: (setData) => selection.update(() => {
+            const newSet = setData.selection.id ? setData.selection : {...setData.selection, id: setData.id};
+            store(newSet);
+            return newSet;
+        }),
+
+        unloadSet: () => selection.update(() => {
+            const newSet = {...template};
+            store(newSet);
+            return newSet;
+        }),
+
+        save,
         isSaved,
-        isSelected: derived(selection, $selection =>
-            item => getSelected($selection, item.class === regionsType)[item.class]?.hasOwnProperty(item.id) || false
+
+        selectionTitle: derived(selection, $sel => $sel.title),
+        isSelected: derived(selection, $sel =>
+            item => $sel.selected[item.class]?.[item.id] || false
         ),
-        isSetSelected: derived(selection, $selection =>
-            set => isThisSetSelected($selection, set)
+
+        selected: derived(selection, $sel =>
+            $sel.selected
         ),
-        selected: derived(selection, $selection =>
-            isRegion => filter($selection, isRegion)
+
+        nbSelected: derived(selection, $sel =>
+            Object.values($sel.selected).reduce(
+                (count, items) => count + Object.keys(items).length, 0
+            )
         ),
-        nbSelected: derived(selection, $selection =>
-            isRegion => {
-                const selected = filter($selection, isRegion);
-                if (isRegion) {
-                    return Object.keys(selected).length;
-                }
-                return selected.reduce(
-                    (count, [_, selectedItems]) => count + Object.keys(selectedItems).length, 0
-                )
-            }
-        ),
-        selectionTitle: derived(selection, $selection =>
-            isRegion => {
-                return $selection[isRegion ? "regions" : "records"].title;
-            }
-        ),
-        selection: derived(selection, $selection =>
-            isRegion => {
-                return $selection[isRegion ? "regions" : "records"];
-            }
-        ),
-        toggleSet: set => update(selection => {
-            if (isThisSetSelected(selection, set)) {
-                return unloadSet(selection, set);
-            }
-            return loadSet(selection, set);
-        }),
+
+        isSetSelected: derived(selection, $sel =>
+            set => $sel.id === set.id
+        )
     };
 }
-export const selectionStore = createSelectionStore();
+
+export const recordsSelection = createTypedSelectionStore({
+    type: 'documentSet',
+    modelName: 'document-set',
+    title: appLang === 'en' ? 'Document set' : 'Set de documents',
+    extractMeta: (item) => ({title: item.title, url: item.url})
+});
+
+export const regionsSelection = createTypedSelectionStore({
+    type: 'regionsSet',
+    modelName: 'regions-set',
+    title: appLang === 'en' ? 'Regions set' : 'Set de régions',
+    extractMeta: (item) => item
+});
+
+export const clusterSelection = createTypedSelectionStore({
+    type: 'clusterSet',
+    modelName: 'cluster-set',
+    title: appLang === 'en' ? 'Selected regions' : 'Régions sélectionnées',
+    extractMeta: (item) => ({title: item.title, xywh: item.xywh, img: item.img})
+});
