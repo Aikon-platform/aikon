@@ -304,7 +304,7 @@ def create_list_annotations(regions: Regions):
 # TODO PAUL: add `only_ids`functionnality on aiiinotate side
 # TODO PAUL: add `min_c` `max_c` on aiiinotate
 def get_manifest_annotations(
-    regions_ref, only_ids=True, min_c: int = None, max_c: int = None
+    regions_ref, only_ids=True, min_c: int | None = None, max_c: int | None = None
 ):
     manifest_annotations, response = [], ""
     next_page = f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions_ref}/search"
