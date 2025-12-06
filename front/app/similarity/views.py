@@ -31,6 +31,8 @@ from app.similarity.utils import (
     regions_from_img,
     add_user_to_category_x,
     filter_pairs,
+    retrieve_pair,
+    get_or_create_pair,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
@@ -604,44 +606,6 @@ def save_category(request):
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
-def retrieve_pair(img1, img2, regions_id_1, regions_id_2, create=False):
-    def check_region_ids(pair):
-        if not pair:
-            return False
-        return (
-            pair.regions_id_1 == regions_id_1 and pair.regions_id_2 == regions_id_2
-        ) or (pair.regions_id_1 == regions_id_2 and pair.regions_id_2 == regions_id_1)
-
-    try:
-        region_pair = RegionPair.objects.get(img_1=img1, img_2=img2)
-        if check_region_ids(region_pair):
-            return region_pair, "OK"
-    except RegionPair.DoesNotExist:
-        pass
-
-    try:
-        region_pair = RegionPair.objects.get(img_1=img2, img_2=img1)
-        if check_region_ids(region_pair):
-            return region_pair, "OK"
-    except RegionPair.DoesNotExist:
-        if not create:
-            return None, "No region pair found in database"
-
-        region_pair = RegionPair.objects.create(
-            img_1=img1,
-            img_2=img2,
-            regions_id_1=regions_id_1,
-            regions_id_2=regions_id_2,
-            score=None,
-            is_manual=False,
-            similarity_type=1,
-            category_x=[],
-        )
-        return region_pair, "New region pair created"
-
-    return None, "Region pair found but regions IDs do not match"
-
-
 def exact_match(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
@@ -700,43 +664,34 @@ def exact_match_batch(request):
         pairs_data = data.get("pairs", [])
 
         results = {"created": 0, "updated": 0, "already_matched": 0}
+        pairs_to_create = []
         pairs_to_update = []
 
         for pair_data in pairs_data:
-            img_1, img_2 = pair_data["img_1"], pair_data["img_2"]
-            regions_id_1, regions_id_2 = (
+            region_pair, created = get_or_create_pair(
+                pair_data["img_1"],
+                pair_data["img_2"],
                 pair_data["regions_id_1"],
                 pair_data["regions_id_2"],
             )
 
-            if sort_key(img_1) > sort_key(img_2):
-                img_1, img_2 = img_2, img_1
-                regions_id_1, regions_id_2 = regions_id_2, regions_id_1
-
-            region_pair, created = RegionPair.objects.get_or_create(
-                img_1=img_1,
-                img_2=img_2,
-                defaults={
-                    "regions_id_1": regions_id_1,
-                    "regions_id_2": regions_id_2,
-                    "category": 1,
-                    "similarity_type": 1,
-                    "is_manual": False,
-                    "score": None,
-                    "category_x": [],
-                },
-            )
-
             if created:
-                results["created"] += 1
+                pairs_to_create.append(region_pair)
             elif region_pair.category != 1:
                 region_pair.category = 1
                 pairs_to_update.append(region_pair)
             else:
                 results["already_matched"] += 1
 
+        if pairs_to_create:
+            RegionPair.objects.bulk_create(pairs_to_create)
+            results["created"] = len(pairs_to_create)
+
         if pairs_to_update:
-            RegionPair.objects.bulk_update(pairs_to_update, ["category"])
+            RegionPair.objects.bulk_update(
+                pairs_to_update,
+                ["img_1", "img_2", "regions_id_1", "regions_id_2", "category"],
+            )
             results["updated"] = len(pairs_to_update)
 
         return JsonResponse({"status": "success", "results": results}, status=200)
