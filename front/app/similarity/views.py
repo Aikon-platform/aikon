@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
+from django.db import transaction
 
 from django.contrib.auth.decorators import user_passes_test
 
@@ -601,6 +602,149 @@ def save_category(request):
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
+def retrieve_pair(img1, img2, regions_id_1, regions_id_2, create=False):
+    def check_region_ids(pair):
+        if not pair:
+            return False
+        return (
+            pair.regions_id_1 == regions_id_1 and pair.regions_id_2 == regions_id_2
+        ) or (pair.regions_id_1 == regions_id_2 and pair.regions_id_2 == regions_id_1)
+
+    try:
+        region_pair = RegionPair.objects.get(img_1=img1, img_2=img2)
+        if check_region_ids(region_pair):
+            return region_pair, "OK"
+    except RegionPair.DoesNotExist:
+        pass
+
+    try:
+        region_pair = RegionPair.objects.get(img_1=img2, img_2=img1)
+        if check_region_ids(region_pair):
+            return region_pair, "OK"
+    except RegionPair.DoesNotExist:
+        if not create:
+            return None, "No region pair found in database"
+
+        region_pair = RegionPair.objects.create(
+            img_1=img1,
+            img_2=img2,
+            regions_id_1=regions_id_1,
+            regions_id_2=regions_id_2,
+            score=None,
+            is_manual=False,
+            similarity_type=1,
+            category_x=[],
+        )
+        return region_pair, "New region pair created"
+
+    return None, "Region pair found but regions IDs do not match"
+
+
+def exact_match(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
+        regions_id_1, regions_id_2 = [
+            data.get("regions_id_1"),
+            data.get("regions_id_2"),
+        ]
+
+        region_pair, msg = retrieve_pair(
+            img_1, img_2, regions_id_1, regions_id_2, create=True
+        )
+        if not region_pair:
+            return JsonResponse(
+                {"error": msg},
+                status=400,
+            )
+
+        if region_pair.category == 1:
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "message": "Pair is already tagged as exact match",
+                    "pair_info": region_pair.get_info(as_json=True),
+                },
+                status=200,
+            )
+        region_pair.category = 1  # exact match
+        region_pair.save()
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "message": "Pair successfully tagged as exact match",
+                "pair_info": region_pair.get_info(as_json=True),
+            },
+            status=200,
+        )
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
+@transaction.atomic
+def exact_match_batch(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        pairs_data = data.get("pairs", [])
+
+        results = {"created": 0, "updated": 0, "already_matched": 0}
+        pairs_to_update = []
+
+        for pair_data in pairs_data:
+            img_1, img_2 = pair_data["img_1"], pair_data["img_2"]
+            regions_id_1, regions_id_2 = (
+                pair_data["regions_id_1"],
+                pair_data["regions_id_2"],
+            )
+
+            if sort_key(img_1) > sort_key(img_2):
+                img_1, img_2 = img_2, img_1
+                regions_id_1, regions_id_2 = regions_id_2, regions_id_1
+
+            region_pair, created = RegionPair.objects.get_or_create(
+                img_1=img_1,
+                img_2=img_2,
+                defaults={
+                    "regions_id_1": regions_id_1,
+                    "regions_id_2": regions_id_2,
+                    "category": 1,
+                    "similarity_type": 1,
+                    "is_manual": False,
+                    "score": None,
+                    "category_x": [],
+                },
+            )
+
+            if created:
+                results["created"] += 1
+            elif region_pair.category != 1:
+                region_pair.category = 1
+                pairs_to_update.append(region_pair)
+            else:
+                results["already_matched"] += 1
+
+        if pairs_to_update:
+            RegionPair.objects.bulk_update(pairs_to_update, ["category"])
+            results["updated"] = len(pairs_to_update)
+
+        return JsonResponse({"status": "success", "results": results}, status=200)
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 @user_passes_test(is_superuser)

@@ -34,8 +34,6 @@
     const addUrl = modelName.includes('treatment') ? `/${appName}/${modelName}/add/` : `/${appName}-admin/${webappName}/${modelName}/add/`
 </script>
 
-<!--<Loading visible={$loading}/>-->
-
 <Modal/>
 
 <SelectionBtn {selectionLength}/>

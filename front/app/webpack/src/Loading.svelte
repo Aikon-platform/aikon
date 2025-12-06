@@ -1,9 +1,9 @@
 <script>
     import { fade } from 'svelte/transition';
-    export let visible = false;
+    import {loading} from "./utils.js";
 </script>
 
-{#if visible}
+{#if $loading}
     <div class="bkg-shade" transition:fade="{{ duration: 150 }}">
         <div class="loader"/>
     </div>

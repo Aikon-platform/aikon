@@ -53,7 +53,7 @@
     }
 </script>
 
-<Loading visible={$loading}/>
+<Loading/>
 
 <Modal/>
 

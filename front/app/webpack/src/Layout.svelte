@@ -1,9 +1,13 @@
 <script>
+    import Loading from "./Loading.svelte";
+    import Modal from "./Modal.svelte";
+
     export let sidebarWidth = "25";
     export const layoutHeight = "90vh";
     export let tabList = {};
 
     let availableTabs = Object.keys(tabList);
+    export let topOffsetElement = null;
 
     function updateTopOffset(element = null) {
         if (!element) {
@@ -11,7 +15,7 @@
         }
         document.documentElement.style.setProperty('--top-offset', `${element.offsetHeight}px`);
     }
-    updateTopOffset()
+    updateTopOffset(topOffsetElement)
 
     // import {onMount} from "svelte";
     // let resizeObserver;
@@ -48,6 +52,9 @@
         window.history.pushState({}, "", url);
     }
 </script>
+
+<Loading/>
+<Modal/>
 
 <div class="layout" style="min-height: {layoutHeight};">
     <aside class="sidebar" style="width: {sidebarWidth}%; min-height: {layoutHeight};">

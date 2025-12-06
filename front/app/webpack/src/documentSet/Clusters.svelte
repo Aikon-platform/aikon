@@ -3,21 +3,70 @@
     import Table from "../Table.svelte";
     import Row from "../Row.svelte";
     import Toolbar from "../Toolbar.svelte";
-    import {appLang} from "../constants.js";
+    import {appLang, appName, csrfToken} from "../constants.js";
+    import {withLoading} from "../utils.js";
     import Pagination from "../Pagination.svelte";
     import RegionsSelectionModal from "../regions/RegionsSelectionModal.svelte";
 
     import { clusterSelection } from '../selection/selectionStore.js';
-
     export let documentSetStore;
     const {
         paginatedClusters,
         imageNodes,
         imageClusters,
-        pageLength
+        pageLength,
+        clusterValidation
     } = documentSetStore;
 
     const fonction = () => console.log("prout");
+
+    const imgRef2pairInfo = (imgRef) => {
+        const [regionId, ...rest] = imgRef.split('_');
+        return {img: rest.join('_'), regionId};
+    };
+
+    const pairwise = (arr) => {
+        const pairs = [];
+        for (let i = 0; i < arr.length; i++) {
+            for (let j = i + 1; j < arr.length; j++) {
+                pairs.push([arr[i], arr[j]]);
+            }
+        }
+        return pairs;
+    };
+
+    const validateCluster = async (cluster) => {
+        const pairs = pairwise(cluster.members).map(([ref1, ref2]) => {
+            const {img: img1, regionId: reg1} = imgRef2pairInfo(ref1);
+            const {img: img2, regionId: reg2} = imgRef2pairInfo(ref2);
+            return {img_1: img1, img_2: img2, regions_id_1: reg1, regions_id_2: reg2};
+        });
+
+        try {
+            const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/exact-match-batch`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({pairs})
+            }));
+
+            if (!response.ok) {
+                console.error('Batch validation failed');
+                return false;
+            }
+
+            const res = await response.json();
+            console.log(res);
+            clusterValidation(cluster.id)
+
+            return true;
+        } catch (error) {
+            console.error('Error:', error);
+            return false;
+        }
+    };
 
     $: onlyPartial = true;
     $: onlyNotValidated = true;
@@ -48,7 +97,7 @@
             title: appLang === 'en' ? 'Validate cluster' : 'Valider le cluster',
             desc: appLang === 'en' ? 'Set as exact match all the pairs of regions in the cluster' : 'Définir comme correspondance exacte toutes les paires de régions dans le cluster',
             icon: 'fa-check',
-            fct: fonction
+            fct: validateCluster
         },
         validated: {
             title: appLang === 'en' ? 'Validated cluster' : 'Cluster valide',
@@ -59,6 +108,8 @@
 
     const { validate, validated, ...globalActions } = actionLabels;
 </script>
+
+
 
 <Toolbar expandable={false}>
     <div slot="toolbar-visible">
@@ -97,7 +148,7 @@
                     <span class="cluster-size">{cl.size} images</span>
                     <hr>
                     {#if !cl.fullyConnected}
-                        <button class="button is-small is-warning" title={validate.desc} on:click={validate.fct}>
+                        <button class="button is-small is-warning" title={validate.desc} on:click={() => validate.fct(cl)}>
                             {validate.title}
                         </button>
                     {:else}

@@ -26,12 +26,7 @@ export function createDocumentSetStore(documentSetId) {
         pageUpdate(pageNb, currentPage, "p");
     }
 
-    const paginatedClusters = derived([currentPage], ($currentPage) => {
-        const start = ($currentPage - 1) * pageLength;
-        const end = start + pageLength;
-        const $clusters = get(imageClusters);
-        return $clusters.slice(start, end);
-    });
+    const validatedClusters = writable(new Set());
 
     /**
      * All RegionsPair objects loaded in the current context
@@ -596,7 +591,7 @@ export function createDocumentSetStore(documentSetId) {
         });
 
         return Array.from(clusterMap.values())
-            .map((members, id) => {
+            .map(members => {
                 const n = members.length;
                 const maxEdges = (n * (n - 1)) / 2;
                 const imageSet = new Set(members);
@@ -605,7 +600,7 @@ export function createDocumentSetStore(documentSetId) {
                 ).length;
 
                 return {
-                    id,
+                    id: crypto.randomUUID(),
                     members,
                     size: n,
                     fullyConnected: actualLinks === maxEdges
@@ -621,6 +616,21 @@ export function createDocumentSetStore(documentSetId) {
         if (!$pairs.length) return [];
         return findClusters($pairs, Array.from(get(imageNodes).keys()));
     });
+
+    const paginatedClusters = derived([imageClusters, validatedClusters, currentPage], ([$clusters, $validated, $currentPage]) => {
+        const start = ($currentPage - 1) * pageLength;
+        const end = start + pageLength;
+        return $clusters
+            .slice(start, end)
+            .map(cluster => ({
+                ...cluster,
+                fullyConnected: cluster.fullyConnected || $validated.has(cluster.id)
+            }));
+    });
+
+    function clusterValidation(clusterId) {
+        validatedClusters.update(set => new Set(set).add(clusterId));
+    }
 
     function toggleCategory(categoryId) {
         selectedCategories.update(cats => {
@@ -663,6 +673,7 @@ export function createDocumentSetStore(documentSetId) {
         threshold,
         paginatedClusters,
         imageClusters,
+        clusterValidation,
         setThreshold: (t) => threshold.set(t),
         handlePageUpdate,
         pageLength,
