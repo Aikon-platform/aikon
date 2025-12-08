@@ -9,9 +9,7 @@
     import { clusterSelection } from '../selection/selectionStore.js';
 
     export let documentSetStore;
-    const {
-        imageNodes,
-    } = documentSetStore;
+    const { imageNodes,} = documentSetStore;
     export let clusterStore;
     const {
         clusterNb,
@@ -22,10 +20,8 @@
         removeFromClusters
     } = clusterStore;
 
-    const removeRegions = () => window.alert("Delete regions function not implemented yet.");
-
-    $: onlyPartial = true;
-    $: onlyNotValidated = true;
+    // $: onlyPartial = true;
+    // $: onlyNotValidated = true;
 
     const actionLabels = {
         create: {
@@ -42,13 +38,13 @@
             shortcut: 'Shift + D',
             fct: removeFromClusters
         },
-        delete: {
-            title: appLang === 'en' ? 'Delete regions' : 'Supprimer les régions',
-            desc: appLang === 'en' ? 'Remove selected regions from the document' : 'Supprimer du document les régions sélectionnées',
-            icon: 'fa-trash',
-            shortcut: 'Shift + X',
-            fct: removeRegions
-        },
+        // delete: {
+        //     title: appLang === 'en' ? 'Delete regions' : 'Supprimer les régions',
+        //     desc: appLang === 'en' ? 'Remove selected regions from the document' : 'Supprimer du document les régions sélectionnées',
+        //     icon: 'fa-trash',
+        //     shortcut: 'Shift + X',
+        //     fct: () => window.alert("Delete regions function not implemented yet.");
+        // },
         validate: {
             title: appLang === 'en' ? 'Validate cluster' : 'Valider le cluster',
             desc: appLang === 'en' ? 'Set as exact match all the pairs of regions in the cluster' : 'Définir comme correspondance exacte toutes les paires de régions dans le cluster',

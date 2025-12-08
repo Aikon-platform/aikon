@@ -14,7 +14,8 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         pageUpdate(pageNb, currentPage, "p");
     }
 
-    function findClusters(imgPairs, imageIds) {
+    function findClusters(pairs) {
+        if (pairs.length === 0) return [];
         const parent = new Map();
 
         const find = (img) => {
@@ -36,7 +37,14 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             }
         };
 
-        imgPairs.forEach(p => union(p.id_1, p.id_2));
+        const imageIds = new Set();
+        pairs.forEach(p => {
+            if (p.category === 1){
+                union(p.id_1, p.id_2)
+                imageIds.add(p.id_1);
+                imageIds.add(p.id_2);
+            }
+        });
 
         const clusterMap = new Map();
         imageIds.forEach(imgId => {
@@ -52,8 +60,8 @@ export function createClusterStore(documentSetStore, clusterSelection) {
                 const n = members.length;
                 const maxEdges = (n * (n - 1)) / 2;
                 const imageSet = new Set(members);
-                const actualLinks = imgPairs.filter(p =>
-                    imageSet.has(p.id_1) && imageSet.has(p.id_2)
+                const actualLinks = pairs.filter(p =>
+                    p.category === 1 && imageSet.has(p.id_1) && imageSet.has(p.id_2)
                 ).length;
 
                 return {
@@ -63,6 +71,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
                     fullyConnected: actualLinks === maxEdges
                 };
             })
+            .filter(c => c.size > 1)
             .sort((a, b) => b.size - a.size);
     }
 
@@ -71,7 +80,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
      */
     const imageClusters = derived(allPairs, ($pairs) => {
         if (!$pairs.length) return [];
-        return findClusters($pairs, Array.from(get(imageNodes).keys()));
+        return findClusters($pairs);
     });
 
     // UI clusters, manipulable without needing to rerun findClusters
@@ -100,6 +109,19 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         };
     };
 
+    const removeImgsFromInterface = (imgRefSet, byOriginCluster) => {
+        interfaceClusters.update($clusters =>
+            $clusters
+                .map(c => {
+                    if (!byOriginCluster[c.id]) return c;
+                    const remaining = c.members.filter(m => !imgRefSet.has(m));
+                    return {...c, members: remaining, size: remaining.length};
+                })
+                .filter(c => c.size > 0)
+        );
+        return true;
+    }
+
     const removeImgRefs = async (imgRefs) => {
         const imgRefArray = Array.isArray(imgRefs) ? imgRefs : Object.keys(imgRefs);
         const imgRefSet = new Set(imgRefArray);
@@ -122,7 +144,10 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             );
         });
 
-        if (pairsToRemove.length === 0) return true;
+        if (pairsToRemove.length === 0) {
+            removeImgsFromInterface(imgRefSet, byOriginCluster)
+            return true;
+        }
 
         try {
             const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/uncategorize-pair-batch`, {
@@ -143,16 +168,17 @@ export function createClusterStore(documentSetStore, clusterSelection) {
                 return false;
             }
 
-            interfaceClusters.update($clusters =>
-                $clusters
-                    .map(c => {
-                        if (!byOriginCluster[c.id]) return c;
-
-                        const remaining = c.members.filter(m => !imgRefSet.has(m));
-                        return {...c, members: remaining, size: remaining.length};
-                    })
-                    .filter(c => c.size > 0)
-            );
+            removeImgsFromInterface(imgRefSet, byOriginCluster);
+            // interfaceClusters.update($clusters =>
+            //     $clusters
+            //         .map(c => {
+            //             if (!byOriginCluster[c.id]) return c;
+            //
+            //             const remaining = c.members.filter(m => !imgRefSet.has(m));
+            //             return {...c, members: remaining, size: remaining.length};
+            //         })
+            //         .filter(c => c.size > 0)
+            // );
 
             return true;
         } catch (error) {
@@ -272,7 +298,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     const removeFromClusters = async () => {
         const confirmed = await showMessage(
             appLang === "en" ? "Do you want to remove these images from their clusters?" : "Voulez-vous supprimer ces images de leurs clusters ?",
-            appLang === "en" ? "Confirm deletion" : "Confirmer la supression",
+            appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
             true
         );
         if (!confirmed) {

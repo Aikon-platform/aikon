@@ -25,7 +25,7 @@
     const tabList = {
         "img": appLang === "en" ? "Image Network" : "Réseau d'images",
         "doc": appLang === "en" ? "Document Network" : "Réseau de documents",
-        "sim": appLang === "en" ? "Similarity Clusters" : "Groupe de similarités",
+        "sim": appLang === "en" ? "Copy Clusters" : "Groupe de copies",
         "mat": appLang === "en" ? "Document Matrix" : "Matrice de documents",
     };
 
