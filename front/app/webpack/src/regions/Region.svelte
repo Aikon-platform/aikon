@@ -4,8 +4,12 @@
 
     import { refToIIIF } from "../utils.js";
     import { appLang } from '../constants';
+    import { regionsSelection } from '../selection/selectionStore.js';
 
     export let selectionStore;
+    if (!selectionStore) {
+        selectionStore = regionsSelection;
+    }
     const { isSelected } = selectionStore;
 
     import { regionsStore } from './regionsStore.js';
