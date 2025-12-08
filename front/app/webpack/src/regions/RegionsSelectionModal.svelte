@@ -7,9 +7,8 @@
     export let selectionStore;
     const { selected } = selectionStore;
 
-    // $selected = {"Regions"/"Cluster" : [{S}, {E}, {L}, {E}, {C}, {T}, {I}, {O}, {N}]}
-    const selectionType = Object.keys($selected)[0];
-    $: selectedRegions = $selected[selectionType] || {};
+    // $selected = {"Regions"/"Cluster" : {id: {S}, id: {E}, id: {L}, id: {E}, id: {C}, id: {T}}}
+    $: selectedRegions = Object.values($selected)[0] || {};
     $: selectionLength = Object.keys(selectedRegions).length;
     $: areSelectedRegions = selectionLength > 0;
 </script>
@@ -29,7 +28,7 @@
                             </div>
                         </figure>
                         <button class="delete region-btn" aria-label="remove from selection"
-                                on:click={() => selectionStore.remove(id, selectionType)}/>
+                                on:click={() => selectionStore.remove(id, Object.keys($selected)[0])}/>
                     </div>
                 {/each}
             </div>

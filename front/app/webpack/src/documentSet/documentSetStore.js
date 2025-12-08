@@ -151,6 +151,7 @@ export function createDocumentSetStore(documentSetId) {
 
                 imageMap.forEach(imgData => {
                     const doc = documentMap.get(imgData.regionId);
+                    imgData.class = 'Cluster';
                     imgData.color = doc?.color;
                     imgData.title = (doc?.title || `Region ${imgData.regionId}`) + `<br>Page ${imgData.canvas}`;
                 });
@@ -159,7 +160,7 @@ export function createDocumentSetStore(documentSetId) {
                     documents: regionIds.length,
                     pairs: pairs.length,
                     images: imgStats.count,
-                    clusters: null, // marker
+                    clusters: null,
                     categories
                 });
 

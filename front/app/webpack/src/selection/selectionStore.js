@@ -1,18 +1,18 @@
-import {derived, writable} from 'svelte/store';
+import {derived, writable, get} from 'svelte/store';
 import {csrfToken, appLang} from '../constants';
 
 function createTypedSelectionStore(config) {
     const {
         type,
         modelName,
-        defaultTitle,
+        title,
         extractMeta = (item) => item // by default, keep item as it is
     } = config;
 
     const template = {
         id: null,
         type,
-        title: defaultTitle,
+        title: title,
         // <{model_name: {record_id: {record_meta}, record_id: {record_meta}}, model_name: {...}, ...}>
         selected: {}
     };
@@ -120,10 +120,10 @@ function createTypedSelectionStore(config) {
             return set;
         }),
 
-        empty: () => selection.update(() => {
-            const newSet = {...template};
-            store(newSet);
-            return newSet;
+        empty: () => selection.update(set => {
+            set.selected = {}
+            store(set, true);
+            return set;
         }),
 
         updateTitle: (title) => selection.update(set => {

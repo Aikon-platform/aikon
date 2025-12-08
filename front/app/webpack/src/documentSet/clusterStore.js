@@ -282,6 +282,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         const selected = selectedRegions();
         const removed = await removeImgRefs(Object.keys(selected));
         if (!removed) return false;
+
         clusterSelection.empty();
         return true;
     };
