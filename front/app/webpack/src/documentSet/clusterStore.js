@@ -169,16 +169,6 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             }
 
             removeImgsFromInterface(imgRefSet, byOriginCluster);
-            // interfaceClusters.update($clusters =>
-            //     $clusters
-            //         .map(c => {
-            //             if (!byOriginCluster[c.id]) return c;
-            //
-            //             const remaining = c.members.filter(m => !imgRefSet.has(m));
-            //             return {...c, members: remaining, size: remaining.length};
-            //         })
-            //         .filter(c => c.size > 0)
-            // );
 
             return true;
         } catch (error) {
