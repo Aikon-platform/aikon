@@ -3,12 +3,11 @@
     import Table from "../Table.svelte";
     import Row from "../Row.svelte";
     import Toolbar from "../Toolbar.svelte";
-    import {appLang, appName, csrfToken} from "../constants.js";
-    import {withLoading} from "../utils.js";
+    import {appLang} from "../constants.js";
     import Pagination from "../Pagination.svelte";
     import RegionsSelectionModal from "../regions/RegionsSelectionModal.svelte";
-
     import { clusterSelection } from '../selection/selectionStore.js';
+
     export let documentSetStore;
     const {
         imageNodes,
@@ -18,58 +17,12 @@
         clusterNb,
         paginatedClusters,
         pageLength,
-        clusterValidation
+        validateCluster,
+        newCluster,
+        removeFromClusters
     } = clusterStore;
 
-    const fonction = () => console.log("prout");
-
-    const imgRef2pairInfo = (imgRef) => {
-        const [regionId, ...rest] = imgRef.split('_');
-        return {img: rest.join('_'), regionId};
-    };
-
-    const pairwise = (arr) => {
-        const pairs = [];
-        for (let i = 0; i < arr.length; i++) {
-            for (let j = i + 1; j < arr.length; j++) {
-                pairs.push([arr[i], arr[j]]);
-            }
-        }
-        return pairs;
-    };
-
-    const validateCluster = async (cluster) => {
-        const pairs = pairwise(cluster.members).map(([ref1, ref2]) => {
-            const {img: img1, regionId: reg1} = imgRef2pairInfo(ref1);
-            const {img: img2, regionId: reg2} = imgRef2pairInfo(ref2);
-            return {img_1: img1, img_2: img2, regions_id_1: reg1, regions_id_2: reg2};
-        });
-
-        try {
-            const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/exact-match-batch`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({pairs})
-            }));
-
-            if (!response.ok) {
-                console.error('Batch validation failed');
-                return false;
-            }
-
-            const res = await response.json();
-            console.table(res);
-            clusterValidation(cluster.id)
-
-            return true;
-        } catch (error) {
-            console.error('Error:', error);
-            return false;
-        }
-    };
+    const removeRegions = () => window.alert("Delete regions function not implemented yet.");
 
     $: onlyPartial = true;
     $: onlyNotValidated = true;
@@ -80,21 +33,21 @@
             desc: appLang === 'en' ? 'Create a new validated cluster from the selected regions' : 'Créer un nouveau cluster valide à partir des régions sélectionnées',
             icon: 'fa-object-group',
             shortcut: 'Shift + C',
-            fct: fonction
+            fct: newCluster
         },
         remove: {
             title: appLang === 'en' ? 'Remove from cluster' : 'Retirer du cluster',
             desc: appLang === 'en' ? 'Remove the selected regions from their cluster' : 'Retirer les régions sélectionnées de leur cluster',
             icon: 'fa-chain-broken',
             shortcut: 'Shift + D',
-            fct: fonction
+            fct: removeFromClusters
         },
         delete: {
             title: appLang === 'en' ? 'Delete regions' : 'Supprimer les régions',
             desc: appLang === 'en' ? 'Remove selected regions from the document' : 'Supprimer du document les régions sélectionnées',
             icon: 'fa-trash',
             shortcut: 'Shift + X',
-            fct: fonction
+            fct: removeRegions
         },
         validate: {
             title: appLang === 'en' ? 'Validate cluster' : 'Valider le cluster',
@@ -161,7 +114,7 @@
             </svelte:fragment>
             <svelte:fragment slot="row-body">
                 {#each cl.members as imgId}
-                    <Region item={$imageNodes.get(imgId)} copyable={false} selectionStore={clusterSelection}/>
+                    <Region item={{...$imageNodes.get(imgId), clusterId: cl.id}} copyable={false} selectionStore={clusterSelection}/>
                 {/each}
             </svelte:fragment>
         </Row>

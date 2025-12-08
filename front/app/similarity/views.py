@@ -661,13 +661,11 @@ def exact_match_batch(request):
 
     try:
         data = json.loads(request.body)
-        pairs_data = data.get("pairs", [])
-
         results = {"created": 0, "updated": 0, "already_matched": 0}
         pairs_to_create = []
         pairs_to_update = []
 
-        for pair_data in pairs_data:
+        for pair_data in data.get("pairs", []):
             region_pair, created = get_or_create_pair(
                 pair_data["img_1"],
                 pair_data["img_2"],
@@ -695,6 +693,41 @@ def exact_match_batch(request):
             results["updated"] = len(pairs_to_update)
 
         return JsonResponse({"status": "success", "results": results}, status=200)
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@transaction.atomic
+def uncategorize_pair_batch(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        pairs_to_update = []
+        for pair_data in data.get("pairs", []):
+            pair, _ = get_or_create_pair(
+                pair_data["img_1"],
+                pair_data["img_2"],
+                pair_data["regions_id_1"],
+                pair_data["regions_id_2"],
+                create=False,
+            )
+            if pair and pair.category is not None:
+                pair.category = None
+                pairs_to_update.append(pair)
+
+        uncategorized = 0
+        if pairs_to_update:
+            RegionPair.objects.bulk_update(pairs_to_update, ["category"])
+            uncategorized = len(pairs_to_update)
+
+        return JsonResponse(
+            {"status": "success", "uncategorized": uncategorized}, status=200
+        )
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)

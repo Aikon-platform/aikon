@@ -803,7 +803,7 @@ def retrieve_pair(img1, img2, regions_id_1, regions_id_2, create=False):
     return None, "Region pair found but regions IDs do not match"
 
 
-def get_or_create_pair(img_1, img_2, regions_id_1, regions_id_2):
+def get_or_create_pair(img_1, img_2, regions_id_1, regions_id_2, create=True):
     img_1, img_2 = sorted([img_1, img_2], key=sort_key)
     existing_pair = RegionPair.objects.filter(
         Q(img_1=img_1, img_2=img_2) | Q(img_1=img_2, img_2=img_1)
@@ -815,6 +815,9 @@ def get_or_create_pair(img_1, img_2, regions_id_1, regions_id_2):
             rid_2 in [regions_id_2, regions_id_1]
         ):
             return existing_pair, False
+
+    if not create:
+        return None, False
 
     return (
         RegionPair(

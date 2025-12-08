@@ -13,7 +13,8 @@
 
     const documentSetStore = createDocumentSetStore(docSet.id);
     const { error, fetchPairs } = documentSetStore;
-    const clusterStore = createClusterStore(documentSetStore);
+    import { clusterSelection } from '../selection/selectionStore.js';
+    const clusterStore = createClusterStore(documentSetStore, clusterSelection);
 
     const tabList = {
         "img": appLang === "en" ? "Image Network" : "Réseau d'images",
