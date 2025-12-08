@@ -11,12 +11,15 @@
     import { clusterSelection } from '../selection/selectionStore.js';
     export let documentSetStore;
     const {
-        paginatedClusters,
         imageNodes,
-        imageClusters,
+    } = documentSetStore;
+    export let clusterStore;
+    const {
+        clusterNb,
+        paginatedClusters,
         pageLength,
         clusterValidation
-    } = documentSetStore;
+    } = clusterStore;
 
     const fonction = () => console.log("prout");
 
@@ -58,7 +61,7 @@
             }
 
             const res = await response.json();
-            console.log(res);
+            console.table(res);
             clusterValidation(cluster.id)
 
             return true;
@@ -109,8 +112,6 @@
     const { validate, validated, ...globalActions } = actionLabels;
 </script>
 
-
-
 <Toolbar expandable={false}>
     <div slot="toolbar-visible">
         <div class="columns is-vcentered is-mobile py-4">
@@ -136,7 +137,7 @@
     </div>
 </Toolbar>
 
-<Pagination store={documentSetStore} nbOfItems={$imageClusters.length} {pageLength}/>
+<Pagination store={clusterStore} nbOfItems={$clusterNb} {pageLength}/>
 
 <RegionsSelectionModal selectionStore={clusterSelection}/>
 
@@ -167,7 +168,7 @@
     {/each}
 </Table>
 
-<Pagination store={documentSetStore} nbOfItems={$imageClusters.length} {pageLength}/>
+<Pagination store={clusterStore} nbOfItems={$clusterNb} {pageLength}/>
 
 <style>
     .shortcut {

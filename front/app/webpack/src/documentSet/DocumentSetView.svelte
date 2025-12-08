@@ -8,10 +8,12 @@
     import NetworkInfo from "./NetworkInfo.svelte";
     import {setContext} from "svelte";
     import Clusters from "./Clusters.svelte";
+    import {createClusterStore} from "./clusterStore.js";
     export let docSet;
 
     const documentSetStore = createDocumentSetStore(docSet.id);
     const { error, fetchPairs } = documentSetStore;
+    const clusterStore = createClusterStore(documentSetStore);
 
     const tabList = {
         "img": appLang === "en" ? "Image Network" : "Réseau d'images",
@@ -34,7 +36,7 @@
 
 <Layout {tabList}>
     <div slot="sidebar" let:activeTab>
-        <Sidebar {docSet} {documentSetStore}>
+        <Sidebar {docSet} {documentSetStore} {clusterStore}>
             <div slot="datavizInfo">
                 {#if activeTab === "img"}
                     <p>The Regions Network visualizes the relationships between image regions across different witnesses in the document set.
@@ -85,7 +87,7 @@
                         {#if activeTab === "img" || activeTab === "doc"}
                             <NetworkVisualization {documentSetStore} type={activeTab}/>
                         {:else if activeTab === "sim"}
-                            <Clusters {documentSetStore}/>
+                            <Clusters {documentSetStore} {clusterStore}/>
                         {:else if activeTab === "mat"}
                             <DocumentMatrix {documentSetStore}/>
                         {/if}

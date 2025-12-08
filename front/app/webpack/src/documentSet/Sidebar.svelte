@@ -6,15 +6,16 @@
 
     export let docSet = null;
     export let documentSetStore;
+    export let clusterStore;
     const {
         docSetNumber,
         documentNodes,
-        imageClusters,
         selectedCategories,
         toggleCategory,
         selectedRegions,
         toggleRegion
     } = documentSetStore;
+    const { clusterNb } = clusterStore;
 
     const selectedDocuments = getContext('selectedDocuments');
 </script>
@@ -54,7 +55,7 @@
                     <div class="level-item has-text-centered">
                         <div>
                             <p class="heading">Clusters</p>
-                            <p class="title is-5">{$imageClusters.length || 0}</p>
+                            <p class="title is-5">{$clusterNb || 0}</p>
                         </div>
                     </div>
                 </div>
