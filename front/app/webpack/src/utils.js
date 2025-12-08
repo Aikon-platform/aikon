@@ -4,6 +4,8 @@ import { sasUrl, cantaloupeUrl, appName } from './constants';
 export const loading = writable(false);
 export const errorMsg = writable("");
 
+const isString = (x) => typeof x === 'string' || x instanceof String;
+
 export async function withLoading(asyncFunction) {
     loading.set(true);
     try {
@@ -15,6 +17,10 @@ export async function withLoading(asyncFunction) {
 
 export function extractNb(str) {
     return str.match(/\d+/g).toString();
+}
+
+export function extractInt(str) {
+    return parseInt(extractNb(str), 10);
 }
 
 export function shorten(str, maxLen=100) {
@@ -30,7 +36,7 @@ export function getCantaloupeUrl() {
 }
 
 export function getSasUrl() {
-    return sasUrl ?? "http://localhost:3000";
+    return sasUrl ?? "http://localhost:8888";
 }
 
 export function initPagination(pageWritable, urlParam) {
@@ -70,7 +76,10 @@ export function refToIIIFRoot(imgRef=null) {
         : `${getCantaloupeUrl()}/iiif/2/${imgName}`;
 }
 
-export function refToIIIF(imgRef=null, coord="full", size="full") {
+export function refToIIIF(imgRef=null, coord=null, size="full") {
+    // in some cases, coord is "x,y,w,h.jpg" => conveet to "x,y,w,h"
+    coord = isString(coord) ? coord.replace(".jpg", "") : coord;
+
     // imgRef can be like "wit<id>_<digit><id>_<page_nb>.jpg" or "wit<id>_<digit><id>_<page_nb>_<x,y,h,w>.jpg"
     if (!imgRef) {
         return "https://placehold.co/96x96/png?text=No+image";
@@ -97,9 +106,10 @@ export function refToIIIF(imgRef=null, coord="full", size="full") {
     }*/
 
     const imgRefArr = imgRef.split("_");
-    // const imgCoord = coord ? coord : imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : "full";
-    const imgCoord = imgRefArr[imgRefArr.length -1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : coord;
-    return `${imgRoot}/${imgCoord}/${size}/0/default.jpg`;
+    if (!coord) {
+        coord = imgRefArr[imgRefArr.length - 1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : "full";
+    }
+    return `${imgRoot}/${coord}/${size}/0/default.jpg`;
 }
 
 export function refToIIIFInfo(imgRef=null) {
@@ -130,7 +140,7 @@ export function showMessage(msg, title = null, confirm = false) {
             if (title) {
                 document.getElementById("modal-title").innerHTML = title;
             }
-            document.getElementById("modal-body").innerHTML = msg;
+            document.getElementById("modal-msg").innerHTML = msg;
             document.getElementById("hidden-msg-btn").click();
 
             const cancelBtn = document.getElementById("cancel-btn");
@@ -278,4 +288,59 @@ export function generateColor(index) {
     const saturation = saturations[index % saturations.length];
     const lightness = lightnesses[Math.floor(index / saturations.length) % lightnesses.length];
     return `hsl(${Math.floor(hue)}, ${saturation}%, ${lightness}%)`;
+}
+
+export function getColNb(innerWidth=null) {
+    if (innerWidth < 600) {
+        return 1;
+    } else if (innerWidth < 800) {
+        return 2;
+    } else if (innerWidth < 1000) {
+        return 3;
+    } else if (innerWidth < 1200) {
+        return 4;
+    } else if (innerWidth < 1400) {
+        return 5;
+    } else if (innerWidth >= 1400) {
+        return 6;
+    }
+    return 4
+}
+
+export function closeModal(el) {
+    const closeElements = el.querySelectorAll(
+        '.modal-background, .modal-close, .modal-card-head .delete, .modal-card-foot .button-close'
+    );
+
+    const close = () => el.classList.remove('is-active');
+
+    closeElements.forEach(el => el.addEventListener('click', close));
+
+    const handleEscape = (e) => {
+        if (e.key === 'Escape' && el.classList.contains('is-active')) {
+            close();
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    return {
+        destroy() {
+            closeElements.forEach(el => el.removeEventListener('click', close));
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+}
+
+export function openModal(node) {
+    const open = () => {
+        const target = document.getElementById(node.dataset.target);
+        target?.classList.add('is-active');
+    };
+    node.addEventListener('click', open);
+
+    return {
+        destroy() {
+            node.removeEventListener('click', open);
+        }
+    };
 }

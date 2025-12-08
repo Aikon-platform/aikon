@@ -135,30 +135,6 @@ cd sas && mvn jetty:run
 Navigate to [http://localhost:8888/index.html](http://localhost:8888/index.html) to start annotating:
 You should now see Mirador with default example manifests.
 >
-#### Enabling authentication for Redis instance (optional)
->
-Get the redis config file and the redis password in the environment variables
-```bash
-REDIS_CONF=$(redis-cli INFO | grep config_file | awk -F: '{print $2}' | tr -d '[:space:]')
-source app/config/.env
-```
->
-Add your `REDIS_PASSWORD` (from `app/config/.env`) to Redis config file
->
-```bash
-sudo sed -i -e "s/^requirepass [^ ]*/requirepass $REDIS_PASSWORD/" "$REDIS_CONF"
-sudo sed -i -e "s/# requirepass [^ ]*/requirepass $REDIS_PASSWORD/" "$REDIS_CONF"
-```
->
-Restart Redis
-```bash
-sudo systemctl restart redis-server # Mac: brew services restart redis
-```
->
-Test the password
-```
-redis-cli -a $REDIS_PASSWORD
-```
 </details>
 
 ### Connection to API 📡

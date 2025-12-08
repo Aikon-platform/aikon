@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
+from django.db import transaction
 
 from django.contrib.auth.decorators import user_passes_test
 
@@ -30,6 +31,8 @@ from app.similarity.utils import (
     regions_from_img,
     add_user_to_category_x,
     filter_pairs,
+    retrieve_pair,
+    get_or_create_pair,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
@@ -379,9 +382,7 @@ def get_regions(img_1, img_2, wid, rid):
 
 
 def get_regions_title_by_ref(request, wid, rid=None, regions_ref: str | None = None):
-    # TODO this is VERY inefficient:
-    #   + desc generation should not create one DB query per crop, but once per regions_ref!
-    #   + regions_ref contains the id of the regions which should be extracted
+    # NOT USED anymore
     try:
         regions = Regions.objects.filter(json__ref__startswith=regions_ref).first()
         if regions is None:
@@ -603,6 +604,135 @@ def save_category(request):
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
+def exact_match(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
+        regions_id_1, regions_id_2 = [
+            data.get("regions_id_1"),
+            data.get("regions_id_2"),
+        ]
+
+        region_pair, msg = retrieve_pair(
+            img_1, img_2, regions_id_1, regions_id_2, create=True
+        )
+        if not region_pair:
+            return JsonResponse(
+                {"error": msg},
+                status=400,
+            )
+
+        if region_pair.category == 1:
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "message": "Pair is already tagged as exact match",
+                    "pair_info": region_pair.get_info(as_json=True),
+                },
+                status=200,
+            )
+        region_pair.category = 1  # exact match
+        region_pair.save()
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "message": "Pair successfully tagged as exact match",
+                "pair_info": region_pair.get_info(as_json=True),
+            },
+            status=200,
+        )
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
+@transaction.atomic
+def exact_match_batch(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        results = {"created": 0, "updated": 0, "already_matched": 0}
+        pairs_to_create = []
+        pairs_to_update = []
+
+        for pair_data in data.get("pairs", []):
+            region_pair, created = get_or_create_pair(
+                pair_data["img_1"],
+                pair_data["img_2"],
+                pair_data["regions_id_1"],
+                pair_data["regions_id_2"],
+            )
+
+            if created:
+                pairs_to_create.append(region_pair)
+            elif region_pair.category != 1:
+                region_pair.category = 1
+                pairs_to_update.append(region_pair)
+            else:
+                results["already_matched"] += 1
+
+        if pairs_to_create:
+            RegionPair.objects.bulk_create(pairs_to_create)
+            results["created"] = len(pairs_to_create)
+
+        if pairs_to_update:
+            RegionPair.objects.bulk_update(
+                pairs_to_update,
+                ["img_1", "img_2", "regions_id_1", "regions_id_2", "category"],
+            )
+            results["updated"] = len(pairs_to_update)
+
+        return JsonResponse({"status": "success", "results": results}, status=200)
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@transaction.atomic
+def uncategorize_pair_batch(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        pairs_to_update = []
+        for pair_data in data.get("pairs", []):
+            pair, _ = get_or_create_pair(
+                pair_data["img_1"],
+                pair_data["img_2"],
+                pair_data["regions_id_1"],
+                pair_data["regions_id_2"],
+                create=False,
+            )
+            if pair and pair.category is not None:
+                pair.category = None
+                pairs_to_update.append(pair)
+
+        uncategorized = 0
+        if pairs_to_update:
+            RegionPair.objects.bulk_update(pairs_to_update, ["category"])
+            uncategorized = len(pairs_to_update)
+
+        return JsonResponse(
+            {"status": "success", "uncategorized": uncategorized}, status=200
+        )
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 @user_passes_test(is_superuser)

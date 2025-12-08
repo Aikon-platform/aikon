@@ -763,3 +763,76 @@ def filter_pairs(
         pairs = pairs[:topk]
 
     return [p.to_dict() for p in pairs]
+
+
+def retrieve_pair(img1, img2, regions_id_1, regions_id_2, create=False):
+    def check_region_ids(pair):
+        if not pair:
+            return False
+        return (
+            pair.regions_id_1 == regions_id_1 and pair.regions_id_2 == regions_id_2
+        ) or (pair.regions_id_1 == regions_id_2 and pair.regions_id_2 == regions_id_1)
+
+    try:
+        region_pair = RegionPair.objects.get(img_1=img1, img_2=img2)
+        if check_region_ids(region_pair):
+            return region_pair, "OK"
+    except RegionPair.DoesNotExist:
+        pass
+
+    try:
+        region_pair = RegionPair.objects.get(img_1=img2, img_2=img1)
+        if check_region_ids(region_pair):
+            return region_pair, "OK"
+    except RegionPair.DoesNotExist:
+        if not create:
+            return None, "No region pair found in database"
+
+        region_pair = RegionPair.objects.create(
+            img_1=img1,
+            img_2=img2,
+            regions_id_1=regions_id_1,
+            regions_id_2=regions_id_2,
+            score=None,
+            is_manual=False,
+            similarity_type=1,
+            category_x=[],
+        )
+        return region_pair, "New region pair created"
+
+    return None, "Region pair found but regions IDs do not match"
+
+
+def get_or_create_pair(img_1, img_2, regions_id_1, regions_id_2, create=True):
+    img_1, img_2 = sorted([img_1, img_2], key=sort_key)
+    existing_pair = RegionPair.objects.filter(
+        Q(img_1=img_1, img_2=img_2) | Q(img_1=img_2, img_2=img_1)
+    ).first()
+
+    if existing_pair:
+        rid_1, rid_2 = existing_pair.regions_id_1, existing_pair.regions_id_2
+        region_ids = [int(regions_id_2), int(regions_id_1)]
+        if (rid_1 not in region_ids) and (rid_2 not in region_ids):
+            log(
+                f"[get_or_create_pair] Region pair for {img_1}-{img_2} already exists for regions {rid_1}/{rid_2} instead of {regions_id_1}/{regions_id_2}",
+                msg_type="error",
+            )
+        return existing_pair, False
+
+    if not create:
+        return None, False
+
+    return (
+        RegionPair(
+            img_1=img_1,
+            img_2=img_2,
+            regions_id_1=regions_id_1,
+            regions_id_2=regions_id_2,
+            category=1,
+            similarity_type=1,
+            is_manual=False,
+            score=None,
+            category_x=[],
+        ),
+        True,
+    )

@@ -63,6 +63,7 @@ function getJSON(url, callback, idMessage) {
 }
 
 function showMessage(message, idMessage = null) {
+    // NOT USED ANYMORE
     const msgElement = idMessage ? document.getElementById(idMessage) : null;
     if (msgElement) {
         msgElement.textContent = message;

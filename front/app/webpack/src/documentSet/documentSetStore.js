@@ -1,5 +1,5 @@
 import {derived, writable, get} from 'svelte/store';
-import {extractNb, refToIIIFRoot, imageToPage, generateColor} from "../utils.js";
+import {extractNb, refToIIIFRoot, imageToPage, generateColor, initPagination, pageUpdate} from "../utils.js";
 import {appUrl, regionsType} from "../constants.js";
 // // TO DELETE
 // import {regionsType} from "../constants.js";
@@ -9,21 +9,18 @@ import {appUrl, regionsType} from "../constants.js";
 export function createDocumentSetStore(documentSetId) {
     const error = writable(null);
 
-    const loading = writable(false);
-
     const selectedCategories = writable([1]);
 
     const selectedNodes = writable([]);
 
     const selectedRegions = writable(new Set());
 
-    const threshold = 0;
+    const threshold = writable(0.5);
 
     /**
      * All RegionsPair objects loaded in the current context
      */
     const allPairs = writable([]);
-
 
     const pairIndex = writable({
         byImage: new Map(),        // imgId -> [pairs]
@@ -67,21 +64,20 @@ export function createDocumentSetStore(documentSetId) {
     const fetchPairs = derived(selectedCategories, ($selectedCategories, set) => {
         const promise = (async () => {
             try {
-                const cats = $selectedCategories.join(',');
-
                 // // TO DELETE
-                // // const documentSetId = 413; // histoire naturelle
+                // const documentSetId = 413; // histoire naturelle
                 // // const documentSetId = 414; // nicolas
                 // // const documentSetId = 415; // physiologus
-                // const documentSetId = 416; // de materia medica
+                // // const documentSetId = 416; // de materia medica
+                // // const documentSetId = 417; // traité de géométrie
                 // // TO DELETE
 
-                const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${cats}`);
+                const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${$selectedCategories.join(',')}`);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const data = await response.json();
 
-                const index = { byImage: new Map(), byDocPair: new Map(), byDoc: new Map(),}
+                const index = { byImage: new Map(), byDocPair: new Map(), byDoc: new Map(), }
                 const documentMap = new Map();
                 const imageMap = new Map();
 
@@ -110,8 +106,10 @@ export function createDocumentSetStore(documentSetId) {
                     if (score == null && pair.is_manual !== true) {
                         return acc;
                     }
-                    if ($selectedCategories.includes(0) && pair.category === 0 && score < threshold) {
-                        return acc;
+                    if ($selectedCategories.includes(0) && pair.category === 0) {
+                        if (pair.is_manual !== true && score < threshold) {
+                            return acc;
+                        }
                     }
                     acc.push(processPair(pair, context));
                     return acc;
@@ -153,6 +151,7 @@ export function createDocumentSetStore(documentSetId) {
 
                 imageMap.forEach(imgData => {
                     const doc = documentMap.get(imgData.regionId);
+                    imgData.class = 'Cluster';
                     imgData.color = doc?.color;
                     imgData.title = (doc?.title || `Region ${imgData.regionId}`) + `<br>Page ${imgData.canvas}`;
                 });
@@ -161,6 +160,7 @@ export function createDocumentSetStore(documentSetId) {
                     documents: regionIds.length,
                     pairs: pairs.length,
                     images: imgStats.count,
+                    clusters: null,
                     categories
                 });
 
@@ -351,7 +351,7 @@ export function createDocumentSetStore(documentSetId) {
         }
     }
 
-    function calculateLinkProps(score, scoreRange, minDistance = 10, maxDistance = 200, minWidth = 1, maxWidth = 25) {
+    function calculateLinkProps(score, scoreRange, minDistance = 10, maxDistance = 200, minWidth = 2, maxWidth = 25) {
         const {min, _, range} = scoreRange;
         const strength = range === 0 ? 0.5 : (score - min) / range;
         const distance = maxDistance - strength * (maxDistance - minDistance);
@@ -566,6 +566,7 @@ export function createDocumentSetStore(documentSetId) {
 
     return {
         error,
+        allPairs,
         pairIndex,
         documentNodes,
         imageNodes,
@@ -583,6 +584,9 @@ export function createDocumentSetStore(documentSetId) {
         updateSelectedNodes: (nodes) => selectedNodes.set(nodes),
         toggleCategory,
         toggleRegion,
-        buildAlignedImageMatrix
+        buildAlignedImageMatrix,
+
+        threshold,
+        setThreshold: (t) => threshold.set(t),
     };
 }

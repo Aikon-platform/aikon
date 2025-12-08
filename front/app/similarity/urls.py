@@ -96,6 +96,13 @@ urlpatterns = [
         no_match,
         name="witness-no-match",
     ),
+    path(f"{APP_NAME}/exact-match", exact_match, name="exact-match"),
+    path(f"{APP_NAME}/exact-match-batch", exact_match_batch, name="exact-match-batch"),
+    path(
+        f"{APP_NAME}/uncategorize-pair-batch",
+        uncategorize_pair_batch,
+        name="uncategorize-pair-batch",
+    ),
     path(f"{APP_NAME}/save-category", save_category, name="save-category"),
     path(
         f"{APP_NAME}/index-similarity/<str:regions_ref>",
