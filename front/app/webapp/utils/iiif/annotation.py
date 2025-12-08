@@ -27,7 +27,7 @@ from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.regions import get_file_regions
 
 IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
-# SAS_APP_URL = f"http://sas:{SAS_PORT}"
+# SAS_APP_URL = f"http://sas:{SAS_PORT}" if DOCKER else SAS_APP_URL
 
 
 def get_manifest_annotations(
