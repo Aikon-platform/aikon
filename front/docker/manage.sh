@@ -9,8 +9,8 @@ sleep 2
 
 $manage collectstatic --noinput
 
-$manage makemigrations
-$manage migrate
+# $manage makemigrations
+# $manage migrate
 
 # source /home/aikon/app/config/.env
 # # Create superuser if it doesn't exist
