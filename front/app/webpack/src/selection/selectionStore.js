@@ -12,7 +12,7 @@ function createTypedSelectionStore(config) {
     const template = {
         id: null,
         type,
-        title: title,
+        title,
         // <{model_name: {record_id: {record_meta}, record_id: {record_meta}}, model_name: {...}, ...}>
         selected: {}
     };
@@ -121,7 +121,9 @@ function createTypedSelectionStore(config) {
         }),
 
         empty: () => selection.update(set => {
-            set.selected = {}
+            set.id = null;
+            set.title = title;
+            set.selected = {};
             store(set, true);
             return set;
         }),
