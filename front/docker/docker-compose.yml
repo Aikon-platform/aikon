@@ -94,8 +94,8 @@ services:
     env_file:
       - ./.env
     volumes:
-        - ../sas:/sas
-        #- ${DATA_FOLDER}/sas:/sas/data
+      - ../sas:/sas # data/ already exists inside sas/ folder
+      - ${DATA_FOLDER}/sas:/sas/data # to override it with custom, define it afterward
     ports:
       - "${SAS_PORT:-8888}:${SAS_PORT:-8888}"
     networks:
