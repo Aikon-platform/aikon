@@ -27,6 +27,7 @@
     const sRegionRef = `${sWit}_${sDigit}`;
 
     /** @type {{ queryImage: Promise<string>, similarityImage: Promise<string> }}*/
+    // TODO use toTitledRegion if possible
     const descPromiseObj = {
         queryImage: getDesc(qRegionRef, similarityPairContext.similarityType, similarityPairContext.score, qCanvas, baseUrl, pathUrl, true, false),
         similarityImage: getDesc(sRegionRef, similarityPairContext.similarityType, similarityPairContext.score, sCanvas, baseUrl, pathUrl, true, true),
@@ -45,10 +46,7 @@
                 ? "Query image"
                 : "Similarity"
             }</span>
-            <Region item={imgData[k]}
-                    descPromise={descPromiseObj[k]}
-                    height="full"
-            ></Region>
+            <Region item={imgData[k]} descPromise={descPromiseObj[k]} height="full"/>
         </div>
     {/each}
 </div>

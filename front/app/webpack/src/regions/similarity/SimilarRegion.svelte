@@ -6,7 +6,7 @@
 
     import Region from "../Region.svelte";
     import CategoryButton from "./CategoryButton.svelte";
-    import {extractInt} from "../../utils.js";
+    import {extractInt, shorten} from "../../utils.js";
     import {similarityStore} from "./similarityStore.js";
 
     const {comparedRegions} = similarityStore;
@@ -46,8 +46,8 @@
 
     const toTitledRegion = () => {
         let item = toRegionItem(sImg, wit, xywh, canvas);
-        const sRef = `${wit}_${digit}_anno${sRegions}`;
-        item.title = `${$comparedRegions[sRef].title}<br/>Page ${extractInt(canvas)}<br/><b>Score: ${score}</b>`;
+        const regionData = $comparedRegions[`${wit}_${digit}_anno${sRegions}`] || {title: item.title};
+        item.title = `${shorten(regionData.title.replace(/^[^|]+/, ""))}<br/>Page ${extractInt(canvas)}<br/><b>Score: ${score}</b>`;
         return item;
     }
 

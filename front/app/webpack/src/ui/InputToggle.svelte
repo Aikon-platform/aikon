@@ -35,12 +35,9 @@
     }
 </script>
 
-<button id={htmlId}
-        name={htmlId}
-        class="input-checkbox-wrapper
-               is-flex is-align-items-center-is-justify-content-center p-2 pl-3 pr-3
-               { buttonDisplay ? 'button is-clickable' : '' }
-               { isChecked ? 'is-checked' : '' }"
+<button id={htmlId} name={htmlId}
+        class="input-checkbox-wrapper is-flex is-align-items-center-is-justify-content-center p-2 pl-3 pr-3"
+        class:is-checked={isChecked} class:is-clickable={buttonDisplay} class:button={buttonDisplay}
         aria-label={toggleLabel}
         on:click|preventDefault={toggleOnClick}
 >
@@ -57,7 +54,7 @@
         transition: background-color var(--default-transition);
     }
     .switch {
-        display: inline-block;
+        /*display: inline-block;*/
         width: 35px;
         height: 17px;
         border-radius: 1rem;

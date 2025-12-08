@@ -70,9 +70,4 @@
     }
 </script>
 
-<div>
-    <SimilarRegions {qImg} {sImgsPromise}></SimilarRegions>
-</div>
-
-<style>
-</style>
+<SimilarRegions {qImg} {sImgsPromise}/>
