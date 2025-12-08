@@ -1,3 +1,4 @@
+<!--NOT USED ANYMORE-->
 <script>
     import { getContext } from 'svelte';
     import { manifestToMirador, refToIIIF } from "../utils.js";

@@ -1,8 +1,15 @@
 import * as d3 from 'd3';
 
-export function createSvg(div, nodes, links = null, onSelectionChange, onModeChange = null) {
-    const centerX = 400;
-    const centerY = 300;
+const NODE_RADIUS = 8;
+const LINK_WIDTH = 1.5;
+const LINK_DISTANCE = 50;
+const LINK_STRENGTH = 0.5;
+const WIDTH = 800;
+const HEIGHT = 600;
+
+export function createSvg(div, nodes, links = null, onSelectionChange = null, onModeChange = null) {
+    const centerX = WIDTH / 2;
+    const centerY = HEIGHT / 2;
 
     const container = d3.select(div);
 
@@ -14,15 +21,15 @@ export function createSvg(div, nodes, links = null, onSelectionChange, onModeCha
         .data(links)
         .join("line")
         .attr("class", "link")
-        .attr("stroke-width", d => d.width)
-        .attr("stroke-opacity", d => Math.max(0.2, d.strength));
+        .attr("stroke-width", d => d.width || LINK_WIDTH)
+        .attr("stroke-opacity", d => Math.max(0.2, d.strength || LINK_STRENGTH));
 
     const node = g.append("g")
         .selectAll("circle")
         .data(nodes)
         .join("circle")
         .attr("class", "node")
-        .attr("r", d => d.radius)
+        .attr("r", d => d.radius || NODE_RADIUS)
         .attr("fill", d => d.color);
 
     node.append("title").text(d => d.label);
@@ -30,39 +37,41 @@ export function createSvg(div, nodes, links = null, onSelectionChange, onModeCha
     const simulation = d3.forceSimulation(nodes)
         .force("link", d3.forceLink(links)
             .id(d => d.id)
-            .strength(d => d.strength)
-            .distance(d => d.distance)
+            //.strength(d => d.strength || LINK_STRENGTH)
+            .distance(d => d.distance || LINK_DISTANCE)
         )
         .force("charge", d3.forceManyBody().strength(-250))
         .force("center", d3.forceCenter(centerX, centerY).strength(0.7))
-        .force("collide", d3.forceCollide(d => d.radius + 10).strength(0.5))
+        .force("collide", d3.forceCollide(d => (d.radius || NODE_RADIUS) + 10).strength(LINK_STRENGTH))
         .force("x", d3.forceX(centerX).strength(0.025))
-        .force("y", d3.forceY(centerY).strength(0.025));
+        .force("y", d3.forceY(centerY).strength(0.025))
 
-    const selectionManager = createSelectionManager({
-        svg,
-        g,
-        nodes: nodes,
-        onSelectionChange: (selected, order) => {
-            node.classed("selected", d => selected.has(d.id));
-            const selectedNodesArray = processSelection(nodes, selected, order);
-            onSelectionChange(selectedNodesArray);
-        }
-    });
+    let selectionManager = null;
+    if (onSelectionChange){
+        selectionManager = createSelectionManager({
+            svg,
+            g,
+            nodes: nodes,
+            onSelectionChange: (selected, order) => {
+                node.classed("selected", d => selected.has(d.id));
+                const selectedNodesArray = processSelection(nodes, selected, order);
+                onSelectionChange(selectedNodesArray);
+            }
+        });
+        svg.call(d3.zoom()
+            .scaleExtent([0.1, 10])
+            .filter(event => !selectionManager.isSelectionMode() || event.type === 'wheel')
+            .on("zoom", ({transform}) => g.attr("transform", transform)));
 
-    svg.call(d3.zoom()
-        .scaleExtent([0.1, 10])
-        .filter(event => !selectionManager.isSelectionMode() || event.type === 'wheel')
-        .on("zoom", ({transform}) => g.attr("transform", transform)));
+        const {dragstarted, dragged, dragended} = createSimulationHandlers(simulation, link, node, null);
 
-    const {dragstarted, dragged, dragended} = createSimulationHandlers(simulation, link, node, null);
-
-    selectionManager.setupNodeClick(node);
-    selectionManager.setupDrag(node, {
-        start: dragstarted,
-        drag: dragged,
-        end: dragended
-    });
+        selectionManager.setupNodeClick(node);
+        selectionManager.setupDrag(node, {
+            start: dragstarted,
+            drag: dragged,
+            end: dragended
+        });
+    }
 
     return {
         destroy: () => {
@@ -70,9 +79,11 @@ export function createSvg(div, nodes, links = null, onSelectionChange, onModeCha
             svg.remove();
         },
         toggleSelectionMode: () => {
-            const mode = selectionManager.toggleSelectionMode();
-            if (onModeChange) onModeChange(mode);
-            return mode;
+            if (selectionManager) {
+                const mode = selectionManager.toggleSelectionMode();
+                if (onModeChange) onModeChange(mode);
+                return mode;
+            }
         }
     };
 }

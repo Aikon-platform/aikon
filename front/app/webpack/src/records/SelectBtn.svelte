@@ -1,12 +1,13 @@
 <script>
     import { appLang } from '../constants';
-    import {selectionStore} from "../selection/selectionStore.js";
-    const { isSelected } = selectionStore;
+    import { recordsSelection } from "../selection/selectionStore.js";
+    const { isSelected } = recordsSelection;
+
     export let item;
     $: itemSelected = $isSelected(item);
 </script>
 
-<button class="button" class:is-inverted={itemSelected} on:click={() => selectionStore.toggle(item)}>
+<button class="button" class:is-inverted={itemSelected} on:click={() => recordsSelection.toggle(item)}>
     {#if appLang === 'en'}
         {itemSelected ? 'Remove from' : 'Add to'} selection
     {:else}

@@ -6,7 +6,7 @@
     import AlignedMatrix from './AlignedMatrix.svelte';
     import { appLang } from '../constants.js';
 
-    export let type = 'image';
+    export let type = 'img';
     export let documentSetStore;
     const {
         imageNetwork,
@@ -20,7 +20,7 @@
     let selectionMode = false;
     const render_threshold = 1000;
 
-    $: networkData = type === 'image' ? imageNetwork : documentNetwork;
+    $: networkData = type === 'img' ? imageNetwork : documentNetwork;
 
     $: if ($networkData && container) {
         renderVisualization();
@@ -44,10 +44,9 @@
             $networkData.links,
             onSelectionChange,
             (mode) => { selectionMode = mode; },
-            type
         );
 
-        selectionMode = type === 'image';
+        selectionMode = type === 'img';
         if (selectionMode) {
             networkInstance.toggleSelectionMode();
         }
@@ -83,7 +82,7 @@
     <div bind:this={container} class="visualization-container"></div>
 
     {#if $selectedNodes.length > 0}
-        {#if type === 'image'}
+        {#if type === 'img'}
         <div class="selected-panel box mt-4">
             <h3 class="title is-5">{appLang === "en" ? 'Selected regions' : 'Régions sélectionnées'} ({$selectedNodes.length})</h3>
             <div class="selected-nodes grid is-gap-2 mt-5">
@@ -92,7 +91,7 @@
                 {/each}
             </div>
         </div>
-        {:else if type === 'document'}
+        {:else if type === 'doc'}
             <AlignedMatrix selectedDocuments={$selectedNodes} {documentSetStore}/>
         {/if}
     {/if}
