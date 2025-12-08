@@ -1,5 +1,5 @@
 <script>
-    import { appLang } from '../constants';
+    import {appLang} from '../constants';
     import Layout from '../Layout.svelte';
     import Sidebar from './Sidebar.svelte';
     import NetworkVisualization from './NetworkVisualization.svelte';
@@ -9,11 +9,17 @@
     import {setContext} from "svelte";
     import Clusters from "./Clusters.svelte";
     import {createClusterStore} from "./clusterStore.js";
+
     export let docSet;
 
     const documentSetStore = createDocumentSetStore(docSet.id);
-    const { error, fetchPairs } = documentSetStore;
-    import { clusterSelection } from '../selection/selectionStore.js';
+    const {error, fetchPairs} = documentSetStore;
+    import {clusterSelection} from '../selection/selectionStore.js';
+
+    const {selected} = clusterSelection;
+    import Modal from "../Modal.svelte";
+    import {refToIIIF} from "../utils.js";
+
     const clusterStore = createClusterStore(documentSetStore, clusterSelection);
 
     const tabList = {
@@ -40,21 +46,26 @@
         <Sidebar {docSet} {documentSetStore} {clusterStore}>
             <div slot="datavizInfo">
                 {#if activeTab === "img"}
-                    <p>The Regions Network visualizes the relationships between image regions across different witnesses in the document set.
-                        Each node represents an image region, and edges indicate similarity or connections based on predefined criteria.</p>
+                    <p>The Regions Network visualizes the relationships between image regions across different witnesses
+                        in the document set.
+                        Each node represents an image region, and edges indicate similarity or connections based on
+                        predefined criteria.</p>
                     <ul>
                         <li>Nodes: Image regions from various witnesses.</li>
                         <li>Edges: Similarity links between regions.</li>
                     </ul>
                 {:else if activeTab === "doc"}
-                    <p>The Documents Network illustrates the connections between different witnesses in the document set.
-                        Each node represents a witness, and edges denote relationships based on shared content or other relevant factors.</p>
+                    <p>The Documents Network illustrates the connections between different witnesses in the document
+                        set.
+                        Each node represents a witness, and edges denote relationships based on shared content or other
+                        relevant factors.</p>
                     <ul>
                         <li>Nodes: Witnesses in the document set.</li>
                         <li>Edges: Relationships based on shared content.</li>
                     </ul>
                 {:else}
-                    <p>La matrice de documents visualise les scores de similarité globaux entre tous les documents du corpus.
+                    <p>La matrice de documents visualise les scores de similarité globaux entre tous les documents du
+                        corpus.
                         Cliquez sur une cellule pour voir les détails des similarités entre pages.</p>
                     <ul>
                         <li>Matrice : Scores normalisés entre documents (0-100).</li>
@@ -67,6 +78,24 @@
     </div>
 
     <div slot="content" let:activeTab>
+
+        <Modal>
+            <div slot="content" class="fixed-grid has-6-cols">
+                <div class="grid is-gap-2">
+                    {#each Object.values(Object.values($selected)[0] || {}) as meta}
+                        <div class="selection cell">
+                            <figure class="image is-64x64 card">
+                                <img src="{refToIIIF(meta.img, meta.xywh, '96,')}" alt="Extracted region"/>
+                                <div class="overlay is-center">
+                                    <span class="overlay-desc">{meta.title}</span>
+                                </div>
+                            </figure>
+                        </div>
+                    {/each}
+                </div>
+            </div>
+        </Modal>
+
         {#if $error}
             <article class="message is-danger">
                 <div class="message-body">{$error}</div>
@@ -79,7 +108,8 @@
                     <article class="message is-warning">
                         <div class="message-body">
                             No document pairs found for this configuration.
-                            Please adjust your selection criteria in the sidebar to include more documents or categories.
+                            Please adjust your selection criteria in the sidebar to include more documents or
+                            categories.
                         </div>
                     </article>
                 {:else}

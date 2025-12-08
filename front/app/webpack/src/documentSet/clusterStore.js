@@ -1,6 +1,6 @@
 import {derived, writable, get} from 'svelte/store';
-import {initPagination, pageUpdate, withLoading} from "../utils.js";
-import {appName, csrfToken} from "../constants.js";
+import {initPagination, pageUpdate, showMessage, withLoading} from "../utils.js";
+import {appLang, appName, csrfToken} from "../constants.js";
 
 export function createClusterStore(documentSetStore, clusterSelection) {
     const pageLength = 10;
@@ -125,7 +125,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         if (pairsToRemove.length === 0) return true;
 
         try {
-            await withLoading(() => fetch(`${window.location.origin}/${appName}/uncategorize-pair-batch`, {
+            const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/uncategorize-pair-batch`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -133,6 +133,15 @@ export function createClusterStore(documentSetStore, clusterSelection) {
                 },
                 body: JSON.stringify({pairs: pairsToRemove})
             }));
+
+            if (!response.ok) {
+                console.log(response)
+                await showMessage(
+                    appLang === "en" ? "Batch un-categorization failed" : "La dé-catégorisation par lot a échoué",
+                    appLang === "en" ? "Error" : "Erreur",
+                );
+                return false;
+            }
 
             interfaceClusters.update($clusters =>
                 $clusters
@@ -147,7 +156,10 @@ export function createClusterStore(documentSetStore, clusterSelection) {
 
             return true;
         } catch (error) {
-            console.error('Error:', error);
+            await showMessage(
+                error,
+                appLang === "en" ? "Error" : "Erreur",
+            );
             return false;
         }
     };
@@ -168,12 +180,20 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             }));
 
             if (!response.ok) {
-                console.error('Batch validation failed');
+                console.log(response)
+                await showMessage(
+                    appLang === "en" ? "Batch validation failed" : "La validation par lot a échoué",
+                    appLang === "en" ? "Error" : "Erreur",
+                );
                 return false;
             }
 
             return true;
         } catch (error) {
+            await showMessage(
+                error,
+                appLang === "en" ? "Error" : "Erreur",
+            );
             console.error('Error:', error);
             return false;
         }
@@ -195,7 +215,6 @@ export function createClusterStore(documentSetStore, clusterSelection) {
 
     const createCluster = async (imgRefs) => {
         if (imgRefs.length < 2) {
-            window.alert('Need at least 2 images');
             return false;
         }
 
@@ -220,11 +239,23 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     const selectedRegions = () => Object.values(get(clusterSelection).selected)[0] || {};
 
     const newCluster = async () => {
+        const confirmed = await showMessage(
+            appLang === "en" ? "Do you want to create a cluster out of these images?" : "Voulez-vous créer un cluster à partir de ces images ?",
+            appLang === "en" ? "Confirm creation" : "Confirmer la création",
+            true
+        );
+        if (!confirmed) {
+            return; // User cancelled the creation
+        }
+
         const selected = selectedRegions();
         const imgRefs = Object.keys(selected);
 
         if (imgRefs.length < 2) {
-            window.alert('Need at least 2 images');
+            await showMessage(
+                appLang === "en" ? "Cluster creation requires at least 2 images" : "La création d'un nouveau cluster nécessite a minima 2 images",
+                appLang === "en" ? "Impossible creation" : "Création impossible",
+            );
             return false;
         }
 
@@ -239,6 +270,15 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     };
 
     const removeFromClusters = async () => {
+        const confirmed = await showMessage(
+            appLang === "en" ? "Do you want to remove these images from their clusters?" : "Voulez-vous supprimer ces images de leurs clusters ?",
+            appLang === "en" ? "Confirm deletion" : "Confirmer la supression",
+            true
+        );
+        if (!confirmed) {
+            return; // User cancelled the deletion
+        }
+
         const selected = selectedRegions();
         const removed = await removeImgRefs(Object.keys(selected));
         if (!removed) return false;

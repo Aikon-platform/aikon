@@ -14,7 +14,13 @@
             </div>
             <button class="delete media-left" aria-label="close"></button>
         </div>
-        <section id="modal-body" class="modal-card-body"></section>
+        <section id="modal-body" class="modal-card-body">
+            <div id="modal-msg"></div>
+            <div class="py-3">
+                <slot name="content"/>
+            </div>
+        </section>
+
         <footer id="modal-footer" class="modal-card-foot is-center pt-3" hidden>
             <div class="buttons">
                 <button id="cancel-btn" class="button is-link is-light button-close">

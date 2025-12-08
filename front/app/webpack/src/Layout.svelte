@@ -54,7 +54,7 @@
 </script>
 
 <Loading/>
-<Modal/>
+<!--<Modal/>-->
 
 <div class="layout" style="min-height: {layoutHeight};">
     <aside class="sidebar" style="width: {sidebarWidth}%; min-height: {layoutHeight};">

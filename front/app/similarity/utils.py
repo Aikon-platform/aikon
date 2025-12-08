@@ -811,10 +811,13 @@ def get_or_create_pair(img_1, img_2, regions_id_1, regions_id_2, create=True):
 
     if existing_pair:
         rid_1, rid_2 = existing_pair.regions_id_1, existing_pair.regions_id_2
-        if (rid_1 in [regions_id_1, regions_id_2]) and (
-            rid_2 in [regions_id_2, regions_id_1]
-        ):
-            return existing_pair, False
+        region_ids = [int(regions_id_2), int(regions_id_1)]
+        if (rid_1 not in region_ids) and (rid_2 not in region_ids):
+            log(
+                f"[get_or_create_pair] Region pair for {img_1}-{img_2} already exists for regions {rid_1}/{rid_2} instead of {regions_id_1}/{regions_id_2}",
+                msg_type="error",
+            )
+        return existing_pair, False
 
     if not create:
         return None, False

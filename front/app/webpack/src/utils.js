@@ -135,7 +135,7 @@ export function showMessage(msg, title = null, confirm = false) {
             if (title) {
                 document.getElementById("modal-title").innerHTML = title;
             }
-            document.getElementById("modal-body").innerHTML = msg;
+            document.getElementById("modal-msg").innerHTML = msg;
             document.getElementById("hidden-msg-btn").click();
 
             const cancelBtn = document.getElementById("cancel-btn");
