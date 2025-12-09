@@ -18,8 +18,6 @@ from app.config.settings import (
     APP_NAME,
     APP_URL,
     ADDITIONAL_MODULES,
-    SAS_PORT,
-    DOCKER,
 )
 from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, flatten_dict
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
