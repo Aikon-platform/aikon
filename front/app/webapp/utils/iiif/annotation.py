@@ -180,6 +180,7 @@ def get_regions_annotations(
 
                 r_annos[canvas][aid] = {
                     "id": aid,
+                    "id_full": anno["@id"],
                     "ref": f"{img}_{xywh}",
                     "class": "Region",
                     "type": get_name("Regions"),
