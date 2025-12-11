@@ -58,7 +58,7 @@ def save_document_set(request, dsid=None):
                     ds.wit_ids = witness_ids
                     ds.ser_ids = series_ids
                     ds.work_ids = work_ids
-                    ds.users_id = shared_with
+                    ds.shared_with = shared_with
                 else:
                     ds, is_new = create_doc_set(
                         {

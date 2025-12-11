@@ -27,7 +27,7 @@ def get_user(user: User = None) -> User:
 
 
 def create_doc_set(
-    doc_list: list | dict, user: User = None, users_ids: list = None
+    doc_list: list | dict, user: User = None, shared_with: list = None
 ) -> Tuple[DocumentSet, bool]:
     if not len(doc_list):
         log(
@@ -37,8 +37,8 @@ def create_doc_set(
 
     user = get_user(user)
     if type(doc_list) == dict:
-        return create_doc_set_from_ids(doc_list, user, users_ids)
-    return create_doc_set_from_records(doc_list, user, users_ids)
+        return create_doc_set_from_ids(doc_list, user, shared_with)
+    return create_doc_set_from_records(doc_list, user, shared_with)
 
 
 def create_doc_set_from_records(
