@@ -63,7 +63,7 @@ class DocumentSet(AbstractSearchableModel):
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
-    users_id = ArrayField(models.IntegerField(), default=list, blank=True, null=True)
+    shared_with = ArrayField(models.IntegerField(), default=list, blank=True, null=True)
 
     selection = models.JSONField(
         verbose_name="JSON selection",

@@ -44,7 +44,7 @@ def save_document_set(request, dsid=None):
             witness_ids = data.get("Witness", [])
             series_ids = data.get("Series", [])
             work_ids = data.get("Work", [])
-            users_ids = data.get("User", [])
+            shared_with = data.get("User", [])
 
             if len(witness_ids) + len(series_ids) + len(work_ids) == 0:
                 return JsonResponse(
@@ -58,7 +58,7 @@ def save_document_set(request, dsid=None):
                     ds.wit_ids = witness_ids
                     ds.ser_ids = series_ids
                     ds.work_ids = work_ids
-                    ds.users_ids = users_ids
+                    ds.users_id = shared_with
                 else:
                     ds, is_new = create_doc_set(
                         {
@@ -67,14 +67,13 @@ def save_document_set(request, dsid=None):
                             "work_ids": work_ids,
                         },
                         user=request.user,
-                        users_ids=users_ids,
+                        shared_with=shared_with,
                     )
                     keep_title = not is_new
 
                 ds.selection = selection
                 title = ds.title if keep_title else set_name
                 ds.title = f"{title} #{ds.id}" if "#" not in title else title
-                ds.users_ids = users_ids
 
                 ds.save()
 

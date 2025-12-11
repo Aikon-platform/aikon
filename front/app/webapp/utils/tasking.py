@@ -44,7 +44,7 @@ def create_doc_set(
 def create_doc_set_from_records(
     records: List[Witness | Digitization | Regions],
     user: User = None,
-    users_ids: list = None,
+    shared_with: list = None,
 ):
     wit_ids = set()
     doc_title = "Document set"
@@ -78,7 +78,7 @@ def create_doc_set_from_records(
                 user=user,
                 wit_ids=wit_ids,
                 is_public=False,
-                users_ids=users_ids,
+                shared_with=shared_with,
             )
             doc_set.save()
             is_new = True
@@ -92,7 +92,7 @@ def create_doc_set_from_records(
     return doc_set, is_new
 
 
-def create_doc_set_from_ids(ids: dict, user: User = None, users_ids: list = None):
+def create_doc_set_from_ids(ids: dict, user: User = None, shared_with: list = None):
     """
     ids: {
         "wit_ids": List[int],
@@ -111,7 +111,7 @@ def create_doc_set_from_ids(ids: dict, user: User = None, users_ids: list = None
                 user=user,
                 **ids,
                 is_public=False,
-                users_ids=users_ids,
+                shared_with=shared_with,
             )
             doc_set.save()
             is_new = True
