@@ -77,6 +77,7 @@
             aspect-ratio:{svgViewBox ? svgViewBox.split(' ')[2] / svgViewBox.split(' ')[3] : 1};
         "
         on:click={() => selectable ? selectionStore.toggle(item) : null}
+        on:keyup={null}
         on:mouseenter={() => isHovered = true}
         on:mouseleave={() => isHovered = false}
     >

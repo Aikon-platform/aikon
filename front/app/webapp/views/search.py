@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.core.paginator import Paginator
 from django.db import models
+from django.contrib.auth.models import User
 
 from app.webapp.search_filters import *
 from app.webapp.utils.constants import PAGE_LEN
@@ -105,3 +106,14 @@ def search_document_set(request):
     doc_sets = DocumentSetFilter(request.GET, queryset=queryset.order_by("-id"))
 
     return JsonResponse(paginated_records(request, doc_sets.qs))
+
+
+@require_GET
+def search_user(request):
+    q = request.GET.get("q", "")
+
+    user_list = User.objects.filter(username__icontains=q).all()
+
+    return JsonResponse(
+        {"users": [{"id": user.id, "username": str(user)} for user in user_list]}
+    )

@@ -27,7 +27,7 @@ def get_user(user: User = None) -> User:
 
 
 def create_doc_set(
-    doc_list: list | dict, user: User = None
+    doc_list: list | dict, user: User = None, users_ids: list = None
 ) -> Tuple[DocumentSet, bool]:
     if not len(doc_list):
         log(
@@ -37,12 +37,14 @@ def create_doc_set(
 
     user = get_user(user)
     if type(doc_list) == dict:
-        return create_doc_set_from_ids(doc_list, user)
-    return create_doc_set_from_records(doc_list, user)
+        return create_doc_set_from_ids(doc_list, user, users_ids)
+    return create_doc_set_from_records(doc_list, user, users_ids)
 
 
 def create_doc_set_from_records(
-    records: List[Witness | Digitization | Regions], user: User = None
+    records: List[Witness | Digitization | Regions],
+    user: User = None,
+    users_ids: list = None,
 ):
     wit_ids = set()
     doc_title = "Document set"
@@ -76,6 +78,7 @@ def create_doc_set_from_records(
                 user=user,
                 wit_ids=wit_ids,
                 is_public=False,
+                users_ids=users_ids,
             )
             doc_set.save()
             is_new = True
@@ -89,7 +92,7 @@ def create_doc_set_from_records(
     return doc_set, is_new
 
 
-def create_doc_set_from_ids(ids: dict, user: User = None):
+def create_doc_set_from_ids(ids: dict, user: User = None, users_ids: list = None):
     """
     ids: {
         "wit_ids": List[int],
@@ -108,6 +111,7 @@ def create_doc_set_from_ids(ids: dict, user: User = None):
                 user=user,
                 **ids,
                 is_public=False,
+                users_ids=users_ids,
             )
             doc_set.save()
             is_new = True

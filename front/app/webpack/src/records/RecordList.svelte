@@ -89,7 +89,7 @@
 
 <SelectionModal {selectionLength}>
     {#each selectedRecords as [type, selectedItems]}
-        {#if Object.values(selectedItems).length > 0}
+        {#if Object.values(selectedItems).length > 0 && type !== "User"}
             <h3>{model2title[type]}</h3>
             <table class="table pl-2 is-fullwidth">
                 <tbody>

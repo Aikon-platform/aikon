@@ -124,6 +124,10 @@ function createSelectionStore() {
             selectedIds[modelName] = Object.keys(records);
         });
 
+        if (!selectedIds.User) {
+            selectedIds.User = [];
+        }
+
         const endpoint = set.id !== null ? `${set.id}/edit` : "new";
 
         fetch(`${window.location.origin}/${modelName}/${endpoint}`, {
@@ -224,9 +228,10 @@ function createSelectionStore() {
                 if (isRegion) {
                     return Object.keys(selected).length;
                 }
-                return selected.reduce(
-                    (count, [_, selectedItems]) => count + Object.keys(selectedItems).length, 0
-                )
+                return selected.reduce((count, [modelName, selectedItems]) => {
+                    if (modelName === "User") return count;
+                    return count + Object.keys(selectedItems).length;
+                }, 0);
             }
         ),
         selectionTitle: derived(selection, $selection =>
