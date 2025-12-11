@@ -149,7 +149,6 @@ function createTypedSelectionStore(config) {
         save,
         isSaved,
 
-        selectionTitle: derived(selection, $sel => $sel.title),
         isSelected: derived(selection, $sel =>
             item => $sel.selected[item.class]?.[item.id] || false
         ),
@@ -157,16 +156,32 @@ function createTypedSelectionStore(config) {
         selected: derived(selection, $sel =>
             $sel.selected
         ),
-
-        nbSelected: derived(selection, $sel =>
-            Object.values($sel.selected).reduce(
-                (count, items) => count + Object.keys(items).length, 0
-            )
-        ),
-
         isSetSelected: derived(selection, $sel =>
             set => $sel.id === set.id
         )
+        nbSelected: derived(selection, $selection =>
+            isRegion => {
+                const selected = filter($selection, isRegion);
+                if (isRegion) {
+                    return Object.keys(selected).length;
+                }
+                return selected.reduce(
+                    (count, [_, selectedItems]) => count + Object.keys(selectedItems).length, 0
+                )
+            }
+        ),
+        selectionTitle: derived(selection, $selection =>
+            isRegion => $selection[isRegion ? "regions" : "records"].title
+        ),
+        selection: derived(selection, $selection =>
+            isRegion =>  $selection[isRegion ? "regions" : "records"]
+        ),
+        toggleSet: set => update(selection => {
+            if (isThisSetSelected(selection, set)) {
+                return unloadSet(selection, set);
+            }
+            return loadSet(selection, set);
+        }),
     };
 }
 
