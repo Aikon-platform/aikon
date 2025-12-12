@@ -1,5 +1,5 @@
 import {derived, writable, get} from 'svelte/store';
-import {extractNb, refToIIIFRoot, imageToPage, generateColor, initPagination, pageUpdate} from "../utils.js";
+import {extractNb, refToIIIFRoot, imageToPage, generateColor} from "../utils.js";
 import {appUrl, regionsType} from "../constants.js";
 // // TO DELETE
 // import {regionsType} from "../constants.js";
