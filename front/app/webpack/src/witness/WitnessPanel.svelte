@@ -76,23 +76,23 @@
             {#each Object.entries(witness.metadata_full.wit) as [key, value]}
                 <span class="witness-key">{value.label}</span>
                 <span class="witness-value">
-                    {#if editedField === key}
-                        {#if choices[key]}
-                            <div class="select is-small is-link">
-                                <select bind:value={editedValue} on:change={() => saveField(key)}>
-                                    {#each choices[key] as option}
-                                        <option value={option.value}>{option.label}</option>
-                                    {/each}
-                                </select>
-                            </div>
-                        {:else}
-                            <input
-                                class="input is-small"
-                                bind:value={editedValue}
-                                on:blur={() => saveField(key)}
-                            />
-                        {/if}
-                    {:else}
+                    <!--{#if editedField === key}-->
+                    <!--    {#if choices[key]}-->
+                    <!--        <div class="select is-small is-link">-->
+                    <!--            <select bind:value={editedValue} on:change={() => saveField(key)}>-->
+                    <!--                {#each choices[key] as option}-->
+                    <!--                    <option value={option.value}>{option.label}</option>-->
+                    <!--                {/each}-->
+                    <!--            </select>-->
+                    <!--        </div>-->
+                    <!--    {:else}-->
+                    <!--        <input-->
+                    <!--            class="input is-small"-->
+                    <!--            bind:value={editedValue}-->
+                    <!--            on:blur={() => saveField(key)}-->
+                    <!--        />-->
+                    <!--    {/if}-->
+                    <!--{:else}-->
                         <span
                             class="editable-span"
                             on:click={() => editMetadata(key, value.value)}
@@ -100,7 +100,7 @@
                         >
                             {value.value}
                         </span>
-                    {/if}
+                    <!--{/if}-->
                 </span>
             {/each}
 
