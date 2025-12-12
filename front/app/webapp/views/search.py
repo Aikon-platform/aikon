@@ -98,13 +98,12 @@ def search_document_set(request):
         .filter(set_len__gt=1)
     )
 
-    shared_with = base_queryset.filter(shared_with__contains=[user.id])
-    users_set = base_queryset.filter(Q(user=user))
-
     if user.is_superuser:
         queryset = base_queryset
     else:
-        queryset = users_set.union(shared_with)
+        queryset = base_queryset.filter(
+            Q(shared_with__contains=[user.id]) | Q(user=user)
+        ).distinct()
 
     doc_sets = DocumentSetFilter(request.GET, queryset=queryset.order_by("-id"))
 

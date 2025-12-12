@@ -87,13 +87,14 @@
 
         <div class="grid">
             {#each Object.entries(item.selection.selected) as [modelName, selectedRecords]}
-                {#each Object.entries(selectedRecords) as [id, meta]}
-                    <div>
-                        <!--TODO add possibility to remove from selection-->
-                        <span class="tag is-rounded is-accent">{modelName} #{id}</span>
-                        {meta.title}
-                    </div>
-                {/each}
+                {#if modelName !== 'User'}
+                    {#each Object.entries(selectedRecords) as [id, meta]}
+                        <div>
+                            <span class="tag is-rounded is-accent">{modelName} #{id}</span>
+                            {meta.title}
+                        </div>
+                    {/each}
+                {/if}
             {/each}
         </div>
 
