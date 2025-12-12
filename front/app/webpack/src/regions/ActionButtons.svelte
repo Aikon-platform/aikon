@@ -1,8 +1,10 @@
 <script>
     import { getContext } from 'svelte';
     import { manifestToMirador, showMessage, downloadBlob, withLoading } from "../utils.js";
-    import { selectionStore } from "../selection/selectionStore.js";
-    const { selected, nbSelected } = selectionStore;
+
+    import { regionsSelection } from "../selection/selectionStore.js";
+    const { selected, nbSelected } = regionsSelection;
+
     import { regionsStore } from './regionsStore.js';
     const { allRegions } = regionsStore;
     import { appName, appLang, regionsType, csrfToken } from '../constants';
@@ -10,9 +12,10 @@
     const manifest = getContext('manifest');
     const isValidated = getContext('isValidated');
 
-    $: selectionLength = $nbSelected(true);
+    $: selectionLength = $nbSelected;
     $: isEditMode = !isValidated;
-    $: selectedRegions = $selected(true);
+    // $selected = {"Regions" : [{S}, {E}, {L}, {E}, {C}, {T}, {I}, {O}, {N}]}
+    $: selectedRegions = Object.values($selected)[0] || {};
 
     // TODO here when there is not only one document selected, this assertion is erroneous
     $: areAllSelected = selectionLength >= Object.keys($allRegions).length;
@@ -42,7 +45,7 @@
                 }
                 await deleteRegion(regionData);
                 regionsStore.remove(regionId);
-                selectionStore.remove(regionId, regionsType)
+                regionsSelection.remove(regionId, regionsType)
 
             } catch (error) {
                 await showMessage(`Failed to delete region ${regionId}: ${error.message}`, "Error");
@@ -62,15 +65,15 @@
 
     function toggleAllSelection() {
         if (areAllSelected) {
-            selectionStore.removeAll(Object.keys($allRegions), regionsType);
+            regionsSelection.removeAll(Object.keys($allRegions), regionsType);
         } else {
-            selectionStore.addAll(Object.values($allRegions));
+            regionsSelection.addAll(Object.values($allRegions));
         }
     }
 
     async function downloadRegions(){
         // download only displayed regions?
-        const regionsRef = Object.values($selected(true)).map(r => r.ref);
+        const regionsRef = Object.values(selectedRegions).map(r => r.ref);
         const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/regions/export`, {
             method: "POST",
             headers: { "X-CSRFToken": csrfToken },

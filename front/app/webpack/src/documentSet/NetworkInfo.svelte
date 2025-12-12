@@ -1,11 +1,11 @@
 <script>
     import {appLang} from "../constants.js";
 
-    export let activeTab = 0;
+    export let activeTab = "img";
     export let documentSetStore;
     const { imageStats, documentStats, docPairStats } = documentSetStore;
 
-    $: currentStats = activeTab === 0 ? $imageStats : activeTab === 1 ? $documentStats : $docPairStats;
+    $: currentStats = activeTab === "img" ? $imageStats : activeTab === "doc" ? $documentStats : $docPairStats;
 </script>
 
 <div class="level has-text-centered">

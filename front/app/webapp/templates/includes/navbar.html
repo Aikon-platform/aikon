@@ -1,6 +1,6 @@
 {% load static shared_tags %}
 
-<nav class="navbar is-fixed-top" role="navigation" aria-label="main navigation">
+<nav id="navbar" class="navbar is-fixed-top" role="navigation" aria-label="main navigation">
     <div class="navbar-brand ml-5">
         <a class="navbar-item" href="/{% url 'webapp:home' %}">
             <img id="nav-icon" src="{% static 'img/favicon-'|add:APP_NAME|add:'.png' %}" alt="Icon">
