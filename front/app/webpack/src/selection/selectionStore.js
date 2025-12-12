@@ -163,7 +163,6 @@ function createTypedSelectionStore(config) {
                 (count, items) => count + Object.keys(items).length, 0
             )
         ),
-
         isSetSelected: derived(selection, $sel =>
             set => $sel.id === set.id
         )
