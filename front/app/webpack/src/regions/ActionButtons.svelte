@@ -23,7 +23,6 @@
     }
 
     // TODO add toggle button to switch in between select mode and view mode
-
     async function deleteSelectedRegions() {
         const confirmed = await showMessage(
             appLang === "en" ? "Are you sure you want to delete these regions?" : "Voulez-vous vraiment supprimer ces régions ?",
@@ -35,13 +34,13 @@
             return; // User cancelled the deletion
         }
 
-        for (const regionId of Object.keys(selectedRegions)) {
+        for (const [regionId, regionData] of Object.entries(selectedRegions)) {
             try {
                 if (!$allRegions.hasOwnProperty(regionId)) {
                     // only delete regions that are displayed
                     continue;
                 }
-                await deleteRegion(regionId);
+                await deleteRegion(regionData);
                 regionsStore.remove(regionId);
                 selectionStore.remove(regionId, regionsType)
 
@@ -50,9 +49,9 @@
             }
         }
     }
-    async function deleteRegion(regionId) {
-        const HTTP_SAS = SAS_APP_URL.replace("https", "http");
-        const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${HTTP_SAS}/annotation/${regionId}`;
+    async function deleteRegion(regionData) {
+        const regionIdFull = regionData.id_full;  // full @id of the region.
+        const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${regionIdFull}`;
 
         const response = await fetch(urlDelete, { method: "DELETE"});
 

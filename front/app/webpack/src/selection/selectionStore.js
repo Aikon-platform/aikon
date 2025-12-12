@@ -235,14 +235,10 @@ function createSelectionStore() {
             }
         ),
         selectionTitle: derived(selection, $selection =>
-            isRegion => {
-                return $selection[isRegion ? "regions" : "records"].title;
-            }
+            isRegion => $selection[isRegion ? "regions" : "records"].title
         ),
         selection: derived(selection, $selection =>
-            isRegion => {
-                return $selection[isRegion ? "regions" : "records"];
-            }
+            isRegion =>  $selection[isRegion ? "regions" : "records"]
         ),
         toggleSet: set => update(selection => {
             if (isThisSetSelected(selection, set)) {
