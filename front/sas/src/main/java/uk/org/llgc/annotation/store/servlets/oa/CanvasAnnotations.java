@@ -58,12 +58,9 @@ public class CanvasAnnotations extends HttpServlet {
 		// VHS's URL has been changed, so the annotations and canvas IDs received from AIKON
 		// are outdated => here, we query once for the new URL, once for the old, and concatenate both results.
 		String uriRewrite = uriOrig.replace("https://vhs.huma-num.fr/", "https://iscd.huma-num.fr/");
-		System.out.println(">>>>>>>>>>>>>>>>>>> URI ORIG" + uriOrig);
-		System.out.println(">>>>>>>>>>>>>>>>>>> URI REWRITE" + uriRewrite);
-		_logger.debug(">>>>>>>>>>>>>>>>>>> URI ORIG" + uriOrig);
-		_logger.debug(">>>>>>>>>>>>>>>>>>> URI REWRITE" + uriRewrite);
 		if ( ! uriRewrite.equals(uriOrig) ) {
 			AnnotationList tAnnoListRewrite = _store.getAnnotationsFromPage(new Canvas(uriRewrite, ""));
+			// concatenate annotations found using urlOrig and urlRewrite
 			List<Annotation> annotationsConcat = Stream.concat(
 				tAnnoList.getAnnotations().stream(),
 				tAnnoListRewrite.getAnnotations().stream()
@@ -71,19 +68,8 @@ public class CanvasAnnotations extends HttpServlet {
 			// convert each annotation to its JSON representation
 			tAnnoListJson.put(
 				"resources",
-				annotationsConcat
-					.stream()
-					.map(anno -> anno.toJson())
-					.collect(Collectors.toList())
+				annotationsConcat.stream().map(anno -> anno.toJson()).collect(Collectors.toList())
 			);
-			System.out.println(JsonUtils.toPrettyString(tAnnoListJson));
-			_logger.debug(JsonUtils.toPrettyString(tAnnoListJson));
-			// System.out.println(">>>>>>>>>>>>>>>>>>> BASE ANNOTATIONS" +   tAnnoList.getAnnotations().toString());
-			// System.out.println(">>>>>>>>>>>>>>>>>>> REWRITE ANNOTATIONS" + tAnnoListRewrite.getAnnotations().toString());
-			// System.out.println(">>>>>>>>>>>>>>>>>>> ANNOTATIONS CONCAT" + annotationsConcat.toString());
-			// _logger.debug(">>>>>>>>>>>>>>>>>>> BASE ANNOTATIONS" +   tAnnoList.getAnnotations().toString());
-			// _logger.debug(">>>>>>>>>>>>>>>>>>> REWRITE ANNOTATIONS" + tAnnoListRewrite.getAnnotations().toString());
-			// _logger.debug(">>>>>>>>>>>>>>>>>>> ANNOTATIONS CONCAT" + annotationsConcat.toString());
 		}
 
 		pRes.setContentType("application/ld+json; charset=UTF-8");
