@@ -11,7 +11,10 @@ import com.github.jsonldjava.utils.JsonUtils;
 import org.apache.jena.rdf.model.Model;
 
 import java.util.Map;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -25,8 +28,7 @@ import uk.org.llgc.annotation.store.data.AnnotationList;
 import uk.org.llgc.annotation.store.data.Canvas;
 import uk.org.llgc.annotation.store.AnnotationUtils;
 import uk.org.llgc.annotation.store.StoreConfig;
-
-import uk.org.llgc.annotation.store.exceptions.MalformedAnnotation;
+import uk.org.llgc.annotation.store.data.Annotation;
 
 public class CanvasAnnotations extends HttpServlet {
 	protected static Logger _logger = LogManager.getLogger(CanvasAnnotations.class.getName());
@@ -42,17 +44,35 @@ public class CanvasAnnotations extends HttpServlet {
 	}
 
 	public void doGet(final HttpServletRequest pReq, final HttpServletResponse pRes) throws IOException {
-		_logger.debug("Annotations for page: " + pReq.getParameter("uri"));
+		String uriOrig = pReq.getParameter("uri");
+		_logger.debug("Annotations for page: " + uriOrig);
 		_logger.debug("media " + pReq.getParameter("media"));
 		_logger.debug("limit " + pReq.getParameter("limit"));
-		if (pReq.getParameter("uri") == null || pReq.getParameter("uri").trim().length() == 0) {
+		if (uriOrig == null || uriOrig.trim().length() == 0) {
 			return; // for some reason Mirador is sending blank uri requests
 		}
-        AnnotationList tAnnoList = _store.getAnnotationsFromPage(new Canvas(pReq.getParameter("uri"), ""));
+		AnnotationList tAnnoList = _store.getAnnotationsFromPage(new Canvas(uriOrig, ""));
+		Map<String,Object> tAnnoListJson = tAnnoList.toJson();
 
-        pRes.setContentType("application/ld+json; charset=UTF-8");
+		// DIRTY FIX FOR VHS MIRADOR:
+		// VHS's URL has been changed, so the annotations and canvas IDs received from AIKON
+		// are outdated => here, we query once for the new URL, once for the old, and concatenate both results.
+		String uriRewrite = uriOrig.replace("https://vhs.huma-num.fr/", "https://iscd.huma-num.fr/");
+		if ( ! uriRewrite.equals(uriOrig) ) {
+			AnnotationList tAnnoListRewrite = _store.getAnnotationsFromPage(new Canvas(uriRewrite, ""));
+			List<Annotation> annotationsConcat = Stream.concat(
+				tAnnoList.getAnnotations().stream(),
+				tAnnoListRewrite.getAnnotations().stream()
+			).collect(Collectors.toList());
+			tAnnoListJson.put("resources", annotationsConcat);
+			System.out.println(">>>>>>>>>>>>>>>>>>> BASE ANNOTATIONS" +   tAnnoList.getAnnotations().toString());
+			System.out.println(">>>>>>>>>>>>>>>>>>> REWRITE ANNOTATIONS" + tAnnoListRewrite.getAnnotations().toString());
+			System.out.println(">>>>>>>>>>>>>>>>>>> ANNOTATIONS CONCAT" + annotationsConcat.toString());
+		}
+
+		pRes.setContentType("application/ld+json; charset=UTF-8");
         pRes.setCharacterEncoding("UTF-8");
-        /**/_logger.debug(JsonUtils.toPrettyString(tAnnoList.toJson().get("resources")));
-        pRes.getWriter().println(JsonUtils.toPrettyString(tAnnoList.toJson().get("resources")));
+        /**/_logger.debug(JsonUtils.toPrettyString(tAnnoListJson.get("resources")));
+        pRes.getWriter().println(JsonUtils.toPrettyString(tAnnoListJson.get("resources")));
     }
 }
