@@ -58,6 +58,8 @@ public class CanvasAnnotations extends HttpServlet {
 		// VHS's URL has been changed, so the annotations and canvas IDs received from AIKON
 		// are outdated => here, we query once for the new URL, once for the old, and concatenate both results.
 		String uriRewrite = uriOrig.replace("https://vhs.huma-num.fr/", "https://iscd.huma-num.fr/");
+		_logger.debug(">>>>>>>>>>>>>>>>>>> URI ORIG" +   uriOrig);
+		_logger.debug(">>>>>>>>>>>>>>>>>>> URI REWRITE" +   uriRewrite);
 		if ( ! uriRewrite.equals(uriOrig) ) {
 			AnnotationList tAnnoListRewrite = _store.getAnnotationsFromPage(new Canvas(uriRewrite, ""));
 			List<Annotation> annotationsConcat = Stream.concat(
