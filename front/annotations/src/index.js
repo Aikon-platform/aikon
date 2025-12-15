@@ -1,12 +1,12 @@
 import Mirador from 'mirador';
 import Mae from "mirador-annotation-editor";
-import { LocalStorageAdapter } from "mirador-annotation-editor";
-// import { AiiinotateAdapter } from "mirador-annotation-editor";
 
-console.log("Mirador", Mirador);
-console.log("Mae", Mae);
-console.log("LocalStorageAdapter", LocalStorageAdapter);
-// console.log("AiiinotateAdapter", AiiinotateAdapter);
+const { AiiinotateAdapter } = Mae.at(-1);
+
+const
+  windowUrl = new URL(window.location.href),
+  iiifManifest = windowUrl.searchParams.get("iiif-content"),
+  iiifCanvas = windowUrl.searchParams.get("canvas");
 
 const iiifAnnotationVersion = 2;
 
@@ -15,7 +15,10 @@ const config = {
   id: 'miradorRoot',
   language: 'en',
   annotation: {
-    adapter: ()=>{}, // (canvasId) => new AiiinotateAdapter(process.env.APP_BASE_URL, iiifAnnotationVersion, canvasId),
+    adapter: (canvasId) => {
+      console.log("AIIINOTATE ADAPTER", canvasId);
+      return new AiiinotateAdapter(process.env.APP_BASE_URL, iiifAnnotationVersion, canvasId);
+    },
     allowTargetShapesStyling: true,
     commentTemplates: [{
       content: '<h4>Comment</h4><p>Comment content</p>',
@@ -76,7 +79,7 @@ const config = {
     sideBarOpenByDefault: true,
   },
   windows: [
-    { manifestId: ' https://iiif.harvardartmuseums.org/manifests/object/299843' },
+    { manifestId: iiifManifest },
   ],
 };
 
