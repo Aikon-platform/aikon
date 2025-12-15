@@ -31,13 +31,6 @@ import uk.org.llgc.annotation.store.StoreConfig;
 import uk.org.llgc.annotation.store.data.Annotation;
 
 public class CanvasAnnotations extends HttpServlet {
-	// concatenate 2 arrays of any type. see: https://stackoverflow.com/a/784842
-	static <T> T[] concatArrays(T[] first, T[] second) {
-		T[] result = Arrays.copyOf(first, first.length + second.length);
-		System.arraycopy(second, 0, result, first.length, second.length);
-		return result;
-	}
-
 	protected static Logger _logger = LogManager.getLogger(CanvasAnnotations.class.getName());
 	protected AnnotationUtils _annotationUtils = null;
 	protected StoreAdapter _store = null;
@@ -61,6 +54,9 @@ public class CanvasAnnotations extends HttpServlet {
 		AnnotationList tAnnoList = _store.getAnnotationsFromPage(new Canvas(uriOrig, ""));
 		Map<String,Object> tAnnoListJson = tAnnoList.toJson();
 
+		// DIRTY FIX FOR VHS MIRADOR:
+		// VHS's URL has been changed, so the annotations and canvas IDs received from AIKON
+		// are outdated => here, we query once for the new URL, once for the old, and concatenate both results.
 		String uriRewrite = uriOrig.replace("https://vhs.huma-num.fr/", "https://iscd.huma-num.fr/");
 		if ( ! uriRewrite.equals(uriOrig) ) {
 			AnnotationList tAnnoListRewrite = _store.getAnnotationsFromPage(new Canvas(uriRewrite, ""));
