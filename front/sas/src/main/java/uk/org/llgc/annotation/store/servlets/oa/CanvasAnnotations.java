@@ -68,6 +68,9 @@ public class CanvasAnnotations extends HttpServlet {
 			System.out.println(">>>>>>>>>>>>>>>>>>> BASE ANNOTATIONS" +   tAnnoList.getAnnotations().toString());
 			System.out.println(">>>>>>>>>>>>>>>>>>> REWRITE ANNOTATIONS" + tAnnoListRewrite.getAnnotations().toString());
 			System.out.println(">>>>>>>>>>>>>>>>>>> ANNOTATIONS CONCAT" + annotationsConcat.toString());
+			_logger.debug(">>>>>>>>>>>>>>>>>>> BASE ANNOTATIONS" +   tAnnoList.getAnnotations().toString());
+			_logger.debug(">>>>>>>>>>>>>>>>>>> REWRITE ANNOTATIONS" + tAnnoListRewrite.getAnnotations().toString());
+			_logger.debug(">>>>>>>>>>>>>>>>>>> ANNOTATIONS CONCAT" + annotationsConcat.toString());
 		}
 
 		pRes.setContentType("application/ld+json; charset=UTF-8");
