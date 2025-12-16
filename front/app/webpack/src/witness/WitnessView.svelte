@@ -50,7 +50,9 @@
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentRegionId = parseInt(baseUrl.split("regions/")[1].replace("/", ""));
 
-    let activeTab = 0;
+    const tabStorage = "active-tab";
+    let activeTab = Number(localStorage.getItem(tabStorage)) || 0;
+    $: localStorage.setItem(tabStorage, activeTab);
 
     const tabList = [
         appLang === "en" ? "Viewer" : "Visionneuse",

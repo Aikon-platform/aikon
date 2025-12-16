@@ -1,2 +1,2 @@
-export{X as default}from"./witness-4c232e79.js";
+export{X as default}from"./witness-2580e684.js";
 //# sourceMappingURL=witness.js.map
