@@ -216,7 +216,7 @@
             .attr('x', 0)
             .attr('y', height + 10)
             .attr('width', width)
-            .attr('height', 50)
+            .attr('height', 100)
             .append('xhtml:div')
             .style('display', 'flex')
             .style('align-items', 'center')
@@ -278,13 +278,13 @@
     }
 </script>
 
-<div class="document-matrix">
+<div class="document-matrix columns">
     {#if !documents.length}
         <div class="notification is-info">
             Aucun document disponible pour afficher la matrice de similarité.
         </div>
     {:else}
-        <div class="matrix-panel">
+        <div class="matrix-panel column">
             <h3 class="title is-5">Similarity Matrix</h3>
             <div class="matrix-wrapper">
                 <div class="matrix-content">
@@ -301,7 +301,7 @@
         </div>
 
         {#if selectedCell}
-            <div class="scatter-panel">
+            <div class="scatter-panel column">
                 <h3 class="title is-5">Page-by-page similarity</h3>
                 <div bind:this={scatterContainer} class="scatter-container"></div>
             </div>
@@ -315,7 +315,7 @@
         gap: 2rem;
         padding: 1rem;
         overflow-x: auto;
-        height: 90vh;
+        min-height: 90vh;
     }
 
     .scatter-container {

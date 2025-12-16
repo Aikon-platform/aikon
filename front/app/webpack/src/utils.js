@@ -20,7 +20,7 @@ export function extractNb(str) {
 }
 
 export function extractInt(str) {
-    return parseInt(extractNb(str));
+    return parseInt(extractNb(str), 10);
 }
 
 export function shorten(str, maxLen=100) {
@@ -36,7 +36,7 @@ export function getCantaloupeUrl() {
 }
 
 export function getSasUrl() {
-    return sasUrl ?? "http://localhost:3000";
+    return sasUrl ?? "http://localhost:8888";
 }
 
 export function initPagination(pageWritable, urlParam) {
@@ -140,7 +140,7 @@ export function showMessage(msg, title = null, confirm = false) {
             if (title) {
                 document.getElementById("modal-title").innerHTML = title;
             }
-            document.getElementById("modal-body").innerHTML = msg;
+            document.getElementById("modal-msg").innerHTML = msg;
             document.getElementById("hidden-msg-btn").click();
 
             const cancelBtn = document.getElementById("cancel-btn");
@@ -288,4 +288,59 @@ export function generateColor(index) {
     const saturation = saturations[index % saturations.length];
     const lightness = lightnesses[Math.floor(index / saturations.length) % lightnesses.length];
     return `hsl(${Math.floor(hue)}, ${saturation}%, ${lightness}%)`;
+}
+
+export function getColNb(innerWidth=null) {
+    if (innerWidth < 600) {
+        return 1;
+    } else if (innerWidth < 800) {
+        return 2;
+    } else if (innerWidth < 1000) {
+        return 3;
+    } else if (innerWidth < 1200) {
+        return 4;
+    } else if (innerWidth < 1400) {
+        return 5;
+    } else if (innerWidth >= 1400) {
+        return 6;
+    }
+    return 4
+}
+
+export function closeModal(el) {
+    const closeElements = el.querySelectorAll(
+        '.modal-background, .modal-close, .modal-card-head .delete, .modal-card-foot .button-close'
+    );
+
+    const close = () => el.classList.remove('is-active');
+
+    closeElements.forEach(el => el.addEventListener('click', close));
+
+    const handleEscape = (e) => {
+        if (e.key === 'Escape' && el.classList.contains('is-active')) {
+            close();
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    return {
+        destroy() {
+            closeElements.forEach(el => el.removeEventListener('click', close));
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+}
+
+export function openModal(node) {
+    const open = () => {
+        const target = document.getElementById(node.dataset.target);
+        target?.classList.add('is-active');
+    };
+    node.addEventListener('click', open);
+
+    return {
+        destroy() {
+            node.removeEventListener('click', open);
+        }
+    };
 }

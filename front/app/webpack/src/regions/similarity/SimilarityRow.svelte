@@ -4,11 +4,12 @@
     import { similarityStore } from "./similarityStore.js";
     const { selectedRegions } = similarityStore;
     import { appLang, csrfToken } from "../../constants";
-    import { manifestToMirador, refToIIIF, showMessage } from "../../utils.js";
+    import {getColNb, manifestToMirador, refToIIIF, showMessage} from "../../utils.js";
     import { toRegionItem } from "../utils.js";
 
     import SimilarityMatches from "./SimilarityMatches.svelte";
     import PropagatedMatches from "./PropagatedMatches.svelte";
+    import Row from "../../Row.svelte";
 
     /** @typedef {import("../types.js").RegionItemType} RegionItemType */
 
@@ -146,51 +147,44 @@
 
     }
 
-    // TODO make it more responsive
-    $: matchClasses = window.innerWidth < 1500 ? 'fixed-grid has-4-cols' : 'fixed-grid has-5-cols';
+    $: colNb = getColNb(window.innerWidth);
+    $: gridClass = `fixed-grid has-${colNb - 1}-cols`;
 </script>
 
-<tr>
-    <th class="is-3 center-flex is-narrow" style="width: 260px">
-        <div class="content-wrapper py-5">
-            <a class="tag px-2 py-1 mb-2 is-rounded is-hoverable" href="{manifestToMirador(manifest, parseInt(canvas))}" target="_blank">
-                <i class="fa-solid fa-pen-to-square"></i>
-                Page {parseInt(canvas)}
-            </a>
-
-            <!--TODO make image copyable-->
-            <img src="{refToIIIF(qImg, qImg.split('_').pop(), '250,')}" alt="Query region" class="mb-3 card query-image">
-
-            <div class="new-similarity control pt-2 is-center">
-                <div class="tags has-addons" style="flex-wrap: nowrap">
-                    <input bind:value={sImg} class="input is-small tag" type="text"
-                           placeholder="{appLang === 'en' ? 'Add new match' : 'Ajouter une correspondance'}"
-                    />
-                    <button class="button is-small tag is-link is-center" on:click={addMatch}>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-                            <path fill="currentColor" d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 144L48 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l144 0 0 144c0 17.7 14.3 32 32 32s32-14.3 32-32l0-144 144 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-144 0 0-144z"/>
-                        </svg>
-                    </button>
-                </div>
-                <button id="no-match" class="button is-small tag is-danger is-center m-0 {sLen === 1 ? 'visible' : ''}"
-                        on:click={noMatch} transition:fade={{ duration: 500 }}
-                        title="{appLang === 'en' ? 'No match for this region in this witness' : 'Aucune correspondance de cette région pour ce témoin'}">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
-                        <path fill="white" d="M376.6 84.5c11.3-13.6 9.5-33.8-4.1-45.1s-33.8-9.5-45.1 4.1L192 206 56.6 43.5C45.3 29.9 25.1 28.1 11.5 39.4S-3.9 70.9 7.4 84.5L150.3 256 7.4 427.5c-11.3 13.6-9.5 33.8 4.1 45.1s33.8 9.5 45.1-4.1L192 306 327.4 468.5c11.3 13.6 31.5 15.4 45.1 4.1s15.4-31.5 4.1-45.1L233.7 256 376.6 84.5z"/>
+<Row useGrid={false}>
+    <svelte:fragment slot="row-header">
+        <a class="tag px-2 py-1 mb-2 is-rounded is-hoverable" href="{manifestToMirador(manifest, parseInt(canvas))}" target="_blank">
+            <i class="fa-solid fa-pen-to-square"></i>
+            Page {parseInt(canvas)}
+        </a>
+        <img src="{refToIIIF(qImg, qImg.split('_').pop(), '250,')}" alt="Query region" class="mb-3 card query-image">
+        <div class="new-similarity control pt-2 is-center">
+            <div class="tags has-addons" style="flex-wrap: nowrap">
+                <input bind:value={sImg} class="input is-small tag" type="text" placeholder="{appLang === 'en' ? 'Add new match' : 'Ajouter une correspondance'}"/>
+                <button class="button is-small tag is-link is-center" on:click={addMatch}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                        <path fill="currentColor" d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 144L48 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l144 0 0 144c0 17.7 14.3 32 32 32s32-14.3 32-32l0-144 144 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-144 0 0-144z"/>
                     </svg>
                 </button>
             </div>
+            <button id="no-match" class="button is-small tag is-danger is-center m-0 {sLen === 1 ? 'visible' : ''}"
+                    on:click={noMatch} transition:fade={{ duration: 500 }}
+                    title="{appLang === 'en' ? 'No match for this region in this witness' : 'Aucune correspondance de cette région pour ce témoin'}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
+                    <path fill="white" d="M376.6 84.5c11.3-13.6 9.5-33.8-4.1-45.1s-33.8-9.5-45.1 4.1L192 206 56.6 43.5C45.3 29.9 25.1 28.1 11.5 39.4S-3.9 70.9 7.4 84.5L150.3 256 7.4 427.5c-11.3 13.6-9.5 33.8 4.1 45.1s33.8 9.5 45.1-4.1L192 306 327.4 468.5c11.3 13.6 31.5 15.4 45.1 4.1s15.4-31.5 4.1-45.1L233.7 256 376.6 84.5z"/>
+                </svg>
+            </button>
         </div>
-    </th>
-    <td class="p-5 is-fullwidth">
-        <div class="{ isInModal ? '' : matchClasses}">
-            <SimilarityMatches {qImg}></SimilarityMatches>
+    </svelte:fragment>
+    <svelte:fragment slot="row-body">
+        <div class="{isInModal ? '' : gridClass}">
+            <SimilarityMatches {qImg}/>
         </div>
-        <div class="{ isInModal ? '' : matchClasses}">
-            <PropagatedMatches {qImg}></PropagatedMatches>
+        <div class="{isInModal ? '' : gridClass}">
+            <PropagatedMatches {qImg}/>
         </div>
-    </td>
-</tr>
+    </svelte:fragment>
+</Row>
 
 <style>
     .query-image {
@@ -204,9 +198,5 @@
         opacity: 0;
         visibility: hidden;
         transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
-    }
-    .visible {
-        opacity: 1 !important;
-        visibility: visible !important;
     }
 </style>

@@ -4,13 +4,14 @@
 
     import { refToIIIF } from "../utils.js";
     import { appLang } from '../constants';
+    import { regionsSelection } from '../selection/selectionStore.js';
 
-    export let selectable = true;
-    export let copyable = true;
-    export let borderColor = null;
-
-    import { selectionStore } from '../selection/selectionStore.js';
+    export let selectionStore;
+    if (!selectionStore) {
+        selectionStore = regionsSelection;
+    }
     const { isSelected } = selectionStore;
+
     import { regionsStore } from './regionsStore.js';
     const { clipBoard } = regionsStore;
 
@@ -20,13 +21,16 @@
 
     /** @type {RegionItemType} */
     export let item;
-    /** @type {Promise<string>?} TODO CHANGE THAT */
+    /** @type {Promise<string>?} */
     export let descPromise = undefined;
     /** @type {boolean} enforce a small square display. if `height === "full"`, will be switched to `false`. see below */
     export let isSquare = true;
     /** @type {number|"full"} either a dimension in pixels, or the "full" keyword used by the IIIF image api */
     export let height = isSquare ? 96 : 140;
     if ( height === "full" ) { isSquare = false }
+    export let borderColor = null;
+
+    export let toggleSelection = selectionStore.toggle;
 
     /////////////////////////////////////////////
     /** @type {RegionItemType?} defined in `SimilarityRow`.
@@ -46,6 +50,9 @@
     if ( !isInModal ) {
         import("./modal/ModalController.svelte").then((res) => modalControllerComponent = res.default);
     }
+
+    export let selectable = !isInModal;
+    export let copyable = true;
 
     $: desc = item.title;
     $: if (descPromise) {
@@ -67,7 +74,7 @@
 >
     <figure class="image card region-image {isSquare ? 'is-96x96' : ''}" tabindex="-1"
             style="{height==='full' ? 'height: 100%' : `height: ${height}px; min-width: ${height}px`}; {borderColor ? `border: 5px solid ${borderColor};` : ''}"
-            on:click={() => selectable ? selectionStore.toggle(item) : null} on:keyup={() => null}>
+            on:click={() => selectable ? toggleSelection(item) : null} on:keyup={() => null}>
         <img class="region-img" src={imgSrc} alt="Extracted region"/>
         <div class="overlay is-center">
             <span class="overlay-desc">{@html desc}</span>

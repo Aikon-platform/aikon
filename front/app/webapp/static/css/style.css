@@ -382,3 +382,14 @@ td.is-fullwidth {
     z-index: 2;
     position: relative;
 }
+
+.visible {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+.ctrl-extra .ctrl-block {
+    width: 100%;
+    display: grid;
+    grid-template-rows: 100%;
+    grid-template-columns: 1fr 5.7fr; /** make items seem horizontally centered with .ctrl-base .ctrl-block */
+}

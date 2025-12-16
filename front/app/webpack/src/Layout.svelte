@@ -1,26 +1,76 @@
 <script>
+    import Loading from "./Loading.svelte";
+    import Modal from "./Modal.svelte";
+
     export let sidebarWidth = "25";
     export const layoutHeight = "90vh";
-    export let activeTab = 0;
-    export let tabList = [];
+    export let tabList = {};
+
+    let availableTabs = Object.keys(tabList);
+    export let topOffsetElement = null;
+
+    function updateTopOffset(element = null) {
+        if (!element) {
+            element = document.getElementById("navbar");
+        }
+        document.documentElement.style.setProperty('--top-offset', `${element.offsetHeight}px`);
+    }
+    updateTopOffset(topOffsetElement)
+
+    // import {onMount} from "svelte";
+    // let resizeObserver;
+    // onMount(() => {
+    //     const tabs = document.getElementById("tabs");
+    //     updateTopOffset(tabs);
+    //
+    //     resizeObserver = new ResizeObserver(() => {
+    //         updateTopOffset(tabs);
+    //     });
+    //
+    //     if (tabs) {
+    //         resizeObserver.observe(tabs);
+    //     }
+    //
+    //     return () => {
+    //         if (resizeObserver && tabs) {
+    //             resizeObserver.unobserve(tabs);
+    //             resizeObserver.disconnect();
+    //         }
+    //     };
+    // });
+
+    $: activeTab = new URLSearchParams(window.location.search).get("tab") ?? availableTabs[0] ?? null;
+
+    function changeTab(tab) {
+        if (!availableTabs.includes(tab)) {
+            console.warn(`Tab "${tab}" is not available.`);
+            return;
+        }
+        activeTab = tab;
+        const url = new URL(window.location);
+        url.searchParams.set("tab", tab);
+        window.history.pushState({}, "", url);
+    }
 </script>
+
+<Loading/>
+<!--<Modal/>-->
 
 <div class="layout" style="min-height: {layoutHeight};">
     <aside class="sidebar" style="width: {sidebarWidth}%; min-height: {layoutHeight};">
         <slot name="sidebar"/>
     </aside>
 
-
     <main class="main-content" style="width: {100-sidebarWidth}%; min-height: {layoutHeight};">
-        <nav class="tabs-bar">
+        <nav id="tabs" class="tabs-bar">
             {#if $$slots.tabs}
                 <slot name="tabs" {activeTab}/>
-            {:else if tabList.length}
+            {:else if Object.keys(tabList).length}
                 <div class="tabs">
                     <ul>
-                        {#each tabList as tab, index}
-                            <li class:is-active={activeTab === index}>
-                                <a on:click={() => activeTab = index} href="{null}">{tab}</a>
+                        {#each Object.entries(tabList) as [tabRef, tabTitle]}
+                            <li class:is-active={activeTab === tabRef}>
+                                <a on:click={() => changeTab(tabRef)} href="{null}">{tabTitle}</a>
                             </li>
                         {/each}
                     </ul>

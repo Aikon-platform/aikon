@@ -4,8 +4,10 @@ import { similarityStore } from './similarityStore.js';
 const { getRegionsInfo } = similarityStore;
 
 /**
- * create a descripton to be displayed when hovering on a similarity image.
- * outside of `SimilarityMatches`, it is possible that the similarity's region (identified by `regionRef`) is not contained in `similarityStore.comparedRegions`, that contains metata om the regions. in that cxase, we fetch data from the backend.
+ * create a description to be displayed when hovering on a similarity image.
+ * Outside `SimilarityMatches`, it is possible that the similarity's region (identified by `regionRef`)
+ * is not contained in `similarityStore.comparedRegions`, that contains metadata on the regions.
+ * In that case, we fetch data from the backend.
  * @param {string} regionRef
  * @param {number} similarityType
  * @param {number?} score

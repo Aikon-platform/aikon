@@ -1,12 +1,14 @@
 <script>
     import Item from "./Item.svelte";
 	import Modal from '../Modal.svelte';
-    import {selectionStore} from "../selection/selectionStore.js";
     import {appLang, appName} from "../constants.js";
     import { showMessage } from "../utils";
-    const { isSetSelected } = selectionStore;
+
     export let item;
     export let recordsStore;
+
+    import { recordsSelection } from "../selection/selectionStore.js";
+    const { isSetSelected } = recordsSelection;
     $: setSelected = $isSetSelected(item);
 
     function getColor(status) {
@@ -50,7 +52,7 @@
 
 <Item {item} {recordsStore}>
     <div slot="buttons">
-        <button class="button" class:is-inverted={setSelected} on:click={() => selectionStore.toggleSet(item)}>
+        <button class="button" class:is-inverted={setSelected} on:click={() => recordsSelection.toggleSet(item)}>
             {#if appLang === 'en'}
                 {setSelected ? 'Unload from' : 'Load to'} selection
             {:else}

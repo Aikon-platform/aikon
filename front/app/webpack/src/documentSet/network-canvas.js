@@ -50,7 +50,7 @@ export function createCanvas(div, nodes, links = null, onSelectionChange, onMode
     const simulation = d3.forceSimulation(nodes)
         .force("link", d3.forceLink(links)
             .id(d => d.id)
-            .strength(d => d.strength)
+            //.strength(d => d.strength)
             .distance(d => d.distance)
         )
         .force("charge", d3.forceManyBody().strength(-250))
@@ -119,13 +119,13 @@ export function createCanvas(div, nodes, links = null, onSelectionChange, onMode
 
     function render() {
         ctx.save();
-        ctx.fillStyle = "#ffffff";
+        // ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, width, height);
 
         ctx.translate(transform.x, transform.y);
         ctx.scale(transform.k, transform.k);
 
-        ctx.strokeStyle = "#999";
+        ctx.strokeStyle = "#8a8a8a";
         ctx.lineWidth = 1 / transform.k;
 
         links.forEach(link => {
