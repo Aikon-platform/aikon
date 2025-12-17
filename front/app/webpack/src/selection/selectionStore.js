@@ -168,8 +168,12 @@ function createTypedSelectionStore(config) {
         ),
 
         nbSelected: derived(selection, $sel =>
-            Object.values($sel.selected).reduce(
-                (count, items) => count + Object.keys(items).length, 0
+            Object.entries($sel.selected).reduce(
+                (count, [model, items]) =>
+                    model === "User"
+                        ? count
+                        : count + Object.keys(items).length,
+                0
             )
         ),
         isSetSelected: derived(selection, $sel =>

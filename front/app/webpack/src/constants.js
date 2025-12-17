@@ -18,4 +18,5 @@ export const model2title = {
     "Work": appLang === "en"  ? "Work" : "Œuvre",
     "Series": appLang === "en"  ? "Series" : "Série d'imprimés",
     "Regions": appLang === "en"  ? "Region Extraction" : "Extraction d'illustrations",
+    "User": appLang === "en" ? "User" : "Utilisateur"
 }
