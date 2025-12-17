@@ -3,6 +3,7 @@
     import SelectionFooter from "./SelectionFooter.svelte";
 
     import { recordsSelection } from "./selectionStore.js";
+    import {appLang} from "../constants.js";
     const { selected } = recordsSelection;
 
     export let selectionStore;
@@ -111,7 +112,7 @@
         <section class="modal-card-body">
             <slot />
 
-            <h4 class="title is-6 mt-3 mb-2">Shared with</h4>
+            <h4>{appLang === 'en' ? 'Shared with' : 'Partagé avec'}</h4>
             <div class="field is-grouped is-grouped-multiline">
                 {#each selectedUsers as user (user.id)}
                     <div class="tags has-addons">
@@ -141,18 +142,18 @@
                         </p>
                     </div>
                 </div>
-                    {#if userResults.length > 0}
-                        <div class="dropdown-menu" id="dropdown-menu" role="menu">
-                            <div class="dropdown-content">
-                                {#each userResults as user}
-                                    <div class="dropdown-item"
-                                        on:click={() => addUser(user)} on:keydown={null}>
-                                        {user.username}
-                                    </div>
-                                {/each}
-                            </div>
+                {#if userResults.length > 0}
+                    <div class="dropdown-menu" id="dropdown-menu" role="menu">
+                        <div class="dropdown-content">
+                            {#each userResults as user}
+                                <div class="dropdown-item"
+                                    on:click={() => addUser(user)} on:keydown={null}>
+                                    {user.username}
+                                </div>
+                            {/each}
                         </div>
-                    {/if}
+                    </div>
+                {/if}
             </div>
         </section>
 
@@ -175,5 +176,9 @@
         border: none;
         border-bottom: 1px solid var(--bulma-link);
         border-radius: 0;
+    }
+
+    .tags:last-of-type {
+        margin-bottom: .8em;
     }
 </style>
