@@ -4,8 +4,8 @@
     import { refToIIIF, loading } from "../utils.js";
     import { appLang, regionsType, modules } from "../constants";
 
-    import { selectionStore } from "../selection/selectionStore.js";
-    const { selected } = selectionStore;
+    import { regionsSelection } from "../selection/selectionStore.js";
+    const { selected, nbSelected, remove } = regionsSelection;
     import { regionsStore } from "../regions/regionsStore.js";
     const { allRegions, fetchAll } = regionsStore;
 
@@ -43,24 +43,25 @@
     setContext("manifest", manifest);
     setContext("isValidated", isValidated);
 
-    $: selectedRegions = $selected(true);
-    $: selectionLength = Object.keys(selectedRegions).length;
+    $: selectedRegions = $selected;
+    $: selectionLength = $nbSelected;
     $: areSelectedRegions = selectionLength > 0;
 
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentRegionId = parseInt(baseUrl.split("regions/")[1].replace("/", ""));
 
-    const tabStorage = "active-tab";
-    let activeTab = Number(localStorage.getItem(tabStorage)) || 0;
-    $: localStorage.setItem(tabStorage, activeTab);
+    const tabList = {
+        viewer: appLang === "en" ? "Viewer" : "Visionneuse",
+        all: appLang === "en" ? "All regions" : "Toutes les régions",
+        page: appLang === "en" ? "Per page" : "Par page",
+    };
 
-    const tabList = [
-        appLang === "en" ? "Viewer" : "Visionneuse",
-        appLang === "en" ? "All regions" : "Toutes les régions",
-        appLang === "en" ? "Per page" : "Par page",
-    ];
-    if (modules.includes("similarity")) tabList.push(appLang === "en" ? "Similarity" : "Similarité");
-    if (modules.includes("vectorization")) tabList.push(appLang === "en" ? "Vectorization" : "Vectorisation");
+    if (modules.includes("similarity")) {
+        tabList.similarity = appLang === "en" ? "Similarity" : "Similarité";
+    }
+    if (modules.includes("vectorization")) {
+        tabList.vectorization = appLang === "en" ? "Vectorization" : "Vectorisation";
+    }
 </script>
 
 <Loading visible={$loading} />
@@ -69,12 +70,12 @@
 
 <SelectionBtn {selectionLength} />
 
-<Layout bind:activeTab {tabList}>
-    <div slot="sidebar">
+<Layout {tabList}>
+    <div slot="sidebar" let:activeTab>
         <WitnessPanel {witness} {editUrl} {viewTitle} />
     </div>
 
-    <div slot="content">
+    <div slot="content" let:activeTab>
         {#if manifests.length === 0}
             <article class="message is-warning">
                 <div class="message-body">
@@ -99,10 +100,10 @@
                 </div>
             </div>
 
-            {#if activeTab === 0}
+            {#if activeTab === "viewer"}
                 <Viewer />
 
-            {:else if activeTab === 1}
+            {:else if activeTab === "all"}
                 <div class="grid is-gap-2 mt-5">
                     {#await fetchAll}
                         <div class="faded is-center">
@@ -119,34 +120,36 @@
                     {/await}
                 </div>
 
-            {:else if activeTab === 2}
+            {:else if activeTab === "page"}
                 <PageRegions />
 
-            {:else if activeTab === 3}
+            {:else if activeTab === "similarity"}
                 <Similarity />
 
-            {:else if activeTab === 4}
+            {:else if activeTab === "vectorization"}
                 <Vectorization />
             {/if}
         {/if}
     </div>
 </Layout>
 
-<SelectionModal isRegion={true} {selectionLength}>
+<SelectionModal {selectionLength} selectionStore={regionsSelection}>
     {#if areSelectedRegions}
         <div class="fixed-grid has-6-cols">
             <div class="grid is-gap-2">
-                {#each Object.entries(selectedRegions) as [id, meta]}
-                    <div class="selection cell">
-                        <figure class="image is-64x64 card">
-                            <img src="{refToIIIF(meta.img, meta.xywh, '96,')}" alt="" />
-                            <div class="overlay is-center">
-                                <span class="overlay-desc">{meta.title}</span>
-                            </div>
-                        </figure>
-                        <button class="delete region-btn"
-                            on:click={() => selectionStore.remove(id, regionsType)} />
-                    </div>
+                {#each Object.entries(selectedRegions) as [type, selectedItems]}
+                    {#each Object.entries(selectedItems) as [id, meta]}
+                        <div class="selection cell">
+                            <figure class="image is-64x64 card">
+                                <img src="{refToIIIF(meta.img, meta.xywh, '96,')}" alt="" />
+                                <div class="overlay is-center">
+                                    <span class="overlay-desc">{meta.title}</span>
+                                </div>
+                            </figure>
+                            <button class="delete region-btn"
+                                on:click={() => remove(id, regionsType)} />
+                        </div>
+                    {/each}
                 {/each}
             </div>
         </div>

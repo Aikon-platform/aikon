@@ -87,15 +87,10 @@
     </div>
 {/await}
 
-<<<<<<< HEAD
-<SelectionModal {selectionLength}>
-    {#each selectedRecords as [type, selectedItems]}
-        {#if Object.values(selectedItems).length > 0 && type !== "User"}
-=======
 <SelectionModal {selectionLength} selectionStore={recordsSelection}>
     {#each Object.entries(selectedRecords) as [type, selectedItems]}
-        {#if Object.values(selectedItems).length > 0 && type in model2title}
->>>>>>> main
+        {#if Object.values(selectedItems).length > 0 && type in model2title && type !== "User"}
+
             <h3>{model2title[type]}</h3>
             <table class="table pl-2 is-fullwidth">
                 <tbody>

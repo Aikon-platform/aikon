@@ -5,11 +5,15 @@
     import {appLang, mediaPrefix} from "../../constants.js";
     import { refToIIIF } from "../../utils.js";
 
-    import { selectionStore } from "../../selection/selectionStore.js";
+    import { regionsSelection } from '../../selection/selectionStore.js';
+
+    export let selectionStore;
+    if (!selectionStore) {
+        selectionStore = regionsSelection;
+    }
     const { isSelected } = selectionStore;
 
-    import { regionsStore } from "../../regions/regionsStore.js";
-    const { clipBoard } = regionsStore;
+    export let toggleSelection = selectionStore.toggle;
 
     export let svgPath;
     export let width = 200;
@@ -76,7 +80,7 @@
             width: {fullWidth ? '50%' : `${width}px`};
             aspect-ratio:{svgViewBox ? svgViewBox.split(' ')[2] / svgViewBox.split(' ')[3] : 1};
         "
-        on:click={() => selectable ? selectionStore.toggle(item) : null}
+        on:click={() => selectable ? toggleSelection(item) : null}
         on:keyup={null}
         on:mouseenter={() => isHovered = true}
         on:mouseleave={() => isHovered = false}
