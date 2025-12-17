@@ -3,13 +3,16 @@
     import SelectionFooter from "./SelectionFooter.svelte";
 
     import { recordsSelection } from "./selectionStore.js";
-    import {appLang} from "../constants.js";
+    import { appLang, userId, isSuperuser } from "../constants.js";
     const { selected } = recordsSelection;
 
     export let selectionStore;
     export let selectionLength = false;
 
     const { selectionTitle, updateTitle, save } = selectionStore;
+
+    $: ownerId = $selected?.owner_id;
+    $: isOwner = isSuperuser || ownerId === userId;
 
     let isEditing = false;
     let titleInput;
@@ -119,42 +122,46 @@
                         <span class="tag">
                             {user.username}
                         </span>
-                        <button
-                            class="tag is-delete"
-                            on:click={() => removeUser(user.id)}
-                        >
-                        </button>
+                        {#if isOwner}
+                            <button
+                                class="tag is-delete"
+                                on:click={() => removeUser(user.id)}
+                            >
+                            </button>
+                        {/if}
                     </div>
                 {/each}
             </div>
 
-            <div class="dropdown is-active">
-                <div class="dropdown-trigger">
-                    <div class="field">
-                        <p class="control is-expanded has-icons-right">
-                            <input
-                                class="input"
-                                placeholder="Search users…"
-                                bind:value={userQuery}
-                                on:input={searchUsers}
-                            />
-                            <span class="icon is-small is-right"><i class="fas fa-search"></i></span>
-                        </p>
-                    </div>
-                </div>
-                {#if userResults.length > 0}
-                    <div class="dropdown-menu" id="dropdown-menu" role="menu">
-                        <div class="dropdown-content">
-                            {#each userResults as user}
-                                <div class="dropdown-item"
-                                    on:click={() => addUser(user)} on:keydown={null}>
-                                    {user.username}
-                                </div>
-                            {/each}
+            {#if isOwner}
+                <div class="dropdown is-active">
+                    <div class="dropdown-trigger">
+                        <div class="field">
+                            <p class="control is-expanded has-icons-right">
+                                <input
+                                    class="input"
+                                    placeholder="Search users…"
+                                    bind:value={userQuery}
+                                    on:input={searchUsers}
+                                />
+                                <span class="icon is-small is-right"><i class="fas fa-search"></i></span>
+                            </p>
                         </div>
                     </div>
-                {/if}
-            </div>
+                    {#if userResults.length > 0}
+                        <div class="dropdown-menu" id="dropdown-menu" role="menu">
+                            <div class="dropdown-content">
+                                {#each userResults as user}
+                                    <div class="dropdown-item"
+                                        on:click={() => addUser(user)} on:keydown={null}>
+                                        {user.username}
+                                    </div>
+                                {/each}
+                            </div>
+                        </div>
+                    {/if}
+                </div>
+            {/if}
         </section>
 
         <SelectionFooter {selectionStore} />
@@ -179,6 +186,6 @@
     }
 
     .tags:last-of-type {
-        margin-bottom: .8em;
+        margin-bottom: 0.75em;
     }
 </style>
