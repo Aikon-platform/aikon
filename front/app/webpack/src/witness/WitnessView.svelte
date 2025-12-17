@@ -89,11 +89,11 @@
                         <RegionsBtn {baseUrl} {currentRegionId} {activeTab}/>
                     </div>
                     <div class="cell">
-                        {#if activeTab === 1 || activeTab === 2 }
+                        {#if activeTab === "all" || activeTab === "page" }
                             <ActionButtons />
-                        {:else if activeTab === 0}
+                        {:else if activeTab === "viewer"}
                             <WitnessBtn {manifests} />
-                        {:else if activeTab === 4}
+                        {:else if activeTab === "vectorization"}
                             <ExportButtons/>
                         {/if}
                     </div>
