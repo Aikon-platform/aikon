@@ -17,16 +17,17 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     function findClusters(pairs) {
         if (pairs.length === 0) return [];
         const parent = new Map();
+        const ref2Id = new Map();
 
-        const find = (img) => {
-            if (!parent.has(img)) {
-                parent.set(img, img);
-                return img;
+        const find = (ref) => {
+            if (!parent.has(ref)) {
+                parent.set(ref, ref);
+                return ref;
             }
-            if (parent.get(img) !== img) {
-                parent.set(img, find(parent.get(img)));
+            if (parent.get(ref) !== ref) {
+                parent.set(ref, find(parent.get(ref)));
             }
-            return parent.get(img);
+            return parent.get(ref);
         };
 
         const union = (a, b) => {
@@ -37,22 +38,25 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             }
         };
 
-        const imageIds = new Set();
+        const refs = new Set();
         pairs.forEach(p => {
-            if (p.category === 1){
-                union(p.id_1, p.id_2)
-                imageIds.add(p.id_1);
-                imageIds.add(p.id_2);
+            if (p.category === 1) {
+                union(p.ref_1, p.ref_2);
+                refs.add(p.ref_1);
+                refs.add(p.ref_2);
+
+                ref2Id.set(p.ref_1, p.id_1);
+                ref2Id.set(p.ref_2, p.id_2);
             }
         });
 
         const clusterMap = new Map();
-        imageIds.forEach(imgId => {
-            const root = find(imgId);
+        refs.forEach(ref => {
+            const root = find(ref);
             if (!clusterMap.has(root)) {
                 clusterMap.set(root, []);
             }
-            clusterMap.get(root).push(imgId);
+            clusterMap.get(root).push(ref2Id.get(ref));
         });
 
         return Array.from(clusterMap.values())
@@ -61,7 +65,8 @@ export function createClusterStore(documentSetStore, clusterSelection) {
                 const maxEdges = (n * (n - 1)) / 2;
                 const imageSet = new Set(members);
                 const actualLinks = pairs.filter(p =>
-                    p.category === 1 && imageSet.has(p.id_1) && imageSet.has(p.id_2)
+                    p.category === 1 &&
+                    imageSet.has(p.id_1) && imageSet.has(p.id_2)
                 ).length;
 
                 return {
@@ -105,7 +110,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         const {img: img2, regionId: reg2} = imgRef2pairData(ref2);
         return {
             img_1: img1, img_2: img2,
-            regions_id_1: reg1, regions_id_2: reg2
+            // regions_id_1: reg1, regions_id_2: reg2
         };
     };
 

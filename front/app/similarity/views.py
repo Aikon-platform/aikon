@@ -669,8 +669,6 @@ def exact_match_batch(request):
             region_pair, created = get_or_create_pair(
                 pair_data["img_1"],
                 pair_data["img_2"],
-                pair_data["regions_id_1"],
-                pair_data["regions_id_2"],
             )
 
             # if created:
@@ -721,8 +719,6 @@ def uncategorize_pair_batch(request):
             pair, _ = get_or_create_pair(
                 pair_data["img_1"],
                 pair_data["img_2"],
-                pair_data["regions_id_1"],
-                pair_data["regions_id_2"],
                 create=False,
             )
             if pair and pair.category is not None:
