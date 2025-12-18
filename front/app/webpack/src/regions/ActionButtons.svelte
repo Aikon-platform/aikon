@@ -7,6 +7,10 @@
     const { allRegions } = regionsStore;
     import { appName, appLang, regionsType, csrfToken } from '../constants';
 
+    /** @type {number?} ID of the currently selected region (if there is a currently selected region) */
+    export let currentRegionId;
+    console.log(">>>", currentRegionId);
+
     const manifest = getContext('manifest');
     const manifestShortId = manifest.split("/").at(-2);
     const isValidated = getContext('isValidated');
@@ -122,8 +126,9 @@
             <i class="fa-solid fa-rotate-right"></i>
             {appLang === 'en' ? 'Reload' : "Recharger"}
         </button>
-        <!-- when no regions extraction have been made, we hide the button: "Go to editor" redirects to a Mirador editor for a specific region extraction, which hasn't been created yet -->
-        {#if manifest.length}
+        <!-- when no regions extraction have been made, we hide the button: "Go to editor" redirects
+          to a Mirador editor for a specific region extraction, which hasn't been created yet -->
+        {#if manifest.length && currentRegionId}
             <a class="tag is-link is-rounded mr-3" href="{manifestToMirador(manifest)}" target="_blank">
                 <i class="fa-solid fa-edit"></i>
                 {appLang === 'en' ? 'Go to editor' : "Aller à l'éditeur"}

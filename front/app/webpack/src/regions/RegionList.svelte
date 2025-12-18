@@ -72,7 +72,7 @@
         </div>
         {#if ["all", "page"].includes(currentLayout)}
             <div class="cell" transition:fade={{ duration: 500 }}>
-                <ActionButtons/>
+                <ActionButtons {currentRegionId}/>
             </div>
         {/if}
     </div>
