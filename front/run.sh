@@ -47,7 +47,10 @@ AIIINOTATE_PID=$!
 PIDS+=($AIIINOTATE_PID)
 
 rm -rf "$ANNOTATIONS_DIR"/dist "$ANNOTATIONS_DIR"/.parcel-cache
-"$ANNOTATIONS_BIN"/dotenvx run -f "$ENV_FILE" -- "$ANNOTATIONS_BIN"/parcel "$ANNOTATIONS_DIR"/src/index.html --port "$MIRADOR_PORT" --dist-dir "$ANNOTATIONS_DIR/dist" &
+"$ANNOTATIONS_BIN"/dotenvx run -f "$ENV_FILE" -- \
+"$ANNOTATIONS_BIN"/parcel "$ANNOTATIONS_DIR"/src/index.html \
+    --port "$MIRADOR_PORT" \
+    --dist-dir "$ANNOTATIONS_DIR/dist" &
 MIRADOR_PID=$!
 PIDS+=($MIRADOR_PID)
 

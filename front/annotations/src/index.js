@@ -5,7 +5,6 @@ import 'react-quill/dist/quill.snow.css';
 const iiifAnnotationVersion = 2;
 const { AiiinotateAdapter } = Mae.at(-1);
 
-
 const
   windowUrl = new URL(window.location.href),
   iiifManifest = windowUrl.searchParams.get("iiif-content"),

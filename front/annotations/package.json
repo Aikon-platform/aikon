@@ -14,6 +14,7 @@
   "author": "",
   "license": "GPL-3.0-or-later",
   "dependencies": {
+    "@dotenvx/dotenvx": "^1.51.2",
     "http-server": "^14.1.1",
     "mirador": "^4.0.0",
     "mirador-annotation-editor": "^1.1.6",
