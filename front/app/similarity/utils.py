@@ -804,7 +804,10 @@ def retrieve_pair(img1, img2, regions_id_1, regions_id_2, create=False):
 
 
 def get_or_create_pair(img_1, img_2, regions_id_1, regions_id_2, create=True):
-    img_1, img_2 = sorted([img_1, img_2], key=sort_key)
+    if sort_key(img_2) < sort_key(img_1):
+        img_1, img_2 = img_2, img_1
+        regions_id_1, regions_id_2 = regions_id_2, regions_id_1
+
     existing_pair = RegionPair.objects.filter(
         Q(img_1=img_1, img_2=img_2) | Q(img_1=img_2, img_2=img_1)
     ).first()
