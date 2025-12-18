@@ -6,7 +6,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     const pageLength = 10;
     const currentPage = writable(1);
 
-    const {allPairs, imageNodes} = documentSetStore;
+    const {allPairs} = documentSetStore;
 
     initPagination(currentPage, "p");
 
@@ -17,17 +17,16 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     function findClusters(pairs) {
         if (pairs.length === 0) return [];
         const parent = new Map();
-        const ref2Id = new Map();
 
-        const find = (ref) => {
-            if (!parent.has(ref)) {
-                parent.set(ref, ref);
-                return ref;
+        const find = (img) => {
+            if (!parent.has(img)) {
+                parent.set(img, img);
+                return img;
             }
-            if (parent.get(ref) !== ref) {
-                parent.set(ref, find(parent.get(ref)));
+            if (parent.get(img) !== img) {
+                parent.set(img, find(parent.get(img)));
             }
-            return parent.get(ref);
+            return parent.get(img);
         };
 
         const union = (a, b) => {
@@ -38,25 +37,22 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             }
         };
 
-        const refs = new Set();
+        const imageIds = new Set();
         pairs.forEach(p => {
-            if (p.category === 1) {
-                union(p.ref_1, p.ref_2);
-                refs.add(p.ref_1);
-                refs.add(p.ref_2);
-
-                ref2Id.set(p.ref_1, p.id_1);
-                ref2Id.set(p.ref_2, p.id_2);
+            if (p.category === 1){
+                union(p.id_1, p.id_2)
+                imageIds.add(p.id_1);
+                imageIds.add(p.id_2);
             }
         });
 
         const clusterMap = new Map();
-        refs.forEach(ref => {
-            const root = find(ref);
+        imageIds.forEach(imgId => {
+            const root = find(imgId);
             if (!clusterMap.has(root)) {
                 clusterMap.set(root, []);
             }
-            clusterMap.get(root).push(ref2Id.get(ref));
+            clusterMap.get(root).push(imgId);
         });
 
         return Array.from(clusterMap.values())
@@ -65,8 +61,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
                 const maxEdges = (n * (n - 1)) / 2;
                 const imageSet = new Set(members);
                 const actualLinks = pairs.filter(p =>
-                    p.category === 1 &&
-                    imageSet.has(p.id_1) && imageSet.has(p.id_2)
+                    p.category === 1 && imageSet.has(p.id_1) && imageSet.has(p.id_2)
                 ).length;
 
                 return {
