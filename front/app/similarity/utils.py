@@ -807,19 +807,43 @@ def get_or_create_pair(img_1, img_2, regions_id_1, regions_id_2, create=True):
     if sort_key(img_2) < sort_key(img_1):
         img_1, img_2 = img_2, img_1
         regions_id_1, regions_id_2 = regions_id_2, regions_id_1
+    regions_id_1, regions_id_2 = int(regions_id_1), int(regions_id_2)
 
     existing_pair = RegionPair.objects.filter(
         Q(img_1=img_1, img_2=img_2) | Q(img_1=img_2, img_2=img_1)
     ).first()
 
     if existing_pair:
-        rid_1, rid_2 = existing_pair.regions_id_1, existing_pair.regions_id_2
-        region_ids = [int(regions_id_2), int(regions_id_1)]
-        if (rid_1 not in region_ids) or (rid_2 not in region_ids):
+        is_same_order = existing_pair.img_1 == img_1
+        existing_rid_1, existing_rid_2 = (
+            existing_pair.regions_id_1,
+            existing_pair.regions_id_2,
+        )
+
+        if is_same_order:
+            expected_rid_1, expected_rid_2 = regions_id_1, regions_id_2
+        else:
+            expected_rid_1, expected_rid_2 = regions_id_2, regions_id_1
+
+        needs_correction = (
+            existing_rid_1 != expected_rid_1 or existing_rid_2 != expected_rid_2
+        )
+
+        if needs_correction:
             log(
-                f"[get_or_create_pair] Region pair for {img_1}-{img_2} already exists for regions {rid_1}/{rid_2} instead of {regions_id_1}/{regions_id_2}",
-                msg_type="error",
+                f"[get_or_create_pair] Correcting pair {existing_pair.img_1}-{existing_pair.img_2}: "
+                f"regions ({existing_rid_1}/{existing_rid_2}) → ({expected_rid_1}/{expected_rid_2})",
             )
+            existing_pair.regions_id_1 = expected_rid_1
+            existing_pair.regions_id_2 = expected_rid_2
+
+        if not is_same_order:
+            log(
+                f"[get_or_create_pair] Normalizing image order for {existing_pair.img_1}-{existing_pair.img_2}",
+            )
+            existing_pair.img_1 = img_1
+            existing_pair.img_2 = img_2
+
         return existing_pair, False
 
     if not create:
