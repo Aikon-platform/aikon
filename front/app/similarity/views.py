@@ -673,14 +673,22 @@ def exact_match_batch(request):
                 pair_data["regions_id_2"],
             )
 
+            # if created:
+            #     region_pair.category = 1
+            #     pairs_to_create.append(region_pair)
+            # elif region_pair.category != 1:
+            #     region_pair.category = 1
+            #     pairs_to_update.append(region_pair)
+            # else:
+            #     results["already_matched"] += 1
+            log(
+                f"[exact_match_batch] Pair ({created}): {region_pair.img_1}-{region_pair.img_2} => {region_pair.category}"
+            )
+            region_pair.category = 1
             if created:
-                region_pair.category = 1
                 pairs_to_create.append(region_pair)
-            elif region_pair.category != 1:
-                region_pair.category = 1
-                pairs_to_update.append(region_pair)
             else:
-                results["already_matched"] += 1
+                pairs_to_update.append(region_pair)
 
         if pairs_to_create:
             RegionPair.objects.bulk_create(pairs_to_create)
