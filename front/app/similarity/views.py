@@ -695,7 +695,10 @@ def exact_match_batch(request):
             results["created"] = len(pairs_to_create)
 
         if pairs_to_update:
-            RegionPair.objects.bulk_update(pairs_to_update, ["category"])
+            RegionPair.objects.bulk_update(
+                pairs_to_update,
+                ["category", "regions_id_1", "regions_id_2", "img_1", "img_2"],
+            )
             results["updated"] = len(pairs_to_update)
 
         return JsonResponse({"status": "success", "results": results}, status=200)
