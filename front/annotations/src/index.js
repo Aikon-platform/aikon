@@ -8,7 +8,7 @@ const { AiiinotateAdapter } = Mae.at(-1);
 const
   windowUrl = new URL(window.location.href),
   iiifManifest = windowUrl.searchParams.get("iiif-content"),
-  iiifCanvas = windowUrl.searchParams.get("canvas");
+  iiifCanvasIndex = windowUrl.searchParams.get("canvas");
 
 const config = {
   id: 'miradorRoot',
@@ -79,7 +79,10 @@ const config = {
     sideBarOpenByDefault: true,
   },
   windows: [
-    { manifestId: iiifManifest },
+    {
+      manifestId: iiifManifest,
+      canvasIndex: iiifCanvasIndex
+    },
   ],
 };
 

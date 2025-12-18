@@ -89,7 +89,7 @@ export function refToIIIFInfo(imgRef=null) {
     return `${refToIIIFRoot(imgRef)}/info.json`;
 }
 
-export function manifestToMirador(manifest = null, canvasNb = 1) {
+export function manifestToMirador(manifest = null, canvasNb = 0) {
     return `${getMiradorUrl()}/index.html?iiif-content=${manifest}&canvas=${canvasNb}`;
 }
 
