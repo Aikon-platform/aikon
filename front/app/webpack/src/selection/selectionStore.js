@@ -13,6 +13,7 @@ function createTypedSelectionStore(config) {
         id: null,
         type,
         title,
+        is_public: false,
         // <{model_name: {record_id: {record_meta}, record_id: {record_meta}}, model_name: {...}, ...}>
         selected: {}
     };
@@ -49,6 +50,7 @@ function createTypedSelectionStore(config) {
                 },
                 body: JSON.stringify({
                     title: set.title,
+                    is_public: set.is_public,
                     selection: set,
                     ...selectedIds
                 })
@@ -59,6 +61,7 @@ function createTypedSelectionStore(config) {
                 selection.update(current => {
                     current.id = data.document_set_id;
                     current.title = data.document_set_title;
+                    current.is_public = data.is_public;
                     store(current, true);
                     return current;
                 });
@@ -151,6 +154,11 @@ function createTypedSelectionStore(config) {
 
         updateTitle: (title) => selection.update(set => {
             set.title = title;
+            store(set, true);
+            return set;
+        }),
+        updatePublic: (is_public) => selection.update(set => {
+            set.is_public = is_public;
             store(set, true);
             return set;
         }),

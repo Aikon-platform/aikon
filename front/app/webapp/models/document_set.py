@@ -205,6 +205,7 @@ class DocumentSet(AbstractSearchableModel):
                 "type": "documentSet",
                 "title": self.title,
                 "owner_id": self.user.id,
+                "is_public": self.is_public,
                 "selected": self.get_document_metadata(),
             }
             type(self).objects.filter(pk=self.pk).update(selection=json_data)

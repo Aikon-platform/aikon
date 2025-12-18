@@ -9,7 +9,7 @@
     export let selectionStore;
     export let selectionLength = false;
 
-    const { selectionTitle, updateTitle, save } = selectionStore;
+    const { selectionTitle, updateTitle, updatePublic, save } = selectionStore;
 
     $: ownerId = $selected?.owner_id;
     $: isOwner = isSuperuser || ownerId === userId;
@@ -160,6 +160,17 @@
                             </div>
                         </div>
                     {/if}
+                </div>
+
+                <div class="field mt-3 is-right">
+                    <label class="checkbox">
+                        <input
+                            type="checkbox"
+                            checked={$selected?.is_public}
+                            on:change={(e) => updatePublic(e.target.checked)}
+                        />
+                        {appLang === 'en' ? 'Make public' : 'Rendre public'}
+                    </label>
                 </div>
             {/if}
         </section>

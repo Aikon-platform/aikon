@@ -102,7 +102,7 @@ def search_document_set(request):
         queryset = base_queryset
     else:
         queryset = base_queryset.filter(
-            Q(shared_with__contains=[user.id]) | Q(user=user)
+            Q(shared_with__contains=[user.id]) | Q(user=user) | Q(is_public=True)
         ).distinct()
 
     doc_sets = DocumentSetFilter(request.GET, queryset=queryset.order_by("-id"))

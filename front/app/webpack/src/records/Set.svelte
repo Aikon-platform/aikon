@@ -75,9 +75,6 @@
 
     </div>
 
-    <!-- TODO add way to make selection public-->
-
-
     <div slot="body">
         <div class="tags container">
             {#each Object.entries(item.treatments) as [id, meta]}
