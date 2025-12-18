@@ -803,51 +803,31 @@ def retrieve_pair(img1, img2, regions_id_1, regions_id_2, create=False):
     return None, "Region pair found but regions IDs do not match"
 
 
-def get_or_create_pair(img_1, img_2, regions_id_1, regions_id_2, create=True):
+def get_or_create_pair(img_1, img_2, create=True):
     if sort_key(img_2) < sort_key(img_1):
         img_1, img_2 = img_2, img_1
-        regions_id_1, regions_id_2 = regions_id_2, regions_id_1
-    regions_id_1, regions_id_2 = int(regions_id_1), int(regions_id_2)
 
     existing_pair = RegionPair.objects.filter(
         Q(img_1=img_1, img_2=img_2) | Q(img_1=img_2, img_2=img_1)
     ).first()
 
     if existing_pair:
-        is_same_order = existing_pair.img_1 == img_1
-        existing_rid_1, existing_rid_2 = (
-            existing_pair.regions_id_1,
-            existing_pair.regions_id_2,
-        )
-
-        if is_same_order:
-            expected_rid_1, expected_rid_2 = regions_id_1, regions_id_2
-        else:
-            expected_rid_1, expected_rid_2 = regions_id_2, regions_id_1
-
-        needs_correction = (
-            existing_rid_1 != expected_rid_1 or existing_rid_2 != expected_rid_2
-        )
-
-        if needs_correction:
+        if existing_pair.img_1 != img_1:
             log(
-                f"[get_or_create_pair] Correcting pair {existing_pair.img_1}-{existing_pair.img_2}: "
-                f"regions ({existing_rid_1}/{existing_rid_2}) → ({expected_rid_1}/{expected_rid_2})",
+                f"[get_or_create_pair] {existing_pair.img_1} and {existing_pair.img_2} are not in the expected order ({img_1}, {img_2})"
             )
-            existing_pair.regions_id_1 = expected_rid_1
-            existing_pair.regions_id_2 = expected_rid_2
-
-        if not is_same_order:
-            log(
-                f"[get_or_create_pair] Normalizing image order for {existing_pair.img_1}-{existing_pair.img_2}",
-            )
-            existing_pair.img_1 = img_1
-            existing_pair.img_2 = img_2
+            # existing_pair.img_1 = img_1
+            # existing_pair.img_2 = img_2
+            # existing_pair.regions_id_1 = existing_pair.regions_id_2
+            # existing_pair.regions_id_2 = existing_pair.regions_id_1
 
         return existing_pair, False
 
     if not create:
         return None, False
+
+    regions_id_1 = regions_from_img(img_1)
+    regions_id_2 = regions_from_img(img_2)
 
     return (
         RegionPair(
