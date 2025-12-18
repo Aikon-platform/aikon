@@ -674,6 +674,7 @@ def exact_match_batch(request):
             )
 
             if created:
+                region_pair.category = 1
                 pairs_to_create.append(region_pair)
             elif region_pair.category != 1:
                 region_pair.category = 1
@@ -686,10 +687,7 @@ def exact_match_batch(request):
             results["created"] = len(pairs_to_create)
 
         if pairs_to_update:
-            RegionPair.objects.bulk_update(
-                pairs_to_update,
-                ["img_1", "img_2", "regions_id_1", "regions_id_2", "category"],
-            )
+            RegionPair.objects.bulk_update(pairs_to_update, ["category"])
             results["updated"] = len(pairs_to_update)
 
         return JsonResponse({"status": "success", "results": results}, status=200)
