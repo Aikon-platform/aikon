@@ -1,10 +1,10 @@
 import {derived, writable, get} from 'svelte/store';
 import {extractNb, refToIIIFRoot, imageToPage, generateColor, initPagination, pageUpdate} from "../utils.js";
-import {appUrl, regionsType} from "../constants.js";
-// // TO DELETE
-// import {regionsType} from "../constants.js";
-// const appUrl = "https://vhs.huma-num.fr";
-// // TO DELETE
+// import {appUrl, regionsType} from "../constants.js";
+// TO DELETE
+import {regionsType} from "../constants.js";
+const appUrl = "https://vhs.huma-num.fr";
+// TO DELETE
 
 export function createDocumentSetStore(documentSetId) {
     const error = writable(null);
@@ -64,13 +64,13 @@ export function createDocumentSetStore(documentSetId) {
     const fetchPairs = derived(selectedCategories, ($selectedCategories, set) => {
         const promise = (async () => {
             try {
-                // // TO DELETE
+                // TO DELETE
                 // const documentSetId = 413; // histoire naturelle
-                // // const documentSetId = 414; // nicolas
-                // // const documentSetId = 415; // physiologus
-                // // const documentSetId = 416; // de materia medica
-                // // const documentSetId = 417; // traité de géométrie
-                // // TO DELETE
+                // const documentSetId = 414; // nicolas
+                const documentSetId = 415; // physiologus
+                // const documentSetId = 416; // de materia medica
+                // const documentSetId = 417; // traité de géométrie
+                // TO DELETE
 
                 const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${$selectedCategories.join(',')}`);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -86,11 +86,14 @@ export function createDocumentSetStore(documentSetId) {
                 const imgStats = emptyStats();
                 const docPStats = emptyStats();
                 const categories = {};
+                // MARKER
+                const imgToRegionsMap = new Map();
 
                 const context = {
                     index,
                     documentMap,
                     imageMap,
+                    imgToRegionsMap,
                     pStats,
                     docStats,
                     imgStats,
@@ -216,7 +219,7 @@ export function createDocumentSetStore(documentSetId) {
      * }
      */
     function processPair(pair, context) {
-        const {index, documentMap, imageMap, pStats, docStats, imgStats, docPStats, categories} = context;
+        const {index, documentMap, imageMap, imgToRegionsMap, pStats, docStats, imgStats, docPStats, categories} = context;
 
         const score = pair.score ?? null;
         const category = pair.category ?? 0;
@@ -232,21 +235,30 @@ export function createDocumentSetStore(documentSetId) {
         for (const key of ['1', '2']) {
             const imgKey = pair[`img_${key}`];
             const rid = pair[`regions_id_${key}`];
-            const imgId = `${rid}_${imgKey}`;
             const imgParts = imgKey.split("_");
             const imgRef = `${imgParts.slice(0,3).join("_").replace(".jpg", "")}.jpg`;
             const imgCoord = imgParts.slice(3).join("_").replace(".jpg", "");
             const imgPage = imageToPage(imgKey);
 
-            pair[`id_${key}`] = imgId;
+            // MARKER
+            if (imgToRegionsMap.has(imgKey)) {
+                const previousRid = imgToRegionsMap.get(imgKey);
+                if (previousRid !== rid) {
+                    console.warn(`⚠️ INCONSISTENCY DETECTED: Image "${imgKey}" used with different regions_id: ${previousRid} and ${rid}`);
+                }
+            } else {
+                imgToRegionsMap.set(imgKey, rid);
+            }
+
+            pair[`id_${key}`] = imgKey;
             pair[`img_${key}`] = `${refToIIIFRoot(imgKey)}/${imgCoord}/full/0/default.jpg`;
             pair[`page_${key}`] = imgPage;
             pair[`ref_${key}`] = imgRef;
             pair[`coord_${key}`] = imgCoord;
 
-            if (!imageMap.has(imgId)) {
-                imageMap.set(imgId, {
-                    id: imgId,
+            if (!imageMap.has(imgKey)) {
+                imageMap.set(imgKey, {
+                    id: imgKey,
                     img: imgRef,
                     regionId: rid,
                     canvas: imgPage,
@@ -263,11 +275,11 @@ export function createDocumentSetStore(documentSetId) {
                     images: [],
                 });
             }
-            documentMap.get(rid).images.push({id: imgId, canvas: imgPage})
+            documentMap.get(rid).images.push({id: imgKey, canvas: imgPage})
 
-            addToStats(imgStats, imgId, weightedScore);
+            addToStats(imgStats, imgKey, weightedScore);
             addToStats(docStats, rid, weightedScore);
-            addToIndex(index.byImage, imgId, pair);
+            addToIndex(index.byImage, imgKey, pair);
             addToIndex(index.byDoc, rid, pair);
         }
 

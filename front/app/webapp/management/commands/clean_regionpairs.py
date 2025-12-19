@@ -18,6 +18,8 @@ def get_digit_id(img):
 class Command(BaseCommand):
     help = "Correct incorrect RegionPair entries in the database"
 
+    # todo get mapping of region_id to digitization id to verify consistency
+
     def handle(self, *args, **options):
         # Statistics
         stats = {
@@ -77,8 +79,8 @@ class Command(BaseCommand):
             ]
 
         # Check if images need to be swapped for alphabetical order
-        sorted_imgs = sorted([pair.img_1, pair.img_2], key=sort_key)
-        if [pair.img_1, pair.img_2] != sorted_imgs:
+        [img1, img2] = sorted([pair.img_1, pair.img_2], key=sort_key)
+        if pair.img_1 != img1 or pair.img_2 != img2:
             self.stdout.write(
                 self.style.WARNING(
                     f"Pair #{pair.id}: Images not in alphabetical order. "
@@ -86,7 +88,7 @@ class Command(BaseCommand):
                 )
             )
             # Swap images and their corresponding regions
-            pair.img_1, pair.img_2 = pair.img_2, pair.img_1
+            pair.img_1, pair.img_2 = img1, img2
             pair.regions_id_1, pair.regions_id_2 = pair.regions_id_2, pair.regions_id_1
             stats["swapped_alphabetical"] += 1
             changes_made = True

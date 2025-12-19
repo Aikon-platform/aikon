@@ -30,9 +30,9 @@ export function shorten(str, maxLen=100) {
 }
 
 export function getCantaloupeUrl() {
-    return cantaloupeUrl ?? "http://localhost:8182";
-    // // TO DELETE
-    // return "https://vhs.huma-num.fr"
+    // return cantaloupeUrl ?? "http://localhost:8182";
+    // TO DELETE
+    return "https://vhs.huma-num.fr"
 }
 
 export function getSasUrl() {

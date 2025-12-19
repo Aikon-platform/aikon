@@ -1,13 +1,17 @@
 from __future__ import annotations  # for a reference to RegionPair from RegionPair
 
-from typing import List, Literal, NamedTuple
+import re
+from typing import List, NamedTuple
 
+from django.core.exceptions import ValidationError
 from django.contrib.postgres.fields import ArrayField
 from django.db import models, connection
 from django.db.models import Q, F
 
+from app.webapp.utils.functions import cast, sort_key
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.utils.functions import cast
+from app.webapp.models.digitization import Digitization
+from app.webapp.models.regions import Regions
 
 
 class RegionPairTuple(NamedTuple):
@@ -184,6 +188,50 @@ class RegionPair(models.Model):
                 "similarity_type": info[8],
             }
         return info
+
+    def clean(self, regions_to_digit=None):
+        """Validation supplémentaire avant save"""
+        super().clean()
+
+        # img1, img2 = self.img_1, self.img_2
+        # rid1, rid2 = self.regions_id_1, self.regions_id_2
+        #
+        # def get_digit_id(img):
+        #     return int(re.findall(r"\d+", img)[1])
+        #
+        # def get_digit_regions_id(digit_id):
+        #     try:
+        #         digit = Digitization.objects.get(id=digit_id)
+        #     except Digitization.DoesNotExist:
+        #         digit = None
+        #     regions = list(digit.get_regions() if digit else [])
+        #     if not regions:
+        #         regions = Regions.objects.create(
+        #             digitization=digit,
+        #             model="manual",
+        #         )
+        #     else:
+        #         regions = regions[0]
+        #     return int(regions.id)
+        #
+        # if regions_to_digit is None:
+        #     pass
+        #
+        #
+        # # Vérifier que regions_id correspondent aux images
+        # if self.regions_id_1 != regions_from_img(self.img_1):
+        #     raise ValidationError(
+        #         f"regions_id_1 ({self.regions_id_1}) doesn't match img_1 ({self.img_1})"
+        #     )
+        # if self.regions_id_2 != regions_from_img(self.img_2):
+        #     raise ValidationError(
+        #         f"regions_id_2 ({self.regions_id_2}) doesn't match img_2 ({self.img_2})"
+        #     )
+
+    def save(self, *args, **kwargs):
+        """Auto-normalisation avant save"""
+        self.full_clean()  # call clean() method
+        super().save(*args, **kwargs)
 
     def to_dict(self) -> dict:
         return {
