@@ -580,6 +580,7 @@ def save_category(request):
                 "category": category,
                 "is_manual": data.get("is_manual", False),
                 "similarity_type": similarity_type,
+                "category_x": [],
             },
         )
         region_pair = add_user_to_category_x(region_pair, request.user.id)
