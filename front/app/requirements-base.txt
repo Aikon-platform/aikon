@@ -35,6 +35,7 @@ frozendict==2.3.4
 idna>=3.7
 imagesize>=1.4.1
 iiif-prezi==0.3.0
+iiif-download>=0.1.15
 jinxed==1.2.0
 lxml>=4.9.1
 numpy>=1.18.5
@@ -51,6 +52,7 @@ PyLD==2.0.3
 pyparsing==3.0.9
 PyPDF2==2.10.4
 PyMuPDF>=1.12
+pymupdf-img
 python-dateutil==2.8.2
 python-environ==0.4.54
 python-magic==0.4.27
