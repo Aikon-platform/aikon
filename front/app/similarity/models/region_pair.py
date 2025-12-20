@@ -26,6 +26,10 @@ class RegionPairTuple(NamedTuple):
     similarity_type: int
 
 
+def add_jpg(img: str) -> str:
+    return img if img.endswith(".jpg") else f"{img}.jpg"
+
+
 def get_name(fieldname, plural=False):
     fields = {
         "RegionPair": {
@@ -189,48 +193,85 @@ class RegionPair(models.Model):
             }
         return info
 
-    def clean(self, regions_to_digit=None):
-        """Validation supplémentaire avant save"""
+    def clean(self, regions_to_digit=None, create_missing_regions=False):
+        # NOTE: not called on bulk_create or bulk_update
         super().clean()
 
-        # img1, img2 = self.img_1, self.img_2
-        # rid1, rid2 = self.regions_id_1, self.regions_id_2
-        #
-        # def get_digit_id(img):
-        #     return int(re.findall(r"\d+", img)[1])
-        #
-        # def get_digit_regions_id(digit_id):
-        #     try:
-        #         digit = Digitization.objects.get(id=digit_id)
-        #     except Digitization.DoesNotExist:
-        #         digit = None
-        #     regions = list(digit.get_regions() if digit else [])
-        #     if not regions:
-        #         regions = Regions.objects.create(
-        #             digitization=digit,
-        #             model="manual",
-        #         )
-        #     else:
-        #         regions = regions[0]
-        #     return int(regions.id)
-        #
-        # if regions_to_digit is None:
-        #     pass
-        #
-        #
-        # # Vérifier que regions_id correspondent aux images
-        # if self.regions_id_1 != regions_from_img(self.img_1):
-        #     raise ValidationError(
-        #         f"regions_id_1 ({self.regions_id_1}) doesn't match img_1 ({self.img_1})"
-        #     )
-        # if self.regions_id_2 != regions_from_img(self.img_2):
-        #     raise ValidationError(
-        #         f"regions_id_2 ({self.regions_id_2}) doesn't match img_2 ({self.img_2})"
-        #     )
+        def get_digit_id(img):
+            matches = re.findall(r"\d+", img)
+            return int(matches[1]) if len(matches) > 1 else None
 
-    def save(self, *args, **kwargs):
-        """Auto-normalisation avant save"""
-        self.full_clean()  # call clean() method
+        def get_region_digit_id(regions_id):
+            if regions_to_digit:
+                digit_id = regions_to_digit.get(regions_id)
+                return int(digit_id) if digit_id else None
+
+            try:
+                region = Regions.objects.select_related("digitization").get(
+                    id=regions_id
+                )
+                return region.digitization.id if region.digitization else None
+            except Regions.DoesNotExist:
+                return None
+
+        def get_digit_regions_id(digit_id):
+            regions = Regions.objects.filter(digitization_id=digit_id).first()
+
+            if not regions:
+                if create_missing_regions:
+                    try:
+                        digit = Digitization.objects.get(id=digit_id)
+                    except Digitization.DoesNotExist:
+                        raise ValidationError(f"Digitization {digit_id} does not exist")
+
+                    regions = Regions.objects.create(
+                        digitization=digit,
+                        model="manual",
+                    )
+                else:
+                    raise ValidationError(
+                        f"No regions found for digitization {digit_id}"
+                    )
+
+            return regions.id
+
+        img1, img2 = add_jpg(self.img_1), add_jpg(self.img_2)
+        rid1, rid2 = self.regions_id_1, self.regions_id_2
+
+        if sort_key(img2) < sort_key(img1):
+            self.img_1, self.img_2 = img2, img1
+            self.regions_id_1, self.regions_id_2 = rid2, rid1
+        else:
+            self.img_1, self.img_2 = img1, img2
+
+        img_digit_id_1 = get_digit_id(self.img_1)
+        img_digit_id_2 = get_digit_id(self.img_2)
+
+        if img_digit_id_1 is None or img_digit_id_2 is None:
+            raise ValidationError(
+                f"Cannot extract digitization ID from image names "
+                f"({self.img_1}, {self.img_2})"
+            )
+
+        reg_digit_id_1 = get_region_digit_id(self.regions_id_1)
+        reg_digit_id_2 = get_region_digit_id(self.regions_id_2)
+
+        if img_digit_id_1 != reg_digit_id_1:
+            if img_digit_id_2 == reg_digit_id_1 and img_digit_id_1 == reg_digit_id_2:
+                self.regions_id_1, self.regions_id_2 = (
+                    self.regions_id_2,
+                    self.regions_id_1,
+                )
+                reg_digit_id_1, reg_digit_id_2 = reg_digit_id_2, reg_digit_id_1
+            else:
+                self.regions_id_1 = get_digit_regions_id(img_digit_id_1)
+
+        if img_digit_id_2 != reg_digit_id_2:
+            self.regions_id_2 = get_digit_regions_id(img_digit_id_2)
+
+    def save(self, validate=True, *args, **kwargs):
+        if validate:
+            self.full_clean()  # call clean() method
         super().save(*args, **kwargs)
 
     def to_dict(self) -> dict:
