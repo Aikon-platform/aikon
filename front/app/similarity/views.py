@@ -669,24 +669,26 @@ def exact_match_batch(request):
             region_pair, created = get_or_create_pair(
                 pair_data["img_1"],
                 pair_data["img_2"],
+                pair_data["regions_id_1"],
+                pair_data["regions_id_2"],
             )
 
-            # if created:
-            #     region_pair.category = 1
-            #     pairs_to_create.append(region_pair)
-            # elif region_pair.category != 1:
-            #     region_pair.category = 1
-            #     pairs_to_update.append(region_pair)
-            # else:
-            #     results["already_matched"] += 1
-            log(
-                f"[exact_match_batch] Pair ({created}): {region_pair.img_1}-{region_pair.img_2} => {region_pair.category}"
-            )
-            region_pair.category = 1
             if created:
+                region_pair.category = 1
                 pairs_to_create.append(region_pair)
-            else:
+            elif region_pair.category != 1:
+                region_pair.category = 1
                 pairs_to_update.append(region_pair)
+            else:
+                results["already_matched"] += 1
+            # log(
+            #     f"[exact_match_batch] Pair ({created}): {region_pair.img_1}-{region_pair.img_2} => {region_pair.category}"
+            # )
+            # region_pair.category = 1
+            # if created:
+            #     pairs_to_create.append(region_pair)
+            # else:
+            #     pairs_to_update.append(region_pair)
 
         if pairs_to_create:
             RegionPair.objects.bulk_create(pairs_to_create)
@@ -695,7 +697,8 @@ def exact_match_batch(request):
         if pairs_to_update:
             RegionPair.objects.bulk_update(
                 pairs_to_update,
-                ["category", "regions_id_1", "regions_id_2", "img_1", "img_2"],
+                # ["category", "regions_id_1", "regions_id_2", "img_1", "img_2"],
+                ["category"],
             )
             results["updated"] = len(pairs_to_update)
 
