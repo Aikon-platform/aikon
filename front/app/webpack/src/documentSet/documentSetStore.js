@@ -106,9 +106,9 @@ export function createDocumentSetStore(documentSetId) {
                         return acc;
                     }
                     const score = pair.score ?? null;
-                    if (score == null && pair.is_manual !== true) {
-                        return acc;
-                    }
+                    // if (score == null && pair.is_manual !== true) {
+                    //     return acc;
+                    // }
                     if ($selectedCategories.includes(0) && pair.category === 0) {
                         if (pair.is_manual !== true && score < threshold) {
                             return acc;
