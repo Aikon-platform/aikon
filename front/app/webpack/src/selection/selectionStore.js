@@ -12,7 +12,7 @@ function createTypedSelectionStore(config) {
     const template = {
         id: null,
         type,
-        title: title,
+        title,
         // <{model_name: {record_id: {record_meta}, record_id: {record_meta}}, model_name: {...}, ...}>
         selected: {}
     };
@@ -69,6 +69,18 @@ function createTypedSelectionStore(config) {
         });
     }
 
+    const loadSet = (setData) => selection.update(() => {
+        const newSet = setData.selection.id ? setData.selection : {...setData.selection, id: setData.id};
+        store(newSet);
+        return newSet;
+    });
+
+    const unloadSet = () => selection.update(() => {
+        const newSet = {...template, selected: {}};
+        store(newSet);
+        return newSet;
+    });
+
     return {
         type,
         subscribe: selection.subscribe,
@@ -120,8 +132,19 @@ function createTypedSelectionStore(config) {
             return set;
         }),
 
+        toggleSet: (set) => {
+            const currentSelection = get(selection);
+            if (currentSelection.id === set.id) {
+                unloadSet();
+            } else {
+                loadSet(set);
+            }
+        },
+
         empty: () => selection.update(set => {
-            set.selected = {}
+            set.id = null;
+            set.title = title;
+            set.selected = {};
             store(set, true);
             return set;
         }),
@@ -130,18 +153,6 @@ function createTypedSelectionStore(config) {
             set.title = title;
             store(set, true);
             return set;
-        }),
-
-        loadSet: (setData) => selection.update(() => {
-            const newSet = setData.selection.id ? setData.selection : {...setData.selection, id: setData.id};
-            store(newSet);
-            return newSet;
-        }),
-
-        unloadSet: () => selection.update(() => {
-            const newSet = {...template};
-            store(newSet);
-            return newSet;
         }),
 
         save,
@@ -161,10 +172,9 @@ function createTypedSelectionStore(config) {
                 (count, items) => count + Object.keys(items).length, 0
             )
         ),
-
         isSetSelected: derived(selection, $sel =>
             set => $sel.id === set.id
-        )
+        ),
     };
 }
 

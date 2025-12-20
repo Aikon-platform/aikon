@@ -15,6 +15,7 @@ django-nested-admin==3.4.0
 django-polymorphic==3.1.0
 fontawesomefree==6.1.1
 imagesize>=1.4.1
+iiif-download>=0.1.15
 iiif-prezi==0.3.0
 numpy>=1.18.5
 orjson>=3.10.15
@@ -23,8 +24,7 @@ pdf2image==1.16.2
 Pillow>=10.3.0
 pycparser==2.21
 pyparsing==3.0.9
-PyPDF2==2.10.4
-PyMuPDF>=1.12
+pymupdf-img
 python-dateutil==2.8.2
 python-environ==0.4.54
 requests>=2.32.4

@@ -1,13 +1,17 @@
 from __future__ import annotations  # for a reference to RegionPair from RegionPair
 
-from typing import List, Literal, NamedTuple
+import re
+from typing import List, NamedTuple
 
+from django.core.exceptions import ValidationError
 from django.contrib.postgres.fields import ArrayField
 from django.db import models, connection
 from django.db.models import Q, F
 
+from app.webapp.utils.functions import cast, sort_key
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.utils.functions import cast
+from app.webapp.models.digitization import Digitization
+from app.webapp.models.regions import Regions
 
 
 class RegionPairTuple(NamedTuple):
@@ -20,6 +24,10 @@ class RegionPairTuple(NamedTuple):
     category_x: List[int]
     is_manual: bool
     similarity_type: int
+
+
+def add_jpg(img: str) -> str:
+    return img if img.endswith(".jpg") else f"{img}.jpg"
 
 
 def get_name(fieldname, plural=False):
@@ -184,6 +192,87 @@ class RegionPair(models.Model):
                 "similarity_type": info[8],
             }
         return info
+
+    def clean(self, regions_to_digit=None, create_missing_regions=False):
+        # NOTE: not called on bulk_create or bulk_update
+        super().clean()
+
+        def get_digit_id(img):
+            matches = re.findall(r"\d+", img)
+            return int(matches[1]) if len(matches) > 1 else None
+
+        def get_region_digit_id(regions_id):
+            if regions_to_digit:
+                digit_id = regions_to_digit.get(regions_id)
+                return int(digit_id) if digit_id else None
+
+            try:
+                region = Regions.objects.select_related("digitization").get(
+                    id=regions_id
+                )
+                return region.digitization.id if region.digitization else None
+            except Regions.DoesNotExist:
+                return None
+
+        def get_digit_regions_id(digit_id):
+            regions = Regions.objects.filter(digitization_id=digit_id).first()
+
+            if not regions:
+                if create_missing_regions:
+                    try:
+                        digit = Digitization.objects.get(id=digit_id)
+                    except Digitization.DoesNotExist:
+                        raise ValidationError(f"Digitization {digit_id} does not exist")
+
+                    regions = Regions.objects.create(
+                        digitization=digit,
+                        model="manual",
+                    )
+                else:
+                    raise ValidationError(
+                        f"No regions found for digitization {digit_id}"
+                    )
+
+            return regions.id
+
+        img1, img2 = add_jpg(self.img_1), add_jpg(self.img_2)
+        rid1, rid2 = self.regions_id_1, self.regions_id_2
+
+        if sort_key(img2) < sort_key(img1):
+            self.img_1, self.img_2 = img2, img1
+            self.regions_id_1, self.regions_id_2 = rid2, rid1
+        else:
+            self.img_1, self.img_2 = img1, img2
+
+        img_digit_id_1 = get_digit_id(self.img_1)
+        img_digit_id_2 = get_digit_id(self.img_2)
+
+        if img_digit_id_1 is None or img_digit_id_2 is None:
+            raise ValidationError(
+                f"Cannot extract digitization ID from image names "
+                f"({self.img_1}, {self.img_2})"
+            )
+
+        reg_digit_id_1 = get_region_digit_id(self.regions_id_1)
+        reg_digit_id_2 = get_region_digit_id(self.regions_id_2)
+
+        if img_digit_id_1 != reg_digit_id_1:
+            if img_digit_id_2 == reg_digit_id_1 and img_digit_id_1 == reg_digit_id_2:
+                self.regions_id_1, self.regions_id_2 = (
+                    self.regions_id_2,
+                    self.regions_id_1,
+                )
+                reg_digit_id_1, reg_digit_id_2 = reg_digit_id_2, reg_digit_id_1
+            else:
+                self.regions_id_1 = get_digit_regions_id(img_digit_id_1)
+
+        if img_digit_id_2 != reg_digit_id_2:
+            self.regions_id_2 = get_digit_regions_id(img_digit_id_2)
+
+    def save(self, validate=True, *args, **kwargs):
+        if validate:
+            self.full_clean()  # call clean() method
+        super().save(*args, **kwargs)
 
     def to_dict(self) -> dict:
         return {

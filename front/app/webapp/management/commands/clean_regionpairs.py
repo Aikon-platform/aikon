@@ -1,25 +1,19 @@
 import re
 
 from django.core.management.base import BaseCommand
+from django.core.exceptions import ValidationError
 
 from app.similarity.models.region_pair import RegionPair
 from app.webapp.models.digitization import Digitization
+from app.webapp.models.regions import Regions
 
 # RUN WITH: front/venv/bin/python front/manage.py clean_regionpairs
-
-
-def get_digit_id(img):
-    """Extract the digitization ID from the image filename
-    img names follow this template "wit<id>_<digit><id>_<nb>.jpg".
-    e.g. wit56_pdf78_0012.jpg -> digitization ID is 78"""
-    return int(re.findall(r"\d+", img)[1])
 
 
 class Command(BaseCommand):
     help = "Correct incorrect RegionPair entries in the database"
 
     def handle(self, *args, **options):
-        # Statistics
         stats = {
             "total_pairs": 0,
             "fixed_jpg_extension": 0,
@@ -33,6 +27,14 @@ class Command(BaseCommand):
             "ids_to_delete": [],
         }
 
+        # Create regions_to_digit mapping once
+        self.stdout.write("Building regions-to-digitization mapping...")
+        regions_to_digit = {}
+        for region in Regions.objects.select_related("digitization").all():
+            if region.digitization:
+                regions_to_digit[region.id] = region.digitization.id
+        self.stdout.write(f"Mapped {len(regions_to_digit)} regions")
+
         pairs = RegionPair.objects.all()
         total = pairs.count()
         self.stdout.write(f"\nProcessing {total} RegionPairs...\n")
@@ -44,7 +46,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"Progress: {i + 1}/{total}")
 
             try:
-                self._process_pair(pair, stats)
+                self._process_pair(pair, stats, regions_to_digit)
             except Exception as e:
                 stats["errors"] += 1
                 self.stdout.write(
@@ -52,64 +54,72 @@ class Command(BaseCommand):
                 )
 
         self._find_duplicates(stats)
-
         self._print_summary(stats)
 
-    def _process_pair(self, pair, stats):
-        """Process a single RegionPair"""
+    def _process_pair(self, pair, stats, regions_to_digit):
+        """Process a single RegionPair using the model's clean() method"""
         changes_made = False
         pair_id = pair.id
 
-        # Fix missing .jpg extension
-        if not pair.img_1.endswith(".jpg"):
-            pair.img_1 = f"{pair.img_1}.jpg"
-            stats["fixed_jpg_extension"] += 1
-            changes_made = True
+        # Store original values to detect changes
+        original = (pair.img_1, pair.img_2, pair.regions_id_1, pair.regions_id_2)
 
-        if not pair.img_2.endswith(".jpg"):
-            pair.img_2 = f"{pair.img_2}.jpg"
-            stats["fixed_jpg_extension"] += 1
-            changes_made = True
-
-        def sort_key(s):
-            return [
-                int(part) if part.isdigit() else part for part in re.split("(\d+)", s)
-            ]
-
-        # Check if images need to be swapped for alphabetical order
-        sorted_imgs = sorted([pair.img_1, pair.img_2], key=sort_key)
-        if [pair.img_1, pair.img_2] != sorted_imgs:
+        # Apply clean() to normalize and validate
+        try:
+            pair.clean(regions_to_digit=regions_to_digit, create_missing_regions=True)
+        except ValidationError as e:
             self.stdout.write(
-                self.style.WARNING(
-                    f"Pair #{pair.id}: Images not in alphabetical order. "
-                    f"Swapping {pair.img_1} <-> {pair.img_2}"
-                )
+                self.style.ERROR(f"Pair #{pair_id}: Validation failed - {e}")
             )
-            # Swap images and their corresponding regions
-            pair.img_1, pair.img_2 = pair.img_2, pair.img_1
-            pair.regions_id_1, pair.regions_id_2 = pair.regions_id_2, pair.regions_id_1
-            stats["swapped_alphabetical"] += 1
+            stats["errors"] += 1
+            stats["ids_to_delete"].append(pair_id)
+            return
+
+        # Track what clean() fixed
+        current = (pair.img_1, pair.img_2, pair.regions_id_1, pair.regions_id_2)
+        if current != original:
             changes_made = True
 
-        digit_id_1 = get_digit_id(pair.img_1)
-        digit_id_2 = get_digit_id(pair.img_2)
+            # Log specific changes for stats
+            if original[0] != current[0] or original[1] != current[1]:
+                if not original[0].endswith(".jpg") or not original[1].endswith(".jpg"):
+                    stats["fixed_jpg_extension"] += 1
 
-        # check if duplicates would be created by the img name update
+                if original[0] != current[0]:  # Images were swapped
+                    stats["swapped_alphabetical"] += 1
+
+            if (original[2], original[3]) != (current[2], current[3]):
+                if original[2] == current[3] and original[3] == current[2]:
+                    stats["swapped_regions"] += 1
+                else:
+                    stats["fixed_region_ids"] += 1
+
+        # Handle score == 0
+        if pair.score == 0:
+            self.stdout.write(
+                self.style.WARNING(f"Pair #{pair_id}: Score is zero, setting to None")
+            )
+            pair.score = None
+            stats["score_zero"] += 1
+            changes_made = True
+
+        # Check for duplicates
         if changes_made:
             existing = (
                 RegionPair.objects.filter(img_1=pair.img_1, img_2=pair.img_2)
-                .exclude(id=pair.id)
+                .exclude(id=pair_id)
                 .first()
             )
 
             if existing:
                 self.stdout.write(
                     self.style.WARNING(
-                        f"Pair #{pair.id}: Would create duplicate with #{existing.id}. "
+                        f"Pair #{pair_id}: Would create duplicate with #{existing.id}. "
                         f"Merging into existing pair..."
                     )
                 )
 
+                # Merge data into existing pair
                 if pair.score and (not existing.score or pair.score > existing.score):
                     existing.score = pair.score
 
@@ -123,102 +133,19 @@ class Command(BaseCommand):
                     existing.category_x = list(
                         set(existing.category_x + pair.category_x)
                     )
-                existing.save()
 
-                # Delete the duplicate
+                existing.save(validate=False)
+
+                # Delete duplicate
                 pair.delete()
                 stats["duplicates_found"] += 1
                 stats["deleted_pairs"] += 1
                 self.stdout.write(f"  - Deleted duplicate pair #{pair_id}")
-                return  # Skip the rest of processing for this pair
+                return
 
-        if not digit_id_1 or not digit_id_2:
-            self.stdout.write(
-                self.style.ERROR(
-                    f"Pair #{pair_id}: Could not extract digit IDs from img names"
-                )
-            )
-            stats["ids_to_delete"].append(pair_id)
-            # TODO delete?
-            return
-
-        # Check if scores are zero
-        if pair.score == 0:
-            self.stdout.write(
-                self.style.WARNING(f"Pair #{pair.id}: Score is zero, setting to None")
-            )
-            pair.score = None
-            stats["score_zero"] += 1
-            changes_made = True
-
-        # Get valid region IDs for each digitization
-        try:
-            digit_1 = Digitization.objects.get(id=digit_id_1)
-            valid_regions_1 = list(digit_1.get_regions().values_list("id", flat=True))
-        except Digitization.DoesNotExist:
-            self.stdout.write(
-                self.style.ERROR(
-                    f"Pair #{pair.id}: Digitization {digit_id_1} not found"
-                )
-            )
-            stats["ids_to_delete"].append(pair_id)
-            # TODO delete? check for other witness digitizations?
-            return
-
-        try:
-            digit_2 = Digitization.objects.get(id=digit_id_2)
-            valid_regions_2 = list(digit_2.get_regions().values_list("id", flat=True))
-        except Digitization.DoesNotExist:
-            self.stdout.write(
-                self.style.ERROR(
-                    f"Pair #{pair.id}: Digitization {digit_id_2} not found"
-                )
-            )
-            stats["ids_to_delete"].append(pair_id)
-            # TODO delete? check for other witness digitizations?
-            return
-
-        # Check if regions are swapped
-        if (
-            pair.regions_id_1 not in valid_regions_1
-            and pair.regions_id_2 not in valid_regions_2
-            and pair.regions_id_1 in valid_regions_2
-            and pair.regions_id_2 in valid_regions_1
-        ):
-            self.stdout.write(
-                self.style.WARNING(f"Pair #{pair.id}: Regions are swapped! Fixing...")
-            )
-            pair.regions_id_1, pair.regions_id_2 = pair.regions_id_2, pair.regions_id_1
-            stats["swapped_regions"] += 1
-            changes_made = True
-
-        # Fix invalid region IDs
-        else:
-            if pair.regions_id_1 not in valid_regions_1:
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"Pair #{pair.id}: regions_id_1 ({pair.regions_id_1}) not valid."
-                        f"Using first valid region: {valid_regions_1[0]}"
-                    )
-                )
-                pair.regions_id_1 = valid_regions_1[0]
-                stats["fixed_region_ids"] += 1
-                changes_made = True
-
-            if pair.regions_id_2 not in valid_regions_2:
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"Pair #{pair.id}: regions_id_2 ({pair.regions_id_2}) not valid."
-                        f"Using first valid region: {valid_regions_2[0]}"
-                    )
-                )
-                pair.regions_id_2 = valid_regions_2[0]
-                stats["fixed_region_ids"] += 1
-                changes_made = True
-
-        # Save if we made changes
+        # Save changes
         if changes_made:
-            pair.save()
+            pair.save(validate=False)
 
     def _find_duplicates(self, stats):
         """Find and report duplicate pairs"""
@@ -237,7 +164,6 @@ class Command(BaseCommand):
 
             if key in seen:
                 duplicates.append((pair_id, seen[key]))
-                stats["duplicates_found"] += 1
             else:
                 seen[key] = pair_id
 
