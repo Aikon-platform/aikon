@@ -19,6 +19,8 @@ services:
       - ./.env
     environment:
       <<: *proxy-settings
+    extra_hosts:
+      - "smtp.gmail.com:74.125.206.109"
     ports:
       - "${DJANGO_PORT}:8000"
     depends_on:
@@ -93,7 +95,7 @@ services:
       - ./.env
     volumes:
         - ../sas:/sas
-        - ${DATA_FOLDER}/sas:/sas/data
+        #- ${DATA_FOLDER}/sas:/sas/data
     ports:
       - "${SAS_PORT:-8888}:${SAS_PORT:-8888}"
     networks:
