@@ -4,7 +4,7 @@
     const { isSaved, selection } = selectionStore;
     import {appLang, appName} from '../constants';
 
-    export let isRegion = selectionStore.type !== 'document';
+    export let isRegion = selectionStore.type !== 'documentSet';
 </script>
 
 <footer class="modal-card-foot is-center">
@@ -20,7 +20,7 @@
                 </span>
             </a>
         {:else}
-            <button class="button is-link" on:click={() => selectionStore.save()}>
+            <button class="button is-link" oit sn:click={() => selectionStore.save()}>
                 <span>
                     <i class="fa-solid fa-floppy-disk"></i>
                     {appLang === 'en' ? 'Save selection' : 'Sauvegarder la sélection'}
