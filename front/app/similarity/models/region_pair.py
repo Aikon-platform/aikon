@@ -14,6 +14,39 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 
 
+def extract_digit_id(img: str) -> int | None:
+    """Extract digitization ID from image name (e.g., 'wit7_man9_0023_...' → 9)"""
+    matches = re.findall(r"\d+", img)
+    return int(matches[1]) if len(matches) > 1 else None
+
+
+def get_region_digit_id(regions_id: int) -> int | None:
+    """Get digitization ID associated with a regions_id"""
+    try:
+        region = Regions.objects.select_related("digitization").get(id=regions_id)
+        return region.digitization.id if region.digitization else None
+    except Regions.DoesNotExist:
+        return None
+
+
+def get_digit_regions_id(digit_id: int, create_if_missing: bool = False) -> int:
+    """Get or create regions_id for a digitization ID"""
+    regions = Regions.objects.filter(digitization_id=digit_id).first()
+
+    if not regions:
+        if create_if_missing:
+            try:
+                digit = Digitization.objects.get(id=digit_id)
+            except Digitization.DoesNotExist:
+                raise ValidationError(f"Digitization {digit_id} does not exist")
+
+            regions = Regions.objects.create(digitization=digit, model="manual")
+        else:
+            raise ValidationError(f"No regions found for digitization {digit_id}")
+
+    return regions.id
+
+
 class RegionPairTuple(NamedTuple):
     score: float
     q_img: str
@@ -193,81 +226,109 @@ class RegionPair(models.Model):
             }
         return info
 
-    def clean(self, regions_to_digit=None, create_missing_regions=False):
-        # NOTE: not called on bulk_create or bulk_update
-        super().clean()
+    @classmethod
+    def rid_from_pair_containing_img(
+        cls, img: str, create_if_missing: bool = True
+    ) -> int:
+        """
+        Retrieve regions_id for an image, with fallback to extraction from image name.
+        Priority:
+        1. Existing pair with img_1
+        2. Existing pair with img_2
+        3. Extract from image name and lookup/create regions
+        """
+        if not img.endswith(".jpg"):
+            img = f"{img}.jpg"
 
-        def get_digit_id(img):
-            matches = re.findall(r"\d+", img)
-            return int(matches[1]) if len(matches) > 1 else None
+        # Try to find in existing pairs
+        q1 = cls.objects.values_list("regions_id_1").filter(img_1=img).first()
+        if q1:
+            return q1[0]
 
-        def get_region_digit_id(regions_id):
-            if regions_to_digit:
-                digit_id = regions_to_digit.get(regions_id)
-                return int(digit_id) if digit_id else None
+        q2 = cls.objects.values_list("regions_id_2").filter(img_2=img).first()
+        if q2:
+            return q2[0]
 
-            try:
-                region = Regions.objects.select_related("digitization").get(
-                    id=regions_id
-                )
-                return region.digitization.id if region.digitization else None
-            except Regions.DoesNotExist:
-                return None
+        # Extract from image name
+        digit_id = extract_digit_id(img)
+        if digit_id is None:
+            raise ValidationError(f"Cannot extract digitization ID from {img}")
 
-        def get_digit_regions_id(digit_id):
-            regions = Regions.objects.filter(digitization_id=digit_id).first()
+        return get_digit_regions_id(digit_id, create_if_missing)
 
-            if not regions:
-                if create_missing_regions:
-                    try:
-                        digit = Digitization.objects.get(id=digit_id)
-                    except Digitization.DoesNotExist:
-                        raise ValidationError(f"Digitization {digit_id} does not exist")
+    @classmethod
+    def rid_from_img(
+        cls, img: str, candidate_rids: list[int] = None, create_if_missing=True
+    ) -> int:
+        """
+        Get regions_id for an image.
+        Checks candidate_rids first (in order), then falls back to existing pairs or creation.
+        """
+        img = add_jpg(img)
+        img_digit_id = extract_digit_id(img)
 
-                    regions = Regions.objects.create(
-                        digitization=digit,
-                        model="manual",
-                    )
-                else:
-                    raise ValidationError(
-                        f"No regions found for digitization {digit_id}"
-                    )
+        if img_digit_id is None:
+            raise ValidationError(f"Cannot extract digitization ID from {img}")
 
-            return regions.id
+        if candidate_rids:
+            for rid in candidate_rids:
+                if get_region_digit_id(rid) == img_digit_id:
+                    return rid
 
-        img1, img2 = add_jpg(self.img_1), add_jpg(self.img_2)
-        rid1, rid2 = self.regions_id_1, self.regions_id_2
+        return cls.rid_from_pair_containing_img(img, create_if_missing)
 
+    @classmethod
+    def check_order(
+        cls, img1, img2, rid1, rid2, regions_to_digit=None, create_missing_regions=False
+    ):
+        """Return regions IDs ordered according to image names"""
         if sort_key(img2) < sort_key(img1):
-            self.img_1, self.img_2 = img2, img1
-            self.regions_id_1, self.regions_id_2 = rid2, rid1
+            img1, img2 = img2, img1
+            rid1, rid2 = rid2, rid1
         else:
-            self.img_1, self.img_2 = img1, img2
+            img1, img2 = img1, img2
 
-        img_digit_id_1 = get_digit_id(self.img_1)
-        img_digit_id_2 = get_digit_id(self.img_2)
+        # Extract digitization IDs from images
+        img_digit_id_1 = extract_digit_id(img1)
+        img_digit_id_2 = extract_digit_id(img2)
 
         if img_digit_id_1 is None or img_digit_id_2 is None:
             raise ValidationError(
-                f"Cannot extract digitization ID from image names "
-                f"({self.img_1}, {self.img_2})"
+                f"Cannot extract digitization ID from image names " f"({img1}, {img2})"
             )
 
-        reg_digit_id_1 = get_region_digit_id(self.regions_id_1)
-        reg_digit_id_2 = get_region_digit_id(self.regions_id_2)
+        # Get digitization IDs from regions (with optional cache)
+        if regions_to_digit:
+            reg_digit_id_1 = regions_to_digit.get(rid1) or None
+            reg_digit_id_2 = regions_to_digit.get(rid2) or None
+        else:
+            reg_digit_id_1 = get_region_digit_id(rid1)
+            reg_digit_id_2 = get_region_digit_id(rid2)
 
+        # Fix mismatches
         if img_digit_id_1 != reg_digit_id_1:
             if img_digit_id_2 == reg_digit_id_1 and img_digit_id_1 == reg_digit_id_2:
-                self.regions_id_1, self.regions_id_2 = (
-                    self.regions_id_2,
-                    self.regions_id_1,
-                )
+                rid1, rid2 = rid2, rid1
                 reg_digit_id_1, reg_digit_id_2 = reg_digit_id_2, reg_digit_id_1
             else:
-                self.regions_id_1 = get_digit_regions_id(img_digit_id_1)
+                rid1 = get_digit_regions_id(img_digit_id_1, create_missing_regions)
 
         if img_digit_id_2 != reg_digit_id_2:
-            self.regions_id_2 = get_digit_regions_id(img_digit_id_2)
+            rid2 = get_digit_regions_id(img_digit_id_2, create_missing_regions)
+
+        return img1, img2, rid1, rid2
+
+    def clean(self, regions_to_digit=None, create_missing_regions=False):
+        super().clean()
+
+        self.img_1, self.img_2, self.regions_id_1, self.regions_id_2 = self.check_order(
+            add_jpg(self.img_1),
+            add_jpg(self.img_2),
+            self.regions_id_1,
+            self.regions_id_2,
+            regions_to_digit,
+            create_missing_regions,
+        )
 
     def save(self, validate=True, *args, **kwargs):
         if validate:
