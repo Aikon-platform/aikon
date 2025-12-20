@@ -1,10 +1,10 @@
 import {derived, writable, get} from 'svelte/store';
 import {extractNb, refToIIIFRoot, imageToPage, generateColor, initPagination, pageUpdate} from "../utils.js";
-// import {appUrl, regionsType} from "../constants.js";
-// TO DELETE
-import {regionsType} from "../constants.js";
-const appUrl = "https://vhs.huma-num.fr";
-// TO DELETE
+import {appUrl, regionsType} from "../constants.js";
+// // TO DELETE
+// import {regionsType} from "../constants.js";
+// const appUrl = "https://vhs.huma-num.fr";
+// // TO DELETE
 
 export function createDocumentSetStore(documentSetId) {
     const error = writable(null);
@@ -64,13 +64,13 @@ export function createDocumentSetStore(documentSetId) {
     const fetchPairs = derived(selectedCategories, ($selectedCategories, set) => {
         const promise = (async () => {
             try {
-                // TO DELETE
-                // const documentSetId = 413; // histoire naturelle
-                // const documentSetId = 414; // nicolas
-                const documentSetId = 415; // physiologus
-                // const documentSetId = 416; // de materia medica
-                // const documentSetId = 417; // traité de géométrie
-                // TO DELETE
+                // // TO DELETE
+                // // const documentSetId = 413; // histoire naturelle
+                // // const documentSetId = 414; // nicolas
+                // const documentSetId = 415; // physiologus
+                // // const documentSetId = 416; // de materia medica
+                // // const documentSetId = 417; // traité de géométrie
+                // // TO DELETE
 
                 const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${$selectedCategories.join(',')}`);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
