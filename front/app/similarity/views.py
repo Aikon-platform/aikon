@@ -584,7 +584,7 @@ def save_category(request):
             },
         )
         region_pair = add_user_to_category_x(region_pair, request.user.id)
-        region_pair.save()
+        region_pair.save(validate=False)
 
         message = (
             f"New region pair #{region_pair.id} created"

@@ -175,7 +175,7 @@ class RegionPair(models.Model):
     """
     List of users Ids that have added this pair to their "user category" list
     """
-    category_x = ArrayField(models.IntegerField(), null=True, default=list)
+    category_x = ArrayField(models.IntegerField(), null=True, blank=True, default=list)
     """
     Is this pair manually added by a user or automatically generated (ie from a score file)
     """
@@ -330,7 +330,7 @@ class RegionPair(models.Model):
             create_missing_regions,
         )
 
-    def save(self, validate=True, *args, **kwargs):
+    def save(self, validate=False, *args, **kwargs):
         if validate:
             self.full_clean()  # call clean() method
         super().save(*args, **kwargs)
