@@ -157,6 +157,7 @@ function createTypedSelectionStore(config) {
 
         save,
         isSaved,
+        selection,
 
         selectionTitle: derived(selection, $sel => $sel.title),
         isSelected: derived(selection, $sel =>
