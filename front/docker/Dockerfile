@@ -74,9 +74,9 @@ EXPOSE 8000
 
 RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER}/app/staticfiles
 
-COPY --chown=${USER} docker/manage.sh /home/aikon/manage.sh
-RUN chmod +x /home/aikon/manage.sh
-RUN /home/${USER}/manage.sh
+#COPY --chown=${USER} docker/manage.sh /home/aikon/manage.sh
+#RUN chmod +x /home/aikon/manage.sh
+#RUN /home/${USER}/manage.sh
 
 # Launch gunicorn
 CMD export LC_ALL=C.UTF-8 && export LANG=C.UTF-8 && \
