@@ -134,7 +134,7 @@ class Command(BaseCommand):
                         set(existing.category_x + pair.category_x)
                     )
 
-                existing.save(validate=False)
+                existing.save()
 
                 # Delete duplicate
                 pair.delete()
@@ -145,7 +145,7 @@ class Command(BaseCommand):
 
         # Save changes
         if changes_made:
-            pair.save(validate=False)
+            pair.save()
 
     def _find_duplicates(self, stats):
         """Find and report duplicate pairs"""

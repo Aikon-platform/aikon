@@ -434,7 +434,7 @@ def add_region_pair(request, wid, rid=None):
                 region_pair.score = None
 
             region_pair = add_user_to_category_x(region_pair, request.user.id)
-            region_pair.save()
+            region_pair.save(validate=True)
         except RegionPair.DoesNotExist:
             region_pair = RegionPair.objects.create(
                 img_1=img_1,
@@ -584,7 +584,7 @@ def save_category(request):
             },
         )
         region_pair = add_user_to_category_x(region_pair, request.user.id)
-        region_pair.save(validate=False)
+        region_pair.save()
 
         message = (
             f"New region pair #{region_pair.id} created"
