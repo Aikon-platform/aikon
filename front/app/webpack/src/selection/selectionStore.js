@@ -69,6 +69,18 @@ function createTypedSelectionStore(config) {
         });
     }
 
+    const loadSet = (setData) => selection.update(() => {
+        const newSet = setData.selection.id ? setData.selection : {...setData.selection, id: setData.id};
+        store(newSet);
+        return newSet;
+    });
+
+    const unloadSet = () => selection.update(() => {
+        const newSet = {...template, selected: {}};
+        store(newSet);
+        return newSet;
+    });
+
     return {
         type,
         subscribe: selection.subscribe,
@@ -120,6 +132,15 @@ function createTypedSelectionStore(config) {
             return set;
         }),
 
+        toggleSet: (set) => {
+            const currentSelection = get(selection);
+            if (currentSelection.id === set.id) {
+                unloadSet();
+            } else {
+                loadSet(set);
+            }
+        },
+
         empty: () => selection.update(set => {
             set.id = null;
             set.title = title;
@@ -134,20 +155,9 @@ function createTypedSelectionStore(config) {
             return set;
         }),
 
-        loadSet: (setData) => selection.update(() => {
-            const newSet = setData.selection.id ? setData.selection : {...setData.selection, id: setData.id};
-            store(newSet);
-            return newSet;
-        }),
-
-        unloadSet: () => selection.update(() => {
-            const newSet = {...template};
-            store(newSet);
-            return newSet;
-        }),
-
         save,
         isSaved,
+        selection,
 
         selectionTitle: derived(selection, $sel => $sel.title),
         isSelected: derived(selection, $sel =>
@@ -165,7 +175,7 @@ function createTypedSelectionStore(config) {
         ),
         isSetSelected: derived(selection, $sel =>
             set => $sel.id === set.id
-        )
+        ),
     };
 }
 
