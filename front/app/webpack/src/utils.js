@@ -6,6 +6,14 @@ export const errorMsg = writable("");
 
 const isString = (x) => typeof x === 'string' || x instanceof String;
 
+
+/**
+ * Display loading UI while waiting for Promise
+ * @example
+ * const response = await withLoading(() =>
+ *     // do something
+ * );
+ */
 export async function withLoading(asyncFunction) {
     loading.set(true);
     try {

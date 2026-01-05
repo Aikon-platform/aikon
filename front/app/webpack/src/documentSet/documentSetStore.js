@@ -1,8 +1,9 @@
 import {derived, writable, get} from 'svelte/store';
 import {extractNb, refToIIIFRoot, imageToPage, generateColor} from "../utils.js";
-import {appUrl, regionsType} from "../constants.js";
+import {appUrl} from "../constants.js";
+import PairWorker from './pairProcessor.worker.js?worker';
+
 // // TO DELETE
-// import {regionsType} from "../constants.js";
 // const appUrl = "https://vhs.huma-num.fr";
 // // TO DELETE
 
@@ -10,17 +11,19 @@ export function createDocumentSetStore(documentSetId) {
     const error = writable(null);
 
     const selectedCategories = writable([1]);
-
-    const selectedNodes = writable([]);
-
     const selectedRegions = writable(new Set());
-
+    const selectedNodes = writable([]);
     const threshold = writable(0.5);
+    const topK = writable(null); // null = disabled, number = k
+    const mutualTopK = writable(false);
 
     /**
      * All RegionsPair objects loaded in the current context
      */
     const allPairs = writable([]);
+
+    // web worker for processing pairs
+    let worker;
 
     const pairIndex = writable({
         byImage: new Map(),        // imgId -> [pairs]
@@ -38,18 +41,6 @@ export function createDocumentSetStore(documentSetId) {
      */
     const documentNodes = writable(new Map());
 
-    function emptyStats() {
-        return {
-            count: 0,
-            scoreCount: new Map(),
-            scoreRange: {min: Infinity, max: -Infinity, range: null},
-            countRange: {min: Infinity, max: -Infinity, range: null},
-            links: 0,
-            clusters: 0,
-            density: 0
-        };
-    }
-
     const pairStats = writable({});
     const documentStats = writable({});
     const imageStats = writable({});
@@ -61,280 +52,171 @@ export function createDocumentSetStore(documentSetId) {
         categories: {}
     });
 
-    const fetchPairs = derived(selectedCategories, ($selectedCategories, set) => {
-        const promise = (async () => {
+    const fetchPairs = derived(selectedCategories, ($cats, set) => {
+        if (worker) worker.terminate();
+
+        // TO DELETE
+        // const documentSetId = 413; // histoire naturelle
+        // const documentSetId = 414; // nicolas
+        // const documentSetId = 415; // physiologus
+        // const documentSetId = 416; // de materia medica
+        // const documentSetId = 417; // traité de géométrie
+        // TO DELETE
+
+        const load = async () => {
+
             try {
-                // // TO DELETE
-                // // const documentSetId = 413; // histoire naturelle
-                // // const documentSetId = 414; // nicolas
-                // const documentSetId = 415; // physiologus
-                // // const documentSetId = 416; // de materia medica
-                // // const documentSetId = 417; // traité de géométrie
-                // // TO DELETE
-
-                const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${$selectedCategories.join(',')}`);
+                const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${$cats.join(',')}`);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const rawData = await response.json();
 
-                const data = await response.json();
+                worker = new PairWorker();
 
-                const index = { byImage: new Map(), byDocPair: new Map(), byDoc: new Map(), }
-                const documentMap = new Map();
-                const imageMap = new Map();
+                worker.postMessage({
+                    rawPairs: rawData,
+                    selectedCategories: $cats
+                });
 
-                const pStats = emptyStats();
-                const docStats = emptyStats();
-                const imgStats = emptyStats();
-                const docPStats = emptyStats();
-                const categories = {};
-                // MARKER
-                const imgToRegionsMap = new Map();
+                worker.onmessage = (e) => {
+                    const { allPairs: sorted, imageNodes: imgMap, pairIndex: idx, stats } = e.data;
 
-                const context = {
-                    index,
-                    documentMap,
-                    imageMap,
-                    imgToRegionsMap,
-                    pStats,
-                    docStats,
-                    imgStats,
-                    docPStats,
-                    categories
+                    allPairs.set(sorted);
+                    imageNodes.set(imgMap);
+                    pairIndex.set(idx);
+
+                    pairStats.set(stats.pairStats);
+                    documentStats.set(stats.documentStats);
+                    imageStats.set(stats.imageStats);
+                    docPairStats.set(stats.docPairStats);
+
+                    const currentRegions = get(selectedRegions);
+                    if (currentRegions.size === 0) {
+                        selectedRegions.set(new Set(stats.documentStats.scoreCount.keys()));
+                    }
+
+                    const range = stats.pairStats.scoreRange;
+                    // TODO update slider min/max
+
+                    worker.terminate();
+                    worker = null;
                 };
 
-                const pairs = data.reduce((acc, pair) => {
-                    if (pair.category === 4) {
-                        return acc;
-                    }
-                    const score = pair.score ?? null;
-                    // if (score == null && pair.is_manual !== true) {
-                    //     return acc;
-                    // }
-                    if ($selectedCategories.includes(0) && pair.category === 0) {
-                        if (pair.is_manual !== true && score < threshold) {
-                            return acc;
-                        }
-                    }
-                    acc.push(processPair(pair, context));
-                    return acc;
-                }, []);
+                worker.onerror = (err) => {
+                    console.error("Worker error", err);
+                    error.set("Error processing pairs");
+                };
 
-                pStats.avgScore = pStats.count > 0 ? pStats.totalScore / pStats.count : 0;
-                docStats.links = Array.from(docPStats.scoreCount.entries()).length;
-                imgStats.links = pairs.length;
-                docPStats.links = docPStats.scoreCount.size;
-
-                computeDensity(docStats);
-                computeDensity(imgStats);
-                computeDensity(docPStats);
-
-                computeRange(pStats);
-                computeRange(docStats);
-                computeRange(imgStats);
-                computeRange(docPStats);
-
-                const regionIds = Array.from(documentMap.keys());
-                await Promise.all(
-                    regionIds.map(async (rid, i) => {
-                        const info = await getRegionsInfo(rid);
-                        const color = generateColor(i);
-
-                        const node = documentMap.get(rid);
-                        Object.assign(node, {
-                            title: info.title,
-                            ref: info.ref,
-                            witnessId: info.witnessId,
-                            digitizationRef: info.digitizationRef,
-                            zeros: info.zeros,
-                            img_nb: info.img_nb,
-                            url: info.url,
-                            color
-                        });
-                    })
-                );
-
-                imageMap.forEach(imgData => {
-                    const doc = documentMap.get(imgData.regionId);
-                    imgData.class = 'Cluster';
-                    imgData.color = doc?.color;
-                    imgData.title = (doc?.title || `Region ${imgData.regionId}`) + `<br>Page ${imgData.canvas}`;
-                });
-
-                docSetNumber.set({
-                    documents: regionIds.length,
-                    pairs: pairs.length,
-                    images: imgStats.count,
-                    clusters: null,
-                    categories
-                });
-
-                pairIndex.set(index);
-                pairStats.set(pStats);
-                documentStats.set(docStats);
-                imageStats.set(imgStats);
-                docPairStats.set(docPStats);
-                selectedRegions.set(new Set(regionIds));
-                documentNodes.set(documentMap);
-                imageNodes.set(imageMap);
-                allPairs.set(pairs.filter(Boolean)); // todo find a way to be more efficient than this
             } catch (e) {
-                error.set(`Error processing pairs: ${e.message}`);
+                error.set(`Fetch error: ${e.message}`);
             }
-        })();
-        set(promise)
+        };
+
+        load();
+        set(Promise.resolve());
     });
 
-    /**
-     * param pair : similarity pair to update
-     * {
-     *      "img_1": "wit<id>_<digit><id>_<canvas_nb>_<coord>.jpg",
-     *      "img_2": "wit<id>_<digit><id>_<canvas_nb>_<coord>.jpg",
-     *      "regions_id_1": 1,
-     *      "regions_id_2": 2,
-     *      "score": 0.123,
-     *      "category": 1,
-     *      "category_x": [],
-     *      "is_manual": false,
-     *      "similarity_type": 1
-     * }
-     *
-     * returns { pair } with added fields:
-     *  {
-     *      "id_1": "<region_id>_wit<id>_<digit><id>_<canvas_nb>_<coord>.jpg",
-     *      "id_2": "<region_id>_wit<id>_<digit><id>_<canvas_nb>_<coord>.jpg",
-     *      "regions_id_1": 1,
-     *      "regions_id_2": 2,
-     *      "img_1": "iiif url",
-     *      "img_2": "iiif url",
-     *      "page_1": <canvas_nb>,
-     *      "page_2": <canvas_nb>,
-     *      "ref_1": "wit<id>_<digit><id>_<canvas_nb>.jpg",
-     *      "ref_2": "wit<id>_<digit><id>_<canvas_nb>.jpg",
-     *      "coord_1": "<coord>",
-     *      "coord_2": "<coord>",
-     *      "score": 0.123,
-     *      "category": 1,
-     *      "category_x": [],
-     *      "is_manual": false,
-     *      "similarity_type": 1
-     * }
-     */
-    function processPair(pair, context) {
-        const {index, documentMap, imageMap, imgToRegionsMap, pStats, docStats, imgStats, docPStats, categories} = context;
+    const filteredPairs = derived(
+        [allPairs, threshold, topK, mutualTopK],
+        ([$pairs, $threshold, $topK, $mutual]) => {
+            if (!$pairs) return [];
 
-        const score = pair.score ?? null;
-        const category = pair.category ?? 0;
-        const weightedScore = calculateWeightedScore(score, category);
+            const result = [];
+            const len = $pairs.length;
 
-        pair.weightedScore = weightedScore;
-        addToScores(pStats, weightedScore);
+            for (let i = 0; i < len; i++) {
+                const p = $pairs[i];
 
-        pStats.count++;
-        pStats.totalScore += weightedScore;
-        categories[category] = (categories[category] || 0) + 1;
-
-        for (const key of ['1', '2']) {
-            const imgKey = pair[`img_${key}`];
-            const rid = pair[`regions_id_${key}`];
-            const imgParts = imgKey.split("_");
-            const imgRef = `${imgParts.slice(0,3).join("_").replace(".jpg", "")}.jpg`;
-            const imgCoord = imgParts.slice(3).join("_").replace(".jpg", "");
-            const imgPage = imageToPage(imgKey);
-
-            // MARKER
-            if (imgToRegionsMap.has(imgKey)) {
-                const previousRid = imgToRegionsMap.get(imgKey);
-                if (previousRid !== rid) {
-                    console.warn(`⚠️ INCONSISTENCY DETECTED: Image "${imgKey}" used with different regions_id: ${previousRid} and ${rid}`);
+                // Threshold on score
+                if (p.weightedScore < $threshold) {
+                    // stop here because pairs are sorted by score
+                    // and threshold is prioritised on topK filtering
+                    break;
                 }
-            } else {
-                imgToRegionsMap.set(imgKey, rid);
+
+                // TopK filtering
+                if ($topK !== null) {
+                    const k = $topK;
+                    if ($mutual) {
+                        // MBoth images must be in each other's top K
+                        if (p.rank_1 > k || p.rank_2 > k) continue;
+                    } else {
+                        // At least one image must be in top K
+                        if (p.rank_1 > k && p.rank_2 > k) continue;
+                    }
+                }
+
+                result.push(p);
             }
+            return result;
+        }
+    );
 
-            pair[`id_${key}`] = imgKey;
-            pair[`img_${key}`] = `${refToIIIFRoot(imgKey)}/${imgCoord}/full/0/default.jpg`;
-            pair[`page_${key}`] = imgPage;
-            pair[`ref_${key}`] = imgRef;
-            pair[`coord_${key}`] = imgCoord;
+    // TODO filteredDocs ?
+    // TODO get regionInfo before fetching and processing pairs in order to have titles/colors from the start + populate documentNodes images
 
-            if (!imageMap.has(imgKey)) {
-                imageMap.set(imgKey, {
-                    id: imgKey,
-                    img: imgRef,
-                    regionId: rid,
-                    canvas: imgPage,
-                    color: null,
-                    ref: imgRef,
-                    type: regionsType,
-                    xywh: imgCoord.split(","),
-                });
-            }
+    /**
+     * Reactively fetches region metadata (titles, colors) when document stats are populated by the worker.
+     * This compensates for the removal of the fetch logic in the main fetchPairs function.
+     */
+    const metadataFetcher = derived(documentStats, async ($docStats, set) => {
+        const regionIds = $docStats?.scoreCount ? Array.from($docStats.scoreCount.keys()) : [];
 
-            if (!documentMap.has(rid)) {
-                documentMap.set(rid, {
-                    id: rid,
-                    images: [],
-                });
-            }
-            documentMap.get(rid).images.push({id: imgKey, canvas: imgPage})
-
-            addToStats(imgStats, imgKey, weightedScore);
-            addToStats(docStats, rid, weightedScore);
-            addToIndex(index.byImage, imgKey, pair);
-            addToIndex(index.byDoc, rid, pair);
+        if (regionIds.length === 0) {
+            set(false);
+            return;
         }
 
-        const {regions_id_1: r1, regions_id_2: r2} = pair;
-        const pairKey = r1 < r2 ? `${r1}-${r2}` : `${r2}-${r1}`;
-        addToStats(docPStats, pairKey, weightedScore);
-        addToIndex(index.byDocPair, pairKey, pair);
+        try {
+            const docMap = new Map();
 
-        return pair;
-    }
+            // Parallel fetch of region details
+            await Promise.all(
+                regionIds.map(async (rid, i) => {
+                    const info = await getRegionsInfo(rid);
+                    const color = generateColor(i);
 
-    function calculateWeightedScore(score, category, categoryWeights = {1: 1.0, 2: 0.5, 3: 0.125, 4: -1.0, 5: 0.125}) {
-        const baseScore = score ?? 0;
-        const weight = categoryWeights[category] ?? 0;
-        return Math.max(0.01, baseScore + baseScore * weight);
-    }
+                    docMap.set(rid, {
+                        id: rid,
+                        title: info.title,
+                        ref: info.ref,
+                        witnessId: info.witnessId,
+                        digitizationRef: info.digitizationRef,
+                        zeros: info.zeros,
+                        img_nb: info.img_nb,
+                        url: info.url,
+                        color,
+                        // Initialize images array (will be populated by worker logic linkage if needed,
+                        // but here we primarily need metadata for the network nodes)
+                        images: []
+                    });
+                })
+            );
 
-    function computeRange(stats) {
-        stats.scoreRange.range = stats.scoreRange.max - stats.scoreRange.min;
-        stats.countRange.range = stats.countRange.max - stats.countRange.min;
-    }
+            // Update the writable store exposed to the UI
+            documentNodes.set(docMap);
 
-    function computeDensity(stats) {
-        if (stats.links <= 0) return 0;
-        stats.density = (2 * stats.links) / (stats.count * (stats.count - 1));
-    }
+            // Also update the image nodes with the correct colors/titles now that we have them
+            imageNodes.update(imgMap => {
+                imgMap.forEach(img => {
+                    const doc = docMap.get(img.regionId);
+                    if (doc) {
+                        img.color = doc.color;
+                        img.title = (doc.title || `Region ${img.regionId}`) + `<br>Page ${img.canvas}`;
+                    }
+                });
+                return imgMap;
+            });
 
-    function addToStats(stats, key, score) {
-        const existing = stats.scoreCount.get(key);
-        if (!existing) { stats.count++; }
+            set(true);
+        } catch (e) {
+            console.error("Error fetching region metadata", e);
+            error.set(e.message);
+            set(false);
+        }
+    });
+    // Force subscription to ensure the side-effect runs even if the UI doesn't explicitly subscribe to this derived store
+    metadataFetcher.subscribe(() => {});
 
-        // TODO is it better to check at each pass or compute min/max at the end?
-        const accumulatedScore = (existing?.score || 0) + score;
-        addToScores(stats, accumulatedScore);
-
-        const count = (existing?.count || 0) + 1;
-        if (count < stats.countRange.min) stats.countRange.min = count;
-        if (count > stats.countRange.max) stats.countRange.max = count;
-
-        stats.scoreCount.set(key, {
-            score: accumulatedScore,
-            count: count,
-        });
-    }
-
-    function addToIndex(index, key, pair) {
-        if (!index.has(key)) index.set(key, []);
-        index.get(key).push(pair);
-    }
-
-    function addToScores(stats, score) {
-        if (score == null) return;
-        if (score < stats.scoreRange.min) stats.scoreRange.min = score;
-        if (score > stats.scoreRange.max) stats.scoreRange.max = score;
-    }
 
     async function getRegionsInfo(regionId) {
         try {
@@ -364,6 +246,8 @@ export function createDocumentSetStore(documentSetId) {
     }
 
     function calculateLinkProps(score, scoreRange, minDistance = 10, maxDistance = 200, minWidth = 2, maxWidth = 25) {
+        if (!scoreRange) return {strength: 0.5, distance: 100, width: 2};
+
         const {min, _, range} = scoreRange;
         const strength = range === 0 ? 0.5 : (score - min) / range;
         const distance = maxDistance - strength * (maxDistance - minDistance);
@@ -372,48 +256,66 @@ export function createDocumentSetStore(documentSetId) {
     }
 
     function normalizeRadius(count, countRange, minRadius = 10, maxRadius = 60) {
+        if (!countRange) return minRadius;
+
         const {min, _, range} = countRange;
         if (range === 0) return (minRadius + maxRadius) / 2;
         return minRadius + ((count - min) / range) * (maxRadius - minRadius);
     }
 
-    const imageNetwork = derived(allPairs, ($pairs) => {
+    /**
+     * Image Network Visualization Data
+     * Only processes nodes and links that are currently visible based on TopK/Threshold.
+     */
+    const imageNetwork = derived([filteredPairs], ([$pairs]) => {
         const $imageNodes = get(imageNodes);
         const $stats = get(imageStats);
-        const $pairStats = get(pairStats)
+        const $pairStats = get(pairStats);
 
-        const nodes = Array.from($imageNodes.values()).map(n => {
-            const imgStats = $stats.scoreCount.get(n.id);
-            const {count, score} = imgStats;
-            const label = `Region: ${n.regionId}\nPage: ${n.canvas}\nConnections: ${count}\nTotal score: ${score}`;
-            return {
-                ...n,
-                radius: normalizeRadius(score, $stats.scoreRange), // normalizeRadius(count, $stats.countRange)
-                label,
-            };
-        });
-
-        const links = $pairs.map(pair => {
+        const activeNodes = new Set();
+        const links = [];
+        for (const pair of $pairs) {
             const {strength, distance, width} = calculateLinkProps(pair.weightedScore, $pairStats.scoreRange);
-            return {
+            links.push({
                 source: pair.id_1,
                 target: pair.id_2,
                 strength,
                 distance,
                 width
+            });
+
+            // Mark nodes as active so we only render relevant images
+            if (!activeNodes.has(pair.id_1)) activeNodes.add(pair.id_1);
+            if (!activeNodes.has(pair.id_2)) activeNodes.add(pair.id_2);
+        }
+
+        const nodes = [];
+        for (const imgId of activeNodes) {
+            const nodeData = $imageNodes.get(imgId);
+            if (nodeData) {
+                const imgStats = $stats.scoreCount?.get(imgId);
+                const {count, score} = imgStats;
+
+                nodes.push({
+                    ...nodeData,
+                    radius: normalizeRadius(score, $stats.scoreRange),
+                    label: `Region: ${nodeData.regionId}\nPage: ${nodeData.canvas}\nConnections: ${count}\nTotal score: ${score.toFixed(2)}`
+                });
             }
-        });
+        }
 
         return { nodes, links };
     });
 
+    /**
+     * Helper to filter network based on active regions
+     * (Kept for compatibility, though imageNetwork now handles region filtering internally for performance)
+     */
     function filterNetwork(network, activeRegions, keyRid="id") {
-        // TODO recompute stats?
-        if (activeRegions.size === network.nodes.length) {
-            return network;
-        }
+        if (activeRegions.size === 0) return network;
+        if (activeRegions.size === network.nodes.length) return network;
 
-        const nodeIds = new Set()
+        const nodeIds = new Set();
         const nodes = network.nodes.filter(n => {
             if (activeRegions.has(n[keyRid])){
                 nodeIds.add(n.id);
@@ -430,22 +332,25 @@ export function createDocumentSetStore(documentSetId) {
         return {...network, nodes, links};
     }
 
-    const filteredImageNetwork = derived([imageNetwork, selectedRegions], ([$network, $active]) => {
-        return filterNetwork($network, $active, "regionId");
-    });
+    // const filteredImageNetwork = derived([imageNetwork, selectedRegions], ([$network, $active]) => {
+    //     // Redundant filtering if imageNetwork already filters, but keeps architectural consistency
+    //     return filterNetwork($network, $active, "regionId");
+    // });
 
     const documentNetwork = derived([documentNodes], ([$docNodes]) => {
         const $docPairStats = get(docPairStats);
-        const $stats = get(documentStats)
+        const $docStats = get(documentStats)
+
+        if ($docNodes.size === 0) return { nodes: [], links: [] };
 
         const nodes = Array.from($docNodes.values()).map(n => {
-            const docStats = $stats.scoreCount.get(n.id);
+            const docStats = $docStats.scoreCount?.get(n.id);
             const {count, score} = docStats;
-            const label =  `${n.title}\nImage: ${count}\nTotal score: ${score}`;
+
             return {
-                ...n, // todo do we need to duplicate all document data here?
-                radius: normalizeRadius(docStats.count, $stats.countRange),
-                label,
+                ...n,
+                radius: normalizeRadius(count, $docStats.countRange),
+                label: `${n.title}\nImages: ${count}\nTotal score: ${score.toFixed(2)}`,
             };
         });
 
@@ -465,13 +370,14 @@ export function createDocumentSetStore(documentSetId) {
     });
 
     /**
+     * Matrix Visualization Logic
      * returns {
-     *      regions: [regionId1, regionId2 ...],           // ordered list of selected regions ids
-     *      rows: [                                        // images contained in the same pairs across regions
-     *          { regionId1: {id: img_id, page: page_nb}, regionId2: {id: img_id, page: page_nb} },
-     *          { regionId1: {id: img_id, page: page_nb} },
-     *          { regionId1: {id: img_id, page: page_nb}, regionsId3: {id: img_id, page: page_nb} },
-     *      ]
+     *    regions: [regionId1, regionId2 ...],           // ordered list of selected regions ids
+     *    rows: [                                        // images contained in the same pairs across regions
+     *       { regionId1: {id: img_id, page: page_nb}, regionId2: {id: img_id, page: page_nb} },
+     *       { regionId1: {id: img_id, page: page_nb} },
+     *       { regionId1: {id: img_id, page: page_nb}, regionsId3: {id: img_id, page: page_nb} },
+     *    ]
      * }
      */
     function buildAlignedImageMatrix(orderedSelection) {
@@ -481,8 +387,31 @@ export function createDocumentSetStore(documentSetId) {
         const $pairIndex = get(pairIndex);
 
         const firstRegionId = orderedSelection[0];
+
         const firstDoc = $documentNodes.get(firstRegionId);
         if (!firstDoc?.images) return {regions: orderedSelection, rows: []};
+        const firstImages = [...firstDoc.images].sort((a, b) => a.canvas - b.canvas);
+
+        // TODO do populate documentNodes images when processing pairs in the worker
+        // // Note: The worker does not populate doc.images in the documentNodes map
+        // // We need to retrieve images belonging to a document via the pairIndex.byDoc or similar
+        // // However, pairIndex.byDoc gives pairs, not unique images.
+        // // We can infer images from the filtered imageNodes or reconstruct it.
+        // // For the matrix, we need a starting list of images for the first region.
+        //
+        // // Strategy: Get all images for the first region from the imageNodes store
+        // const $imageNodes = get(imageNodes);
+        // const firstImages = [];
+        //
+        // // Scan all images to find those belonging to firstRegionId
+        // // This is O(N) on images, which is acceptable (<< 1M pairs)
+        // $imageNodes.forEach(img => {
+        //     if (img.regionId === firstRegionId) {
+        //         firstImages.push(img);
+        //     }
+        // });
+        //
+        // firstImages.sort((a, b) => a.canvas - b.canvas);
 
         const findPairs = (imgId, sourceRegionId, targetRegionId) => {
             const {r1, r2} = {r1: sourceRegionId, r2: targetRegionId};
@@ -501,7 +430,6 @@ export function createDocumentSetStore(documentSetId) {
                 .filter(Boolean);
         };
 
-        const firstImages = [...firstDoc.images].sort((a, b) => a.canvas - b.canvas);
         const allRows = [];
 
         for (const firstImg of firstImages) {
@@ -578,12 +506,14 @@ export function createDocumentSetStore(documentSetId) {
 
     return {
         error,
-        allPairs,
+        // to keep ?
+        allPairs, // Contains all pairs sorted
+        visiblePairs: filteredPairs, // Optimized for visualization
         pairIndex,
         documentNodes,
         imageNodes,
         fetchPairs,
-        imageNetwork: filteredImageNetwork,
+        imageNetwork,
         documentNetwork: filteredDocumentNetwork,
         selectedCategories,
         pairStats,
@@ -600,5 +530,9 @@ export function createDocumentSetStore(documentSetId) {
 
         threshold,
         setThreshold: (t) => threshold.set(t),
+        topK,
+        setTopK: (k) => topK.set(k),
+        mutualTopK,
+        setMutualTopK: (b) => mutualTopK.set(b),
     };
 }
