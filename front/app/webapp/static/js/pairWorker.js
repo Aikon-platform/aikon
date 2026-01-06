@@ -1,5 +1,4 @@
-import { regionsType } from "../constants.js";
-
+const regionsType = "region";
 const IMG_REGEX = /^(.+)_(\d+)_([\d,]+)\.jpg$/;
 
 self.onmessage = (e) => {

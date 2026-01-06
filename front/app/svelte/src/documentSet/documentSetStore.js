@@ -1,11 +1,16 @@
 import {derived, writable, get} from 'svelte/store';
-import {extractNb, refToIIIFRoot, imageToPage, generateColor} from "../utils.js";
-import {appUrl} from "../constants.js";
-import PairWorker from './pairProcessor.worker.js?worker';
+import {extractNb, generateColor} from "../utils.js";
+// import {appUrl} from "../constants.js";
 
-// // TO DELETE
-// const appUrl = "https://vhs.huma-num.fr";
-// // TO DELETE
+// TO DELETE
+const appUrl = "https://vhs.huma-num.fr";
+// TO DELETE
+
+const createWorker = () => new Worker(
+   '/static/js/pairWorker.js',
+   //  './pairWorker.js',
+    { type: 'module' }
+);
 
 export function createDocumentSetStore(documentSetId) {
     const error = writable(null);
@@ -60,7 +65,7 @@ export function createDocumentSetStore(documentSetId) {
 
         // TO DELETE
         // const documentSetId = 413; // histoire naturelle
-        // const documentSetId = 414; // nicolas
+        const documentSetId = 414; // nicolas
         // const documentSetId = 415; // physiologus
         // const documentSetId = 416; // de materia medica
         // const documentSetId = 417; // traité de géométrie
@@ -72,14 +77,14 @@ export function createDocumentSetStore(documentSetId) {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const rawData = await response.json();
 
-                worker = new PairWorker();
+                worker = createWorker();
 
                 worker.postMessage({
                     rawPairs: rawData,
                     selectedCategories: $cats
                 });
 
-                worker.onmessage = (e) => {
+                worker.onmessage = async (e) => {
                     const { allPairs: sorted, imageNodes: imgMap, pairIndex: idx, stats } = e.data;
 
                     allPairs.set(sorted);
@@ -91,10 +96,28 @@ export function createDocumentSetStore(documentSetId) {
                     imageStats.set(stats.imageStats);
                     docPairStats.set(stats.docPairStats);
 
+                    const regionIds = Array.from(stats.documentStats.scoreCount.keys());
+
                     const currentRegions = get(selectedRegions);
                     if (currentRegions.size === 0) {
-                        selectedRegions.set(new Set(Array.from(stats.documentStats.scoreCount.keys())));
+                        selectedRegions.set(new Set(regionIds));
                     }
+
+                    docSetNumber.set({
+                        documents: regionIds.length,
+                        pairs: sorted.length,
+                        images: imgMap.size,
+                        categories: $cats.reduce((acc, c) => ({...acc, [c]: true}), {})
+                    });
+
+                    const results = await Promise.all(
+                        regionIds.map(id => getRegionsInfo(id).then(info => ({id, info})))
+                    );
+
+                    regionsMetadata.update(current => {
+                        results.forEach(({id, info}) => current.set(id, info));
+                        return current;
+                    });
 
                     worker.terminate();
                     worker = null;
@@ -144,26 +167,18 @@ export function createDocumentSetStore(documentSetId) {
     /**
      * Map<regionId, regionData>
      */
-    const documentNodes = derived(documentStats, ($stats, set) => {
-        if (!$stats?.scoreCount) {
-            set(new Map());
-            return;
-        }
+    const documentNodes = derived(regionsMetadata, ($meta) => {
+        if (!$meta.size) return new Map();
 
-        const ids = Array.from($stats.scoreCount.keys());
-        const $meta = get(regionsMetadata);
+        const ids = Array.from($meta.keys());
         const $imageNodes = get(imageNodes);
-
         const nodes = new Map();
-        const missingIds = [];
 
         ids.forEach((id, index) => {
-            if (!$meta.has(id)) missingIds.push(id);
-
-            const info = $meta.get(id) || {};
+            const info = $meta.get(id);
             nodes.set(id, {
                 id,
-                title: info.title || `Loading...`,
+                title: info.title || `Region Extraction ${id}`,
                 color: info.color || generateColor(index),
                 images: [],
                 ...info
@@ -181,19 +196,8 @@ export function createDocumentSetStore(documentSetId) {
 
         nodes.forEach(doc => doc.images.sort((a, b) => a.canvas - b.canvas));
 
-        set(nodes);
-
-        if (missingIds.length > 0) {
-            Promise.all(missingIds.map(id => getRegionsInfo(id)
-                .then(info => ({id, info}))))
-                .then(results => {
-                    regionsMetadata.update(current => {
-                        results.forEach(({id, info}) => current.set(id, info));
-                        return current;
-                    });
-                });
-        }
-    }, new Map());
+        return nodes;
+    });
 
     const filteredPairs = derived(
         [allPairs, threshold, topK, mutualTopK, selectedRegions],
@@ -357,27 +361,6 @@ export function createDocumentSetStore(documentSetId) {
         const firstDoc = $documentNodes.get(firstRegionId);
         if (!firstDoc?.images) return {regions: orderedSelection, rows: []};
         const firstImages = firstDoc.images; // already sorted by canvas in documentNodes
-
-        // TODO do populate documentNodes images when processing pairs in the worker
-        // // Note: The worker does not populate doc.images in the documentNodes map
-        // // We need to retrieve images belonging to a document via the pairIndex.byDoc or similar
-        // // However, pairIndex.byDoc gives pairs, not unique images.
-        // // We can infer images from the filtered imageNodes or reconstruct it.
-        // // For the matrix, we need a starting list of images for the first region.
-        //
-        // // Strategy: Get all images for the first region from the imageNodes store
-        // const $imageNodes = get(imageNodes);
-        // const firstImages = [];
-        //
-        // // Scan all images to find those belonging to firstRegionId
-        // // This is O(N) on images, which is acceptable (<< 1M pairs)
-        // $imageNodes.forEach(img => {
-        //     if (img.regionId === firstRegionId) {
-        //         firstImages.push(img);
-        //     }
-        // });
-        //
-        // firstImages.sort((a, b) => a.canvas - b.canvas);
 
         const findPairs = (imgId, sourceRegionId, targetRegionId) => {
             const {r1, r2} = {r1: sourceRegionId, r2: targetRegionId};
