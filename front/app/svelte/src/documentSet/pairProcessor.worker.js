@@ -142,7 +142,6 @@ function getOrAddImage(imgKey, rid, map, imgStats, docStats, score) {
             xywh: coords ? coords.split(',') : null,
             type: regionsType,
             // to be initialized in the main thread
-            class: null,
             color: null
         };
         map.set(imgId, imgData);

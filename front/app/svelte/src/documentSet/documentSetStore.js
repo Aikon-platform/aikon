@@ -13,6 +13,7 @@ export function createDocumentSetStore(documentSetId) {
     const selectedCategories = writable([1]);
     const selectedRegions = writable(new Set());
     const selectedNodes = writable([]);
+
     const threshold = writable(0.5);
     const topK = writable(null); // null = disabled, number = k
     const mutualTopK = writable(false);
@@ -21,6 +22,7 @@ export function createDocumentSetStore(documentSetId) {
      * All RegionsPair objects loaded in the current context
      */
     const allPairs = writable([]);
+    const regionsMetadata = writable(new Map());
 
     // web worker for processing pairs
     let worker;
@@ -36,11 +38,6 @@ export function createDocumentSetStore(documentSetId) {
      */
     const imageNodes = writable(new Map());
 
-    /**
-     * Document nodes: Map<regionId, regionData>
-     */
-    const documentNodes = writable(new Map());
-
     const pairStats = writable({});
     const documentStats = writable({});
     const imageStats = writable({});
@@ -51,6 +48,12 @@ export function createDocumentSetStore(documentSetId) {
         images: 0,
         categories: {}
     });
+
+    /**
+     * Metadata Cache for Regions (Titles, Refs, Colors)
+     * Acts as a persistent cache to avoid refetching known regions.
+     */
+    const regionMetadata = writable(new Map());
 
     const fetchPairs = derived(selectedCategories, ($cats, set) => {
         if (worker) worker.terminate();
@@ -64,7 +67,6 @@ export function createDocumentSetStore(documentSetId) {
         // TO DELETE
 
         const load = async () => {
-
             try {
                 const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${$cats.join(',')}`);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -91,11 +93,8 @@ export function createDocumentSetStore(documentSetId) {
 
                     const currentRegions = get(selectedRegions);
                     if (currentRegions.size === 0) {
-                        selectedRegions.set(new Set(stats.documentStats.scoreCount.keys()));
+                        selectedRegions.set(new Set(Array.from(stats.documentStats.scoreCount.keys())));
                     }
-
-                    const range = stats.pairStats.scoreRange;
-                    // TODO update slider min/max
 
                     worker.terminate();
                     worker = null;
@@ -103,7 +102,7 @@ export function createDocumentSetStore(documentSetId) {
 
                 worker.onerror = (err) => {
                     console.error("Worker error", err);
-                    error.set("Error processing pairs");
+                    error.set(`Error processing pairs: ${err.message}`);
                 };
 
             } catch (e) {
@@ -114,109 +113,6 @@ export function createDocumentSetStore(documentSetId) {
         load();
         set(Promise.resolve());
     });
-
-    const filteredPairs = derived(
-        [allPairs, threshold, topK, mutualTopK],
-        ([$pairs, $threshold, $topK, $mutual]) => {
-            if (!$pairs) return [];
-
-            const result = [];
-            const len = $pairs.length;
-
-            for (let i = 0; i < len; i++) {
-                const p = $pairs[i];
-
-                // Threshold on score
-                if (p.weightedScore < $threshold) {
-                    // stop here because pairs are sorted by score
-                    // and threshold is prioritised on topK filtering
-                    break;
-                }
-
-                // TopK filtering
-                if ($topK !== null) {
-                    const k = $topK;
-                    if ($mutual) {
-                        // MBoth images must be in each other's top K
-                        if (p.rank_1 > k || p.rank_2 > k) continue;
-                    } else {
-                        // At least one image must be in top K
-                        if (p.rank_1 > k && p.rank_2 > k) continue;
-                    }
-                }
-
-                result.push(p);
-            }
-            return result;
-        }
-    );
-
-    // TODO filteredDocs ?
-    // TODO get regionInfo before fetching and processing pairs in order to have titles/colors from the start + populate documentNodes images
-
-    /**
-     * Reactively fetches region metadata (titles, colors) when document stats are populated by the worker.
-     * This compensates for the removal of the fetch logic in the main fetchPairs function.
-     */
-    const metadataFetcher = derived(documentStats, async ($docStats, set) => {
-        const regionIds = $docStats?.scoreCount ? Array.from($docStats.scoreCount.keys()) : [];
-
-        if (regionIds.length === 0) {
-            set(false);
-            return;
-        }
-
-        try {
-            const docMap = new Map();
-
-            // Parallel fetch of region details
-            await Promise.all(
-                regionIds.map(async (rid, i) => {
-                    const info = await getRegionsInfo(rid);
-                    const color = generateColor(i);
-
-                    docMap.set(rid, {
-                        id: rid,
-                        title: info.title,
-                        ref: info.ref,
-                        witnessId: info.witnessId,
-                        digitizationRef: info.digitizationRef,
-                        zeros: info.zeros,
-                        img_nb: info.img_nb,
-                        url: info.url,
-                        color,
-                        // Initialize images array (will be populated by worker logic linkage if needed,
-                        // but here we primarily need metadata for the network nodes)
-                        images: []
-                    });
-                })
-            );
-
-            // Update the writable store exposed to the UI
-            documentNodes.set(docMap);
-
-            // Also update the image nodes with the correct colors/titles now that we have them
-            imageNodes.update(imgMap => {
-                imgMap.forEach(img => {
-                    const doc = docMap.get(img.regionId);
-                    if (doc) {
-                        img.color = doc.color;
-                        img.title = (doc.title || `Region ${img.regionId}`) + `<br>Page ${img.canvas}`;
-                    }
-                });
-                return imgMap;
-            });
-
-            set(true);
-        } catch (e) {
-            console.error("Error fetching region metadata", e);
-            error.set(e.message);
-            set(false);
-        }
-    });
-    // Force subscription to ensure the side-effect runs even if the UI doesn't explicitly subscribe to this derived store
-    metadataFetcher.subscribe(() => {});
-
 
     async function getRegionsInfo(regionId) {
         try {
@@ -245,6 +141,110 @@ export function createDocumentSetStore(documentSetId) {
         }
     }
 
+    /**
+     * Map<regionId, regionData>
+     */
+    const documentNodes = derived(documentStats, ($stats, set) => {
+        if (!$stats?.scoreCount) {
+            set(new Map());
+            return;
+        }
+
+        const ids = Array.from($stats.scoreCount.keys());
+        const $meta = get(regionsMetadata);
+        const $imageNodes = get(imageNodes);
+
+        const nodes = new Map();
+        const missingIds = [];
+
+        ids.forEach((id, index) => {
+            if (!$meta.has(id)) missingIds.push(id);
+
+            const info = $meta.get(id) || {};
+            nodes.set(id, {
+                id,
+                title: info.title || `Loading...`,
+                color: info.color || generateColor(index),
+                images: [],
+                ...info
+            });
+        });
+
+        $imageNodes.forEach(img => {
+            const doc = nodes.get(img.regionId);
+            if (doc) {
+                img.color = doc.color;
+                img.title = `${doc.title} | Page ${img.canvas}`;
+                doc.images.push(img);
+            }
+        });
+
+        nodes.forEach(doc => doc.images.sort((a, b) => a.canvas - b.canvas));
+
+        set(nodes);
+
+        if (missingIds.length > 0) {
+            Promise.all(missingIds.map(id => getRegionsInfo(id)
+                .then(info => ({id, info}))))
+                .then(results => {
+                    regionsMetadata.update(current => {
+                        results.forEach(({id, info}) => current.set(id, info));
+                        return current;
+                    });
+                });
+        }
+    }, new Map());
+
+    const filteredPairs = derived(
+        [allPairs, threshold, topK, mutualTopK, selectedRegions],
+        ([$pairs, $threshold, $topK, $mutual, $regions]) => {
+            if (!$pairs) return [];
+            const result = [];
+
+            for (let i = 0; i < $pairs.length; i++) {
+                const p = $pairs[i];
+
+                // 1. Score threshold (pairs are sorted by score threshold is prioritised on topK filtering)
+                if (p.weightedScore < $threshold) break;
+
+                // 2. Region filter
+                if (!$regions.has(p.regions_id_1) || !$regions.has(p.regions_id_2)) continue;
+
+                // 3. TopK filtering
+                if ($topK !== null) {
+                    if ($mutual) {
+                        if (p.rank_1 > $topK || p.rank_2 > $topK) continue;
+                    } else {
+                        if (p.rank_1 > $topK && p.rank_2 > $topK) continue;
+                    }
+                }
+                result.push(p);
+            }
+            return result;
+        }
+    );
+
+    const filteredDocs = derived(
+        [filteredPairs, documentNodes],
+        ([$pairs, $docNodes]) => {
+            if (!$pairs.length || $docNodes.size === 0) return [];
+
+            const activeDocIds = new Set();
+            for (const p of $pairs) {
+                activeDocIds.add(p.regions_id_1);
+                activeDocIds.add(p.regions_id_2);
+            }
+
+            const docs = [];
+            activeDocIds.forEach(id => {
+                const doc = $docNodes.get(id);
+                if (doc) docs.push(doc);
+            });
+
+            return docs.sort((a, b) => b.id - a.id);
+        }
+    );
+
     function calculateLinkProps(score, scoreRange, minDistance = 10, maxDistance = 200, minWidth = 2, maxWidth = 25) {
         if (!scoreRange) return {strength: 0.5, distance: 100, width: 2};
 
@@ -269,7 +269,7 @@ export function createDocumentSetStore(documentSetId) {
      */
     const imageNetwork = derived([filteredPairs], ([$pairs]) => {
         const $imageNodes = get(imageNodes);
-        const $stats = get(imageStats);
+        const $imgStats = get(imageStats);
         const $pairStats = get(pairStats);
 
         const activeNodes = new Set();
@@ -293,12 +293,12 @@ export function createDocumentSetStore(documentSetId) {
         for (const imgId of activeNodes) {
             const nodeData = $imageNodes.get(imgId);
             if (nodeData) {
-                const imgStats = $stats.scoreCount?.get(imgId);
+                const imgStats = $imgStats.scoreCount?.get(imgId);
                 const {count, score} = imgStats;
 
                 nodes.push({
                     ...nodeData,
-                    radius: normalizeRadius(score, $stats.scoreRange),
+                    radius: normalizeRadius(score, $imgStats.scoreRange),
                     label: `Region: ${nodeData.regionId}\nPage: ${nodeData.canvas}\nConnections: ${count}\nTotal score: ${score.toFixed(2)}`
                 });
             }
@@ -307,37 +307,7 @@ export function createDocumentSetStore(documentSetId) {
         return { nodes, links };
     });
 
-    /**
-     * Helper to filter network based on active regions
-     * (Kept for compatibility, though imageNetwork now handles region filtering internally for performance)
-     */
-    function filterNetwork(network, activeRegions, keyRid="id") {
-        if (activeRegions.size === 0) return network;
-        if (activeRegions.size === network.nodes.length) return network;
-
-        const nodeIds = new Set();
-        const nodes = network.nodes.filter(n => {
-            if (activeRegions.has(n[keyRid])){
-                nodeIds.add(n.id);
-                return true;
-            }
-            return false;
-        });
-        const links = network.links.filter(l => {
-            const srcId = l.source?.id ?? l.source;
-            const tgtId = l.target?.id ?? l.target;
-            return nodeIds.has(srcId) && nodeIds.has(tgtId);
-        });
-
-        return {...network, nodes, links};
-    }
-
-    // const filteredImageNetwork = derived([imageNetwork, selectedRegions], ([$network, $active]) => {
-    //     // Redundant filtering if imageNetwork already filters, but keeps architectural consistency
-    //     return filterNetwork($network, $active, "regionId");
-    // });
-
-    const documentNetwork = derived([documentNodes], ([$docNodes]) => {
+    const documentNetwork = derived(filteredDocs, ($docNodes) => {
         const $docPairStats = get(docPairStats);
         const $docStats = get(documentStats)
 
@@ -365,10 +335,6 @@ export function createDocumentSetStore(documentSetId) {
         return { nodes, links };
     });
 
-    const filteredDocumentNetwork = derived([documentNetwork, selectedRegions], ([$network, $active]) => {
-        return filterNetwork($network, $active);
-    });
-
     /**
      * Matrix Visualization Logic
      * returns {
@@ -390,7 +356,7 @@ export function createDocumentSetStore(documentSetId) {
 
         const firstDoc = $documentNodes.get(firstRegionId);
         if (!firstDoc?.images) return {regions: orderedSelection, rows: []};
-        const firstImages = [...firstDoc.images].sort((a, b) => a.canvas - b.canvas);
+        const firstImages = firstDoc.images; // already sorted by canvas in documentNodes
 
         // TODO do populate documentNodes images when processing pairs in the worker
         // // Note: The worker does not populate doc.images in the documentNodes map
@@ -514,7 +480,7 @@ export function createDocumentSetStore(documentSetId) {
         imageNodes,
         fetchPairs,
         imageNetwork,
-        documentNetwork: filteredDocumentNetwork,
+        documentNetwork,
         selectedCategories,
         pairStats,
         documentStats,
