@@ -42,6 +42,10 @@ export function createDocumentSetStore(documentSetId) {
      * Image nodes: Map<imgId, imageData>
      */
     const imageNodes = writable(new Map());
+    /**
+     * Document nodes: Map<regionId, regionData>
+     */
+    const documentNodes = writable(new Map());
 
     const pairStats = writable({});
     const documentStats = writable({});
@@ -49,7 +53,7 @@ export function createDocumentSetStore(documentSetId) {
     const docPairStats = writable({});
     const docSetNumber = writable({
         documents: 0,
-        pairs: 0,
+        pairs: null,
         images: 0,
         categories: {}
     });
@@ -71,70 +75,103 @@ export function createDocumentSetStore(documentSetId) {
         // const documentSetId = 417; // traité de géométrie
         // TO DELETE
 
-        const load = async () => {
-            try {
-                const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${$cats.join(',')}`);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const rawData = await response.json();
+        const loadPromise = new Promise((resolve, reject) => {
+            const load = async () => {
+                try {
+                    const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${$cats.join(',')}`);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const rawData = await response.json();
 
-                worker = createWorker();
+                    worker = createWorker();
 
-                worker.postMessage({
-                    rawPairs: rawData,
-                    selectedCategories: $cats
-                });
-
-                worker.onmessage = async (e) => {
-                    const { allPairs: sorted, imageNodes: imgMap, pairIndex: idx, stats } = e.data;
-
-                    allPairs.set(sorted);
-                    imageNodes.set(imgMap);
-                    pairIndex.set(idx);
-
-                    pairStats.set(stats.pairStats);
-                    documentStats.set(stats.documentStats);
-                    imageStats.set(stats.imageStats);
-                    docPairStats.set(stats.docPairStats);
-
-                    const regionIds = Array.from(stats.documentStats.scoreCount.keys());
-
-                    const currentRegions = get(selectedRegions);
-                    if (currentRegions.size === 0) {
-                        selectedRegions.set(new Set(regionIds));
-                    }
-
-                    docSetNumber.set({
-                        documents: regionIds.length,
-                        pairs: sorted.length,
-                        images: imgMap.size,
-                        categories: $cats.reduce((acc, c) => ({...acc, [c]: true}), {})
+                    worker.postMessage({
+                        rawPairs: rawData,
+                        selectedCategories: $cats
                     });
 
-                    const results = await Promise.all(
-                        regionIds.map(id => getRegionsInfo(id).then(info => ({id, info})))
-                    );
+                    worker.onmessage = async (e) => {
+                        const { allPairs: sorted, imageNodes: imgMap, pairIndex: idx, categories: cats, stats } = e.data;
 
-                    regionsMetadata.update(current => {
-                        results.forEach(({id, info}) => current.set(id, info));
-                        return current;
-                    });
+                        pairIndex.set(idx);
 
-                    worker.terminate();
-                    worker = null;
-                };
+                        pairStats.set(stats.pairStats);
+                        documentStats.set(stats.documentStats);
+                        imageStats.set(stats.imageStats);
+                        docPairStats.set(stats.docPairStats);
 
-                worker.onerror = (err) => {
-                    console.error("Worker error", err);
-                    error.set(`Error processing pairs: ${err.message}`);
-                };
+                        const regionIds = Array.from(stats.documentStats.scoreCount.keys());
 
-            } catch (e) {
-                error.set(`Fetch error: ${e.message}`);
-            }
-        };
+                        const currentRegions = get(selectedRegions);
+                        if (currentRegions.size === 0) {
+                            selectedRegions.set(new Set(regionIds));
+                        }
 
-        load();
-        set(Promise.resolve());
+                        const results = await Promise.all(
+                            regionIds.map(id => getRegionsInfo(id).then(info => ({id, info})))
+                        );
+
+                        const metaMap = new Map();
+                        results.forEach(({id, info}) => metaMap.set(id, info));
+                        regionsMetadata.set(metaMap);
+
+                        const docMap = new Map();
+                        regionIds.forEach((id, index) => {
+                            const info = metaMap.get(id) || {};
+                            docMap.set(id, {
+                                id,
+                                title: info.title || `Region Extraction ${id}`,
+                                color: info.color || generateColor(index),
+                                images: [],
+                                ...info
+                            });
+                        });
+
+                        imgMap.forEach(img => {
+                            const doc = docMap.get(img.regionId);
+                            if (doc) {
+                                img.color = doc.color;
+                                img.title = `${doc.title} | Page ${img.canvas}`;
+                                doc.images.push(img);
+                            }
+                        });
+
+                        docMap.forEach(doc => doc.images.sort((a, b) => a.canvas - b.canvas));
+
+                        imageNodes.set(imgMap);
+                        documentNodes.set(docMap);
+
+                        docSetNumber.set({
+                            documents: regionIds.length,
+                            pairs: sorted.length,
+                            images: imgMap.size,
+                            categories: cats
+                        });
+
+                        allPairs.set(sorted);
+
+                        worker.terminate();
+                        worker = null;
+                        resolve(sorted.length);
+                    };
+
+                    worker.onerror = (err) => {
+                        console.error("Worker error", err);
+                        const errMsg = `Error processing pairs: ${err.message}`;
+                        error.set(errMsg);
+                        reject(new Error(errMsg));
+                    };
+
+                } catch (e) {
+                    const errMsg = `Fetch error: ${e.message}`;
+                    error.set(errMsg);
+                    reject(new Error(errMsg));
+                }
+            };
+
+            load();
+        });
+
+        set(loadPromise);
     });
 
     async function getRegionsInfo(regionId) {
@@ -164,41 +201,8 @@ export function createDocumentSetStore(documentSetId) {
         }
     }
 
-    /**
-     * Map<regionId, regionData>
-     */
-    const documentNodes = derived(regionsMetadata, ($meta) => {
-        if (!$meta.size) return new Map();
-
-        const ids = Array.from($meta.keys());
-        const $imageNodes = get(imageNodes);
-        const nodes = new Map();
-
-        ids.forEach((id, index) => {
-            const info = $meta.get(id);
-            nodes.set(id, {
-                id,
-                title: info.title || `Region Extraction ${id}`,
-                color: info.color || generateColor(index),
-                images: [],
-                ...info
-            });
-        });
-
-        $imageNodes.forEach(img => {
-            const doc = nodes.get(img.regionId);
-            if (doc) {
-                img.color = doc.color;
-                img.title = `${doc.title} | Page ${img.canvas}`;
-                doc.images.push(img);
-            }
-        });
-
-        nodes.forEach(doc => doc.images.sort((a, b) => a.canvas - b.canvas));
-
-        return nodes;
-    });
-
+    // TODO make filtering more efficient by remembering what was filtered last time
+    // TODO and only applying the delta (keep in memory last threshold, topK, regions etc)
     const filteredPairs = derived(
         [allPairs, threshold, topK, mutualTopK, selectedRegions],
         ([$pairs, $threshold, $topK, $mutual, $regions]) => {
@@ -455,7 +459,6 @@ export function createDocumentSetStore(documentSetId) {
 
     return {
         error,
-        // to keep ?
         allPairs, // Contains all pairs sorted
         visiblePairs: filteredPairs, // Optimized for visualization
         pairIndex,

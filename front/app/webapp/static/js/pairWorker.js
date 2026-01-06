@@ -9,7 +9,7 @@ self.onmessage = (e) => {
 
 function processPairs(data) {
     const pairs = [];
-    const imageMap = new Map(); // imgId -> imgNode
+    const imageMap = new Map();
 
     const index = {
         byImage: new Map(),   // imgId -> [pairs]
@@ -21,6 +21,7 @@ function processPairs(data) {
     const docStats = createStatsObject();
     const imgStats = createStatsObject();
     const docPStats = createStatsObject();
+    const categories = {};
 
     const weights = {1: 1.0, 2: 0.5, 3: 0.125, 4: -1.0, 5: 0.125};
 
@@ -28,9 +29,13 @@ function processPairs(data) {
     for (let i = 0; i < len; i++) {
         const p = data[i];
 
-        if (p.category === 4) continue;
+        const cat = p.category || 0;
 
-        const w = weights[p.category] || 0;
+        if (cat === 4) continue;
+
+        categories[cat] = (categories[cat] || 0) + 1;
+
+        const w = weights[cat] || 0;
         const baseScore = p.score ?? w;
         const weightedScore = Math.max(0.01, baseScore + baseScore * w);
 
@@ -47,7 +52,7 @@ function processPairs(data) {
 
             score: p.score,
             weightedScore: weightedScore,
-            category: p.category,
+            category: cat,
             is_manual: p.is_manual,
 
             // Rank for topk filtering
@@ -103,6 +108,7 @@ function processPairs(data) {
         allPairs: pairs,
         imageNodes: imageMap,
         pairIndex: index,
+        categories,
         stats: {
             pairStats: pStats,
             documentStats: docStats,

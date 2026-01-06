@@ -325,3 +325,56 @@ export function openModal(node) {
         }
     };
 }
+
+export function syncStoreWithURL(store, paramName, type = 'string') {
+    const parsers = {
+        string: (params) => params.get(paramName) || '',
+        array: (params) => {
+            const value = params.get(paramName);
+            return value ? value.split(',').map(Number).filter(v => !isNaN(v)) : null;
+        },
+        set: (params) => {
+            const value = params.get(paramName);
+            return value ? new Set(value.split(',').map(Number).filter(v => !isNaN(v))) : null;
+        },
+        number: (params) => Number(params.get(paramName)) || 0,
+        boolean: (params) => params.get(paramName) === 'true'
+    };
+
+    const serializers = {
+        string: (url, value) => value ? url.searchParams.set(paramName, value) : url.searchParams.delete(paramName),
+        array: (url, values) => {
+            if (values.length) {
+                url.searchParams.set(paramName, values.join(','));
+            } else {
+                url.searchParams.delete(paramName);
+            }
+        },
+        set: (url, values) => {
+            if (values.size) {
+                url.searchParams.set(paramName, Array.from(values).join(','));
+            } else {
+                url.searchParams.delete(paramName);
+            }
+        },
+        number: (url, value) => url.searchParams.set(paramName, String(value)),
+        boolean: (url, value) => value ? url.searchParams.set(paramName, 'true') : url.searchParams.delete(paramName)
+    };
+
+    if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const parsed = parsers[type](params);
+
+        // N'initialiser que si une valeur existe dans l'URL
+        if (parsed !== null) {
+            store.set(parsed);
+        }
+
+        return (value) => {
+            const url = new URL(window.location);
+            serializers[type](url, value);
+            window.history.pushState({}, "", url);
+        };
+    }
+    return () => {};
+}

@@ -1,19 +1,38 @@
 <script>
+    import {onMount} from 'svelte';
+    import {setContext} from "svelte";
+
     import {appLang} from '../constants';
+    import {syncStoreWithURL} from '../utils';
+
     import Layout from '../Layout.svelte';
     import Sidebar from './Sidebar.svelte';
     import NetworkVisualization from './NetworkVisualization.svelte';
     import DocumentMatrix from './DocumentMatrix.svelte';
     import {createDocumentSetStore} from './documentSetStore.js';
     import NetworkInfo from "./NetworkInfo.svelte";
-    import {setContext} from "svelte";
     import Clusters from "./Clusters.svelte";
     import {createClusterStore} from "./clusterStore.js";
 
     export let docSet;
 
     const documentSetStore = createDocumentSetStore(docSet.id);
-    const {error, fetchPairs} = documentSetStore;
+    const {error, fetchPairs, selectedRegions, selectedCategories} = documentSetStore;
+
+    let syncRegions, syncCategories;
+    onMount(() => {
+        syncRegions = syncStoreWithURL(selectedRegions, 'regions', 'set');
+        syncCategories = syncStoreWithURL(selectedCategories, 'categories', 'array');
+
+        const unsubRegions = selectedRegions.subscribe(syncRegions);
+        const unsubCategories = selectedCategories.subscribe(syncCategories);
+
+        return () => {
+            unsubRegions();
+            unsubCategories();
+        };
+    });
+
     import {clusterSelection} from '../selection/selectionStore.js';
 
     const {selected} = clusterSelection;
