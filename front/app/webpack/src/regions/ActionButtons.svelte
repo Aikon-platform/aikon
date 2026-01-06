@@ -1,8 +1,10 @@
 <script>
     import { getContext } from 'svelte';
     import { manifestToMirador, showMessage, downloadBlob, withLoading } from "../utils.js";
-    import { selectionStore } from "../selection/selectionStore.js";
-    const { selected, nbSelected } = selectionStore;
+
+    import { regionsSelection } from "../selection/selectionStore.js";
+    const { selected, nbSelected } = regionsSelection;
+
     import { regionsStore } from './regionsStore.js';
     const { allRegions } = regionsStore;
     import { appName, appLang, regionsType, csrfToken } from '../constants';
@@ -10,9 +12,10 @@
     const manifest = getContext('manifest');
     const isValidated = getContext('isValidated');
 
-    $: selectionLength = $nbSelected(true);
+    $: selectionLength = $nbSelected;
     $: isEditMode = !isValidated;
-    $: selectedRegions = $selected(true);
+    // $selected = {"Regions" : [{S}, {E}, {L}, {E}, {C}, {T}, {I}, {O}, {N}]}
+    $: selectedRegions = Object.values($selected)[0] || {};
 
     // TODO here when there is not only one document selected, this assertion is erroneous
     $: areAllSelected = selectionLength >= Object.keys($allRegions).length;
@@ -23,7 +26,6 @@
     }
 
     // TODO add toggle button to switch in between select mode and view mode
-
     async function deleteSelectedRegions() {
         const confirmed = await showMessage(
             appLang === "en" ? "Are you sure you want to delete these regions?" : "Voulez-vous vraiment supprimer ces régions ?",
@@ -35,24 +37,24 @@
             return; // User cancelled the deletion
         }
 
-        for (const regionId of Object.keys(selectedRegions)) {
+        for (const [regionId, regionData] of Object.entries(selectedRegions)) {
             try {
                 if (!$allRegions.hasOwnProperty(regionId)) {
                     // only delete regions that are displayed
                     continue;
                 }
-                await deleteRegion(regionId);
+                await deleteRegion(regionData);
                 regionsStore.remove(regionId);
-                selectionStore.remove(regionId, regionsType)
+                regionsSelection.remove(regionId, regionsType)
 
             } catch (error) {
                 await showMessage(`Failed to delete region ${regionId}: ${error.message}`, "Error");
             }
         }
     }
-    async function deleteRegion(regionId) {
-        const HTTP_SAS = SAS_APP_URL.replace("https", "http");
-        const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${HTTP_SAS}/annotation/${regionId}`;
+    async function deleteRegion(regionData) {
+        const regionIdFull = regionData.id_full;  // full @id of the region.
+        const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${regionIdFull}`;
 
         const response = await fetch(urlDelete, { method: "DELETE"});
 
@@ -63,15 +65,15 @@
 
     function toggleAllSelection() {
         if (areAllSelected) {
-            selectionStore.removeAll(Object.keys($allRegions), regionsType);
+            regionsSelection.removeAll(Object.keys($allRegions), regionsType);
         } else {
-            selectionStore.addAll(Object.values($allRegions));
+            regionsSelection.addAll(Object.values($allRegions));
         }
     }
 
     async function downloadRegions(){
         // download only displayed regions?
-        const regionsRef = Object.values($selected(true)).map(r => r.ref);
+        const regionsRef = Object.values(selectedRegions).map(r => r.ref);
         const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/regions/export`, {
             method: "POST",
             headers: { "X-CSRFToken": csrfToken },

@@ -1,0 +1,38 @@
+<script>
+    import {appLang} from "../constants.js";
+
+    export let activeTab = "img";
+    export let documentSetStore;
+    const { imageStats, documentStats, docPairStats } = documentSetStore;
+
+    $: currentStats = activeTab === "img" ? $imageStats : activeTab === "doc" ? $documentStats : $docPairStats;
+</script>
+
+<div class="level has-text-centered">
+    <div class="level-item">
+        <div>
+            <p class="heading">{appLang === "en" ? "Nodes" : "Nœuds"}</p>
+            <p class="title is-5">{currentStats.count || 0}</p>
+        </div>
+    </div>
+    <div class="level-item">
+        <div>
+            <p class="heading">{appLang === 'en' ? 'Edges' : 'Liens'}</p>
+            <p class="title is-5">{currentStats.links || 0}</p>
+        </div>
+    </div>
+    {#if currentStats?.clusters}
+        <div class="level-item">
+            <div>
+                <p class="heading">Clusters</p>
+                <p class="title is-5">{currentStats.clusters || 0}</p>
+            </div>
+        </div>
+    {/if}
+    <div class="level-item">
+        <div>
+            <p class="heading">{appLang === 'en' ? 'Density' : 'Densité'}</p>
+            <p class="title is-5">{currentStats?.density?.toFixed(3) || 0}</p>
+        </div>
+    </div>
+</div>

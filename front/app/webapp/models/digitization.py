@@ -41,7 +41,7 @@ from app.webapp.utils.functions import (
 )
 from app.webapp.utils.paths import (
     IMG_PATH,
-    MEDIA_DIR,
+    MEDIA_PATH,
     IMG_DIR,
     REGIONS_PATH,
     PDF_DIR,
@@ -183,7 +183,7 @@ class Digitization(AbstractSearchableModel):
         return IMG_DIR if self.digit_type == IMG_ABBR else PDF_DIR
 
     def get_absolute_path(self):
-        return f"{MEDIA_DIR}/{self.get_relative_path()}"
+        return f"{MEDIA_PATH}/{self.get_relative_path()}"
 
     def get_file_path(self, is_abs=True, i=None, ext=None):
         path = self.get_absolute_path() if is_abs else self.get_relative_path()
@@ -378,14 +378,6 @@ class Digitization(AbstractSearchableModel):
                 return error
         return error
 
-    def get_nb_of_pages(self):
-        import PyPDF2
-
-        with open(self.get_file_path(), "rb") as pdf_file:
-            pdf_reader = PyPDF2.PdfFileReader(pdf_file)
-            page_nb = pdf_reader.getNumPages()
-        return page_nb
-
         # NOTE methods to be used inside list columns of witnesses
 
     def regions_btn(self):
@@ -451,9 +443,8 @@ class Digitization(AbstractSearchableModel):
     def delete(self, using=None, keep_parents=False):
         super().delete()
 
-    def add_info(self, license_url, source):
+    def add_info(self, license_url):
         self.license = license_url
-        # self.add_source(source)
         if license_url != NO_LICENSE:
             self.is_open = True
         self.save(update_fields=["license", "source", "is_open"])

@@ -357,6 +357,11 @@ td.is-fullwidth {
     color: var(--selected);
 }
 
+.checked > figure {
+    outline: 4px solid var(--bulma-link);
+    border-radius: var(--bulma-card-radius);
+}
+
 .hoverable:hover {
     cursor: pointer;
     text-decoration: underline;
@@ -366,4 +371,25 @@ td.is-fullwidth {
     list-style: none !important;
     margin: 0 !important;
     font-size: 1rem !important;
+}
+
+.body-content {
+    max-width: 90vw;
+}
+
+#footer {
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+    z-index: 5;
+    position: relative;
+}
+
+.visible {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+.ctrl-extra .ctrl-block {
+    width: 100%;
+    display: grid;
+    grid-template-rows: 100%;
+    grid-template-columns: 1fr 5.7fr; /** make items seem horizontally centered with .ctrl-base .ctrl-block */
 }

@@ -665,45 +665,11 @@ def reset_similarity(regions: Regions):
     return True
 
 
-def regions_from_img(q_img: str) -> int:
-    """
-    retrieve the regions id (member of `RegionPair.(regions_id_1|regions_id_2)`)
-    for an image q_img (member of `RegionPair.(img_1|img_2)`).
-    union.first() raises an error so we run 2 queries instead
-    returns the ID of the regions object associated with the image.
-    """
+def regions_from_img(q_img: str, candidate_rids: list[int] = None) -> int:
     if not q_img.endswith(".jpg"):
         q_img = f"{q_img}.jpg"
 
-    q1 = RegionPair.objects.values_list("regions_id_1").filter(img_1=q_img).first()
-    if q1:
-        return q1[0]
-    q2 = RegionPair.objects.values_list("regions_id_2").filter(img_2=q_img).first()
-    if q2:
-        return q2[0]
-
-    def get_digit_id(img):
-        return int(re.findall(r"\d+", img)[1])
-
-    def get_digit_regions_id(digit_id):
-        try:
-            digit = Digitization.objects.get(id=digit_id)
-        except Digitization.DoesNotExist:
-            log(
-                f"[get_regions_from_digit] Digitization with id {digit_id} does not exist"
-            )
-            digit = None
-        regions = list(digit.get_regions() if digit else [])
-        if not regions:
-            regions = Regions.objects.create(
-                digitization=digit,
-                model="manual",
-            )
-        else:
-            regions = regions[0]
-        return int(regions.id)
-
-    return get_digit_regions_id(get_digit_id(q_img))
+    return RegionPair.rid_from_img(q_img, candidate_rids)
 
 
 def add_user_to_category_x(region_pair: RegionPair, user_id: int):
@@ -713,3 +679,135 @@ def add_user_to_category_x(region_pair: RegionPair, user_id: int):
         region_pair.category_x.append(user_id)
     region_pair.category_x = [c for c in region_pair.category_x if c is not None]
     return region_pair
+
+
+def filter_pairs(
+    regions_ids, exclusive, min_score, max_score, topk, exclude_self, categories
+):
+    if exclusive:
+        # get all pairs where regions_id_1 AND regions_id_2 are in q_regions ids
+        query = Q(regions_id_1__in=regions_ids) & Q(regions_id_2__in=regions_ids)
+    else:
+        # get all pairs where regions_id_1 OR regions_id_2 are in regions_ids ids
+        query = Q(regions_id_1__in=regions_ids) | Q(regions_id_2__in=regions_ids)
+
+    if min_score is not None:
+        query &= Q(score__gte=float(min_score))
+
+    if max_score is not None:
+        query &= Q(score__lte=float(max_score))
+
+    if exclude_self:
+        query &= ~Q(regions_id_1=F("regions_id_2"))
+        # if exclude_self, we need to exclude regions from the same witness
+        # same_witness_regions = set()
+        # for r in Regions.objects.filter(id__in=regions_ids).select_related('witness'):
+        #     witness_regions = r.witness.get_regions()
+        #     if len(witness_regions) > 1:
+        #         same_witness_regions.update([wr.id for wr in witness_regions])
+        # if same_witness_regions:
+        #     query &= ~(Q(regions_id_1__in=same_witness_regions) & Q(regions_id_2__in=same_witness_regions))
+
+    if categories:
+        has_no_category = 0 in categories
+        real_categories = [c for c in categories if c != 0]
+
+        if has_no_category and real_categories:
+            query &= Q(category__in=real_categories) | Q(category__isnull=True)
+        elif has_no_category:
+            query &= Q(category__isnull=True)
+        elif real_categories:
+            query &= Q(category__in=real_categories)
+
+    pairs = RegionPair.objects.filter(query).order_by(F("score").desc(nulls_first=True))
+    if not pairs.exists():
+        log(f"[filter_pairs] No pairs found matching the criteria {query}")
+        return []
+
+    if topk is not None:
+        topk = int(topk)
+        pairs = pairs[:topk]
+
+    return [p.to_dict() for p in pairs]
+
+
+def retrieve_pair(img1, img2, regions_id_1, regions_id_2, create=False):
+    def check_region_ids(pair):
+        if not pair:
+            return False
+        return (
+            pair.regions_id_1 == regions_id_1 and pair.regions_id_2 == regions_id_2
+        ) or (pair.regions_id_1 == regions_id_2 and pair.regions_id_2 == regions_id_1)
+
+    try:
+        region_pair = RegionPair.objects.get(img_1=img1, img_2=img2)
+        if check_region_ids(region_pair):
+            return region_pair, "OK"
+    except RegionPair.DoesNotExist:
+        pass
+
+    try:
+        region_pair = RegionPair.objects.get(img_1=img2, img_2=img1)
+        if check_region_ids(region_pair):
+            return region_pair, "OK"
+    except RegionPair.DoesNotExist:
+        if not create:
+            return None, "No region pair found in database"
+
+        region_pair = RegionPair.objects.create(
+            img_1=img1,
+            img_2=img2,
+            regions_id_1=regions_id_1,
+            regions_id_2=regions_id_2,
+            score=None,
+            is_manual=False,
+            similarity_type=1,
+            category_x=[],
+        )
+        return region_pair, "New region pair created"
+
+    return None, "Region pair found but regions IDs do not match"
+
+
+def get_or_create_pair(img_1, img_2, rid_1, rid_2, create=True):
+    if sort_key(img_2) < sort_key(img_1):
+        img_1, img_2 = img_2, img_1
+        rid_1, rid_2 = rid_2, rid_1
+
+    pair = RegionPair.objects.filter(
+        # Q(img_1=img_1, img_2=img_2) | Q(img_1=img_2, img_2=img_1)
+        img_1=img_1,
+        img_2=img_2,
+    ).first()
+
+    if pair:
+        if pair.regions_id_1 not in [rid_1, rid_2] or pair.regions_id_2 not in [
+            rid_1,
+            rid_2,
+        ]:
+            log(
+                f"[get_or_create_pair] Pair regions ids ({pair.regions_id_1}-{pair.regions_id_2})"
+                f" do not match provided ids ({rid_1}-{rid_2})"
+            )
+        return pair, False
+
+    if not create:
+        return None, False
+
+    rid_1 = regions_from_img(img_1, candidate_rids=[rid_1, rid_2])
+    rid_2 = regions_from_img(img_2, candidate_rids=[rid_2, rid_1])
+
+    return (
+        RegionPair(
+            img_1=img_1,
+            img_2=img_2,
+            regions_id_1=rid_1,
+            regions_id_2=rid_2,
+            category=1,
+            similarity_type=3,
+            is_manual=True,
+            score=None,
+            category_x=[],
+        ),
+        True,
+    )
