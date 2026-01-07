@@ -434,7 +434,7 @@ def add_region_pair(request, wid, rid=None):
                 region_pair.score = None
 
             region_pair = add_user_to_category_x(region_pair, request.user.id)
-            region_pair.save()
+            region_pair.save(validate=True)
         except RegionPair.DoesNotExist:
             region_pair = RegionPair.objects.create(
                 img_1=img_1,
@@ -580,6 +580,7 @@ def save_category(request):
                 "category": category,
                 "is_manual": data.get("is_manual", False),
                 "similarity_type": similarity_type,
+                "category_x": [],
             },
         )
         region_pair = add_user_to_category_x(region_pair, request.user.id)
@@ -674,12 +675,21 @@ def exact_match_batch(request):
             )
 
             if created:
+                region_pair.category = 1
                 pairs_to_create.append(region_pair)
             elif region_pair.category != 1:
                 region_pair.category = 1
                 pairs_to_update.append(region_pair)
             else:
                 results["already_matched"] += 1
+            # log(
+            #     f"[exact_match_batch] Pair ({created}): {region_pair.img_1}-{region_pair.img_2} => {region_pair.category}"
+            # )
+            # region_pair.category = 1
+            # if created:
+            #     pairs_to_create.append(region_pair)
+            # else:
+            #     pairs_to_update.append(region_pair)
 
         if pairs_to_create:
             RegionPair.objects.bulk_create(pairs_to_create)
@@ -688,7 +698,8 @@ def exact_match_batch(request):
         if pairs_to_update:
             RegionPair.objects.bulk_update(
                 pairs_to_update,
-                ["img_1", "img_2", "regions_id_1", "regions_id_2", "category"],
+                # ["category", "regions_id_1", "regions_id_2", "img_1", "img_2"],
+                ["category"],
             )
             results["updated"] = len(pairs_to_update)
 
@@ -712,8 +723,6 @@ def uncategorize_pair_batch(request):
             pair, _ = get_or_create_pair(
                 pair_data["img_1"],
                 pair_data["img_2"],
-                pair_data["regions_id_1"],
-                pair_data["regions_id_2"],
                 create=False,
             )
             if pair and pair.category is not None:

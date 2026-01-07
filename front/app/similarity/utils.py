@@ -665,45 +665,11 @@ def reset_similarity(regions: Regions):
     return True
 
 
-def regions_from_img(q_img: str) -> int:
-    """
-    retrieve the regions id (member of `RegionPair.(regions_id_1|regions_id_2)`)
-    for an image q_img (member of `RegionPair.(img_1|img_2)`).
-    union.first() raises an error so we run 2 queries instead
-    returns the ID of the regions object associated with the image.
-    """
+def regions_from_img(q_img: str, candidate_rids: list[int] = None) -> int:
     if not q_img.endswith(".jpg"):
         q_img = f"{q_img}.jpg"
 
-    q1 = RegionPair.objects.values_list("regions_id_1").filter(img_1=q_img).first()
-    if q1:
-        return q1[0]
-    q2 = RegionPair.objects.values_list("regions_id_2").filter(img_2=q_img).first()
-    if q2:
-        return q2[0]
-
-    def get_digit_id(img):
-        return int(re.findall(r"\d+", img)[1])
-
-    def get_digit_regions_id(digit_id):
-        try:
-            digit = Digitization.objects.get(id=digit_id)
-        except Digitization.DoesNotExist:
-            log(
-                f"[get_regions_from_digit] Digitization with id {digit_id} does not exist"
-            )
-            digit = None
-        regions = list(digit.get_regions() if digit else [])
-        if not regions:
-            regions = Regions.objects.create(
-                digitization=digit,
-                model="manual",
-            )
-        else:
-            regions = regions[0]
-        return int(regions.id)
-
-    return get_digit_regions_id(get_digit_id(q_img))
+    return RegionPair.rid_from_img(q_img, candidate_rids)
 
 
 def add_user_to_category_x(region_pair: RegionPair, user_id: int):
@@ -803,34 +769,43 @@ def retrieve_pair(img1, img2, regions_id_1, regions_id_2, create=False):
     return None, "Region pair found but regions IDs do not match"
 
 
-def get_or_create_pair(img_1, img_2, regions_id_1, regions_id_2, create=True):
-    img_1, img_2 = sorted([img_1, img_2], key=sort_key)
-    existing_pair = RegionPair.objects.filter(
-        Q(img_1=img_1, img_2=img_2) | Q(img_1=img_2, img_2=img_1)
+def get_or_create_pair(img_1, img_2, rid_1, rid_2, create=True):
+    if sort_key(img_2) < sort_key(img_1):
+        img_1, img_2 = img_2, img_1
+        rid_1, rid_2 = rid_2, rid_1
+
+    pair = RegionPair.objects.filter(
+        # Q(img_1=img_1, img_2=img_2) | Q(img_1=img_2, img_2=img_1)
+        img_1=img_1,
+        img_2=img_2,
     ).first()
 
-    if existing_pair:
-        rid_1, rid_2 = existing_pair.regions_id_1, existing_pair.regions_id_2
-        region_ids = [int(regions_id_2), int(regions_id_1)]
-        if (rid_1 not in region_ids) and (rid_2 not in region_ids):
+    if pair:
+        if pair.regions_id_1 not in [rid_1, rid_2] or pair.regions_id_2 not in [
+            rid_1,
+            rid_2,
+        ]:
             log(
-                f"[get_or_create_pair] Region pair for {img_1}-{img_2} already exists for regions {rid_1}/{rid_2} instead of {regions_id_1}/{regions_id_2}",
-                msg_type="error",
+                f"[get_or_create_pair] Pair regions ids ({pair.regions_id_1}-{pair.regions_id_2})"
+                f" do not match provided ids ({rid_1}-{rid_2})"
             )
-        return existing_pair, False
+        return pair, False
 
     if not create:
         return None, False
+
+    rid_1 = regions_from_img(img_1, candidate_rids=[rid_1, rid_2])
+    rid_2 = regions_from_img(img_2, candidate_rids=[rid_2, rid_1])
 
     return (
         RegionPair(
             img_1=img_1,
             img_2=img_2,
-            regions_id_1=regions_id_1,
-            regions_id_2=regions_id_2,
+            regions_id_1=rid_1,
+            regions_id_2=rid_2,
             category=1,
-            similarity_type=1,
-            is_manual=False,
+            similarity_type=3,
+            is_manual=True,
             score=None,
             category_x=[],
         ),

@@ -39,7 +39,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
 
         const imageIds = new Set();
         pairs.forEach(p => {
-            if (p.category === 1){
+            if (p.category === 1) {
                 union(p.id_1, p.id_2)
                 imageIds.add(p.id_1);
                 imageIds.add(p.id_2);
@@ -101,11 +101,20 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     };
 
     const pairData = (ref1, ref2) => {
-        const {img: img1, regionId: reg1} = imgRef2pairData(ref1);
-        const {img: img2, regionId: reg2} = imgRef2pairData(ref2);
+        // const {img: img1, regionId: reg1} = imgRef2pairData(ref1);
+        // const {img: img2, regionId: reg2} = imgRef2pairData(ref2);
+        // return {
+        //     img_1: ref1, img_2: ref2,
+        // };
+
+        const img1 = get(imageNodes).get(ref1);
+        const img2 = get(imageNodes).get(ref2);
+
         return {
-            img_1: img1, img_2: img2,
-            regions_id_1: reg1, regions_id_2: reg2
+            img_1: ref1,
+            img_2: ref2,
+            regions_id_1: img1?.regionId,
+            regions_id_2: img2?.regionId
         };
     };
 

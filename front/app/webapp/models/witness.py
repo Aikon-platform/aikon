@@ -364,7 +364,7 @@ class Witness(AbstractSearchableModel):
 
         return None
 
-    def get_imgs(self, is_abs=False, temp=False, check_in_dir=False):
+    def get_imgs(self, is_abs=False, temp=False, check_in_dir=True):
         imgs = []
         for digit in self.get_digits():
             imgs.extend(
