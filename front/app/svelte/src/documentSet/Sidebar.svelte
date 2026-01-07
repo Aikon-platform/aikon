@@ -3,6 +3,7 @@
     import CategoryButton from "../regions/similarity/CategoryButton.svelte";
     import LegendItem from "./LegendItem.svelte";
     import {getContext} from "svelte";
+    import Legend from "./Legend.svelte";
 
     export let docSet = null;
     export let documentSetStore;
@@ -18,6 +19,26 @@
     const { clusterNb } = clusterStore;
 
     const selectedDocuments = getContext('selectedDocuments');
+
+    const allCategories = [0, 1, 2, 3, 5];
+    let filterMode = 'all';
+
+    $: if (filterMode === 'all' && $selectedCategories.length !== allCategories.length) {
+        selectedCategories.set(allCategories);
+    }
+
+    function handleToggleCategory(cat) {
+        if (filterMode === 'filtered') {
+            toggleCategory(cat);
+        }
+    }
+
+    function setFilterMode(mode) {
+        filterMode = mode;
+        if (mode === 'all' && $selectedCategories.length !== allCategories.length) {
+            selectedCategories.set(allCategories);
+        }
+    }
 </script>
 
 <div class="m-4 py-5 px-4">
@@ -59,14 +80,11 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="legend-list">
-                    {#each Array.from($documentNodes || new Map()) as [id, meta]}
-                        <LegendItem id={id} meta={meta} isActive={$selectedRegions.has(parseInt(id))}
-                                    toggle={() => toggleRegion(parseInt(id))}/>
-                    {/each}
-                </div>
             </div>
+
+            <hr>
+
+            <Legend documentNodes={$documentNodes} selectedRegions={$selectedRegions} {toggleRegion}/>
 
             <hr>
 
@@ -74,14 +92,33 @@
                 <h3 class="title">
                     {appLang === 'en' ? 'Similarity categories' : 'Catégories de similarité'}
                 </h3>
-                <div class="tags">
-                    {#each [0, 1, 2, 3, 5] as cat}
-                        <CategoryButton
-                            category={cat}
-                            isSelected={$selectedCategories.includes(cat)}
-                            toggle={toggleCategory}
-                        />
-                        {$docSetNumber.categories[cat] || 0}
+                <div class="buttons mb-3">
+                    {#each ['all', 'filtered'] as mode}
+                        <button class="button is-small is-flex-grow-1"
+                            class:is-link={filterMode === mode}
+                            class:is-contrasted={filterMode !== mode}
+                            on:click={() => setFilterMode(mode)}>
+                            {
+                                mode === 'all' ?
+                                appLang === 'en' ? 'All pairs' : 'Toutes les paires' :
+                                appLang === 'en' ? 'Filter by category' : 'Filtrer par catégorie'
+                            }
+                        </button>
+                    {/each}
+                </div>
+
+                <div class="level" class:is-disabled={filterMode === 'all'}>
+                    {#each allCategories as cat}
+                        <div class="level-item has-text-centered">
+                            <div>
+                                <CategoryButton
+                                    category={cat}
+                                    isSelected={$selectedCategories.includes(cat)}
+                                    toggle={handleToggleCategory}
+                                    selectable={filterMode === 'filtered'}/>
+                                <p class="is-size-7 mt-1">{$docSetNumber.categories[cat] || 0}</p>
+                            </div>
+                        </div>
                     {/each}
                 </div>
             </div>
@@ -97,11 +134,3 @@
         </div>
     {/if}
 </div>
-
-<style>
-    .legend-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-</style>

@@ -65,7 +65,6 @@
 
 <div>
     <button class="toggle-button button is-small is-link mb-3"
-        class:is-active={selectionMode}
         on:click={toggleSelectionMode}>
         {#if selectionMode}
             <span class="icon px-4">
