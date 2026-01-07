@@ -19,7 +19,7 @@ export function createDocumentSetStore(documentSetId) {
     const selectedRegions = writable(new Set());
     const selectedNodes = writable([]);
 
-    const threshold = writable(0.5);
+    const threshold = writable(0);
     const topK = writable(null); // null = disabled, number = k
     const mutualTopK = writable(false);
 

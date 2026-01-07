@@ -17,19 +17,28 @@
     export let docSet;
 
     const documentSetStore = createDocumentSetStore(docSet.id);
-    const {error, fetchPairs, selectedRegions, selectedCategories} = documentSetStore;
+    const {error, fetchPairs, selectedRegions, selectedCategories, threshold, topK, mutualTopK} = documentSetStore;
 
-    let syncRegions, syncCategories;
+    let syncRegions, syncCategories, syncThreshold, syncTopK, syncMutualTopK;
     onMount(() => {
         syncRegions = syncStoreWithURL(selectedRegions, 'regions', 'set');
         syncCategories = syncStoreWithURL(selectedCategories, 'categories', 'array');
+        syncThreshold = syncStoreWithURL(threshold, 'threshold', 'number');
+        syncTopK = syncStoreWithURL(topK, 'topk', 'number');
+        syncMutualTopK = syncStoreWithURL(mutualTopK, 'mutual', 'boolean');
 
         const unsubRegions = selectedRegions.subscribe(syncRegions);
         const unsubCategories = selectedCategories.subscribe(syncCategories);
+        const unsubThreshold = threshold.subscribe(syncThreshold);
+        const unsubTopK = topK.subscribe(syncTopK);
+        const unsubMutualTopK = mutualTopK.subscribe(syncMutualTopK);
 
         return () => {
             unsubRegions();
             unsubCategories();
+            unsubThreshold();
+            unsubTopK();
+            unsubMutualTopK();
         };
     });
 
