@@ -6,7 +6,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     const pageLength = 10;
     const currentPage = writable(1);
 
-    const {allPairs, imageNodes} = documentSetStore;
+    const {visiblePairs, imageNodes} = documentSetStore;
 
     initPagination(currentPage, "p");
 
@@ -39,11 +39,9 @@ export function createClusterStore(documentSetStore, clusterSelection) {
 
         const imageIds = new Set();
         pairs.forEach(p => {
-            if (p.category === 1) {
-                union(p.id_1, p.id_2)
-                imageIds.add(p.id_1);
-                imageIds.add(p.id_2);
-            }
+            union(p.id_1, p.id_2)
+            imageIds.add(p.id_1);
+            imageIds.add(p.id_2);
         });
 
         const clusterMap = new Map();
@@ -61,7 +59,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
                 const maxEdges = (n * (n - 1)) / 2;
                 const imageSet = new Set(members);
                 const actualLinks = pairs.filter(p =>
-                    p.category === 1 && imageSet.has(p.id_1) && imageSet.has(p.id_2)
+                    imageSet.has(p.id_1) && imageSet.has(p.id_2)
                 ).length;
 
                 return {
@@ -78,7 +76,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     /**
      * Clusters { id, members: [imgId1, imgId2, ...], size, fullyConnected }
      */
-    const imageClusters = derived(allPairs, ($pairs) => {
+    const imageClusters = derived(visiblePairs, ($pairs) => {
         if (!$pairs.length) return [];
         return findClusters($pairs);
     });

@@ -17,21 +17,23 @@
     export let docSet;
 
     const documentSetStore = createDocumentSetStore(docSet.id);
-    const {error, fetchPairs, selectedRegions, selectedCategories, threshold, topK, mutualTopK} = documentSetStore;
+    const {error, fetchPairs, selectedRegions, selectedCategories, threshold, topK, mutualTopK, scoreMode} = documentSetStore;
 
-    let syncRegions, syncCategories, syncThreshold, syncTopK, syncMutualTopK;
+    let syncRegions, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode;
     onMount(() => {
         syncRegions = syncStoreWithURL(selectedRegions, 'regions', 'set');
         syncCategories = syncStoreWithURL(selectedCategories, 'categories', 'array');
         syncThreshold = syncStoreWithURL(threshold, 'threshold', 'number');
         syncTopK = syncStoreWithURL(topK, 'topk', 'number');
         syncMutualTopK = syncStoreWithURL(mutualTopK, 'mutual', 'boolean');
+        syncScoreMode = syncStoreWithURL(scoreMode, 'mode', 'string');
 
         const unsubRegions = selectedRegions.subscribe(syncRegions);
         const unsubCategories = selectedCategories.subscribe(syncCategories);
         const unsubThreshold = threshold.subscribe(syncThreshold);
         const unsubTopK = topK.subscribe(syncTopK);
         const unsubMutualTopK = mutualTopK.subscribe(syncMutualTopK);
+        const unsubScoreMode = scoreMode.subscribe(syncScoreMode);
 
         return () => {
             unsubRegions();
@@ -39,6 +41,7 @@
             unsubThreshold();
             unsubTopK();
             unsubMutualTopK();
+            unsubScoreMode();
         };
     });
 

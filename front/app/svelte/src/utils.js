@@ -328,7 +328,10 @@ export function openModal(node) {
 
 export function syncStoreWithURL(store, paramName, type = 'string') {
     const parsers = {
-        string: (params) => params.get(paramName) || '',
+        string: (params) => {
+            const value = params.get(paramName);
+            return value !== null ? value : null; // Retourner null si absent
+        },
         array: (params) => {
             const value = params.get(paramName);
             return value ? value.split(',').map(Number).filter(v => !isNaN(v)) : null;
@@ -337,27 +340,39 @@ export function syncStoreWithURL(store, paramName, type = 'string') {
             const value = params.get(paramName);
             return value ? new Set(value.split(',').map(Number).filter(v => !isNaN(v))) : null;
         },
-        number: (params) => Number(params.get(paramName)) || 0,
-        boolean: (params) => params.get(paramName) === 'true'
+        number: (params) => {
+            const value = params.get(paramName);
+            return value !== null ? Number(value) : null; // Retourner null si absent
+        },
+        boolean: (params) => {
+            const value = params.get(paramName);
+            return value !== null ? value === 'true' : null; // Retourner null si absent
+        }
     };
 
     const serializers = {
         string: (url, value) => value ? url.searchParams.set(paramName, value) : url.searchParams.delete(paramName),
         array: (url, values) => {
-            if (values.length) {
+            if (values?.length) {
                 url.searchParams.set(paramName, values.join(','));
             } else {
                 url.searchParams.delete(paramName);
             }
         },
         set: (url, values) => {
-            if (values.size) {
+            if (values?.size) {
                 url.searchParams.set(paramName, Array.from(values).join(','));
             } else {
                 url.searchParams.delete(paramName);
             }
         },
-        number: (url, value) => url.searchParams.set(paramName, String(value)),
+        number: (url, value) => {
+            if (value !== null && value !== undefined) {
+                url.searchParams.set(paramName, String(value));
+            } else {
+                url.searchParams.delete(paramName);
+            }
+        },
         boolean: (url, value) => value ? url.searchParams.set(paramName, 'true') : url.searchParams.delete(paramName)
     };
 
@@ -365,7 +380,6 @@ export function syncStoreWithURL(store, paramName, type = 'string') {
         const params = new URLSearchParams(window.location.search);
         const parsed = parsers[type](params);
 
-        // N'initialiser que si une valeur existe dans l'URL
         if (parsed !== null) {
             store.set(parsed);
         }

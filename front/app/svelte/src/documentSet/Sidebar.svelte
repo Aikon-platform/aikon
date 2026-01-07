@@ -22,6 +22,8 @@
         setTopK,
         mutualTopK,
         setMutualTopK,
+        scoreMode,
+        setScoreMode,
         pairStats
     } = documentSetStore;
     const { clusterNb } = clusterStore;
@@ -30,21 +32,18 @@
 
     const allCategories = [0, 1, 2, 3, 5];
     let filterMode = 'all';
-    $: scoreMode = $topK !== null ? 'topk' : 'threshold';
 
-    $: if (filterMode === 'all' && $selectedCategories.length !== allCategories.length) {
+    const notAllCat = () => {
+        return filterMode === 'all' && $selectedCategories.length !== allCategories.length;
+    };
+
+    $: if (notAllCat()) {
         selectedCategories.set(allCategories);
-    }
-
-    function handleToggleCategory(cat) {
-        if (filterMode === 'filtered') {
-            toggleCategory(cat);
-        }
     }
 
     function setFilterMode(mode) {
         filterMode = mode;
-        if (mode === 'all' && $selectedCategories.length !== allCategories.length) {
+        if (notAllCat()) {
             selectedCategories.set(allCategories);
         }
     }
@@ -123,7 +122,7 @@
                                 <CategoryButton
                                     category={cat}
                                     isSelected={$selectedCategories.includes(cat)}
-                                    toggle={handleToggleCategory}
+                                    toggle={(cat) => filterMode === 'filtered' ? toggleCategory(cat) : null}
                                     selectable={filterMode === 'filtered'}/>
                                 <p class="is-size-7 mt-1">{$docSetNumber.categories[cat] || 0}</p>
                             </div>
@@ -141,9 +140,9 @@
                 <div class="buttons mb-3">
                     {#each ['threshold', 'topk'] as mode}
                         <button class="button is-small is-flex-grow-1"
-                            class:is-link={scoreMode === mode}
-                            class:is-contrasted={scoreMode !== mode}
-                            on:click={() => mode === 'threshold' ? setTopK(null) : setTopK($topK ?? 3)}>
+                            class:is-link={$scoreMode === mode}
+                            class:is-contrasted={$scoreMode !== mode}
+                            on:click={() => setScoreMode(mode)}>
                             {
                                 mode === 'threshold' ?
                                 appLang === 'en' ? 'Score threshold' : 'Seuil de score' :
@@ -153,7 +152,7 @@
                     {/each}
                 </div>
 
-                {#if scoreMode === 'threshold'}
+                {#if $scoreMode === 'threshold'}
                     <InputSlider minVal={$pairStats.scoreRange?.min || 0} maxVal={$pairStats.scoreRange?.max || 1}
                         start={$threshold} step={0.01} roundTo={2}
                         title={appLang === 'en' ? 'Minimum score' : 'Score minimum'}

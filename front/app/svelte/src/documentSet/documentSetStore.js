@@ -20,8 +20,9 @@ export function createDocumentSetStore(documentSetId) {
     const selectedNodes = writable([]);
 
     const threshold = writable(0);
-    const topK = writable(null); // null = disabled, number = k
+    const topK = writable(3);
     const mutualTopK = writable(false);
+    const scoreMode = writable('threshold');
 
     /**
      * All RegionsPair objects loaded in the current context
@@ -209,26 +210,35 @@ export function createDocumentSetStore(documentSetId) {
             if (!$pairs) return [];
             const result = [];
 
+            const $mode = get(scoreMode);
+
             for (let i = 0; i < $pairs.length; i++) {
-                const p = $pairs[i];
+                    const p = $pairs[i];
 
-                // 1. Score threshold (pairs are sorted by score threshold is prioritised on topK filtering)
-                if (p.weightedScore < $threshold) break;
-
-                // 2. Region filter
-                if (!$regions.has(p.regions_id_1) || !$regions.has(p.regions_id_2)) continue;
-
-                // 3. TopK filtering
-                if ($topK !== null) {
-                    if ($mutual) {
-                        if (p.rank_1 > $topK || p.rank_2 > $topK) continue;
-                    } else {
-                        if (p.rank_1 > $topK && p.rank_2 > $topK) continue;
+                    // 1. Score filtering
+                    if ($mode === 'threshold') {
+                        if (p.weightedScore < $threshold) break;
                     }
+
+                    // 2. Region filter
+                    if (!$regions.has(p.regions_id_1) || !$regions.has(p.regions_id_2)) continue;
+
+                    // 3. TopK filtering
+                    if ($mode === 'topk' && $topK !== null) {
+                        const r1Rank = p.rank_1 ?? Infinity;
+                        const r2Rank = p.rank_2 ?? Infinity;
+
+                        if ($mutual) {
+                            if (r1Rank > $topK || r2Rank > $topK) continue;
+                        } else {
+                            if (r1Rank > $topK && r2Rank > $topK) continue;
+                        }
+                    }
+
+                    result.push(p);
                 }
-                result.push(p);
-            }
-            return result;
+
+                return result;
         }
     );
 
@@ -486,5 +496,7 @@ export function createDocumentSetStore(documentSetId) {
         setTopK: (k) => topK.set(k),
         mutualTopK,
         setMutualTopK: (b) => mutualTopK.set(b),
+        scoreMode,
+        setScoreMode: (m) => scoreMode.set(m),
     };
 }
