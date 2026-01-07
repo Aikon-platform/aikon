@@ -53,7 +53,7 @@ function processPairs(data) {
             score: p.score,
             weightedScore: weightedScore,
             category: cat,
-            is_manual: p.is_manual,
+            similarity_type: p.similarity_type,
 
             // Rank for topk filtering
             rank_1: 0,
