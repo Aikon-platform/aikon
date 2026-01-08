@@ -33,17 +33,9 @@
     const allCategories = [0, 1, 2, 3, 5];
     let filterMode = 'all';
 
-    const notAllCat = () => {
-        return filterMode === 'all' && $selectedCategories.length !== allCategories.length;
-    };
-
-    $: if (notAllCat()) {
-        selectedCategories.set(allCategories);
-    }
-
     function setFilterMode(mode) {
         filterMode = mode;
-        if (notAllCat()) {
+        if (mode === 'all' && $selectedCategories.length !== allCategories.length) {
             selectedCategories.set(allCategories);
         }
     }

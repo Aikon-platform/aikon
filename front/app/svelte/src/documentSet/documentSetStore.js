@@ -15,7 +15,7 @@ const createWorker = () => new Worker(
 export function createDocumentSetStore(documentSetId) {
     const error = writable(null);
 
-    const selectedCategories = writable([1]);
+    const selectedCategories = writable([]);
     const selectedRegions = writable(new Set());
     const selectedNodes = writable([]);
 
@@ -59,13 +59,12 @@ export function createDocumentSetStore(documentSetId) {
         categories: {}
     });
 
-    /**
-     * Metadata Cache for Regions (Titles, Refs, Colors)
-     * Acts as a persistent cache to avoid refetching known regions.
-     */
-    const regionMetadata = writable(new Map());
-
     const fetchPairs = derived(selectedCategories, ($cats, set) => {
+        if ($cats.length === 0) {
+            set(Promise.resolve(0));
+            return;
+        }
+
         if (worker) worker.terminate();
 
         // TO DELETE
@@ -74,6 +73,7 @@ export function createDocumentSetStore(documentSetId) {
         // const documentSetId = 415; // physiologus
         // const documentSetId = 416; // de materia medica
         // const documentSetId = 417; // traité de géométrie
+        // const documentSetId = 436; // Jombert complet
         // TO DELETE
 
         const loadPromise = new Promise((resolve, reject) => {

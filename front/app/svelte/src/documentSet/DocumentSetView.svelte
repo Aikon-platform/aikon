@@ -1,6 +1,7 @@
 <script>
     import {onMount} from 'svelte';
     import {setContext} from "svelte";
+    import {get} from 'svelte/store';
 
     import {appLang} from '../constants';
     import {syncStoreWithURL} from '../utils';
@@ -27,6 +28,10 @@
         syncTopK = syncStoreWithURL(topK, 'topk', 'number');
         syncMutualTopK = syncStoreWithURL(mutualTopK, 'mutual', 'boolean');
         syncScoreMode = syncStoreWithURL(scoreMode, 'mode', 'string');
+
+        if (!get(selectedCategories)) {
+            selectedCategories.set([1]);
+        }
 
         const unsubRegions = selectedRegions.subscribe(syncRegions);
         const unsubCategories = selectedCategories.subscribe(syncCategories);
