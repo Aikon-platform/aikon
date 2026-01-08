@@ -1,188 +1,102 @@
 <script>
     import * as d3 from 'd3';
     import LegendItem from './LegendItem.svelte';
-    import {shorten} from "../utils.js";
 
     export let documentSetStore;
 
-    const { documentNodes, docPairStats, pairIndex, selectedCategories } = documentSetStore;
+    const { documentNodes, docPairStats, pairIndex, documentStats } = documentSetStore;
 
     let matrixContainer;
-    let scatterContainer;
+    let scatterSvg;
     let selectedCell = null;
+    let sortOrder = 'name';
 
     $: documents = Array.from($documentNodes?.values() || []);
-    $: matrixData = buildMatrixData(documents, $docPairStats.scoreCount);
-    $: scatterData = selectedCell ? buildScatterData(selectedCell) : null;
+    $: matrixData = buildMatrix(documents, $docPairStats.scoreCount, $documentStats.scoreCount);
+    $: scatterData = selectedCell ? buildScatter(selectedCell) : null;
 
     const cellSize = 30;
+    const margin = { top: 100, right: 10, bottom: 10, left: 100 };
 
+    function buildMatrix(docs, scoreCount, docStats) {
+        if (!docs.length) return { docs: [], matrix: [], orders: {}, maxScore: 0 };
 
-    // todo put that in docset store
-    function buildMatrixData(docs, scoreCount) {
-        const matrix = [];
-        let globalMax = 0;
+        const n = docs.length;
+        const matrix = Array(n).fill(0).map(() => Array(n).fill(0));
+        let maxScore = 0;
 
-        scoreCount.forEach(({score}) => {
-            if (score > globalMax) globalMax = score;
+        docs.forEach((doc, i) => {
+            doc.index = i;
+            doc.count = docStats?.get(doc.id)?.count || 0;
         });
 
-        for (let i = 0; i < docs.length; i++) {
-            const row = [];
-            for (let j = 0; j < docs.length; j++) {
-                if (i === j) {
-                    row.push({ score: 0, normalized: 0, isDiagonal: true }); // Diagonale = 0
+        for (let i = 0; i < n; i++) {
+            for (let j = 0; j < n; j++) {
+                if (i !== j) {
+                    const key = docs[i].id < docs[j].id
+                        ? `${docs[i].id}-${docs[j].id}`
+                        : `${docs[j].id}-${docs[i].id}`;
+                    const score = scoreCount?.get(key)?.score || 0;
+                    if (score > maxScore) maxScore = score;
+                    matrix[i][j] = { x: j, y: i, z: score };
                 } else {
-                    const {r1, r2} = {r1: docs[i].id, r2: docs[j].id};
-                    const key = r1 < r2 ? `${r1}-${r2}` : `${r2}-${r1}`;
-                    const stat = scoreCount.get(key);
-                    const score = stat?.score || 0;
-                    const normalized = globalMax > 0 ? (score / globalMax) * 100 : 0;
-                    row.push({ score, normalized, isDiagonal: false });
+                    matrix[i][j] = { x: j, y: i, z: 0, diagonal: true };
                 }
             }
-            matrix.push(row);
         }
 
-        return { docs, matrix, max: globalMax };
+        const orders = {
+            name: d3.range(n).sort((a, b) => docs[a].title.localeCompare(docs[b].title)),
+            score: d3.range(n).sort((a, b) => docs[b].count - docs[a].count),
+        };
+
+        return { docs, matrix, orders, maxScore };
     }
 
-    function buildScatterData(cell) {
+    function buildScatter(cell) {
         const { doc1, doc2 } = cell;
-
         const pairKey = doc1.id < doc2.id ? `${doc1.id}-${doc2.id}` : `${doc2.id}-${doc1.id}`;
-        const relevantPairs = $pairIndex.byDocPair.get(pairKey) || [];
+        const pairs = $pairIndex.byDocPair.get(pairKey) || [];
 
-        if (!relevantPairs.length) return null;
+        if (!pairs.length) return null;
 
         const pageMap = new Map();
         let minScore = Infinity;
         let maxScore = -Infinity;
 
-        relevantPairs.forEach(p => {
-            let page1, page2, score;
-
-            if (p.regions_id_1 === doc1.id) {
-                page1 = p.page_1;
-                page2 = p.page_2;
-                score = p.weightedScore || 0;
-            } else {
-                page1 = p.page_2;
-                page2 = p.page_1;
-                score = p.weightedScore || 0;
-            }
-
-            // TODO build page index inside store?
+        pairs.forEach(p => {
+            const [page1, page2, score] = p.regions_id_1 === doc1.id
+                ? [p.page_1, p.page_2, p.weightedScore || 0]
+                : [p.page_2, p.page_1, p.weightedScore || 0];
 
             const key = `${page1}-${page2}`;
-            if (!pageMap.has(key)) {
-                pageMap.set(key, { page1, page2, scores: [], count: 0 });
-            }
+            if (!pageMap.has(key)) pageMap.set(key, { page1, page2, scores: [] });
 
-            const entry = pageMap.get(key);
-            entry.scores.push(score);
-            entry.count++;
-
+            pageMap.get(key).scores.push(score);
             if (score < minScore) minScore = score;
             if (score > maxScore) maxScore = score;
         });
 
-        const points = Array.from(pageMap.values()).map(({ page1, page2, scores, count }) => {
-            const avgScore = scores.reduce((a, b) => a + b, 0) / count;
-            return { page1, page2, score: avgScore, count };
-        });
+        const points = Array.from(pageMap.values()).map(({ page1, page2, scores }) => ({
+            page1,
+            page2,
+            score: scores.reduce((a, b) => a + b, 0) / scores.length,
+            count: scores.length
+        }));
 
         return { points, minScore, maxScore, doc1, doc2 };
     }
 
-    function renderMatrix(container, data) {
-        if (!container || !data.docs.length) return;
+    function renderMatrix() {
+        if (!matrixContainer || !matrixData.docs.length) return;
 
-        d3.select(container).selectAll('*').remove();
+        const { docs, matrix, maxScore } = matrixData;
+        const width = docs.length * cellSize;
+        const height = docs.length * cellSize;
 
-        const margin = { top: 10, right: 20, bottom: 20, left: 10 };
-        const width = data.docs.length * cellSize + margin.left + margin.right;
-        const height = data.docs.length * cellSize + margin.top + margin.bottom;
+        d3.select(matrixContainer).selectAll('*').remove();
 
-        const svg = d3.select(container)
-            .append('svg')
-            .attr('width', width)
-            .attr('height', height);
-
-        const g = svg.append('g')
-            .attr('transform', `translate(${margin.left},${margin.top})`);
-
-        const rows = g.selectAll('.row')
-            .data(data.matrix)
-            .join('g')
-            .attr('class', 'row')
-            .attr('transform', (d, i) => `translate(0,${i * cellSize})`);
-
-        rows.selectAll('.cell')
-            .data((d, i) => d.map((cell, j) => ({ ...cell, row: i, col: j })))
-            .join('rect')
-            .attr('class', 'cell')
-            .attr('x', d => d.col * cellSize)
-            .attr('width', cellSize)
-            .attr('height', cellSize)
-            .attr('fill', d => {
-                if (d.isDiagonal) {
-                    return '#e0e0e0'; // Couleur grise pour la diagonale
-                }
-                const color = d3.hsl(233, 0.951, 0.52);
-                color.opacity = d.normalized / 100;
-                return color;
-            })
-            .attr('stroke', d => {
-                if (selectedCell && selectedCell.row === d.row && selectedCell.col === d.col) {
-                    return '#000';
-                }
-                return '#fff';
-            })
-            .attr('stroke-width', d => {
-                if (selectedCell && selectedCell.row === d.row && selectedCell.col === d.col) {
-                    return 4;
-                }
-                return 1;
-            })
-            .attr('stroke-opacity', d => {
-                if (selectedCell && selectedCell.row === d.row && selectedCell.col === d.col) {
-                    return 1;
-                }
-                return 0.3;
-            })
-            .style('cursor', 'pointer')
-            .on('click', (event, d) => {
-                selectedCell = {
-                    row: d.row,
-                    col: d.col,
-                    doc1: data.docs[d.row],
-                    doc2: data.docs[d.col]
-                };
-                renderMatrix(container, data);
-            });
-    }
-
-    function renderScatter(container, data) {
-        if (!container) return;
-
-        d3.select(container).selectAll('*').remove();
-
-        if (!data || !data.points.length) {
-            d3.select(container)
-                .append('div')
-                .style('padding', '2rem')
-                .style('text-align', 'center')
-                .style('color', '#999')
-                .text('Aucune paire de pages trouvée entre ces deux documents.');
-            return;
-        }
-
-        const margin = { top: 40, right: 20, bottom: 50, left: 60 };
-        const width = 500 - margin.left - margin.right;
-        const height = 500 - margin.top - margin.bottom;
-
-        const svg = d3.select(container)
+        const svg = d3.select(matrixContainer)
             .append('svg')
             .attr('width', width + margin.left + margin.right)
             .attr('height', height + margin.top + margin.bottom);
@@ -190,182 +104,230 @@
         const g = svg.append('g')
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
-        const maxPage1 = Math.max(...data.points.map(p => p.page1), 0);
-        const maxPage2 = Math.max(...data.points.map(p => p.page2), 0);
+        const x = d3.scaleBand().range([0, width]).domain(d3.range(docs.length)).padding(0.01);
 
-        const xScale = d3.scaleLinear()
-            .domain([0, maxPage1])
-            .range([0, width]);
+        const tooltip = d3.select('body').append('div')
+            .attr('class', 'tooltip')
+            .style('position', 'fixed')
+            .style('background', 'white')
+            .style('border', '1px solid #ddd')
+            .style('border-radius', '4px')
+            .style('padding', '8px')
+            .style('pointer-events', 'none')
+            .style('opacity', 0)
+            .style('font-size', '12px')
+            .style('box-shadow', '0 2px 4px rgba(0,0,0,0.1)')
+            .style('z-index', '9999');
 
-        const yScale = d3.scaleLinear()
-            .domain([0, maxPage2])
-            .range([height, 0]);
+        const row = g.selectAll('.row')
+            .data(matrix)
+            .join('g')
+            .attr('class', 'row')
+            .attr('transform', (d, i) => `translate(0,${x(i)})`);
+
+        row.each(function(rowData) {
+            d3.select(this).selectAll('.cell')
+                .data(rowData.filter(d => d.z > 0 || d.diagonal))
+                .join('rect')
+                .attr('class', 'cell')
+                .attr('x', d => x(d.x))
+                .attr('width', x.bandwidth())
+                .attr('height', x.bandwidth())
+                .attr('fill', d => {
+                    if (d.diagonal) return '#e8e8e8';
+                    const color = d3.hsl(233, 0.951, 0.52);
+                    color.opacity = maxScore > 0 ? d.z / maxScore : 0;
+                    return color;
+                })
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 0.5)
+                .style('opacity', 0.8)
+                .style('cursor', d => d.diagonal ? 'default' : 'pointer')
+                .on('mouseover', function(event, d) {
+                    if (d.diagonal) return;
+                    d3.select(this).attr('stroke', '#000').attr('stroke-width', 2).style('opacity', 1);
+                    tooltip.style('opacity', 1);
+                })
+                .on('mousemove', function(event, d) {
+                    if (d.diagonal) return;
+                    tooltip
+                        .html(`<strong>${docs[d.y].title}</strong><br/>↔<br/><strong>${docs[d.x].title}</strong><br/><br/>Score: ${d.z.toFixed(2)}`)
+                        .style('left', (event.clientX + 15) + 'px')
+                        .style('top', (event.clientY + 15) + 'px');
+                })
+                .on('mouseleave', function() {
+                    d3.select(this).attr('stroke', '#fff').attr('stroke-width', 0.5).style('opacity', 0.8);
+                    tooltip.style('opacity', 0);
+                })
+                .on('click', (event, d) => {
+                    if (d.diagonal) return;
+                    selectedCell = { row: d.y, col: d.x, doc1: docs[d.y], doc2: docs[d.x] };
+                });
+        });
+
+        updateOrder();
+    }
+
+    function renderScatter() {
+        if (!scatterSvg || !scatterData?.points.length) return;
+
+        d3.select(scatterSvg).selectAll('*').remove();
+
+        const { points, minScore, maxScore, doc1, doc2 } = scatterData;
+        const margin = { top: 40, right: 20, bottom: 60, left: 70 };
+        const width = 500 - margin.left - margin.right;
+        const height = 500 - margin.top - margin.bottom;
+
+        const svg = d3.select(scatterSvg)
+            .attr('width', 500)
+            .attr('height', 500);
+
+        const g = svg.append('g')
+            .attr('transform', `translate(${margin.left},${margin.top})`);
+
+        const maxPage1 = Math.max(...points.map(p => p.page1));
+        const maxPage2 = Math.max(...points.map(p => p.page2));
+
+        const xScale = d3.scaleLinear().domain([0, maxPage1]).range([0, width]);
+        const yScale = d3.scaleLinear().domain([0, maxPage2]).range([height, 0]);
 
         g.append('g')
             .attr('transform', `translate(0,${height})`)
-            .call(d3.axisBottom(xScale)
-                .ticks(Math.min(maxPage1 + 1, 10))
-                .tickFormat(d3.format('d')));
+            .call(d3.axisBottom(xScale).ticks(Math.min(maxPage1, 10)));
 
-        g.append('g')
-            .call(d3.axisLeft(yScale)
-                .ticks(Math.min(maxPage2 + 1, 10))
-                .tickFormat(d3.format('d')));
+        g.append('g').call(d3.axisLeft(yScale).ticks(Math.min(maxPage2, 10)));
 
-        g.append('foreignObject')
-            .attr('x', 0)
-            .attr('y', height + 10)
-            .attr('width', width)
-            .attr('height', 100)
-            .append('xhtml:div')
-            .style('display', 'flex')
-            .style('align-items', 'center')
-            .style('justify-content', 'center')
-            .style('gap', '0.5rem')
-            .style('margin-top', '20px')
-            .html(`<span class="legend-color" style="background-color: ${data.doc1.color}; width: 12px; height: 12px; display: inline-block; border-radius: 50%;"></span>
-                <span style="font-size: 12px;">${shorten(data.doc1.title) || `Doc ${data.doc1.id}`} (page)</span>`);
+        g.append('text')
+            .attr('x', width / 2)
+            .attr('y', height + 40)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '12px')
+            .text(`${doc1.title} (page)`);
 
-        g.append('foreignObject')
-            .attr('x', -margin.left + 5)
-            .attr('y', 0)
-            .attr('width', 50)
-            .attr('height', width)
-            .append('xhtml:div')
-            .style('display', 'flex')
-            .style('align-items', 'center')
-            .style('justify-content', 'center')
-            .style('gap', '0.5rem')
-            .style('transform', `rotate(-90deg) translateX(-${height/2}px)`)
-            .style('transform-origin', 'left top')
-            .style('white-space', 'nowrap')
-            //.style('height', '100%')
-            .html(`<span class="legend-color" style="background-color: ${data.doc2.color}; width: 12px; height: 12px; display: inline-block; border-radius: 50%;"></span>
-                <span style="font-size: 12px;">${shorten(data.doc2.title) || `Doc ${data.doc2.id}`} (page)</span>`);
-
-        const scoreRange = data.maxScore - data.minScore;
+        g.append('text')
+            .attr('transform', 'rotate(-90)')
+            .attr('x', -height / 2)
+            .attr('y', -50)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '12px')
+            .text(`${doc2.title} (page)`);
 
         g.selectAll('.point')
-            .data(data.points)
-            .join('rect')
-            .attr('class', 'point')
-            .attr('x', d => xScale(d.page1) - 4)
-            .attr('y', d => yScale(d.page2) - 4)
-            .attr('width', 8)
-            .attr('height', 8)
-            .attr('fill', d3.hsl(233, 0.951, 0.52))
-            .attr('opacity', d => {
-                const categories = $selectedCategories || [];
-                if (categories.length === 1 && categories[0] === 1) {
-                    return 1;
-                }
-                return opacity(d.score, {min: data.minScore, max: data.maxScore, range: scoreRange});
-            });
+            .data(points)
+            .join('circle')
+            .attr('cx', d => xScale(d.page1))
+            .attr('cy', d => yScale(d.page2))
+            .attr('r', 4)
+            .attr('fill', d => {
+                const color = d3.hsl(233, 0.951, 0.52);
+                color.opacity = (d.score - minScore) / (maxScore - minScore);
+                return color;
+            })
+            .attr('opacity', 0.7);
     }
 
-    function opacity(score, scoreRange, minOpacity = 0.05, maxOpacity = 1) {
-        const {min, _, range} = scoreRange;
-        if (range === 0) return 0.55;
-        return minOpacity + Math.pow((score - min) / range, 3) * maxOpacity;
+    function updateOrder() {
+        if (!matrixContainer || !matrixData.orders[sortOrder]) return;
+
+        const { docs, orders } = matrixData;
+        const x = d3.scaleBand().range([0, docs.length * cellSize]).domain(orders[sortOrder]).padding(0.01);
+
+        const svg = d3.select(matrixContainer).select('svg').select('g');
+        const t = svg.transition().duration(1500);
+
+        t.selectAll('.row')
+            .delay((d, i) => x(i) * 2)
+            .attr('transform', (d, i) => `translate(0,${x(i)})`)
+            .selectAll('.cell')
+            .delay(d => x(d.x) * 2)
+            .attr('x', d => x(d.x));
     }
 
-    $: if (scatterContainer && scatterData) {
-        renderScatter(scatterContainer, scatterData);
-    }
-
-    $: if (matrixContainer && matrixData) {
-        renderMatrix(matrixContainer, matrixData);
-    }
+    $: if (matrixContainer && matrixData.docs.length) renderMatrix();
+    $: if (scatterSvg && scatterData) renderScatter();
+    $: if (sortOrder && matrixContainer) updateOrder();
 </script>
 
-<div class="document-matrix columns">
+<div class="columns">
     {#if !documents.length}
-        <div class="notification is-info">
-            Aucun document disponible pour afficher la matrice de similarité.
+        <div class="column">
+            <div class="notification is-info">Aucun document disponible</div>
         </div>
     {:else}
-        <div class="matrix-panel column">
-            <h3 class="title is-5">Similarity Matrix</h3>
-            <div class="matrix-wrapper">
-                <div class="matrix-content">
+        <div class="column is-half">
+            <div class="box">
+                <div class="field">
+                    <label class="label" for="sort-order">Ordre</label>
+                    <div class="control" id="sort-order">
+                        <div class="select">
+                            <select bind:value={sortOrder}>
+                                <option value="name">Par nom</option>
+                                <option value="score">Par score</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="matrix-wrapper">
                     <div class="row-headers">
-                        {#each documents as doc, i}
-                            <div class="row-header" style="height: {cellSize}px; line-height: {cellSize}px;">
+                        {#each matrixData.docs as doc}
+                            <div class="header-item" style="height: {cellSize}px;">
                                 <LegendItem id={doc.id} meta={doc} onlyColor={true} clickable={false} />
                             </div>
                         {/each}
                     </div>
-                    <div bind:this={matrixContainer} class="matrix-container"></div>
+                    <div class="matrix-main">
+                        <div class="col-headers">
+                            {#each matrixData.docs as doc}
+                                <div class="header-item" style="width: {cellSize}px;">
+                                    <LegendItem id={doc.id} meta={doc} onlyColor={true} clickable={false} />
+                                </div>
+                            {/each}
+                        </div>
+                        <div bind:this={matrixContainer}></div>
+                    </div>
                 </div>
             </div>
         </div>
 
         {#if selectedCell}
-            <div class="scatter-panel column">
-                <h3 class="title is-5">Page-by-page similarity</h3>
-                <div bind:this={scatterContainer} class="scatter-container"></div>
+            <div class="column is-half">
+                <div class="box">
+                    <h4 class="title is-5">Similarité page par page</h4>
+                    <svg bind:this={scatterSvg}></svg>
+                </div>
             </div>
         {/if}
     {/if}
 </div>
 
 <style>
-    .document-matrix {
-        display: flex;
-        gap: 2rem;
-        padding: 1rem;
-        overflow-x: auto;
-        min-height: 90vh;
-    }
-
-    .scatter-container {
-        height: 100%;
-    }
-
-    .matrix-panel {
-        flex: 0 0 50%;
-        min-width: 400px;
-    }
-
-    .scatter-panel {
-        flex: 0 0 45%;
-        min-width: 400px;
-    }
-
     .matrix-wrapper {
         display: flex;
-        flex-direction: column;
-    }
-
-    .matrix-content {
-        display: flex;
-        align-items: flex-start;
+        gap: 0.5rem;
+        overflow: auto;
     }
 
     .row-headers {
         display: flex;
         flex-direction: column;
-        margin-right: 0.5rem;
-        flex-shrink: 0;
+        padding-top: 100px;
     }
 
-    .row-header {
+    .col-headers {
+        display: flex;
+        margin-left: 100px;
+        margin-bottom: 0.5rem;
+    }
+
+    .header-item {
         display: flex;
         align-items: center;
         justify-content: center;
-        padding-top: 20px;
     }
 
-    .matrix-container {
-        flex: 1;
-    }
-
-    .scatter-container {
-        overflow: auto;
-    }
-
-    :global(.cell:hover) {
-        stroke: #333 !important;
-        stroke-width: 2px !important;
+    .matrix-main {
+        display: flex;
+        flex-direction: column;
     }
 </style>
