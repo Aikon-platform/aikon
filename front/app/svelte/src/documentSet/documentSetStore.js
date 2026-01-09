@@ -68,8 +68,8 @@ export function createDocumentSetStore(documentSetId) {
         if (worker) worker.terminate();
 
         // TO DELETE
-        // const documentSetId = 413; // histoire naturelle
-        const documentSetId = 414; // nicolas
+        const documentSetId = 413; // histoire naturelle
+        // const documentSetId = 414; // nicolas
         // const documentSetId = 415; // physiologus
         // const documentSetId = 416; // de materia medica
         // const documentSetId = 417; // traité de géométrie

@@ -39,6 +39,10 @@
             selectedCategories.set(allCategories);
         }
     }
+    function handleSetScoreMode(mode){
+        // todo set page to 1
+        setScoreMode(mode)
+    }
 </script>
 
 <div class="m-4 py-5 px-4">
@@ -134,7 +138,7 @@
                         <button class="button is-small is-flex-grow-1"
                             class:is-link={$scoreMode === mode}
                             class:is-contrasted={$scoreMode !== mode}
-                            on:click={() => setScoreMode(mode)}>
+                            on:click={() => handleSetScoreMode(mode)}>
                             {
                                 mode === 'threshold' ?
                                 appLang === 'en' ? 'Score threshold' : 'Seuil de score' :
