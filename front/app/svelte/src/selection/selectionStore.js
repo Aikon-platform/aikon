@@ -193,9 +193,14 @@ export const regionsSelection = createTypedSelectionStore({
     extractMeta: (item) => item
 });
 
+function ref(imgRef) {
+    const [_, ...ref] = imgRef.split('_');
+    return ref.join('_');
+}
+
 export const clusterSelection = createTypedSelectionStore({
     type: 'clusterSet',
     modelName: 'cluster-set',
     title: appLang === 'en' ? 'Selected regions' : 'Régions sélectionnées',
-    extractMeta: (item) => ({imgRef: item.id, clusterId: item.clusterId, title: item.title, xywh: item.xywh, img: item.img})
+    extractMeta: (item) => ({imgRef: item.id, clusterId: item.clusterId, title: item.title, xywh: item.xywh, img: ref(item.id)})
 });

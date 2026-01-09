@@ -85,7 +85,7 @@ export function refToIIIFRoot(imgRef=null) {
 }
 
 export function refToIIIF(imgRef=null, coord=null, size="full") {
-    // in some cases, coord is "x,y,w,h.jpg" => conveet to "x,y,w,h"
+    // in some cases, coord is "x,y,w,h.jpg" => convert to "x,y,w,h"
     coord = isString(coord) ? coord.replace(".jpg", "") : coord;
 
     // imgRef can be like "wit<id>_<digit><id>_<page_nb>.jpg" or "wit<id>_<digit><id>_<page_nb>_<x,y,h,w>.jpg"
@@ -117,6 +117,7 @@ export function refToIIIF(imgRef=null, coord=null, size="full") {
     if (!coord) {
         coord = imgRefArr[imgRefArr.length - 1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : "full";
     }
+
     return `${imgRoot}/${coord}/${size}/0/default.jpg`;
 }
 
