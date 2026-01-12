@@ -346,6 +346,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             return (
                 request.user.is_superuser
                 or obj.user == request.user
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
         return False
@@ -355,6 +356,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             return (
                 obj.user == request.user
                 or obj.is_public
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
         return False
@@ -378,11 +380,13 @@ class WitnessInline(nested_admin.NestedStackedInline):
             return (
                 request.user.is_superuser
                 or obj.user == request.user
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
         return (
             request.user.is_superuser
             or obj.user == request.user
+            or obj.shared_with.filter(pk=request.user.pk).exists()
             or is_in_group(request.user, obj.user)
         )
 
@@ -391,6 +395,7 @@ class WitnessInline(nested_admin.NestedStackedInline):
             return (
                 obj.user == request.user
                 or obj.is_public
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
         return True
@@ -400,6 +405,7 @@ class WitnessInline(nested_admin.NestedStackedInline):
             return (
                 obj.user == request.user
                 or obj.is_public
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
         return True

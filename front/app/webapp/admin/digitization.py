@@ -47,6 +47,7 @@ class DigitizationAdmin(UnregisteredAdmin):
             return (
                 request.user.is_superuser
                 or obj.user == request.user
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
 
@@ -55,14 +56,17 @@ class DigitizationAdmin(UnregisteredAdmin):
             return (
                 obj.user == request.user
                 or obj.is_public
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
 
     def has_add_permission(self, request, obj=None):
         if obj and obj.user:
-            print(obj)
-            print(obj.user)
-            return obj.user == request.user or is_in_group(request.user, obj.user)
+            return (
+                obj.user == request.user
+                or is_in_group(request.user, obj.user)
+                or obj.shared_with.filter(pk=request.user.pk).exists()
+            )
         else:
             return True
 
@@ -138,6 +142,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
             return (
                 request.user.is_superuser
                 or obj.user == request.user
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
 
@@ -146,6 +151,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
             return (
                 obj.user == request.user
                 or obj.is_public
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
         else:
@@ -153,6 +159,10 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
     def has_add_permission(self, request, obj=None):
         if obj and obj.user:
-            return obj.user == request.user or is_in_group(request.user, obj.user)
+            return (
+                obj.user == request.user
+                or is_in_group(request.user, obj.user)
+                or obj.shared_with.filter(pk=request.user.pk).exists()
+            )
         else:
             return True
