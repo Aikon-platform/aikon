@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.utils.text import slugify
 from django.utils.html import format_html
 from django.urls import reverse
+from django.contrib.postgres.fields import ArrayField
 
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.edition import Edition
@@ -58,6 +59,7 @@ def get_name(fieldname, plural=False):
             "en": "number useful for classifying the different volumes of an edition, but not necessarily of historical value",
             "fr": "numéro utile pour classer les différents tomes d'une édition, mais qui n'a pas nécessairement de valeur historique",
         },
+        "shared_with": {"en": "shared with", "fr": "partagé avec"},
     }
 
     return get_fieldname(fieldname, fields, plural)
@@ -162,6 +164,13 @@ class Witness(AbstractSearchableModel):
 
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
+
+    shared_with = models.ManyToManyField(
+        User,
+        blank=True,
+        related_name="shared_witnesses",
+        verbose_name=get_name("shared_with"),
+    )
 
     def get_absolute_edit_url(self):
         return reverse("admin:webapp_witness_change", args=[self.id])
