@@ -136,6 +136,7 @@ export function createDocumentSetStore(documentSetId) {
                             }
                         });
 
+                        // TODO sort also image by coordinates (only y) + keep image number in memory (?)
                         docMap.forEach(doc => doc.images.sort((a, b) => a.canvas - b.canvas));
 
                         imageNodes.set(imgMap);
@@ -202,8 +203,6 @@ export function createDocumentSetStore(documentSetId) {
         }
     }
 
-    // TODO make filtering more efficient by remembering what was filtered last time
-    // TODO and only applying the delta (keep in memory last threshold, topK, regions etc)
     const filteredPairs = derived(
         [allPairs, threshold, topK, mutualTopK, selectedRegions],
         ([$pairs, $threshold, $topK, $mutual, $regions]) => {
@@ -467,6 +466,83 @@ export function createDocumentSetStore(documentSetId) {
         });
     }
 
+    const matrixMode = writable('all'); // 'all' | 'filtered'
+    const normalizeByPages = writable(false);
+
+    const visiblePairIds = derived(filteredPairs, ($pairs) => {
+        const set = new Set();
+        for (const p of $pairs) {
+            set.add(`${p.id_1}-${p.id_2}`);
+        }
+        return set;
+    });
+
+    const filteredDocPairStats = derived(filteredPairs, ($pairs) => {
+        const scoreCount = new Map();
+        if (!$pairs?.length) return {scoreCount, scoreRange: {min: 0, max: 0, range: 0}};
+
+        let min = Infinity, max = -Infinity;
+        for (const p of $pairs) {
+            const key = p.regions_id_1 < p.regions_id_2
+                ? `${p.regions_id_1}-${p.regions_id_2}`
+                : `${p.regions_id_2}-${p.regions_id_1}`;
+            const entry = scoreCount.get(key) || {score: 0, count: 0};
+            entry.score += p.weightedScore || 0;
+            entry.count++;
+            scoreCount.set(key, entry);
+        }
+
+        for (const {score} of scoreCount.values()) {
+            if (score < min) min = score;
+            if (score > max) max = score;
+        }
+        if (min === Infinity) min = max = 0;
+
+        return {scoreCount, scoreRange: {min, max, range: max - min}};
+    });
+
+    const filteredDocStats = derived(filteredPairs, ($pairs) => {
+        const scoreCount = new Map();
+        if (!$pairs?.length) return {scoreCount, countRange: {min: 0, max: 0, range: 0}};
+
+        for (const p of $pairs) {
+            for (const rid of [p.regions_id_1, p.regions_id_2]) {
+                const entry = scoreCount.get(rid) || {score: 0, count: 0};
+                entry.score += p.weightedScore || 0;
+                entry.count++;
+                scoreCount.set(rid, entry);
+            }
+        }
+
+        let min = Infinity, max = -Infinity;
+        for (const {count} of scoreCount.values()) {
+            if (count < min) min = count;
+            if (count > max) max = count;
+        }
+        if (min === Infinity) min = max = 0;
+
+        return {scoreCount, countRange: {min, max, range: max - min}};
+    });
+
+    const activeDocPairStats = derived(
+        [matrixMode, docPairStats, filteredDocPairStats],
+        ([$mode, $all, $filtered]) => $mode === 'filtered' ? $filtered : $all
+    );
+
+    const activeDocStats = derived(
+        [matrixMode, documentStats, filteredDocStats],
+        ([$mode, $all, $filtered]) => $mode === 'filtered' ? $filtered : $all
+    );
+
+    // Page counts per document (for normalization)
+    const pageCountMap = derived(documentNodes, ($docs) => {
+        const map = new Map();
+        for (const [id, doc] of $docs) {
+            map.set(id, Math.max(1, doc.images?.length || doc.img_nb || 1));
+        }
+        return map;
+    });
+
     return {
         error,
         allPairs, // Contains all pairs sorted
@@ -498,5 +574,14 @@ export function createDocumentSetStore(documentSetId) {
         setMutualTopK: (b) => mutualTopK.set(b),
         scoreMode,
         setScoreMode: (m) => scoreMode.set(m),
+
+        matrixMode,
+        setMatrixMode: (m) => matrixMode.set(m),
+        normalizeByPages,
+        setNormalizeByPages: (b) => normalizeByPages.set(b),
+        activeDocPairStats,
+        activeDocStats,
+        pageCountMap,
+        visiblePairIds,
     };
 }

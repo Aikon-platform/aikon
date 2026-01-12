@@ -6,7 +6,10 @@
 
     export let documentSetStore;
 
-    const {documentNodes, docPairStats, pairIndex, documentStats} = documentSetStore;
+    const {
+        documentNodes, pairIndex, activeDocPairStats, activeDocStats,
+        pageCountMap, visiblePairIds, matrixMode, normalizeByPages
+    } = documentSetStore;
 
     const t = {
         title: {en: 'Document Matrix', fr: 'Matrice de documents'},
@@ -18,38 +21,40 @@
         page: {en: 'page', fr: 'page'},
         score: {en: 'Score', fr: 'Score'},
         noPairs: {en: 'No pairs', fr: 'Aucune paire'},
-        selectCell: {
-            en: 'Click a cell to view page-by-page similarity',
-            fr: 'Cliquez sur une cellule pour voir la similarité page par page'
-        }
+        selectCell: {en: 'Click a cell to view page-by-page similarity', fr: 'Cliquez sur une cellule pour voir la similarité page par page'},
+        byPage: {en: 'By page', fr: 'Par page'},
+        byImage: {en: 'By image', fr: 'Par image'},
+        image: {en: 'image', fr: 'image'},
+        normalize: {en: 'Normalize', fr: 'Normaliser'},
+        normalization: {en: 'Normalization by document page counts', fr: 'Normalisation par le nombre de pages des documents'},
+        allPairs: {en: 'All pairs in the document set', fr: 'Toutes les paires du corpus'},
+        filteredPairs: {en: 'Filtered pairs', fr: 'Paires après filtrage'},
+        filtering: {en: 'Source of image pairs for the visualizations', fr: "Source des paires d’images pour les visualisations"},
     };
     const i18n = (key) => t[key]?.[appLang] || t[key]?.en || key;
 
-    let container;
-    let matrixContainer;
-    let scatterContainer;
-    let modalElement;
+    let container, matrixContainer, scatterContainer, modalElement;
     let selectedCell = null;
     let sortOrder = 'name';
     let splitRatio = 0.5;
     let isDragging = false;
     let containerWidth = 0;
     let resizeObserver;
-
     let clickedPage = null;
+    let clickedImages = null;
+    let scatterMode = 'page';
 
     const MIN_WIDTH = 300;
-
-    $: documents = Array.from($documentNodes?.values() || []);
-    $: matrixData = buildMatrix(documents, $docPairStats.scoreCount, $documentStats.scoreCount, sortOrder);
-    $: scatterData = selectedCell ? buildScatter(selectedCell) : null;
-    $: leftWidth = Math.max(MIN_WIDTH, containerWidth * splitRatio - 4);
-    $: rightWidth = Math.max(MIN_WIDTH, containerWidth * (1 - splitRatio) - 4);
-
     const cellSize = 30;
     const scatterCellSize = 5;
 
-    function buildMatrix(docs, scoreCount, docStats, order) {
+    $: documents = Array.from($documentNodes?.values() || []);
+    $: matrixData = buildMatrix(documents, $activeDocPairStats.scoreCount, $activeDocStats.scoreCount, sortOrder, $normalizeByPages, $pageCountMap);
+    $: scatterData = selectedCell ? buildScatter(selectedCell, scatterMode, $matrixMode === 'filtered', $visiblePairIds) : null;
+    $: leftWidth = Math.max(MIN_WIDTH, containerWidth * splitRatio - 4);
+    $: rightWidth = Math.max(MIN_WIDTH, containerWidth * (1 - splitRatio) - 4);
+
+    function buildMatrix(docs, scoreCount, docStats, order, normalize, pageCounts) {
         if (!docs.length) return {docs: [], matrix: [], maxScore: 0};
 
         docs.forEach((doc, i) => {
@@ -74,7 +79,14 @@
                     const key = sorted[i].id < sorted[j].id
                         ? `${sorted[i].id}-${sorted[j].id}`
                         : `${sorted[j].id}-${sorted[i].id}`;
-                    const score = scoreCount?.get(key)?.score || 0;
+                    let score = scoreCount?.get(key)?.score || 0;
+
+                    if (normalize && score > 0) {
+                        const p1 = pageCounts.get(sorted[i].id) || 1;
+                        const p2 = pageCounts.get(sorted[j].id) || 1;
+                        score /= Math.sqrt(p1 * p2);
+                    }
+
                     if (score > maxScore) maxScore = score;
                     row.push({x: j, y: i, z: score, doc1: sorted[i], doc2: sorted[j]});
                 } else {
@@ -87,17 +99,27 @@
         return {docs: sorted, matrix, maxScore};
     }
 
-    function buildScatter(cell) {
+    function buildScatter(cell, mode, filterPairs, visibleIds) {
         const {doc1, doc2} = cell;
         const pairKey = doc1.id < doc2.id ? `${doc1.id}-${doc2.id}` : `${doc2.id}-${doc1.id}`;
-        const pairs = $pairIndex.byDocPair.get(pairKey) || [];
+        let pairs = $pairIndex.byDocPair.get(pairKey) || [];
+
+        if (filterPairs && visibleIds.size > 0) {
+            pairs = pairs.filter(p => visibleIds.has(`${p.id_1}-${p.id_2}`));
+        }
 
         if (!pairs.length) return null;
 
+        return mode === 'image'
+            ? buildImageScatter(doc1, doc2, pairs)
+            : buildPageScatter(doc1, doc2, pairs);
+    }
+
+    function buildPageScatter(doc1, doc2, pairs) {
         const pageMap = new Map();
         let minScore = Infinity, maxScore = -Infinity;
 
-        pairs.forEach(p => {
+        for (const p of pairs) {
             const [page1, page2, score] = p.regions_id_1 === doc1.id
                 ? [p.page_1, p.page_2, p.weightedScore || 0]
                 : [p.page_2, p.page_1, p.weightedScore || 0];
@@ -107,7 +129,7 @@
             pageMap.get(key).scores.push(score);
             if (score < minScore) minScore = score;
             if (score > maxScore) maxScore = score;
-        });
+        }
 
         const points = Array.from(pageMap.values()).map(({page1, page2, scores}) => ({
             page1, page2,
@@ -115,7 +137,56 @@
             count: scores.length
         }));
 
-        return {points, minScore, maxScore, doc1, doc2};
+        return {mode: 'page', points, minScore, maxScore, doc1, doc2};
+    }
+
+    function sortImagesByPosition(images) {
+        return [...images].sort((a, b) => {
+            if (a.canvas !== b.canvas) return a.canvas - b.canvas;
+            const y1 = parseInt(a.xywh?.[1] || 0);
+            const y2 = parseInt(b.xywh?.[1] || 0);
+            return y1 - y2;
+        });
+    }
+
+    function buildImageScatter(doc1, doc2, pairs) {
+        const images1 = sortImagesByPosition(doc1.images || []);
+        const images2 = sortImagesByPosition(doc2.images || []);
+
+        if (!images1.length || !images2.length) return null;
+
+        const imgIndex1 = new Map(images1.map((img, i) => [img.id, i]));
+        const imgIndex2 = new Map(images2.map((img, i) => [img.id, i]));
+
+        const pairScores = new Map();
+        let minScore = Infinity, maxScore = -Infinity;
+
+        pairs.forEach(p => {
+            const [imgId1, imgId2, score] = p.regions_id_1 === doc1.id
+                ? [p.id_1, p.id_2, p.weightedScore || 0]
+                : [p.id_2, p.id_1, p.weightedScore || 0];
+
+            const idx1 = imgIndex1.get(imgId1);
+            const idx2 = imgIndex2.get(imgId2);
+
+            if (idx1 !== undefined && idx2 !== undefined) {
+                const key = `${idx1}-${idx2}`;
+                pairScores.set(key, {idx1, idx2, imgId1, imgId2, score});
+                if (score < minScore) minScore = score;
+                if (score > maxScore) maxScore = score;
+            }
+        });
+
+        return {
+            mode: 'image',
+            images1,
+            images2,
+            pairScores,
+            minScore,
+            maxScore,
+            doc1,
+            doc2
+        };
     }
 
     function renderMatrix() {
@@ -219,17 +290,20 @@
             .attr('stroke-width', d => isSelected(d) ? 2 : 0.5);
     }
 
-    function handleCellClick(page1, page2, doc1, doc2) {
-        clickedPage = {page1, page2, doc1, doc2};
-        modalElement?.classList.add('is-active');
-    }
-
     function renderScatter() {
-        if (!scatterContainer || !scatterData?.points.length) return;
-
+        if (!scatterContainer || !scatterData) return;
         d3.select(scatterContainer).selectAll('*').remove();
 
+        if (scatterData.mode === 'image') {
+            renderImageScatter();
+        } else {
+            renderPageScatter();
+        }
+    }
+
+    function renderPageScatter() {
         const {points, minScore, maxScore, doc1, doc2} = scatterData;
+        if (!points.length) return;
 
         const margin = {top: 65, right: 40, bottom: 20, left: 80};
         const heatmapHeight = 10;
@@ -321,11 +395,8 @@
                 .on('mouseleave', () => tooltip.style('opacity', 0));
         });
 
-        g.append('g')
-            .call(d3.axisTop(xScale).ticks(Math.min(maxPage1, 10)));
-
-        g.append('g')
-            .call(d3.axisLeft(yScale).ticks(Math.min(maxPage2, 10)));
+        g.append('g').call(d3.axisTop(xScale).ticks(Math.min(maxPage1, 10)));
+        g.append('g').call(d3.axisLeft(yScale).ticks(Math.min(maxPage2, 10)));
 
         const truncate = (text, maxPx) => {
             const maxChars = Math.floor(maxPx / 6);
@@ -383,7 +454,8 @@
                 const p1 = Math.floor(mx / scatterCellSize) + 1;
                 const p2 = Math.floor(my / scatterCellSize) + 1;
                 if (p1 >= 1 && p1 <= maxPage1 && p2 >= 1 && p2 <= maxPage2) {
-                    handleCellClick(p1, p2, doc1, doc2);
+                    const point = pointMap.get(`${p1}-${p2}`);
+                    handlePageClick(p1, p2, doc1, doc2, point?.score);
                 }
             });
 
@@ -405,6 +477,204 @@
         scatterContainer.style.height = svgHeight + 'px';
     }
 
+    function renderImageScatter() {
+        const {images1, images2, pairScores, minScore, maxScore, doc1, doc2} = scatterData;
+        if (!images1.length || !images2.length) return;
+
+        const margin = {top: 65, right: 40, bottom: 20, left: 80};
+        const heatmapHeight = 10;
+
+        const plotWidth = images1.length * scatterCellSize;
+        const plotHeight = images2.length * scatterCellSize;
+
+        const svgWidth = plotWidth + margin.left + margin.right;
+        const svgHeight = plotHeight + margin.top + margin.bottom;
+
+        const svg = d3.select(scatterContainer)
+            .append('svg')
+            .attr('width', svgWidth)
+            .attr('height', svgHeight);
+
+        const g = svg.append('g')
+            .attr('transform', `translate(${margin.left},${margin.top})`);
+
+        const xScale = d3.scaleLinear().domain([0, images1.length]).range([0, plotWidth]);
+        const yScale = d3.scaleLinear().domain([0, images2.length]).range([0, plotHeight]);
+
+        const tooltip = d3.select('body').selectAll('.scatter-tooltip').data([0])
+            .join('div')
+            .attr('class', 'scatter-tooltip')
+            .style('position', 'fixed')
+            .style('background', 'var(--bulma-scheme-main)')
+            .style('border', '1px solid var(--bulma-border)')
+            .style('border-radius', '4px')
+            .style('padding', '6px 10px')
+            .style('pointer-events', 'none')
+            .style('opacity', 0)
+            .style('font-size', '11px')
+            .style('box-shadow', '0 2px 4px rgba(0,0,0,0.15)')
+            .style('z-index', '9999')
+            .style('color', 'var(--bulma-text)');
+
+        const pageBoundaries1 = getPageBoundaries(images1);
+        const pageBoundaries2 = getPageBoundaries(images2);
+
+        const xHeatmap = g.append('g').attr('transform', `translate(0,${-22 - heatmapHeight})`);
+        pageBoundaries1.forEach(({start, end, page, count}) => {
+            xHeatmap.append('rect')
+                .attr('x', start * scatterCellSize)
+                .attr('width', (end - start) * scatterCellSize)
+                .attr('height', heatmapHeight)
+                .attr('fill', doc1.color)
+                .attr('opacity', 0.5)
+                .style('cursor', 'default')
+                .on('mouseover', () => tooltip.style('opacity', 1))
+                .on('mousemove', (event) => {
+                    tooltip
+                        .html(`${i18n('page')} ${page}<br/><strong>${count}</strong> image${count > 1 ? 's' : ''}`)
+                        .style('left', (event.clientX + 10) + 'px')
+                        .style('top', (event.clientY - 30) + 'px');
+                })
+                .on('mouseleave', () => tooltip.style('opacity', 0));
+        });
+
+        const yHeatmap = g.append('g').attr('transform', `translate(-55,0)`);
+        pageBoundaries2.forEach(({start, end, page, count}) => {
+            yHeatmap.append('rect')
+                .attr('x', 0)
+                .attr('y', start * scatterCellSize)
+                .attr('width', heatmapHeight)
+                .attr('height', (end - start) * scatterCellSize)
+                .attr('fill', doc2.color)
+                .attr('opacity', 0.5)
+                .style('cursor', 'default')
+                .on('mouseover', () => tooltip.style('opacity', 1))
+                .on('mousemove', (event) => {
+                    tooltip
+                        .html(`${i18n('page')} ${page}<br/><strong>${count}</strong> image${count > 1 ? 's' : ''}`)
+                        .style('left', (event.clientX + 10) + 'px')
+                        .style('top', (event.clientY - 30) + 'px');
+                })
+                .on('mouseleave', () => tooltip.style('opacity', 0));
+        });
+
+        g.append('g').call(d3.axisTop(xScale).ticks(Math.min(images1.length, 10)));
+        g.append('g').call(d3.axisLeft(yScale).ticks(Math.min(images2.length, 10)));
+
+        const truncate = (text, maxPx) => {
+            const maxChars = Math.floor(maxPx / 6);
+            return text.length > maxChars ? text.slice(0, maxChars - 1) + '…' : text;
+        };
+
+        const xLabel = g.append('g').attr('transform', `translate(${plotWidth / 2},${-50})`);
+        xLabel.append('circle').attr('r', 4).attr('cx', -plotWidth / 2 + 4).attr('fill', doc1.color);
+        xLabel.append('text')
+            .attr('x', -plotWidth / 2 + 14)
+            .attr('text-anchor', 'start')
+            .attr('dominant-baseline', 'middle')
+            .attr('font-size', '11px')
+            .attr('fill', 'var(--bulma-text)')
+            .text(truncate(`${doc1.title} (${i18n('image')})`, plotWidth - 20));
+
+        const yLabel = g.append('g').attr('transform', `translate(-68,${plotHeight / 2}) rotate(-90)`);
+        yLabel.append('circle').attr('r', 4).attr('cx', -plotHeight / 2 + 4).attr('fill', doc2.color);
+        yLabel.append('text')
+            .attr('x', -plotHeight / 2 + 14)
+            .attr('text-anchor', 'start')
+            .attr('dominant-baseline', 'middle')
+            .attr('font-size', '11px')
+            .attr('fill', 'var(--bulma-text)')
+            .text(truncate(`${doc2.title} (${i18n('image')})`, plotHeight - 20));
+
+        g.append('rect')
+            .attr('class', 'hover-overlay')
+            .attr('width', plotWidth)
+            .attr('height', plotHeight)
+            .attr('fill', 'transparent')
+            .style('cursor', 'pointer')
+            .on('mousemove', (event) => {
+                const [mx, my] = d3.pointer(event, g.node());
+                const idx1 = Math.floor(mx / scatterCellSize);
+                const idx2 = Math.floor(my / scatterCellSize);
+                if (idx1 < 0 || idx1 >= images1.length || idx2 < 0 || idx2 >= images2.length) {
+                    tooltip.style('opacity', 0);
+                    return;
+                }
+                const img1 = images1[idx1];
+                const img2 = images2[idx2];
+                const pair = pairScores.get(`${idx1}-${idx2}`);
+                const tipTitle = `<span style="color:${doc1.color}">●</span> ${i18n('page')} ${img1.canvas}, ${i18n('image')} ${idx1 + 1}<br/><span style="color:${doc2.color}">●</span> ${i18n('page')} ${img2.canvas}, ${i18n('image')} ${idx2 + 1}`;
+                const content = pair
+                    ? `${tipTitle}<br/>${i18n('score')}: ${pair.score.toFixed(2)}`
+                    : tipTitle;
+                tooltip
+                    .style('opacity', 1)
+                    .html(content)
+                    .style('left', (event.clientX + 10) + 'px')
+                    .style('top', (event.clientY - 40) + 'px');
+            })
+            .on('mouseleave', () => tooltip.style('opacity', 0))
+            .on('click', (event) => {
+                const [mx, my] = d3.pointer(event, g.node());
+                const idx1 = Math.floor(mx / scatterCellSize);
+                const idx2 = Math.floor(my / scatterCellSize);
+                if (idx1 >= 0 && idx1 < images1.length && idx2 >= 0 && idx2 < images2.length) {
+                    const pair = pairScores.get(`${idx1}-${idx2}`);
+                    handleImageClick(images1[idx1], images2[idx2], doc1, doc2, pair?.score);
+                }
+            });
+
+        const cellData = Array.from(pairScores.values());
+        g.selectAll('.cell')
+            .data(cellData)
+            .join('rect')
+            .attr('class', 'cell')
+            .attr('x', d => d.idx1 * scatterCellSize)
+            .attr('y', d => d.idx2 * scatterCellSize)
+            .attr('width', scatterCellSize)
+            .attr('height', scatterCellSize)
+            .attr('fill', d3.hsl(233, 0.951, 0.52))
+            .attr('opacity', d => maxScore > minScore
+                ? 0.2 + 0.8 * (d.score - minScore) / (maxScore - minScore)
+                : 0.5)
+            .attr('pointer-events', 'none');
+
+        scatterContainer.style.width = svgWidth + 'px';
+        scatterContainer.style.height = svgHeight + 'px';
+    }
+
+    function getPageBoundaries(images) {
+        const boundaries = [];
+        let currentPage = null;
+        let start = 0;
+
+        images.forEach((img, i) => {
+            if (img.canvas !== currentPage) {
+                if (currentPage !== null) {
+                    boundaries.push({start, end: i, page: currentPage, count: i - start});
+                }
+                currentPage = img.canvas;
+                start = i;
+            }
+        });
+        if (currentPage !== null) {
+            boundaries.push({start, end: images.length, page: currentPage, count: images.length - start});
+        }
+        return boundaries;
+    }
+
+    function handlePageClick(page1, page2, doc1, doc2, score) {
+        clickedPage = {page1, page2, doc1, doc2, score};
+        clickedImages = null;
+        modalElement?.classList.add('is-active');
+    }
+
+    function handleImageClick(img1, img2, doc1, doc2, score) {
+        clickedImages = {img1, img2, doc1, doc2, score};
+        clickedPage = null;
+        modalElement?.classList.add('is-active');
+    }
+
     function startDrag(e) {
         isDragging = true;
         e.preventDefault();
@@ -424,6 +694,10 @@
     function getPageImageUrl(doc, pageNum) {
         const size = "full";
         return refToIIIF(`wit${doc.witnessId}_${doc.digitizationRef}_${String(pageNum).padStart(doc.zeros, '0')}`, "full", size);
+    }
+
+    function getRegionImageUrl(img) {
+        return refToIIIF(img.ref, img.xywh?.join(','), "full");
     }
 
     onMount(() => {
@@ -449,9 +723,40 @@
         window.removeEventListener('touchend', stopDrag);
     });
 
+    $: modalData = clickedPage ? {
+        items: [1, 2].map(nb => ({
+            doc: clickedPage[`doc${nb}`],
+            label: clickedPage[`page${nb}`],
+            imgUrl: getPageImageUrl(clickedPage[`doc${nb}`], clickedPage[`page${nb}`])
+        })),
+        score: clickedPage.score
+    } : clickedImages ? {
+        items: [['img1', 'doc1'], ['img2', 'doc2']].map(([imgKey, docKey]) => ({
+            doc: clickedImages[docKey],
+            label: clickedImages[imgKey].canvas,
+            imgUrl: getRegionImageUrl(clickedImages[imgKey])
+        })),
+        score: clickedImages.score
+    } : null;
+
     $: if (matrixContainer && matrixData.docs.length) renderMatrix();
     $: if (scatterContainer && scatterData) renderScatter();
 </script>
+
+<div class="field mb-4">
+    <label class="label is-small" for="matrix-mode">
+        {i18n('filtering')}
+    </label>
+
+    <div class="control">
+        <div class="select is-small is-fullwidth">
+            <select id="matrix-mode" bind:value={$matrixMode}>
+                <option value="all">{i18n('allPairs')}</option>
+                <option value="filtered">{i18n('filteredPairs')}</option>
+            </select>
+        </div>
+    </div>
+</div>
 
 <div class="split-container" bind:this={container}>
     {#if !documents.length}
@@ -459,9 +764,9 @@
     {:else}
         <div class="split-panel" style="width: {leftWidth}px;">
             <div class="box panel-box">
-                <div class="is-flex is-justify-content-space-between is-align-items-center mb-3">
+                <div class="is-flex is-justify-content-space-between is-align-items-center mb-3" style="flex-wrap: wrap; gap: 0.5rem;">
                     <h4 class="title is-6 mb-0">{i18n('title')}</h4>
-                    <div class="field mb-0">
+                    <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
                         <div class="control">
                             <div class="select is-small">
                                 <select bind:value={sortOrder}>
@@ -470,6 +775,10 @@
                                 </select>
                             </div>
                         </div>
+                        <label title={i18n('normalization')} class="checkbox is-size-7">
+                            <input type="checkbox" checked={$normalizeByPages} on:change={e => normalizeByPages.set(e.target.checked)}>
+                            {i18n('normalize')}
+                        </label>
                     </div>
                 </div>
 
@@ -500,7 +809,21 @@
 
         <div class="split-panel" style="width: {rightWidth}px;">
             <div class="box panel-box">
-                <h4 class="title is-6 mb-3">{i18n('pageByPage')}</h4>
+                <div class="is-flex is-justify-content-space-between is-align-items-center mb-3">
+                    <h4 class="title is-6 mb-0">{i18n('pageByPage')}</h4>
+                    {#if selectedCell}
+                        <div class="field mb-0">
+                            <div class="control">
+                                <div class="select is-small">
+                                    <select bind:value={scatterMode}>
+                                        <option value="page">{i18n('byPage')}</option>
+                                        <option value="image">{i18n('byImage')}</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    {/if}
+                </div>
                 <div class="scroll-area">
                     {#if selectedCell}
                         <div class="scatter-container" bind:this={scatterContainer}></div>
@@ -517,26 +840,32 @@
     <div class="modal-background"></div>
     <div class="modal-content" style="width: auto; max-width: 70vw;">
         <div class="box p-5">
-            {#if clickedPage}
+            {#if modalData}
                 <table class="table is-fullwidth p-3 has-text-centered">
                     <thead>
                         <tr>
-                            {#each [1, 2] as nb}
+                            {#each modalData.items as item}
                                 <th class="doc-title">
-                                    <span style="color:{clickedPage[`doc${nb}`].color}">●</span>
-                                    <strong>{clickedPage[`doc${nb}`].title}</strong>
+                                    <span style="color:{item.doc.color}">●</span>
+                                    <strong>{item.doc.title}</strong>
                                 </th>
                             {/each}
                         </tr>
                     </thead>
                     <tbody>
+                        {#if modalData.score !== undefined}
+                            <tr>
+                                <td colspan="2" class="has-text-centered">
+                                    <span class="tag is-small">{i18n('score')} <b>{modalData.score.toFixed(2)}</b></span>
+                                </td>
+                            </tr>
+                        {/if}
                         <tr>
-                            {#each [1, 2] as nb}
+                            {#each modalData.items as item}
                                 <td>
-                                    <p class="is-size-7 has-text-grey mb-3">{i18n('page')} {clickedPage[`page${nb}`]}</p>
+                                    <p class="is-size-7 has-text-grey mb-3">{i18n('page')} {item.label}</p>
                                     <figure class="image">
-                                        <img src={getPageImageUrl(clickedPage[`doc${nb}`], clickedPage[`page${nb}`])}
-                                             alt="Page {clickedPage[`page${nb}`]}"/>
+                                        <img src={item.imgUrl} alt="Page {item.label}" style="border-radius: 5px;"/>
                                     </figure>
                                 </td>
                             {/each}
