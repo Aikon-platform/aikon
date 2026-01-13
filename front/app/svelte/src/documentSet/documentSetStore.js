@@ -1,9 +1,11 @@
 import {derived, writable, get} from 'svelte/store';
 import {extractNb, generateColor} from "../utils.js";
-// import {appUrl} from "../constants.js";
+import { streamPairsToWorker } from "./pairStreamReader.js";
+
+import {appUrl} from "../constants.js";
 
 // TO DELETE
-const appUrl = "https://vhs.huma-num.fr";
+// const appUrl = "https://vhs.huma-num.fr";
 // TO DELETE
 
 const createWorker = () => new Worker(
@@ -14,6 +16,8 @@ const createWorker = () => new Worker(
 
 export function createDocumentSetStore(documentSetId) {
     const error = writable(null);
+    const loading = writable(false);
+    const loadingProgress = writable({ loaded: 0, done: false });
 
     const selectedCategories = writable([]);
     const selectedRegions = writable(new Set());
@@ -32,6 +36,7 @@ export function createDocumentSetStore(documentSetId) {
 
     // web worker for processing pairs
     let worker;
+    let abortController = null;
 
     const pairIndex = writable({
         byImage: new Map(),        // imgId -> [pairs]
@@ -65,36 +70,50 @@ export function createDocumentSetStore(documentSetId) {
             return;
         }
 
-        if (worker) worker.terminate();
+        // Cleanup previous
+        if (worker) worker.terminate() && (worker = null);
+        if (abortController) abortController.abort();
+        abortController = new AbortController();
 
         // TO DELETE
-        const documentSetId = 413; // histoire naturelle
+        // const documentSetId = 413; // histoire naturelle
         // const documentSetId = 414; // nicolas
-        // const documentSetId = 415; // physiologus
+        // const documentSetId = 437; // physiologus
         // const documentSetId = 416; // de materia medica
         // const documentSetId = 417; // traité de géométrie
         // const documentSetId = 436; // Jombert complet
+        // const documentSetId = 432; // Jombert incomplet
         // TO DELETE
 
         const loadPromise = new Promise((resolve, reject) => {
-            const load = async () => {
-                try {
-                    const response = await fetch(`${appUrl}/document-set/${documentSetId}/pairs?category=${$cats.join(',')}`);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const rawData = await response.json();
+            loading.set(true);
+            loadingProgress.set({ loaded: 0, done: false });
+            error.set(null);
 
+            const run = async () => {
+                try {
                     worker = createWorker();
 
-                    worker.postMessage({
-                        rawPairs: rawData,
-                        selectedCategories: $cats
-                    });
-
                     worker.onmessage = async (e) => {
-                        const { allPairs: sorted, imageNodes: imgMap, pairIndex: idx, categories: cats, stats } = e.data;
+                        const { type } = e.data;
+
+                        if (type === 'progress') {
+                            loadingProgress.set({ loaded: e.data.count, done: false });
+                            return;
+                        }
+
+                        if (type !== 'complete') return;
+
+                        // Process complete - same as before
+                        const {
+                            allPairs: sorted,
+                            imageNodes: imgMap,
+                            pairIndex: idx,
+                            categories: cats,
+                            stats
+                        } = e.data;
 
                         pairIndex.set(idx);
-
                         pairStats.set(stats.pairStats);
                         documentStats.set(stats.documentStats);
                         imageStats.set(stats.imageStats);
@@ -102,17 +121,16 @@ export function createDocumentSetStore(documentSetId) {
 
                         const regionIds = Array.from(stats.documentStats.scoreCount.keys());
 
-                        const currentRegions = get(selectedRegions);
-                        if (currentRegions.size === 0) {
+                        if (get(selectedRegions).size === 0) {
                             selectedRegions.set(new Set(regionIds));
                         }
 
                         const results = await Promise.all(
-                            regionIds.map(id => getRegionsInfo(id).then(info => ({id, info})))
+                            regionIds.map(id => getRegionsInfo(id).then(info => ({ id, info })))
                         );
 
                         const metaMap = new Map();
-                        results.forEach(({id, info}) => metaMap.set(id, info));
+                        results.forEach(({ id, info }) => metaMap.set(id, info));
                         regionsMetadata.set(metaMap);
 
                         const docMap = new Map();
@@ -136,7 +154,7 @@ export function createDocumentSetStore(documentSetId) {
                             }
                         });
 
-                        // TODO sort also image by coordinates (only y) + keep image number in memory (?)
+                        // TODO: sort images by coord (from top to bottom only)
                         docMap.forEach(doc => doc.images.sort((a, b) => a.canvas - b.canvas));
 
                         imageNodes.set(imgMap);
@@ -151,6 +169,9 @@ export function createDocumentSetStore(documentSetId) {
 
                         allPairs.set(sorted);
 
+                        loading.set(false);
+                        loadingProgress.set({ loaded: sorted.length, done: true });
+
                         worker.terminate();
                         worker = null;
                         resolve(sorted.length);
@@ -158,19 +179,35 @@ export function createDocumentSetStore(documentSetId) {
 
                     worker.onerror = (err) => {
                         console.error("Worker error", err);
-                        const errMsg = `Error processing pairs: ${err.message}`;
-                        error.set(errMsg);
-                        reject(new Error(errMsg));
+                        error.set(`Worker error: ${err.message}`);
+                        loading.set(false);
+                        reject(err);
                     };
 
+                    const url = `${appUrl}/document-set/${documentSetId}/pairs/stream?category=${$cats.join(',')}`;
+
+                    await streamPairsToWorker(url, worker, {
+                        signal: abortController.signal,
+                        onProgress: (loaded, done) => {
+                            loadingProgress.set({ loaded, done });
+                        },
+                        onError: (err) => {
+                            error.set(`Stream error: ${err.message}`);
+                        }
+                    });
+
                 } catch (e) {
-                    const errMsg = `Fetch error: ${e.message}`;
-                    error.set(errMsg);
-                    reject(new Error(errMsg));
+                    if (e.name === 'AbortError') {
+                        console.log('Request aborted');
+                        return;
+                    }
+                    error.set(`Fetch error: ${e.message}`);
+                    loading.set(false);
+                    reject(e);
                 }
             };
 
-            load();
+            run();
         });
 
         set(loadPromise);
@@ -181,8 +218,8 @@ export function createDocumentSetStore(documentSetId) {
             const response = await fetch(`${appUrl}/search/regions/?id=${regionId}`);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-            const {results} = await response.json();
-            if (!results?.length) return {title: `Region Extraction ${regionId}`};
+            const { results } = await response.json();
+            if (!results?.length) return { title: `Region Extraction ${regionId}` };
 
             const region = results[0];
             const [, ...titleParts] = region.title.split(" | ");
@@ -199,7 +236,7 @@ export function createDocumentSetStore(documentSetId) {
             };
         } catch (e) {
             error.set(`Error fetching region #${regionId}: ${e.message}`);
-            return {title: `Region Extraction ${regionId}`};
+            return { title: `Region Extraction ${regionId}` };
         }
     }
 
@@ -466,7 +503,7 @@ export function createDocumentSetStore(documentSetId) {
         });
     }
 
-    const matrixMode = writable('all'); // 'all' | 'filtered'
+    const matrixMode = writable('filtered'); // 'all' | 'filtered'
     const normalizeByPages = writable(false);
 
     const visiblePairIds = derived(filteredPairs, ($pairs) => {
@@ -545,6 +582,14 @@ export function createDocumentSetStore(documentSetId) {
 
     return {
         error,
+        loadingProgress,
+        cancelLoading: () => {
+            if (abortController) {
+                abortController.abort();
+                loading.set(false);
+            }
+        },
+
         allPairs, // Contains all pairs sorted
         visiblePairs: filteredPairs, // Optimized for visualization
         pairIndex,

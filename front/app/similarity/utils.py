@@ -1,3 +1,5 @@
+import gzip
+import json
 import os
 import re
 from enum import IntEnum
@@ -10,7 +12,7 @@ import requests
 from itertools import combinations_with_replacement
 
 from pathlib import Path
-from django.db import transaction
+from django.db import transaction, connection
 from django.db.models import Q, F
 from django.core.cache import cache
 
@@ -800,3 +802,73 @@ def get_or_create_pair(img_1, img_2, rid_1, rid_2, create=True):
         ),
         True,
     )
+
+
+F_IMG1, F_IMG2, F_RID1, F_RID2, F_SCORE, F_CAT, F_CATX, F_SIMTYPE = range(8)
+
+GZIP_BATCH_SIZE = 1000
+
+
+def row_to_dict(row):
+    """Convert SQL row tuple to dict."""
+    return {
+        "img_1": row[F_IMG1],
+        "img_2": row[F_IMG2],
+        "regions_id_1": row[F_RID1],
+        "regions_id_2": row[F_RID2],
+        "score": row[F_SCORE],
+        "category": row[F_CAT],
+        "category_x": row[F_CATX] or [],
+        "similarity_type": row[F_SIMTYPE],
+    }
+
+
+def stream_pairs_ndjson(sql, params):
+    """Generator yielding one JSON line per pair."""
+    with connection.cursor() as cursor:
+        cursor.execute(sql, params)
+        for row in cursor:
+            yield json.dumps(row_to_dict(row), separators=(",", ":")) + "\n"
+
+
+def build_pairs_query(
+    regions_ids, categories, min_score, max_score, topk, exclude_self
+):
+    """Build raw SQL with proper filtering."""
+    conditions = ["regions_id_1 = ANY(%s)", "regions_id_2 = ANY(%s)"]
+    params = [list(regions_ids), list(regions_ids)]
+
+    if min_score is not None:
+        conditions.append("score >= %s")
+        params.append(min_score)
+
+    if max_score is not None:
+        conditions.append("score <= %s")
+        params.append(max_score)
+
+    if exclude_self:
+        conditions.append("regions_id_1 != regions_id_2")
+
+    if categories:
+        has_null = 0 in categories
+        real_cats = [c for c in categories if c != 0]
+
+        if has_null and real_cats:
+            conditions.append("(category = ANY(%s) OR category IS NULL)")
+            params.append(real_cats)
+        elif has_null:
+            conditions.append("category IS NULL")
+        elif real_cats:
+            conditions.append("category = ANY(%s)")
+            params.append(real_cats)
+
+    sql = f"""
+        SELECT img_1, img_2, regions_id_1, regions_id_2,
+               score, category, category_x, similarity_type
+        FROM webapp_regionpair
+        WHERE {" AND ".join(conditions)}
+        ORDER BY score DESC NULLS FIRST
+        {"LIMIT " + str(int(topk)) if topk else ""}
+    """
+
+    return sql, params

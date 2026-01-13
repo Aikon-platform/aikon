@@ -4,8 +4,8 @@ from collections import OrderedDict
 from typing import List, Set
 
 from django.db.models import Q, Count, F
-from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.http import StreamingHttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -34,6 +34,8 @@ from app.similarity.utils import (
     retrieve_pair,
     get_or_create_pair,
     SimilarityType,
+    build_pairs_query,
+    stream_pairs_ndjson,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
@@ -858,6 +860,37 @@ def remove_incorrect_pairs(request, mismatched=False, duplicate=False, swapped=T
         )
 
 
+def parse_categories(cat_str):
+    if not cat_str:
+        return None
+    try:
+        return [int(c.strip()) for c in cat_str.split(",")]
+    except (TypeError, ValueError):
+        return None
+
+
+def safe_float(val):
+    try:
+        return float(val) if val else None
+    except (TypeError, ValueError):
+        return None
+
+
+def safe_int(val):
+    try:
+        return int(val) if val else None
+    except (TypeError, ValueError):
+        return None
+
+
+def safe_bool(val):
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, str):
+        return val.lower() == "true"
+    return None
+
+
 def get_regions_pairs(request, wid, rid=None):
     """
     Return all the region pairs for a given region id or witness id
@@ -913,11 +946,11 @@ def get_regions_pairs(request, wid, rid=None):
         pairs = filter_pairs(
             regions_ids,
             exclusive=(witness_ids or regions_ids),
-            min_score=request.GET.get("minScore", None),
-            max_score=request.GET.get("maxScore", None),
-            topk=request.GET.get("topk", None),
-            exclude_self=request.GET.get("excludeSelf", "false").lower() == "true",
-            categories=request.GET.get("category", []),
+            min_score=safe_float(request.GET.get("minScore")),
+            max_score=safe_float(request.GET.get("maxScore")),
+            topk=safe_int(request.GET.get("topk")),
+            exclude_self=safe_bool(request.GET.get("excludeSelf")) or False,
+            categories=parse_categories(request.GET.get("category")) or [],
         )
         return JsonResponse(pairs, status=200, safe=False)
     except Exception as e:
@@ -940,23 +973,65 @@ def get_document_set_pairs(request, dsid=None):
             {"error": f"No regions found for this document set #{dsid}"}, status=400
         )
 
-    categories = request.GET.get("category", None)
-    try:
-        if categories:
-            categories = [int(c.strip()) for c in categories.split(",")]
-    except (TypeError, ValueError):
-        categories = None
-
     try:
         pairs = filter_pairs(
             regions_ids,
             exclusive=True,
-            min_score=request.GET.get("minScore", None),
-            max_score=request.GET.get("maxScore", None),
-            topk=request.GET.get("topk", None),
-            exclude_self=request.GET.get("excludeSelf", "false").lower() == "true",
-            categories=categories,
+            min_score=safe_float(request.GET.get("minScore")),
+            max_score=safe_float(request.GET.get("maxScore")),
+            topk=safe_int(request.GET.get("topk")),
+            exclude_self=safe_bool(request.GET.get("excludeSelf")) or False,
+            categories=parse_categories(request.GET.get("category")),
         )
         return JsonResponse(pairs, status=200, safe=False)
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
+def stream_document_set_pairs(request, dsid=None):
+    """
+    Streams pairs as NDJSON
+
+    Query params:
+        category: comma-separated category IDs (0 = uncategorized)
+        minScore, maxScore: score range filter
+        topk: limit results
+        excludeSelf: exclude same-document pairs
+        compress: if 'true', return gzip-compressed response
+    """
+    if dsid is None:
+        return JsonResponse({"error": "No document set id provided"}, status=400)
+
+    try:
+        document_set = DocumentSet.objects.get(id=dsid)
+    except Exception:
+        return JsonResponse(
+            {"error": f"Document set #{dsid} does not exist"}, status=400
+        )
+
+    regions_ids = document_set.get_regions(only_ids=True)
+    if not regions_ids:
+        return JsonResponse(
+            {"error": f"No regions found for document set #{dsid}"}, status=400
+        )
+
+    params = {
+        "categories": parse_categories(request.GET.get("category")),
+        "min_score": safe_float(request.GET.get("minScore")),
+        "max_score": safe_float(request.GET.get("maxScore")),
+        "topk": safe_int(request.GET.get("topk")),
+        "exclude_self": safe_bool(request.GET.get("excludeSelf")) or False,
+    }
+
+    sql, sql_params = build_pairs_query(regions_ids, **params)
+
+    response = StreamingHttpResponse(
+        stream_pairs_ndjson(sql, sql_params), content_type="application/x-ndjson"
+    )
+
+    # Nginx streaming headers
+    response["X-Accel-Buffering"] = "no"
+    response["Cache-Control"] = "no-cache, no-store"
+    response["X-Content-Type-Options"] = "nosniff"
+
+    return response

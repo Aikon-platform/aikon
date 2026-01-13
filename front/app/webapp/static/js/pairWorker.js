@@ -1,34 +1,64 @@
-const regionsType = "region";
+/**
+ * Web Worker for incremental pair processing.
+ * Receives batches via postMessage and builds indexes incrementally.
+ */
+
 const IMG_REGEX = /^(.+)_(\d+)_([\d,]+)\.jpg$/;
 
+// Persistent state across batches
+let state = null;
+
 self.onmessage = (e) => {
-    const { rawPairs, selectedCategories } = e.data;
-    const results = processPairs(rawPairs);
-    self.postMessage(results);
+    const { type, pairs, isLast } = e.data;
+
+    switch (type) {
+        case 'init':
+            state = createState();
+            break;
+
+        case 'batch':
+            if (!state) state = createState();
+            processBatch(pairs);
+            if (isLast) finalize();
+            break;
+
+        case 'done':
+            if (state) finalize();
+            break;
+
+        // Legacy: full array mode (for backward compat)
+        default:
+            if (e.data.rawPairs) {
+                state = createState();
+                processBatch(e.data.rawPairs);
+                finalize();
+            }
+    }
 };
 
-function processPairs(data) {
-    const pairs = [];
-    const imageMap = new Map();
-
-    const index = {
-        byImage: new Map(),   // imgId -> [pairs]
-        byDocPair: new Map(), // "r1-r2" -> [pairs]
-        byDoc: new Map(),     // rid -> [pairs]
+function createState() {
+    return {
+        pairs: [],
+        imageMap: new Map(),
+        index: {
+            byImage: new Map(),
+            byDocPair: new Map(),
+            byDoc: new Map(),
+        },
+        categories: {},
+        pStats: createStatsObject(),
+        docStats: createStatsObject(),
+        imgStats: createStatsObject(),
+        docPStats: createStatsObject(),
+        weights: { 1: 1.0, 2: 0.5, 3: 0.125, 4: -1.0, 5: 0.125 }
     };
+}
 
-    const pStats = createStatsObject();
-    const docStats = createStatsObject();
-    const imgStats = createStatsObject();
-    const docPStats = createStatsObject();
-    const categories = {};
+function processBatch(batch) {
+    const { pairs, imageMap, index, categories, weights, pStats, docStats, imgStats, docPStats } = state;
 
-    const weights = {1: 1.0, 2: 0.5, 3: 0.125, 4: -1.0, 5: 0.125};
-
-    const len = data.length;
-    for (let i = 0; i < len; i++) {
-        const p = data[i];
-
+    for (let i = 0; i < batch.length; i++) {
+        const p = batch[i];
         const cat = p.category || 0;
 
         if (cat === 4) continue;
@@ -49,19 +79,15 @@ function processPairs(data) {
             regions_id_2: p.regions_id_2,
             page_1: img1.canvas,
             page_2: img2.canvas,
-
             score: p.score,
-            weightedScore: weightedScore,
+            weightedScore,
             category: cat,
             similarity_type: p.similarity_type,
-
-            // Rank for topk filtering
             rank_1: 0,
             rank_2: 0
         };
 
         pairs.push(processedPair);
-
         updateStats(pStats, null, weightedScore);
 
         const pairKey = p.regions_id_1 < p.regions_id_2
@@ -73,25 +99,27 @@ function processPairs(data) {
 
         pushToMap(index.byImage, img1.id, processedPair);
         pushToMap(index.byImage, img2.id, processedPair);
-
         pushToMap(index.byDoc, p.regions_id_1, processedPair);
         pushToMap(index.byDoc, p.regions_id_2, processedPair);
     }
 
+    // Progress update (optional - can throttle if needed)
+    self.postMessage({ type: 'progress', count: pairs.length });
+}
+
+function finalize() {
+    const { pairs, imageMap, index, categories, pStats, docStats, imgStats, docPStats } = state;
+
+    // Sort all pairs by score
     pairs.sort((a, b) => b.weightedScore - a.weightedScore);
 
     // TOP-K
     for (const [imgId, imgPairs] of index.byImage) {
-        // Sort image pairs by descending score
         imgPairs.sort((a, b) => b.weightedScore - a.weightedScore);
-
         for (let k = 0; k < imgPairs.length; k++) {
             const pair = imgPairs[k];
-            if (pair.id_1 === imgId) {
-                pair.rank_1 = k + 1; // Rang 1-based
-            } else {
-                pair.rank_2 = k + 1;
-            }
+            if (pair.id_1 === imgId) pair.rank_1 = k + 1;
+            else pair.rank_2 = k + 1;
         }
     }
 
@@ -104,7 +132,9 @@ function processPairs(data) {
     computeDensity(imgStats);
     computeDensity(docPStats);
 
-    return {
+    // Send final result
+    self.postMessage({
+        type: 'complete',
         allPairs: pairs,
         imageNodes: imageMap,
         pairIndex: index,
@@ -115,7 +145,10 @@ function processPairs(data) {
             imageStats: imgStats,
             docPairStats: docPStats
         }
-    };
+    });
+
+    // Clear state for next use
+    state = null;
 }
 
 function getOrAddImage(imgKey, rid, map, imgStats, docStats, score) {
@@ -123,9 +156,7 @@ function getOrAddImage(imgKey, rid, map, imgStats, docStats, score) {
     let imgData = map.get(imgId);
 
     if (!imgData) {
-        let page = 0;
-        let ref = imgKey;
-        let coords = null; // string "x,y,w,h"
+        let page = 0, ref = imgKey, coords = null;
 
         const match = imgKey.match(IMG_REGEX);
         if (match) {
@@ -142,10 +173,10 @@ function getOrAddImage(imgKey, rid, map, imgStats, docStats, score) {
         imgData = {
             id: imgId,
             regionId: rid,
-            ref: ref,
+            ref,
             canvas: page,
             xywh: coords ? coords.split(',') : null,
-            type: regionsType,
+            type: "regions",
             // to be initialized in the main thread
             color: null
         };
@@ -159,15 +190,19 @@ function getOrAddImage(imgKey, rid, map, imgStats, docStats, score) {
 }
 
 function pushToMap(map, key, value) {
-    if (!map.has(key)) map.set(key, []);
-    map.get(key).push(value);
+    let arr = map.get(key);
+    if (!arr) {
+        arr = [];
+        map.set(key, arr);
+    }
+    arr.push(value);
 }
 
 function createStatsObject() {
     return {
         count: 0,
         totalScore: 0,
-        scoreCount: new Map(), // key -> { score, count }
+        scoreCount: new Map(),
         scoreRange: { min: Infinity, max: -Infinity, range: 0 },
         countRange: { min: Infinity, max: -Infinity, range: 0 },
         links: 0,
@@ -187,11 +222,10 @@ function updateStats(stats, key, score) {
     if (!entry) {
         entry = { score: 0, count: 0 };
         stats.scoreCount.set(key, entry);
-        stats.count++; // Number of unique keys
+        stats.count++;
     }
-
     entry.score += score;
-    entry.count += 1;
+    entry.count++;
 }
 
 function updateMinMax(rangeObj, val) {
@@ -209,10 +243,8 @@ function finalizeStats(stats, linkCount) {
             updateMinMax(stats.countRange, val.count);
         }
     } else if (stats.scoreRange.min === Infinity) {
-        stats.scoreRange.min = 0;
-        stats.scoreRange.max = 0;
-        stats.countRange.min = 0;
-        stats.countRange.max = 0;
+        stats.scoreRange.min = stats.scoreRange.max = 0;
+        stats.countRange.min = stats.countRange.max = 0;
     }
 
     stats.scoreRange.range = stats.scoreRange.max - stats.scoreRange.min;
@@ -224,6 +256,5 @@ function computeDensity(stats) {
         stats.density = 0;
         return;
     }
-    // Undirected graph density 2 * E / (V * (V-1))
     stats.density = (2 * stats.links) / (stats.count * (stats.count - 1));
 }
