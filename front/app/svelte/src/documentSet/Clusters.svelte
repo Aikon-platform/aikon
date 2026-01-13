@@ -3,7 +3,7 @@
     import Table from "../Table.svelte";
     import Row from "../Row.svelte";
     import Toolbar from "../Toolbar.svelte";
-    import {appLang} from "../constants.js";
+    import {appLang, isSuperuser} from "../constants.js";
     import Pagination from "../Pagination.svelte";
     import RegionsSelectionModal from "../regions/RegionsSelectionModal.svelte";
     import { clusterSelection } from '../selection/selectionStore.js';
@@ -61,6 +61,7 @@
     const { validate, validated, ...globalActions } = actionLabels;
 </script>
 
+{#if isSuperuser}
 <Toolbar expandable={false}>
     <div slot="toolbar-visible">
         <div class="columns is-vcentered is-mobile py-4">
@@ -85,6 +86,7 @@
         </div>
     </div>
 </Toolbar>
+{/if}
 
 <Pagination store={clusterStore} nbOfItems={$clusterNb} {pageLength}/>
 

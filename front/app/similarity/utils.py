@@ -1,4 +1,4 @@
-import hashlib
+import gzip
 import json
 import os
 import re
@@ -12,13 +12,14 @@ import requests
 from itertools import combinations_with_replacement
 
 from pathlib import Path
-from django.db import transaction
+from django.db import transaction, connection
 from django.db.models import Q, F
 from django.core.cache import cache
 
 from app.similarity.const import SCORES_PATH
 from app.config.settings import APP_URL, APP_NAME
 from app.similarity.models.region_pair import RegionPair, RegionPairTuple
+from app.similarity.models.similarity_parameters import SimilarityParameters
 from app.similarity.tasks import delete_api_similarity
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
@@ -60,11 +61,6 @@ def prepare_request(witnesses, treatment_id):
             # NOTE api parameters are added in similarity.forms.get_api_parameters
         },
     )
-
-
-def generate_hash(params):
-    serialized = json.dumps(params, sort_keys=True)
-    return hashlib.sha256(serialized.encode()).hexdigest()[:8]
 
 
 def process_results(data, completed=True):
@@ -133,7 +129,9 @@ def process_results(data, completed=True):
             response.raise_for_status()
             json_content = response.json()
 
-            param_hash = generate_hash(json_content.get("parameters", {}))
+            params = json_content.get("parameters", {})
+            param_hash = SimilarityParameters.get_or_create_from_params(params)
+
             score_file = Path(f"{SCORES_PATH}/{regions_ref_pair}/{param_hash}.json")
             os.makedirs(f"{SCORES_PATH}/{regions_ref_pair}", exist_ok=True)
             if score_file.exists():
@@ -261,7 +259,7 @@ def score_file_to_db(file_path):
     """
     p = Path(file_path)
     pair_scores = load_scores(p)
-    pair_ref, algo = p.parent.name, p.stem
+    pair_ref, param_hash = p.parent.name, p.stem
     if not pair_scores or not pair_ref:
         return False
 
@@ -281,9 +279,8 @@ def score_file_to_db(file_path):
                         score=score,
                         regions_id_1=ref_1.split("_anno")[1],
                         regions_id_2=ref_2.split("_anno")[1],
-                        is_manual=False,
                         similarity_type=1,
-                        category_x=[],
+                        similarity_hash=param_hash,  # e.g. '2c53284a', 'efaca344' generated with generate_hash
                     )
                 )
     except ValueError as e:
@@ -295,15 +292,13 @@ def score_file_to_db(file_path):
         with transaction.atomic():
             RegionPair.objects.bulk_update_or_create(
                 pairs_to_update,
-                [
+                update_fields=[
                     "score",
                     "regions_id_1",
                     "regions_id_2",
-                    "is_manual",
                     "similarity_type",
                 ],
-                ["img_1", "img_2"],
-                "score",
+                match_fields=["img_1", "img_2", "similarity_hash"],
             )
     except Exception as e:
         log(f"[score_file_to_db] error while adding pairs to db {pair_ref}", e)
@@ -508,7 +503,7 @@ def get_best_pairs(
     export_pairs_no_score = []  # pairs for export without a score
 
     for pair in region_pairs:
-        # [score, img1, img2, regions_id1, regions_id2, category, is_manual, similarity_type]
+        # [score, img1, img2, regions_id1, regions_id2, category, category_x, similarity_type, similarity_hash]
         pair_data = pair.get_info(q_img)
         if pair_data[2] in added_images:
             # NOTE: first duplicate wins. Higher-priority pairs (e.g., manual) appearing later
@@ -526,10 +521,8 @@ def get_best_pairs(
         if pair.category in excluded_categories:
             continue
 
-        if (
-            pair.is_manual
-            or pair.similarity_type == SimilarityType.MANUAL
-            or (pair.category_x and user_id in pair.category_x)
+        if pair.similarity_type == SimilarityType.MANUAL or (
+            pair.category_x and user_id in pair.category_x
         ):
             manual_pairs.append(pair_data)
         elif pair.similarity_type == SimilarityType.PROPAGATED:
@@ -760,8 +753,7 @@ def retrieve_pair(img1, img2, regions_id_1, regions_id_2, create=False):
             regions_id_1=regions_id_1,
             regions_id_2=regions_id_2,
             score=None,
-            is_manual=False,
-            similarity_type=1,
+            similarity_type=SimilarityType.AUTO,
             category_x=[],
         )
         return region_pair, "New region pair created"
@@ -804,10 +796,79 @@ def get_or_create_pair(img_1, img_2, rid_1, rid_2, create=True):
             regions_id_1=rid_1,
             regions_id_2=rid_2,
             category=1,
-            similarity_type=3,
-            is_manual=True,
+            similarity_type=SimilarityType.PROPAGATED,
             score=None,
             category_x=[],
         ),
         True,
     )
+
+
+F_IMG1, F_IMG2, F_RID1, F_RID2, F_SCORE, F_CAT, F_CATX, F_SIMTYPE = range(8)
+
+GZIP_BATCH_SIZE = 1000
+
+
+def row_to_dict(row):
+    """Convert SQL row tuple to dict."""
+    return {
+        "img_1": row[F_IMG1],
+        "img_2": row[F_IMG2],
+        "regions_id_1": row[F_RID1],
+        "regions_id_2": row[F_RID2],
+        "score": row[F_SCORE],
+        "category": row[F_CAT],
+        "category_x": row[F_CATX] or [],
+        "similarity_type": row[F_SIMTYPE],
+    }
+
+
+def stream_pairs_ndjson(sql, params):
+    """Generator yielding one JSON line per pair."""
+    with connection.cursor() as cursor:
+        cursor.execute(sql, params)
+        for row in cursor:
+            yield json.dumps(row_to_dict(row), separators=(",", ":")) + "\n"
+
+
+def build_pairs_query(
+    regions_ids, categories, min_score, max_score, topk, exclude_self
+):
+    """Build raw SQL with proper filtering."""
+    conditions = ["regions_id_1 = ANY(%s)", "regions_id_2 = ANY(%s)"]
+    params = [list(regions_ids), list(regions_ids)]
+
+    if min_score is not None:
+        conditions.append("score >= %s")
+        params.append(min_score)
+
+    if max_score is not None:
+        conditions.append("score <= %s")
+        params.append(max_score)
+
+    if exclude_self:
+        conditions.append("regions_id_1 != regions_id_2")
+
+    if categories:
+        has_null = 0 in categories
+        real_cats = [c for c in categories if c != 0]
+
+        if has_null and real_cats:
+            conditions.append("(category = ANY(%s) OR category IS NULL)")
+            params.append(real_cats)
+        elif has_null:
+            conditions.append("category IS NULL")
+        elif real_cats:
+            conditions.append("category = ANY(%s)")
+            params.append(real_cats)
+
+    sql = f"""
+        SELECT img_1, img_2, regions_id_1, regions_id_2,
+               score, category, category_x, similarity_type
+        FROM webapp_regionpair
+        WHERE {" AND ".join(conditions)}
+        ORDER BY score DESC NULLS FIRST
+        {"LIMIT " + str(int(topk)) if topk else ""}
+    """
+
+    return sql, params

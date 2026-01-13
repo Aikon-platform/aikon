@@ -12,6 +12,7 @@ from app.webapp.utils.functions import cast, sort_key
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
+from app.similarity.models.similarity_parameters import SimilarityParameters
 
 
 def extract_digit_id(img: str) -> int | None:
@@ -55,8 +56,8 @@ class RegionPairTuple(NamedTuple):
     s_regions: int
     category: int
     category_x: List[int]
-    is_manual: bool
     similarity_type: int
+    similarity_hash: str
 
 
 def add_jpg(img: str) -> str:
@@ -74,7 +75,7 @@ def get_name(fieldname, plural=False):
 
 
 class RegionPairManager(models.Manager):
-    def bulk_update_or_create(self, objs, update_fields, match_field, update_field):
+    def bulk_update_or_create(self, objs, update_fields, match_fields):
         if not objs:
             return
 
@@ -82,46 +83,27 @@ class RegionPairManager(models.Manager):
         fields = [
             f
             for f in model._meta.fields
-            if f.name in update_fields or f.name in match_field
+            if f.name in update_fields or f.name in match_fields
         ]
 
         with connection.cursor() as cursor:
             table_name = model._meta.db_table
             columns = ", ".join(f.column for f in fields)
             placeholders = ", ".join("%s" for _ in fields)
-
-            # conflict_update = ", ".join(
-            #     f"{f.column} = EXCLUDED.{f.column}"
-            #     for f in fields
-            #     if f.name in update_fields and f.name != update_field
-            # )
-            #
-            # if conflict_update:
-            #     conflict_update += ", "
-            # conflict_update += f"{update_field} = CASE WHEN EXCLUDED.{update_field} > {table_name}.{update_field} THEN EXCLUDED.{update_field} ELSE {table_name}.{update_field} END"
-            #
-            # sql = f"""
-            #     INSERT INTO {table_name} ({columns})
-            #     VALUES ({placeholders})
-            #     ON CONFLICT ({', '.join(f.column for f in fields if f.name in match_field)})
-            #     DO UPDATE SET {conflict_update}
-            # """
             conflict_update = ", ".join(
                 f"{f.column} = EXCLUDED.{f.column}"
                 for f in fields
                 if f.name in update_fields
             )
 
-            # SQL query for bulk insert/update
             sql = f"""
                 INSERT INTO {table_name} ({columns})
                 VALUES ({placeholders})
-                ON CONFLICT ({', '.join(f.column for f in fields if f.name in match_field)})
+                ON CONFLICT ({', '.join(f.column for f in fields if f.name in match_fields)})
                 DO UPDATE SET {conflict_update}
             """
 
             data = [[getattr(obj, f.name) for f in fields] for obj in objs]
-
             cursor.executemany(sql, data)
 
 
@@ -131,7 +113,9 @@ class RegionPair(models.Model):
         verbose_name_plural = get_name("RegionPair", True)
         app_label = "webapp"
         constraints = [
-            models.UniqueConstraint(fields=["img_1", "img_2"], name="unique_img_pair")
+            models.UniqueConstraint(
+                fields=["img_1", "img_2", "similarity_hash"], name="unique_img_pair"
+            )
         ]
         # make database queries on those fields more efficient
         indexes = [
@@ -177,58 +161,24 @@ class RegionPair(models.Model):
     """
     category_x = ArrayField(models.IntegerField(), null=True, blank=True, default=list)
     """
-    Is this pair manually added by a user or automatically generated (ie from a score file)
-    """
-    is_manual = models.BooleanField(max_length=150, null=True, default=False)
-    """
-    Type of similarity. This should replace `is_manual` in the long run
-    1 = automatic / computed similarity
+    Type of similarity.
+    1 =_pair  automatic / computed similarity
     2 = manual similarity
     3 = propagated similarity
     """
     similarity_type = models.IntegerField(blank=True, null=True, default=1)
-
-    # TODO: consider removing the following fields to reduce overhead
-    created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
-    updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
+    """
+    Hash of the parameters used to compute the similarity (for automatic similarities)
+    """
+    similarity_hash = models.CharField(
+        max_length=8, blank=True, null=True, default=None
+    )
 
     objects = RegionPairManager()
 
-    def get_info(self, q_img=None, as_json=False) -> RegionPairTuple | dict:
-        if q_img is None:
-            q_img = self.img_1
-        s_img = self.img_2 if self.img_1 == q_img else self.img_1
-        q_regions = self.regions_id_1 if self.img_1 == q_img else self.regions_id_2
-        s_regions = self.regions_id_2 if self.img_1 == q_img else self.regions_id_1
-
-        info = (
-            self.score,
-            q_img,
-            s_img,
-            q_regions,
-            s_regions,
-            self.category,
-            self.category_x or [],
-            self.is_manual,
-            self.similarity_type,
-        )
-        if as_json:
-            return {
-                "score": info[0],
-                "q_img": info[1],
-                "s_img": info[2],
-                "q_regions": info[3],
-                "s_regions": info[4],
-                "category": info[5],
-                "category_x": info[6],
-                "is_manual": info[7],
-                "similarity_type": info[8],
-            }
-        return info
-
     @classmethod
     def rid_from_pair_containing_img(
-        cls, img: str, create_if_missing: bool = True
+        cls, img: str, similarity_hash: str = None, create_if_missing: bool = True
     ) -> int:
         """
         Retrieve regions_id for an image, with fallback to extraction from image name.
@@ -240,16 +190,31 @@ class RegionPair(models.Model):
         if not img.endswith(".jpg"):
             img = f"{img}.jpg"
 
-        # Try to find in existing pairs
-        q1 = cls.objects.values_list("regions_id_1").filter(img_1=img).first()
+        # Try to find in existing pairs (priority to specific hash if provided)
+        filter_kwargs = {"img_1": img}
+        if similarity_hash:
+            filter_kwargs["similarity_hash"] = similarity_hash
+
+        q1 = (
+            cls.objects.filter(**filter_kwargs)
+            .values_list("regions_id_1", flat=True)
+            .first()
+        )
         if q1:
-            return q1[0]
+            return q1
 
-        q2 = cls.objects.values_list("regions_id_2").filter(img_2=img).first()
+        filter_kwargs = {"img_2": img}
+        if similarity_hash:
+            filter_kwargs["similarity_hash"] = similarity_hash
+
+        q2 = (
+            cls.objects.filter(**filter_kwargs)
+            .values_list("regions_id_2", flat=True)
+            .first()
+        )
         if q2:
-            return q2[0]
+            return q2
 
-        # Extract from image name
         digit_id = extract_digit_id(img)
         if digit_id is None:
             raise ValidationError(f"Cannot extract digitization ID from {img}")
@@ -258,7 +223,11 @@ class RegionPair(models.Model):
 
     @classmethod
     def rid_from_img(
-        cls, img: str, candidate_rids: list[int] = None, create_if_missing=True
+        cls,
+        img: str,
+        candidate_rids: list[int] = None,
+        similarity_hash: str = None,
+        create_if_missing=True,
     ) -> int:
         """
         Get regions_id for an image.
@@ -275,7 +244,7 @@ class RegionPair(models.Model):
                 if get_region_digit_id(rid) == img_digit_id:
                     return rid
 
-        return cls.rid_from_pair_containing_img(img, create_if_missing)
+        return cls.rid_from_pair_containing_img(img, similarity_hash, create_if_missing)
 
     @classmethod
     def check_order(
@@ -335,6 +304,44 @@ class RegionPair(models.Model):
             self.full_clean()  # call clean() method
         super().save(*args, **kwargs)
 
+    def get_parameters(self) -> dict | None:
+        """Get similarity parameters from hash"""
+        if not self.similarity_hash:
+            return None
+        return SimilarityParameters.get_params(self.similarity_hash)
+
+    def get_info(self, q_img=None, as_json=False) -> RegionPairTuple | dict:
+        if q_img is None:
+            q_img = self.img_1
+        s_img = self.img_2 if self.img_1 == q_img else self.img_1
+        q_regions = self.regions_id_1 if self.img_1 == q_img else self.regions_id_2
+        s_regions = self.regions_id_2 if self.img_1 == q_img else self.regions_id_1
+
+        info = (
+            self.score,
+            q_img,
+            s_img,
+            q_regions,
+            s_regions,
+            self.category,
+            self.category_x or [],
+            self.similarity_type,
+            self.similarity_hash,
+        )
+        if as_json:
+            return {
+                "score": info[0],
+                "q_img": info[1],
+                "s_img": info[2],
+                "q_regions": info[3],
+                "s_regions": info[4],
+                "category": info[5],
+                "category_x": info[6],
+                "similarity_type": info[7],
+                "similarity_hash": info[8],
+            }
+        return info
+
     def to_dict(self) -> dict:
         return {
             "img_1": self.img_1,
@@ -344,8 +351,8 @@ class RegionPair(models.Model):
             "score": cast(self.score, float),
             "category": cast(self.category, int),
             "category_x": [cast(c, int) for c in self.category_x or []],
-            "is_manual": self.is_manual,
             "similarity_type": cast(self.similarity_type, int),
+            # "similarity_params": self.get_parameters()
         }
 
     def get_ref(self):

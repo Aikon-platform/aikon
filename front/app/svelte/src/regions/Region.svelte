@@ -60,7 +60,7 @@
     }
 
     $: imgSrc = refToIIIF(
-        item.img,
+        item.img ?? item.ref,
         item.xywh,
         height === "full" ? height : isSquare ? `${height},` : `,${height}`
     )

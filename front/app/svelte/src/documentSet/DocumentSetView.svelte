@@ -1,19 +1,51 @@
 <script>
+    import {onMount} from 'svelte';
+    import {setContext} from "svelte";
+    import {get} from 'svelte/store';
+
     import {appLang} from '../constants';
+    import {syncStoreWithURL} from '../utils';
+
     import Layout from '../Layout.svelte';
     import Sidebar from './Sidebar.svelte';
     import NetworkVisualization from './NetworkVisualization.svelte';
     import DocumentMatrix from './DocumentMatrix.svelte';
     import {createDocumentSetStore} from './documentSetStore.js';
     import NetworkInfo from "./NetworkInfo.svelte";
-    import {setContext} from "svelte";
     import Clusters from "./Clusters.svelte";
     import {createClusterStore} from "./clusterStore.js";
 
     export let docSet;
 
     const documentSetStore = createDocumentSetStore(docSet.id);
-    const {error, fetchPairs} = documentSetStore;
+    const {error, fetchPairs, selectedRegions, selectedCategories, threshold, topK, mutualTopK, scoreMode} = documentSetStore;
+
+    let syncRegions, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode;
+    onMount(() => {
+        syncRegions = syncStoreWithURL(selectedRegions, 'regions', 'set');
+        syncCategories = syncStoreWithURL(selectedCategories, 'categories', 'array', [1]);
+        syncThreshold = syncStoreWithURL(threshold, 'threshold', 'number');
+        syncTopK = syncStoreWithURL(topK, 'topk', 'number');
+        syncMutualTopK = syncStoreWithURL(mutualTopK, 'mutual', 'boolean');
+        syncScoreMode = syncStoreWithURL(scoreMode, 'mode', 'string');
+
+        const unsubRegions = selectedRegions.subscribe(syncRegions);
+        const unsubCategories = selectedCategories.subscribe(syncCategories);
+        const unsubThreshold = threshold.subscribe(syncThreshold);
+        const unsubTopK = topK.subscribe(syncTopK);
+        const unsubMutualTopK = mutualTopK.subscribe(syncMutualTopK);
+        const unsubScoreMode = scoreMode.subscribe(syncScoreMode);
+
+        return () => {
+            unsubRegions();
+            unsubCategories();
+            unsubThreshold();
+            unsubTopK();
+            unsubMutualTopK();
+            unsubScoreMode();
+        };
+    });
+
     import {clusterSelection} from '../selection/selectionStore.js';
 
     const {selected} = clusterSelection;
@@ -23,10 +55,10 @@
     const clusterStore = createClusterStore(documentSetStore, clusterSelection);
 
     const tabList = {
-        "img": appLang === "en" ? "Image Network" : "Réseau d'images",
-        "doc": appLang === "en" ? "Document Network" : "Réseau de documents",
         "sim": appLang === "en" ? "Copy Clusters" : "Groupe de copies",
         "mat": appLang === "en" ? "Document Matrix" : "Matrice de documents",
+        "img": appLang === "en" ? "Image Network" : "Réseau d'images",
+        "doc": appLang === "en" ? "Document Network" : "Réseau de documents",
     };
 
     const selectedDocuments = docSet?.selection?.selected || {
