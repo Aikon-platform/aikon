@@ -92,7 +92,6 @@
         score: score,
         category: selectedCategory,
         category_x: updateCurrentUsers(users),
-        is_manual: isManual || similarityType === 2,
         similarity_type: similarityType
     })
 

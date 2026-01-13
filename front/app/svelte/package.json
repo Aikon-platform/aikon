@@ -1,0 +1,24 @@
+{
+  "name": "aikon-svelte",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run build:clean && npm run build:regionList && npm run build:recordList && npm run build:documentSet",
+    "build:clean": "rm -rf ../webapp/static/svelte/*",
+    "build:regionList": "BUILD_TARGET=regionList vite build",
+    "build:recordList": "BUILD_TARGET=recordList vite build",
+    "build:documentSet": "BUILD_TARGET=documentSet vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^2.4.2",
+    "vite": "^4.4.5",
+    "svelte": "^3.59.2"
+  },
+  "dependencies": {
+    "choices.js": "^11.1.0",
+    "d3": "^7.9.0",
+    "nouislider": "^15.8.1"
+  }
+}

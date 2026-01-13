@@ -387,6 +387,12 @@ td.is-fullwidth {
     opacity: 1 !important;
     visibility: visible !important;
 }
+
+.is-disabled {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
 .ctrl-extra .ctrl-block {
     width: 100%;
     display: grid;

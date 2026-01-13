@@ -6,6 +6,14 @@ export const errorMsg = writable("");
 
 const isString = (x) => typeof x === 'string' || x instanceof String;
 
+
+/**
+ * Display loading UI while waiting for Promise
+ * @example
+ * const response = await withLoading(() =>
+ *     // do something
+ * );
+ */
 export async function withLoading(asyncFunction) {
     loading.set(true);
     try {
@@ -31,7 +39,7 @@ export function shorten(str, maxLen=100) {
 
 export function getCantaloupeUrl() {
     return cantaloupeUrl ?? "http://localhost:8182";
-    // // TO DELETE
+    // TO DELETE
     // return "https://vhs.huma-num.fr"
 }
 
@@ -77,7 +85,7 @@ export function refToIIIFRoot(imgRef=null) {
 }
 
 export function refToIIIF(imgRef=null, coord=null, size="full") {
-    // in some cases, coord is "x,y,w,h.jpg" => conveet to "x,y,w,h"
+    // in some cases, coord is "x,y,w,h.jpg" => convert to "x,y,w,h"
     coord = isString(coord) ? coord.replace(".jpg", "") : coord;
 
     // imgRef can be like "wit<id>_<digit><id>_<page_nb>.jpg" or "wit<id>_<digit><id>_<page_nb>_<x,y,h,w>.jpg"
@@ -109,6 +117,7 @@ export function refToIIIF(imgRef=null, coord=null, size="full") {
     if (!coord) {
         coord = imgRefArr[imgRefArr.length - 1].includes(",") ? imgRefArr.pop().replace(".jpg", "") : "full";
     }
+
     return `${imgRoot}/${coord}/${size}/0/default.jpg`;
 }
 
@@ -239,35 +248,8 @@ export function createNewAndOld() {
 }
 
 /**
- * @typedef {LoadStateType} an object to manage a "loading" state, useful when doing async queries
- * @type {object}
- * @property {() => void} setLoading
- * @property {() => void} setLoaded: loading finished without error
- * @property {() => void} setError: error in loading
- * @property {() => 0|1|-1} get: returns the load state as a number code. 0 = "loading", 1 = "loaded", -1 = "error"
- * @property {() => "loading"|"loaded"|"error"} getString: returns the load state as a string
- */
-export function createLoadState() {
-    /** @type {0|1|-1} 0="loading", 1="loaded", -1="error" */
-    let _state = 0;
-    return {
-        setLoading: () => _state = 0,
-        setLoaded: () => _state = 1,
-        setError: () => _state = -1,
-        get: () => _state,
-        getString: () =>
-            _state===0
-            ? "loading"
-            : _state===1
-            ? "loaded"
-            : "error"
-    }
-}
-
-
-/**
- * @param {Any | Array<Any>} x: an array of hashable values
- * @param {Any | Array<Any>} y: an array of hashable values
+ * @param x {Any | Array<Any>}: an array of hashable values
+ * @param y {Any | Array<Any>}: an array of hashable values
  * @returns {boolean} true if the arrays are the same
  */
 export const equalArrayShallow = (x, y) =>
@@ -343,4 +325,74 @@ export function openModal(node) {
             node.removeEventListener('click', open);
         }
     };
+}
+
+export function syncStoreWithURL(store, paramName, type = 'string', defaultValue = null) {
+    const parsers = {
+        string: (params) => {
+            const value = params.get(paramName);
+            return value !== null ? value : null; // Retourner null si absent
+        },
+        array: (params) => {
+            const value = params.get(paramName);
+            return value ? value.split(',').map(Number).filter(v => !isNaN(v)) : null;
+        },
+        set: (params) => {
+            const value = params.get(paramName);
+            return value ? new Set(value.split(',').map(Number).filter(v => !isNaN(v))) : null;
+        },
+        number: (params) => {
+            const value = params.get(paramName);
+            return value !== null ? Number(value) : null; // Retourner null si absent
+        },
+        boolean: (params) => {
+            const value = params.get(paramName);
+            return value !== null ? value === 'true' : null; // Retourner null si absent
+        }
+    };
+
+    const serializers = {
+        string: (url, value) => value ? url.searchParams.set(paramName, value) : url.searchParams.delete(paramName),
+        array: (url, values) => {
+            if (values?.length) {
+                url.searchParams.set(paramName, values.join(','));
+            } else {
+                url.searchParams.delete(paramName);
+            }
+        },
+        set: (url, values) => {
+            if (values?.size) {
+                url.searchParams.set(paramName, Array.from(values).join(','));
+            } else {
+                url.searchParams.delete(paramName);
+            }
+        },
+        number: (url, value) => {
+            if (value !== null && value !== undefined) {
+                url.searchParams.set(paramName, String(value));
+            } else {
+                url.searchParams.delete(paramName);
+            }
+        },
+        boolean: (url, value) => value ? url.searchParams.set(paramName, 'true') : url.searchParams.delete(paramName)
+    };
+
+    if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const parsed = parsers[type](params);
+
+        if (parsed !== null) {
+            store.set(parsed);
+        } else if (defaultValue !== null) {
+            const value = typeof defaultValue === 'function' ? defaultValue() : defaultValue;
+            store.set(value);
+        }
+
+        return (value) => {
+            const url = new URL(window.location);
+            serializers[type](url, value);
+            window.history.pushState({}, "", url);
+        };
+    }
+    return () => {};
 }

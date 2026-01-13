@@ -6,6 +6,8 @@ from django.core.exceptions import ValidationError
 from app.similarity.models.region_pair import RegionPair
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
+from similarity.utils import SimilarityType
+
 
 # RUN WITH: front/venv/bin/python front/manage.py clean_regionpairs
 
@@ -126,8 +128,14 @@ class Command(BaseCommand):
                 if pair.category and not existing.category:
                     existing.category = pair.category
 
-                if pair.is_manual and not existing.is_manual:
-                    existing.is_manual = True
+                # Keep the "strongest" similarity_type: MANUAL > PROPAGATED > AUTO
+                if pair.similarity_type == SimilarityType.MANUAL:  # MANUAL
+                    existing.similarity_type = SimilarityType.MANUAL
+                elif (
+                    pair.similarity_type == SimilarityType.PROPAGATED
+                    and existing.similarity_type == SimilarityType.AUTO
+                ):  # PROPAGATED > AUTO
+                    existing.similarity_type = SimilarityType.PROPAGATED
 
                 if pair.category_x:
                     existing.category_x = list(
