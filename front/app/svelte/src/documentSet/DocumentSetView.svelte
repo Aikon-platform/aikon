@@ -23,15 +23,11 @@
     let syncRegions, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode;
     onMount(() => {
         syncRegions = syncStoreWithURL(selectedRegions, 'regions', 'set');
-        syncCategories = syncStoreWithURL(selectedCategories, 'categories', 'array');
+        syncCategories = syncStoreWithURL(selectedCategories, 'categories', 'array', [1]);
         syncThreshold = syncStoreWithURL(threshold, 'threshold', 'number');
         syncTopK = syncStoreWithURL(topK, 'topk', 'number');
         syncMutualTopK = syncStoreWithURL(mutualTopK, 'mutual', 'boolean');
         syncScoreMode = syncStoreWithURL(scoreMode, 'mode', 'string');
-
-        if (!get(selectedCategories)) {
-            selectedCategories.set([1]);
-        }
 
         const unsubRegions = selectedRegions.subscribe(syncRegions);
         const unsubCategories = selectedCategories.subscribe(syncCategories);
@@ -59,10 +55,10 @@
     const clusterStore = createClusterStore(documentSetStore, clusterSelection);
 
     const tabList = {
-        "img": appLang === "en" ? "Image Network" : "Réseau d'images",
-        "doc": appLang === "en" ? "Document Network" : "Réseau de documents",
         "sim": appLang === "en" ? "Copy Clusters" : "Groupe de copies",
         "mat": appLang === "en" ? "Document Matrix" : "Matrice de documents",
+        "img": appLang === "en" ? "Image Network" : "Réseau d'images",
+        "doc": appLang === "en" ? "Document Network" : "Réseau de documents",
     };
 
     const selectedDocuments = docSet?.selection?.selected || {

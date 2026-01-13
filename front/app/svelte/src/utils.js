@@ -327,7 +327,7 @@ export function openModal(node) {
     };
 }
 
-export function syncStoreWithURL(store, paramName, type = 'string') {
+export function syncStoreWithURL(store, paramName, type = 'string', defaultValue = null) {
     const parsers = {
         string: (params) => {
             const value = params.get(paramName);
@@ -383,6 +383,9 @@ export function syncStoreWithURL(store, paramName, type = 'string') {
 
         if (parsed !== null) {
             store.set(parsed);
+        } else if (defaultValue !== null) {
+            const value = typeof defaultValue === 'function' ? defaultValue() : defaultValue;
+            store.set(value);
         }
 
         return (value) => {

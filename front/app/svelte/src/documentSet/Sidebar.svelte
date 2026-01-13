@@ -26,12 +26,12 @@
         setScoreMode,
         pairStats
     } = documentSetStore;
-    const { clusterNb } = clusterStore;
+    const { clusterNb, handlePageUpdate } = clusterStore;
 
     const selectedDocuments = getContext('selectedDocuments');
 
     const allCategories = [0, 1, 2, 3, 5];
-    let filterMode = 'all';
+    let filterMode = 'filtered';
 
     function setFilterMode(mode) {
         filterMode = mode;
@@ -40,7 +40,7 @@
         }
     }
     function handleSetScoreMode(mode){
-        // todo set page to 1
+        handlePageUpdate(1);
         setScoreMode(mode)
     }
 </script>

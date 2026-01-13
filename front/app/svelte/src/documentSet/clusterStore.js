@@ -1,6 +1,6 @@
 import {derived, writable, get} from 'svelte/store';
 import {initPagination, pageUpdate, showMessage, withLoading} from "../utils.js";
-import {appLang, appName, csrfToken} from "../constants.js";
+import {appLang, appName, csrfToken, isSuperuser} from "../constants.js";
 
 export function createClusterStore(documentSetStore, clusterSelection) {
     const pageLength = 10;
@@ -223,6 +223,14 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     };
 
     const validateCluster = async (cluster) => {
+        if (!isSuperuser){
+            await showMessage(
+                appLang === "en" ? "You do not have permission to validate clusters" : "Vous n'avez pas la permission, de valider les clusters.",
+                appLang === "en" ? "Permission Denied" : "Permission refusée"
+            );
+            return false;
+        }
+
         const success = await makePairsExactMatch(cluster.members);
 
         if (success) {

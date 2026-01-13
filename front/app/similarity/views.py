@@ -860,11 +860,14 @@ def remove_incorrect_pairs(request, mismatched=False, duplicate=False, swapped=T
         )
 
 
-def parse_categories(cat_str):
-    if not cat_str:
+# TODO move to webapp.utils
+
+
+def parse_list(string):
+    if not string:
         return None
     try:
-        return [int(c.strip()) for c in cat_str.split(",")]
+        return [int(c.strip()) for c in string.split(",")]
     except (TypeError, ValueError):
         return None
 
@@ -950,7 +953,7 @@ def get_regions_pairs(request, wid, rid=None):
             max_score=safe_float(request.GET.get("maxScore")),
             topk=safe_int(request.GET.get("topk")),
             exclude_self=safe_bool(request.GET.get("excludeSelf")) or False,
-            categories=parse_categories(request.GET.get("category")) or [],
+            categories=parse_list(request.GET.get("category")) or [],
         )
         return JsonResponse(pairs, status=200, safe=False)
     except Exception as e:
@@ -981,7 +984,7 @@ def get_document_set_pairs(request, dsid=None):
             max_score=safe_float(request.GET.get("maxScore")),
             topk=safe_int(request.GET.get("topk")),
             exclude_self=safe_bool(request.GET.get("excludeSelf")) or False,
-            categories=parse_categories(request.GET.get("category")),
+            categories=parse_list(request.GET.get("category")),
         )
         return JsonResponse(pairs, status=200, safe=False)
     except Exception as e:
@@ -1016,7 +1019,7 @@ def stream_document_set_pairs(request, dsid=None):
         )
 
     params = {
-        "categories": parse_categories(request.GET.get("category")),
+        "categories": parse_list(request.GET.get("category")),
         "min_score": safe_float(request.GET.get("minScore")),
         "max_score": safe_float(request.GET.get("maxScore")),
         "topk": safe_int(request.GET.get("topk")),
