@@ -15,6 +15,7 @@
         selectedCategories,
         toggleCategory,
         selectedRegions,
+        selectAllRegions,
         toggleRegion,
         threshold,
         setThreshold,
@@ -88,7 +89,7 @@
 
             <hr>
 
-            <Legend documentNodes={$documentNodes} selectedRegions={$selectedRegions} {toggleRegion}/>
+            <Legend documentNodes={$documentNodes} selectedRegions={$selectedRegions} {toggleRegion} {selectAllRegions}/>
 
             <hr>
 

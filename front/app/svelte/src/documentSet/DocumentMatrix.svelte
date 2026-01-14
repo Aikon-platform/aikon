@@ -1,6 +1,6 @@
 <script>
     import * as d3 from 'd3';
-    import {appLang} from '../constants.js';
+    import {appLang, model2title} from '../constants.js';
     import {onMount, onDestroy} from 'svelte';
     import {closeModal, refToIIIF} from '../utils.js';
 
@@ -14,7 +14,7 @@
     const t = {
         title: {en: 'Document Matrix', fr: 'Matrice de documents'},
         order: {en: 'Order', fr: 'Ordre'},
-        byName: {en: 'By name', fr: 'Par nom'},
+        byName: {en: 'By title', fr: 'Par titre'},
         byScore: {en: 'By score', fr: 'Par score'},
         noDocuments: {en: 'No documents available', fr: 'Aucun document disponible'},
         pageByPage: {en: 'Page-by-page similarity', fr: 'Similarité page par page'},
@@ -249,9 +249,16 @@
                     tooltip.style('opacity', 1);
                 })
                 .on('mousemove', function (event, d) {
+                    const docs = `<span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>↔<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}`
                     const content = d.z === 0
-                        ? `<span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>↔<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}<br/><br/><em>${i18n('noPairs')}</em>`
-                        : `<span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>↔<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}<br/><br/>${i18n('score')}: ${d.z.toFixed(2)}`;
+                        ? `${docs}<br/><br/><em>${i18n('noPairs')}</em>`
+                        : `${docs}<br/><br/>${i18n('score')}: ${d.z.toFixed(2)}`;
+
+                    // if (d.z === 0) {
+                    //     // marker
+                    //     console.log(d.doc1.witnessId, "↔", d.doc2.witnessId);
+                    // }
+
                     tooltip
                         .html(content)
                         .style('left', (event.clientX + 15) + 'px')
@@ -785,20 +792,15 @@
                 <div class="scroll-area">
                     <div class="matrix-grid" style="--cell-size: {cellSize}px;">
                         <div class="matrix-corner"></div>
-                        <div class="col-headers">
-                            {#each matrixData.docs as doc (doc.id)}
-                                <div class="header-cell">
-                                    <span class="color-dot" style="background-color: {doc.color}" title={doc.title}></span>
-                                </div>
-                            {/each}
-                        </div>
-                        <div class="row-headers">
-                            {#each matrixData.docs as doc (doc.id)}
-                                <div class="header-cell">
-                                    <span class="color-dot" style="background-color: {doc.color}" title={doc.title}></span>
-                                </div>
-                            {/each}
-                        </div>
+                        {#each ["col", "row"] as side}
+                            <div class="{side}-headers">
+                                {#each matrixData.docs as doc (doc.id)}
+                                    <div class="header-cell">
+                                        <span class="color-dot" style="background-color: {doc.color}" title="{doc.title} {model2title.Witness} #{doc.witnessId}"></span>
+                                    </div>
+                                {/each}
+                            </div>
+                        {/each}
                         <div class="matrix-canvas" bind:this={matrixContainer}></div>
                     </div>
                 </div>

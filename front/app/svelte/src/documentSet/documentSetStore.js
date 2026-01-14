@@ -2,10 +2,10 @@ import {derived, writable, get} from 'svelte/store';
 import {extractNb, generateColor} from "../utils.js";
 import { streamPairsToWorker } from "./pairStreamReader.js";
 
-import {appUrl} from "../constants.js";
+// import {appUrl} from "../constants.js";
 
 // TO DELETE
-// const appUrl = "https://vhs.huma-num.fr";
+const appUrl = "https://vhs.huma-num.fr";
 // TO DELETE
 
 const createWorker = () => new Worker(
@@ -76,7 +76,7 @@ export function createDocumentSetStore(documentSetId) {
         abortController = new AbortController();
 
         // TO DELETE
-        // const documentSetId = 413; // histoire naturelle
+        const documentSetId = 413; // histoire naturelle
         // const documentSetId = 414; // nicolas
         // const documentSetId = 437; // physiologus
         // const documentSetId = 416; // de materia medica
@@ -115,6 +115,7 @@ export function createDocumentSetStore(documentSetId) {
 
                         pairIndex.set(idx);
                         pairStats.set(stats.pairStats);
+                        applyDefaultThreshold();
                         documentStats.set(stats.documentStats);
                         imageStats.set(stats.imageStats);
                         docPairStats.set(stats.docPairStats);
@@ -503,6 +504,25 @@ export function createDocumentSetStore(documentSetId) {
         });
     }
 
+    function selectAllRegions() {
+        const allIds = Array.from(get(documentNodes).keys());
+        selectedRegions.set(new Set(allIds));
+    }
+
+    function applyDefaultThreshold() {
+        if (!get(selectedCategories).includes(0)) return;
+
+        const { min, max } = get(pairStats).scoreRange || {};
+        if (min == null || max == null) return;
+
+        if (get(threshold) === min) {
+            threshold.set((min + max) / 2);
+            // scoreMode.set('topk');
+            // topK.set(2);
+            // mutualTopK.set(true);
+        }
+    }
+
     const matrixMode = writable('filtered'); // 'all' | 'filtered'
     const normalizeByPages = writable(false);
 
@@ -609,6 +629,7 @@ export function createDocumentSetStore(documentSetId) {
         updateSelectedNodes: (nodes) => selectedNodes.set(nodes),
         toggleCategory,
         toggleRegion,
+        selectAllRegions,
         buildAlignedImageMatrix,
 
         threshold,
