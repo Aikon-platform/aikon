@@ -15,7 +15,11 @@ def paginated_records(request, records):
     page_number = request.GET.get("p", 1)
     page_obj = paginator.get_page(page_number)
 
-    results = [json_obj for obj in page_obj if (json_obj := obj.json) is not None]
+    results = [
+        obj.to_json(request_user=request.user)
+        for obj in page_obj
+        if obj.json is not None
+    ]
 
     return {
         "results": results,

@@ -178,7 +178,18 @@ class Witness(AbstractSearchableModel):
     def get_absolute_view_url(self):
         return reverse("webapp:witness_regions_view", args=[self.id])
 
-    def to_json(self, reindex=True, no_img=False):
+    def can_edit(self, user):
+        if not user or not user.is_authenticated:
+            return False
+
+        return (
+            user.is_superuser
+            or self.user == user
+            or self.shared_with.filter(pk=user.pk).exists()
+            or user.groups.filter(user=self.user).exists()
+        )
+
+    def to_json(self, reindex=True, no_img=False, request_user=None):
         buttons = {"regions": reverse("webapp:witness_regions_view", args=[self.id])}
 
         digits = self.get_digits()
@@ -202,6 +213,7 @@ class Witness(AbstractSearchableModel):
                 "user": user.__str__() if user else NO_USER,
                 "edit_url": self.get_absolute_edit_url(),
                 "view_url": self.get_absolute_view_url(),
+                "can_edit": self.can_edit(request_user),
                 "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),
                 "is_public": self.is_public,
                 "metadata": {

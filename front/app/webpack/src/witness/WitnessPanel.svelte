@@ -8,8 +8,6 @@
 
     let choices = {};
     let openContents = new Set();
-    let editedField = null;
-    let editedValue = "";
 
     onMount(async () => {
         const url = `${window.location.origin}/${appName}/witness/select`;
@@ -21,34 +19,6 @@
             return false;
         }
     });
-
-    function editMetadata(key, value) {
-        editedField = key;
-        editedValue = value;
-    }
-
-    async function saveField(key) {
-        const data = {};
-        data[key] = editedValue;
-
-        const url = `${window.location.origin}/${appName}/witness/${witness.id}/update`;
-        const response = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": csrfToken
-            },
-            body: JSON.stringify(data)
-        });
-
-        if (!response.ok) {
-            alert("Error saving value!");
-            return;
-        }
-
-        witness.metadata_full.wit[key].value = editedValue;
-        editedField = null;
-    }
 
     function showContent(id) {
         if (openContents.has(id)) {
@@ -65,42 +35,22 @@
         <div class="pb-2">
             <h1 class="title">
                 {viewTitle}
-                <a
-                    href={editUrl}
-                    class="edit-btn button is-small is-rounded is-link px-3 ml-2 mt-1"
-                    title="Edit"
-                >
-                    <span class="iconify" data-icon="entypo:edit"></span>
-                </a>
+                {#if witness.can_edit}
+                    <a
+                        href={editUrl}
+                        class="edit-btn button is-small is-rounded is-link px-3 ml-2 mt-1"
+                        title="Edit"
+                    >
+                        <span class="iconify" data-icon="entypo:edit"></span>
+                    </a>
+                {/if}
             </h1>
             {#each Object.entries(witness.metadata_full.wit) as [key, value]}
                 <span class="witness-key">{value.label}</span>
                 <span class="witness-value">
-                    <!--{#if editedField === key}-->
-                    <!--    {#if choices[key]}-->
-                    <!--        <div class="select is-small is-link">-->
-                    <!--            <select bind:value={editedValue} on:change={() => saveField(key)}>-->
-                    <!--                {#each choices[key] as option}-->
-                    <!--                    <option value={option.value}>{option.label}</option>-->
-                    <!--                {/each}-->
-                    <!--            </select>-->
-                    <!--        </div>-->
-                    <!--    {:else}-->
-                    <!--        <input-->
-                    <!--            class="input is-small"-->
-                    <!--            bind:value={editedValue}-->
-                    <!--            on:blur={() => saveField(key)}-->
-                    <!--        />-->
-                    <!--    {/if}-->
-                    <!--{:else}-->
-                        <span
-                            class="editable-span"
-                            on:click={() => editMetadata(key, value.value)}
-                            on:keydown={() => editMetadata(key, value.value)}
-                        >
-                            {value.value}
-                        </span>
-                    <!--{/if}-->
+                    <span>
+                        {value.value}
+                    </span>
                 </span>
             {/each}
 
