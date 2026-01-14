@@ -35,6 +35,7 @@ def search_witnesses(request):
         witnesses = Witness.objects.filter(
             Q(user=current_user)
             | Q(is_public=True)
+            | Q(shared_with=current_user)
             | Q(user__groups__in=current_user.groups.all())
         ).distinct()
 

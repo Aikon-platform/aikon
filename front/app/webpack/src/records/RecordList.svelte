@@ -5,7 +5,7 @@
     const { selected, nbSelected } = recordsSelection;
 
     import SelectionBtn from "../selection/SelectionBtn.svelte";
-    import { appLang, appName, webappName, model2title, addPermission } from '../constants';
+    import { appLang, appName, webappName, model2title } from '../constants';
     import SelectionModal from "../selection/SelectionModal.svelte";
     import RecordSearch from "./RecordSearch.svelte";
     import Pagination from "../Pagination.svelte";
@@ -40,7 +40,7 @@
 
 <RecordSearch {recordsStore} {searchFields}/>
 
-{#if !modelTitle.includes('set') && addPermission}
+{#if !modelTitle.includes('set')}
     <!-- <span class="is-right">
         <a href="{addUrl}" class="button is-rounded is-primary mb-4"
         title='{appLang === "en" ? "Import" : "Importer"}'>
