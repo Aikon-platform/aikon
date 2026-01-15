@@ -58,10 +58,11 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
         "place",
         "notes",
         "tags",
+        "shared_with",
         "is_public",
     ]
     inlines = [RoleInline, WitnessInline]
-    autocomplete_fields = ("work", "edition", "place")
+    autocomplete_fields = ("work", "edition", "place", "shared_with")
 
     @admin.display(description=get_name("Edition"))
     def get_edition(self, obj):
@@ -148,6 +149,7 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
             return (
                 request.user.is_superuser
                 or obj.user == request.user
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
 
@@ -156,5 +158,6 @@ class SeriesAdmin(nested_admin.NestedModelAdmin):
             return (
                 obj.user == request.user
                 or obj.is_public
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
