@@ -192,7 +192,9 @@ class WitnessRegionsView(AbstractRecordView):
 
         witness = self.get_record()
         context["view_title"] = f"{witness}"
-        context["witness"] = witness.get_json(reindex=True)
+        context["witness"] = witness.get_json(
+            reindex=True, request_user=self.request.user
+        )
         if len(context["witness"]["digits"]) == 0:
             # TODO handle case where no digitization is available
             pass
