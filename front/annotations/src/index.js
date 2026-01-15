@@ -1,9 +1,10 @@
 import Mirador from 'mirador';
-import Mae from "mirador-annotation-editor";
+import Mae, { annotationAdapters } from "mirador-annotation-editor";
 import 'react-quill/dist/quill.snow.css';
 
 const iiifAnnotationVersion = 2;
-const { AiiinotateAdapter } = Mae.at(-1);
+const { AiiinotateAdapter } = annotationAdapters;
+console.log("MAE", AiiinotateAdapter);
 
 const
   windowUrl = new URL(window.location.href),
@@ -15,8 +16,6 @@ const config = {
   language: 'en',
   annotation: {
     adapter: (canvasId) => {
-      console.log(">>> canvasId", canvasId);
-      console.log(">>> AIIINOTATE_BASE_URL", process.env.AIIINOTATE_BASE_URL);
       return new AiiinotateAdapter(process.env.AIIINOTATE_BASE_URL, iiifAnnotationVersion, canvasId)
     },
     allowTargetShapesStyling: true,
