@@ -177,6 +177,16 @@ class RegionPair(models.Model):
     objects = RegionPairManager()
 
     @classmethod
+    def order_pair(
+        cls, pair: tuple | str, as_string: bool = False
+    ) -> tuple[str, str] | str:
+        """Return image names ordered consistently"""
+        ref1, ref2 = pair.split("-") if isinstance(pair, str) else pair
+        if sort_key(ref2) < sort_key(ref1):
+            ref1, ref2 = ref2, ref1
+        return f"{ref1}-{ref2}" if as_string else (ref1, ref2)
+
+    @classmethod
     def rid_from_pair_containing_img(
         cls, img: str, similarity_hash: str = None, create_if_missing: bool = True
     ) -> int:
