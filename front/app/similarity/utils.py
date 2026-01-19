@@ -298,11 +298,11 @@ def get_existing_pairs(doc_refs: list[str], parameters: dict) -> set[str]:
     """
     # Reproduce API format to generate hash
     params = {
-        "algorithm": parameters.get("algorithm", "cosine"),
-        "topk": parameters.get("cosine_n_filter", 20),
-        "feat_net": parameters.get("feat_net", "dino_deitsmall16_pretrain"),
-        "segswap_prefilter": parameters.get("segswap_prefilter", True),
-        "segswap_n": parameters.get("segswap_n_filter", 10),
+        "algorithm": str(parameters.get("algorithm", "cosine")),
+        "topk": int(parameters.get("cosine_n_filter", 20)),
+        "feat_net": str(parameters.get("feat_net", "dino_deitsmall16_pretrain")),
+        "segswap_prefilter": bool(parameters.get("segswap_prefilter", True)),
+        "segswap_n": int(parameters.get("segswap_n", 10)),
         "raw_transpositions": ["none"],
     }
 
@@ -313,6 +313,27 @@ def get_existing_pairs(doc_refs: list[str], parameters: dict) -> set[str]:
         for pair_ref in [f"{ref1}-{ref2}", f"{ref2}-{ref1}"]:
             if (Path(SCORES_PATH) / pair_ref / f"{param_hash}.json").exists():
                 existing.add(pair_ref)
+
+            if (Path(SCORES_PATH) / pair_ref).exists():
+                # if (Path(SCORES_PATH) / pair_ref / f"{param_hash}.json").exists():
+                #     existing.add(pair_ref)
+
+                for file in os.listdir(Path(SCORES_PATH) / pair_ref):
+                    if file.startswith(param_hash):
+                        continue
+                    with open(Path(SCORES_PATH) / pair_ref / file, "rb") as f:
+                        content = orjson.loads(f.read())
+                        log(
+                            {
+                                "hash/file": f"{param_hash}/{file}",
+                                "parameters": params,
+                                "file_params": content.get("parameters", {}),
+                            },
+                            msg_type="yellow",
+                        )
+
+                # TODO remove after verification
+                # existing.add(pair_ref)
 
     return existing
 
