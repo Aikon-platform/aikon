@@ -2,10 +2,10 @@ import {derived, writable, get} from 'svelte/store';
 import {extractNb, generateColor} from "../utils.js";
 import { streamPairsToWorker } from "./pairStreamReader.js";
 
-import {appUrl} from "../constants.js";
+// import {appUrl} from "../constants.js";
 
 // TO DELETE
-// const appUrl = "https://vhs.huma-num.fr";
+const appUrl = "https://vhs.huma-num.fr";
 // TO DELETE
 
 const createWorker = () => new Worker(
@@ -81,6 +81,7 @@ export function createDocumentSetStore(documentSetId) {
         // const documentSetId = 437; // physiologus
         // const documentSetId = 416; // de materia medica
         // const documentSetId = 417; // traité de géométrie
+        const documentSetId = 418; // encyclopédie mathématique
         // const documentSetId = 436; // Jombert complet
         // const documentSetId = 432; // Jombert incomplet
         // TO DELETE
