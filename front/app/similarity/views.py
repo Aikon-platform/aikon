@@ -713,6 +713,7 @@ def exact_match_batch(request):
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
+        log("[exact_match_batch] Exception encountered", e)
         return JsonResponse({"error": str(e)}, status=500)
 
 

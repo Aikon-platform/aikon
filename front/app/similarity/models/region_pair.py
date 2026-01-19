@@ -182,7 +182,7 @@ class RegionPair(models.Model):
     ) -> tuple[str, str] | str:
         """Return image names ordered consistently"""
         ref1, ref2 = pair.split("-") if isinstance(pair, str) else pair
-        if sort_key(ref2) < sort_key(ref1):
+        if sort_key(str(ref2)) < sort_key(str(ref1)):
             ref1, ref2 = ref2, ref1
         return f"{ref1}-{ref2}" if as_string else (ref1, ref2)
 
