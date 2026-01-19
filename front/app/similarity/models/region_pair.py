@@ -252,16 +252,18 @@ class RegionPair(models.Model):
 
         valid_candidates = [rid for rid in (candidate_rids or []) if rid is not None]
         if valid_candidates:
-            if img_digit_id is not None:
-                for rid in valid_candidates:
-                    try:
-                        if get_region_digit_id(rid) == img_digit_id:
-                            return rid
-                    except Exception:
-                        continue
+            db_error = False
+            for rid in valid_candidates:
+                try:
+                    if get_region_digit_id(rid) == img_digit_id:
+                        return rid
+                except Exception:
+                    db_error = True
+                    continue
 
-            # No match found: return first existing candidate (skip DB validation if Digitization missing)
-            return valid_candidates[0]
+            if img_digit_id is None or db_error:
+                # No match found: return first existing candidate (skip DB validation if Digitization missing)
+                return valid_candidates[0]
 
         return cls.rid_from_pair_containing_img(img, similarity_hash, create_if_missing)
 
