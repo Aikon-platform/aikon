@@ -164,11 +164,11 @@ def process_results(data, completed=True):
             score_file = Path(f"{SCORES_PATH}/{regions_ref_pair}/{param_hash}.json")
             os.makedirs(f"{SCORES_PATH}/{regions_ref_pair}", exist_ok=True)
             if score_file.exists():
-                # This check should be made when starting the task not now
+                # This should be avoided by get_existing_pairs > skip_pairs in prepare_request
                 log(
-                    f"[process_results] File {score_file} already exists, overriding its content"
+                    f"[process_results] File {score_file} already exists, skipping download"
                 )
-                # continue
+                continue
 
             with open(score_file, "wb") as f:
                 json_content["result_url"] = score_url
@@ -347,7 +347,7 @@ def score_file_to_db(file_path):
                     regions_id_1=rid1,
                     regions_id_2=rid2,
                     similarity_type=1,
-                    similarity_hash=param_hash,
+                    similarity_hash=param_hash,  # e.g. '2c53284a', 'efaca344' generated with generate_hash
                 )
             )
     except ValueError as e:
