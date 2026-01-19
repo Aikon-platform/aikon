@@ -314,26 +314,20 @@ def get_existing_pairs(doc_refs: list[str], parameters: dict) -> set[str]:
             if (Path(SCORES_PATH) / pair_ref / f"{param_hash}.json").exists():
                 existing.add(pair_ref)
 
-            if (Path(SCORES_PATH) / pair_ref).exists():
-                # if (Path(SCORES_PATH) / pair_ref / f"{param_hash}.json").exists():
-                #     existing.add(pair_ref)
-
-                for file in os.listdir(Path(SCORES_PATH) / pair_ref):
-                    if file.startswith(param_hash):
-                        continue
-                    with open(Path(SCORES_PATH) / pair_ref / file, "rb") as f:
-                        content = orjson.loads(f.read())
-                        log(
-                            {
-                                "hash/file": f"{param_hash}/{file}",
-                                "parameters": params,
-                                "file_params": content.get("parameters", {}),
-                            },
-                            msg_type="yellow",
-                        )
-
-                # TODO remove after verification
-                # existing.add(pair_ref)
+            # if (Path(SCORES_PATH) / pair_ref).exists():
+            #     for file in os.listdir(Path(SCORES_PATH) / pair_ref):
+            #         if file.startswith(param_hash):
+            #             continue
+            #         with open(Path(SCORES_PATH) / pair_ref / file, "rb") as f:
+            #             content = orjson.loads(f.read())
+            #             log(
+            #                 {
+            #                     "hash/file": f"{param_hash}/{file}",
+            #                     "parameters": params,
+            #                     "file_params": content.get("parameters", {}),
+            #                 },
+            #                 msg_type="yellow",
+            #             )
 
     return existing
 
