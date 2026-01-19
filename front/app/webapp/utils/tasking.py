@@ -262,6 +262,7 @@ def receive_notification(request):
     from app.webapp.models.treatment import Treatment
 
     if request.method != "POST":
+        log("[receive_notification] Invalid request method", msg_type="error")
         return {"success": False, "error": "Only POST requests are supported"}, 400
 
     try:
@@ -270,6 +271,7 @@ def receive_notification(request):
         assert "experiment_id" in data
         assert "event" in data
     except (ValueError, AssertionError) as e:
+        log("[receive_notification] Invalid data payload", e)
         return {
             "success": False,
             "error": f"Data payload does not contain expected content: {e}",
@@ -277,7 +279,8 @@ def receive_notification(request):
 
     try:
         treatment = Treatment.objects.get(id=data["experiment_id"])
-    except Treatment.DoesNotExist:
+    except Treatment.DoesNotExist as e:
+        log("[receive_notification] Treatment not found", e)
         # TODO handle manual treatment?
         return {"success": False, "error": "Treatment not found"}, 400
 
