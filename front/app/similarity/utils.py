@@ -27,7 +27,7 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
-from app.webapp.utils.functions import delete_path
+from app.webapp.utils.functions import delete_path, sort_key
 from app.webapp.utils.logger import log
 from config.settings import APP_LANG
 
@@ -328,25 +328,28 @@ def score_file_to_db(file_path):
         return False
 
     ref_1, ref_2 = RegionPair.order_pair(pair_ref)
-    # TODO verify that regions_id exists?
+    rid1 = int(ref_1.split("_anno")[1])
+    rid2 = int(ref_2.split("_anno")[1])
 
     pairs_to_update = []
     try:
         for score, img1, img2 in pair_scores:
-            img1, img2 = RegionPair.order_pair((img1, img2))
             score = float(score)
-            if score > 0:
-                pairs_to_update.append(
-                    RegionPair(
-                        img_1=img1,
-                        img_2=img2,
-                        score=score,
-                        regions_id_1=ref_1.split("_anno")[1],
-                        regions_id_2=ref_2.split("_anno")[1],
-                        similarity_type=1,
-                        similarity_hash=param_hash,  # e.g. '2c53284a', 'efaca344' generated with generate_hash
-                    )
+            if score <= 0:
+                continue
+
+            img1, img2 = RegionPair.order_pair((img1, img2))
+            pairs_to_update.append(
+                RegionPair(
+                    img_1=img1,
+                    img_2=img2,
+                    score=score,
+                    regions_id_1=rid1,
+                    regions_id_2=rid2,
+                    similarity_type=1,
+                    similarity_hash=param_hash,
                 )
+            )
     except ValueError as e:
         log(f"[score_file_to_db] error while processing {pair_ref}", e)
         return False
@@ -785,8 +788,10 @@ def fix_img(img_ref: str) -> str:
 
 
 def get_or_create_pair(img_1, img_2, rid_1, rid_2, create=True):
-    img_1, img_2 = RegionPair.order_pair((fix_img(img_1), fix_img(img_2)))
-    rid_1, rid_2 = RegionPair.order_pair((rid_1, rid_2))
+    img_1, img_2 = fix_img(img_1), fix_img(img_2)
+    if sort_key(img_2) < sort_key(img_1):
+        img_1, img_2 = img_2, img_1
+        rid_1, rid_2 = rid_2, rid_1
 
     pair = RegionPair.objects.filter(
         # Q(img_1=img_1, img_2=img_2) | Q(img_1=img_2, img_2=img_1)
