@@ -130,7 +130,8 @@ def process_results(data, completed=True):
     """
     from app.similarity.tasks import process_similarity_file
 
-    log(f"[process_results] Received data: {data}")
+    log(f"[process_results] Received data", msg_type="cyan")
+    log(data, msg_type="cyan")
 
     output = data.get("output", {})
     if not data or not output:
@@ -309,9 +310,9 @@ def get_existing_pairs(doc_refs: list[str], parameters: dict) -> set[str]:
     existing = set()
 
     for ref1, ref2 in combinations_with_replacement(sorted(set(doc_refs)), 2):
-        pair_ref = RegionPair.order_pair((ref1, ref2), as_string=True)
-        if (Path(SCORES_PATH) / pair_ref / f"{param_hash}.json").exists():
-            existing.add(pair_ref)
+        for pair_ref in [f"{ref1}-{ref2}", f"{ref2}-{ref1}"]:
+            if (Path(SCORES_PATH) / pair_ref / f"{param_hash}.json").exists():
+                existing.add(pair_ref)
 
     return existing
 

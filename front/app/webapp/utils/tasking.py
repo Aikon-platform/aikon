@@ -228,8 +228,10 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
         if documents:
             uids = [d.get("uid", "UID") for d in documents]
             log(
-                f"[prepare_request] Found {len(documents)} documents to process: {', '.join(uids)}"
+                f"[prepare_request] Found {len(documents)} documents to process: {', '.join(uids)}",
+                msg_type="info",
             )
+            log(parameters, msg_type="info")
 
             return {
                 "experiment_id": str(treatment_id),
@@ -244,7 +246,7 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
             if APP_LANG == "en"
             else f"Aucun document à traiter pour les enregistrements sélectionnés."
         )
-        log(f"[prepare_request] {err}")
+        log(f"[prepare_request] {err}", msg_type="error")
         raise Exception(err)
 
     except Exception as e:
