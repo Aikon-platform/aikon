@@ -194,8 +194,9 @@ export const regionsSelection = createTypedSelectionStore({
 });
 
 function ref(imgRef) {
-    const [_, ...ref] = imgRef.split('_');
-    return ref.join('_');
+    if (!imgRef.startsWith('wit')) return imgRef;
+    const [_, ...ref] = imgRef.split('_wit');
+    return `wit${ref}`;
 }
 
 export const clusterSelection = createTypedSelectionStore({

@@ -20,13 +20,13 @@ from config.settings import APP_LANG
 ################################################################
 
 
-def prepare_request(witnesses, treatment_id):
+def prepare_request(witnesses, treatment_id, parameters=None):
     return tasking.prepare_request(
         witnesses,
         treatment_id,
         prepare_document,
         "regions",
-        {"model": f"{EXTRACTOR_MODEL}"},
+        dict({"model": f"{EXTRACTOR_MODEL}"}, **(parameters or {})),
     )
 
 
@@ -106,11 +106,8 @@ def process_results(data, completed=True):
 
 def prepare_document(document: Witness | Digitization | Regions, **kwargs):
     if not type(document).__name__ == "Witness" and not document.has_images():
-        raise ValueError(
-            f"“{document}” has no digitization to extract regions from"
-            if APP_LANG == "en"
-            else f"« {document} » n'a pas de numérisation pour laquelle extraire des régions"
-        )
+        log(f"[prepare_document] Skipping {document}: no images to process")
+        return []
 
     regions = document.get_regions() if hasattr(document, "get_regions") else [document]
 
@@ -118,11 +115,8 @@ def prepare_document(document: Witness | Digitization | Regions, **kwargs):
         region.model == kwargs["model"] and has_annotation(region.get_ref())
         for region in regions
     ):
-        raise ValueError(
-            f"“{document}” already has regions extracted with {kwargs['model']}"
-            if APP_LANG == "en"
-            else f"« {document} » a déjà des régions extraites avec {kwargs['model']}"
-        )
+        log(f"[prepare_document] Skipping {document}: regions already extracted")
+        return []
 
     digits = document.get_digits() if hasattr(document, "get_digits") else [document]
 

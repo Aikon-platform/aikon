@@ -237,7 +237,9 @@ class Treatment(AbstractSearchableModel):
             return
 
         try:
-            parameters = prepare_task_request(self.task_type, witnesses, self.id)
+            parameters = prepare_task_request(
+                self.task_type, witnesses, self.id, self.api_parameters
+            )
         except (ImportError, AttributeError) as e:
             self.on_task_error(
                 {
@@ -259,8 +261,8 @@ class Treatment(AbstractSearchableModel):
 
         url = f"{API_URL}/{self.task_type}/start"
 
-        if api_param := self.api_parameters:
-            parameters.update(api_param)
+        # if api_param := self.api_parameters:
+        #     parameters.update(api_param)
 
         api_query = requests.post(url, json=parameters)
 

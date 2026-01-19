@@ -78,39 +78,36 @@
         <Sidebar {docSet} {documentSetStore} {clusterStore}>
             <div slot="datavizInfo">
                 {#if activeTab === "img"}
-                    <p>The Regions Network visualizes the relationships between image regions across different witnesses
-                        in the document set.
-                        Each node represents an image region, and edges indicate similarity or connections based on
-                        predefined criteria.</p>
-                    <ul>
-                        <li>Nodes: Image regions from various witnesses.</li>
-                        <li>Edges: Similarity links between regions.</li>
-                    </ul>
+                    <p>
+                        {appLang === 'en'
+                            ? 'Network where each node is an image region. Edges connect regions with similarity scores above the threshold. Node color indicates the source document.'
+                            : 'Réseau où chaque nœud est une région d\'image. Les liens connectent les régions dont le score de similarité dépasse le seuil. La couleur indique le document source.'}
+                    </p>
                 {:else if activeTab === "doc"}
-                    <p>The Documents Network illustrates the connections between different witnesses in the document
-                        set.
-                        Each node represents a witness, and edges denote relationships based on shared content or other
-                        relevant factors.</p>
-                    <ul>
-                        <li>Nodes: Witnesses in the document set.</li>
-                        <li>Edges: Relationships based on shared content.</li>
-                    </ul>
-                {:else}
-                    <p>La matrice de documents visualise les scores de similarité globaux entre tous les documents du
-                        corpus.
-                        Cliquez sur une cellule pour voir les détails des similarités entre pages.</p>
-                    <ul>
-                        <li>Matrice : Scores normalisés entre documents (0-100).</li>
-                        <li>Scatter plot : Similarités détaillées par page.</li>
-                    </ul>
+                    <p>
+                        {appLang === 'en'
+                            ? 'Network where each node is a document. Edge thickness reflects the cumulative similarity score between document pairs. Node size indicates the number of connections.'
+                            : 'Réseau où chaque nœud est un document. L\'épaisseur des liens reflète le score de similarité cumulé entre paires de documents. La taille des nœuds indique le nombre de connexions.'}
+                    </p>
+                {:else if activeTab === "matrix"}
+                    <p>
+                        {appLang === 'en'
+                            ? 'Matrix showing aggregated similarity scores between documents. Click a cell to explore page-level similarities in a scatter plot interface.'
+                            : 'Matrice affichant les scores de similarité agrégés entre documents. Cliquez sur une cellule pour explorer les similarités entre paires de documents.'}
+                    </p>
+                {:else if activeTab === "clusters"}
+                    <p>
+                        {appLang === 'en'
+                            ? 'Groups of images that share a similarity connection above the score threshold.'
+                            : 'Groupes d\'images partageant une connexion de similarité au-dessus du seuil de score.'}
+                    </p>
                 {/if}
-                <NetworkInfo {activeTab} {documentSetStore}/>
+                <!--<NetworkInfo {activeTab} {documentSetStore}/>-->
             </div>
         </Sidebar>
     </div>
 
     <div slot="content" let:activeTab>
-
         <Modal>
             <div slot="content" class="fixed-grid has-6-cols">
                 <div class="grid is-gap-2">

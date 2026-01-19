@@ -3,7 +3,7 @@ import re
 from collections import OrderedDict
 from typing import List, Set
 
-from django.db.models import Q, Count, F
+from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404
 from django.http import StreamingHttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -15,7 +15,14 @@ from django.contrib.auth.decorators import user_passes_test
 from app.similarity.models.region_pair import RegionPair, RegionPairTuple
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
-from app.webapp.utils.functions import sort_key, truncate_char
+from app.webapp.utils.functions import (
+    sort_key,
+    truncate_char,
+    safe_float,
+    safe_int,
+    parse_list,
+    safe_bool,
+)
 from app.webapp.utils.logger import log
 from app.similarity.utils import (
     send_request,
@@ -384,7 +391,6 @@ def get_regions(img_1, img_2, wid, rid):
 
 
 def get_regions_title_by_ref(request, wid, rid=None, regions_ref: str | None = None):
-    # NOT USED anymore
     try:
         regions = Regions.objects.filter(json__ref__startswith=regions_ref).first()
         if regions is None:
@@ -418,7 +424,7 @@ def add_region_pair(request, wid, rid=None):
         if not (validate_img_ref(q_img) and validate_img_ref(s_img)):
             raise ValidationError("Invalid image string format")
 
-        img_1, img_2 = sorted([q_img, s_img], key=sort_key)
+        img_1, img_2 = RegionPair.order_pair((q_img, s_img))
         img_1, img_2 = add_jpg(img_1), add_jpg(img_2)
 
         # todo use rid if defined?
@@ -532,7 +538,7 @@ def save_category(request):
 
         # img_1 and img_2 are sorted by witness ID.
         # regions_ids are retrieved programmatically instead of from `data` because retrieving from `data` may lead to inconsistencies (regions not aligned with their image), especially in the case of propagated regions.
-        img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
+        img_1, img_2 = RegionPair.order_pair((data.get("img_1"), data.get("img_2")))
         category = data.get("category")
         category = int(data.get("category")) if category else None
         similarity_type = int(data.get("similarity_type", SimilarityType.MANUAL))
@@ -612,7 +618,7 @@ def exact_match(request):
 
     try:
         data = json.loads(request.body)
-        img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
+        img_1, img_2 = RegionPair.order_pair((data.get("img_1"), data.get("img_2")))
         regions_id_1, regions_id_2 = [
             data.get("regions_id_1"),
             data.get("regions_id_2"),
@@ -845,7 +851,7 @@ def remove_incorrect_pairs(request, mismatched=False, duplicate=False, swapped=T
                     img_1=pair.img_2, img_2=pair.img_1
                 ).first()
                 if reverse_pair:
-                    sorted_imgs = sorted([pair.img_1, pair.img_2], key=sort_key)
+                    sorted_imgs = RegionPair.order_pair((pair.img_1, pair.img_2))
                     if pair.img_1 != sorted_imgs[0]:
                         pair.delete()
                     else:
@@ -858,40 +864,6 @@ def remove_incorrect_pairs(request, mismatched=False, duplicate=False, swapped=T
             {"message": f"An error occurred while removing incorrect pairs: {e}"},
             status=500,
         )
-
-
-# TODO move to webapp.utils
-
-
-def parse_list(string):
-    if not string:
-        return None
-    try:
-        return [int(c.strip()) for c in string.split(",")]
-    except (TypeError, ValueError):
-        return None
-
-
-def safe_float(val):
-    try:
-        return float(val) if val else None
-    except (TypeError, ValueError):
-        return None
-
-
-def safe_int(val):
-    try:
-        return int(val) if val else None
-    except (TypeError, ValueError):
-        return None
-
-
-def safe_bool(val):
-    if isinstance(val, bool):
-        return val
-    if isinstance(val, str):
-        return val.lower() == "true"
-    return None
 
 
 def get_regions_pairs(request, wid, rid=None):

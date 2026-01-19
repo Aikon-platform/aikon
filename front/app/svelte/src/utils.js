@@ -38,9 +38,9 @@ export function shorten(str, maxLen=100) {
 }
 
 export function getCantaloupeUrl() {
-    return cantaloupeUrl ?? "http://localhost:8182";
+    // return cantaloupeUrl ?? "http://localhost:8182";
     // TO DELETE
-    // return "https://vhs.huma-num.fr"
+    return "https://vhs.huma-num.fr"
 }
 
 export function getSasUrl() {
@@ -92,10 +92,17 @@ export function refToIIIF(imgRef=null, coord=null, size="full") {
     if (!imgRef) {
         return "https://placehold.co/96x96/png?text=No+image";
     }
+    if (!imgRef.startsWith("wit")) {
+        // TODO try to understand why this happens and remove workaround
+        const [_, ...ref] = imgRef.split('_wit');
+        imgRef = `wit${ref}`;
+    }
+
     const imgRoot = refToIIIFRoot(imgRef);
     if (imgRoot === undefined) {
         return "https://placehold.co/96x96/png?text=No+image";
     }
+
     /*if (size !== "full" && imgCoord !== "full") {
         let [_, __, crop_h, crop_w] = String(imgCoord).split(",").map(Number);
         let [size_h, size_w] = size.split(",").map(Number);
