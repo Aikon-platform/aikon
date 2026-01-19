@@ -773,9 +773,20 @@ def retrieve_pair(img1, img2, regions_id_1, regions_id_2, create=False):
     return None, "Region pair found but regions IDs do not match"
 
 
+def fix_img(img_ref: str) -> str:
+    # TODO fix: the img1 and img2 should be sent with region id ref as prefix
+    img_ref = img_ref if img_ref.endswith(".jpg") else f"{img_ref}.jpg"
+    if img_ref.startswith("wit"):
+        return img_ref
+    if "_wit" in img_ref:
+        return "wit" + img_ref.split("_wit", 1)[1]
+    log(f"[fix_img] probably wrong image ref: {img_ref}")
+    return img_ref
+
+
 def get_or_create_pair(img_1, img_2, rid_1, rid_2, create=True):
-    img_1, img_2 = RegionPair.order_pair((img_2, img_1))
-    rid_1, rid_2 = RegionPair.order_pair((rid_2, rid_1))
+    img_1, img_2 = RegionPair.order_pair((fix_img(img_1), fix_img(img_2)))
+    rid_1, rid_2 = RegionPair.order_pair((rid_1, rid_2))
 
     pair = RegionPair.objects.filter(
         # Q(img_1=img_1, img_2=img_2) | Q(img_1=img_2, img_2=img_1)
