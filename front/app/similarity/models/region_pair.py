@@ -177,6 +177,16 @@ class RegionPair(models.Model):
     objects = RegionPairManager()
 
     @classmethod
+    def order_pair(
+        cls, pair: tuple | str, as_string: bool = False
+    ) -> tuple[str, str] | str:
+        """Return image names ordered consistently"""
+        ref1, ref2 = pair.split("-") if isinstance(pair, str) else pair
+        if sort_key(ref2) < sort_key(ref1):
+            ref1, ref2 = ref2, ref1
+        return f"{ref1}-{ref2}" if as_string else (ref1, ref2)
+
+    @classmethod
     def rid_from_pair_containing_img(
         cls, img: str, similarity_hash: str = None, create_if_missing: bool = True
     ) -> int:
@@ -231,18 +241,27 @@ class RegionPair(models.Model):
     ) -> int:
         """
         Get regions_id for an image.
-        Checks candidate_rids first (in order), then falls back to existing pairs or creation.
+        Priority:
+        1. candidate_rid matching image's digitization (order of candidate_rids matters)
+        2. Any valid candidate_rid (if digit validation fails)
+        3. Existing pair containing the image
+        4. Create new regions (if create_if_missing=True)
         """
         img = add_jpg(img)
         img_digit_id = extract_digit_id(img)
 
-        if img_digit_id is None:
-            raise ValidationError(f"Cannot extract digitization ID from {img}")
+        valid_candidates = [rid for rid in (candidate_rids or []) if rid is not None]
+        if valid_candidates:
+            if img_digit_id is not None:
+                for rid in valid_candidates:
+                    try:
+                        if get_region_digit_id(rid) == img_digit_id:
+                            return rid
+                    except Exception:
+                        continue
 
-        if candidate_rids:
-            for rid in candidate_rids:
-                if get_region_digit_id(rid) == img_digit_id:
-                    return rid
+            # No match found: return first existing candidate (skip DB validation if Digitization missing)
+            return valid_candidates[0]
 
         return cls.rid_from_pair_containing_img(img, similarity_hash, create_if_missing)
 

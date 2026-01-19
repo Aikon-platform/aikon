@@ -1,4 +1,3 @@
-import gzip
 import json
 import os
 import re
@@ -19,15 +18,17 @@ from django.core.cache import cache
 from app.similarity.const import SCORES_PATH
 from app.config.settings import APP_URL, APP_NAME
 from app.similarity.models.region_pair import RegionPair, RegionPairTuple
-from app.similarity.models.similarity_parameters import SimilarityParameters
+from app.similarity.models.similarity_parameters import (
+    SimilarityParameters,
+    generate_hash,
+)
 from app.similarity.tasks import delete_api_similarity
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
-from app.webapp.utils.functions import sort_key, delete_path
+from app.webapp.utils.functions import delete_path
 from app.webapp.utils.logger import log
-from app.webapp.views import check_ref
 from config.settings import APP_LANG
 
 
@@ -51,15 +52,40 @@ class SimilarityCategory(IntEnum):
 ################################################################
 
 
-def prepare_request(witnesses, treatment_id):
+def prepare_request(witnesses, treatment_id, parameters=None):
+    """
+    Prepare similarity request, excluding already computed pairs.
+    """
+    doc_refs = get_doc_refs_from_records(witnesses)
+
+    if not doc_refs:
+        raise ValueError(
+            "No documents with extracted regions for similarity computation"
+            if APP_LANG == "en"
+            else "Aucun document avec des régions extraites pour le calcul de similarité"
+        )
+
+    # Check existing pairs if parameters provided
+    skip_pairs = []
+    if parameters:
+        all_pairs = {
+            RegionPair.order_pair((r1, r2), as_string=True)
+            for r1, r2 in combinations_with_replacement(set(doc_refs), 2)
+        }
+        existing = get_existing_pairs(doc_refs, parameters)
+        if existing and existing == all_pairs:
+            return {
+                "message": "All similarity pairs already computed for these parameters"
+            }
+
+        skip_pairs = list(existing)
+
     return tasking.prepare_request(
         witnesses,
         treatment_id,
         prepare_document,
         "similarity",
-        {
-            # NOTE api parameters are added in similarity.forms.get_api_parameters
-        },
+        {**(parameters or {}), "skip_pairs": skip_pairs},
     )
 
 
@@ -104,6 +130,8 @@ def process_results(data, completed=True):
     """
     from app.similarity.tasks import process_similarity_file
 
+    log(f"[process_results] Received data: {data}")
+
     output = data.get("output", {})
     if not data or not output:
         log("No similarity results to download")
@@ -123,6 +151,7 @@ def process_results(data, completed=True):
         if regions_ref_pair == "dataset":
             # do not index scores for the entire set of document pairs (used in AIKON-demo)
             continue
+        regions_ref_pair = RegionPair.order_pair(regions_ref_pair, as_string=True)
 
         try:
             response = requests.get(score_url, stream=True)
@@ -252,6 +281,41 @@ def json_to_scores_tuples(json_scores):
     ]
 
 
+def get_doc_refs_from_records(records) -> list[str]:
+    """Extract all document refs from records (Witness/Digitization/Regions)."""
+    refs = []
+    for record in records:
+        regions = record.get_regions() if hasattr(record, "get_regions") else [record]
+        refs.extend(region.get_ref() for region in regions if regions)
+    return refs
+
+
+def get_existing_pairs(doc_refs: list[str], parameters: dict) -> set[str]:
+    """
+    Check which document pairs already have similarity results for given parameters.
+    Returns set of pair identifiers like "ref1-ref2" (sorted alphabetically).
+    """
+    # Reproduce API format to generate hash
+    params = {
+        "algorithm": parameters.get("algorithm", "cosine"),
+        "topk": parameters.get("cosine_n_filter", 20),
+        "feat_net": parameters.get("feat_net", "dino_deitsmall16_pretrain"),
+        "segswap_prefilter": parameters.get("segswap_prefilter", True),
+        "segswap_n": parameters.get("segswap_n_filter", 10),
+        "raw_transpositions": ["none"],
+    }
+
+    param_hash = generate_hash(params)
+    existing = set()
+
+    for ref1, ref2 in combinations_with_replacement(sorted(set(doc_refs)), 2):
+        pair_ref = RegionPair.order_pair((ref1, ref2), as_string=True)
+        if (Path(SCORES_PATH) / pair_ref / f"{param_hash}.json").exists():
+            existing.add(pair_ref)
+
+    return existing
+
+
 def score_file_to_db(file_path):
     """
     Load scores from a .json file and add all of its pairs in the RegionPair table
@@ -263,13 +327,13 @@ def score_file_to_db(file_path):
     if not pair_scores or not pair_ref:
         return False
 
-    ref_1, ref_2 = sorted(pair_ref.split("-"), key=sort_key)
+    ref_1, ref_2 = RegionPair.order_pair(pair_ref)
     # TODO verify that regions_id exists?
 
     pairs_to_update = []
     try:
         for score, img1, img2 in pair_scores:
-            img1, img2 = sorted([img1, img2], key=sort_key)
+            img1, img2 = RegionPair.order_pair((img1, img2))
             score = float(score)
             if score > 0:
                 pairs_to_update.append(
@@ -386,27 +450,6 @@ def get_region_pairs_with(q_img, query_regions_ids, target_regions_ids):
         query &= ~Q(regions_id_1=F("regions_id_2"))
 
     return list(RegionPair.objects.filter(query))
-
-
-def get_pairs_for_regions(unfiltered_pairs, q_rid, regions_ids):
-    """For a given regions identifier, filters a list of pairs that relates to it, then
-    NOT USED
-    keeps only those pertaining to the selected comparison regions.
-
-    :param unfiltered_pairs: list of RegionPair objects
-    :param q_rid: in - id of the Regions object currently analyzed
-    :param regions_ids: list[int] - ids of the Regions objects to be linked by pairs to the Regions identified by q_rid
-    :return: list of RegionPair objects with one end from the Regions  identifier by q_rid and one end from any Regions identified by regions_ids
-    """
-    pairs = [
-        pair
-        for pair in unfiltered_pairs
-        if pair.regions_id_1 == q_rid or pair.regions_id_2 == q_rid
-    ]
-    if q_rid not in regions_ids:
-        pairs = [pair for pair in pairs if pair.regions_id_1 != pair.regions_id_2]
-
-    return pairs
 
 
 def delete_pairs_with_regions(regions_id: int):
@@ -575,16 +618,20 @@ def doc_pairs(doc_ids: list):
 
 
 def check_computed_pairs(regions_refs):
+    # TODO incorrect with score files in json format located in different subfolders
+    # TODO change that
     sim_files = os.listdir(SCORES_PATH)
     regions_to_send = []
     for pair in doc_pairs(regions_refs):
-        if f"{'-'.join(sorted(pair))}.npy" not in sim_files:
+        if f"{RegionPair.order_pair(pair, as_string=True)}.npy" not in sim_files:
             regions_to_send.extend(pair)
     # return list of unique regions_ref involved in one of the pairs that are not already computed
     return list(set(regions_to_send))
 
 
 def get_computed_pairs(regions_ref):
+    # TODO incorrect with score files in json format located in different subfolders
+    # TODO change that
     return [
         pair_file.replace(".npy", "")
         for pair_file in os.listdir(SCORES_PATH)
@@ -593,44 +640,9 @@ def get_computed_pairs(regions_ref):
 
 
 def get_all_pairs():
+    # TODO incorrect with score files in json format located in different subfolders
+    # TODO change that
     return [pair_file.replace(".npy", "") for pair_file in os.listdir(SCORES_PATH)]
-
-
-def get_regions_ref_in_pairs(pairs):
-    return list(set([ref for pair in pairs for ref in pair.split("-")]))
-
-
-def get_compared_regions_refs(regions_ref):
-    refs = get_regions_ref_in_pairs(get_computed_pairs(regions_ref))
-    refs.remove(regions_ref)
-    return refs
-
-
-def get_compared_regions(regions: Regions):
-    refs = get_compared_regions_refs(regions.get_ref())
-    return [
-        region
-        for (passed, region) in [check_ref(ref, "Regions") for ref in refs]
-        if passed
-    ]
-
-
-def check_score_files(file_names):
-    from app.similarity.tasks import check_similarity_files
-
-    # TODO check similarity file content inside a celery task (task is empty)
-    check_similarity_files.delay(file_names)
-
-
-def load_similarity(pair):
-    try:
-        pair_scores = np.load(
-            Path(SCORES_PATH) / f"{'-'.join(sorted(pair))}.npy", allow_pickle=True
-        )
-        return pair, pair_scores
-    except FileNotFoundError as e:
-        log(f"[load_similarity] no score file for {pair}", e)
-        return pair, None
 
 
 def reset_similarity(regions: Regions):
@@ -762,9 +774,8 @@ def retrieve_pair(img1, img2, regions_id_1, regions_id_2, create=False):
 
 
 def get_or_create_pair(img_1, img_2, rid_1, rid_2, create=True):
-    if sort_key(img_2) < sort_key(img_1):
-        img_1, img_2 = img_2, img_1
-        rid_1, rid_2 = rid_2, rid_1
+    img_1, img_2 = RegionPair.order_pair((img_2, img_1))
+    rid_1, rid_2 = RegionPair.order_pair((rid_2, rid_1))
 
     pair = RegionPair.objects.filter(
         # Q(img_1=img_1, img_2=img_2) | Q(img_1=img_2, img_2=img_1)

@@ -23,13 +23,13 @@ from config.settings import APP_LANG
 ################################################################
 
 
-def prepare_request(witnesses, treatment_id):
+def prepare_request(witnesses, treatment_id, parameters=None):
     return tasking.prepare_request(
         witnesses,
         treatment_id,
         prepare_document,
         "vectorization",
-        {"model": f"{VECTO_MODEL_EPOCH}"},
+        {"model": f"{VECTO_MODEL_EPOCH}", **(parameters or {})},
     )
 
 

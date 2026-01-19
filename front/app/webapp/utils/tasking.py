@@ -154,10 +154,10 @@ def process_task_results(task_name, data, completed=True):
         raise e
 
 
-def prepare_task_request(task_name, records, treatment_id):
+def prepare_task_request(task_name, records, treatment_id, api_parameters=None):
     try:
         module = importlib.import_module(f"{task_name}.utils")
-        return getattr(module, "prepare_request")(records, treatment_id)
+        return getattr(module, "prepare_request")(records, treatment_id, api_parameters)
     except (ImportError, AttributeError) as e:
         raise e
 
