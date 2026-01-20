@@ -156,7 +156,7 @@ class Treatment(AbstractSearchableModel):
             urls = [f"{url}?tab={tabs[self.task_type]}" for url in urls]
         return urls
 
-    def to_json(self, reindex=True, no_img=False):
+    def to_json(self, reindex=True, no_img=False, request_user=None):
         try:
             user = self.requested_by
             doc_set = self.document_set

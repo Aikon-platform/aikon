@@ -9,10 +9,12 @@ from django.views.decorators.csrf import csrf_exempt
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions, check_version
 from app.webapp.models.digitization import Digitization
+from app.webapp.models.witness import Witness
 from app.config.settings import API_URL
 from app.webapp.models.treatment import Treatment
 from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.paths import MEDIA_PATH
+from webapp.forms import WitnessForm
 
 
 def admin_app(request):
@@ -191,3 +193,33 @@ def set_title(request, set_id):
         return JsonResponse({"title": doc_set.title})
     except DocumentSet.DoesNotExist:
         return JsonResponse({"title": "Unknown"}, status=404)
+
+
+def witness_select_fields(request):
+    form = WitnessForm()
+    select = {}
+
+    for name, field in form.fields.items():
+        if getattr(field, "choices", None):
+            choice_list = []
+            for choice in field.choices:
+                value, label = choice
+                choice_list.append({"value": str(value), "label": str(label)})
+            select[name] = choice_list
+
+    return JsonResponse(select)
+
+
+def witness_update(request, wid):
+    witness = get_object_or_404(Witness, id=wid)
+
+    data = json.loads(request.body.decode("utf-8"))
+    wit_data = {}
+
+    for field in WitnessForm.Meta.fields:
+        wit_data[field] = data.get(field, getattr(witness, field))
+
+    form = WitnessForm(wit_data, instance=witness)
+    form.save()
+
+    return JsonResponse({"status": "OK"})

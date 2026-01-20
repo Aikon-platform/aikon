@@ -167,7 +167,7 @@ class Regions(AbstractSearchableModel):
             return metadata
         return {}
 
-    def to_json(self, reindex=True, no_img=False):
+    def to_json(self, reindex=True, no_img=False, request_user=None):
         """
         Do not take into account no_img for regions because there is no post_save task as for Digitization
         to fill image related properties

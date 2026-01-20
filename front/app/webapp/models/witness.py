@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.utils.text import slugify
 from django.utils.html import format_html
 from django.urls import reverse
+from django.contrib.postgres.fields import ArrayField
 
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.edition import Edition
@@ -29,12 +30,14 @@ from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
 from app.webapp.utils.functions import get_icon, flatten, format_dates
 from app.webapp.utils.logger import log
+from webapp.models.utils.constants import MAP_PAGE_TYPE
 
 
 def get_name(fieldname, plural=False):
     fields = {
         "id_nb": {"en": "identification number", "fr": "cote"},
         "nb_pages": {"en": "number of pages/folios", "fr": "nombre de pages/folios"},
+        "notes": {"en": "additional notes", "fr": "informations complémentaires"},
         "link": {
             "en": "external link (online catalog, etc.)",
             "fr": "lien externe (catalogue en ligne, etc.)",
@@ -48,13 +51,15 @@ def get_name(fieldname, plural=False):
         },
         "volume": {"en": VOL, "fr": VOL},
         "series": {"en": SER, "fr": SER},
-        "title": {"en": "title of the volume", "fr": "titre du volume"},
+        "volume_title": {"en": "title of the volume", "fr": "titre du volume"},
         "is_public": {"en": "make it public", "fr": "rendre public"},
-        "number": {"en": "volume number", "fr": "numéro de volume"},
+        "volume_nb": {"en": "volume number", "fr": "numéro de volume"},
+        "edition": {"en": "edition", "fr": "édition"},
         "number_info": {
             "en": "number useful for classifying the different volumes of an edition, but not necessarily of historical value",
             "fr": "numéro utile pour classer les différents tomes d'une édition, mais qui n'a pas nécessairement de valeur historique",
         },
+        "shared_with": {"en": "shared with", "fr": "partagé avec"},
     }
 
     return get_fieldname(fieldname, fields, plural)
@@ -138,13 +143,13 @@ class Witness(AbstractSearchableModel):
         null=True,
     )
     volume_title = models.CharField(
-        verbose_name=get_name("title"),
+        verbose_name=get_name("volume_title"),
         max_length=500,
         blank=True,
         null=True,
     )
     volume_nb = models.IntegerField(
-        verbose_name=get_name("number"),
+        verbose_name=get_name("volume_nb"),
         help_text=get_name("number_info"),
         blank=True,
         null=True,
@@ -160,14 +165,31 @@ class Witness(AbstractSearchableModel):
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
+    shared_with = models.ManyToManyField(
+        User,
+        blank=True,
+        related_name="shared_witnesses",
+        verbose_name=get_name("shared_with"),
+    )
+
     def get_absolute_edit_url(self):
         return reverse("admin:webapp_witness_change", args=[self.id])
 
     def get_absolute_view_url(self):
         return reverse("webapp:witness_regions_view", args=[self.id])
 
-    def to_json(self, reindex=True, no_img=False):
-        # TODO create to_json template in a Abstract class
+    def can_edit(self, user):
+        if not user or not user.is_authenticated:
+            return False
+
+        return (
+            user.is_superuser
+            or self.user == user
+            or self.shared_with.filter(pk=user.pk).exists()
+            or user.groups.filter(user=self.user).exists()
+        )
+
+    def to_json(self, reindex=True, no_img=False, request_user=None):
         buttons = {"regions": reverse("webapp:witness_regions_view", args=[self.id])}
 
         digits = self.get_digits()
@@ -191,6 +213,7 @@ class Witness(AbstractSearchableModel):
                 "user": user.__str__() if user else NO_USER,
                 "edit_url": self.get_absolute_edit_url(),
                 "view_url": self.get_absolute_view_url(),
+                "can_edit": self.can_edit(request_user),
                 "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),
                 "is_public": self.is_public,
                 "metadata": {
@@ -201,23 +224,72 @@ class Witness(AbstractSearchableModel):
                     get_name("page_nb"): self.get_page(),
                     get_name("Language"): self.get_lang_names(),
                 },
+                "metadata_full": self.get_wit_metadata(),
                 "buttons": buttons,
             }
         )
+
+    def get_wit_metadata(self):
+        metadata = {}
+
+        wit = {
+            "type": self.get_type(),
+            "page_type": self.get_page_type(),
+            "nb_pages": self.get_page(),
+            "notes": self.get_notes(),
+            "link": self.get_link(),
+        }
+
+        if self.type != "ms":
+            wit["edition"] = self.get_edition()
+            wit["volume_nb"] = self.get_volume_nb()
+            wit["volume_title"] = self.get_volume_title()
+
+        wit = {
+            key: {
+                "label": get_name(key),
+                "value": value,
+            }
+            for key, value in wit.items()
+        }
+
+        metadata["wit"] = wit
+
+        if contents := self.get_contents():
+            metadata["contents"] = []
+
+            for content in contents:
+                content_dict = content.get_metadata()
+                metadata["contents"].append(content_dict)
+        return metadata
 
     def get_type(self):
         # NOTE should be returning "letterpress" (tpr) / "woodblock" (wpr) / "manuscript" (ms)
         return MAP_WIT_TYPE[self.type]
 
+    def get_page_type(self):
+        return MAP_PAGE_TYPE[self.page_type]
+
     def get_ref(self):
         return f"wit{self.id}"
 
     def get_page(self):
-        return (
-            f"{self.nb_pages} {'ff' if self.page_type == FOL_ABBR else 'pp'}."
-            if self.nb_pages
-            else "-"
-        )
+        return f"{self.nb_pages}" if self.nb_pages else "-"
+
+    def get_notes(self):
+        return f"{self.notes}" if self.notes else "-"
+
+    def get_link(self):
+        return f"{self.link}" if self.link else "-"
+
+    def get_edition(self):
+        return f"{self.edition}" if self.edition else "-"
+
+    def get_volume_nb(self):
+        return f"{self.volume_nb}" if self.volume_nb else "-"
+
+    def get_volume_title(self):
+        return f"{self.volume_title}" if self.volume_title else "-"
 
     def is_validated(self):
         for regions in self.get_regions():

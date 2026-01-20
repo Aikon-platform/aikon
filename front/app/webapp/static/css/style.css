@@ -379,7 +379,7 @@ td.is-fullwidth {
 
 #footer {
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
-    z-index: 5;
+    z-index: 2;
     position: relative;
 }
 
