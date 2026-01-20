@@ -228,8 +228,10 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
         if documents:
             uids = [d.get("uid", "UID") for d in documents]
             log(
-                f"[prepare_request] Found {len(documents)} documents to process: {', '.join(uids)}"
+                f"[prepare_request] Found {len(documents)} documents to process: {', '.join(uids)}",
+                msg_type="info",
             )
+            log(parameters, msg_type="info")
 
             return {
                 "experiment_id": str(treatment_id),
@@ -244,7 +246,7 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
             if APP_LANG == "en"
             else f"Aucun document à traiter pour les enregistrements sélectionnés."
         )
-        log(f"[prepare_request] {err}")
+        log(f"[prepare_request] {err}", msg_type="error")
         raise Exception(err)
 
     except Exception as e:
@@ -260,6 +262,7 @@ def receive_notification(request):
     from app.webapp.models.treatment import Treatment
 
     if request.method != "POST":
+        log("[receive_notification] Invalid request method", msg_type="error")
         return {"success": False, "error": "Only POST requests are supported"}, 400
 
     try:
@@ -268,6 +271,10 @@ def receive_notification(request):
         assert "experiment_id" in data
         assert "event" in data
     except (ValueError, AssertionError) as e:
+        log(
+            f"[receive_notification] Invalid data payload\n\n{request.body.decode('utf-8')}",
+            e,
+        )
         return {
             "success": False,
             "error": f"Data payload does not contain expected content: {e}",
@@ -275,7 +282,8 @@ def receive_notification(request):
 
     try:
         treatment = Treatment.objects.get(id=data["experiment_id"])
-    except Treatment.DoesNotExist:
+    except Treatment.DoesNotExist as e:
+        log(f"[receive_notification] Treatment #{data['experiment_id']} not found", e)
         # TODO handle manual treatment?
         return {"success": False, "error": "Treatment not found"}, 400
 

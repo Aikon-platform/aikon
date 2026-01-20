@@ -727,8 +727,10 @@ def uncategorize_pair_batch(request):
         pairs_to_update = []
         for pair_data in data.get("pairs", []):
             pair, _ = get_or_create_pair(
-                pair_data["img_1"],
-                pair_data["img_2"],
+                pair_data.get("img_1"),
+                pair_data.get("img_2"),
+                pair_data.get("regions_id_1", None),
+                pair_data.get("regions_id_2", None),
                 create=False,
             )
             if pair and pair.category is not None:
