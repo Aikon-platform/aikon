@@ -271,7 +271,10 @@ def receive_notification(request):
         assert "experiment_id" in data
         assert "event" in data
     except (ValueError, AssertionError) as e:
-        log("[receive_notification] Invalid data payload", e)
+        log(
+            f"[receive_notification] Invalid data payload\n\n{request.body.decode('utf-8')}",
+            e,
+        )
         return {
             "success": False,
             "error": f"Data payload does not contain expected content: {e}",
@@ -280,7 +283,7 @@ def receive_notification(request):
     try:
         treatment = Treatment.objects.get(id=data["experiment_id"])
     except Treatment.DoesNotExist as e:
-        log("[receive_notification] Treatment not found", e)
+        log(f"[receive_notification] Treatment #{data['experiment_id']} not found", e)
         # TODO handle manual treatment?
         return {"success": False, "error": "Treatment not found"}, 400
 

@@ -307,8 +307,9 @@ def get_existing_pairs(doc_refs: list[str], parameters: dict) -> set[str]:
     }
 
     param_hash = generate_hash(params)
-    existing = set()
+    log(f"[get_existing_pairs] Checking existing pairs for hash {param_hash}")
 
+    existing = set()
     for ref1, ref2 in combinations_with_replacement(sorted(set(doc_refs)), 2):
         for pair_ref in [f"{ref1}-{ref2}", f"{ref2}-{ref1}"]:
             if (Path(SCORES_PATH) / pair_ref / f"{param_hash}.json").exists():
@@ -803,7 +804,7 @@ def fix_img(img_ref: str) -> str:
     return img_ref
 
 
-def get_or_create_pair(img_1, img_2, rid_1, rid_2, create=True):
+def get_or_create_pair(img_1, img_2, rid_1=None, rid_2=None, create=True):
     img_1, img_2 = fix_img(img_1), fix_img(img_2)
     if sort_key(img_2) < sort_key(img_1):
         img_1, img_2 = img_2, img_1
@@ -815,22 +816,23 @@ def get_or_create_pair(img_1, img_2, rid_1, rid_2, create=True):
         img_2=img_2,
     ).first()
 
+    is_rids = rid_1 is not None and rid_2 is not None
+
     if pair:
-        if pair.regions_id_1 not in [rid_1, rid_2] or pair.regions_id_2 not in [
-            rid_1,
-            rid_2,
-        ]:
-            log(
-                f"[get_or_create_pair] Pair regions ids ({pair.regions_id_1}-{pair.regions_id_2})"
-                f" do not match provided ids ({rid_1}-{rid_2})"
-            )
+        if is_rids:
+            rids = [rid_1, rid_2]
+            if pair.regions_id_1 not in rids or pair.regions_id_2 not in rids:
+                log(
+                    f"[get_or_create_pair] Pair regions ids ({pair.regions_id_1}-{pair.regions_id_2})"
+                    f" do not match provided ids ({rid_1}-{rid_2})"
+                )
         return pair, False
 
     if not create:
         return None, False
 
-    rid_1 = regions_from_img(img_1, candidate_rids=[rid_1, rid_2])
-    rid_2 = regions_from_img(img_2, candidate_rids=[rid_2, rid_1])
+    rid_1 = regions_from_img(img_1, candidate_rids=[rid_1, rid_2] if is_rids else None)
+    rid_2 = regions_from_img(img_2, candidate_rids=[rid_2, rid_1] if is_rids else None)
 
     return (
         RegionPair(
