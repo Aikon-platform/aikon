@@ -499,15 +499,14 @@ def svg_to_xywh(svgstr: str) -> str:
                 xmax = max(xmax, p_xmax)
                 ymin = min(ymin, p_ymin)
                 ymax = max(ymax, p_ymax)
-        xywh = [xmin, ymin, xmax - xmin, ymax - ymin]
 
         # force XYWH to be contained in the canvas, otherwise Cantaloupe can't display it
         # if `roof` is undefined, just ensure that `x` is positive.
         constrain = (
             lambda roof: lambda x: min(max(x, 0), roof) if roof > 0 else max(x, 0)
         )
-        constrain_y = constrain(canvas_wh["h"])
         constrain_x = constrain(canvas_wh["w"])
+        constrain_y = constrain(canvas_wh["h"])
         xywh = [
             constrain_x(xmin),
             constrain_y(ymin),
@@ -585,13 +584,13 @@ def get_regions_annotations(
 
             # NOTE: how are XYWH coordinates extracted ?
             # - only supported selectors are oa:FragmentSelector, oa:SvgSelector and an oa:Choice containing oa:SvgSelector or oa:FragmentSelector.
-            # - if selector is oa:SvgSelector, calculate and extract its boudning box
+            # - if selector is oa:SvgSelector, extract its boudning box
             # - if selector is oa:FragmentSelector, extract its xywh coordinates.
-            # - if selector is a choice, repeat process for both selectors.
+            # - if selector is a choice, repeat process for both selectors until XYWH coords have been found
             # - if no selector could be extracted, raise.
             # SVG-parsing and bbox calc etc is necessary: MAE exports SVG targets as an array of [oa:SvgSelector, oa:FragmentSelector],
-            # but `oa:SvgSelector` is used to document space information, while oa:FragmentSelector is used to store time information: the time on which the annotation is (for video annos).
-            # so we can't rely on oa:FragmentSelector, since it's not equivalent ot oa:SvgSelector.
+            # but `oa:SvgSelector` is used to document space information, while oa:FragmentSelector is used to store time information:
+            # the time on which the annotation is (for video annos) so we can't rely on oa:FragmentSelector, since it's not equivalent ot oa:SvgSelector.
             xywh = ""
             if on_value[0]["selector"]["@type"] == "oa:Choice":
                 for selector in (
@@ -602,7 +601,6 @@ def get_regions_annotations(
                     if len(xywh):
                         break
             else:
-                # print("<<< NOT CHOICE", on_value[0]["selector"]["@type"])
                 xywh = selector_to_xywh(on_value[0]["selector"])
             if not xywh:
                 raise ValueError(f"Could not extract XYWH coordinates for annotation")
