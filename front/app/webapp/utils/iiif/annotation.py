@@ -454,6 +454,80 @@ def fragment_selector_to_xywh(selector: Dict) -> str:
     return ""
 
 
+def svg_to_xywh(svgstr: str) -> str:
+    """
+    extract an XYWH bounding box from an SVG and return it as "x,y,w,h". it is convoluted but there isn't really a better method.
+    """
+    from svgpathtools import svg2paths
+    from lxml import etree  # pyright: ignore
+    import tempfile
+    import os
+
+    try:
+        # extract canvas width and height if it is stored in svg's attributes
+        # (this is to ensure that the bounding box is contained within the canvas, otherwise cantaloupe can't display the region)
+        root = etree.fromstring(svgstr)
+        width = root.xpath("./@width")
+        height = root.xpath("./@height")
+        canvas_wh = {
+            "w": int(width[0]) if len(width) > 0 else 0,
+            "h": int(height[0]) if len(height) > 0 else 0,
+        }
+
+        # `svg2paths` provides the best SVG reading (with transforms etc.) but only words on svg files
+        # => create a temporary file and read svg from it. `delete=False` because `delete` can cause problems on Windows.
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".svg", delete=False, encoding="utf-8"
+        ) as tf:
+            tf.write(svgstr)
+            fn = tf.name
+        try:
+            paths, _ = svg2paths(fn)  # pyright: ignore
+        finally:
+            os.remove(fn)
+
+        # calculate bounding box of the SVG
+        # adapted from https://stackoverflow.com/a/76076555
+        for i, path in enumerate(paths):
+            if i == 0:
+                # initialise the overall min-max with the first path
+                xmin, xmax, ymin, ymax = path.bbox()
+            else:
+                # expand bounds to match path bounds if needed
+                p_xmin, p_xmax, p_ymin, p_ymax = path.bbox()
+                xmin = min(xmin, p_xmin)
+                xmax = max(xmax, p_xmax)
+                ymin = min(ymin, p_ymin)
+                ymax = max(ymax, p_ymax)
+        xywh = [xmin, ymin, xmax - xmin, ymax - ymin]
+
+        # force XYWH to be contained in the canvas, otherwise Cantaloupe can't display it
+        # if `roof` is undefined, just ensure that `x` is positive.
+        constrain = (
+            lambda roof: lambda x: min(max(x, 0), roof) if roof > 0 else max(x, 0)
+        )
+        constrain_y = constrain(canvas_wh["h"])
+        constrain_x = constrain(canvas_wh["w"])
+        xywh = [
+            constrain_x(xmin),
+            constrain_y(ymin),
+            constrain_x(xmax - xmin),
+            constrain_y(ymax - ymin),
+        ]
+        return ",".join(str(c) for c in xywh)
+    except Exception as e:
+        log(f"[svg_to_xywh] Failed to extract a bounding box from SVG '{svgstr}'", e)
+        return ""
+
+
+def selector_to_xywh(selector: Dict) -> str:
+    if selector["@type"] == "oa:SvgSelector":
+        xywh = svg_to_xywh(selector["value"])
+    else:
+        xywh = fragment_selector_to_xywh(selector)
+    return xywh
+
+
 # TODO PAUL: implement min_c/max_c on aiiinotate side
 def get_regions_annotations(
     regions: Regions,
@@ -510,30 +584,28 @@ def get_regions_annotations(
                 continue
 
             # NOTE: how are XYWH coordinates extracted ?
-            # - coordinates can only be extracted if `on_value` contains a `oa:FragmentSelector`
-            # - the on_value["selector"] can either be a "oa:Choice" or an "oa:FragmentSelector". the latter case is the export format by MAE.
-            # - if the selector is an "oa:Choice", then extract XYWH from the Fragment, not from other selectors (ie, "oa:SvgSelector")
+            # - only supported selectors are oa:FragmentSelector, oa:SvgSelector and an oa:Choice containing oa:SvgSelector or oa:FragmentSelector.
+            # - if selector is oa:SvgSelector, calculate and extract its boudning box
+            # - if selector is oa:FragmentSelector, extract its xywh coordinates.
+            # - if selector is a choice, repeat process for both selectors.
+            # - if no selector could be extracted, raise.
+            # SVG-parsing and bbox calc etc is necessary: MAE exports SVG targets as an array of [oa:SvgSelector, oa:FragmentSelector],
+            # but `oa:SvgSelector` is used to document space information, while oa:FragmentSelector is used to store time information: the time on which the annotation is (for video annos).
+            # so we can't rely on oa:FragmentSelector, since it's not equivalent ot oa:SvgSelector.
             xywh = ""
             if on_value[0]["selector"]["@type"] == "oa:Choice":
-                print(
-                    f'>>> CHOICE:{on_value[0]["selector"]["@type"]}',
-                    f'// DEFAULT: {on_value[0]["selector"]["default"]["@type"]}',
-                    f'// ITEM: {on_value[0]["selector"]["item"]["@type"]}',
-                )
                 for selector in (
                     on_value[0]["selector"]["default"],
                     on_value[0]["selector"]["item"],
                 ):
-                    xywh = fragment_selector_to_xywh(selector)
+                    xywh = selector_to_xywh(selector)
                     if len(xywh):
                         break
             else:
                 # print("<<< NOT CHOICE", on_value[0]["selector"]["@type"])
-                xywh = fragment_selector_to_xywh(on_value[0]["selector"])
+                xywh = selector_to_xywh(on_value[0]["selector"])
             if not xywh:
                 raise ValueError(f"Could not extract XYWH coordinates for annotation")
-
-            print("$$$ XYWH", xywh)
 
             if as_json:
                 img = f"{img_name}_{canvas.zfill(nb_len)}"
