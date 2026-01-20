@@ -520,6 +520,9 @@ def svg_to_xywh(svgstr: str) -> str:
 
 
 def selector_to_xywh(selector: Dict) -> str:
+    """
+    :returns: "x,y,w,h" or "" if a bounding box could not be extracted
+    """
     if selector["@type"] == "oa:SvgSelector":
         xywh = svg_to_xywh(selector["value"])
     else:
