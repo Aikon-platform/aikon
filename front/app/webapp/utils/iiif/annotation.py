@@ -440,6 +440,20 @@ def get_canvas_list(regions: Regions, all_img=False):
     return canvases
 
 
+def fragment_selector_to_xywh(selector: Dict) -> str:
+    """
+    extract XYWH coordinates from a fragment selector. returns "" if no xywh coords could be extracted.
+
+    a complete fragment string should be of the form: "<base_uri>#xywh=<x,y,w,h>"
+    => fragment_list should contain 2 elts. if it is the case, extract "<x,y,w,h>" and return
+    """
+    if selector["@type"] == "oa:FragmentSelector":
+        fragment_list = selector["value"].split("xywh=")
+        if len(fragment_list) > 1:
+            return fragment_list[1]
+    return ""
+
+
 # TODO PAUL: implement min_c/max_c on aiiinotate side
 def get_regions_annotations(
     regions: Regions,
@@ -495,7 +509,32 @@ def get_regions_annotations(
                 )
                 continue
 
-            xywh = on_value[0]["selector"]["default"]["value"].replace("xywh=", "")
+            # NOTE: how are XYWH coordinates extracted ?
+            # - coordinates can only be extracted if `on_value` contains a `oa:FragmentSelector`
+            # - the on_value["selector"] can either be a "oa:Choice" or an "oa:FragmentSelector". the latter case is the export format by MAE.
+            # - if the selector is an "oa:Choice", then extract XYWH from the Fragment, not from other selectors (ie, "oa:SvgSelector")
+            xywh = ""
+            if on_value[0]["selector"]["@type"] == "oa:Choice":
+                print(
+                    f'>>> CHOICE:{on_value[0]["selector"]["@type"]}',
+                    f'// DEFAULT: {on_value[0]["selector"]["default"]["@type"]}',
+                    f'// ITEM: {on_value[0]["selector"]["item"]["@type"]}',
+                )
+                for selector in (
+                    on_value[0]["selector"]["default"],
+                    on_value[0]["selector"]["item"],
+                ):
+                    xywh = fragment_selector_to_xywh(selector)
+                    if len(xywh):
+                        break
+            else:
+                # print("<<< NOT CHOICE", on_value[0]["selector"]["@type"])
+                xywh = fragment_selector_to_xywh(on_value[0]["selector"])
+            if not xywh:
+                raise ValueError(f"Could not extract XYWH coordinates for annotation")
+
+            print("$$$ XYWH", xywh)
+
             if as_json:
                 img = f"{img_name}_{canvas.zfill(nb_len)}"
                 aid = anno["@id"].split("/")[-1]
