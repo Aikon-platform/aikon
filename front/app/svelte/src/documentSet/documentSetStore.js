@@ -2,10 +2,10 @@ import {derived, writable, get} from 'svelte/store';
 import {extractNb, generateColor} from "../utils.js";
 import { streamPairsToWorker } from "./pairStreamReader.js";
 
-import {appUrl} from "../constants.js";
+// import {appUrl} from "../constants.js";
 
 // TO DELETE
-// const appUrl = "https://vhs.huma-num.fr";
+const appUrl = "https://vhs.huma-num.fr";
 // TO DELETE
 
 const createWorker = () => new Worker(
@@ -76,7 +76,7 @@ export function createDocumentSetStore(documentSetId) {
         abortController = new AbortController();
 
         // TO DELETE
-        // const documentSetId = 413; // histoire naturelle
+        const documentSetId = 413; // histoire naturelle
         // const documentSetId = 414; // nicolas
         // const documentSetId = 437; // physiologus
         // const documentSetId = 416; // de materia medica
@@ -156,8 +156,10 @@ export function createDocumentSetStore(documentSetId) {
                             }
                         });
 
-                        // TODO: sort images by coord (from top to bottom only)
-                        docMap.forEach(doc => doc.images.sort((a, b) => a.canvas - b.canvas));
+                        docMap.forEach(doc => doc.images.sort((a, b) => {
+                            if (a.canvas !== b.canvas) return a.canvas - b.canvas;
+                            return (parseInt(a.xywh?.[1]) || 0) - (parseInt(b.xywh?.[1]) || 0);
+                        }));
 
                         imageNodes.set(imgMap);
                         documentNodes.set(docMap);
@@ -525,7 +527,7 @@ export function createDocumentSetStore(documentSetId) {
     }
 
     const matrixMode = writable('filtered'); // 'all' | 'filtered'
-    const normalizeByPages = writable(false);
+    const normalizeByImages = writable(false);
 
     const visiblePairIds = derived(filteredPairs, ($pairs) => {
         const set = new Set();
@@ -592,8 +594,7 @@ export function createDocumentSetStore(documentSetId) {
         ([$mode, $all, $filtered]) => $mode === 'filtered' ? $filtered : $all
     );
 
-    // Page counts per document (for normalization)
-    const pageCountMap = derived(documentNodes, ($docs) => {
+    const imageCountMap = derived(documentNodes, ($docs) => {
         const map = new Map();
         for (const [id, doc] of $docs) {
             map.set(id, Math.max(1, doc.images?.length || doc.img_nb || 1));
@@ -644,11 +645,10 @@ export function createDocumentSetStore(documentSetId) {
 
         matrixMode,
         setMatrixMode: (m) => matrixMode.set(m),
-        normalizeByPages,
-        setNormalizeByPages: (b) => normalizeByPages.set(b),
+        normalizeByImages,
         activeDocPairStats,
         activeDocStats,
-        pageCountMap,
+        imageCountMap,
         visiblePairIds,
     };
 }

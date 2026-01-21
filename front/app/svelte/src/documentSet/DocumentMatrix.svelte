@@ -8,7 +8,7 @@
 
     const {
         documentNodes, pairIndex, activeDocPairStats, activeDocStats,
-        pageCountMap, visiblePairIds, matrixMode, normalizeByPages
+        imageCountMap, visiblePairIds, matrixMode, normalizeByImages
     } = documentSetStore;
 
     const t = {
@@ -26,7 +26,7 @@
         byImage: {en: 'By image', fr: 'Par image'},
         image: {en: 'image', fr: 'image'},
         normalize: {en: 'Normalize', fr: 'Normaliser'},
-        normalization: {en: 'Normalization by document page counts', fr: 'Normalisation par le nombre de pages des documents'},
+        normalization: {en: 'Normalization by document image counts', fr: "Normalisation par le nombre d'images des documents"},
         allPairs: {en: 'All pairs in the document set', fr: 'Toutes les paires du corpus'},
         filteredPairs: {en: 'Filtered pairs', fr: 'Paires après filtrage'},
         filtering: {en: 'Source of image pairs for the visualizations', fr: "Source des paires d’images pour les visualisations"},
@@ -40,8 +40,7 @@
     let isDragging = false;
     let containerWidth = 0;
     let resizeObserver;
-    let clickedPage = null;
-    let clickedImages = null;
+    let navState = null; // {idx1, idx2}
     let scatterMode = 'page';
 
     const MIN_WIDTH = 300;
@@ -49,12 +48,94 @@
     const scatterCellSize = 5;
 
     $: documents = Array.from($documentNodes?.values() || []);
-    $: matrixData = buildMatrix(documents, $activeDocPairStats.scoreCount, $activeDocStats.scoreCount, sortOrder, $normalizeByPages, $pageCountMap);
+    $: matrixData = buildMatrix(documents, $activeDocPairStats.scoreCount, $activeDocStats.scoreCount, sortOrder, $normalizeByImages, $imageCountMap);
     $: scatterData = selectedCell ? buildScatter(selectedCell, scatterMode, $matrixMode === 'filtered', $visiblePairIds) : null;
     $: leftWidth = Math.max(MIN_WIDTH, containerWidth * splitRatio - 4);
     $: rightWidth = Math.max(MIN_WIDTH, containerWidth * (1 - splitRatio) - 4);
+    $: navLimits = scatterData ? getNavLimits(scatterData) : {max1: 0, max2: 0, pages1: [], pages2: []};
+    $: modalData = navState && scatterData && navLimits ? buildModalData(navState, scatterData, navLimits) : null;
 
-    function buildMatrix(docs, scoreCount, docStats, order, normalize, pageCounts) {
+    function getNavLimits(data) {
+        if (data.mode === 'image') {
+            return {max1: data.images1.length, max2: data.images2.length};
+        }
+        const maxPage1 = Math.max(...data.points.map(p => p.page1));
+        const maxPage2 = Math.max(...data.points.map(p => p.page2));
+        return {max1: maxPage1, max2: maxPage2};
+    }
+
+    function getPageImageUrl(doc, pageNum) {
+        const size = "full";
+        return refToIIIF(`wit${doc.witnessId}_${doc.digitizationRef}_${String(pageNum).padStart(doc.zeros, '0')}`, "full", size);
+    }
+
+    function getRegionImageUrl(img) {
+        return refToIIIF(img.ref, img.xywh?.join(','), "full");
+    }
+
+    function buildModalData(nav, data, limits) {
+        if (!nav || !data || !limits) return null;
+        const {doc1, doc2} = data;
+
+        if (data.mode === 'image') {
+            const img1 = data.images1?.[nav.idx1];
+            const img2 = data.images2?.[nav.idx2];
+            if (!img1 || !img2) return null;
+
+            const pairKey = `${nav.idx1}-${nav.idx2}`;
+            const pair = data.pairScores.get(pairKey);
+
+            return {
+                items: [
+                    {doc: doc1, label: `Page ${img1.canvas} Image #${nav.idx1 + 1}`, imgUrl: getRegionImageUrl(img1)},
+                    {doc: doc2, label: `Page ${img2.canvas} Image #${nav.idx2 + 1}`, imgUrl: getRegionImageUrl(img2)}
+                ],
+                score: pair?.score
+            };
+        }
+
+        const page1 = nav.idx1 + 1;
+        const page2 = nav.idx2 + 1;
+        const point = data.points.find(p => p.page1 === page1 && p.page2 === page2);
+
+        return {
+            items: [
+                {doc: doc1, label: `Page ${page1}`, imgUrl: getPageImageUrl(doc1, page1)},
+                {doc: doc2, label: `Page ${page2}`, imgUrl: getPageImageUrl(doc2, page2)}
+            ],
+            score: point?.score
+        };
+    }
+
+    function navigate(axis, delta) {
+        if (!navState || !scatterData) return;
+
+        if (axis === 'horizontal') {
+            navState.idx1 = (navState.idx1 + delta + navLimits.max1) % navLimits.max1;
+        } else {
+            navState.idx2 = (navState.idx2 + delta + navLimits.max2) % navLimits.max2;
+        }
+        navState = navState; // trigger reactivity
+    }
+
+    function handleKeydown(e) {
+        if (!navState || !modalElement?.classList.contains('is-active')) return;
+
+        const keyMap = {
+            ArrowUp: ['vertical', -1],
+            ArrowDown: ['vertical', 1],
+            ArrowLeft: ['horizontal', -1],
+            ArrowRight: ['horizontal', 1]
+        };
+
+        const action = keyMap[e.key];
+        if (action) {
+            e.preventDefault();
+            navigate(action[0], action[1]);
+        }
+    }
+
+    function buildMatrix(docs, scoreCount, docStats, order, normalize, imageCount) {
         if (!docs.length) return {docs: [], matrix: [], maxScore: 0};
 
         docs.forEach((doc, i) => {
@@ -82,9 +163,9 @@
                     let score = scoreCount?.get(key)?.score || 0;
 
                     if (normalize && score > 0) {
-                        const p1 = pageCounts.get(sorted[i].id) || 1;
-                        const p2 = pageCounts.get(sorted[j].id) || 1;
-                        score /= Math.sqrt(p1 * p2);
+                        const n1 = imageCount.get(sorted[i].id) || 1;
+                        const n2 = imageCount.get(sorted[j].id) || 1;
+                        score /= Math.sqrt(n1 * n2);
                     }
 
                     if (score > maxScore) maxScore = score;
@@ -140,18 +221,9 @@
         return {mode: 'page', points, minScore, maxScore, doc1, doc2};
     }
 
-    function sortImagesByPosition(images) {
-        return [...images].sort((a, b) => {
-            if (a.canvas !== b.canvas) return a.canvas - b.canvas;
-            const y1 = parseInt(a.xywh?.[1] || 0);
-            const y2 = parseInt(b.xywh?.[1] || 0);
-            return y1 - y2;
-        });
-    }
-
     function buildImageScatter(doc1, doc2, pairs) {
-        const images1 = sortImagesByPosition(doc1.images || []);
-        const images2 = sortImagesByPosition(doc2.images || []);
+        const images1 = doc1.images || [];
+        const images2 = doc2.images || [];
 
         if (!images1.length || !images2.length) return null;
 
@@ -460,10 +532,11 @@
                 const [mx, my] = d3.pointer(event, g.node());
                 const p1 = Math.floor(mx / scatterCellSize) + 1;
                 const p2 = Math.floor(my / scatterCellSize) + 1;
-                if (p1 >= 1 && p1 <= maxPage1 && p2 >= 1 && p2 <= maxPage2) {
-                    const point = pointMap.get(`${p1}-${p2}`);
-                    handlePageClick(p1, p2, doc1, doc2, point?.score);
-                }
+
+                if (p1 < 1 || p1 > maxPage1 || p2 < 1 || p2 > maxPage2) return;
+
+                navState = {idx1: p1 - 1, idx2: p2 - 1};
+                modalElement?.classList.add('is-active');
             });
 
         g.selectAll('.cell')
@@ -626,10 +699,11 @@
                 const idx1 = Math.floor(mx / scatterCellSize);
                 const idx2 = Math.floor(my / scatterCellSize);
                 if (idx1 >= 0 && idx1 < images1.length && idx2 >= 0 && idx2 < images2.length) {
-                    const pair = pairScores.get(`${idx1}-${idx2}`);
-                    handleImageClick(images1[idx1], images2[idx2], doc1, doc2, pair?.score);
+                    navState = {idx1, idx2};
+                    modalElement?.classList.add('is-active');
                 }
             });
+
 
         const cellData = Array.from(pairScores.values());
         g.selectAll('.cell')
@@ -670,18 +744,6 @@
         return boundaries;
     }
 
-    function handlePageClick(page1, page2, doc1, doc2, score) {
-        clickedPage = {page1, page2, doc1, doc2, score};
-        clickedImages = null;
-        modalElement?.classList.add('is-active');
-    }
-
-    function handleImageClick(img1, img2, doc1, doc2, score) {
-        clickedImages = {img1, img2, doc1, doc2, score};
-        clickedPage = null;
-        modalElement?.classList.add('is-active');
-    }
-
     function startDrag(e) {
         isDragging = true;
         e.preventDefault();
@@ -698,15 +760,6 @@
         isDragging = false;
     }
 
-    function getPageImageUrl(doc, pageNum) {
-        const size = "full";
-        return refToIIIF(`wit${doc.witnessId}_${doc.digitizationRef}_${String(pageNum).padStart(doc.zeros, '0')}`, "full", size);
-    }
-
-    function getRegionImageUrl(img) {
-        return refToIIIF(img.ref, img.xywh?.join(','), "full");
-    }
-
     onMount(() => {
         if (container) {
             containerWidth = container.offsetWidth;
@@ -720,6 +773,7 @@
         window.addEventListener('mouseup', stopDrag);
         window.addEventListener('touchmove', onDrag);
         window.addEventListener('touchend', stopDrag);
+        window.addEventListener('keydown', handleKeydown);
     });
 
     onDestroy(() => {
@@ -728,23 +782,8 @@
         window.removeEventListener('mouseup', stopDrag);
         window.removeEventListener('touchmove', onDrag);
         window.removeEventListener('touchend', stopDrag);
+        window.removeEventListener('keydown', handleKeydown);
     });
-
-    $: modalData = clickedPage ? {
-        items: [1, 2].map(nb => ({
-            doc: clickedPage[`doc${nb}`],
-            label: clickedPage[`page${nb}`],
-            imgUrl: getPageImageUrl(clickedPage[`doc${nb}`], clickedPage[`page${nb}`])
-        })),
-        score: clickedPage.score
-    } : clickedImages ? {
-        items: [['img1', 'doc1'], ['img2', 'doc2']].map(([imgKey, docKey]) => ({
-            doc: clickedImages[docKey],
-            label: clickedImages[imgKey].canvas,
-            imgUrl: getRegionImageUrl(clickedImages[imgKey])
-        })),
-        score: clickedImages.score
-    } : null;
 
     $: if (matrixContainer && matrixData.docs.length) renderMatrix();
     $: if (scatterContainer && scatterData) renderScatter();
@@ -783,7 +822,7 @@
                             </div>
                         </div>
                         <label title={i18n('normalization')} class="checkbox is-size-7">
-                            <input type="checkbox" checked={$normalizeByPages} on:change={e => normalizeByPages.set(e.target.checked)}>
+                            <input type="checkbox" checked={$normalizeByImages} on:change={e => normalizeByImages.set(e.target.checked)}>
                             {i18n('normalize')}
                         </label>
                     </div>
@@ -846,7 +885,7 @@
                 <table class="table is-fullwidth p-3 has-text-centered">
                     <thead>
                         <tr>
-                            {#each modalData.items as item}
+                            {#each modalData.items as item, _}
                                 <th class="doc-title">
                                     <span style="color:{item.doc.color}">●</span>
                                     <strong>{item.doc.title}</strong>
@@ -863,12 +902,38 @@
                             </tr>
                         {/if}
                         <tr>
-                            {#each modalData.items as item}
-                                <td>
-                                    <p class="is-size-7 has-text-grey mb-3">{i18n('page')} {item.label}</p>
-                                    <figure class="image">
-                                        <img src={item.imgUrl} alt="Page {item.label}" style="border-radius: 5px;"/>
-                                    </figure>
+                            {#each modalData.items as item, i}
+                                <td class="modal-cell">
+                                    <p class="is-size-7 has-text-grey mb-2">{item.label}</p>
+                                    <div class="image-nav-container">
+                                        <button class="nav-btn {i !== 0 ? 'nav-up' : 'nav-left'}"
+                                                on:click={() => navigate(i !== 0 ? 'vertical' : 'horizontal', -1)}>
+                                            {#if i !== 0}
+                                                <span class="icon is-small p-0">
+                                                    <i class="fas fa-chevron-up"></i>
+                                                </span>
+                                            {:else}
+                                                <span class="icon is-small p-0">
+                                                    <i class="fas fa-chevron-left"></i>
+                                                </span>
+                                            {/if}
+                                        </button>
+                                        <figure class="image">
+                                            <img src={item.imgUrl} alt="{scatterData?.mode === 'image' ? 'Image' : 'Page'} {item.label}" class="img-preview"/>
+                                        </figure>
+                                        <button class="nav-btn {i !== 0 ? 'nav-down' : 'nav-right'}"
+                                                on:click={() => navigate(i !== 0 ? 'vertical' : 'horizontal', 1)}>
+                                            {#if i !== 0}
+                                                <span class="icon is-small">
+                                                    <i class="fas fa-chevron-down"></i>
+                                                </span>
+                                            {:else}
+                                                <span class="icon is-small">
+                                                    <i class="fas fa-chevron-right"></i>
+                                                </span>
+                                            {/if}
+                                        </button>
+                                    </div>
                                 </td>
                             {/each}
                         </tr>
@@ -982,5 +1047,38 @@
         width: 50%;
         text-align: center !important;
         vertical-align: middle;
+    }
+
+    .modal-cell {
+        width: 50%;
+        vertical-align: middle;
+    }
+
+    .image-nav-container {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 1em;
+        margin-bottom: 1em;
+    }
+
+    .nav-btn {
+        position: absolute;
+        color: var(--bulma-link);
+        cursor: pointer;
+        z-index: 1;
+    }
+
+    .nav-up { top: 0; }
+    .nav-down { bottom: 0; }
+    .nav-left { left: 0; top: 50%; transform: translateY(-50%); }
+    .nav-right { right: 0; top: 50%; transform: translateY(-50%); }
+
+    .img-preview {
+        border-radius: 5px;
+        max-height: 600px;
+        max-width: 90%;
+        margin: 2em auto 2em auto;
     }
 </style>
