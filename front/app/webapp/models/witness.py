@@ -274,7 +274,11 @@ class Witness(AbstractSearchableModel):
         return f"wit{self.id}"
 
     def get_page(self):
-        return f"{self.nb_pages}" if self.nb_pages else "-"
+        return (
+            f"{self.nb_pages} {'ff' if self.page_type == FOL_ABBR else 'pp'}."
+            if self.nb_pages
+            else "-"
+        )
 
     def get_notes(self):
         return f"{self.notes}" if self.notes else "-"

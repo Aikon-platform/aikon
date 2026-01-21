@@ -142,7 +142,7 @@ class Content(models.Model):
         content = {}
 
         if self.date_max and self.date_min:
-            content[get_name("dates")] = self.get_dates()
+            content[get_name("dates")] = format_dates(self.date_min, self.date_max)
 
         if place := self.place:
             content[get_name("place")] = place.__str__()
@@ -209,4 +209,4 @@ class Content(models.Model):
         validate_dates(self.date_min, self.date_max)
 
     def get_dates(self):
-        return format_dates(self.date_min, self.date_max)
+        return self.date_min or None, self.date_max or None
