@@ -13,7 +13,9 @@
     }
 
     function manifestLabel(url) {
-        const manifestId = url.match(/man(\d+)/)[1];
+        const manifest = url.match(/man(\d+)/);
+        const manifestId = manifest ? manifest[1] : "?";
+
         const regionsExtId = url.match(/anno(\d+)/);
         const regionsExtNumber = regionsExtId ? regionsExtId[1] : null;
 
