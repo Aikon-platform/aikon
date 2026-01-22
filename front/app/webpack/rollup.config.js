@@ -54,7 +54,12 @@ export default [
             }),
             commonjs(),
             !production && livereload('public'),
-            production && terser()
+            production && terser(),
+            del({
+                targets: ["../webapp/static/svelte/*"],
+                force: true
+            })  // with ES directory exports, filenames end with a hash and thus new files are created at each build rather than overwriting the old files => delete the whole `svelte/`  dir before running rollup
+
         ],
         watch: {
             clearScreen: false
@@ -114,11 +119,7 @@ export default [
             commonjs(),
             !production && livereload('public'),
             production && terser(),
-            del({
-                targets: ["../webapp/static/svelte/*"],
-                force: true
-            })  // with ES directory exports, filenames end with a hash and thus new files are created at each build rather than overwriting the old files => delete the whole `svelte/`  dir before running rollup
-        ],
+            ],
         watch: {
             clearScreen: false
         }
