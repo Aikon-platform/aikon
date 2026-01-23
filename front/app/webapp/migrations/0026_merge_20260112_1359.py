@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("webapp", "0024_documentset_users_id"),
+        ("webapp", "0024_alter_regionpair_category_x"),
         ("webapp", "0025_rename_users_id_documentset_shared_with"),
     ]
 

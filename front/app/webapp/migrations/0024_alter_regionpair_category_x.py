@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("webapp", "0028_series_shared_with"),
+        ("webapp", "0023_regionpair_propagation_delete"),
     ]
 
     operations = [
