@@ -48,6 +48,7 @@ class ContentInline(nested_admin.NestedStackedInline):
             return (
                 request.user.is_superuser
                 or obj.user == request.user
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
 
@@ -56,6 +57,7 @@ class ContentInline(nested_admin.NestedStackedInline):
             return (
                 obj.user == request.user
                 or obj.is_public
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
         else:
@@ -63,7 +65,12 @@ class ContentInline(nested_admin.NestedStackedInline):
 
     def has_add_permission(self, request, obj=None):
         if obj and obj.user:
-            return obj.user == request.user or is_in_group(request.user, obj.user)
+            return (
+                obj.user == request.user
+                or is_in_group(request.user, obj.user)
+                or obj.shared_with.filter(pk=request.user.pk).exists()
+            )
+
         else:
             return True
 
@@ -87,6 +94,7 @@ class ContentWorkInline(nested_admin.NestedStackedInline):
             return (
                 request.user.is_superuser
                 or obj.user == request.user
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
 
@@ -95,6 +103,7 @@ class ContentWorkInline(nested_admin.NestedStackedInline):
             return (
                 obj.user == request.user
                 or obj.is_public
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
         else:
@@ -105,6 +114,7 @@ class ContentWorkInline(nested_admin.NestedStackedInline):
             return (
                 obj.user == request.user
                 or obj.is_public
+                or obj.shared_with.filter(pk=request.user.pk).exists()
                 or is_in_group(request.user, obj.user)
             )
         else:

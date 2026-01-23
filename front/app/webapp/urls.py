@@ -213,7 +213,6 @@ urlpatterns += [
 # ADMIN VIEWS
 urlpatterns += [
     path(f"{APP_NAME}/witness/", WitnessList.as_view(), name="witness_list"),
-    path(f"{APP_NAME}/witness/<int:id>/", WitnessView.as_view(), name="witness_view"),
     # path(f"{APP_NAME}/witness/add/", WitnessCreate.as_view(), name="witness_create"),
     path(
         f"{APP_NAME}/witness/<int:id>/change/",
@@ -326,6 +325,16 @@ urlpatterns += [
         export_docset,
         name="export_docset",
     ),
+    path(
+        f"{APP_NAME}/witness/select",
+        witness_select_fields,
+        name="witness_select_fields",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/update",
+        witness_update,
+        name="witness_update",
+    ),
 ]
 
 # SEARCH
@@ -338,6 +347,7 @@ urlpatterns += [
     path("search/documentset/", search_document_set, name="search-document-sets"),
     path("search/digitization/", search_digitizations, name="search-digitizations"),
     path("search/regions/", search_regions, name="search-regions"),
+    path("search/user/", search_user, name="search-user"),
     path("search/json-generation/", json_regeneration, name="regenerate_json"),
 ]
 

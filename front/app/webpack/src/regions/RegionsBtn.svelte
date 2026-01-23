@@ -6,7 +6,9 @@
     const witness = getContext('witness');
     export let baseUrl = `${window.location.origin}${window.location.pathname}`;
     export let currentRegionId;
-    export let currentLayout;
+    export let activeTab;
+
+    const allRegionsUrl = baseUrl.replace(/\/\d+\/?$/, "");
 
     async function deleteRegions() {
         const confirmed = await showMessage(
@@ -71,18 +73,22 @@
 
 <div>
     {#if currentRegionId}
-        {#if ["all", "page"].includes(currentLayout)}
+        {#if ["all", "page"].includes(activeTab) }
+            <a href="{allRegionsUrl}" class="tag is-dark mr-3 is-rounded">All regions</a>
             <button on:click={deleteRegions} class="tag is-danger">
-                {appLang === "en" ? "Delete regions record" : "Supprimer l'intégralité des régions"}
+                {appLang === "en" ? "Delete regions extraction record" : "Supprimer l'extraction de régions"}
             </button>
-        {:else if currentLayout === "similarity"}
+        {:else if activeTab === "similarity"}
             <button on:click={deleteSimilarity} class="tag is-danger">
                 {appLang === "en" ? "Delete all regions similarity" : "Supprimer toutes les similarités du document"}
             </button>
         {/if}
     {:else}
-        {#each witness.regions as regionId}
-            <a href="{baseUrl}{regionId}" class="tag is-dark mr-3 is-rounded">Regions #{regionId}</a>
-        {/each}
+        {#if ["all", "page", "similarity"].includes(activeTab) }
+            {#each witness.regions as regionId}
+                <a href="{baseUrl}{regionId}" class="tag is-dark mr-3 is-rounded">Regions extraction #{regionId}</a>
+            {/each}
+            <!--TODO add NEW REGIONS BUTTON (to create empty region in order to launch new automatic extraction)-->
+        {/if}
     {/if}
 </div>
