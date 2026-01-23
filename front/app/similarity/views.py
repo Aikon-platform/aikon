@@ -3,9 +3,9 @@ import re
 from collections import OrderedDict
 from typing import List, Set
 
-from django.db.models import Q, Count, F
-from django.http import JsonResponse
+from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404
+from django.http import StreamingHttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -15,7 +15,14 @@ from django.contrib.auth.decorators import user_passes_test
 from app.similarity.models.region_pair import RegionPair, RegionPairTuple
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
-from app.webapp.utils.functions import sort_key, truncate_char
+from app.webapp.utils.functions import (
+    sort_key,
+    truncate_char,
+    safe_float,
+    safe_int,
+    parse_list,
+    safe_bool,
+)
 from app.webapp.utils.logger import log
 from app.similarity.utils import (
     send_request,
@@ -33,6 +40,9 @@ from app.similarity.utils import (
     filter_pairs,
     retrieve_pair,
     get_or_create_pair,
+    SimilarityType,
+    build_pairs_query,
+    stream_pairs_ndjson,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
@@ -314,9 +324,8 @@ def get_propagated_matches(
                 regions_id_2=regions_from_img(p_img),
                 category=None,
                 category_x=[],
-                is_manual=False,
                 score=None,
-                similarity_type=3,
+                similarity_type=SimilarityType.PROPAGATED,
             ).get_info()
             for p_img in _propagated
             if p_img not in exact_matches_by_regions
@@ -382,7 +391,6 @@ def get_regions(img_1, img_2, wid, rid):
 
 
 def get_regions_title_by_ref(request, wid, rid=None, regions_ref: str | None = None):
-    # NOT USED anymore
     try:
         regions = Regions.objects.filter(json__ref__startswith=regions_ref).first()
         if regions is None:
@@ -416,7 +424,7 @@ def add_region_pair(request, wid, rid=None):
         if not (validate_img_ref(q_img) and validate_img_ref(s_img)):
             raise ValidationError("Invalid image string format")
 
-        img_1, img_2 = sorted([q_img, s_img], key=sort_key)
+        img_1, img_2 = RegionPair.order_pair((q_img, s_img))
         img_1, img_2 = add_jpg(img_1), add_jpg(img_2)
 
         # todo use rid if defined?
@@ -427,8 +435,7 @@ def add_region_pair(request, wid, rid=None):
         try:
             region_pair = RegionPair.objects.get(img_1=img_1, img_2=img_2)
             created = False
-            region_pair.similarity_type = 2
-            region_pair.is_manual = True
+            region_pair.similarity_type = SimilarityType.MANUAL
 
             if region_pair.score == 0 or region_pair.score == 0.0:
                 region_pair.score = None
@@ -442,8 +449,7 @@ def add_region_pair(request, wid, rid=None):
                 regions_id_1=regions_1,
                 regions_id_2=regions_2,
                 score=None,
-                is_manual=True,
-                similarity_type=2,
+                similarity_type=SimilarityType.MANUAL,
                 category_x=[request.user.id],
             )
             created = True
@@ -532,10 +538,10 @@ def save_category(request):
 
         # img_1 and img_2 are sorted by witness ID.
         # regions_ids are retrieved programmatically instead of from `data` because retrieving from `data` may lead to inconsistencies (regions not aligned with their image), especially in the case of propagated regions.
-        img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
+        img_1, img_2 = RegionPair.order_pair((data.get("img_1"), data.get("img_2")))
         category = data.get("category")
         category = int(data.get("category")) if category else None
-        similarity_type = int(data.get("similarity_type", 1))
+        similarity_type = int(data.get("similarity_type", SimilarityType.MANUAL))
 
         query_filter = {
             "img_1": img_1,
@@ -545,7 +551,7 @@ def save_category(request):
         }
 
         to_delete = (
-            similarity_type == 3 and category == None
+            similarity_type == SimilarityType.PROPAGATED and category is None
         )  # propagation without category => delete
 
         if to_delete:
@@ -578,7 +584,6 @@ def save_category(request):
                 "regions_id_1": regions_id_1,
                 "regions_id_2": regions_id_2,
                 "category": category,
-                "is_manual": data.get("is_manual", False),
                 "similarity_type": similarity_type,
                 "category_x": [],
             },
@@ -613,7 +618,7 @@ def exact_match(request):
 
     try:
         data = json.loads(request.body)
-        img_1, img_2 = sorted([data.get("img_1"), data.get("img_2")], key=sort_key)
+        img_1, img_2 = RegionPair.order_pair((data.get("img_1"), data.get("img_2")))
         regions_id_1, regions_id_2 = [
             data.get("regions_id_1"),
             data.get("regions_id_2"),
@@ -708,6 +713,7 @@ def exact_match_batch(request):
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
+        log("[exact_match_batch] Exception encountered", e)
         return JsonResponse({"error": str(e)}, status=500)
 
 
@@ -721,8 +727,10 @@ def uncategorize_pair_batch(request):
         pairs_to_update = []
         for pair_data in data.get("pairs", []):
             pair, _ = get_or_create_pair(
-                pair_data["img_1"],
-                pair_data["img_2"],
+                pair_data.get("img_1"),
+                pair_data.get("img_2"),
+                pair_data.get("regions_id_1", None),
+                pair_data.get("regions_id_2", None),
                 create=False,
             )
             if pair and pair.category is not None:
@@ -846,7 +854,7 @@ def remove_incorrect_pairs(request, mismatched=False, duplicate=False, swapped=T
                     img_1=pair.img_2, img_2=pair.img_1
                 ).first()
                 if reverse_pair:
-                    sorted_imgs = sorted([pair.img_1, pair.img_2], key=sort_key)
+                    sorted_imgs = RegionPair.order_pair((pair.img_1, pair.img_2))
                     if pair.img_1 != sorted_imgs[0]:
                         pair.delete()
                     else:
@@ -916,11 +924,11 @@ def get_regions_pairs(request, wid, rid=None):
         pairs = filter_pairs(
             regions_ids,
             exclusive=(witness_ids or regions_ids),
-            min_score=request.GET.get("minScore", None),
-            max_score=request.GET.get("maxScore", None),
-            topk=request.GET.get("topk", None),
-            exclude_self=request.GET.get("excludeSelf", "false").lower() == "true",
-            categories=request.GET.get("category", []),
+            min_score=safe_float(request.GET.get("minScore")),
+            max_score=safe_float(request.GET.get("maxScore")),
+            topk=safe_int(request.GET.get("topk")),
+            exclude_self=safe_bool(request.GET.get("excludeSelf")) or False,
+            categories=parse_list(request.GET.get("category")) or [],
         )
         return JsonResponse(pairs, status=200, safe=False)
     except Exception as e:
@@ -943,23 +951,65 @@ def get_document_set_pairs(request, dsid=None):
             {"error": f"No regions found for this document set #{dsid}"}, status=400
         )
 
-    categories = request.GET.get("category", None)
-    try:
-        if categories:
-            categories = [int(c.strip()) for c in categories.split(",")]
-    except (TypeError, ValueError):
-        categories = None
-
     try:
         pairs = filter_pairs(
             regions_ids,
             exclusive=True,
-            min_score=request.GET.get("minScore", None),
-            max_score=request.GET.get("maxScore", None),
-            topk=request.GET.get("topk", None),
-            exclude_self=request.GET.get("excludeSelf", "false").lower() == "true",
-            categories=categories,
+            min_score=safe_float(request.GET.get("minScore")),
+            max_score=safe_float(request.GET.get("maxScore")),
+            topk=safe_int(request.GET.get("topk")),
+            exclude_self=safe_bool(request.GET.get("excludeSelf")) or False,
+            categories=parse_list(request.GET.get("category")),
         )
         return JsonResponse(pairs, status=200, safe=False)
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
+def stream_document_set_pairs(request, dsid=None):
+    """
+    Streams pairs as NDJSON
+
+    Query params:
+        category: comma-separated category IDs (0 = uncategorized)
+        minScore, maxScore: score range filter
+        topk: limit results
+        excludeSelf: exclude same-document pairs
+        compress: if 'true', return gzip-compressed response
+    """
+    if dsid is None:
+        return JsonResponse({"error": "No document set id provided"}, status=400)
+
+    try:
+        document_set = DocumentSet.objects.get(id=dsid)
+    except Exception:
+        return JsonResponse(
+            {"error": f"Document set #{dsid} does not exist"}, status=400
+        )
+
+    regions_ids = document_set.get_regions(only_ids=True)
+    if not regions_ids:
+        return JsonResponse(
+            {"error": f"No regions found for document set #{dsid}"}, status=400
+        )
+
+    params = {
+        "categories": parse_list(request.GET.get("category")),
+        "min_score": safe_float(request.GET.get("minScore")),
+        "max_score": safe_float(request.GET.get("maxScore")),
+        "topk": safe_int(request.GET.get("topk")),
+        "exclude_self": safe_bool(request.GET.get("excludeSelf")) or False,
+    }
+
+    sql, sql_params = build_pairs_query(regions_ids, **params)
+
+    response = StreamingHttpResponse(
+        stream_pairs_ndjson(sql, sql_params), content_type="application/x-ndjson"
+    )
+
+    # Nginx streaming headers
+    response["X-Accel-Buffering"] = "no"
+    response["Cache-Control"] = "no-cache, no-store"
+    response["X-Content-Type-Options"] = "nosniff"
+
+    return response

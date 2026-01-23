@@ -151,9 +151,8 @@ class Logger:
 
         self.logger.error(error_msg)
 
-    def log(self, *msg: Any, msg_type: Optional[str] = None):
+    def log(self, *msg: Any, msg_type: Optional[str] = "white"):
         """Log a message with a given type."""
-        msg_type = msg_type or random.choice(list(self.COLORS.keys()))
         self.logger.info(self.format_message(*msg, msg_type=msg_type))
 
     def warning(self, *msg: Any):

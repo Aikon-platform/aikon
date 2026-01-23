@@ -87,9 +87,12 @@ def launch_task(treatment):
         witnesses = treatment.get_witnesses()
         treatment.start_task(witnesses)
     except Exception as e:
+        from app.webapp.utils.logger import log
+
+        log("Error when starting the task", e)
         treatment.on_task_error(
             {
-                "error": f"Error when retrieving documents from set: {e}",
+                "error": f"Error when starting the task: {e}",
                 "notify": treatment.notify_email,
             },
         )

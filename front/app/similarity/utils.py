@@ -1,4 +1,3 @@
-import hashlib
 import json
 import os
 import re
@@ -12,21 +11,24 @@ import requests
 from itertools import combinations_with_replacement
 
 from pathlib import Path
-from django.db import transaction
+from django.db import transaction, connection
 from django.db.models import Q, F
 from django.core.cache import cache
 
 from app.similarity.const import SCORES_PATH
 from app.config.settings import APP_URL, APP_NAME
 from app.similarity.models.region_pair import RegionPair, RegionPairTuple
+from app.similarity.models.similarity_parameters import (
+    SimilarityParameters,
+    generate_hash,
+)
 from app.similarity.tasks import delete_api_similarity
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
-from app.webapp.utils.functions import sort_key, delete_path
+from app.webapp.utils.functions import delete_path, sort_key
 from app.webapp.utils.logger import log
-from app.webapp.views import check_ref
 from config.settings import APP_LANG
 
 
@@ -50,21 +52,41 @@ class SimilarityCategory(IntEnum):
 ################################################################
 
 
-def prepare_request(witnesses, treatment_id):
+def prepare_request(witnesses, treatment_id, parameters=None):
+    """
+    Prepare similarity request, excluding already computed pairs.
+    """
+    doc_refs = get_doc_refs_from_records(witnesses)
+
+    if not doc_refs:
+        raise ValueError(
+            "No documents with extracted regions for similarity computation"
+            if APP_LANG == "en"
+            else "Aucun document avec des régions extraites pour le calcul de similarité"
+        )
+
+    # Check existing pairs if parameters provided
+    skip_pairs = []
+    if parameters:
+        all_pairs = {
+            RegionPair.order_pair((r1, r2), as_string=True)
+            for r1, r2 in combinations_with_replacement(set(doc_refs), 2)
+        }
+        existing = get_existing_pairs(doc_refs, parameters)
+        if existing and existing == all_pairs:
+            return {
+                "message": "All similarity pairs already computed for these parameters"
+            }
+
+        skip_pairs = list(existing)
+
     return tasking.prepare_request(
         witnesses,
         treatment_id,
         prepare_document,
         "similarity",
-        {
-            # NOTE api parameters are added in similarity.forms.get_api_parameters
-        },
+        {**(parameters or {}), "skip_pairs": skip_pairs},
     )
-
-
-def generate_hash(params):
-    serialized = json.dumps(params, sort_keys=True)
-    return hashlib.sha256(serialized.encode()).hexdigest()[:8]
 
 
 def process_results(data, completed=True):
@@ -108,6 +130,9 @@ def process_results(data, completed=True):
     """
     from app.similarity.tasks import process_similarity_file
 
+    log(f"[process_results] Received data", msg_type="cyan")
+    log(data, msg_type="cyan")
+
     output = data.get("output", {})
     if not data or not output:
         log("No similarity results to download")
@@ -127,21 +152,24 @@ def process_results(data, completed=True):
         if regions_ref_pair == "dataset":
             # do not index scores for the entire set of document pairs (used in AIKON-demo)
             continue
+        regions_ref_pair = RegionPair.order_pair(regions_ref_pair, as_string=True)
 
         try:
             response = requests.get(score_url, stream=True)
             response.raise_for_status()
             json_content = response.json()
 
-            param_hash = generate_hash(json_content.get("parameters", {}))
+            params = json_content.get("parameters", {})
+            param_hash = SimilarityParameters.get_or_create_from_params(params)
+
             score_file = Path(f"{SCORES_PATH}/{regions_ref_pair}/{param_hash}.json")
             os.makedirs(f"{SCORES_PATH}/{regions_ref_pair}", exist_ok=True)
             if score_file.exists():
-                # This check should be made when starting the task not now
+                # This should be avoided by get_existing_pairs > skip_pairs in prepare_request
                 log(
-                    f"[process_results] File {score_file} already exists, overriding its content"
+                    f"[process_results] File {score_file} already exists, skipping download"
                 )
-                # continue
+                continue
 
             with open(score_file, "wb") as f:
                 json_content["result_url"] = score_url
@@ -254,6 +282,57 @@ def json_to_scores_tuples(json_scores):
     ]
 
 
+def get_doc_refs_from_records(records) -> list[str]:
+    """Extract all document refs from records (Witness/Digitization/Regions)."""
+    refs = []
+    for record in records:
+        regions = record.get_regions() if hasattr(record, "get_regions") else [record]
+        refs.extend(region.get_ref() for region in regions if regions)
+    return refs
+
+
+def get_existing_pairs(doc_refs: list[str], parameters: dict) -> set[str]:
+    """
+    Check which document pairs already have similarity results for given parameters.
+    Returns set of pair identifiers like "ref1-ref2" (sorted alphabetically).
+    """
+    # Reproduce API format to generate hash
+    params = {
+        "algorithm": str(parameters.get("algorithm", "cosine")),
+        "topk": int(parameters.get("cosine_n_filter", 20)),
+        "feat_net": str(parameters.get("feat_net", "dino_deitsmall16_pretrain")),
+        "segswap_prefilter": bool(parameters.get("segswap_prefilter", True)),
+        "segswap_n": int(parameters.get("segswap_n", 10)),
+        "raw_transpositions": ["none"],
+    }
+
+    param_hash = generate_hash(params)
+    log(f"[get_existing_pairs] Checking existing pairs for hash {param_hash}")
+
+    existing = set()
+    for ref1, ref2 in combinations_with_replacement(sorted(set(doc_refs)), 2):
+        for pair_ref in [f"{ref1}-{ref2}", f"{ref2}-{ref1}"]:
+            if (Path(SCORES_PATH) / pair_ref / f"{param_hash}.json").exists():
+                existing.add(pair_ref)
+
+            # if (Path(SCORES_PATH) / pair_ref).exists():
+            #     for file in os.listdir(Path(SCORES_PATH) / pair_ref):
+            #         if file.startswith(param_hash):
+            #             continue
+            #         with open(Path(SCORES_PATH) / pair_ref / file, "rb") as f:
+            #             content = orjson.loads(f.read())
+            #             log(
+            #                 {
+            #                     "hash/file": f"{param_hash}/{file}",
+            #                     "parameters": params,
+            #                     "file_params": content.get("parameters", {}),
+            #                 },
+            #                 msg_type="yellow",
+            #             )
+
+    return existing
+
+
 def score_file_to_db(file_path):
     """
     Load scores from a .json file and add all of its pairs in the RegionPair table
@@ -261,31 +340,33 @@ def score_file_to_db(file_path):
     """
     p = Path(file_path)
     pair_scores = load_scores(p)
-    pair_ref, algo = p.parent.name, p.stem
+    pair_ref, param_hash = p.parent.name, p.stem
     if not pair_scores or not pair_ref:
         return False
 
-    ref_1, ref_2 = sorted(pair_ref.split("-"), key=sort_key)
-    # TODO verify that regions_id exists?
+    ref_1, ref_2 = RegionPair.order_pair(pair_ref)
+    rid1 = int(ref_1.split("_anno")[1])
+    rid2 = int(ref_2.split("_anno")[1])
 
     pairs_to_update = []
     try:
         for score, img1, img2 in pair_scores:
-            img1, img2 = sorted([img1, img2], key=sort_key)
             score = float(score)
-            if score > 0:
-                pairs_to_update.append(
-                    RegionPair(
-                        img_1=img1,
-                        img_2=img2,
-                        score=score,
-                        regions_id_1=ref_1.split("_anno")[1],
-                        regions_id_2=ref_2.split("_anno")[1],
-                        is_manual=False,
-                        similarity_type=1,
-                        category_x=[],
-                    )
+            if score <= 0:
+                continue
+
+            img1, img2 = RegionPair.order_pair((img1, img2))
+            pairs_to_update.append(
+                RegionPair(
+                    img_1=img1,
+                    img_2=img2,
+                    score=score,
+                    regions_id_1=rid1,
+                    regions_id_2=rid2,
+                    similarity_type=1,
+                    similarity_hash=param_hash,  # e.g. '2c53284a', 'efaca344' generated with generate_hash
                 )
+            )
     except ValueError as e:
         log(f"[score_file_to_db] error while processing {pair_ref}", e)
         return False
@@ -295,15 +376,13 @@ def score_file_to_db(file_path):
         with transaction.atomic():
             RegionPair.objects.bulk_update_or_create(
                 pairs_to_update,
-                [
+                update_fields=[
                     "score",
                     "regions_id_1",
                     "regions_id_2",
-                    "is_manual",
                     "similarity_type",
                 ],
-                ["img_1", "img_2"],
-                "score",
+                match_fields=["img_1", "img_2", "similarity_hash"],
             )
     except Exception as e:
         log(f"[score_file_to_db] error while adding pairs to db {pair_ref}", e)
@@ -391,27 +470,6 @@ def get_region_pairs_with(q_img, query_regions_ids, target_regions_ids):
         query &= ~Q(regions_id_1=F("regions_id_2"))
 
     return list(RegionPair.objects.filter(query))
-
-
-def get_pairs_for_regions(unfiltered_pairs, q_rid, regions_ids):
-    """For a given regions identifier, filters a list of pairs that relates to it, then
-    NOT USED
-    keeps only those pertaining to the selected comparison regions.
-
-    :param unfiltered_pairs: list of RegionPair objects
-    :param q_rid: in - id of the Regions object currently analyzed
-    :param regions_ids: list[int] - ids of the Regions objects to be linked by pairs to the Regions identified by q_rid
-    :return: list of RegionPair objects with one end from the Regions  identifier by q_rid and one end from any Regions identified by regions_ids
-    """
-    pairs = [
-        pair
-        for pair in unfiltered_pairs
-        if pair.regions_id_1 == q_rid or pair.regions_id_2 == q_rid
-    ]
-    if q_rid not in regions_ids:
-        pairs = [pair for pair in pairs if pair.regions_id_1 != pair.regions_id_2]
-
-    return pairs
 
 
 def delete_pairs_with_regions(regions_id: int):
@@ -508,7 +566,7 @@ def get_best_pairs(
     export_pairs_no_score = []  # pairs for export without a score
 
     for pair in region_pairs:
-        # [score, img1, img2, regions_id1, regions_id2, category, is_manual, similarity_type]
+        # [score, img1, img2, regions_id1, regions_id2, category, category_x, similarity_type, similarity_hash]
         pair_data = pair.get_info(q_img)
         if pair_data[2] in added_images:
             # NOTE: first duplicate wins. Higher-priority pairs (e.g., manual) appearing later
@@ -526,10 +584,8 @@ def get_best_pairs(
         if pair.category in excluded_categories:
             continue
 
-        if (
-            pair.is_manual
-            or pair.similarity_type == SimilarityType.MANUAL
-            or (pair.category_x and user_id in pair.category_x)
+        if pair.similarity_type == SimilarityType.MANUAL or (
+            pair.category_x and user_id in pair.category_x
         ):
             manual_pairs.append(pair_data)
         elif pair.similarity_type == SimilarityType.PROPAGATED:
@@ -582,16 +638,20 @@ def doc_pairs(doc_ids: list):
 
 
 def check_computed_pairs(regions_refs):
+    # TODO incorrect with score files in json format located in different subfolders
+    # TODO change that
     sim_files = os.listdir(SCORES_PATH)
     regions_to_send = []
     for pair in doc_pairs(regions_refs):
-        if f"{'-'.join(sorted(pair))}.npy" not in sim_files:
+        if f"{RegionPair.order_pair(pair, as_string=True)}.npy" not in sim_files:
             regions_to_send.extend(pair)
     # return list of unique regions_ref involved in one of the pairs that are not already computed
     return list(set(regions_to_send))
 
 
 def get_computed_pairs(regions_ref):
+    # TODO incorrect with score files in json format located in different subfolders
+    # TODO change that
     return [
         pair_file.replace(".npy", "")
         for pair_file in os.listdir(SCORES_PATH)
@@ -600,44 +660,9 @@ def get_computed_pairs(regions_ref):
 
 
 def get_all_pairs():
+    # TODO incorrect with score files in json format located in different subfolders
+    # TODO change that
     return [pair_file.replace(".npy", "") for pair_file in os.listdir(SCORES_PATH)]
-
-
-def get_regions_ref_in_pairs(pairs):
-    return list(set([ref for pair in pairs for ref in pair.split("-")]))
-
-
-def get_compared_regions_refs(regions_ref):
-    refs = get_regions_ref_in_pairs(get_computed_pairs(regions_ref))
-    refs.remove(regions_ref)
-    return refs
-
-
-def get_compared_regions(regions: Regions):
-    refs = get_compared_regions_refs(regions.get_ref())
-    return [
-        region
-        for (passed, region) in [check_ref(ref, "Regions") for ref in refs]
-        if passed
-    ]
-
-
-def check_score_files(file_names):
-    from app.similarity.tasks import check_similarity_files
-
-    # TODO check similarity file content inside a celery task (task is empty)
-    check_similarity_files.delay(file_names)
-
-
-def load_similarity(pair):
-    try:
-        pair_scores = np.load(
-            Path(SCORES_PATH) / f"{'-'.join(sorted(pair))}.npy", allow_pickle=True
-        )
-        return pair, pair_scores
-    except FileNotFoundError as e:
-        log(f"[load_similarity] no score file for {pair}", e)
-        return pair, None
 
 
 def reset_similarity(regions: Regions):
@@ -760,8 +785,7 @@ def retrieve_pair(img1, img2, regions_id_1, regions_id_2, create=False):
             regions_id_1=regions_id_1,
             regions_id_2=regions_id_2,
             score=None,
-            is_manual=False,
-            similarity_type=1,
+            similarity_type=SimilarityType.AUTO,
             category_x=[],
         )
         return region_pair, "New region pair created"
@@ -769,7 +793,19 @@ def retrieve_pair(img1, img2, regions_id_1, regions_id_2, create=False):
     return None, "Region pair found but regions IDs do not match"
 
 
-def get_or_create_pair(img_1, img_2, rid_1, rid_2, create=True):
+def fix_img(img_ref: str) -> str:
+    # TODO fix: the img1 and img2 should be sent with region id ref as prefix
+    img_ref = img_ref if img_ref.endswith(".jpg") else f"{img_ref}.jpg"
+    if img_ref.startswith("wit"):
+        return img_ref
+    if "_wit" in img_ref:
+        return "wit" + img_ref.split("_wit", 1)[1]
+    log(f"[fix_img] probably wrong image ref: {img_ref}")
+    return img_ref
+
+
+def get_or_create_pair(img_1, img_2, rid_1=None, rid_2=None, create=True):
+    img_1, img_2 = fix_img(img_1), fix_img(img_2)
     if sort_key(img_2) < sort_key(img_1):
         img_1, img_2 = img_2, img_1
         rid_1, rid_2 = rid_2, rid_1
@@ -780,22 +816,23 @@ def get_or_create_pair(img_1, img_2, rid_1, rid_2, create=True):
         img_2=img_2,
     ).first()
 
+    is_rids = rid_1 is not None and rid_2 is not None
+
     if pair:
-        if pair.regions_id_1 not in [rid_1, rid_2] or pair.regions_id_2 not in [
-            rid_1,
-            rid_2,
-        ]:
-            log(
-                f"[get_or_create_pair] Pair regions ids ({pair.regions_id_1}-{pair.regions_id_2})"
-                f" do not match provided ids ({rid_1}-{rid_2})"
-            )
+        if is_rids:
+            rids = [rid_1, rid_2]
+            if pair.regions_id_1 not in rids or pair.regions_id_2 not in rids:
+                log(
+                    f"[get_or_create_pair] Pair regions ids ({pair.regions_id_1}-{pair.regions_id_2})"
+                    f" do not match provided ids ({rid_1}-{rid_2})"
+                )
         return pair, False
 
     if not create:
         return None, False
 
-    rid_1 = regions_from_img(img_1, candidate_rids=[rid_1, rid_2])
-    rid_2 = regions_from_img(img_2, candidate_rids=[rid_2, rid_1])
+    rid_1 = regions_from_img(img_1, candidate_rids=[rid_1, rid_2] if is_rids else None)
+    rid_2 = regions_from_img(img_2, candidate_rids=[rid_2, rid_1] if is_rids else None)
 
     return (
         RegionPair(
@@ -804,10 +841,79 @@ def get_or_create_pair(img_1, img_2, rid_1, rid_2, create=True):
             regions_id_1=rid_1,
             regions_id_2=rid_2,
             category=1,
-            similarity_type=3,
-            is_manual=True,
+            similarity_type=SimilarityType.PROPAGATED,
             score=None,
             category_x=[],
         ),
         True,
     )
+
+
+F_IMG1, F_IMG2, F_RID1, F_RID2, F_SCORE, F_CAT, F_CATX, F_SIMTYPE = range(8)
+
+GZIP_BATCH_SIZE = 1000
+
+
+def row_to_dict(row):
+    """Convert SQL row tuple to dict."""
+    return {
+        "img_1": row[F_IMG1],
+        "img_2": row[F_IMG2],
+        "regions_id_1": row[F_RID1],
+        "regions_id_2": row[F_RID2],
+        "score": row[F_SCORE],
+        "category": row[F_CAT],
+        "category_x": row[F_CATX] or [],
+        "similarity_type": row[F_SIMTYPE],
+    }
+
+
+def stream_pairs_ndjson(sql, params):
+    """Generator yielding one JSON line per pair."""
+    with connection.cursor() as cursor:
+        cursor.execute(sql, params)
+        for row in cursor:
+            yield json.dumps(row_to_dict(row), separators=(",", ":")) + "\n"
+
+
+def build_pairs_query(
+    regions_ids, categories, min_score, max_score, topk, exclude_self
+):
+    """Build raw SQL with proper filtering."""
+    conditions = ["regions_id_1 = ANY(%s)", "regions_id_2 = ANY(%s)"]
+    params = [list(regions_ids), list(regions_ids)]
+
+    if min_score is not None:
+        conditions.append("score >= %s")
+        params.append(min_score)
+
+    if max_score is not None:
+        conditions.append("score <= %s")
+        params.append(max_score)
+
+    if exclude_self:
+        conditions.append("regions_id_1 != regions_id_2")
+
+    if categories:
+        has_null = 0 in categories
+        real_cats = [c for c in categories if c != 0]
+
+        if has_null and real_cats:
+            conditions.append("(category = ANY(%s) OR category IS NULL)")
+            params.append(real_cats)
+        elif has_null:
+            conditions.append("category IS NULL")
+        elif real_cats:
+            conditions.append("category = ANY(%s)")
+            params.append(real_cats)
+
+    sql = f"""
+        SELECT img_1, img_2, regions_id_1, regions_id_2,
+               score, category, category_x, similarity_type
+        FROM webapp_regionpair
+        WHERE {" AND ".join(conditions)}
+        ORDER BY score DESC NULLS FIRST
+        {"LIMIT " + str(int(topk)) if topk else ""}
+    """
+
+    return sql, params
