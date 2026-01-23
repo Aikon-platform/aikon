@@ -37,7 +37,7 @@ class AbstractSearchableModel(models.Model):
     def get_absolute_view_url(self):
         raise NotImplementedError("Subclasses must implement this method")
 
-    def to_json(self, reindex=True, no_img=False):
+    def to_json(self, reindex=True, no_img=False, request_user=None):
         """
         reindex and no_img are used in subclasses to_json methods
         reindex: force recomputing all properties, even the one that require intensive computation
@@ -64,14 +64,14 @@ class AbstractSearchableModel(models.Model):
     def update(self, **kwargs):
         type(self).objects.filter(pk=self.pk.__str__()).update(**kwargs)
 
-    def get_json(self, reindex=False):
+    def get_json(self, reindex=False, request_user=None):
         """
         Get the JSON representation of the object.
         If reindex is True or json property hasn't been generated yet,
         generate the JSON and update the database.
         """
         if not self.json or reindex:
-            json_data = self.to_json(reindex=True)
+            json_data = self.to_json(reindex=True, request_user=request_user)
             type(self).objects.filter(pk=self.pk.__str__()).update(json=json_data)
             return json_data
         return self.json

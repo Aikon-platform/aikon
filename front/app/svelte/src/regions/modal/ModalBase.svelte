@@ -19,6 +19,7 @@
 
     import ModalRegion from "./ModalRegion.svelte";
     import ModalPage from "./ModalPage.svelte";
+    import ModalVectorization from "./ModalVectorization.svelte";
 
     /** @typedef {import("../types.js").RegionItemType} RegionItemType */
     /** @typedef {"main"|"page"|"similarity"|"expansion"} ViewIdType */
@@ -29,6 +30,7 @@
     export let mainImgItem;
     /** @type {RegionItemType} */
     export let compareImgItem;
+    export let svgItem;
 
     const dispatch = createEventDispatcher();
 
@@ -36,13 +38,17 @@
     const allowedViewIds =
         compareImgItem
         ? [ "main", "page", "similarity", "expansion" ]
-        : [ "main", "page" ];
+        : svgItem
+            ? [ "overlay" ]
+            : [ "main", "page" ];
+
 
     const labels = {
         expansion: { fr: "Expansion de requête", en: "Query expansion" },
         similarity: { fr: "Comparaison", en: "Comparison" },
         page: { fr: "Vue de la page", en: "Page view" },
-        main: { fr: "Vue principale", en: "Main view" }
+        main: { fr: "Vue principale", en: "Main view" },
+        overlay: { fr: "Vue superposée", en: "Overlay view"}
     };
 
     /** @type { {id:ViewIdType, label:string}[] } */
@@ -58,7 +64,8 @@
      */
     const viewComponents = {
         main: ModalRegion,
-        page: ModalPage
+        page: ModalPage,
+        overlay: ModalVectorization,
     };
     if ( compareImgItem ) {
         Promise.all([
@@ -81,13 +88,16 @@
         })
     }
 
-    const viewProps = {};
-    allowedViewIds.map((viewId) =>
-        viewProps[viewId] =
-            viewId==="similarity"
-            ? { compareImgItem: compareImgItem, mainImgItem: mainImgItem }
-            : { mainImgItem: mainImgItem }
-    )
+        const viewProps = {};
+        allowedViewIds.forEach(viewId => {
+            if (viewId === "similarity") {
+                viewProps[viewId] = { mainImgItem, compareImgItem };
+            } else if (viewId === "overlay") {
+                viewProps[viewId] = { svgItem };
+            } else {
+                viewProps[viewId] = { mainImgItem };
+            }
+        });
 
     /** @type {ViewIdType} */
     $: currentViewId = allowedViewIds[0];
