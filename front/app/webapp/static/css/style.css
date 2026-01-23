@@ -193,6 +193,10 @@ fieldset:not(:last-child) {
     vertical-align: -.125em;
 }
 
+.p-0 > .svg-inline--fa {
+    padding: 0 !important;
+}
+
 .wrapper {
     margin-top: 57px;
     display: flex;

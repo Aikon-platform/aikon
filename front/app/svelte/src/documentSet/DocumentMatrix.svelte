@@ -3,6 +3,7 @@
     import {appLang, model2title} from '../constants.js';
     import {onMount, onDestroy} from 'svelte';
     import {closeModal, refToIIIF} from '../utils.js';
+    import DownloadPng from "../ui/DownloadPng.svelte";
 
     export let documentSetStore;
 
@@ -65,12 +66,13 @@
     }
 
     function getPageImageUrl(doc, pageNum) {
-        const size = "full";
+        const size = "600,"; //"full";
         return refToIIIF(`wit${doc.witnessId}_${doc.digitizationRef}_${String(pageNum).padStart(doc.zeros, '0')}`, "full", size);
     }
 
     function getRegionImageUrl(img) {
-        return refToIIIF(img.ref, img.xywh?.join(','), "full");
+        const size = "600,"; //"full";
+        return refToIIIF(img.ref, img.xywh?.join(','), size);
     }
 
     function buildModalData(nav, data, limits) {
@@ -87,8 +89,8 @@
 
             return {
                 items: [
-                    {doc: doc1, label: `Page ${img1.canvas} Image #${nav.idx1 + 1}`, imgUrl: getRegionImageUrl(img1)},
-                    {doc: doc2, label: `Page ${img2.canvas} Image #${nav.idx2 + 1}`, imgUrl: getRegionImageUrl(img2)}
+                    {doc: doc1, label: `Canvas ${img1.canvas} — Image #${nav.idx1 + 1}`, imgUrl: getRegionImageUrl(img1)},
+                    {doc: doc2, label: `Canvas ${img2.canvas} — Image #${nav.idx2 + 1}`, imgUrl: getRegionImageUrl(img2)}
                 ],
                 score: pair?.score
             };
@@ -813,6 +815,7 @@
                 <div class="is-flex is-justify-content-space-between is-align-items-center mb-3" style="flex-wrap: wrap; gap: 0.5rem;">
                     <h4 class="title is-6 mb-0">{i18n('title')}</h4>
                     <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
+                        <DownloadPng targetId="matrix-viz" filename="document-matrix.png" />
                         <div class="control">
                             <div class="select is-small">
                                 <select bind:value={sortOrder}>
@@ -829,7 +832,7 @@
                 </div>
 
                 <div class="scroll-area">
-                    <div class="matrix-grid" style="--cell-size: {cellSize}px;">
+                    <div id="matrix-viz" class="matrix-grid" style="--cell-size: {cellSize}px;">
                         <div class="matrix-corner"></div>
                         {#each ["col", "row"] as side}
                             <div class="{side}-headers">
@@ -853,6 +856,7 @@
                 <div class="is-flex is-justify-content-space-between is-align-items-center mb-3">
                     <h4 class="title is-6 mb-0">{i18n('pageByPage')}</h4>
                     {#if selectedCell}
+                        <DownloadPng targetId="scatter-viz" filename="document-comparison.png" />
                         <div class="field mb-0">
                             <div class="control">
                                 <div class="select is-small">
@@ -867,7 +871,7 @@
                 </div>
                 <div class="scroll-area">
                     {#if selectedCell}
-                        <div class="scatter-container" bind:this={scatterContainer}></div>
+                        <div id="scatter-viz" class="scatter-container" bind:this={scatterContainer}></div>
                     {:else}
                         <p class="has-text-grey is-size-7">{i18n('selectCell')}</p>
                     {/if}
@@ -889,6 +893,7 @@
                                 <th class="doc-title">
                                     <span style="color:{item.doc.color}">●</span>
                                     <strong>{item.doc.title}</strong>
+                                    <p class="is-size-7 has-text-grey mt-2">{item.label}</p>
                                 </th>
                             {/each}
                         </tr>
@@ -897,14 +902,15 @@
                         {#if modalData.score !== undefined}
                             <tr>
                                 <td colspan="2" class="has-text-centered">
-                                    <span class="tag is-small">{i18n('score')} <b>{modalData.score.toFixed(2)}</b></span>
+                                    <span class="tag is-small is-link is-bold">
+                                        {i18n('score')} {modalData.score.toFixed(2)}
+                                    </span>
                                 </td>
                             </tr>
                         {/if}
                         <tr>
                             {#each modalData.items as item, i}
                                 <td class="modal-cell">
-                                    <p class="is-size-7 has-text-grey mb-2">{item.label}</p>
                                     <div class="image-nav-container">
                                         <button class="nav-btn {i !== 0 ? 'nav-up' : 'nav-left'}"
                                                 on:click={() => navigate(i !== 0 ? 'vertical' : 'horizontal', -1)}>
@@ -924,11 +930,11 @@
                                         <button class="nav-btn {i !== 0 ? 'nav-down' : 'nav-right'}"
                                                 on:click={() => navigate(i !== 0 ? 'vertical' : 'horizontal', 1)}>
                                             {#if i !== 0}
-                                                <span class="icon is-small">
+                                                <span class="icon is-small p-0">
                                                     <i class="fas fa-chevron-down"></i>
                                                 </span>
                                             {:else}
-                                                <span class="icon is-small">
+                                                <span class="icon is-small p-0">
                                                     <i class="fas fa-chevron-right"></i>
                                                 </span>
                                             {/if}
