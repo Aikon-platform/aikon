@@ -1,0 +1,31 @@
+{% extends "admin/base_site.html" %}
+{% load shared_tags static %}
+
+{% block title %}
+    {{ view_title }}
+{% endblock %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="{% static 'css/regions.css' %}">
+    <link rel="stylesheet" href="{% static 'svelte/witnessView/witness.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div id="witness-view"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const witness = {{ witness|js|safe }};
+    const manifest = "{{ manifest }}";
+    const manifests = {{ manifests|js|safe }};
+    const imgPrefix = "{{ img_prefix }}";
+    const isValidated = {% if is_validated %}true{% else %}false{% endif %};
+    const nbOfPages = {% if img_nb %}{{img_nb}}{% else %}0{% endif %};
+    const trailingZeros = {% if img_zeros %}{{img_zeros}}{% else %}0{% endif %};
+    const viewTitle = "{{ view_title }}";
+    const editUrl = "{{ witness.edit_url }}";
+</script>
+
+<script type="module" src="{% static 'svelte/witnessView/witness.js' %}"></script>
+{% endblock %}
