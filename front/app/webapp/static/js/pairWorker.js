@@ -26,6 +26,7 @@ self.onmessage = (e) => {
             if (state) {
                 finalize();
             } else {
+                // if received 'done' without any data, send empty result
                 self.postMessage({
                     type: 'complete',
                     allPairs: [],
