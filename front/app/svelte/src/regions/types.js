@@ -9,4 +9,30 @@
  * @property {string} type - Always "Regions"
  */
 
+import {regionsType} from "../constants.js";
+import {refToIIIF} from "../utils.js";
+
 export {}
+
+export class RegionItem {
+    /**
+     * @param {RegionItemType} data
+     */
+    constructor(data) {
+        this.id = data.id;
+        this.img = data.img ?? data.ref;
+        this.title = data.title;
+        this.xywh = data.xywh;
+        this.canvas = data.canvas;
+        this.ref = data.ref;
+        this.type = regionsType;
+    }
+
+    url(coord = null, size = null) {
+        return refToIIIF(
+            this.img,
+            coord ?? this.xywh ?? "full",
+            size ?? "full"
+        );
+    }
+}

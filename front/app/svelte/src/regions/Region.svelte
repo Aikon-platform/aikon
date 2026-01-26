@@ -16,6 +16,7 @@
     const { clipBoard } = regionsStore;
 
     /** @typedef {import("./types.js").RegionItemType} RegionItemType */
+    import { RegionItem } from "./types.js";
 
     /////////////////////////////////////////////
 
@@ -27,7 +28,7 @@
     export let isSquare = true;
     /** @type {number|"full"} either a dimension in pixels, or the "full" keyword used by the IIIF image api */
     export let height = isSquare ? 96 : 140;
-    if ( height === "full" ) { isSquare = false }
+    if ( height === "full" ) { isSquare = false } // TODO apparently never true taking previous line into account
     export let borderColor = null;
 
     export let toggleSelection = selectionStore.toggle;
@@ -54,24 +55,20 @@
     export let selectable = !isInModal;
     export let copyable = true;
 
+    item = new RegionItem(item); // instanciate to ensure homogeneous properties
+
     $: desc = item.title;
     $: if (descPromise) {
         descPromise.then((res) => desc = res);
     }
 
-    $: imgSrc = refToIIIF(
-        item.img ?? item.ref,
-        item.xywh,
-        height === "full" ? height : isSquare ? `${height},` : `,${height}`
-    )
-
+    $: imgSrc = item.url(null, height === "full" ? height : isSquare ? `${height},` : `,${height}`)
     $: isCopied = item.ref === $clipBoard;
 </script>
 
 <div class="region is-center {selectable && $isSelected(item) ? 'checked' : ''}"
      transition:fade={{ duration: transitionDuration }}
-     style="{height==='full' ? 'height: 100%' : ''}"
->
+     style="{height==='full' ? 'height: 100%' : ''}">
     <figure class="image card region-image {isSquare ? 'is-96x96' : ''}" tabindex="-1"
             style="{height==='full' ? 'height: 100%' : `height: ${height}px; min-width: ${height}px`}; {borderColor ? `border: 5px solid ${borderColor};` : ''}"
             on:click={() => selectable ? toggleSelection(item) : null} on:keyup={() => null}>

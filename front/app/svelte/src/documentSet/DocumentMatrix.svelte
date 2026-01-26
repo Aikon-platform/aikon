@@ -853,11 +853,12 @@
 
         <div class="split-panel" style="width: {rightWidth}px;">
             <div class="box panel-box">
-                <div class="is-flex is-justify-content-space-between is-align-items-center mb-3">
+                <div class="is-flex is-justify-content-space-between is-align-items-center mb-3"
+                     style="flex-wrap: wrap; gap: 0.5rem;">
                     <h4 class="title is-6 mb-0">{i18n('pageByPage')}</h4>
-                    {#if selectedCell}
-                        <DownloadPng targetId="scatter-viz" filename="document-comparison.png" />
-                        <div class="field mb-0">
+                    <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
+                        {#if selectedCell}
+                            <DownloadPng targetId="scatter-viz" filename="document-comparison.png"/>
                             <div class="control">
                                 <div class="select is-small">
                                     <select bind:value={scatterMode}>
@@ -866,8 +867,8 @@
                                     </select>
                                 </div>
                             </div>
-                        </div>
-                    {/if}
+                        {/if}
+                    </div>
                 </div>
                 <div class="scroll-area">
                     {#if selectedCell}
