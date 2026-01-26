@@ -56,6 +56,10 @@
     export let mainImgItem;
     /** @type {RegionItemType} */
     export let compareImgItem = undefined;
+    /** @type {RegionItemType[]} */
+    export let items = null;
+    /** @type {number} */
+    export let index = null;
     export let svgItem;
 
     //`Region.svelte` is parent of `ModalController.svelte` and `ModalController` has for descendant `Region,svelte` => weird recursion in which a region contains a modal which could contain a region which could contain a modal.
@@ -84,6 +88,8 @@
                     mainImgItem: mainImgItem,
                     compareImgItem: compareImgItem,
                     svgItem: svgItem,
+                    items: items,
+                    initialIndex: index,
                 }
             })
             _modal.$on("closeModal", onCloseModal);

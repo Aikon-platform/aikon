@@ -20,6 +20,7 @@
     import ModalRegion from "./ModalRegion.svelte";
     import ModalPage from "./ModalPage.svelte";
     import ModalVectorization from "./ModalVectorization.svelte";
+    import { RegionItem } from "../types.js";
 
     /** @typedef {import("../types.js").RegionItemType} RegionItemType */
     /** @typedef {"main"|"page"|"similarity"|"expansion"} ViewIdType */
@@ -31,6 +32,21 @@
     /** @type {RegionItemType} */
     export let compareImgItem;
     export let svgItem;
+    /** @type {RegionItemType[]} */
+    export let items = null;
+    /** @type {number} */
+    export let initialIndex = null;
+
+    $: canNavigate = items?.length > 1;
+    $: currentIndex = initialIndex ?? 0;
+    $: if (canNavigate && items[currentIndex]) {
+        mainImgItem = new RegionItem(items[currentIndex]);
+    }
+
+    const navigate = (delta) => {
+        if (!canNavigate) return;
+        currentIndex = (currentIndex + delta + items.length) % items.length;
+    };
 
     const dispatch = createEventDispatcher();
 
@@ -88,16 +104,22 @@
         })
     }
 
-        const viewProps = {};
-        allowedViewIds.forEach(viewId => {
-            if (viewId === "similarity") {
-                viewProps[viewId] = { mainImgItem, compareImgItem };
-            } else if (viewId === "overlay") {
-                viewProps[viewId] = { svgItem };
-            } else {
-                viewProps[viewId] = { mainImgItem };
-            }
-        });
+        $: viewProps = {
+            main: { mainImgItem },
+            page: { mainImgItem },
+            similarity: { mainImgItem, compareImgItem },
+            overlay: { svgItem },
+            expansion: { mainImgItem, compareImgItem },
+        };
+        // allowedViewIds.forEach(viewId => {
+        //     if (viewId === "similarity") {
+        //         viewProps[viewId] = { mainImgItem, compareImgItem };
+        //     } else if (viewId === "overlay") {
+        //         viewProps[viewId] = { svgItem };
+        //     } else {
+        //         viewProps[viewId] = { mainImgItem };
+        //     }
+        // });
 
     /** @type {ViewIdType} */
     $: currentViewId = allowedViewIds[0];
@@ -106,7 +128,11 @@
 
     const toggleView = (viewId) => currentViewId = viewId;
 
-    const onKeyUp = (e) => { if (e.key === "Escape") dispatch("closeModal") };
+    const onKeyUp = (e) => {
+        if (e.key === "Escape") dispatch("closeModal");
+        else if (e.key === "ArrowLeft") navigate(-1);
+        else if (e.key === "ArrowRight") navigate(1);
+    };
 
     const onClose = () => dispatch("closeModal");
 
@@ -124,6 +150,12 @@
 <div id="region-modal-wrapper" class="modal is-active">
     <div class="modal-background" on:click={onClose} on:keyup={onKeyUp}/>
     <div class="modal-content">
+        {#if canNavigate}
+            <button class="nav-btn nav-left" on:click={() => navigate(-1)}>
+                <span class="icon"><i class="fas fa-chevron-left"/></span>
+            </button>
+        {/if}
+
         <div class="modal-inner">
             <div class="tabs is-centered" style="height: fit-content;">
                 <ul>
@@ -143,6 +175,12 @@
             </div>
 
         </div>
+
+        {#if canNavigate}
+            <button class="nav-btn nav-right" on:click={() => navigate(1)}>
+                <span class="icon"><i class="fas fa-chevron-right"/></span>
+            </button>
+        {/if}
     </div>
     <button on:click={onClose} class="modal-close is-large" aria-label="close"/>
 </div>
@@ -151,8 +189,24 @@
     .modal-content {
         width: 80vw;
         height: 80vh;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .nav-btn {
+        color: var(--bulma-link);
+        cursor: pointer;
+        z-index: 1;
+        /*width: 3rem;*/
+        /*height: 3rem;*/
+        /*cursor: pointer;*/
+        /*display: flex;*/
+        /*align-items: center;*/
+        /*justify-content: center;*/
+        /*flex-shrink: 0;*/
     }
     .modal-inner {
+        flex: 1;
         height: 100%;
         display: grid;
         grid-template-columns: 100%;

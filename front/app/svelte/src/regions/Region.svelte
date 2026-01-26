@@ -2,7 +2,6 @@
     import { getContext } from "svelte";
     import { fade } from 'svelte/transition';
 
-    import { refToIIIF } from "../utils.js";
     import { appLang } from '../constants';
     import { regionsSelection } from '../selection/selectionStore.js';
 
@@ -22,6 +21,10 @@
 
     /** @type {RegionItemType} */
     export let item;
+    /** @type {RegionItemType[]} Optional: array for modal navigation */
+    export let items = null;
+    /** @type {number} Optional: current index in items */
+    export let index = null;
     /** @type {Promise<string>?} */
     export let descPromise = undefined;
     /** @type {boolean} enforce a small square display. if `height === "full"`, will be switched to `false`. see below */
@@ -97,7 +100,9 @@
             </span>
         </button>
         {#if modalControllerComponent}
-            <svelte:component this={modalControllerComponent} mainImgItem={item} compareImgItem={compareImgItem}/>
+            <svelte:component this={modalControllerComponent}
+                              mainImgItem={item} compareImgItem={compareImgItem}
+                              {items} {index}/>
         {/if}
     </div>
 </div>

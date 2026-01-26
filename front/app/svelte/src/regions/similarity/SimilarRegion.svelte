@@ -136,7 +136,7 @@
 
 <div>
     <Region {item} size={256} selectable={false} isSquare={false}/>
-    {#if !isInModal }
+    {#if !isInModal}
         <div class="tags has-addons is-dark is-center">
             <CategoryButton category={1} isSelected={selectedCategory === 1} toggle={categorize} padding="pl-3 pr-2"/>
             <CategoryButton category={2} isSelected={selectedCategory === 2} toggle={categorize}/>

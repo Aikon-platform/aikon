@@ -80,7 +80,8 @@
                             <td class="has-text-centered" style="vertical-align: top;">
                                 {#if rowData[regionId]}
                                     {@const item = $imageNodes.get(rowData[regionId].id)}
-                                    <Region {item} selectable={false} copyable={false} borderColor={getImageColor(rowData[regionId], imageOccurrences)} isSquare={false}/>
+                                    <Region {item} selectable={false} copyable={false} isSquare={false}
+                                            borderColor={getImageColor(rowData[regionId], imageOccurrences)}/>
                                     <div class="has-text-grey-dark mt-2">Page {rowData[regionId].page}</div>
                                 {/if}
                             </td>

@@ -71,7 +71,6 @@ export function pageUpdate(pageNb, pageWritable, urlParam) {
 /** extract image name by removing crop info and adding `.jpg` at the end */
 function refToIIIFName(imgRef = null) {
     if (!imgRef){
-        console.log(imgRef);
         return undefined
     }
 

@@ -37,15 +37,13 @@
 <div class="side-by-side columns">
     {#each ["queryImage", "similarityImage"] as k}
         <div class="img-legend-wrapper column is-flex is-flex-direction-column is-justify-content-center is-align-items-center">
-            <span>{
-                k==="queryImage" && appLang==="fr"
-                ? "Image requête"
-                : k==="similarityImage" && appLang==="fr"
-                ? "Similarité"
-                : k==="queryImage" && appLang==="en"
-                ? "Query image"
-                : "Similarity"
-            }</span>
+            <span>
+                {#if k === "queryImage"}
+                    {appLang === "en" ? "Query image" : "Image requête"}
+                {:else if k === "similarityImage"}
+                    {appLang === "en" ? "Similarity" : "Similarité"}
+                {/if}
+            </span>
             <Region item={imgData[k]} descPromise={descPromiseObj[k]} height="full"/>
         </div>
     {/each}

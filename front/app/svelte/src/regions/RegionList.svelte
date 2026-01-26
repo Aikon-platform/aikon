@@ -90,8 +90,8 @@
                 {appLang === 'en' ? 'Retrieving regions...' : 'Récupération des régions...'}
             </div>
         {:then _}
-            {#each Object.values($allRegions) as item (item.id)}
-                <Region {item} selectionStore={regionsSelection}/>
+            {#each Object.values($allRegions) as item, i (item.id)}
+                <Region {item} items={Object.values($allRegions)} index={i} selectionStore={regionsSelection}/>
             {:else}
                 <ExtractionButtons {currentRegionId} {baseUrl}/>
             {/each}

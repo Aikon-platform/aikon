@@ -42,8 +42,8 @@
                         </div>
                     </svelte:fragment>
                     <svelte:fragment slot="row-body">
-                       {#each Object.values(items) as item (item.id)}
-                            <Region {item} isSquare={true}/>
+                       {#each Object.values(items) as item, i (item.id)}
+                            <Region {item} items={Object.values(items)} index={i}/>
                         {/each}
                     </svelte:fragment>
                 </Row>

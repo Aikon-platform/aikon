@@ -59,6 +59,13 @@
     };
 
     const { validate, validated, ...globalActions } = actionLabels;
+
+    $: clusterItems = new Map(
+        $paginatedClusters.map(cl => [
+            cl.id,
+            cl.members.map(imgId => ({...$imageNodes.get(imgId), clusterId: cl.id}))
+        ])
+    );
 </script>
 
 {#if isSuperuser}
@@ -111,8 +118,9 @@
                 </div>
             </svelte:fragment>
             <svelte:fragment slot="row-body">
-                {#each cl.members as imgId}
-                    <Region item={{...$imageNodes.get(imgId), clusterId: cl.id}} copyable={false} selectionStore={clusterSelection}/>
+                {@const items = clusterItems.get(cl.id)}
+                {#each items as item, i}
+                    <Region {item} {items} index={i} copyable={false} selectionStore={clusterSelection}/>
                 {/each}
             </svelte:fragment>
         </Row>
