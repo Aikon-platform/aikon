@@ -117,17 +117,12 @@
 
             <h4>{appLang === 'en' ? 'Shared with' : 'Partagé avec'}</h4>
             <div class="field is-grouped is-grouped-multiline">
+                <!--TODO: when selecting/unselecting doc set, selected users disappear -->
                 {#each selectedUsers as user (user.id)}
                     <div class="tags has-addons">
-                        <span class="tag">
-                            {user.username}
-                        </span>
+                        <span class="tag">{user.username}</span>
                         {#if isOwner}
-                            <button
-                                class="tag is-delete"
-                                on:click={() => removeUser(user.id)}
-                            >
-                            </button>
+                            <button class="tag is-delete is-link ml-0" on:click={() => removeUser(user.id)}/>
                         {/if}
                     </div>
                 {/each}
@@ -144,7 +139,9 @@
                                     bind:value={userQuery}
                                     on:input={searchUsers}
                                 />
-                                <span class="icon is-small is-right"><i class="fas fa-search"></i></span>
+                                <span class="icon is-small is-right">
+                                    <i class="fas fa-search"/>
+                                </span>
                             </p>
                         </div>
                     </div>
@@ -175,7 +172,7 @@
             {/if}
         </section>
 
-        <SelectionFooter {selectionStore} />
+        <SelectionFooter {selectionStore}/>
     </div>
 </div>
 

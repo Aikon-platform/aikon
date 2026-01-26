@@ -316,10 +316,10 @@ td.is-fullwidth {
     --deleted-text: var(--bulma-danger-light);
 }
 
-.is-delete {
-    color: var(--deleted-text);
-    background-color: var(--deleted);
-}
+/*.is-delete {*/
+/*    color: var(--deleted-text);*/
+/*    background-color: var(--deleted);*/
+/*}*/
 
 .is-contrasted {
     background-color: var(--contrasted) !important;
