@@ -38,9 +38,9 @@ export function shorten(str, maxLen=100) {
 }
 
 export function getCantaloupeUrl() {
-    // return cantaloupeUrl ?? "http://localhost:8182";
+    return cantaloupeUrl ?? "http://localhost:8182";
     // TO DELETE
-    return "https://vhs.huma-num.fr"
+    // return "https://vhs.huma-num.fr"
 }
 
 export function getSasUrl() {
@@ -69,7 +69,12 @@ export function pageUpdate(pageNb, pageWritable, urlParam) {
 }
 
 /** extract image name by removing crop info and adding `.jpg` at the end */
-function refToIIIFName(imgRef=null) {
+function refToIIIFName(imgRef = null) {
+    if (!imgRef){
+        console.log(imgRef);
+        return undefined
+    }
+
     imgRef = imgRef.split("_");
     return imgRef.length < 3
         ? undefined
