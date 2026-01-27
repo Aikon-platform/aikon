@@ -541,7 +541,7 @@ def save_category(request):
         img_1, img_2 = RegionPair.order_pair((data.get("img_1"), data.get("img_2")))
         category = data.get("category")
         category = int(data.get("category")) if category else None
-        similarity_type = int(data.get("similarity_type", SimilarityType.MANUAL))
+        similarity_type = int(data.get("similarity_type") or SimilarityType.MANUAL)
 
         query_filter = {
             "img_1": img_1,

@@ -5,6 +5,7 @@
     import Pagination from "../../Pagination.svelte";
     import VectorizedRegions from "./VectorizedRegions.svelte";
     import RegionModal from "../modal/RegionModal.svelte";
+    import ModalOpener from "../modal/ModalOpener.svelte";
 
     let modalOpen = false;
     let modalIndex = 0;
@@ -20,10 +21,8 @@
         </div>
     {:then _}
         {#each $pageVectImgs as vectImg, i (vectImg.id)}
-            <VectorizedRegions svgPath={vectImg} on:click={() => openModal(i)}>
-                <button slot="actions" class="button tag" on:click|stopPropagation={() => openModal(i)}>
-                    <i class="fa-solid fa-eye"/>
-                </button>
+            <VectorizedRegions svgPath={vectImg}>
+                <ModalOpener on:open={() => openModal(i)}/>
             </VectorizedRegions>
         {:else}
             <div class="faded is-center">
