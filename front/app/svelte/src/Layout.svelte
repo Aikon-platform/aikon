@@ -106,26 +106,6 @@
         min-height: 0;
     }
 
-    .tabs-bar {
-        overflow-x: auto;
-        overflow-y: hidden;
-        flex-shrink: 0;
-        white-space: nowrap;
-    }
-
-    .tabs-bar::-webkit-scrollbar {
-        height: 6px;
-    }
-
-    .tabs-bar::-webkit-scrollbar-track {
-        background: var(--bulma-scheme-main);
-    }
-
-    .tabs-bar::-webkit-scrollbar-thumb {
-        background: var(--bulma-border);
-        border-radius: 3px;
-    }
-
     .content-area {
         flex: 1;
         padding: 2% 5% 2% 1%;

@@ -9,7 +9,6 @@
     const { allRegions, fetchAll } = regionsStore;
 
     import Loading from '../Loading.svelte';
-    import Region from './Region.svelte';
     import Modal from "../Modal.svelte";
     import ExtractionButtons from "./ExtractionButtons.svelte";
     import RegionsBtn from "./RegionsBtn.svelte";
@@ -18,6 +17,7 @@
     import PageRegions from "./PageRegions.svelte";
     import Vectorization from "./vectorization/Vectorization.svelte";
     import RegionsSelectionModal from "./RegionsSelectionModal.svelte";
+    import Regions from "./Regions.svelte";
 
     export let manifest = '';
     export let isValidated = false;
@@ -90,11 +90,11 @@
                 {appLang === 'en' ? 'Retrieving regions...' : 'Récupération des régions...'}
             </div>
         {:then _}
-            {#each Object.values($allRegions) as item, i (item.id)}
-                <Region {item} items={Object.values($allRegions)} index={i} selectionStore={regionsSelection}/>
+            {#if Object.values($allRegions).length}
+                <Regions items={Object.values($allRegions)} selectionStore={regionsSelection}/>
             {:else}
                 <ExtractionButtons {currentRegionId} {baseUrl}/>
-            {/each}
+            {/if}
         {:catch error}
             <div>Error when retrieving regions: {error}</div>
         {/await}

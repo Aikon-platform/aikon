@@ -1,6 +1,10 @@
 <script>
-    import Region from "../regions/Region.svelte";
     import LegendItem from "./LegendItem.svelte";
+    import RegionCard from "../regions/RegionCard.svelte";
+    import RegionModal from "../regions/modal/RegionModal.svelte";
+    import PageView from "../regions/modal/PageView.svelte";
+    import Tabs from "../ui/Tabs.svelte";
+    import {appLang} from "../constants.js";
 
     export let selectedDocuments = [];
     export let documentSetStore;
@@ -56,6 +60,23 @@
         });
         return map;
     })() : new Map();
+
+    let modalOpen = false;
+    let modalIndex = 0;
+    $: modalItems = matrixData ? matrixData.rows.flatMap(rowData =>
+        matrixData.regions.map(regionId => rowData[regionId])
+            .filter(imgData => imgData)
+            .map(imgData => $imageNodes.get(imgData.id))
+    ) : [];
+    const handleOpenModal = (e) => {
+        modalIndex = e.detail.index ?? 0;
+        modalOpen = true;
+    };
+
+    $: tabs = [
+        { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
+        { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
+    ];
 </script>
 
 {#if matrixData}
@@ -80,8 +101,9 @@
                             <td class="has-text-centered" style="vertical-align: top;">
                                 {#if rowData[regionId]}
                                     {@const item = $imageNodes.get(rowData[regionId].id)}
-                                    <Region {item} selectable={false} copyable={false} isSquare={false}
-                                            borderColor={getImageColor(rowData[regionId], imageOccurrences)}/>
+                                    <RegionCard item={item} height={96} borderColor={getImageColor(rowData[regionId], imageOccurrences)}
+                                                selectable={false} copyable={false}
+                                                on:openModal={handleOpenModal}/>
                                     <div class="has-text-grey-dark mt-2">Page {rowData[regionId].page}</div>
                                 {/if}
                             </td>
@@ -92,6 +114,20 @@
         </table>
     </div>
 </div>
+
+<RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
+    <svelte:fragment let:item={currentItem}>
+        <Tabs {tabs} let:activeTab>
+            {#if activeTab === "region"}
+                <div class="modal-region">
+                    <RegionCard item={currentItem} height="full" isInModal={true}/>
+                </div>
+            {:else if activeTab === "page"}
+                <PageView item={currentItem}/>
+            {/if}
+        </Tabs>
+    </svelte:fragment>
+</RegionModal>
 {/if}
 
 <style>

@@ -1,5 +1,4 @@
 <script>
-    import Region from "../regions/Region.svelte";
     import Table from "../Table.svelte";
     import Row from "../Row.svelte";
     import Toolbar from "../Toolbar.svelte";
@@ -7,6 +6,7 @@
     import Pagination from "../Pagination.svelte";
     import RegionsSelectionModal from "../regions/RegionsSelectionModal.svelte";
     import { clusterSelection } from '../selection/selectionStore.js';
+    import Regions from "../regions/Regions.svelte";
 
     export let documentSetStore;
     const { imageNodes,} = documentSetStore;
@@ -118,10 +118,7 @@
                 </div>
             </svelte:fragment>
             <svelte:fragment slot="row-body">
-                {@const items = clusterItems.get(cl.id)}
-                {#each items as item, i}
-                    <Region {item} {items} index={i} copyable={false} selectionStore={clusterSelection}/>
-                {/each}
+                <Regions items={clusterItems.get(cl.id)} copyable={false} selectionStore={clusterSelection}/>
             </svelte:fragment>
         </Row>
     {/each}

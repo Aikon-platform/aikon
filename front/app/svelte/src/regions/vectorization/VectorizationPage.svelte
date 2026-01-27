@@ -4,8 +4,11 @@
     const { vectImgs, pageVectImgs, setPageVectImgs, pageLength } = vectorizationStore;
     import Pagination from "../../Pagination.svelte";
     import VectorizedRegions from "./VectorizedRegions.svelte";
-    import ExportButtons from "./ExportButtons.svelte";
-    let regionsRef = "";
+    import RegionModal from "../modal/RegionModal.svelte";
+
+    let modalOpen = false;
+    let modalIndex = 0;
+    const openModal = (i) => { modalIndex = i; modalOpen = true; };
 </script>
 
 <Pagination store={vectorizationStore} nbOfItems={$vectImgs.length} {pageLength}/>
@@ -16,14 +19,23 @@
             {appLang === 'en' ? 'Retrieving vectorization page...' : 'Récupération la page de vectorisation...'}
         </div>
     {:then _}
-        {#each $pageVectImgs as vectImg (vectImg.id)}
-            <VectorizedRegions svgPath={vectImg}/>
+        {#each $pageVectImgs as vectImg, i (vectImg.id)}
+            <VectorizedRegions svgPath={vectImg} on:click={() => openModal(i)}>
+                <button slot="actions" class="button tag" on:click|stopPropagation={() => openModal(i)}>
+                    <i class="fa-solid fa-eye"/>
+                </button>
+            </VectorizedRegions>
         {:else}
             <div class="faded is-center">
                 {appLang === 'en' ? 'No vectorization' : 'Pas de vectorisation'}
             </div>
             <!--TODO add button for launching vectorization-->
         {/each}
+        <RegionModal items={$pageVectImgs} bind:currentIndex={modalIndex} bind:open={modalOpen}>
+            <svelte:fragment let:item={currentItem}>
+                <VectorizedRegions svgPath={currentItem} fullWidth={true}/>
+            </svelte:fragment>
+        </RegionModal>
     {:catch error}
         <div class="faded is-center">
             {#if appLang === 'en'}

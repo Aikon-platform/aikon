@@ -4,10 +4,10 @@
     import { userId, csrfToken, appName } from '../../constants';
     import { toRegionItem } from "../utils.js";
 
-    import Region from "../Region.svelte";
     import CategoryButton from "./CategoryButton.svelte";
     import {extractInt, shorten} from "../../utils.js";
     import {similarityStore} from "./similarityStore.js";
+    import RegionCard from "../RegionCard.svelte";
 
     const {comparedRegions} = similarityStore;
 
@@ -18,7 +18,6 @@
 
     const windowUrl = new URL(window.location.href)
     const baseUrl = windowUrl.origin;
-    const pathUrl = windowUrl.pathname;
 
     /** @type {string} */
     export let qImg;
@@ -30,14 +29,16 @@
     export let sRegions;
     /** @type {number} */
     export let score = 0;
-    /** @type {number?} */
+    /** @type {number|null} */
     export let category = null;
-    /** @type {number?[]} */
+    /** @type {number|null[]} */
     export let users = [];
     /** @type {boolean} */
     export let isManual;
     /** @type {number} */
     export let similarityType;
+    /** @type {number} */
+    export let index = 0;
 
     // const isPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagation, false otherwise
     const isInModal = getContext("isInModal") || false;
@@ -135,7 +136,7 @@
 </script>
 
 <div>
-    <Region {item} size={256} selectable={false} isSquare={false}/>
+    <RegionCard {item} height={140} selectable={false} isSquare={false} {isInModal} {index} on:openModal/>
     {#if !isInModal}
         <div class="tags has-addons is-dark is-center">
             <CategoryButton category={1} isSelected={selectedCategory === 1} toggle={categorize} padding="pl-3 pr-2"/>

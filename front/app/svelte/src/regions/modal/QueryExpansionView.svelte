@@ -22,11 +22,11 @@
 
 <div class="is-flex is-align-items-center is-justify-content-end">
     <a href={buildRedirectionUrl()}>
-        <button class="button is-link is-small">{
-            appLang === "fr"
-            ? "Voir toutes les similarités pour ce document"
-            : "View all similarities for this document"
-        }</button>
+        <button class="button is-link is-small">
+            {appLang === "fr" ?
+                "Voir toutes les similarités pour ce document" :
+                "View all similarities for this document"}
+        </button>
     </a>
 </div>
 <SimilarityRow qImg={mainImgItem.img}/>

@@ -12,7 +12,6 @@
     import Layout from "../Layout.svelte";
     import WitnessPanel from "../witness/WitnessPanel.svelte"
     import Loading from "../Loading.svelte";
-    import Region from "../regions/Region.svelte";
     import SelectionBtn from "../selection/SelectionBtn.svelte";
     import Modal from "../Modal.svelte";
     import ExtractionButtons from "../regions/ExtractionButtons.svelte";
@@ -25,6 +24,7 @@
     import Viewer from "../witness/ViewerIframe.svelte";
     import WitnessBtn from "../witness/WitnessBtn.svelte";
     import ExportButtons from "../regions/vectorization/ExportButtons.svelte";
+    import Regions from "../regions/Regions.svelte";
 
     export let manifest = "";
     export let manifests = [];
@@ -110,11 +110,11 @@
                             {appLang === "en" ? "Retrieving regions..." : "Récupération des régions..."}
                         </div>
                     {:then _}
-                        {#each Object.values($allRegions) as item, i (item.id)}
-                            <Region {item} items={Object.values($allRegions)} index={i}/>
+                        {#if Object.values($allRegions).length}
+                            <Regions items={Object.values($allRegions)}/>
                         {:else}
-                            <ExtractionButtons {currentRegionId} {baseUrl} />
-                        {/each}
+                            <ExtractionButtons {currentRegionId} {baseUrl}/>
+                        {/if}
                     {:catch error}
                         <div>Error when retrieving regions: {error}</div>
                     {/await}

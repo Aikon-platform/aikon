@@ -2,13 +2,13 @@
     import { getContext } from 'svelte';
     import { regionsStore } from "./regionsStore.js";
     const { pageRegions, fetchPages } = regionsStore;
-    import Region from "./Region.svelte";
     import Pagination from "../Pagination.svelte";
     import Table from "../Table.svelte";
     import ExtractionButtons from "./ExtractionButtons.svelte";
     import { appLang } from '../constants';
     import {manifestToMirador, refToIIIF} from "../utils.js";
     import Row from "../Row.svelte";
+    import Regions from "./Regions.svelte";
 
     const nbOfPages = getContext('nbOfPages');
     const trailingZeros = getContext('trailingZeros');
@@ -42,9 +42,7 @@
                         </div>
                     </svelte:fragment>
                     <svelte:fragment slot="row-body">
-                       {#each Object.values(items) as item, i (item.id)}
-                            <Region {item} items={Object.values(items)} index={i}/>
-                        {/each}
+                        <Regions items={Object.values(items)}/>
                     </svelte:fragment>
                 </Row>
             {/each}
