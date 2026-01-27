@@ -1,3 +1,5 @@
+<!-- TO DELETE not used anymore -->
+
 <script>
     import { setContext } from 'svelte';
     import { fade } from 'svelte/transition';
@@ -11,7 +13,6 @@
     import Loading from '../Loading.svelte';
     import Modal from "../Modal.svelte";
     import ExtractionButtons from "./ExtractionButtons.svelte";
-    import RegionsBtn from "./RegionsBtn.svelte";
     import ActionButtons from "./ActionButtons.svelte";
     import Similarity from "./similarity/Similarity.svelte";
     import PageRegions from "./PageRegions.svelte";
@@ -61,9 +62,6 @@
 
 <div id="nav-actions">
     <div class="actions grid">
-        <div class="cell is-left is-middle">
-            <RegionsBtn {baseUrl} {currentRegionId} {currentLayout}/>
-        </div>
         {#if ["all", "page"].includes(currentLayout)}
             <div class="cell" transition:fade={{ duration: 500 }}>
                 <ActionButtons/>

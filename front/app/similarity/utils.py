@@ -432,7 +432,7 @@ def get_matched_regions(q_img: str, s_regions_id: int):
     )
 
 
-def get_region_pairs_with(q_img, query_regions_ids, target_regions_ids):
+def get_region_pairs_with(q_img, query_regions_ids, target_regions_ids=None):
     """
     Retrieve RegionPair records where:
     - One image is q_img
@@ -444,6 +444,10 @@ def get_region_pairs_with(q_img, query_regions_ids, target_regions_ids):
     :param target_regions_ids: list[int], IDs of target regions to compare against
     :return: List of RegionPair objects
     """
+    if target_regions_ids is None:
+        query = Q(img_1=q_img) | Q(img_2=q_img)
+        return list(RegionPair.objects.filter(query))
+
     # Query where q_img is img_1 and its region is in query_regions_ids
     # and the comparison region is in target_regions_ids
     query1 = (

@@ -15,7 +15,6 @@
     import SelectionBtn from "../selection/SelectionBtn.svelte";
     import Modal from "../Modal.svelte";
     import ExtractionButtons from "../regions/ExtractionButtons.svelte";
-    import RegionsBtn from "../regions/RegionsBtn.svelte";
     import ActionButtons from "../regions/ActionButtons.svelte";
     import Similarity from "../regions/similarity/Similarity.svelte";
     import PageRegions from "../regions/PageRegions.svelte";
@@ -25,6 +24,7 @@
     import WitnessBtn from "../witness/WitnessBtn.svelte";
     import ExportButtons from "../regions/vectorization/ExportButtons.svelte";
     import Regions from "../regions/Regions.svelte";
+    import { activeLayout } from '../ui/tabStore.js';
 
     export let manifest = "";
     export let manifests = [];
@@ -64,18 +64,18 @@
     }
 </script>
 
-<Loading visible={$loading} />
+<Loading visible={$loading}/>
 
-<Modal />
+<Modal/>
 
-<SelectionBtn {selectionLength} />
+<SelectionBtn {selectionLength}/>
 
 <Layout {tabList}>
-    <div slot="sidebar" let:activeTab>
-        <WitnessPanel {witness} {editUrl} {viewTitle} />
+    <div slot="sidebar">
+        <WitnessPanel {witness} {editUrl} {viewTitle}/>
     </div>
 
-    <div slot="content" let:activeTab>
+    <div slot="content">
         {#if manifests.length === 0}
             <article class="message is-warning">
                 <div class="message-body">
@@ -85,25 +85,22 @@
         {:else}
             <div id="nav-actions">
                 <div class="actions grid">
-                    <div class="cell is-left">
-                        <RegionsBtn {baseUrl} {currentRegionId} {activeTab}/>
-                    </div>
                     <div class="cell">
-                        {#if activeTab === "all" || activeTab === "page" }
-                            <ActionButtons />
-                        {:else if activeTab === "viewer"}
-                            <WitnessBtn {manifests} />
-                        {:else if activeTab === "vectorization"}
+                        {#if $activeLayout === "all" || $activeLayout === "page" }
+                            <ActionButtons/>
+                        {:else if $activeLayout === "viewer"}
+                            <WitnessBtn {manifests}/>
+                        {:else if $activeLayout === "vectorization"}
                             <ExportButtons/>
                         {/if}
                     </div>
                 </div>
             </div>
 
-            {#if activeTab === "viewer"}
-                <Viewer />
+            {#if $activeLayout === "viewer"}
+                <Viewer/>
 
-            {:else if activeTab === "all"}
+            {:else if $activeLayout === "all"}
                 <div class="grid is-gap-2 mt-5">
                     {#await fetchAll}
                         <div class="faded is-center">
@@ -120,14 +117,14 @@
                     {/await}
                 </div>
 
-            {:else if activeTab === "page"}
-                <PageRegions />
+            {:else if $activeLayout === "page"}
+                <PageRegions/>
 
-            {:else if activeTab === "similarity"}
-                <Similarity />
+            {:else if $activeLayout === "similarity"}
+                <Similarity/>
 
-            {:else if activeTab === "vectorization"}
-                <Vectorization />
+            {:else if $activeLayout === "vectorization"}
+                <Vectorization/>
             {/if}
         {/if}
     </div>
@@ -141,13 +138,13 @@
                     {#each Object.entries(selectedItems) as [id, meta]}
                         <div class="selection cell">
                             <figure class="image is-64x64 card">
-                                <img src="{refToIIIF(meta.img, meta.xywh, '96,')}" alt="" />
+                                <img src="{refToIIIF(meta.img, meta.xywh, '96,')}" alt=""/>
                                 <div class="overlay is-center">
                                     <span class="overlay-desc">{meta.title}</span>
                                 </div>
                             </figure>
                             <button class="delete region-btn"
-                                on:click={() => remove(id, regionsType)} />
+                                on:click={() => remove(id, regionsType)}/>
                         </div>
                     {/each}
                 {/each}

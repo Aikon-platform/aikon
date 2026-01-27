@@ -1,11 +1,11 @@
 <script>
     import {appLang} from "../constants.js";
+    import { activeLayout } from "../ui/tabStore.js"
 
-    export let activeTab = "img";
     export let documentSetStore;
     const { imageStats, documentStats, docPairStats } = documentSetStore;
 
-    $: currentStats = activeTab === "img" ? $imageStats : activeTab === "doc" ? $documentStats : $docPairStats;
+    $: currentStats = $activeLayout === "img" ? $imageStats : $activeLayout === "doc" ? $documentStats : $docPairStats;
 </script>
 
 <div class="level has-text-centered">

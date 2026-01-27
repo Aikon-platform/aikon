@@ -5,6 +5,7 @@
     import PageView from "../regions/modal/PageView.svelte";
     import Tabs from "../ui/Tabs.svelte";
     import {appLang} from "../constants.js";
+    import { activeTab } from '../ui/tabStore.js';
 
     export let selectedDocuments = [];
     export let documentSetStore;

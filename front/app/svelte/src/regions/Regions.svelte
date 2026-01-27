@@ -37,9 +37,8 @@
 
 {#each Object.values(items) as item, i (item.id)}
     <RegionCard item={new RegionItem(item)} index={i}
-            {height} borderColor={null}
-            {copyable} {selectable} {selectionStore}
-            selected={$isSelected(item)} on:openModal={handleOpenModal}/>
+            {height} {copyable} {selectable} {selectionStore}
+            on:openModal={handleOpenModal}/>
 {/each}
 
 <RegionModal {items} bind:currentIndex={modalIndex}

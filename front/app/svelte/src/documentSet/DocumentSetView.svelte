@@ -1,7 +1,7 @@
 <script>
     import {onMount} from 'svelte';
     import {setContext} from "svelte";
-    import {get} from 'svelte/store';
+    import { activeLayout } from '../ui/tabStore.js';
 
     import {appLang} from '../constants';
     import {syncStoreWithURL} from '../utils';
@@ -74,40 +74,40 @@
 </script>
 
 <Layout {tabList}>
-    <div slot="sidebar" let:activeTab>
+    <div slot="sidebar">
         <Sidebar {docSet} {documentSetStore} {clusterStore}>
             <div slot="datavizInfo">
-                {#if activeTab === "img"}
+                {#if $activeLayout === "img"}
                     <p>
                         {appLang === 'en'
                             ? 'Network where each node is an image region. Edges connect regions with similarity scores above the threshold. Node color indicates the source document.'
                             : 'Réseau où chaque nœud est une région d\'image. Les liens connectent les régions dont le score de similarité dépasse le seuil. La couleur indique le document source.'}
                     </p>
-                {:else if activeTab === "doc"}
+                {:else if $activeLayout === "doc"}
                     <p>
                         {appLang === 'en'
                             ? 'Network where each node is a document. Edge thickness reflects the cumulative similarity score between document pairs. Node size indicates the number of connections.'
                             : 'Réseau où chaque nœud est un document. L\'épaisseur des liens reflète le score de similarité cumulé entre paires de documents. La taille des nœuds indique le nombre de connexions.'}
                     </p>
-                {:else if activeTab === "matrix"}
+                {:else if $activeLayout === "matrix"}
                     <p>
                         {appLang === 'en'
                             ? 'Matrix showing aggregated similarity scores between documents. Click a cell to explore page-level similarities in a scatter plot interface.'
                             : 'Matrice affichant les scores de similarité agrégés entre documents. Cliquez sur une cellule pour explorer les similarités entre paires de documents.'}
                     </p>
-                {:else if activeTab === "clusters"}
+                {:else if $activeLayout === "clusters"}
                     <p>
                         {appLang === 'en'
                             ? 'Groups of images that share a similarity connection above the score threshold.'
                             : 'Groupes d\'images partageant une connexion de similarité au-dessus du seuil de score.'}
                     </p>
                 {/if}
-                <!--<NetworkInfo {activeTab} {documentSetStore}/>-->
+                <!--<NetworkInfo {$activeLayout} {documentSetStore}/>-->
             </div>
         </Sidebar>
     </div>
 
-    <div slot="content" let:activeTab>
+    <div slot="content">
         <Modal>
             <div slot="content" class="fixed-grid has-6-cols">
                 <div class="grid is-gap-2">
@@ -143,12 +143,12 @@
                     </article>
                 {:else}
                     <div>
-                        <h2 class="title is-3 has-text-link">{tabList[activeTab]}</h2>
-                        {#if activeTab === "img" || activeTab === "doc"}
-                            <NetworkVisualization {documentSetStore} type={activeTab}/>
-                        {:else if activeTab === "sim"}
+                        <h2 class="title is-3 has-text-link">{tabList[$activeLayout]}</h2>
+                        {#if $activeLayout === "img" || $activeLayout === "doc"}
+                            <NetworkVisualization {documentSetStore} type={$activeLayout}/>
+                        {:else if $activeLayout === "sim"}
                             <Clusters {documentSetStore} {clusterStore}/>
-                        {:else if activeTab === "mat"}
+                        {:else if $activeLayout === "mat"}
                             <DocumentMatrix {documentSetStore}/>
                         {/if}
                     </div>

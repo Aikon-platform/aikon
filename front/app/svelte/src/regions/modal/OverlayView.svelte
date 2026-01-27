@@ -88,9 +88,9 @@
         </div>
     </div>
     <div class="overlay-wrapper">
-        <img class="compare-img" src={queryUrl} alt={queryItem.title}/>
+        <img class="compare-img" src={similarUrl} alt={similarItem.title}/>
         <img class="main-img" class:overlay-reset={currentlyResetting}
-             src={similarUrl} alt={similarItem.title} style:opacity={overlayOpacity} style:transform={cssTransforms}/>
+             src={queryUrl} alt={queryItem.title} style:opacity={overlayOpacity} style:transform={cssTransforms}/>
     </div>
 </div>
 

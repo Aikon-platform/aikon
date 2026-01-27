@@ -1,12 +1,12 @@
 <script>
+    import { onMount } from 'svelte';
     import Loading from "./Loading.svelte";
-    import Modal from "./Modal.svelte";
+    import { activeLayout } from './ui/tabStore.js';
 
     export let sidebarWidth = "25";
     export const layoutHeight = "90vh";
     export let tabList = {};
 
-    let availableTabs = Object.keys(tabList);
     export let topOffsetElement = null;
 
     function updateTopOffset(element = null) {
@@ -16,45 +16,14 @@
         document.documentElement.style.setProperty('--top-offset', `${element.offsetHeight}px`);
     }
     updateTopOffset(topOffsetElement)
-
-    // import {onMount} from "svelte";
-    // let resizeObserver;
-    // onMount(() => {
-    //     const tabs = document.getElementById("tabs");
-    //     updateTopOffset(tabs);
-    //
-    //     resizeObserver = new ResizeObserver(() => {
-    //         updateTopOffset(tabs);
-    //     });
-    //
-    //     if (tabs) {
-    //         resizeObserver.observe(tabs);
-    //     }
-    //
-    //     return () => {
-    //         if (resizeObserver && tabs) {
-    //             resizeObserver.unobserve(tabs);
-    //             resizeObserver.disconnect();
-    //         }
-    //     };
-    // });
-
-    $: activeTab = new URLSearchParams(window.location.search).get("tab") ?? availableTabs[0] ?? null;
-
-    function changeTab(tab) {
-        if (!availableTabs.includes(tab)) {
-            console.warn(`Tab "${tab}" is not available.`);
-            return;
-        }
-        activeTab = tab;
-        const url = new URL(window.location);
-        url.searchParams.set("tab", tab);
-        window.history.pushState({}, "", url);
-    }
+    onMount(() => {
+        activeLayout.init();
+        window.addEventListener('popstate', () => activeLayout.init());
+        return () => window.removeEventListener('popstate', () => activeLayout.init());
+    });
 </script>
 
 <Loading/>
-<!--<Modal/>-->
 
 <div class="layout" style="min-height: {layoutHeight};">
     <aside class="sidebar" style="width: {sidebarWidth}%; min-height: {layoutHeight};">
@@ -64,13 +33,13 @@
     <main class="main-content" style="width: {100-sidebarWidth}%; min-height: {layoutHeight};">
         <nav id="tabs" class="tabs-bar">
             {#if $$slots.tabs}
-                <slot name="tabs" {activeTab}/>
+                <slot name="tabs"/>
             {:else if Object.keys(tabList).length}
                 <div class="tabs">
                     <ul>
                         {#each Object.entries(tabList) as [tabRef, tabTitle]}
-                            <li class:is-active={activeTab === tabRef}>
-                                <a on:click={() => changeTab(tabRef)} href="{null}">{tabTitle}</a>
+                            <li class:is-active={$activeLayout === tabRef}>
+                                <a on:click={() => activeLayout.change(tabRef)} href="{null}">{tabTitle}</a>
                             </li>
                         {/each}
                     </ul>
@@ -79,7 +48,7 @@
         </nav>
 
         <div class="content-area pl-5">
-            <slot name="content" {activeTab}/>
+            <slot name="content"/>
         </div>
     </main>
 </div>

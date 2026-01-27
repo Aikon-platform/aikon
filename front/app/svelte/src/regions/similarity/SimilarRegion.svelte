@@ -39,9 +39,8 @@
     export let similarityType;
     /** @type {number} */
     export let index = 0;
-
-    // const isPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagation, false otherwise
-    const isInModal = getContext("isInModal") || false;
+    /** @type {boolean} */
+    export let isInModal = false;
 
     const [wit, digit, canvas, xywh] = sImg.split('.')[0].split('_');
 
@@ -136,7 +135,7 @@
 </script>
 
 <div>
-    <RegionCard {item} height={140} selectable={false} isSquare={false} {isInModal} {index} on:openModal/>
+    <RegionCard {item} height={140} selectable={false} copyable={true} isSquare={false} {isInModal} {index} on:openModal/>
     {#if !isInModal}
         <div class="tags has-addons is-dark is-center">
             <CategoryButton category={1} isSelected={selectedCategory === 1} toggle={categorize} padding="pl-3 pr-2"/>

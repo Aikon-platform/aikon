@@ -14,6 +14,7 @@
 
     export let qImg;
     export let sImgsPromise;
+    export let isInModal = false;
 
     const {
         selectedRegions,
@@ -197,7 +198,7 @@
         <div class="m-2 is-gap-2" class:grid={filteredSImgs.length > 0}>
             {#each filteredSImgs as {uuid, data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]}, i (uuid)}
                 <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual} {similarityType}
-                               index={i} on:openModal={handleOpenModal}/>
+                               index={i} on:openModal={handleOpenModal} {isInModal}/>
             {:else}
                 {#if noRegionsSelected }
                     <div class="faded is-center">

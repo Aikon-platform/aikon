@@ -29,4 +29,4 @@
         </button>
     </a>
 </div>
-<SimilarityRow qImg={mainImgItem.img}/>
+<SimilarityRow qImg={mainImgItem.img} isInModal={true}/>

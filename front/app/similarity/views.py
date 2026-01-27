@@ -125,17 +125,23 @@ def get_similar_images(request, wid, rid=None):
     try:
         data = json.loads(request.body.decode("utf-8"))
         q_regions_ids = [q_r.id for q_r in q_regions]
-        t_regions_ids = list(data.get("regionsIds", []))
-        q_img = str(data.get("qImg", ""))
-        topk = min(max(int(data.get("topk", 10)), 1), 20)
 
-        if not t_regions_ids or not q_img:
+        filter_by_regions = data.get("filterByRegions", True)
+        t_regions_ids = list(data.get("regionsIds", []))
+
+        q_img = str(data.get("qImg", ""))
+        topk = min(max(int(data.get("topk") or 10), 1), 20)
+
+        if not q_img:
+            return JsonResponse({})
+
+        if filter_by_regions and not t_regions_ids:
             return JsonResponse({})
 
         pairs = get_region_pairs_with(
             q_img,
             query_regions_ids=q_regions_ids,
-            target_regions_ids=t_regions_ids,
+            target_regions_ids=t_regions_ids if filter_by_regions else None,
         )
 
         result = get_best_pairs(
