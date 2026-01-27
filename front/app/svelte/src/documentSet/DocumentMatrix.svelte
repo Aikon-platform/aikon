@@ -4,6 +4,7 @@
     import {onMount, onDestroy} from 'svelte';
     import {closeModal, refToIIIF} from '../utils.js';
     import DownloadPng from "../ui/DownloadPng.svelte";
+    import NavigationArrow from "../ui/NavigationArrow.svelte";
 
     export let documentSetStore;
 
@@ -109,7 +110,7 @@
         };
     }
 
-    function navigate(axis, delta) {
+    function navigate(delta, axis) {
         if (!navState || !scatterData) return;
 
         if (axis === 'horizontal') {
@@ -124,10 +125,10 @@
         if (!navState || !modalElement?.classList.contains('is-active')) return;
 
         const keyMap = {
-            ArrowUp: ['vertical', -1],
-            ArrowDown: ['vertical', 1],
-            ArrowLeft: ['horizontal', -1],
-            ArrowRight: ['horizontal', 1]
+            ArrowUp: [-1, 'vertical'],
+            ArrowDown: [1, 'vertical'],
+            ArrowLeft: [-1, 'horizontal'],
+            ArrowRight: [1, 'horizontal']
         };
 
         const action = keyMap[e.key];
@@ -913,33 +914,11 @@
                             {#each modalData.items as item, i}
                                 <td class="modal-cell">
                                     <div class="image-nav-container">
-                                        <button class="nav-btn {i !== 0 ? 'nav-up' : 'nav-left'}"
-                                                on:click={() => navigate(i !== 0 ? 'vertical' : 'horizontal', -1)}>
-                                            {#if i !== 0}
-                                                <span class="icon is-small p-0">
-                                                    <i class="fas fa-chevron-up"></i>
-                                                </span>
-                                            {:else}
-                                                <span class="icon is-small p-0">
-                                                    <i class="fas fa-chevron-left"></i>
-                                                </span>
-                                            {/if}
-                                        </button>
+                                        <NavigationArrow direction={i !== 0 ? 'up' : 'left'} delta={-1} axis={i !== 0 ? 'vertical' : 'horizontal'} navigationFct={navigate}/>
                                         <figure class="image">
                                             <img src={item.imgUrl} alt="{scatterData?.mode === 'image' ? 'Image' : 'Page'} {item.label}" class="img-preview"/>
                                         </figure>
-                                        <button class="nav-btn {i !== 0 ? 'nav-down' : 'nav-right'}"
-                                                on:click={() => navigate(i !== 0 ? 'vertical' : 'horizontal', 1)}>
-                                            {#if i !== 0}
-                                                <span class="icon is-small p-0">
-                                                    <i class="fas fa-chevron-down"></i>
-                                                </span>
-                                            {:else}
-                                                <span class="icon is-small p-0">
-                                                    <i class="fas fa-chevron-right"></i>
-                                                </span>
-                                            {/if}
-                                        </button>
+                                        <NavigationArrow direction={i !== 0 ? 'down' : 'right'} delta={1} axis={i !== 0 ? 'vertical' : 'horizontal'} navigationFct={navigate}/>
                                     </div>
                                 </td>
                             {/each}
@@ -1069,18 +1048,6 @@
         margin-top: 1em;
         margin-bottom: 1em;
     }
-
-    .nav-btn {
-        position: absolute;
-        color: var(--bulma-link);
-        cursor: pointer;
-        z-index: 1;
-    }
-
-    .nav-up { top: 0; }
-    .nav-down { bottom: 0; }
-    .nav-left { left: 0; top: 50%; transform: translateY(-50%); }
-    .nav-right { right: 0; top: 50%; transform: translateY(-50%); }
 
     .img-preview {
         border-radius: 5px;

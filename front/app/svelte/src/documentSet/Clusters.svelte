@@ -82,7 +82,9 @@
                     {#each Object.values(globalActions) as action}
                         <p class="control">
                             <button class="button pl-5" on:click|preventDefault={action.fct} title={action.desc}>
-                                <span class="icon is-small"><i class="fas {action.icon}"/></span>
+                                <span class="icon is-small">
+                                    <i class="fas {action.icon}"/>
+                                </span>
                                 {action.title}
                                 <span class="shortcut">{action.shortcut}</span>
                             </button>

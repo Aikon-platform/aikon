@@ -86,7 +86,7 @@
         display: block;
         font-weight: bold;
         border-bottom: 1px solid var(--bulma-border);
-        padding: 10px 0;
+        padding: 2em 0 .75em;
     }
 
     .witness-value {
