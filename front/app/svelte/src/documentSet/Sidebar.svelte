@@ -1,10 +1,11 @@
 <script>
     import {appLang, appUrl, appName, model2title} from '../constants.js';
     import CategoryButton from "../regions/similarity/CategoryButton.svelte";
-    import LegendItem from "./LegendItem.svelte";
+    import { activeLayout } from '../ui/tabStore.js';
     import {getContext} from "svelte";
     import Legend from "./Legend.svelte";
     import InputSlider from "../ui/InputSlider.svelte";
+    import NetworkInfo from "./NetworkInfo.svelte";
 
     export let docSet = null;
     export let documentSetStore;
@@ -178,7 +179,32 @@
                 <h3 class="title">
                     {appLang === 'en' ? 'Visualisation information' : 'Informations sur la visualisation'}
                 </h3>
-                <slot name="datavizInfo"/>
+                {#if $activeLayout === "img"}
+                    <p>
+                        {appLang === 'en'
+                            ? 'Network where each node is an image region. Edges connect regions with similarity scores above the threshold. Node color indicates the source document.'
+                            : 'Réseau où chaque nœud est une région d\'image. Les liens connectent les régions dont le score de similarité dépasse le seuil. La couleur indique le document source.'}
+                    </p>
+                {:else if $activeLayout === "doc"}
+                    <p>
+                        {appLang === 'en'
+                            ? 'Network where each node is a document. Edge thickness reflects the cumulative similarity score between document pairs. Node size indicates the number of connections.'
+                            : 'Réseau où chaque nœud est un document. L\'épaisseur des liens reflète le score de similarité cumulé entre paires de documents. La taille des nœuds indique le nombre de connexions.'}
+                    </p>
+                {:else if $activeLayout === "mat"}
+                    <p>
+                        {appLang === 'en'
+                            ? 'Matrix showing aggregated similarity scores between documents. Click a cell to explore page-level similarities in a scatter plot interface.'
+                            : 'Matrice affichant les scores de similarité agrégés entre documents. Cliquez sur une cellule pour explorer les similarités entre paires de documents.'}
+                    </p>
+                {:else if $activeLayout === "sim"}
+                    <p>
+                        {appLang === 'en'
+                            ? 'Groups of images that share a similarity connection above the score threshold.'
+                            : 'Groupes d\'images partageant une connexion de similarité au-dessus du seuil de score.'}
+                    </p>
+                {/if}
+                <!--<NetworkInfo/>-->
             </div>
         </div>
     {/if}

@@ -87,15 +87,15 @@
 
 <div>
     {#if currentRegionId}
-        <a href="{allRegionsUrl}" class="tag is-dark mr-3 is-rounded">
+        <a href="{allRegionsUrl}" class="tag is-dark mr-3 mb-3 is-rounded">
             {appLang === "en" ? "Back to all witness view" : "Retour à la vue complète du témoin"}
         </a>
-        <button on:click={deleteResults} class="tag is-danger">
+        <button on:click={deleteResults} class="tag ml-3 mb-3 is-danger">
             {appLang === "en" ? `Delete displayed ${resultName}` : `Supprimer les ${resultName} affichés`}
         </button>
     {:else}
         {#each witness.regions as regionId}
-            <a href="{baseUrl}{regionId}" class="tag is-dark mr-3 is-rounded">Regions extraction #{regionId}</a>
+            <a href="{baseUrl}{regionId}" class="tag is-dark mr-3 mb-3 is-rounded">Regions extraction #{regionId}</a>
         {/each}
         <!--TODO add NEW REGIONS BUTTON (to create empty region in order to launch new automatic extraction)-->
     {/if}

@@ -10,7 +10,7 @@
  */
 
 import { regionsType } from "../constants.js";
-import { getCantaloupeUrl } from "../utils.js";
+import {getCantaloupeUrl, getSasUrl} from "../utils.js";
 
 const IMG_REF_REGEX = /^(?:(\d+)_)?wit(\d+)_([a-z]{3})(\d+)(?:_anno(\d+))?_(\d+)(?:_([\d,]+))?(?:\.jpg)?$/;
 
@@ -56,6 +56,8 @@ export class RegionItem {
     }
 
     get witnessId() { return this.parsed.witnessId; }
+    get digitType() { return this.parsed.digitizationType; }
+    get digitId() { return this.parsed.digitizationId; }
     get regionId() { return this.parsed.regionId; }
     get canvasNb() { return this.parsed.canvasNb; }
     get canvasDigits() { return this.parsed.canvasDigits; }
@@ -79,17 +81,25 @@ export class RegionItem {
         return `${this.iiifRoot}/${c}/${size}/0/default.jpg`;
     }
 
-    infoUrl() {
+    info() {
         return this.iiifRoot ? `${this.iiifRoot}/info.json` : null;
     }
 
-    urlForCanvas(canvasNb = this.canvasNb, coord = "full", size = "full") {
+    manifest() {
+        let ref = `wit${this.witnessId}_${this.digitType}${this.digitId}`;
+        if (this.regionId) {
+            ref += `_anno${this.regionId}`;
+        }
+        return `${getCantaloupeUrl()}/iiif/v2/${ref}/manifest.json`;
+    }
+
+    urlForCanvas(canvasNb = this.canvasNb, coord = this.coord, size = "full") {
         const newImgRoot = this.imgRoot.replace(
             `_${this.canvasStr()}.jpg`,
             `_${this.canvasStr(canvasNb)}.jpg`
         );
-        const c = Array.isArray(coord) ? coord.join(',') : coord;
-        return `${getCantaloupeUrl()}/iiif/2/${newImgRoot}/${c}/${size}/0/default.jpg`;
+        const xywh = Array.isArray(coord) ? coord.join(',') : coord;
+        return `${getCantaloupeUrl()}/iiif/2/${newImgRoot}/${xywh}/${size}/0/default.jpg`;
     }
 
     infoUrlForCanvas(canvasNb = this.canvasNb) {
@@ -98,5 +108,9 @@ export class RegionItem {
             `_${this.canvasStr(canvasNb)}.jpg`
         );
         return `${getCantaloupeUrl()}/iiif/2/${newImgRoot}/info.json`;
+    }
+
+    urlForMirador(canvasNb = this.canvasNb){
+        return `${getSasUrl()}/index.html?iiif-content=${this.manifest()}&canvas=${canvasNb}`;
     }
 }

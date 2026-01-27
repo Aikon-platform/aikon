@@ -4,9 +4,10 @@
     export let delta = 0 // -1 or 1 for page navigation
     export let axis = null; // 'horizontal' or 'vertical'
     export let navigationFct = () => {}; // function to call on click
+    export let css = ""; // additional css styles
 </script>
 
-<button class="nav-btn nav-{direction}" on:click={() => navigationFct(delta, axis)} aria-label="Navigate {direction}">
+<button class="nav-btn nav-{direction}" on:click={() => navigationFct(delta, axis)} aria-label="Navigate {direction}" style="{css}">
     <span class="icon is-small p-0">
         <i class="fas fa-chevron-{direction}"/>
     </span>
