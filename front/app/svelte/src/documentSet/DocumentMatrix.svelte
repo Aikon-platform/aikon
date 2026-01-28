@@ -5,6 +5,7 @@
     import {closeModal, refToIIIF} from '../utils.js';
     import DownloadPng from "../ui/DownloadPng.svelte";
     import NavigationArrow from "../ui/NavigationArrow.svelte";
+    import SplitLayout from "../ui/SplitLayout.svelte";
 
     export let documentSetStore;
 
@@ -35,13 +36,11 @@
     };
     const i18n = (key) => t[key]?.[appLang] || t[key]?.en || key;
 
-    let container, matrixContainer, scatterContainer, modalElement;
+    let matrixContainer, scatterContainer, modalElement;
     let selectedCell = null;
     let sortOrder = 'name';
     let splitRatio = 0.5;
-    let isDragging = false;
     let containerWidth = 0;
-    let resizeObserver;
     let navState = null; // {idx1, idx2}
     let scatterMode = 'page';
 
@@ -52,8 +51,6 @@
     $: documents = Array.from($documentNodes?.values() || []);
     $: matrixData = buildMatrix(documents, $activeDocPairStats.scoreCount, $activeDocStats.scoreCount, sortOrder, $normalizeByImages, $imageCountMap);
     $: scatterData = selectedCell ? buildScatter(selectedCell, scatterMode, $matrixMode === 'filtered', $visiblePairIds) : null;
-    $: leftWidth = Math.max(MIN_WIDTH, containerWidth * splitRatio - 4);
-    $: rightWidth = Math.max(MIN_WIDTH, containerWidth * (1 - splitRatio) - 4);
     $: navLimits = scatterData ? getNavLimits(scatterData) : {max1: 0, max2: 0, pages1: [], pages2: []};
     $: modalData = navState && scatterData && navLimits ? buildModalData(navState, scatterData, navLimits) : null;
 
@@ -747,44 +744,11 @@
         return boundaries;
     }
 
-    function startDrag(e) {
-        isDragging = true;
-        e.preventDefault();
-    }
-
-    function onDrag(e) {
-        if (!isDragging || !container) return;
-        const rect = container.getBoundingClientRect();
-        const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
-        splitRatio = Math.max(0.2, Math.min(0.8, x / rect.width));
-    }
-
-    function stopDrag() {
-        isDragging = false;
-    }
-
     onMount(() => {
-        if (container) {
-            containerWidth = container.offsetWidth;
-            resizeObserver = new ResizeObserver(entries => {
-                containerWidth = entries[0].contentRect.width;
-            });
-            resizeObserver.observe(container);
-        }
-
-        window.addEventListener('mousemove', onDrag);
-        window.addEventListener('mouseup', stopDrag);
-        window.addEventListener('touchmove', onDrag);
-        window.addEventListener('touchend', stopDrag);
         window.addEventListener('keydown', handleKeydown);
     });
 
     onDestroy(() => {
-        resizeObserver?.disconnect();
-        window.removeEventListener('mousemove', onDrag);
-        window.removeEventListener('mouseup', stopDrag);
-        window.removeEventListener('touchmove', onDrag);
-        window.removeEventListener('touchend', stopDrag);
         window.removeEventListener('keydown', handleKeydown);
     });
 
@@ -807,81 +771,70 @@
     </div>
 </div>
 
-<div class="split-container" bind:this={container}>
-    {#if !documents.length}
+{#if !documents.length}
+    <div class="container">
         <div class="notification is-info" style="width: 100%">{i18n('noDocuments')}</div>
-    {:else}
-        <div class="split-panel" style="width: {leftWidth}px;">
-            <div class="box panel-box">
-                <div class="is-flex is-justify-content-space-between is-align-items-center mb-3" style="flex-wrap: wrap; gap: 0.5rem;">
-                    <h4 class="title is-6 mb-0">{i18n('title')}</h4>
-                    <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
-                        <DownloadPng targetId="matrix-viz" filename="document-matrix.png" />
-                        <div class="control">
-                            <div class="select is-small">
-                                <select bind:value={sortOrder}>
-                                    <option value="name">{i18n('byName')}</option>
-                                    <option value="score">{i18n('byScore')}</option>
-                                </select>
-                            </div>
-                        </div>
-                        <label title={i18n('normalization')} class="checkbox is-size-7">
-                            <input type="checkbox" checked={$normalizeByImages} on:change={e => normalizeByImages.set(e.target.checked)}>
-                            {i18n('normalize')}
-                        </label>
+    </div>
+{:else}
+    <SplitLayout>
+        <div slot="left-title" class="is-flex is-justify-content-space-between">
+            <h4 class="title is-6 mb-0">{i18n('title')}</h4>
+            <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
+                <DownloadPng targetId="matrix-viz" filename="document-matrix.png" />
+                <div class="control">
+                    <div class="select is-small">
+                        <select bind:value={sortOrder}>
+                            <option value="name">{i18n('byName')}</option>
+                            <option value="score">{i18n('byScore')}</option>
+                        </select>
                     </div>
                 </div>
-
-                <div class="scroll-area">
-                    <div id="matrix-viz" class="matrix-grid" style="--cell-size: {cellSize}px;">
-                        <div class="matrix-corner"></div>
-                        {#each ["col", "row"] as side}
-                            <div class="{side}-headers">
-                                {#each matrixData.docs as doc (doc.id)}
-                                    <div class="header-cell">
-                                        <span class="color-dot" style="background-color: {doc.color}" title="{doc.title} {model2title.Witness} #{doc.witnessId}"></span>
-                                    </div>
-                                {/each}
+                <label title={i18n('normalization')} class="checkbox is-size-7">
+                    <input type="checkbox" checked={$normalizeByImages} on:change={e => normalizeByImages.set(e.target.checked)}>
+                    {i18n('normalize')}
+                </label>
+            </div>
+        </div>
+        <div slot="left-scroll">
+            <div id="matrix-viz" class="matrix-grid" style="--cell-size: {cellSize}px;">
+                <div class="matrix-corner"></div>
+                {#each ["col", "row"] as side}
+                    <div class="{side}-headers">
+                        {#each matrixData.docs as doc (doc.id)}
+                            <div class="header-cell">
+                                <span class="color-dot" style="background-color: {doc.color}" title="{doc.title} {model2title.Witness} #{doc.witnessId}"></span>
                             </div>
                         {/each}
-                        <div class="matrix-canvas" bind:this={matrixContainer}></div>
                     </div>
-                </div>
+                {/each}
+                <div class="matrix-canvas" bind:this={matrixContainer}></div>
             </div>
         </div>
-
-        <div class="split-divider" on:mousedown={startDrag} on:touchstart={startDrag} role="separator" tabindex="0"></div>
-
-        <div class="split-panel" style="width: {rightWidth}px;">
-            <div class="box panel-box">
-                <div class="is-flex is-justify-content-space-between is-align-items-center mb-3"
-                     style="flex-wrap: wrap; gap: 0.5rem;">
-                    <h4 class="title is-6 mb-0">{i18n('pageByPage')}</h4>
-                    <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
-                        {#if selectedCell}
-                            <DownloadPng targetId="scatter-viz" filename="document-comparison.png"/>
-                            <div class="control">
-                                <div class="select is-small">
-                                    <select bind:value={scatterMode}>
-                                        <option value="page">{i18n('byPage')}</option>
-                                        <option value="image">{i18n('byImage')}</option>
-                                    </select>
-                                </div>
-                            </div>
-                        {/if}
+        <div slot="right-title" class="is-flex is-justify-content-space-between">
+            <h4 class="title is-6 mb-0">{i18n('pageByPage')}</h4>
+            <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
+                {#if selectedCell}
+                    <DownloadPng targetId="scatter-viz" filename="document-comparison.png"/>
+                    <div class="control">
+                        <div class="select is-small">
+                            <select bind:value={scatterMode}>
+                                <option value="page">{i18n('byPage')}</option>
+                                <option value="image">{i18n('byImage')}</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
-                <div class="scroll-area">
-                    {#if selectedCell}
-                        <div id="scatter-viz" class="scatter-container" bind:this={scatterContainer}></div>
-                    {:else}
-                        <p class="has-text-grey is-size-7">{i18n('selectCell')}</p>
-                    {/if}
-                </div>
+                {/if}
             </div>
         </div>
-    {/if}
-</div>
+        <div slot="right-scroll">
+            {#if selectedCell}
+                <div id="scatter-viz" class="scatter-container" bind:this={scatterContainer}></div>
+            {:else}
+                <p class="has-text-grey is-size-7">{i18n('selectCell')}</p>
+            {/if}
+        </div>
+    </SplitLayout>
+{/if}
 
 <div id="matrix-page-modal" class="modal" bind:this={modalElement} use:closeModal>
     <div class="modal-background"></div>
@@ -932,54 +885,6 @@
 </div>
 
 <style>
-    .split-container {
-        display: flex;
-        gap: 0;
-        user-select: none;
-    }
-
-    .split-panel {
-        flex-shrink: 0;
-        min-width: 0;
-        height: 100%;
-    }
-
-    .split-divider {
-        width: 8px;
-        cursor: col-resize;
-        background: transparent;
-        position: relative;
-        flex-shrink: 0;
-    }
-
-    .split-divider::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 4px;
-        height: 40px;
-        background: var(--bulma-border);
-        border-radius: 2px;
-    }
-
-    .split-divider:hover::after {
-        background: var(--bulma-link);
-    }
-
-    .panel-box {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .scroll-area {
-        flex: 1;
-        overflow: auto;
-        max-height: calc(100vh - 250px);
-    }
-
     .matrix-grid {
         display: grid;
         grid-template-columns: var(--cell-size) auto;
