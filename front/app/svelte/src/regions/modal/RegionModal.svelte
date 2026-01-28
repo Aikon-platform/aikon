@@ -1,5 +1,6 @@
 <script>
     import { createEventDispatcher, onMount, onDestroy } from "svelte";
+    import NavigationArrow from "../../ui/NavigationArrow.svelte";
 
     export let open = false;
     /** @type {any[]} */
@@ -38,9 +39,7 @@
         <div class="modal-background" on:click={close} on:keyup/>
         <div class="modal-content">
             {#if canNavigate}
-                <button class="nav-btn" on:click={() => navigate(-1)}>
-                    <span class="icon"><i class="fas fa-chevron-left"/></span>
-                </button>
+                <NavigationArrow direction="left" delta={-1} navigationFct={navigate} css={"position: initial;"}/>
             {/if}
 
             <div class="modal-inner">
@@ -48,9 +47,7 @@
             </div>
 
             {#if canNavigate}
-                <button class="nav-btn" on:click={() => navigate(1)}>
-                    <span class="icon"><i class="fas fa-chevron-right"/></span>
-                </button>
+                <NavigationArrow direction="right" delta={1} navigationFct={navigate} css={"position: initial;"}/>
             {/if}
         </div>
         <button class="modal-close is-large" on:click={close} aria-label="close"/>
@@ -64,11 +61,6 @@
         display: flex;
         align-items: center;
         gap: 1rem;
-    }
-    .nav-btn {
-        color: var(--bulma-link);
-        cursor: pointer;
-        z-index: 1;
     }
     .modal-inner {
         flex: 1;
