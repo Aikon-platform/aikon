@@ -1,6 +1,6 @@
 import {derived, writable, get} from 'svelte/store';
-import {initPagination, pageUpdate, showMessage, withLoading} from "../utils.js";
-import {appLang, appName, csrfToken, isSuperuser} from "../constants.js";
+import {initPagination, pageUpdate, showMessage, withLoading} from "../../utils.js";
+import {appLang, appName, csrfToken, isSuperuser} from "../../constants.js";
 
 export function createClusterStore(documentSetStore, clusterSelection) {
     const pageLength = 10;

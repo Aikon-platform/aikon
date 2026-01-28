@@ -1,6 +1,6 @@
 <script>
     import LegendItem from "./LegendItem.svelte";
-    import {appLang, model2title} from "../constants.js";
+    import {appLang, model2title} from "../../constants.js";
 
     export let documentNodes;
     export let selectedRegions;

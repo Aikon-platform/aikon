@@ -1,10 +1,10 @@
 <script>
-    import LegendItem from "./LegendItem.svelte";
-    import RegionCard from "../regions/RegionCard.svelte";
-    import RegionModal from "../regions/modal/RegionModal.svelte";
-    import PageView from "../regions/modal/PageView.svelte";
-    import Tabs from "../ui/Tabs.svelte";
-    import {appLang} from "../constants.js";
+    import LegendItem from "../sidebar/LegendItem.svelte";
+    import RegionCard from "../../regions/RegionCard.svelte";
+    import RegionModal from "../../regions/modal/RegionModal.svelte";
+    import PageView from "../../regions/modal/PageView.svelte";
+    import Tabs from "../../ui/Tabs.svelte";
+    import {appLang} from "../../constants.js";
 
     export let selectedDocuments = [];
     export let documentSetStore;

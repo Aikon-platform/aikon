@@ -1,12 +1,12 @@
 <script>
-    import Table from "../Table.svelte";
-    import Row from "../Row.svelte";
-    import Toolbar from "../Toolbar.svelte";
-    import {appLang, isSuperuser} from "../constants.js";
-    import Pagination from "../Pagination.svelte";
-    import RegionsSelectionModal from "../regions/RegionsSelectionModal.svelte";
-    import { clusterSelection } from '../selection/selectionStore.js';
-    import Regions from "../regions/Regions.svelte";
+    import Table from "../../Table.svelte";
+    import Row from "../../Row.svelte";
+    import Toolbar from "../../Toolbar.svelte";
+    import {appLang, isSuperuser} from "../../constants.js";
+    import Pagination from "../../Pagination.svelte";
+    import RegionsSelectionModal from "../../regions/RegionsSelectionModal.svelte";
+    import { clusterSelection } from '../../selection/selectionStore.js';
+    import Regions from "../../regions/Regions.svelte";
 
     export let documentSetStore;
     const { imageNodes,} = documentSetStore;

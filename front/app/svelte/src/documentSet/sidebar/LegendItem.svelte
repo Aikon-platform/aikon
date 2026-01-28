@@ -1,5 +1,5 @@
 <script>
-    import {appName, appUrl} from "../constants.js";
+    import {appName, appUrl} from "../../constants.js";
 
     export let isActive = true;
     export let id;

@@ -1,11 +1,10 @@
 <script>
-    import {appLang, appUrl, appName, model2title} from '../constants.js';
-    import CategoryButton from "../regions/similarity/CategoryButton.svelte";
-    import { activeLayout } from '../ui/tabStore.js';
+    import {appLang, model2title} from '../../constants.js';
+    import CategoryButton from "../../regions/similarity/CategoryButton.svelte";
+    import { activeLayout } from '../../ui/tabStore.js';
     import {getContext} from "svelte";
     import Legend from "./Legend.svelte";
-    import InputSlider from "../ui/InputSlider.svelte";
-    import NetworkInfo from "./NetworkInfo.svelte";
+    import InputSlider from "../../ui/InputSlider.svelte";
 
     export let docSet = null;
     export let documentSetStore;

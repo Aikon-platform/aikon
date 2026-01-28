@@ -2,9 +2,9 @@
     import { onDestroy } from 'svelte';
     import { createCanvas } from './network-canvas.js';
     import { createSvg } from './network-svg.js';
-    import AlignedMatrix from './AlignedMatrix.svelte';
-    import { appLang } from '../constants.js';
-    import Regions from "../regions/Regions.svelte";
+    import DocumentTable from './DocumentTable.svelte';
+    import { appLang } from '../../constants.js';
+    import Regions from "../../regions/Regions.svelte";
 
     export let type = 'img';
     export let documentSetStore;
@@ -18,7 +18,7 @@
     let networkInstance;
     let container;
     let selectionMode = false;
-    const render_threshold = 1000;
+    const render_threshold = 500;
 
     $: networkData = type === 'img' ? imageNetwork : documentNetwork;
 
@@ -68,11 +68,11 @@
         on:click={toggleSelectionMode}>
         {#if selectionMode}
             <span class="icon px-4">
-                <i class="fas fa-hand-pointer"></i>
+                <i class="fas fa-hand-pointer"/>
             </span>
         {:else}
             <span class="icon px-4">
-                <i class="fas fa-crop-alt"></i>
+                <i class="fas fa-crop-alt"/>
             </span>
         {/if}
         Switch to {selectionMode ? 'click' : 'selection'} mode
@@ -89,7 +89,7 @@
             </div>
         </div>
         {:else if type === 'doc'}
-            <AlignedMatrix selectedDocuments={$selectedNodes} {documentSetStore}/>
+            <DocumentTable selectedDocuments={$selectedNodes} {documentSetStore}/>
         {/if}
     {/if}
 </div>

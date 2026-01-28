@@ -1,6 +1,6 @@
 <script>
-    import {appLang} from "../constants.js";
-    import { activeLayout } from "../ui/tabStore.js"
+    import {appLang} from "../../constants.js";
+    import { activeLayout } from "../../ui/tabStore.js"
 
     export let documentSetStore;
     const { imageStats, documentStats, docPairStats } = documentSetStore;

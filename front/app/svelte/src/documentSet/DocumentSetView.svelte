@@ -7,12 +7,12 @@
     import {syncStoreWithURL} from '../utils';
 
     import Layout from '../Layout.svelte';
-    import Sidebar from './Sidebar.svelte';
-    import NetworkVisualization from './NetworkVisualization.svelte';
+    import Sidebar from './sidebar/Sidebar.svelte';
+    import NetworkVisualization from './network/NetworkVisualization.svelte';
     import DocumentMatrix from './document-matrix/DocumentMatrix.svelte';
     import {createDocumentSetStore} from './documentSetStore.js';
-    import Clusters from "./Clusters.svelte";
-    import {createClusterStore} from "./clusterStore.js";
+    import Clusters from "./clusters/Clusters.svelte";
+    import {createClusterStore} from "./clusters/clusterStore.js";
 
     export let docSet;
 
