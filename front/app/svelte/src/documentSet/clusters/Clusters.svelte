@@ -9,7 +9,7 @@
     import Regions from "../../regions/Regions.svelte";
 
     export let documentSetStore;
-    const { imageNodes,} = documentSetStore;
+    const { imageNodes, selectedCategories } = documentSetStore;
     export let clusterStore;
     const {
         clusterNb,
@@ -66,6 +66,8 @@
             cl.members.map(imgId => ({...$imageNodes.get(imgId), clusterId: cl.id}))
         ])
     );
+
+    $: onlyExactMatches = $selectedCategories.length === 1 && $selectedCategories[0] === 1;
 </script>
 
 {#if isSuperuser}
@@ -80,15 +82,20 @@
             <div class="column">
                 <div class="field has-addons">
                     {#each Object.values(globalActions) as action}
-                        <p class="control">
-                            <button class="button pl-5" on:click|preventDefault={action.fct} title={action.desc}>
-                                <span class="icon is-small">
-                                    <i class="fas {action.icon}"/>
-                                </span>
-                                {action.title}
-                                <span class="shortcut">{action.shortcut}</span>
-                            </button>
-                        </p>
+                        {#if !onlyExactMatches && action.title === actionLabels.remove.title}
+                            <!-- Skip "remove" action if other category are selected -->
+                            <!-- Because it makes no sense to remove the category "exact match" from pairs that do not have it -->
+                        {:else}
+                            <p class="control">
+                                <button class="button pl-5" on:click|preventDefault={action.fct} title={action.desc}>
+                                    <span class="icon is-small">
+                                        <i class="fas {action.icon}"/>
+                                    </span>
+                                    {action.title}
+                                    <span class="shortcut">{action.shortcut}</span>
+                                </button>
+                            </p>
+                        {/if}
                     {/each}
                 </div>
             </div>

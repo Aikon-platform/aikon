@@ -67,11 +67,20 @@ export function createClusterStore(documentSetStore, clusterSelection) {
                     }
                 }
 
+                // if (actualLinks > maxEdges) {
+                //     console.warn(`Cluster has more actual links (${actualLinks}) than max possible edges (${maxEdges}).`);
+                //     for (const p of pairs) {
+                //         if (imageSet.has(p.id_1) && imageSet.has(p.id_2)) {
+                //             console.log(p);
+                //         }
+                //     }
+                // }
+
                 return {
                     id: crypto.randomUUID(),
                     members,
                     size: n,
-                    fullyConnected: actualLinks === maxEdges && allCategory1
+                    fullyConnected: actualLinks >= maxEdges && allCategory1
                 };
             })
             .filter(c => c.size > 1)

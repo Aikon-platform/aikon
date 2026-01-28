@@ -808,11 +808,16 @@ def fix_img(img_ref: str) -> str:
     return img_ref
 
 
-def get_or_create_pair(img_1, img_2, rid_1=None, rid_2=None, create=True):
+def normalize_pair(img_1: str, img_2: str, rid_1: int = None, rid_2: int = None):
     img_1, img_2 = fix_img(img_1), fix_img(img_2)
     if sort_key(img_2) < sort_key(img_1):
         img_1, img_2 = img_2, img_1
         rid_1, rid_2 = rid_2, rid_1
+    return img_1, img_2, rid_1, rid_2
+
+
+def get_or_create_pair(img_1, img_2, rid_1=None, rid_2=None, create=True):
+    img_1, img_2, rid_1, rid_2 = normalize_pair(img_1, img_2, rid_1, rid_2)
 
     pair = RegionPair.objects.filter(
         # Q(img_1=img_1, img_2=img_2) | Q(img_1=img_2, img_2=img_1)

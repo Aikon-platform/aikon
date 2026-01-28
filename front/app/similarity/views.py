@@ -39,10 +39,10 @@ from app.similarity.utils import (
     add_user_to_category_x,
     filter_pairs,
     retrieve_pair,
-    get_or_create_pair,
     SimilarityType,
     build_pairs_query,
     stream_pairs_ndjson,
+    normalize_pair,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
@@ -673,48 +673,60 @@ def exact_match_batch(request):
 
     try:
         data = json.loads(request.body)
-        results = {"created": 0, "updated": 0, "already_matched": 0}
-        pairs_to_create = []
-        pairs_to_update = []
+        results = {"created": 0, "updated": 0}
 
-        for pair_data in data.get("pairs", []):
-            region_pair, created = get_or_create_pair(
-                pair_data["img_1"],
-                pair_data["img_2"],
-                pair_data["regions_id_1"],
-                pair_data["regions_id_2"],
+        pairs = [
+            normalize_pair(p["img_1"], p["img_2"], p["regions_id_1"], p["regions_id_2"])
+            for p in data.get("pairs", [])
+        ]
+
+        if not pairs:
+            return JsonResponse({"status": "success", "results": results})
+
+        unique_img_pairs = {(img_1, img_2) for img_1, img_2, _, _ in pairs}
+
+        q = Q()
+        for img_1, img_2 in unique_img_pairs:
+            q |= Q(img_1=img_1, img_2=img_2)
+
+        existing = set(
+            RegionPair.objects.filter(q).values_list("img_1", "img_2").distinct()
+        )
+
+        # Create missing
+        to_create = []
+        created_keys = set()
+        for img_1, img_2, rid_1, rid_2 in pairs:
+            key = (img_1, img_2)
+            if key not in existing and key not in created_keys:
+                created_keys.add(key)
+                to_create.append(
+                    RegionPair(
+                        img_1=img_1,
+                        img_2=img_2,
+                        regions_id_1=regions_from_img(
+                            img_1, candidate_rids=[rid_1, rid_2]
+                        ),
+                        regions_id_2=regions_from_img(
+                            img_2, candidate_rids=[rid_2, rid_1]
+                        ),
+                        category=1,
+                        similarity_type=SimilarityType.PROPAGATED,
+                        score=None,
+                        category_x=[],
+                    )
+                )
+
+        if to_create:
+            RegionPair.objects.bulk_create(to_create)
+            results["created"] = len(to_create)
+
+        if existing:
+            results["updated"] = (
+                RegionPair.objects.filter(q).exclude(category=1).update(category=1)
             )
 
-            if created:
-                region_pair.category = 1
-                pairs_to_create.append(region_pair)
-            elif region_pair.category != 1:
-                region_pair.category = 1
-                pairs_to_update.append(region_pair)
-            else:
-                results["already_matched"] += 1
-            # log(
-            #     f"[exact_match_batch] Pair ({created}): {region_pair.img_1}-{region_pair.img_2} => {region_pair.category}"
-            # )
-            # region_pair.category = 1
-            # if created:
-            #     pairs_to_create.append(region_pair)
-            # else:
-            #     pairs_to_update.append(region_pair)
-
-        if pairs_to_create:
-            RegionPair.objects.bulk_create(pairs_to_create)
-            results["created"] = len(pairs_to_create)
-
-        if pairs_to_update:
-            RegionPair.objects.bulk_update(
-                pairs_to_update,
-                # ["category", "regions_id_1", "regions_id_2", "img_1", "img_2"],
-                ["category"],
-            )
-            results["updated"] = len(pairs_to_update)
-
-        return JsonResponse({"status": "success", "results": results}, status=200)
+        return JsonResponse({"status": "success", "results": results})
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
@@ -730,27 +742,31 @@ def uncategorize_pair_batch(request):
 
     try:
         data = json.loads(request.body)
-        pairs_to_update = []
-        for pair_data in data.get("pairs", []):
-            pair, _ = get_or_create_pair(
-                pair_data.get("img_1"),
-                pair_data.get("img_2"),
-                pair_data.get("regions_id_1", None),
-                pair_data.get("regions_id_2", None),
-                create=False,
+
+        pairs = set()
+        for p in data.get("pairs", []):
+            img_1, img_2, _, _ = normalize_pair(
+                p.get("img_1"),
+                p.get("img_2"),
+                p.get("regions_id_1"),
+                p.get("regions_id_2"),
             )
-            if pair and pair.category is not None:
-                pair.category = None
-                pairs_to_update.append(pair)
+            pairs.add((img_1, img_2))
 
-        uncategorized = 0
-        if pairs_to_update:
-            RegionPair.objects.bulk_update(pairs_to_update, ["category"])
-            uncategorized = len(pairs_to_update)
+        if not pairs:
+            return JsonResponse({"status": "success", "uncategorized": 0})
 
-        return JsonResponse(
-            {"status": "success", "uncategorized": uncategorized}, status=200
+        q = Q()
+        for img_1, img_2 in pairs:
+            q |= Q(img_1=img_1, img_2=img_2)
+
+        uncategorized = (
+            RegionPair.objects.filter(q)
+            .exclude(category__isnull=True)
+            .update(category=None)
         )
+
+        return JsonResponse({"status": "success", "uncategorized": uncategorized})
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
