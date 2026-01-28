@@ -81,8 +81,8 @@ export function createDocumentSetStore(documentSetId) {
         // const documentSetId = 414; // nicolas
         // const documentSetId = 437; // physiologus
         // const documentSetId = 416; // de materia medica
-        // const documentSetId = 417; // traité de géométrie
-        // const documentSetId = 418; // encyclopédie mathématique
+        // const documentSetId = 417; // traitÃ© de gÃ©omÃ©trie
+        // const documentSetId = 418; // encyclopÃ©die mathÃ©matique
         // const documentSetId = 436; // Jombert complet
         // const documentSetId = 432; // Jombert incomplet
         // TO DELETE
@@ -303,6 +303,53 @@ export function createDocumentSetStore(documentSetId) {
         }
     );
 
+    const filteredDocPairStats = derived(filteredPairs, ($pairs) => {
+        const scoreCount = new Map();
+        if (!$pairs?.length) return {scoreCount, scoreRange: {min: 0, max: 0, range: 0}};
+
+        let min = Infinity, max = -Infinity;
+        for (const p of $pairs) {
+            const key = p.regions_id_1 < p.regions_id_2
+                ? `${p.regions_id_1}-${p.regions_id_2}`
+                : `${p.regions_id_2}-${p.regions_id_1}`;
+            const entry = scoreCount.get(key) || {score: 0, count: 0};
+            entry.score += p.weightedScore || 0;
+            entry.count++;
+            scoreCount.set(key, entry);
+        }
+
+        for (const {score} of scoreCount.values()) {
+            if (score < min) min = score;
+            if (score > max) max = score;
+        }
+        if (min === Infinity) min = max = 0;
+
+        return {scoreCount, scoreRange: {min, max, range: max - min}};
+    });
+
+    const filteredDocStats = derived(filteredPairs, ($pairs) => {
+        const scoreCount = new Map();
+        if (!$pairs?.length) return {scoreCount, countRange: {min: 0, max: 0, range: 0}};
+
+        for (const p of $pairs) {
+            for (const rid of [p.regions_id_1, p.regions_id_2]) {
+                const entry = scoreCount.get(rid) || {score: 0, count: 0};
+                entry.score += p.weightedScore || 0;
+                entry.count++;
+                scoreCount.set(rid, entry);
+            }
+        }
+
+        let min = Infinity, max = -Infinity;
+        for (const {count} of scoreCount.values()) {
+            if (count < min) min = count;
+            if (count > max) max = count;
+        }
+        if (min === Infinity) min = max = 0;
+
+        return {scoreCount, countRange: {min, max, range: max - min}};
+    });
+
     function calculateLinkProps(score, scoreRange, minDistance = 10, maxDistance = 200, minWidth = 2, maxWidth = 25) {
         if (!scoreRange) return {strength: 0.5, distance: 100, width: 2};
 
@@ -365,15 +412,15 @@ export function createDocumentSetStore(documentSetId) {
         return { nodes, links };
     });
 
-    const documentNetwork = derived(filteredDocs, ($docNodes) => {
-        const $docPairStats = get(docPairStats);
-        const $docStats = get(documentStats)
+    const documentNetwork = derived([filteredDocs], ([$docNodes]) => {
+        if (!$docNodes.length) return { nodes: [], links: [] };
 
-        if ($docNodes.size === 0) return { nodes: [], links: [] };
+        const $docStats = get(filteredDocStats);
+        const $docPairStats = get(filteredDocPairStats);
 
-        const nodes = Array.from($docNodes.values()).map(n => {
-            const docStats = $docStats.scoreCount?.get(n.id);
-            const {count, score} = docStats;
+        const nodes = $docNodes.map(n => {
+            const stats = $docStats.scoreCount?.get(n.id);
+            const { count = 0, score = 0 } = stats || {};
 
             return {
                 ...n,
@@ -389,6 +436,7 @@ export function createDocumentSetStore(documentSetId) {
                 source, target, strength, distance, width
             };
         });
+
 
         return { nodes, links };
     });
@@ -534,53 +582,6 @@ export function createDocumentSetStore(documentSetId) {
             set.add(`${p.id_1}-${p.id_2}`);
         }
         return set;
-    });
-
-    const filteredDocPairStats = derived(filteredPairs, ($pairs) => {
-        const scoreCount = new Map();
-        if (!$pairs?.length) return {scoreCount, scoreRange: {min: 0, max: 0, range: 0}};
-
-        let min = Infinity, max = -Infinity;
-        for (const p of $pairs) {
-            const key = p.regions_id_1 < p.regions_id_2
-                ? `${p.regions_id_1}-${p.regions_id_2}`
-                : `${p.regions_id_2}-${p.regions_id_1}`;
-            const entry = scoreCount.get(key) || {score: 0, count: 0};
-            entry.score += p.weightedScore || 0;
-            entry.count++;
-            scoreCount.set(key, entry);
-        }
-
-        for (const {score} of scoreCount.values()) {
-            if (score < min) min = score;
-            if (score > max) max = score;
-        }
-        if (min === Infinity) min = max = 0;
-
-        return {scoreCount, scoreRange: {min, max, range: max - min}};
-    });
-
-    const filteredDocStats = derived(filteredPairs, ($pairs) => {
-        const scoreCount = new Map();
-        if (!$pairs?.length) return {scoreCount, countRange: {min: 0, max: 0, range: 0}};
-
-        for (const p of $pairs) {
-            for (const rid of [p.regions_id_1, p.regions_id_2]) {
-                const entry = scoreCount.get(rid) || {score: 0, count: 0};
-                entry.score += p.weightedScore || 0;
-                entry.count++;
-                scoreCount.set(rid, entry);
-            }
-        }
-
-        let min = Infinity, max = -Infinity;
-        for (const {count} of scoreCount.values()) {
-            if (count < min) min = count;
-            if (count > max) max = count;
-        }
-        if (min === Infinity) min = max = 0;
-
-        return {scoreCount, countRange: {min, max, range: max - min}};
     });
 
     const imageCountMap = derived(documentNodes, ($docs) => {
