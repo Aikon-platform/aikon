@@ -66,6 +66,12 @@ class Command(BaseCommand):
             help="Output file for dry-run actions",
         )
         parser.add_argument(
+            "--flagged-output",
+            type=str,
+            default="flagged_pairs.json",
+            help="Output file for flagged pairs requiring review",
+        )
+        parser.add_argument(
             "--apply-from-file",
             type=str,
             help="Apply actions from JSON file",
@@ -79,7 +85,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--limit",
             type=int,
-            default=10000,
+            default=0,
             help="Max pairs to process (0 for all)",
         )
 
@@ -201,6 +207,7 @@ class Command(BaseCommand):
             self._export_actions(actions, options["output"], stats)
         else:
             self._apply_actions(actions, stats, regions_to_digit)
+        self._export_flagged_pairs(actions, options["flagged_output"])
 
         self._print_summary(stats, dry_run)
 
@@ -572,6 +579,31 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.WARNING(f"Flagged {len(flags)} pairs for review")
             )
+
+    def _export_flagged_pairs(self, actions: list[Action], output_file: str):
+        """Export detailed flagged pairs report for human review."""
+        flagged = [a for a in actions if a.type == Action.FLAG]
+
+        # Group flagged by reason
+        by_reason = defaultdict(list)
+        for a in flagged:
+            by_reason[a.reason.split(":")[0]].append(a.to_dict())
+
+        export = {
+            "generated_at": datetime.now().isoformat(),
+            "summary": {
+                "total_flagged": len(flagged),
+                "by_reason": {k: len(v) for k, v in by_reason.items()},
+            },
+            "flagged_pairs_by_reason": dict(by_reason),
+        }
+
+        with open(output_file, "w") as f:
+            json.dump(export, f, indent=2)
+
+        self.stdout.write(
+            self.style.WARNING(f"\nExported flagged pairs to {output_file}")
+        )
 
     def _print_summary(self, stats, dry_run: bool):
         self.stdout.write("\n" + "=" * 60)

@@ -1,24 +1,13 @@
 <script>
     import { fade } from 'svelte/transition';
-    import {onMount, getContext, onDestroy} from 'svelte';
-
-    import {appLang, mediaPrefix} from "../../constants.js";
+    import { onMount, onDestroy } from 'svelte';
+    import { appLang, mediaPrefix } from "../../constants.js";
     import { refToIIIF } from "../../utils.js";
-
-    import { regionsSelection } from '../../selection/selectionStore.js';
-
-    export let selectionStore;
-    if (!selectionStore) {
-        selectionStore = regionsSelection;
-    }
-    const { isSelected } = selectionStore;
-
-    export let toggleSelection = selectionStore.toggle;
 
     export let svgPath;
     export let width = 200;
     export let fullWidth = false;
-    export let selectable = true;
+    export let selected = false;
 
     const [wit, digit, canvas, xywh] = svgPath.replace(".svg", "").split("_");
     const img = refToIIIF(`${wit}_${digit}_${canvas}`, xywh, `${width},`);
@@ -27,21 +16,6 @@
     let svgContent = '';
     let svgViewBox = '';
     let downloadUrl = '';
-
-    const compareImgItem = getContext("qImgMetadata") || undefined;
-    const isInModal = getContext("isInModal") || false;
-    const transitionDuration = isInModal ? 0 : 500;
-
-    let modalControllerComponent;
-    if ( !isInModal ) {
-        import("../modal/ModalController.svelte").then((res) => modalControllerComponent = res.default);
-    }
-
-    let item = {
-        ref: svgPath,
-        img: `${wit}_${digit}_${canvas}`,
-        xywh
-    };
 
     $: if (svgContent) {
         const blob = new Blob([svgContent], { type: "image/svg+xml" });
@@ -72,19 +46,9 @@
     });
 </script>
 
-<div class="region is-center {selectable && $isSelected(item) ? 'checked' : ''}"
-    transition:fade={{ duration: transitionDuration }}
->
-    <figure class="image card region-image"
-        style="
-            width: {fullWidth ? '50%' : `${width}px`};
-            aspect-ratio:{svgViewBox ? svgViewBox.split(' ')[2] / svgViewBox.split(' ')[3] : 1};
-        "
-        on:click={() => selectable ? toggleSelection(item) : null}
-        on:keyup={null}
-        on:mouseenter={() => isHovered = true}
-        on:mouseleave={() => isHovered = false}
-    >
+<div class="region is-center" class:checked={selected} transition:fade={{ duration: 300 }}>
+    <figure class="image card region-image" style="width: {fullWidth ? '50%' : `${width}px`}; aspect-ratio:{svgViewBox ? svgViewBox.split(' ')[2] / svgViewBox.split(' ')[3] : 1};"
+            on:click on:keyup on:mouseenter={() => isHovered = true} on:mouseleave={() => isHovered = false}>
         <div class="svg-container">
             {#if !isHovered && svgContent}
                 {@html svgContent}
@@ -94,35 +58,15 @@
     </figure>
 
     <div class="region-btn ml-1">
-        <a class="button tag"
-           href={downloadUrl}
-           download={svgPath}
-        >
-            <i class="fa-solid fa-download"></i>
-            <span class="tooltip">
-                {appLang === 'en' ? "Download SVG" : "Télécharger le SVG"}
-            </span>
+        <a class="button tag" href={downloadUrl} download={svgPath}>
+            <i class="fa-solid fa-download"/>
+            <span class="tooltip">{appLang === 'en' ? "Download SVG" : "Télécharger le SVG"}</span>
         </a>
-        {#if modalControllerComponent}
-            <svelte:component this={modalControllerComponent}
-                mainImgItem={item}
-                compareImgItem={compareImgItem}
-                svgItem={svgPath}
-            />
-        {/if}
+        <slot name="actions"/>
     </div>
 </div>
 
 <style>
-    .region {
-        cursor: pointer;
-        position: relative;
-        display: flex;
-        justify-content: center;
-        align-items: start;
-        max-height: 100%;
-    }
-
     .svg-container {
         position: absolute;
         inset: 0;
@@ -133,14 +77,6 @@
     .svg-container :global(svg) {
         width: 100%;
         height: 100%;
-    }
-
-    .region-btn {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-around;
     }
 
     .region-image {
@@ -154,38 +90,6 @@
         object-fit: contain;
     }
 
-    .region-btn {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-around;
-    }
-    .region-btn > * {
-        width: 100%;
-    }
-    .region-btn > :first-child {
-        margin-bottom: .5em;
-    }
-    .region-btn > .button:hover .tooltip {
-        visibility: visible;
-        opacity: 1;
-    }
-    .tooltip {
-        visibility: hidden;
-        background-color: rgba(0, 0, 0, 0.7);
-        color: #fff;
-        text-align: center;
-        border-radius: 6px;
-        padding: 5px;
-        position: absolute;
-        z-index: 6;
-        bottom: 125%;
-        left: 50%;
-        transform: translateX(-50%);
-        opacity: 0;
-        transition: opacity 0.3s;
-    }
     .button {
         padding-left: .8em;
         padding-right: .2em;

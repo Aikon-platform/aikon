@@ -43,11 +43,78 @@ fieldset:not(:last-child) {
     margin-bottom: 1.5rem;
 }
 
+/*.tooltip {*/
+/*    position: relative;*/
+/*    display: inline-block;*/
+/*    border-bottom: 1px dotted black;*/
+/*    cursor: pointer;*/
+/*}*/
+
 .tooltip {
+    visibility: hidden;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 6;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.region-btn {
     position: relative;
-    display: inline-block;
-    border-bottom: 1px dotted black;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+}
+.region-btn > * {
+    width: 100%;
+}
+.region-btn > :first-child {
+    margin-bottom: .5em;
+}
+.region-btn > .button:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+.region {
     cursor: pointer;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: start;
+    max-height: 100%;
+}
+
+.tabs-bar {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.tabs a {
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.tabs-bar::-webkit-scrollbar {
+    height: 6px;
+}
+
+.tabs-bar::-webkit-scrollbar-track {
+    background: var(--bulma-scheme-main);
+}
+
+.tabs-bar::-webkit-scrollbar-thumb {
+    background: var(--bulma-border);
+    border-radius: 3px;
 }
 
 .tooltip .tooltiptext {

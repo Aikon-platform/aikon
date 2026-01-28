@@ -4,15 +4,17 @@
     import { appLang, appName, csrfToken } from '../constants';
 
     const witness = getContext('witness');
-    export let baseUrl = `${window.location.origin}${window.location.pathname}`;
-    export let currentRegionId;
-    export let activeTab;
+    const baseUrl = `${window.location.origin}${window.location.pathname}`;
+    const currentRegionId = parseInt(baseUrl.split('regions/')[1].replace("/", ""));
+    import { activeLayout } from '../ui/tabStore.js';
 
     const allRegionsUrl = baseUrl.replace(/\/\d+\/?$/, "");
 
     async function deleteRegions() {
         const confirmed = await showMessage(
-            appLang === "en" ? "Are you sure you want to delete this record?" : "Voulez-vous vraiment supprimer cet enregistrement ?",
+            appLang === "en" ?
+                "Are you sure you want to delete all the region extraction of this witness?" :
+                "Voulez-vous vraiment supprimer les extractions de régions effectuées sur ce document ?",
             appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
             true
         );
@@ -69,26 +71,34 @@
             await showMessage(error.message, "Error");
         }
     }
+
+    function deleteResults() {
+        if (["all", "page"].includes($activeLayout)) {
+            deleteRegions();
+        } else if ($activeLayout === "similarity") {
+            deleteSimilarity();
+        }
+    }
+
+    $: resultName = ["all", "page"].includes($activeLayout)
+        ? (appLang === "en" ? "regions" : "régions")
+        : (appLang === "en" ? "similarities" : "similarités");
 </script>
 
 <div>
     {#if currentRegionId}
-        {#if ["all", "page"].includes(activeTab) }
-            <a href="{allRegionsUrl}" class="tag is-dark mr-3 is-rounded">All regions</a>
-            <button on:click={deleteRegions} class="tag is-danger">
-                {appLang === "en" ? "Delete regions extraction record" : "Supprimer l'extraction de régions"}
-            </button>
-        {:else if activeTab === "similarity"}
-            <button on:click={deleteSimilarity} class="tag is-danger">
-                {appLang === "en" ? "Delete all regions similarity" : "Supprimer toutes les similarités du document"}
+        <a href="{allRegionsUrl}" class="tag is-dark mr-3 mb-3 is-rounded">
+            {appLang === "en" ? "Back to all witness view" : "Retour à la vue complète du témoin"}
+        </a>
+        {#if ["all", "page", "similarity"].includes($activeLayout)}
+            <button on:click={deleteResults} class="tag mr-3 mb-3 is-danger">
+                {appLang === "en" ? `Delete displayed ${resultName}` : `Supprimer les ${resultName} affichés`}
             </button>
         {/if}
     {:else}
-        {#if ["all", "page", "similarity"].includes(activeTab) }
-            {#each witness.regions as regionId}
-                <a href="{baseUrl}{regionId}" class="tag is-dark mr-3 is-rounded">Regions extraction #{regionId}</a>
-            {/each}
-            <!--TODO add NEW REGIONS BUTTON (to create empty region in order to launch new automatic extraction)-->
-        {/if}
+        {#each witness.regions as regionId}
+            <a href="{baseUrl}{regionId}" class="tag is-dark mr-3 mb-3 is-rounded">Regions extraction #{regionId}</a>
+        {/each}
+        <!--TODO add NEW REGIONS BUTTON (to create empty region in order to launch new automatic extraction)-->
     {/if}
 </div>

@@ -20,7 +20,7 @@
             </tr>
         {:then _}
             {#each $pageQImgs as qImg (qImg.id)}
-                <SimilarityRow {qImg}></SimilarityRow>
+                <SimilarityRow {qImg}/>
             {:else}
                 <tr class="faded is-center">
                     {appLang === "en" ? "No similarity" : "Pas de similarités"}

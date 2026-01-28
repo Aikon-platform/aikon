@@ -9,6 +9,7 @@ import { extractNb } from "../utils.js";
  * @param {string} xywh
  * @param {string} canvas
  * @returns {RegionItemType}
+ * TODO use RegionItem class
  */
 export const toRegionItem = (imgName, witId, xywh, canvas) => ({
     id: imgName, // note for normal regions, it is their SAS annotation id: used for region selection
