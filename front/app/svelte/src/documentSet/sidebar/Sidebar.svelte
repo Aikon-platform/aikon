@@ -25,7 +25,9 @@
         setMutualTopK,
         scoreMode,
         setScoreMode,
-        pairStats
+        pairStats,
+        scoreFilter,
+        setScoreFilter,
     } = documentSetStore;
     const { clusterNb, handlePageUpdate } = clusterStore;
 
@@ -131,45 +133,65 @@
             <hr>
 
             <div class="pt-2">
-                <h3 class="title">
-                    {appLang === 'en' ? 'Similarity score' : 'Score de similarité'}
-                </h3>
-                <div class="buttons mb-3">
-                    {#each ['threshold', 'topk'] as mode}
-                        <button class="button is-small is-flex-grow-1"
-                            class:is-link={$scoreMode === mode}
-                            class:is-contrasted={$scoreMode !== mode}
-                            on:click={() => handleSetScoreMode(mode)}>
-                            {
-                                mode === 'threshold' ?
-                                appLang === 'en' ? 'Score threshold' : 'Seuil de score' :
-                                appLang === 'en' ? 'Top K pairs' : 'Top K paires'
-                            }
-                        </button>
-                    {/each}
-                </div>
-
-                {#if $scoreMode === 'threshold'}
-                    <InputSlider minVal={$pairStats.scoreRange?.min || 0} maxVal={$pairStats.scoreRange?.max || 1}
-                        start={$threshold} step={0.01} roundTo={2}
-                        title={appLang === 'en' ? 'Minimum score' : 'Score minimum'}
-                        on:updateSlider={(e) => setThreshold(e.detail)}/>
-                {:else}
-                    <div class="columns mt-2">
-                        <div class="column is-two-thirds pl-4">
-                            <InputSlider minVal={1} maxVal={5} start={$topK || 3} step={1} roundTo={0} title="K"
-                                on:updateSlider={(e) => setTopK(e.detail)}/>
+                <div class="level is-mobile">
+                    <div class="level-left">
+                        <div class="level-item">
+                            <h3 class="title">
+                                {appLang === 'en' ? 'Similarity score' : 'Score de similarité'}
+                            </h3>
                         </div>
-                        <div class="column mt-2">
-                            <label class="checkbox mt-3 is-flex is-align-items-center">
-                                <input on:change={() => setMutualTopK(!$mutualTopK)} checked={$mutualTopK} type="checkbox" class="mr-2"/>
+                    </div>
+                    <div class="level-right">
+                        <div class="level-item">
+                            <label class="checkbox mt-1 is-flex is-align-items-center">
+                                <input on:change={() => setScoreFilter(!$scoreFilter)} checked={!$scoreFilter} type="checkbox" class="mr-2"/>
                                 <span class="is-size-7">
-                                    {appLang === 'en' ? 'Mutual top K' : 'Top K mutuel'}
+                                    {appLang === 'en' ? 'Disable filtering' : 'Désactiver le filtrage'}
                                 </span>
                             </label>
                         </div>
                     </div>
-                {/if}
+                </div>
+
+                <div class:disabled={!$scoreFilter}>
+                    <div class="buttons mb-3">
+                        {#each ['threshold', 'topk'] as mode}
+                            <button class="button is-small is-flex-grow-1"
+                                    class:is-link={$scoreMode === mode}
+                                    class:is-contrasted={$scoreMode !== mode}
+                                    on:click={() => handleSetScoreMode(mode)}>
+                                {
+                                    mode === 'threshold' ?
+                                        appLang === 'en' ? 'Score threshold' : 'Seuil de score' :
+                                        appLang === 'en' ? 'Top K pairs' : 'Top K paires'
+                                }
+                            </button>
+                        {/each}
+                    </div>
+
+                    {#if $scoreMode === 'threshold'}
+                        <InputSlider minVal={$pairStats.scoreRange?.min || 0} maxVal={$pairStats.scoreRange?.max || 1}
+                                     start={$threshold} step={0.01} roundTo={2}
+                                     title={appLang === 'en' ? 'Minimum score' : 'Score minimum'}
+                                     on:updateSlider={(e) => setThreshold(e.detail)}/>
+                    {:else}
+                        <div class="columns mt-2">
+                            <div class="column is-two-thirds pl-4">
+                                <InputSlider minVal={1} maxVal={5} start={$topK || 3} step={1} roundTo={0} title="K"
+                                             on:updateSlider={(e) => setTopK(e.detail)}/>
+                            </div>
+                            <div class="column mt-2">
+                                <label class="checkbox mt-3 is-flex is-align-items-center">
+                                    <input on:change={() => setMutualTopK(!$mutualTopK)} checked={$mutualTopK}
+                                           type="checkbox" class="mr-2"/>
+                                    <span class="is-size-7">
+                                        {appLang === 'en' ? 'Mutual top K' : 'Top K mutuel'}
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    {/if}
+                </div>
             </div>
 
             <hr>

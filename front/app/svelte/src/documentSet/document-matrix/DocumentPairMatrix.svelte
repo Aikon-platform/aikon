@@ -287,10 +287,6 @@
         label.append('text').attr('x', -size / 2 + 14).attr('text-anchor', 'start').attr('dominant-baseline', 'middle')
             .attr('font-size', '11px').attr('fill', 'var(--bulma-text)').text(truncate(`${doc.title} (${suffix})`, size - 20));
     }
-
-    export function getScatterData() {
-        return scatterData;
-    }
 </script>
 
 <div class="scatter-container" bind:this={container}></div>

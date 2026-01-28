@@ -2,15 +2,15 @@
     import {appLang} from '../../constants.js';
     import DownloadPng from "../../ui/DownloadPng.svelte";
     import SplitLayout from "../../ui/SplitLayout.svelte";
-    import SetMatrix from "./SetMatrix.svelte";
+    import DocumentSetMatrix from "./DocumentSetMatrix.svelte";
     import DocumentPairMatrix from "./DocumentPairMatrix.svelte";
     import PairDetailModal from "./PairDetailModal.svelte";
 
     export let documentSetStore;
 
     const {
-        documentNodes, pairIndex, activeDocPairStats, activeDocStats,
-        imageCountMap, visiblePairIds, matrixMode, normalizeByImages
+        documentNodes, pairIndex, filteredDocPairStats, filteredDocStats,
+        imageCountMap, visiblePairIds, normalizeByImages
     } = documentSetStore;
 
     const t = {
@@ -35,16 +35,16 @@
     let scatterMode = 'page';
     let navState = null;
     let modalActive = false;
-    let pairMatrixRef;
+    let scatterData = null;
 
     $: documents = Array.from($documentNodes?.values() || []);
-    $: pairsForSelection = selectedCell ? getPairsForCell(selectedCell, $matrixMode === 'filtered', $visiblePairIds) : [];
+    $: pairsForSelection = selectedCell ? getPairsForCell(selectedCell, $visiblePairIds) : [];
 
-    function getPairsForCell(cell, filterPairs, visibleIds) {
+    function getPairsForCell(cell, visibleIds) {
         const {doc1, doc2} = cell;
         const pairKey = doc1.id < doc2.id ? `${doc1.id}-${doc2.id}` : `${doc2.id}-${doc1.id}`;
         let pairs = $pairIndex.byDocPair.get(pairKey) || [];
-        if (filterPairs && visibleIds.size > 0) pairs = pairs.filter(p => visibleIds.has(`${p.id_1}-${p.id_2}`));
+        if (visibleIds.size > 0) pairs = pairs.filter(p => visibleIds.has(`${p.id_1}-${p.id_2}`));
         return pairs;
     }
 
@@ -54,6 +54,7 @@
 
     function handleScatterClick(e) {
         navState = {idx1: e.detail.idx1, idx2: e.detail.idx2};
+        scatterData = e.detail.data;
         modalActive = true;
     }
 
@@ -65,18 +66,6 @@
         modalActive = false;
     }
 </script>
-
-<div class="field mb-4">
-    <label class="label is-small" for="matrix-mode">{i18n('filtering')}</label>
-    <div class="control">
-        <div class="select is-small is-fullwidth">
-            <select id="matrix-mode" bind:value={$matrixMode}>
-                <option value="all">{i18n('allPairs')}</option>
-                <option value="filtered">{i18n('filteredPairs')}</option>
-            </select>
-        </div>
-    </div>
-</div>
 
 {#if !documents.length}
     <div class="container">
@@ -98,15 +87,15 @@
                 </div>
                 <label title={i18n('normalization')} class="checkbox is-size-7">
                     <input type="checkbox" checked={$normalizeByImages} on:change={e => normalizeByImages.set(e.target.checked)}>
-                    {i18n('normalize')}
+                    <span class="pt-1">{i18n('normalize')}</span>
                 </label>
             </div>
         </div>
         <div slot="left-scroll" id="matrix-viz">
-            <SetMatrix
+            <DocumentSetMatrix
                 {documents} {sortOrder}
-                scoreData={$activeDocPairStats.scoreCount}
-                docStats={$activeDocStats.scoreCount}
+                scoreData={$filteredDocPairStats.scoreCount}
+                docStats={$filteredDocStats.scoreCount}
                 imageCountMap={$imageCountMap}
                 normalize={$normalizeByImages}
                 on:cellselect={handleCellSelect}
@@ -131,7 +120,6 @@
         <div slot="right-scroll" id="scatter-viz">
             {#if selectedCell}
                 <DocumentPairMatrix
-                    bind:this={pairMatrixRef}
                     doc1={selectedCell.doc1}
                     doc2={selectedCell.doc2}
                     pairs={pairsForSelection}
@@ -146,9 +134,7 @@
 {/if}
 
 <PairDetailModal
-    active={modalActive}
-    scatterData={pairMatrixRef?.getScatterData()}
-    {navState}
+    active={modalActive} {scatterData} {navState}
     on:navigate={handleModalNavigate}
     on:close={handleModalClose}
 />

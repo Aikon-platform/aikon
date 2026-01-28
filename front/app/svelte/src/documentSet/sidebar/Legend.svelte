@@ -14,48 +14,50 @@
         id: (a, b) => a[0] - b[0],
         witnessId: (a, b) => (a[1].witnessId || 0) - (b[1].witnessId || 0),
         title: (a, b) => (a[1].title || '').localeCompare(b[1].title || '')
+        // todo add date
     };
     $: sortedDocs = Array.from(documentNodes || new Map()).sort(sortWith[sortBy]);
 </script>
 
 <div>
-    <div class="level is-mobile mb-3">
+    <h3 class="title mb-3">
+        {appLang === 'en' ? 'Visible documents' : 'Documents visibles'} ({documentNodes?.size || 0})
+    </h3>
+    <div class="level is-mobile mb-4">
         <div class="level-left">
             <div class="level-item">
-                <h3 class="title mb-0">
-                    {appLang === 'en' ? 'Visible documents' : 'Documents visibles'}
-                </h3>
+                <div class="level-item mb-0 field has-addons is-small">
+                    <p class="control mb-0" title={appLang === 'en' ? 'Sort documents by' : 'Trier les documents par'}>
+                        <span class="select is-small">
+                            <select bind:value={sortBy}>
+                                <option value="id">ID</option>
+                                <option value="witnessId">{model2title.Witness}</option>
+                                <option value="title">{appLang === 'en' ? 'Title' : 'Titre'}</option>
+                            </select>
+                        </span>
+                    </p>
+                    <p class="control" title={appLang === 'en' ? 'Select all documents' : 'Sélectionner tous les documents'}>
+                        <button class="button is-small is-shadowless" on:click={() => selectAllRegions()}>
+                            {appLang === 'en' ? 'Select all' : 'Tout sélectionner'}
+                            <span class="icon is-small has-text-link pl-5 pr-1">
+                                <i class="fas fa-check"/>
+                            </span>
+                        </button>
+                    </p>
+                </div>
             </div>
         </div>
         <div class="level-right">
-            <div class="level-item mb-0 field has-addons is-small">
-                <p class="control mb-0" title={appLang === 'en' ? 'Sort documents by' : 'Trier les documents par'}>
-                    <span class="select is-small">
-                        <select bind:value={sortBy}>
-                            <option value="id">ID</option>
-                            <option value="witnessId">{model2title.Witness}</option>
-                            <option value="title">{appLang === 'en' ? 'Title' : 'Titre'}</option>
-                        </select>
-                    </span>
-                </p>
-                <p class="control" title={appLang === 'en' ? 'Select all documents' : 'Sélectionner tous les documents'}>
-                    <button class="button is-small is-shadowless" on:click={() => selectAllRegions()}>
-                        <span class="icon is-small has-text-link pl-2">
-                            <i class="fas fa-check"></i>
-                        </span>
-                    </button>
-                </p>
-            </div>
             <div class="level-item" title={isExpanded ? 'Minify legend' : 'Expand legend'}>
                 <button class="button is-small is-ghost" on:click={() => isExpanded = !isExpanded}
                         aria-label={isExpanded ? 'Minify legend' : 'Expand legend'}>
                     {#if isExpanded}
                         <span class="icon is-small">
-                            <i class="fas fa-chevron-up"></i>
+                            <i class="fas fa-chevron-up"/>
                         </span>
                     {:else}
                         <span class="icon is-small">
-                            <i class="fas fa-chevron-down"></i>
+                            <i class="fas fa-chevron-down"/>
                         </span>
                     {/if}
                 </button>

@@ -23,10 +23,11 @@ export function createDocumentSetStore(documentSetId) {
     const selectedRegions = writable(new Set());
     const selectedNodes = writable([]);
 
+    const scoreFilter = writable(true);
     const threshold = writable(0);
     const topK = writable(3);
     const mutualTopK = writable(false);
-    const scoreMode = writable('threshold');
+    const scoreMode = writable('topk');
 
     /**
      * All RegionsPair objects loaded in the current context
@@ -244,8 +245,8 @@ export function createDocumentSetStore(documentSetId) {
     }
 
     const filteredPairs = derived(
-        [allPairs, threshold, topK, mutualTopK, selectedRegions],
-        ([$pairs, $threshold, $topK, $mutual, $regions]) => {
+        [allPairs, threshold, topK, mutualTopK, selectedRegions, scoreFilter],
+        ([$pairs, $threshold, $topK, $mutual, $regions, $scoreFilter]) => {
             if (!$pairs) return [];
             const result = [];
 
@@ -255,7 +256,7 @@ export function createDocumentSetStore(documentSetId) {
                     const p = $pairs[i];
 
                     // 1. Score filtering
-                    if ($mode === 'threshold') {
+                    if ($mode === 'threshold' && $scoreFilter) {
                         if (p.weightedScore < $threshold) break;
                     }
 
@@ -263,7 +264,7 @@ export function createDocumentSetStore(documentSetId) {
                     if (!$regions.has(p.regions_id_1) || !$regions.has(p.regions_id_2)) continue;
 
                     // 3. TopK filtering
-                    if ($mode === 'topk' && $topK !== null) {
+                    if ($mode === 'topk' && $topK !== null && $scoreFilter) {
                         const r1Rank = p.rank_1 ?? Infinity;
                         const r2Rank = p.rank_2 ?? Infinity;
 
@@ -525,7 +526,6 @@ export function createDocumentSetStore(documentSetId) {
         }
     }
 
-    const matrixMode = writable('filtered'); // 'all' | 'filtered'
     const normalizeByImages = writable(false);
 
     const visiblePairIds = derived(filteredPairs, ($pairs) => {
@@ -583,16 +583,6 @@ export function createDocumentSetStore(documentSetId) {
         return {scoreCount, countRange: {min, max, range: max - min}};
     });
 
-    const activeDocPairStats = derived(
-        [matrixMode, docPairStats, filteredDocPairStats],
-        ([$mode, $all, $filtered]) => $mode === 'filtered' ? $filtered : $all
-    );
-
-    const activeDocStats = derived(
-        [matrixMode, documentStats, filteredDocStats],
-        ([$mode, $all, $filtered]) => $mode === 'filtered' ? $filtered : $all
-    );
-
     const imageCountMap = derived(documentNodes, ($docs) => {
         const map = new Map();
         for (const [id, doc] of $docs) {
@@ -641,12 +631,13 @@ export function createDocumentSetStore(documentSetId) {
         setMutualTopK: (b) => mutualTopK.set(b),
         scoreMode,
         setScoreMode: (m) => scoreMode.set(m),
+        scoreFilter,
+        setScoreFilter: (b) => scoreFilter.set(b),
 
-        matrixMode,
-        setMatrixMode: (m) => matrixMode.set(m),
+        filteredDocPairStats,
+        filteredDocStats,
+
         normalizeByImages,
-        activeDocPairStats,
-        activeDocStats,
         imageCountMap,
         visiblePairIds,
     };
