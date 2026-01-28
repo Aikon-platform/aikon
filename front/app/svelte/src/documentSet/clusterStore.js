@@ -58,15 +58,20 @@ export function createClusterStore(documentSetStore, clusterSelection) {
                 const n = members.length;
                 const maxEdges = (n * (n - 1)) / 2;
                 const imageSet = new Set(members);
-                const actualLinks = pairs.filter(p =>
-                    imageSet.has(p.id_1) && imageSet.has(p.id_2)
-                ).length;
+                let actualLinks = 0;
+                let allCategory1 = true;
+                for (const p of pairs) {
+                    if (imageSet.has(p.id_1) && imageSet.has(p.id_2)) {
+                        actualLinks++;
+                        if (allCategory1 && p.category !== 1) allCategory1 = false;
+                    }
+                }
 
                 return {
                     id: crypto.randomUUID(),
                     members,
                     size: n,
-                    fullyConnected: actualLinks === maxEdges
+                    fullyConnected: actualLinks === maxEdges && allCategory1
                 };
             })
             .filter(c => c.size > 1)
