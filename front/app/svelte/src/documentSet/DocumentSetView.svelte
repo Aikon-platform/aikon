@@ -9,7 +9,7 @@
     import Layout from '../Layout.svelte';
     import Sidebar from './Sidebar.svelte';
     import NetworkVisualization from './NetworkVisualization.svelte';
-    import DocumentMatrix from './DocumentMatrix.svelte';
+    import DocumentMatrix from './document-matrix/DocumentMatrix.svelte';
     import {createDocumentSetStore} from './documentSetStore.js';
     import Clusters from "./Clusters.svelte";
     import {createClusterStore} from "./clusterStore.js";

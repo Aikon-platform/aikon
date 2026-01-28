@@ -94,12 +94,15 @@ export class RegionItem {
     }
 
     urlForCanvas(canvasNb = this.canvasNb, coord = this.coord, size = "full") {
-        const newImgRoot = this.imgRoot.replace(
-            `_${this.canvasStr()}.jpg`,
-            `_${this.canvasStr(canvasNb)}.jpg`
-        );
+        let imgRoot = this.imgRoot;
+        if (canvasNb !== this.canvasNb) {
+            imgRoot = imgRoot.replace(
+                `_${this.canvasStr()}.jpg`,
+                `_${this.canvasStr(canvasNb)}.jpg`
+            );
+        }
         const xywh = Array.isArray(coord) ? coord.join(',') : coord;
-        return `${getCantaloupeUrl()}/iiif/2/${newImgRoot}/${xywh}/${size}/0/default.jpg`;
+        return `${getCantaloupeUrl()}/iiif/2/${imgRoot}/${xywh}/${size}/0/default.jpg`;
     }
 
     infoUrlForCanvas(canvasNb = this.canvasNb) {

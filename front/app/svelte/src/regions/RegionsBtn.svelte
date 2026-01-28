@@ -90,9 +90,11 @@
         <a href="{allRegionsUrl}" class="tag is-dark mr-3 mb-3 is-rounded">
             {appLang === "en" ? "Back to all witness view" : "Retour à la vue complète du témoin"}
         </a>
-        <button on:click={deleteResults} class="tag ml-3 mb-3 is-danger">
-            {appLang === "en" ? `Delete displayed ${resultName}` : `Supprimer les ${resultName} affichés`}
-        </button>
+        {#if ["all", "page", "similarity"].includes($activeLayout)}
+            <button on:click={deleteResults} class="tag mr-3 mb-3 is-danger">
+                {appLang === "en" ? `Delete displayed ${resultName}` : `Supprimer les ${resultName} affichés`}
+            </button>
+        {/if}
     {:else}
         {#each witness.regions as regionId}
             <a href="{baseUrl}{regionId}" class="tag is-dark mr-3 mb-3 is-rounded">Regions extraction #{regionId}</a>
