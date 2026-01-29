@@ -28,6 +28,9 @@ export function createDocumentSetStore(documentSetId) {
     const topK = writable(3);
     const mutualTopK = writable(false);
     const scoreMode = writable('topk');
+    const onlyExactMatches = derived(selectedCategories, $cats =>
+        $cats.length === 1 && $cats[0] === 1
+    );
 
     /**
      * All RegionsPair objects loaded in the current context
@@ -81,8 +84,8 @@ export function createDocumentSetStore(documentSetId) {
         // const documentSetId = 414; // nicolas
         // const documentSetId = 437; // physiologus
         // const documentSetId = 416; // de materia medica
-        // const documentSetId = 417; // traitÃ© de gÃ©omÃ©trie
-        // const documentSetId = 418; // encyclopÃ©die mathÃ©matique
+        // const documentSetId = 417; // traité de géométrie
+        // const documentSetId = 418; // encyclopédie mathématique
         // const documentSetId = 436; // Jombert complet
         // const documentSetId = 432; // Jombert incomplet
         // TO DELETE
@@ -412,6 +415,7 @@ export function createDocumentSetStore(documentSetId) {
         return { nodes, links };
     });
 
+    // TODO should it derive from filteredDocStats since filteredDocs is derived from filteredPairs?
     const documentNetwork = derived([filteredDocs], ([$docNodes]) => {
         if (!$docNodes.length) return { nodes: [], links: [] };
 
@@ -457,12 +461,13 @@ export function createDocumentSetStore(documentSetId) {
 
         const $documentNodes = get(documentNodes);
         const $pairIndex = get(pairIndex);
+        const $onlyExactMatches = get(onlyExactMatches);
 
         const firstRegionId = orderedSelection[0];
 
         const firstDoc = $documentNodes.get(firstRegionId);
         if (!firstDoc?.images) return {regions: orderedSelection, rows: []};
-        const firstImages = firstDoc.images; // already sorted by canvas in documentNodes
+        const firstImages = firstDoc.images;
 
         const findPairs = (imgId, sourceRegionId, targetRegionId) => {
             const {r1, r2} = {r1: sourceRegionId, r2: targetRegionId};
@@ -470,16 +475,50 @@ export function createDocumentSetStore(documentSetId) {
             const pairs = $pairIndex.byDocPair.get(pairKey) || [];
 
             return pairs
+                .filter(p =>
+                    (p.id_1 === imgId && p.regions_id_1 === sourceRegionId) ||
+                    (p.id_2 === imgId && p.regions_id_2 === sourceRegionId)
+                )
                 .map(p => {
-                    if (p.id_1 === imgId && p.regions_id_1 === sourceRegionId) {
-                        return {id: p.id_2, page: p.page_2};
-                    } else if (p.id_2 === imgId && p.regions_id_2 === sourceRegionId) {
-                        return {id: p.id_1, page: p.page_1};
-                    }
-                    return null;
-                })
-                .filter(Boolean);
+                    const isFirst = p.id_1 === imgId;
+                    return {
+                        id: isFirst ? p.id_2 : p.id_1,
+                        page: isFirst ? p.page_2 : p.page_1,
+                        rank: isFirst ? p.rank_1 : p.rank_2,
+                        otherRank: isFirst ? p.rank_2 : p.rank_1,
+                        score: p.weightedScore
+                    };
+                });
         };
+
+        const findBestMatch = (imgId, sourceRegionId, targetRegionId) => {
+            const pairs = findPairs(imgId, sourceRegionId, targetRegionId);
+            if (!pairs.length) return null;
+
+            const mutualTop1 = pairs.find(p => p.rank <= 1 && p.otherRank <= 1);
+            if (mutualTop1) return {id: mutualTop1.id, page: mutualTop1.page};
+
+            const mutualTop2 = pairs.find(p => p.rank <= 2 && p.otherRank <= 2);
+            if (mutualTop2) return {id: mutualTop2.id, page: mutualTop2.page};
+
+            return null;
+        };
+
+        if (!$onlyExactMatches) {
+            const rows = [];
+            for (const firstImg of firstImages) {
+                const row = {[firstRegionId]: {id: firstImg.id, page: firstImg.canvas}};
+
+                for (let colIdx = 1; colIdx < orderedSelection.length; colIdx++) {
+                    const targetRegionId = orderedSelection[colIdx];
+                    const best = findBestMatch(firstImg.id, firstRegionId, targetRegionId);
+                    if (best) row[targetRegionId] = best;
+                }
+
+                rows.push(row);
+            }
+            return {regions: orderedSelection, rows};
+        }
 
         const allRows = [];
 
@@ -507,7 +546,7 @@ export function createDocumentSetStore(documentSetId) {
                         const uniquePairs = new Map();
                         allPairsFound.forEach(p => {
                             if (!uniquePairs.has(p.id)) {
-                                uniquePairs.set(p.id, p);
+                                uniquePairs.set(p.id, {id: p.id, page: p.page});
                             }
                         });
 
@@ -611,6 +650,7 @@ export function createDocumentSetStore(documentSetId) {
         imageNetwork,
         documentNetwork,
         selectedCategories,
+        onlyExactMatches,
         pairStats,
         documentStats,
         imageStats,

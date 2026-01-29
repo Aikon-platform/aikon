@@ -21,7 +21,7 @@
 
 <div>
     <h3 class="title mb-3">
-        {appLang === 'en' ? 'Visible documents' : 'Documents visibles'} ({documentNodes?.size || 0})
+        {appLang === 'en' ? 'Visible documents' : 'Documents visibles'} ({sortedDocs.length || 0})
     </h3>
     <div class="level is-mobile mb-4">
         <div class="level-left">

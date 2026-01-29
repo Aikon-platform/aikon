@@ -53,6 +53,8 @@
 
     const clusterStore = createClusterStore(documentSetStore, clusterSelection);
 
+    $: if ($activeLayout === 'sim') documentSetStore.setScoreFilter(true);
+
     const tabList = {
         "sim": appLang === "en" ? "Copy Clusters" : "Groupe de copies",
         "mat": appLang === "en" ? "Document Matrix" : "Matrice de documents",

@@ -9,7 +9,7 @@
     import Regions from "../../regions/Regions.svelte";
 
     export let documentSetStore;
-    const { imageNodes, selectedCategories } = documentSetStore;
+    const { imageNodes, onlyExactMatches } = documentSetStore;
     export let clusterStore;
     const {
         clusterNb,
@@ -66,8 +66,6 @@
             cl.members.map(imgId => ({...$imageNodes.get(imgId), clusterId: cl.id}))
         ])
     );
-
-    $: onlyExactMatches = $selectedCategories.length === 1 && $selectedCategories[0] === 1;
 </script>
 
 {#if isSuperuser}
@@ -82,7 +80,7 @@
             <div class="column">
                 <div class="field has-addons">
                     {#each Object.values(globalActions) as action}
-                        {#if !onlyExactMatches && action.title === actionLabels.remove.title}
+                        {#if !$onlyExactMatches && action.title === actionLabels.remove.title}
                             <!-- Skip "remove" action if other category are selected -->
                             <!-- Because it makes no sense to remove the category "exact match" from pairs that do not have it -->
                         {:else}
