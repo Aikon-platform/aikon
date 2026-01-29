@@ -1,5 +1,5 @@
 <script>
-    import {appLang} from '../../constants.js';
+    import {i18n} from '../../utils.js';
     import DownloadPng from "../../ui/DownloadPng.svelte";
     import SplitLayout from "../../ui/SplitLayout.svelte";
     import DocumentSetMatrix from "./DocumentSetMatrix.svelte";
@@ -28,7 +28,6 @@
         filteredPairs: {en: 'Filtered pairs', fr: 'Paires après filtrage'},
         filtering: {en: 'Source of image pairs for the visualizations', fr: "Source des paires d'images pour les visualisations"},
     };
-    const i18n = (key) => t[key]?.[appLang] || t[key]?.en || key;
 
     let selectedCell = null;
     let sortOrder = 'name';
@@ -69,25 +68,25 @@
 
 {#if !documents.length}
     <div class="container">
-        <div class="notification is-info" style="width: 100%">{i18n('noDocuments')}</div>
+        <div class="notification is-info" style="width: 100%">{i18n('noDocuments', t)}</div>
     </div>
 {:else}
     <SplitLayout>
         <div slot="left-title" class="is-flex is-justify-content-space-between">
-            <h4 class="title is-6 mb-0">{i18n('title')}</h4>
+            <h4 class="title is-6 mb-0">{i18n('title', t)}</h4>
             <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
                 <DownloadPng targetId="matrix-viz" filename="document-matrix.png" />
                 <div class="control">
                     <div class="select is-small">
                         <select bind:value={sortOrder}>
-                            <option value="name">{i18n('byName')}</option>
-                            <option value="score">{i18n('byScore')}</option>
+                            <option value="name">{i18n('byName', t)}</option>
+                            <option value="score">{i18n('byScore', t)}</option>
                         </select>
                     </div>
                 </div>
-                <label title={i18n('normalization')} class="checkbox is-size-7">
+                <label title={i18n('normalization', t)} class="checkbox is-size-7">
                     <input type="checkbox" checked={$normalizeByImages} on:change={e => normalizeByImages.set(e.target.checked)}>
-                    <span class="pt-1">{i18n('normalize')}</span>
+                    <span class="pt-1">{i18n('normalize', t)}</span>
                 </label>
             </div>
         </div>
@@ -102,15 +101,15 @@
             />
         </div>
         <div slot="right-title" class="is-flex is-justify-content-space-between">
-            <h4 class="title is-6 mb-0">{i18n('pageByPage')}</h4>
+            <h4 class="title is-6 mb-0">{i18n('pageByPage', t)}</h4>
             <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
                 {#if selectedCell}
                     <DownloadPng targetId="scatter-viz" filename="document-comparison.png"/>
                     <div class="control">
                         <div class="select is-small">
                             <select bind:value={scatterMode}>
-                                <option value="page">{i18n('byPage')}</option>
-                                <option value="image">{i18n('byImage')}</option>
+                                <option value="page">{i18n('byPage', t)}</option>
+                                <option value="image">{i18n('byImage', t)}</option>
                             </select>
                         </div>
                     </div>
@@ -127,7 +126,7 @@
                     on:cellclick={handleScatterClick}
                 />
             {:else}
-                <p class="has-text-grey is-size-7">{i18n('selectCell')}</p>
+                <p class="has-text-grey is-size-7">{i18n('selectCell', t)}</p>
             {/if}
         </div>
     </SplitLayout>

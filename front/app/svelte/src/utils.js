@@ -1,11 +1,12 @@
 import { writable } from 'svelte/store';
-import { sasUrl, cantaloupeUrl, appName } from './constants';
+import {sasUrl, cantaloupeUrl, appName, appLang} from './constants';
 
 export const loading = writable(false);
 export const errorMsg = writable("");
 
 const isString = (x) => typeof x === 'string' || x instanceof String;
 
+export const i18n = (key, t) => t[key]?.[appLang] || t[key]?.en || key;
 
 /**
  * Display loading UI while waiting for Promise

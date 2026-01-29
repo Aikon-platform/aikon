@@ -1,5 +1,6 @@
 <script>
     import {appName, appUrl} from "../../constants.js";
+    import {i18n} from '../../utils.js';
 
     export let isActive = true;
     export let id;
@@ -11,32 +12,38 @@
     };
     export let clickable = true;
     export let onlyColor = false;
+
+    const imageCount = meta.images?.length || 0;
+    const docTitle = `${meta.title} #${id} (${imageCount} images)`;
+
+    const t = {
+        nbImg: {en: 'Number of images for this region extraction', fr: "Nombre d'images extraites pour ce document"},
+        toggle: {en: 'Toggle document pairs visibility', fr: "Activer/désactiver la visibilité des paires du document"},
+    };
 </script>
 
-<div class="legend-item" class:inactive={!isActive}>
-    <span class="legend-nb"><!--IMAGE NUMBER--></span>
-    <span class="legend-color" class:inactive={!isActive} class:clickable={clickable}
-          aria-label="{meta.title}" title="{meta.title}"
-          style="background-color: {isActive ? meta.color : '#999'};"
-          on:click={toggle} on:keydown={null} role="button" tabindex="0" />
-    {#if !onlyColor}
-        <span class="legend-label">
+<div class="legend-item is-flex is-justify-content-space-between" class:inactive={!isActive}>
+    <span class="is-flex is-align-items-center" style="gap: 0.5rem;">
+        <span class="legend-color" class:inactive={!isActive} class:clickable={clickable}
+             aria-label={docTitle} title="{onlyColor ? docTitle : i18n('toggle', t)}"
+             style="background-color: {isActive ? meta.color : '#999'};"
+             on:click={toggle} on:keydown={null} role="button" tabindex="0"/>
+        <span class="legend-label" class:is-hidden={onlyColor}>
             <a href={`${appUrl}/${appName}/witness/${meta.witnessId}/regions/${id}`} target="_blank">
                 {meta.title}
             </a>
         </span>
-    {/if}
+    </span>
+    <span class="tag is-small has-text-grey is-rounded px-2"
+          title={i18n('nbImg', t)} class:is-hidden={onlyColor}>
+        {imageCount}
+    </span>
 </div>
 
 <style>
-    .legend-nb {
-        /* ADD  STYLE */
-    }
-
     .legend-item {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
         padding: 0.25rem 0;
         transition: opacity 0.2s;
     }

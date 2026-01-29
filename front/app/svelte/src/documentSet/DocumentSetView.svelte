@@ -23,6 +23,7 @@
     onMount(() => {
         syncRegions = syncStoreWithURL(selectedRegions, 'regions', 'set');
         syncCategories = syncStoreWithURL(selectedCategories, 'categories', 'array', [1]);
+        // NOTE do not work with InputSlider that cannot be updated programmatically
         syncThreshold = syncStoreWithURL(threshold, 'threshold', 'number');
         syncTopK = syncStoreWithURL(topK, 'topk', 'number');
         syncMutualTopK = syncStoreWithURL(mutualTopK, 'mutual', 'boolean');
