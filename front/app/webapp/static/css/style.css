@@ -43,11 +43,6 @@ fieldset:not(:last-child) {
     margin-bottom: 1.5rem;
 }
 
-.noUi-target {
-    /*background: var(--bulma-link) !important;*/
-    border: var(--bulma-border-weak) !important;
-}
-
 /*.tooltip {*/
 /*    position: relative;*/
 /*    display: inline-block;*/
