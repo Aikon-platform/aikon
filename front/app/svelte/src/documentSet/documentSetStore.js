@@ -24,7 +24,7 @@ export function createDocumentSetStore(documentSetId) {
     const selectedNodes = writable([]);
 
     const scoreFilter = writable(true);
-    const threshold = writable(0);
+    const threshold = writable(0.5);
     const topK = writable(3);
     const mutualTopK = writable(false);
     const scoreMode = writable('topk');

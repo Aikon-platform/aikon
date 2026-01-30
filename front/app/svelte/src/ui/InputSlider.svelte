@@ -88,6 +88,11 @@
     $: if (slider?.noUiSlider && (minVal !== prevRange.min || maxVal !== prevRange.max)) {
         prevRange = { min: minVal, max: maxVal };
         slider.noUiSlider.updateOptions({ range: { min: minVal, max: maxVal } }, false);
+        // NOTE if the minVal/maxVal are updated through reactive props
+        // NOTE after the start value is set AND if the start value is above the maxVal
+        // NOTE then the start is defaulted to maxVal by noUiSlider
+        // NOTE if you receive range after initial value,
+        // NOTE better set min and max first way above expected start value
     }
 
     $: if (slider?.noUiSlider && !valuesEqual(roundVal(start), roundVal(prevStart))) {
