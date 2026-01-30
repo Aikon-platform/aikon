@@ -270,10 +270,6 @@ export const equalArrayShallow = (x, y) =>
     && x.every((e, idx) => e === y[idx]||undefined);
 
 
-export function imageToPage(imgName) {
-    return parseInt(imgName.split('_').at(-2));
-}
-
 export function generateColor(index) {
     const goldenAngle = 137.5;
     const saturations = [85, 70, 60];

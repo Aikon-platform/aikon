@@ -164,7 +164,7 @@
         width: 15px;
         height: 15px;
         right: -10px;
-        top: -6px;
+        top: -5px;
         border-radius: 1rem;
         background-color: var(--bulma-link);
         border: solid 2px var(--bulma-border-weak);

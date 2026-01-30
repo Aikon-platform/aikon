@@ -84,9 +84,9 @@
                         </select>
                     </div>
                 </div>
-                <label title={i18n('normalization', t)} class="checkbox is-size-7">
+                <label title={i18n('normalization', t)} class="checkbox is-size-7 is-flex is-align-items-center">
                     <input type="checkbox" checked={$normalizeByImages} on:change={e => normalizeByImages.set(e.target.checked)}>
-                    <span class="pt-1">{i18n('normalize', t)}</span>
+                    <span class="pl-1">{i18n('normalize', t)}</span>
                 </label>
             </div>
         </div>
