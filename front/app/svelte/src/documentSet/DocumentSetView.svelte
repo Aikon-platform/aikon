@@ -14,6 +14,10 @@
     import Clusters from "./clusters/Clusters.svelte";
     import {createClusterStore} from "./clusters/clusterStore.js";
 
+    import Modal from "../Modal.svelte";
+    import {refToIIIF} from "../utils.js";
+    // import StemmaBuilder from "./stemma/StemmaBuilder.svelte";
+
     export let docSet;
 
     const documentSetStore = createDocumentSetStore(docSet.id);
@@ -23,7 +27,6 @@
     onMount(() => {
         syncRegions = syncStoreWithURL(selectedRegions, 'regions', 'set');
         syncCategories = syncStoreWithURL(selectedCategories, 'categories', 'array', [1]);
-        // NOTE do not work with InputSlider that cannot be updated programmatically
         syncThreshold = syncStoreWithURL(threshold, 'threshold', 'number');
         syncTopK = syncStoreWithURL(topK, 'topk', 'number');
         syncMutualTopK = syncStoreWithURL(mutualTopK, 'mutual', 'boolean');
@@ -49,8 +52,6 @@
     import {clusterSelection} from '../selection/selectionStore.js';
 
     const {selected} = clusterSelection;
-    import Modal from "../Modal.svelte";
-    import {refToIIIF} from "../utils.js";
 
     const clusterStore = createClusterStore(documentSetStore, clusterSelection);
 
@@ -58,6 +59,7 @@
 
     const tabList = {
         "sim": appLang === "en" ? "Copy Clusters" : "Groupe de copies",
+        // "ste": appLang === "en" ? "Stemma builder" : "Aide au stemma",
         "mat": appLang === "en" ? "Document Matrix" : "Matrice de documents",
         "img": appLang === "en" ? "Image Network" : "Réseau d'images",
         "doc": appLang === "en" ? "Document Network" : "Réseau de documents",
@@ -123,6 +125,8 @@
                             <Clusters {documentSetStore} {clusterStore}/>
                         {:else if $activeLayout === "mat"}
                             <DocumentMatrix {documentSetStore}/>
+                        <!--{:else if $activeLayout === "ste"}-->
+                        <!--    <StemmaBuilder {documentSetStore}/>-->
                         {/if}
                     </div>
                 {/if}

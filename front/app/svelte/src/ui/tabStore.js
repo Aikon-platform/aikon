@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store';
 
-function createTabStore() {
-    const initialTab = new URLSearchParams(window.location.search).get("tab") ?? "all";
+function createTabStore(defaultTab = "all") {
+    const initialTab = new URLSearchParams(window.location.search).get("tab") ?? defaultTab;
     const { subscribe, set } = writable(initialTab);
 
     return {
@@ -12,8 +12,8 @@ function createTabStore() {
             url.searchParams.set("tab", tab);
             window.history.pushState({}, "", url);
         },
-        init: () => {
-            const tab = new URLSearchParams(window.location.search).get("tab") ?? "all";
+        init: (fallback = defaultTab) => {
+            const tab = new URLSearchParams(window.location.search).get("tab") ?? fallback;
             set(tab);
         }
     };

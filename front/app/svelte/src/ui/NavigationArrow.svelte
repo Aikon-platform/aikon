@@ -5,11 +5,17 @@
     export let axis = null; // 'horizontal' or 'vertical'
     export let navigationFct = () => {}; // function to call on click
     export let css = ""; // additional css styles
+    export let icon = "chevron";
+    export let text = "";
 </script>
 
-<button class="nav-btn nav-{direction}" on:click={() => navigationFct(delta, axis)} aria-label="Navigate {direction}" style="{css}">
+<button class="nav-btn nav-{direction} is-flex is-flex-direction-column is-align-items-center"
+        on:click={() => navigationFct(delta, axis)} aria-label="Navigate {direction}" style="{css}">
+    {#if text}
+        <span class="is-size-7 mb-1 has-text-grey">{text}</span>
+    {/if}
     <span class="icon is-small p-0">
-        <i class="fas fa-chevron-{direction}"/>
+        <i class="fas fa-{icon}-{direction}"/>
     </span>
 </button>
 

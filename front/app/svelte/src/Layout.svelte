@@ -6,7 +6,7 @@
     export let sidebarWidth = "25";
     export const layoutHeight = "90vh";
     export let tabList = {};
-
+    export let defaultTab = Object.keys(tabList)[0] ?? "all";
     export let topOffsetElement = null;
 
     function updateTopOffset(element = null) {
@@ -17,7 +17,7 @@
     }
     updateTopOffset(topOffsetElement)
     onMount(() => {
-        activeLayout.init();
+        activeLayout.init(defaultTab);
         window.addEventListener('popstate', () => activeLayout.init());
         return () => window.removeEventListener('popstate', () => activeLayout.init());
     });

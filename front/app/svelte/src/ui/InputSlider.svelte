@@ -85,6 +85,7 @@
         }
     }
 
+    // update range if minVal/maxVal change in the parent component
     $: if (slider?.noUiSlider && (minVal !== prevRange.min || maxVal !== prevRange.max)) {
         prevRange = { min: minVal, max: maxVal };
         slider.noUiSlider.updateOptions({ range: { min: minVal, max: maxVal } }, false);
@@ -95,6 +96,7 @@
         // NOTE better set min and max first way above expected start value
     }
 
+    // update start if value passed to props change in the parent component
     $: if (slider?.noUiSlider && !valuesEqual(roundVal(start), roundVal(prevStart))) {
         prevStart = start;
         slider.noUiSlider.set(start, false);
