@@ -14,12 +14,11 @@
     ////////////////////////////////////
 
     export let qImg;
+    export let isInModal = false;
 
     const { propagateParams, selectedRegions } = similarityStore;
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentPageId = window.location.pathname.match(/\d+/g).join('-');
-
-    const isInModal = getContext("isInModal") || false;
 
     let propagatedMatchesPromise;
 

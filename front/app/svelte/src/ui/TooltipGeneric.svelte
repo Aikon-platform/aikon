@@ -24,10 +24,8 @@ const htmlId = `tooltip-generic-${window.crypto.randomUUID()}`;
 $: tooltipWidthClass = setTooltipWidthClass(tooltipText);
 $: setTooltipWidthClass = (_tooltipText) =>
     tooltipWidthClass =
-        _tooltipText.length > 100
-        ? "tooltip-wide"
-        : _tooltipText.length > 20
-        ? "tooltip-mid"
+        _tooltipText.length > 100 ? "tooltip-wide"
+        : _tooltipText.length > 20 ? "tooltip-mid"
         : "tooltip-thin";
 
 $: targetEl = undefined;
@@ -43,9 +41,9 @@ const onClick = () => displayTooltip = !displayTooltip;
 
 onMount(() =>  {
     targetEl =
-        targetHtmlId
-        ? document.getElementById(targetHtmlId)
-        : document.getElementById(htmlId).parentElement;
+        targetHtmlId ?
+            document.getElementById(targetHtmlId) :
+            document.getElementById(htmlId).parentElement;
     if ( targetHtmlId && !targetEl ) {
         console.error(`TooltipGeneric: element with ID ${targetHtmlId} not found, defaulting to the parent element`);
         targetEl = document.getElementById(htmlId).targetElement;
@@ -59,32 +57,14 @@ onDestroy(() => {
     targetEl.removeEventListener("mouseout", onMouseout);
     targetEl.removeEventListener("click", onClick);
 })
-
-
 </script>
 
 
-<span id={htmlId}
-      class="tooltip {tooltipWidthClass} { displayTooltip ? 'display' : '' }"
->{tooltipText}</span>
-
+<span id={htmlId} class="tooltip {tooltipWidthClass} {displayTooltip ? 'display' : ''}">
+    {tooltipText}
+</span>
 
 <style>
-.tooltip {
-    visibility: hidden;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: #fff;
-    text-align: center;
-    border-radius: 6px;
-    padding: 5px;
-    position: absolute;
-    z-index: 6;
-    bottom: 125%;
-    left: 50%;
-    transform: translateX(-50%);
-    opacity: 0;
-    transition: opacity 0.3s;
-}
 .tooltip.display {
     visibility: visible;
     opacity: 1;

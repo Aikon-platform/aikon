@@ -16,6 +16,7 @@
     ////////////////////////////////////////////////
 
     export let qImg;
+    export let isInModal = false;
 
     let sImg = "";
     const [wit, digit, canvas, xywh] = qImg.split('.')[0].split('_');
@@ -24,10 +25,9 @@
     const errorName = appLang === "en" ? "Error" : "Erreur";
 
     const manifest = getContext('manifest');
-    const isInModal = getContext("isInModal") || false;
 
     $: sLen = $selectedRegions.hasOwnProperty(currentPageId) ? Object.values($selectedRegions[currentPageId]).length : 0;
-    $: hasNoMatch = false; // TODO HERE FIND A WAY TO SET NO MATCH FOR THIS Q REGIONS
+    //$: hasNoMatch = false; // TODO HERE FIND A WAY TO SET NO MATCH FOR THIS Q REGIONS
 
     /** @type {RegionItemType} used by region/modal */
     setContext("qImgMetadata", toRegionItem(qImg, wit, xywh, canvas));
@@ -178,10 +178,10 @@
     </svelte:fragment>
     <svelte:fragment slot="row-body">
         <div class="{isInModal ? '' : gridClass}">
-            <SimilarityMatches {qImg}/>
+            <SimilarityMatches {qImg} {isInModal}/>
         </div>
         <div class="{isInModal ? '' : gridClass}">
-            <PropagatedMatches {qImg}/>
+            <PropagatedMatches {qImg} {isInModal}/>
         </div>
     </svelte:fragment>
 </Row>

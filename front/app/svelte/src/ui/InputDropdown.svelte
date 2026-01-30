@@ -410,7 +410,7 @@
     }
     /** selected item (single and multi) */
     :global(.choices__inner .dropdown-item) {
-        background-color: var(--default-color);
+        background-color: var(--bulma-link);
         color: white;
         border: var(--default-border);
         border-radius: 1rem;
@@ -450,7 +450,7 @@
         z-index: 10 !important;
     }
     :global(.choices__list--dropdown .dropdown-item.is-highlighted) {
-        background-color: var(--default-color) !important;
+        background-color: var(--bulma-link) !important;
         color: white;
     }
 </style>

@@ -15,47 +15,30 @@
     emits:
     - "updateSlider" @type{number[]}. an array of 1 or 2 nu;bers, depending on if it's a 1 or 2 input slider
 
-    restrictions:
-    - updates to props are not handled.
-
     good to know:
-    - thanks to `createNewAndOld`, values are only emitted when there's a change between the previously set value and the newly set value.
     - how is value resetting handled ?
         - an ancestor creates a `setContext` that holds a `writable`. by updating the `writable's` value, this component is reset
         - if several instances of `InputSlider` inherit the same component, they will all be reset when the parent sets a new value on `resetTrigger`
-        - technical details: there are several more or less hacky patterns to trigger an update in a child component from the parent, from exporting a fumction in the child so that it can be called in the parent, to listening to prop changes, using stores etc (see: https://www.reddit.com/r/sveltejs/comments/np9qc0/send_event_from_a_parent_to_child/).
+        - technical details: there are several more or less hacky patterns to trigger an update in a child component from the parent, from exporting a function in the child so that it can be called in the parent, to listening to prop changes, using stores etc (see: https://www.reddit.com/r/sveltejs/comments/np9qc0/send_event_from_a_parent_to_child/).
             using the context API has some advantages:
                 - you can batch trigger functions in child components with a common ancestor: all child component auto-inherit from their ancestor's context. this fits our use case: in forms, we want a single `reset` button to reset all form inputs at once.
-                - contrary to resetting using stores, resetting is isolated: several components can set their own `resetTrigger` contexts, and they will affect their descendant components only.`InputSlider` inheriting from other compomnents will not be affected.
-                - the context is just a trigger and is implementation independant. this means that the same trigger can be used to reset different inputs. in fact, `InputSlider`, `InputDropdown` and `InputToggle` all use the sane `resetTrigger`
+                - contrary to resetting using stores, resetting is isolated: several components can set their own `resetTrigger` contexts, and they will affect their descendant components only.`InputSlider` inheriting from other components will not be affected.
+                - the context is just a trigger and is implementation independent. this means that the same trigger can be used to reset different inputs. in fact, `InputSlider`, `InputDropdown` and `InputToggle` all use the sane `resetTrigger`
                 - the only problem will be if 2 ancestor components of a single input both call `setContext("resetTrigger")`. in those cases, the 2 ancestors will trigger a resetting of the same input,
 -->
 <script>
     import { onMount, onDestroy, createEventDispatcher, getContext } from "svelte";
-
     import noUiSlider from "nouislider";
     import 'nouislider/dist/nouislider.css';
-
     import TooltipGeneric from "./TooltipGeneric.svelte";
-
-    import { createNewAndOld, equalArrayShallow } from "../utils";
-
-    /** @typedef {import("../utils").NewAndOldType} NewAndOldType */
-
-    //////////////////////////////////////////////
-
-    /**
-     * @type {number|number[]} SelectedValType:
-     *      the currently selected value(s) on the slider. data structure
-     *      changes slightly depending on if we're building a 1-input or 2-input slider:
-     *      number if not isRange, [number, number] otherwise.
-     */
 
     /** @type {number} */
     export let minVal;
     /** @type {number} */
     export let maxVal;
-    /** @type {number|number[]} : default, pre-selecteed values. if 1 value is provided, then it's a single input slider. if an array of 2 values are provided, it's a min/max 2 input range slider */
+    /** @type {number|number[]}
+     * default, pre-selected values. if 1 value is provided, then it's a single input slider.
+     * if an array of 2 values is provided, it's a min/max 2 input range slider */
     export let start;
     /** @type {number?} */
     export let step = undefined;
@@ -66,159 +49,142 @@
     /** @type {boolean} if true, emit on set + on update. else, emit only on set */
     export let emitOnUpdate = false;
 
-    //////////////////////////////////////////////
-
     const dispatch = createEventDispatcher();
-
-    const sliderHtmlId = `slider-${window.crypto.randomUUID()}`;
+    const sliderHtmlId = `slider-${crypto.randomUUID()}`;
     const isRange = Array.isArray(start) && start.length === 2 && start.every(n => !isNaN(parseFloat(n)));  // true if number, number
-    const handleTooltips = [];
     const handleHtmlIds = isRange
-        ? [ `noUi-handle-${window.crypto.randomUUID()}`,
-            `noUi-handle-${window.crypto.randomUUID()}` ]
-        : [ `noUi-handle-${window.crypto.randomUUID()}` ];
+        ? [crypto.randomUUID(), crypto.randomUUID()].map(id => `noUi-handle-${id}`)
+        : [`noUi-handle-${crypto.randomUUID()}`];
 
-    /** @type {NewAndOldType} tracks changes on "set" */
-    const newAndOldSelectedVal = createNewAndOld();
-    newAndOldSelectedVal.setCompareFn(isRange ? equalArrayShallow : (x,y) => numRound(x)===numRound(y));
-    newAndOldSelectedVal.set(start);
+    /** @type {writable} the `resetTrigger` context stores a writable. we subscribe to the writable,
+     * and when its value is updated, reset InputSlider */
+    const resetTriggerContext = getContext("resetTrigger");
+    resetTriggerContext?.subscribe(() => slider?.noUiSlider?.reset());
 
-    /** @type {writable} the `resetTrigger` context stores a writable. we subscribe to the writable, and when its value is updated, reset InputSlider */
-    const resetTriggerContext = getContext("resetTrigger") || undefined;
-    resetTriggerContext?.subscribe(resetInputSlider);
+    let slider;
+    let handleTooltips = [];
+    let selectedVal = start;
+    let prevValue = null;
+    let prevStart = start;
+    let prevRange = { min: minVal, max: maxVal };
 
-    /** @type {number} tracks changes on "update" */
-    $: selectedVal = start;
-    $: updateHandleTooltip(selectedVal);
+    const round = n => Number(n.toFixed(roundTo));
+    const roundVal = v => Array.isArray(v) ? v.map(round) : round(v);
+    const valuesEqual = (a, b) => isRange
+        ? a?.[0] === b?.[0] && a?.[1] === b?.[1]
+        : a === b;
 
-    //////////////////////////////////////////////
-
-    const numRound = n => Number((n).toFixed(roundTo))
-
-    /**
-     * @param {number[]|number} val: if isRange, then array of 2 values. else, 1 value.
-     * @param {"update"|"set"} caller: on which event the function is called: `newAndOldSelectedVal` is only updated on set.
-     */
-    const updateSelectedValAndDispatch = (val, caller) => {
-        val = Array.isArray(val) ? val.map(numRound) : numRound(val);
+    function handleSliderEvent(caller) {
+        const val = roundVal(slider.noUiSlider.get(true));
         selectedVal = val;
-        if (caller==="set" || (caller==="update" && emitOnUpdate)) {
-            newAndOldSelectedVal.set(val);
-            if ( !newAndOldSelectedVal.same() ) {
-                dispatch("updateSlider", newAndOldSelectedVal.get());
+        if (caller === "set" || emitOnUpdate) {
+            if (!valuesEqual(val, prevValue)) {
+                prevValue = val;
+                dispatch("updateSlider", val);
             }
         }
     }
 
-    // update the `TooltipGeneric.tooltipText` prop when selectedVal is updated.
-    function updateHandleTooltip(_selectedVal) {
-        if ( handleTooltips.length ) {
-            handleTooltips.map((tooltip, idx) =>
-                tooltip.$set({ tooltipText: isRange ? _selectedVal[idx] : _selectedVal }));
-        }
+    // update range if minVal/maxVal change in the parent component
+    $: if (slider?.noUiSlider && (minVal !== prevRange.min || maxVal !== prevRange.max)) {
+        prevRange = { min: minVal, max: maxVal };
+        slider.noUiSlider.updateOptions({ range: { min: minVal, max: maxVal } }, false);
+        // NOTE if the minVal/maxVal are updated through reactive props
+        // NOTE after the start value is set AND if the start value is above the maxVal
+        // NOTE then the start is defaulted to maxVal by noUiSlider
+        // NOTE if you receive range after initial value,
+        // NOTE better set min and max first way above expected start value
     }
 
-    function resetInputSlider() {
-        const slider = document.getElementById(sliderHtmlId);
-        if ( slider?.noUiSlider ) { slider.noUiSlider.reset(); }
+    // update start if value passed to props change in the parent component
+    $: if (slider?.noUiSlider && !valuesEqual(roundVal(start), roundVal(prevStart))) {
+        prevStart = start;
+        slider.noUiSlider.set(start, false);
+        selectedVal = roundVal(start);
     }
 
-    function initSlider() {
-        const slider = document.getElementById(sliderHtmlId);
-        let newVal;
-        noUiSlider.create(slider, {
-            start: start,
-            step: step,
-            connect: isRange ? true : "lower",
-            range: { min: minVal, max: maxVal },
-            handleAttributes: handleHtmlIds.map((_id) => ({"id": _id }))  // 1 html ID per handle
-        });
-        // `selectedVal` is updated on update, and the parent component receives a new value on set.
-        slider.noUiSlider.on("update", () => {
-            newVal = slider.noUiSlider.get(true);
-            updateSelectedValAndDispatch(newVal, "update");
-        });
-        slider.noUiSlider.on("set", () => {
-            newVal = slider.noUiSlider.get(true)
-            updateSelectedValAndDispatch(newVal, "set");
-        });
-    }
-
-    // the TooltipGenerics that are bound to the slider's handle must be created in a declarative way to be positionned correctly in the DOM
-    function initHandleTooltips() {
-        handleHtmlIds.map((handleHtmlId, idx) => {
-            handleTooltips.push(new TooltipGeneric({
-                target: document.getElementById(handleHtmlId),
-                props:
-                    isRange
-                    ? { tooltipText: selectedVal[idx] }
-                    : { tooltipText: selectedVal }
-            }));
-        })
-    }
-
-    //////////////////////////////////////////////
+    $: handleTooltips.forEach((tooltip, i) =>
+        tooltip.$set({ tooltipText: isRange ? selectedVal[i] : selectedVal })
+    );
 
     onMount(() => {
-        initSlider();
-        initHandleTooltips();
-    })
-    onDestroy(() => {
-        // very dirty destroy
-        if (document.getElementById(sliderHtmlId)) {
-            document.getElementById(sliderHtmlId).innerHTML = "";
-        }
-    })
-    </script>
+        slider = document.getElementById(sliderHtmlId);
+        noUiSlider.create(slider, {
+            start,
+            step,
+            connect: isRange ? true : "lower",
+            range: { min: minVal, max: maxVal },
+            handleAttributes: handleHtmlIds.map(id => ({ id }))
+        });
+        slider.noUiSlider.on("update", () => handleSliderEvent("update"));
+        slider.noUiSlider.on("set", () => handleSliderEvent("set"));
 
+        handleTooltips = handleHtmlIds.map((id, i) => new TooltipGeneric({
+            target: document.getElementById(id),
+            props: { tooltipText: isRange ? selectedVal[i] : selectedVal }
+        }));
+    });
 
-    <div>
-        <span>{title} ({selectedVal})</span>
-        <div class="slider-outer-wrapper is-flex flex-direction-row">
-            <span class="range-marker">{ minVal }</span>
-            <div class="slider-wrapper">
-                <div class="slider" id={sliderHtmlId}></div>
-            </div>
-            <span class="range-marker">{ maxVal }</span>
+    onDestroy(() => slider?.noUiSlider?.destroy());
+</script>
+
+<div>
+    <span>{title} ({selectedVal})</span>
+    <div class="slider-outer-wrapper is-flex flex-direction-row">
+        <span class="range-marker">{minVal}</span>
+        <div class="slider-wrapper">
+            <div class="slider" id={sliderHtmlId}/>
         </div>
+        <span class="range-marker">{maxVal}</span>
     </div>
+</div>
 
-
-    <style>
+<style>
     .slider-outer-wrapper {
-        margin: 10px;
-        margin-bottom: 0;
+        margin: 10px 10px 0;
     }
+
     .slider-wrapper {
         min-height: 15px;
         width: 100%;
         margin: 0 15px;
     }
+
     .range-marker {
         transform: translateY(-40%);
     }
+
     :global(.noUi-horizontal) {
         height: 5px;
     }
+
     :global(.noUi-horizontal .noUi-connects) {
-        outline: solid 1px white;
+        outline: solid 1px var(--accent);
     }
+
     :global(.noUi-horizontal .noUi-connect) {
-        background-color: var(--default-color);
+        background-color: var(--bulma-link);
+        transform: scale(1, 1.1);
     }
+
     :global(.noUi-horizontal .noUi-handle) {
-    	width: 15px;
-    	height: 15px;
-    	right: -10px;
-    	top: -6px;
+        width: 15px;
+        height: 15px;
+        right: -10px;
+        top: -5px;
         border-radius: 1rem;
-        background-color: var(--default-color);
-        border: solid 2px white;
+        background-color: var(--bulma-link);
+        border: solid 2px var(--bulma-border-weak);
         box-shadow: none;
         cursor: grab;
     }
+
     :global(.noUi-horizontal .noUi-handle::before),
     :global(.noUi-horizontal .noUi-handle::after) {
         all: unset;
     }
-    </style>
+
+    :global(.noUi-target) {
+        border: var(--bulma-border-weak) !important;
+    }
+</style>

@@ -85,3 +85,6 @@ run_api.sh
 run_frontend.sh
 run_main.sh
 .vscode
+
+flagged_pairs.json
+front/app/webapp/static/svelte/*

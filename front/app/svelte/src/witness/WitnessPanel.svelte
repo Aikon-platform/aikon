@@ -1,6 +1,7 @@
 <script>
-    import { appLang, appName, csrfToken } from '../constants';
+    import { appName } from '../constants';
     import {onMount} from "svelte";
+    import RegionsBtn from "../regions/RegionsBtn.svelte";
 
     export let viewTitle = "";
     export let witness = {};
@@ -36,22 +37,19 @@
             <h1 class="title">
                 {viewTitle}
                 {#if witness.can_edit}
-                    <a
-                        href={editUrl}
-                        class="edit-btn button is-small is-rounded is-link px-3 ml-2 mt-1"
-                        title="Edit"
-                    >
-                        <span class="iconify" data-icon="entypo:edit"></span>
+                    <a href={editUrl} title="Edit" class="edit-btn button is-small is-rounded is-link px-3 ml-2 mt-1">
+                        <span class="iconify" data-icon="entypo:edit"/>
                     </a>
                 {/if}
             </h1>
+
+            <div class="cell is-left is-middle">
+                <RegionsBtn/>
+            </div>
+
             {#each Object.entries(witness.metadata_full.wit) as [key, value]}
                 <span class="witness-key">{value.label}</span>
-                <span class="witness-value">
-                    <span>
-                        {value.value}
-                    </span>
-                </span>
+                <span class="witness-value">{value.value}</span>
             {/each}
 
             {#if witness.metadata_full.contents?.length}
@@ -59,11 +57,8 @@
 
                 {#each witness.metadata_full.contents as content, id}
                     <div class="mb-3">
-                        <div
-                            class="is-flex is-justify-content-space-between witness-key"
-                            on:click={() => showContent(id)}
-                            on:keypress={() => showContent(id)}
-                        >
+                        <div class="is-flex is-justify-content-space-between witness-key"
+                            on:click={() => showContent(id)} on:keypress={null}>
                             {content.title}
                             {#if Object.entries(content.content).length }
                                 <i class="fa-solid fa-chevron-down"></i>
@@ -73,7 +68,9 @@
                         {#if openContents.has(id)}
                             <div class="mt-2 pl-3">
                                 {#each Object.entries(content.content) as [key, value]}
-                                    <div class="witness-value"><b>{key}:</b> {value}</div>
+                                    <div class="witness-value">
+                                        <b>{key}:</b> {value}
+                                    </div>
                                 {/each}
                             </div>
                         {/if}
@@ -89,7 +86,7 @@
         display: block;
         font-weight: bold;
         border-bottom: 1px solid var(--bulma-border);
-        padding: 10px 0;
+        padding: 2em 0 .75em;
     }
 
     .witness-value {
