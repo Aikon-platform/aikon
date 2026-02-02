@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("webapp", "0026_merge_20260112_1359"),
+        ("webapp", "0027_rename_users_id_documentset_shared_with"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
                 blank=True,
                 related_name="shared_witnesses",
                 to=settings.AUTH_USER_MODEL,
-                verbose_name="Shared with",
+                verbose_name="Partagé avec",
             ),
         ),
     ]

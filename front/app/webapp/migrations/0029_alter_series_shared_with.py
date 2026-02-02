@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("webapp", "0025_similarityparameters_and_more"),
+        ("webapp", "0028_witness_shared_with"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
                 blank=True,
                 related_name="shared_series",
                 to=settings.AUTH_USER_MODEL,
-                verbose_name="Shared with",
+                verbose_name="Partagé avec",
             ),
         ),
     ]
