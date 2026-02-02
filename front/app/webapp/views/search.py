@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.core.paginator import Paginator
 from django.db import models
+from django.contrib.auth.models import User
 
 from app.webapp.search_filters import *
 from app.webapp.utils.constants import PAGE_LEN
@@ -14,7 +15,11 @@ def paginated_records(request, records):
     page_number = request.GET.get("p", 1)
     page_obj = paginator.get_page(page_number)
 
-    results = [json_obj for obj in page_obj if (json_obj := obj.json) is not None]
+    results = [
+        obj.to_json(request_user=request.user)
+        for obj in page_obj
+        if obj.json is not None
+    ]
 
     return {
         "results": results,
@@ -34,6 +39,7 @@ def search_witnesses(request):
         witnesses = Witness.objects.filter(
             Q(user=current_user)
             | Q(is_public=True)
+            | Q(shared_with=current_user)
             | Q(user__groups__in=current_user.groups.all())
         ).distinct()
 
@@ -100,8 +106,21 @@ def search_document_set(request):
     if user.is_superuser:
         queryset = base_queryset
     else:
-        queryset = base_queryset.filter(Q(user=user))
+        queryset = base_queryset.filter(
+            Q(shared_with__contains=[user.id]) | Q(user=user) | Q(is_public=True)
+        ).distinct()
 
     doc_sets = DocumentSetFilter(request.GET, queryset=queryset.order_by("-id"))
 
     return JsonResponse(paginated_records(request, doc_sets.qs))
+
+
+@require_GET
+def search_user(request):
+    q = request.GET.get("q", "")
+
+    user_list = User.objects.filter(username__icontains=q).all()
+
+    return JsonResponse(
+        {"users": [{"id": user.id, "username": str(user)} for user in user_list]}
+    )

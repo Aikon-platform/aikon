@@ -65,7 +65,7 @@ def process_results(data, completed=True):
     for doc_results in results_url:
         doc_id = doc_results.get("doc_id")
         result_url = doc_results.get("result_url")
-        result_dir = SVG_PATH / doc_id
+        result_dir = Path(f"{SVG_PATH}/{doc_id}")
 
         if result_dir.exists() and any(result_dir.glob("*.svg")):
             # if the path already exists and contains svg file,

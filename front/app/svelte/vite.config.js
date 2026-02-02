@@ -5,13 +5,13 @@ import path from 'path';
 const target = process.env.BUILD_TARGET;
 
 const configs = {
-  regionList: {
-    input: path.resolve(__dirname, 'src/regions/region-list.js'),
-    outDir: '../webapp/static/svelte/regionList',
+  witness: {
+    input: path.resolve(__dirname, 'src/witness/witness.js'),
+    outDir: '../webapp/static/svelte/witnessView',
     format: 'es',
-    entryFileNames: 'region-list.js',
+    entryFileNames: 'witness.js',
     chunkFileNames: '[name]-[hash].js',
-    assetFileNames: 'regionList.[ext]',
+    assetFileNames: 'witness.[ext]',
     inlineDynamicImports: false
   },
   recordList: {

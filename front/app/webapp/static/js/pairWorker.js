@@ -23,7 +23,24 @@ self.onmessage = (e) => {
             break;
 
         case 'done':
-            if (state) finalize();
+            if (state) {
+                finalize();
+            } else {
+                // if received 'done' without any data, send empty result
+                self.postMessage({
+                    type: 'complete',
+                    allPairs: [],
+                    imageNodes: new Map(),
+                    pairIndex: { byImage: new Map(), byDocPair: new Map(), byDoc: new Map() },
+                    categories: {},
+                    stats: {
+                        pairStats: createStatsObject(true),
+                        documentStats: createStatsObject(true),
+                        imageStats: createStatsObject(true),
+                        docPairStats: createStatsObject(true)
+                    }
+                });
+            }
             break;
 
         // Legacy: full array mode (for backward compat)
@@ -198,15 +215,18 @@ function pushToMap(map, key, value) {
     arr.push(value);
 }
 
-function createStatsObject() {
+function createStatsObject(isEmpty = false) {
+    const min = isEmpty ? 0 : Infinity;
+    const max = isEmpty ? 0 : -Infinity;
     return {
         count: 0,
         totalScore: 0,
         scoreCount: new Map(),
-        scoreRange: { min: Infinity, max: -Infinity, range: 0 },
-        countRange: { min: Infinity, max: -Infinity, range: 0 },
+        scoreRange: { min: min, max: max, range: 0 },
+        countRange: { min: min, max: max, range: 0 },
         links: 0,
-        density: 0
+        density: 0,
+        avgScore: 0
     };
 }
 

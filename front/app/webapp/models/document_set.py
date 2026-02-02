@@ -63,6 +63,8 @@ class DocumentSet(AbstractSearchableModel):
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
 
+    shared_with = ArrayField(models.IntegerField(), default=list, blank=True, null=True)
+
     selection = models.JSONField(
         verbose_name="JSON selection",
         blank=True,
@@ -202,12 +204,14 @@ class DocumentSet(AbstractSearchableModel):
                 "id": self.id,
                 "type": "documentSet",
                 "title": self.title,
+                "owner_id": self.user.id,
+                "is_public": self.is_public,
                 "selected": self.get_document_metadata(),
             }
             type(self).objects.filter(pk=self.pk).update(selection=json_data)
         return self.selection
 
-    def to_json(self, reindex=True, no_img=False):
+    def to_json(self, reindex=True, no_img=False, request_user=None):
         user = self.user
         try:
             return json_encode(

@@ -24,7 +24,7 @@
 
 {#if modules.includes("similarity")}
     {#if Object.keys($comparedRegions).length }
-        <SimilarityToolbar></SimilarityToolbar>
+        <SimilarityToolbar/>
     {/if}
     {#if $loading}
         <Table>

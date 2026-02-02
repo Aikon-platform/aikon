@@ -1,12 +1,20 @@
 <script>
-    import { getContext } from "svelte";
+    import { getContext, setContext } from "svelte";
 
     import { appLang } from '../../constants';
     import { similarityStore } from "./similarityStore.js";
+    import { toRegionItem } from "../utils.js";
     import SimilarRegion from "./SimilarRegion.svelte";
+    import RegionModal from "../modal/RegionModal.svelte";
+    import RegionCard from "../RegionCard.svelte";
+    import PageView from "../modal/PageView.svelte";
+    import SimilarityView from "../modal/SimilarityView.svelte";
+    import QueryExpansionView from "../modal/QueryExpansionView.svelte";
+    import Tabs from "../../ui/Tabs.svelte";
 
     export let qImg;
     export let sImgsPromise;
+    export let isInModal = false;
 
     const {
         selectedRegions,
@@ -15,8 +23,11 @@
         propagateFilterByRegions
     } = similarityStore;
 
-    const isPropagatedContext = getContext("similarityPropagatedContext") || false;  // true if it's a propagation, false otherwise
+    const isPropagatedContext = getContext("similarityPropagatedContext") || false;
     const currentPageId = window.location.pathname.match(/\d+/g).join('-');
+
+    // Get query image metadata from context for SimilarityView
+    const qImgMetadata = getContext("qImgMetadata") || null;
 
     let errorMsg;
 
@@ -99,7 +110,9 @@
      * current behaviour:
      *      categories set in `SimilarRegion` won't affect the filtering done by displaySimImg until the next reload.
      * explanation:
-     *      fixing this would ask to re-fetch `sImgsPromise` from the backend: when setting a category in `SimilarRegion`, the database is updated, the object in `SimilarRegion` is updated, but the update is not transmitted to the parent (aka, the current component)
+     *      fixing this would ask to re-fetch `sImgsPromise` from the backend: when setting a category in `SimilarRegion`,
+     *      the database is updated, the object in `SimilarRegion` is updated, but the update is not transmitted to the parent
+     *      (aka, the current component)
      *
      * @returns {boolean}
      */
@@ -147,24 +160,45 @@
         }
     };
 
+    let modalOpen = false;
+    let modalIndex = 0;
+
+    // Convert filteredSImgs data to RegionItem format for the modal
+    $: modalItems = filteredSImgs.map(({ data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType] }) => {
+        const [wit, digit, canvas, xywh] = sImg.split('.')[0].split('_');
+        return toRegionItem(sImg, wit, xywh, canvas);
+    });
+
+    $: currentScore = filteredSImgs[modalIndex]?.data[0] ?? null;
+
+    const handleOpenModal = (e) => {
+        modalIndex = e.detail.index ?? 0;
+        modalOpen = true;
+    };
+
+    $: tabs = [
+        { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
+        { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
+        { id: "similarity", label: appLang === "en" ? "Comparison" : "Comparaison" },
+        { id: "expansion", label: appLang === "en" ? "Query Expansion" : "Expansion de requête" }
+    ];
 </script>
 
 {#if sImgsPromise && loadingStatus==="loading"}
-    <div class="faded is-center">{
-        appLang === 'en' && !isPropagatedContext
-        ? 'Retrieving similar regions...'
-        : appLang === 'fr' && !isPropagatedContext
-        ? 'Récupération des régions similaires...'
-        : appLang === 'en' && isPropagatedContext
-        ? "Retrieving propagated regions..."
-        : "Récupération de similarités propagées..."
-    }</div>
+    <div class="faded is-center">
+        {#if isPropagatedContext}
+            {appLang === 'en' ? "Retrieving propagated regions..." : "Récupération de similarités propagées..."}
+        {:else}
+            {appLang === 'en' ? 'Retrieving similar regions...' : 'Récupération des régions similaires...'}
+        {/if}
+    </div>
 {:else if loadingStatus === "loaded"}
     <div>
         <span class="m-2">{filteredSImgs.length} {getSimilarityLabel(isPropagatedContext, filteredSImgs.length)}</span>
         <div class="m-2 is-gap-2" class:grid={filteredSImgs.length > 0}>
-            {#each filteredSImgs as {uuid, data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]} (uuid)}
-                <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual} {similarityType}/>
+            {#each filteredSImgs as {uuid, data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]}, i (uuid)}
+                <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual} {similarityType}
+                               index={i} on:openModal={handleOpenModal} {isInModal}/>
             {:else}
                 {#if noRegionsSelected }
                     <div class="faded is-center">
@@ -178,6 +212,24 @@
             {/each}
         </div>
     </div>
+
+    <RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
+        <svelte:fragment let:item={currentItem}>
+            <Tabs {tabs} let:activeTab>
+                {#if activeTab === "region"}
+                    <div class="modal-region">
+                        <RegionCard item={currentItem} height="full" isInModal={true}/>
+                    </div>
+                {:else if activeTab === "page"}
+                    <PageView item={currentItem}/>
+                {:else if activeTab === "similarity" && qImgMetadata}
+                    <SimilarityView queryItem={qImgMetadata} similarItem={currentItem} score={currentScore}/>
+                {:else if activeTab === "expansion"}
+                    <QueryExpansionView mainImgItem={currentItem}/>
+                {/if}
+            </Tabs>
+        </svelte:fragment>
+    </RegionModal>
 {:else if loadingStatus==="error"}
     <div class="faded is-center">
         {
@@ -187,3 +239,15 @@
         }
     </div>
 {/if}
+
+<style>
+    .modal-region {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-region :global(.region) {
+        height: 100%;
+    }
+</style>

@@ -10,25 +10,14 @@
     /////////////////////////////////////////////
 
     export let qImg;
+    export let isInModal = false;
     let sImgsPromise;
 
-    const isInModal = getContext("isInModal") || false;
-    const { selectedRegions, comparedRegions } = similarityStore;
+    const { selectedRegions } = similarityStore;
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentPageId = window.location.pathname.match(/\d+/g).join("-");
 
     /////////////////////////////////////////////
-
-    /**
-     * if `_isInModal`, we retrieve similarities for all possible regions. else, only for regions defined by the user.
-     * @param {SelectedRegionsType} selection
-     * @param {boolean} _isInModal
-     * @returns {number[]}
-     */
-    const getRegionsIds = (selection, _isInModal) =>
-        _isInModal
-        ? Object.keys($comparedRegions).map((k) => $comparedRegions[k].id)
-        : Object.values(selection[currentPageId] || {}).map(r => r.id);
 
     /**
      * retrieve similar images to `qImg`
@@ -38,16 +27,17 @@
      * @returns {Promise<array>}
      */
     async function fetchSImgs(qImg, selection, _isInModal) {
-        const regionsIds = getRegionsIds(selection, _isInModal);
-        if (regionsIds.length === 0) {
+        const regionsIds = Object.values(selection[currentPageId] || {}).map(r => r.id);
+        if (!_isInModal && regionsIds.length === 0) {
             return [];
         }
         const response = await fetch(`${baseUrl}similar-images`, {
             method: "POST",
             body: JSON.stringify({
                 regionsIds: regionsIds,
+                filterByRegions: !_isInModal,
                 qImg: qImg,
-                topk: 12, // TODO retrieve this value from the user
+                topk: 10, // TODO retrieve this value from the user
             }),
             headers: {
                 "Content-Type": "application/json",
@@ -70,4 +60,4 @@
     }
 </script>
 
-<SimilarRegions {qImg} {sImgsPromise}/>
+<SimilarRegions {qImg} {sImgsPromise} {isInModal}/>

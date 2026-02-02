@@ -1,11 +1,12 @@
 import { writable } from 'svelte/store';
-import { sasUrl, cantaloupeUrl, appName } from './constants';
+import {sasUrl, cantaloupeUrl, appName, appLang} from './constants';
 
 export const loading = writable(false);
 export const errorMsg = writable("");
 
 const isString = (x) => typeof x === 'string' || x instanceof String;
 
+export const i18n = (key, t) => t[key]?.[appLang] || t[key]?.en || key;
 
 /**
  * Display loading UI while waiting for Promise
@@ -69,7 +70,11 @@ export function pageUpdate(pageNb, pageWritable, urlParam) {
 }
 
 /** extract image name by removing crop info and adding `.jpg` at the end */
-function refToIIIFName(imgRef=null) {
+function refToIIIFName(imgRef = null) {
+    if (!imgRef){
+        return undefined
+    }
+
     imgRef = imgRef.split("_");
     return imgRef.length < 3
         ? undefined
@@ -264,10 +269,6 @@ export const equalArrayShallow = (x, y) =>
     && x.length===y.length
     && x.every((e, idx) => e === y[idx]||undefined);
 
-
-export function imageToPage(imgName) {
-    return parseInt(imgName.split('_').at(-2));
-}
 
 export function generateColor(index) {
     const goldenAngle = 137.5;
