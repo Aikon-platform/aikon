@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
+        migrations.AddField(
             model_name="series",
             name="shared_with",
             field=models.ManyToManyField(

@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("webapp", "0028_series_shared_with"),
+        ("webapp", "0027_witness_shared_with"),
     ]
 
     operations = [
