@@ -15,13 +15,12 @@ def paginated_records(request, records):
     page_number = request.GET.get("p", 1)
     page_obj = paginator.get_page(page_number)
 
-    results = [
-        {**json_obj, "can_edit": obj.can_edit(request.user)}
-        if hasattr(obj, "can_edit")
-        else json_obj
-        for obj in page_obj
-        if (json_obj := obj.json)
-    ]
+    results = []
+    for obj in page_obj:
+        if json_obj := obj.json:
+            if hasattr(obj, "can_edit"):
+                json_obj = {**json_obj, "can_edit": obj.can_edit(request.user)}
+            results.append(json_obj)
 
     return {
         "results": results,
@@ -37,7 +36,7 @@ def get_shared_with(model_class, current_user):
     return model_class.objects.filter(
         Q(user=current_user)
         | Q(is_public=True)
-        | Q(shared_with__id=current_user.id)
+        | Q(shared_with=current_user)
         | Q(user__groups__in=current_user.groups.all())
     ).distinct()
 
