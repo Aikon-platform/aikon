@@ -135,10 +135,6 @@ class Content(models.Model):
     )
 
     def get_metadata(self):
-        metadata = {
-            "title": f"{self.work.__str__()} ({self.get_formatted_pages() if self.page_max and self.page_min else '-'})",
-        }
-
         content = {}
 
         if self.date_max and self.date_min:
@@ -153,9 +149,11 @@ class Content(models.Model):
         if self.get_roles():
             content[get_name("roles")] = self.get_str_roles()
 
-        metadata["content"] = content
-
-        return metadata
+        work_title = self.work.__str__() if self.work else "Unknown Work"
+        return {
+            "title": f"{work_title} ({self.get_formatted_pages()})",
+            "content": content,
+        }
 
     def get_witness(self):
         try:
@@ -171,9 +169,11 @@ class Content(models.Model):
 
     def get_formatted_pages(self):
         if self.page_min == "" and self.page_max == "":
-            return ""
+            return "-"
 
-        page_t = "pp." if self.get_witness().page_type == PAG_ABBR else "ff."
+        page_t = ""
+        if wit := self.get_witness():
+            page_t = "pp. " if wit.get_page_type() == PAG_ABBR else "ff. "
         return f"{page_t} {format_start_end(self.page_min, self.page_max)}"
 
     def get_nb_of_page(self, only_nb=True):
