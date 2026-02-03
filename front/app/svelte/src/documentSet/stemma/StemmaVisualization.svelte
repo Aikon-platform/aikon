@@ -3,6 +3,8 @@
     import * as d3 from 'd3';
 
     export let documents = [];
+    export let selectedNodes = [];
+    export let edges = [];
 
     const dispatch = createEventDispatcher();
 
@@ -13,19 +15,25 @@
     let height = 600;
     let transform = d3.zoomIdentity;
     let resizeObserver;
-    let rafId = null;
+
+    let bgColor, selectedColor, linkColor;
 
     const NODE_WIDTH = 120;
     const NODE_HEIGHT = 40;
 
     let nodes = [];
-    let edges = [];
     let draggedNode = null;
     let drawingEdge = null;
     let hoveredNode = null;
-    let selectedNode = null;
 
-    $: if (documents.length && container) initNodes(documents);
+    function extractCssColor(varName, fallback) {
+        const temp = document.createElement('div');
+        temp.style.color = `var(${varName}, ${fallback})`;
+        document.body.appendChild(temp);
+        const computed = getComputedStyle(temp).color;
+        document.body.removeChild(temp);
+        return computed;
+    }
 
     function initNodes(docs) {
         const cols = Math.ceil(Math.sqrt(docs.length));
@@ -58,24 +66,22 @@
     function render() {
         if (!ctx) return;
         ctx.save();
-        ctx.fillStyle = 'var(--bulma-scheme-main-bis, #999)';
+        ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, width, height);
         ctx.translate(transform.x, transform.y);
         ctx.scale(transform.k, transform.k);
 
-        // Draw edges
         ctx.lineWidth = 2 / transform.k;
         edges.forEach(e => {
             const src = nodes.find(n => n.id === e.source);
             const tgt = nodes.find(n => n.id === e.target);
-            if (src && tgt) drawArrow(src, tgt, 'var(--bulma-link)');
+            if (src && tgt) drawArrow(src, tgt, selectedColor);
         });
 
-        // Draw edge being created
         if (drawingEdge) {
             const src = nodes.find(n => n.id === drawingEdge.source);
             if (src) {
-                ctx.strokeStyle = 'var(--bulma-link)';
+                ctx.strokeStyle = selectedColor;
                 ctx.setLineDash([5, 5]);
                 ctx.beginPath();
                 ctx.moveTo(src.x + src.width / 2, src.y + src.height);
@@ -85,13 +91,13 @@
             }
         }
 
-        // Draw nodes
+        const selectedIds = new Set(selectedNodes.map(n => n.id));
         nodes.forEach(n => {
             const isHovered = hoveredNode === n;
-            const isSelected = selectedNode === n;
+            const isSelected = selectedIds.has(n.id);
 
-            ctx.fillStyle = '#222';
-            ctx.strokeStyle = isSelected ? 'var(--bulma-link)' : (isHovered ? 'var(--bulma-link)' : n.color);
+            ctx.fillStyle = n.color;
+            ctx.strokeStyle = isSelected ? selectedColor : (isHovered ? selectedColor : n.color);
             ctx.lineWidth = (isSelected ? 3 : (isHovered ? 2 : 1)) / transform.k;
 
             ctx.beginPath();
@@ -99,7 +105,7 @@
             ctx.fill();
             ctx.stroke();
 
-            ctx.fillStyle = 'var(--bulma-scheme-main-bis, #f0f0f0)';
+            ctx.fillStyle = '#222';
             ctx.font = `${12 / transform.k}px sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
@@ -141,12 +147,17 @@
             drawingEdge = { source: node.id, x: (mx - transform.x) / transform.k, y: (my - transform.y) / transform.k };
         } else if (node) {
             draggedNode = node;
-            selectedNode = node;
-            dispatch('nodeselect', node);
-        } else {
-            selectedNode = null;
+            toggleNodeSelection(node);
         }
         render();
+    }
+
+    function toggleNodeSelection(node) {
+        const idx = selectedNodes.findIndex(n => n.id === node.id);
+        const newSelection = idx >= 0
+            ? [...selectedNodes.slice(0, idx), ...selectedNodes.slice(idx + 1)]
+            : [...selectedNodes, node];
+        dispatch('selectionchange', newSelection);
     }
 
     function handleMouseMove(e) {
@@ -183,7 +194,6 @@
             if (target && target.id !== drawingEdge.source) {
                 const exists = edges.some(ed => ed.source === drawingEdge.source && ed.target === target.id);
                 if (!exists) {
-                    edges = [...edges, { source: drawingEdge.source, target: target.id }];
                     dispatch('edgecreate', { source: drawingEdge.source, target: target.id });
                 }
             }
@@ -194,10 +204,13 @@
     }
 
     function handleResize() {
+        if (!container || !canvas || !ctx) return;
         const rect = container.getBoundingClientRect();
-        if (rect.width !== width || rect.height !== height) {
-            width = rect.width || 800;
-            height = rect.height || 600;
+        const newWidth = rect.width || 800;
+        const newHeight = rect.height || 600;
+        if (newWidth !== width || newHeight !== height) {
+            width = newWidth;
+            height = newHeight;
             canvas.width = width;
             canvas.height = height;
             render();
@@ -205,8 +218,17 @@
     }
 
     onMount(() => {
+        bgColor = extractCssColor('--bulma-scheme-main-bis', '#f9fafb');
+        selectedColor = extractCssColor('--bulma-link', '#4258ff');
+        linkColor = extractCssColor('--bulma-body-color', '#5a5f6b');
+
         ctx = canvas.getContext('2d');
-        handleResize();
+
+        const rect = container.getBoundingClientRect();
+        width = rect.width || 800;
+        height = rect.height || 600;
+        canvas.width = width;
+        canvas.height = height;
 
         resizeObserver = new ResizeObserver(handleResize);
         resizeObserver.observe(container);
@@ -225,17 +247,7 @@
 
     onDestroy(() => {
         resizeObserver?.disconnect();
-        if (rafId) cancelAnimationFrame(rafId);
     });
-
-    export function removeEdge(source, target) {
-        edges = edges.filter(e => !(e.source === source && e.target === target));
-        render();
-    }
-
-    export function getGraph() {
-        return { nodes: nodes.map(n => ({ id: n.id, x: n.x, y: n.y })), edges: [...edges] };
-    }
 </script>
 
 <div class="stemma-container" bind:this={container}>
@@ -252,11 +264,14 @@
     .stemma-container {
         position: relative;
         width: 100%;
-        height: 100%;
-        min-height: 400px;
+        min-height: 80vh;
+        overflow: hidden;
     }
     canvas {
         display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
         border-radius: .5rem;

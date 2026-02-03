@@ -2,55 +2,48 @@
     import { i18n } from '../../utils.js';
     import SplitLayout from '../../ui/SplitLayout.svelte';
     import StemmaVisualization from './StemmaVisualization.svelte';
+    import { createStemmaStore } from './stemmaStore.js';
 
     export let documentSetStore;
 
-    const { documentNodes, filteredDocPairStats } = documentSetStore;
+    const stemmaStore = createStemmaStore(documentSetStore);
+    const { selectedNodes, edges, filteredDocuments } = stemmaStore;
 
     const t = {
         title: { en: 'Stemma Builder', fr: 'Éditeur de stemma' },
-        hint: {
-            en: 'Drag to move • Shift + drag to connect • Click to select',
-            fr: 'Glisser pour déplacer • Maj + glisser pour connecter • Cliquer pour sélectionner'
-        },
+        hint: { en: 'Drag to move • Shift + drag to connect • Click to select', fr: 'Glisser pour déplacer • Maj + glisser pour connecter • Cliquer pour sélectionner' },
         noDocuments: { en: 'No documents available', fr: 'Aucun document disponible' },
-        details: { en: 'Details', fr: 'Détails' },
-        selectNode: { en: 'Select a document node to view details', fr: 'Sélectionnez un document pour voir les détails' },
+        selection: { en: 'Selection', fr: 'Sélection' },
         edges: { en: 'Connections', fr: 'Connexions' },
-        noEdges: { en: 'No connections yet', fr: 'Aucune connexion' },
-        from: { en: 'From', fr: 'De' },
-        to: { en: 'To', fr: 'Vers' },
+        selectViz: { en: 'Select a visualization', fr: 'Choisir une visualisation' },
     };
 
     let stemmaViz;
-    let selectedNode = null;
-    let createdEdges = [];
 
-    $: documents = Array.from($documentNodes?.values() || []);
-
-    function handleNodeSelect(e) {
-        selectedNode = e.detail;
+    function handleSelectionChange(e) {
+        selectedNodes.set(e.detail);
+        documentSetStore.updateSelectedNodes(e.detail.map(n => n.id));
     }
 
     function handleEdgeCreate(e) {
         const { source, target } = e.detail;
-        const srcDoc = $documentNodes.get(source);
-        const tgtDoc = $documentNodes.get(target);
-        createdEdges = [...createdEdges, {
-            source,
-            target,
-            sourceTitle: srcDoc?.title || source,
-            targetTitle: tgtDoc?.title || target
-        }];
+        const srcDoc = $filteredDocuments.find(d => d.id === source);
+        const tgtDoc = $filteredDocuments.find(d => d.id === target);
+        stemmaStore.addEdge(source, target, srcDoc, tgtDoc);
     }
 
     function removeEdge(source, target) {
-        createdEdges = createdEdges.filter(e => !(e.source === source && e.target === target));
+        stemmaStore.removeEdge(source, target);
         stemmaViz?.removeEdge(source, target);
+    }
+
+    function removeFromSelection(id) {
+        stemmaStore.removeFromSelection(id);
+        documentSetStore.updateSelectedNodes($selectedNodes.map(n => n.id));
     }
 </script>
 
-{#if !documents.length}
+{#if !$filteredDocuments.length}
     <div class="container">
         <div class="notification is-info">{i18n('noDocuments', t)}</div>
     </div>
@@ -61,53 +54,91 @@
             <span class="tag is-small">{i18n('hint', t)}</span>
         </div>
         <div slot="left-scroll" class="stemma-panel">
-            <StemmaVisualization
-                bind:this={stemmaViz}
-                {documents}
-                on:nodeselect={handleNodeSelect}
-                on:edgecreate={handleEdgeCreate}
-            />
-        </div>
-        <div slot="right-title">
-            <h4 class="title is-6 mb-0">{i18n('details', t)}</h4>
-        </div>
-        <div slot="right-scroll">
-            {#if selectedNode}
-                <div class="box mb-4">
-                    <h5 class="title is-6" style="color: {selectedNode.color}">{selectedNode.title}</h5>
-                    <p class="is-size-7 has-text-grey">ID: {selectedNode.id}</p>
+            {#if $selectedNodes.length}
+                <div class="selection-bar mb-2">
+                    <span class="is-size-7 has-text-grey mr-2">{i18n('selection', t)}:</span>
+                    <div class="is-flex is-flex-wrap-wrap" style="gap: 0.25rem;">
+                        {#each $selectedNodes as node, idx (node.id)}
+                            <span class="tag is-small" style="background-color: {node.color}; color: #222;">
+                                <span class="mr-1">{idx + 1}.</span>
+                                {node.title.length > 12 ? node.title.slice(0, 10) + '…' : node.title}
+                                <button class="delete is-small ml-1" on:click={() => removeFromSelection(node.id)}></button>
+                            </span>
+                        {/each}
+                    </div>
                 </div>
-            {:else}
-                <p class="has-text-grey is-size-7">{i18n('selectNode', t)}</p>
             {/if}
 
-            <h5 class="title is-6 mt-5">{i18n('edges', t)}</h5>
-            {#if createdEdges.length === 0}
-                <p class="has-text-grey is-size-7">{i18n('noEdges', t)}</p>
-            {:else}
-                <div class="edge-list">
-                    {#each createdEdges as edge}
-                        <div class="edge-item is-flex is-align-items-center is-justify-content-space-between mb-2">
-                            <span class="is-size-7">
-                                <strong>{edge.sourceTitle}</strong> → <strong>{edge.targetTitle}</strong>
+            <div class="canvas-wrapper">
+                <StemmaVisualization
+                    bind:this={stemmaViz}
+                    documents={$filteredDocuments}
+                    selectedNodes={$selectedNodes}
+                    edges={$edges}
+                    on:selectionchange={handleSelectionChange}
+                    on:edgecreate={handleEdgeCreate}
+                />
+            </div>
+
+            {#if $edges.length}
+                <div class="edges-bar mt-2">
+                    <span class="is-size-7 has-text-grey mr-2">{i18n('edges', t)}:</span>
+                    <div class="is-flex is-flex-wrap-wrap" style="gap: 0.25rem;">
+                        {#each $edges as edge}
+                            <span class="tag is-small">
+                                <span class="edge-dot" style="background: {edge.sourceColor}"></span>
+                                →
+                                <span class="edge-dot" style="background: {edge.targetColor}"></span>
+                                <button class="delete is-small ml-1" on:click={() => removeEdge(edge.source, edge.target)}></button>
                             </span>
-                            <button class="delete is-small" on:click={() => removeEdge(edge.source, edge.target)}></button>
-                        </div>
-                    {/each}
+                        {/each}
+                    </div>
                 </div>
             {/if}
+        </div>
+
+        <div slot="right-title" class="is-flex is-align-items-center" style="gap: 0.5rem;">
+            <div class="select is-small">
+                <select>
+                    <option value="">{i18n('selectViz', t)}</option>
+                </select>
+            </div>
+            <div class="select is-small">
+                <select>
+                    <option value="">{i18n('selectViz', t)}</option>
+                </select>
+            </div>
+        </div>
+
+        <div slot="right-scroll">
         </div>
     </SplitLayout>
 {/if}
 
 <style>
     .stemma-panel {
+        display: flex;
+        flex-direction: column;
         height: 100%;
-        min-height: 500px;
     }
-    .edge-item {
+    .canvas-wrapper {
+        flex: 1;
+        min-height: 400px;
+        position: relative;
+    }
+    .selection-bar, .edges-bar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
         padding: 0.5rem;
-        background: var(--bulma-background);
+        background: var(--bulma-scheme-main-bis);
         border-radius: 4px;
+    }
+    .edge-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin: 0 2px;
     }
 </style>
