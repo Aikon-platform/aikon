@@ -65,7 +65,7 @@ class AbstractSearchableModel(models.Model):
     def update(self, **kwargs):
         type(self).objects.filter(pk=self.pk.__str__()).update(**kwargs)
 
-    def get_json(self, reindex=False, request_user=None):
+    def get_json(self, reindex=False, request_user=None, full_metadata=False):
         """
         Get the JSON representation of the object.
         If reindex is True or json property hasn't been generated yet,
@@ -78,10 +78,13 @@ class AbstractSearchableModel(models.Model):
             type(self).objects.filter(pk=self.pk.__str__()).update(json=json_data)
             return json_data
 
+        json_data = self.json.copy()
         if request_user and hasattr(self, "can_edit"):
-            json_data = self.json.copy()
             json_data["can_edit"] = self.can_edit(request_user)
-            return json_data
+
+        if full_metadata and "metadata_full" not in json_data:
+            if hasattr(self, "get_full_metadata"):
+                json_data["metadata_full"] = self.get_full_metadata(json_data)
 
         return self.json
 
