@@ -199,6 +199,10 @@ class Witness(AbstractSearchableModel):
         if not no_img and (reindex or not img):
             img = self.get_img(only_first=True)
 
+        updated = (
+            self.updated_at.strftime("%Y-%m-%d %H:%M") if self.updated_at else None
+        )
+
         return json_encode(
             {
                 "id": self.id,
@@ -215,9 +219,7 @@ class Witness(AbstractSearchableModel):
                 "view_url": self.get_absolute_view_url(),
                 # NOTE handled dynamically by the get_json method in SearchableModel
                 "can_edit": self.can_edit(request_user),
-                "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M")
-                if self.updated_at
-                else None,
+                "updated_at": updated,
                 "is_public": self.is_public,
                 "metadata": {
                     get_name("id_nb"): self.id_nb or "-",
@@ -227,12 +229,12 @@ class Witness(AbstractSearchableModel):
                     get_name("page_nb"): self.get_page(),
                     get_name("Language"): self.get_lang_names(),
                 },
-                "metadata_full": self.get_wit_metadata(),
+                "metadata_full": self.get_full_metadata(),
                 "buttons": buttons,
             }
         )
 
-    def get_wit_metadata(self):
+    def get_full_metadata(self):
         metadata = {}
 
         wit = {
