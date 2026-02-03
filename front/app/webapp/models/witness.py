@@ -25,6 +25,7 @@ from app.webapp.models.utils.constants import (
     FOL_ABBR,
     NO_USER,
     MS_ABBR,
+    MS,
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
@@ -270,10 +271,10 @@ class Witness(AbstractSearchableModel):
 
     def get_type(self):
         # NOTE should be returning "letterpress" (tpr) / "woodblock" (wpr) / "manuscript" (ms)
-        return MAP_WIT_TYPE.get(self.type, MS_ABBR)
+        return MAP_WIT_TYPE.get(self.type, MS.capitalize())
 
     def get_page_type(self):
-        return MAP_PAGE_TYPE.get(self.page_type, PAG_ABBR)
+        return MAP_PAGE_TYPE.get(self.page_type, PAGE.capitalize())
 
     def get_ref(self):
         return f"wit{self.id}"
