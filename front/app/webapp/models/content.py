@@ -26,6 +26,7 @@ from app.webapp.utils.functions import (
     flatten,
 )
 from app.webapp.utils.logger import log
+from config.settings import APP_LANG
 
 
 def get_name(fieldname, plural=False):
@@ -173,8 +174,12 @@ class Content(models.Model):
 
         page_t = ""
         if wit := self.get_witness():
-            page_t = "pp. " if wit.get_page_type() == PAG_ABBR else "ff. "
-        return f"{page_t} {format_start_end(self.page_min, self.page_max)}"
+            page_t = "pp. " if wit.page_type == PAG_ABBR else "ff. "
+
+        if self.whole_witness:
+            return f"Entire {WIT}" if APP_LANG == "en" else f"Intégralité du {WIT}"
+
+        return f"{page_t}{format_start_end(self.page_min, self.page_max)}"
 
     def get_nb_of_page(self, only_nb=True):
         wit = self.get_witness()

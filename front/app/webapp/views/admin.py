@@ -203,11 +203,11 @@ class WitnessRegionsView(AbstractRecordView):
         context["manifests"] = []
 
         for did in context["witness"]["digits"]:
-            if digit := Digitization.objects.get(pk=did):
+            if digit := Digitization.objects.filter(pk=did).first():
                 context["manifests"].append(digit.gen_manifest_url(version=MANIFEST_V2))
 
         for rid in context["witness"]["regions"]:
-            regions = Regions.objects.get(pk=rid)
+            regions = Regions.objects.filter(pk=rid).first()
             if not regions:
                 continue
 
@@ -217,7 +217,7 @@ class WitnessRegionsView(AbstractRecordView):
             # TODO handle multiple manifest for multiple regions
 
             man = regions.gen_manifest_url(version=MANIFEST_V2)
-            context["manifest"] = man
+            context["manifest"] = man  # overwritten at each iteration
             context["manifests"].append(man)
 
             context["img_prefix"] = regions.get_ref().split("_anno")[0]
