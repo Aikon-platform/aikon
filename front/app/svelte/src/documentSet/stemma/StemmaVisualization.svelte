@@ -1,5 +1,5 @@
 <script>
-    import { onMount, onDestroy, createEventDispatcher } from 'svelte';
+    import { onMount, onDestroy, afterUpdate, createEventDispatcher } from 'svelte';
     import * as d3 from 'd3';
 
     export let documents = [];
@@ -26,6 +26,10 @@
     let drawingEdge = null;
     let hoveredNode = null;
 
+    afterUpdate(render);
+
+    $: if (documents.length && ctx) initNodes(documents);
+
     function extractCssColor(varName, fallback) {
         const temp = document.createElement('div');
         temp.style.color = `var(${varName}, ${fallback})`;
@@ -48,7 +52,6 @@
             width: NODE_WIDTH,
             height: NODE_HEIGHT
         }));
-        render();
     }
 
     function getNodeAt(mx, my) {
@@ -75,13 +78,13 @@
         edges.forEach(e => {
             const src = nodes.find(n => n.id === e.source);
             const tgt = nodes.find(n => n.id === e.target);
-            if (src && tgt) drawArrow(src, tgt, selectedColor);
+            if (src && tgt) drawArrow(src, tgt, linkColor);
         });
 
         if (drawingEdge) {
             const src = nodes.find(n => n.id === drawingEdge.source);
             if (src) {
-                ctx.strokeStyle = selectedColor;
+                ctx.strokeStyle = linkColor;
                 ctx.setLineDash([5, 5]);
                 ctx.beginPath();
                 ctx.moveTo(src.x + src.width / 2, src.y + src.height);
@@ -143,21 +146,15 @@
         const [mx, my] = d3.pointer(e);
         const node = getNodeAt(mx, my);
 
-        if (e.shiftKey && node) {
-            drawingEdge = { source: node.id, x: (mx - transform.x) / transform.k, y: (my - transform.y) / transform.k };
+        if (e.shiftKey || e.metaKey) {
+            if (node) {
+                drawingEdge = { source: node.id, x: (mx - transform.x) / transform.k, y: (my - transform.y) / transform.k };
+                render();
+            }
         } else if (node) {
             draggedNode = node;
-            toggleNodeSelection(node);
+            render();
         }
-        render();
-    }
-
-    function toggleNodeSelection(node) {
-        const idx = selectedNodes.findIndex(n => n.id === node.id);
-        const newSelection = idx >= 0
-            ? [...selectedNodes.slice(0, idx), ...selectedNodes.slice(idx + 1)]
-            : [...selectedNodes, node];
-        dispatch('selectionchange', newSelection);
     }
 
     function handleMouseMove(e) {
@@ -233,15 +230,29 @@
         resizeObserver = new ResizeObserver(handleResize);
         resizeObserver.observe(container);
 
+        const selection = d3.select(canvas);
+
         const zoom = d3.zoom()
             .scaleExtent([0.2, 5])
-            .filter(e => !e.shiftKey && (e.type === 'wheel' || (!draggedNode && !drawingEdge)))
+            .filter(e => {
+                if (e.type === 'wheel') return true;
+                if (e.shiftKey || e.metaKey) return false;
+                if (draggedNode || drawingEdge) return false;
+                const [mx, my] = d3.pointer(e);
+                return !getNodeAt(mx, my);
+            })
             .on('zoom', ({ transform: t }) => {
                 transform = t;
                 render();
             });
 
-        d3.select(canvas).call(zoom);
+        selection
+            .on('mousedown.custom', handleMouseDown)
+            .on('mousemove.custom', handleMouseMove)
+            .on('mouseup.custom', handleMouseUp)
+            .on('mouseleave.custom', () => { draggedNode = null; drawingEdge = null; })
+            .call(zoom);
+
         if (documents.length) initNodes(documents);
     });
 
@@ -251,13 +262,7 @@
 </script>
 
 <div class="stemma-container" bind:this={container}>
-    <canvas
-        bind:this={canvas}
-        on:mousedown={handleMouseDown}
-        on:mousemove={handleMouseMove}
-        on:mouseup={handleMouseUp}
-        on:mouseleave={() => { draggedNode = null; drawingEdge = null; }}
-    />
+    <canvas bind:this={canvas} />
 </div>
 
 <style>

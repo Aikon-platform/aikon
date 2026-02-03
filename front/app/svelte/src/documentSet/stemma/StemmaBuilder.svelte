@@ -11,19 +11,14 @@
 
     const t = {
         title: { en: 'Stemma Builder', fr: 'Éditeur de stemma' },
-        hint: { en: 'Drag to move • Shift + drag to connect • Click to select', fr: 'Glisser pour déplacer • Maj + glisser pour connecter • Cliquer pour sélectionner' },
+        hint: { en: 'Drag to move • Scroll to zoom • Shift+drag to connect', fr: 'Glisser pour déplacer • Défiler pour zoomer • Maj+glisser pour connecter' },
         noDocuments: { en: 'No documents available', fr: 'Aucun document disponible' },
-        selection: { en: 'Selection', fr: 'Sélection' },
+        order: { en: 'Order', fr: 'Ordre' },
         edges: { en: 'Connections', fr: 'Connexions' },
         selectViz: { en: 'Select a visualization', fr: 'Choisir une visualisation' },
     };
 
-    let stemmaViz;
-
-    function handleSelectionChange(e) {
-        selectedNodes.set(e.detail);
-        documentSetStore.updateSelectedNodes(e.detail.map(n => n.id));
-    }
+    $: documentSetStore.updateSelectedNodes($selectedNodes.map(n => n.id));
 
     function handleEdgeCreate(e) {
         const { source, target } = e.detail;
@@ -34,12 +29,6 @@
 
     function removeEdge(source, target) {
         stemmaStore.removeEdge(source, target);
-        stemmaViz?.removeEdge(source, target);
-    }
-
-    function removeFromSelection(id) {
-        stemmaStore.removeFromSelection(id);
-        documentSetStore.updateSelectedNodes($selectedNodes.map(n => n.id));
     }
 </script>
 
@@ -56,32 +45,20 @@
         <div slot="left-scroll" class="stemma-panel">
             {#if $selectedNodes.length}
                 <div class="selection-bar mb-2">
-                    <span class="is-size-7 has-text-grey mr-2">{i18n('selection', t)}:</span>
+                    <span class="is-size-7 has-text-grey mr-2">{i18n('order', t)}:</span>
                     <div class="is-flex is-flex-wrap-wrap" style="gap: 0.25rem;">
                         {#each $selectedNodes as node, idx (node.id)}
                             <span class="tag is-small" style="background-color: {node.color}; color: #222;">
                                 <span class="mr-1">{idx + 1}.</span>
                                 {node.title.length > 12 ? node.title.slice(0, 10) + '…' : node.title}
-                                <button class="delete is-small ml-1" on:click={() => removeFromSelection(node.id)}></button>
                             </span>
                         {/each}
                     </div>
                 </div>
             {/if}
 
-            <div class="canvas-wrapper">
-                <StemmaVisualization
-                    bind:this={stemmaViz}
-                    documents={$filteredDocuments}
-                    selectedNodes={$selectedNodes}
-                    edges={$edges}
-                    on:selectionchange={handleSelectionChange}
-                    on:edgecreate={handleEdgeCreate}
-                />
-            </div>
-
             {#if $edges.length}
-                <div class="edges-bar mt-2">
+                <div class="edges-bar mb-2">
                     <span class="is-size-7 has-text-grey mr-2">{i18n('edges', t)}:</span>
                     <div class="is-flex is-flex-wrap-wrap" style="gap: 0.25rem;">
                         {#each $edges as edge}
@@ -95,6 +72,15 @@
                     </div>
                 </div>
             {/if}
+
+            <div class="canvas-wrapper">
+                <StemmaVisualization
+                    documents={$filteredDocuments}
+                    selectedNodes={$selectedNodes}
+                    edges={$edges}
+                    on:edgecreate={handleEdgeCreate}
+                />
+            </div>
         </div>
 
         <div slot="right-title" class="is-flex is-align-items-center" style="gap: 0.5rem;">

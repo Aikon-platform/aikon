@@ -3,7 +3,6 @@ import { writable, derived, get } from 'svelte/store';
 export function createStemmaStore(documentSetStore) {
     const { documentNodes, selectedRegions } = documentSetStore;
 
-    const selectedNodes = writable([]);
     const edges = writable([]);
 
     const filteredDocuments = derived(
@@ -13,17 +12,45 @@ export function createStemmaStore(documentSetStore) {
                 .filter(doc => $selectedRegions.has(doc.id))
     );
 
-    const orderedSelection = derived(selectedNodes, $nodes =>
-        $nodes.map((n, idx) => ({ ...n, order: idx + 1 }))
+    const selectedNodes = derived(
+        [edges, filteredDocuments],
+        ([$edges, $docs]) => {
+            if (!$edges.length) return [];
+
+            const nodeIds = new Set();
+            $edges.forEach(e => {
+                nodeIds.add(e.source);
+                nodeIds.add(e.target);
+            });
+
+            const children = new Map();
+            const inDegree = new Map();
+            nodeIds.forEach(id => {
+                children.set(id, []);
+                inDegree.set(id, 0);
+            });
+            $edges.forEach(e => {
+                children.get(e.source).push(e.target);
+                inDegree.set(e.target, inDegree.get(e.target) + 1);
+            });
+
+            const sorted = [];
+            const queue = [...nodeIds].filter(id => inDegree.get(id) === 0).sort((a, b) => a - b);
+
+            while (queue.length) {
+                queue.sort((a, b) => a - b);
+                const id = queue.shift();
+                sorted.push(id);
+                for (const child of children.get(id)) {
+                    inDegree.set(child, inDegree.get(child) - 1);
+                    if (inDegree.get(child) === 0) queue.push(child);
+                }
+            }
+
+            const docMap = new Map($docs.map(d => [d.id, d]));
+            return sorted.map(id => docMap.get(id)).filter(Boolean);
+        }
     );
-
-    function removeFromSelection(id) {
-        selectedNodes.update($nodes => $nodes.filter(n => n.id !== id));
-    }
-
-    function clearSelection() {
-        selectedNodes.set([]);
-    }
 
     function addEdge(source, target, sourceDoc, targetDoc) {
         edges.update($edges => {
@@ -52,7 +79,7 @@ export function createStemmaStore(documentSetStore) {
 
     function getGraph() {
         return {
-            nodes: get(selectedNodes).map(n => ({ id: n.id, x: n.x, y: n.y })),
+            nodes: get(selectedNodes).map(n => ({ id: n.id })),
             edges: get(edges)
         };
     }
@@ -61,9 +88,6 @@ export function createStemmaStore(documentSetStore) {
         selectedNodes,
         edges,
         filteredDocuments,
-        orderedSelection,
-        removeFromSelection,
-        clearSelection,
         addEdge,
         removeEdge,
         clearEdges,
