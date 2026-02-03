@@ -2,10 +2,10 @@ import {derived, writable, get} from 'svelte/store';
 import {extractNb, generateColor} from "../utils.js";
 import { streamPairsToWorker } from "./pairStreamReader.js";
 
-import {appUrl} from "../constants.js";
+// import {appUrl} from "../constants.js";
 
 // TO DELETE
-// const appUrl = "https://vhs.huma-num.fr";
+const appUrl = "https://vhs.huma-num.fr";
 // TO DELETE
 
 const createWorker = () => new Worker(
@@ -26,7 +26,7 @@ export function createDocumentSetStore(documentSetId) {
     const scoreFilter = writable(true);
     const threshold = writable(0.5);
     const topK = writable(3);
-    const mutualTopK = writable(false);
+    const mutualTopK = writable(true);
     const scoreMode = writable('topk');
     const onlyExactMatches = derived(selectedCategories, $cats =>
         $cats.length === 1 && $cats[0] === 1
@@ -80,7 +80,7 @@ export function createDocumentSetStore(documentSetId) {
         abortController = new AbortController();
 
         // TO DELETE
-        // const documentSetId = 413; // histoire naturelle
+        const documentSetId = 413; // histoire naturelle
         // const documentSetId = 414; // nicolas
         // const documentSetId = 437; // physiologus
         // const documentSetId = 416; // de materia medica

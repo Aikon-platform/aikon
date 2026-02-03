@@ -68,7 +68,7 @@
         edges.forEach(e => {
             const src = nodes.find(n => n.id === e.source);
             const tgt = nodes.find(n => n.id === e.target);
-            if (src && tgt) drawArrow(src, tgt, '#999');
+            if (src && tgt) drawArrow(src, tgt, 'var(--bulma-link)');
         });
 
         // Draw edge being created
@@ -90,8 +90,8 @@
             const isHovered = hoveredNode === n;
             const isSelected = selectedNode === n;
 
-            ctx.fillStyle = n.color;
-            ctx.strokeStyle = isSelected ? 'var(--bulma-link)' : (isHovered ? '#333' : '#666');
+            ctx.fillStyle = '#222';
+            ctx.strokeStyle = isSelected ? 'var(--bulma-link)' : (isHovered ? 'var(--bulma-link)' : n.color);
             ctx.lineWidth = (isSelected ? 3 : (isHovered ? 2 : 1)) / transform.k;
 
             ctx.beginPath();
@@ -245,10 +245,7 @@
         on:mousemove={handleMouseMove}
         on:mouseup={handleMouseUp}
         on:mouseleave={() => { draggedNode = null; drawingEdge = null; }}
-    ></canvas>
-    <div class="stemma-hint">
-        <span class="tag is-light is-small">Drag to move • Shift + drag to connect • Scroll to zoom</span>
-    </div>
+    />
 </div>
 
 <style>
@@ -262,11 +259,6 @@
         display: block;
         width: 100%;
         height: 100%;
-    }
-    .stemma-hint {
-        position: absolute;
-        bottom: 0.5rem;
-        left: 0.5rem;
-        pointer-events: none;
+        border-radius: .5rem;
     }
 </style>

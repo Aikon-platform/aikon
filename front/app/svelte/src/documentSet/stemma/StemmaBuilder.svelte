@@ -9,6 +9,10 @@
 
     const t = {
         title: { en: 'Stemma Builder', fr: 'Éditeur de stemma' },
+        hint: {
+            en: 'Drag to move • Shift + drag to connect • Click to select',
+            fr: 'Glisser pour déplacer • Maj + glisser pour connecter • Cliquer pour sélectionner'
+        },
         noDocuments: { en: 'No documents available', fr: 'Aucun document disponible' },
         details: { en: 'Details', fr: 'Détails' },
         selectNode: { en: 'Select a document node to view details', fr: 'Sélectionnez un document pour voir les détails' },
@@ -54,7 +58,7 @@
     <SplitLayout>
         <div slot="left-title" class="is-flex is-justify-content-space-between is-align-items-center">
             <h4 class="title is-6 mb-0">{i18n('title', t)}</h4>
-            <span class="tag is-light">{documents.length} documents</span>
+            <span class="tag is-small">{i18n('hint', t)}</span>
         </div>
         <div slot="left-scroll" class="stemma-panel">
             <StemmaVisualization
