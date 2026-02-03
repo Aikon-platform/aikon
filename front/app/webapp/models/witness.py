@@ -213,8 +213,11 @@ class Witness(AbstractSearchableModel):
                 "user": user.__str__() if user else NO_USER,
                 "edit_url": self.get_absolute_edit_url(),
                 "view_url": self.get_absolute_view_url(),
+                # NOTE handled dynamically by the get_json method in SearchableModel
                 "can_edit": self.can_edit(request_user),
-                "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),
+                "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M")
+                if self.updated_at
+                else None,
                 "is_public": self.is_public,
                 "metadata": {
                     get_name("id_nb"): self.id_nb or "-",

@@ -17,9 +17,7 @@ def paginated_records(request, records):
 
     results = []
     for obj in page_obj:
-        if json_obj := obj.json:
-            if hasattr(obj, "can_edit"):
-                json_obj = {**json_obj, "can_edit": obj.can_edit(request.user)}
+        if json_obj := obj.get_json(request_user=request.user):
             results.append(json_obj)
 
     return {
