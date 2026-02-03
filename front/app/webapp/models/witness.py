@@ -270,10 +270,10 @@ class Witness(AbstractSearchableModel):
 
     def get_type(self):
         # NOTE should be returning "letterpress" (tpr) / "woodblock" (wpr) / "manuscript" (ms)
-        return MAP_WIT_TYPE[self.type]
+        return MAP_WIT_TYPE.get(self.type, MS_ABBR)
 
     def get_page_type(self):
-        return MAP_PAGE_TYPE[self.page_type]
+        return MAP_PAGE_TYPE.get(self.page_type, PAG_ABBR)
 
     def get_ref(self):
         return f"wit{self.id}"
