@@ -84,9 +84,9 @@ class AbstractSearchableModel(models.Model):
 
         if full_metadata and "metadata_full" not in json_data:
             if hasattr(self, "get_full_metadata"):
-                json_data["metadata_full"] = self.get_full_metadata(json_data)
+                json_data["metadata_full"] = self.get_full_metadata()
 
-        return self.json
+        return json_data
 
     def is_key_defined(self, key):
         return not (not self.json or key not in self.json or not self.json[key])
