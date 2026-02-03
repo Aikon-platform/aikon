@@ -245,7 +245,7 @@ class Witness(AbstractSearchableModel):
             "link": self.get_link(),
         }
 
-        if self.type != "ms":
+        if self.type != MS_ABBR:
             wit["edition"] = self.get_edition()
             wit["volume_nb"] = self.get_volume_nb()
             wit["volume_title"] = self.get_volume_title()
@@ -352,6 +352,7 @@ class Witness(AbstractSearchableModel):
         )
         if len(wit_dates) == 1:
             return None, wit_dates[0]
+
         return (min(wit_dates), max(wit_dates)) if wit_dates else (None, None)
 
     def get_contents(self):
