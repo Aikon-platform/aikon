@@ -26,7 +26,7 @@ from app.webapp.utils.functions import (
     flatten,
 )
 from app.webapp.utils.logger import log
-from config.settings import APP_LANG
+from app.config.settings import APP_LANG
 
 
 def get_name(fieldname, plural=False):
