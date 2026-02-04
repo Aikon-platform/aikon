@@ -28,8 +28,6 @@
 
     afterUpdate(render);
 
-    $: if (documents.length && ctx) initNodes(documents);
-
     function extractCssColor(varName, fallback) {
         const temp = document.createElement('div');
         temp.style.color = `var(${varName}, ${fallback})`;
@@ -52,6 +50,7 @@
             width: NODE_WIDTH,
             height: NODE_HEIGHT
         }));
+        render();
     }
 
     function getNodeAt(mx, my) {
@@ -146,15 +145,14 @@
         const [mx, my] = d3.pointer(e);
         const node = getNodeAt(mx, my);
 
-        if (e.shiftKey || e.metaKey) {
-            if (node) {
-                drawingEdge = { source: node.id, x: (mx - transform.x) / transform.k, y: (my - transform.y) / transform.k };
-                render();
-            }
-        } else if (node) {
-            draggedNode = node;
-            render();
+        if (node) {
+             if (e.shiftKey || e.metaKey) {
+                 drawingEdge = { source: node.id, x: (mx - transform.x) / transform.k, y: (my - transform.y) / transform.k };
+             } else {
+                 draggedNode = node;
+             }
         }
+        render();
     }
 
     function handleMouseMove(e) {
@@ -234,23 +232,13 @@
 
         const zoom = d3.zoom()
             .scaleExtent([0.2, 5])
-            .filter(e => {
-                if (e.type === 'wheel') return true;
-                if (e.shiftKey || e.metaKey) return false;
-                if (draggedNode || drawingEdge) return false;
-                const [mx, my] = d3.pointer(e);
-                return !getNodeAt(mx, my);
-            })
+            .filter(e => !(e.shiftKey || e.metaKey) && (e.type === 'wheel' || (!draggedNode && !drawingEdge)))
             .on('zoom', ({ transform: t }) => {
                 transform = t;
                 render();
             });
 
         selection
-            .on('mousedown.custom', handleMouseDown)
-            .on('mousemove.custom', handleMouseMove)
-            .on('mouseup.custom', handleMouseUp)
-            .on('mouseleave.custom', () => { draggedNode = null; drawingEdge = null; })
             .call(zoom);
 
         if (documents.length) initNodes(documents);
@@ -262,7 +250,13 @@
 </script>
 
 <div class="stemma-container" bind:this={container}>
-    <canvas bind:this={canvas} />
+    <canvas
+        bind:this={canvas}
+        on:mousedown={handleMouseDown}
+        on:mousemove={handleMouseMove}
+        on:mouseup={handleMouseUp}
+        on:mouseleave={() => { draggedNode = null; drawingEdge = null; }}
+    />
 </div>
 
 <style>
