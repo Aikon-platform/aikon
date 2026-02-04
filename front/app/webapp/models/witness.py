@@ -25,6 +25,7 @@ from app.webapp.models.utils.constants import (
     FOL_ABBR,
     NO_USER,
     MS_ABBR,
+    MS,
 )
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
@@ -199,6 +200,10 @@ class Witness(AbstractSearchableModel):
         if not no_img and (reindex or not img):
             img = self.get_img(only_first=True)
 
+        updated = (
+            self.updated_at.strftime("%Y-%m-%d %H:%M") if self.updated_at else None
+        )
+
         return json_encode(
             {
                 "id": self.id,
@@ -213,8 +218,9 @@ class Witness(AbstractSearchableModel):
                 "user": user.__str__() if user else NO_USER,
                 "edit_url": self.get_absolute_edit_url(),
                 "view_url": self.get_absolute_view_url(),
+                # NOTE handled dynamically by the get_json method in SearchableModel
                 "can_edit": self.can_edit(request_user),
-                "updated_at": self.updated_at.strftime("%Y-%m-%d %H:%M"),
+                "updated_at": updated,
                 "is_public": self.is_public,
                 "metadata": {
                     get_name("id_nb"): self.id_nb or "-",
@@ -224,12 +230,12 @@ class Witness(AbstractSearchableModel):
                     get_name("page_nb"): self.get_page(),
                     get_name("Language"): self.get_lang_names(),
                 },
-                "metadata_full": self.get_wit_metadata(),
+                "metadata_full": self.get_full_metadata(),
                 "buttons": buttons,
             }
         )
 
-    def get_wit_metadata(self):
+    def get_full_metadata(self):
         metadata = {}
 
         wit = {
@@ -240,7 +246,7 @@ class Witness(AbstractSearchableModel):
             "link": self.get_link(),
         }
 
-        if self.type != "ms":
+        if self.type != MS_ABBR:
             wit["edition"] = self.get_edition()
             wit["volume_nb"] = self.get_volume_nb()
             wit["volume_title"] = self.get_volume_title()
@@ -265,10 +271,10 @@ class Witness(AbstractSearchableModel):
 
     def get_type(self):
         # NOTE should be returning "letterpress" (tpr) / "woodblock" (wpr) / "manuscript" (ms)
-        return MAP_WIT_TYPE[self.type]
+        return MAP_WIT_TYPE.get(self.type, MS.capitalize())
 
     def get_page_type(self):
-        return MAP_PAGE_TYPE[self.page_type]
+        return MAP_PAGE_TYPE.get(self.page_type, PAGE.capitalize())
 
     def get_ref(self):
         return f"wit{self.id}"
@@ -347,6 +353,7 @@ class Witness(AbstractSearchableModel):
         )
         if len(wit_dates) == 1:
             return None, wit_dates[0]
+
         return (min(wit_dates), max(wit_dates)) if wit_dates else (None, None)
 
     def get_contents(self):

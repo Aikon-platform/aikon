@@ -193,7 +193,8 @@ class WitnessRegionsView(AbstractRecordView):
         witness = self.get_record()
         context["view_title"] = f"{witness}"
         context["witness"] = witness.get_json(
-            reindex=True, request_user=self.request.user
+            request_user=self.request.user,
+            full_metadata=True,
         )
         if len(context["witness"]["digits"]) == 0:
             # TODO handle case where no digitization is available
@@ -202,18 +203,22 @@ class WitnessRegionsView(AbstractRecordView):
         context["manifests"] = []
 
         for did in context["witness"]["digits"]:
-            digit = Digitization.objects.get(pk=did)
-            context["manifests"].append(digit.gen_manifest_url(version=MANIFEST_V2))
+            if digit := Digitization.objects.filter(pk=did).first():
+                context["manifests"].append(digit.gen_manifest_url(version=MANIFEST_V2))
 
         for rid in context["witness"]["regions"]:
-            regions = Regions.objects.get(pk=rid)
+            regions = Regions.objects.filter(pk=rid).first()
+            if not regions:
+                continue
+
             context["regions_ids"].append(rid)
             # for regions in witness.get_regions():
             #     context["regions_ids"].append(regions.id)
             # TODO handle multiple manifest for multiple regions
 
-            context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
-            context["manifests"].append(regions.gen_manifest_url(version=MANIFEST_V2))
+            man = regions.gen_manifest_url(version=MANIFEST_V2)
+            context["manifest"] = man  # overwritten at each iteration
+            context["manifests"].append(man)
 
             context["img_prefix"] = regions.get_ref().split("_anno")[0]
             if context["img_nb"] is None:
