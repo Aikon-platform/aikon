@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Tuple, List, Literal, Dict
 
 from app.config.settings import (
     CANTALOUPE_APP_URL,
@@ -12,7 +13,11 @@ from app.webapp.utils.logger import log
 from app.webapp.utils.paths import REGIONS_PATH
 
 
-def get_file_regions(regions: Regions):
+def get_file_regions(
+    regions: Regions,
+) -> Tuple[List[str], Literal["txt"]] | Tuple[List[Dict], Literal["json"]] | Tuple[
+    None, None
+]:
     json_file = REGIONS_PATH / f"{regions.get_ref()}.json"
     if json_file.exists():
         try:

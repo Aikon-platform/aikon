@@ -4,8 +4,9 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 from urllib.request import urlopen
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 
+from django.db.models import Q
 import requests
 from PIL import Image
 
@@ -48,7 +49,7 @@ def update_params(urlstr: str, q_params: Dict) -> str:
     return urlunparse(url)
 
 
-def to_annotation_url(id_short_manifest, id_short_annotation: str) -> str:
+def to_annotation_url(id_short_manifest: str, id_short_annotation: str) -> str:
     """build an URL to an annotation based on its short ID (the unique part of the URL string)"""
     return f"{AIIINOTATE_BASE_URL}/data/{IIIF_PRESENTATION_VERSION}/{id_short_manifest}/annotation/{id_short_annotation}"
 
@@ -177,6 +178,7 @@ def set_canvas(seq, canvas_nb, img_name, img, version=None):
         annotation.text("Annotation")
 
 
+# TODO aiiinotate use `xywh`
 def get_coord_from_annotation(sas_annotation):
     try:
         # coord => "x,y,w,h"
@@ -205,7 +207,7 @@ def get_id_from_annotation(sas_annotation):
 
 def get_annotations_per_canvas(region: Regions, last_canvas=0, specific_canvas=""):
     """
-    Returns a dict with the text annotation file info:
+    Read task result files and build  a dict with the text annotation file info:
     { "canvas1": [ coord1, coord2 ], "canvas2": [], "canvas3": [ coord1 ] }
 
     if specific_canvas, returns [ coord1, coord2 ]
@@ -265,7 +267,22 @@ def get_annotations_per_canvas(region: Regions, last_canvas=0, specific_canvas="
     )
 
 
-def formatted_annotations(regions: Regions):
+def formatted_annotations(
+    regions: Regions,
+) -> Tuple[List[str], List[Tuple[int, List[int | float], str]]]:
+    """
+    format all annotations for all canvases in a Regions extraction.
+
+    Returns:
+        annotation_ids: [ anno_id_1, anno_id_2, ... ]
+        canvas_annotations: [
+            (
+                canvas_nb: int,  # position of canvas in the manifest
+                coord_annotations: List[number],  # xywh bounding box of the annotation
+                img_file: str  # name of image file
+            )
+        ]
+    """
     canvas_annotations = []
     annotation_ids = []
 
@@ -426,6 +443,7 @@ def get_canvas_list(regions: Regions, all_img=False):
     # canvas_imgs =  { canvas_nb: img_name, canvas_nb: img_name, ... }
     canvas_imgs = {int(i.split("_")[-1].split(".")[0]): i for i in imgs}
     # list of canvas number containing annotations
+    # TODO aiiinotate use canvasIdx pour récupérer les # d'images
     annotated_canvas_nb = set(
         [
             int(a.get("on", "").split("/canvas/c")[1].split(".json")[0])
@@ -445,6 +463,7 @@ def get_canvas_list(regions: Regions, all_img=False):
         log(f"[get_canvas_list] No regions file for regions #{regions.id}")
         return canvases
 
+    # TODO refactoriser avec `get_regions_img` ?
     if anno_format == "txt":
         for line in data:
             # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
@@ -472,6 +491,7 @@ def get_canvas_list(regions: Regions, all_img=False):
     return canvases
 
 
+# TODO delete ? (handled by aiiinotate)
 def fragment_selector_to_xywh(selector: Dict) -> str:
     """
     extract XYWH coordinates from a fragment selector. returns "" if no xywh coords could be extracted.
@@ -486,6 +506,7 @@ def fragment_selector_to_xywh(selector: Dict) -> str:
     return ""
 
 
+# TODO delete ? (handled by aiiinotate)
 def svg_to_xywh(svgstr: str) -> str:
     """
     extract an XYWH bounding box from an SVG and return it as "x,y,w,h". it is convoluted but there isn't really a better method.
@@ -551,6 +572,7 @@ def svg_to_xywh(svgstr: str) -> str:
         return ""
 
 
+# TODO delete ? (handled by aiiinotate)
 def selector_to_xywh(selector: Dict) -> str:
     """
     :returns: "x,y,w,h" or "" if a bounding box could not be extracted
@@ -684,8 +706,9 @@ def get_canvas_lists(digit: Digitization, all_img=False):
     return canvases
 
 
+# TODO rewrite with get_and_parse
 def get_indexed_canvas_annotations(regions: Regions, canvas_nb):
-    canvas_url = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/search?uri={regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
+    canvas_url = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/search?canvasUri={regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
     try:
         response = requests.get(canvas_url)
         response.raise_for_status()
@@ -698,6 +721,7 @@ def get_indexed_canvas_annotations(regions: Regions, canvas_nb):
         return []
 
 
+# TODO use aiiinotate count
 def total_annotations(regions_ref: str) -> int:
     try:
         r = requests.get(
@@ -771,7 +795,9 @@ def get_regions_urls(regions: Regions):
 
 
 def get_images_annotations(regions: Regions):
-    # Used to export images annotations
+    """
+    Get cantaloupe URLs for all regions in a Region extraction. Used to export images annotations
+    """
     imgs = []
 
     try:
@@ -888,7 +914,7 @@ def index_annotations_on_canvas(regions: Regions, canvas_nb):
     formatted_annos = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions.get_ref()}/list/anno-{canvas_nb}.json"
     # POST request that index the annotations
     response = requests.post(
-        f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/createMany",
+        f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/createMany?throwOnCanvasIndexError=true",
         json={"uri": formatted_annos},
     )
 
@@ -945,7 +971,7 @@ def index_manifest(manifest_url, reindex=False):
     try:
         # Index the manifest into aiiinotate
         r = requests.post(
-            f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}/create",
+            f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}/create?throwOnCanvasIndexError=true",
             json=manifest_content,
         )
         print(r)
@@ -1045,29 +1071,6 @@ def unindex_manifest(manifest_url: str) -> bool:
     return True
 
 
-# NOT USED
-def unindex_annotations_for_canvas(canvas_uri: str) -> bool:
-    """delete all annotations that have for target `canvas_uri`"""
-    try:
-        url_delete = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/delete?canvasUri={canvas_uri}"
-        r = requests.delete(url_delete)
-        if not r.status_code in [200, 204]:
-            log(
-                f"[unindex_annotations_for_canvas]: Failed to remove annotations for canvas {canvas_uri}"
-                f"Status code: {r.status_code}. Error: {r.text}"
-            )
-            return False
-        deleted_count = r.json()["deletedCount"]
-        log(f"[unindex_annotations_for_canvas]: Removed {deleted_count} annotations")
-    except Exception as e:
-        log(
-            f"[unindex_annotations_for_canvas]: Failed to remove annotations for canvas {canvas_uri}",
-            e,
-        )
-        return False
-    return True
-
-
 def unindex_annotations_for_manifest(manifest_url: str) -> bool:
     """delete all annotations for a manifest"""
     try:
@@ -1086,6 +1089,29 @@ def unindex_annotations_for_manifest(manifest_url: str) -> bool:
     except Exception as e:
         log(
             f"[unindex_annotations_for_manifest]: Failed to remove annotations for manifest {manifest_url}",
+            e,
+        )
+        return False
+    return True
+
+
+# NOTE NOT USED
+def unindex_annotations_for_canvas(canvas_uri: str) -> bool:
+    """delete all annotations that have for target `canvas_uri`"""
+    try:
+        url_delete = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/delete?canvasUri={canvas_uri}"
+        r = requests.delete(url_delete)
+        if not r.status_code in [200, 204]:
+            log(
+                f"[unindex_annotations_for_canvas]: Failed to remove annotations for canvas {canvas_uri}"
+                f"Status code: {r.status_code}. Error: {r.text}"
+            )
+            return False
+        deleted_count = r.json()["deletedCount"]
+        log(f"[unindex_annotations_for_canvas]: Removed {deleted_count} annotations")
+    except Exception as e:
+        log(
+            f"[unindex_annotations_for_canvas]: Failed to remove annotations for canvas {canvas_uri}",
             e,
         )
         return False
