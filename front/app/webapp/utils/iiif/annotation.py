@@ -378,26 +378,30 @@ def get_manifest_annotations(
     # JSONSchema used by aiiinotate explicitly requires booleans to be expressed as "true" or "false".
     # https://json-schema.org/understanding-json-schema/reference/boolean
     q_params: Dict[str, Any] = {"onlyIds": "true" if only_ids else "false"}
+
     # `canvasMin` and `canvasMax` are 0-indexed while `min_c` `max_c` are 1-indexed => convert
-    if min_c and isinstance(min_c, int):
-        q_params["canvasMin"] = max(min_c - 1, 0)
-        if max_c and isinstance(min_c, int) and int(max_c) >= int(min_c):
-            q_params["canvasMax"] = max(max_c - 1, 0)
+    c_range = [min_c, max_c]
+    for (i, c) in enumerate(c_range):
+        try:
+            c_range[i] = max(int(c) - 1, 0)  # pyright: ignore
+        except:  # min_c / max_c not convertible to 0
+            c_range[i] = None
+    if isinstance(c_range[0], int):
+        q_params["canvasMin"] = c_range[0]
+        if isinstance(c_range[1], int) and c_range[1] >= c_range[0]:
+            q_params["canvasMax"] = c_range[1]
 
     q_url = update_params(q_url, q_params)
 
+    r = []
     if only_ids:
-        id_list = get_and_parse(q_url)
-        # sanity check to preserve type consistency if there's been an error in `get_and_parse`
-        if not isinstance(id_list, list):
-            return []
-        return id_list
-
-    annotations = get_annotations_paginated(q_url)
+        r = get_and_parse(q_url)
+    else:
+        r = get_annotations_paginated(q_url)
     # sanity check to preserve type consistency if there's been an error in `get_and_parse`
-    if not isinstance(annotations, list):
+    if not isinstance(r, list):
         return []
-    return annotations
+    return r
 
 
 def get_canvas_list(regions: Regions, all_img=False):
