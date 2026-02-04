@@ -54,13 +54,6 @@
         pairs: getFilteredPairsForDocPair(selectedCell.doc1.id, selectedCell.doc2.id)
     } : null;
 
-    function handleEdgeCreate(e) {
-        const { source, target } = e.detail;
-        const srcDoc = $filteredDocuments.find(d => d.id === source);
-        const tgtDoc = $filteredDocuments.find(d => d.id === target);
-        stemmaStore.addEdge(source, target, srcDoc, tgtDoc);
-    }
-
     function removeEdge(source, target) {
         stemmaStore.removeEdge(source, target);
     }
@@ -121,12 +114,7 @@
         {/if}
 
         <div class="canvas-wrapper">
-            <StemmaVisualization
-                documents={$filteredDocuments}
-                selectedNodes={$selectedNodes}
-                edges={$edges}
-                on:edgecreate={handleEdgeCreate}
-            />
+            <StemmaVisualization documents={$filteredDocuments} {stemmaStore}/>
         </div>
     </div>
 

@@ -3,10 +3,9 @@
     import * as d3 from 'd3';
 
     export let documents = [];
-    export let selectedNodes = [];
-    export let edges = [];
+    export let stemmaStore;
 
-    const dispatch = createEventDispatcher();
+    const { selectedNodes, edges, nodePositions } = stemmaStore;
 
     let container;
     let canvas;
@@ -41,15 +40,18 @@
         const cols = Math.ceil(Math.sqrt(docs.length));
         const spacing = { x: NODE_WIDTH + 60, y: NODE_HEIGHT + 80 };
 
-        nodes = docs.map((doc, i) => ({
-            id: doc.id,
-            title: doc.title || `Document ${doc.id}`,
-            color: doc.color || '#999',
-            x: (i % cols) * spacing.x + 100,
-            y: Math.floor(i / cols) * spacing.y + 100,
-            width: NODE_WIDTH,
-            height: NODE_HEIGHT
-        }));
+        nodes = docs.map((doc, i) => {
+            const saved = $nodePositions[doc.id];
+            return {
+                id: doc.id,
+                title: doc.title || `Document ${doc.id}`,
+                color: doc.color || '#999',
+                x: saved?.x ?? (i % cols) * spacing.x + 100,
+                y: saved?.y ?? Math.floor(i / cols) * spacing.y + 100,
+                width: NODE_WIDTH,
+                height: NODE_HEIGHT
+            };
+        });
         render();
     }
 
@@ -74,7 +76,7 @@
         ctx.scale(transform.k, transform.k);
 
         ctx.lineWidth = 2 / transform.k;
-        edges.forEach(e => {
+        $edges.forEach(e => {
             const src = nodes.find(n => n.id === e.source);
             const tgt = nodes.find(n => n.id === e.target);
             if (src && tgt) drawArrow(src, tgt, linkColor);
@@ -93,7 +95,7 @@
             }
         }
 
-        const selectedIds = new Set(selectedNodes.map(n => n.id));
+        const selectedIds = new Set($selectedNodes.map(n => n.id));
         nodes.forEach(n => {
             const isHovered = hoveredNode === n;
             const isSelected = selectedIds.has(n.id);
@@ -187,14 +189,22 @@
             const [mx, my] = d3.pointer(e);
             const target = getNodeAt(mx, my);
             if (target && target.id !== drawingEdge.source) {
-                const exists = edges.some(ed => ed.source === drawingEdge.source && ed.target === target.id);
+                const exists = $edges.some(ed => ed.source === drawingEdge.source && ed.target === target.id);
                 if (!exists) {
-                    dispatch('edgecreate', { source: drawingEdge.source, target: target.id });
+                    const { source, target } = { source: drawingEdge.source, target: target.id };
+                    const srcDoc = documents.find(d => d.id === source);
+                    const tgtDoc = documents.find(d => d.id === target);
+                    stemmaStore.addEdge(source, target, srcDoc, tgtDoc);
                 }
             }
             drawingEdge = null;
         }
-        draggedNode = null;
+
+        if (draggedNode) {
+            const {id, x, y} = draggedNode;
+            stemmaStore.updateNodePosition(id, x, y);
+            draggedNode = null;
+        }
         render();
     }
 

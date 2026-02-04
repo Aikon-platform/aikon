@@ -1,9 +1,29 @@
 import { writable, derived, get } from 'svelte/store';
 
+const emptyGraph = { edges: [], nodePositions: {} };
+
+function loadGraph() {
+    if (typeof localStorage === 'undefined') return emptyGraph;
+    try {
+        return JSON.parse(localStorage.getItem('stemmaGraph')) || emptyGraph;
+    } catch {
+        return emptyGraph;
+    }
+}
+
+function saveGraph(graph) {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem('stemmaGraph', JSON.stringify(graph));
+}
+
 export function createStemmaStore(documentSetStore) {
     const { documentNodes, selectedRegions, filteredDocPairStats, filteredDocStats, imageCountMap, pairIndex, visiblePairIds } = documentSetStore;
 
-    const edges = writable([]);
+    const stemmaGraph = writable(loadGraph());
+    stemmaGraph.subscribe(saveGraph);
+
+    const edges = derived(stemmaGraph, $g => $g.edges);
+    const nodePositions = derived(stemmaGraph, $g => $g.nodePositions);
 
     const filteredDocuments = derived(
         [documentNodes, selectedRegions],
@@ -102,40 +122,61 @@ export function createStemmaStore(documentSetStore) {
     }
 
     function addEdge(source, target, sourceDoc, targetDoc) {
-        edges.update($edges => {
-            if ($edges.some(e => e.source === source && e.target === target)) return $edges;
-            return [...$edges, {
-                source, target,
-                sourceTitle: sourceDoc?.title || source,
-                targetTitle: targetDoc?.title || target,
-                sourceColor: sourceDoc?.color,
-                targetColor: targetDoc?.color
-            }];
+        stemmaGraph.update($g => {
+            if ($g.edges.some(e => e.source === source && e.target === target)) return $g;
+            return {
+                ...$g,
+                edges: [...$g.edges, {
+                    source, target,
+                    sourceTitle: sourceDoc?.title || source,
+                    targetTitle: targetDoc?.title || target,
+                    sourceColor: sourceDoc?.color,
+                    targetColor: targetDoc?.color
+                }]
+            };
         });
     }
 
     function removeEdge(source, target) {
-        edges.update($edges => $edges.filter(e => !(e.source === source && e.target === target)));
+        stemmaGraph.update($g => ({
+            ...$g,
+            edges: $g.edges.filter(e => !(e.source === source && e.target === target))
+        }));
     }
 
     function clearEdges() {
-        edges.set([]);
+        stemmaGraph.update($g => ({ ...$g, edges: [] }));
+    }
+
+    function clearGraph() {
+        stemmaGraph.set(emptyGraph);
+    }
+
+    function updateNodePosition(nodeId, x, y) {
+        stemmaGraph.update($g => ({
+            ...$g,
+            nodePositions: { ...$g.nodePositions, [nodeId]: { x, y } }
+        }));
     }
 
     function getGraph() {
+        const $g = get(stemmaGraph);
         return {
-            nodes: get(selectedNodes).map(n => ({ id: n.id })),
-            edges: get(edges)
+            nodes: get(selectedNodes).map(n => ({ id: n.id, ...($g.nodePositions[n.id] || {}) })),
+            edges: $g.edges
         };
     }
 
     return {
         selectedNodes,
         edges,
+        nodePositions,
         filteredDocuments,
         addEdge,
         removeEdge,
         clearEdges,
+        clearGraph,
+        updateNodePosition,
         getGraph,
         matrixScoreData,
         matrixDocStats,
