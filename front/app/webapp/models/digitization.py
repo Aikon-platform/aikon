@@ -243,11 +243,11 @@ class Digitization(AbstractSearchableModel):
     ####### WORK IN PROGRESS
 
     def count_annotations(self):
-        from app.webapp.utils.iiif.annotation import total_annotations
+        from app.webapp.utils.iiif.annotation import get_total_annotations
 
         count = 0
         for regions in self.get_regions():
-            count += total_annotations(regions.get_ref())
+            count += get_total_annotations(regions.get_ref())
 
         return count
 

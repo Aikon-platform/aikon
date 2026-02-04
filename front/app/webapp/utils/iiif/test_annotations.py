@@ -26,7 +26,7 @@ from app.webapp.utils.iiif.annotation import (
     get_coord_from_annotation,
     get_id_from_annotation,
     formatted_annotations,
-    total_annotations,
+    get_total_annotations,
     create_list_annotations,
     check_indexation,
     get_images_annotations,
@@ -80,7 +80,7 @@ class AnnotationsTestCase(LiveServerTestCase):
 # def get_coord_from_annotation(sas_annotation):
 # def get_id_from_annotation(sas_annotation):
 # def formatted_annotations(regions: Regions):
-# def total_annotations(regions: Regions):
+# def get_total_annotations(regions: Regions):
 # def create_list_annotations(regions: Regions):
 # def check_indexation(regions: Regions, reindex=False):
 # def get_images_annotations(regions: Regions):

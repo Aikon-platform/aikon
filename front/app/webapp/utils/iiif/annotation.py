@@ -342,7 +342,7 @@ def get_and_parse(q_url: str) -> List | Dict | None:
         r = requests.get(q_url)
         if r.status_code != 200:
             log(
-                f"[get_and_parse] Failed to get annotations from aiiinotate for URL {q_url}: {r.status_code}"
+                f"[get_and_parse] Failed to get data from aiiinotate for URL {q_url}: {r.status_code}"
             )
             return
         try:
@@ -353,13 +353,13 @@ def get_and_parse(q_url: str) -> List | Dict | None:
             return
     except requests.exceptions.RequestException as e:
         log(
-            f"[get_and_parse] Failed to retrieve annotations for {q_url}",
+            f"[get_and_parse] Failed to retrieve data for {q_url}",
             e,
         )
         return
     except Exception as e:
         log(
-            f"[get_and_parse] Failed to parse annotations for {q_url}",
+            f"[get_and_parse] Failed to get and parse annotations for {q_url}",
             e,
         )
         return
@@ -688,8 +688,10 @@ def get_regions_annotations(
 
 def get_indexed_manifests():
     try:
-        r = requests.get(f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}")
-        manifests = r.json()["members"]
+        r = get_and_parse(
+            f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}"
+        )
+        manifests = r["members"]  # pyright: ignore
     except Exception as e:
         log(
             f"[get_indexed_manifests]: Failed to load indexed manifests in aiiinotate",
@@ -710,9 +712,7 @@ def get_canvas_lists(digit: Digitization, all_img=False):
 def get_indexed_canvas_annotations(regions: Regions, canvas_nb):
     canvas_url = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/search?canvasUri={regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
     try:
-        response = requests.get(canvas_url)
-        response.raise_for_status()
-        return response.json()
+        return get_and_parse(canvas_url)["resources"]  # pyright: ignore
     except Exception as e:
         log(
             f"[get_indexed_canvas_annotations] Could not retrieve annotation for {canvas_url}",
@@ -722,15 +722,15 @@ def get_indexed_canvas_annotations(regions: Regions, canvas_nb):
 
 
 # TODO use aiiinotate count
-def total_annotations(regions_ref: str) -> int:
+def get_total_annotations(regions_ref: str) -> int:
     try:
-        r = requests.get(
+        r = get_and_parse(
             f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/count?manifestShortId=${regions_ref}"
         )
-        return r.json()["count"]
+        return r["count"]  # pyright: ignore
     except Exception as e:
         log(
-            f"[total_annotations]: Error when retrieving the number of annotations for regions ref '{regions_ref}'",
+            f"[get_total_annotations]: Error when retrieving the number of annotations for regions ref '{regions_ref}'",
             e,
         )
         return 0
@@ -741,7 +741,7 @@ def has_annotation(regions_ref: str) -> bool:
     Check if there are any annotations for the given regions reference.
     Returns True if at least one annotation is found, False otherwise.
     """
-    return total_annotations(regions_ref) > 0
+    return get_total_annotations(regions_ref) > 0
 
 
 def get_training_regions(regions: Regions):
