@@ -361,6 +361,7 @@ def get_annotations_paginated(q_url: str) -> List[Dict]:
             log(
                 f"[get_annotations_paginated] annotation_list should be a Dict, got {type(annotation_list)}",
             )
+            next_page = None
         else:
             annotations += annotation_list.get("resources", [])
             next_page = annotation_list.get("next", None)
@@ -374,7 +375,9 @@ def get_manifest_annotations(
     # all annotations for a given regions_ref
     q_url = f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions_ref}/search"
 
-    q_params: Dict[str, Any] = {"onlyIds": only_ids}
+    # JSONSchema used by aiiinotate explicitly requires booleans to be expressed as "true" or "false".
+    # https://json-schema.org/understanding-json-schema/reference/boolean
+    q_params: Dict[str, Any] = {"onlyIds": "true" if only_ids else "false"}
     if min_c:
         q_params["canvasMin"] = min_c
         if max_c and int(max_c) >= int(min_c):
