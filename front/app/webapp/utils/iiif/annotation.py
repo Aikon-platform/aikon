@@ -2,9 +2,9 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 from urllib.request import urlopen
-from typing import List, Dict
+from typing import List, Dict, Any
 
 import requests
 from PIL import Image
@@ -32,6 +32,20 @@ IIIF_PRESENTATION_VERSION = 2
 
 # ********************************************
 # UTILS
+
+
+def update_params(urlstr: str, q_params: Dict) -> str:
+    """
+    update the url string `urlstr` with the dictionnary of query parameters `q_str` and return the updated url string.
+    https://coderivers.org/blog/python-url-replace/
+    """
+    url = urlparse(urlstr)
+    url_q_params = parse_qs(url.query)
+    for k, v in q_params.items():
+        url_q_params[k] = v
+    url_q_params = urlencode(url_q_params, doseq=True)
+    url = url._replace(query=url_q_params)
+    return urlunparse(url)
 
 
 def to_annotation_url(id_short_manifest, id_short_annotation: str) -> str:
@@ -354,27 +368,28 @@ def get_annotations_paginated(q_url: str) -> List[Dict]:
     return annotations
 
 
-# TODO implement min_c and max_c here
-# TODO find way to safely update parameters (i.e. take 2 URLs, or 2 query dicts, one old and one new, and update old with new.)
-# NOTE the problem will be, with paginated URLs, that we need query parameters
-# NOTE from page1 to be preserved when querying page2 (i.e., `canvasMin` and `canvasMax`
-# NOTE must be preserved from one page to the other)
-# NOTE see here for URL replacement: https://coderivers.org/blog/python-url-replace/
 def get_manifest_annotations(
     regions_ref, only_ids=True, min_c: int | None = None, max_c: int | None = None
 ):
     # all annotations for a given regions_ref
     q_url = f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions_ref}/search"
 
+    q_params: Dict[str, Any] = {"onlyIds": only_ids}
+    if min_c:
+        q_params["canvasMin"] = min_c
+        if max_c and int(max_c) >= int(min_c):
+            q_params["canvasMax"] = max_c
+
+    q_url = update_params(q_url, q_params)
+    print(">>>>>", q_url)
+
     if only_ids:
-        q_url = f"{q_url}?onlyIds=true"
         id_list = get_and_parse(q_url)
         # sanity check to preserve type consistency if there's been an error in `get_and_parse`
         if not isinstance(id_list, list):
             return []
         return id_list
 
-    q_url = f"{q_url}?onlyIds=false"
     annotations = get_annotations_paginated(q_url)
     # sanity check to preserve type consistency if there's been an error in `get_and_parse`
     if not isinstance(annotations, list):
