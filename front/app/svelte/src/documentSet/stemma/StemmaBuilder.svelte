@@ -4,6 +4,7 @@
     import StemmaVisualization from './StemmaVisualization.svelte';
     import DocumentSetMatrix from '../document-matrix/DocumentSetMatrix.svelte';
     import DocumentPairMatrix from '../document-matrix/DocumentPairMatrix.svelte';
+    import PairDetailModal from '../document-matrix/PairDetailModal.svelte';
     import { createStemmaStore } from './stemmaStore.js';
 
     export let documentSetStore;
@@ -13,7 +14,7 @@
     const stemmaStore = createStemmaStore(documentSetStore);
     const {
         selectedNodes, edges, filteredDocuments, matrixScoreData,
-        matrixDocStats, matrixImageCount
+        matrixDocStats, matrixImageCount, getFilteredPairsForDocPair
     } = stemmaStore;
 
     const t = {
@@ -25,9 +26,8 @@
         normalization: {en: 'Normalization by document image counts', fr: "Normalisation par le nombre d'images des documents"},
         selectViz: { en: 'Select a visualization', fr: 'Choisir une visualisation' },
         docMatrix: { en: 'Document Matrix', fr: 'Matrice de documents' },
-        pairMatrix: { en: 'Pair Matrix', fr: 'Matrice de paires' },
         noSelection: { en: 'Connect documents in the stemma to see visualizations', fr: 'Connectez des documents dans le stemma pour voir les visualisations' },
-        niViz: { en: 'Select a visualization above', fr: 'Sélectionnez une visualisation ci-dessus' },
+        noViz: { en: 'Select a visualization above', fr: 'Sélectionnez une visualisation ci-dessus' },
         byPage: { en: 'By page', fr: 'Par page' },
         byImage: { en: 'By image', fr: 'Par image' },
     };
@@ -42,14 +42,16 @@
     let selectedViz = '';
     let selectedViz2 = '';
     let selectedCell = null;
-
     let scatterMode = 'page';
+    let modalActive = false;
+    let navState = null;
+    let scatterData = null;
 
     $: documentSetStore.updateSelectedNodes($selectedNodes.map(n => n.id));
     $: pairMatrixData = selectedCell ? {
         doc1: selectedCell.doc1,
         doc2: selectedCell.doc2,
-        pairs: stemmaStore.getPairsForDocPair(selectedCell.doc1.id, selectedCell.doc2.id)
+        pairs: getFilteredPairsForDocPair(selectedCell.doc1.id, selectedCell.doc2.id)
     } : null;
 
     function handleEdgeCreate(e) {
@@ -65,6 +67,20 @@
 
     function handleCellSelect(e) {
         selectedCell = e.detail;
+    }
+
+    function handleScatterClick(e) {
+        navState = { idx1: e.detail.idx1, idx2: e.detail.idx2 };
+        scatterData = e.detail.data;
+        modalActive = true;
+    }
+
+    function handleModalNavigate(e) {
+        navState = { ...e.detail };
+    }
+
+    function handleModalClose() {
+        modalActive = false;
     }
 </script>
 
@@ -140,14 +156,14 @@
     <div slot="right-scroll">
         {#if !selectedViz}
             <article class="message is-warning">
-                <div class="message-body">{i18n('niViz', t)}</div>
+                <div class="message-body">{i18n('noViz', t)}</div>
             </article>
         {:else if !$selectedNodes.length}
             <article class="message is-warning">
                 <div class="message-body">{i18n('noSelection', t)}</div>
             </article>
         {:else if selectedViz === 'docMatrix'}
-            <!-- TODO add normalize / order by selected documents-->
+            <!-- TODO order by selected documents-->
             <DocumentSetMatrix
                 documents={$selectedNodes}
                 scoreData={$matrixScoreData}
@@ -166,15 +182,11 @@
                 <span class="has-text-grey">↔</span>
                 <span class="color-dot" style="background: {pairMatrixData.doc2.color}"/>
             </h4>
-            <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
-                <div class="control">
-                    <div class="select is-small">
-                        <select bind:value={scatterMode}>
-                            <option value="page">{i18n('byPage', t)}</option>
-                            <option value="image">{i18n('byImage', t)}</option>
-                        </select>
-                    </div>
-                </div>
+            <div class="select is-small">
+                <select bind:value={scatterMode}>
+                    <option value="page">{i18n('byPage', t)}</option>
+                    <option value="image">{i18n('byImage', t)}</option>
+                </select>
             </div>
         {/if}
     </div>
@@ -185,10 +197,17 @@
                 doc2={pairMatrixData.doc2}
                 pairs={pairMatrixData.pairs}
                 mode={scatterMode}
+                on:cellclick={handleScatterClick}
             />
         {/if}
     </div>
 </SplitLayout>
+
+<PairDetailModal
+    active={modalActive} {scatterData} {navState}
+    on:navigate={handleModalNavigate}
+    on:close={handleModalClose}
+/>
 
 <style>
     .stemma-panel {
