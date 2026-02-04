@@ -361,7 +361,7 @@ def get_annotations_paginated(q_url: str) -> List[Dict]:
             log(
                 f"[get_annotations_paginated] annotation_list should be a Dict, got {type(annotation_list)}",
             )
-            next_page = None
+            next_page = None  # avoid infinite loop
         else:
             annotations += annotation_list.get("resources", [])
             next_page = annotation_list.get("next", None)
@@ -378,13 +378,13 @@ def get_manifest_annotations(
     # JSONSchema used by aiiinotate explicitly requires booleans to be expressed as "true" or "false".
     # https://json-schema.org/understanding-json-schema/reference/boolean
     q_params: Dict[str, Any] = {"onlyIds": "true" if only_ids else "false"}
-    if min_c:
-        q_params["canvasMin"] = min_c
-        if max_c and int(max_c) >= int(min_c):
-            q_params["canvasMax"] = max_c
+    # `canvasMin` and `canvasMax` are 0-indexed while `min_c` `max_c` are 1-indexed => convert
+    if min_c and isinstance(min_c, int):
+        q_params["canvasMin"] = max(min_c - 1, 0)
+        if max_c and isinstance(min_c, int) and int(max_c) >= int(min_c):
+            q_params["canvasMax"] = max(max_c - 1, 0)
 
     q_url = update_params(q_url, q_params)
-    print(">>>>>", q_url)
 
     if only_ids:
         id_list = get_and_parse(q_url)
@@ -398,70 +398,6 @@ def get_manifest_annotations(
     if not isinstance(annotations, list):
         return []
     return annotations
-
-    # next_page = f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions_ref}/search"
-    # while next_page:
-    #     try:
-    #         response = requests.get(next_page)
-    #         annotations = response.json()
-    #
-    #         if response.status_code != 200:
-    #             log(
-    #                 f"[get_manifest_annotations] Failed to get annotations from aiiinotate for {next_page}: {response.status_code}"
-    #             )
-    #             return []
-    #
-    #         resources = annotations.get("resources", [])
-    #         if not resources:
-    #             break
-    #
-    #         # if only a certain range is needed (do not work because the annotations are sorted alphabetically by canvas number)
-    #         # TODO change the SAS code to add canvas number in the annotation metadata
-    #         #  AND/OR sort the annotations by canvas number
-    #         # if min_c is not None:
-    #         #     first_canvas = int(
-    #         #         resources[0]["on"].split("/canvas/c")[1].split(".json")[0]
-    #         #     )
-    #         #     last_canvas = int(
-    #         #         resources[-1]["on"].split("/canvas/c")[1].split(".json")[0]
-    #         #     )
-    #         #
-    #         #     if max_c is not None and first_canvas > max_c:
-    #         #         break
-    #         #
-    #         #     # Skip this page if the entire range is outside min_c and max_c
-    #         #     if last_canvas < min_c:
-    #         #         next_page = annotations.get("next")
-    #         #         continue
-    #
-    #         if only_ids:
-    #             manifest_annotations.extend(
-    #                 annotation["@id"] for annotation in annotations["resources"]
-    #             )
-    #         else:
-    #             manifest_annotations.extend(annotations["resources"])
-    #
-    #         next_page = annotations.get("next")
-    #         if next_page:
-    #             next_page = f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions_ref}/search?{next_page.split('?')[1]}"
-    #
-    #     except requests.exceptions.JSONDecodeError as e:
-    #         log(f"[get_manifest_annotations] JSON decode error for {next_page}")
-    #         log(response.text, exception=e)
-    #         return manifest_annotations
-    #     except requests.exceptions.RequestException as e:
-    #         log(
-    #             f"[get_manifest_annotations] Failed to retrieve annotations for {next_page}",
-    #             e,
-    #         )
-    #         return manifest_annotations
-    #     except Exception as e:
-    #         log(
-    #             f"[get_manifest_annotations] Failed to parse annotations for {next_page}",
-    #             e,
-    #         )
-    #         return manifest_annotations
-    # return manifest_annotations
 
 
 def get_canvas_list(regions: Regions, all_img=False):
