@@ -6,10 +6,12 @@
     import DocumentPairMatrix from '../document-matrix/DocumentPairMatrix.svelte';
     import PairDetailModal from '../document-matrix/PairDetailModal.svelte';
     import { createStemmaStore } from './stemmaStore.js';
+    import SpatialFrieze from "./SpatialFrieze.svelte";
+    import ImageStemma from "./ImageStemma.svelte";
 
     export let documentSetStore;
 
-    const { normalizeByImages } = documentSetStore;
+    const { normalizeByImages, visiblePairs, documentNodes, imageNodes } = documentSetStore;
 
     const stemmaStore = createStemmaStore(documentSetStore);
     const {
@@ -24,24 +26,24 @@
         edges: { en: 'Connections', fr: 'Connexions' },
         normalize: {en: 'Normalize', fr: 'Normaliser'},
         normalization: {en: 'Normalization by document image counts', fr: "Normalisation par le nombre d'images des documents"},
-        selectViz: { en: 'Select a visualization', fr: 'Choisir une visualisation' },
-        docMatrix: { en: 'Document Matrix', fr: 'Matrice de documents' },
         noSelection: { en: 'Connect documents in the stemma to see visualizations', fr: 'Connectez des documents dans le stemma pour voir les visualisations' },
         noViz: { en: 'Select a visualization above', fr: 'Sélectionnez une visualisation ci-dessus' },
         byPage: { en: 'By page', fr: 'Par page' },
         byImage: { en: 'By image', fr: 'Par image' },
+
+        selectViz: { en: 'Select a visualization', fr: 'Choisir une visualisation' },
+        docMatrix: { en: 'Document Matrix', fr: 'Matrice de documents' },
+        spatialFrieze: { en: 'Spatial Frieze', fr: 'Frise spatiale' },
     };
 
     const vizOptions = [
         { id: 'docMatrix', label: t.docMatrix },
-    ];
-    const viz2Options = [
-        //{ id: 'pairMatrix', label: t.pairMatrix },
+        { id: 'spatialFrieze', label: t.spatialFrieze },
     ];
 
     let selectedViz = '';
-    let selectedViz2 = '';
     let selectedCell = null;
+    let selectedFriezeImage = null;
     let scatterMode = 'page';
     let modalActive = false;
     let navState = null;
@@ -74,6 +76,10 @@
 
     function handleModalClose() {
         modalActive = false;
+    }
+
+    function handleFriezeImageSelect(e) {
+        selectedFriezeImage = e.detail;
     }
 </script>
 
@@ -127,14 +133,6 @@
                 {/each}
             </select>
         </div>
-        <div class="select is-small">
-            <select bind:value={selectedViz2}>
-                <option value="">{i18n('selectViz', t)}</option>
-                {#each viz2Options as opt}
-                    <option value={opt.id}>{i18n(opt.id, t)}</option>
-                {/each}
-            </select>
-        </div>
         <label title={i18n('normalization', t)} class="checkbox is-size-7 is-flex is-align-items-center">
             <input type="checkbox" bind:checked={$normalizeByImages}>
             <span class="pl-1">{i18n('normalize', t)}</span>
@@ -160,6 +158,13 @@
                 normalize={$normalizeByImages}
                 on:cellselect={handleCellSelect}
             />
+        {:else if selectedViz === 'spatialFrieze'}
+            <SpatialFrieze
+                {selectedNodes}
+                {visiblePairs}
+                {documentNodes}
+                on:imageselect={handleFriezeImageSelect}
+            />
         {/if}
     </div>
 
@@ -176,6 +181,10 @@
                     <option value="image">{i18n('byImage', t)}</option>
                 </select>
             </div>
+        {:else if selectedFriezeImage}
+            <h4 class="title is-6 mb-0">
+                Coucou
+            </h4>
         {/if}
     </div>
     <div slot="bottom-right-scroll">
@@ -186,6 +195,14 @@
                 pairs={pairMatrixData.pairs}
                 mode={scatterMode}
                 on:cellclick={handleScatterClick}
+            />
+        {:else if selectedFriezeImage}
+            <ImageStemma
+                {stemmaStore}
+                {visiblePairs}
+                {imageNodes}
+                startImageId={selectedFriezeImage.imageId}
+                baseDocId={selectedFriezeImage.baseDocId}
             />
         {/if}
     </div>

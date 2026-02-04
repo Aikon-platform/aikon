@@ -188,13 +188,13 @@
         if (drawingEdge) {
             const [mx, my] = d3.pointer(e);
             const target = getNodeAt(mx, my);
-            if (target && target.id !== drawingEdge.source) {
-                const exists = $edges.some(ed => ed.source === drawingEdge.source && ed.target === target.id);
+            const sourceId = drawingEdge.source;
+            if (target && target.id !== sourceId) {
+                const exists = $edges.some(ed => ed.source === sourceId && ed.target === target.id);
                 if (!exists) {
-                    const { source, target } = { source: drawingEdge.source, target: target.id };
-                    const srcDoc = documents.find(d => d.id === source);
-                    const tgtDoc = documents.find(d => d.id === target);
-                    stemmaStore.addEdge(source, target, srcDoc, tgtDoc);
+                    const srcDoc = documents.find(d => d.id === sourceId);
+                    const tgtDoc = documents.find(d => d.id === target.id);
+                    stemmaStore.addEdge(sourceId, target.id, srcDoc, tgtDoc);
                 }
             }
             drawingEdge = null;
