@@ -80,10 +80,10 @@ export function createDocumentSetStore(documentSetId) {
         abortController = new AbortController();
 
         // TO DELETE
-        const documentSetId = 413; // histoire naturelle
+        // const documentSetId = 413; // histoire naturelle
         // const documentSetId = 414; // nicolas
         // const documentSetId = 437; // physiologus
-        // const documentSetId = 416; // de materia medica
+        const documentSetId = 416; // de materia medica
         // const documentSetId = 417; // traité de géométrie
         // const documentSetId = 418; // encyclopédie mathématique
         // const documentSetId = 436; // Jombert complet
@@ -159,10 +159,16 @@ export function createDocumentSetStore(documentSetId) {
                             }
                         });
 
-                        docMap.forEach(doc => doc.images.sort((a, b) => {
-                            if (a.canvas !== b.canvas) return a.canvas - b.canvas;
-                            return (parseInt(a.xywh?.[1]) || 0) - (parseInt(b.xywh?.[1]) || 0);
-                        }));
+                        // TODO add normalizedScore = totalScore / images.length
+
+                        docMap.forEach(doc => {
+                            // doc.normalizedScore = doc.images.length
+                            doc.images.sort((a, b) => {
+                                if (a.canvas !== b.canvas) return a.canvas - b.canvas;
+                                return (parseInt(a.xywh?.[1]) || 0) - (parseInt(b.xywh?.[1]) || 0);
+                            })
+                            return doc;
+                        });
 
                         imageNodes.set(imgMap);
                         documentNodes.set(docMap);
@@ -613,7 +619,7 @@ export function createDocumentSetStore(documentSetId) {
         }
     }
 
-    const normalizeByImages = writable(false);
+    const normalizeByImages = writable(true);
 
     const visiblePairIds = derived(filteredPairs, ($pairs) => {
         const set = new Set();

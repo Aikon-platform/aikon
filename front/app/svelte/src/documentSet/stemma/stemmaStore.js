@@ -1,7 +1,7 @@
 import { writable, derived, get } from 'svelte/store';
 
 export function createStemmaStore(documentSetStore) {
-    const { documentNodes, selectedRegions } = documentSetStore;
+    const { documentNodes, selectedRegions, visiblePairs, filteredDocPairStats, filteredDocStats, imageCountMap, pairIndex } = documentSetStore;
 
     const edges = writable([]);
 
@@ -52,13 +52,60 @@ export function createStemmaStore(documentSetStore) {
         }
     );
 
+    // Derived stores for matrix visualization
+    const selectedNodeIds = derived(selectedNodes, $nodes => new Set($nodes.map(n => n.id)));
+
+    const matrixScoreData = derived(
+        [filteredDocPairStats, selectedNodeIds],
+        ([$stats, $ids]) => {
+            if (!$ids.size) return new Map();
+            const filtered = new Map();
+            for (const [key, value] of $stats.scoreCount) {
+                const [id1, id2] = key.split('-').map(Number);
+                if ($ids.has(id1) && $ids.has(id2)) {
+                    filtered.set(key, value);
+                }
+            }
+            return filtered;
+        }
+    );
+
+    const matrixDocStats = derived(
+        [filteredDocStats, selectedNodeIds],
+        ([$stats, $ids]) => {
+            if (!$ids.size) return new Map();
+            const filtered = new Map();
+            for (const [id, value] of $stats.scoreCount) {
+                if ($ids.has(id)) filtered.set(id, value);
+            }
+            return filtered;
+        }
+    );
+
+    const matrixImageCount = derived(
+        [imageCountMap, selectedNodeIds],
+        ([$counts, $ids]) => {
+            if (!$ids.size) return new Map();
+            const filtered = new Map();
+            for (const [id, count] of $counts) {
+                if ($ids.has(id)) filtered.set(id, count);
+            }
+            return filtered;
+        }
+    );
+
+    function getPairsForDocPair(doc1Id, doc2Id) {
+        const $pairIndex = get(pairIndex);
+        const key = doc1Id < doc2Id ? `${doc1Id}-${doc2Id}` : `${doc2Id}-${doc1Id}`;
+        return $pairIndex.byDocPair.get(key) || [];
+    }
+
     function addEdge(source, target, sourceDoc, targetDoc) {
         edges.update($edges => {
             const exists = $edges.some(e => e.source === source && e.target === target);
             if (exists) return $edges;
             return [...$edges, {
-                source,
-                target,
+                source, target,
                 sourceTitle: sourceDoc?.title || source,
                 targetTitle: targetDoc?.title || target,
                 sourceColor: sourceDoc?.color,
@@ -91,6 +138,11 @@ export function createStemmaStore(documentSetStore) {
         addEdge,
         removeEdge,
         clearEdges,
-        getGraph
+        getGraph,
+        // Matrix visualization data
+        matrixScoreData,
+        matrixDocStats,
+        matrixImageCount,
+        getPairsForDocPair
     };
 }
