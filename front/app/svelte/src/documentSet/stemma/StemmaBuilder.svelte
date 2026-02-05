@@ -45,7 +45,7 @@
     let selectedCell = null;
     let selectedFriezeImage = null;
     let scatterMode = 'page';
-    let friezeMode = 'page';
+    let friezeMode = 'image';
     let modalActive = false;
     let navState = null;
     let scatterData = null;
@@ -134,7 +134,7 @@
                 {/each}
             </select>
         </div>
-        {#if selectedViz === 'docMatrix'}}
+        {#if selectedViz === 'docMatrix'}
             <label title={i18n('normalization', t)} class="checkbox is-size-7 is-flex is-align-items-center">
                 <input type="checkbox" bind:checked={$normalizeByImages}>
                 <span class="pl-1">{i18n('normalize', t)}</span>
@@ -172,6 +172,7 @@
                 {selectedNodes}
                 {visiblePairs}
                 {documentNodes}
+                mode={friezeMode}
                 on:imageselect={handleFriezeImageSelect}
             />
         {/if}
