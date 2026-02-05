@@ -1,7 +1,7 @@
 <script>
     import { i18n } from '../../utils.js';
     import SplitLayout from '../../ui/SplitLayout.svelte';
-    import StemmaVisualization from './StemmaVisualization.svelte';
+    import StemmaEditor from './StemmaEditor.svelte';
     import DocumentSetMatrix from '../document-matrix/DocumentSetMatrix.svelte';
     import DocumentPairMatrix from '../document-matrix/DocumentPairMatrix.svelte';
     import PairDetailModal from '../document-matrix/PairDetailModal.svelte';
@@ -37,14 +37,15 @@
     };
 
     const vizOptions = [
-        { id: 'docMatrix', label: t.docMatrix },
         { id: 'spatialFrieze', label: t.spatialFrieze },
+        { id: 'docMatrix', label: t.docMatrix },
     ];
 
     let selectedViz = '';
     let selectedCell = null;
     let selectedFriezeImage = null;
     let scatterMode = 'page';
+    let friezeMode = 'page';
     let modalActive = false;
     let navState = null;
     let scatterData = null;
@@ -120,7 +121,7 @@
         {/if}
 
         <div class="canvas-wrapper">
-            <StemmaVisualization documents={$filteredDocuments} {stemmaStore}/>
+            <StemmaEditor documents={$filteredDocuments} {stemmaStore}/>
         </div>
     </div>
 
@@ -133,10 +134,19 @@
                 {/each}
             </select>
         </div>
-        <label title={i18n('normalization', t)} class="checkbox is-size-7 is-flex is-align-items-center">
-            <input type="checkbox" bind:checked={$normalizeByImages}>
-            <span class="pl-1">{i18n('normalize', t)}</span>
-        </label>
+        {#if selectedViz === 'docMatrix'}}
+            <label title={i18n('normalization', t)} class="checkbox is-size-7 is-flex is-align-items-center">
+                <input type="checkbox" bind:checked={$normalizeByImages}>
+                <span class="pl-1">{i18n('normalize', t)}</span>
+            </label>
+        {:else if selectedViz === 'spatialFrieze'}
+            <div class="select is-small">
+                <select bind:value={friezeMode}>
+                    <option value="page">{i18n('byPage', t)}</option>
+                    <option value="image">{i18n('byImage', t)}</option>
+                </select>
+            </div>
+        {/if}
     </div>
 
     <div slot="right-scroll">
@@ -149,7 +159,6 @@
                 <div class="message-body">{i18n('noSelection', t)}</div>
             </article>
         {:else if selectedViz === 'docMatrix'}
-            <!-- TODO order by selected documents-->
             <DocumentSetMatrix
                 documents={$selectedNodes}
                 scoreData={$matrixScoreData}

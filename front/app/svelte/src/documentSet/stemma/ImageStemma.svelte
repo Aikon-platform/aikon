@@ -156,7 +156,7 @@
                     x2={edge.target.x + IMG_SIZE / 2}
                     y2={edge.target.y}
                     stroke="var(--bulma-grey)"
-                    stroke-width="3"
+                    stroke-width="5"
                     marker-end="url(#arrowhead)"
                 />
             {/each}
@@ -169,7 +169,7 @@
                         rx="4"
                         fill={node.color}
                         stroke="{node.color}"
-                        stroke-width={node.docId === baseDocId ? 10 : 5}
+                        stroke-width={node.docId === baseDocId ? 20 : 10}
                     />
                     <image href={getImageUrl(node.img)}
                         width={IMG_SIZE}
