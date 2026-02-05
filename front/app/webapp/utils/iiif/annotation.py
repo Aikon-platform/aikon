@@ -185,7 +185,7 @@ def get_coord_from_annotation(sas_annotation, as_str=False):
         coord = sas_annotation["on"][0]["xywh"]
         # remove negative values if some of the coordinates exceed the image boundaries
         if as_str:
-            return ",".join(["0" if int(num) < 0 else num for num in coord.split(",")])
+            return ",".join(["0" if num < 0 else str(num) for num in coord])
         return coord
     except Exception as e:
         log(
