@@ -1,3 +1,17 @@
+<!--
+Propagation logic:
+1. The startImageId (clicked line in the in the spatial frieze) determines the starting image placed at the base document node
+2. We use Breadth-first search algorithm to browse the stemma, following all edges from the base node to build the complete graph structure
+3. For each edge, look for the best matching pair between the current image and the neighbor document:
+   - If multiple pairs exist, pick the one with the highest weightedScore
+   - If no visible pair exists, it's a dead end for image propagation (node is displayed with a placeholder)
+4. Continue to next generation: each resolved node becomes the new base for its unvisited neighbors
+5. Repeat until all reachable nodes are visited
+
+Special cases:
+- Circular graphs: if multiple paths reach the same node, keep the pair with the highest score
+-->
+
 <script>
     import { derived } from 'svelte/store';
     import {RegionItem} from "../../regions/types.js";
@@ -34,65 +48,62 @@
 
         const docMap = new Map(docs.map(n => [n.id, n]));
         const adjacency = new Map();
-        for (const docId of docMap.keys()) {
-            adjacency.set(docId, []);
-        }
+        for (const docId of docMap.keys()) adjacency.set(docId, []);
         for (const e of edges) {
             adjacency.get(e.source)?.push(e.target);
             adjacency.get(e.target)?.push(e.source);
         }
 
-        const resolved = new Map();
-        resolved.set(baseId, { imageId: startImgId, score: Infinity });
-
+        // Propagate images via BFS until dead ends
+        const resolved = new Map([[baseId, { imageId: startImgId, score: Infinity }]]);
         const queue = [baseId];
         const visited = new Set([baseId]);
 
         while (queue.length) {
             const currentDocId = queue.shift();
             const currentImgId = resolved.get(currentDocId).imageId;
-            const currentImg = imgNodes.get(currentImgId);
-            if (!currentImg) continue;
+            if (!currentImgId || !imgNodes.get(currentImgId)) continue;
 
             for (const neighborDocId of adjacency.get(currentDocId) || []) {
+                const match = findBestMatch(currentImgId, currentDocId, neighborDocId, pairIdx);
+
                 if (visited.has(neighborDocId)) {
                     const existing = resolved.get(neighborDocId);
-                    const candidate = findBestMatch(currentImgId, currentDocId, neighborDocId, pairIdx);
-                    if (candidate && (!existing || candidate.score > existing.score)) {
-                        resolved.set(neighborDocId, candidate);
+                    if (match && (!existing.imageId || match.score > existing.score)) {
+                        resolved.set(neighborDocId, match);
                     }
                     continue;
                 }
 
-                const match = findBestMatch(currentImgId, currentDocId, neighborDocId, pairIdx);
-                if (match) {
-                    resolved.set(neighborDocId, match);
-                    visited.add(neighborDocId);
-                    queue.push(neighborDocId);
-                }
+                visited.add(neighborDocId);
+                resolved.set(neighborDocId, match || { imageId: null, score: -Infinity });
+                if (match) queue.push(neighborDocId);
             }
         }
 
+        // Add missing nodes from stemma graph
+        for (const docId of docMap.keys()) {
+            if (!resolved.has(docId)) {
+                resolved.set(docId, { imageId: null, score: -Infinity });
+            }
+        }
+
+        // Build nodes
         const nodes = [];
         let minX = Infinity, minY = Infinity;
 
         for (const [docId, { imageId }] of resolved) {
             const doc = docMap.get(docId);
             const pos = positions[docId] || { x: 0, y: 0 };
-            const img = imgNodes.get(imageId);
-            if (!doc || !img) continue;
+            if (!doc) continue;
 
             if (pos.x < minX) minX = pos.x;
             if (pos.y < minY) minY = pos.y;
 
             nodes.push({
-                docId,
-                imageId,
-                color: doc.color,
-                title: doc.title,
-                x: pos.x,
-                y: pos.y,
-                img
+                docId, imageId, color: doc.color, title: doc.title,
+                x: pos.x, y: pos.y,
+                img: imageId ? imgNodes.get(imageId) : null
             });
         }
 
@@ -102,12 +113,12 @@
             n.y = n.y - minY + padding;
         }
 
-        const resolvedDocIds = new Set(resolved.keys());
+        // All edges from stemma graph
+        const nodeMap = new Map(nodes.map(n => [n.docId, n]));
         const renderedEdges = edges
-            .filter(e => resolvedDocIds.has(e.source) && resolvedDocIds.has(e.target))
             .map(e => {
-                const src = nodes.find(n => n.docId === e.source);
-                const tgt = nodes.find(n => n.docId === e.target);
+                const src = nodeMap.get(e.source);
+                const tgt = nodeMap.get(e.target);
                 return src && tgt ? { source: src, target: tgt } : null;
             })
             .filter(Boolean);
@@ -134,7 +145,7 @@
     }
 
     function getImageUrl(img) {
-        if (!img) return '';
+        if (!img) return `https://placehold.co/${IMG_SIZE}x${IMG_SIZE}/png?text=No+image`;
         const regionItem = new RegionItem(img);
         return regionItem.url(null, `,${IMG_SIZE}`);
     }

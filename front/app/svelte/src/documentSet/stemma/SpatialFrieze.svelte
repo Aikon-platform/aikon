@@ -12,7 +12,6 @@
 
     const LINE_WIDTH = 5;
     const AXIS_HEIGHT = 20;
-    const HEATMAP_HEIGHT = 8;
 
     const baseDocId = writable(null);
     const selectedIndex = writable(null);
@@ -26,6 +25,7 @@
 
     const t = {
         base: { en: 'Pick a base document', fr: 'Sélectionner un document de base' },
+        similarity: { en: 'similarities', fr: 'similarités' },
     };
 
     const friezeData = derived(
@@ -163,6 +163,9 @@
 <div class="frieze-container">
     {#if $friezeData}
         {@const baseDoc = $documentNodes.get($baseDocId)}
+        <h4 class="title is-6 mb-3">
+            {baseDoc.title} {i18n('similarity', t)}
+        </h4>
         {@const friezeWidth = items.length * LINE_WIDTH}
         <div class="frieze-wrapper">
             <div class="frieze" style="--line-width: {LINE_WIDTH}px;">
@@ -295,7 +298,7 @@
     .doc-selector .tag {
         cursor: pointer;
         border: 2px solid transparent;
-        transition: border-color 0.3s, opacity 0.15s, filter 0.15s;
+        transition: border-color 0.3s, opacity 0.3s, filter 0.3s;
     }
     .doc-selector .tag.is-base {
         border-color: var(--bulma-link);
