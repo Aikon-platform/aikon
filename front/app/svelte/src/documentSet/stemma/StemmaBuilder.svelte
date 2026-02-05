@@ -151,13 +151,9 @@
 
     <div slot="right-scroll">
         {#if !selectedViz}
-            <article class="message is-warning">
-                <div class="message-body">{i18n('noViz', t)}</div>
-            </article>
+            <p class="has-text-grey is-size-7">{i18n('noViz', t)}</p>
         {:else if !$selectedNodes.length}
-            <article class="message is-warning">
-                <div class="message-body">{i18n('noSelection', t)}</div>
-            </article>
+            <p class="has-text-grey is-size-7">{i18n('noSelection', t)}</p>
         {:else if selectedViz === 'docMatrix'}
             <DocumentSetMatrix
                 documents={$selectedNodes}

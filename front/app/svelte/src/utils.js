@@ -39,9 +39,9 @@ export function shorten(str, maxLen=100) {
 }
 
 export function getCantaloupeUrl() {
-    // return cantaloupeUrl ?? "http://localhost:8182";
+    return cantaloupeUrl ?? "http://localhost:8182";
     // TO DELETE
-    return "https://vhs.huma-num.fr"
+    // return "https://vhs.huma-num.fr"
 }
 
 export function getSasUrl() {
@@ -105,6 +105,7 @@ export function refToIIIF(imgRef=null, coord=null, size="full") {
 
     const imgRoot = refToIIIFRoot(imgRef);
     if (imgRoot === undefined) {
+        console.error(`Could not extract image name from imgRef ${imgRef}`);
         return "https://placehold.co/96x96/png?text=No+image";
     }
 
