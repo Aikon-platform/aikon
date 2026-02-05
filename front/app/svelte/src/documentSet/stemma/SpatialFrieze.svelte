@@ -12,6 +12,7 @@
 
     const LINE_WIDTH = 5;
     const AXIS_HEIGHT = 20;
+    const HEATMAP_HEIGHT = 8;
 
     const baseDocId = writable(null);
     const selectedIndex = writable(null);
@@ -38,8 +39,8 @@
             const images = baseDoc.images;
             const otherDocIds = new Set($nodes.filter(n => n.id !== $baseId).map(n => n.id));
 
-            const imageMatchCount = new Map();
-            for (const img of images) imageMatchCount.set(img.id, new Set());
+            const imageMatches = new Map();
+            for (const img of images) imageMatches.set(img.id, new Set());
 
             if (otherDocIds.size) {
                 for (const p of $pairs) {
@@ -51,7 +52,7 @@
                     const otherRegionId = id1InBase ? p.regions_id_2 : p.regions_id_1;
                     if (!otherDocIds.has(otherRegionId)) continue;
 
-                    imageMatchCount.get(baseImgId)?.add(otherRegionId);
+                    imageMatches.get(baseImgId)?.add(otherRegionId);
                 }
             }
 
@@ -67,7 +68,7 @@
                 }
                 const pd = pageData.get(page);
                 pd.images.push(img);
-                for (const docId of imageMatchCount.get(img.id) || []) {
+                for (const docId of imageMatches.get(img.id) || []) {
                     pd.matchedDocs.add(docId);
                 }
             }
@@ -75,8 +76,9 @@
             const imageItems = images.map(img => ({
                 id: img.id,
                 page: img.canvas,
-                matchCount: imageMatchCount.get(img.id)?.size || 0
+                matchedDocs: imageMatches.get(img.id) || new Set()
             }));
+            imageItems.forEach(item => item.matchCount = item.matchedDocs.size);
 
             const pageItems = [];
             for (let p = 1; p <= maxPage; p++) {
@@ -84,10 +86,22 @@
                 pageItems.push({
                     page: p,
                     imageCount: pd?.images.length || 0,
+                    matchedDocs: pd?.matchedDocs || new Set(),
                     matchCount: pd?.matchedDocs.size || 0,
                     images: pd?.images || []
                 });
             }
+
+            const pageBoundaries = [];
+            let currentPage = null, startIdx = 0;
+            images.forEach((img, i) => {
+                if (img.canvas !== currentPage) {
+                    if (currentPage !== null) pageBoundaries.push({ page: currentPage, startIdx, endIdx: i });
+                    currentPage = img.canvas;
+                    startIdx = i;
+                }
+            });
+            if (currentPage !== null) pageBoundaries.push({ page: currentPage, startIdx, endIdx: images.length });
 
             const maxImageMatches = Math.max(1, ...imageItems.map(i => i.matchCount));
             const maxPageMatches = Math.max(1, ...pageItems.map(p => p.matchCount));
@@ -96,6 +110,7 @@
             return {
                 imageItems,
                 pageItems,
+                pageBoundaries,
                 maxImageMatches,
                 maxPageMatches,
                 maxImagesPerPage,
@@ -107,20 +122,19 @@
 
     $: items = $friezeData ? (mode === 'image' ? $friezeData.imageItems : $friezeData.pageItems) : [];
     $: maxVal = $friezeData ? (mode === 'image' ? $friezeData.maxImageMatches : $friezeData.maxPageMatches) : 1;
-    $: axisMax = $friezeData ? (mode === 'image' ? $friezeData.totalImages : $friezeData.totalPages) : 0;
+
+    let hoveredDocs = new Set();
 
     function handleClick(index) {
         selectedIndex.set(index);
         if (mode === 'image') {
             const img = $friezeData.imageItems[index];
-            dispatch('imageselect', {
-                imageId: img.id,
-                baseDocId: $baseDocId
-            });
+            dispatch('imageselect', { imageId: img.id, baseDocId: $baseDocId });
         } else {
             const pageItem = $friezeData.pageItems[index];
+            const firstImg = pageItem.images[0];
             dispatch('imageselect', {
-                imageId: pageItem.images[0]?.id || null,
+                imageId: firstImg?.id || null,
                 baseDocId: $baseDocId,
                 page: pageItem.page,
                 images: pageItem.images
@@ -128,21 +142,28 @@
         }
     }
 
-    function getAxisTicks(max, targetCount = 10) {
-        if (max <= targetCount) return Array.from({ length: max }, (_, i) => i + 1);
-        const step = Math.ceil(max / targetCount);
+    function handleMouseEnter(item) {
+        hoveredDocs = item.matchedDocs;
+    }
+
+    function handleMouseLeave() {
+        hoveredDocs = new Set();
+    }
+
+    function getAxisTicks(maxPage) {
         const ticks = [];
-        for (let i = step; i <= max; i += step) ticks.push(i);
-        if (ticks[ticks.length - 1] !== max) ticks.push(max);
+        for (let p = 50; p <= maxPage; p += 50) ticks.push(p);
+        if (ticks.length === 0 || ticks[ticks.length - 1] !== maxPage) ticks.push(maxPage);
         return ticks;
     }
 
-    $: axisTicks = getAxisTicks(axisMax);
+    $: axisTicks = $friezeData ? getAxisTicks($friezeData.totalPages) : [];
 </script>
 
 <div class="frieze-container">
     {#if $friezeData}
         {@const baseDoc = $documentNodes.get($baseDocId)}
+        {@const friezeWidth = items.length * LINE_WIDTH}
         <div class="frieze-wrapper">
             <div class="frieze" style="--line-width: {LINE_WIDTH}px;">
                 {#each items as item, idx}
@@ -150,8 +171,10 @@
                         class="frieze-line"
                         class:is-selected={idx === $selectedIndex}
                         style="--opacity: {item.matchCount / maxVal}"
-                        title="{mode === 'image' ? `Page ${item.page}, ` : ''}{item.matchCount} match(es)"
+                        title="{mode === 'image' ? `Page ${item.page}, ` : `Page ${item.page}, `}{item.matchCount} match(es)"
                         on:click={() => handleClick(idx)}
+                        on:mouseenter={() => handleMouseEnter(item)}
+                        on:mouseleave={handleMouseLeave}
                     />
                 {/each}
             </div>
@@ -168,13 +191,23 @@
                 </div>
             {/if}
 
-            <svg class="axis" height={AXIS_HEIGHT} style="width: {items.length * LINE_WIDTH}px;">
-                <line x1="0" y1="0" x2="100%" y2="0" stroke="var(--bulma-border)" />
-                {#each axisTicks as tick}
-                    {@const x = (mode === 'image' ? tick - 0.5 : tick - 0.5) * LINE_WIDTH}
-                    <line x1={x} y1="0" x2={x} y2="5" stroke="var(--bulma-border)" />
-                    <text x={x} y="16" text-anchor="middle" class="axis-label">{tick}</text>
-                {/each}
+            <svg class="axis" height={AXIS_HEIGHT} style="width: {friezeWidth}px;">
+                <line x1="0" y1="0" x2={friezeWidth} y2="0" stroke="var(--bulma-border)" />
+                {#if mode === 'page'}
+                    {#each axisTicks as tick}
+                        {@const x = (tick - 0.5) * LINE_WIDTH}
+                        <line x1={x} y1="0" x2={x} y2="5" stroke="var(--bulma-border)" />
+                        <text x={x} y="16" text-anchor="middle" class="axis-label">{tick}</text>
+                    {/each}
+                {:else}
+                    {#each $friezeData.pageBoundaries as boundary}
+                        {@const x = boundary.startIdx * LINE_WIDTH}
+                        {#if boundary.page % 50 === 0 || boundary.page === $friezeData.totalPages}
+                            <line x1={x} y1="0" x2={x} y2="5" stroke="var(--bulma-border)" />
+                            <text x={x} y="16" text-anchor="middle" class="axis-label">{boundary.page}</text>
+                        {/if}
+                    {/each}
+                {/if}
             </svg>
         </div>
 
@@ -193,8 +226,11 @@
         <h4 class="title is-6 my-2">{i18n('base', t)}</h4>
         <div class="doc-selector">
             {#each $selectedNodes as node (node.id)}
-                <button class="tag is-small" class:is-base={node.id === $baseDocId}
-                    style="background-color: {node.color}; color: #222;" title={node.title}
+                <button class="tag is-small"
+                    class:is-base={node.id === $baseDocId}
+                    class:is-inactive={hoveredDocs.size > 0 && !hoveredDocs.has(node.id) && node.id !== $baseDocId}
+                    style="background-color: {node.color}; color: #222;"
+                    title={node.title}
                     on:click={() => { baseDocId.set(node.id); selectedIndex.set(null); }}>
                     {node.title.length > 15 ? node.title.slice(0, 13) + '…' : node.title}
                 </button>
@@ -216,7 +252,6 @@
         height: 60px;
         background: var(--bulma-scheme-main-bis);
         border-radius: 4px 4px 0 0;
-        width: 2000px; /* wider than real frieze to have background color all the way */
     }
     .frieze-line {
         width: var(--line-width);
@@ -234,7 +269,7 @@
     }
     .heatmap {
         display: flex;
-        height: 10px;
+        height: 8px;
     }
     .heatmap-cell {
         width: var(--line-width);
@@ -245,7 +280,7 @@
         display: block;
     }
     .axis-label {
-        font-size: 10px;
+        font-size: 9px;
         fill: var(--bulma-text-weak);
     }
     .frieze-legend {
@@ -260,9 +295,13 @@
     .doc-selector .tag {
         cursor: pointer;
         border: 2px solid transparent;
-        transition: border-color 0.15s;
+        transition: border-color 0.3s, opacity 0.15s, filter 0.15s;
     }
     .doc-selector .tag.is-base {
         border-color: var(--bulma-link);
+    }
+    .doc-selector .tag.is-inactive {
+        opacity: 0.3;
+        filter: grayscale(0.8);
     }
 </style>
