@@ -178,11 +178,11 @@ def set_canvas(seq, canvas_nb, img_name, img, version=None):
         annotation.text("Annotation")
 
 
-# TODO aiiinotate use `xywh`
 def get_coord_from_annotation(sas_annotation):
     try:
         # coord => "x,y,w,h"
-        coord = (sas_annotation["on"][0]["selector"]["default"]["value"]).split("=")[1]
+        # since AIIINOTATE_STRICT_MODE is true, `xywh` will always be defined
+        coord = sas_annotation["on"][0]["xywh"]
         # remove negative values if some of the coordinates exceed the image boundaries
         return ",".join(["0" if int(num) < 0 else num for num in coord.split(",")])
     except Exception as e:
@@ -380,7 +380,7 @@ def get_annotations_paginated(q_url: str) -> List[Dict]:
             )
             next_page = None  # avoid infinite loop
         else:
-            annotations += annotation_list.get("resources", [])
+            annotations.extend(annotation_list.get("resources", []))
             next_page = annotation_list.get("next", None)
 
     return annotations
@@ -396,7 +396,7 @@ def get_manifest_annotations(
     # https://json-schema.org/understanding-json-schema/reference/boolean
     q_params: Dict[str, Any] = {"onlyIds": "true" if only_ids else "false"}
 
-    # `canvasMin` and `canvasMax` are 0-indexed while `min_c` `max_c` are 1-indexed => convert
+    # `canvasMin` and `canvasMax` are 0-indexed while `min_c` `max_c` are 1-indexed => convert to 0-indexed
     c_range = [min_c, max_c]
     for (i, c) in enumerate(c_range):
         try:
@@ -430,7 +430,7 @@ def get_canvas_list(regions: Regions, all_img=False):
         ...
     ]
     """
-    imgs = regions.get_imgs()
+    imgs: List[str] = regions.get_imgs()  # list of file names
 
     if all_img:
         # Display all images associated to the digitization, even if no regions were extracted
@@ -442,14 +442,9 @@ def get_canvas_list(regions: Regions, all_img=False):
 
     # canvas_imgs =  { canvas_nb: img_name, canvas_nb: img_name, ... }
     canvas_imgs = {int(i.split("_")[-1].split(".")[0]): i for i in imgs}
-    # list of canvas number containing annotations
-    # TODO aiiinotate use canvasIdx pour récupérer les # d'images
-    annotated_canvas_nb = set(
-        [
-            int(a.get("on", "").split("/canvas/c")[1].split(".json")[0])
-            for a in indexed_annos
-        ]
-    )
+    # list of canvas numbers containing annotations
+    # TODO canvasIdx is 0 indexed, is `canvas_imgs` 1-indexed ?
+    annotated_canvas_nb = set([a["on"][0]["canvasIdx"] for a in indexed_annos])
 
     for canvas_nb in annotated_canvas_nb:
         canvases.append((canvas_nb, canvas_imgs[canvas_nb]))
@@ -463,7 +458,7 @@ def get_canvas_list(regions: Regions, all_img=False):
         log(f"[get_canvas_list] No regions file for regions #{regions.id}")
         return canvases
 
-    # TODO refactoriser avec `get_regions_img` ?
+    # NOTE refactor with `get_annotations_per_canvas` ?
     if anno_format == "txt":
         for line in data:
             # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
@@ -491,100 +486,6 @@ def get_canvas_list(regions: Regions, all_img=False):
     return canvases
 
 
-# TODO delete ? (handled by aiiinotate)
-def fragment_selector_to_xywh(selector: Dict) -> str:
-    """
-    extract XYWH coordinates from a fragment selector. returns "" if no xywh coords could be extracted.
-
-    a complete fragment string should be of the form: "<base_uri>#xywh=<x,y,w,h>"
-    => fragment_list should contain 2 elts. if it is the case, extract "<x,y,w,h>" and return
-    """
-    if selector["@type"] == "oa:FragmentSelector":
-        fragment_list = selector["value"].split("xywh=")
-        if len(fragment_list) > 1:
-            return fragment_list[1]
-    return ""
-
-
-# TODO delete ? (handled by aiiinotate)
-def svg_to_xywh(svgstr: str) -> str:
-    """
-    extract an XYWH bounding box from an SVG and return it as "x,y,w,h". it is convoluted but there isn't really a better method.
-    """
-    from svgpathtools import svg2paths
-    from lxml import etree  # pyright: ignore
-    import tempfile
-    import os
-
-    try:
-        # extract canvas width and height if it is stored in svg's attributes
-        # (this is to ensure that the bounding box is contained within the canvas, otherwise cantaloupe can't display the region)
-        root = etree.fromstring(svgstr)
-        width = root.xpath("./@width")
-        height = root.xpath("./@height")
-        canvas_wh = {
-            "w": int(width[0]) if len(width) > 0 else 0,
-            "h": int(height[0]) if len(height) > 0 else 0,
-        }
-
-        # `svg2paths` provides the best SVG reading (with transforms etc.) but only words on svg files
-        # => create a temporary file and read svg from it. `delete=False` because `delete` can cause problems on Windows.
-        with tempfile.NamedTemporaryFile(
-            "w", suffix=".svg", delete=False, encoding="utf-8"
-        ) as tf:
-            tf.write(svgstr)
-            fn = tf.name
-        try:
-            paths, _ = svg2paths(fn)  # pyright: ignore
-        finally:
-            os.remove(fn)
-
-        # calculate bounding box of the SVG
-        # adapted from https://stackoverflow.com/a/76076555
-        for i, path in enumerate(paths):
-            if i == 0:
-                # initialise the overall min-max with the first path
-                xmin, xmax, ymin, ymax = path.bbox()
-            else:
-                # expand bounds to match path bounds if needed
-                p_xmin, p_xmax, p_ymin, p_ymax = path.bbox()
-                xmin = min(xmin, p_xmin)
-                xmax = max(xmax, p_xmax)
-                ymin = min(ymin, p_ymin)
-                ymax = max(ymax, p_ymax)
-
-        # force XYWH to be contained in the canvas, otherwise Cantaloupe can't display it
-        # if `roof` is undefined, just ensure that `x` is positive.
-        constrain = (
-            lambda roof: lambda x: min(max(x, 0), roof) if roof > 0 else max(x, 0)
-        )
-        constrain_x = constrain(canvas_wh["w"])
-        constrain_y = constrain(canvas_wh["h"])
-        xywh = [
-            constrain_x(xmin),
-            constrain_y(ymin),
-            constrain_x(xmax - xmin),
-            constrain_y(ymax - ymin),
-        ]
-        return ",".join(str(c) for c in xywh)
-    except Exception as e:
-        log(f"[svg_to_xywh] Failed to extract a bounding box from SVG '{svgstr}'", e)
-        return ""
-
-
-# TODO delete ? (handled by aiiinotate)
-def selector_to_xywh(selector: Dict) -> str:
-    """
-    :returns: "x,y,w,h" or "" if a bounding box could not be extracted
-    """
-    if selector["@type"] == "oa:SvgSelector":
-        xywh = svg_to_xywh(selector["value"])
-    else:
-        xywh = fragment_selector_to_xywh(selector)
-    return xywh
-
-
-# TODO PAUL: implement min_c/max_c on aiiinotate side
 def get_regions_annotations(
     regions: Regions,
     as_json=False,
@@ -603,11 +504,13 @@ def get_regions_annotations(
     if as_json:
         min_c = min_c or 1
         max_c = max_c or regions.get_json()["img_nb"]
+        # { canvas_nb: {} }, canvas_nb is 1-indexed.
         r_annos = {str(c): {} for c in range(min_c, max_c + 1)}
 
     annos = get_manifest_annotations(regions_ref, False, min_c, max_c)
     if len(annos) == 0:
         return r_annos
+    # `min_c`/`max_c` are handled in `get_manifest_annotations` so no need to filter by canvas number here
     for anno in annos:
         try:
             on_value: List[Dict] = anno["on"]  # on is a list of SpecificResources
@@ -615,52 +518,17 @@ def get_regions_annotations(
             canvas = id_canvas.split("/canvas/c")[1].split(".json")[
                 0
             ]  # string representation of the canvas number
-            try:
-                canvas_num = int(canvas)
-            except ValueError:
-                log(
-                    f"[get_regions_annotations] Failed to parse canvas value '{canvas}' for annotation {on_value}"
-                )
-                continue
-
-            # Stop once max_c is reached
-            # DO NOT WORK since the annotations are sorted ALPHABETICALLY by canvas number
-            # if max_c is not None and (canvas_num > max_c):
-            #     break
-
-            if (max_c is not None and canvas_num > max_c) or (
-                min_c is not None and canvas_num < min_c
-            ):
-                continue
-
             if canvas not in r_annos:
                 log(
                     f"[get_regions_annotations] Key '{canvas}' should be included between {min_c}-{max_c} => pass"
                 )
                 continue
 
-            # NOTE: how are XYWH coordinates extracted ?
-            # - only supported selectors are oa:FragmentSelector, oa:SvgSelector and an oa:Choice containing oa:SvgSelector or oa:FragmentSelector.
-            # - if selector is oa:SvgSelector, extract its boudning box
-            # - if selector is oa:FragmentSelector, extract its xywh coordinates.
-            # - if selector is a choice, repeat process for both selectors until XYWH coords have been found
-            # - if no selector could be extracted, raise.
-            # SVG-parsing and bbox calc etc is necessary: MAE exports SVG targets as an array of [oa:SvgSelector, oa:FragmentSelector],
-            # but `oa:SvgSelector` is used to document space information, while oa:FragmentSelector is used to store time information:
-            # the time on which the annotation is (for video annos) so we can't rely on oa:FragmentSelector, since it's not equivalent ot oa:SvgSelector.
-            xywh = ""
-            if on_value[0]["selector"]["@type"] == "oa:Choice":
-                for selector in (
-                    on_value[0]["selector"]["default"],
-                    on_value[0]["selector"]["item"],
-                ):
-                    xywh = selector_to_xywh(selector)
-                    if len(xywh):
-                        break
-            else:
-                xywh = selector_to_xywh(on_value[0]["selector"])
-            if not xywh:
+            # since AIIINOTATE_STRICT_MODE is true, xywh will always be defined.
+            xywh = on_value[0]["xywh"]
+            if not xywh or not len(xywh):
                 raise ValueError(f"Could not extract XYWH coordinates for annotation")
+            xywh_str = "".join(str(c) for c in xywh)
 
             if as_json:
                 img = f"{img_name}_{canvas.zfill(nb_len)}"
@@ -668,13 +536,13 @@ def get_regions_annotations(
 
                 r_annos[canvas][aid] = {
                     "id": aid,
-                    "ref": f"{img}_{xywh}",
+                    "ref": f"{img}_{xywh_str}",
                     "class": "Region",
                     "type": get_name("Regions"),
-                    "title": region_title(canvas, xywh),
+                    "title": region_title(canvas, xywh_str),
                     "url": gen_iiif_url(img, res=f"{xywh}/full/0"),
                     "canvas": canvas,
-                    "xywh": xywh.split(","),
+                    "xywh": xywh,
                     "img": img,
                 }
             else:
@@ -708,7 +576,6 @@ def get_canvas_lists(digit: Digitization, all_img=False):
     return canvases
 
 
-# TODO rewrite with get_and_parse
 def get_indexed_canvas_annotations(regions: Regions, canvas_nb):
     canvas_url = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/search?canvasUri={regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
     try:
@@ -721,7 +588,6 @@ def get_indexed_canvas_annotations(regions: Regions, canvas_nb):
         return []
 
 
-# TODO use aiiinotate count
 def get_total_annotations(regions_ref: str) -> int:
     try:
         r = get_and_parse(
@@ -848,6 +714,7 @@ def check_indexation(regions: Regions, reindex=False):
         return 0
 
     try:
+        # NOTE refactor with `get_annotations_per_canvas` ?
         if anno_format == "txt":
             for line in data:
                 parts = line.split()
@@ -914,7 +781,7 @@ def index_annotations_on_canvas(regions: Regions, canvas_nb):
     formatted_annos = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions.get_ref()}/list/anno-{canvas_nb}.json"
     # POST request that index the annotations
     response = requests.post(
-        f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/createMany?throwOnCanvasIndexError=true",
+        f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/createMany",
         json={"uri": formatted_annos},
     )
 
@@ -971,7 +838,7 @@ def index_manifest(manifest_url, reindex=False):
     try:
         # Index the manifest into aiiinotate
         r = requests.post(
-            f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}/create?throwOnCanvasIndexError=true",
+            f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}/create",
             json=manifest_content,
         )
         print(r)
