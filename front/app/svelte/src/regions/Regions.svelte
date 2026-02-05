@@ -8,7 +8,7 @@
 
     import {regionsSelection} from "../selection/selectionStore.js";
     export let selectionStore = regionsSelection;
-    const { isSelected } = selectionStore;
+    // const { isSelected } = selectionStore;
 
     /** @type {RegionItemType[]} */
     export let items = [];
@@ -29,7 +29,7 @@
         modalIndex = e.detail.index;
     };
 
-    $: tabs = [
+    const tabs = [
         { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
         { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
     ];

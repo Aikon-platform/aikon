@@ -15,6 +15,11 @@ Special cases:
 <script>
     import { derived } from 'svelte/store';
     import {RegionItem} from "../../regions/types.js";
+    import RegionModal from "../../regions/modal/RegionModal.svelte";
+    import PageView from "../../regions/modal/PageView.svelte";
+    import RegionCard from "../../regions/RegionCard.svelte";
+    import Tabs from "../../ui/Tabs.svelte";
+    import {appLang} from "../../constants.js";
 
     export let stemmaStore;
     export let visiblePairs;
@@ -25,6 +30,28 @@ Special cases:
     const { edges, nodePositions, selectedNodes } = stemmaStore;
 
     const IMG_SIZE = 150;
+    let modalOpen = false;
+    let clickedRegionIdx = 0;
+    $: visibleRegions = stemmaImages.nodes
+        .filter(n => n.img)
+        .map(n => new RegionItem(n.img));
+
+    const clickOnImg = (node) => {
+        if (!node.img){
+            return
+        }
+        clickedRegionIdx = visibleRegions.findIndex(r => r.id === node.imageId);
+        modalOpen = true;
+    };
+
+    const handleNavigate = (e) => {
+        clickedRegionIdx = e.detail.index ?? 0;
+    };
+
+    const tabs = [
+        { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
+        { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
+    ];
 
     const pairIndex = derived(visiblePairs, $pairs => {
         const idx = new Map();
@@ -88,7 +115,6 @@ Special cases:
             }
         }
 
-        // Build nodes
         const nodes = [];
         let minX = Infinity, minY = Infinity;
 
@@ -173,7 +199,10 @@ Special cases:
             {/each}
 
             {#each stemmaImages.nodes as node (node.docId)}
-                <g transform="translate({node.x}, {node.y})">
+                <g transform="translate({node.x}, {node.y})"
+                    style="cursor: {node.img ? 'pointer' : 'default'}"
+                    on:click={() => clickOnImg(node)}
+                    on:keyup>
                     <rect
                         width={IMG_SIZE}
                         height={IMG_SIZE}
@@ -196,6 +225,20 @@ Special cases:
         <p class="has-text-grey is-size-7 p-3">Select an image in the frieze above</p>
     {/if}
 </div>
+
+<RegionModal items={visibleRegions} bind:currentIndex={clickedRegionIdx} bind:open={modalOpen} on:navigate={handleNavigate}>
+    <svelte:fragment let:item={currentItem}>
+        <Tabs {tabs} let:activeTab>
+            {#if activeTab === "region"}
+                <div class="modal-region">
+                    <RegionCard item={currentItem} height="full" isInModal={true} selectable={false}/>
+                </div>
+            {:else if activeTab === "page"}
+                <PageView item={currentItem}/>
+            {/if}
+        </Tabs>
+    </svelte:fragment>
+</RegionModal>
 
 <style>
     .image-stemma {
