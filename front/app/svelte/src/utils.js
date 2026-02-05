@@ -95,9 +95,11 @@ export function refToIIIF(imgRef=null, coord=null, size="full") {
 
   // imgRef can be like "wit<id>_<digit><id>_<page_nb>.jpg" or "wit<id>_<digit><id>_<page_nb>_<x,y,h,w>.jpg"
   if (!imgRef) {
+    console.log("IMG REF IS UNDEFINED", imgRef, coord, size);
     return "https://placehold.co/96x96/png?text=No+image";
   }
   if (!imgRef.startsWith("wit")) {
+    console.log("IMG REF DOES NOT START WITH 'wit'", imgRef, coord, size);
     // TODO try to understand why this happens and remove workaround
     const [_, ...ref] = imgRef.split("_wit");
     imgRef = `wit${ref}`;
@@ -105,6 +107,7 @@ export function refToIIIF(imgRef=null, coord=null, size="full") {
 
   const imgRoot = refToIIIFRoot(imgRef);
   if (imgRoot === undefined) {
+    console.log("IMG ROOT is undefined", imgRef, coord, size);
     return "https://placehold.co/96x96/png?text=No+image";
   }
 
