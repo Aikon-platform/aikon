@@ -178,13 +178,15 @@ def set_canvas(seq, canvas_nb, img_name, img, version=None):
         annotation.text("Annotation")
 
 
-def get_coord_from_annotation(sas_annotation):
+def get_coord_from_annotation(sas_annotation, as_str=False):
     try:
         # coord => "x,y,w,h"
         # since AIIINOTATE_STRICT_MODE is true, `xywh` will always be defined
         coord = sas_annotation["on"][0]["xywh"]
         # remove negative values if some of the coordinates exceed the image boundaries
-        return ",".join(["0" if int(num) < 0 else num for num in coord.split(",")])
+        if as_str:
+            return ",".join(["0" if int(num) < 0 else num for num in coord.split(",")])
+        return coord
     except Exception as e:
         log(
             f"[get_coord_from_annotation] Could not retrieve coord from aiiinotate annotation",
@@ -294,7 +296,7 @@ def formatted_annotations(
             if bool(c_annotations):
                 coord_annotations = [
                     (
-                        get_coord_from_annotation(sas_anno),
+                        get_coord_from_annotation(sas_anno, as_str=True),
                         get_id_from_annotation(sas_anno),
                     )
                     for sas_anno in c_annotations
@@ -443,8 +445,8 @@ def get_canvas_list(regions: Regions, all_img=False):
     # canvas_imgs =  { canvas_nb: img_name, canvas_nb: img_name, ... }
     canvas_imgs = {int(i.split("_")[-1].split(".")[0]): i for i in imgs}
     # list of canvas numbers containing annotations
-    # TODO canvasIdx is 0 indexed, is `canvas_imgs` 1-indexed ?
-    annotated_canvas_nb = set([a["on"][0]["canvasIdx"] for a in indexed_annos])
+    # `canvasIdx` is 0 indexed, is `canvas_imgs` is 1-indexed => convert `canvasIdx` values to be 1-indexed
+    annotated_canvas_nb = set([a["on"][0]["canvasIdx"] + 1 for a in indexed_annos])
 
     for canvas_nb in annotated_canvas_nb:
         canvases.append((canvas_nb, canvas_imgs[canvas_nb]))
@@ -620,9 +622,7 @@ def get_training_regions(regions: Regions):
         if bool(sas_annotations):
             train_regions = []
             for sas_annotation in sas_annotations:
-                x, y, w, h = [
-                    int(n) for n in get_coord_from_annotation(sas_annotation).split(",")
-                ]
+                x, y, w, h = get_coord_from_annotation(sas_annotation)
                 train_regions.append(
                     f"0 {((x + x + w) / 2) / width} {((y + y + h) / 2) / height} {w / width} {h / height}"
                 )
@@ -672,7 +672,7 @@ def get_images_annotations(regions: Regions):
 
             if bool(c_annotations):
                 canvas_imgs = [
-                    f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/{get_coord_from_annotation(sas_annotation)}/full/0/default.jpg"
+                    f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/{get_coord_from_annotation(sas_annotation, as_str=True)}/full/0/default.jpg"
                     for sas_annotation in c_annotations
                 ]
                 imgs.extend(canvas_imgs)
