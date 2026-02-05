@@ -328,7 +328,7 @@ class Digitization(AbstractSearchableModel):
         type(self).objects.filter(pk=self.pk.__str__()).update(json=json_data)
         return self.json
 
-    def to_json(self, reindex=True, no_img=False):
+    def to_json(self, reindex=True, no_img=False, request_user=None):
         djson = self.json or {}
         imgs = djson.get("imgs", [] if no_img else self.get_imgs(check_in_dir=True))
         return {
@@ -362,7 +362,7 @@ class Digitization(AbstractSearchableModel):
         base_url = f"{APP_URL}/{APP_NAME}/iiif/{self.get_ref()}"
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 
-    def gen_manifest_json(self):
+    def gen_manifest_json(self, version=None):
         from app.webapp.utils.iiif.manifest import gen_manifest_json
 
         error = {"error": "Unable to create a valid manifest"}
@@ -377,14 +377,6 @@ class Digitization(AbstractSearchableModel):
                 error["reason"] = f"{e}"
                 return error
         return error
-
-    def get_nb_of_pages(self):
-        import PyPDF2
-
-        with open(self.get_file_path(), "rb") as pdf_file:
-            pdf_reader = PyPDF2.PdfFileReader(pdf_file)
-            page_nb = pdf_reader.getNumPages()
-        return page_nb
 
         # NOTE methods to be used inside list columns of witnesses
 
@@ -451,9 +443,8 @@ class Digitization(AbstractSearchableModel):
     def delete(self, using=None, keep_parents=False):
         super().delete()
 
-    def add_info(self, license_url, source):
+    def add_info(self, license_url):
         self.license = license_url
-        # self.add_source(source)
         if license_url != NO_LICENSE:
             self.is_open = True
         self.save(update_fields=["license", "source", "is_open"])

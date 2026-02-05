@@ -171,6 +171,12 @@ MAP_WIT_TYPE = {
     WPR_ABBR: WPR.capitalize(),
 }
 
+MAP_PAGE_TYPE = {
+    PAG_ABBR: PAGE.capitalize(),
+    FOL_ABBR: FOLIO.capitalize(),
+    OTH_ABBR: OTHER.capitalize(),
+}
+
 REGIONS = (
     "Image regions extraction" if APP_LANG == "en" else "Extraction de régions d'images"
 )

@@ -2,4 +2,4 @@ venv/
 .git/
 *.pyc
 __pycache__/
-sas/data/ # to avoid to copy all binary annotations at each build (relative path to the build context of sas)
+# sas/data/ # to avoid to copy all binary annotations at each build (relative path to the build context of sas)

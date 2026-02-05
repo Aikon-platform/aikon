@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.core.paginator import Paginator
 from django.db import models
+from django.contrib.auth.models import User
 
 from app.webapp.search_filters import *
 from app.webapp.utils.constants import PAGE_LEN
@@ -14,7 +15,10 @@ def paginated_records(request, records):
     page_number = request.GET.get("p", 1)
     page_obj = paginator.get_page(page_number)
 
-    results = [json_obj for obj in page_obj if (json_obj := obj.json) is not None]
+    results = []
+    for obj in page_obj:
+        if json_obj := obj.get_json(request_user=request.user):
+            results.append(json_obj)
 
     return {
         "results": results,
@@ -24,19 +28,20 @@ def paginated_records(request, records):
     }
 
 
+def get_shared_with(model_class, current_user):
+    if current_user.is_superuser:
+        return model_class.objects.order_by("id")
+    return model_class.objects.filter(
+        Q(user=current_user)
+        | Q(is_public=True)
+        | Q(shared_with=current_user)
+        | Q(user__groups__in=current_user.groups.all())
+    ).distinct()
+
+
 @require_GET
 def search_witnesses(request):
-    current_user = request.user
-
-    if current_user.is_superuser:
-        witnesses = Witness.objects.order_by("id")
-    else:
-        witnesses = Witness.objects.filter(
-            Q(user=current_user)
-            | Q(is_public=True)
-            | Q(user__groups__in=current_user.groups.all())
-        ).distinct()
-
+    witnesses = get_shared_with(Witness, request.user)
     witness_filter = WitnessFilter(request.GET, queryset=witnesses)
     return JsonResponse(paginated_records(request, witness_filter.qs))
 
@@ -60,7 +65,8 @@ def search_works(request):
 
 @require_GET
 def search_series(request):
-    series_filter = SeriesFilter(request.GET, queryset=Series.objects.order_by("id"))
+    series = get_shared_with(Series, request.user)
+    series_filter = SeriesFilter(request.GET, queryset=series)
     return JsonResponse(paginated_records(request, series_filter.qs))
 
 
@@ -100,8 +106,21 @@ def search_document_set(request):
     if user.is_superuser:
         queryset = base_queryset
     else:
-        queryset = base_queryset.filter(Q(user=user))
+        queryset = base_queryset.filter(
+            Q(shared_with__contains=[user.id]) | Q(user=user) | Q(is_public=True)
+        ).distinct()
 
     doc_sets = DocumentSetFilter(request.GET, queryset=queryset.order_by("-id"))
 
     return JsonResponse(paginated_records(request, doc_sets.qs))
+
+
+@require_GET
+def search_user(request):
+    q = request.GET.get("q", "")
+
+    user_list = User.objects.filter(username__icontains=q).all()
+
+    return JsonResponse(
+        {"users": [{"id": user.id, "username": str(user)} for user in user_list]}
+    )

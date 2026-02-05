@@ -12,7 +12,6 @@
         const CSRF_TOKEN = "{{ csrf_token }}";
         const USER_ID = "{{ user.id }}";
         const IS_SUPERUSER = "{{ user.is_superuser }}" === "True";
-        const ADD_PERMISSION = "{{ perms.APP_NAME.add_ }}" === "True";
 
         const ADDITIONAL_MODULES = {{ ADDITIONAL_MODULES|safe }};
 
@@ -61,7 +60,6 @@
     <script src="{% static 'js/jquery-3.6.1.js' %}"></script>
     <script src="{% static 'js/script.js' %}"></script>
     <script src="{% static 'js/eventListeners.js' %}"></script>
-    <script src="{% static 'js/modal.js' %}"></script>
 
     <link href="{% static 'admin/css/vendor/select2/select2.css' %}" media="screen" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="{% static 'css/select2-custom.css' %}">

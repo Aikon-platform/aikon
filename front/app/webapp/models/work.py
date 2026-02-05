@@ -88,7 +88,7 @@ class Work(AbstractSearchableModel):
 
         return f"{base_url}?{query_string}"
 
-    def to_json(self, reindex=True, no_img=False):
+    def to_json(self, reindex=True, no_img=False, request_user=None):
         place = self.place
         author = self.author
         return json_encode(
@@ -100,6 +100,7 @@ class Work(AbstractSearchableModel):
                 # "user_id": self.user.id,
                 "edit_url": self.get_absolute_edit_url(),
                 "view_url": self.get_absolute_view_url(),
+                "can_edit": True,
                 "title": self.__str__(),
                 "metadata": {
                     get_name("dates"): format_dates(self.date_min, self.date_max),

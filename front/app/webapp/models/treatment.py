@@ -156,7 +156,7 @@ class Treatment(AbstractSearchableModel):
             urls = [f"{url}?tab={tabs[self.task_type]}" for url in urls]
         return urls
 
-    def to_json(self, reindex=True, no_img=False):
+    def to_json(self, reindex=True, no_img=False, request_user=None):
         try:
             user = self.requested_by
             doc_set = self.document_set
@@ -237,7 +237,9 @@ class Treatment(AbstractSearchableModel):
             return
 
         try:
-            parameters = prepare_task_request(self.task_type, witnesses, self.id)
+            parameters = prepare_task_request(
+                self.task_type, witnesses, self.id, self.api_parameters
+            )
         except (ImportError, AttributeError) as e:
             self.on_task_error(
                 {
@@ -259,8 +261,8 @@ class Treatment(AbstractSearchableModel):
 
         url = f"{API_URL}/{self.task_type}/start"
 
-        if api_param := self.api_parameters:
-            parameters.update(api_param)
+        # if api_param := self.api_parameters:
+        #     parameters.update(api_param)
 
         api_query = requests.post(url, json=parameters)
 

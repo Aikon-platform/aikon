@@ -23,13 +23,13 @@ from config.settings import APP_LANG
 ################################################################
 
 
-def prepare_request(witnesses, treatment_id):
+def prepare_request(witnesses, treatment_id, parameters=None):
     return tasking.prepare_request(
         witnesses,
         treatment_id,
         prepare_document,
         "vectorization",
-        {"model": f"{VECTO_MODEL_EPOCH}"},
+        {"model": f"{VECTO_MODEL_EPOCH}", **(parameters or {})},
     )
 
 
@@ -65,7 +65,7 @@ def process_results(data, completed=True):
     for doc_results in results_url:
         doc_id = doc_results.get("doc_id")
         result_url = doc_results.get("result_url")
-        result_dir = SVG_PATH / doc_id
+        result_dir = Path(f"{SVG_PATH}/{doc_id}")
 
         if result_dir.exists() and any(result_dir.glob("*.svg")):
             # if the path already exists and contains svg file,

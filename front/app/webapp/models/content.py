@@ -18,16 +18,27 @@ from app.webapp.models.utils.constants import (
     DATE_INFO,
 )
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.utils.functions import format_start_end, extract_nb, validate_dates
+from app.webapp.utils.functions import (
+    format_start_end,
+    extract_nb,
+    validate_dates,
+    format_dates,
+    flatten,
+)
 from app.webapp.utils.logger import log
+from app.config.settings import APP_LANG
 
 
 def get_name(fieldname, plural=False):
     fields = {
         "page_min": {"en": "From page/folio", "fr": "De la page/folio"},
         "page_max": {"en": "To page/folio", "fr": "Jusqu'à la page/folio"},
+        "pages": {"en": "pages", "fr": "pages"},
+        "lang": {"en": "language", "fr": "langage"},
         "tags": {"en": f"{TAG}s", "fr": f"{TAG}s"},
         "place": {"en": "creation place", "fr": "lieu de création"},
+        "dates": {"en": "dates", "fr": "dates"},
+        "roles": {"en": "historical actors", "fr": "acteurs"},
         "whole_wit": {"en": f"complete {WIT}", "fr": f"intégralité du {WIT}"},
         "whole_wit_info": {
             "en": f"does the {WIT} contain only this {WORK}?",
@@ -124,6 +135,27 @@ class Content(models.Model):
         blank=True,
     )
 
+    def get_metadata(self):
+        content = {}
+
+        if self.date_max and self.date_min:
+            content[get_name("dates")] = format_dates(self.date_min, self.date_max)
+
+        if place := self.place:
+            content[get_name("place")] = place.__str__()
+
+        if self.get_langs():
+            content[get_name("lang")] = self.get_str_lang()
+
+        if self.get_roles():
+            content[get_name("roles")] = self.get_str_roles()
+
+        work_title = self.work.__str__() if self.work else "Unknown Work"
+        return {
+            "title": f"{work_title} ({self.get_formatted_pages()})",
+            "content": content,
+        }
+
     def get_witness(self):
         try:
             return self.witness
@@ -135,6 +167,19 @@ class Content(models.Model):
             return ""
 
         return format_start_end(self.page_min, self.page_max)
+
+    def get_formatted_pages(self):
+        if self.page_min == "" and self.page_max == "":
+            return "-"
+
+        page_t = ""
+        if wit := self.get_witness():
+            page_t = "pp. " if wit.page_type == PAG_ABBR else "ff. "
+
+        if self.whole_witness:
+            return f"Entire {WIT}" if APP_LANG == "en" else f"Intégralité du {WIT}"
+
+        return f"{page_t}{format_start_end(self.page_min, self.page_max)}"
 
     def get_nb_of_page(self, only_nb=True):
         wit = self.get_witness()
@@ -149,8 +194,20 @@ class Content(models.Model):
         # Django automatically creates a reverse relationship from Content to Role
         return self.roles.all()
 
+    def get_str_roles(self):
+        roles = []
+        for role in self.get_roles():
+            roles.append(role.__str__())
+        return ", ".join(roles)
+
     def get_langs(self):
         return self.lang.all()
+
+    def get_str_lang(self):
+        languages = []
+        for lang in self.get_langs():
+            languages.append(lang.__str__())
+        return ", ".join(languages)
 
     def clean(self):
         super().clean()

@@ -1,7 +1,6 @@
 {% load i18n admin_urls shared_tags %}
 
 {% is_superuser user as is_admin %}
-{% if is_admin or original.user == user or not original.user %}
     <div class="submit-row buttons field is-grouped" style="justify-content: center">
 
         <div class="buttons">
@@ -19,4 +18,3 @@
             {% endif %}
         </div>
     </div>
-{% endif %}

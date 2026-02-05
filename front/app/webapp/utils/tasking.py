@@ -27,7 +27,10 @@ def get_user(user: User = None) -> User:
 
 
 def create_doc_set(
-    doc_list: list | dict, user: User = None
+    doc_list: list | dict,
+    user: User = None,
+    shared_with: list = None,
+    is_public: bool = False,
 ) -> Tuple[DocumentSet, bool]:
     if not len(doc_list):
         log(
@@ -37,12 +40,15 @@ def create_doc_set(
 
     user = get_user(user)
     if type(doc_list) == dict:
-        return create_doc_set_from_ids(doc_list, user)
-    return create_doc_set_from_records(doc_list, user)
+        return create_doc_set_from_ids(doc_list, user, shared_with, is_public)
+    return create_doc_set_from_records(doc_list, user, shared_with, is_public)
 
 
 def create_doc_set_from_records(
-    records: List[Witness | Digitization | Regions], user: User = None
+    records: List[Witness | Digitization | Regions],
+    user: User = None,
+    shared_with: list = None,
+    is_public: bool = False,
 ):
     wit_ids = set()
     doc_title = "Document set"
@@ -75,7 +81,8 @@ def create_doc_set_from_records(
                 title=doc_title,
                 user=user,
                 wit_ids=wit_ids,
-                is_public=False,
+                is_public=is_public,
+                shared_with=shared_with,
             )
             doc_set.save()
             is_new = True
@@ -89,7 +96,12 @@ def create_doc_set_from_records(
     return doc_set, is_new
 
 
-def create_doc_set_from_ids(ids: dict, user: User = None):
+def create_doc_set_from_ids(
+    ids: dict,
+    user: User = None,
+    shared_with: list = None,
+    is_public: bool = False,
+):
     """
     ids: {
         "wit_ids": List[int],
@@ -107,7 +119,8 @@ def create_doc_set_from_ids(ids: dict, user: User = None):
                 title="Document set",
                 user=user,
                 **ids,
-                is_public=False,
+                is_public=is_public,
+                shared_with=shared_with,
             )
             doc_set.save()
             is_new = True
@@ -154,10 +167,10 @@ def process_task_results(task_name, data, completed=True):
         raise e
 
 
-def prepare_task_request(task_name, records, treatment_id):
+def prepare_task_request(task_name, records, treatment_id, api_parameters=None):
     try:
         module = importlib.import_module(f"{task_name}.utils")
-        return getattr(module, "prepare_request")(records, treatment_id)
+        return getattr(module, "prepare_request")(records, treatment_id, api_parameters)
     except (ImportError, AttributeError) as e:
         raise e
 
@@ -228,8 +241,10 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
         if documents:
             uids = [d.get("uid", "UID") for d in documents]
             log(
-                f"[prepare_request] Found {len(documents)} documents to process: {', '.join(uids)}"
+                f"[prepare_request] Found {len(documents)} documents to process: {', '.join(uids)}",
+                msg_type="info",
             )
+            log(parameters, msg_type="info")
 
             return {
                 "experiment_id": str(treatment_id),
@@ -244,7 +259,7 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
             if APP_LANG == "en"
             else f"Aucun document à traiter pour les enregistrements sélectionnés."
         )
-        log(f"[prepare_request] {err}")
+        log(f"[prepare_request] {err}", msg_type="error")
         raise Exception(err)
 
     except Exception as e:
@@ -260,6 +275,7 @@ def receive_notification(request):
     from app.webapp.models.treatment import Treatment
 
     if request.method != "POST":
+        log("[receive_notification] Invalid request method", msg_type="error")
         return {"success": False, "error": "Only POST requests are supported"}, 400
 
     try:
@@ -268,6 +284,10 @@ def receive_notification(request):
         assert "experiment_id" in data
         assert "event" in data
     except (ValueError, AssertionError) as e:
+        log(
+            f"[receive_notification] Invalid data payload\n\n{request.body.decode('utf-8')}",
+            e,
+        )
         return {
             "success": False,
             "error": f"Data payload does not contain expected content: {e}",
@@ -275,7 +295,8 @@ def receive_notification(request):
 
     try:
         treatment = Treatment.objects.get(id=data["experiment_id"])
-    except Treatment.DoesNotExist:
+    except Treatment.DoesNotExist as e:
+        log(f"[receive_notification] Treatment #{data['experiment_id']} not found", e)
         # TODO handle manual treatment?
         return {"success": False, "error": "Treatment not found"}, 400
 

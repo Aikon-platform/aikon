@@ -1,3 +1,7 @@
+import warnings
+
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
+
 from .base import ENV
 
 # Load the appropriate settings file based on the TARGET environment variable

@@ -6,7 +6,6 @@
 {% block extrahead %}
     <link rel="stylesheet" href="{% static 'css/regions.css' %}">
     <link rel="stylesheet" href="{% static 'svelte/documentSet.css' %}">
-    <link rel="stylesheet" href="{% static 'svelte/regionList/regionList.css' %}">
     <style>
     .network-svg, .network-canvas {
         display: block;
@@ -51,6 +50,14 @@
 
     .node-label {
         user-select: none;
+    }
+    .partially {
+        border-color: var(--bulma-warning) !important;
+        background: hsla(var(--bulma-warning-h), var(--bulma-warning-s), var(--bulma-warning-l), 0.1);
+    }
+    .fully {
+        border-color: var(--bulma-success) !important;
+        background: hsla(var(--bulma-success-h), var(--bulma-success-s), var(--bulma-success-l), 0.1);
     }
     </style>
 {% endblock %}

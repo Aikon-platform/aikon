@@ -155,14 +155,6 @@ class Regions(AbstractSearchableModel):
 
         return sorted(svg_files_names) == sorted(anno_list)
 
-    def get_computed_pairs(self):
-        sim_files = [
-            npy_file
-            for npy_file in os.listdir(SCORES_PATH)
-            if self.get_ref() in npy_file
-        ]
-        return sim_files
-
     def get_metadata(self):
         if digit := self.get_digit():
             metadata = digit.get_metadata()
@@ -172,7 +164,7 @@ class Regions(AbstractSearchableModel):
             return metadata
         return {}
 
-    def to_json(self, reindex=True, no_img=False):
+    def to_json(self, reindex=True, no_img=False, request_user=None):
         """
         Do not take into account no_img for regions because there is no post_save task as for Digitization
         to fill image related properties
@@ -208,8 +200,5 @@ class Regions(AbstractSearchableModel):
 
         action = "final" if self.is_validated else "edit"
         btn = regions_btn(self, action if self.has_regions() else "no_regions")
-
-        if len(self.get_computed_pairs()) != 0:
-            btn += regions_btn(self, "similarity")
 
         return mark_safe(btn)

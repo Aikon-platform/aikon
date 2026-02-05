@@ -96,6 +96,13 @@ urlpatterns = [
         no_match,
         name="witness-no-match",
     ),
+    path(f"{APP_NAME}/exact-match", exact_match, name="exact-match"),
+    path(f"{APP_NAME}/exact-match-batch", exact_match_batch, name="exact-match-batch"),
+    path(
+        f"{APP_NAME}/uncategorize-pair-batch",
+        uncategorize_pair_batch,
+        name="uncategorize-pair-batch",
+    ),
     path(f"{APP_NAME}/save-category", save_category, name="save-category"),
     path(
         f"{APP_NAME}/index-similarity/<str:regions_ref>",
@@ -137,5 +144,10 @@ urlpatterns = [
         f"document-set/<int:dsid>/pairs",
         get_document_set_pairs,
         name="document-set-pairs",
+    ),
+    path(
+        f"document-set/<int:dsid>/pairs/stream",
+        stream_document_set_pairs,
+        name="stream-document-set-pairs",
     ),
 ]
