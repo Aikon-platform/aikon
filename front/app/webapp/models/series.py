@@ -30,6 +30,7 @@ def get_name(fieldname, plural=False):
             "en": "No volume number provided",
             "fr": "Pas de numéro de volume renseigné",
         },
+        "shared_with": {"en": "shared with", "fr": "partagé avec"},
     }
     return get_fieldname(fieldname, fields, plural)
 
@@ -81,6 +82,13 @@ class Series(AbstractSearchableModel):
         blank=True,
     )
 
+    shared_with = models.ManyToManyField(
+        User,
+        blank=True,
+        related_name="shared_series",
+        verbose_name=get_name("shared_with"),
+    )
+
     def get_absolute_edit_url(self):
         return reverse("admin:webapp_series_change", args=[self.id])
 
@@ -92,7 +100,18 @@ class Series(AbstractSearchableModel):
 
         return f"{base_url}?{query_string}"
 
-    def to_json(self, reindex=True, no_img=False):
+    def can_edit(self, user):
+        if not user or not user.is_authenticated:
+            return False
+
+        return (
+            user.is_superuser
+            or self.user == user
+            or self.shared_with.filter(pk=user.pk).exists()
+            or user.groups.filter(user=self.user).exists()
+        )
+
+    def to_json(self, reindex=True, no_img=False, request_user=None):
         library = self.place
         pub_place = self.get_edition_place()
         publisher = self.get_publisher()
@@ -105,6 +124,7 @@ class Series(AbstractSearchableModel):
                 "type": get_name("Series"),
                 "edit_url": self.get_absolute_edit_url(),
                 "view_url": self.get_absolute_view_url(),
+                "can_edit": self.can_edit(request_user),
                 "title": self.__str__(),
                 "user": user.__str__() if user else NO_USER,
                 "user_id": user.id if user else 0,

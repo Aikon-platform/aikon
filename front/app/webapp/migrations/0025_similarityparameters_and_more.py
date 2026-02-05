@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("webapp", "0024_alter_regionpair_category_x"),
+        ("webapp", "0028_series_shared_with"),
     ]
 
     operations = [

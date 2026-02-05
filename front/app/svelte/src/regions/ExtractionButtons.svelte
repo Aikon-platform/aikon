@@ -82,7 +82,7 @@
     <!--    </button>-->
     {#if modules.includes("regions")}
         <!--TODO make this button disappear if a task is already triggered for this witness ?-->
-        <button class="button is-link is-inverted" on:click={automaticRegions}>
+        <button class="button is-link is-light" on:click={automaticRegions}>
             {appLang === 'en' ? 'Automatic region extraction' : 'Extraction automatique des régions'}
         </button>
     {/if}

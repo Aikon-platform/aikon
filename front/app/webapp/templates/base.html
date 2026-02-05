@@ -12,7 +12,6 @@
         const CSRF_TOKEN = "{{ csrf_token }}";
         const USER_ID = "{{ user.id }}";
         const IS_SUPERUSER = "{{ user.is_superuser }}" === "True";
-        const ADD_PERMISSION = "{{ perms.APP_NAME.add_ }}" === "True";
 
         const ADDITIONAL_MODULES = {{ ADDITIONAL_MODULES|safe }};
 

@@ -22,6 +22,7 @@ from app.webapp.search_filters import (
 from app.webapp.forms import *
 from app.webapp.forms.treatment import TreatmentForm
 from app.webapp.models.regions import Regions
+from app.webapp.models.digitization import Digitization
 from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2
@@ -148,11 +149,6 @@ class AbstractRecordList(AbstractView, TemplateView):
         return context
 
 
-class WitnessView(AbstractRecordView):
-    model = Witness
-    form_class = WitnessForm
-
-
 class WitnessCreate(AbstractRecordCreate):
     model = Witness
     form_class = WitnessForm
@@ -177,7 +173,7 @@ class WitnessRegionsView(AbstractRecordView):
     # f"witness/<int:wid>/regions/"
     # display only all Regions objects for a given Witness
     model = Witness
-    template_name = "webapp/regions.html"
+    template_name = "webapp/witness.html"
     pk_url_kwarg = "id"
     fields = []
 
@@ -195,15 +191,19 @@ class WitnessRegionsView(AbstractRecordView):
         context["img_nb"] = None
 
         witness = self.get_record()
-        context["view_title"] = (
-            f"“{witness}” regions"
-            if APP_LANG == "en"
-            else f"Images extraites de « {witness} »"
+        context["view_title"] = f"{witness}"
+        context["witness"] = witness.get_json(
+            reindex=True, request_user=self.request.user
         )
-        context["witness"] = witness.get_json(reindex=True)
         if len(context["witness"]["digits"]) == 0:
             # TODO handle case where no digitization is available
             pass
+
+        context["manifests"] = []
+
+        for did in context["witness"]["digits"]:
+            digit = Digitization.objects.get(pk=did)
+            context["manifests"].append(digit.gen_manifest_url(version=MANIFEST_V2))
 
         for rid in context["witness"]["regions"]:
             regions = Regions.objects.get(pk=rid)
@@ -211,7 +211,10 @@ class WitnessRegionsView(AbstractRecordView):
             # for regions in witness.get_regions():
             #     context["regions_ids"].append(regions.id)
             # TODO handle multiple manifest for multiple regions
+
             context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
+            context["manifests"].append(regions.gen_manifest_url(version=MANIFEST_V2))
+
             context["img_prefix"] = regions.get_ref().split("_anno")[0]
             if context["img_nb"] is None:
                 rjson = regions.get_json()
@@ -228,7 +231,7 @@ class RegionsView(AbstractRecordView):
     # f"witness/<int:wid>/regions/<int:rid>/"
     # display only one Regions object
     model = Regions
-    template_name = "webapp/regions.html"
+    template_name = "webapp/witness.html"
     fields = []
     pk_url_kwarg = "rid"
 
@@ -254,7 +257,10 @@ class RegionsView(AbstractRecordView):
         )
         context["witness"] = wit.get_json(reindex=True)
         context["is_validated"] = regions.is_validated
+
         context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
+        context["manifests"] = [regions.gen_manifest_url(version=MANIFEST_V2)]
+
         context["img_prefix"] = regions.get_ref().split("_anno")[0]
         rjson = regions.get_json()
         context["img_nb"] = rjson["img_nb"] or 0

@@ -65,7 +65,7 @@
                     </p>
 
                     <p class="subtitle is-6 mb-0 ml-2 pt-2 is-middle">
-                        {#if hasEditUrl}
+                        {#if hasEditUrl && item.can_edit}
                             <a href={hasEditUrl ? item.edit_url : null} class="edit-btn button is-small is-rounded is-link px-2"
                                title='{appLang === "en" ? "Edit" : "Éditer"}'>
                                 <span class="iconify" data-icon="entypo:edit"/>

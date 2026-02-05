@@ -432,7 +432,7 @@ def get_matched_regions(q_img: str, s_regions_id: int):
     )
 
 
-def get_region_pairs_with(q_img, query_regions_ids, target_regions_ids):
+def get_region_pairs_with(q_img, query_regions_ids, target_regions_ids=None):
     """
     Retrieve RegionPair records where:
     - One image is q_img
@@ -444,6 +444,10 @@ def get_region_pairs_with(q_img, query_regions_ids, target_regions_ids):
     :param target_regions_ids: list[int], IDs of target regions to compare against
     :return: List of RegionPair objects
     """
+    if target_regions_ids is None:
+        query = Q(img_1=q_img) | Q(img_2=q_img)
+        return list(RegionPair.objects.filter(query))
+
     # Query where q_img is img_1 and its region is in query_regions_ids
     # and the comparison region is in target_regions_ids
     query1 = (
@@ -804,11 +808,16 @@ def fix_img(img_ref: str) -> str:
     return img_ref
 
 
-def get_or_create_pair(img_1, img_2, rid_1=None, rid_2=None, create=True):
+def normalize_pair(img_1: str, img_2: str, rid_1: int = None, rid_2: int = None):
     img_1, img_2 = fix_img(img_1), fix_img(img_2)
     if sort_key(img_2) < sort_key(img_1):
         img_1, img_2 = img_2, img_1
         rid_1, rid_2 = rid_2, rid_1
+    return img_1, img_2, rid_1, rid_2
+
+
+def get_or_create_pair(img_1, img_2, rid_1=None, rid_2=None, create=True):
+    img_1, img_2, rid_1, rid_2 = normalize_pair(img_1, img_2, rid_1, rid_2)
 
     pair = RegionPair.objects.filter(
         # Q(img_1=img_1, img_2=img_2) | Q(img_1=img_2, img_2=img_1)

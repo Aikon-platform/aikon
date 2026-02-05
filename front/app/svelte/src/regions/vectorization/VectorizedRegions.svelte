@@ -1,22 +1,30 @@
 <script>
     import { fade } from 'svelte/transition';
-    import { onMount } from 'svelte';
-    import {mediaPrefix } from "../../constants.js";
-    import {refToIIIF} from "../../utils.js";
+    import { onMount, onDestroy } from 'svelte';
+    import { appLang, mediaPrefix } from "../../constants.js";
+    import { refToIIIF } from "../../utils.js";
 
     export let svgPath;
     export let width = 200;
+    export let fullWidth = false;
+    export let selected = false;
+
     const [wit, digit, canvas, xywh] = svgPath.replace(".svg", "").split("_");
-    // const [wit, digit, canvas, xywh] = svgPath.split("/")[1].replace(".svg", "").replace(".jpg", "").split("_");
     const img = refToIIIF(`${wit}_${digit}_${canvas}`, xywh, `${width},`);
 
     let isHovered = false;
     let svgContent = '';
     let svgViewBox = '';
+    let downloadUrl = '';
 
-    // TODO display name and canvas of the region
-    // TODO add button to access individual vectorization
-    // TODO add button to delete svg
+    $: if (svgContent) {
+        const blob = new Blob([svgContent], { type: "image/svg+xml" });
+        downloadUrl = URL.createObjectURL(blob);
+    }
+
+    onDestroy(() => {
+        if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+    });
 
     onMount(async () => {
         const response = await fetch(`${mediaPrefix}svg/${svgPath}`);
@@ -25,15 +33,12 @@
         const parser = new DOMParser();
         const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
 
-        // Get the viewBox
         const svgElement = svgDoc.querySelector('svg');
         svgViewBox = svgElement.getAttribute('viewBox') || `0 0 ${svgElement.getAttribute('width')} ${svgElement.getAttribute('height')}`;
 
         svgDoc.querySelectorAll('image').forEach(img => img.remove());
 
-        // Ensure the SVG has a viewBox
         svgElement.setAttribute('viewBox', svgViewBox);
-        // Remove width and height attributes to allow proper scaling
         svgElement.removeAttribute('width');
         svgElement.removeAttribute('height');
 
@@ -41,37 +46,30 @@
     });
 </script>
 
-<div class="svg-regions is-center" transition:fade={{ duration: 500 }}
-     on:mouseenter={() => isHovered = true} on:mouseleave={() => isHovered = false}>
-    <figure class="image card region-image" style="width: {width}px; aspect-ratio: {svgViewBox ? svgViewBox.split(' ')[2] / svgViewBox.split(' ')[3] : 1};">
+<div class="region is-center" class:checked={selected} transition:fade={{ duration: 300 }}>
+    <figure class="image card region-image" style="width: {fullWidth ? '50%' : `${width}px`}; aspect-ratio:{svgViewBox ? svgViewBox.split(' ')[2] / svgViewBox.split(' ')[3] : 1};"
+            on:click on:keyup on:mouseenter={() => isHovered = true} on:mouseleave={() => isHovered = false}>
         <div class="svg-container">
             {#if !isHovered && svgContent}
                 {@html svgContent}
             {/if}
         </div>
-        <img src="{img}" alt="Extracted region"/>
+        <img class="region-img" src="{img}" alt="Extracted region"/>
     </figure>
+
+    <div class="region-btn ml-1">
+        <a class="button tag" href={downloadUrl} download={svgPath}>
+            <i class="fa-solid fa-download"/>
+            <span class="tooltip">{appLang === 'en' ? "Download SVG" : "Télécharger le SVG"}</span>
+        </a>
+        <slot name="actions"/>
+    </div>
 </div>
 
 <style>
-    .svg-regions {
-        position: relative;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-    }
-
-    .image {
-        position: relative;
-        width: 100%;
-        height: 100%;
-    }
-
     .svg-container {
         position: absolute;
-        top: 0;
-        left: 0;
+        inset: 0;
         width: 100%;
         height: 100%;
     }
@@ -81,9 +79,20 @@
         height: 100%;
     }
 
-    img {
-        width: 100%;
+    .region-image {
+        max-height: 100%;
+    }
+
+    .svg-container,
+    .region-img {
         height: 100%;
-        object-fit: cover;
+        width: auto;
+        object-fit: contain;
+    }
+
+    .button {
+        padding-left: .8em;
+        padding-right: .2em;
+        color: var(--bulma-link);
     }
 </style>
