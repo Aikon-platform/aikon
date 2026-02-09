@@ -41,7 +41,7 @@ def get_shared_with(model_class, current_user):
 
 @require_GET
 def search_witnesses(request):
-    witnesses = get_shared_with(Witness, request.user).prefetch_related("shared_with")
+    witnesses = get_shared_with(Witness, request.user)
     witness_filter = WitnessFilter(request.GET, queryset=witnesses)
     return JsonResponse(paginated_records(request, witness_filter.qs))
 
@@ -65,7 +65,7 @@ def search_works(request):
 
 @require_GET
 def search_series(request):
-    series = get_shared_with(Series, request.user).prefetch_related("shared_with")
+    series = get_shared_with(Series, request.user)
     series_filter = SeriesFilter(request.GET, queryset=series)
     return JsonResponse(paginated_records(request, series_filter.qs))
 
