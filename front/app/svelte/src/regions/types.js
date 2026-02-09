@@ -14,7 +14,7 @@ import {getCantaloupeUrl, getSasUrl} from "../utils.js";
 
 const IMG_REF_REGEX = /^(?:(\d+)_)?wit(\d+)_([a-z]{3})(\d+)(?:_anno(\d+))?_(\d+)(?:_([\d,]+))?(?:\.jpg)?$/;
 
-function parseImgRef(imgRef) {
+export function parseImgRef(imgRef) {
     if (!imgRef) return null;
 
     const match = imgRef.match(IMG_REF_REGEX);

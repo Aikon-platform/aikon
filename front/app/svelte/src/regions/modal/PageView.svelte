@@ -70,9 +70,9 @@
             Page {currentCanvas}
         </a>
     </div>
-    <div class="modal-context-wrapper my-3">
+    <div class="modal-context-wrapper mb-3">
         {#if currentCanvas !== 1}
-            <NavigationArrow direction="left" delta={-1} navigationFct={changePage} css={"margin-left: -6em;"} icon={"caret"} text={i18n("prev", t)}/>
+            <NavigationArrow direction="left" delta={-1} navigationFct={changePage} css={"margin-left: -6em;"} icon={"circle"} text={i18n("prev", t)}/>
         {/if}
         <img class="card modal-context-full-page" src={fullPageUrl} alt={appLang === "fr" ? "Vue de la page d'où la région est extraite" : "View of the page the region is extracted from"}/>
         {#if canvasOffset === 0}
@@ -81,7 +81,7 @@
             {/await}
         {/if}
         {#if currentCanvas !== maxPage}
-            <NavigationArrow direction="right" delta={1} navigationFct={changePage} css={"margin-right: -6em;"} icon={"caret"} text={i18n("next", t)}/>
+            <NavigationArrow direction="right" delta={1} navigationFct={changePage} css={"margin-right: -6em;"} icon={"circle"} text={i18n("next", t)}/>
         {/if}
     </div>
 </div>
