@@ -6,7 +6,7 @@
     export let documents = [];
     export let stemmaStore;
 
-    const { selectedNodes, edges, nodePositions, nodeTitles, updateNodeTitle } = stemmaStore;
+    const { selectedNodes, edges, nodePositions, nodeTitles, updateNodeTitle, clearGraph } = stemmaStore;
 
     let container;
     let canvas;
@@ -31,10 +31,16 @@
     const t = {
         rename: {en: 'Rename node in stemma', fr: "Renommer un nœud au sein du stemma"},
         save: {en: 'Save', fr: "Enregistrer"},
-        cancel: {en: 'Cancel', fr: "Annuler"}
+        cancel: {en: 'Cancel', fr: "Annuler"},
+        reset: { en: 'Reset stemma', fr: 'Réinitialiser le stemma' }
     }
 
     afterUpdate(render);
+
+    function resetStemma() {
+        clearGraph();
+        initNodes(documents);
+    }
 
     function extractCssColor(varName, fallback) {
         const temp = document.createElement('div');
@@ -302,6 +308,12 @@
         on:dblclick={handleDblClick}
         on:mouseleave={() => { draggedNode = null; drawingEdge = null; }}
     />
+
+    <button class="tag reset-btn" on:click={resetStemma} title={i18n('reset', t)}>
+        <span class="icon is-small p-0">
+            <i class="fas fa-undo"></i>
+        </span>
+    </button>
 </div>
 
 {#if editingNode}
@@ -309,7 +321,7 @@
         <div class="modal-background" on:click={() => editingNode = null} on:keydown={null}/>
         <div class="modal-content" style="max-width: 300px;">
             <div class="box">
-                <h4 class="title is-6 mb-0">{i18n('rename', t)}</h4>
+                <h4 class="title is-6 mb-4">{i18n('rename', t)}</h4>
                 <div class="field is-flex is-align-items-center" style="gap: 0.5rem;">
                     <span class="icon is-small is-left">
                         <span class="color-dot" style="background: {editingNode.color}"></span>
@@ -352,5 +364,11 @@
         height: 12px;
         border-radius: 50%;
         display: inline-block;
+    }
+    .reset-btn {
+        position: absolute;
+        top: 0.5rem;
+        left: 0.5rem;
+        cursor: pointer;
     }
 </style>
