@@ -10,16 +10,15 @@
     import Row from "../Row.svelte";
     import Regions from "./Regions.svelte";
 
+    const manifest = getContext('manifest');
+    const imgPrefix = getContext("imgPrefix");
     const nbOfPages = getContext('nbOfPages');
     const trailingZeros = getContext('trailingZeros');
 
     const zeros = (n, l) => n.toString().padStart(l, '0');
-    // TODO bug: imgPrefix is undefined here !!!!
-    function toImgName(canvasNb){
-        // NOTE here sometimes the number of trailing zeros generated is not corresponding to the number of pages
-        return `${imgPrefix}_${zeros(canvasNb, trailingZeros)}`;
-    }
-    const manifest = getContext('manifest');
+    // NOTE here sometimes the number of trailing zeros generated is not corresponding to the number of pages
+    const toImgName = (canvasNb) => `${imgPrefix}_${zeros(canvasNb, trailingZeros)}`;
+
 </script>
 
 <Pagination store={regionsStore} nbOfItems={nbOfPages}/>

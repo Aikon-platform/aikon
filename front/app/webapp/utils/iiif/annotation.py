@@ -990,7 +990,7 @@ def unindex_regions(regions_ref, manifest_url: str) -> bool:
     - remove all annotations related to that manifest
     - remove the manifest related to that extraction
     """
-    index_manifest(manifest_url)
+    index_manifest(manifest_url)  # no effect if manifest is aldready indexed
     unindex_manifest(manifest_url)
     return unindex_annotations_for_manifest(manifest_url)
 

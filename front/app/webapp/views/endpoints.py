@@ -206,6 +206,12 @@ def delete_regions(request, rid):
 
         delete_api_regions.delay(regions.get_digit().get_ref(), regions.model)
 
+        witness = regions.digitization.witness
+        print("REINDEX = FALSE")
+        json.dumps(witness.to_json(reindex=False), indent=2)
+        print("REINDEX = TRUE")
+        json.dumps(witness.to_json(reindex=True), indent=2)
+
         try:
             # Delete the regions record in the database
             regions.delete()
