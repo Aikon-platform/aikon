@@ -639,6 +639,8 @@ export function createDocumentSetStore(documentSetId) {
     });
 
     return {
+        documentSetId,
+
         error,
         loadingProgress,
         cancelLoading: () => {
