@@ -2,25 +2,11 @@ import { writable, derived, get } from 'svelte/store';
 
 const emptyGraph = { edges: [], nodePositions: {} };
 
-function loadGraph() {
-    if (typeof localStorage === 'undefined') return emptyGraph;
-    try {
-        return JSON.parse(localStorage.getItem('stemmaGraph')) || emptyGraph;
-    } catch {
-        return emptyGraph;
-    }
-}
-
-function saveGraph(graph) {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.setItem('stemmaGraph', JSON.stringify(graph));
-}
-
 export function createStemmaStore(documentSetStore) {
-    const { documentNodes, selectedRegions, filteredDocPairStats, filteredDocStats, imageCountMap, pairIndex, visiblePairIds } = documentSetStore;
+    const { docSetId, documentNodes, selectedRegions, filteredDocPairStats, filteredDocStats, imageCountMap, pairIndex, visiblePairIds } = documentSetStore;
 
-    const stemmaGraph = writable(loadGraph());
-    stemmaGraph.subscribe(saveGraph);
+    const stemmaGraph = writable(JSON.parse(localStorage.getItem(`stemmaGraph-${docSetId}`)) || emptyGraph);
+    stemmaGraph.subscribe(graph => localStorage.setItem(`stemmaGraph-${docSetId}`, JSON.stringify(graph)));
 
     const edges = derived(stemmaGraph, $g => $g.edges);
     const nodePositions = derived(stemmaGraph, $g => $g.nodePositions);
