@@ -50,9 +50,6 @@ class AnnotationsTestCase(LiveServerTestCase):
     def setUp(self):
         pass
 
-    def test_blabla(self):
-        print("blabla")
-
     def test_index_regions(self):
         test_regions = Regions.objects.first()
         index_regions(test_regions)

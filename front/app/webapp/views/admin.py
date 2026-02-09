@@ -208,7 +208,6 @@ class WitnessRegionsView(AbstractRecordView):
 
         for rid in context["witness"]["regions"]:
             regions = Regions.objects.filter(pk=rid).first()
-            print("HELLO REGIONS", regions)
             if not regions:
                 continue
 
@@ -265,8 +264,6 @@ class RegionsView(AbstractRecordView):
 
         context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
         context["manifests"] = [regions.gen_manifest_url(version=MANIFEST_V2)]
-
-        print(">>>>>>>>>>>>>>>>", regions.get_ref())
 
         context["img_prefix"] = regions.get_ref().split("_anno")[0]
         rjson = regions.get_json()

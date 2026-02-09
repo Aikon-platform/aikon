@@ -839,7 +839,6 @@ def index_manifest(manifest_url, reindex=False):
             f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}/create",
             json=manifest_content,
         )
-        print(r)
         if r.status_code != 200:
             log(
                 f"[index_manifest]: Failed to index manifest. Status code: {r.status_code}: {r.text}"
