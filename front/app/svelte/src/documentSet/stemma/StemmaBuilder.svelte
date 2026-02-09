@@ -20,7 +20,7 @@
     const stemmaStore = createStemmaStore(documentSetStore);
     const {
         selectedNodes, edges, filteredDocuments, matrixScoreData,
-        matrixDocStats, matrixImageCount, getFilteredPairsForDocPair
+        matrixDocStats, matrixImageCount, getFilteredPairsForDocPair, nodeTitles
     } = stemmaStore;
 
     const t = {
@@ -111,9 +111,10 @@
                 <span class="is-size-7 has-text-grey mr-2">{i18n('order', t)}:</span>
                 <div class="is-flex is-flex-wrap-wrap" style="gap: 0.25rem;">
                     {#each $selectedNodes as node, idx (node.id)}
+                        {@const title = $nodeTitles[node.id] || node.title}
                         <span class="tag is-small" style="background-color: {node.color}; color: #222;">
                             <span class="mr-1">{idx + 1}.</span>
-                            {node.title.length > 12 ? node.title.slice(0, 10) + '…' : node.title}
+                            {title.length > 12 ? title.slice(0, 10) + '…' : title}
                         </span>
                     {/each}
                 </div>
@@ -190,6 +191,7 @@
                 {selectedNodes}
                 {visiblePairs}
                 {documentNodes}
+                {stemmaStore}
                 mode={friezeMode}
                 on:imageselect={handleFriezeImageSelect}
             />
@@ -211,11 +213,12 @@
             </div>
         {:else if selectedFriezeImage}
             {@const baseDoc = $selectedNodes.find(d => d.id === selectedFriezeImage.baseDocId)}
+            {@const title = $nodeTitles[selectedFriezeImage.baseDocId] || baseDoc?.title}
             {@const imgData = parseImgRef(selectedFriezeImage.imageId)}
             <h4 class="title is-6 mb-0">
                 <span>Image stemma from</span>
                 <span class="color-dot" style="background: {baseDoc?.color}"></span>
-                {baseDoc?.title ?? 'Unknown'}
+                {title ?? 'Unknown'}
                 (canvas {imgData.canvasNb})
             </h4>
         {/if}

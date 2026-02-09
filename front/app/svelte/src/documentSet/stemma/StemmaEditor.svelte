@@ -1,11 +1,12 @@
 <script>
     import { onMount, onDestroy, afterUpdate, createEventDispatcher } from 'svelte';
     import * as d3 from 'd3';
+    import {i18n} from "../../utils.js";
 
     export let documents = [];
     export let stemmaStore;
 
-    const { selectedNodes, edges, nodePositions } = stemmaStore;
+    const { selectedNodes, edges, nodePositions, nodeTitles, updateNodeTitle } = stemmaStore;
 
     let container;
     let canvas;
@@ -24,6 +25,14 @@
     let draggedNode = null;
     let drawingEdge = null;
     let hoveredNode = null;
+    let editingNode = null;
+    let editTitle = '';
+
+    const t = {
+        rename: {en: 'Rename node in stemma', fr: "Renommer un nœud au sein du stemma"},
+        save: {en: 'Save', fr: "Enregistrer"},
+        cancel: {en: 'Cancel', fr: "Annuler"}
+    }
 
     afterUpdate(render);
 
@@ -42,9 +51,10 @@
 
         nodes = docs.map((doc, i) => {
             const saved = $nodePositions[doc.id];
+            const customTitle = $nodeTitles[doc.id];
             return {
                 id: doc.id,
-                title: doc.title || `Document ${doc.id}`,
+                title: customTitle || doc.title || `Document ${doc.id}`,
                 color: doc.color || '#999',
                 x: saved?.x ?? (i % cols) * spacing.x + 100,
                 y: saved?.y ?? Math.floor(i / cols) * spacing.y + 100,
@@ -157,6 +167,30 @@
         render();
     }
 
+    function handleDblClick(e) {
+        const [mx, my] = d3.pointer(e);
+        const node = getNodeAt(mx, my);
+        if (node) {
+            editingNode = node;
+            editTitle = node.title;
+        }
+    }
+
+    function saveTitle() {
+        if (editingNode && editTitle.trim()) {
+            updateNodeTitle(editingNode.id, editTitle.trim());
+            const node = nodes.find(n => n.id === editingNode.id);
+            if (node) node.title = editTitle.trim();
+            render();
+        }
+        editingNode = null;
+    }
+
+    function handleEditKeydown(e) {
+        if (e.key === 'Enter') saveTitle();
+        if (e.key === 'Escape') editingNode = null;
+    }
+
     function handleMouseMove(e) {
         const [mx, my] = d3.pointer(e);
         const worldX = (mx - transform.x) / transform.k;
@@ -265,9 +299,37 @@
         on:mousedown={handleMouseDown}
         on:mousemove={handleMouseMove}
         on:mouseup={handleMouseUp}
+        on:dblclick={handleDblClick}
         on:mouseleave={() => { draggedNode = null; drawingEdge = null; }}
     />
 </div>
+
+{#if editingNode}
+    <div class="modal is-active">
+        <div class="modal-background" on:click={() => editingNode = null} on:keydown={null}/>
+        <div class="modal-content" style="max-width: 300px;">
+            <div class="box">
+                <h4 class="title is-6 mb-0">{i18n('rename', t)}</h4>
+                <div class="field is-flex is-align-items-center" style="gap: 0.5rem;">
+                    <span class="icon is-small is-left">
+                        <span class="color-dot" style="background: {editingNode.color}"></span>
+                    </span>
+                    <div class="control">
+                        <input class="input is-small"
+                            type="text"
+                            bind:value={editTitle}
+                            on:keydown={handleEditKeydown}
+                        />
+                    </div>
+                </div>
+                <div class="buttons is-right">
+                    <button class="button is-small" on:click={() => editingNode = null}>{i18n('cancel', t)}</button>
+                    <button class="button is-small is-link" on:click={saveTitle}>{i18n('save', t)}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{/if}
 
 <style>
     .stemma-container {
@@ -284,5 +346,11 @@
         width: 100%;
         height: 100%;
         border-radius: .5rem;
+    }
+    .color-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
     }
 </style>

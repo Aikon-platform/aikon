@@ -1,6 +1,6 @@
 import { writable, derived, get } from 'svelte/store';
 
-const emptyGraph = { edges: [], nodePositions: {} };
+const emptyGraph = { edges: [], nodePositions: {}, nodeTitles: {} };
 
 export function createStemmaStore(documentSetStore) {
     const { docSetId, documentNodes, selectedRegions, filteredDocPairStats, filteredDocStats, imageCountMap, pairIndex, visiblePairIds } = documentSetStore;
@@ -10,6 +10,14 @@ export function createStemmaStore(documentSetStore) {
 
     const edges = derived(stemmaGraph, $g => $g.edges);
     const nodePositions = derived(stemmaGraph, $g => $g.nodePositions);
+    const nodeTitles = derived(stemmaGraph, $g => $g.nodeTitles || {});
+
+    function updateNodeTitle(nodeId, title) {
+        stemmaGraph.update($g => ({
+            ...$g,
+            nodeTitles: { ...$g.nodeTitles, [nodeId]: title }
+        }));
+    }
 
     const filteredDocuments = derived(
         [documentNodes, selectedRegions],
@@ -157,6 +165,8 @@ export function createStemmaStore(documentSetStore) {
         selectedNodes,
         edges,
         nodePositions,
+        nodeTitles,
+        updateNodeTitle,
         filteredDocuments,
         addEdge,
         removeEdge,

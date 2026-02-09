@@ -3,10 +3,13 @@
     import { derived, writable } from 'svelte/store';
     import { i18n } from "../../utils.js";
 
+    export let stemmaStore;
     export let selectedNodes;
     export let visiblePairs;
     export let documentNodes;
     export let mode = 'page';
+
+    const { nodeTitles } = stemmaStore;
 
     const dispatch = createEventDispatcher();
 
@@ -229,13 +232,13 @@
         <h4 class="title is-6 my-2">{i18n('base', t)}</h4>
         <div class="doc-selector">
             {#each $selectedNodes as node (node.id)}
-                <button class="tag is-small"
+                {@const title = $nodeTitles[node.id] || node.title}
+                <button class="tag is-small" title={title}
                     class:is-base={node.id === $baseDocId}
                     class:is-inactive={hoveredDocs.size > 0 && !hoveredDocs.has(node.id) && node.id !== $baseDocId}
                     style="background-color: {node.color}; color: #222;"
-                    title={node.title}
                     on:click={() => { baseDocId.set(node.id); selectedIndex.set(null); }}>
-                    {node.title.length > 15 ? node.title.slice(0, 13) + '…' : node.title}
+                    {title.length > 15 ? title.slice(0, 13) + '…' : title}
                 </button>
             {/each}
         </div>
