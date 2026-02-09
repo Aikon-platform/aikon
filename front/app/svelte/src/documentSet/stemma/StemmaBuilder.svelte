@@ -1,5 +1,6 @@
 <script>
     import { i18n } from '../../utils.js';
+    import { parseImgRef } from '../../regions/types.js';
     import SplitLayout from '../../ui/SplitLayout.svelte';
     import StemmaEditor from './StemmaEditor.svelte';
     import DocumentSetMatrix from '../document-matrix/DocumentSetMatrix.svelte';
@@ -82,6 +83,11 @@
     function handleFriezeImageSelect(e) {
         selectedFriezeImage = e.detail;
     }
+
+    function handleVizChange() {
+        selectedCell = null;
+        selectedFriezeImage = null;
+    }
 </script>
 
 <SplitLayout>
@@ -127,7 +133,7 @@
 
     <div slot="right-title" class="is-flex is-align-items-center" style="gap: 0.5rem;">
         <div class="select is-small">
-            <select bind:value={selectedViz}>
+            <select bind:value={selectedViz} on:change={handleVizChange}>
                 <option value="">{i18n('selectViz', t)}</option>
                 {#each vizOptions as opt}
                     <option value={opt.id}>{i18n(opt.id, t)}</option>
@@ -188,8 +194,13 @@
                 </select>
             </div>
         {:else if selectedFriezeImage}
+            {@const baseDoc = $selectedNodes.find(d => d.id === selectedFriezeImage.baseDocId)}
+            {@const imgData = parseImgRef(selectedFriezeImage.imageId)}
             <h4 class="title is-6 mb-0">
-                Coucou
+                <span>Image stemma from</span>
+                <span class="color-dot" style="background: {baseDoc?.color}"></span>
+                {baseDoc?.title ?? 'Unknown'}
+                (canvas {imgData.canvasNb})
             </h4>
         {/if}
     </div>
