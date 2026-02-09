@@ -12,7 +12,10 @@
 
     export let documentSetStore;
 
-    const { normalizeByImages, visiblePairs, documentNodes, imageNodes } = documentSetStore;
+    const {
+        normalizeByImages, visiblePairs, documentNodes, imageNodes,
+        filteredDocPairStats, filteredDocStats, imageCountMap
+    } = documentSetStore;
 
     const stemmaStore = createStemmaStore(documentSetStore);
     const {
@@ -31,6 +34,8 @@
         noViz: { en: 'Select a visualization above', fr: 'Sélectionnez une visualisation ci-dessus' },
         byPage: { en: 'By page', fr: 'Par page' },
         byImage: { en: 'By image', fr: 'Par image' },
+        selectedDocs: { en: 'Selected documents', fr: 'Documents sélectionnés' },
+        fullDocSet: { en: 'Full document set', fr: 'Jeu de documents complet' },
 
         selectViz: { en: 'Select a visualization', fr: 'Choisir une visualisation' },
         docMatrix: { en: 'Document Matrix', fr: 'Matrice de documents' },
@@ -50,6 +55,7 @@
     let modalActive = false;
     let navState = null;
     let scatterData = null;
+    let matrixScope = 'selected';
 
     $: documentSetStore.updateSelectedNodes($selectedNodes.map(n => n.id));
     $: pairMatrixData = selectedCell ? {
@@ -83,6 +89,10 @@
     function handleFriezeImageSelect(e) {
         selectedFriezeImage = e.detail;
     }
+
+    $: fullDocuments = Array.from($documentNodes?.values() || []);
+    $: fullScoreData = $filteredDocPairStats?.scoreCount || new Map();
+    $: fullDocStats = $filteredDocStats?.scoreCount || new Map();
 
     function handleVizChange() {
         selectedCell = null;
@@ -141,6 +151,12 @@
             </select>
         </div>
         {#if selectedViz === 'docMatrix'}
+            <div class="select is-small">
+                <select bind:value={matrixScope}>
+                    <option value="selected">{i18n('selectedDocs', t)}</option>
+                    <option value="full">{i18n('fullDocSet', t)}</option>
+                </select>
+            </div>
             <label title={i18n('normalization', t)} class="checkbox is-size-7 is-flex is-align-items-center">
                 <input type="checkbox" bind:checked={$normalizeByImages}>
                 <span class="pl-1">{i18n('normalize', t)}</span>
@@ -162,10 +178,10 @@
             <p class="has-text-grey is-size-7">{i18n('noSelection', t)}</p>
         {:else if selectedViz === 'docMatrix'}
             <DocumentSetMatrix
-                documents={$selectedNodes}
-                scoreData={$matrixScoreData}
-                docStats={$matrixDocStats}
-                imageCountMap={$matrixImageCount}
+                documents={matrixScope === 'full' ? fullDocuments : $selectedNodes}
+                scoreData={matrixScope === 'full' ? fullScoreData : $matrixScoreData}
+                docStats={matrixScope === 'full' ? fullDocStats : $matrixDocStats}
+                imageCountMap={matrixScope === 'full' ? $imageCountMap : $matrixImageCount}
                 normalize={$normalizeByImages}
                 on:cellselect={handleCellSelect}
             />
