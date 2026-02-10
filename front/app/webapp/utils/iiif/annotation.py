@@ -882,7 +882,6 @@ def process_regions(
         return False
 
     anno_file = f"{REGIONS_PATH}/{regions.get_ref()}.{extension}"
-    # TODO delete ? rendered useless by using regions.process_results(completed=True)
     if not is_new and Path(anno_file).exists():
         # necessary check because regions are sent twice (once for PROGRESS event, then when SUCCESS event)
         log(
@@ -928,7 +927,6 @@ def unindex_annotation(annotation_id: str) -> bool:
     # annotation_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}
     annotation_url = to_annotation_url("", annotation_id).replace("https", "http")
     delete_url = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/delete?uri={annotation_url}"
-    # TODO delete regions_pairs associated with the annotation if similarity module is enabled?
     try:
         response = requests.delete(delete_url)
         if response.status_code in [200, 204]:
@@ -1024,22 +1022,24 @@ def destroy_regions(regions: Regions):
 
         delete_pairs_with_regions(regions.id)
 
-    # necessary to fetch witness here, before regions is deleted
-    witness = Witness.objects.get(digitization__witness=regions)
-    try:
-        witness.set_json_regions()
-    except Exception as e:
-        log(
-            f"[destroy_regions] Failed to update witness.json for witness #{witness.id}",
-            e,
-        )
-
     try:
         # Delete the regions record in the database
         regions.delete()
     except Exception as e:
         log(f"[destroy_regions] Failed to delete regions record #{regions.id}", e)
         return False
+
+    # update the witness.json object
+    try:
+        witness = Witness.objects.get(
+            Q(digitizations__witness_id=regions.digitization.witness_id)
+        )
+        witness.set_json_regions()
+    except Exception as e:
+        log(
+            f"[destroy_regions] Failed to update witness.json",
+            e,
+        )
 
     regions_file = f"{REGIONS_PATH}/{regions_ref}.json"
     if Path(regions_file).exists():
