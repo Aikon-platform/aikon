@@ -19,8 +19,8 @@
 
     const stemmaStore = createStemmaStore(documentSetStore);
     const {
-        selectedNodes, edges, filteredDocuments, matrixScoreData,
-        matrixDocStats, matrixImageCount, getFilteredPairsForDocPair, nodeTitles
+        selectedNodes, filteredDocuments, matrixScoreData, matrixDocStats,
+        matrixImageCount, getFilteredPairsForDocPair, nodeTitles
     } = stemmaStore;
 
     const t = {
@@ -63,10 +63,6 @@
         doc2: selectedCell.doc2,
         pairs: getFilteredPairsForDocPair(selectedCell.doc1.id, selectedCell.doc2.id)
     } : null;
-
-    function removeEdge(source, target) {
-        stemmaStore.removeEdge(source, target);
-    }
 
     function handleCellSelect(e) {
         selectedCell = e.detail;
@@ -118,22 +114,6 @@
                         <span class="tag is-small" style="background-color: {node.color}; color: #222;">
                             <span class="mr-1">{idx + 1}.</span>
                             {title.length > 12 ? title.slice(0, 10) + '…' : title}
-                        </span>
-                    {/each}
-                </div>
-            </div>
-        {/if}
-
-        {#if $edges.length}
-            <div class="edges-bar mb-2">
-                <span class="is-size-7 has-text-grey mr-2">{i18n('edges', t)}:</span>
-                <div class="is-flex is-flex-wrap-wrap" style="gap: 0.25rem;">
-                    {#each $edges as edge}
-                        <span class="tag is-small">
-                            <span class="edge-dot" style="background: {edge.sourceColor}"></span>
-                            →
-                            <span class="edge-dot" style="background: {edge.targetColor}"></span>
-                            <button class="delete is-small ml-1" on:click={() => removeEdge(edge.source, edge.target)}></button>
                         </span>
                     {/each}
                 </div>
@@ -267,7 +247,7 @@
         min-height: 400px;
         position: relative;
     }
-    .selection-bar, .edges-bar {
+    .selection-bar {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
@@ -275,11 +255,10 @@
         background: var(--bulma-scheme-main-bis);
         border-radius: 4px;
     }
-    .edge-dot, .color-dot {
+    .color-dot {
         width: 10px;
         height: 10px;
         border-radius: 50%;
         display: inline-block;
     }
-    .edge-dot { margin: 0 2px; }
 </style>

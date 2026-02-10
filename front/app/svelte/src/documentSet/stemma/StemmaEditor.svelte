@@ -6,7 +6,10 @@
     export let documents = [];
     export let stemmaStore;
 
-    const { selectedNodes, edges, nodePositions, nodeTitles, updateNodeTitle, clearGraph } = stemmaStore;
+    const {
+        selectedNodes, edges, nodePositions, nodeTitles,
+        updateNodeTitle, updateEdgeLabel, clearGraph, removeEdge
+    } = stemmaStore;
 
     let container;
     let canvas;
@@ -27,9 +30,14 @@
     let hoveredNode = null;
     let editingNode = null;
     let editTitle = '';
+    let editingEdge = null;
+    let editLabel = '';
 
     const t = {
         rename: {en: 'Rename node in stemma', fr: "Renommer un nœud au sein du stemma"},
+        editEdge: {en: 'Edit connection', fr: "Modifier la connexion"},
+        label: {en: 'Label (optional)', fr: "Libellé (optionnel)"},
+        delete: {en: 'Delete', fr: "Supprimer"},
         save: {en: 'Save', fr: "Enregistrer"},
         cancel: {en: 'Cancel', fr: "Annuler"},
         reset: { en: 'Reset stemma', fr: 'Réinitialiser le stemma' }
@@ -83,6 +91,28 @@
         return null;
     }
 
+    function getEdgeAt(mx, my) {
+        const x = (mx - transform.x) / transform.k;
+        const y = (my - transform.y) / transform.k;
+        const threshold = 8 / transform.k;
+
+        for (const e of $edges) {
+            const src = nodes.find(n => n.id === e.source);
+            const tgt = nodes.find(n => n.id === e.target);
+            if (!src || !tgt) continue;
+
+            const sx = src.x + src.width / 2, sy = src.y + src.height;
+            const tx = tgt.x + tgt.width / 2, ty = tgt.y;
+            const len = Math.hypot(tx - sx, ty - sy);
+            if (len === 0) continue;
+
+            const t = Math.max(0, Math.min(1, ((x - sx) * (tx - sx) + (y - sy) * (ty - sy)) / (len * len)));
+            const dist = Math.hypot(x - (sx + t * (tx - sx)), y - (sy + t * (ty - sy)));
+            if (dist < threshold) return e;
+        }
+        return null;
+    }
+
     function render() {
         if (!ctx) return;
         ctx.save();
@@ -95,7 +125,17 @@
         $edges.forEach(e => {
             const src = nodes.find(n => n.id === e.source);
             const tgt = nodes.find(n => n.id === e.target);
-            if (src && tgt) drawArrow(src, tgt, linkColor);
+            if (src && tgt) {
+                drawArrow(src, tgt, linkColor);
+                if (e.label) {
+                    const mx = (src.x + src.width / 2 + tgt.x + tgt.width / 2) / 2;
+                    const my = (src.y + src.height + tgt.y) / 2;
+                    ctx.fillStyle = linkColor;
+                    ctx.font = `${10 / transform.k}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(e.label, mx, my - 4 / transform.k);
+                }
+            }
         });
 
         if (drawingEdge) {
@@ -179,6 +219,12 @@
         if (node) {
             editingNode = node;
             editTitle = node.title;
+            return;
+        }
+        const edge = getEdgeAt(mx, my);
+        if (edge) {
+            editingEdge = edge;
+            editLabel = edge.label || '';
         }
     }
 
@@ -190,6 +236,25 @@
             render();
         }
         editingNode = null;
+    }
+
+    function saveEdge() {
+        if (editingEdge) {
+            updateEdgeLabel(editingEdge.source, editingEdge.target, editLabel.trim());
+        }
+        editingEdge = null;
+    }
+
+    function deleteEdge() {
+        if (editingEdge) {
+            removeEdge(editingEdge.source, editingEdge.target);
+        }
+        editingEdge = null;
+    }
+
+    function handleEdgeKeydown(e) {
+        if (e.key === 'Enter') saveEdge();
+        if (e.key === 'Escape') editingEdge = null;
     }
 
     function handleEditKeydown(e) {
@@ -337,6 +402,34 @@
                 <div class="buttons is-right">
                     <button class="button is-small" on:click={() => editingNode = null}>{i18n('cancel', t)}</button>
                     <button class="button is-small is-link" on:click={saveTitle}>{i18n('save', t)}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{/if}
+
+{#if editingEdge}
+    <div class="modal is-active">
+        <div class="modal-background" on:click={() => editingEdge = null} on:keydown={null}/>
+        <div class="modal-content" style="max-width: 300px;">
+            <div class="box">
+                <h4 class="title is-6 mb-4">{i18n('editEdge', t)}</h4>
+                <div class="field is-flex is-align-items-center" style="gap: 0.5rem;">
+                    <span class="color-dot" style="background: {editingEdge.sourceColor}"></span>
+                    <span>→</span>
+                    <span class="color-dot" style="background: {editingEdge.targetColor}"></span>
+                </div>
+                <div class="control">
+                    <input class="input is-small"
+                        type="text"
+                        bind:value={editLabel}
+                        on:keydown={handleEdgeKeydown}
+                    />
+                </div>
+                <div class="buttons is-right mt-3">
+                    <button class="button is-small is-danger is-outlined" on:click={deleteEdge}>{i18n('delete', t)}</button>
+                    <button class="button is-small" on:click={() => editingEdge = null}>{i18n('cancel', t)}</button>
+                    <button class="button is-small is-link" on:click={saveEdge}>{i18n('save', t)}</button>
                 </div>
             </div>
         </div>
