@@ -409,6 +409,18 @@ class Witness(AbstractSearchableModel):
     def has_regions(self):
         return any(digit.has_regions() for digit in self.get_digits())
 
+    def set_json_regions(self, op: Literal["create", "delete"], regions_id: int):
+        allowed_ops = ["create", "delete"]
+        if op not in allowed_ops:
+            raise ValueError(
+                f"Witness.set_regions: forbidden value for argument 'op': '{op}'. Allowed values are: {allowed_ops}"
+            )
+
+        witness_json: dict = self.json
+        witness_json["regions"] = [region.id for region in self.get_regions()]
+        self.update_json(witness_json)
+        return
+
     def get_works(self):
         return list(
             set(
@@ -497,28 +509,6 @@ class Witness(AbstractSearchableModel):
         content.whole_witness = is_complete
         content.witness = self
         content.save()
-
-    def set_regions(self, op: Literal["create", "delete"], regions_id: int):
-        allowed_ops = ["create", "delete"]
-        if op not in allowed_ops:
-            raise ValueError(
-                f"Witness.set_regions: forbidden value for argument 'op': '{op}'. Allowed values are: {allowed_ops}"
-            )
-
-        witness_json: dict = self.json  # todo ensure type consistency
-        print(">>>> JSON", self.json)
-
-        if op == "create":
-            witness_json["regions"] = witness_json["regions"].append(
-                regions_id
-            )  # todo check if regions_id is in regions_id_list beforehand
-        else:
-            witness_json["regions"] = [
-                rid for rid in witness_json["regions"] if rid != regions_id
-            ]
-
-        self.update_json(witness_json)  # todo does update_json actually save ?
-        return
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.__str__())

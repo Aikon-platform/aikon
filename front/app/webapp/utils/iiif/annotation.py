@@ -12,6 +12,7 @@ from PIL import Image
 
 from app.webapp.models.regions import Regions, get_name
 from app.webapp.models.digitization import Digitization
+from app.webapp.models.witness import Witness
 
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.config.settings import (
@@ -752,9 +753,11 @@ def check_indexation(regions: Regions, reindex=False):
 
 
 def index_regions(regions: Regions):
+    # index the manifest
     if not index_manifest(regions.gen_manifest_url(version=MANIFEST_V2), True):
         return
 
+    # fetch the annotations from the annotation file
     canvases_to_annotate: Dict[str, List[int | None]] = get_annotations_per_canvas(
         regions
     )  # pyright: ignore
@@ -794,6 +797,10 @@ def index_annotations_on_canvas(regions: Regions, canvas_nb):
 
 
 def reindex_file(filename):
+    """
+    - if it is a new Regions extraction, create the Regions object and save it to database
+    - index the Regions extraction into the annotation server
+    """
     a_ref = filename.replace(".txt", "").replace(".json", "")
     ref = parse_ref(a_ref)
     if not ref or not ref["regions"]:
@@ -857,7 +864,12 @@ def process_regions(
     regions_file_content, digit, model="Unknown model", extension="json"
 ):
     """
-    main function to write a regions extraction result to DB: save Regions to database, fetch all results and convert them to IIIF annotations, index new regions and manifest in aiiinotate
+    main function to write a regions extraction result to DB:
+    - write task results sent from API to file
+    - save Regions to database,
+    - fetch all results and convert them to IIIF annotations,
+    - index new regions and manifest in aiiinotate
+    - update the witness with information on the Region.
     """
     try:
         # TODO add step to check if regions weren't generated before for the same model
@@ -870,6 +882,7 @@ def process_regions(
         return False
 
     anno_file = f"{REGIONS_PATH}/{regions.get_ref()}.{extension}"
+    # TODO delete ? rendered useless by using regions.process_results(completed=True)
     if not is_new and Path(anno_file).exists():
         # necessary check because regions are sent twice (once for PROGRESS event, then when SUCCESS event)
         log(
@@ -894,6 +907,13 @@ def process_regions(
         index_regions(regions)
     except Exception as e:
         log(f"[process_regions] Failed to index regions for digit #{digit.id}", e)
+        return False
+
+    try:
+        witness = Witness.objects.get(pk=digit.witness_id)
+        witness.set_json_regions("create", regions.id)
+    except Exception as e:
+        log(f"[process_regions] Failed to update witness.json with up-to-date regions.")
         return False
 
     return True

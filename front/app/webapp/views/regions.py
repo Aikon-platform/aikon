@@ -89,6 +89,9 @@ def reindex_regions(request, obj_ref):
 
 @user_passes_test(is_superuser)
 def index_witness_regions(request, wit_id):
+    """
+    index all regions files for a single witness.
+    """
     wit = get_object_or_404(Witness, pk=wit_id)
     regions_files = sorted(get_files_with_prefix(REGIONS_PATH, f"{wit.get_ref()}_"))
     res = {
