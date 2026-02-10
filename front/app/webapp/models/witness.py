@@ -409,13 +409,11 @@ class Witness(AbstractSearchableModel):
     def has_regions(self):
         return any(digit.has_regions() for digit in self.get_digits())
 
-    def set_json_regions(self, op: Literal["create", "delete"], regions_id: int):
-        allowed_ops = ["create", "delete"]
-        if op not in allowed_ops:
-            raise ValueError(
-                f"Witness.set_regions: forbidden value for argument 'op': '{op}'. Allowed values are: {allowed_ops}"
-            )
-
+    def set_json_regions(self):
+        """
+        after creating or deleting a Regions, update the witness.json field.
+        necessary to avoid desyncrhonization of witnes.json with what's actually in the database.
+        """
         witness_json: dict = self.json
         witness_json["regions"] = [region.id for region in self.get_regions()]
         self.update_json(witness_json)

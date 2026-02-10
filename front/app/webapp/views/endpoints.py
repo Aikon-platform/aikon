@@ -191,6 +191,11 @@ def create_manual_regions(request, wid, did=None, rid=None):
 
 
 def delete_regions(request, rid):
+    """
+    aikon hook to delete a regions and its associated annotations.
+    used in the UI to delete a regions
+    """
+    print(">>>>> HELLLOOOOOOOOOO")
     from app.webapp.tasks import delete_annotations
     from app.regions.tasks import delete_api_regions
 
@@ -207,14 +212,20 @@ def delete_regions(request, rid):
         delete_api_regions.delay(regions.get_digit().get_ref(), regions.model)
 
         try:
+            digitization = Digitization.objects.get(pk=regions.digitization_id)
+            print(">>>>>>> DIGITIZATION", digitization)
             # Delete the regions record in the database
             regions.delete()
             # remove the regions id from the Witness.json field
-            witness = regions.digitization.witness
-            witness.update_regions(
-                "delete", regions.id
-            )  # todo add also where we create a regions
+            witness = Witness.objects.get(
+                digitization__witness_id=digitization.witness_id
+            )
+            print(">>>>>>> WITNESS", witness)
+            witness.set_json_regions()
         except Exception as e:
+            print(">>>>>>>>>> DELETE REGIONS EXCEPTION", e)
+            print(e)
+            print("")
             return JsonResponse(
                 {"message": f"Failed to delete regions record #{rid}: {e}"},
                 status=400,

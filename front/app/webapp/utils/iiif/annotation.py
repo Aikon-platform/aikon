@@ -911,8 +911,9 @@ def process_regions(
 
     try:
         witness = Witness.objects.get(pk=digit.witness_id)
-        witness.set_json_regions("create", regions.id)
+        witness.set_json_regions()
     except Exception as e:
+        log(e)
         log(f"[process_regions] Failed to update witness.json with up-to-date regions.")
         return False
 
@@ -1022,6 +1023,16 @@ def destroy_regions(regions: Regions):
         from app.similarity.utils import delete_pairs_with_regions
 
         delete_pairs_with_regions(regions.id)
+
+    # necessary to fetch witness here, before regions is deleted
+    witness = Witness.objects.get(digitization__witness=regions)
+    try:
+        witness.set_json_regions()
+    except Exception as e:
+        log(
+            f"[destroy_regions] Failed to update witness.json for witness #{witness.id}",
+            e,
+        )
 
     try:
         # Delete the regions record in the database

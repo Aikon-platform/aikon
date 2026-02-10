@@ -38,6 +38,7 @@ def reindex_from_file(regions_id):
     return check_indexation(regions, True)
 
 
+# NOTE unused
 @celery_app.task
 def delete_regions_and_annotations(regions_id):
     from app.webapp.models.regions import Regions
