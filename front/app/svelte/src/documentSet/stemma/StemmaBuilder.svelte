@@ -93,14 +93,14 @@
     $: fullDocuments = Array.from($documentNodes?.values() || []);
     $: fullScoreData = $filteredDocPairStats?.scoreCount || new Map();
     $: fullDocStats = $filteredDocStats?.scoreCount || new Map();
+    $: friezeDocuments = matrixScope === 'full' ? fullDocuments : $selectedNodes;
 
     function handleVizChange() {
         selectedCell = null;
         selectedFriezeImage = null;
     }
 
-    $: needsSelection = selectedViz && !$selectedNodes.length &&
-        !(selectedViz === 'docMatrix' && matrixScope === 'full');
+    $: needsSelection = selectedViz && !$selectedNodes.length && matrixScope !== 'full';
 </script>
 
 <SplitLayout>
@@ -154,13 +154,15 @@
                 {/each}
             </select>
         </div>
-        {#if selectedViz === 'docMatrix'}
+        {#if selectedViz}
             <div class="select is-small">
                 <select bind:value={matrixScope}>
                     <option value="selected">{i18n('selectedDocs', t)}</option>
                     <option value="full">{i18n('fullDocSet', t)}</option>
                 </select>
             </div>
+        {/if}
+        {#if selectedViz === 'docMatrix'}
             <label title={i18n('normalization', t)} class="checkbox is-size-7 is-flex is-align-items-center">
                 <input type="checkbox" bind:checked={$normalizeByImages}>
                 <span class="pl-1">{i18n('normalize', t)}</span>
@@ -191,7 +193,7 @@
             />
         {:else if selectedViz === 'spatialFrieze'}
             <SpatialFrieze
-                {selectedNodes}
+                documents={friezeDocuments}
                 {visiblePairs}
                 {documentNodes}
                 {stemmaStore}
@@ -240,6 +242,7 @@
                 {stemmaStore}
                 {visiblePairs}
                 {imageNodes}
+                documents={friezeDocuments}
                 startImageId={selectedFriezeImage.imageId}
                 baseDocId={selectedFriezeImage.baseDocId}
             />

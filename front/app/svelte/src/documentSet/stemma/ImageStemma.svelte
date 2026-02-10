@@ -24,10 +24,11 @@ Special cases:
     export let stemmaStore;
     export let visiblePairs;
     export let imageNodes;
+    export let documents;
     export let startImageId;
     export let baseDocId;
 
-    const { edges, nodePositions, selectedNodes } = stemmaStore;
+    const { edges, nodePositions } = stemmaStore;
 
     const IMG_SIZE = 150;
     let modalOpen = false;
@@ -68,12 +69,31 @@ Special cases:
 
     let stemmaImages = { nodes: [], edges: [] };
 
-    $: stemmaImages = computeStemma($edges, $nodePositions, $selectedNodes, $pairIndex, $imageNodes, startImageId, baseDocId);
+    $: stemmaImages = computeStemma($edges, $nodePositions, documents, $pairIndex, $imageNodes, startImageId, baseDocId);
 
     function computeStemma(edges, positions, docs, pairIdx, imgNodes, startImgId, baseId) {
-        if (!edges.length || !startImgId || !baseId) return { nodes: [], edges: [] };
+        if (!startImgId || !baseId) return { nodes: [], edges: [] };
 
         const docMap = new Map(docs.map(n => [n.id, n]));
+        const baseDoc = docMap.get(baseId);
+
+        if (!edges.length) {
+            if (!baseDoc) return { nodes: [], edges: [] };
+            const img = imgNodes.get(startImgId);
+            return {
+                nodes: [{
+                    docId: baseId,
+                    imageId: startImgId,
+                    color: baseDoc.color,
+                    title: baseDoc.title,
+                    x: 20,
+                    y: 20,
+                    img
+                }],
+                edges: []
+            };
+        }
+
         const adjacency = new Map();
         for (const docId of docMap.keys()) adjacency.set(docId, []);
         for (const e of edges) {
