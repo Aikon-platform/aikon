@@ -9,12 +9,12 @@
  * @property {string} type
  */
 
-import { regionsType } from "../constants.js";
+import {appName, regionsType} from "../constants.js";
 import {getCantaloupeUrl, getSasUrl} from "../utils.js";
 
 const IMG_REF_REGEX = /^(?:(\d+)_)?wit(\d+)_([a-z]{3})(\d+)(?:_anno(\d+))?_(\d+)(?:_([\d,]+))?(?:\.jpg)?$/;
 
-function parseImgRef(imgRef) {
+export function parseImgRef(imgRef) {
     if (!imgRef) return null;
 
     const match = imgRef.match(IMG_REF_REGEX);
@@ -89,8 +89,9 @@ export class RegionItem {
         let ref = `wit${this.witnessId}_${this.digitType}${this.digitId}`;
         if (this.regionId) {
             ref += `_anno${this.regionId}`;
+            return `${getCantaloupeUrl()}/${appName}/iiif/v2/${ref}/manifest.json`;
         }
-        return `${getCantaloupeUrl()}/iiif/v2/${ref}/manifest.json`;
+        return `${getCantaloupeUrl()}/${appName}/iiif/${ref}/manifest.json`;
     }
 
     urlForCanvas(canvasNb = this.canvasNb, coord = this.coord, size = "full") {

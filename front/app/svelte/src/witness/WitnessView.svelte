@@ -1,6 +1,5 @@
 <script>
     import { setContext } from "svelte";
-    import { fade } from 'svelte/transition';
     import { refToIIIF, loading } from "../utils.js";
     import { appLang, regionsType, modules } from "../constants";
 

@@ -15,11 +15,10 @@ def paginated_records(request, records):
     page_number = request.GET.get("p", 1)
     page_obj = paginator.get_page(page_number)
 
-    results = [
-        obj.to_json(request_user=request.user)
-        for obj in page_obj
-        if obj.json is not None
-    ]
+    results = []
+    for obj in page_obj:
+        if json_obj := obj.get_json(request_user=request.user):
+            results.append(json_obj)
 
     return {
         "results": results,
@@ -29,20 +28,20 @@ def paginated_records(request, records):
     }
 
 
+def get_shared_with(model_class, current_user):
+    if current_user.is_superuser:
+        return model_class.objects.order_by("id")
+    return model_class.objects.filter(
+        Q(user=current_user)
+        | Q(is_public=True)
+        | Q(shared_with=current_user)
+        | Q(user__groups__in=current_user.groups.all())
+    ).distinct()
+
+
 @require_GET
 def search_witnesses(request):
-    current_user = request.user
-
-    if current_user.is_superuser:
-        witnesses = Witness.objects.order_by("id")
-    else:
-        witnesses = Witness.objects.filter(
-            Q(user=current_user)
-            | Q(is_public=True)
-            | Q(shared_with=current_user)
-            | Q(user__groups__in=current_user.groups.all())
-        ).distinct()
-
+    witnesses = get_shared_with(Witness, request.user)
     witness_filter = WitnessFilter(request.GET, queryset=witnesses)
     return JsonResponse(paginated_records(request, witness_filter.qs))
 
@@ -66,7 +65,8 @@ def search_works(request):
 
 @require_GET
 def search_series(request):
-    series_filter = SeriesFilter(request.GET, queryset=Series.objects.order_by("id"))
+    series = get_shared_with(Series, request.user)
+    series_filter = SeriesFilter(request.GET, queryset=series)
     return JsonResponse(paginated_records(request, series_filter.qs))
 
 

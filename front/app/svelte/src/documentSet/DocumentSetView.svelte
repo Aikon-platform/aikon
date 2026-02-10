@@ -16,7 +16,7 @@
 
     import Modal from "../Modal.svelte";
     import {refToIIIF} from "../utils.js";
-    // import StemmaBuilder from "./stemma/StemmaBuilder.svelte";
+    import StemmaBuilder from "./stemma/StemmaBuilder.svelte";
 
     export let docSet;
 
@@ -59,7 +59,7 @@
 
     const tabList = {
         "sim": appLang === "en" ? "Copy Clusters" : "Groupe de copies",
-        // "ste": appLang === "en" ? "Stemma builder" : "Aide au stemma",
+        "ste": appLang === "en" ? "Stemma builder" : "Aide au stemma",
         "mat": appLang === "en" ? "Document Matrix" : "Matrice de documents",
         "img": appLang === "en" ? "Image Network" : "Réseau d'images",
         "doc": appLang === "en" ? "Document Network" : "Réseau de documents",
@@ -125,8 +125,8 @@
                             <Clusters {documentSetStore} {clusterStore}/>
                         {:else if $activeLayout === "mat"}
                             <DocumentMatrix {documentSetStore}/>
-                        <!--{:else if $activeLayout === "ste"}-->
-                        <!--    <StemmaBuilder {documentSetStore}/>-->
+                        {:else if $activeLayout === "ste"}
+                            <StemmaBuilder {documentSetStore}/>
                         {/if}
                     </div>
                 {/if}

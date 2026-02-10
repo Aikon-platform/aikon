@@ -1,9 +1,10 @@
 <script>
-    import { closeModal } from '../utils.js';
+    import {closeModal, i18n} from '../utils.js';
     import SelectionFooter from "./SelectionFooter.svelte";
 
     import { recordsSelection } from "./selectionStore.js";
     import { appLang, userId, isSuperuser } from "../constants.js";
+    import DownloadPng from "../ui/DownloadPng.svelte";
     const { selected } = recordsSelection;
 
     export let selectionStore;
@@ -115,7 +116,10 @@
         <section class="modal-card-body">
             <slot />
 
-            <h4>{appLang === 'en' ? 'Shared with' : 'Partagé avec'}</h4>
+            <hr>
+
+            <h4 class="title is-6 mb-4">{appLang === 'en' ? 'Shared with' : 'Partagé avec'}</h4>
+
             <div class="field is-grouped is-grouped-multiline">
                 <!--TODO: when selecting/unselecting doc set, selected users disappear -->
                 {#each selectedUsers as user (user.id)}
@@ -129,12 +133,12 @@
             </div>
 
             {#if isOwner}
+             <div class="is-flex is-justify-content-space-between">
                 <div class="dropdown is-active">
                     <div class="dropdown-trigger">
                         <div class="field">
                             <p class="control is-expanded has-icons-right">
-                                <input
-                                    class="input"
+                                <input class="input is-small"
                                     placeholder="Search users…"
                                     bind:value={userQuery}
                                     on:input={searchUsers}
@@ -158,17 +162,16 @@
                         </div>
                     {/if}
                 </div>
-
-                <div class="field mt-3 is-right">
-                    <label class="checkbox">
-                        <input
-                            type="checkbox"
+                <div class="field mt-2 mr-5 is-right">
+                    <label class="checkbox is-size-7 is-flex is-align-items-center">
+                        <input type="checkbox"
                             checked={$selected?.is_public}
                             on:change={(e) => updatePublic(e.target.checked)}
                         />
-                        {appLang === 'en' ? 'Make public' : 'Rendre public'}
+                        <span class="pl-1">{appLang === 'en' ? 'Make public' : 'Rendre public'}</span>
                     </label>
                 </div>
+            </div>
             {/if}
         </section>
 

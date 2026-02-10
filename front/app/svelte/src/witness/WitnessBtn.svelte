@@ -13,7 +13,7 @@
     }
 
     function manifestLabel(url) {
-        const manifest = url.match(/man(\d+)/);
+        const manifest = url.match(/(?:man|img|pdf)(\d+)/);
         const manifestId = manifest ? manifest[1] : "?";
 
         const regionsExtId = url.match(/anno(\d+)/);
