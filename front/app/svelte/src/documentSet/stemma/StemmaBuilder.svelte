@@ -55,7 +55,7 @@
     let modalActive = false;
     let navState = null;
     let scatterData = null;
-    let matrixScope = 'selected';
+    let matrixScope = 'full';
 
     $: documentSetStore.updateSelectedNodes($selectedNodes.map(n => n.id));
     $: pairMatrixData = selectedCell ? {
@@ -98,6 +98,9 @@
         selectedCell = null;
         selectedFriezeImage = null;
     }
+
+    $: needsSelection = selectedViz && !$selectedNodes.length &&
+        !(selectedViz === 'docMatrix' && matrixScope === 'full');
 </script>
 
 <SplitLayout>
@@ -175,7 +178,7 @@
     <div slot="right-scroll">
         {#if !selectedViz}
             <p class="has-text-grey is-size-7">{i18n('noViz', t)}</p>
-        {:else if !$selectedNodes.length}
+        {:else if needsSelection}
             <p class="has-text-grey is-size-7">{i18n('noSelection', t)}</p>
         {:else if selectedViz === 'docMatrix'}
             <DocumentSetMatrix
