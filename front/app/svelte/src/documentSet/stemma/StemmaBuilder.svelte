@@ -19,8 +19,8 @@
 
     const stemmaStore = createStemmaStore(documentSetStore);
     const {
-        selectedNodes, edges, filteredDocuments, matrixScoreData,
-        matrixDocStats, matrixImageCount, getFilteredPairsForDocPair, nodeTitles
+        selectedNodes, filteredDocuments, matrixScoreData, matrixDocStats,
+        matrixImageCount, getFilteredPairsForDocPair, nodeTitles
     } = stemmaStore;
 
     const t = {
@@ -55,7 +55,7 @@
     let modalActive = false;
     let navState = null;
     let scatterData = null;
-    let matrixScope = 'selected';
+    let matrixScope = 'full';
 
     $: documentSetStore.updateSelectedNodes($selectedNodes.map(n => n.id));
     $: pairMatrixData = selectedCell ? {
@@ -63,10 +63,6 @@
         doc2: selectedCell.doc2,
         pairs: getFilteredPairsForDocPair(selectedCell.doc1.id, selectedCell.doc2.id)
     } : null;
-
-    function removeEdge(source, target) {
-        stemmaStore.removeEdge(source, target);
-    }
 
     function handleCellSelect(e) {
         selectedCell = e.detail;
@@ -93,15 +89,18 @@
     $: fullDocuments = Array.from($documentNodes?.values() || []);
     $: fullScoreData = $filteredDocPairStats?.scoreCount || new Map();
     $: fullDocStats = $filteredDocStats?.scoreCount || new Map();
+    $: friezeDocuments = matrixScope === 'full' ? fullDocuments : $selectedNodes;
 
     function handleVizChange() {
         selectedCell = null;
         selectedFriezeImage = null;
     }
+
+    $: needsSelection = selectedViz && !$selectedNodes.length && matrixScope !== 'full';
 </script>
 
 <SplitLayout>
-    <div slot="left-title" class="is-flex is-justify-content-space-between is-align-items-center">
+    <div id="stemma-header" slot="left-title" class="is-flex is-justify-content-space-between is-align-items-center">
         <h4 class="title is-6 mb-0">{i18n('title', t)}</h4>
         <span class="tag is-small">{i18n('hint', t)}</span>
     </div>
@@ -115,22 +114,6 @@
                         <span class="tag is-small" style="background-color: {node.color}; color: #222;">
                             <span class="mr-1">{idx + 1}.</span>
                             {title.length > 12 ? title.slice(0, 10) + '…' : title}
-                        </span>
-                    {/each}
-                </div>
-            </div>
-        {/if}
-
-        {#if $edges.length}
-            <div class="edges-bar mb-2">
-                <span class="is-size-7 has-text-grey mr-2">{i18n('edges', t)}:</span>
-                <div class="is-flex is-flex-wrap-wrap" style="gap: 0.25rem;">
-                    {#each $edges as edge}
-                        <span class="tag is-small">
-                            <span class="edge-dot" style="background: {edge.sourceColor}"></span>
-                            →
-                            <span class="edge-dot" style="background: {edge.targetColor}"></span>
-                            <button class="delete is-small ml-1" on:click={() => removeEdge(edge.source, edge.target)}></button>
                         </span>
                     {/each}
                 </div>
@@ -151,13 +134,15 @@
                 {/each}
             </select>
         </div>
-        {#if selectedViz === 'docMatrix'}
+        {#if selectedViz}
             <div class="select is-small">
                 <select bind:value={matrixScope}>
                     <option value="selected">{i18n('selectedDocs', t)}</option>
                     <option value="full">{i18n('fullDocSet', t)}</option>
                 </select>
             </div>
+        {/if}
+        {#if selectedViz === 'docMatrix'}
             <label title={i18n('normalization', t)} class="checkbox is-size-7 is-flex is-align-items-center">
                 <input type="checkbox" bind:checked={$normalizeByImages}>
                 <span class="pl-1">{i18n('normalize', t)}</span>
@@ -175,7 +160,7 @@
     <div slot="right-scroll">
         {#if !selectedViz}
             <p class="has-text-grey is-size-7">{i18n('noViz', t)}</p>
-        {:else if !$selectedNodes.length}
+        {:else if needsSelection}
             <p class="has-text-grey is-size-7">{i18n('noSelection', t)}</p>
         {:else if selectedViz === 'docMatrix'}
             <DocumentSetMatrix
@@ -188,7 +173,7 @@
             />
         {:else if selectedViz === 'spatialFrieze'}
             <SpatialFrieze
-                {selectedNodes}
+                documents={friezeDocuments}
                 {visiblePairs}
                 {documentNodes}
                 {stemmaStore}
@@ -237,6 +222,7 @@
                 {stemmaStore}
                 {visiblePairs}
                 {imageNodes}
+                documents={friezeDocuments}
                 startImageId={selectedFriezeImage.imageId}
                 baseDocId={selectedFriezeImage.baseDocId}
             />
@@ -251,6 +237,10 @@
 />
 
 <style>
+    #stemma-header {
+        overflow: hidden;
+        white-space: nowrap;
+    }
     .stemma-panel {
         display: flex;
         flex-direction: column;
@@ -261,7 +251,7 @@
         min-height: 400px;
         position: relative;
     }
-    .selection-bar, .edges-bar {
+    .selection-bar {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
@@ -269,11 +259,10 @@
         background: var(--bulma-scheme-main-bis);
         border-radius: 4px;
     }
-    .edge-dot, .color-dot {
+    .color-dot {
         width: 10px;
         height: 10px;
         border-radius: 50%;
         display: inline-block;
     }
-    .edge-dot { margin: 0 2px; }
 </style>

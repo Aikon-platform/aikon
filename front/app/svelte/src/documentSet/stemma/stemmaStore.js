@@ -19,6 +19,15 @@ export function createStemmaStore(documentSetStore) {
         }));
     }
 
+    function updateEdgeLabel(source, target, label) {
+        stemmaGraph.update($g => ({
+            ...$g,
+            edges: $g.edges.map(e =>
+                e.source === source && e.target === target ? { ...e, label } : e
+            )
+        }));
+    }
+
     const filteredDocuments = derived(
         [documentNodes, selectedRegions],
         ([$documentNodes, $selectedRegions]) =>
@@ -167,6 +176,7 @@ export function createStemmaStore(documentSetStore) {
         nodePositions,
         nodeTitles,
         updateNodeTitle,
+        updateEdgeLabel,
         filteredDocuments,
         addEdge,
         removeEdge,

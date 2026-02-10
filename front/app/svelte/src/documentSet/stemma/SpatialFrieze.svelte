@@ -4,7 +4,7 @@
     import { i18n } from "../../utils.js";
 
     export let stemmaStore;
-    export let selectedNodes;
+    export let documents;
     export let visiblePairs;
     export let documentNodes;
     export let mode = 'page';
@@ -19,8 +19,8 @@
     const baseDocId = writable(null);
     const selectedIndex = writable(null);
 
-    $: if ($selectedNodes.length && !$selectedNodes.find(n => n.id === $baseDocId)) {
-        baseDocId.set($selectedNodes[0].id);
+    $: if (documents.length && !documents.find(n => n.id === $baseDocId)) {
+        baseDocId.set(documents[0].id);
         selectedIndex.set(null);
     }
 
@@ -31,8 +31,10 @@
         similarity: { en: 'similarities', fr: 'similarités' },
     };
 
+    const documentsStore = writable([]);
+    $: documentsStore.set(documents);
     const friezeData = derived(
-        [selectedNodes, visiblePairs, documentNodes, baseDocId],
+        [documentsStore, visiblePairs, documentNodes, baseDocId],
         ([$nodes, $pairs, $docs, $baseId]) => {
             if (!$nodes.length || !$docs.size || !$baseId) return null;
 
@@ -228,10 +230,10 @@
         <p class="has-text-grey is-size-7">No base document selected</p>
     {/if}
 
-    {#if $selectedNodes.length}
+    {#if documents.length}
         <h4 class="title is-6 my-2">{i18n('base', t)}</h4>
         <div class="doc-selector">
-            {#each $selectedNodes as node (node.id)}
+            {#each documents as node (node.id)}
                 {@const title = $nodeTitles[node.id] || node.title}
                 <button class="tag is-small" title={title}
                     class:is-base={node.id === $baseDocId}
