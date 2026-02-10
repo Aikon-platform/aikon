@@ -100,7 +100,7 @@
 </script>
 
 <SplitLayout>
-    <div slot="left-title" class="is-flex is-justify-content-space-between is-align-items-center">
+    <div id="stemma-header" slot="left-title" class="is-flex is-justify-content-space-between is-align-items-center">
         <h4 class="title is-6 mb-0">{i18n('title', t)}</h4>
         <span class="tag is-small">{i18n('hint', t)}</span>
     </div>
@@ -237,6 +237,10 @@
 />
 
 <style>
+    #stemma-header {
+        overflow: hidden;
+        white-space: nowrap;
+    }
     .stemma-panel {
         display: flex;
         flex-direction: column;

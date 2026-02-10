@@ -271,4 +271,13 @@ Special cases:
         min-width: 100%;
         min-height: 200px;
     }
+    .modal-region {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-region :global(.region) {
+        height: 100%;
+    }
 </style>
