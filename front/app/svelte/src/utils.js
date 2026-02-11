@@ -1,5 +1,5 @@
 import { writable } from "svelte/store";
-import { miradorUrl, cantaloupeUrl, appName } from "./constants";
+import { miradorUrl, cantaloupeUrl, appName, appLang, aiiinotateUrl } from "./constants";
 
 export const loading = writable(false);
 export const errorMsg = writable("");
@@ -145,7 +145,7 @@ export function manifestToMirador(manifest = null, canvasNb = 0) {
 }
 
 export function toAiiinotateAnnotationUrl(manifestShortId, annotationShortId) {
-  return `${AIIINOTATE_BASE_URL}/data/2/${manifestShortId}/annotation/${annotationShortId}`
+  return `${aiiinotateUrl}/data/2/${manifestShortId}/annotation/${annotationShortId}`
 }
 
 export function parseData(elementId) {

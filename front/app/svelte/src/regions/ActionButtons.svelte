@@ -1,5 +1,7 @@
 <script>
     import { getContext } from 'svelte';
+
+    import { aiiinotateUrl } from "../constants.js";
     import { manifestToMirador, showMessage, downloadBlob, withLoading, toAiiinotateAnnotationUrl } from "../utils.js";
     import { regionsSelection } from "../selection/selectionStore.js";
     const { selected, nbSelected } = regionsSelection;
@@ -30,7 +32,7 @@
     }
 
     async function deleteRegion(regionId) {
-        const urlDelete = `${AIIINOTATE_BASE_URL}/annotations/2/delete?uri=${toAiiinotateAnnotationUrl(manifestShortId, regionId)}`;
+        const urlDelete = `${aiiinotateUrl}/annotations/2/delete?uri=${toAiiinotateAnnotationUrl(manifestShortId, regionId)}`;
         const response = await fetch(urlDelete, { method: "DELETE"});
         if (response.status > 299) {
             throw new Error(`Failed to delete ${urlDelete} due to ${response.status}: '${response.statusText}'`);
