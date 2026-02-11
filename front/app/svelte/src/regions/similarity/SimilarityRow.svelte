@@ -4,7 +4,7 @@
     import { similarityStore } from "./similarityStore.js";
     const { selectedRegions } = similarityStore;
     import { appLang, csrfToken } from "../../constants";
-    import {getColNb, manifestToMirador, refToIIIF, showMessage} from "../../utils.js";
+    import {manifestToMirador, refToIIIF, showMessage} from "../../utils.js";
     import { toRegionItem } from "../utils.js";
 
     import SimilarityMatches from "./SimilarityMatches.svelte";
@@ -26,7 +26,13 @@
 
     const manifest = getContext("manifest");
 
+    // let innerWidth;
+    // $: console.log(innerWidth);
+    // $: colNb = getColNb(innerWidth);
+
     $: sLen = $selectedRegions.hasOwnProperty(currentPageId) ? Object.values($selectedRegions[currentPageId]).length : 0;
+    $: gridClass = `fixed-grid has-${colNb - 1}-cols`;
+
     //$: hasNoMatch = false; // TODO HERE FIND A WAY TO SET NO MATCH FOR THIS Q REGIONS
 
     /** @type {RegionItemType} used by region/modal */
@@ -146,9 +152,6 @@
       }
 
     }
-
-    $: colNb = getColNb(window.innerWidth);
-    $: gridClass = `fixed-grid has-${colNb - 1}-cols`;
 </script>
 
 <Row useGrid={false}>
