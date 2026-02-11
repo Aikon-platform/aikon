@@ -83,32 +83,31 @@ def process_results(data, completed=True):
         raise ValueError("\n".join(error))
 
     # doc_results is supposed to be { "doc_id": doc_id, "result_url": result_url }
-    if completed == True:
-        for doc_results in results_url:
-            doc_id = doc_results.get("doc_id")
-            result_url = doc_results.get("result_url")  # API URL with results.
+    for doc_results in results_url:
+        doc_id = doc_results.get("doc_id")
+        result_url = doc_results.get("result_url")  # API URL with results.
 
-            digit_id = parse_ref(doc_id)["digit"][1]
-            try:
-                response = requests.get(result_url, stream=True)
-                response.raise_for_status()
-                json_content = response.json()
-                import json
+        digit_id = parse_ref(doc_id)["digit"][1]
+        try:
+            response = requests.get(result_url, stream=True)
+            response.raise_for_status()
+            json_content = response.json()
+            import json
 
-                log(json.dumps(json_content, indent=2))
-            except Exception as e:
-                log(f"Could not retrieve annotation from {result_url}", e)
-                continue
+            log(json.dumps(json_content, indent=2))
+        except Exception as e:
+            log(f"Could not retrieve annotation from {result_url}", e)
+            continue
 
-            if not check_regions_json_file(json_content):
-                continue
+        if not check_regions_json_file(json_content):
+            continue
 
-            try:
-                model_name = result_url.split("/")[-1].split("+")[0] or EXTRACTOR_MODEL
-                process_regions_file.delay(json_content, digit_id, model_name)
-            except Exception as e:
-                log(f"Could not process annotation from {result_url}", e)
-                raise e
+        try:
+            model_name = result_url.split("/")[-1].split("+")[0] or EXTRACTOR_MODEL
+            process_regions_file.delay(json_content, digit_id, model_name)
+        except Exception as e:
+            log(f"Could not process annotation from {result_url}", e)
+            raise e
     return
 
 

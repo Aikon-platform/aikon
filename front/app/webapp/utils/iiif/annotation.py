@@ -870,6 +870,8 @@ def process_regions(
     - fetch all results and convert them to IIIF annotations,
     - index new regions and manifest in aiiinotate
     - update the witness with information on the Region.
+
+    results are sent from the API inbatches, so this will be called several times per Regions extraction.
     """
     try:
         # TODO add step to check if regions weren't generated before for the same model
@@ -883,7 +885,7 @@ def process_regions(
 
     anno_file = f"{REGIONS_PATH}/{regions.get_ref()}.{extension}"
     if not is_new and Path(anno_file).exists():
-        # necessary check because regions are sent twice (once for PROGRESS event, then when SUCCESS event)
+        # necessary check because regions are sent several times (once for PROGRESS event, then when SUCCESS event)
         log(
             f"[process_regions] Regions for Digit #{digit.id} already exists with same model, skipping",
         )

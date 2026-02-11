@@ -302,6 +302,7 @@ class Treatment(AbstractSearchableModel):
         self.save()
 
     def process_results(self, data, completed=True):
+        # NOTE: each notification sends a batch of results, so we need to all `process_task_results` even when completed=False
         try:
             process_task_results(self.task_type, data, completed)
             # TODO add status "PROCESSING" and change status after results are processed
