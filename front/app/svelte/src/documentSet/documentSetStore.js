@@ -26,7 +26,7 @@ export function createDocumentSetStore(documentSetId) {
   const scoreFilter = writable(true);
   const threshold = writable(0.5);
   const topK = writable(3);
-  const mutualTopK = writable(false);
+  const mutualTopK = writable(true);
   const scoreMode = writable("topk");
   const onlyExactMatches = derived(selectedCategories, $cats =>
     $cats.length === 1 && $cats[0] === 1
@@ -88,6 +88,7 @@ export function createDocumentSetStore(documentSetId) {
     // const documentSetId = 418; // encyclopédie mathématique
     // const documentSetId = 436; // Jombert complet
     // const documentSetId = 432; // Jombert incomplet
+    // const documentSetId = 408;
     // TO DELETE
 
     const loadPromise = new Promise((resolve, reject) => {
@@ -159,10 +160,16 @@ export function createDocumentSetStore(documentSetId) {
               }
             });
 
-            docMap.forEach(doc => doc.images.sort((a, b) => {
-              if (a.canvas !== b.canvas) return a.canvas - b.canvas;
-              return (parseInt(a.xywh?.[1]) || 0) - (parseInt(b.xywh?.[1]) || 0);
-            }));
+            // TODO add normalizedScore = totalScore / images.length
+
+            docMap.forEach(doc => {
+              // doc.normalizedScore = doc.images.length
+              doc.images.sort((a, b) => {
+                if (a.canvas !== b.canvas) return a.canvas - b.canvas;
+                return (parseInt(a.xywh?.[1]) || 0) - (parseInt(b.xywh?.[1]) || 0);
+              })
+              return doc;
+            });
 
             imageNodes.set(imgMap);
             documentNodes.set(docMap);
@@ -613,7 +620,7 @@ export function createDocumentSetStore(documentSetId) {
     }
   }
 
-  const normalizeByImages = writable(false);
+  const normalizeByImages = writable(true);
 
   const visiblePairIds = derived(filteredPairs, ($pairs) => {
     const set = new Set();
@@ -632,6 +639,8 @@ export function createDocumentSetStore(documentSetId) {
   });
 
   return {
+    documentSetId,
+
     error,
     loadingProgress,
     cancelLoading: () => {

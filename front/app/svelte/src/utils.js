@@ -107,7 +107,7 @@ export function refToIIIF(imgRef=null, coord=null, size="full") {
 
   const imgRoot = refToIIIFRoot(imgRef);
   if (imgRoot === undefined) {
-    console.log("IMG ROOT is undefined", imgRef, coord, size);
+    console.error(`Could not extract image name from imgRef ${imgRef}`);
     return "https://placehold.co/96x96/png?text=No+image";
   }
 

@@ -87,7 +87,7 @@
 
     <div class="split-panel" style="width: {rightWidth}px;" use:observeRightPanel>
         {#if hasBottomRight}
-            <div class="box panel-box" style="height: {topHeight}px;">
+            <div class="box panel-box mb-0" style="height: {topHeight}px;">
                 <div class="mb-3"><slot name="right-title"/></div>
                 <div class="scroll-area"><slot name="right-scroll"/></div>
             </div>

@@ -33,9 +33,6 @@
             {#each Object.entries($pageRegions) as [canvasNb, items]}
                 <Row>
                     <svelte:fragment slot="row-header">
-                        { toImgName(canvasNb) }
-                        <br/>
-                        { refToIIIF(toImgName(canvasNb), 'full', '250,') }
                         <img src="{refToIIIF(toImgName(canvasNb), 'full', '250,')}" alt="Canvas {canvasNb}" class="mb-3 card">
                         <div class="is-center mb-1">
                             <a class="tag px-2 py-1 is-rounded is-hoverable" href="{manifestToMirador(manifest, canvasNb)}" target="_blank">

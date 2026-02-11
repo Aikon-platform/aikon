@@ -22,7 +22,7 @@
     {:then _}
         {#each $pageVectImgs as vectImg, i (vectImg.id)}
             <VectorizedRegions svgPath={vectImg}>
-                <ModalOpener on:open={() => openModal(i)}/>
+                <ModalOpener slot="actions" on:open={() => openModal(i)}/>
             </VectorizedRegions>
         {:else}
             <div class="faded is-center">
