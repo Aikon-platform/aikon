@@ -8,7 +8,7 @@ the process is somewhat convoluted since we need to use a replication of a datab
 - run the tests (finally !)
 """
 
-# NOTE `admin` postgres user needs persmission to create and drop a database
+# NOTE `admin` postgres user needs permission to create and drop a database
 # if you get an error when running tests, do:
 # >>> sudo -u postgres psql        # bash login to psql as postgres
 # >>> ALTER USER admin CREATEDB;   # grant db creation privileges to user admin.

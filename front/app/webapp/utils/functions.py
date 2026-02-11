@@ -63,6 +63,37 @@ def normalize_str(string):
     return string
 
 
+def parse_list(string):
+    if not string:
+        return None
+    try:
+        return [int(c.strip()) for c in string.split(",")]
+    except (TypeError, ValueError):
+        return None
+
+
+def safe_float(val):
+    try:
+        return float(val) if val else None
+    except (TypeError, ValueError):
+        return None
+
+
+def safe_int(val):
+    try:
+        return int(val) if val else None
+    except (TypeError, ValueError):
+        return None
+
+
+def safe_bool(val):
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, str):
+        return val.lower() == "true"
+    return None
+
+
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime.datetime):

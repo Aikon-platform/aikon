@@ -150,14 +150,6 @@ class Regions(AbstractSearchableModel):
 
         return sorted(svg_files_names) == sorted(anno_list)
 
-    def get_computed_pairs(self):
-        sim_files = [
-            npy_file
-            for npy_file in os.listdir(SCORES_PATH)
-            if self.get_ref() in npy_file
-        ]
-        return sim_files
-
     def get_metadata(self):
         if digit := self.get_digit():
             metadata = digit.get_metadata()
@@ -203,8 +195,5 @@ class Regions(AbstractSearchableModel):
 
         action = "final" if self.is_validated else "edit"
         btn = regions_btn(self, action if self.has_regions() else "no_regions")
-
-        if len(self.get_computed_pairs()) != 0:
-            btn += regions_btn(self, "similarity")
 
         return mark_safe(btn)

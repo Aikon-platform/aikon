@@ -362,7 +362,7 @@ class Digitization(AbstractSearchableModel):
         base_url = f"{APP_URL}/{APP_NAME}/iiif/{self.get_ref()}"
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 
-    def gen_manifest_json(self):
+    def gen_manifest_json(self, version=None):
         from app.webapp.utils.iiif.manifest import gen_manifest_json
 
         error = {"error": "Unable to create a valid manifest"}
