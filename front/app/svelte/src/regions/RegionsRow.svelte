@@ -1,17 +1,17 @@
 <!--NOT USED ANYMORE-->
 <script>
-    import { getContext } from 'svelte';
+    import { getContext } from "svelte";
     import { manifestToMirador, refToIIIF } from "../utils.js";
     export let canvasNb;
     export let canvasImg;
 
-    const manifest = getContext('manifest');
+    const manifest = getContext("manifest");
 </script>
 
 <tr>
     <th class="is-3 center-flex is-narrow" style="width: 260px">
         <div class="content-wrapper py-5">
-            <img src="{refToIIIF(canvasImg, 'full', '250,')}" alt="Canvas {canvasNb}" class="mb-3 card">
+            <img src="{refToIIIF(canvasImg, "full", "250,")}" alt="Canvas {canvasNb}" class="mb-3 card">
             <div class="is-center mb-1">
                 <a class="tag px-2 py-1 is-rounded is-hoverable" href="{manifestToMirador(manifest, canvasNb)}" target="_blank">
                     <i class="fa-solid fa-pen-to-square"></i>

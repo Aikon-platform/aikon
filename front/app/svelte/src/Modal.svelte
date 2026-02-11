@@ -1,6 +1,6 @@
 <script>
-    import { appLang } from './constants';
-    import { closeModal, openModal } from './utils.js';
+    import { appLang } from "./constants";
+    import { closeModal, openModal } from "./utils.js";
 </script>
 
 <button id="hidden-msg-btn" use:openModal data-target="msg-modal" hidden/>
@@ -24,7 +24,7 @@
         <footer id="modal-footer" class="modal-card-foot is-center pt-3" hidden>
             <div class="buttons">
                 <button id="cancel-btn" class="button is-link is-light button-close">
-                    {appLang === 'en' ? 'Abort' : 'Retour'}
+                    {appLang === "en" ? "Abort" : "Retour"}
                 </button>
                 <button id="ok-btn" class="button is-link button-close">OK</button>
             </div>

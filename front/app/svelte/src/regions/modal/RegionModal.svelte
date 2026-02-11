@@ -13,21 +13,21 @@
     $: currentItem = items[currentIndex] ?? null;
 
     const close = () => {
-        open = false;
-        dispatch("close");
+      open = false;
+      dispatch("close");
     };
 
     const navigate = (delta) => {
-        if (!canNavigate) return;
-        currentIndex = (currentIndex + delta + items.length) % items.length;
-        dispatch("navigate", { index: currentIndex, item: currentItem });
+      if (!canNavigate) return;
+      currentIndex = (currentIndex + delta + items.length) % items.length;
+      dispatch("navigate", { index: currentIndex, item: currentItem });
     };
 
     const onKeydown = (e) => {
-        if (!open) return;
-        if (e.key === "Escape") close();
-        else if (e.key === "ArrowLeft") navigate(-1);
-        else if (e.key === "ArrowRight") navigate(1);
+      if (!open) return;
+      if (e.key === "Escape") close();
+      else if (e.key === "ArrowLeft") navigate(-1);
+      else if (e.key === "ArrowRight") navigate(1);
     };
 
     onMount(() => document.addEventListener("keydown", onKeydown));
@@ -39,7 +39,7 @@
         <div class="modal-background" on:click={close} on:keyup/>
         <div class="modal-content">
             {#if canNavigate}
-                <NavigationArrow direction="left" delta={-1} navigationFct={navigate} css={"position: initial;"}/>
+                <NavigationArrow direction="left" delta={-1} navigationFct={navigate} css="position: initial;"/>
             {/if}
 
             <div class="modal-inner">
@@ -47,7 +47,7 @@
             </div>
 
             {#if canNavigate}
-                <NavigationArrow direction="right" delta={1} navigationFct={navigate} css={"position: initial;"}/>
+                <NavigationArrow direction="right" delta={1} navigationFct={navigate} css="position: initial;"/>
             {/if}
         </div>
         <button class="modal-close is-large" on:click={close} aria-label="close"/>

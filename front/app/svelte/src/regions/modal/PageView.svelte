@@ -15,9 +15,9 @@
 
     // reset canvas offset when item changes
     $: if (item.id !== previousItemId) {
-        canvasOffset = 0;
-        maxPage = null;
-        previousItemId = item.id;
+      canvasOffset = 0;
+      maxPage = null;
+      previousItemId = item.id;
     }
 
     $: currentPage = new RegionItem(item);
@@ -27,40 +27,40 @@
     $: xywh = currentPage.coord;
 
     const t = {
-        next: { en: "Next page", fr: "Page suivante" },
-        prev: { en: "Previous page", fr: "Page précédente" },
+      next: { en: "Next page", fr: "Page suivante" },
+      prev: { en: "Previous page", fr: "Page précédente" },
     };
 
     $: xywhRelPromise = fetch(iiifInfoUrl)
-        .then(r => {
-            if (!r.ok) {
-                if (maxPage === null) maxPage = currentCanvas - 1;
-                throw new Error('Page not found');
-            }
-            return r.json();
-        })
-        .then(({ width, height }) => [
-            (xywh[0] / width) * 100,
-            (xywh[1] / height) * 100,
-            (xywh[2] / width) * 100,
-            (xywh[3] / height) * 100
-        ])
-        .catch(() => null);
+      .then(r => {
+        if (!r.ok) {
+          if (maxPage === null) maxPage = currentCanvas - 1;
+          throw new Error("Page not found");
+        }
+        return r.json();
+      })
+      .then(({ width, height }) => [
+        (xywh[0] / width) * 100,
+        (xywh[1] / height) * 100,
+        (xywh[2] / width) * 100,
+        (xywh[3] / height) * 100
+      ])
+      .catch(() => null);
 
     const changePage = async (delta) => {
-        const nextCanvas = currentCanvas + delta;
-        if (nextCanvas < 1) return;
-        if (maxPage !== null && nextCanvas > maxPage) return;
+      const nextCanvas = currentCanvas + delta;
+      if (nextCanvas < 1) return;
+      if (maxPage !== null && nextCanvas > maxPage) return;
 
-        const response = await fetch(
-            currentPage.infoUrlForCanvas(nextCanvas)
-        );
+      const response = await fetch(
+        currentPage.infoUrlForCanvas(nextCanvas)
+      );
 
-        if (!response.ok) {
-            maxPage = currentCanvas;
-            return;
-        }
-        canvasOffset += delta;
+      if (!response.ok) {
+        maxPage = currentCanvas;
+        return;
+      }
+      canvasOffset += delta;
     };
 </script>
 
@@ -72,7 +72,7 @@
     </div>
     <div class="modal-context-wrapper mb-3">
         {#if currentCanvas !== 1}
-            <NavigationArrow direction="left" delta={-1} navigationFct={changePage} css={"margin-left: -6em;"} icon={"circle"} text={i18n("prev", t)}/>
+            <NavigationArrow direction="left" delta={-1} navigationFct={changePage} css="margin-left: -6em;" icon="circle" text={i18n("prev", t)}/>
         {/if}
         <img class="card modal-context-full-page" src={fullPageUrl} alt={appLang === "fr" ? "Vue de la page d'où la région est extraite" : "View of the page the region is extracted from"}/>
         {#if canvasOffset === 0}
@@ -81,7 +81,7 @@
             {/await}
         {/if}
         {#if currentCanvas !== maxPage}
-            <NavigationArrow direction="right" delta={1} navigationFct={changePage} css={"margin-right: -6em;"} icon={"circle"} text={i18n("next", t)}/>
+            <NavigationArrow direction="right" delta={1} navigationFct={changePage} css="margin-right: -6em;" icon="circle" text={i18n("next", t)}/>
         {/if}
     </div>
 </div>

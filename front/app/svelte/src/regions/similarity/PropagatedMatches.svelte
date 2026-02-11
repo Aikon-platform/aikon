@@ -3,7 +3,7 @@
 
     import SimilarRegions from "./SimilarRegions.svelte";
 
-    import { csrfToken } from '../../constants.js';
+    import { csrfToken } from "../../constants.js";
     import { similarityStore } from "./similarityStore";
     import { createNewAndOld, equalArrayShallow } from "../../utils";
 
@@ -18,15 +18,15 @@
 
     const { propagateParams, selectedRegions } = similarityStore;
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
-    const currentPageId = window.location.pathname.match(/\d+/g).join('-');
+    const currentPageId = window.location.pathname.match(/\d+/g).join("-");
 
     let propagatedMatchesPromise;
 
     /** @type {NewAndOldType}*/
     const newAndOldPropagateParams = createNewAndOld();
     newAndOldPropagateParams.setCompareFn((x,y) =>
-        [x,y].every(_ =>
-            _ && _.hasOwnProperty("propagateRecursionDepth") && _.hasOwnProperty("propagateFilterByRegions"))
+      [x,y].every(_ =>
+        _ && _.hasOwnProperty("propagateRecursionDepth") && _.hasOwnProperty("propagateFilterByRegions"))
         ? x.propagateRecursionDepth === y.propagateRecursionDepth
             && x.propagateFilterByRegions === y.propagateFilterByRegions
         : false
@@ -46,7 +46,7 @@
      * @returns {number[]|[]} the IDs of each regions
      */
     const getRegionsIds = (_selectedRegions) =>
-        Object.keys(_selectedRegions).includes(currentPageId)
+      Object.keys(_selectedRegions).includes(currentPageId)
         ? Object.values(_selectedRegions[currentPageId]).map(v => v.id)
         : [];
 
@@ -57,40 +57,40 @@
      * @param {boolean} _isInModal
      */
     const getPropagatedMatches = async (_propagateParams, regionsForWitness, _isInModal ) =>
-        fetch(`${baseUrl}propagated-matches/${qImg}`, {
-            method: "POST",
-            body: JSON.stringify({
-                regionsIds: _isInModal ? [] : regionsForWitness,
-                filterByRegions: _isInModal ? false : _propagateParams.propagateFilterByRegions,
-                recursionDepth: _propagateParams.propagateRecursionDepth
-            }),
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            }
-        })
+      fetch(`${baseUrl}propagated-matches/${qImg}`, {
+        method: "POST",
+        body: JSON.stringify({
+          regionsIds: _isInModal ? [] : regionsForWitness,
+          filterByRegions: _isInModal ? false : _propagateParams.propagateFilterByRegions,
+          recursionDepth: _propagateParams.propagateRecursionDepth
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken
+        }
+      })
         .then(r => r.json())
         .catch(e => {
-            console.error("PropagatedMatches.getPropagatedMatches:", e);
-            return []
+          console.error("PropagatedMatches.getPropagatedMatches:", e);
+          return []
         });
 
     ////////////////////////////////////
 
     // for some reason, grouping `propagateParams` and `selectedRegions` in a single derived doesn't work, so we use 2 subscribes instead
     propagateParams.subscribe((newPropagateParams) => {
-        newAndOldPropagateParams.set(newPropagateParams);
-        if ( !newAndOldPropagateParams.same() ) {
-            propagatedMatchesPromise =
-                getPropagatedMatches(newAndOldPropagateParams.get(), getRegionsIds($selectedRegions), isInModal);
-        }
+      newAndOldPropagateParams.set(newPropagateParams);
+      if ( !newAndOldPropagateParams.same() ) {
+        propagatedMatchesPromise =
+          getPropagatedMatches(newAndOldPropagateParams.get(), getRegionsIds($selectedRegions), isInModal);
+      }
     })
     selectedRegions.subscribe((newSelectedRegions) => {
-        newAndOldSelectedRegions.set(getRegionsIds(newSelectedRegions));
-        if ( $propagateParams.propagateFilterByRegions === true && !newAndOldSelectedRegions.same() ) {
-            propagatedMatchesPromise =
-                getPropagatedMatches($propagateParams, newAndOldSelectedRegions.get(), isInModal);
-        }
+      newAndOldSelectedRegions.set(getRegionsIds(newSelectedRegions));
+      if ( $propagateParams.propagateFilterByRegions === true && !newAndOldSelectedRegions.same() ) {
+        propagatedMatchesPromise =
+          getPropagatedMatches($propagateParams, newAndOldSelectedRegions.get(), isInModal);
+      }
     })
 
 </script>

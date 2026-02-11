@@ -1,21 +1,21 @@
 <script>
-    import { getContext } from 'svelte';
+    import { getContext } from "svelte";
     import { regionsStore } from "./regionsStore.js";
     const { pageRegions, fetchPages } = regionsStore;
     import Pagination from "../Pagination.svelte";
     import Table from "../Table.svelte";
     import ExtractionButtons from "./ExtractionButtons.svelte";
-    import { appLang } from '../constants';
+    import { appLang } from "../constants";
     import { manifestToMirador, refToIIIF } from "../utils.js";
     import Row from "../Row.svelte";
     import Regions from "./Regions.svelte";
 
-    const manifest = getContext('manifest');
+    const manifest = getContext("manifest");
     const imgPrefix = getContext("imgPrefix");
-    const nbOfPages = getContext('nbOfPages');
-    const trailingZeros = getContext('trailingZeros');
+    const nbOfPages = getContext("nbOfPages");
+    const trailingZeros = getContext("trailingZeros");
 
-    const zeros = (n, l) => n.toString().padStart(l, '0');
+    const zeros = (n, l) => n.toString().padStart(l, "0");
     // NOTE here sometimes the number of trailing zeros generated is not corresponding to the number of pages
     const toImgName = (canvasNb) => `${imgPrefix}_${zeros(canvasNb, trailingZeros)}`;
 
@@ -26,14 +26,14 @@
 <Table>
     {#await $fetchPages}
         <tr class="faded is-center">
-            {appLang === 'en' ? 'Retrieving paginated regions...' : 'Récupération des pages...'}
+            {appLang === "en" ? "Retrieving paginated regions..." : "Récupération des pages..."}
         </tr>
     {:then _}
         {#if Object.values($pageRegions).length > 0}
             {#each Object.entries($pageRegions) as [canvasNb, items]}
                 <Row>
                     <svelte:fragment slot="row-header">
-                        <img src="{refToIIIF(toImgName(canvasNb), 'full', '250,')}" alt="Canvas {canvasNb}" class="mb-3 card">
+                        <img src="{refToIIIF(toImgName(canvasNb), "full", "250,")}" alt="Canvas {canvasNb}" class="mb-3 card">
                         <div class="is-center mb-1">
                             <a class="tag px-2 py-1 is-rounded is-hoverable" href="{manifestToMirador(manifest, canvasNb)}" target="_blank">
                                 <i class="fa-solid fa-pen-to-square"></i>
@@ -53,7 +53,7 @@
         {/if}
     {:catch error}
         <tr class="faded is-center">
-            {appLang === 'en' ? `Error when retrieving paginated regions: ${error}` : `Erreur de récupération des pages : ${error}`}
+            {appLang === "en" ? `Error when retrieving paginated regions: ${error}` : `Erreur de récupération des pages : ${error}`}
         </tr>
     {/await}
 </Table>

@@ -12,9 +12,9 @@
     export let similarItem;
 
     const flipChoices = [
-        { value: "h", label: appLang === "fr" ? "Basculer horizontalement" : "Flip horizontally" },
-        { value: "v", label: appLang === "fr" ? "Basculer verticalement" : "Flip vertically" },
-        { value: "hv", label: appLang === "fr" ? "Basculer H+V" : "Flip H+V" }
+      { value: "h", label: appLang === "fr" ? "Basculer horizontalement" : "Flip horizontally" },
+      { value: "v", label: appLang === "fr" ? "Basculer verticalement" : "Flip vertically" },
+      { value: "hv", label: appLang === "fr" ? "Basculer H+V" : "Flip H+V" }
     ];
 
     let overlayOpacity = 0.5;
@@ -32,18 +32,18 @@
                         scale(${overlayFlip.map(x => x * (overlayScale / 100)).join()})`;
 
     const updateFlip = (e) => {
-        const flip = e.detail[0];
-        overlayFlip = flip === "hv" ? [-1, -1] : flip === "h" ? [-1, 1] : flip === "v" ? [1, -1] : [1, 1];
+      const flip = e.detail[0];
+      overlayFlip = flip === "hv" ? [-1, -1] : flip === "h" ? [-1, 1] : flip === "v" ? [1, -1] : [1, 1];
     };
 
     const reset = () => {
-        overlayOpacity = 0.5;
-        overlayRotation = 0;
-        overlayScale = 100;
-        overlayFlip = [1, 1];
-        overlayTranslate = [0, 0];
-        currentlyResetting = true;
-        setTimeout(() => currentlyResetting = false, 300);
+      overlayOpacity = 0.5;
+      overlayRotation = 0;
+      overlayScale = 100;
+      overlayFlip = [1, 1];
+      overlayTranslate = [0, 0];
+      currentlyResetting = true;
+      setTimeout(() => currentlyResetting = false, 300);
     };
 </script>
 

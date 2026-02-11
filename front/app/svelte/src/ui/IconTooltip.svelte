@@ -14,8 +14,8 @@
     import TooltipGeneric from "./TooltipGeneric.svelte";
 
     export let iconifyIcon,
-               altText,
-               tooltipText;
+      altText,
+      tooltipText;
 </script>
 
 

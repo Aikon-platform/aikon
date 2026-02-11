@@ -1,22 +1,22 @@
 <script>
-    import { getContext } from 'svelte';
+    import { getContext } from "svelte";
 
     import { aiiinotateUrl } from "../constants.js";
     import { manifestToMirador, showMessage, downloadBlob, withLoading, toAiiinotateAnnotationUrl } from "../utils.js";
     import { regionsSelection } from "../selection/selectionStore.js";
     const { selected, nbSelected } = regionsSelection;
 
-    import { regionsStore } from './regionsStore.js';
+    import { regionsStore } from "./regionsStore.js";
     const { allRegions } = regionsStore;
-    import { appName, appLang, regionsType, csrfToken } from '../constants';
+    import { appName, appLang, regionsType, csrfToken } from "../constants";
 
     /** @type {number?} ID of the currently selected region (if there is a currently selected region) */
     export let currentRegionId;
     console.log(">>>", currentRegionId);
 
-    const manifest = getContext('manifest');
+    const manifest = getContext("manifest");
     const manifestShortId = manifest.split("/").at(-2);
-    const isValidated = getContext('isValidated');
+    const isValidated = getContext("isValidated");
 
     $: selectionLength = $nbSelected;
     $: isEditMode = !isValidated;
@@ -27,70 +27,70 @@
     $: areAllSelected = selectionLength >= Object.keys($allRegions).length;
 
     function toggleEditMode() {
-        isEditMode = !isEditMode;
-        // TODO send validation status to backend
+      isEditMode = !isEditMode;
+      // TODO send validation status to backend
     }
 
     async function deleteRegion(regionId) {
-        const urlDelete = `${aiiinotateUrl}/annotations/2/delete?uri=${toAiiinotateAnnotationUrl(manifestShortId, regionId)}`;
-        const response = await fetch(urlDelete, { method: "DELETE"});
-        if (response.status > 299) {
-            throw new Error(`Failed to delete ${urlDelete} due to ${response.status}: '${response.statusText}'`);
-        }
+      const urlDelete = `${aiiinotateUrl}/annotations/2/delete?uri=${toAiiinotateAnnotationUrl(manifestShortId, regionId)}`;
+      const response = await fetch(urlDelete, { method: "DELETE"});
+      if (response.status > 299) {
+        throw new Error(`Failed to delete ${urlDelete} due to ${response.status}: '${response.statusText}'`);
+      }
     }
 
     // TODO add toggle button to switch in between select mode and view mode
     async function deleteSelectedRegions() {
-        const confirmed = await showMessage(
-            appLang === "en" ? "Are you sure you want to delete these regions?" : "Voulez-vous vraiment supprimer ces régions ?",
-            appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
-            true
-        );
+      const confirmed = await showMessage(
+        appLang === "en" ? "Are you sure you want to delete these regions?" : "Voulez-vous vraiment supprimer ces régions ?",
+        appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
+        true
+      );
 
-        if (!confirmed) {
-            return; // User cancelled the deletion
+      if (!confirmed) {
+        return; // User cancelled the deletion
+      }
+
+      for (const [regionId, regionData] of Object.entries(selectedRegions)) {
+        try {
+          if (!$allRegions.hasOwnProperty(regionId)) {
+            // only delete regions that are displayed
+            continue;
+          }
+          await deleteRegion(regionId);
+          regionsStore.remove(regionId);
+          regionsSelection.remove(regionId, regionsType)
+
+        } catch (error) {
+          await showMessage(`Failed to delete region ${regionId}: ${error.message}`, "Error");
         }
-
-        for (const [regionId, regionData] of Object.entries(selectedRegions)) {
-            try {
-                if (!$allRegions.hasOwnProperty(regionId)) {
-                    // only delete regions that are displayed
-                    continue;
-                }
-                await deleteRegion(regionId);
-                regionsStore.remove(regionId);
-                regionsSelection.remove(regionId, regionsType)
-
-            } catch (error) {
-                await showMessage(`Failed to delete region ${regionId}: ${error.message}`, "Error");
-            }
-        }
+      }
     }
 
     function toggleAllSelection() {
-        if (areAllSelected) {
-            regionsSelection.removeAll(Object.keys($allRegions), regionsType);
-        } else {
-            regionsSelection.addAll(Object.values($allRegions));
-        }
+      if (areAllSelected) {
+        regionsSelection.removeAll(Object.keys($allRegions), regionsType);
+      } else {
+        regionsSelection.addAll(Object.values($allRegions));
+      }
     }
 
     async function downloadRegions(){
-        // download only displayed regions?
-        const regionsRef = Object.values(selectedRegions).map(r => r.ref);
-        const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/regions/export`, {
-            method: "POST",
-            headers: { "X-CSRFToken": csrfToken },
-            body: JSON.stringify({regionsRef})
-        }));
-        const blob = await response.blob();
-        // TODO find better filename
-        downloadBlob(blob, 'regions.zip');
+      // download only displayed regions?
+      const regionsRef = Object.values(selectedRegions).map(r => r.ref);
+      const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/regions/export`, {
+        method: "POST",
+        headers: { "X-CSRFToken": csrfToken },
+        body: JSON.stringify({regionsRef})
+      }));
+      const blob = await response.blob();
+      // TODO find better filename
+      downloadBlob(blob, "regions.zip");
     }
 </script>
 
 <div class="is-right mb-3">
-    <button class="button {isEditMode ? 'is-success' : 'is-link'} mr-3" on:click={() => toggleEditMode()}>
+    <button class="button {isEditMode ? "is-success" : "is-link"} mr-3" on:click={() => toggleEditMode()}>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="pr-3">
             {#if isEditMode}
                 <!--Check icon-->
@@ -100,7 +100,7 @@
                 <path d="M471.6 21.7c-21.9-21.9-57.3-21.9-79.2 0L362.3 51.7l97.9 97.9 30.1-30.1c21.9-21.9 21.9-57.3 0-79.2L471.6 21.7zm-299.2 220c-6.1 6.1-10.8 13.6-13.5 21.9l-29.6 88.8c-2.9 8.6-.6 18.1 5.8 24.6s15.9 8.7 24.6 5.8l88.8-29.6c8.2-2.7 15.7-7.4 21.9-13.5L437.7 172.3 339.7 74.3 172.4 241.7zM96 64C43 64 0 107 0 160V416c0 53 43 96 96 96H352c53 0 96-43 96-96V320c0-17.7-14.3-32-32-32s-32 14.3-32 32v96c0 17.7-14.3 32-32 32H96c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h96c17.7 0 32-14.3 32-32s-14.3-32-32-32H96z"/>
             {/if}
         </svg>
-        {#if isEditMode}{appLang === 'en' ? 'Validate' : 'Valider'}{:else}{appLang === 'en' ? 'Edit' : 'Modifier'}{/if}
+        {#if isEditMode}{appLang === "en" ? "Validate" : "Valider"}{:else}{appLang === "en" ? "Edit" : "Modifier"}{/if}
     </button>
     <button class="button is-link is-light mr-3" on:click={toggleAllSelection}>
         <!--<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
@@ -115,11 +115,11 @@
         {/if}
         </svg>-->
         <i class="fa-solid fa-square-check"></i>
-        <span id="all-selection">{appLang === 'en' ? 'Select all' : 'Tout sélectionner'}</span>
+        <span id="all-selection">{appLang === "en" ? "Select all" : "Tout sélectionner"}</span>
     </button>
     <button class="button is-link is-light" on:click={downloadRegions}>
         <i class="fa-solid fa-download"></i>
-        {appLang === 'en' ? 'Download' : 'Télécharger'}
+        {appLang === "en" ? "Download" : "Télécharger"}
     </button>
 </div>
 
@@ -128,19 +128,19 @@
         <!--TODO make reload fetch regions with api request-->
         <button class="tag is-link is-light is-rounded mr-3" on:click={() => location.reload()}>
             <i class="fa-solid fa-rotate-right"></i>
-            {appLang === 'en' ? 'Reload' : "Recharger"}
+            {appLang === "en" ? "Reload" : "Recharger"}
         </button>
         <!-- when no regions extraction have been made, we hide the button: "Go to editor" redirects
           to a Mirador editor for a specific region extraction, which hasn't been created yet -->
         {#if manifest.length && currentRegionId}
             <a class="tag is-link is-rounded mr-3" href="{manifestToMirador(manifest)}" target="_blank">
                 <i class="fa-solid fa-edit"></i>
-                {appLang === 'en' ? 'Go to editor' : "Aller à l'éditeur"}
+                {appLang === "en" ? "Go to editor" : "Aller à l'éditeur"}
             </a>
         {/if}
         <button class="tag is-danger is-rounded" on:click={deleteSelectedRegions}>
             <i class="fa-solid fa-trash"></i>
-            {appLang === 'en' ? 'Delete selected regions' : 'Supprimer les régions sélectionnées'}
+            {appLang === "en" ? "Delete selected regions" : "Supprimer les régions sélectionnées"}
         </button>
     {/if}
 </div>

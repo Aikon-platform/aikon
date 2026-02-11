@@ -12,11 +12,11 @@
 
     /** @returns {string} */
     function buildRedirectionUrl() {
-        const mainImgWitnessId = mainImgItem.img.match(/wit(\d+)/)[1];
-        const u = new URL(window.location.origin);
-        u.pathname = `${new URL(window.location).pathname.split("/")[1]}/witness/${mainImgWitnessId}/regions/`
-        u.searchParams.set("tab", "similarity");
-        return u.href;
+      const mainImgWitnessId = mainImgItem.img.match(/wit(\d+)/)[1];
+      const u = new URL(window.location.origin);
+      u.pathname = `${new URL(window.location).pathname.split("/")[1]}/witness/${mainImgWitnessId}/regions/`
+      u.searchParams.set("tab", "similarity");
+      return u.href;
     }
 </script>
 
@@ -24,8 +24,8 @@
     <a href={buildRedirectionUrl()}>
         <button class="button is-link is-small">
             {appLang === "fr" ?
-                "Voir toutes les similarités pour ce document" :
-                "View all similarities for this document"}
+              "Voir toutes les similarités pour ce document" :
+              "View all similarities for this document"}
         </button>
     </a>
 </div>

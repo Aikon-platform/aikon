@@ -1,5 +1,5 @@
 <script>
-    import { appName } from '../constants';
+    import { appName } from "../constants";
     import {onMount} from "svelte";
     import RegionsBtn from "../regions/RegionsBtn.svelte";
 
@@ -11,23 +11,23 @@
     let openContents = new Set();
 
     onMount(async () => {
-        const url = `${window.location.origin}/${appName}/witness/select`;
-        try {
-            const response = await fetch(url);
-            choices = await response.json();
-        } catch (error) {
-            console.error('Error:', error);
-            return false;
-        }
+      const url = `${window.location.origin}/${appName}/witness/select`;
+      try {
+        const response = await fetch(url);
+        choices = await response.json();
+      } catch (error) {
+        console.error("Error:", error);
+        return false;
+      }
     });
 
     function showContent(id) {
-        if (openContents.has(id)) {
-            openContents.delete(id);
-        } else {
-            openContents.add(id);
-        }
-        openContents = new Set(openContents);
+      if (openContents.has(id)) {
+        openContents.delete(id);
+      } else {
+        openContents.add(id);
+      }
+      openContents = new Set(openContents);
     }
 </script>
 

@@ -2,28 +2,28 @@
     export let selectionStore;
 
     const { isSaved, selection } = selectionStore;
-    import {appLang, appName} from '../constants';
+    import {appLang, appName} from "../constants";
 
-    export let isRegion = selectionStore.type !== 'documentSet';
+    export let isRegion = selectionStore.type !== "documentSet";
 </script>
 
 <footer class="modal-card-foot is-center">
     <div class="buttons">
         <button class="button button-close is-link is-light" on:click={() => selectionStore.empty()}>
-            {appLang === 'en' ? 'Clear selection' : 'Vider la sélection'}
+            {appLang === "en" ? "Clear selection" : "Vider la sélection"}
         </button>
         {#if $isSaved && !isRegion}
             <a class="button is-link" href="/{appName}/treatment/add/?document_set={$selection?.id}">
                 <span>
                     <i class="fa-solid fa-gear"></i>
-                    {appLang === 'en' ? 'Go to treatment' : 'Accéder au traitement'}
+                    {appLang === "en" ? "Go to treatment" : "Accéder au traitement"}
                 </span>
             </a>
         {:else}
             <button class="button is-link" on:click={() => selectionStore.save()}>
                 <span>
                     <i class="fa-solid fa-floppy-disk"></i>
-                    {appLang === 'en' ? 'Save selection' : 'Sauvegarder la sélection'}
+                    {appLang === "en" ? "Save selection" : "Sauvegarder la sélection"}
                 </span>
             </button>
         {/if}

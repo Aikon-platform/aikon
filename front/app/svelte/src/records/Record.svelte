@@ -14,7 +14,7 @@
         {#each Object.entries(item.metadata) as [field, value]}
             <div class="datum is-middle columns">
                 <div class="column is-4 is-bold">{field}</div>
-                <div class="column is-8 {value === '-' ? 'faded' : ''}">{@html value}</div>
+                <div class="column is-8 {value === "-" ? "faded" : ""}">{@html value}</div>
             </div>
         {/each}
     </div>

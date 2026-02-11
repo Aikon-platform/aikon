@@ -102,12 +102,11 @@
     const resetTriggerContext = getContext("resetTrigger") || undefined;
     resetTriggerContext?.subscribe(() => resetInputDropdown(choicesObj, choicesItems, start, selectAll));
 
-
     /** @type {Array} array of DropdownChoiceItem.value */
-    $: selectedValues = [];
+    let selectedValues = [];
 
     /** @type {Array} temprarily toggled in `useDispatchLock`. when true, will block all requests */
-    $: dispatchLock = false;
+    let dispatchLock = false;
 
     /** dispatching of selected elements to the parent component happens when `selectedValues` is updated and `dispatchLock` is set to false. this avoids intermediate calls to `dispatch` when selecting all elements. */
     $: bufferedDispatch(selectedValues, dispatchLock);
@@ -116,50 +115,50 @@
 
     /** block all dispatches of `updateValues` for `dispatchLockDuration` */
     const useDispatchLock = () => {
-        dispatchLock = true;
-        setTimeout(() => dispatchLock = false, dispatchLockDuration);
+      dispatchLock = true;
+      setTimeout(() => dispatchLock = false, dispatchLockDuration);
     }
 
     const bufferedDispatch = (_selectedValues, _dispatchLock) => {
-        if ( !_dispatchLock ) {
-            newAndOldSelectedValues.set(_selectedValues);
-            if ( !newAndOldSelectedValues.same()  ) {
-                dispatch("updateValues", selectedValues);
-            }
+      if ( !_dispatchLock ) {
+        newAndOldSelectedValues.set(_selectedValues);
+        if ( !newAndOldSelectedValues.same()  ) {
+          dispatch("updateValues", selectedValues);
         }
+      }
     };
 
     const toIconify = (iconifyId) => `<span class="iconify" data-icon=${iconifyId}/>`;
 
     const prefixToHtml = (prefix, prefixType) =>
-        prefix != null && prefixType != null && prefix.length && prefixType.length
+      prefix != null && prefixType != null && prefix.length && prefixType.length
         ? `<span class="dropdown-prefix-wrapper">${
-            prefixType==="iconify" ? toIconify(prefix) : prefix
+          prefixType==="iconify" ? toIconify(prefix) : prefix
         }</span>`
         : "";
 
     const maybeAddSelectAll = (_choicesItems, _selectAll) =>
-        _selectAll
+      _selectAll
         ? [
-            {
-                value: selectAllValue,
-                label: `<b>${appLang==="fr" ? "Tout sélectionner" : "Select all"}</b>`
-            }, {
-                value: unSelectAllValue,
-                label: `<b>${appLang==="fr" ? "Tout retirer" : "Remove all"}</b>`
-            }, ..._choicesItems
+          {
+            value: selectAllValue,
+            label: `<b>${appLang==="fr" ? "Tout sélectionner" : "Select all"}</b>`
+          }, {
+            value: unSelectAllValue,
+            label: `<b>${appLang==="fr" ? "Tout retirer" : "Remove all"}</b>`
+          }, ..._choicesItems
         ]
         : _choicesItems;
 
     const formatChoices = (_choicesItems, _selectAll) =>
-        maybeAddSelectAll(_choicesItems, _selectAll)
+      maybeAddSelectAll(_choicesItems, _selectAll)
         .map(el => {
-            el.id = `dropdown-choice-${window.crypto.randomUUID()}`;;
-            el.label = `<span>
+          el.id = `dropdown-choice-${window.crypto.randomUUID()}`;;
+          el.label = `<span>
                 ${prefixToHtml(el.prefix || "",  el.prefixType || "")}
                 <span class="dropdown-prefix-text">${el.label}</span>
             </span>`;
-            return el;
+          return el;
         });
 
     /**
@@ -169,16 +168,16 @@
      * @param {boolean} _selectedAll
      */
     function initData(_choicesItems, _start, _selectAll) {
-        _choicesItems = structuredClone(_choicesItems);
-        _start = structuredClone(_start);
-        // all items in _choicesItems with `selected: true` will be automatically pre-selected.
-        _choicesItems = formatChoices(_choicesItems, _selectAll).map(c =>
-            _start.includes(c.value)
-            ? ({ ...c, selected: true })
-            : ({ ...c, selected: false })
-        )
-        selectedValues = _start
-        return _choicesItems;
+      _choicesItems = structuredClone(_choicesItems);
+      _start = structuredClone(_start);
+      // all items in _choicesItems with `selected: true` will be automatically pre-selected.
+      _choicesItems = formatChoices(_choicesItems, _selectAll).map(c =>
+        _start.includes(c.value)
+          ? ({ ...c, selected: true })
+          : ({ ...c, selected: false })
+      )
+      selectedValues = _start
+      return _choicesItems;
     }
 
     /**
@@ -189,10 +188,10 @@
      * @param {boolean} _selectedAll
      */
     function resetInputDropdown(_choicesObj, _choicesItems, _start, _selectAll) {
-        if ( _choicesObj ) {
-            _choicesItems = initData(_choicesItems, _start, _selectAll);
-            _choicesObj.clearStore().setChoices(_choicesItems);
-        }
+      if ( _choicesObj ) {
+        _choicesItems = initData(_choicesItems, _start, _selectAll);
+        _choicesObj.clearStore().setChoices(_choicesItems);
+      }
     }
 
     /**
@@ -218,38 +217,38 @@
      * @returns {any[]} : the updated _selectedValues
      */
     const onAddItem = (e, _choicesObj, _choicesItems, _selectedValues, _selectAllValue, _unSelectAllValue) => {
-        _selectedValues = structuredClone(_selectedValues);
-        _choicesItems = structuredClone(_choicesItems);
-        if (e.detail.value === _selectAllValue) {
-            useDispatchLock();
-            // set `selectedValues` + unselect all previous choices and reselect all choices except the Select/Unselect ones.
-            _choicesItems = _choicesItems.map(c =>
-                [_selectAllValue, _unSelectAllValue].includes(c.value)
-                ? ({ ...c, selected: false })
-                : ({ ...c, selected: true })
-            );
-            _choicesObj
-                .removeActiveItems()
-                .clearChoices(true, true)  // removes all choices, selected or not. without that, `setValue` will extend existing choices with _choicesItems instead of replacing.
-                .setValue(_choicesItems)
-                .hideDropdown();
-            _selectedValues = [...new Set(
-                _choicesItems
-                .filter(c => c.selected===true)
-                .map(c => c.value)
-            )];
-        } else if (e.detail.value === _unSelectAllValue) {
-            _choicesObj
-                .removeActiveItems()
-                .hideDropdown();
-            _selectedValues = [];
-        } else {
-            _selectedValues =
-                multiple===true
-                ? [..._selectedValues, e.detail.value]
-                : [e.detail.value];
-        }
-        return [...new Set(_selectedValues)];
+      _selectedValues = structuredClone(_selectedValues);
+      _choicesItems = structuredClone(_choicesItems);
+      if (e.detail.value === _selectAllValue) {
+        useDispatchLock();
+        // set `selectedValues` + unselect all previous choices and reselect all choices except the Select/Unselect ones.
+        _choicesItems = _choicesItems.map(c =>
+          [_selectAllValue, _unSelectAllValue].includes(c.value)
+            ? ({ ...c, selected: false })
+            : ({ ...c, selected: true })
+        );
+        _choicesObj
+          .removeActiveItems()
+          .clearChoices(true, true)  // removes all choices, selected or not. without that, `setValue` will extend existing choices with _choicesItems instead of replacing.
+          .setValue(_choicesItems)
+          .hideDropdown();
+        _selectedValues = [...new Set(
+          _choicesItems
+            .filter(c => c.selected===true)
+            .map(c => c.value)
+        )];
+      } else if (e.detail.value === _unSelectAllValue) {
+        _choicesObj
+          .removeActiveItems()
+          .hideDropdown();
+        _selectedValues = [];
+      } else {
+        _selectedValues =
+          multiple===true
+            ? [..._selectedValues, e.detail.value]
+            : [e.detail.value];
+      }
+      return [...new Set(_selectedValues)];
     };
 
     /**
@@ -258,70 +257,70 @@
      * @returns {any[]} : the updated _selectedValues
      */
     const onRemoveItem = (e, _selectedValues) =>
-        structuredClone(_selectedValues).filter(s => s !== e.detail.value);
+      structuredClone(_selectedValues).filter(s => s !== e.detail.value);
 
     /**
      * @param {DropdownChoiceArray} _choicesItems: all the available choices
      * @param {boolean} _selectAll
      */
     function initChoices(_choicesItems, _selectAll) {
-        const choicesTarget = document.getElementById(htmlId);
+      const choicesTarget = document.getElementById(htmlId);
 
-        choicesObj = new Choices(choicesTarget, {
-            items: [],
-            choices: _choicesItems,
-            addChoices: false,
-            addItems: false,
-            removeItems: true,
-            removeItemButton: true,
-            searchEnabled: searchable,
-            allowHTML: true,
-            shouldSort: _selectAll ? false : true,  // if selectAll, then "Select all" "Remove all" should be on top.
-            sorter: (a,b) => a.label.localeCompare(b.label),  // alpanumeric sorting
-            placeholderValue: placeholder,
-            classNames: {
-                item: ["choices__item", "dropdown-item"]
-            },
-            loadingText: appLang === "fr" ? 'Chargement...' : 'Loading...',
-            noResultsText: appLang === "fr" ? "Pas de résultats" : 'No results found',
-            noChoicesText: appLang === "fr" ? "Pas de choix pour faire la sélection" : 'No choices to choose from',
-            itemSelectText: appLang === "fr" ? "Cliquer pour sélectionner" : 'Press to select',
-            uniqueItemText: appLang === "fr" ? "Seules des valeurs uniques peuvent être ajoutées" : 'Only unique values can be added',
-            customAddItemText: appLang === "fr" ? "Les valeurs ne répondent pas aux conditions attendues" : 'Only values matching specific conditions can be added',
-            removeItemIconText: appLang === "fr" ? "Retirer l'item" : `Remove item`,
-            addItemText: (value) =>
-                appLang === "fr"
-                ? `Cliquer sur Entrer pour ajouter <b>${value}</b>`
-                : `Press Enter to add <b>"${value}"</b>`,
-            removeItemLabelText: (value) =>
-                appLang === "fr"
-                ? `Retirer l'item: ${value}`
-                : `Remove item: ${value}`,
-            maxItemText: (maxItemCount) =>
-                appLang === "fr"
-                ? `Seulement ${maxItemCount} items peuvent être ajoutées`
-                : `Only ${maxItemCount} items can be added`
-        })
+      choicesObj = new Choices(choicesTarget, {
+        items: [],
+        choices: _choicesItems,
+        addChoices: false,
+        addItems: false,
+        removeItems: true,
+        removeItemButton: true,
+        searchEnabled: searchable,
+        allowHTML: true,
+        shouldSort: _selectAll ? false : true,  // if selectAll, then "Select all" "Remove all" should be on top.
+        sorter: (a,b) => a.label.localeCompare(b.label),  // alpanumeric sorting
+        placeholderValue: placeholder,
+        classNames: {
+          item: ["choices__item", "dropdown-item"]
+        },
+        loadingText: appLang === "fr" ? "Chargement..." : "Loading...",
+        noResultsText: appLang === "fr" ? "Pas de résultats" : "No results found",
+        noChoicesText: appLang === "fr" ? "Pas de choix pour faire la sélection" : "No choices to choose from",
+        itemSelectText: appLang === "fr" ? "Cliquer pour sélectionner" : "Press to select",
+        uniqueItemText: appLang === "fr" ? "Seules des valeurs uniques peuvent être ajoutées" : "Only unique values can be added",
+        customAddItemText: appLang === "fr" ? "Les valeurs ne répondent pas aux conditions attendues" : "Only values matching specific conditions can be added",
+        removeItemIconText: appLang === "fr" ? "Retirer l'item" : "Remove item",
+        addItemText: (value) =>
+          appLang === "fr"
+            ? `Cliquer sur Entrer pour ajouter <b>${value}</b>`
+            : `Press Enter to add <b>"${value}"</b>`,
+        removeItemLabelText: (value) =>
+          appLang === "fr"
+            ? `Retirer l'item: ${value}`
+            : `Remove item: ${value}`,
+        maxItemText: (maxItemCount) =>
+          appLang === "fr"
+            ? `Seulement ${maxItemCount} items peuvent être ajoutées`
+            : `Only ${maxItemCount} items can be added`
+      })
 
-        // reassigning `selectedValues` will trigger a dispatch of `updateValues` (see `bufferedDispatch`)
-        choicesTarget.addEventListener("addItem", (e) => {
-            selectedValues = onAddItem(e, choicesObj, _choicesItems, selectedValues, selectAllValue, unSelectAllValue)
-        });
-        choicesTarget.addEventListener("removeItem", (e) => {
-            selectedValues = onRemoveItem(e, selectedValues)
-        })
+      // reassigning `selectedValues` will trigger a dispatch of `updateValues` (see `bufferedDispatch`)
+      choicesTarget.addEventListener("addItem", (e) => {
+        selectedValues = onAddItem(e, choicesObj, _choicesItems, selectedValues, selectAllValue, unSelectAllValue)
+      });
+      choicesTarget.addEventListener("removeItem", (e) => {
+        selectedValues = onRemoveItem(e, selectedValues)
+      })
     }
 
     /////////////////////////////////////////////////////
 
     onMount(() => {
-        const _choicesItems = initData(choicesItems, start, selectAll);
-        initChoices(_choicesItems, selectAll);
+      const _choicesItems = initData(choicesItems, start, selectAll);
+      initChoices(_choicesItems, selectAll);
     })
 
     onDestroy(() => {
-        choicesObj.destroy();
-        choicesObj = undefined;
+      choicesObj.destroy();
+      choicesObj = undefined;
     })
 </script>
 
@@ -331,9 +330,9 @@
         <label for={htmlId}>{title}</label>
     {/if}
     <div class="input-dropdown-select
-                { multiple ? 'is-multiple' : 'is-single' }
-                { multiple && selectedValues.length ? 'is-flex is-justify-content-flex-start is-align-items-center' : ''}
-                { lightDisplay ? 'light-display' : ''}"
+                { multiple ? "is-multiple" : "is-single" }
+                { multiple && selectedValues.length ? "is-flex is-justify-content-flex-start is-align-items-center" : ""}
+                { lightDisplay ? "light-display" : ""}"
     >
         {#if multiple }
             {#if selectedValues.length }
@@ -345,12 +344,12 @@
                         targetHtmlId={counterHtmlId}
                         tooltipText={`${selectedValues.length}
                                     ${ appLang==="fr" && selectedValues.length > 1
-                                    ? "valeurs sélectionnées"
-                                    : appLang==="fr" && selectedValues.length === 1
-                                    ? "valeur sélectionnée"
-                                    : appLang==="en" && selectedValues.length > 1
-                                    ? "selected values"
-                                    : "selected value"
+                          ? "valeurs sélectionnées"
+                          : appLang==="fr" && selectedValues.length === 1
+                            ? "valeur sélectionnée"
+                            : appLang==="en" && selectedValues.length > 1
+                              ? "selected values"
+                              : "selected value"
                                     }`}
                     ></TooltipGeneric>
                 </span>

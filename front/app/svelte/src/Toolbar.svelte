@@ -1,26 +1,27 @@
 <script>
-    import {slide} from 'svelte/transition';
+    import {slide} from "svelte/transition";
     import TooltipGeneric from "./ui/TooltipGeneric.svelte";
     import {appLang} from "./constants.js";
 
-    $: toolbarExpanded = false;
     export let expandable = true;
 
+    let toolbarExpanded = false;
+
     const toolbarText = {
-        true: {
-            en: "Collapse the toolbar",
-            fr: "Refermer le menu"
-        },
-        false: {
-            en: "Expand the toolbar",
-            fr: "Ouvrir le menu"
-        }
+      true: {
+        en: "Collapse the toolbar",
+        fr: "Refermer le menu"
+      },
+      false: {
+        en: "Expand the toolbar",
+        fr: "Ouvrir le menu"
+      }
     }
     const toggleToolbarExpanded = () => toolbarExpanded = !toolbarExpanded;
 </script>
 
 <div id="toolbar" class="ctrl-wrapper is-flex is-justify-content-center is-align-items-center
-     { toolbarExpanded ? 'toolbar-expanded' : 'toolbar-collapsed' }">
+     { toolbarExpanded ? "toolbar-expanded" : "toolbar-collapsed" }">
 
     <form class="ctrl">
         <div class="ctrl-base">

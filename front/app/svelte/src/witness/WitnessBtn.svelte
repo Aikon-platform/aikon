@@ -6,33 +6,33 @@
     let selectedManifest = manifests?.[0] || "";
 
     function selectManifest(e) {
-        selectedManifest = e.target.value;
-        window.dispatchEvent(new CustomEvent("selectManifest", {
-            detail: { selectedManifest }
-        }));
+      selectedManifest = e.target.value;
+      window.dispatchEvent(new CustomEvent("selectManifest", {
+        detail: { selectedManifest }
+      }));
     }
 
     function manifestLabel(url) {
-        const manifest = url.match(/(?:man|img|pdf)(\d+)/);
-        const manifestId = manifest ? manifest[1] : "?";
+      const manifest = url.match(/(?:man|img|pdf)(\d+)/);
+      const manifestId = manifest ? manifest[1] : "?";
 
-        const regionsExtId = url.match(/anno(\d+)/);
-        const regionsExtNumber = regionsExtId ? regionsExtId[1] : null;
+      const regionsExtId = url.match(/anno(\d+)/);
+      const regionsExtNumber = regionsExtId ? regionsExtId[1] : null;
 
-        let label = "";
-        label += `${appLang === "en" ? "Manifest" : "Manifeste"} #${manifestId}`;
+      let label = "";
+      label += `${appLang === "en" ? "Manifest" : "Manifeste"} #${manifestId}`;
 
-        if (regionsExtNumber) {
-            label += `, ${appLang === "en" ? "Regions extraction" : "Extraction de régions"} #${regionsExtNumber}`;
-        }
+      if (regionsExtNumber) {
+        label += `, ${appLang === "en" ? "Regions extraction" : "Extraction de régions"} #${regionsExtNumber}`;
+      }
 
-        return label;
+      return label;
     }
 </script>
 
 <div class="field selector is-flex is-right mb-2">
     <label for="digit" class="label">
-        {appLang === 'en' ? "Digitization:" : 'Numérisation :'}
+        {appLang === "en" ? "Digitization:" : "Numérisation :"}
     </label>
     <div id="digit" class="control pl-3">
         <div class="select is-small">

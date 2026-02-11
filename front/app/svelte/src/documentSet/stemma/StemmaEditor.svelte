@@ -1,14 +1,14 @@
 <script>
-    import { onMount, onDestroy, afterUpdate, createEventDispatcher } from 'svelte';
-    import * as d3 from 'd3';
+    import { onMount, onDestroy, afterUpdate, createEventDispatcher } from "svelte";
+    import * as d3 from "d3";
     import {i18n} from "../../utils.js";
 
     export let documents = [];
     export let stemmaStore;
 
     const {
-        selectedNodes, edges, nodePositions, nodeTitles,
-        updateNodeTitle, updateEdgeLabel, clearGraph, removeEdge
+      selectedNodes, edges, nodePositions, nodeTitles,
+      updateNodeTitle, updateEdgeLabel, clearGraph, removeEdge
     } = stemmaStore;
 
     let container;
@@ -29,338 +29,338 @@
     let drawingEdge = null;
     let hoveredNode = null;
     let editingNode = null;
-    let editTitle = '';
+    let editTitle = "";
     let editingEdge = null;
-    let editLabel = '';
+    let editLabel = "";
 
     const t = {
-        rename: {en: 'Rename node in stemma', fr: "Renommer un nœud au sein du stemma"},
-        editEdge: {en: 'Edit connection', fr: "Modifier la connexion"},
-        label: {en: 'Label (optional)', fr: "Libellé (optionnel)"},
-        delete: {en: 'Delete', fr: "Supprimer"},
-        save: {en: 'Save', fr: "Enregistrer"},
-        cancel: {en: 'Cancel', fr: "Annuler"},
-        reset: { en: 'Reset stemma', fr: 'Réinitialiser le stemma' }
+      rename: {en: "Rename node in stemma", fr: "Renommer un nœud au sein du stemma"},
+      editEdge: {en: "Edit connection", fr: "Modifier la connexion"},
+      label: {en: "Label (optional)", fr: "Libellé (optionnel)"},
+      delete: {en: "Delete", fr: "Supprimer"},
+      save: {en: "Save", fr: "Enregistrer"},
+      cancel: {en: "Cancel", fr: "Annuler"},
+      reset: { en: "Reset stemma", fr: "Réinitialiser le stemma" }
     }
 
     afterUpdate(render);
 
     function resetStemma() {
-        clearGraph();
-        initNodes(documents);
+      clearGraph();
+      initNodes(documents);
     }
 
     function extractCssColor(varName, fallback) {
-        const temp = document.createElement('div');
-        temp.style.color = `var(${varName}, ${fallback})`;
-        document.body.appendChild(temp);
-        const computed = getComputedStyle(temp).color;
-        document.body.removeChild(temp);
-        return computed;
+      const temp = document.createElement("div");
+      temp.style.color = `var(${varName}, ${fallback})`;
+      document.body.appendChild(temp);
+      const computed = getComputedStyle(temp).color;
+      document.body.removeChild(temp);
+      return computed;
     }
 
     function initNodes(docs) {
-        const cols = Math.ceil(Math.sqrt(docs.length));
-        const spacing = { x: NODE_WIDTH + 60, y: NODE_HEIGHT + 80 };
+      const cols = Math.ceil(Math.sqrt(docs.length));
+      const spacing = { x: NODE_WIDTH + 60, y: NODE_HEIGHT + 80 };
 
-        nodes = docs.map((doc, i) => {
-            const saved = $nodePositions[doc.id];
-            const customTitle = $nodeTitles[doc.id];
-            return {
-                id: doc.id,
-                title: customTitle || doc.title || `Document ${doc.id}`,
-                color: doc.color || '#999',
-                x: saved?.x ?? (i % cols) * spacing.x + 100,
-                y: saved?.y ?? Math.floor(i / cols) * spacing.y + 100,
-                width: NODE_WIDTH,
-                height: NODE_HEIGHT
-            };
-        });
-        render();
+      nodes = docs.map((doc, i) => {
+        const saved = $nodePositions[doc.id];
+        const customTitle = $nodeTitles[doc.id];
+        return {
+          id: doc.id,
+          title: customTitle || doc.title || `Document ${doc.id}`,
+          color: doc.color || "#999",
+          x: saved?.x ?? (i % cols) * spacing.x + 100,
+          y: saved?.y ?? Math.floor(i / cols) * spacing.y + 100,
+          width: NODE_WIDTH,
+          height: NODE_HEIGHT
+        };
+      });
+      render();
     }
 
     function getNodeAt(mx, my) {
-        const x = (mx - transform.x) / transform.k;
-        const y = (my - transform.y) / transform.k;
-        for (let i = nodes.length - 1; i >= 0; i--) {
-            const n = nodes[i];
-            if (x >= n.x && x <= n.x + n.width && y >= n.y && y <= n.y + n.height) {
-                return n;
-            }
+      const x = (mx - transform.x) / transform.k;
+      const y = (my - transform.y) / transform.k;
+      for (let i = nodes.length - 1; i >= 0; i--) {
+        const n = nodes[i];
+        if (x >= n.x && x <= n.x + n.width && y >= n.y && y <= n.y + n.height) {
+          return n;
         }
-        return null;
+      }
+      return null;
     }
 
     function getEdgeAt(mx, my) {
-        const x = (mx - transform.x) / transform.k;
-        const y = (my - transform.y) / transform.k;
-        const threshold = 8 / transform.k;
+      const x = (mx - transform.x) / transform.k;
+      const y = (my - transform.y) / transform.k;
+      const threshold = 8 / transform.k;
 
-        for (const e of $edges) {
-            const src = nodes.find(n => n.id === e.source);
-            const tgt = nodes.find(n => n.id === e.target);
-            if (!src || !tgt) continue;
+      for (const e of $edges) {
+        const src = nodes.find(n => n.id === e.source);
+        const tgt = nodes.find(n => n.id === e.target);
+        if (!src || !tgt) continue;
 
-            const sx = src.x + src.width / 2, sy = src.y + src.height;
-            const tx = tgt.x + tgt.width / 2, ty = tgt.y;
-            const len = Math.hypot(tx - sx, ty - sy);
-            if (len === 0) continue;
+        const sx = src.x + src.width / 2, sy = src.y + src.height;
+        const tx = tgt.x + tgt.width / 2, ty = tgt.y;
+        const len = Math.hypot(tx - sx, ty - sy);
+        if (len === 0) continue;
 
-            const t = Math.max(0, Math.min(1, ((x - sx) * (tx - sx) + (y - sy) * (ty - sy)) / (len * len)));
-            const dist = Math.hypot(x - (sx + t * (tx - sx)), y - (sy + t * (ty - sy)));
-            if (dist < threshold) return e;
-        }
-        return null;
+        const t = Math.max(0, Math.min(1, ((x - sx) * (tx - sx) + (y - sy) * (ty - sy)) / (len * len)));
+        const dist = Math.hypot(x - (sx + t * (tx - sx)), y - (sy + t * (ty - sy)));
+        if (dist < threshold) return e;
+      }
+      return null;
     }
 
     function render() {
-        if (!ctx) return;
-        ctx.save();
-        ctx.fillStyle = bgColor;
-        ctx.fillRect(0, 0, width, height);
-        ctx.translate(transform.x, transform.y);
-        ctx.scale(transform.k, transform.k);
+      if (!ctx) return;
+      ctx.save();
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, width, height);
+      ctx.translate(transform.x, transform.y);
+      ctx.scale(transform.k, transform.k);
 
-        ctx.lineWidth = 2 / transform.k;
-        $edges.forEach(e => {
-            const src = nodes.find(n => n.id === e.source);
-            const tgt = nodes.find(n => n.id === e.target);
-            if (src && tgt) {
-                drawArrow(src, tgt, linkColor);
-                if (e.label) {
-                    const mx = (src.x + src.width / 2 + tgt.x + tgt.width / 2) / 2;
-                    const my = (src.y + src.height + tgt.y) / 2;
-                    ctx.fillStyle = linkColor;
-                    ctx.font = `${10 / transform.k}px sans-serif`;
-                    ctx.textAlign = 'center';
-                    ctx.fillText(e.label, mx, my - 4 / transform.k);
-                }
-            }
-        });
-
-        if (drawingEdge) {
-            const src = nodes.find(n => n.id === drawingEdge.source);
-            if (src) {
-                ctx.strokeStyle = linkColor;
-                ctx.setLineDash([5, 5]);
-                ctx.beginPath();
-                ctx.moveTo(src.x + src.width / 2, src.y + src.height);
-                ctx.lineTo(drawingEdge.x, drawingEdge.y);
-                ctx.stroke();
-                ctx.setLineDash([]);
-            }
+      ctx.lineWidth = 2 / transform.k;
+      $edges.forEach(e => {
+        const src = nodes.find(n => n.id === e.source);
+        const tgt = nodes.find(n => n.id === e.target);
+        if (src && tgt) {
+          drawArrow(src, tgt, linkColor);
+          if (e.label) {
+            const mx = (src.x + src.width / 2 + tgt.x + tgt.width / 2) / 2;
+            const my = (src.y + src.height + tgt.y) / 2;
+            ctx.fillStyle = linkColor;
+            ctx.font = `${10 / transform.k}px sans-serif`;
+            ctx.textAlign = "center";
+            ctx.fillText(e.label, mx, my - 4 / transform.k);
+          }
         }
+      });
 
-        const selectedIds = new Set($selectedNodes.map(n => n.id));
-        nodes.forEach(n => {
-            const isHovered = hoveredNode === n;
-            const isSelected = selectedIds.has(n.id);
+      if (drawingEdge) {
+        const src = nodes.find(n => n.id === drawingEdge.source);
+        if (src) {
+          ctx.strokeStyle = linkColor;
+          ctx.setLineDash([5, 5]);
+          ctx.beginPath();
+          ctx.moveTo(src.x + src.width / 2, src.y + src.height);
+          ctx.lineTo(drawingEdge.x, drawingEdge.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
 
-            ctx.fillStyle = n.color;
-            ctx.strokeStyle = isSelected ? selectedColor : (isHovered ? selectedColor : n.color);
-            ctx.lineWidth = (isSelected ? 3 : (isHovered ? 2 : 1)) / transform.k;
+      const selectedIds = new Set($selectedNodes.map(n => n.id));
+      nodes.forEach(n => {
+        const isHovered = hoveredNode === n;
+        const isSelected = selectedIds.has(n.id);
 
-            ctx.beginPath();
-            ctx.roundRect(n.x, n.y, n.width, n.height, 4);
-            ctx.fill();
-            ctx.stroke();
+        ctx.fillStyle = n.color;
+        ctx.strokeStyle = isSelected ? selectedColor : (isHovered ? selectedColor : n.color);
+        ctx.lineWidth = (isSelected ? 3 : (isHovered ? 2 : 1)) / transform.k;
 
-            ctx.fillStyle = '#222';
-            ctx.font = `${12 / transform.k}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            const label = n.title.length > 14 ? n.title.slice(0, 12) + '…' : n.title;
-            ctx.fillText(label, n.x + n.width / 2, n.y + n.height / 2);
-        });
+        ctx.beginPath();
+        ctx.roundRect(n.x, n.y, n.width, n.height, 4);
+        ctx.fill();
+        ctx.stroke();
 
-        ctx.restore();
+        ctx.fillStyle = "#222";
+        ctx.font = `${12 / transform.k}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const label = n.title.length > 14 ? n.title.slice(0, 12) + "…" : n.title;
+        ctx.fillText(label, n.x + n.width / 2, n.y + n.height / 2);
+      });
+
+      ctx.restore();
     }
 
     function drawArrow(src, tgt, color) {
-        const sx = src.x + src.width / 2;
-        const sy = src.y + src.height;
-        const tx = tgt.x + tgt.width / 2;
-        const ty = tgt.y;
+      const sx = src.x + src.width / 2;
+      const sy = src.y + src.height;
+      const tx = tgt.x + tgt.width / 2;
+      const ty = tgt.y;
 
-        ctx.strokeStyle = color;
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(tx, ty);
-        ctx.stroke();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(tx, ty);
+      ctx.stroke();
 
-        const angle = Math.atan2(ty - sy, tx - sx);
-        const headLen = 10 / transform.k;
-        ctx.beginPath();
-        ctx.moveTo(tx, ty);
-        ctx.lineTo(tx - headLen * Math.cos(angle - Math.PI / 6), ty - headLen * Math.sin(angle - Math.PI / 6));
-        ctx.lineTo(tx - headLen * Math.cos(angle + Math.PI / 6), ty - headLen * Math.sin(angle + Math.PI / 6));
-        ctx.closePath();
-        ctx.fill();
+      const angle = Math.atan2(ty - sy, tx - sx);
+      const headLen = 10 / transform.k;
+      ctx.beginPath();
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(tx - headLen * Math.cos(angle - Math.PI / 6), ty - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(tx - headLen * Math.cos(angle + Math.PI / 6), ty - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
     }
 
     function handleMouseDown(e) {
-        const [mx, my] = d3.pointer(e);
-        const node = getNodeAt(mx, my);
+      const [mx, my] = d3.pointer(e);
+      const node = getNodeAt(mx, my);
 
-        if (node) {
-             if (e.shiftKey || e.metaKey) {
-                 drawingEdge = { source: node.id, x: (mx - transform.x) / transform.k, y: (my - transform.y) / transform.k };
-             } else {
-                 draggedNode = node;
-             }
+      if (node) {
+        if (e.shiftKey || e.metaKey) {
+          drawingEdge = { source: node.id, x: (mx - transform.x) / transform.k, y: (my - transform.y) / transform.k };
+        } else {
+          draggedNode = node;
         }
-        render();
+      }
+      render();
     }
 
     function handleDblClick(e) {
-        const [mx, my] = d3.pointer(e);
-        const node = getNodeAt(mx, my);
-        if (node) {
-            editingNode = node;
-            editTitle = node.title;
-            return;
-        }
-        const edge = getEdgeAt(mx, my);
-        if (edge) {
-            editingEdge = edge;
-            editLabel = edge.label || '';
-        }
+      const [mx, my] = d3.pointer(e);
+      const node = getNodeAt(mx, my);
+      if (node) {
+        editingNode = node;
+        editTitle = node.title;
+        return;
+      }
+      const edge = getEdgeAt(mx, my);
+      if (edge) {
+        editingEdge = edge;
+        editLabel = edge.label || "";
+      }
     }
 
     function saveTitle() {
-        if (editingNode && editTitle.trim()) {
-            updateNodeTitle(editingNode.id, editTitle.trim());
-            const node = nodes.find(n => n.id === editingNode.id);
-            if (node) node.title = editTitle.trim();
-            render();
-        }
-        editingNode = null;
+      if (editingNode && editTitle.trim()) {
+        updateNodeTitle(editingNode.id, editTitle.trim());
+        const node = nodes.find(n => n.id === editingNode.id);
+        if (node) node.title = editTitle.trim();
+        render();
+      }
+      editingNode = null;
     }
 
     function saveEdge() {
-        if (editingEdge) {
-            updateEdgeLabel(editingEdge.source, editingEdge.target, editLabel.trim());
-        }
-        editingEdge = null;
+      if (editingEdge) {
+        updateEdgeLabel(editingEdge.source, editingEdge.target, editLabel.trim());
+      }
+      editingEdge = null;
     }
 
     function deleteEdge() {
-        if (editingEdge) {
-            removeEdge(editingEdge.source, editingEdge.target);
-        }
-        editingEdge = null;
+      if (editingEdge) {
+        removeEdge(editingEdge.source, editingEdge.target);
+      }
+      editingEdge = null;
     }
 
     function handleEdgeKeydown(e) {
-        if (e.key === 'Enter') saveEdge();
-        if (e.key === 'Escape') editingEdge = null;
+      if (e.key === "Enter") saveEdge();
+      if (e.key === "Escape") editingEdge = null;
     }
 
     function handleEditKeydown(e) {
-        if (e.key === 'Enter') saveTitle();
-        if (e.key === 'Escape') editingNode = null;
+      if (e.key === "Enter") saveTitle();
+      if (e.key === "Escape") editingNode = null;
     }
 
     function handleMouseMove(e) {
-        const [mx, my] = d3.pointer(e);
-        const worldX = (mx - transform.x) / transform.k;
-        const worldY = (my - transform.y) / transform.k;
+      const [mx, my] = d3.pointer(e);
+      const worldX = (mx - transform.x) / transform.k;
+      const worldY = (my - transform.y) / transform.k;
 
-        if (drawingEdge) {
-            drawingEdge.x = worldX;
-            drawingEdge.y = worldY;
-            render();
-            return;
-        }
+      if (drawingEdge) {
+        drawingEdge.x = worldX;
+        drawingEdge.y = worldY;
+        render();
+        return;
+      }
 
-        if (draggedNode) {
-            draggedNode.x = worldX - draggedNode.width / 2;
-            draggedNode.y = worldY - draggedNode.height / 2;
-            render();
-            return;
-        }
+      if (draggedNode) {
+        draggedNode.x = worldX - draggedNode.width / 2;
+        draggedNode.y = worldY - draggedNode.height / 2;
+        render();
+        return;
+      }
 
-        const node = getNodeAt(mx, my);
-        if (node !== hoveredNode) {
-            hoveredNode = node;
-            canvas.style.cursor = node ? 'pointer' : 'default';
-            render();
-        }
+      const node = getNodeAt(mx, my);
+      if (node !== hoveredNode) {
+        hoveredNode = node;
+        canvas.style.cursor = node ? "pointer" : "default";
+        render();
+      }
     }
 
     function handleMouseUp(e) {
-        if (drawingEdge) {
-            const [mx, my] = d3.pointer(e);
-            const target = getNodeAt(mx, my);
-            const sourceId = drawingEdge.source;
-            if (target && target.id !== sourceId) {
-                const exists = $edges.some(ed => ed.source === sourceId && ed.target === target.id);
-                if (!exists) {
-                    const srcDoc = documents.find(d => d.id === sourceId);
-                    const tgtDoc = documents.find(d => d.id === target.id);
-                    stemmaStore.addEdge(sourceId, target.id, srcDoc, tgtDoc);
-                }
-            }
-            drawingEdge = null;
+      if (drawingEdge) {
+        const [mx, my] = d3.pointer(e);
+        const target = getNodeAt(mx, my);
+        const sourceId = drawingEdge.source;
+        if (target && target.id !== sourceId) {
+          const exists = $edges.some(ed => ed.source === sourceId && ed.target === target.id);
+          if (!exists) {
+            const srcDoc = documents.find(d => d.id === sourceId);
+            const tgtDoc = documents.find(d => d.id === target.id);
+            stemmaStore.addEdge(sourceId, target.id, srcDoc, tgtDoc);
+          }
         }
+        drawingEdge = null;
+      }
 
-        if (draggedNode) {
-            const {id, x, y} = draggedNode;
-            stemmaStore.updateNodePosition(id, x, y);
-            draggedNode = null;
-        }
-        render();
+      if (draggedNode) {
+        const {id, x, y} = draggedNode;
+        stemmaStore.updateNodePosition(id, x, y);
+        draggedNode = null;
+      }
+      render();
     }
 
     function handleResize() {
-        if (!container || !canvas || !ctx) return;
-        const rect = container.getBoundingClientRect();
-        const newWidth = rect.width || 800;
-        const newHeight = rect.height || 600;
-        if (newWidth !== width || newHeight !== height) {
-            width = newWidth;
-            height = newHeight;
-            canvas.width = width;
-            canvas.height = height;
-            render();
-        }
+      if (!container || !canvas || !ctx) return;
+      const rect = container.getBoundingClientRect();
+      const newWidth = rect.width || 800;
+      const newHeight = rect.height || 600;
+      if (newWidth !== width || newHeight !== height) {
+        width = newWidth;
+        height = newHeight;
+        canvas.width = width;
+        canvas.height = height;
+        render();
+      }
     }
 
     onMount(() => {
-        bgColor = extractCssColor('--bulma-scheme-main-bis', '#f9fafb');
-        selectedColor = extractCssColor('--bulma-link', '#4258ff');
-        linkColor = extractCssColor('--bulma-body-color', '#5a5f6b');
+      bgColor = extractCssColor("--bulma-scheme-main-bis", "#f9fafb");
+      selectedColor = extractCssColor("--bulma-link", "#4258ff");
+      linkColor = extractCssColor("--bulma-body-color", "#5a5f6b");
 
-        ctx = canvas.getContext('2d');
+      ctx = canvas.getContext("2d");
 
-        const rect = container.getBoundingClientRect();
-        width = rect.width || 800;
-        height = rect.height || 600;
-        canvas.width = width;
-        canvas.height = height;
+      const rect = container.getBoundingClientRect();
+      width = rect.width || 800;
+      height = rect.height || 600;
+      canvas.width = width;
+      canvas.height = height;
 
-        resizeObserver = new ResizeObserver(handleResize);
-        resizeObserver.observe(container);
+      resizeObserver = new ResizeObserver(handleResize);
+      resizeObserver.observe(container);
 
-        const selection = d3.select(canvas);
+      const selection = d3.select(canvas);
 
-        const zoom = d3.zoom()
-            .scaleExtent([0.2, 5])
-            .filter(e => !(e.shiftKey || e.metaKey) && (e.type === 'wheel' || (!draggedNode && !drawingEdge)))
-            .on('zoom', ({ transform: t }) => {
-                transform = t;
-                render();
-            });
+      const zoom = d3.zoom()
+        .scaleExtent([0.2, 5])
+        .filter(e => !(e.shiftKey || e.metaKey) && (e.type === "wheel" || (!draggedNode && !drawingEdge)))
+        .on("zoom", ({ transform: t }) => {
+          transform = t;
+          render();
+        });
 
-        selection
-            .call(zoom);
+      selection
+        .call(zoom);
 
-        if (documents.length) initNodes(documents);
+      if (documents.length) initNodes(documents);
     });
 
     onDestroy(() => {
-        resizeObserver?.disconnect();
+      resizeObserver?.disconnect();
     });
 </script>
 
@@ -374,7 +374,7 @@
         on:mouseleave={() => { draggedNode = null; drawingEdge = null; }}
     />
 
-    <button class="tag reset-btn" on:click={resetStemma} title={i18n('reset', t)}>
+    <button class="tag reset-btn" on:click={resetStemma} title={i18n("reset", t)}>
         <span class="icon is-small p-0">
             <i class="fas fa-undo"></i>
         </span>
@@ -386,7 +386,7 @@
         <div class="modal-background" on:click={() => editingNode = null} on:keydown={null}/>
         <div class="modal-content" style="max-width: 300px;">
             <div class="box">
-                <h4 class="title is-6 mb-4">{i18n('rename', t)}</h4>
+                <h4 class="title is-6 mb-4">{i18n("rename", t)}</h4>
                 <div class="field is-flex is-align-items-center" style="gap: 0.5rem;">
                     <span class="icon is-small is-left">
                         <span class="color-dot" style="background: {editingNode.color}"></span>
@@ -400,8 +400,8 @@
                     </div>
                 </div>
                 <div class="buttons is-right">
-                    <button class="button is-small" on:click={() => editingNode = null}>{i18n('cancel', t)}</button>
-                    <button class="button is-small is-link" on:click={saveTitle}>{i18n('save', t)}</button>
+                    <button class="button is-small" on:click={() => editingNode = null}>{i18n("cancel", t)}</button>
+                    <button class="button is-small is-link" on:click={saveTitle}>{i18n("save", t)}</button>
                 </div>
             </div>
         </div>
@@ -413,7 +413,7 @@
         <div class="modal-background" on:click={() => editingEdge = null} on:keydown={null}/>
         <div class="modal-content" style="max-width: 300px;">
             <div class="box">
-                <h4 class="title is-6 mb-4">{i18n('editEdge', t)}</h4>
+                <h4 class="title is-6 mb-4">{i18n("editEdge", t)}</h4>
                 <div class="field is-flex is-align-items-center" style="gap: 0.5rem;">
                     <span class="color-dot" style="background: {editingEdge.sourceColor}"></span>
                     <span>→</span>
@@ -427,9 +427,9 @@
                     />
                 </div>
                 <div class="buttons is-right mt-3">
-                    <button class="button is-small is-danger is-outlined" on:click={deleteEdge}>{i18n('delete', t)}</button>
-                    <button class="button is-small" on:click={() => editingEdge = null}>{i18n('cancel', t)}</button>
-                    <button class="button is-small is-link" on:click={saveEdge}>{i18n('save', t)}</button>
+                    <button class="button is-small is-danger is-outlined" on:click={deleteEdge}>{i18n("delete", t)}</button>
+                    <button class="button is-small" on:click={() => editingEdge = null}>{i18n("cancel", t)}</button>
+                    <button class="button is-small is-link" on:click={saveEdge}>{i18n("save", t)}</button>
                 </div>
             </div>
         </div>

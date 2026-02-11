@@ -1,7 +1,7 @@
 <script>
     import { getContext, setContext } from "svelte";
 
-    import { appLang } from '../../constants';
+    import { appLang } from "../../constants";
     import { similarityStore } from "./similarityStore.js";
     import { toRegionItem } from "../utils.js";
     import SimilarRegion from "./SimilarRegion.svelte";
@@ -17,14 +17,14 @@
     export let isInModal = false;
 
     const {
-        selectedRegions,
-        excludedCategories,
-        similarityScoreCutoff,
-        propagateFilterByRegions
+      selectedRegions,
+      excludedCategories,
+      similarityScoreCutoff,
+      propagateFilterByRegions
     } = similarityStore;
 
     const isPropagatedContext = getContext("similarityPropagatedContext") || false;
-    const currentPageId = window.location.pathname.match(/\d+/g).join('-');
+    const currentPageId = window.location.pathname.match(/\d+/g).join("-");
 
     // Get query image metadata from context for SimilarityView
     const qImgMetadata = getContext("qImgMetadata") || null;
@@ -32,24 +32,32 @@
     let errorMsg;
 
     $: noRegionsSelected =
-        Object.values($selectedRegions).length === 0
+      Object.values($selectedRegions).length === 0
         || $selectedRegions[currentPageId] === undefined
         || !Object.keys($selectedRegions[currentPageId]).length;
 
 
     /** @type {"loading"|"loaded"|"error"} updated when `sImgsPromise` is updated */
-    $: loadingStatus = "loading";
+    let loadingStatus = "loading";
 
-    /** @type {Array<{uuid:string, data: [score, img1, img2, region_1, region_2, category, users, isManual, similarityType]}>}
-     * all similarity images, defined sImgsPromise is resolved and then updated each time a new `sImgsPromise` is passed by the parent */
-    $: allSImgs = [];
+    /**
+     * @type {Array<{uuid:string, data: [score, img1, img2, region_1, region_2, category, users, isManual, similarityType]}>}
+     * all similarity images without any filters. defined sImgsPromise is resolved
+     * and then updated each time a new `sImgsPromise` is passed by the parent
+     */
+    let allSImgs = [];
 
-    /** @type {Array<{uuid:string, data: Array}>} allSImgs filtered by displaySimImg, updated when one of `allSImgs`, `$excludedCategories`, `$similarityScoreCutoff`, `$propagateFilterByRegions` are updated */
+    /**
+     * @type {Array<{uuid:string, data: Array}>}
+     * allSImgs filtered by displaySimImg, updated when one of `allSImgs`,
+     * `$excludedCategories`, `$similarityScoreCutoff`,
+     * `$propagateFilterByRegions` are updated
+     */
     $: filteredSImgs = filterSImgs(
-        allSImgs,
-        $excludedCategories,
-        $similarityScoreCutoff,
-        $propagateFilterByRegions
+      allSImgs,
+      $excludedCategories,
+      $similarityScoreCutoff,
+      $propagateFilterByRegions
     );
 
     /**
@@ -66,21 +74,21 @@
      */
     // 1) reset state
     $: ((_) => {
-        loadingStatus = "loading";
-        filteredSImgs = [];
-        allSImgs = [];
-     })(sImgsPromise);
+      loadingStatus = "loading";
+      filteredSImgs = [];
+      allSImgs = [];
+    })(sImgsPromise);
 
     // 2) update state when `sImgsPromise` is resolved
     $: sImgsPromise.then((res) => {
-        allSImgs = res.map(el => ({
-            uuid: window.crypto.randomUUID(),
-            data: el
-        }))
-        loadingStatus = "loaded";
+      allSImgs = res.map(el => ({
+        uuid: window.crypto.randomUUID(),
+        data: el
+      }))
+      loadingStatus = "loaded";
     }).catch((e) => {
-        errorMsg = e;
-        loadingStatus = "error";
+      errorMsg = e;
+      loadingStatus = "error";
     });
 
     //////////////////////////////
@@ -100,7 +108,7 @@
      * @param {Array<number>} _excludedCategories
      */
     const isNotInExcludedCategories = (simImgCategory, usersCategory, _excludedCategories) =>
-        !_excludedCategories.includes(simImgCategory);
+      !_excludedCategories.includes(simImgCategory);
 
     /**
      * NOTE: the filtered images won't be updated if the user sets a category on a `SimilarRegion` until the next refresh.
@@ -117,47 +125,47 @@
      * @returns {boolean}
      */
     const displaySimImg = (
-        simImgScore,
-        simImgCategory,
-        usersCategory,
-        _excludedCategories,
-        _similarityScoreCutoff,
-        _propagateFilterByRegions
+      simImgScore,
+      simImgCategory,
+      usersCategory,
+      _excludedCategories,
+      _similarityScoreCutoff,
+      _propagateFilterByRegions
     ) => isPropagatedContext
-        ? true
-        : isAboveCutoff(simImgScore, _similarityScoreCutoff)
+      ? true
+      : isAboveCutoff(simImgScore, _similarityScoreCutoff)
             && isNotInExcludedCategories(simImgCategory, usersCategory, _excludedCategories);
 
 
     /**  run `displaySimImg` to filter `_allSimgs` */
     const filterSImgs = (_allSImgs, _excludedCategories, _similarityScoreCutoff, _propagateFilterByRegions) =>
-        _allSImgs.filter(({uuid, data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]}) =>
-            displaySimImg(
-                score,
-                category,
-                users,
-                _excludedCategories,
-                _similarityScoreCutoff,
-                _propagateFilterByRegions
-            )
-        );
+      _allSImgs.filter(({uuid, data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]}) =>
+        displaySimImg(
+          score,
+          category,
+          users,
+          _excludedCategories,
+          _similarityScoreCutoff,
+          _propagateFilterByRegions
+        )
+      );
 
     const getSimilarityLabel = (isPropagated, count) => {
-        const isPlural = count > 1;
+      const isPlural = count > 1;
 
-        if (isPropagated) {
-            if (appLang === "fr") {
-                return isPlural ? "similarités propagées" : "similarité propagée";
-            } else {
-                return isPlural ? "propagated matches" : "propagated match";
-            }
+      if (isPropagated) {
+        if (appLang === "fr") {
+          return isPlural ? "similarités propagées" : "similarité propagée";
         } else {
-            if (appLang === "fr") {
-                return isPlural ? "images similaires" : "image similaire";
-            } else {
-                return isPlural ? "similar images" : "similar image";
-            }
+          return isPlural ? "propagated matches" : "propagated match";
         }
+      } else {
+        if (appLang === "fr") {
+          return isPlural ? "images similaires" : "image similaire";
+        } else {
+          return isPlural ? "similar images" : "similar image";
+        }
+      }
     };
 
     let modalOpen = false;
@@ -165,31 +173,31 @@
 
     // Convert filteredSImgs data to RegionItem format for the modal
     $: modalItems = filteredSImgs.map(({ data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType] }) => {
-        const [wit, digit, canvas, xywh] = sImg.split('.')[0].split('_');
-        return toRegionItem(sImg, wit, xywh, canvas);
+      const [wit, digit, canvas, xywh] = sImg.split(".")[0].split("_");
+      return toRegionItem(sImg, wit, xywh, canvas);
     });
 
     $: currentScore = filteredSImgs[modalIndex]?.data[0] ?? null;
 
     const handleOpenModal = (e) => {
-        modalIndex = e.detail.index ?? 0;
-        modalOpen = true;
+      modalIndex = e.detail.index ?? 0;
+      modalOpen = true;
     };
 
     const tabs = [
-        { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
-        { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
-        { id: "similarity", label: appLang === "en" ? "Comparison" : "Comparaison" },
-        { id: "expansion", label: appLang === "en" ? "Query Expansion" : "Expansion de requête" }
+      { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
+      { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
+      { id: "similarity", label: appLang === "en" ? "Comparison" : "Comparaison" },
+      { id: "expansion", label: appLang === "en" ? "Query Expansion" : "Expansion de requête" }
     ];
 </script>
 
 {#if sImgsPromise && loadingStatus==="loading"}
     <div class="faded is-center">
         {#if isPropagatedContext}
-            {appLang === 'en' ? "Retrieving propagated regions..." : "Récupération de similarités propagées..."}
+            {appLang === "en" ? "Retrieving propagated regions..." : "Récupération de similarités propagées..."}
         {:else}
-            {appLang === 'en' ? 'Retrieving similar regions...' : 'Récupération des régions similaires...'}
+            {appLang === "en" ? "Retrieving similar regions..." : "Récupération des régions similaires..."}
         {/if}
     </div>
 {:else if loadingStatus === "loaded"}
@@ -202,11 +210,11 @@
             {:else}
                 {#if noRegionsSelected }
                     <div class="faded is-center">
-                        {appLang === 'en' ? 'No document selected. Select one to display results.' : 'Aucun document sélectionné. Sélectionnez-en un pour afficher les résultats.'}
+                        {appLang === "en" ? "No document selected. Select one to display results." : "Aucun document sélectionné. Sélectionnez-en un pour afficher les résultats."}
                     </div>
                 {:else}
                     <div class="faded is-center">
-                        {appLang === 'en' ? 'No similar regions' : 'Pas de régions similaires'}
+                        {appLang === "en" ? "No similar regions" : "Pas de régions similaires"}
                     </div>
                 {/if}
             {/each}
@@ -233,9 +241,9 @@
 {:else if loadingStatus==="error"}
     <div class="faded is-center">
         {
-            appLang === 'en' ?
-            `Error when retrieving similar regions: ${errorMsg}` :
-            `Erreur de recupération des régions similaires: ${errorMsg}`
+            appLang === "en" ?
+              `Error when retrieving similar regions: ${errorMsg}` :
+              `Erreur de recupération des régions similaires: ${errorMsg}`
         }
     </div>
 {/if}

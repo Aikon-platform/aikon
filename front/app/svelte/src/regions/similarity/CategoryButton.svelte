@@ -8,7 +8,7 @@
     export let padding = "px-2";
 </script>
 
-<span class="tag py-4 {padding} {selectable ? 'is-hoverable' : ''}" class:is-selected={isSelected}
+<span class="tag py-4 {padding} {selectable ? "is-hoverable" : ""}" class:is-selected={isSelected}
       on:click={() => toggle(category)} on:keyup={null} title={categoryInfo[category].title}>
     {@html categoryInfo[category].svg}
 </span>

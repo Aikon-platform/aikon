@@ -23,7 +23,7 @@
     import WitnessBtn from "../witness/WitnessBtn.svelte";
     import ExportButtons from "../regions/vectorization/ExportButtons.svelte";
     import Regions from "../regions/Regions.svelte";
-    import { activeLayout } from '../ui/tabStore.js';
+    import { activeLayout } from "../ui/tabStore.js";
 
     export let manifest = "";
     export let manifests = [];
@@ -50,16 +50,16 @@
     const currentRegionId = parseInt(baseUrl.split("regions/")[1].replace("/", ""));
 
     const tabList = {
-        viewer: appLang === "en" ? "Viewer" : "Visionneuse",
-        all: appLang === "en" ? "All regions" : "Toutes les régions",
-        page: appLang === "en" ? "Per page" : "Par page",
+      viewer: appLang === "en" ? "Viewer" : "Visionneuse",
+      all: appLang === "en" ? "All regions" : "Toutes les régions",
+      page: appLang === "en" ? "Per page" : "Par page",
     };
 
     if (modules.includes("similarity")) {
-        tabList.similarity = appLang === "en" ? "Similarity" : "Similarité";
+      tabList.similarity = appLang === "en" ? "Similarity" : "Similarité";
     }
     if (modules.includes("vectorization")) {
-        tabList.vectorization = appLang === "en" ? "Vectorization" : "Vectorisation";
+      tabList.vectorization = appLang === "en" ? "Vectorization" : "Vectorisation";
     }
 </script>
 
@@ -137,7 +137,7 @@
                     {#each Object.entries(selectedItems) as [id, meta]}
                         <div class="selection cell">
                             <figure class="image is-64x64 card">
-                                <img src="{refToIIIF(meta.img, meta.xywh, '96,')}" alt=""/>
+                                <img src="{refToIIIF(meta.img, meta.xywh, "96,")}" alt=""/>
                                 <div class="overlay is-center">
                                     <span class="overlay-desc">{meta.title}</span>
                                 </div>

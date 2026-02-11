@@ -1,18 +1,18 @@
 <script>
-    import { onDestroy } from 'svelte';
-    import { createCanvas } from './network-canvas.js';
-    import { createSvg } from './network-svg.js';
-    import DocumentTable from './DocumentTable.svelte';
-    import { appLang } from '../../constants.js';
+    import { onDestroy } from "svelte";
+    import { createCanvas } from "./network-canvas.js";
+    import { createSvg } from "./network-svg.js";
+    import DocumentTable from "./DocumentTable.svelte";
+    import { appLang } from "../../constants.js";
     import Regions from "../../regions/Regions.svelte";
 
-    export let type = 'img';
+    export let type = "img";
     export let documentSetStore;
     const {
-        imageNetwork,
-        documentNetwork,
-        selectedNodes,
-        updateSelectedNodes,
+      imageNetwork,
+      documentNetwork,
+      selectedNodes,
+      updateSelectedNodes,
     } = documentSetStore;
 
     let networkInstance;
@@ -20,46 +20,46 @@
     let selectionMode = false;
     const render_threshold = 500;
 
-    $: networkData = type === 'img' ? imageNetwork : documentNetwork;
+    $: networkData = type === "img" ? imageNetwork : documentNetwork;
 
     $: if ($networkData && container) {
-        renderVisualization();
+      renderVisualization();
     }
 
     function renderVisualization() {
-        if (networkInstance) {
-            networkInstance.destroy();
-            updateSelectedNodes([]);
-        }
+      if (networkInstance) {
+        networkInstance.destroy();
+        updateSelectedNodes([]);
+      }
 
-        function onSelectionChange(selectedData) {
-            updateSelectedNodes(selectedData);
-        }
+      function onSelectionChange(selectedData) {
+        updateSelectedNodes(selectedData);
+      }
 
-        const createNetwork = $networkData.nodes.length < render_threshold ? createSvg : createCanvas;
+      const createNetwork = $networkData.nodes.length < render_threshold ? createSvg : createCanvas;
 
-        networkInstance = createNetwork(
-            container,
-            $networkData.nodes,
-            $networkData.links,
-            onSelectionChange,
-            (mode) => { selectionMode = mode; },
-        );
+      networkInstance = createNetwork(
+        container,
+        $networkData.nodes,
+        $networkData.links,
+        onSelectionChange,
+        (mode) => { selectionMode = mode; },
+      );
 
-        selectionMode = type === 'img';
-        if (selectionMode) {
-            networkInstance.toggleSelectionMode();
-        }
+      selectionMode = type === "img";
+      if (selectionMode) {
+        networkInstance.toggleSelectionMode();
+      }
     }
 
     function toggleSelectionMode() {
-        if (networkInstance) {
-            selectionMode = networkInstance.toggleSelectionMode();
-        }
+      if (networkInstance) {
+        selectionMode = networkInstance.toggleSelectionMode();
+      }
     }
 
     onDestroy(() => {
-        networkInstance?.destroy();
+      networkInstance?.destroy();
     });
 </script>
 
@@ -75,20 +75,20 @@
                 <i class="fas fa-crop-alt"/>
             </span>
         {/if}
-        Switch to {selectionMode ? 'click' : 'selection'} mode
+        Switch to {selectionMode ? "click" : "selection"} mode
     </button>
 
     <div bind:this={container} class="visualization-container"></div>
 
     {#if $selectedNodes.length > 0}
-        {#if type === 'img'}
+        {#if type === "img"}
         <div class="selected-panel box mt-4">
-            <h3 class="title is-5">{appLang === "en" ? 'Selected regions' : 'Régions sélectionnées'} ({$selectedNodes.length})</h3>
+            <h3 class="title is-5">{appLang === "en" ? "Selected regions" : "Régions sélectionnées"} ({$selectedNodes.length})</h3>
             <div class="selected-nodes grid is-gap-2 mt-5">
                 <Regions items={$selectedNodes} selectable={false} copyable={false}/>
             </div>
         </div>
-        {:else if type === 'doc'}
+        {:else if type === "doc"}
             <DocumentTable selectedDocuments={$selectedNodes} {documentSetStore}/>
         {/if}
     {/if}

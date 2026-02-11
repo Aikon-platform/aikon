@@ -21,17 +21,17 @@
     let modalIndex = 0;
 
     const handleOpenModal = (e) => {
-        modalIndex = e.detail.index ?? 0;
-        modalOpen = true;
+      modalIndex = e.detail.index ?? 0;
+      modalOpen = true;
     };
 
     const handleNavigate = (e) => {
-        modalIndex = e.detail.index;
+      modalIndex = e.detail.index;
     };
 
     const tabs = [
-        { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
-        { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
+      { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
+      { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
     ];
 </script>
 

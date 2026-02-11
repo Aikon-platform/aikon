@@ -1,7 +1,7 @@
 <script>
     import { getContext, setContext } from "svelte";
 
-    import { userId, csrfToken, appName } from '../../constants';
+    import { userId, csrfToken, appName } from "../../constants";
     import { toRegionItem } from "../utils.js";
 
     import CategoryButton from "./CategoryButton.svelte";
@@ -42,13 +42,13 @@
     /** @type {boolean} */
     export let isInModal = false;
 
-    const [wit, digit, canvas, xywh] = sImg.split('.')[0].split('_');
+    const [wit, digit, canvas, xywh] = sImg.split(".")[0].split("_");
 
     const toTitledRegion = () => {
-        let item = toRegionItem(sImg, wit, xywh, canvas);
-        const regionData = $comparedRegions[`${wit}_${digit}_anno${sRegions}`] || {title: item.title};
-        item.title = `${shorten(regionData.title.replace(/^[^|]+/, ""))}<br/>Page ${extractInt(canvas)}<br/><b>Score: ${score}</b>`;
-        return item;
+      let item = toRegionItem(sImg, wit, xywh, canvas);
+      const regionData = $comparedRegions[`${wit}_${digit}_anno${sRegions}`] || {title: item.title};
+      item.title = `${shorten(regionData.title.replace(/^[^|]+/, ""))}<br/>Page ${extractInt(canvas)}<br/><b>Score: ${score}</b>`;
+      return item;
     }
 
     /** @type {RegionItemType} */
@@ -59,48 +59,48 @@
 
     /** @type {SimilarityPairType} we set the whole similarity pair as a context object so that it can be used by the descendant ModalSimilarity and its descendants if needed */
     setContext("similarityPair", {
-        qImg: qImg,
-        sImg: sImg,
-        qRegions: qRegions,
-        sRegions: sRegions,
-        score: score,
-        category: category,
-        users: users,
-        isManual: isManual,
-        similarityType: similarityType,
+      qImg: qImg,
+      sImg: sImg,
+      qRegions: qRegions,
+      sRegions: sRegions,
+      score: score,
+      category: category,
+      users: users,
+      isManual: isManual,
+      similarityType: similarityType,
     });
 
     ////////////////////////////////////////////
 
     function updateCurrentUsers(_users) {
-        _users = _users.slice();  // copy `_users`
-        let userIndex = _users.indexOf(Number(userId));
-        if ( isSelectedByUser && userIndex === -1  ) {
-            _users.push(Number(userId));
-        } else if ( !isSelectedByUser && userIndex !== -1 ) {
-            _users.splice(userIndex, 1);
-        }
-        return _users;
+      _users = _users.slice();  // copy `_users`
+      let userIndex = _users.indexOf(Number(userId));
+      if ( isSelectedByUser && userIndex === -1  ) {
+        _users.push(Number(userId));
+      } else if ( !isSelectedByUser && userIndex !== -1 ) {
+        _users.splice(userIndex, 1);
+      }
+      return _users;
     };
 
     // format the current SimilarRegion to send to the backend
     const toRegionPair = () => ({
-        img_1: qImg,
-        img_2: sImg,
-        regions_id_1: qRegions,
-        regions_id_2: sRegions,
-        score: score,
-        category: selectedCategory,
-        category_x: updateCurrentUsers(users),
-        similarity_type: similarityType
+      img_1: qImg,
+      img_2: sImg,
+      regions_id_1: qRegions,
+      regions_id_2: sRegions,
+      score: score,
+      category: selectedCategory,
+      category_x: updateCurrentUsers(users),
+      similarity_type: similarityType
     })
 
     function updateCategory(category) {
-        if (category === 5) {
-            isSelectedByUser = !isSelectedByUser;
-        } else {
-            selectedCategory = selectedCategory === category ? null : category;
-        }
+      if (category === 5) {
+        isSelectedByUser = !isSelectedByUser;
+      } else {
+        selectedCategory = selectedCategory === category ? null : category;
+      }
     }
 
     ////////////////////////////////////////////
@@ -111,26 +111,26 @@
      * setting the region will create the RegionPair and save it to database
      */
     async function categorize(category) {
-        updateCategory(category);
-        try {
-            const response = await fetch(`${baseUrl}/${appName}/save-category`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify(toRegionPair())
-            });
-            if (!response.ok) {
-                console.error(`Error: Network response was not ok`);
-                // unselect category
-                updateCategory(category);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            // unselect category
-            updateCategory(category);
+      updateCategory(category);
+      try {
+        const response = await fetch(`${baseUrl}/${appName}/save-category`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken
+          },
+          body: JSON.stringify(toRegionPair())
+        });
+        if (!response.ok) {
+          console.error("Error: Network response was not ok");
+          // unselect category
+          updateCategory(category);
         }
+      } catch (error) {
+        console.error("Error:", error);
+        // unselect category
+        updateCategory(category);
+      }
     }
 </script>
 

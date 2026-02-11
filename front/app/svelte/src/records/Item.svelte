@@ -1,7 +1,7 @@
 <script>
-    import { fade } from 'svelte/transition';
+    import { fade } from "svelte/transition";
     import {deleteRecord, refToIIIF, showMessage} from "../utils.js";
-    import { appLang, userId, isSuperuser } from '../constants';
+    import { appLang, userId, isSuperuser } from "../constants";
 
     export let recordsStore;
 
@@ -10,25 +10,25 @@
     const hasEditUrl = item.hasOwnProperty("edit_url") && item.edit_url !== "";
 
     async function deleteItem() {
-        // TODO add delete button if USER is the creator of the record OR super admin
-        const confirmed = await showMessage(
-            appLang === "en" ? "Are you sure you want to delete this record?" : "Voulez-vous vraiment supprimer cet enregistrement ?",
-            appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
-            true
-        );
-        if (!confirmed) {
-            return; // User cancelled the deletion
-        }
+      // TODO add delete button if USER is the creator of the record OR super admin
+      const confirmed = await showMessage(
+        appLang === "en" ? "Are you sure you want to delete this record?" : "Voulez-vous vraiment supprimer cet enregistrement ?",
+        appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
+        true
+      );
+      if (!confirmed) {
+        return; // User cancelled the deletion
+      }
 
-        const success = await deleteRecord(item.id, item.class);
-        if (success) {
-            recordsStore.remove(item.id);
-        } else {
-            await showMessage(
-                appLang === "en" ? "Failed to delete record" : "Erreur lors de la suppression de l'enregistrement",
-                appLang === "en" ? "Error" : "Erreur"
-            );
-        }
+      const success = await deleteRecord(item.id, item.class);
+      if (success) {
+        recordsStore.remove(item.id);
+      } else {
+        await showMessage(
+          appLang === "en" ? "Failed to delete record" : "Erreur lors de la suppression de l'enregistrement",
+          appLang === "en" ? "Error" : "Erreur"
+        );
+      }
     }
 </script>
 
@@ -36,15 +36,15 @@
     <div class="card mb-5">
         <div class="card-content">
             <div class="media">
-                {#if item.hasOwnProperty('img')}
+                {#if item.hasOwnProperty("img")}
                     <div class="media-left">
                         <figure class="card image is-96x96">
-                            <img src="{refToIIIF(item.img, 'full', '250,')}" alt="Record illustration"/>
+                            <img src="{refToIIIF(item.img, "full", "250,")}" alt="Record illustration"/>
                         </figure>
                     </div>
                 {/if}
                 <div class="media-content">
-                    <a href={hasViewUrl ? item.view_url : null} class="title is-4 {hasViewUrl ? 'hoverable' : ''} pt-2">
+                    <a href={hasViewUrl ? item.view_url : null} class="title is-4 {hasViewUrl ? "hoverable" : ""} pt-2">
                         <span class="tag px-2 py-1 mb-1 mr-1 is-dark is-rounded">{item.type} #{item.id}</span>
                         {item.title}
                     </a>
@@ -70,12 +70,12 @@
                                title='{appLang === "en" ? "Edit" : "Éditer"}'>
                                 <span class="iconify" data-icon="entypo:edit"/>
                                 <span class="ml-2">
-                                    {appLang === 'en' ? 'Edit' : 'Éditer'}
+                                    {appLang === "en" ? "Edit" : "Éditer"}
                                 </span>
                             </a>
                         {/if}
                         {#if item.hasOwnProperty("buttons") && Object.keys(item.buttons).length !== 0}
-                            {#if item.hasOwnProperty('iiif')}
+                            {#if item.hasOwnProperty("iiif")}
                                 {#each item.iiif as iiif}
                                     <span class="tag logo mt-1">{@html iiif}</span>
                                 {/each}
@@ -86,9 +86,9 @@
                 <div class="media-right">
                     <slot name="buttons"/>
                 </div>
-                {#if item.class === 'Treatment' || item.class === 'DocumentSet'}
+                {#if item.class === "Treatment" || item.class === "DocumentSet"}
                     {#if item.user_id === parseInt(userId) || isSuperuser}
-                        <button class="delete is-medium" title="{appLang === 'en' ? 'Delete' : 'Supprimer'}" on:click={deleteItem}/>
+                        <button class="delete is-medium" title="{appLang === "en" ? "Delete" : "Supprimer"}" on:click={deleteItem}/>
                     {/if}
                 {/if}
             </div>
