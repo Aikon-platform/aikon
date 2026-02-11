@@ -74,12 +74,8 @@
     const usersIncludesCurrentUser = (currentUsers) =>
       currentUsers.includes(Number(userId));
 
-    // WORKS
     const updateCategory = (newCategory, oldCategory) =>
       newCategory === oldCategory ? null : newCategory;
-
-    // const updateIsSelectedByUser = (newCategory, _currentUsers) =>
-    //   newCategory === 5 && !usersIncl`udesCurrentUser(_currentUsers);
 
     const updateUsers = (newCategory, currentUsers) => {
       console.log("updateUsers", newCategory, currentUsers);

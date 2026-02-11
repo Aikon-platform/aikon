@@ -84,6 +84,7 @@ export default defineConfig([
     rules: {
       ...baseRules,
       "svelte/require-each-key": "off",
+      "svelte/no-at-html-tags": "warn"
     },
   },
   {
