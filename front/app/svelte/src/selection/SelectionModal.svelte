@@ -74,10 +74,9 @@
     }
 </script>
 
+<!--TODO if isSaved, and documentSet add link to view-->
 
-<div
-    id="selection-modal"
-    class="modal fade"
+<div id="selection-modal" class="modal fade"
     use:closeModal
     tabindex="-1"
     aria-labelledby="selection-modal-label"
@@ -88,7 +87,7 @@
     <div class="modal-content">
         <div class="modal-card-head media mb-0 is-middle">
             <div class="title is-4 mb-0 media-content">
-                <i class="fa-solid fa-book-bookmark"></i>
+                <i class="fa-solid fa-book-bookmark"/>
 
                 {#if isEditing}
                     <input
@@ -102,7 +101,7 @@
                     <span on:click={startEditing} on:keyup={null}>
                         {$selectionTitle}
                         <span class="pl-3 smaller has-text-link">
-                            <i class="fas fa-edit" />
+                            <i class="fas fa-edit"/>
                         </span>
                     </span>
                 {/if}
@@ -114,7 +113,7 @@
         </div>
 
         <section class="modal-card-body">
-            <slot />
+            <slot/>
 
             <hr>
 
@@ -166,7 +165,7 @@
                     <label class="checkbox is-size-7 is-flex is-align-items-center">
                         <input type="checkbox"
                             checked={$selected?.is_public}
-                            on:change={(e) => updatePublic(e.target.checked)}
+                            on:change={(e) => updatePublic(e.target.checked) && save()}
                         />
                         <span class="pl-1">{appLang === 'en' ? 'Make public' : 'Rendre public'}</span>
                     </label>
@@ -198,5 +197,9 @@
 
     .tags:last-of-type {
         margin-bottom: 0.75em;
+    }
+
+    .modal-card-body {
+        overflow: initial;
     }
 </style>

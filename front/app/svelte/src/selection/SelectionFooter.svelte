@@ -19,6 +19,12 @@
                     {appLang === 'en' ? 'Go to treatment' : 'Accéder au traitement'}
                 </span>
             </a>
+            <a class="button is-link is-dark" href="/{appName}/document-set/{$selection?.id}" target="_blank">
+                <span>
+                    <i class="fa-solid fa-file-export"></i>
+                    {appLang === 'en' ? 'Explore corpus' : 'Explorer le corpus'}
+                </span>
+            </a>
         {:else}
             <button class="button is-link" on:click={() => selectionStore.save()}>
                 <span>
@@ -27,17 +33,18 @@
                 </span>
             </button>
         {/if}
-        {#if !isRegion}
-            <a class="button is-link is-dark" href="/{appName}/document-set/{$selection?.id}/json" target="_blank">
-                <span>
-                    <i class="fa-solid fa-file-export"></i> JSON
-                </span>
-            </a>
-            <a class="button is-link is-dark" href="/{appName}/document-set/{$selection?.id}/zip" target="_blank">
-                <span>
-                    <i class="fa-solid fa-file-zipper"></i> ZIP
-                </span>
-            </a>
-        {/if}
+        <!--TODO fix export before displaying again-->
+        <!--{#if !isRegion}-->
+        <!--    <a class="button is-link is-dark" href="/{appName}/document-set/{$selection?.id}/json" target="_blank">-->
+        <!--        <span>-->
+        <!--            <i class="fa-solid fa-file-export"></i> JSON-->
+        <!--        </span>-->
+        <!--    </a>-->
+        <!--    <a class="button is-link is-dark" href="/{appName}/document-set/{$selection?.id}/zip" target="_blank">-->
+        <!--        <span>-->
+        <!--            <i class="fa-solid fa-file-zipper"></i> ZIP-->
+        <!--        </span>-->
+        <!--    </a>-->
+        <!--{/if}-->
     </div>
 </footer>
