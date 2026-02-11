@@ -48,6 +48,7 @@
     const item = toTitledRegion();
 
     let selectedCategory = category;
+    let isSelectedByUser = usersIncludesCurrentUser(users);
 
     ////////////////////////////////////////////
 
@@ -71,8 +72,9 @@
       similarity_hash: similarityHash
     })
 
-    const usersIncludesCurrentUser = (currentUsers) =>
-      currentUsers.includes(Number(userId));
+    function usersIncludesCurrentUser (currentUsers) {
+      return currentUsers.includes(Number(userId));
+    }
 
     const updateCategory = (newCategory, oldCategory) =>
       newCategory === oldCategory ? null : newCategory;
@@ -93,11 +95,14 @@
      * setting the region will create the RegionPair and save it to database
      */
     async function categorize(category) {
+      // NOTE order is important
       selectedCategory = updateCategory(category, selectedCategory);
       let currentUsers = updateUsers(selectedCategory, users);
+      isSelectedByUser = usersIncludesCurrentUser(currentUsers);
       console.log("OLD CURRENT USERS", users);
       console.log("NEW SELECTED CATEGORY", selectedCategory);
       console.log("NEW CURRENT USERS", currentUsers);
+      console.log("NEW IS SELECTED BY USER", isSelectedByUser);
 
       try {
         const response = await fetch(`${baseUrl}/${appName}/save-category`, {
@@ -130,7 +135,7 @@
             <CategoryButton category={2} isSelected={selectedCategory === 2} toggle={categorize}/>
             <CategoryButton category={3} isSelected={selectedCategory === 3} toggle={categorize}/>
             <CategoryButton category={4} isSelected={selectedCategory === 4} toggle={categorize}/>
-            <CategoryButton category={5} isSelected={selectedCategory === 5} toggle={categorize} padding="pl-2 pr-3"/>
+            <CategoryButton category={5} isSelected={isSelectedByUser} toggle={categorize} padding="pl-2 pr-3"/>
         </div>
     {/if}
 </div>

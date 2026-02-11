@@ -4,7 +4,7 @@
     import { similarityStore } from "./similarityStore.js";
     const { selectedRegions } = similarityStore;
     import { appLang, csrfToken } from "../../constants";
-    import {manifestToMirador, refToIIIF, showMessage} from "../../utils.js";
+    import {getColNb, manifestToMirador, refToIIIF, showMessage} from "../../utils.js";
     import { toRegionItem } from "../utils.js";
 
     import SimilarityMatches from "./SimilarityMatches.svelte";
@@ -26,10 +26,8 @@
 
     const manifest = getContext("manifest");
 
-    // let innerWidth;
-    // $: console.log(innerWidth);
-    // $: colNb = getColNb(innerWidth);
-
+    let innerWidth = 0;
+    $: colNb = getColNb(innerWidth);
     $: sLen = $selectedRegions.hasOwnProperty(currentPageId) ? Object.values($selectedRegions[currentPageId]).length : 0;
     $: gridClass = `fixed-grid has-${colNb - 1}-cols`;
 
@@ -153,6 +151,8 @@
 
     }
 </script>
+
+<svelte:window bind:innerWidth />
 
 <Row useGrid={false}>
     <svelte:fragment slot="row-header">
