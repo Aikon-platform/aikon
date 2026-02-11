@@ -44,7 +44,9 @@
           "X-CSRFToken": csrfToken,
         },
       });
-      return await response.json();
+      const json = await response.json();
+      console.log("JSON", json)
+      return json;
     }
 
     /////////////////////////////////////////////

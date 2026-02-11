@@ -20,9 +20,10 @@ export let targetHtmlId;
 
 const htmlId = `tooltip-generic-${window.crypto.randomUUID()}`;
 
-// set the width of a tooltip that is by default super thin
-$: tooltipWidthClass = setTooltipWidthClass(tooltipText);
-$: setTooltipWidthClass = (_tooltipText) =>
+// set the width of a tooltip based on the value of tooltipText
+let tooltipWidthClass;
+$: setTooltipWidthClass(tooltipText);
+const setTooltipWidthClass = (_tooltipText) =>
   tooltipWidthClass =
     _tooltipText.length > 100 ? "tooltip-wide"
       : _tooltipText.length > 20 ? "tooltip-mid"

@@ -556,10 +556,8 @@ def save_category(request):
             # "regions_id_2": regions_id_2,
         }
 
-        to_delete = (
-            similarity_type == SimilarityType.PROPAGATED and category is None
-        )  # propagation without category => delete
-
+        # propagation without category => delete
+        to_delete = similarity_type == SimilarityType.PROPAGATED and category is None
         if to_delete:
             try:
                 region_pair = RegionPair.objects.get(
@@ -596,6 +594,7 @@ def save_category(request):
         )
         region_pair = add_user_to_category_x(region_pair, request.user.id)
         region_pair.save()
+        print(f"\n\n>>>>>>>>>> {region_pair.id} <<<<<<<<<<<<<\n\n")
 
         message = (
             f"New region pair #{region_pair.id} created"
@@ -615,6 +614,9 @@ def save_category(request):
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>.")
+        print(e)
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>.")
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 

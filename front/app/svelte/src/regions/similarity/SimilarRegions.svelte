@@ -41,7 +41,7 @@
     let loadingStatus = "loading";
 
     /**
-     * @type {Array<{uuid:string, data: [score, img1, img2, region_1, region_2, category, users, isManual, similarityType]}>}
+     * @type {Array<{uuid:string, data: [score, img1, img2, region_1, region_2, category, users, similarityType, similarityHash]}>}
      * all similarity images without any filters. defined sImgsPromise is resolved
      * and then updated each time a new `sImgsPromise` is passed by the parent
      */
@@ -53,7 +53,8 @@
      * `$excludedCategories`, `$similarityScoreCutoff`,
      * `$propagateFilterByRegions` are updated
      */
-    $: filteredSImgs = filterSImgs(
+    let filteredSImgs = [];
+    $: filterSImgs(
       allSImgs,
       $excludedCategories,
       $similarityScoreCutoff,
@@ -107,7 +108,7 @@
      * @param {Array<number>} usersCategory
      * @param {Array<number>} _excludedCategories
      */
-    const isNotInExcludedCategories = (simImgCategory, usersCategory, _excludedCategories) =>
+    const isNotInExcludedCategories = (simImgCategory, _excludedCategories) =>
       !_excludedCategories.includes(simImgCategory);
 
     /**
@@ -127,23 +128,23 @@
     const displaySimImg = (
       simImgScore,
       simImgCategory,
-      usersCategory,
       _excludedCategories,
       _similarityScoreCutoff,
       _propagateFilterByRegions
     ) => isPropagatedContext
       ? true
       : isAboveCutoff(simImgScore, _similarityScoreCutoff)
-            && isNotInExcludedCategories(simImgCategory, usersCategory, _excludedCategories);
-
+        && isNotInExcludedCategories(simImgCategory, _excludedCategories);
 
     /**  run `displaySimImg` to filter `_allSimgs` */
     const filterSImgs = (_allSImgs, _excludedCategories, _similarityScoreCutoff, _propagateFilterByRegions) =>
-      _allSImgs.filter(({uuid, data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]}) =>
+      filteredSImgs = _allSImgs.filter(({
+        uuid,
+        data: [score, _, sImg, qRegions, sRegions, category, users, similarityType, similarityHash]
+      }) =>
         displaySimImg(
           score,
           category,
-          users,
           _excludedCategories,
           _similarityScoreCutoff,
           _propagateFilterByRegions
@@ -172,7 +173,7 @@
     let modalIndex = 0;
 
     // Convert filteredSImgs data to RegionItem format for the modal
-    $: modalItems = filteredSImgs.map(({ data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType] }) => {
+    $: modalItems = filteredSImgs.map(({ data: [score, _, sImg, qRegions, sRegions, category, users, similarityType, similarityHash] }) => {
       const [wit, digit, canvas, xywh] = sImg.split(".")[0].split("_");
       return toRegionItem(sImg, wit, xywh, canvas);
     });
@@ -204,9 +205,11 @@
     <div>
         <span class="m-2">{filteredSImgs.length} {getSimilarityLabel(isPropagatedContext, filteredSImgs.length)}</span>
         <div class="m-2 is-gap-2" class:grid={filteredSImgs.length > 0}>
-            {#each filteredSImgs as {uuid, data: [score, _, sImg, qRegions, sRegions, category, users, isManual, similarityType]}, i (uuid)}
-                <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {isManual} {similarityType}
-                               index={i} on:openModal={handleOpenModal} {isInModal}/>
+            {#each filteredSImgs as {uuid, data: [score, _, sImg, qRegions, sRegions, category, users, similarityType, similarityHash]}, i (uuid)}
+                <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {similarityType} {similarityHash}
+                               index={i}
+                               on:openModal={handleOpenModal}
+                               {isInModal}/>
             {:else}
                 {#if noRegionsSelected }
                     <div class="faded is-center">

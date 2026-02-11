@@ -12,14 +12,14 @@
 
     /** @type {number?} ID of the currently selected region (if there is a currently selected region) */
     export let currentRegionId;
-    console.log(">>>", currentRegionId);
 
     const manifest = getContext("manifest");
     const manifestShortId = manifest.split("/").at(-2);
     const isValidated = getContext("isValidated");
 
+    let isEditMode = !isValidated;
+
     $: selectionLength = $nbSelected;
-    $: isEditMode = !isValidated;
     // $selected = {"Regions" : [{S}, {E}, {L}, {E}, {C}, {T}, {I}, {O}, {N}]}
     $: selectedRegions = Object.values($selected)[0] || {};
 

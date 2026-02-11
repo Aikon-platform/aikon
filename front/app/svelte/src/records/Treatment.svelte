@@ -6,8 +6,15 @@
     export let item;
     export let recordsStore;
 
-    $: finished = item.is_finished;
-    $: task_status = item.status;
+    let finished = item.is_finished;
+    let task_status = item.status;
+    /** reactively update `finished` and `task_status` when the props item` changes */
+    $: updateItemStatus(item);
+
+    const updateItemStatus = (_item) => {
+      finished = _item.is_finished;
+      task_status = _item.status;
+    }
 
     async function cancelTreatment() {
       const confirmed = await showMessage(

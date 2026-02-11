@@ -88,7 +88,7 @@ const comparedRegionsChoices = derived(comparedRegions, (($comparedRegions) =>
 const similarityScoreRangePromise = fetchSimilarityScoreRange();
 
 /** @type {number?} ensures that $similarityScoreCutoff matches a value in similarityScoreRangePromise. updated by fetchSimilarityScoreRange */
-$: defaultSimilarityScoreCutoff = $similarityScoreCutoff || undefined
+let defaultSimilarityScoreCutoff = $similarityScoreCutoff || undefined
 
 /** @returns {Promise<Array<number?>>} */
 async function fetchSimilarityScoreRange() {

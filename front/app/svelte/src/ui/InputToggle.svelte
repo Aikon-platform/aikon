@@ -23,7 +23,7 @@
     const resetTriggerContext = getContext("resetTrigger") || undefined;
     resetTriggerContext?.subscribe(resetInputCheckbox);
 
-    $: isChecked = start;
+    let isChecked = start;
     $: dispatch("updateChecked", isChecked);
 
     ///////////////////////////////////////////
