@@ -310,6 +310,7 @@ def get_witness_data(witness, json_cascade=True):
     w_regions = witness.get_regions()
     w_reg_processes = {}
     for r in w_regions:
+        # TODO change to use get_json()
         reg_raw_json = r.to_json()
         del reg_raw_json["class"]
         del reg_raw_json["type"]

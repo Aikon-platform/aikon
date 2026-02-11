@@ -352,7 +352,8 @@ class TreatmentView(AbstractRecordView):
         documents = {}
         for document in treatment.get_objects():
             documents.setdefault(
-                f"{document._meta.verbose_name} #{document.id}", document.to_json()
+                f"{document._meta.verbose_name} #{document.id}",
+                document.to_json(),  # NOTE hmmmm is it safe to call to_json() here?
             )
 
         context["documents"] = documents

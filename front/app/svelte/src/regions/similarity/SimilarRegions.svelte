@@ -176,7 +176,7 @@
         modalOpen = true;
     };
 
-    $: tabs = [
+    const tabs = [
         { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
         { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
         { id: "similarity", label: appLang === "en" ? "Comparison" : "Comparaison" },

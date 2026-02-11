@@ -218,6 +218,12 @@
                             ? 'Matrix showing aggregated similarity scores between documents. Click a cell to explore page-level similarities in a scatter plot interface.'
                             : 'Matrice affichant les scores de similarité agrégés entre documents. Cliquez sur une cellule pour explorer les similarités entre paires de documents.'}
                     </p>
+                {:else if $activeLayout === "ste"}
+                    <p>
+                        {appLang === 'en'
+                            ? 'Interactive tool to assist in building a stemma based on document similarities.'
+                            : 'Outil interactif pour aider à construire un stemma basé sur les similarités entre documents.'}
+                    </p>
                 {:else if $activeLayout === "sim"}
                     <p>
                         {appLang === 'en'
