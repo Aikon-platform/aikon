@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm run build:clean && npm run build:witness && npm run build:recordList && npm run build:documentSet",
+    "build": "npm run lint && npm run build:clean && npm run build:witness && npm run build:recordList && npm run build:documentSet",
     "build:clean": "rm -rf ../webapp/static/svelte/*",
     "build:witness": "BUILD_TARGET=witness vite build",
     "build:recordList": "BUILD_TARGET=recordList vite build",
