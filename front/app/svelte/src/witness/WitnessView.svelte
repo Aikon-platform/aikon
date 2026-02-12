@@ -97,7 +97,7 @@
             </div>
 
             {#if $activeLayout === "viewer"}
-                <Viewer/>
+                <Viewer {manifests}/>
 
             {:else if $activeLayout === "all"}
                 <div class="grid is-gap-2 mt-5">

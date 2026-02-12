@@ -110,7 +110,6 @@ async function fetchSimilarityScoreRange() {
         })
         .catch(err => {
             console.error("Error on fetchSimilarityScoreRange:", err);
-            errorMsg.set(err.message);
             return range
         })
 }

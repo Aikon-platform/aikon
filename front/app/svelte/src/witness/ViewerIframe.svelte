@@ -2,6 +2,8 @@
     import {onMount} from "svelte";
     import {manifestToMirador} from "../utils.js";
 
+    export let manifests
+
     let iframeSrc = "";
 
     onMount(() => {
