@@ -5,19 +5,19 @@
     let selectedElement = null;
 
     function handleElementSelect(event) {
-      selectedElement = event.detail;
+        selectedElement = event.detail;
     }
 
     function updateElement(event) {
-      const { property, value } = event.detail;
-      if (selectedElement) {
-        if (property === "remove") {
-          selectedElement.remove();
-          selectedElement = null;
-        } else {
-          selectedElement.setAttribute(property, value);
+        const { property, value } = event.detail;
+        if (selectedElement) {
+            if (property === "remove") {
+                selectedElement.remove();
+                selectedElement = null;
+            } else {
+                selectedElement.setAttribute(property, value);
+            }
         }
-      }
     }
 </script>
 

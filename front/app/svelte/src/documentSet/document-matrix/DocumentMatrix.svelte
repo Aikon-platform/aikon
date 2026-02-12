@@ -9,23 +9,23 @@
     export let documentSetStore;
 
     const {
-      documentNodes, pairIndex, filteredDocPairStats, filteredDocStats,
-      imageCountMap, visiblePairIds, normalizeByImages
+        documentNodes, pairIndex, filteredDocPairStats, filteredDocStats,
+        imageCountMap, visiblePairIds, normalizeByImages
     } = documentSetStore;
 
     const t = {
-      title: {en: "Document Matrix", fr: "Matrice de documents"},
-      byName: {en: "By title", fr: "Par titre"},
-      byScore: {en: "By score", fr: "Par score"},
-      pageByPage: {en: "Page-by-page similarity", fr: "Similarité page par page"},
-      selectCell: {en: "Click a cell to view page-by-page similarity", fr: "Cliquez sur une cellule pour voir la similarité page par page"},
-      byPage: {en: "By page", fr: "Par page"},
-      byImage: {en: "By image", fr: "Par image"},
-      normalize: {en: "Normalize", fr: "Normaliser"},
-      normalization: {en: "Normalization by document image counts", fr: "Normalisation par le nombre d'images des documents"},
-      allPairs: {en: "All pairs in the document set", fr: "Toutes les paires du corpus"},
-      filteredPairs: {en: "Filtered pairs", fr: "Paires après filtrage"},
-      filtering: {en: "Source of image pairs for the visualizations", fr: "Source des paires d'images pour les visualisations"},
+        title: {en: "Document Matrix", fr: "Matrice de documents"},
+        byName: {en: "By title", fr: "Par titre"},
+        byScore: {en: "By score", fr: "Par score"},
+        pageByPage: {en: "Page-by-page similarity", fr: "Similarité page par page"},
+        selectCell: {en: "Click a cell to view page-by-page similarity", fr: "Cliquez sur une cellule pour voir la similarité page par page"},
+        byPage: {en: "By page", fr: "Par page"},
+        byImage: {en: "By image", fr: "Par image"},
+        normalize: {en: "Normalize", fr: "Normaliser"},
+        normalization: {en: "Normalization by document image counts", fr: "Normalisation par le nombre d'images des documents"},
+        allPairs: {en: "All pairs in the document set", fr: "Toutes les paires du corpus"},
+        filteredPairs: {en: "Filtered pairs", fr: "Paires après filtrage"},
+        filtering: {en: "Source of image pairs for the visualizations", fr: "Source des paires d'images pour les visualisations"},
     };
 
     let selectedCell = null;
@@ -39,29 +39,29 @@
     $: pairsForSelection = selectedCell ? getPairsForCell(selectedCell, $visiblePairIds) : [];
 
     function getPairsForCell(cell, visibleIds) {
-      const {doc1, doc2} = cell;
-      const pairKey = doc1.id < doc2.id ? `${doc1.id}-${doc2.id}` : `${doc2.id}-${doc1.id}`;
-      let pairs = $pairIndex.byDocPair.get(pairKey) || [];
-      if (visibleIds.size > 0) pairs = pairs.filter(p => visibleIds.has(`${p.id_1}-${p.id_2}`));
-      return pairs;
+        const {doc1, doc2} = cell;
+        const pairKey = doc1.id < doc2.id ? `${doc1.id}-${doc2.id}` : `${doc2.id}-${doc1.id}`;
+        let pairs = $pairIndex.byDocPair.get(pairKey) || [];
+        if (visibleIds.size > 0) pairs = pairs.filter(p => visibleIds.has(`${p.id_1}-${p.id_2}`));
+        return pairs;
     }
 
     function handleCellSelect(e) {
-      selectedCell = e.detail;
+        selectedCell = e.detail;
     }
 
     function handleScatterClick(e) {
-      navState = {idx1: e.detail.idx1, idx2: e.detail.idx2};
-      scatterData = e.detail.data;
-      modalActive = true;
+        navState = {idx1: e.detail.idx1, idx2: e.detail.idx2};
+        scatterData = e.detail.data;
+        modalActive = true;
     }
 
     function handleModalNavigate(e) {
-      navState = {...e.detail};
+        navState = {...e.detail};
     }
 
     function handleModalClose() {
-      modalActive = false;
+        modalActive = false;
     }
 </script>
 

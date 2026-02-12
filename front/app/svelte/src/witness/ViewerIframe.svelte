@@ -5,13 +5,13 @@
     let iframeSrc = "";
 
     onMount(() => {
-      if (manifests.length > 0) iframeSrc = manifestToMirador(manifests[0]);
+        if (manifests.length > 0) iframeSrc = manifestToMirador(manifests[0]);
 
-      function handler(e) {
-        iframeSrc = manifestToMirador(e.detail.selectedManifest);
-      }
+        function handler(e) {
+            iframeSrc = manifestToMirador(e.detail.selectedManifest);
+        }
 
-      window.addEventListener("selectManifest", handler);
+        window.addEventListener("selectManifest", handler);
     });
 </script>
 

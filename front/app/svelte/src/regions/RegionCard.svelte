@@ -10,7 +10,7 @@
 
     export let selectionStore;
     if (!selectionStore) {
-      selectionStore = regionsSelection;
+        selectionStore = regionsSelection;
     }
     export let toggleSelection = selectionStore.toggle;
     const { isSelected } = selectionStore;

@@ -20,57 +20,57 @@
     let currentTitle;
 
     function startEditing() {
-      isEditing = true;
-      currentTitle = $selectionTitle;
-      setTimeout(() => titleInput?.focus(), 0);
+        isEditing = true;
+        currentTitle = $selectionTitle;
+        setTimeout(() => titleInput?.focus(), 0);
     }
 
     function handleKeydown(event) {
-      if (event.key === "Enter") finishEditing();
+        if (event.key === "Enter") finishEditing();
     }
 
     function finishEditing() {
-      isEditing = false;
-      updateTitle(currentTitle);
-      save();
+        isEditing = false;
+        updateTitle(currentTitle);
+        save();
     }
 
     $: selectedUsers = Object.entries($selected?.User || {})
-      .map(([id, meta]) => ({
-        id: Number(id),
-        username: meta.title
-      }));
+        .map(([id, meta]) => ({
+            id: Number(id),
+            username: meta.title
+        }));
 
     let userQuery = "";
     let userResults = [];
 
     async function searchUsers() {
-      if (userQuery.trim().length < 1) {
-        userResults = [];
-        return;
-      }
+        if (userQuery.trim().length < 1) {
+            userResults = [];
+            return;
+        }
 
-      const response = await fetch(
-        `${window.location.origin}/search/user?q=${encodeURIComponent(userQuery)}`
-      );
+        const response = await fetch(
+            `${window.location.origin}/search/user?q=${encodeURIComponent(userQuery)}`
+        );
 
-      const data = await response.json();
-      userResults = data.users || [];
+        const data = await response.json();
+        userResults = data.users || [];
     }
 
     function addUser(user) {
-      selectionStore.add({
-        id: user.id,
-        class: "User",
-        title: user.username
-      });
+        selectionStore.add({
+            id: user.id,
+            class: "User",
+            title: user.username
+        });
 
-      userQuery = "";
-      userResults = [];
+        userQuery = "";
+        userResults = [];
     }
 
     function removeUser(id) {
-      selectionStore.remove(id, "User");
+        selectionStore.remove(id, "User");
     }
 </script>
 

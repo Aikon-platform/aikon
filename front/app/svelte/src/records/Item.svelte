@@ -10,25 +10,25 @@
     const hasEditUrl = item.hasOwnProperty("edit_url") && item.edit_url !== "";
 
     async function deleteItem() {
-      // TODO add delete button if USER is the creator of the record OR super admin
-      const confirmed = await showMessage(
-        appLang === "en" ? "Are you sure you want to delete this record?" : "Voulez-vous vraiment supprimer cet enregistrement ?",
-        appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
-        true
-      );
-      if (!confirmed) {
-        return; // User cancelled the deletion
-      }
-
-      const success = await deleteRecord(item.id, item.class);
-      if (success) {
-        recordsStore.remove(item.id);
-      } else {
-        await showMessage(
-          appLang === "en" ? "Failed to delete record" : "Erreur lors de la suppression de l'enregistrement",
-          appLang === "en" ? "Error" : "Erreur"
+        // TODO add delete button if USER is the creator of the record OR super admin
+        const confirmed = await showMessage(
+            appLang === "en" ? "Are you sure you want to delete this record?" : "Voulez-vous vraiment supprimer cet enregistrement ?",
+            appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
+            true
         );
-      }
+        if (!confirmed) {
+            return; // User cancelled the deletion
+        }
+
+        const success = await deleteRecord(item.id, item.class);
+        if (success) {
+            recordsStore.remove(item.id);
+        } else {
+            await showMessage(
+                appLang === "en" ? "Failed to delete record" : "Erreur lors de la suppression de l'enregistrement",
+                appLang === "en" ? "Error" : "Erreur"
+            );
+        }
     }
 </script>
 
@@ -39,7 +39,7 @@
                 {#if item.hasOwnProperty("img")}
                     <div class="media-left">
                         <figure class="card image is-96x96">
-                            <img src="{refToIIIF(item.img, "full", "250,")}" alt="Record illustration"/>
+                            <img src="{refToIIIF(item.img, 'full', '250,')}" alt="Record illustration"/>
                         </figure>
                     </div>
                 {/if}

@@ -23,66 +23,66 @@ import Toolbar from "../../Toolbar.svelte";
 ///////////////////////////////////////
 
 const  {
-  selectedRegions,
-  comparedRegions,
-  excludedCategories,
-  similarityScoreCutoff,
-  propagateRecursionDepth,
-  propagateFilterByRegions,
-  allowedPropagateDepthRange
+    selectedRegions,
+    comparedRegions,
+    excludedCategories,
+    similarityScoreCutoff,
+    propagateRecursionDepth,
+    propagateFilterByRegions,
+    allowedPropagateDepthRange
 } = similarityStore;
 
 
 function updateNavActionsHeight() {
-  const navActions = document.getElementById("nav-actions");
-  if (navActions) {
-    document.documentElement.style.setProperty("--top-offset", `${navActions.offsetHeight}px`);
-  }
+    const navActions = document.getElementById("nav-actions");
+    if (navActions) {
+        document.documentElement.style.setProperty("--top-offset", `${navActions.offsetHeight}px`);
+    }
 }
 let resizeObserver;
 onMount(() => {
-  updateNavActionsHeight();
-
-  resizeObserver = new ResizeObserver(() => {
     updateNavActionsHeight();
-  });
 
-  const navActions = document.getElementById("nav-actions");
-  if (navActions) {
-    resizeObserver.observe(navActions);
-  }
+    resizeObserver = new ResizeObserver(() => {
+        updateNavActionsHeight();
+    });
 
-  return () => {
-    if (resizeObserver && navActions) {
-      resizeObserver.unobserve(navActions);
-      resizeObserver.disconnect();
+    const navActions = document.getElementById("nav-actions");
+    if (navActions) {
+        resizeObserver.observe(navActions);
     }
-  };
+
+    return () => {
+        if (resizeObserver && navActions) {
+            resizeObserver.unobserve(navActions);
+            resizeObserver.disconnect();
+        }
+    };
 });
 
 const currentPageId = window.location.pathname.match(/\d+/g).join("-");
 const baseUrl = `${window.location.origin}${window.location.pathname}`;
 
 const tooltipText =
-  appLang==="en"
-    ? "Propagated matches are exact matches to images that have an exact match with the current image. There may be up to 6 exact matches connecting the current image and propagated images."
-    : "Les correspondances propagées correspondent à des correspondances exactes à des images ayant une correspondance exacte avec l'image actuelle. Il peut y avoir jusqu'à 6 images reliant l'image actuelle à une correspondance propagée.";
+    appLang==="en"
+        ? "Propagated matches are exact matches to images that have an exact match with the current image. There may be up to 6 exact matches connecting the current image and propagated images."
+        : "Les correspondances propagées correspondent à des correspondances exactes à des images ayant une correspondance exacte avec l'image actuelle. Il peut y avoir jusqu'à 6 images reliant l'image actuelle à une correspondance propagée.";
 
 const categoriesChoices = [
-  { value: 1, label: cat.exactLabel, prefix: cat.exactSvg, prefixType: "svg" },
-  { value: 2, label: cat.partialLabel, prefix: cat.partialSvg, prefixType: "svg" },
-  { value: 3, label: cat.semanticLabel, prefix: cat.semanticSvg, prefixType: "svg" },
-  { value: 4, label: cat.noLabel, prefix: cat.noSvg, prefixType: "svg" },
-  { value: 5, label: cat.userLabel, prefix: cat.userSvg, prefixType: "svg" },
+    { value: 1, label: cat.exactLabel, prefix: cat.exactSvg, prefixType: "svg" },
+    { value: 2, label: cat.partialLabel, prefix: cat.partialSvg, prefixType: "svg" },
+    { value: 3, label: cat.semanticLabel, prefix: cat.semanticSvg, prefixType: "svg" },
+    { value: 4, label: cat.noLabel, prefix: cat.noSvg, prefixType: "svg" },
+    { value: 5, label: cat.userLabel, prefix: cat.userSvg, prefixType: "svg" },
 ];
 
 const comparedRegionsChoices = derived(comparedRegions, (($comparedRegions) =>
-  Object.entries($comparedRegions).map(([regionId, region]) => ({
-    prefix: `#${region.id}`,  // the number of the region
-    prefixType: "text",
-    value: regionId,
-    label: shorten(region.title.replace(/^[^|]+/, ""))
-  }))));
+    Object.entries($comparedRegions).map(([regionId, region]) => ({
+        prefix: `#${region.id}`,  // the number of the region
+        prefixType: "text",
+        value: regionId,
+        label: shorten(region.title.replace(/^[^|]+/, ""))
+    }))));
 
 /** @type {Promise<Array<number?>>}. will be updated every time $selectedRegions changes */
 const similarityScoreRangePromise = fetchSimilarityScoreRange();
@@ -92,27 +92,27 @@ let defaultSimilarityScoreCutoff = $similarityScoreCutoff || undefined
 
 /** @returns {Promise<Array<number?>>} */
 async function fetchSimilarityScoreRange() {
-  let range = [];
-  return await fetch(`${baseUrl}similarity-score-range`)
-    .then(response => response.json())
-    .then(data => {
-      range = [data.min, data.max];
-      if ( !range.every(x => typeof x === "number") ) {
-        console.error(`fetchSimilarityScoreRange: expected '[number, number]', got '${range}'. Defaulting to '[]'`);
-        range = [];
-      } else {
-        defaultSimilarityScoreCutoff =
-          $similarityScoreCutoff && range[0] <= $similarityScoreCutoff && range[1] >= $similarityScoreCutoff
-            ? $similarityScoreCutoff
-            : range[0]
-      }
-      return range;
-    })
-    .catch(err => {
-      console.error("Error on fetchSimilarityScoreRange:", err);
-      errorMsg.set(err.message);
-      return range
-    })
+    let range = [];
+    return await fetch(`${baseUrl}similarity-score-range`)
+        .then(response => response.json())
+        .then(data => {
+            range = [data.min, data.max];
+            if ( !range.every(x => typeof x === "number") ) {
+                console.error(`fetchSimilarityScoreRange: expected '[number, number]', got '${range}'. Defaulting to '[]'`);
+                range = [];
+            } else {
+                defaultSimilarityScoreCutoff =
+                    $similarityScoreCutoff && range[0] <= $similarityScoreCutoff && range[1] >= $similarityScoreCutoff
+                        ? $similarityScoreCutoff
+                        : range[0]
+            }
+            return range;
+        })
+        .catch(err => {
+            console.error("Error on fetchSimilarityScoreRange:", err);
+            errorMsg.set(err.message);
+            return range
+        })
 }
 
 const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail);
@@ -120,14 +120,14 @@ const setExcludedCategories = (e) => excludedCategories.set(e.detail);
 const setPropagateRecursionDepth = (e) => propagateRecursionDepth.set(e.detail);
 const setPropagateFilterByRegions = (e) => propagateFilterByRegions.set(e.detail);
 const setComparedRegions = (e) => {
-  const selectedRegionsIds = e.detail;
-  const newSelectedRegions = { [currentPageId] : {} }
-  Object.keys($comparedRegions).forEach(key => {
-    if ( selectedRegionsIds.includes(key) ) {
-      newSelectedRegions[currentPageId][key] = $comparedRegions[key];
-    }
-  })
-  selectedRegions.set(newSelectedRegions);
+    const selectedRegionsIds = e.detail;
+    const newSelectedRegions = { [currentPageId] : {} }
+    Object.keys($comparedRegions).forEach(key => {
+        if ( selectedRegionsIds.includes(key) ) {
+            newSelectedRegions[currentPageId][key] = $comparedRegions[key];
+        }
+    })
+    selectedRegions.set(newSelectedRegions);
 }
 </script>
 

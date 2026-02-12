@@ -12,31 +12,31 @@
     $: updateItemStatus(item);
 
     const updateItemStatus = (_item) => {
-      finished = _item.is_finished;
-      task_status = _item.status;
+        finished = _item.is_finished;
+        task_status = _item.status;
     }
 
     async function cancelTreatment() {
-      const confirmed = await showMessage(
-        appLang === "en" ? "Are you sure you want to cancel treatment?" : "Êtes-vous sûr de vouloir annuler le traitement en cours ?",
-        appLang === "en" ? "Confirm cancel" : "Confirmer l'annulation",
-        true
-      );
+        const confirmed = await showMessage(
+            appLang === "en" ? "Are you sure you want to cancel treatment?" : "Êtes-vous sûr de vouloir annuler le traitement en cours ?",
+            appLang === "en" ? "Confirm cancel" : "Confirmer l'annulation",
+            true
+        );
 
-      if (!confirmed) {
-        return; // User cancelled
-      }
+        if (!confirmed) {
+            return; // User cancelled
+        }
 
-      const success = await getSuccess(`/${appName}/treatment/${item.id}/cancel`);
-      if (success) {
-        finished = true;
-        task_status = "CANCELLED";
-      } else {
-        await showMessage(
-          appLang === "en" ? "Failed to cancel treatment" : "Erreur lors de l'annulation du traitement",
-          appLang === "en" ? "Error" : "Erreur"
-        )
-      }
+        const success = await getSuccess(`/${appName}/treatment/${item.id}/cancel`);
+        if (success) {
+            finished = true;
+            task_status = "CANCELLED";
+        } else {
+            await showMessage(
+                appLang === "en" ? "Failed to cancel treatment" : "Erreur lors de l'annulation du traitement",
+                appLang === "en" ? "Error" : "Erreur"
+            )
+        }
     }
 </script>
 

@@ -11,7 +11,7 @@
     const dispatch = createEventDispatcher();
 
     const t = {
-      score: {en: "Score", fr: "Score"},
+        score: {en: "Score", fr: "Score"},
     };
     const i18n = (key) => t[key]?.[appLang] || t[key]?.en || key;
 
@@ -21,76 +21,76 @@
     $: modalData = navState && scatterData && navLimits ? buildModalData(navState, scatterData, navLimits) : null;
 
     function getNavLimits(data) {
-      if (data.mode === "image") return {max1: data.images1.length, max2: data.images2.length};
-      const maxPage1 = Math.max(...data.points.map(p => p.page1));
-      const maxPage2 = Math.max(...data.points.map(p => p.page2));
-      return {max1: maxPage1, max2: maxPage2};
+        if (data.mode === "image") return {max1: data.images1.length, max2: data.images2.length};
+        const maxPage1 = Math.max(...data.points.map(p => p.page1));
+        const maxPage2 = Math.max(...data.points.map(p => p.page2));
+        return {max1: maxPage1, max2: maxPage2};
     }
 
     function getPageImageUrl(doc, pageNum) {
-      // TODO use RegionItem.urlForCanvas()
-      return refToIIIF(`wit${doc.witnessId}_${doc.digitizationRef}_${String(pageNum).padStart(doc.zeros, "0")}`, "full", "600,");
+        // TODO use RegionItem.urlForCanvas()
+        return refToIIIF(`wit${doc.witnessId}_${doc.digitizationRef}_${String(pageNum).padStart(doc.zeros, "0")}`, "full", "600,");
     }
 
     function getRegionImageUrl(img) {
-      // TODO use RegionItem.urlForRegion()
-      return refToIIIF(img.ref, img.xywh?.join(","), "600,");
+        // TODO use RegionItem.urlForRegion()
+        return refToIIIF(img.ref, img.xywh?.join(","), "600,");
     }
 
     function buildModalData(nav, data, limits) {
-      if (!nav || !data || !limits) return null;
-      const {doc1, doc2} = data;
+        if (!nav || !data || !limits) return null;
+        const {doc1, doc2} = data;
 
-      if (data.mode === "image") {
-        const img1 = data.images1?.[nav.idx1];
-        const img2 = data.images2?.[nav.idx2];
-        if (!img1 || !img2) return null;
+        if (data.mode === "image") {
+            const img1 = data.images1?.[nav.idx1];
+            const img2 = data.images2?.[nav.idx2];
+            if (!img1 || !img2) return null;
 
-        const pair = data.pairScores.get(`${nav.idx1}-${nav.idx2}`);
+            const pair = data.pairScores.get(`${nav.idx1}-${nav.idx2}`);
+            return {
+                items: [
+                    {doc: doc1, label: `Canvas ${img1.canvas} — Image #${nav.idx1 + 1}`, imgUrl: getRegionImageUrl(img1)},
+                    {doc: doc2, label: `Canvas ${img2.canvas} — Image #${nav.idx2 + 1}`, imgUrl: getRegionImageUrl(img2)}
+                ],
+                score: pair?.score
+            };
+        }
+
+        const page1 = nav.idx1 + 1, page2 = nav.idx2 + 1;
+        const point = data.points.find(p => p.page1 === page1 && p.page2 === page2);
         return {
-          items: [
-            {doc: doc1, label: `Canvas ${img1.canvas} — Image #${nav.idx1 + 1}`, imgUrl: getRegionImageUrl(img1)},
-            {doc: doc2, label: `Canvas ${img2.canvas} — Image #${nav.idx2 + 1}`, imgUrl: getRegionImageUrl(img2)}
-          ],
-          score: pair?.score
+            items: [
+                {doc: doc1, label: `Page ${page1}`, imgUrl: getPageImageUrl(doc1, page1)},
+                {doc: doc2, label: `Page ${page2}`, imgUrl: getPageImageUrl(doc2, page2)}
+            ],
+            score: point?.score
         };
-      }
-
-      const page1 = nav.idx1 + 1, page2 = nav.idx2 + 1;
-      const point = data.points.find(p => p.page1 === page1 && p.page2 === page2);
-      return {
-        items: [
-          {doc: doc1, label: `Page ${page1}`, imgUrl: getPageImageUrl(doc1, page1)},
-          {doc: doc2, label: `Page ${page2}`, imgUrl: getPageImageUrl(doc2, page2)}
-        ],
-        score: point?.score
-      };
     }
 
     function navigate(delta, axis) {
-      if (!navState || !scatterData) return;
-      if (axis === "horizontal") {
-        navState.idx1 = (navState.idx1 + delta + navLimits.max1) % navLimits.max1;
-      } else {
-        navState.idx2 = (navState.idx2 + delta + navLimits.max2) % navLimits.max2;
-      }
-      dispatch("navigate", navState);
+        if (!navState || !scatterData) return;
+        if (axis === "horizontal") {
+            navState.idx1 = (navState.idx1 + delta + navLimits.max1) % navLimits.max1;
+        } else {
+            navState.idx2 = (navState.idx2 + delta + navLimits.max2) % navLimits.max2;
+        }
+        dispatch("navigate", navState);
     }
 
     function handleKeydown(e) {
-      if (!active || !navState) return;
-      const keyMap = {
-        ArrowUp: [-1, "vertical"],
-        ArrowDown: [1, "vertical"],
-        ArrowLeft: [-1, "horizontal"],
-        ArrowRight: [1, "horizontal"]
-      };
-      const action = keyMap[e.key];
-      if (action) { e.preventDefault(); navigate(action[0], action[1]); }
+        if (!active || !navState) return;
+        const keyMap = {
+            ArrowUp: [-1, "vertical"],
+            ArrowDown: [1, "vertical"],
+            ArrowLeft: [-1, "horizontal"],
+            ArrowRight: [1, "horizontal"]
+        };
+        const action = keyMap[e.key];
+        if (action) { e.preventDefault(); navigate(action[0], action[1]); }
     }
 
     function handleClose() {
-      dispatch("close");
+        dispatch("close");
     }
 
     onMount(() => window.addEventListener("keydown", handleKeydown));

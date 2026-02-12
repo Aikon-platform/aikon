@@ -7,60 +7,60 @@
     export let filename = "export.png";
 
     function getScrollParent(el) {
-      while (el && el !== document.body) {
-        const style = getComputedStyle(el);
-        if (/(auto|scroll|hidden)/.test(style.overflow + style.overflowX + style.overflowY)) {
-          return el;
+        while (el && el !== document.body) {
+            const style = getComputedStyle(el);
+            if (/(auto|scroll|hidden)/.test(style.overflow + style.overflowX + style.overflowY)) {
+                return el;
+            }
+            el = el.parentElement;
         }
-        el = el.parentElement;
-      }
-      return null;
+        return null;
     }
 
     async function download() {
-      await withLoading(async () => {
-        const el = document.getElementById(targetId);
-        if (!el) return;
+        await withLoading(async () => {
+            const el = document.getElementById(targetId);
+            if (!el) return;
 
-        const scrollParent = getScrollParent(el);
-        const saved = scrollParent ? {
-          overflow: scrollParent.style.overflow,
-          maxHeight: scrollParent.style.maxHeight,
-          height: scrollParent.style.height
-        } : null;
+            const scrollParent = getScrollParent(el);
+            const saved = scrollParent ? {
+                overflow: scrollParent.style.overflow,
+                maxHeight: scrollParent.style.maxHeight,
+                height: scrollParent.style.height
+            } : null;
 
-        try {
-          if (scrollParent) {
-            scrollParent.style.overflow = "visible";
-            scrollParent.style.maxHeight = "none";
-            scrollParent.style.height = "auto";
-          }
+            try {
+                if (scrollParent) {
+                    scrollParent.style.overflow = "visible";
+                    scrollParent.style.maxHeight = "none";
+                    scrollParent.style.height = "auto";
+                }
 
-          const canvas = await html2canvas(el, {
-            backgroundColor: null,
-            scale: 2,
-            logging: false,
-            useCORS: true,
-            scrollX: 0,
-            scrollY: 0
-          });
+                const canvas = await html2canvas(el, {
+                    backgroundColor: null,
+                    scale: 2,
+                    logging: false,
+                    useCORS: true,
+                    scrollX: 0,
+                    scrollY: 0
+                });
 
-          const link = document.createElement("a");
-          link.download = filename;
-          link.href = canvas.toDataURL("image/png");
-          link.click();
-        } catch (error) {
-          await showMessage(
-            `Error generating PNG: ${error}`,
-            appLang === "en" ? "Error" : "Erreur");
-        } finally {
-          if (scrollParent && saved) {
-            scrollParent.style.overflow = saved.overflow;
-            scrollParent.style.maxHeight = saved.maxHeight;
-            scrollParent.style.height = saved.height;
-          }
-        }
-      });
+                const link = document.createElement("a");
+                link.download = filename;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            } catch (error) {
+                await showMessage(
+                    `Error generating PNG: ${error}`,
+                    appLang === "en" ? "Error" : "Erreur");
+            } finally {
+                if (scrollParent && saved) {
+                    scrollParent.style.overflow = saved.overflow;
+                    scrollParent.style.maxHeight = saved.maxHeight;
+                    scrollParent.style.height = saved.height;
+                }
+            }
+        });
     }
 </script>
 

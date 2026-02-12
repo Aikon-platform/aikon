@@ -27,65 +27,65 @@
     $: areAllSelected = selectionLength >= Object.keys($allRegions).length;
 
     function toggleEditMode() {
-      isEditMode = !isEditMode;
-      // TODO send validation status to backend
+        isEditMode = !isEditMode;
+        // TODO send validation status to backend
     }
 
     async function deleteRegion(regionId) {
-      const urlDelete = `${aiiinotateUrl}/annotations/2/delete?uri=${toAiiinotateAnnotationUrl(manifestShortId, regionId)}`;
-      const response = await fetch(urlDelete, { method: "DELETE"});
-      if (response.status > 299) {
-        throw new Error(`Failed to delete ${urlDelete} due to ${response.status}: '${response.statusText}'`);
-      }
+        const urlDelete = `${aiiinotateUrl}/annotations/2/delete?uri=${toAiiinotateAnnotationUrl(manifestShortId, regionId)}`;
+        const response = await fetch(urlDelete, { method: "DELETE"});
+        if (response.status > 299) {
+            throw new Error(`Failed to delete ${urlDelete} due to ${response.status}: '${response.statusText}'`);
+        }
     }
 
     // TODO add toggle button to switch in between select mode and view mode
     async function deleteSelectedRegions() {
-      const confirmed = await showMessage(
-        appLang === "en" ? "Are you sure you want to delete these regions?" : "Voulez-vous vraiment supprimer ces régions ?",
-        appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
-        true
-      );
+        const confirmed = await showMessage(
+            appLang === "en" ? "Are you sure you want to delete these regions?" : "Voulez-vous vraiment supprimer ces régions ?",
+            appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
+            true
+        );
 
-      if (!confirmed) {
-        return; // User cancelled the deletion
-      }
-
-      for (const [regionId, regionData] of Object.entries(selectedRegions)) {
-        try {
-          if (!$allRegions.hasOwnProperty(regionId)) {
-            // only delete regions that are displayed
-            continue;
-          }
-          await deleteRegion(regionId);
-          regionsStore.remove(regionId);
-          regionsSelection.remove(regionId, regionsType)
-
-        } catch (error) {
-          await showMessage(`Failed to delete region ${regionId}: ${error.message}`, "Error");
+        if (!confirmed) {
+            return; // User cancelled the deletion
         }
-      }
+
+        for (const [regionId, regionData] of Object.entries(selectedRegions)) {
+            try {
+                if (!$allRegions.hasOwnProperty(regionId)) {
+                    // only delete regions that are displayed
+                    continue;
+                }
+                await deleteRegion(regionId);
+                regionsStore.remove(regionId);
+                regionsSelection.remove(regionId, regionsType)
+
+            } catch (error) {
+                await showMessage(`Failed to delete region ${regionId}: ${error.message}`, "Error");
+            }
+        }
     }
 
     function toggleAllSelection() {
-      if (areAllSelected) {
-        regionsSelection.removeAll(Object.keys($allRegions), regionsType);
-      } else {
-        regionsSelection.addAll(Object.values($allRegions));
-      }
+        if (areAllSelected) {
+            regionsSelection.removeAll(Object.keys($allRegions), regionsType);
+        } else {
+            regionsSelection.addAll(Object.values($allRegions));
+        }
     }
 
     async function downloadRegions(){
-      // download only displayed regions?
-      const regionsRef = Object.values(selectedRegions).map(r => r.ref);
-      const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/regions/export`, {
-        method: "POST",
-        headers: { "X-CSRFToken": csrfToken },
-        body: JSON.stringify({regionsRef})
-      }));
-      const blob = await response.blob();
-      // TODO find better filename
-      downloadBlob(blob, "regions.zip");
+        // download only displayed regions?
+        const regionsRef = Object.values(selectedRegions).map(r => r.ref);
+        const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/regions/export`, {
+            method: "POST",
+            headers: { "X-CSRFToken": csrfToken },
+            body: JSON.stringify({regionsRef})
+        }));
+        const blob = await response.blob();
+        // TODO find better filename
+        downloadBlob(blob, "regions.zip");
     }
 </script>
 

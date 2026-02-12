@@ -12,10 +12,10 @@
     const { fetchSimilarity, comparedRegions } = similarityStore;
 
     onMount(() => {
-      if (modules.includes("similarity")){
-        fetchSimilarity();
+        if (modules.includes("similarity")){
+            fetchSimilarity();
         // fetchSimilarityScoreRange();
-      }
+        }
     });
 </script>
 

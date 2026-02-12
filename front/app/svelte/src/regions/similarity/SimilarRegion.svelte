@@ -53,40 +53,40 @@
     ////////////////////////////////////////////
 
     function toTitledRegion() {
-      let item = toRegionItem(sImg, wit, xywh, canvas);
-      const regionData = $comparedRegions[`${wit}_${digit}_anno${sRegions}`] || {title: item.title};
-      item.title = `${shorten(regionData.title.replace(/^[^|]+/, ""))}<br/>Page ${extractInt(canvas)}<br/><b>Score: ${score}</b>`;
-      return item;
+        let item = toRegionItem(sImg, wit, xywh, canvas);
+        const regionData = $comparedRegions[`${wit}_${digit}_anno${sRegions}`] || {title: item.title};
+        item.title = `${shorten(regionData.title.replace(/^[^|]+/, ""))}<br/>Page ${extractInt(canvas)}<br/><b>Score: ${score}</b>`;
+        return item;
     }
 
     // format the current SimilarRegion to send to the backend
     const toRegionPair = (currentUsers) => ({
-      img_1: qImg,
-      img_2: sImg,
-      regions_id_1: qRegions,
-      regions_id_2: sRegions,
-      score: score,
-      category: selectedCategory,
-      category_x: currentUsers,
-      similarity_type: similarityType,
-      similarity_hash: similarityHash
+        img_1: qImg,
+        img_2: sImg,
+        regions_id_1: qRegions,
+        regions_id_2: sRegions,
+        score: score,
+        category: selectedCategory,
+        category_x: currentUsers,
+        similarity_type: similarityType,
+        similarity_hash: similarityHash
     })
 
     function usersIncludesCurrentUser (currentUsers) {
-      return currentUsers.includes(Number(userId));
+        return currentUsers.includes(Number(userId));
     }
 
     const updateCategory = (newCategory, oldCategory) =>
-      newCategory === oldCategory ? null : newCategory;
+        newCategory === oldCategory ? null : newCategory;
 
     const updateUsers = (newCategory, currentUsers) => {
-      console.log("updateUsers", newCategory, currentUsers);
-      currentUsers = currentUsers.slice()
-      if ( !usersIncludesCurrentUser(currentUsers) ) {
-        return [ ...currentUsers, Number(userId) ];
-      } else {
-        return currentUsers// .filter((_userId) => Number(userId) !== _userId );
-      }
+        console.log("updateUsers", newCategory, currentUsers);
+        currentUsers = currentUsers.slice()
+        if ( !usersIncludesCurrentUser(currentUsers) ) {
+            return [ ...currentUsers, Number(userId) ];
+        } else {
+            return currentUsers// .filter((_userId) => Number(userId) !== _userId );
+        }
     }
 
     /**
@@ -95,34 +95,34 @@
      * setting the region will create the RegionPair and save it to database
      */
     async function categorize(category) {
-      // NOTE order is important
-      selectedCategory = updateCategory(category, selectedCategory);
-      let currentUsers = updateUsers(selectedCategory, users);
-      isSelectedByUser = usersIncludesCurrentUser(currentUsers);
-      console.log("OLD CURRENT USERS", users);
-      console.log("NEW SELECTED CATEGORY", selectedCategory);
-      console.log("NEW CURRENT USERS", currentUsers);
-      console.log("NEW IS SELECTED BY USER", isSelectedByUser);
+        // NOTE order is important
+        selectedCategory = updateCategory(category, selectedCategory);
+        let currentUsers = updateUsers(selectedCategory, users);
+        isSelectedByUser = usersIncludesCurrentUser(currentUsers);
+        console.log("OLD CURRENT USERS", users);
+        console.log("NEW SELECTED CATEGORY", selectedCategory);
+        console.log("NEW CURRENT USERS", currentUsers);
+        console.log("NEW IS SELECTED BY USER", isSelectedByUser);
 
-      try {
-        const response = await fetch(`${baseUrl}/${appName}/save-category`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": csrfToken
-          },
-          body: JSON.stringify(toRegionPair(currentUsers))
-        });
-        if (!response.ok) {
-          console.error("Error: Network response was not ok");
-          // unselect category
-          selectedCategory = updateCategory(category);
+        try {
+            const response = await fetch(`${baseUrl}/${appName}/save-category`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify(toRegionPair(currentUsers))
+            });
+            if (!response.ok) {
+                console.error("Error: Network response was not ok");
+                // unselect category
+                selectedCategory = updateCategory(category);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            // unselect category
+            selectedCategory = updateCategory(category);
         }
-      } catch (error) {
-        console.error("Error:", error);
-        // unselect category
-        selectedCategory = updateCategory(category);
-      }
     }
 </script>
 

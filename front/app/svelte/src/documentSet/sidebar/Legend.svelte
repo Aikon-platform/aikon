@@ -11,10 +11,10 @@
 
     let sortBy = "id"; // 'id' | 'witnessId' | 'title'
     const sortWith = {
-      id: (a, b) => a[0] - b[0],
-      witnessId: (a, b) => (a[1].witnessId || 0) - (b[1].witnessId || 0),
-      title: (a, b) => (a[1].title || "").localeCompare(b[1].title || "")
-      // todo add date
+        id: (a, b) => a[0] - b[0],
+        witnessId: (a, b) => (a[1].witnessId || 0) - (b[1].witnessId || 0),
+        title: (a, b) => (a[1].title || "").localeCompare(b[1].title || "")
+        // todo add date
     };
     $: sortedDocs = Array.from(documentNodes || new Map()).sort(sortWith[sortBy]);
     $: selectedDocs = sortedDocs.filter(([id, _]) => selectedRegions.has(parseInt(id)));

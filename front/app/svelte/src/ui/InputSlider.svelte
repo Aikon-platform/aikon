@@ -53,8 +53,8 @@
     const sliderHtmlId = `slider-${crypto.randomUUID()}`;
     const isRange = Array.isArray(start) && start.length === 2 && start.every(n => !isNaN(parseFloat(n)));  // true if number, number
     const handleHtmlIds = isRange
-      ? [crypto.randomUUID(), crypto.randomUUID()].map(id => `noUi-handle-${id}`)
-      : [`noUi-handle-${crypto.randomUUID()}`];
+        ? [crypto.randomUUID(), crypto.randomUUID()].map(id => `noUi-handle-${id}`)
+        : [`noUi-handle-${crypto.randomUUID()}`];
 
     /** @type {writable} the `resetTrigger` context stores a writable. we subscribe to the writable,
      * and when its value is updated, reset InputSlider */
@@ -71,58 +71,58 @@
     const round = n => Number(n.toFixed(roundTo));
     const roundVal = v => Array.isArray(v) ? v.map(round) : round(v);
     const valuesEqual = (a, b) => isRange
-      ? a?.[0] === b?.[0] && a?.[1] === b?.[1]
-      : a === b;
+        ? a?.[0] === b?.[0] && a?.[1] === b?.[1]
+        : a === b;
 
     function handleSliderEvent(caller) {
-      const val = roundVal(slider.noUiSlider.get(true));
-      selectedVal = val;
-      if (caller === "set" || emitOnUpdate) {
-        if (!valuesEqual(val, prevValue)) {
-          prevValue = val;
-          dispatch("updateSlider", val);
+        const val = roundVal(slider.noUiSlider.get(true));
+        selectedVal = val;
+        if (caller === "set" || emitOnUpdate) {
+            if (!valuesEqual(val, prevValue)) {
+                prevValue = val;
+                dispatch("updateSlider", val);
+            }
         }
-      }
     }
 
     // update range if minVal/maxVal change in the parent component
     $: if (slider?.noUiSlider && (minVal !== prevRange.min || maxVal !== prevRange.max)) {
-      prevRange = { min: minVal, max: maxVal };
-      slider.noUiSlider.updateOptions({ range: { min: minVal, max: maxVal } }, false);
-      // NOTE if the minVal/maxVal are updated through reactive props
-      // NOTE after the start value is set AND if the start value is above the maxVal
-      // NOTE then the start is defaulted to maxVal by noUiSlider
-      // NOTE if you receive range after initial value,
-      // NOTE better set min and max first way above expected start value
+        prevRange = { min: minVal, max: maxVal };
+        slider.noUiSlider.updateOptions({ range: { min: minVal, max: maxVal } }, false);
+        // NOTE if the minVal/maxVal are updated through reactive props
+        // NOTE after the start value is set AND if the start value is above the maxVal
+        // NOTE then the start is defaulted to maxVal by noUiSlider
+        // NOTE if you receive range after initial value,
+        // NOTE better set min and max first way above expected start value
     }
 
     // update start if value passed to props change in the parent component
     $: if (slider?.noUiSlider && !valuesEqual(roundVal(start), roundVal(prevStart))) {
-      prevStart = start;
-      slider.noUiSlider.set(start, false);
-      selectedVal = roundVal(start);
+        prevStart = start;
+        slider.noUiSlider.set(start, false);
+        selectedVal = roundVal(start);
     }
 
     $: handleTooltips.forEach((tooltip, i) =>
-      tooltip.$set({ tooltipText: isRange ? selectedVal[i] : selectedVal })
+        tooltip.$set({ tooltipText: isRange ? selectedVal[i] : selectedVal })
     );
 
     onMount(() => {
-      slider = document.getElementById(sliderHtmlId);
-      noUiSlider.create(slider, {
-        start,
-        step,
-        connect: isRange ? true : "lower",
-        range: { min: minVal, max: maxVal },
-        handleAttributes: handleHtmlIds.map(id => ({ id }))
-      });
-      slider.noUiSlider.on("update", () => handleSliderEvent("update"));
-      slider.noUiSlider.on("set", () => handleSliderEvent("set"));
+        slider = document.getElementById(sliderHtmlId);
+        noUiSlider.create(slider, {
+            start,
+            step,
+            connect: isRange ? true : "lower",
+            range: { min: minVal, max: maxVal },
+            handleAttributes: handleHtmlIds.map(id => ({ id }))
+        });
+        slider.noUiSlider.on("update", () => handleSliderEvent("update"));
+        slider.noUiSlider.on("set", () => handleSliderEvent("set"));
 
-      handleTooltips = handleHtmlIds.map((id, i) => new TooltipGeneric({
-        target: document.getElementById(id),
-        props: { tooltipText: isRange ? selectedVal[i] : selectedVal }
-      }));
+        handleTooltips = handleHtmlIds.map((id, i) => new TooltipGeneric({
+            target: document.getElementById(id),
+            props: { tooltipText: isRange ? selectedVal[i] : selectedVal }
+        }));
     });
 
     onDestroy(() => slider?.noUiSlider?.destroy());

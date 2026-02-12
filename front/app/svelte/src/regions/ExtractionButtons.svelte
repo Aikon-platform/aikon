@@ -7,66 +7,66 @@
     export let baseUrl;
 
     async function manualRegions() {
-      const wlo = `${window.location.origin}/${appName}`
-      let url = `${wlo}/witness/${witness.id}/regions/add`;
-      if (witness.regions.length === 1 || currentRegionId){
-        const regionId = currentRegionId || witness.regions[0];
-        url = `${wlo}/witness/${witness.id}/regions/${regionId}/add`;
-      }
+        const wlo = `${window.location.origin}/${appName}`
+        let url = `${wlo}/witness/${witness.id}/regions/add`;
+        if (witness.regions.length === 1 || currentRegionId){
+            const regionId = currentRegionId || witness.regions[0];
+            url = `${wlo}/witness/${witness.id}/regions/${regionId}/add`;
+        }
 
-      // todo : allow "witness/<int:wid>/digitization/<int:did>/regions/add"
-      const response = await withLoading(() => fetch(url, {
-        method: "POST",
-        headers: { "X-CSRFToken": csrfToken },
-      }));
+        // todo : allow "witness/<int:wid>/digitization/<int:did>/regions/add"
+        const response = await withLoading(() => fetch(url, {
+            method: "POST",
+            headers: { "X-CSRFToken": csrfToken },
+        }));
 
-      if (!response.ok) {
-        await showMessage(`Failed to create regions: '${response.statusText}'`, "Error");
-        throw new Error(`Failed to create regions: '${response.statusText}'`);
-      }
+        if (!response.ok) {
+            await showMessage(`Failed to create regions: '${response.statusText}'`, "Error");
+            throw new Error(`Failed to create regions: '${response.statusText}'`);
+        }
 
-      let res;
-      try {
-        res = await response.json();
-      } catch (error) {
-        await showMessage(`Failed to parse JSON response: '${error}'`, "Error");
-        throw new Error(`Failed to parse JSON response: '${error}'`);
-      }
+        let res;
+        try {
+            res = await response.json();
+        } catch (error) {
+            await showMessage(`Failed to parse JSON response: '${error}'`, "Error");
+            throw new Error(`Failed to parse JSON response: '${error}'`);
+        }
 
-      if (res.hasOwnProperty("mirador_url")) {
-        window.open(res.mirador_url);
-      }
-      if (res.hasOwnProperty("regions_id")) {
-        window.location.href = `${baseUrl.split("regions/")[0]}regions/${res.regions_id}`;
-      }
+        if (res.hasOwnProperty("mirador_url")) {
+            window.open(res.mirador_url);
+        }
+        if (res.hasOwnProperty("regions_id")) {
+            window.location.href = `${baseUrl.split("regions/")[0]}regions/${res.regions_id}`;
+        }
     }
     async function automaticRegions() {
-      const url = `${window.location.origin}/${appName}/witness/${witness.id}/regions/extract`;
-      const response = await withLoading(() => fetch(url, {
-        method: "POST",
-        headers: { "X-CSRFToken": csrfToken },
-      }));
+        const url = `${window.location.origin}/${appName}/witness/${witness.id}/regions/extract`;
+        const response = await withLoading(() => fetch(url, {
+            method: "POST",
+            headers: { "X-CSRFToken": csrfToken },
+        }));
 
-      let res;
-      if (response.ok) {
-        try {
-          res = await response.json();
-          console.log(res);
-        } catch (error) {
-          await showMessage(`Failed to parse JSON response: '${error}'`, "Error");
-          throw new Error(`Failed to parse JSON response: '${error}'`);
-        } finally {
-          const docSet = res.doc_set_id;
-          if (!docSet) {
-            await showMessage("Failed to launch regions extraction: 'No document set id'", "Error");
-            throw new Error("Failed to launch regions extraction: 'No document set id'");
-          }
-          window.location.href = `${window.location.origin}/${appName}/treatment/add/?document_set=${docSet}&task_type=regions`;
+        let res;
+        if (response.ok) {
+            try {
+                res = await response.json();
+                console.log(res);
+            } catch (error) {
+                await showMessage(`Failed to parse JSON response: '${error}'`, "Error");
+                throw new Error(`Failed to parse JSON response: '${error}'`);
+            } finally {
+                const docSet = res.doc_set_id;
+                if (!docSet) {
+                    await showMessage("Failed to launch regions extraction: 'No document set id'", "Error");
+                    throw new Error("Failed to launch regions extraction: 'No document set id'");
+                }
+                window.location.href = `${window.location.origin}/${appName}/treatment/add/?document_set=${docSet}&task_type=regions`;
+            }
+        } else {
+            await showMessage(`Failed to launch regions extraction: '${res.message}'`, "Error");
+            throw new Error(`Failed to launch regions extraction: '${res.message}'`);
         }
-      } else {
-        await showMessage(`Failed to launch regions extraction: '${res.message}'`, "Error");
-        throw new Error(`Failed to launch regions extraction: '${res.message}'`);
-      }
     }
 </script>
 

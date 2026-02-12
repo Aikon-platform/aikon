@@ -5,20 +5,20 @@
 
     let previousLength = selectionLength;
     $: if (selectionLength !== previousLength) {
-      const isIncreasing = selectionLength > previousLength;
-      previousLength = selectionLength;
+        const isIncreasing = selectionLength > previousLength;
+        previousLength = selectionLength;
 
-      const button = document.getElementById("btn-content");
-      if (button) {
-        button.animate([
-          { transform: isIncreasing ? "translateY(-7px)" : "translateX(-5px)" },
-          { transform: isIncreasing ? "translateY(7px)" : "translateX(5px)" },
-          { transform: "translate(0)" }
-        ], {
-          duration: 300,
-          easing: "cubic-bezier(0.65, 0, 0.35, 1)"
-        });
-      }
+        const button = document.getElementById("btn-content");
+        if (button) {
+            button.animate([
+                { transform: isIncreasing ? "translateY(-7px)" : "translateX(-5px)" },
+                { transform: isIncreasing ? "translateY(7px)" : "translateX(5px)" },
+                { transform: "translate(0)" }
+            ], {
+                duration: 300,
+                easing: "cubic-bezier(0.65, 0, 0.35, 1)"
+            });
+        }
     }
 </script>
 

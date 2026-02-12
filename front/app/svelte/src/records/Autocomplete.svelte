@@ -19,43 +19,43 @@
     const dispatch = createEventDispatcher();
 
     $: {
-      if (inputValue.length > 0) {
-        filteredItems = items.filter(item =>
-          item.label.toLowerCase().includes(inputValue.toLowerCase())
-        );
-        isOpen = true;
-      } else {
-        filteredItems = [];
-        isOpen = false;
-        if (selectedItem) {
-          selectedItem = null;
-          dispatch("select", { id: null, label: "" });
+        if (inputValue.length > 0) {
+            filteredItems = items.filter(item =>
+                item.label.toLowerCase().includes(inputValue.toLowerCase())
+            );
+            isOpen = true;
+        } else {
+            filteredItems = [];
+            isOpen = false;
+            if (selectedItem) {
+                selectedItem = null;
+                dispatch("select", { id: null, label: "" });
+            }
         }
-      }
     }
 
     function handleInput() {
-      selectedIndex = -1;
+        selectedIndex = -1;
     }
 
     function handleKeydown(event) {
-      if (event.key === "ArrowDown") {
-        event.preventDefault();
-        selectedIndex = (selectedIndex + 1) % filteredItems.length;
-      } else if (event.key === "ArrowUp") {
-        event.preventDefault();
-        selectedIndex = selectedIndex <= 0 ? filteredItems.length - 1 : selectedIndex - 1;
-      } else if (event.key === "Enter" && selectedIndex !== -1) {
-        event.preventDefault();
-        selectItem(filteredItems[selectedIndex]);
-      }
+        if (event.key === "ArrowDown") {
+            event.preventDefault();
+            selectedIndex = (selectedIndex + 1) % filteredItems.length;
+        } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            selectedIndex = selectedIndex <= 0 ? filteredItems.length - 1 : selectedIndex - 1;
+        } else if (event.key === "Enter" && selectedIndex !== -1) {
+            event.preventDefault();
+            selectItem(filteredItems[selectedIndex]);
+        }
     }
 
     function selectItem(item) {
-      inputValue = item.label;
-      selectedItem = item;
-      isOpen = false;
-      dispatch("select", item);
+        inputValue = item.label;
+        selectedItem = item;
+        isOpen = false;
+        dispatch("select", item);
     }
 </script>
 

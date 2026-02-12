@@ -9,73 +9,73 @@
     export let selectedDocuments = [];
     export let documentSetStore;
     const {
-      buildAlignedImageMatrix,
-      documentNodes,
-      imageNodes,
+        buildAlignedImageMatrix,
+        documentNodes,
+        imageNodes,
     } = documentSetStore;
 
     function generateDistinctColor(str) {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-        hash = hash & hash;
-      }
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            hash = hash & hash;
+        }
 
-      const goldenRatio = 0.618033988749895;
-      const hue = ((hash * goldenRatio) % 1) * 360;
-      const saturation = 65 + (hash % 20);
-      const lightness = 80 + (hash % 10);
+        const goldenRatio = 0.618033988749895;
+        const hue = ((hash * goldenRatio) % 1) * 360;
+        const saturation = 65 + (hash % 20);
+        const lightness = 80 + (hash % 10);
 
-      return `hsl(${Math.floor(hue)}, ${saturation}%, ${lightness}%)`;
+        return `hsl(${Math.floor(hue)}, ${saturation}%, ${lightness}%)`;
     }
 
     let matrixData = null;
 
     $: if (selectedDocuments.length > 0 && $imageNodes && $documentNodes) {
-      const selectionOrder = selectedDocuments.map(n => n.id);
-      matrixData = buildAlignedImageMatrix(selectionOrder);
+        const selectionOrder = selectedDocuments.map(n => n.id);
+        matrixData = buildAlignedImageMatrix(selectionOrder);
     } else {
-      matrixData = null;
+        matrixData = null;
     }
 
     function getImageColor(regionData, imageOccurrences) {
-      if (!regionData) return undefined;
-      const imgId = regionData.id;
+        if (!regionData) return undefined;
+        const imgId = regionData.id;
 
-      if (imageOccurrences.get(imgId) === 1) return undefined;
-      if (!imageColorMap.has(imgId)) {
-        imageColorMap.set(imgId, generateDistinctColor(imgId));
-      }
-      return imageColorMap.get(imgId);
+        if (imageOccurrences.get(imgId) === 1) return undefined;
+        if (!imageColorMap.has(imgId)) {
+            imageColorMap.set(imgId, generateDistinctColor(imgId));
+        }
+        return imageColorMap.get(imgId);
     }
 
     const imageColorMap = new Map();
 
     $: imageOccurrences = matrixData ? (() => {
-      const map = new Map();
-      matrixData.rows.forEach(rowData => {
-        Object.values(rowData).forEach(imgData => {
-          map.set(imgData.id, (map.get(imgData.id) || 0) + 1);
+        const map = new Map();
+        matrixData.rows.forEach(rowData => {
+            Object.values(rowData).forEach(imgData => {
+                map.set(imgData.id, (map.get(imgData.id) || 0) + 1);
+            });
         });
-      });
-      return map;
+        return map;
     })() : new Map();
 
     let modalOpen = false;
     let modalIndex = 0;
     $: modalItems = matrixData ? matrixData.rows.flatMap(rowData =>
-      matrixData.regions.map(regionId => rowData[regionId])
-        .filter(imgData => imgData)
-        .map(imgData => $imageNodes.get(imgData.id))
+        matrixData.regions.map(regionId => rowData[regionId])
+            .filter(imgData => imgData)
+            .map(imgData => $imageNodes.get(imgData.id))
     ) : [];
     const handleOpenModal = (e) => {
-      modalIndex = e.detail.index ?? 0;
-      modalOpen = true;
+        modalIndex = e.detail.index ?? 0;
+        modalOpen = true;
     };
 
     const tabs = [
-      { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
-      { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
+        { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
+        { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
     ];
 </script>
 

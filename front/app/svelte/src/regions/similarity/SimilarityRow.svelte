@@ -39,115 +39,115 @@
     ////////////////////////////////////////////////
 
     function check_region_ref(region_ref) {
-      region_ref = region_ref.replace(".jpg", "");
-      const region_ref_regex = /^wit\d+_[a-zA-Z]{3}\d+_\d+_\d+,\d+,\d+,\d+$/;
-      return region_ref_regex.test(region_ref);
+        region_ref = region_ref.replace(".jpg", "");
+        const region_ref_regex = /^wit\d+_[a-zA-Z]{3}\d+_\d+_\d+,\d+,\d+,\d+$/;
+        return region_ref_regex.test(region_ref);
     }
 
     async function addMatch() {
-      if (!sImg || !check_region_ref(sImg)) {
-        await showMessage(
-          appLang === "en" ?
-            "Please insert a valid region reference to add a new match" :
-            "Veuillez insérer une référence de région valide pour ajouter une nouvelle correspondance",
-          "Error");
-        return;
-      }
-
-      try {
-        const response = await fetch(`${baseUrl}add-region-pair`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": csrfToken
-          },
-          body: JSON.stringify({
-            "q_img": qImg.replace(".jpg", ""),
-            "s_img": sImg,
-            "similarity_type": 2
-          })
-        });
-
-        if (!response.ok) {
-          console.error("Error: Network response was not ok");
-          await showMessage(
-            appLang === "en" ?
-              "Problem with network, match was not added" :
-              "Problème de réseau, la correspondance n'a pas été ajoutée",
-            errorName
-          );
+        if (!sImg || !check_region_ref(sImg)) {
+            await showMessage(
+                appLang === "en" ?
+                    "Please insert a valid region reference to add a new match" :
+                    "Veuillez insérer une référence de région valide pour ajouter une nouvelle correspondance",
+                "Error");
+            return;
         }
 
-        const data = await response.json();
-        if (data.hasOwnProperty("error") || !data.hasOwnProperty("s_regions")){
-          await showMessage(
-            appLang === "en" ?
-              `Request was unsuccessful, match was not added:<br>${data.error}` :
-              `La requête n'a pas abouti, la correspondance n'a pas été ajoutée :<br>${data.error}`,
-            errorName
-          );
-          return;
-        }
-        const regions = data.s_regions;
-        similarityStore.addComparedRegions(regions)
-        similarityStore.select(regions)
+        try {
+            const response = await fetch(`${baseUrl}add-region-pair`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({
+                    "q_img": qImg.replace(".jpg", ""),
+                    "s_img": sImg,
+                    "similarity_type": 2
+                })
+            });
 
-      } catch (error) {
-        console.error("Error:", error);
-        await showMessage(
-          appLang === "en" ?
-            `An error has occurred, match was not added:<br>${error}` :
-            `Une erreur s'est produite, la correspondance n'a pas été ajoutée :<br>${error}`,
-          errorName
-        );
-      }
+            if (!response.ok) {
+                console.error("Error: Network response was not ok");
+                await showMessage(
+                    appLang === "en" ?
+                        "Problem with network, match was not added" :
+                        "Problème de réseau, la correspondance n'a pas été ajoutée",
+                    errorName
+                );
+            }
+
+            const data = await response.json();
+            if (data.hasOwnProperty("error") || !data.hasOwnProperty("s_regions")){
+                await showMessage(
+                    appLang === "en" ?
+                        `Request was unsuccessful, match was not added:<br>${data.error}` :
+                        `La requête n'a pas abouti, la correspondance n'a pas été ajoutée :<br>${data.error}`,
+                    errorName
+                );
+                return;
+            }
+            const regions = data.s_regions;
+            similarityStore.addComparedRegions(regions)
+            similarityStore.select(regions)
+
+        } catch (error) {
+            console.error("Error:", error);
+            await showMessage(
+                appLang === "en" ?
+                    `An error has occurred, match was not added:<br>${error}` :
+                    `Une erreur s'est produite, la correspondance n'a pas été ajoutée :<br>${error}`,
+                errorName
+            );
+        }
     }
 
     async function noMatch() {
-      const regions = Object.values($selectedRegions[currentPageId])[0];
-      const confirmed = await showMessage(
-        appLang === "en" ?
-          `Do you confirm this region does not have any match in ${regions.title}?` :
-          `Confirmez-vous que cette région n'a pas de correspondance dans ${regions.title} ?`,
-        appLang === "en" ? "Confirm no match" : "Confirmer l'absence de correspondance",
-        true
-      );
-
-      if (!confirmed) {
-        return;
-      }
-      try {
-        const response = await fetch(`${baseUrl}no-match`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": csrfToken
-          },
-          body: JSON.stringify({
-            "q_img": qImg,
-            "s_regions": regions.id,
-          })
-        });
-
-        if (!response.ok) {
-          console.error("Error: Network response was not ok");
-          await showMessage(
-            appLang === "en" ? "Problem with network" : "Problème de réseau",
-            errorName
-          );
-        }
-
-        similarityStore.select(regions)
-
-      } catch (error) {
-        console.error("Error:", error);
-        await showMessage(
-          appLang === "en" ?
-            `An error has occurred, request was unsuccessful:<br>${error}` :
-            `Une erreur s'est produite, la requête n'a pas abouti :<br>${error}`,
-          errorName
+        const regions = Object.values($selectedRegions[currentPageId])[0];
+        const confirmed = await showMessage(
+            appLang === "en" ?
+                `Do you confirm this region does not have any match in ${regions.title}?` :
+                `Confirmez-vous que cette région n'a pas de correspondance dans ${regions.title} ?`,
+            appLang === "en" ? "Confirm no match" : "Confirmer l'absence de correspondance",
+            true
         );
-      }
+
+        if (!confirmed) {
+            return;
+        }
+        try {
+            const response = await fetch(`${baseUrl}no-match`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({
+                    "q_img": qImg,
+                    "s_regions": regions.id,
+                })
+            });
+
+            if (!response.ok) {
+                console.error("Error: Network response was not ok");
+                await showMessage(
+                    appLang === "en" ? "Problem with network" : "Problème de réseau",
+                    errorName
+                );
+            }
+
+            similarityStore.select(regions)
+
+        } catch (error) {
+            console.error("Error:", error);
+            await showMessage(
+                appLang === "en" ?
+                    `An error has occurred, request was unsuccessful:<br>${error}` :
+                    `Une erreur s'est produite, la requête n'a pas abouti :<br>${error}`,
+                errorName
+            );
+        }
 
     }
 </script>
@@ -160,7 +160,7 @@
             <i class="fa-solid fa-pen-to-square"></i>
             Page {parseInt(canvas)}
         </a>
-        <img src="{refToIIIF(qImg, qImg.split("_").pop(), "250,")}" alt="Query region" class="mb-3 card query-image">
+        <img src="{refToIIIF(qImg, qImg.split('_').pop(), '250,')}" alt="Query region" class="mb-3 card query-image">
         <div class="new-similarity control pt-2 is-center">
             <div class="tags has-addons" style="flex-wrap: nowrap">
                 <input bind:value={sImg} class="input is-small tag" type="text" placeholder="{appLang === "en" ? "Add new match" : "Ajouter une correspondance"}"/>

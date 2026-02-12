@@ -25,17 +25,17 @@ const projectRoot = argv[2] || path.join(__dirname, "..")
 // Add deps to pkg.json
 const packageJSON = JSON.parse(fs.readFileSync(path.join(projectRoot, "package.json"), "utf8"))
 packageJSON.devDependencies = Object.assign(packageJSON.devDependencies, {
-  "svelte-check": "^3.0.0",
-  "svelte-preprocess": "^5.0.0",
-  "@rollup/plugin-typescript": "^11.0.0",
-  "typescript": "^4.9.0",
-  "tslib": "^2.5.0",
-  "@tsconfig/svelte": "^3.0.0"
+    "svelte-check": "^3.0.0",
+    "svelte-preprocess": "^5.0.0",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "typescript": "^4.9.0",
+    "tslib": "^2.5.0",
+    "@tsconfig/svelte": "^3.0.0"
 })
 
 // Add script for checking
 packageJSON.scripts = Object.assign(packageJSON.scripts, {
-  "check": "svelte-check"
+    "check": "svelte-check"
 })
 
 // Write the package JSON
@@ -67,14 +67,14 @@ rollupConfig = rollupConfig.replace("'src/main.js'", "'src/main.ts'")
 
 // Add preprocessor
 rollupConfig = rollupConfig.replace(
-  "compilerOptions:",
-  "preprocess: sveltePreprocess({ sourceMap: !production }),\n\t\t\tcompilerOptions:"
+    "compilerOptions:",
+    "preprocess: sveltePreprocess({ sourceMap: !production }),\n\t\t\tcompilerOptions:"
 );
 
 // Add TypeScript
 rollupConfig = rollupConfig.replace(
-  "commonjs(),",
-  "commonjs(),\n\t\ttypescript({\n\t\t\tsourceMap: !production,\n\t\t\tinlineSources: !production\n\t\t}),"
+    "commonjs(),",
+    "commonjs(),\n\t\ttypescript({\n\t\t\tsourceMap: !production,\n\t\t\tinlineSources: !production\n\t\t}),"
 );
 fs.writeFileSync(rollupConfigPath, rollupConfig)
 
@@ -104,20 +104,20 @@ fs.writeFileSync(dtsPath, "/// <reference types=\"svelte\" />")
 
 // Delete this script, but not during testing
 if (!argv[2]) {
-  // Remove the script
-  fs.unlinkSync(path.join(__filename))
+    // Remove the script
+    fs.unlinkSync(path.join(__filename))
 
-  // Check for Mac's DS_store file, and if it's the only one left remove it
-  const remainingFiles = fs.readdirSync(path.join(__dirname))
-  if (remainingFiles.length === 1 && remainingFiles[0] === ".DS_store") {
-    fs.unlinkSync(path.join(__dirname, ".DS_store"))
-  }
+    // Check for Mac's DS_store file, and if it's the only one left remove it
+    const remainingFiles = fs.readdirSync(path.join(__dirname))
+    if (remainingFiles.length === 1 && remainingFiles[0] === ".DS_store") {
+        fs.unlinkSync(path.join(__dirname, ".DS_store"))
+    }
 
-  // Check if the scripts folder is empty
-  if (fs.readdirSync(path.join(__dirname)).length === 0) {
+    // Check if the scripts folder is empty
+    if (fs.readdirSync(path.join(__dirname)).length === 0) {
     // Remove the scripts folder
-    fs.rmdirSync(path.join(__dirname))
-  }
+        fs.rmdirSync(path.join(__dirname))
+    }
 }
 
 // Adds the extension recommendation
@@ -130,5 +130,5 @@ fs.writeFileSync(path.join(projectRoot, ".vscode", "extensions.json"), `{
 console.log("Converted to TypeScript.")
 
 if (fs.existsSync(path.join(projectRoot, "node_modules"))) {
-  console.log("\nYou will need to re-run your dependency manager to get started.")
+    console.log("\nYou will need to re-run your dependency manager to get started.")
 }

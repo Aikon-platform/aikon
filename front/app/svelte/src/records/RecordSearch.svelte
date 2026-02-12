@@ -10,24 +10,24 @@
     let formData = {};
 
     onMount(() => {
-      // fill search form according to URL search params
-      const params = $searchParams ?? new URLSearchParams(window.location.search);
-      searchFields.forEach(field => {
-        formData[field.name] = params.get(field.name) || field.initial || "";
-      });
+        // fill search form according to URL search params
+        const params = $searchParams ?? new URLSearchParams(window.location.search);
+        searchFields.forEach(field => {
+            formData[field.name] = params.get(field.name) || field.initial || "";
+        });
     });
 
     function handleSearch(event) {
-      event.preventDefault();
-      recordSearch(formData);
+        event.preventDefault();
+        recordSearch(formData);
     }
 
     function isAutocomplete(field) {
-      return field.type.includes("ChoiceField") && field.choices.length > 5;
+        return field.type.includes("ChoiceField") && field.choices.length > 5;
     }
 
     function handleSelect(field, event) {
-      formData[field.name] = event.detail.id;
+        formData[field.name] = event.detail.id;
     }
 
     const isMulti = field => field.type.includes("Multiple");

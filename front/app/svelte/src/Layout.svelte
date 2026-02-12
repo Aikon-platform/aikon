@@ -10,16 +10,16 @@
     export let topOffsetElement = null;
 
     function updateTopOffset(element = null) {
-      if (!element) {
-        element = document.getElementById("navbar");
-      }
-      document.documentElement.style.setProperty("--top-offset", `${element.offsetHeight}px`);
+        if (!element) {
+            element = document.getElementById("navbar");
+        }
+        document.documentElement.style.setProperty("--top-offset", `${element.offsetHeight}px`);
     }
     updateTopOffset(topOffsetElement)
     onMount(() => {
-      activeLayout.init(defaultTab);
-      window.addEventListener("popstate", () => activeLayout.init());
-      return () => window.removeEventListener("popstate", () => activeLayout.init());
+        activeLayout.init(defaultTab);
+        window.addEventListener("popstate", () => activeLayout.init());
+        return () => window.removeEventListener("popstate", () => activeLayout.init());
     });
 </script>
 

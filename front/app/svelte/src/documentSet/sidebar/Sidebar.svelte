@@ -10,24 +10,24 @@
     export let documentSetStore;
     export let clusterStore;
     const {
-      docSetNumber,
-      documentNodes,
-      selectedCategories,
-      toggleCategory,
-      selectedRegions,
-      selectAllRegions,
-      toggleRegion,
-      threshold,
-      setThreshold,
-      topK,
-      setTopK,
-      mutualTopK,
-      setMutualTopK,
-      scoreMode,
-      setScoreMode,
-      pairStats,
-      scoreFilter,
-      setScoreFilter,
+        docSetNumber,
+        documentNodes,
+        selectedCategories,
+        toggleCategory,
+        selectedRegions,
+        selectAllRegions,
+        toggleRegion,
+        threshold,
+        setThreshold,
+        topK,
+        setTopK,
+        mutualTopK,
+        setMutualTopK,
+        scoreMode,
+        setScoreMode,
+        pairStats,
+        scoreFilter,
+        setScoreFilter,
     } = documentSetStore;
     const { clusterNb, handlePageUpdate } = clusterStore;
 
@@ -37,14 +37,14 @@
     let filterMode = "filtered";
 
     function setFilterMode(mode) {
-      filterMode = mode;
-      if (mode === "all" && $selectedCategories.length !== allCategories.length) {
-        selectedCategories.set(allCategories);
-      }
+        filterMode = mode;
+        if (mode === "all" && $selectedCategories.length !== allCategories.length) {
+            selectedCategories.set(allCategories);
+        }
     }
     function handleSetScoreMode(mode){
-      handlePageUpdate(1);
-      setScoreMode(mode)
+        handlePageUpdate(1);
+        setScoreMode(mode)
     }
 </script>
 
@@ -107,8 +107,8 @@
                             on:click={() => setFilterMode(mode)}>
                             {
                                 mode === "all" ?
-                                  appLang === "en" ? "All pairs" : "Toutes les paires" :
-                                  appLang === "en" ? "Filter by category" : "Filtrer par catégorie"
+                                    appLang === "en" ? "All pairs" : "Toutes les paires" :
+                                    appLang === "en" ? "Filter by category" : "Filtrer par catégorie"
                             }
                         </button>
                     {/each}
@@ -162,8 +162,8 @@
                                     on:click={() => handleSetScoreMode(mode)}>
                                 {
                                     mode === "threshold" ?
-                                      appLang === "en" ? "Score threshold" : "Seuil de score" :
-                                      appLang === "en" ? "Top K pairs" : "Top K paires"
+                                        appLang === "en" ? "Score threshold" : "Seuil de score" :
+                                        appLang === "en" ? "Top K pairs" : "Top K paires"
                                 }
                             </button>
                         {/each}
@@ -203,32 +203,32 @@
                 {#if $activeLayout === "img"}
                     <p>
                         {appLang === "en"
-                          ? "Network where each node is an image region. Edges connect regions with similarity scores above the threshold. Node color indicates the source document."
-                          : "Réseau où chaque nœud est une région d'image. Les liens connectent les régions dont le score de similarité dépasse le seuil. La couleur indique le document source."}
+                            ? "Network where each node is an image region. Edges connect regions with similarity scores above the threshold. Node color indicates the source document."
+                            : "Réseau où chaque nœud est une région d'image. Les liens connectent les régions dont le score de similarité dépasse le seuil. La couleur indique le document source."}
                     </p>
                 {:else if $activeLayout === "doc"}
                     <p>
                         {appLang === "en"
-                          ? "Network where each node is a document. Edge thickness reflects the cumulative similarity score between document pairs. Node size indicates the number of connections."
-                          : "Réseau où chaque nœud est un document. L'épaisseur des liens reflète le score de similarité cumulé entre paires de documents. La taille des nœuds indique le nombre de connexions."}
+                            ? "Network where each node is a document. Edge thickness reflects the cumulative similarity score between document pairs. Node size indicates the number of connections."
+                            : "Réseau où chaque nœud est un document. L'épaisseur des liens reflète le score de similarité cumulé entre paires de documents. La taille des nœuds indique le nombre de connexions."}
                     </p>
                 {:else if $activeLayout === "mat"}
                     <p>
                         {appLang === "en"
-                          ? "Matrix showing aggregated similarity scores between documents. Click a cell to explore page-level similarities in a scatter plot interface."
-                          : "Matrice affichant les scores de similarité agrégés entre documents. Cliquez sur une cellule pour explorer les similarités entre paires de documents."}
+                            ? "Matrix showing aggregated similarity scores between documents. Click a cell to explore page-level similarities in a scatter plot interface."
+                            : "Matrice affichant les scores de similarité agrégés entre documents. Cliquez sur une cellule pour explorer les similarités entre paires de documents."}
                     </p>
                 {:else if $activeLayout === "ste"}
                     <p>
                         {appLang === "en"
-                          ? "Interactive tool to assist in building a stemma based on document similarities."
-                          : "Outil interactif pour aider à construire un stemma basé sur les similarités entre documents."}
+                            ? "Interactive tool to assist in building a stemma based on document similarities."
+                            : "Outil interactif pour aider à construire un stemma basé sur les similarités entre documents."}
                     </p>
                 {:else if $activeLayout === "sim"}
                     <p>
                         {appLang === "en"
-                          ? "Groups of images that share a similarity connection above the score threshold."
-                          : "Groupes d'images partageant une connexion de similarité au-dessus du seuil de score."}
+                            ? "Groups of images that share a similarity connection above the score threshold."
+                            : "Groupes d'images partageant une connexion de similarité au-dessus du seuil de score."}
                     </p>
                 {/if}
                 <!--<NetworkInfo/>-->

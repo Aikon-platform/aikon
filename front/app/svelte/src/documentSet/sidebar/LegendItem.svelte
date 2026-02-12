@@ -6,9 +6,9 @@
     export let id;
     export let toggle = () => {};
     export let meta = {
-      title: "Region",
-      color: "#999",
-      witnessId: 1
+        title: "Region",
+        color: "#999",
+        witnessId: 1
     };
     export let clickable = true;
     export let onlyColor = false;
@@ -17,8 +17,8 @@
     const docTitle = `${meta.title} #${id} (${imageCount} images)`;
 
     const t = {
-      nbImg: {en: "Number of images for this region extraction", fr: "Nombre d'images extraites pour ce document"},
-      toggle: {en: "Toggle document pairs visibility", fr: "Activer/désactiver la visibilité des paires du document"},
+        nbImg: {en: "Number of images for this region extraction", fr: "Nombre d'images extraites pour ce document"},
+        toggle: {en: "Toggle document pairs visibility", fr: "Activer/désactiver la visibilité des paires du document"},
     };
 </script>
 
