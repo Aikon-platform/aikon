@@ -75,20 +75,13 @@
 </script>
 
 
-<div
-    id="selection-modal"
-    class="modal fade"
-    use:closeModal
-    tabindex="-1"
-    aria-labelledby="selection-modal-label"
-    aria-hidden="true"
->
-    <div class="modal-background" />
+<div id="selection-modal" class="modal fade" use:closeModal tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
+    <div class="modal-background"/>
 
     <div class="modal-content">
         <div class="modal-card-head media mb-0 is-middle">
             <div class="title is-4 mb-0 media-content">
-                <i class="fa-solid fa-book-bookmark"></i>
+                <i class="fa-solid fa-book-bookmark"/>
 
                 {#if isEditing}
                     <input
@@ -102,7 +95,7 @@
                     <span on:click={startEditing} on:keyup={null}>
                         {$selectionTitle}
                         <span class="pl-3 smaller has-text-link">
-                            <i class="fas fa-edit" />
+                            <i class="fas fa-edit"/>
                         </span>
                     </span>
                 {/if}
@@ -168,7 +161,9 @@
                             checked={$selected?.is_public}
                             on:change={(e) => updatePublic(e.target.checked)}
                         />
-                        <span class="pl-1">{appLang === "en" ? "Make public" : "Rendre public"}</span>
+                        <span class="pl-1">
+                            {appLang === "en" ? "Make public" : "Rendre public"}
+                        </span>
                     </label>
                 </div>
             </div>

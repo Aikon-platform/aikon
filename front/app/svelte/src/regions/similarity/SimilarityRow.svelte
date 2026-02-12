@@ -163,7 +163,7 @@
         <img src="{refToIIIF(qImg, qImg.split('_').pop(), '250,')}" alt="Query region" class="mb-3 card query-image">
         <div class="new-similarity control pt-2 is-center">
             <div class="tags has-addons" style="flex-wrap: nowrap">
-                <input bind:value={sImg} class="input is-small tag" type="text" placeholder="{appLang === "en" ? "Add new match" : "Ajouter une correspondance"}"/>
+                <input bind:value={sImg} class="input is-small tag" type="text" placeholder="{appLang === 'en' ? 'Add new match' : 'Ajouter une correspondance'}"/>
                 <button class="button is-small tag is-link is-center" on:click={addMatch}>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
                         <path fill="currentColor" d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 144L48 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l144 0 0 144c0 17.7 14.3 32 32 32s32-14.3 32-32l0-144 144 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-144 0 0-144z"/>

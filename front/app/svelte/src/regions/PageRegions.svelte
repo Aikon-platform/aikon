@@ -13,7 +13,6 @@
     const { selectedManifest, imgPrefix, nbOfPages, leadingZeros } = witnessStore;
 
     const zeros = (n, l) => n.toString().padStart(l, "0");
-    // NOTE here sometimes the number of trailing zeros generated is not corresponding to the number of pages
     const toImgName = (canvasNb) => `${$imgPrefix}_${zeros(canvasNb, $leadingZeros)}`;
 </script>
 

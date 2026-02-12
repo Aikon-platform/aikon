@@ -59,7 +59,7 @@ DJANGO_PID=$!
 PIDS+=($DJANGO_PID)
 
 color_echo cyan "Celery worker PID  $CELERY_WORKER_PID"
-color_echo cyan "C2elery beat PID    $CELERY_BEAT_PID"
+color_echo cyan "Celery beat PID    $CELERY_BEAT_PID"
 color_echo cyan "Django PID         $DJANGO_PID"
 color_echo cyan "Cantaloupe PID     $CANTALOUPE_PID"
 color_echo cyan "AIIINOTATE PID     $AIIINOTATE_PID"

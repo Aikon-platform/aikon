@@ -27,7 +27,7 @@ from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.regions import get_file_regions
 
 IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
-IIIF_SEARCH_VESION = 1
+IIIF_SEARCH_VERSION = 1
 IIIF_PRESENTATION_VERSION = 2
 
 
@@ -144,7 +144,7 @@ def format_annotation(regions: Regions, canvas_nb, xywh):
     }
 
 
-def set_canvas(seq, canvas_nb, img_name, img, version=None):
+def set_canvas(seq, canvas_nb, img_name, img):
     """
     Build the canvas and annotation for each image
     Called for each manifest (v2: corrected annotations) image when a witness is being indexed
@@ -189,19 +189,19 @@ def get_coord_from_annotation(aiiinotation, as_str=False):
         return coord
     except Exception as e:
         log(
-            f"[get_coord_from_annotation] Could not retrieve coord from aiiinotate annotation",
+            f"[get_coord_from_annotation] Could not retrieve coord from aiiinotation",
             e,
         )
         return "0,0,0,0"
 
 
-def get_id_from_annotation(aiiinnotation):
+def get_id_from_annotation(aiiinotation):
     try:
         # annotation_id => "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}"
-        return aiiinnotation["@id"].split("/")[-1]
+        return aiiinotation["@id"].split("/")[-1]
     except Exception as e:
         log(
-            f"[get_id_from_annotation] Could not retrieve id from aiiinotate annotation",
+            f"[get_id_from_annotation] Could not retrieve id from aiiinotation",
             e,
         )
         return ""
@@ -209,7 +209,7 @@ def get_id_from_annotation(aiiinnotation):
 
 def get_annotations_per_canvas(region: Regions, last_canvas=0, specific_canvas=""):
     """
-    Read task result files and build  a dict with the text annotation file info:
+    Read task result files and build a dict with the text annotation file info:
     { "canvas1": [ coord1, coord2 ], "canvas2": [], "canvas3": [ coord1 ] }
 
     if specific_canvas, returns [ coord1, coord2 ]
@@ -339,32 +339,31 @@ def get_and_parse(q_url: str) -> List | Dict | None:
     """
     GET the resources at `q_url` and return them as a List or Dict. if there's an error, return None.
     """
-    r = None
     try:
         r = requests.get(q_url)
         if r.status_code != 200:
             log(
                 f"[get_and_parse] Failed to get data from aiiinotate for URL {q_url}: {r.status_code}"
             )
-            return
+            return None
         try:
             return r.json()
         except requests.exceptions.JSONDecodeError as e:
             log(f"[get_and_parse] JSON decode error for {q_url}")
             log(r.text, exception=e)
-            return
+            return None
     except requests.exceptions.RequestException as e:
         log(
             f"[get_and_parse] Failed to retrieve data for {q_url}",
             e,
         )
-        return
+        return None
     except Exception as e:
         log(
             f"[get_and_parse] Failed to get and parse annotations for {q_url}",
             e,
         )
-        return
+        return None
 
 
 def get_annotations_paginated(q_url: str) -> List[Dict]:
@@ -392,7 +391,7 @@ def get_manifest_annotations(
     regions_ref, only_ids=True, min_c: int | None = None, max_c: int | None = None
 ):
     # all annotations for a given regions_ref
-    q_url = f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions_ref}/search"
+    q_url = f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VERSION}/manifests/{regions_ref}/search"
 
     # JSONSchema used by aiiinotate explicitly requires booleans to be expressed as "true" or "false".
     # https://json-schema.org/understanding-json-schema/reference/boolean
@@ -412,11 +411,7 @@ def get_manifest_annotations(
 
     q_url = update_params(q_url, q_params)
 
-    r = []
-    if only_ids:
-        r = get_and_parse(q_url)
-    else:
-        r = get_annotations_paginated(q_url)
+    r = get_and_parse(q_url) if only_ids else get_annotations_paginated(q_url)
     # sanity check to preserve type consistency if there's been an error in `get_and_parse`
     if not isinstance(r, list):
         return []
@@ -850,7 +845,8 @@ def index_manifest(manifest_url, reindex=False):
         )
         if r.status_code != 200:
             log(
-                f"[index_manifest]: Failed to index manifest. Status code: {r.status_code}: {r.text}"
+                f"[index_manifest]: Failed to index manifest {manifest_url}."
+                f"Status code: {r.status_code}: {r.text}"
             )
             return False
     except Exception as e:

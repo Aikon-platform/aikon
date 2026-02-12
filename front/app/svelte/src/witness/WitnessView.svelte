@@ -30,7 +30,6 @@
     export let editUrl = "";
     export let viewTitle = "";
 
-    // MARKER MARKER
     const witnessStore = createWitnessStore(witness.digits);
 
     setContext("witness", witness);

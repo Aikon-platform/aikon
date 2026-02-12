@@ -26,6 +26,8 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
 from app.config.settings import APP_LANG
+from similarity.models.region_pair import RegionPair
+
 
 ##########################################################
 #                       ADMIN VIEWS                      #
@@ -258,8 +260,9 @@ class RegionsView(AbstractRecordView):
         context["is_validated"] = regions.is_validated
 
         if digit := regions.get_digit():
+            context["witness"]["digits"] = {}
             djson = digit.get_json()
-            context["digits"][digit.id] = {
+            context["witness"]["digits"][digit.id] = {
                 "manifest": digit.get_manifest_url(),
                 "img_prefix": digit.get_ref(),
                 "img_nb": djson["img_nb"] or 0,

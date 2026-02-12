@@ -179,7 +179,7 @@
                         class="frieze-line"
                         class:is-selected={idx === $selectedIndex}
                         style="--opacity: {item.matchCount / maxVal}"
-                        title="{mode === "image" ? `Page ${item.page}, ` : `Page ${item.page}, `}{item.matchCount} match(es)"
+                        title="{mode === 'image' ? `Page ${item.page}, ` : `Page ${item.page}, `}{item.matchCount} match(es)"
                         on:click={() => handleClick(idx)}
                         on:mouseenter={() => handleMouseEnter(item)}
                         on:mouseleave={handleMouseLeave}

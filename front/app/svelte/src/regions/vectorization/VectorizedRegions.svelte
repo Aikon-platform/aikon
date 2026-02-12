@@ -47,7 +47,7 @@
 </script>
 
 <div class="region is-center" class:checked={selected} transition:fade={{ duration: 300 }}>
-    <figure class="image card region-image" style="width: {fullWidth ? "50%" : `${width}px`}; aspect-ratio:{svgViewBox ? svgViewBox.split(" ")[2] / svgViewBox.split(" ")[3] : 1};"
+    <figure class="image card region-image" style="width: {fullWidth ? '50%' : `${width}px`}; aspect-ratio:{svgViewBox ? svgViewBox.split(' ')[2] / svgViewBox.split(' ')[3] : 1};"
             on:click on:keyup on:mouseenter={() => isHovered = true} on:mouseleave={() => isHovered = false}>
         <div class="svg-container">
             {#if !isHovered && svgContent}

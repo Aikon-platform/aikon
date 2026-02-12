@@ -10,9 +10,9 @@
     <div class="modal-content">
         <div class="modal-card-head media mb-0">
             <div class="title is-4 mb-0 media-content">
-                <span id="modal-title" class="mb-0"></span>
+                <span id="modal-title" class="mb-0"/>
             </div>
-            <button class="delete media-left" aria-label="close"></button>
+            <button class="delete media-left" aria-label="close"/>
         </div>
         <section id="modal-body" class="modal-card-body">
             <div id="modal-msg"></div>

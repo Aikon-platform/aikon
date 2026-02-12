@@ -35,15 +35,12 @@
     }
 </script>
 
-<button id={htmlId} name={htmlId}
+<button id={htmlId} name={htmlId} aria-label={toggleLabel} on:click|preventDefault={toggleOnClick}
         class="input-checkbox-wrapper is-flex is-align-items-center-is-justify-content-center p-2 pl-3 pr-3"
-        class:is-checked={isChecked} class:is-clickable={buttonDisplay} class:button={buttonDisplay}
-        aria-label={toggleLabel}
-        on:click|preventDefault={toggleOnClick}
->
+        class:is-checked={isChecked} class:is-clickable={buttonDisplay} class:button={buttonDisplay}>
     <span class="switch mr-2">
         <span class="switch-control">
-            <span class="switch-spot"></span>
+            <span class="switch-spot"/>
         </span>
     </span>
     <span class="label">{toggleLabel}</span>

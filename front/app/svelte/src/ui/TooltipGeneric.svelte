@@ -61,7 +61,7 @@ onDestroy(() => {
 </script>
 
 
-<span id={htmlId} class="tooltip {tooltipWidthClass} {displayTooltip ? "display" : ""}">
+<span id={htmlId} class="tooltip {tooltipWidthClass} {displayTooltip ? 'display' : ''}">
     {tooltipText}
 </span>
 

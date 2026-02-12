@@ -46,6 +46,8 @@
         handlePageUpdate(1);
         setScoreMode(mode)
     }
+
+    // todo use i18n
 </script>
 
 <div class="m-4 py-5 px-4">

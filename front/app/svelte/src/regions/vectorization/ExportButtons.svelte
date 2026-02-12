@@ -42,7 +42,7 @@
 
 <div class="is-right mb-3">
     <button class="button is-link is-light" on:click={downloadVectorizations}>
-        <i class="fa-solid fa-download"></i>
+        <i class="fa-solid fa-download"/>
         {appLang === "en" ? "Download All" : "Tout Télécharger"}
     </button>
 </div>

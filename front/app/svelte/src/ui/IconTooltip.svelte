@@ -7,7 +7,6 @@
         optional text describing the tooltip for accessibility
     - tooltipText (string)
         text displayed on tooltip hover.
-
 -->
 
 <script>
@@ -21,11 +20,8 @@
 
 <div class="is-inline-block icon-tooltip">
     <button>
-        <span class="iconify"
-              data-icon={iconifyIcon}
-              title={altText}
-        ></span>
-        <TooltipGeneric {tooltipText}></TooltipGeneric>
+        <span class="iconify" data-icon={iconifyIcon} title={altText}/>
+        <TooltipGeneric {tooltipText}/>
     </button>
 </div>
 

@@ -43,7 +43,7 @@
     /**
      * extract regions ids for the selected regions of the current witness
      * @type {SelectedRegionsType} _selectedRegions
-     * @returns {number[]|[]} the IDs of each regions
+     * @returns {number[]|[]} the IDs of each region
      */
     const getRegionsIds = (_selectedRegions) =>
         Object.keys(_selectedRegions).includes(currentPageId)

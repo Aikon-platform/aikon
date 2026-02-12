@@ -44,7 +44,7 @@
                     </div>
                 {/if}
                 <div class="media-content">
-                    <a href={hasViewUrl ? item.view_url : null} class="title is-4 {hasViewUrl ? "hoverable" : ""} pt-2">
+                    <a href={hasViewUrl ? item.view_url : null} class="title is-4 {hasViewUrl ? 'hoverable' : ''} pt-2">
                         <span class="tag px-2 py-1 mb-1 mr-1 is-dark is-rounded">{item.type} #{item.id}</span>
                         {item.title}
                     </a>
@@ -88,7 +88,7 @@
                 </div>
                 {#if item.class === "Treatment" || item.class === "DocumentSet"}
                     {#if item.user_id === parseInt(userId) || isSuperuser}
-                        <button class="delete is-medium" title="{appLang === "en" ? "Delete" : "Supprimer"}" on:click={deleteItem}/>
+                        <button class="delete is-medium" title="{appLang === 'en' ? 'Delete' : 'Supprimer'}" on:click={deleteItem}/>
                     {/if}
                 {/if}
             </div>

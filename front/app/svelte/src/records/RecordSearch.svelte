@@ -62,10 +62,11 @@
                                             on:select={(event) => handleSelect(field, event)}
                                         />
                                     {:else}
-                                        <div class="select is-small is-wide {isMulti(field) ? "is-multiple" : ""}">
+                                        {@const isMulti = isMulti(field)}
+                                        <div class="select is-small is-wide" class:is-multiple={isMulti}>
                                             <select id={field.name} name={field.name} bind:value={formData[field.name]} class="is-wide"
-                                                    {...isMulti(field) ? { size: 3, multiple: true } : {}}>
-                                                {#if !isMulti(field)}
+                                                    {...isMulti ? { size: 3, multiple: true } : {}}>
+                                                {#if !isMulti}
                                                     <option value="" disabled selected class="faded">
                                                         {appLang === "en" ? "Select" : "Sélectionner"} ...
                                                     </option>

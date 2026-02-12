@@ -81,7 +81,7 @@
     /** @type {String?} */
     export let title = undefined;
     /** @type {Boolean} if True, extra "Select All" and "Unselect All" options will be preprended to `choicesItems`. clicking on them will (un)select all choicesItems. by default, true for multi-choice, false for single-choice */
-    export let selectAll = multiple ? true : false;
+    export let selectAll = multiple;
 
     const htmlId = `input-dropdown-select-${window.crypto.randomUUID()}`;
     const counterHtmlId = `input-dropdown-counter-${window.crypto.randomUUID()}`;
@@ -322,6 +322,11 @@
         choicesObj.destroy();
         choicesObj = undefined;
     })
+
+    const selected = {
+        plural: appLang === "en" ? "selected values" : "valeurs sélectionnées",
+        singular: appLang === "en" ? "selected value" : "valeur sélectionnée",
+    }
 </script>
 
 
@@ -329,43 +334,21 @@
     {#if title!==undefined }
         <label for={htmlId}>{title}</label>
     {/if}
-    <div class="input-dropdown-select
-                { multiple ? "is-multiple" : "is-single" }
-                { multiple && selectedValues.length ? "is-flex is-justify-content-flex-start is-align-items-center" : ""}
-                { lightDisplay ? "light-display" : ""}"
-    >
-        {#if multiple }
+    <div class="input-dropdown-select {multiple ? 'is-multiple' : 'is-single'}
+            {multiple && selectedValues.length ? 'is-flex is-justify-content-flex-start is-align-items-center' : ''}"
+            class:light-display={lightDisplay}>
+        {#if multiple}
             {#if selectedValues.length }
                 <span class="is-relative">
-                    <span id={counterHtmlId}
-                        class="input-dropdown-count tag m-1"
-                    >{ selectedValues.length }</span>
-                    <TooltipGeneric
-                        targetHtmlId={counterHtmlId}
-                        tooltipText={`${selectedValues.length}
-                                    ${ appLang==="fr" && selectedValues.length > 1
-                            ? "valeurs sélectionnées"
-                            : appLang==="fr" && selectedValues.length === 1
-                                ? "valeur sélectionnée"
-                                : appLang==="en" && selectedValues.length > 1
-                                    ? "selected values"
-                                    : "selected value"
-                                    }`}
-                    ></TooltipGeneric>
+                    <span id={counterHtmlId} class="input-dropdown-count tag m-1">
+                        { selectedValues.length }
+                    </span>
+                    <TooltipGeneric targetHtmlId={counterHtmlId} tooltipText={selected[selectedValues.length > 1 ? 'plural' : 'singular']}/>
                 </span>
-            {/if }
-            <select id={htmlId}
-                    name={htmlId}
-                    aria-label={title}
-                    class="m-1"
-                    multiple
-            ></select>
-        {:else }
-            <select id={htmlId}
-                    name={htmlId}
-                    aria-label={title}
-                    class="m-1"
-            ></select>
+            {/if}
+            <select id={htmlId} name={htmlId} aria-label={title} class="m-1" multiple/>
+        {:else}
+            <select id={htmlId} name={htmlId} aria-label={title} class="m-1"/>
         {/if}
     </div>
 

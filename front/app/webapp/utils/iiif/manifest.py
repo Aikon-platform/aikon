@@ -44,7 +44,7 @@ def get_meta_value(metadatum, label: str):
     return get_meta(metadatum, "value")
 
 
-def process_images(obj, seq, version=None):
+def process_images(obj, seq):
     """
     obj: Digitization | Regions
     Process the images of a witness and add them to a sequence
@@ -64,7 +64,6 @@ def process_images(obj, seq, version=None):
                     counter,
                     img,
                     Image.open(f"{IMG_PATH}/{img}"),
-                    version,
                 )
             except UnidentifiedImageError as e:
                 log(f"[process_images] Unable to retrieve {img}", e)
@@ -114,7 +113,7 @@ def gen_manifest_json(obj):
     try:
         # And walk through the pages
         seq = manifest.sequence(ident="normal", label="Normal Order")
-        success = process_images(obj, seq, version)
+        success = process_images(obj, seq)
         if not success:
             log(
                 f"[gen_manifest_json] Unable to retrieve images for {class_name} n°{obj.id}"
