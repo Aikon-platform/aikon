@@ -21,20 +21,15 @@
     }
 
     $: currentPage = new RegionItem(item);
+    $: xywh = currentPage.coord;
     $: currentCanvas = currentPage.canvasNb + canvasOffset;
     $: fullPageUrl = currentPage.urlForCanvas(currentCanvas, "full");
     $: iiifInfoUrl = currentPage.infoUrlForCanvas(currentCanvas);
-    $: xywh = currentPage.coord;
-
-    const t = {
-      next: { en: "Next page", fr: "Page suivante" },
-      prev: { en: "Previous page", fr: "Page précédente" },
-    };
 
     $: xywhRelPromise = fetch(iiifInfoUrl)
       .then(r => {
         if (!r.ok) {
-          if (maxPage === null) maxPage = currentCanvas - 1;
+          maybeResetMaxPage();
           throw new Error("Page not found");
         }
         return r.json();
@@ -45,7 +40,18 @@
         (xywh[2] / width) * 100,
         (xywh[3] / height) * 100
       ])
-      .catch(() => null);
+      .catch((e) => {
+        console.error(`PageView: error fetching ${iiifInfoUrl}`, e);
+      });
+
+    const maybeResetMaxPage = () => {
+      if (maxPage === null) maxPage = currentCanvas - 1;
+    }
+
+    const t = {
+      next: { en: "Next page", fr: "Page suivante" },
+      prev: { en: "Previous page", fr: "Page précédente" },
+    };
 
     const changePage = async (delta) => {
       const nextCanvas = currentCanvas + delta;

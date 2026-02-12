@@ -36,7 +36,6 @@
         || $selectedRegions[currentPageId] === undefined
         || !Object.keys($selectedRegions[currentPageId]).length;
 
-
     /** @type {"loading"|"loaded"|"error"} updated when `sImgsPromise` is updated */
     let loadingStatus = "loading";
 
@@ -81,7 +80,7 @@
     })(sImgsPromise);
 
     // 2) update state when `sImgsPromise` is resolved
-    $: sImgsPromise.then((res) => {
+    sImgsPromise.then((res) => {
       allSImgs = res.map(el => ({
         uuid: window.crypto.randomUUID(),
         data: el
