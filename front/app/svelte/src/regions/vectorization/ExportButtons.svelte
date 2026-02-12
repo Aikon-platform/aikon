@@ -1,5 +1,4 @@
 <script>
-    import { getContext } from "svelte";
     import { downloadBlob, withLoading } from "../../utils.js";
     import { appName, appLang, csrfToken } from "../../constants";
 

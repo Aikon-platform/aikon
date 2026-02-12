@@ -6,12 +6,7 @@ const WitnessApp = new WitnessView({
     viewTitle,
     editUrl,
     witness,
-    manifest,
-    manifests,
     isValidated,
-    imgPrefix,
-    nbOfPages,
-    leadingZeros
   }
 });
 

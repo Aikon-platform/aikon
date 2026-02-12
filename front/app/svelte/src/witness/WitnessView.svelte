@@ -3,6 +3,7 @@
     import { refToIIIF, loading } from "../utils.js";
     import { appLang, regionsType, modules } from "../constants";
 
+    import { createWitnessStore } from "./witnessStore.js";
     import { regionsSelection } from "../selection/selectionStore.js";
     const { selected, nbSelected, remove } = regionsSelection;
     import { regionsStore } from "../regions/regionsStore.js";
@@ -20,26 +21,19 @@
     import SelectionModal from "../selection/SelectionModal.svelte";
     import Vectorization from "../regions/vectorization/Vectorization.svelte";
     import Viewer from "../witness/ViewerIframe.svelte";
-    import WitnessBtn from "../witness/WitnessBtn.svelte";
     import ExportButtons from "../regions/vectorization/ExportButtons.svelte";
     import Regions from "../regions/Regions.svelte";
     import { activeLayout } from "../ui/tabStore.js";
 
-    export let manifest = "";
-    export let manifests = [];
     export let isValidated = false;
-    export let imgPrefix = "";
-    export let nbOfPages = 1;
-    export let leadingZeros = 1;
     export let witness = {};
     export let editUrl = "";
     export let viewTitle = "";
 
+    // MARKER MARKER
+    const witnessStore = createWitnessStore(witness.digits);
+
     setContext("witness", witness);
-    setContext("nbOfPages", nbOfPages);
-    setContext("leadingZeros", leadingZeros);
-    setContext("imgPrefix", imgPrefix);
-    setContext("manifest", manifest);
     setContext("isValidated", isValidated);
 
     $: selectedRegions = $selected;
@@ -50,16 +44,16 @@
     const currentRegionId = parseInt(baseUrl.split("regions/")[1].replace("/", ""));
 
     const tabList = {
-      viewer: appLang === "en" ? "Viewer" : "Visionneuse",
-      all: appLang === "en" ? "All regions" : "Toutes les régions",
-      page: appLang === "en" ? "Per page" : "Par page",
+        viewer: appLang === "en" ? "Viewer" : "Visionneuse",
+        all: appLang === "en" ? "All regions" : "Toutes les régions",
+        page: appLang === "en" ? "Per page" : "Par page",
     };
 
     if (modules.includes("similarity")) {
-      tabList.similarity = appLang === "en" ? "Similarity" : "Similarité";
+        tabList.similarity = appLang === "en" ? "Similarity" : "Similarité";
     }
     if (modules.includes("vectorization")) {
-      tabList.vectorization = appLang === "en" ? "Vectorization" : "Vectorisation";
+        tabList.vectorization = appLang === "en" ? "Vectorization" : "Vectorisation";
     }
 </script>
 
@@ -75,7 +69,7 @@
     </div>
 
     <div slot="content">
-        {#if manifests.length === 0}
+        {#if !witnessStore.hasDigit()}
             <article class="message is-warning">
                 <div class="message-body">
                     {appLang === "en" ? "This witness has no digitization." : "Ce témoin n'a pas de numérisation."}
@@ -86,9 +80,7 @@
                 <div class="actions grid">
                     <div class="cell">
                         {#if $activeLayout === "all" || $activeLayout === "page" }
-                            <ActionButtons/>
-                        {:else if $activeLayout === "viewer"}
-                            <WitnessBtn {manifests}/>
+                            <ActionButtons {witnessStore}/>
                         {:else if $activeLayout === "vectorization"}
                             <ExportButtons/>
                         {/if}
@@ -97,7 +89,7 @@
             </div>
 
             {#if $activeLayout === "viewer"}
-                <Viewer/>
+                <Viewer {witnessStore}/>
 
             {:else if $activeLayout === "all"}
                 <div class="grid is-gap-2 mt-5">
@@ -117,10 +109,10 @@
                 </div>
 
             {:else if $activeLayout === "page"}
-                <PageRegions/>
+                <PageRegions {witnessStore}/>
 
             {:else if $activeLayout === "similarity"}
-                <Similarity/>
+                <Similarity {witnessStore}/>
 
             {:else if $activeLayout === "vectorization"}
                 <Vectorization/>
@@ -137,7 +129,7 @@
                     {#each Object.entries(selectedItems) as [id, meta]}
                         <div class="selection cell">
                             <figure class="image is-64x64 card">
-                                <img src="{refToIIIF(meta.img, meta.xywh, "96,")}" alt=""/>
+                                <img src="{refToIIIF(meta.img, meta.xywh, '96,')}" alt=""/>
                                 <div class="overlay is-center">
                                     <span class="overlay-desc">{meta.title}</span>
                                 </div>

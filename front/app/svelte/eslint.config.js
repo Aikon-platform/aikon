@@ -49,57 +49,57 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import stylistic from "@stylistic/eslint-plugin";
 
 const baseRules = {
-  "no-unused-vars": "off",
-  "no-undef": "warn",
-  "quotes": ["error", "double"],
-  "@stylistic/indent": ["error", 2],
+    "no-unused-vars": "off",
+    "no-undef": "warn",
+    "quotes": "off",
+    "@stylistic/indent": ["error", 4],
 };
 
 /** https://eslint.org/docs/latest/use/configure/rules */
 export default defineConfig([
-  // js.configs.recommended,
-  // ...svelte.configs.recommended,
-  {
-    files: ["**/*.{js,mjs,cjs}"],
-    plugins: {
-      "@stylistic": stylistic,
-      "js": js,
+    // js.configs.recommended,
+    // ...svelte.configs.recommended,
+    {
+        files: ["**/*.{js,mjs,cjs}"],
+        plugins: {
+            "@stylistic": stylistic,
+            "js": js,
+        },
+        extends: ["js/recommended"],
+        languageOptions: {
+            globals: { ...globals.browser, ...globals.node },
+        },
+        rules: baseRules
     },
-    extends: ["js/recommended"],
-    languageOptions: {
-      globals: { ...globals.browser, ...globals.node },
+    {
+        files: ["**/*.svelte", "**/*.svelte.js"],
+        plugins: {
+            "@stylistic": stylistic,
+            "svelte": svelte,
+        },
+        extends: ["svelte/recommended"],
+        languageOptions: {
+            globals: { ...globals.browser, ...globals.node },
+        },
+        rules: {
+            ...baseRules,
+            "svelte/require-each-key": "off",
+            "svelte/no-at-html-tags": "warn"
+        },
     },
-    rules: baseRules
-  },
-  {
-    files: ["**/*.svelte", "**/*.svelte.js"],
-    plugins: {
-      "@stylistic": stylistic,
-      "svelte": svelte,
+    {
+        files: ["**/*.json"],
+        plugins: { json },
+        language: "json/json",
+        extends: ["json/recommended"],
     },
-    extends: ["svelte/recommended"],
-    languageOptions: {
-      globals: { ...globals.browser, ...globals.node },
+    {
+        files: ["**/*.css"],
+        plugins: { css },
+        language: "css/css",
+        extends: ["css/recommended"],
     },
-    rules: {
-      ...baseRules,
-      "svelte/require-each-key": "off",
-      "svelte/no-at-html-tags": "warn"
-    },
-  },
-  {
-    files: ["**/*.json"],
-    plugins: { json },
-    language: "json/json",
-    extends: ["json/recommended"],
-  },
-  {
-    files: ["**/*.css"],
-    plugins: { css },
-    language: "css/css",
-    extends: ["css/recommended"],
-  },
-  globalIgnores(["package-lock.json"]),
+    globalIgnores(["package-lock.json"]),
 ]);
 
 // export default [
