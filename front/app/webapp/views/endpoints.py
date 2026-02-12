@@ -10,7 +10,7 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
-from app.webapp.utils.constants import MANIFEST_V2, PAGE_LEN
+from app.webapp.utils.constants import PAGE_LEN
 
 from app.webapp.utils.iiif.annotation import (
     get_regions_annotations,
@@ -204,11 +204,10 @@ def delete_regions(request, rid):
     regions = get_object_or_404(Regions, id=rid)
     try:
         delete_annotations.delay(
-            regions.get_ref(), regions.gen_manifest_url(version=MANIFEST_V2)
-        )
+            regions.get_ref(), regions.get_manifest_url()
+        )  # MARKER MARKER
 
-        Path(f"{REGIONS_PATH}/{regions.get_ref()}.json").unlink(missing_ok=True)
-
+        Path(f"{REGIONS_PATH}/{regions.get_ref()}.json").unlink()
         delete_api_regions.delay(regions.get_digit().get_ref(), regions.model)
 
         try:
@@ -218,7 +217,7 @@ def delete_regions(request, rid):
             witness = Witness.objects.get(
                 Q(digitizations__witness_id=regions.digitization.witness_id)
             )
-            witness.set_json_regions()
+            witness.set_json_regions()  # MARKER MARKER
         except Exception as e:
             return JsonResponse(
                 {"message": f"Failed to delete regions record #{rid}: {e}"},

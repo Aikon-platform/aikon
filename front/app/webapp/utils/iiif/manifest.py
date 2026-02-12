@@ -76,9 +76,10 @@ def process_images(obj, seq, version=None):
     return True
 
 
-def gen_manifest_json(obj, version=None):
+def gen_manifest_json(obj):
     """
     obj: Digitization | Regions
+    Both return the same digitization manifest
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
@@ -86,7 +87,7 @@ def gen_manifest_json(obj, version=None):
 
     try:
         fac = ManifestFactory(
-            mdbase=obj.gen_manifest_url(only_base=True, version=version),
+            mdbase=obj.get_manifest_url(only_base=True),
             imgbase=f"{CANTALOUPE_APP_URL}/iiif/2/",
         )
     except Exception as e:

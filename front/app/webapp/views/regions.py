@@ -181,7 +181,7 @@ def export_regions_img(request, regions_id):
     return list_to_txt(images, regions.get_ref())
 
 
-def canvas_annotations(request, version, regions_ref, canvas_nb):
+def canvas_annotations(request, regions_ref, canvas_nb):
     regions_id = regions_ref.split("_")[-1].replace("anno", "")
     regions = get_object_or_404(Regions, pk=regions_id)
     return JsonResponse(format_canvas_annotations(regions, canvas_nb))

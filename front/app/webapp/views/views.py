@@ -124,16 +124,17 @@ def manifest_digitization(request, digit_ref):
     if not passed:
         return JsonResponse(digit, safe=False)
 
-    return JsonResponse(digit.gen_manifest_json())
+    return JsonResponse(digit.get_manifest_json())
 
 
-def manifest_regions(request, version, regions_ref):
-    # TODO make difference if witness is not public
-    passed, regions = check_ref(regions_ref, "Regions")
-    if not passed:
-        return JsonResponse(regions, safe=False)
-
-    return JsonResponse(regions.gen_manifest_json(version=check_version(version)))
+# SHOULD NOT BE USE ANYMORE
+# def manifest_regions(request, version, regions_ref):
+#     # TODO make difference if witness is not public
+#     passed, regions = check_ref(regions_ref, "Regions")
+#     if not passed:
+#         return JsonResponse(regions, safe=False)
+#
+#     return JsonResponse(regions.get_manifest_json())
 
 
 # def export_digit_img(request, digit_id):

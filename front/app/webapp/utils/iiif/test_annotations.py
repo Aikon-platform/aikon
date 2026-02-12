@@ -19,7 +19,7 @@ from app.webapp.utils.iiif.annotation import (
     format_annotation,
     set_canvas,
     get_indexed_manifests,
-    index_manifest_in_sas,
+    index_manifest_in_sas,  # MARKER MARKER
     get_canvas_list,
     get_canvas_lists,
     get_indexed_canvas_annotations,

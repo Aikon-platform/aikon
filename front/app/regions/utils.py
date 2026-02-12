@@ -128,7 +128,7 @@ def prepare_document(document: Witness | Digitization | Regions, **kwargs):
     digits = document.get_digits() if hasattr(document, "get_digits") else [document]
 
     return [
-        {"type": "iiif", "src": digit.gen_manifest_url(), "uid": digit.get_ref()}
+        {"type": "iiif", "src": digit.get_manifest_url(), "uid": digit.get_ref()}
         for digit in digits
     ]
 

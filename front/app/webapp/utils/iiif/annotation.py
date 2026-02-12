@@ -14,7 +14,6 @@ from app.webapp.models.regions import Regions, get_name
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.witness import Witness
 
-from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.config.settings import (
     CANTALOUPE_APP_URL,
     AIIINOTATE_BASE_URL,
@@ -76,7 +75,7 @@ def format_canvas_annotations(regions: Regions, canvas_nb):
 
 
 def format_annotation(regions: Regions, canvas_nb, xywh):
-    base_url = regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)
+    base_url = regions.get_manifest_url(only_base=True)
     x, y, w, h = xywh
 
     width = w // 2
@@ -171,19 +170,19 @@ def set_canvas(seq, canvas_nb, img_name, img, version=None):
 
     img.set_hw(h, w)
     # In case we do not really index "automatic" annotations but keep them as "otherContents"
-    if version == MANIFEST_V1:
-        # is calling f"{APP_NAME}/iiif/{version}/{anno.get_ref()}/list/anno-{canvas_nb}.json"
-        # (canvas_annotations() view) that returns formatted annotations format_canvas_annotations()
-        annotation_list = canvas.annotationList(ident=f"anno-{canvas_nb}")
-        annotation = annotation_list.annotation(ident=f"a-list-{canvas_nb}")
-        annotation.text("Annotation")
+    # if version == MANIFEST_V1: # MARKER MARKER
+    #     # is calling f"{APP_NAME}/iiif/{version}/{anno.get_ref()}/list/anno-{canvas_nb}.json"
+    #     # (canvas_annotations() view) that returns formatted annotations format_canvas_annotations()
+    #     annotation_list = canvas.annotationList(ident=f"anno-{canvas_nb}")
+    #     annotation = annotation_list.annotation(ident=f"a-list-{canvas_nb}")
+    #     annotation.text("Annotation")
 
 
-def get_coord_from_annotation(sas_annotation, as_str=False):
+def get_coord_from_annotation(aiiinotation, as_str=False):
     try:
         # coord => "x,y,w,h"
         # since AIIINOTATE_STRICT_MODE is true, `xywh` will always be defined
-        coord = sas_annotation["on"][0]["xywh"]
+        coord = aiiinotation["on"][0]["xywh"]
         # remove negative values if some of the coordinates exceed the image boundaries
         if as_str:
             return ",".join(["0" if num < 0 else str(num) for num in coord])
@@ -196,10 +195,10 @@ def get_coord_from_annotation(sas_annotation, as_str=False):
         return "0,0,0,0"
 
 
-def get_id_from_annotation(sas_annotation):
+def get_id_from_annotation(aiiinnotation):
     try:
         # annotation_id => "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}"
-        return sas_annotation["@id"].split("/")[-1]
+        return aiiinnotation["@id"].split("/")[-1]
     except Exception as e:
         log(
             f"[get_id_from_annotation] Could not retrieve id from aiiinotate annotation",
@@ -580,7 +579,7 @@ def get_canvas_lists(digit: Digitization, all_img=False):
 
 
 def get_indexed_canvas_annotations(regions: Regions, canvas_nb):
-    canvas_url = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/search?canvasUri={regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
+    canvas_url = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/search?canvasUri={regions.get_manifest_url(only_base=True)}/canvas/c{canvas_nb}.json"
     try:
         return get_and_parse(canvas_url)["resources"]  # pyright: ignore
     except Exception as e:
@@ -693,7 +692,7 @@ def check_indexation(regions: Regions, reindex=False):
     if not data:
         return False
 
-    if not index_manifest(regions.gen_manifest_url(version=MANIFEST_V2)):
+    if not index_manifest(regions.get_manifest_url()):
         return False
 
     generated_annotations = 0
@@ -754,7 +753,7 @@ def check_indexation(regions: Regions, reindex=False):
 
 def index_regions(regions: Regions):
     # index the manifest
-    if not index_manifest(regions.gen_manifest_url(version=MANIFEST_V2), True):
+    if not index_manifest(regions.get_manifest_url(), True):
         return
 
     # fetch the annotations from the annotation file
@@ -781,7 +780,10 @@ def index_regions(regions: Regions):
 def index_annotations_on_canvas(regions: Regions, canvas_nb):
     # this url (view canvas_annotations()) is calling format_canvas_annotations(),
     # thus returning formatted annotations for each canvas
-    formatted_annos = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions.get_ref()}/list/anno-{canvas_nb}.json"
+    # MARKER MARKER
+    formatted_annos = (
+        f"{APP_URL}/{APP_NAME}/iiif/{regions.get_ref()}/list/anno-{canvas_nb}.json"
+    )
     # POST request that index the annotations
     response = requests.post(
         f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/createMany",
@@ -1016,7 +1018,7 @@ def unindex_regions(regions_ref, manifest_url: str) -> bool:
 
 
 def destroy_regions(regions: Regions):
-    manifest_url = regions.gen_manifest_url(version=MANIFEST_V2)
+    manifest_url = regions.get_manifest_url()
     regions_ref = regions.get_ref()
 
     if "similarity" in ADDITIONAL_MODULES:

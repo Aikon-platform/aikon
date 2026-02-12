@@ -320,7 +320,7 @@ class Digitization(AbstractSearchableModel):
             "ref": self.get_ref(),
             "class": self.__class__.__name__,
             "type": get_name("Digitization"),
-            "url": self.gen_manifest_url(),
+            "url": self.get_manifest_url(),
             "imgs": imgs,
             "img_nb": len(imgs),
             "zeros": self.img_zeros(imgs[0] if imgs else 0),
@@ -337,7 +337,7 @@ class Digitization(AbstractSearchableModel):
             "ref": self.get_ref(),
             "class": self.__class__.__name__,
             "type": get_name("Digitization"),
-            "url": self.gen_manifest_url(),
+            "url": self.get_manifest_url(),
             "imgs": imgs,
             "img_nb": djson.get("img_nb", len(imgs)),
             "zeros": djson.get(
@@ -357,12 +357,11 @@ class Digitization(AbstractSearchableModel):
 
         return metadata
 
-    def gen_manifest_url(self, only_base=False, version=None):
-        # usage of version parameter to copy parameters of Regions.gen_manifest_url()
+    def get_manifest_url(self, only_base=False):
         base_url = f"{APP_URL}/{APP_NAME}/iiif/{self.get_ref()}"
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 
-    def gen_manifest_json(self, version=None):
+    def get_manifest_json(self):
         from app.webapp.utils.iiif.manifest import gen_manifest_json
 
         error = {"error": "Unable to create a valid manifest"}
@@ -388,15 +387,6 @@ class Digitization(AbstractSearchableModel):
         from app.webapp.utils.iiif.gen_html import regions_btn
 
         return mark_safe(regions_btn(self, "view")) if self.has_images() else ""
-
-    # def add_source(self, source):
-    #     # from app.webapp.models.digitization_source import DigitizationSource
-    #     #
-    #     # digit_source = DigitizationSource()
-    #     # digit_source.source = source
-    #     # digit_source.save()
-    #     # self.source = digit_source
-    #     self.source = source
 
     def view_btn(self):
         iiif_link = f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"

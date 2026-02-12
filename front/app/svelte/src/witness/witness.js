@@ -11,7 +11,7 @@ const WitnessApp = new WitnessView({
     isValidated,
     imgPrefix,
     nbOfPages,
-    trailingZeros
+    leadingZeros
   }
 });
 
