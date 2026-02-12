@@ -16,9 +16,6 @@
 
     ////////////////////////////////////////////
 
-    const windowUrl = new URL(window.location.href)
-    const baseUrl = windowUrl.origin;
-
     /** @type {string} */
     export let qImg;
     /** @type {string} */
@@ -33,14 +30,18 @@
     export let category = null;
     /** @type {number|null[]} */
     export let users = [];
-    /** @type {number} */
-    export let similarityType;
-    /** @type {string}*/
-    export let similarityHash;
+    // /** @type {number} */
+    // export let similarityType;
+    // /** @type {string}*/
+    // export let similarityHash;
     /** @type {number} */
     export let index = 0;
     /** @type {boolean} */
     export let isInModal = false;
+
+    const windowUrl = new URL(window.location.href)
+    const baseUrl = windowUrl.origin;
+    const idWitness = windowUrl.pathname.match(/(?<=witness\/)\d+/).at(0);
 
     const [wit, digit, canvas, xywh] = sImg.split(".")[0].split("_");
 
@@ -48,7 +49,9 @@
     const item = toTitledRegion();
 
     let selectedCategory = category;
-    let isSelectedByUser = usersIncludesCurrentUser(users);
+    let currentUsers = users;
+    let isSelectedByUser;
+    $: updateIsSelectedByCurrentUser(currentUsers);  // eslint-disable-line
 
     ////////////////////////////////////////////
 
@@ -60,34 +63,55 @@
     }
 
     // format the current SimilarRegion to send to the backend
-    const toRegionPair = (currentUsers) => ({
+    // not all fields are needed by the backend: the pair is refetched in Django to avoid inserting duplicate rows.
+    const toRegionPair = (/*currentUsers*/) => ({
         img_1: qImg,
         img_2: sImg,
         regions_id_1: qRegions,
         regions_id_2: sRegions,
-        score: score,
+        // score: score,
         category: selectedCategory,
-        category_x: currentUsers,
-        similarity_type: similarityType,
-        similarity_hash: similarityHash
+        // category_x: currentUsers,
+        // similarity_type: similarityType,
+        // similarity_hash: similarityHash
     })
 
-    function usersIncludesCurrentUser (currentUsers) {
-        return currentUsers.includes(Number(userId));
+    function usersIncludesCurrentUser (_currentUsers) {
+        return _currentUsers.includes(Number(userId));
+    }
+
+    function updateIsSelectedByCurrentUser(_currentUsers) {
+        isSelectedByUser = usersIncludesCurrentUser(_currentUsers);
     }
 
     const updateCategory = (newCategory, oldCategory) =>
         newCategory === oldCategory ? null : newCategory;
 
-    const updateUsers = (newCategory, currentUsers) => {
-        console.log("updateUsers", newCategory, currentUsers);
-        currentUsers = currentUsers.slice()
-        if ( !usersIncludesCurrentUser(currentUsers) ) {
-            return [ ...currentUsers, Number(userId) ];
-        } else {
-            return currentUsers// .filter((_userId) => Number(userId) !== _userId );
-        }
+    // const updateUsers = (newCategory, currentUsers) => {
+    //     console.log("updateUsers", newCategory, currentUsers);
+    //     currentUsers = currentUsers.slice()
+    //     if ( !usersIncludesCurrentUser(currentUsers) ) {
+    //         return [ ...currentUsers, Number(userId) ];
+    //     } else {
+    //         return currentUsers// .filter((_userId) => Number(userId) !== _userId );
+    //     }
+    // }
+
+    /**
+     * after saving a regionpair to database using ``
+     */
+    async function updateRegionPair() {
+        const sp = new URLSearchParams({
+            regions_id_1: qRegions,
+            regions_id_2: sRegions,
+            img_1: qImg,
+            img_2: sImg
+        })
+        const r = await fetch(`${baseUrl}/${appName}/witness/${idWitness}/single-similar-image`)
+        console.log(await r.json());
     }
+
+    // TODO
 
     /**
      * save the new RegionPair.category to database (RegionPair.category)
@@ -97,12 +121,12 @@
     async function categorize(category) {
         // NOTE order is important
         selectedCategory = updateCategory(category, selectedCategory);
-        let currentUsers = updateUsers(selectedCategory, users);
-        isSelectedByUser = usersIncludesCurrentUser(currentUsers);
-        console.log("OLD CURRENT USERS", users);
-        console.log("NEW SELECTED CATEGORY", selectedCategory);
-        console.log("NEW CURRENT USERS", currentUsers);
-        console.log("NEW IS SELECTED BY USER", isSelectedByUser);
+        // let currentUsers = updateUsers(selectedCategory, users);
+        // isSelectedByUser = usersIncludesCurrentUser(currentUsers);
+        // console.log("OLD CURRENT USERS", users);
+        // console.log("NEW SELECTED CATEGORY", selectedCategory);
+        // console.log("NEW CURRENT USERS", currentUsers);
+        // console.log("NEW IS SELECTED BY USER", isSelectedByUser);
 
         try {
             const response = await fetch(`${baseUrl}/${appName}/save-category`, {
@@ -111,13 +135,14 @@
                     "Content-Type": "application/json",
                     "X-CSRFToken": csrfToken
                 },
-                body: JSON.stringify(toRegionPair(currentUsers))
+                body: JSON.stringify(toRegionPair())
             });
             if (!response.ok) {
                 console.error("Error: Network response was not ok");
                 // unselect category
                 selectedCategory = updateCategory(category);
             }
+            await updateRegionPair();
         } catch (error) {
             console.error("Error:", error);
             // unselect category
@@ -129,7 +154,6 @@
 <div>
     <RegionCard {item} height={140} selectable={false} copyable={true} isSquare={false} {isInModal} {index} on:openModal/>
     {#if !isInModal}
-        <h2>{selectedCategory}</h2>
         <div class="tags has-addons is-dark is-center">
             <CategoryButton category={1} isSelected={selectedCategory === 1} toggle={categorize} padding="pl-3 pr-2"/>
             <CategoryButton category={2} isSelected={selectedCategory === 2} toggle={categorize}/>

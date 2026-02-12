@@ -67,6 +67,11 @@ urlpatterns = [
         name="witness-similar-region",
     ),
     path(
+        f"{APP_NAME}/witness/<int:wid>/single-similar-image",
+        get_single_similar_image,
+        name="single-similar-image",
+    ),
+    path(
         f"{APP_NAME}/witness/<int:wid>/regions/get_regions_title/<str:regions_ref>",
         get_regions_title_by_ref,
         name="get-regions-title-by-ref",

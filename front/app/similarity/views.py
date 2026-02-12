@@ -160,6 +160,51 @@ def get_similar_images(request, wid, rid=None):
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
+def get_single_similar_image(request, wid):
+    """
+    return a SINGLE pair as a JSON, or {} if it doesn't exist.
+
+    search parameters:
+        - img_1: string
+        - img_2: string
+        - regions_id_1: int
+        - regions_id_2: int
+    """
+    if request.method != "GET":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    params = request.GET.dict()
+    rid_1 = params.get("regions_id_1", None)
+    rid_2 = params.get("regions_id_2", None)
+    img_1 = params.get("img_1", None)
+    img_2 = params.get("img_2", None)
+
+    if any(p is None for p in [rid_1, rid_2, img_1, img_2]):
+        return JsonResponse(
+            {
+                "error": f"All search parameters 'regions_id_1', 'regions_id_2', 'img_1', 'img_2' must be defined"
+            },
+            status=400,
+        )
+
+    try:
+        rid_1 = int(rid_1)
+        rid_2 = int(rid_2)
+    except ValueError:
+        return JsonResponse(
+            {
+                "error": f"Search parameters 'regions_id_1' and 'regions_id_2' must be integers."
+            },
+            status=400,
+        )
+
+    try:
+        # TODO fetch the good imagePair and return it
+        return JsonResponse({"hello": "hello"}, status=200)
+    except Exception as e:
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
 def get_compared_regions(request, wid, rid=None):
     """
     Return the id and metadata of the Regions that have a RegionPair record
