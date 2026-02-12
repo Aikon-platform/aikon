@@ -7,7 +7,7 @@ source "$SCRIPT_DIR"/utils.sh;
 
 check_file_exists "$ENV_FILE"
 cd "$ANNOTATIONS_DIR";
-npm i;
+npm i --include=dev;
 services_start;
 
 aiiinotate --env "$ENV_FILE" -- migrate apply;
