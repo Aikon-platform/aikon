@@ -9,10 +9,10 @@
     export let type = "img";
     export let documentSetStore;
     const {
-      imageNetwork,
-      documentNetwork,
-      selectedNodes,
-      updateSelectedNodes,
+        imageNetwork,
+        documentNetwork,
+        selectedNodes,
+        updateSelectedNodes,
     } = documentSetStore;
 
     let networkInstance;
@@ -23,43 +23,43 @@
     $: networkData = type === "img" ? imageNetwork : documentNetwork;
 
     $: if ($networkData && container) {
-      renderVisualization();
+        renderVisualization();
     }
 
     function renderVisualization() {
-      if (networkInstance) {
-        networkInstance.destroy();
-        updateSelectedNodes([]);
-      }
+        if (networkInstance) {
+            networkInstance.destroy();
+            updateSelectedNodes([]);
+        }
 
-      function onSelectionChange(selectedData) {
-        updateSelectedNodes(selectedData);
-      }
+        function onSelectionChange(selectedData) {
+            updateSelectedNodes(selectedData);
+        }
 
-      const createNetwork = $networkData.nodes.length < render_threshold ? createSvg : createCanvas;
+        const createNetwork = $networkData.nodes.length < render_threshold ? createSvg : createCanvas;
 
-      networkInstance = createNetwork(
-        container,
-        $networkData.nodes,
-        $networkData.links,
-        onSelectionChange,
-        (mode) => { selectionMode = mode; },
-      );
+        networkInstance = createNetwork(
+            container,
+            $networkData.nodes,
+            $networkData.links,
+            onSelectionChange,
+            (mode) => { selectionMode = mode; },
+        );
 
-      selectionMode = type === "img";
-      if (selectionMode) {
-        networkInstance.toggleSelectionMode();
-      }
+        selectionMode = type === "img";
+        if (selectionMode) {
+            networkInstance.toggleSelectionMode();
+        }
     }
 
     function toggleSelectionMode() {
-      if (networkInstance) {
-        selectionMode = networkInstance.toggleSelectionMode();
-      }
+        if (networkInstance) {
+            selectionMode = networkInstance.toggleSelectionMode();
+        }
     }
 
     onDestroy(() => {
-      networkInstance?.destroy();
+        networkInstance?.destroy();
     });
 </script>
 

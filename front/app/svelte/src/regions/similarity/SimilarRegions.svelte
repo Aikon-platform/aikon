@@ -17,10 +17,10 @@
     export let isInModal = false;
 
     const {
-      selectedRegions,
-      excludedCategories,
-      similarityScoreCutoff,
-      propagateFilterByRegions
+        selectedRegions,
+        excludedCategories,
+        similarityScoreCutoff,
+        propagateFilterByRegions
     } = similarityStore;
 
     const isPropagatedContext = getContext("similarityPropagatedContext") || false;
@@ -32,10 +32,9 @@
     let errorMsg;
 
     $: noRegionsSelected =
-      Object.values($selectedRegions).length === 0
+        Object.values($selectedRegions).length === 0
         || $selectedRegions[currentPageId] === undefined
         || !Object.keys($selectedRegions[currentPageId]).length;
-
 
     /** @type {"loading"|"loaded"|"error"} updated when `sImgsPromise` is updated */
     let loadingStatus = "loading";
@@ -55,10 +54,10 @@
      */
     let filteredSImgs = [];
     $: filterSImgs(
-      allSImgs,
-      $excludedCategories,
-      $similarityScoreCutoff,
-      $propagateFilterByRegions
+        allSImgs,
+        $excludedCategories,
+        $similarityScoreCutoff,
+        $propagateFilterByRegions
     );
 
     /**
@@ -75,21 +74,21 @@
      */
     // 1) reset state
     $: ((_) => {
-      loadingStatus = "loading";
-      filteredSImgs = [];
-      allSImgs = [];
+        loadingStatus = "loading";
+        filteredSImgs = [];
+        allSImgs = [];
     })(sImgsPromise);
 
     // 2) update state when `sImgsPromise` is resolved
-    $: sImgsPromise.then((res) => {
-      allSImgs = res.map(el => ({
-        uuid: window.crypto.randomUUID(),
-        data: el
-      }))
-      loadingStatus = "loaded";
+    sImgsPromise.then((res) => {
+        allSImgs = res.map(el => ({
+            uuid: window.crypto.randomUUID(),
+            data: el
+        }))
+        loadingStatus = "loaded";
     }).catch((e) => {
-      errorMsg = e;
-      loadingStatus = "error";
+        errorMsg = e;
+        loadingStatus = "error";
     });
 
     //////////////////////////////
@@ -109,7 +108,7 @@
      * @param {Array<number>} _excludedCategories
      */
     const isNotInExcludedCategories = (simImgCategory, _excludedCategories) =>
-      !_excludedCategories.includes(simImgCategory);
+        !_excludedCategories.includes(simImgCategory);
 
     /**
      * NOTE: the filtered images won't be updated if the user sets a category on a `SimilarRegion` until the next refresh.
@@ -126,47 +125,47 @@
      * @returns {boolean}
      */
     const displaySimImg = (
-      simImgScore,
-      simImgCategory,
-      _excludedCategories,
-      _similarityScoreCutoff,
-      _propagateFilterByRegions
+        simImgScore,
+        simImgCategory,
+        _excludedCategories,
+        _similarityScoreCutoff,
+        _propagateFilterByRegions
     ) => isPropagatedContext
-      ? true
-      : isAboveCutoff(simImgScore, _similarityScoreCutoff)
+        ? true
+        : isAboveCutoff(simImgScore, _similarityScoreCutoff)
         && isNotInExcludedCategories(simImgCategory, _excludedCategories);
 
     /**  run `displaySimImg` to filter `_allSimgs` */
     const filterSImgs = (_allSImgs, _excludedCategories, _similarityScoreCutoff, _propagateFilterByRegions) =>
-      filteredSImgs = _allSImgs.filter(({
-        uuid,
-        data: [score, _, sImg, qRegions, sRegions, category, users, similarityType, similarityHash]
-      }) =>
-        displaySimImg(
-          score,
-          category,
-          _excludedCategories,
-          _similarityScoreCutoff,
-          _propagateFilterByRegions
-        )
-      );
+        filteredSImgs = _allSImgs.filter(({
+            uuid,
+            data: [score, _, sImg, qRegions, sRegions, category, users, similarityType, similarityHash]
+        }) =>
+            displaySimImg(
+                score,
+                category,
+                _excludedCategories,
+                _similarityScoreCutoff,
+                _propagateFilterByRegions
+            )
+        );
 
     const getSimilarityLabel = (isPropagated, count) => {
-      const isPlural = count > 1;
+        const isPlural = count > 1;
 
-      if (isPropagated) {
-        if (appLang === "fr") {
-          return isPlural ? "similarités propagées" : "similarité propagée";
+        if (isPropagated) {
+            if (appLang === "fr") {
+                return isPlural ? "similarités propagées" : "similarité propagée";
+            } else {
+                return isPlural ? "propagated matches" : "propagated match";
+            }
         } else {
-          return isPlural ? "propagated matches" : "propagated match";
+            if (appLang === "fr") {
+                return isPlural ? "images similaires" : "image similaire";
+            } else {
+                return isPlural ? "similar images" : "similar image";
+            }
         }
-      } else {
-        if (appLang === "fr") {
-          return isPlural ? "images similaires" : "image similaire";
-        } else {
-          return isPlural ? "similar images" : "similar image";
-        }
-      }
     };
 
     let modalOpen = false;
@@ -174,22 +173,22 @@
 
     // Convert filteredSImgs data to RegionItem format for the modal
     $: modalItems = filteredSImgs.map(({ data: [score, _, sImg, qRegions, sRegions, category, users, similarityType, similarityHash] }) => {
-      const [wit, digit, canvas, xywh] = sImg.split(".")[0].split("_");
-      return toRegionItem(sImg, wit, xywh, canvas);
+        const [wit, digit, canvas, xywh] = sImg.split(".")[0].split("_");
+        return toRegionItem(sImg, wit, xywh, canvas);
     });
 
     $: currentScore = filteredSImgs[modalIndex]?.data[0] ?? null;
 
     const handleOpenModal = (e) => {
-      modalIndex = e.detail.index ?? 0;
-      modalOpen = true;
+        modalIndex = e.detail.index ?? 0;
+        modalOpen = true;
     };
 
     const tabs = [
-      { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
-      { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
-      { id: "similarity", label: appLang === "en" ? "Comparison" : "Comparaison" },
-      { id: "expansion", label: appLang === "en" ? "Query Expansion" : "Expansion de requête" }
+        { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
+        { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
+        { id: "similarity", label: appLang === "en" ? "Comparison" : "Comparaison" },
+        { id: "expansion", label: appLang === "en" ? "Query Expansion" : "Expansion de requête" }
     ];
 </script>
 
@@ -245,8 +244,8 @@
     <div class="faded is-center">
         {
             appLang === "en" ?
-              `Error when retrieving similar regions: ${errorMsg}` :
-              `Erreur de recupération des régions similaires: ${errorMsg}`
+                `Error when retrieving similar regions: ${errorMsg}` :
+                `Erreur de recupération des régions similaires: ${errorMsg}`
         }
     </div>
 {/if}

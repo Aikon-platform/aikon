@@ -20,109 +20,109 @@
     const selectedIndex = writable(null);
 
     $: if (documents.length && !documents.find(n => n.id === $baseDocId)) {
-      baseDocId.set(documents[0].id);
-      selectedIndex.set(null);
+        baseDocId.set(documents[0].id);
+        selectedIndex.set(null);
     }
 
     $: if (mode) selectedIndex.set(null);
 
     const t = {
-      base: { en: "Pick a base document", fr: "Sélectionner un document de base" },
-      similarity: { en: "similarities", fr: "similarités" },
+        base: { en: "Pick a base document", fr: "Sélectionner un document de base" },
+        similarity: { en: "similarities", fr: "similarités" },
     };
 
     const documentsStore = writable([]);
     $: documentsStore.set(documents);
     const friezeData = derived(
-      [documentsStore, visiblePairs, documentNodes, baseDocId],
-      ([$nodes, $pairs, $docs, $baseId]) => {
-        if (!$nodes.length || !$docs.size || !$baseId) return null;
+        [documentsStore, visiblePairs, documentNodes, baseDocId],
+        ([$nodes, $pairs, $docs, $baseId]) => {
+            if (!$nodes.length || !$docs.size || !$baseId) return null;
 
-        const baseDoc = $docs.get($baseId);
-        if (!baseDoc?.images?.length) return null;
+            const baseDoc = $docs.get($baseId);
+            if (!baseDoc?.images?.length) return null;
 
-        const images = baseDoc.images;
-        const otherDocIds = new Set($nodes.filter(n => n.id !== $baseId).map(n => n.id));
+            const images = baseDoc.images;
+            const otherDocIds = new Set($nodes.filter(n => n.id !== $baseId).map(n => n.id));
 
-        const imageMatches = new Map();
-        for (const img of images) imageMatches.set(img.id, new Set());
+            const imageMatches = new Map();
+            for (const img of images) imageMatches.set(img.id, new Set());
 
-        if (otherDocIds.size) {
-          for (const p of $pairs) {
-            const id1InBase = p.regions_id_1 === baseDoc.id;
-            const id2InBase = p.regions_id_2 === baseDoc.id;
-            if (!id1InBase && !id2InBase) continue;
+            if (otherDocIds.size) {
+                for (const p of $pairs) {
+                    const id1InBase = p.regions_id_1 === baseDoc.id;
+                    const id2InBase = p.regions_id_2 === baseDoc.id;
+                    if (!id1InBase && !id2InBase) continue;
 
-            const baseImgId = id1InBase ? p.id_1 : p.id_2;
-            const otherRegionId = id1InBase ? p.regions_id_2 : p.regions_id_1;
-            if (!otherDocIds.has(otherRegionId)) continue;
+                    const baseImgId = id1InBase ? p.id_1 : p.id_2;
+                    const otherRegionId = id1InBase ? p.regions_id_2 : p.regions_id_1;
+                    if (!otherDocIds.has(otherRegionId)) continue;
 
-            imageMatches.get(baseImgId)?.add(otherRegionId);
-          }
+                    imageMatches.get(baseImgId)?.add(otherRegionId);
+                }
+            }
+
+            const pageData = new Map();
+            let maxPage = 0;
+
+            for (const img of images) {
+                const page = img.canvas;
+                if (page > maxPage) maxPage = page;
+
+                if (!pageData.has(page)) {
+                    pageData.set(page, { images: [], matchedDocs: new Set() });
+                }
+                const pd = pageData.get(page);
+                pd.images.push(img);
+                for (const docId of imageMatches.get(img.id) || []) {
+                    pd.matchedDocs.add(docId);
+                }
+            }
+
+            const imageItems = images.map(img => ({
+                id: img.id,
+                page: img.canvas,
+                matchedDocs: imageMatches.get(img.id) || new Set()
+            }));
+            imageItems.forEach(item => item.matchCount = item.matchedDocs.size);
+
+            const pageItems = [];
+            for (let p = 1; p <= maxPage; p++) {
+                const pd = pageData.get(p);
+                pageItems.push({
+                    page: p,
+                    imageCount: pd?.images.length || 0,
+                    matchedDocs: pd?.matchedDocs || new Set(),
+                    matchCount: pd?.matchedDocs.size || 0,
+                    images: pd?.images || []
+                });
+            }
+
+            const pageBoundaries = [];
+            let currentPage = null, startIdx = 0;
+            images.forEach((img, i) => {
+                if (img.canvas !== currentPage) {
+                    if (currentPage !== null) pageBoundaries.push({ page: currentPage, startIdx, endIdx: i });
+                    currentPage = img.canvas;
+                    startIdx = i;
+                }
+            });
+            if (currentPage !== null) pageBoundaries.push({ page: currentPage, startIdx, endIdx: images.length });
+
+            const maxImageMatches = Math.max(1, ...imageItems.map(i => i.matchCount));
+            const maxPageMatches = Math.max(1, ...pageItems.map(p => p.matchCount));
+            const maxImagesPerPage = Math.max(1, ...pageItems.map(p => p.imageCount));
+
+            return {
+                imageItems,
+                pageItems,
+                pageBoundaries,
+                maxImageMatches,
+                maxPageMatches,
+                maxImagesPerPage,
+                totalImages: images.length,
+                totalPages: maxPage
+            };
         }
-
-        const pageData = new Map();
-        let maxPage = 0;
-
-        for (const img of images) {
-          const page = img.canvas;
-          if (page > maxPage) maxPage = page;
-
-          if (!pageData.has(page)) {
-            pageData.set(page, { images: [], matchedDocs: new Set() });
-          }
-          const pd = pageData.get(page);
-          pd.images.push(img);
-          for (const docId of imageMatches.get(img.id) || []) {
-            pd.matchedDocs.add(docId);
-          }
-        }
-
-        const imageItems = images.map(img => ({
-          id: img.id,
-          page: img.canvas,
-          matchedDocs: imageMatches.get(img.id) || new Set()
-        }));
-        imageItems.forEach(item => item.matchCount = item.matchedDocs.size);
-
-        const pageItems = [];
-        for (let p = 1; p <= maxPage; p++) {
-          const pd = pageData.get(p);
-          pageItems.push({
-            page: p,
-            imageCount: pd?.images.length || 0,
-            matchedDocs: pd?.matchedDocs || new Set(),
-            matchCount: pd?.matchedDocs.size || 0,
-            images: pd?.images || []
-          });
-        }
-
-        const pageBoundaries = [];
-        let currentPage = null, startIdx = 0;
-        images.forEach((img, i) => {
-          if (img.canvas !== currentPage) {
-            if (currentPage !== null) pageBoundaries.push({ page: currentPage, startIdx, endIdx: i });
-            currentPage = img.canvas;
-            startIdx = i;
-          }
-        });
-        if (currentPage !== null) pageBoundaries.push({ page: currentPage, startIdx, endIdx: images.length });
-
-        const maxImageMatches = Math.max(1, ...imageItems.map(i => i.matchCount));
-        const maxPageMatches = Math.max(1, ...pageItems.map(p => p.matchCount));
-        const maxImagesPerPage = Math.max(1, ...pageItems.map(p => p.imageCount));
-
-        return {
-          imageItems,
-          pageItems,
-          pageBoundaries,
-          maxImageMatches,
-          maxPageMatches,
-          maxImagesPerPage,
-          totalImages: images.length,
-          totalPages: maxPage
-        };
-      }
     );
 
     $: items = $friezeData ? (mode === "image" ? $friezeData.imageItems : $friezeData.pageItems) : [];
@@ -131,35 +131,35 @@
     let hoveredDocs = new Set();
 
     function handleClick(index) {
-      selectedIndex.set(index);
-      if (mode === "image") {
-        const img = $friezeData.imageItems[index];
-        dispatch("imageselect", { imageId: img.id, baseDocId: $baseDocId });
-      } else {
-        const pageItem = $friezeData.pageItems[index];
-        const firstImg = pageItem.images[0];
-        dispatch("imageselect", {
-          imageId: firstImg?.id || null,
-          baseDocId: $baseDocId,
-          page: pageItem.page,
-          images: pageItem.images
-        });
-      }
+        selectedIndex.set(index);
+        if (mode === "image") {
+            const img = $friezeData.imageItems[index];
+            dispatch("imageselect", { imageId: img.id, baseDocId: $baseDocId });
+        } else {
+            const pageItem = $friezeData.pageItems[index];
+            const firstImg = pageItem.images[0];
+            dispatch("imageselect", {
+                imageId: firstImg?.id || null,
+                baseDocId: $baseDocId,
+                page: pageItem.page,
+                images: pageItem.images
+            });
+        }
     }
 
     function handleMouseEnter(item) {
-      hoveredDocs = item.matchedDocs;
+        hoveredDocs = item.matchedDocs;
     }
 
     function handleMouseLeave() {
-      hoveredDocs = new Set();
+        hoveredDocs = new Set();
     }
 
     function getAxisTicks(maxPage) {
-      const ticks = [];
-      for (let p = 50; p <= maxPage; p += 50) ticks.push(p);
-      if (ticks.length === 0 || ticks[ticks.length - 1] !== maxPage) ticks.push(maxPage);
-      return ticks;
+        const ticks = [];
+        for (let p = 50; p <= maxPage; p += 50) ticks.push(p);
+        if (ticks.length === 0 || ticks[ticks.length - 1] !== maxPage) ticks.push(maxPage);
+        return ticks;
     }
 
     $: axisTicks = $friezeData ? getAxisTicks($friezeData.totalPages) : [];

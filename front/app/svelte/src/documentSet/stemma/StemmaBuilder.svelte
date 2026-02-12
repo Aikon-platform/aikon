@@ -13,38 +13,38 @@
     export let documentSetStore;
 
     const {
-      normalizeByImages, visiblePairs, documentNodes, imageNodes,
-      filteredDocPairStats, filteredDocStats, imageCountMap
+        normalizeByImages, visiblePairs, documentNodes, imageNodes,
+        filteredDocPairStats, filteredDocStats, imageCountMap
     } = documentSetStore;
 
     const stemmaStore = createStemmaStore(documentSetStore);
     const {
-      selectedNodes, filteredDocuments, matrixScoreData, matrixDocStats,
-      matrixImageCount, getFilteredPairsForDocPair, nodeTitles
+        selectedNodes, filteredDocuments, matrixScoreData, matrixDocStats,
+        matrixImageCount, getFilteredPairsForDocPair, nodeTitles
     } = stemmaStore;
 
     const t = {
-      title: { en: "Stemma Builder", fr: "Éditeur de stemma" },
-      hint: { en: "Drag to move • Scroll to zoom • Shift+drag to connect", fr: "Glisser pour déplacer • Défiler pour zoomer • Maj+glisser pour connecter" },
-      order: { en: "Order", fr: "Ordre" },
-      edges: { en: "Connections", fr: "Connexions" },
-      normalize: {en: "Normalize", fr: "Normaliser"},
-      normalization: {en: "Normalization by document image counts", fr: "Normalisation par le nombre d'images des documents"},
-      noSelection: { en: "Connect documents in the stemma to see visualizations", fr: "Connectez des documents dans le stemma pour voir les visualisations" },
-      noViz: { en: "Select a visualization above", fr: "Sélectionnez une visualisation ci-dessus" },
-      byPage: { en: "By page", fr: "Par page" },
-      byImage: { en: "By image", fr: "Par image" },
-      selectedDocs: { en: "Selected documents", fr: "Documents sélectionnés" },
-      fullDocSet: { en: "Full document set", fr: "Jeu de documents complet" },
+        title: { en: "Stemma Builder", fr: "Éditeur de stemma" },
+        hint: { en: "Drag to move • Scroll to zoom • Shift+drag to connect", fr: "Glisser pour déplacer • Défiler pour zoomer • Maj+glisser pour connecter" },
+        order: { en: "Order", fr: "Ordre" },
+        edges: { en: "Connections", fr: "Connexions" },
+        normalize: {en: "Normalize", fr: "Normaliser"},
+        normalization: {en: "Normalization by document image counts", fr: "Normalisation par le nombre d'images des documents"},
+        noSelection: { en: "Connect documents in the stemma to see visualizations", fr: "Connectez des documents dans le stemma pour voir les visualisations" },
+        noViz: { en: "Select a visualization above", fr: "Sélectionnez une visualisation ci-dessus" },
+        byPage: { en: "By page", fr: "Par page" },
+        byImage: { en: "By image", fr: "Par image" },
+        selectedDocs: { en: "Selected documents", fr: "Documents sélectionnés" },
+        fullDocSet: { en: "Full document set", fr: "Jeu de documents complet" },
 
-      selectViz: { en: "Select a visualization", fr: "Choisir une visualisation" },
-      docMatrix: { en: "Document Matrix", fr: "Matrice de documents" },
-      spatialFrieze: { en: "Spatial Frieze", fr: "Frise spatiale" },
+        selectViz: { en: "Select a visualization", fr: "Choisir une visualisation" },
+        docMatrix: { en: "Document Matrix", fr: "Matrice de documents" },
+        spatialFrieze: { en: "Spatial Frieze", fr: "Frise spatiale" },
     };
 
     const vizOptions = [
-      { id: "spatialFrieze", label: t.spatialFrieze },
-      { id: "docMatrix", label: t.docMatrix },
+        { id: "spatialFrieze", label: t.spatialFrieze },
+        { id: "docMatrix", label: t.docMatrix },
     ];
 
     let selectedViz = "";
@@ -59,31 +59,31 @@
 
     $: documentSetStore.updateSelectedNodes($selectedNodes.map(n => n.id));
     $: pairMatrixData = selectedCell ? {
-      doc1: selectedCell.doc1,
-      doc2: selectedCell.doc2,
-      pairs: getFilteredPairsForDocPair(selectedCell.doc1.id, selectedCell.doc2.id)
+        doc1: selectedCell.doc1,
+        doc2: selectedCell.doc2,
+        pairs: getFilteredPairsForDocPair(selectedCell.doc1.id, selectedCell.doc2.id)
     } : null;
 
     function handleCellSelect(e) {
-      selectedCell = e.detail;
+        selectedCell = e.detail;
     }
 
     function handleScatterClick(e) {
-      navState = { idx1: e.detail.idx1, idx2: e.detail.idx2 };
-      scatterData = e.detail.data;
-      modalActive = true;
+        navState = { idx1: e.detail.idx1, idx2: e.detail.idx2 };
+        scatterData = e.detail.data;
+        modalActive = true;
     }
 
     function handleModalNavigate(e) {
-      navState = { ...e.detail };
+        navState = { ...e.detail };
     }
 
     function handleModalClose() {
-      modalActive = false;
+        modalActive = false;
     }
 
     function handleFriezeImageSelect(e) {
-      selectedFriezeImage = e.detail;
+        selectedFriezeImage = e.detail;
     }
 
     $: fullDocuments = Array.from($documentNodes?.values() || []);
@@ -92,8 +92,8 @@
     $: friezeDocuments = matrixScope === "full" ? fullDocuments : $selectedNodes;
 
     function handleVizChange() {
-      selectedCell = null;
-      selectedFriezeImage = null;
+        selectedCell = null;
+        selectedFriezeImage = null;
     }
 
     $: needsSelection = selectedViz && !$selectedNodes.length && matrixScope !== "full";

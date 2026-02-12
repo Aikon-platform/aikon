@@ -15,52 +15,58 @@
 
     // reset canvas offset when item changes
     $: if (item.id !== previousItemId) {
-      canvasOffset = 0;
-      maxPage = null;
-      previousItemId = item.id;
+        canvasOffset = 0;
+        maxPage = null;
+        previousItemId = item.id;
     }
 
     $: currentPage = new RegionItem(item);
+    $: xywh = currentPage.coord;
     $: currentCanvas = currentPage.canvasNb + canvasOffset;
     $: fullPageUrl = currentPage.urlForCanvas(currentCanvas, "full");
     $: iiifInfoUrl = currentPage.infoUrlForCanvas(currentCanvas);
-    $: xywh = currentPage.coord;
-
-    const t = {
-      next: { en: "Next page", fr: "Page suivante" },
-      prev: { en: "Previous page", fr: "Page précédente" },
-    };
 
     $: xywhRelPromise = fetch(iiifInfoUrl)
-      .then(r => {
-        if (!r.ok) {
-          if (maxPage === null) maxPage = currentCanvas - 1;
-          throw new Error("Page not found");
-        }
-        return r.json();
-      })
-      .then(({ width, height }) => [
-        (xywh[0] / width) * 100,
-        (xywh[1] / height) * 100,
-        (xywh[2] / width) * 100,
-        (xywh[3] / height) * 100
-      ])
-      .catch(() => null);
+        .then(r => {
+            if (!r.ok) {
+                maybeResetMaxPage();
+                throw new Error("Page not found");
+            }
+            return r.json();
+        })
+        .then(({ width, height }) => [
+            (xywh[0] / width) * 100,
+            (xywh[1] / height) * 100,
+            (xywh[2] / width) * 100,
+            (xywh[3] / height) * 100
+        ])
+        .catch((e) => {
+            console.error(`PageView: error fetching ${iiifInfoUrl}`, e);
+        });
+
+    const maybeResetMaxPage = () => {
+        if (maxPage === null) maxPage = currentCanvas - 1;
+    }
+
+    const t = {
+        next: { en: "Next page", fr: "Page suivante" },
+        prev: { en: "Previous page", fr: "Page précédente" },
+    };
 
     const changePage = async (delta) => {
-      const nextCanvas = currentCanvas + delta;
-      if (nextCanvas < 1) return;
-      if (maxPage !== null && nextCanvas > maxPage) return;
+        const nextCanvas = currentCanvas + delta;
+        if (nextCanvas < 1) return;
+        if (maxPage !== null && nextCanvas > maxPage) return;
 
-      const response = await fetch(
-        currentPage.infoUrlForCanvas(nextCanvas)
-      );
+        const response = await fetch(
+            currentPage.infoUrlForCanvas(nextCanvas)
+        );
 
-      if (!response.ok) {
-        maxPage = currentCanvas;
-        return;
-      }
-      canvasOffset += delta;
+        if (!response.ok) {
+            maxPage = currentCanvas;
+            return;
+        }
+        canvasOffset += delta;
     };
 </script>
 

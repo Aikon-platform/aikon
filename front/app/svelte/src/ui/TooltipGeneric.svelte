@@ -24,10 +24,10 @@ const htmlId = `tooltip-generic-${window.crypto.randomUUID()}`;
 let tooltipWidthClass;
 $: setTooltipWidthClass(tooltipText);
 const setTooltipWidthClass = (_tooltipText) =>
-  tooltipWidthClass =
-    _tooltipText.length > 100 ? "tooltip-wide"
-      : _tooltipText.length > 20 ? "tooltip-mid"
-        : "tooltip-thin";
+    tooltipWidthClass =
+        _tooltipText.length > 100 ? "tooltip-wide"
+            : _tooltipText.length > 20 ? "tooltip-mid"
+                : "tooltip-thin";
 
 let targetEl = undefined;
 let displayTooltip = false;
@@ -41,22 +41,22 @@ const onClick = () => displayTooltip = !displayTooltip;
 //////////////////////////////////
 
 onMount(() =>  {
-  targetEl =
-    targetHtmlId ?
-      document.getElementById(targetHtmlId) :
-      document.getElementById(htmlId).parentElement;
-  if ( targetHtmlId && !targetEl ) {
-    console.error(`TooltipGeneric: element with ID ${targetHtmlId} not found, defaulting to the parent element`);
-    targetEl = document.getElementById(htmlId).targetElement;
-  }
-  targetEl.addEventListener("mouseover", onMouseover);
-  targetEl.addEventListener("mouseout", onMouseout);
-  targetEl.addEventListener("click", onClick);
+    targetEl =
+        targetHtmlId ?
+            document.getElementById(targetHtmlId) :
+            document.getElementById(htmlId).parentElement;
+    if ( targetHtmlId && !targetEl ) {
+        console.error(`TooltipGeneric: element with ID ${targetHtmlId} not found, defaulting to the parent element`);
+        targetEl = document.getElementById(htmlId).targetElement;
+    }
+    targetEl.addEventListener("mouseover", onMouseover);
+    targetEl.addEventListener("mouseout", onMouseout);
+    targetEl.addEventListener("click", onClick);
 })
 onDestroy(() => {
-  targetEl.removeEventListener("mouseover", onMouseover);
-  targetEl.removeEventListener("mouseout", onMouseout);
-  targetEl.removeEventListener("click", onClick);
+    targetEl.removeEventListener("mouseover", onMouseover);
+    targetEl.removeEventListener("mouseout", onMouseout);
+    targetEl.removeEventListener("click", onClick);
 })
 </script>
 

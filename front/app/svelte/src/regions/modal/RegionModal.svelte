@@ -13,21 +13,21 @@
     $: currentItem = items[currentIndex] ?? null;
 
     const close = () => {
-      open = false;
-      dispatch("close");
+        open = false;
+        dispatch("close");
     };
 
     const navigate = (delta) => {
-      if (!canNavigate) return;
-      currentIndex = (currentIndex + delta + items.length) % items.length;
-      dispatch("navigate", { index: currentIndex, item: currentItem });
+        if (!canNavigate) return;
+        currentIndex = (currentIndex + delta + items.length) % items.length;
+        dispatch("navigate", { index: currentIndex, item: currentItem });
     };
 
     const onKeydown = (e) => {
-      if (!open) return;
-      if (e.key === "Escape") close();
-      else if (e.key === "ArrowLeft") navigate(-1);
-      else if (e.key === "ArrowRight") navigate(1);
+        if (!open) return;
+        if (e.key === "Escape") close();
+        else if (e.key === "ArrowLeft") navigate(-1);
+        else if (e.key === "ArrowRight") navigate(1);
     };
 
     onMount(() => document.addEventListener("keydown", onKeydown));

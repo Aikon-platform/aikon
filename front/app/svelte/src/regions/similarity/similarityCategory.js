@@ -69,28 +69,28 @@ export const userLabel = appLang === "en" ?  "user specific category" : "corresp
 export const validateLabel = appLang==="en" ? "validate the match" : "valider la correspondance";
 
 export const categoryInfo = {
-  0: {
-    title: noCatLabel,
-    svg: noCatSvg,
-  },
-  1: {
-    title: exactLabel,
-    svg: exactSvg,
-  },
-  2: {
-    title: partialLabel,
-    svg: partialSvg,
-  },
-  3: {
-    title: semanticLabel,
-    svg: semanticSvg,
-  },
-  4: {
-    title: noLabel,
-    svg: noSvg,
-  },
-  5: {
-    title: userLabel,
-    svg: userSvg,
-  }
+    0: {
+        title: noCatLabel,
+        svg: noCatSvg,
+    },
+    1: {
+        title: exactLabel,
+        svg: exactSvg,
+    },
+    2: {
+        title: partialLabel,
+        svg: partialSvg,
+    },
+    3: {
+        title: semanticLabel,
+        svg: semanticSvg,
+    },
+    4: {
+        title: noLabel,
+        svg: noSvg,
+    },
+    5: {
+        title: userLabel,
+        svg: userSvg,
+    }
 };

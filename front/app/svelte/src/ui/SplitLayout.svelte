@@ -19,59 +19,59 @@
     $: hasBottomRight = $$slots["bottom-right-title"] || $$slots["bottom-right-scroll"];
 
     function startDrag(axis) {
-      return (e) => {
-        dragging = axis;
-        e.preventDefault();
-      };
+        return (e) => {
+            dragging = axis;
+            e.preventDefault();
+        };
     }
 
     function onDrag(e) {
-      if (!dragging) return;
-      const clientX = e.clientX ?? e.touches?.[0]?.clientX;
-      const clientY = e.clientY ?? e.touches?.[0]?.clientY;
+        if (!dragging) return;
+        const clientX = e.clientX ?? e.touches?.[0]?.clientX;
+        const clientY = e.clientY ?? e.touches?.[0]?.clientY;
 
-      if (dragging === "h" && container) {
-        const rect = container.getBoundingClientRect();
-        hRatio = Math.max(0.2, Math.min(0.8, (clientX - rect.left) / rect.width));
-      } else if (dragging === "v" && rightPanel) {
-        const rect = rightPanel.getBoundingClientRect();
-        vRatio = Math.max(0.2, Math.min(0.8, (clientY - rect.top) / rect.height));
-      }
+        if (dragging === "h" && container) {
+            const rect = container.getBoundingClientRect();
+            hRatio = Math.max(0.2, Math.min(0.8, (clientX - rect.left) / rect.width));
+        } else if (dragging === "v" && rightPanel) {
+            const rect = rightPanel.getBoundingClientRect();
+            vRatio = Math.max(0.2, Math.min(0.8, (clientY - rect.top) / rect.height));
+        }
     }
 
     function stopDrag() {
-      dragging = null;
+        dragging = null;
     }
 
     onMount(() => {
-      if (container) {
-        containerWidth = container.offsetWidth;
-        resizeObserver = new ResizeObserver(entries => {
-          containerWidth = entries[0].contentRect.width;
-        });
-        resizeObserver.observe(container);
-      }
-      window.addEventListener("mousemove", onDrag);
-      window.addEventListener("mouseup", stopDrag);
-      window.addEventListener("touchmove", onDrag);
-      window.addEventListener("touchend", stopDrag);
+        if (container) {
+            containerWidth = container.offsetWidth;
+            resizeObserver = new ResizeObserver(entries => {
+                containerWidth = entries[0].contentRect.width;
+            });
+            resizeObserver.observe(container);
+        }
+        window.addEventListener("mousemove", onDrag);
+        window.addEventListener("mouseup", stopDrag);
+        window.addEventListener("touchmove", onDrag);
+        window.addEventListener("touchend", stopDrag);
     });
 
     onDestroy(() => {
-      resizeObserver?.disconnect();
-      window.removeEventListener("mousemove", onDrag);
-      window.removeEventListener("mouseup", stopDrag);
-      window.removeEventListener("touchmove", onDrag);
-      window.removeEventListener("touchend", stopDrag);
+        resizeObserver?.disconnect();
+        window.removeEventListener("mousemove", onDrag);
+        window.removeEventListener("mouseup", stopDrag);
+        window.removeEventListener("touchmove", onDrag);
+        window.removeEventListener("touchend", stopDrag);
     });
 
     function observeRightPanel(node) {
-      const ro = new ResizeObserver(entries => {
-        rightPanelHeight = entries[0].contentRect.height;
-      });
-      ro.observe(node);
-      rightPanel = node;
-      return { destroy: () => ro.disconnect() };
+        const ro = new ResizeObserver(entries => {
+            rightPanelHeight = entries[0].contentRect.height;
+        });
+        ro.observe(node);
+        rightPanel = node;
+        return { destroy: () => ro.disconnect() };
     }
 </script>
 

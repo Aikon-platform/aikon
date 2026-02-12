@@ -18,31 +18,31 @@
     let downloadUrl = "";
 
     $: if (svgContent) {
-      const blob = new Blob([svgContent], { type: "image/svg+xml" });
-      downloadUrl = URL.createObjectURL(blob);
+        const blob = new Blob([svgContent], { type: "image/svg+xml" });
+        downloadUrl = URL.createObjectURL(blob);
     }
 
     onDestroy(() => {
-      if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+        if (downloadUrl) URL.revokeObjectURL(downloadUrl);
     });
 
     onMount(async () => {
-      const response = await fetch(`${mediaPrefix}svg/${svgPath}`);
-      const svgText = await response.text();
+        const response = await fetch(`${mediaPrefix}svg/${svgPath}`);
+        const svgText = await response.text();
 
-      const parser = new DOMParser();
-      const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
 
-      const svgElement = svgDoc.querySelector("svg");
-      svgViewBox = svgElement.getAttribute("viewBox") || `0 0 ${svgElement.getAttribute("width")} ${svgElement.getAttribute("height")}`;
+        const svgElement = svgDoc.querySelector("svg");
+        svgViewBox = svgElement.getAttribute("viewBox") || `0 0 ${svgElement.getAttribute("width")} ${svgElement.getAttribute("height")}`;
 
-      svgDoc.querySelectorAll("image").forEach(img => img.remove());
+        svgDoc.querySelectorAll("image").forEach(img => img.remove());
 
-      svgElement.setAttribute("viewBox", svgViewBox);
-      svgElement.removeAttribute("width");
-      svgElement.removeAttribute("height");
+        svgElement.setAttribute("viewBox", svgViewBox);
+        svgElement.removeAttribute("width");
+        svgElement.removeAttribute("height");
 
-      svgContent = new XMLSerializer().serializeToString(svgDoc.documentElement);
+        svgContent = new XMLSerializer().serializeToString(svgDoc.documentElement);
     });
 </script>
 

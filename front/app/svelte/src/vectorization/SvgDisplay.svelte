@@ -6,9 +6,9 @@
     export let svg
 
     function handleElementClick(event) {
-      if (event.target !== event.currentTarget) {
-        dispatcher("elementSelect", event.target);
-      }
+        if (event.target !== event.currentTarget) {
+            dispatcher("elementSelect", event.target);
+        }
     }
 </script>
 

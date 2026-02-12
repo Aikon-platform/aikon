@@ -13,10 +13,10 @@
     export let witnessStore;
 
     onMount(() => {
-      if (modules.includes("similarity")){
-        fetchSimilarity();
+        if (modules.includes("similarity")){
+            fetchSimilarity();
         // fetchSimilarityScoreRange();
-      }
+        }
     });
 </script>
 

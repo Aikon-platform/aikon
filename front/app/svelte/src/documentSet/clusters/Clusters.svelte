@@ -12,59 +12,59 @@
     const { imageNodes, onlyExactMatches } = documentSetStore;
     export let clusterStore;
     const {
-      clusterNb,
-      paginatedClusters,
-      pageLength,
-      validateCluster,
-      newCluster,
-      removeFromClusters
+        clusterNb,
+        paginatedClusters,
+        pageLength,
+        validateCluster,
+        newCluster,
+        removeFromClusters
     } = clusterStore;
 
     // $: onlyPartial = true;
     // $: onlyNotValidated = true;
 
     const actionLabels = {
-      create: {
-        title: appLang === "en" ? "New cluster" : "Nouveau cluster",
-        desc: appLang === "en" ? "Create a new validated cluster from the selected regions" : "Créer un nouveau cluster valide à partir des régions sélectionnées",
-        icon: "fa-object-group",
-        shortcut: "Shift + C",
-        fct: newCluster
-      },
-      remove: {
-        title: appLang === "en" ? "Remove from cluster" : "Retirer du cluster",
-        desc: appLang === "en" ? "Remove the selected regions from their cluster" : "Retirer les régions sélectionnées de leur cluster",
-        icon: "fa-chain-broken",
-        shortcut: "Shift + D",
-        fct: removeFromClusters
-      },
-      // delete: {
-      //     title: appLang === 'en' ? 'Delete regions' : 'Supprimer les régions',
-      //     desc: appLang === 'en' ? 'Remove selected regions from the document' : 'Supprimer du document les régions sélectionnées',
-      //     icon: 'fa-trash',
-      //     shortcut: 'Shift + X',
-      //     fct: () => window.alert("Delete regions function not implemented yet.");
-      // },
-      validate: {
-        title: appLang === "en" ? "Validate cluster" : "Valider le cluster",
-        desc: appLang === "en" ? "Set as exact match all the pairs of regions in the cluster" : "Définir comme correspondance exacte toutes les paires de régions dans le cluster",
-        icon: "fa-check",
-        fct: validateCluster
-      },
-      validated: {
-        title: appLang === "en" ? "Validated cluster" : "Cluster valide",
-        desc: appLang === "en" ? "All pairs of regions have be categorized as exact matches" : "Toutes les paires de régions ont été catégorisées comme des correspondances exactes",
-        icon: "fa-check"
-      }
+        create: {
+            title: appLang === "en" ? "New cluster" : "Nouveau cluster",
+            desc: appLang === "en" ? "Create a new validated cluster from the selected regions" : "Créer un nouveau cluster valide à partir des régions sélectionnées",
+            icon: "fa-object-group",
+            shortcut: "Shift + C",
+            fct: newCluster
+        },
+        remove: {
+            title: appLang === "en" ? "Remove from cluster" : "Retirer du cluster",
+            desc: appLang === "en" ? "Remove the selected regions from their cluster" : "Retirer les régions sélectionnées de leur cluster",
+            icon: "fa-chain-broken",
+            shortcut: "Shift + D",
+            fct: removeFromClusters
+        },
+        // delete: {
+        //     title: appLang === 'en' ? 'Delete regions' : 'Supprimer les régions',
+        //     desc: appLang === 'en' ? 'Remove selected regions from the document' : 'Supprimer du document les régions sélectionnées',
+        //     icon: 'fa-trash',
+        //     shortcut: 'Shift + X',
+        //     fct: () => window.alert("Delete regions function not implemented yet.");
+        // },
+        validate: {
+            title: appLang === "en" ? "Validate cluster" : "Valider le cluster",
+            desc: appLang === "en" ? "Set as exact match all the pairs of regions in the cluster" : "Définir comme correspondance exacte toutes les paires de régions dans le cluster",
+            icon: "fa-check",
+            fct: validateCluster
+        },
+        validated: {
+            title: appLang === "en" ? "Validated cluster" : "Cluster valide",
+            desc: appLang === "en" ? "All pairs of regions have be categorized as exact matches" : "Toutes les paires de régions ont été catégorisées comme des correspondances exactes",
+            icon: "fa-check"
+        }
     };
 
     const { validate, validated, ...globalActions } = actionLabels;
 
     $: clusterItems = new Map(
-      $paginatedClusters.map(cl => [
-        cl.id,
-        cl.members.map(imgId => ({...$imageNodes.get(imgId), clusterId: cl.id}))
-      ])
+        $paginatedClusters.map(cl => [
+            cl.id,
+            cl.members.map(imgId => ({...$imageNodes.get(imgId), clusterId: cl.id}))
+        ])
     );
 </script>
 

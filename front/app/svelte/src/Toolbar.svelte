@@ -8,14 +8,14 @@
     let toolbarExpanded = false;
 
     const toolbarText = {
-      true: {
-        en: "Collapse the toolbar",
-        fr: "Refermer le menu"
-      },
-      false: {
-        en: "Expand the toolbar",
-        fr: "Ouvrir le menu"
-      }
+        true: {
+            en: "Collapse the toolbar",
+            fr: "Refermer le menu"
+        },
+        false: {
+            en: "Expand the toolbar",
+            fr: "Ouvrir le menu"
+        }
     }
     const toggleToolbarExpanded = () => toolbarExpanded = !toolbarExpanded;
 </script>
