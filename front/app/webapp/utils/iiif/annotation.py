@@ -369,7 +369,7 @@ def get_and_parse(q_url: str) -> List | Dict | None:
 
 def get_annotations_paginated(q_url: str) -> List[Dict]:
     """
-    fetch annottions paginated in several AnnotationLists and return them as an array of annotations.
+    fetch annotations paginated in several AnnotationLists and return them as an array of annotations.
     """
     next_page = q_url
     annotations = []

@@ -17,14 +17,9 @@
 {% block extra_js %}
 <script>
     const witness = {{ witness|js|safe }};
-    const manifest = "{{ manifest }}";
-    const manifests = {{ manifests|js|safe }};
-    const imgPrefix = "{{ img_prefix }}";
-    const isValidated = {% if is_validated %}true{% else %}false{% endif %};
-    const nbOfPages = {% if img_nb %}{{img_nb}}{% else %}0{% endif %};
-    const leadingZeros = {% if img_zeros %}{{img_zeros}}{% else %}0{% endif %};
     const viewTitle = "{{ view_title }}";
     const editUrl = "{{ witness.edit_url }}";
+    const isValidated = {% if is_validated %}true{% else %}false{% endif %};
 </script>
 
 <script type="module" src="{% static 'svelte/witnessView/witness.js' %}"></script>
