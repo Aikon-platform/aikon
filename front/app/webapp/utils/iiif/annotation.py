@@ -265,10 +265,6 @@ def get_id_from_annotation(aiiinotation):
         return ""
 
 
-def canvas_from_filename(filename: str) -> int:
-    return int(filename.split("_")[-1].split(".")[0])
-
-
 def iter_canvas_annotations(regions: Regions):
     """
     Generator yielding (canvas_nb, img_name, coords) for each canvas.

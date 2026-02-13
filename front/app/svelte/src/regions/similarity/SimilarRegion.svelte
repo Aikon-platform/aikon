@@ -21,10 +21,10 @@
     export let qImg;
     /** @type {string} */
     export let sImg;
+    // /** @type {number} */
+    // export let qRegions; // TO DELETE
     /** @type {number} */
-    export let qRegions;
-    /** @type {number} */
-    export let sRegions;
+    export let sRegions; // TO DELETE
     /** @type {number} */
     export let score = 0;
     /** @type {number|null} */
