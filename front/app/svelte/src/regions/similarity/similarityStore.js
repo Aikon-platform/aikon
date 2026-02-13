@@ -228,6 +228,8 @@ function createSimilarityStore() {
     }
 
     return {
+        baseUrl,
+        currentPageId,
         currentPage,
         comparedRegions,
         excludedCategories,

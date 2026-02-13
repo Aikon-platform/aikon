@@ -1,8 +1,7 @@
 from uuid import UUID
 
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.core.exceptions import PermissionDenied
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import CreateView, TemplateView, View, UpdateView, DetailView
 from django.shortcuts import get_object_or_404, redirect
 from django.http import Http404
@@ -26,7 +25,6 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
 from app.config.settings import APP_LANG
-from similarity.models.region_pair import RegionPair
 
 
 ##########################################################

@@ -80,7 +80,6 @@
         newCategory === oldCategory ? null : newCategory;
 
     const updateUsers = (newCategory, currentUsers) => {
-        console.log("updateUsers", newCategory, currentUsers);
         currentUsers = currentUsers.slice()
         if ( !usersIncludesCurrentUser(currentUsers) ) {
             return [ ...currentUsers, Number(userId) ];
@@ -99,10 +98,6 @@
         selectedCategory = updateCategory(category, selectedCategory);
         let currentUsers = updateUsers(selectedCategory, users);
         isSelectedByUser = usersIncludesCurrentUser(currentUsers);
-        console.log("OLD CURRENT USERS", users);
-        console.log("NEW SELECTED CATEGORY", selectedCategory);
-        console.log("NEW CURRENT USERS", currentUsers);
-        console.log("NEW IS SELECTED BY USER", isSelectedByUser);
 
         try {
             const response = await fetch(`${baseUrl}/${appName}/save-category`, {
@@ -129,7 +124,6 @@
 <div>
     <RegionCard {item} height={140} selectable={false} copyable={true} isSquare={false} {isInModal} {index} on:openModal/>
     {#if !isInModal}
-        <h2>{selectedCategory}</h2>
         <div class="tags has-addons is-dark is-center">
             <CategoryButton category={1} isSelected={selectedCategory === 1} toggle={categorize} padding="pl-3 pr-2"/>
             <CategoryButton category={2} isSelected={selectedCategory === 2} toggle={categorize}/>

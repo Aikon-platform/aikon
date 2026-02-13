@@ -2,7 +2,7 @@
     import { onMount, getContext } from "svelte";
 
     import { csrfToken } from "../../constants";
-    import SimilarRegions from "./SimilarRegions.svelte";
+    import SimilarRegions from "./_SimilarRegions.svelte";
     import { similarityStore } from "./similarityStore.js";
 
     /** @typedef {import("./similarityStore").SelectedRegionsType} SelectedRegionsType*/
