@@ -218,10 +218,10 @@ def validate_regions(request, regions_ref):
         return HttpResponse(f"An error occurred: {e}", status=500)
 
 
-def witness_sas_annotations(request, regions_id):
-    regions = get_object_or_404(Regions, pk=regions_id)
-    _, c_annos = formatted_annotations(regions)
-    return JsonResponse(c_annos, safe=False)
+# def witness_sas_annotations(request, regions_id):
+#     regions = get_object_or_404(Regions, pk=regions_id)
+#     _, c_annos = formatted_annotations(regions)
+#     return JsonResponse(c_annos, safe=False)
 
 
 @login_required(login_url=LOGIN_URL)

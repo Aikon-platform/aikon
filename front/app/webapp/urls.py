@@ -54,11 +54,11 @@ urlpatterns = [
         name="regions-list",
     ),
     # TODO add f"{APP_NAME}/witness/<int:wit_id>/regions/<int:regions_id>/list/",
-    path(
-        f"{APP_NAME}/annotations/<int:regions_id>",
-        witness_sas_annotations,  # MARKER MARKER
-        name="witness-annotations",
-    ),
+    # path(
+    #     f"{APP_NAME}/annotations/<int:regions_id>",
+    #     witness_sas_annotations,  # MARKER MARKER
+    #     name="witness-annotations",
+    # ),
     path(
         f"test",
         test,
