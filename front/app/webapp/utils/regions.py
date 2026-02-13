@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 from typing import Tuple, List, Literal, Dict
 
 from app.config.settings import (
@@ -7,7 +6,6 @@ from app.config.settings import (
 )
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
-from app.webapp.utils.constants import MANIFEST_V2
 
 from app.webapp.utils.logger import log
 from app.webapp.utils.paths import REGIONS_PATH
@@ -66,7 +64,7 @@ def get_regions_img(regions: Regions):
 
 
 def create_empty_regions(digit: Digitization):
-    from app.webapp.utils.iiif.annotation import index_manifest_in_sas
+    from app.webapp.utils.iiif.annotation import index_manifest  # MARKER MARKER
 
     imgs = digit.get_imgs()
     if len(imgs) == 0:
@@ -85,11 +83,11 @@ def create_empty_regions(digit: Digitization):
         return False
 
     with open(f"{REGIONS_PATH}/{regions.get_ref()}.json", "w") as _:
+        # TODO check if necessary
         pass
 
     try:
-        # TODO some weird inconsistent problem with SAS (fails here unpredictably)
-        success = index_manifest_in_sas(regions.gen_manifest_url(version=MANIFEST_V2))
+        success = index_manifest(regions.get_manifest_url())
         if not success:
             log(
                 f"[create_empty_regions] unable to index manifest in SAS for Regions #{regions.id}."

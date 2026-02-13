@@ -3,6 +3,7 @@
     import { refToIIIF, loading } from "../utils.js";
     import { appLang, regionsType, modules } from "../constants";
 
+    import { createWitnessStore } from "./witnessStore.js";
     import { regionsSelection } from "../selection/selectionStore.js";
     const { selected, nbSelected, remove } = regionsSelection;
     import { regionsStore } from "../regions/regionsStore.js";
@@ -20,26 +21,18 @@
     import SelectionModal from "../selection/SelectionModal.svelte";
     import Vectorization from "../regions/vectorization/Vectorization.svelte";
     import Viewer from "../witness/ViewerIframe.svelte";
-    import WitnessBtn from "../witness/WitnessBtn.svelte";
     import ExportButtons from "../regions/vectorization/ExportButtons.svelte";
     import Regions from "../regions/Regions.svelte";
     import { activeLayout } from "../ui/tabStore.js";
 
-    export let manifest = "";
-    export let manifests = [];
     export let isValidated = false;
-    export let imgPrefix = "";
-    export let nbOfPages = 1;
-    export let trailingZeros = 1;
     export let witness = {};
     export let editUrl = "";
     export let viewTitle = "";
 
+    const witnessStore = createWitnessStore(witness.digits);
+
     setContext("witness", witness);
-    setContext("nbOfPages", nbOfPages);
-    setContext("trailingZeros", trailingZeros);
-    setContext("imgPrefix", imgPrefix);
-    setContext("manifest", manifest);
     setContext("isValidated", isValidated);
 
     $: selectedRegions = $selected;
@@ -75,7 +68,7 @@
     </div>
 
     <div slot="content">
-        {#if manifests.length === 0}
+        {#if !witnessStore.hasDigit()}
             <article class="message is-warning">
                 <div class="message-body">
                     {appLang === "en" ? "This witness has no digitization." : "Ce témoin n'a pas de numérisation."}
@@ -86,9 +79,7 @@
                 <div class="actions grid">
                     <div class="cell">
                         {#if $activeLayout === "all" || $activeLayout === "page" }
-                            <ActionButtons/>
-                        {:else if $activeLayout === "viewer"}
-                            <WitnessBtn {manifests}/>
+                            <ActionButtons {witnessStore}/>
                         {:else if $activeLayout === "vectorization"}
                             <ExportButtons/>
                         {/if}
@@ -97,7 +88,7 @@
             </div>
 
             {#if $activeLayout === "viewer"}
-                <Viewer {manifests}/>
+                <Viewer {witnessStore}/>
 
             {:else if $activeLayout === "all"}
                 <div class="grid is-gap-2 mt-5">
@@ -117,10 +108,10 @@
                 </div>
 
             {:else if $activeLayout === "page"}
-                <PageRegions/>
+                <PageRegions {witnessStore}/>
 
             {:else if $activeLayout === "similarity"}
-                <Similarity/>
+                <Similarity {witnessStore}/>
 
             {:else if $activeLayout === "vectorization"}
                 <Vectorization/>

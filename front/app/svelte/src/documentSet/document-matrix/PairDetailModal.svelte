@@ -132,7 +132,7 @@
                                     <div class="image-nav-container">
                                         <NavigationArrow direction={i !== 0 ? "up" : "left"} delta={-1} axis={i !== 0 ? "vertical" : "horizontal"} navigationFct={navigate}/>
                                         <figure class="image">
-                                            <img src={item.imgUrl} alt="{scatterData?.mode === "image" ? "Image" : "Page"} {item.label}" class="img-preview"/>
+                                            <img src={item.imgUrl} alt="{scatterData?.mode === 'image' ? 'Image' : 'Page'} {item.label}" class="img-preview"/>
                                         </figure>
                                         <NavigationArrow direction={i !== 0 ? "down" : "right"} delta={1} axis={i !== 0 ? "vertical" : "horizontal"} navigationFct={navigate}/>
                                     </div>

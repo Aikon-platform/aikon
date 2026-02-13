@@ -10,6 +10,7 @@
     import SimilarityToolbar from "./SimilarityToolbar.svelte";
 
     const { fetchSimilarity, comparedRegions } = similarityStore;
+    export let witnessStore;
 
     onMount(() => {
         if (modules.includes("similarity")){
@@ -43,6 +44,6 @@
             </tr>
         </Table>
     {:else}
-        <SimilarityPage/>
+        <SimilarityPage {witnessStore}/>
     {/if}
 {/if}

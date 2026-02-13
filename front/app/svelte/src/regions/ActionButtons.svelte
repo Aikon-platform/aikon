@@ -2,7 +2,7 @@
     import { getContext } from "svelte";
 
     import { aiiinotateUrl } from "../constants.js";
-    import { manifestToMirador, showMessage, downloadBlob, withLoading, toAiiinotateAnnotationUrl } from "../utils.js";
+    import { manifestToMirador, showMessage, downloadBlob, withLoading, toAiiinotationUrl } from "../utils.js";
     import { regionsSelection } from "../selection/selectionStore.js";
     const { selected, nbSelected } = regionsSelection;
 
@@ -13,8 +13,9 @@
     /** @type {number?} ID of the currently selected region (if there is a currently selected region) */
     export let currentRegionId;
 
-    const manifest = getContext("manifest");
-    const manifestShortId = manifest.split("/").at(-2);
+    export let witnessStore;
+    const { selectedManifest } = witnessStore;
+    const manifestShortId = $selectedManifest.split("/").at(-2);
     const isValidated = getContext("isValidated");
 
     let isEditMode = !isValidated;
@@ -32,7 +33,7 @@
     }
 
     async function deleteRegion(regionId) {
-        const urlDelete = `${aiiinotateUrl}/annotations/2/delete?uri=${toAiiinotateAnnotationUrl(manifestShortId, regionId)}`;
+        const urlDelete = `${aiiinotateUrl}/annotations/2/delete?uri=${toAiiinotationUrl(manifestShortId, regionId)}`;
         const response = await fetch(urlDelete, { method: "DELETE"});
         if (response.status > 299) {
             throw new Error(`Failed to delete ${urlDelete} due to ${response.status}: '${response.statusText}'`);
@@ -90,7 +91,7 @@
 </script>
 
 <div class="is-right mb-3">
-    <button class="button {isEditMode ? "is-success" : "is-link"} mr-3" on:click={() => toggleEditMode()}>
+    <button class="button {isEditMode ? 'is-success' : 'is-link'} mr-3" on:click={() => toggleEditMode()}>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="pr-3">
             {#if isEditMode}
                 <!--Check icon-->
@@ -103,22 +104,11 @@
         {#if isEditMode}{appLang === "en" ? "Validate" : "Valider"}{:else}{appLang === "en" ? "Edit" : "Modifier"}{/if}
     </button>
     <button class="button is-link is-light mr-3" on:click={toggleAllSelection}>
-        <!--<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-        {#if areAllSelected}
-            <! --Unchecked icon-- >
-            <! --<path d="M64 80c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16H384c8.8 0 16-7.2 16-16V96c0-8.8-7.2-16-16-16H64zM0 96C0 60.7 28.7 32 64 32H384c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L303 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>-- >
-            <path d="m10.6 16.2l7.05-7.05l-1.4-1.4l-5.65 5.65l-2.85-2.85l-1.4 1.4zM5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v14q0 .825-.587 1.413T19 21zm0-2h14V5H5zM5 5v14z" />
-        {:else}
-            <! --Checked icon-- >
-            <! --<path d="M64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L303 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>-- >
-            <path d="m10.6 16.2l7.05-7.05l-1.4-1.4l-5.65 5.65l-2.85-2.85l-1.4 1.4zM5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v14q0 .825-.587 1.413T19 21z" />
-        {/if}
-        </svg>-->
-        <i class="fa-solid fa-square-check"></i>
+        <i class="fa-solid fa-square-check"/>
         <span id="all-selection">{appLang === "en" ? "Select all" : "Tout sélectionner"}</span>
     </button>
     <button class="button is-link is-light" on:click={downloadRegions}>
-        <i class="fa-solid fa-download"></i>
+        <i class="fa-solid fa-download"/>
         {appLang === "en" ? "Download" : "Télécharger"}
     </button>
 </div>
@@ -127,19 +117,20 @@
     {#if isEditMode}
         <!--TODO make reload fetch regions with api request-->
         <button class="tag is-link is-light is-rounded mr-3" on:click={() => location.reload()}>
-            <i class="fa-solid fa-rotate-right"></i>
+            <i class="fa-solid fa-rotate-right"/>
             {appLang === "en" ? "Reload" : "Recharger"}
         </button>
+            <!--MARKER MARKER-->
         <!-- when no regions extraction have been made, we hide the button: "Go to editor" redirects
           to a Mirador editor for a specific region extraction, which hasn't been created yet -->
-        {#if manifest.length && currentRegionId}
-            <a class="tag is-link is-rounded mr-3" href="{manifestToMirador(manifest)}" target="_blank">
-                <i class="fa-solid fa-edit"></i>
+        {#if $selectedManifest.length && currentRegionId}
+            <a class="tag is-link is-rounded mr-3" href="{manifestToMirador($selectedManifest)}" target="_blank">
+                <i class="fa-solid fa-edit"/>
                 {appLang === "en" ? "Go to editor" : "Aller à l'éditeur"}
             </a>
         {/if}
         <button class="tag is-danger is-rounded" on:click={deleteSelectedRegions}>
-            <i class="fa-solid fa-trash"></i>
+            <i class="fa-solid fa-trash"/>
             {appLang === "en" ? "Delete selected regions" : "Supprimer les régions sélectionnées"}
         </button>
     {/if}

@@ -1,9 +1,10 @@
+import colorsys
+import hashlib
 import json
 import re
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
-from urllib.request import urlopen
 from typing import List, Dict, Any, Tuple
 
 from django.db.models import Q
@@ -14,21 +15,19 @@ from app.webapp.models.regions import Regions, get_name
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.witness import Witness
 
-from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.config.settings import (
     CANTALOUPE_APP_URL,
     AIIINOTATE_BASE_URL,
     APP_NAME,
     APP_URL,
-    ADDITIONAL_MODULES,
 )
-from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, flatten_dict
+from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
 from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.regions import get_file_regions
 
 IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
-IIIF_SEARCH_VESION = 1
+IIIF_SEARCH_VERSION = 1
 IIIF_PRESENTATION_VERSION = 2
 
 
@@ -75,68 +74,84 @@ def format_canvas_annotations(regions: Regions, canvas_nb):
     }
 
 
-def format_annotation(regions: Regions, canvas_nb, xywh):
-    base_url = regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)
-    x, y, w, h = xywh
+def string_to_color(s: str, saturation=0.9, lightness=0.5) -> str:
+    """Generate a deterministic hex color from a string."""
+    hash_int = int(hashlib.md5(s.encode()).hexdigest(), 16)
+    hue = (hash_int % 360) / 360.0
 
-    width = w // 2
-    height = h // 2
+    r, g, b = colorsys.hls_to_rgb(hue, lightness, saturation)
+    return f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
+
+
+def format_annotation(regions: Regions, canvas_nb, xywh, tags=None):
+    # regions.get_manifest_url returns digitization manifest
+    base_url = regions.get_manifest_url(only_base=True)
+    x, y, w, h = xywh
 
     annotation_id = regions.gen_annotation_id(canvas_nb)
     canvas_id = f"{base_url}/canvas/c{canvas_nb}.json"
-    xywh = f"xywh={x},{y},{w},{h}"
-    d = f"M{x} {y} h {width} v 0 h {width} v {height} v {height} h -{width} h -{width} v -{height}Z"
-    r_id = f"rectangle_{annotation_id}"
-    d_paper = "{&quot;strokeWidth&quot;:1,&quot;rotation&quot;:0,&quot;annotation&quot;:null,&quot;nonHoverStrokeColor&quot;:[&quot;Color&quot;,0,1,0],&quot;editable&quot;:true,&quot;deleteIcon&quot;:null,&quot;rotationIcon&quot;:null,&quot;group&quot;:null}"
+    xywh_str = f"xywh={x},{y},{w},{h}"
 
-    path = f"""<path xmlns='http://www.w3.org/2000/svg'
-                    d='{d}'
-                    id='{r_id}'
-                    data-paper-data='{d_paper}'
-                    fill-opacity='0'
-                    fill='#00ff00'
-                    fill-rule='nonzero'
-                    stroke='#00ff00'
-                    stroke-width='1'
-                    stroke-linecap='butt'
-                    stroke-linejoin='miter'
-                    stroke-miterlimit='10'
-                    stroke-dashoffset='0'
-                    style='mix-blend-mode: normal'/>"""
-    path = re.sub(r"\s+", " ", path).strip()
+    if tags is None:
+        tags = []
+    # put in first position of tags the tag that would be the most fitted to be displayed in the UI
+    # using a different bounding box color for each annotations sharing the same first tag
+    # e.g. its extraction class (letter, illustration, etc.) or extraction model ("yolo_finetuned", "layout_model", etc.)
+    if model := regions.model:
+        tags = [model] if tags is None else tags + [model]
+    tags.append(regions.get_ref())
+
+    resources = [{"@type": "oa:Tag", "chars": tag} for tag in tags]
+
+    # # SVG path data
+    # width = w // 2
+    # height = h // 2
+    # d = f"M{x} {y} h {width} v 0 h {width} v {height} v {height} h -{width} h -{width} v -{height}Z"
+    # r_id = f"rectangle_{annotation_id}"
+    # Paper.js data
+    # d_paper = json.dumps({
+    #     "strokeWidth": 1,
+    #     "rotation": 0,
+    #     "annotation": None,
+    #     "nonHoverStrokeColor": ["Color", 0, 1, 0],
+    #     "editable": True,
+    #     "deleteIcon": None,
+    #     "rotationIcon": None,
+    #     "group": None
+    # }).replace('"', '&quot;')
+    #
+    # path = (
+    #     f"<path xmlns='http://www.w3.org/2000/svg' "
+    #     f"d='{d}' id='{r_id}' data-paper-data='{d_paper}' "
+    #     f"fill-opacity='0' fill='{string_to_color(tags[0])}' fill-rule='nonzero' "
+    #     f"stroke='{string_to_color(tags[0])}' stroke-width='1' stroke-linecap='butt' "
+    #     f"stroke-linejoin='miter' stroke-miterlimit='10' "
+    #     f"stroke-dashoffset='0' style='mix-blend-mode: normal'/>"
+    # )
+    # path = re.sub(r"\s+", " ", path).strip()
 
     return {
         "@id": f"{AIIINOTATE_BASE_URL.replace('https', 'http')}/annotations/{IIIF_PRESENTATION_VERSION}/{annotation_id}",
         "@type": "oa:Annotation",
         "dcterms:created": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "dcterms:modified": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-        "resource": [
-            {
-                "@type": "dctypes:Text",
-                f"{AIIINOTATE_BASE_URL}/full_text": "",
-                "format": "text/html",
-                "chars": "<p></p>",
-            }
-        ],
+        "resource": resources,
         "on": [
             {
-                "@id": f"{canvas_id}#{xywh}",
+                "@id": f"{canvas_id}#{xywh_str}",
                 "@type": "oa:SpecificResource",
                 "within": {
                     "@id": f"{base_url}/manifest.json",
                     "@type": "sc:Manifest",
                 },
                 "selector": {
-                    "@type": "oa:Choice",
-                    "default": {
-                        "@type": "oa:FragmentSelector",
-                        "value": xywh,
-                    },
-                    "item": {
-                        "@type": "oa:SvgSelector",
-                        "value": f'<svg xmlns="http://www.w3.org/2000/svg">{path}</svg>',
-                    },
+                    "@type": "oa:FragmentSelector",
+                    "value": xywh_str,
                 },
+                # "item": {
+                #     "@type": "oa:SvgSelector",
+                #     "value": f'<svg xmlns="http://www.w3.org/2000/svg">{path}</svg>',
+                # },
                 "full": f"{base_url}/canvas/c{canvas_nb}.json",
             },
         ],
@@ -145,7 +160,49 @@ def format_annotation(regions: Regions, canvas_nb, xywh):
     }
 
 
-def set_canvas(seq, canvas_nb, img_name, img, version=None):
+def split_ref(ref: str) -> Tuple[str, str | None]:
+    """
+    Parse a reference to extract digit_ref and optional regions tag.
+    Returns (digit_ref, regions_ref or None)
+
+    Examples:
+        "wit1_man1_anno3" -> ("wit1_man1", "wit1_man1_anno3")
+        "wit1_man1" -> ("wit1_man1", None)
+    """
+    if "_anno" in ref:
+        digit_ref = ref.split("_anno")[0]
+        return digit_ref, ref
+    return ref, None
+
+
+def filter_annotations_by_tag(annotations: List[Dict], tag: str) -> List[Dict]:
+    """Filter annotations that contain the specified tag in their resources."""
+    if not tag:
+        return annotations
+
+    filtered = []
+    for anno in annotations:
+        resources = anno.get("resource", [])
+        if isinstance(resources, dict):
+            resources = [resources]
+
+        for res in resources:
+            if res.get("@type") == "oa:Tag" and res.get("chars") == tag:
+                filtered.append(anno)
+                break
+
+    return filtered
+
+
+def get_annotation_tags(anno: Dict) -> List[str]:
+    """Extract all tags from an annotation."""
+    resources = anno.get("resource", [])
+    if isinstance(resources, dict):
+        resources = [resources]
+    return [r.get("chars") for r in resources if r.get("@type") == "oa:Tag"]
+
+
+def set_canvas(seq, canvas_nb, img_name, img):
     """
     Build the canvas and annotation for each image
     Called for each manifest (v2: corrected annotations) image when a witness is being indexed
@@ -171,38 +228,38 @@ def set_canvas(seq, canvas_nb, img_name, img, version=None):
 
     img.set_hw(h, w)
     # In case we do not really index "automatic" annotations but keep them as "otherContents"
-    if version == MANIFEST_V1:
-        # is calling f"{APP_NAME}/iiif/{version}/{anno.get_ref()}/list/anno-{canvas_nb}.json"
-        # (canvas_annotations() view) that returns formatted annotations format_canvas_annotations()
-        annotation_list = canvas.annotationList(ident=f"anno-{canvas_nb}")
-        annotation = annotation_list.annotation(ident=f"a-list-{canvas_nb}")
-        annotation.text("Annotation")
+    # if version == MANIFEST_V1: # MARKER MARKER
+    #     # is calling f"{APP_NAME}/iiif/{version}/{anno.get_ref()}/list/anno-{canvas_nb}.json"
+    #     # (canvas_annotations() view) that returns formatted annotations format_canvas_annotations()
+    #     annotation_list = canvas.annotationList(ident=f"anno-{canvas_nb}")
+    #     annotation = annotation_list.annotation(ident=f"a-list-{canvas_nb}")
+    #     annotation.text("Annotation")
 
 
-def get_coord_from_annotation(sas_annotation, as_str=False):
+def get_coord_from_annotation(aiiinotation, as_str=False):
     try:
         # coord => "x,y,w,h"
         # since AIIINOTATE_STRICT_MODE is true, `xywh` will always be defined
-        coord = sas_annotation["on"][0]["xywh"]
+        coord = aiiinotation["on"][0]["xywh"]
         # remove negative values if some of the coordinates exceed the image boundaries
         if as_str:
             return ",".join(["0" if num < 0 else str(num) for num in coord])
         return coord
     except Exception as e:
         log(
-            f"[get_coord_from_annotation] Could not retrieve coord from aiiinotate annotation",
+            f"[get_coord_from_annotation] Could not retrieve coord from aiiinotation",
             e,
         )
         return "0,0,0,0"
 
 
-def get_id_from_annotation(sas_annotation):
+def get_id_from_annotation(aiiinotation):
     try:
         # annotation_id => "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}"
-        return sas_annotation["@id"].split("/")[-1]
+        return aiiinotation["@id"].split("/")[-1]
     except Exception as e:
         log(
-            f"[get_id_from_annotation] Could not retrieve id from aiiinotate annotation",
+            f"[get_id_from_annotation] Could not retrieve id from aiiinotation",
             e,
         )
         return ""
@@ -210,7 +267,7 @@ def get_id_from_annotation(sas_annotation):
 
 def get_annotations_per_canvas(region: Regions, last_canvas=0, specific_canvas=""):
     """
-    Read task result files and build  a dict with the text annotation file info:
+    Read task result files and build a dict with the text annotation file info:
     { "canvas1": [ coord1, coord2 ], "canvas2": [], "canvas3": [ coord1 ] }
 
     if specific_canvas, returns [ coord1, coord2 ]
@@ -340,37 +397,36 @@ def get_and_parse(q_url: str) -> List | Dict | None:
     """
     GET the resources at `q_url` and return them as a List or Dict. if there's an error, return None.
     """
-    r = None
     try:
         r = requests.get(q_url)
         if r.status_code != 200:
             log(
                 f"[get_and_parse] Failed to get data from aiiinotate for URL {q_url}: {r.status_code}"
             )
-            return
+            return None
         try:
             return r.json()
         except requests.exceptions.JSONDecodeError as e:
             log(f"[get_and_parse] JSON decode error for {q_url}")
             log(r.text, exception=e)
-            return
+            return None
     except requests.exceptions.RequestException as e:
         log(
             f"[get_and_parse] Failed to retrieve data for {q_url}",
             e,
         )
-        return
+        return None
     except Exception as e:
         log(
             f"[get_and_parse] Failed to get and parse annotations for {q_url}",
             e,
         )
-        return
+        return None
 
 
-def get_annotations_paginated(q_url: str) -> List[Dict]:
+def get_paginated_annotations(q_url: str) -> List[Dict]:
     """
-    fetch annottions paginated in several AnnotationLists and return them as an array of annotations.
+    fetch annotations paginated in several AnnotationLists and return them as an array of annotations.
     """
     next_page = q_url
     annotations = []
@@ -379,7 +435,7 @@ def get_annotations_paginated(q_url: str) -> List[Dict]:
         annotation_list = get_and_parse(next_page)  # should be IIIF 2 AnnotationList
         if not isinstance(annotation_list, dict):
             log(
-                f"[get_annotations_paginated] annotation_list should be a Dict, got {type(annotation_list)}",
+                f"[get_paginated_annotations] annotation_list should be a Dict, got {type(annotation_list)}",
             )
             next_page = None  # avoid infinite loop
         else:
@@ -389,11 +445,24 @@ def get_annotations_paginated(q_url: str) -> List[Dict]:
     return annotations
 
 
+# MARKER MARKER check were this function is called to use correct ref
 def get_manifest_annotations(
-    regions_ref, only_ids=True, min_c: int | None = None, max_c: int | None = None
+    ref, only_ids=True, min_c: int | None = None, max_c: int | None = None
 ):
-    # all annotations for a given regions_ref
-    q_url = f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VESION}/manifests/{regions_ref}/search"
+    """
+    Get annotations for a manifest, optionally filtered by regions tag.
+
+    Args:
+        ref: Either a digit_ref (wit1_man1) or regions_ref (wit1_man1_anno3).
+             If regions_ref, results are filtered to only that extraction.
+        only_ids: If True, only return annotation IDs. If False, return full annotation data.
+        min_c: If provided, only return annotations for canvases with number >= min_c (1-indexed).
+        max_c: If provided, only return annotations for canvases with number <= max_c (1-indexed).
+    """
+    digit_ref, regions_tag = split_ref(ref)
+
+    # all annotations for a given digit_ref
+    q_url = f"{AIIINOTATE_BASE_URL}/search-api/{IIIF_SEARCH_VERSION}/manifests/{digit_ref}/search"
 
     # JSONSchema used by aiiinotate explicitly requires booleans to be expressed as "true" or "false".
     # https://json-schema.org/understanding-json-schema/reference/boolean
@@ -413,14 +482,15 @@ def get_manifest_annotations(
 
     q_url = update_params(q_url, q_params)
 
-    r = []
-    if only_ids:
-        r = get_and_parse(q_url)
-    else:
-        r = get_annotations_paginated(q_url)
+    r = get_and_parse(q_url) if only_ids else get_paginated_annotations(q_url)
     # sanity check to preserve type consistency if there's been an error in `get_and_parse`
     if not isinstance(r, list):
         return []
+
+    if regions_tag and not only_ids:
+        # TODO filter by regions tag also for only ids
+        r = filter_annotations_by_tag(r, regions_tag)
+
     return r
 
 
@@ -433,7 +503,8 @@ def get_canvas_list(regions: Regions, all_img=False):
         ...
     ]
     """
-    imgs: List[str] = regions.get_imgs()  # list of file names
+    digit = regions.get_digit()
+    imgs: List[str] = digit.get_imgs()  # list of file names
 
     if all_img:
         # Display all images associated to the digitization, even if no regions were extracted
@@ -441,7 +512,8 @@ def get_canvas_list(regions: Regions, all_img=False):
 
     canvases = []
 
-    indexed_annos = get_manifest_annotations(regions.get_ref(), False)
+    # Get annotations filtered by this regions extraction
+    indexed_annos = get_manifest_annotations(regions.get_ref(), only_ids=False)
 
     # canvas_imgs =  { canvas_nb: img_name, canvas_nb: img_name, ... }
     canvas_imgs = {int(i.split("_")[-1].split(".")[0]): i for i in imgs}
@@ -450,7 +522,8 @@ def get_canvas_list(regions: Regions, all_img=False):
     annotated_canvas_nb = set([a["on"][0]["canvasIdx"] + 1 for a in indexed_annos])
 
     for canvas_nb in annotated_canvas_nb:
-        canvases.append((canvas_nb, canvas_imgs[canvas_nb]))
+        if canvas_nb in canvas_imgs:
+            canvases.append((canvas_nb, canvas_imgs[canvas_nb]))
 
     if canvases:
         return canvases
@@ -461,7 +534,7 @@ def get_canvas_list(regions: Regions, all_img=False):
         log(f"[get_canvas_list] No regions file for regions #{regions.id}")
         return canvases
 
-    # NOTE refactor with `get_annotations_per_canvas` ?
+    # MARKER MARKER refactor with `get_annotations_per_canvas` ?
     if anno_format == "txt":
         for line in data:
             # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
@@ -489,6 +562,7 @@ def get_canvas_list(regions: Regions, all_img=False):
     return canvases
 
 
+# MARKER MARKER TODO create a get_digit_annotations + get_regions_annotations and check where to use one or the other
 def get_regions_annotations(
     regions: Regions,
     as_json=False,
@@ -496,41 +570,43 @@ def get_regions_annotations(
     min_c: int | None = None,
     max_c: int | None = None,
 ):
-    # TODO improve efficiency: too slow for witness with a lot of annotations (because it parse all annotations)
     if r_annos is None:
         r_annos = {} if as_json else []
 
-    regions_ref = regions.get_ref()
-    img_name = regions_ref.split("_anno")[0]
-    nb_len = get_img_nb_len(img_name)
+    digit = regions.get_digit()
+    digit_meta = digit.get_json()
+    regions_tag = regions.get_ref()
+
+    img_name = digit.get_ref()
+    nb_len = digit_meta.get("img_nb_len", get_img_nb_len(img_name))
 
     if as_json:
         min_c = min_c or 1
-        max_c = max_c or regions.get_json()["img_nb"]
+        max_c = max_c or digit_meta.get("img_nb")
         # { canvas_nb: {} }, canvas_nb is 1-indexed.
         r_annos = {str(c): {} for c in range(min_c, max_c + 1)}
 
-    annos = get_manifest_annotations(regions_ref, False, min_c, max_c)
+    annos = get_manifest_annotations(digit.get_ref(), False, min_c, max_c)
+    annos = filter_annotations_by_tag(annos, regions_tag)  # TODO filter or not
+
     if len(annos) == 0:
         return r_annos
-    # `min_c`/`max_c` are handled in `get_manifest_annotations` so no need to filter by canvas number here
+
     for anno in annos:
         try:
-            on_value: List[Dict] = anno["on"]  # on is a list of SpecificResources
-            id_canvas = on_value[0]["full"]  # full ID of the target canvas
-            canvas = id_canvas.split("/canvas/c")[1].split(".json")[
-                0
-            ]  # string representation of the canvas number
+            on_value: List[Dict] = anno["on"][0]
+            id_canvas = on_value["full"]
+            canvas = id_canvas.split("/canvas/c")[1].split(".json")[0]
+
             if canvas not in r_annos:
                 log(
                     f"[get_regions_annotations] Key '{canvas}' should be included between {min_c}-{max_c} => pass"
                 )
                 continue
 
-            # since AIIINOTATE_STRICT_MODE is true, xywh will always be defined.
-            xywh = on_value[0]["xywh"]
+            xywh = on_value["xywh"]
             if not xywh or not len(xywh):
-                raise ValueError(f"Could not extract XYWH coordinates for annotation")
+                raise ValueError("Could not extract XYWH coordinates for annotation")
             xywh_str = "".join(str(c) for c in xywh)
 
             if as_json:
@@ -557,6 +633,20 @@ def get_regions_annotations(
     return r_annos
 
 
+def get_annotations_on_canvases(regions: list[Regions], min_c, max_c):
+    anno_regions = {}
+    for reg in regions:
+        max_canvas = reg.get_json()["img_nb"]
+        anno_regions = get_regions_annotations(
+            reg,
+            as_json=True,
+            r_annos=anno_regions,
+            min_c=min_c or 1,
+            max_c=min(max_c, max_canvas) if max_c else max_canvas,
+        )
+    return anno_regions
+
+
 def get_indexed_manifests():
     try:
         r = get_and_parse(
@@ -572,15 +662,8 @@ def get_indexed_manifests():
     return [m["@id"] for m in manifests]
 
 
-def get_canvas_lists(digit: Digitization, all_img=False):
-    canvases = []
-    for regions in digit.get_regions():
-        canvases.extend(get_canvas_list(regions, all_img))
-    return canvases
-
-
 def get_indexed_canvas_annotations(regions: Regions, canvas_nb):
-    canvas_url = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/search?canvasUri={regions.gen_manifest_url(only_base=True, version=MANIFEST_V2)}/canvas/c{canvas_nb}.json"
+    canvas_url = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/search?canvasUri={regions.get_manifest_url(only_base=True)}/canvas/c{canvas_nb}.json"
     try:
         return get_and_parse(canvas_url)["resources"]  # pyright: ignore
     except Exception as e:
@@ -591,26 +674,35 @@ def get_indexed_canvas_annotations(regions: Regions, canvas_nb):
         return []
 
 
-def get_total_annotations(regions_ref: str) -> int:
+def get_total_annotations(ref: str) -> int:
+    """
+    Count annotations for a ref (digit_ref or regions_ref).
+    If regions_ref, only count annotations with that tag.
+    """
+    digit_ref, regions_tag = split_ref(ref)
+
+    if regions_tag:
+        # IF filter by regions, we have to get all annotations and filter them by tag
+        # TODO make aiiinotate support tag filtering by tag
+        annos = get_manifest_annotations(ref, only_ids=False)
+        return len(annos)
+
     try:
         r = get_and_parse(
-            f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/count?manifestShortId=${regions_ref}"
+            f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/count?manifestShortId={digit_ref}"
         )
-        return r["count"]  # pyright: ignore
+        return r["count"]
     except Exception as e:
-        log(
-            f"[get_total_annotations]: Error when retrieving the number of annotations for regions ref '{regions_ref}'",
-            e,
-        )
+        log(f"[get_total_annotations]: Error for ref '{ref}'", e)
         return 0
 
 
-def has_annotation(regions_ref: str) -> bool:
+def has_annotation(ref: str) -> bool:
     """
     Check if there are any annotations for the given regions reference.
     Returns True if at least one annotation is found, False otherwise.
     """
-    return get_total_annotations(regions_ref) > 0
+    return get_total_annotations(ref) > 0
 
 
 def get_training_regions(regions: Regions):
@@ -693,7 +785,7 @@ def check_indexation(regions: Regions, reindex=False):
     if not data:
         return False
 
-    if not index_manifest(regions.gen_manifest_url(version=MANIFEST_V2)):
+    if not index_manifest(regions.get_manifest_url()):
         return False
 
     generated_annotations = 0
@@ -754,7 +846,7 @@ def check_indexation(regions: Regions, reindex=False):
 
 def index_regions(regions: Regions):
     # index the manifest
-    if not index_manifest(regions.gen_manifest_url(version=MANIFEST_V2), True):
+    if not index_manifest(regions.get_manifest_url(), True):
         return
 
     # fetch the annotations from the annotation file
@@ -781,7 +873,11 @@ def index_regions(regions: Regions):
 def index_annotations_on_canvas(regions: Regions, canvas_nb):
     # this url (view canvas_annotations()) is calling format_canvas_annotations(),
     # thus returning formatted annotations for each canvas
-    formatted_annos = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions.get_ref()}/list/anno-{canvas_nb}.json"
+    # MARKER MARKER
+
+    formatted_annos = (
+        f"{APP_URL}/{APP_NAME}/iiif/{regions.get_ref()}/list/anno-{canvas_nb}.json"
+    )
     # POST request that index the annotations
     response = requests.post(
         f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/createMany",
@@ -848,7 +944,8 @@ def index_manifest(manifest_url, reindex=False):
         )
         if r.status_code != 200:
             log(
-                f"[index_manifest]: Failed to index manifest. Status code: {r.status_code}: {r.text}"
+                f"[index_manifest]: Failed to index manifest {manifest_url}."
+                f"Status code: {r.status_code}: {r.text}"
             )
             return False
     except Exception as e:
@@ -956,26 +1053,48 @@ def unindex_manifest(manifest_url: str) -> bool:
     return True
 
 
+def unindex_annotations_by_tag(manifest_url: str, tag: str) -> int:
+    """
+    Delete annotations associated with a specific tag
+    Returns count of deleted annotations.
+    """
+    # manifest_url = http://slug/digit_ref/manifest.json
+    digit_ref = manifest_url.split("/")[-2]
+
+    # Fetch all annotations, filter by tag, delete each one
+    annos = get_manifest_annotations(digit_ref, only_ids=False)
+    tagged_annos = filter_annotations_by_tag(annos, tag)
+
+    deleted = 0
+    for anno in tagged_annos:
+        anno_id = get_id_from_annotation(anno)
+        if anno_id and unindex_annotation(anno_id):
+            deleted += 1
+
+    log(
+        f"[unindex_annotations_by_tag] Deleted {deleted}/{len(tagged_annos)} annotations with tag '{tag}'"
+    )
+    return deleted
+
+
+# MARKER MARKER rename
 def unindex_annotations_for_manifest(manifest_url: str) -> bool:
-    """delete all annotations for a manifest"""
+    """delete all annotations of a manifest"""
     try:
-        # manifest_url = http://slug/manifest_short_id/manifest.json => extract manifest.json
+        # manifest_url = http://slug/manifest_short_id/manifest.json
         manifest_short_id = manifest_url.split("/")[-2]
         url_delete = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/delete?manifestShortId={manifest_short_id}"
         r = requests.delete(url_delete)
-        if not r.status_code in [200, 204]:
+        if r.status_code not in [200, 204]:
             log(
-                f"[unindex_annotations_for_manifest]: Failed to remove annotations for manifest {manifest_url}. "
-                f"Status code: {r.status_code}. Error: {r.text}"
+                f"[unindex_annotations_for_manifest]: Failed. Status: {r.status_code}. Error: {r.text}"
             )
             return False
-        deleted_count = r.json()["deletedCount"]
-        log(f"[unindex_annotations_for_manifest]: Removed {deleted_count} annotations")
-    except Exception as e:
         log(
-            f"[unindex_annotations_for_manifest]: Failed to remove annotations for manifest {manifest_url}",
-            e,
+            f"[unindex_annotations_for_manifest]: Removed {r.json().get('deletedCount', '?')} annotations"
         )
+    except Exception as e:
+        log(f"[unindex_annotations_for_manifest]: Failed for {manifest_url}", e)
         return False
     return True
 
@@ -1005,43 +1124,34 @@ def unindex_annotations_for_canvas(canvas_uri: str) -> bool:
 
 def unindex_regions(regions_ref, manifest_url: str) -> bool:
     """
-    hook to delete all aiiinotate data related to a regions extraction.
-    a region extraction is described by a IIIF manifest in AIKON => in aiiinotate
-    - remove all annotations related to that manifest
-    - remove the manifest related to that extraction
+    Delete all aiiinotations for a specific Regions extraction.
+    Does NOT unindex the manifest
     """
-    index_manifest(manifest_url)  # no effect if manifest is aldready indexed
-    unindex_manifest(manifest_url)
-    return unindex_annotations_for_manifest(manifest_url)
+    index_manifest(manifest_url)  # no effect if manifest is already indexed
+
+    # Delete only annotations tagged with this regions_ref
+    deleted = unindex_annotations_by_tag(manifest_url, regions_ref)
+
+    return deleted >= 0  # Success even if 0 annotations found
 
 
 def destroy_regions(regions: Regions):
-    manifest_url = regions.gen_manifest_url(version=MANIFEST_V2)
+    manifest_url = regions.get_manifest_url()
     regions_ref = regions.get_ref()
 
-    if "similarity" in ADDITIONAL_MODULES:
-        from app.similarity.utils import delete_pairs_with_regions
-
-        delete_pairs_with_regions(regions.id)
-
     try:
-        # Delete the regions record in the database
         regions.delete()
     except Exception as e:
         log(f"[destroy_regions] Failed to delete regions record #{regions.id}", e)
         return False
 
-    # update the witness.json object
     try:
         witness = Witness.objects.get(
             Q(digitizations__witness_id=regions.digitization.witness_id)
         )
         witness.set_json_regions()
     except Exception as e:
-        log(
-            f"[destroy_regions] Failed to update witness.json",
-            e,
-        )
+        log(f"[destroy_regions] Failed to update witness.json", e)
 
     regions_file = f"{REGIONS_PATH}/{regions_ref}.json"
     if Path(regions_file).exists():
@@ -1050,5 +1160,5 @@ def destroy_regions(regions: Regions):
         except Exception as e:
             log(f"[destroy_regions] Failed to delete regions file #{regions_ref}", e)
 
-    # Remove all annotations associated with this record
+    # Only unindex annotations for this extraction, NOT the manifest
     return unindex_regions(regions_ref, manifest_url)

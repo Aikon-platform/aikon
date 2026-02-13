@@ -17,6 +17,7 @@ export const pageSize = PAGE_LEN;  // eslint-disable-line
 
 export const model2title = {
     "Witness": appLang === "en"  ? "Witness" : "Témoin",
+    "Digitization": appLang === "en" ? "Digitization" : "Numérisation",
     "Work": appLang === "en"  ? "Work" : "Œuvre",
     "Series": appLang === "en"  ? "Series" : "Série d'imprimés",
     "Regions": appLang === "en"  ? "Region Extraction" : "Extraction d'illustrations",

@@ -7,7 +7,7 @@ from app.config.settings import (
     APP_URL,
     APP_NAME,
 )
-from app.webapp.utils.constants import MANIFEST_V2, TRUNCATEWORDS_SIM
+from app.webapp.utils.constants import TRUNCATEWORDS_SIM
 import pprint
 import json
 
@@ -63,13 +63,12 @@ def ref_to_iiif(img_ref):
 
 
 @register.filter
-def ref_to_mirador(regions_refs, img_ref):
+def ref_to_mirador(regions_refs, img_ref):  # MARKER MARKER
     # img_ref = {img_name}_{coord} / e.g. "wit205_pdf216_021_667,1853,783,412"
     img_ref = img_ref.split("_")
     digit_ref = "_".join(img_ref[0:1])
 
-    regions_ref = [ref for ref in regions_refs if ref.startswith(digit_ref)][0]
-    manifest = f"{APP_URL}/{APP_NAME}/iiif/{MANIFEST_V2}/{regions_ref}/manifest.json"
+    manifest = f"{APP_URL}/{APP_NAME}/iiif/{digit_ref}/manifest.json"
 
     return f"{MIRADOR_BASE_URL}/index.html?iiif-content={manifest}&canvas={int(img_ref[-2])}"
 

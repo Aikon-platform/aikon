@@ -35,6 +35,6 @@
     </ul>
 </nav>
 {/if}
-<div class="is-size-7 is-center mb-4 {!multiplePages ? "mt-4" : ""}">
+<div class="is-size-7 is-center mb-4" class:mt-4={!multiplePages}>
     {$currentPage * pageLength - pageLength + 1} - {Math.min($currentPage * pageLength, nbOfItems)} / {nbOfItems}
 </div>

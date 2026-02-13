@@ -15,14 +15,14 @@
         {#if $isSaved && !isRegion}
             <a class="button is-link" href="/{appName}/treatment/add/?document_set={$selection?.id}">
                 <span>
-                    <i class="fa-solid fa-gear"></i>
+                    <i class="fa-solid fa-gear"/>
                     {appLang === "en" ? "Go to treatment" : "Accéder au traitement"}
                 </span>
             </a>
         {:else}
             <button class="button is-link" on:click={() => selectionStore.save()}>
                 <span>
-                    <i class="fa-solid fa-floppy-disk"></i>
+                    <i class="fa-solid fa-floppy-disk"/>
                     {appLang === "en" ? "Save selection" : "Sauvegarder la sélection"}
                 </span>
             </button>
@@ -30,12 +30,12 @@
         {#if !isRegion}
             <a class="button is-link is-dark" href="/{appName}/document-set/{$selection?.id}/json" target="_blank">
                 <span>
-                    <i class="fa-solid fa-file-export"></i> JSON
+                    <i class="fa-solid fa-file-export"/> JSON
                 </span>
             </a>
             <a class="button is-link is-dark" href="/{appName}/document-set/{$selection?.id}/zip" target="_blank">
                 <span>
-                    <i class="fa-solid fa-file-zipper"></i> ZIP
+                    <i class="fa-solid fa-file-zipper"/> ZIP
                 </span>
             </a>
         {/if}

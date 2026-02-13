@@ -33,7 +33,7 @@ from app.webapp.utils.paths import (
     IMG_PATH,
 )
 from app.vectorization.const import SVG_PATH
-from app.webapp.utils.constants import MAX_SIZE
+from app.webapp.utils.constants import MAX_SIZE, PAGE_LEN
 from app.webapp.utils.logger import log
 
 
@@ -61,6 +61,13 @@ def extract_nb(string):
 def normalize_str(string):
     string = string.lower().strip().replace("-", "")
     return string
+
+
+def page_bounds(p_nb):
+    if p_nb <= 0:
+        return None, None
+    max_c = p_nb * PAGE_LEN
+    return max_c - PAGE_LEN, max_c
 
 
 def parse_list(string):

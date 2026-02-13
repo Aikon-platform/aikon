@@ -516,11 +516,11 @@ services_manage() {
     else
         brew services "$action" postgresql
         brew services "$action" redis
-        brew services "$action" mongod
+        brew services "$action" mongodb-community@8.0
     fi
 }
 
-# this has no effect if the services are aldready running.
+# this has no effect if the services are already running.
 services_start() {
     services_manage start
 }

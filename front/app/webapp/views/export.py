@@ -104,7 +104,7 @@ def export_docset(request, dsid):
                 file_contents.append(
                     (
                         f"witness{w.id}/digitizations/manifest.json",
-                        d.gen_manifest_json(),
+                        d.get_manifest_json(),
                     )
                 )
 
@@ -116,7 +116,7 @@ def export_docset(request, dsid):
                     (
                         f"witness{w.id}/regions{regions.id}/manifest.json",
                         json.dumps(
-                            regions.gen_manifest_json(),
+                            regions.get_manifest_json(),
                             ensure_ascii=False,
                             indent=2,
                         ),
@@ -224,7 +224,7 @@ def get_region_data(wid, rid):
             regions=get_object_or_404(Regions, id=rid), as_json=True
         )
         result = {
-            "manifest": get_object_or_404(Regions, pk=rid).gen_manifest_url(),
+            "manifest": get_object_or_404(Regions, pk=rid).get_manifest_url(),
             "extracted_crops": annos,
         }
     return result

@@ -62,8 +62,7 @@
 <div class="autocomplete">
     <input class="input is-small is-wide" {name} {id}
            bind:value={inputValue} on:input={handleInput} on:keydown={handleKeydown}
-           {placeholder} autocomplete="off"
-    />
+           {placeholder} autocomplete="off"/>
     {#if isOpen}
         <ul class="autocomplete-list is-wide">
             {#each filteredItems as item, index}

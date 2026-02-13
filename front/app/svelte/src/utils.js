@@ -144,7 +144,7 @@ export function manifestToMirador(manifest = null, canvasNb = 0) {
     return `${getMiradorUrl()}/index.html?iiif-content=${manifest}&canvas=${canvasNb}`;
 }
 
-export function toAiiinotateAnnotationUrl(manifestShortId, annotationShortId) {
+export function toAiiinotationUrl(manifestShortId, annotationShortId) {
     return `${aiiinotateUrl}/data/2/${manifestShortId}/annotation/${annotationShortId}`
 }
 

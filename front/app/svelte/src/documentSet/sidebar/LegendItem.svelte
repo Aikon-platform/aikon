@@ -25,8 +25,8 @@
 <div class="legend-item is-flex is-justify-content-space-between" class:inactive={!isActive}>
     <span class="is-flex is-align-items-center" style="gap: 0.5rem;">
         <span class="legend-color" class:inactive={!isActive} class:clickable={clickable}
-             aria-label={docTitle} title="{onlyColor ? docTitle : i18n("toggle", t)}"
-             style="background-color: {isActive ? meta.color : "#999"};"
+             aria-label={docTitle} title="{onlyColor ? docTitle : i18n('toggle', t)}"
+             style="background-color: {isActive ? meta.color : '#999'};"
              on:click={toggle} on:keydown={null} role="button" tabindex="0"/>
         <span class="legend-label" class:is-hidden={onlyColor}>
             <a href={`${appUrl}/${appName}/witness/${meta.witnessId}/regions/${id}`} target="_blank">

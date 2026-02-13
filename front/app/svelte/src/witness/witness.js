@@ -4,15 +4,10 @@ import WitnessView from "./WitnessView.svelte";
 const WitnessApp = new WitnessView({
     target: document.getElementById("witness-view"),
     props: {
-        viewTitle,  // eslint-disable-line
-        editUrl,  // eslint-disable-line
-        witness,  // eslint-disable-line
-        manifest,  // eslint-disable-line
-        manifests,  // eslint-disable-line
-        isValidated,  // eslint-disable-line
-        imgPrefix,  // eslint-disable-line
-        nbOfPages,  // eslint-disable-line
-        trailingZeros  // eslint-disable-line
+        viewTitle,
+        editUrl,
+        witness,
+        isValidated,
     }
 });
 

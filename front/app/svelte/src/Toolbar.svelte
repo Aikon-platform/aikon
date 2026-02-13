@@ -21,7 +21,7 @@
 </script>
 
 <div id="toolbar" class="ctrl-wrapper is-flex is-justify-content-center is-align-items-center
-     { toolbarExpanded ? "toolbar-expanded" : "toolbar-collapsed" }">
+     { toolbarExpanded ? 'toolbar-expanded' : 'toolbar-collapsed' }">
 
     <form class="ctrl">
         <div class="ctrl-base">

@@ -1,18 +1,18 @@
 import json
 import re
 from collections import OrderedDict
-from typing import List, Set
+from typing import List
 
 from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404
 from django.http import StreamingHttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import transaction, connection
 
 from django.contrib.auth.decorators import user_passes_test
 
-from app.similarity.models.region_pair import RegionPair, RegionPairTuple
+from app.similarity.models.region_pair import RegionPair
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import (
@@ -160,59 +160,6 @@ def get_similar_images(request, wid, rid=None):
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
-def get_single_similar_image(request, wid):
-    """
-    return a SINGLE pair as a JSON. return an error 400 if it dosen't exist.
-
-    search parameters:
-        - img_1: string
-        - img_2: string
-        - regions_id_1: int
-        - regions_id_2: int
-    """
-    if request.method != "GET":
-        return JsonResponse({"error": "Invalid request method"}, status=400)
-
-    params = request.GET.dict()
-    rid_1 = params.get("regions_id_1", None)
-    rid_2 = params.get("regions_id_2", None)
-    img_1 = params.get("img_1", None)
-    img_2 = params.get("img_2", None)
-    similarity_hash = params.get("similarity_hash", None)
-
-    if any(p is None for p in [rid_1, rid_2, img_1, img_2, similarity_hash]):
-        return JsonResponse(
-            {
-                "error": f"All search parameters 'regions_id_1', 'regions_id_2', 'img_1', 'img_2' must be defined"
-            },
-            status=400,
-        )
-    try:
-        rid_1 = int(rid_1)
-        rid_2 = int(rid_2)
-    except ValueError:
-        return JsonResponse(
-            {
-                "error": f"Search parameters 'regions_id_1' and 'regions_id_2' must be integers."
-            },
-            status=400,
-        )
-    try:
-        # we use .filter().first() instead of .get(): regionpair can sometimes include duplicates (which is an error, and Django raises if .get returns more than 1 row.)
-        r = RegionPair.objects.filter(
-            Q(img_1=img_1, img_2=img_2, similarity_hash=similarity_hash)
-            | Q(img_1=img_2, img_2=img_1, similarity_hash=similarity_hash)
-        ).first()
-        if r is not None:
-            return JsonResponse(r.to_dict(), status=200)
-        else:
-            return JsonResponse(
-                {"error": f"No RegionPair with parameters: {params}"}, status=400
-            )
-    except Exception as e:
-        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
-
-
 def get_compared_regions(request, wid, rid=None):
     """
     Return the id and metadata of the Regions that have a RegionPair record
@@ -226,19 +173,19 @@ def get_compared_regions(request, wid, rid=None):
 
     try:
         current_regions = {q_r.get_ref(): q_r.get_json() for q_r in q_regions}
+        q_ids = {q_r.id for q_r in q_regions}
 
-        # Collect all region IDs to query at once
+        pairs = RegionPair.objects.filter(
+            Q(regions_id_1__in=q_ids) | Q(regions_id_2__in=q_ids)
+        ).values_list("regions_id_1", "regions_id_2")
+
         all_region_ids = set()
-        for q_r in q_regions:
-            pairs = RegionPair.objects.filter(
-                Q(regions_id_1=q_r.id) | Q(regions_id_2=q_r.id)
-            ).values_list("regions_id_1", "regions_id_2")
-
-            for id1, id2 in pairs:
-                all_region_ids.add(id2 if id1 == q_r.id else id1)
-
-        # Remove the original region IDs from the set
-        all_region_ids -= set(q_r.id for q_r in q_regions)
+        for id1, id2 in pairs:
+            if id1 in q_ids:
+                all_region_ids.add(id2)
+            if id2 in q_ids:
+                all_region_ids.add(id1)
+        all_region_ids -= q_ids
 
         # Fetch all similar regions in one query
         sim_regions = Regions.objects.filter(id__in=all_region_ids)
@@ -288,136 +235,117 @@ def get_propagated_matches(
     request, wid: int | None = None, rid: int | None = None, img_id: str = ""
 ) -> JsonResponse:
     """
-    formal definition:
-    `imgA <exactMatch> imgB`, `imgB <exactMatch> imgC`, `imgC <exactMatch> (imgD, imgE)`
-    => `imgA <propagatedMatch> (imgC, imgD, imgE)`
+    Given an image `img_id`, find all images reachable through a chain of exact matches
+    (category=1), excluding direct exact matches and already-saved propagations.
 
-    in other words, given an image `q_img`, a propagated match `p_img` satisfies both conditions:
-    - `q_img` not an exact match of `p_img`
-    - `p_img` and `q_img` are connected by a chain of intermediate exact matches
-        - the number of intermediate exact matches between `q_img` and `p_img` is defined, see `RECURSION_DEPTH`
-    - `p_img` and `q_img` may be in the same regions (`RegionPair.regions_id_(1|2)`), but `p_img` and `q_img` cannot have an exact match
-
-    helpful definitions:
-    - matches are defined by rows of the `RegionPair` sql table, which describes relations between 2 images `img_1` and `img_2`. relations are undirected (`img1->img2 == img2->img1`)
-    - `RegionPair` stores exact matches and other types of matches => an exact match is a special type of match => exact matches are a subset of `RegionPair`
-    - an exact match is a relation `(imgA, imgB)` where `RegionPair.category==1`
-
-    process:
-    - propagate() : recursively build a list of `(p_img, depth)`
-    - propagated_to_regionpair() : filter out results and jsonify results as RegionPairs (tuples of `(query_img, propagated_img)`)
-
-    :returns: JSONified RegionPair tuples
+    Uses a recursive SQL CTE instead of Python-level recursion for O(1) queries
+    regardless of graph size and depth.
     """
-    OG_IMG_ID = img_id
-    MAX_DEPTH = 6
-    MIN_DEPTH = 1
-    RECURSION_DEPTH = [MIN_DEPTH, MAX_DEPTH]
-
-    def get_direct_pairs(q_img: str, _id_regions_array: List[int] = []) -> List[str]:
-        img_2_from_1 = RegionPair.objects.values_list("img_2").filter(
-            Q(img_1=q_img) & Q(category=1)
-        )
-        img_1_from_2 = RegionPair.objects.values_list("img_1").filter(
-            Q(img_2=q_img) & Q(category=1)
-        )
-        if len(_id_regions_array):
-            img_2_from_1 = img_2_from_1.filter(Q(regions_id_2__in=_id_regions_array))
-            img_1_from_2 = img_1_from_2.filter(Q(regions_id_1__in=_id_regions_array))
-        return [r[0] for r in list(img_2_from_1.union(img_1_from_2).all())]
-
-    def propagate(
-        q_img: str,
-        _id_regions_array: List[int] = [],
-        _recursion_depth: List[int] = RECURSION_DEPTH,
-        depth: int = 0,
-        matches: Set[str] = set(),
-    ) -> Set[str]:
-        """
-        :param q_img: query image
-        :param _id_regions_array: regions to filter by
-        :param _recursion_depth: [min, max] allowed recursion
-        :param depth: depth of current step
-        :param matches: output results. list of (MatchImage, Depth)
-        """
-        if depth >= _recursion_depth[1]:
-            return matches
-        depth += 1
-        direct_pairs = get_direct_pairs(q_img, _id_regions_array)
-        for new_match in direct_pairs:
-            matches.add(new_match)
-            matches = propagate(
-                new_match,
-                _id_regions_array,
-                _recursion_depth,
-                depth,
-                matches,
-            )
-        return matches
-
-    def propagated_to_regionpair_json(
-        _propagated: Set[str], _id_regions_array: List[int] = []
-    ) -> List[RegionPairTuple]:
-        """
-        - remove matches that are
-            - exact matches to `OG_IMG_ID`
-            - propagations that have already been saved to database
-        - format the results
-        """
-        q_img_regions = regions_from_img(OG_IMG_ID)
-        exact_matches_by_regions = get_direct_pairs(OG_IMG_ID, _id_regions_array)
-        propagation_2_from_1 = RegionPair.objects.values_list("img_2").filter(
-            Q(img_1=OG_IMG_ID) & Q(similarity_type=3)
-        )
-        propagation_1_from_2 = RegionPair.objects.values_list("img_1").filter(
-            Q(img_2=OG_IMG_ID) & Q(similarity_type=3)
-        )
-        saved_propagations = [
-            row[0] for row in propagation_1_from_2.union(propagation_2_from_1)
-        ]
-        return [
-            RegionPair(  # pyright: ignore
-                img_1=OG_IMG_ID,
-                img_2=p_img,
-                regions_id_1=q_img_regions,
-                regions_id_2=regions_from_img(p_img),
-                category=None,
-                category_x=[],
-                score=None,
-                similarity_type=SimilarityType.PROPAGATED,
-            ).get_info()
-            for p_img in _propagated
-            if p_img not in exact_matches_by_regions
-            and p_img not in saved_propagations
-            and p_img != OG_IMG_ID
-        ]
-
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
+
     try:
         data = json.loads(request.body)
-        filter_by_regions: bool = data.get("filterByRegions")
-        id_regions_array: List[int] = data.get("regionsIds", [])
-        max_recursion_depth = data.get("recursionDepth", MAX_DEPTH)
-        recursion_depth = [MIN_DEPTH, max_recursion_depth]
-        id_regions_array = (
-            id_regions_array
-            if filter_by_regions
-            and isinstance(id_regions_array, list)
-            and len(id_regions_array)
-            else []
-        )
-        propagated = propagate(
-            img_id, _id_regions_array=id_regions_array, _recursion_depth=recursion_depth
-        )
-        return JsonResponse(
-            propagated_to_regionpair_json(propagated, id_regions_array), safe=False
-        )
+        filter_by_regions: bool = data.get("filterByRegions", False)
+        regions_ids: List[int] = data.get("regionsIds", [])
+        max_depth = min(int(data.get("recursionDepth", 6)), 6)
+
+        if not (filter_by_regions and isinstance(regions_ids, list) and regions_ids):
+            regions_ids = []
+
+        propagated_imgs = _propagate_cte(img_id, max_depth, regions_ids or None)
+
+        if not propagated_imgs:
+            return JsonResponse([], safe=False)
+
+        q_img_rid = regions_from_img(img_id)
+        img_rids = _batch_regions_from_imgs(propagated_imgs)
+
+        result = [
+            [None, img_id, p_img, q_img_rid, img_rids.get(p_img), None, [], 3, None]
+            for p_img in propagated_imgs
+            if p_img in img_rids
+        ]
+
+        return JsonResponse(result, safe=False)
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
+def _propagate_cte(
+    q_img: str, max_depth: int, regions_ids: List[int] | None = None
+) -> List[str]:
+    """
+    Single-query recursive CTE that traverses the exact-match graph
+    up to `max_depth` hops, then excludes direct matches and saved propagations.
+    """
+    table = RegionPair._meta.db_table
+    has_filter = bool(regions_ids)
+
+    fwd_filter = "AND regions_id_2 = ANY(%(rids)s)" if has_filter else ""
+    rev_filter = "AND regions_id_1 = ANY(%(rids)s)" if has_filter else ""
+    rec_filter = (
+        "AND (CASE WHEN rp.img_1 = c.img THEN rp.regions_id_2"
+        " ELSE rp.regions_id_1 END = ANY(%(rids)s))"
+        if has_filter
+        else ""
+    )
+
+    sql = f"""
+    WITH RECURSIVE chain(img, depth) AS (
+        SELECT img_2, 1 FROM {table}
+        WHERE img_1 = %(q)s AND category = 1 {fwd_filter}
+        UNION
+        SELECT img_1, 1 FROM {table}
+        WHERE img_2 = %(q)s AND category = 1 {rev_filter}
+        UNION
+        SELECT
+            CASE WHEN rp.img_1 = c.img THEN rp.img_2 ELSE rp.img_1 END,
+            c.depth + 1
+        FROM {table} rp
+        INNER JOIN chain c ON (rp.img_1 = c.img OR rp.img_2 = c.img)
+        WHERE rp.category = 1 AND c.depth < %(max_depth)s {rec_filter}
+    )
+    SELECT DISTINCT img FROM chain
+    WHERE img != %(q)s
+      AND img NOT IN (
+          SELECT img_2 FROM {table} WHERE img_1 = %(q)s AND category = 1 {fwd_filter}
+          UNION
+          SELECT img_1 FROM {table} WHERE img_2 = %(q)s AND category = 1 {rev_filter}
+      )
+      AND img NOT IN (
+          SELECT img_2 FROM {table} WHERE img_1 = %(q)s AND similarity_type = 3
+          UNION
+          SELECT img_1 FROM {table} WHERE img_2 = %(q)s AND similarity_type = 3
+      )
+    """
+
+    params = {"q": q_img, "max_depth": max_depth}
+    if has_filter:
+        params["rids"] = list(regions_ids)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, params)
+        return [row[0] for row in cursor.fetchall()]
+
+
+def _batch_regions_from_imgs(imgs: List[str]) -> dict:
+    """Map image refs to their regions_id in a single query."""
+    pairs = RegionPair.objects.filter(
+        Q(img_1__in=imgs) | Q(img_2__in=imgs)
+    ).values_list("img_1", "img_2", "regions_id_1", "regions_id_2")
+
+    img_set = set(imgs)
+    result = {}
+    for img_1, img_2, rid_1, rid_2 in pairs:
+        if img_1 in img_set and img_1 not in result:
+            result[img_1] = rid_1
+        if img_2 in img_set and img_2 not in result:
+            result[img_2] = rid_2
+    return result
 
 
 def get_regions(img_1, img_2, wid, rid):
@@ -582,33 +510,21 @@ def get_query_images(request, wid, rid=None):
         )
 
 
-def save_category(request):
+def add_user_to_pair(request):
     """
-    save category on a region pair.
-    - if it is a normal similarity (not a propagation), update the category and save.
-    - if a propagation does not exist in the database and the user annotates it, add the row to the db and update the category
-    - if the propagation exists in the db, is annotated and the user removes the annotation, delete the row from the db
+    Toggle the current user in the category_x list of all region pairs
+    matching img_1 and img_2. Creates the pair if none exist.
     """
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
     try:
         data = json.loads(request.body)
-
-        # img_1 and img_2 are sorted by witness ID.
-        # regions_ids are retrieved programmatically instead of from `data` because retrieving from `data` may lead to inconsistencies (regions not aligned with their image), especially in the case of propagated regions.
         img_1, img_2 = RegionPair.order_pair((data.get("img_1"), data.get("img_2")))
-        category = data.get("category")
-        category = int(data.get("category")) if category else None
-        similarity_type = int(data.get("similarity_type") or SimilarityType.MANUAL)
-        similarity_hash = data.get("similarity_hash") or None
+        user_id = request.user.id
 
-        query_filter = {
-            "img_1": img_1,
-            "img_2": img_2,
-            # "regions_id_1": regions_id_1,
-            # "regions_id_2": regions_id_2,
-        }
+        query = {"img_1": img_1, "img_2": img_2}
+        rp_list = list(RegionPair.objects.filter(**query))
 
         # propagation without category => delete
         to_delete = similarity_type == SimilarityType.PROPAGATED and category is None
@@ -647,32 +563,87 @@ def save_category(request):
             "category_x": [],
         }
         rp_list = RegionPair.objects.filter(**query_filter)
-        id_list = []
-        if len(rp_list):
+        if rp_list:
             for rp in rp_list:
-                rp.category = category
-                rp = update_category_x(rp, request.user.id)
+                category_x = rp.category_x or []
+                if user_id in category_x:
+                    category_x.remove(user_id)
+                else:
+                    category_x.append(user_id)
+                rp.category_x = category_x
                 rp.save()
-                id_list.append(rp.id)
-            message = f"Updated {len(id_list)} region pairs with IDs: {id_list}"
+            message = f"Updated {len(rp_list)} region pair(s)"
         else:
-            rp = RegionPair(**{**query_filter, **defaults})
-            rp = update_category_x(rp, request.user.id)
-            rp.save()
+            rp = RegionPair.objects.create(
+                **query,
+                category_x=[user_id],
+                regions_id_1=regions_from_img(img_1),
+                regions_id_2=regions_from_img(img_2),
+            )
             message = f"New region pair #{rp.id} created"
 
-        return JsonResponse(
-            {
-                "status": "success",
-                "message": message,
-                # "pair_info": region_pair.get_info(as_json=True),
-            },
-            status=200,
-        )
+        return JsonResponse({"status": "success", "message": message}, status=200)
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
+        log("[add_user_to_pair] An error occurred", e)
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
+def save_category(request):
+    """
+    Save category on all region pairs matching img_1 and img_2.
+    - Creates pair if none exist
+    - For propagated pairs: deletes all matching rows if category is removed
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        img_1, img_2 = RegionPair.order_pair((data.get("img_1"), data.get("img_2")))
+        category = data.get("category")
+        category = int(category) if category else None
+        similarity_type = int(data.get("similarity_type") or SimilarityType.MANUAL)
+
+        query = {"img_1": img_1, "img_2": img_2}
+
+        # propagation without category => delete all
+        if similarity_type == SimilarityType.PROPAGATED and category is None:
+            deleted, _ = RegionPair.objects.filter(**query).delete()
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "message": f"Deleted {deleted} propagated region pair(s)",
+                },
+                status=200,
+            )
+
+        rp_list = list(RegionPair.objects.filter(**query))
+
+        if rp_list:
+            for rp in rp_list:
+                rp.category = category
+                rp.save()
+            message = f"Updated {len(rp_list)} region pair(s)"
+        else:
+            RegionPair.objects.create(
+                **query,
+                category=category,
+                similarity_type=similarity_type,
+                category_x=[],
+                regions_id_1=regions_from_img(img_1),
+                regions_id_2=regions_from_img(img_2),
+            )
+            message = "New region pair created"
+
+        return JsonResponse({"status": "success", "message": message}, status=200)
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        log("[save_category] An error occurred", e)
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 

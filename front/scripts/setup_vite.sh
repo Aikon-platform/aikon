@@ -11,11 +11,11 @@ if ! command -v npm &> /dev/null; then
     echo_title "INSTALL NVM & NODE"
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
     nvm install node
-    npm install -g webpack webpack-cli
 fi
 
 echo_title "SVELTE SETUP"
-cd "$FRONT_DIR"/app/webpack || echo "Webpack directory not found: $FRONT_DIR/app/webpack"
+cd "$FRONT_DIR"/app/svelte || echo "Webpack directory not found: $FRONT_DIR/app/svelte"
+npm install -D vite
 npm init
 color_echo blue "\nCompile svelte components using: "
 color_echo cyan "              npm run build"

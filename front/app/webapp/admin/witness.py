@@ -253,7 +253,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         manifests = []
         for witness in queryset.exclude():
             manifests.extend(
-                [digit.gen_manifest_url() for digit in witness.get_digits()]
+                [digit.get_manifest_url() for digit in witness.get_digits()]
             )
         return list_to_txt(manifests, "IIIF_manifests")
 

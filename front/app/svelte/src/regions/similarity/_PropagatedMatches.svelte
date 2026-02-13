@@ -1,7 +1,7 @@
 <script>
     import { setContext, getContext } from "svelte";
 
-    import SimilarRegions from "./SimilarRegions.svelte";
+    import SimilarRegions from "./_SimilarRegions.svelte";
 
     import { csrfToken } from "../../constants.js";
     import { similarityStore } from "./similarityStore";
@@ -43,7 +43,7 @@
     /**
      * extract regions ids for the selected regions of the current witness
      * @type {SelectedRegionsType} _selectedRegions
-     * @returns {number[]|[]} the IDs of each regions
+     * @returns {number[]|[]} the IDs of each region
      */
     const getRegionsIds = (_selectedRegions) =>
         Object.keys(_selectedRegions).includes(currentPageId)

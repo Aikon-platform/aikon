@@ -1,5 +1,4 @@
 <script>
-    import { getContext } from "svelte";
     import { regionsStore } from "./regionsStore.js";
     const { pageRegions, fetchPages } = regionsStore;
     import Pagination from "../Pagination.svelte";
@@ -10,18 +9,14 @@
     import Row from "../Row.svelte";
     import Regions from "./Regions.svelte";
 
-    const manifest = getContext("manifest");
-    const imgPrefix = getContext("imgPrefix");
-    const nbOfPages = getContext("nbOfPages");
-    const trailingZeros = getContext("trailingZeros");
+    export let witnessStore;
+    const { selectedManifest, imgPrefix, nbOfPages, leadingZeros } = witnessStore;
 
     const zeros = (n, l) => n.toString().padStart(l, "0");
-    // NOTE here sometimes the number of trailing zeros generated is not corresponding to the number of pages
-    const toImgName = (canvasNb) => `${imgPrefix}_${zeros(canvasNb, trailingZeros)}`;
-
+    const toImgName = (canvasNb) => `${$imgPrefix}_${zeros(canvasNb, $leadingZeros)}`;
 </script>
 
-<Pagination store={regionsStore} nbOfItems={nbOfPages}/>
+<Pagination store={regionsStore} nbOfItems={$nbOfPages}/>
 
 <Table>
     {#await $fetchPages}
@@ -35,7 +30,7 @@
                     <svelte:fragment slot="row-header">
                         <img src="{refToIIIF(toImgName(canvasNb), 'full', '250,')}" alt="Canvas {canvasNb}" class="mb-3 card">
                         <div class="is-center mb-1">
-                            <a class="tag px-2 py-1 is-rounded is-hoverable" href="{manifestToMirador(manifest, canvasNb)}" target="_blank">
+                            <a class="tag px-2 py-1 is-rounded is-hoverable" href="{manifestToMirador($selectedManifest, canvasNb)}" target="_blank">
                                 <i class="fa-solid fa-pen-to-square"></i>
                                 Page {canvasNb}
                             </a>
@@ -58,4 +53,4 @@
     {/await}
 </Table>
 
-<Pagination store={regionsStore} nbOfItems={nbOfPages}/>
+<Pagination store={regionsStore} nbOfItems={$nbOfPages}/>

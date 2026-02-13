@@ -23,7 +23,7 @@ run_script setup_venv.sh "Virtual environment initialization"
 run_script setup_var_env.sh "Environment variables configuration"
 run_script setup_cantaloupe.sh "Cantaloupe configuration"
 run_script setup_db.sh "Database generation"
-run_script setup_webpack.sh "Webpack initialization"
+run_script setup_vite.sh "Vite initialization"
 run_script setup_annotations.sh "Annotations module initialization"
 
 echo_title "🎉 DJANGO APP IS SET UP! 🎉"

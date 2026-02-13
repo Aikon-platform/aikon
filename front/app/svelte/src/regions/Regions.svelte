@@ -41,8 +41,7 @@
             on:openModal={handleOpenModal}/>
 {/each}
 
-<RegionModal {items} bind:currentIndex={modalIndex}
-             bind:open={modalOpen} on:navigate={handleNavigate}>
+<RegionModal {items} bind:currentIndex={modalIndex} bind:open={modalOpen} on:navigate={handleNavigate}>
     <svelte:fragment let:item={currentItem}>
         <Tabs {tabs} let:activeTab>
             {#if activeTab === "region"}

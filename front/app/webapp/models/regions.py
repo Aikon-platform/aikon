@@ -15,20 +15,13 @@ from app.config.settings import (
 from app.similarity.const import SCORES_PATH
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.searchable_models import AbstractSearchableModel
-from app.webapp.models.utils.constants import WIT, REG
+from app.webapp.models.utils.constants import REG
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.webapp.utils.paths import REGIONS_PATH
 
 
 def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, {}, plural)
-
-
-def check_version(version):
-    if version != MANIFEST_V1 and version != MANIFEST_V2:
-        return MANIFEST_V1
-    return version
 
 
 class Regions(AbstractSearchableModel):
@@ -77,35 +70,23 @@ class Regions(AbstractSearchableModel):
     def img_zeros(self):
         return self.get_digit().img_zeros() or 0
 
-    def gen_manifest_url(self, only_base=False, version=MANIFEST_V1):
+    def get_manifest_url(self, only_base=False):
         witness = self.get_witness()
         digit = self.get_digit()
         if not witness or not digit:
             return None
 
-        base_url = (
-            f"{APP_URL}/{APP_NAME}/iiif/{check_version(version)}/{self.get_ref()}"
-        )
-        return f"{base_url}{'' if only_base else '/manifest.json'}"
+        return digit.get_manifest_url(only_base=only_base)
 
-    def gen_manifest_json(self, version=MANIFEST_V1):
-        from app.webapp.utils.iiif.manifest import gen_manifest_json
+    def get_manifest_json(self):
+        digit = self.get_digit()
+        if not digit:
+            return None
 
-        error = {"error": "Unable to create a valid manifest"}
-        if manifest := gen_manifest_json(self, check_version(version)):
-            try:
-                return (
-                    manifest.toJSON(top=True)
-                    if hasattr(manifest, "toJSON")
-                    else manifest
-                )
-            except StructuralError as e:
-                error["reason"] = f"{e}"
-                return error
-        return error
+        return digit.get_manifest_json()
 
     def gen_mirador_url(self):
-        return f"{MIRADOR_BASE_URL}/index.html?iiif-content={self.gen_manifest_url(version=MANIFEST_V2)}"
+        return f"{MIRADOR_BASE_URL}/index.html?iiif-content={self.get_manifest_url()}"
 
     def get_ref(self):
         if digit := self.get_digit():
