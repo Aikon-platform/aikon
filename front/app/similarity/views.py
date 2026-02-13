@@ -1,7 +1,7 @@
 import json
 import re
 from collections import OrderedDict
-from typing import List, Set
+from typing import List
 
 from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404
