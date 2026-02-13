@@ -516,7 +516,7 @@ services_manage() {
     else
         brew services "$action" postgresql
         brew services "$action" redis
-        brew services "$action" mongod
+        brew services "$action" mongodb-community@8.0
     fi
 }
 
