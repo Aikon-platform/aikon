@@ -36,7 +36,7 @@ from app.similarity.utils import (
     get_all_pairs,
     reset_similarity,
     regions_from_img,
-    add_user_to_category_x,
+    update_category_x,
     filter_pairs,
     retrieve_pair,
     SimilarityType,
@@ -499,7 +499,7 @@ def add_region_pair(request, wid, rid=None):
             if region_pair.score == 0 or region_pair.score == 0.0:
                 region_pair.score = None
 
-            region_pair = add_user_to_category_x(region_pair, request.user.id)
+            region_pair = update_category_x(region_pair, request.user.id)
             region_pair.save(validate=True)
         except RegionPair.DoesNotExist:
             region_pair = RegionPair.objects.create(
@@ -601,6 +601,7 @@ def save_category(request):
         category = data.get("category")
         category = int(data.get("category")) if category else None
         similarity_type = int(data.get("similarity_type") or SimilarityType.MANUAL)
+        similarity_hash = data.get("similarity_hash") or None
 
         query_filter = {
             "img_1": img_1,
@@ -635,31 +636,35 @@ def save_category(request):
         regions_id_1 = regions_from_img(img_1)
         regions_id_2 = regions_from_img(img_2)
 
-        region_pair, created = RegionPair.objects.update_or_create(
-            **query_filter,
-            defaults={
-                "regions_id_1": regions_id_1,
-                "regions_id_2": regions_id_2,
-                "category": category,
-                "similarity_type": similarity_type,
-                "category_x": [],
-            },
-        )
-        region_pair = add_user_to_category_x(region_pair, request.user.id)
-        region_pair.save()
-        print(f"\n\n>>>>>>>>>> {region_pair.id} <<<<<<<<<<<<<\n\n")
-
-        message = (
-            f"New region pair #{region_pair.id} created"
-            if created
-            else f"Existing region pair #{region_pair.id} updated"
-        )
+        # NOTE : we do a manual bulk_update_or_create to not just update the current RegionPair, but to update ALL RegionPairs with the same img_1 and img_2.
+        defaults = {
+            "regions_id_1": regions_id_1,
+            "regions_id_2": regions_id_2,
+            "category": category,
+            "similarity_type": similarity_type,
+            "similarity_hash": similarity_hash,
+            "category_x": [],
+        }
+        rp_list = RegionPair.objects.filter(**query_filter)
+        id_list = []
+        if len(rp_list):
+            for rp in rp_list:
+                rp.category = category
+                rp = update_category_x(rp, request.user.id)
+                rp.save()
+                id_list.append(rp.id)
+            message = f"Updated {len(id_list)} region pairs with IDs: {id_list}"
+        else:
+            rp = RegionPair(**{**query_filter, **defaults})
+            rp = update_category_x(rp, request.user.id)
+            rp.save()
+            message = f"New region pair #{rp.id} created"
 
         return JsonResponse(
             {
                 "status": "success",
                 "message": message,
-                "pair_info": region_pair.get_info(as_json=True),
+                # "pair_info": region_pair.get_info(as_json=True),
             },
             status=200,
         )
@@ -667,9 +672,6 @@ def save_category(request):
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
-        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>.")
-        print(e)
-        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>.")
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
