@@ -167,7 +167,10 @@
             const response = await fetch(`${baseUrl}add-region-pair`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
-                body: JSON.stringify({q_img: qImg.replace(".jpg", ""), s_img: sImg, similarity_type: 2})
+                body: JSON.stringify({
+                    q_img: qImg.replace(".jpg", ""), // TODO no need to remove .jpg
+                    s_img: sImg,
+                })
             });
             if (!response.ok) {
                 await showMessage(appLang === "en" ? "Problem with network, match was not added" : "Problème de réseau, la correspondance n'a pas été ajoutée", errorName);

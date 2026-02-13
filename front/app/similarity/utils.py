@@ -706,19 +706,14 @@ def update_category_x(region_pair: RegionPair, user_id: int):
     """
     update the `category_x` field from a `region_pair`.
     category_x is a List[int] containing the user IDs of all users that have done a user_match on a category.
-
-    NOTE `category_x` should contain user_id IF AND ONLY IF RegionPair.category == 5. otherwise. remove user_id from category_x.
     """
-    if region_pair.category == SimilarityCategory.USER_MATCH:
-        if region_pair.category_x is None:
-            region_pair.category_x = [user_id]
-        elif user_id not in region_pair.category_x:
-            region_pair.category_x.append(user_id)
-        region_pair.category_x = [u for u in region_pair.category_x if u is not None]
-    else:
-        region_pair.category_x = [
-            u for u in region_pair.category_x if u != user_id and u is not None
-        ]
+    if region_pair.category_x is None:
+        region_pair.category_x = []
+
+    if user_id not in region_pair.category_x:
+        region_pair.category_x.append(user_id)
+    region_pair.category_x = [u for u in region_pair.category_x if u is not None]
+
     return region_pair
 
 
