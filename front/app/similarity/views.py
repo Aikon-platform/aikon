@@ -162,7 +162,7 @@ def get_similar_images(request, wid, rid=None):
 
 def get_single_similar_image(request, wid):
     """
-    return a SINGLE pair as a JSON, or {} if it doesn't exist.
+    return a SINGLE pair as a JSON. return an error 400 if it dosen't exist.
 
     search parameters:
         - img_1: string
@@ -178,15 +178,15 @@ def get_single_similar_image(request, wid):
     rid_2 = params.get("regions_id_2", None)
     img_1 = params.get("img_1", None)
     img_2 = params.get("img_2", None)
+    similarity_hash = params.get("similarity_hash", None)
 
-    if any(p is None for p in [rid_1, rid_2, img_1, img_2]):
+    if any(p is None for p in [rid_1, rid_2, img_1, img_2, similarity_hash]):
         return JsonResponse(
             {
                 "error": f"All search parameters 'regions_id_1', 'regions_id_2', 'img_1', 'img_2' must be defined"
             },
             status=400,
         )
-
     try:
         rid_1 = int(rid_1)
         rid_2 = int(rid_2)
@@ -197,10 +197,18 @@ def get_single_similar_image(request, wid):
             },
             status=400,
         )
-
     try:
-        # TODO fetch the good imagePair and return it
-        return JsonResponse({"hello": "hello"}, status=200)
+        # we use .filter().first() instead of .get(): regionpair can sometimes include duplicates (which is an error, and Django raises if .get returns more than 1 row.)
+        r = RegionPair.objects.filter(
+            Q(img_1=img_1, img_2=img_2, similarity_hash=similarity_hash)
+            | Q(img_1=img_2, img_2=img_1, similarity_hash=similarity_hash)
+        ).first()
+        if r is not None:
+            return JsonResponse(r.to_dict(), status=200)
+        else:
+            return JsonResponse(
+                {"error": f"No RegionPair with parameters: {params}"}, status=400
+            )
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 

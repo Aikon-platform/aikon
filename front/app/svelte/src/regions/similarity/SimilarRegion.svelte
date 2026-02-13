@@ -32,8 +32,8 @@
     export let users = [];
     // /** @type {number} */
     // export let similarityType;
-    // /** @type {string}*/
-    // export let similarityHash;
+    /** @type {string}*/
+    export let similarityHash;
     /** @type {number} */
     export let index = 0;
     /** @type {boolean} */
@@ -51,7 +51,7 @@
     let selectedCategory = category;
     let currentUsers = users;
     let isSelectedByUser;
-    $: updateIsSelectedByCurrentUser(currentUsers);  // eslint-disable-line
+    $: updateIsSelectedByCurrentUser(currentUsers);
 
     ////////////////////////////////////////////
 
@@ -81,34 +81,37 @@
     }
 
     function updateIsSelectedByCurrentUser(_currentUsers) {
+        console.log(">>>> HELLOOOO");
         isSelectedByUser = usersIncludesCurrentUser(_currentUsers);
     }
 
     const updateCategory = (newCategory, oldCategory) =>
         newCategory === oldCategory ? null : newCategory;
 
-    // const updateUsers = (newCategory, currentUsers) => {
-    //     console.log("updateUsers", newCategory, currentUsers);
-    //     currentUsers = currentUsers.slice()
-    //     if ( !usersIncludesCurrentUser(currentUsers) ) {
-    //         return [ ...currentUsers, Number(userId) ];
-    //     } else {
-    //         return currentUsers// .filter((_userId) => Number(userId) !== _userId );
-    //     }
-    // }
-
     /**
-     * after saving a regionpair to database using ``
+     * after saving a regionpair to database, refetch the regionpair from the DB
+     * and update selectedCategory` and `currentUsers`. it is overkill, but the point
+     * is for categories in front to always be in sync with the back and the db.
      */
     async function updateRegionPair() {
         const sp = new URLSearchParams({
             regions_id_1: qRegions,
             regions_id_2: sRegions,
             img_1: qImg,
-            img_2: sImg
+            img_2: sImg,
+            similarity_hash: similarityHash
         })
-        const r = await fetch(`${baseUrl}/${appName}/witness/${idWitness}/single-similar-image`)
-        console.log(await r.json());
+        try {
+            const r = await fetch(`${baseUrl}/${appName}/witness/${idWitness}/single-similar-image?${sp.toString()}`)
+            if (!r.ok) {
+                console.error(`Could not fetch updated regionpair because of error: ${(await r.json()).error} (Status=${r.status})`);
+            }
+            const regionPair = await r.json();
+            selectedCategory = regionPair.category;
+            currentUsers = regionPair.category_x;
+        } catch (e) {
+            console.error(`Could not fetch updated regionpair because of error: ${e.message}`);
+        }
     }
 
     // TODO

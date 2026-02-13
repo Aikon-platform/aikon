@@ -205,7 +205,7 @@
         <span class="m-2">{filteredSImgs.length} {getSimilarityLabel(isPropagatedContext, filteredSImgs.length)}</span>
         <div class="m-2 is-gap-2" class:grid={filteredSImgs.length > 0}>
             {#each filteredSImgs as {uuid, data: [score, _, sImg, qRegions, sRegions, category, users, similarityType, similarityHash]}, i (uuid)}
-                <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users}
+                <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users} {similarityHash}
                                index={i}
                                on:openModal={handleOpenModal}
                                {isInModal}/>
