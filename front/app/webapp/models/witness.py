@@ -412,7 +412,7 @@ class Witness(AbstractSearchableModel):
     def set_json_regions(self):
         """
         after creating or deleting a Regions, update the witness.json field.
-        necessary to avoid desyncrhonization of witnes.json with what's actually in the database.
+        necessary to avoid de-synchronization of witness.json with what's actually in the database.
         """
         witness_json: dict = self.json
         witness_json["regions"] = [region.id for region in self.get_regions()]

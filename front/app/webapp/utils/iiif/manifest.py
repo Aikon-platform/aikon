@@ -75,31 +75,30 @@ def process_images(obj, seq):
     return True
 
 
-def gen_manifest_json(obj):
+def gen_manifest_json(digit):
     """
-    obj: Digitization | Regions
+    digit: Digitization
+    NOTE : regions do not have their own manifest, but are included in the digitization manifest as annotations on the canvases.
     Both return the same digitization manifest
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
-    class_name = obj.__class__.__name__
-
     try:
         fac = ManifestFactory(
-            mdbase=obj.get_manifest_url(only_base=True),
+            mdbase=digit.get_manifest_url(only_base=True),
             imgbase=f"{CANTALOUPE_APP_URL}/iiif/2/",
         )
     except Exception as e:
         log(
-            f"[gen_manifest_json] Unable to create manifest for {class_name} n°{obj.id}",
+            f"[gen_manifest_json] Unable to create manifest for Digitization n°{digit.id}",
             e,
         )
         return False
 
     fac.set_iiif_image_info(version="2.0", lvl="2")
     # Build the manifest
-    manifest = fac.manifest(ident="manifest", label=obj.__str__())
-    metadata = obj.get_metadata()
+    manifest = fac.manifest(ident="manifest", label=digit.__str__())
+    metadata = digit.get_metadata()
     manifest.set_metadata(metadata)
 
     # Set the manifest's attribution, description, and viewing hint
@@ -113,23 +112,17 @@ def gen_manifest_json(obj):
     try:
         # And walk through the pages
         seq = manifest.sequence(ident="normal", label="Normal Order")
-        success = process_images(obj, seq)
+        success = process_images(digit, seq)
         if not success:
             log(
-                f"[gen_manifest_json] Unable to retrieve images for {class_name} n°{obj.id}"
+                f"[gen_manifest_json] Unable to retrieve images for Digitization n°{digit.id}"
             )
             return False
     except Exception as e:
         log(
-            f"[gen_manifest_json] Unable to process images for {class_name} n°{obj.id}",
+            f"[gen_manifest_json] Unable to process images for Digitization n°{digit.id}",
             e,
         )
         return False
-
-    # # DIRTY FIX FOR SAS 😡
-    # import json
-    #
-    # manifest = json.loads(manifest.toString())
-    # # manifest["@context"] = f"{APP_URL}/context.json"
 
     return manifest

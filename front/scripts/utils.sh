@@ -520,7 +520,7 @@ services_manage() {
     fi
 }
 
-# this has no effect if the services are aldready running.
+# this has no effect if the services are already running.
 services_start() {
     services_manage start
 }

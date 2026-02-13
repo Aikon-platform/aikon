@@ -10,7 +10,6 @@ from app.webapp.utils import tasking
 from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.iiif.annotation import has_annotation
 from app.webapp.utils.logger import log
-from config.settings import APP_LANG
 
 
 ################################################################
@@ -34,7 +33,7 @@ def prepare_request(witnesses, treatment_id, parameters=None):
 # usage: see webapp.utils.tasking.process_task_results()
 def process_results(data, completed=True):
     """
-    retreive the JSON results from the API and store them to the annotation server
+    retrieve the JSON results from the API and store them to the annotation server
 
     :param data: {
         "output": {

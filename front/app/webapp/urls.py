@@ -351,11 +351,6 @@ urlpatterns += [
     path("superadmin/works/", list_works, name="list-works"),
 ]
 
-# DIRTY FIX FOR SAS 😡
-urlpatterns += [
-    path("context.json", iiif_context, name="iiif-context"),
-]
-
 # TEST VIEWS
 urlpatterns += [
     path(
