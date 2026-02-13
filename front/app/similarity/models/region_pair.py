@@ -373,6 +373,7 @@ class RegionPair(models.Model):
             "category": cast(self.category, int),
             "category_x": [cast(c, int) for c in self.category_x or []],
             "similarity_type": cast(self.similarity_type, int),
+            "similarity_hash": self.similarity_hash
             # "similarity_params": self.get_parameters()
         }
 

@@ -1,6 +1,4 @@
 <script>
-    import { setContext } from "svelte";
-
     import { userId, csrfToken, appName } from "../../constants";
     import { toRegionItem } from "../utils.js";
 
