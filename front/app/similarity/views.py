@@ -636,7 +636,8 @@ def save_category(request):
         regions_id_1 = regions_from_img(img_1)
         regions_id_2 = regions_from_img(img_2)
 
-        # NOTE : we do a manual bulk_update_or_create to not just update the current RegionPair, but to update ALL RegionPairs with the same img_1 and img_2.
+        # NOTE : we do a manual bulk_update_or_create to not just update the current RegionPair
+        # NOTE : the goal is to update ALL RegionPairs with the same img_1 and img_2.
         defaults = {
             "regions_id_1": regions_id_1,
             "regions_id_2": regions_id_2,
