@@ -57,33 +57,21 @@
         return item;
     }
 
-    // format the current SimilarRegion to send to the backend
-    const toRegionPair = (currentUsers) => ({
-        img_1: qImg,
-        img_2: sImg,
-        regions_id_1: qRegions,
-        regions_id_2: sRegions,
-        score: score,
-        category: selectedCategory,
-        category_x: currentUsers,
-        similarity_type: similarityType,
-        similarity_hash: similarityHash
-    })
+    // // format the current SimilarRegion to send to the backend
+    // const toRegionPair = (currentUsers) => ({
+    //     img_1: qImg,
+    //     img_2: sImg,
+    //     regions_id_1: qRegions,
+    //     regions_id_2: sRegions,
+    //     score: score,
+    //     category: selectedCategory,
+    //     category_x: currentUsers,
+    //     similarity_type: similarityType,
+    //     similarity_hash: similarityHash
+    // })
 
     function usersIncludesCurrentUser (currentUsers) {
         return currentUsers.includes(Number(userId));
-    }
-
-    const updateCategory = (newCategory, oldCategory) =>
-        newCategory === oldCategory ? null : newCategory;
-
-    const updateUsers = (newCategory, currentUsers) => {
-        currentUsers = currentUsers.slice()
-        if ( !usersIncludesCurrentUser(currentUsers) ) {
-            return [ ...currentUsers, Number(userId) ];
-        } else {
-            return currentUsers// .filter((_userId) => Number(userId) !== _userId );
-        }
     }
 
     /**
@@ -92,10 +80,8 @@
      * setting the region will create the RegionPair and save it to database
      */
     async function categorize(category) {
-        // NOTE order is important
-        selectedCategory = updateCategory(category, selectedCategory);
-        let currentUsers = updateUsers(selectedCategory, users);
-        isSelectedByUser = usersIncludesCurrentUser(currentUsers);
+        const previousCategory = selectedCategory;
+        selectedCategory = selectedCategory === category ? null : category;
 
         try {
             const response = await fetch(`${baseUrl}/${appName}/save-category`, {
@@ -104,17 +90,44 @@
                     "Content-Type": "application/json",
                     "X-CSRFToken": csrfToken
                 },
-                body: JSON.stringify(toRegionPair(currentUsers))
+                body: JSON.stringify({
+                    img_1: qImg,
+                    img_2: sImg,
+                    category: selectedCategory,
+                    similarity_type: similarityType,
+                    similarity_hash: similarityHash
+                })
             });
             if (!response.ok) {
                 console.error("Error: Network response was not ok");
-                // unselect category
-                selectedCategory = updateCategory(category);
+                selectedCategory = previousCategory;
             }
         } catch (error) {
             console.error("Error:", error);
-            // unselect category
-            selectedCategory = updateCategory(category);
+            selectedCategory = previousCategory;
+        }
+    }
+
+    async function addUserToPair() {
+        const previousState = isSelectedByUser;
+        isSelectedByUser = !isSelectedByUser;
+
+        try {
+            const response = await fetch(`${baseUrl}/${appName}/add-user-to-pair`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({ img_1: qImg, img_2: sImg })
+            });
+            if (!response.ok) {
+                console.error("Error: Network response was not ok");
+                isSelectedByUser = previousState;
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            isSelectedByUser = previousState;
         }
     }
 </script>
@@ -127,7 +140,7 @@
             <CategoryButton category={2} isSelected={selectedCategory === 2} toggle={categorize}/>
             <CategoryButton category={3} isSelected={selectedCategory === 3} toggle={categorize}/>
             <CategoryButton category={4} isSelected={selectedCategory === 4} toggle={categorize}/>
-            <CategoryButton category={5} isSelected={isSelectedByUser} toggle={categorize} padding="pl-2 pr-3"/>
+            <CategoryButton category={5} isSelected={isSelectedByUser} toggle={addUserToPair} padding="pl-2 pr-3"/>
         </div>
     {/if}
 </div>

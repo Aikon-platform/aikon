@@ -67,11 +67,6 @@ urlpatterns = [
         name="witness-similar-region",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/single-similar-image",
-        get_single_similar_image,
-        name="single-similar-image",
-    ),
-    path(
         f"{APP_NAME}/witness/<int:wid>/regions/get_regions_title/<str:regions_ref>",
         get_regions_title_by_ref,
         name="get-regions-title-by-ref",
@@ -109,6 +104,7 @@ urlpatterns = [
         name="uncategorize-pair-batch",
     ),
     path(f"{APP_NAME}/save-category", save_category, name="save-category"),
+    path(f"{APP_NAME}/add-user-to-pair", add_user_to_pair, name="add-user-to-pair"),
     path(
         f"{APP_NAME}/index-similarity/<str:regions_ref>",
         index_regions_similarity,

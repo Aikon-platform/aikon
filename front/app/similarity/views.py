@@ -12,7 +12,7 @@ from django.db import transaction, connection
 
 from django.contrib.auth.decorators import user_passes_test
 
-from app.similarity.models.region_pair import RegionPair, RegionPairTuple
+from app.similarity.models.region_pair import RegionPair
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import (
@@ -156,59 +156,6 @@ def get_similar_images(request, wid, rid=None):
 
     except (json.JSONDecodeError, ValueError) as e:
         return JsonResponse({"error": f"Invalid data: {e}"}, status=400)
-    except Exception as e:
-        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
-
-
-def get_single_similar_image(request, wid):
-    """
-    return a SINGLE pair as a JSON. return an error 400 if it doesn't exist.
-
-    search parameters:
-        - img_1: string
-        - img_2: string
-        - regions_id_1: int
-        - regions_id_2: int
-    """
-    if request.method != "GET":
-        return JsonResponse({"error": "Invalid request method"}, status=400)
-
-    params = request.GET.dict()
-    rid_1 = params.get("regions_id_1", None)
-    rid_2 = params.get("regions_id_2", None)
-    img_1 = params.get("img_1", None)
-    img_2 = params.get("img_2", None)
-    similarity_hash = params.get("similarity_hash", None)
-
-    if any(p is None for p in [rid_1, rid_2, img_1, img_2, similarity_hash]):
-        return JsonResponse(
-            {
-                "error": f"All search parameters 'regions_id_1', 'regions_id_2', 'img_1', 'img_2' must be defined"
-            },
-            status=400,
-        )
-    try:
-        rid_1 = int(rid_1)
-        rid_2 = int(rid_2)
-    except ValueError:
-        return JsonResponse(
-            {
-                "error": f"Search parameters 'regions_id_1' and 'regions_id_2' must be integers."
-            },
-            status=400,
-        )
-    try:
-        # we use .filter().first() instead of .get(): regionpair can sometimes include duplicates (which is an error, and Django raises if .get returns more than 1 row.)
-        r = RegionPair.objects.filter(
-            Q(img_1=img_1, img_2=img_2, similarity_hash=similarity_hash)
-            | Q(img_1=img_2, img_2=img_1, similarity_hash=similarity_hash)
-        ).first()
-        if r is not None:
-            return JsonResponse(r.to_dict(), status=200)
-        else:
-            return JsonResponse(
-                {"error": f"No RegionPair with parameters: {params}"}, status=400
-            )
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
@@ -563,82 +510,98 @@ def get_query_images(request, wid, rid=None):
         )
 
 
-def save_category(request):
+def add_user_to_pair(request):
     """
-    save category on a region pair.
-    - if it is a normal similarity (not a propagation), update the category and save.
-    - if a propagation does not exist in the database and the user annotates it, add the row to the db and update the category
-    - if the propagation exists in the db, is annotated and the user removes the annotation, delete the row from the db
+    Toggle the current user in the category_x list of a region pair.
+    Creates the pair if it doesn't exist (for propagated matches).
     """
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
     try:
         data = json.loads(request.body)
+        img_1, img_2 = RegionPair.order_pair((data.get("img_1"), data.get("img_2")))
+        user_id = request.user.id
 
-        # img_1 and img_2 are sorted by witness ID.
-        # regions_ids are retrieved programmatically instead of from `data` because retrieving from `data` may lead to inconsistencies (regions not aligned with their image), especially in the case of propagated regions.
+        region_pair, _ = RegionPair.objects.get_or_create(
+            img_1=img_1,
+            img_2=img_2,
+            defaults={
+                "category_x": [],
+                # TODO soon to be removed
+                "regions_id_1": regions_from_img(img_1),
+                "regions_id_2": regions_from_img(img_2),
+            },
+        )
+
+        category_x = region_pair.category_x or []
+        if user_id in category_x:
+            category_x.remove(user_id)
+        else:
+            category_x.append(user_id)
+
+        region_pair.category_x = category_x
+        region_pair.save()
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "category_x": category_x,
+            },
+            status=200,
+        )
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        log("[add_user_to_pair] An error occurred", e)
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
+def save_category(request):
+    """
+    Save category on a region pair.
+    - Creates pair if it doesn't exist
+    - For propagated pairs: deletes the row if category is removed
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
         img_1, img_2 = RegionPair.order_pair((data.get("img_1"), data.get("img_2")))
         category = data.get("category")
-        category = int(data.get("category")) if category else None
+        category = int(category) if category else None
         similarity_type = int(data.get("similarity_type") or SimilarityType.MANUAL)
 
-        query_filter = {
-            "img_1": img_1,
-            "img_2": img_2,
-            # "regions_id_1": regions_id_1,
-            # "regions_id_2": regions_id_2,
-        }
+        query = {"img_1": img_1, "img_2": img_2}
 
         # propagation without category => delete
-        to_delete = similarity_type == SimilarityType.PROPAGATED and category is None
-        if to_delete:
-            try:
-                region_pair = RegionPair.objects.get(
-                    **query_filter,
-                )
-                region_pair.delete()
-                message = f"Deleted 1 propagated region pair"
-                pair_info = region_pair.get_info(as_json=True)
-            except RegionPair.DoesNotExist:
-                message = "Region pair does not exist thus was not deleted"
-                pair_info = {}
-
+        if similarity_type == SimilarityType.PROPAGATED and category is None:
+            deleted, _ = RegionPair.objects.filter(**query).delete()
             return JsonResponse(
                 {
                     "status": "success",
-                    "message": message,
-                    "pair_info": pair_info,
+                    "message": f"Deleted {deleted} propagated region pair(s)",
                 },
                 status=200,
             )
 
-        regions_id_1 = regions_from_img(img_1)
-        regions_id_2 = regions_from_img(img_2)
-
         region_pair, created = RegionPair.objects.update_or_create(
-            **query_filter,
+            **query,
             defaults={
-                "regions_id_1": regions_id_1,
-                "regions_id_2": regions_id_2,
                 "category": category,
                 "similarity_type": similarity_type,
-                "category_x": [],
+                # TODO soon to be removed
+                "regions_id_1": regions_from_img(img_1),
+                "regions_id_2": regions_from_img(img_2),
             },
-        )
-        region_pair = add_user_to_category_x(region_pair, request.user.id)
-        region_pair.save()
-
-        message = (
-            f"New region pair #{region_pair.id} created"
-            if created
-            else f"Existing region pair #{region_pair.id} updated"
         )
 
         return JsonResponse(
             {
                 "status": "success",
-                "message": message,
+                "message": f"Region pair #{region_pair.id} {'created' if created else 'updated'}",
                 "pair_info": region_pair.get_info(as_json=True),
             },
             status=200,
