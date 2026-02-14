@@ -1,6 +1,6 @@
 <script>
-    import { manifestToMirador } from "../utils.js";
-    import {appLang, model2title} from "../constants.js";
+    import {i18n, manifestToMirador} from "../utils.js";
+    import {appLang} from "../constants.js";
 
     export let witnessStore;
     const { manifests, selectedManifest } = witnessStore;
@@ -10,13 +10,13 @@
     function manifestLabel(url) {
         const manifest = url.match(/(?:man|img|pdf)(\d+)/);
         const manifestId = manifest?.[1] ?? "?";
-        return `${appLang === "en" ? "Manifest" : "Manifeste"} #${manifestId}`;
+        return `${i18n("Manifest")} #${manifestId}`;
     }
 </script>
 
 <div class="field selector is-flex is-right mb-2">
     <label for="digit" class="label mt-1">
-        {model2title.Digitization}
+        {i18n('Digitization')}
     </label>
     <div id="digit" class="control pl-3">
         <div class="select is-small">

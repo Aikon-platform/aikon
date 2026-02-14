@@ -1,12 +1,24 @@
 import { writable } from "svelte/store";
-import { miradorUrl, cantaloupeUrl, appName, appLang, aiiinotateUrl } from "./constants";
+import {miradorUrl, cantaloupeUrl, appName, appLang, aiiinotateUrl, model2title} from "./constants";
 
 export const loading = writable(false);
 export const errorMsg = writable("");
 
 const isString = (x) => typeof x === "string" || x instanceof String;
 
-export const i18n = (key, t) => t[key]?.[appLang] || t[key]?.en || key;
+const u = {
+    "delete": { en: "Delete", fr: "Supprimer"},
+    "error": {en: "Error", fr: "Erreur"},
+    "cancel": {en: "Cancel", fr: "Annuler"},
+    "title": {en: "Title", fr: "Titre"},
+    "confirm": {en: "Confirm", fr: "Confirmer"},
+    "errored": {en: "An error has occurred", fr: "Une erreur est survenue"},
+}
+export const i18n = (key, t = null) => {
+    let dic = {...u, ...model2title}
+    if (t) dic = {...dic, ...t}
+    return dic[key]?.[appLang] || dic[key]?.en || key}
+;
 
 /**
  * Display loading UI while waiting for Promise

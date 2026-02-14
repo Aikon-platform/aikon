@@ -76,7 +76,7 @@ function createSimilarityStore() {
     /** @type {writable<number?>} RegionPairs below this score will be hidden from the user */
     const similarityScoreCutoff = writable(JSON.parse(localStorage.getItem("similarityScoreCutoff")) || undefined);
     similarityScoreCutoff.subscribe((value) => {
-    // since the 1st value is undefined, we need to ensure we're not writing this to localStorage
+        // since the 1st value is undefined, we need to ensure we're not writing this to localStorage
         if (value!=null) localStorage.setItem("similarityScoreCutoff", JSON.stringify(value))
     });
 
@@ -227,6 +227,91 @@ function createSimilarityStore() {
         });
     }
 
+    // Global signal to force all visible rows to refresh (e.g. from a toolbar)
+    const refreshSignal = writable(0);
+    const triggerRefresh = () => refreshSignal.update(n => n + 1);
+
+    /** * Factory to create a dedicated store for a single SimilarityRow.
+     * Encapsulates fetch logic, state management, and race-condition handling.
+     */
+    function createRowStore(qImg, isInModal) {
+        const items = writable([]);
+        const propagated = writable([]);
+        const loading = writable(false);
+        const error = writable(null);
+        let cGen = 0, pGen = 0, visible = isInModal;
+
+        const getRids = () => {
+            const sel = get(selectedRegions);
+            return Object.values(sel[currentPageId] || {}).map(r => r.id);
+        };
+
+        const fetchComputed = async (rids) => {
+            const gen = ++cGen;
+            loading.set(true);
+            try {
+                const res = await fetch(`${baseUrl}similar-images`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
+                    body: JSON.stringify({regionsIds: rids, filterByRegions: !isInModal, qImg, topk: 10}),
+                });
+                const data = await res.json();
+                if (gen === cGen) items.set(data);
+            } catch (e) {
+                if (gen === cGen) error.set(e.message);
+            } finally {
+                if (gen === cGen) loading.set(false);
+            }
+        };
+
+        const fetchPropagated = async (rids) => {
+            const gen = ++pGen;
+            const params = get(propagateParams);
+            try {
+                const res = await fetch(`${baseUrl}propagated-matches/${qImg}`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
+                    body: JSON.stringify({
+                        regionsIds: isInModal ? [] : rids,
+                        filterByRegions: isInModal ? false : params.propagateFilterByRegions,
+                        recursionDepth: params.propagateRecursionDepth,
+                    })
+                });
+                const data = await res.json();
+                if (gen === pGen) propagated.set(data);
+            } catch (e) {
+                if (gen === pGen) propagated.set([]);
+            }
+        };
+
+        const fetchAll = () => {
+            const rids = getRids();
+            if (!isInModal && rids.length === 0) {
+                items.set([]);
+            } else {
+                fetchComputed(rids);
+            }
+            fetchPropagated(rids);
+        };
+
+        const unsubs = [
+            // Only refresh if this specific row is visible
+            refreshSignal.subscribe(() => visible && fetchAll()),
+            propagateParams.subscribe(() => visible && fetchPropagated(getRids()))
+        ];
+
+        return {
+            items, propagated, loading, error, fetchAll,
+            setVisible: (v) => { visible = v; if (v) fetchAll(); },
+            filtered: derived([items, excludedCategories, similarityScoreCutoff], ([$i, $e, $s]) =>
+                $i.filter(([score, , , , , cat]) =>
+                    !$e.includes(cat) && (score == null || $s == null || Number(score) >= $s)
+                )
+            ),
+            destroy: () => unsubs.forEach(fn => fn())
+        };
+    }
+
     return {
         baseUrl,
         currentPageId,
@@ -251,6 +336,8 @@ function createSimilarityStore() {
         addComparedRegions,
         isSelected,
         pageLength,
+        createRowStore,
+        triggerRefresh,
     };
 }
 

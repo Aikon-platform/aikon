@@ -22,6 +22,7 @@
     import { createRecordsStore } from "./recordStore.js";
     import Set from "./Set.svelte";
     import Treatment from "./Treatment.svelte";
+    import {i18n} from "../utils.js";
     const recordsStore = createRecordsStore(modelName);
     const { pageRecords, resultPage, resultNumber } = recordsStore;
 
@@ -91,7 +92,7 @@
     {#each Object.entries(selectedRecords) as [type, selectedItems]}
         {#if Object.values(selectedItems).length > 0 && type in model2title && type !== "User"}
 
-            <h3>{model2title[type]}</h3>
+            <h3>{i18n(type)}</h3>
             <table class="table pl-2 is-fullwidth">
                 <tbody>
                 {#each Object.entries(selectedItems) as [id, meta]}
