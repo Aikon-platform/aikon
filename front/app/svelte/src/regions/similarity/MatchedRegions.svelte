@@ -17,6 +17,7 @@
     export let qImg;
     export let isInModal = false;
     export let noRegionsSelected = false;
+    export let cols = 4;
 
     const qImgMetadata = getContext("qImgMetadata") || null;
 
@@ -65,9 +66,9 @@
         {appLang === "en" ? `Error: ${error}` : `Erreur : ${error}`}
     </div>
 {:else}
-    <div>
+    <div class="p-2">
         <span class="m-2">{items.length} {label}</span>
-        <div class="m-2 is-gap-2" class:grid={items.length > 0}>
+        <div class="m-4 is-gap-3 has-{cols}-cols" class:grid={items.length > 0}>
             {#each items as [score, _, sImg, qRegions, sRegions, category, users, similarityType, similarityHash], i (sImg)}
                 <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users}
                                {similarityType} {similarityHash} index={i} {isInModal}

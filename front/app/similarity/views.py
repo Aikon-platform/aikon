@@ -816,7 +816,6 @@ def reset_regions_similarity(request, rid=None):
 #         )
 
 
-# MARKER MARKER do not use rid
 def get_regions_pairs(request, wid, rid=None):
     """
     Return all the region pairs for a given region id or witness id.

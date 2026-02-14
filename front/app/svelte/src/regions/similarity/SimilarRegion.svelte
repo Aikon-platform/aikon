@@ -53,7 +53,10 @@
     function toTitledRegion() {
         let item = toRegionItem(sImg, wit, xywh, canvas);
         const regionData = $comparedRegions[`${wit}_${digit}_anno${sRegions}`] || {title: item.title};
-        item.title = `${shorten(regionData.title.replace(/^[^|]+/, ""))}<br/>Page ${extractInt(canvas)}<br/><b>Score: ${score}</b>`;
+        item.title = `${shorten(regionData.title.replace(/^[^|]+/, ""))}<br/>Page ${extractInt(canvas)}`;
+        if (score){
+            item.title += `<br/><b>Score: ${score}</b>`;
+        }
         return item;
     }
 
@@ -132,7 +135,7 @@
     }
 </script>
 
-<div>
+<div class="cell">
     <RegionCard {item} height={140} selectable={false} copyable={true} isSquare={false} {isInModal} {index} on:openModal/>
     {#if !isInModal}
         <div class="tags has-addons is-dark is-center">

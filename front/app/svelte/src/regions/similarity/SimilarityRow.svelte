@@ -41,7 +41,6 @@
     let innerWidth = 0;
     $: colNb = getColNb(innerWidth);
     $: sLen = Object.keys($selectedRegions[currentPageId] || {}).length;
-    $: gridClass = `fixed-grid has-${colNb - 1}-cols`;
 
     setContext("qImgMetadata", toRegionItem(qImg, wit, xywh, canvas));
 
@@ -165,15 +164,9 @@
 
     <svelte:fragment slot="row-body">
         {#if hasBeenVisible}
-            <div class="{isInModal ? '' : gridClass}">
-                <MatchedRegions items={$filtered} loading={$loading} error={$error} {qImg} {isInModal} {noRegionsSelected} />
-            </div>
-            <div class="{isInModal ? '' : gridClass}">
-                <div class="block matches-suggestion-wrapper">
-                    <div class="matches-suggestion">
-                        <MatchedRegions items={$propagated} loading={$propagatedLoading} error={null} isPropagated={true} {qImg} {isInModal} />
-                    </div>
-                </div>
+            <MatchedRegions items={$filtered} loading={$loading} error={$error} {qImg} {isInModal} {noRegionsSelected} cols={colNb - 1}/>
+            <div class="block propagated-regions my-4">
+                <MatchedRegions items={$propagated} loading={$propagatedLoading} error={null} isPropagated={true} {qImg} {isInModal} cols={colNb - 1}/>
             </div>
         {/if}
     </svelte:fragment>
@@ -195,12 +188,8 @@
         transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
     }
 
-    .matches-suggestion-wrapper {
+    .propagated-regions {
         border: 1px solid var(--bulma-border);
         border-radius: 1em;
-    }
-
-    .matches-suggestion {
-        margin: 1.5rem;
     }
 </style>

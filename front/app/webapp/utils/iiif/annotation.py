@@ -227,13 +227,6 @@ def set_canvas(seq, canvas_nb, img_name, img):
         img = annotation.image(ident=img_name, iiif=True)
 
     img.set_hw(h, w)
-    # In case we do not really index "automatic" annotations but keep them as "otherContents"
-    # if version == MANIFEST_V1: # MARKER MARKER
-    #     # is calling f"{APP_NAME}/iiif/{version}/{anno.get_ref()}/list/anno-{canvas_nb}.json"
-    #     # (canvas_annotations() view) that returns formatted annotations format_canvas_annotations()
-    #     annotation_list = canvas.annotationList(ident=f"anno-{canvas_nb}")
-    #     annotation = annotation_list.annotation(ident=f"a-list-{canvas_nb}")
-    #     annotation.text("Annotation")
 
 
 def get_coord_from_annotation(aiiinotation, as_str=False):
@@ -479,7 +472,6 @@ def get_paginated_annotations(q_url: str) -> List[Dict]:
     return annotations
 
 
-# MARKER MARKER check were this function is called to use correct ref
 def get_manifest_annotations(
     ref, only_ids=True, min_c: int | None = None, max_c: int | None = None
 ):
@@ -563,7 +555,7 @@ def get_canvas_list(regions: Regions, all_img=False):
     return canvases
 
 
-# MARKER MARKER TODO create a get_digit_annotations + get_regions_annotations and check where to use one or the other
+# TODO create a get_digit_annotations / get_regions_annotations and check where to use one or the other
 def get_regions_annotations(
     regions: Regions,
     as_json=False,
@@ -854,7 +846,6 @@ def index_regions(regions: Regions):
 def index_annotations_on_canvas(regions: Regions, canvas_nb):
     # this url (view canvas_annotations()) is calling format_canvas_annotations(),
     # thus returning formatted annotations for each canvas
-    # MARKER MARKER
 
     formatted_annos = (
         f"{APP_URL}/{APP_NAME}/iiif/{regions.get_ref()}/list/anno-{canvas_nb}.json"
@@ -1058,7 +1049,6 @@ def unindex_annotations_by_tag(manifest_url: str, tag: str) -> int:
     return deleted
 
 
-# MARKER MARKER rename
 def delete_manifest_annotations(manifest_url: str) -> bool:
     """delete all annotations of a manifest"""
     try:
