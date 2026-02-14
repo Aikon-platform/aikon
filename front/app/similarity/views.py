@@ -1,5 +1,4 @@
 import json
-import re
 from collections import OrderedDict
 from typing import List
 
@@ -931,7 +930,7 @@ def stream_document_set_pairs(request, dsid=None):
             {"error": f"Document set #{dsid} does not exist"}, status=400
         )
 
-    digit_ids = document_set.digit_ids
+    digit_ids = document_set.get_digit_ids()
     if not digit_ids:
         return JsonResponse(
             {"error": f"No digitizations found for document set #{dsid}"}, status=400

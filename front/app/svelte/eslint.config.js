@@ -8,9 +8,9 @@ import stylistic from "@stylistic/eslint-plugin";
 
 const baseRules = {
     "no-unused-vars": "off",
-    "no-undef": "warning",
+    "no-undef": "warn",
     "quotes": "off",
-    "@stylistic/indent": ["warning", 4],
+    "@stylistic/indent": ["warn", 4],
 };
 
 /** https://eslint.org/docs/latest/use/configure/rules */
