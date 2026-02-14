@@ -12,11 +12,10 @@ from django.db import transaction, connection
 
 from django.contrib.auth.decorators import user_passes_test
 
-from app.similarity.models.region_pair import RegionPair
+from app.similarity.models.region_pair import RegionPair, parse_img, add_jpg
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import (
-    sort_key,
     truncate_char,
     safe_float,
     safe_int,
@@ -30,12 +29,11 @@ from app.similarity.utils import (
     get_computed_pairs,
     get_best_pairs,
     get_region_pairs_with,
-    get_regions_q_imgs,
+    get_digit_imgs,
     validate_img_ref,
     get_matched_regions,
     get_all_pairs,
     reset_similarity,
-    regions_from_img,
     update_category_x,
     filter_pairs,
     retrieve_pair,
@@ -124,10 +122,12 @@ def get_similar_images(request, wid, rid=None):
 
     try:
         data = json.loads(request.body.decode("utf-8"))
-        q_regions_ids = [q_r.id for q_r in q_regions]
+        q_digit_ids = list(
+            Digitization.objects.filter(witness_id=wid).values_list("id", flat=True)
+        )
 
-        filter_by_regions = data.get("filterByRegions", True)
-        t_regions_ids = list(data.get("regionsIds", []))
+        filter_by_digit = data.get("filterByRegions", True)
+        t_digit_ids = list(data.get("digitIds", data.get("regionsIds", [])))
 
         q_img = str(data.get("qImg", ""))
         topk = min(max(int(data.get("topk") or 10), 1), 20)
@@ -135,13 +135,13 @@ def get_similar_images(request, wid, rid=None):
         if not q_img:
             return JsonResponse({})
 
-        if filter_by_regions and not t_regions_ids:
+        if filter_by_digit and not t_digit_ids:
             return JsonResponse({})
 
         pairs = get_region_pairs_with(
             q_img,
-            query_regions_ids=q_regions_ids,
-            target_regions_ids=t_regions_ids if filter_by_regions else None,
+            query_digit_ids=q_digit_ids,
+            target_digit_ids=t_digit_ids if filter_by_digit else None,
         )
 
         result = get_best_pairs(
@@ -173,27 +173,25 @@ def get_compared_regions(request, wid, rid=None):
 
     try:
         current_regions = {q_r.get_ref(): q_r.get_json() for q_r in q_regions}
-        q_ids = {q_r.id for q_r in q_regions}
+        q_digit_ids = {q_r.digitization_id for q_r in q_regions}
 
         pairs = RegionPair.objects.filter(
-            Q(regions_id_1__in=q_ids) | Q(regions_id_2__in=q_ids)
-        ).values_list("regions_id_1", "regions_id_2")
+            Q(digit_1__in=q_digit_ids) | Q(digit_2__in=q_digit_ids)
+        ).values_list("digit_1", "digit_2")
 
-        all_region_ids = set()
-        for id1, id2 in pairs:
-            if id1 in q_ids:
-                all_region_ids.add(id2)
-            if id2 in q_ids:
-                all_region_ids.add(id1)
-        all_region_ids -= q_ids
+        partner_ids = set()
+        for d1, d2 in pairs:
+            if d1 in q_digit_ids:
+                partner_ids.add(d2)
+            if d2 in q_digit_ids:
+                partner_ids.add(d1)
+        partner_ids -= q_digit_ids
 
-        # Fetch all similar regions in one query
-        sim_regions = Regions.objects.filter(id__in=all_region_ids)
+        partner_regions = Regions.objects.filter(digitization_id__in=partner_ids)
 
         compared_regions = dict(
             sorted(
-                {r.get_ref(): r.get_json() for r in sim_regions}.items(),
-                key=lambda x: sort_key(x[0]),
+                {r.get_ref(): r.get_json() for r in partner_regions}.items(),
             )
         )
 
@@ -217,9 +215,12 @@ def get_similarity_score_range(
     from django.db.models import Max, Min
 
     try:
+        digit_ids = list(
+            Digitization.objects.filter(witness_id=wid).values_list("id", flat=True)
+        )
         q = RegionPair.objects.filter(
-            (Q(img_1__startswith=f"wit{wid}") & ~Q(score=None))  # pyright: ignore
-            | (Q(img_2__startswith=f"wit{wid}") & ~Q(score=None))
+            (Q(digit_1__in=digit_ids) & ~Q(score=None))
+            | (Q(digit_2__in=digit_ids) & ~Q(score=None))
         )
         _min = q.aggregate(Min("score"))["score__min"]
         _max = q.aggregate(Max("score"))["score__max"]
@@ -246,26 +247,28 @@ def get_propagated_matches(
 
     try:
         data = json.loads(request.body)
-        filter_by_regions: bool = data.get("filterByRegions", False)
-        regions_ids: List[int] = data.get("regionsIds", [])
+        filter_by_digit: bool = data.get("filterByRegions", False)
+        digit_ids: List[int] = data.get("digitIds", data.get("regionsIds", []))
         max_depth = min(int(data.get("recursionDepth", 6)), 6)
 
-        if not (filter_by_regions and isinstance(regions_ids, list) and regions_ids):
-            regions_ids = []
+        if not (filter_by_digit and isinstance(digit_ids, list) and digit_ids):
+            digit_ids = []
 
-        propagated_imgs = _propagate_cte(img_id, max_depth, regions_ids or None)
+        propagated_imgs = _propagate_cte(img_id, max_depth, digit_ids or None)
 
         if not propagated_imgs:
             return JsonResponse([], safe=False)
 
-        q_img_rid = regions_from_img(img_id)
-        img_rids = _batch_regions_from_imgs(propagated_imgs)
-
-        result = [
-            [None, img_id, p_img, q_img_rid, img_rids.get(p_img), None, [], 3, None]
-            for p_img in propagated_imgs
-            if p_img in img_rids
-        ]
+        q_ref = parse_img(add_jpg(img_id))
+        result = []
+        for p_img in propagated_imgs:
+            try:
+                p_ref = parse_img(p_img)
+                result.append(
+                    [None, img_id, p_img, q_ref.digit, p_ref.digit, None, [], 3, None]
+                )
+            except ValueError:
+                continue
 
         return JsonResponse(result, safe=False)
 
@@ -276,20 +279,16 @@ def get_propagated_matches(
 
 
 def _propagate_cte(
-    q_img: str, max_depth: int, regions_ids: List[int] | None = None
+    q_img: str, max_depth: int, digit_ids: List[int] | None = None
 ) -> List[str]:
-    """
-    Single-query recursive CTE that traverses the exact-match graph
-    up to `max_depth` hops, then excludes direct matches and saved propagations.
-    """
     table = RegionPair._meta.db_table
-    has_filter = bool(regions_ids)
+    has_filter = bool(digit_ids)
 
-    fwd_filter = "AND regions_id_2 = ANY(%(rids)s)" if has_filter else ""
-    rev_filter = "AND regions_id_1 = ANY(%(rids)s)" if has_filter else ""
+    fwd_filter = "AND digit_2 = ANY(%(dids)s)" if has_filter else ""
+    rev_filter = "AND digit_1 = ANY(%(dids)s)" if has_filter else ""
     rec_filter = (
-        "AND (CASE WHEN rp.img_1 = c.img THEN rp.regions_id_2"
-        " ELSE rp.regions_id_1 END = ANY(%(rids)s))"
+        "AND (CASE WHEN rp.img_1 = c.img THEN rp.digit_2"
+        " ELSE rp.digit_1 END = ANY(%(dids)s))"
         if has_filter
         else ""
     )
@@ -325,56 +324,11 @@ def _propagate_cte(
 
     params = {"q": q_img, "max_depth": max_depth}
     if has_filter:
-        params["rids"] = list(regions_ids)
+        params["dids"] = list(digit_ids)
 
     with connection.cursor() as cursor:
         cursor.execute(sql, params)
         return [row[0] for row in cursor.fetchall()]
-
-
-def _batch_regions_from_imgs(imgs: List[str]) -> dict:
-    """Map image refs to their regions_id in a single query."""
-    pairs = RegionPair.objects.filter(
-        Q(img_1__in=imgs) | Q(img_2__in=imgs)
-    ).values_list("img_1", "img_2", "regions_id_1", "regions_id_2")
-
-    img_set = set(imgs)
-    result = {}
-    for img_1, img_2, rid_1, rid_2 in pairs:
-        if img_1 in img_set and img_1 not in result:
-            result[img_1] = rid_1
-        if img_2 in img_set and img_2 not in result:
-            result[img_2] = rid_2
-    return result
-
-
-def get_regions(img_1, img_2, wid, rid):
-    def get_digit_id(img):
-        return int(re.findall(r"\d+", img)[1])
-
-    def get_regions_from_digit(digit_id):
-        digit = get_object_or_404(Digitization, id=digit_id)
-        regions = list(digit.get_regions())
-        if not regions:
-            regions = Regions.objects.create(
-                digitization=digit,
-                model="manual",
-            )
-        else:
-            regions = regions[0]
-        return regions.id
-
-    if img_1.startswith(f"wit{wid}"):
-        witness = get_object_or_404(Witness, id=wid)
-        regions_1 = rid or witness.get_regions()[0].id
-        digit_2 = get_digit_id(img_2)
-        regions_2 = get_regions_from_digit(digit_2)
-    else:
-        digit_1 = get_digit_id(img_1)
-        regions_1 = get_regions_from_digit(digit_1)
-        witness = get_object_or_404(Witness, id=wid)
-        regions_2 = rid or witness.get_regions()[0].id
-    return regions_1, regions_2
 
 
 def get_regions_title_by_ref(request, wid, rid=None, regions_ref: str | None = None):
@@ -396,14 +350,6 @@ def add_region_pair(request, wid, rid=None):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
-    def add_jpg(img: str) -> str:
-        """
-        Ensure the image reference ends with .jpg
-        """
-        if not img.endswith(".jpg"):
-            return f"{img}.jpg"
-        return img
-
     try:
         data = json.loads(request.body)
         q_img, s_img = data.get("q_img"), data.get("s_img")
@@ -413,11 +359,7 @@ def add_region_pair(request, wid, rid=None):
 
         img_1, img_2 = RegionPair.order_pair((q_img, s_img))
         img_1, img_2 = add_jpg(img_1), add_jpg(img_2)
-
-        # todo use rid if defined?
-        regions_1, regions_2 = regions_from_img(img_1), regions_from_img(img_2)
-        if not regions_1 or not regions_2:
-            return JsonResponse({"error": "Unable to find regions"}, status=404)
+        ref1, ref2 = parse_img(img_1), parse_img(img_2)
 
         try:
             region_pair = RegionPair.objects.get(img_1=img_1, img_2=img_2)
@@ -433,21 +375,17 @@ def add_region_pair(request, wid, rid=None):
             region_pair = RegionPair.objects.create(
                 img_1=img_1,
                 img_2=img_2,
-                regions_id_1=regions_1,
-                regions_id_2=regions_2,
+                digit_1=ref1.digit,
+                digit_2=ref2.digit,
                 score=None,
                 similarity_type=SimilarityType.MANUAL,
                 category_x=[request.user.id],
             )
             created = True
 
-        s_regions = get_object_or_404(
-            Regions, id=regions_2 if q_img == img_1 else regions_1
-        )
         return JsonResponse(
             {
                 "success": f"Region pair {'created' if created else 'updated'} successfully",
-                "s_regions": s_regions.get_json(),
                 "pair_info": region_pair.get_info(as_json=True),
             }
         )
@@ -468,10 +406,8 @@ def no_match(request, wid, rid=None):
     try:
         data = json.loads(request.body)
         q_img = data.get("q_img")
-        s_regions = data.get(
-            "s_regions"
-        )  # always a scalar: this function can only be used on a single region
-        pairs = get_matched_regions(q_img, s_regions)
+        s_digit_id = data.get("s_digit_id", data.get("s_regions"))
+        pairs = get_matched_regions(q_img, s_digit_id)
         for pair in pairs:
             pair.category = 4
             # NOTE remove pair once and for all?
@@ -498,8 +434,7 @@ def get_query_images(request, wid, rid=None):
     try:
         q_imgs = set()
         for q_r in q_regions:
-            rid = q_r.id
-            q_imgs.update(get_regions_q_imgs(q_r.id, wid))
+            q_imgs.update(get_digit_imgs(q_r.digitization_id))
         return JsonResponse(sorted(list(q_imgs)), safe=False)
     except Exception as e:
         return JsonResponse(
@@ -537,11 +472,12 @@ def add_user_to_pair(request):
                 rp.save()
             message = f"Updated {len(rp_list)} region pair(s)"
         else:
+            ref1, ref2 = parse_img(img_1), parse_img(img_2)
             rp = RegionPair.objects.create(
                 **query,
                 category_x=[user_id],
-                regions_id_1=regions_from_img(img_1),
-                regions_id_2=regions_from_img(img_2),
+                digit_1=ref1.digit,
+                digit_2=ref2.digit,
             )
             message = f"New region pair #{rp.id} created"
 
@@ -596,8 +532,8 @@ def save_category(request):
                 category=category,
                 similarity_type=similarity_type,
                 category_x=[],
-                regions_id_1=regions_from_img(img_1),
-                regions_id_2=regions_from_img(img_2),
+                digit_1=parse_img(img_1).digit,
+                digit_2=parse_img(img_2).digit,
             )
             message = "New region pair created"
 
@@ -617,14 +553,8 @@ def exact_match(request):
     try:
         data = json.loads(request.body)
         img_1, img_2 = RegionPair.order_pair((data.get("img_1"), data.get("img_2")))
-        regions_id_1, regions_id_2 = [
-            data.get("regions_id_1"),
-            data.get("regions_id_2"),
-        ]
 
-        region_pair, msg = retrieve_pair(
-            img_1, img_2, regions_id_1, regions_id_2, create=True
-        )
+        region_pair, msg = retrieve_pair(img_1, img_2, create=True)
         if not region_pair:
             return JsonResponse(
                 {"error": msg},
@@ -667,15 +597,12 @@ def exact_match_batch(request):
         data = json.loads(request.body)
         results = {"created": 0, "updated": 0}
 
-        pairs = [
-            normalize_pair(p["img_1"], p["img_2"], p["regions_id_1"], p["regions_id_2"])
-            for p in data.get("pairs", [])
-        ]
+        pairs = [normalize_pair(p["img_1"], p["img_2"]) for p in data.get("pairs", [])]
 
         if not pairs:
             return JsonResponse({"status": "success", "results": results})
 
-        unique_img_pairs = {(img_1, img_2) for img_1, img_2, _, _ in pairs}
+        unique_img_pairs = {(img_1, img_2) for img_1, img_2 in pairs}
 
         q = Q()
         for img_1, img_2 in unique_img_pairs:
@@ -688,20 +615,17 @@ def exact_match_batch(request):
         # Create missing
         to_create = []
         created_keys = set()
-        for img_1, img_2, rid_1, rid_2 in pairs:
+        for img_1, img_2 in pairs:
             key = (img_1, img_2)
             if key not in existing and key not in created_keys:
                 created_keys.add(key)
+                ref1, ref2 = parse_img(img_1), parse_img(img_2)
                 to_create.append(
                     RegionPair(
                         img_1=img_1,
                         img_2=img_2,
-                        regions_id_1=regions_from_img(
-                            img_1, candidate_rids=[rid_1, rid_2]
-                        ),
-                        regions_id_2=regions_from_img(
-                            img_2, candidate_rids=[rid_2, rid_1]
-                        ),
+                        digit_1=ref1.digit,
+                        digit_2=ref2.digit,
                         category=1,
                         similarity_type=SimilarityType.PROPAGATED,
                         score=None,
@@ -737,13 +661,7 @@ def uncategorize_pair_batch(request):
 
         pairs = set()
         for p in data.get("pairs", []):
-            img_1, img_2, _, _ = normalize_pair(
-                p.get("img_1"),
-                p.get("img_2"),
-                p.get("regions_id_1"),
-                p.get("regions_id_2"),
-            )
-            pairs.add((img_1, img_2))
+            pairs.add(normalize_pair(p.get("img_1"), p.get("img_2")))
 
         if not pairs:
             return JsonResponse({"status": "success", "uncategorized": 0})
@@ -885,21 +803,13 @@ def remove_incorrect_pairs(request, mismatched=False, duplicate=False, swapped=T
 
 def get_regions_pairs(request, wid, rid=None):
     """
-    Return all the region pairs for a given region id or witness id
-    1. if rid is provided, return all pairs for this region
-    2. if rid is not provided, return all pairs for all regions of the witness
+    Return all the region pairs for a given region id or witness id.
+    Filters on digit_ids derived from witnesses/digitizations.
 
-    if witnessIds or regionsIds are provided, return only pairs where regions_id_1 AND regions_id_2 are in the list of q_regions
-    otherwise, return pairs where regions_id_1 OR regions_id_2 are in the list of q_regions
-
-    additional URL arguments can be passed in the URL
-    - minScore: float, minimum score to filter pairs
-    - maxScore: float, maximum score to filter pairs
-    - topk: int, maximum number of pairs to return
-    - category: list[int], filter pairs by category
-    - regionsIds: list of int, filter pairs by regions ids
-    - witnessIds: list of int, filter pairs by witness ids
-    - excludeSelf: bool, if true, filter out pairs where both regions_1 and regions_2 are the same
+    URL arguments:
+    - minScore, maxScore, topk, category, excludeSelf
+    - regionsIds: comma-separated digitization IDs (legacy name kept for API compat)
+    - witnessIds: comma-separated witness IDs
     """
     if rid is not None:
         regions = [get_object_or_404(Regions, id=rid)]
@@ -912,32 +822,34 @@ def get_regions_pairs(request, wid, rid=None):
             {"error": f"No regions found for this witness #{wid}"}, status=400
         )
 
-    # get the url arguments
-    regions_ids = request.GET.get("regionsIds", [])
-    witness_ids = request.GET.get("witnessIds", [])
+    digit_ids_param = request.GET.get("regionsIds", "")
+    witness_ids_param = request.GET.get("witnessIds", "")
 
-    q_regions = set()
-    if regions_ids:
+    digit_ids = set()
+    if digit_ids_param:
         try:
-            q_regions.update(int(rid) for rid in regions_ids.split(","))
+            digit_ids.update(int(d) for d in digit_ids_param.split(","))
         except ValueError:
             return JsonResponse({"error": "Invalid regionsIds parameter"}, status=400)
 
-    if witness_ids:
-        witness_ids = witness_ids.split(",")
+    if witness_ids_param:
         try:
-            for wid in witness_ids:
-                witness = get_object_or_404(Witness, id=int(wid))
-                q_regions.update(r.id for r in witness.get_regions())
+            for w in witness_ids_param.split(","):
+                digit_ids.update(
+                    Digitization.objects.filter(witness_id=int(w)).values_list(
+                        "id", flat=True
+                    )
+                )
         except ValueError:
             return JsonResponse({"error": "Invalid witnessIds parameter"}, status=400)
 
-    q_regions.update(r.id for r in regions)
+    # Always include the current witness's digit_ids
+    digit_ids.update(r.digitization_id for r in regions)
 
     try:
         pairs = filter_pairs(
-            regions_ids,
-            exclusive=(witness_ids or regions_ids),
+            digit_ids,
+            exclusive=bool(witness_ids_param or digit_ids_param),
             min_score=safe_float(request.GET.get("minScore")),
             max_score=safe_float(request.GET.get("maxScore")),
             topk=safe_int(request.GET.get("topk")),
@@ -959,15 +871,16 @@ def get_document_set_pairs(request, dsid=None):
             {"error": f"Document set #{dsid} does not exist"}, status=400
         )
 
-    regions_ids = document_set.get_regions(only_ids=True)
-    if not len(regions_ids):
+    digit_ids = document_set.digit_ids
+    if not digit_ids:
         return JsonResponse(
-            {"error": f"No regions found for this document set #{dsid}"}, status=400
+            {"error": f"No digitizations found for this document set #{dsid}"},
+            status=400,
         )
 
     try:
         pairs = filter_pairs(
-            regions_ids,
+            digit_ids,
             exclusive=True,
             min_score=safe_float(request.GET.get("minScore")),
             max_score=safe_float(request.GET.get("maxScore")),
@@ -1001,10 +914,10 @@ def stream_document_set_pairs(request, dsid=None):
             {"error": f"Document set #{dsid} does not exist"}, status=400
         )
 
-    regions_ids = document_set.get_regions(only_ids=True)
-    if not regions_ids:
+    digit_ids = document_set.digit_ids
+    if not digit_ids:
         return JsonResponse(
-            {"error": f"No regions found for document set #{dsid}"}, status=400
+            {"error": f"No digitizations found for document set #{dsid}"}, status=400
         )
 
     params = {
@@ -1015,7 +928,7 @@ def stream_document_set_pairs(request, dsid=None):
         "exclude_self": safe_bool(request.GET.get("excludeSelf")) or False,
     }
 
-    sql, sql_params = build_pairs_query(regions_ids, **params)
+    sql, sql_params = build_pairs_query(digit_ids, **params)
 
     response = StreamingHttpResponse(
         stream_pairs_ndjson(sql, sql_params), content_type="application/x-ndjson"

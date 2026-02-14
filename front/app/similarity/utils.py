@@ -13,11 +13,15 @@ from itertools import combinations_with_replacement
 from pathlib import Path
 from django.db import transaction, connection
 from django.db.models import Q, F
-from django.core.cache import cache
 
 from app.similarity.const import SCORES_PATH
 from app.config.settings import APP_URL, APP_NAME
-from app.similarity.models.region_pair import RegionPair, RegionPairTuple
+from app.similarity.models.region_pair import (
+    RegionPair,
+    RegionPairTuple,
+    parse_img,
+    add_jpg,
+)
 from app.similarity.models.similarity_parameters import (
     SimilarityParameters,
     generate_hash,
@@ -27,7 +31,7 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
-from app.webapp.utils.functions import delete_path, sort_key
+from app.webapp.utils.functions import delete_path
 from app.webapp.utils.logger import log
 from config.settings import APP_LANG
 
@@ -357,15 +361,18 @@ def score_file_to_db(file_path):
                 continue
 
             img1, img2 = RegionPair.order_pair((img1, img2))
+            ref1, ref2 = parse_img(img1), parse_img(img2)
             pairs_to_update.append(
                 RegionPair(
                     img_1=img1,
                     img_2=img2,
+                    digit_1=ref1.digit,
+                    digit_2=ref2.digit,
                     score=score,
                     regions_id_1=rid1,
                     regions_id_2=rid2,
                     similarity_type=1,
-                    similarity_hash=param_hash,  # e.g. '2c53284a', 'efaca344' generated with generate_hash
+                    similarity_hash=param_hash,
                 )
             )
     except ValueError as e:
@@ -379,6 +386,8 @@ def score_file_to_db(file_path):
                 pairs_to_update,
                 update_fields=[
                     "score",
+                    "digit_1",
+                    "digit_2",
                     "regions_id_1",
                     "regions_id_2",
                     "similarity_type",
@@ -395,150 +404,55 @@ def score_file_to_db(file_path):
     return True
 
 
-def get_compared_regions_ids(regions_id):
-    """
-    Retrieve all unique region IDs that have been associated with the given region ID in RegionPair records.
-
-    :param regions_id: str, the region ID to look for
-    :return: list of unique region IDs
-    """
+def get_compared_digit_ids(digit_id):
     pairs = RegionPair.objects.filter(
-        Q(regions_id_1=regions_id) | Q(regions_id_2=regions_id)
-    ).values_list("regions_id_1", "regions_id_2")
+        Q(digit_1=digit_id) | Q(digit_2=digit_id)
+    ).values_list("digit_1", "digit_2")
 
-    associated_ids = set()
-    for id1, id2 in pairs:
-        associated_ids.add(int(id2) if int(id1) == regions_id else int(id1))
-
-    return list(associated_ids)
+    return list({int(d2) if int(d1) == digit_id else int(d1) for d1, d2 in pairs})
 
 
-def get_regions_pairs(regions_id: int):
+def get_digit_pairs(digit_id: int):
     return RegionPair.objects.filter(
-        Q(regions_id_1=regions_id) | Q(regions_id_2=regions_id)
-    ).values_list("regions_id_1", "regions_id_2", "img_1", "img_2")
+        Q(digit_1=digit_id) | Q(digit_2=digit_id)
+    ).values_list("digit_1", "digit_2", "img_1", "img_2")
 
 
-def get_matched_regions(q_img: str, s_regions_id: int):
-    """
-    Retrieve all RegionPair records containing the given query image name and the given s_regions_id
-    if q_img is in img_1, then s_regions_id should be in regions_id_2 and vice versa
-    :param q_img: str, the image name to look for
-    :param s_regions_id: int, the regions_id to look for
-    :return: list of RegionPair objects
-    """
+def get_matched_regions(q_img: str, s_digit_id: int):
     return RegionPair.objects.filter(
-        (Q(img_1=q_img) & Q(regions_id_2=s_regions_id))
-        | (Q(img_2=q_img) & Q(regions_id_1=s_regions_id))
+        (Q(img_1=q_img) & Q(digit_2=s_digit_id))
+        | (Q(img_2=q_img) & Q(digit_1=s_digit_id))
     )
 
 
-def get_region_pairs_with(q_img, query_regions_ids, target_regions_ids=None):
-    """
-    Retrieve RegionPair records where:
-    - One image is q_img
-    - One region is from query_regions_ids
-    - The other region is from target_regions_ids
+def get_region_pairs_with(q_img, query_digit_ids, target_digit_ids=None):
+    if target_digit_ids is None:
+        return list(RegionPair.objects.filter(Q(img_1=q_img) | Q(img_2=q_img)))
 
-    :param q_img: str, the query image name
-    :param query_regions_ids: list[int], IDs of query regions
-    :param target_regions_ids: list[int], IDs of target regions to compare against
-    :return: List of RegionPair objects
-    """
-    if target_regions_ids is None:
-        query = Q(img_1=q_img) | Q(img_2=q_img)
-        return list(RegionPair.objects.filter(query))
-
-    # Query where q_img is img_1 and its region is in query_regions_ids
-    # and the comparison region is in target_regions_ids
-    query1 = (
+    query = (
         Q(img_1=q_img)
-        & Q(regions_id_1__in=query_regions_ids)
-        & Q(regions_id_2__in=target_regions_ids)
-    )
-
-    # Query where q_img is img_2 and its region is in query_regions_ids
-    # and the comparison region is in target_regions_ids
-    query2 = (
+        & Q(digit_1__in=query_digit_ids)
+        & Q(digit_2__in=target_digit_ids)
+    ) | (
         Q(img_2=q_img)
-        & Q(regions_id_2__in=query_regions_ids)
-        & Q(regions_id_1__in=target_regions_ids)
+        & Q(digit_2__in=query_digit_ids)
+        & Q(digit_1__in=target_digit_ids)
     )
 
-    # Note: if img1 and img2 are not correctly paired with regions_id_1 and regions_id_2,
-    #       they will be excluded from results
-
-    query = query1 | query2
-
-    # if there is no intersection between query and target regions, remove self-comparisons
-    if not bool(set(query_regions_ids) & set(target_regions_ids)):
-        query &= ~Q(regions_id_1=F("regions_id_2"))
+    if not bool(set(query_digit_ids) & set(target_digit_ids)):
+        query &= ~Q(digit_1=F("digit_2"))
 
     return list(RegionPair.objects.filter(query))
 
 
-def delete_pairs_with_regions(regions_id: int):
-    RegionPair.objects.filter(
-        Q(regions_id_1=regions_id) | Q(regions_id_2=regions_id)
-    ).delete()
-
-    if cache.get(f"regions_q_imgs_{regions_id}") is not None:
-        cache.delete(f"regions_q_imgs_{regions_id}")
+def delete_pairs_with_digit(digit_id: int):
+    RegionPair.objects.filter(Q(digit_1=digit_id) | Q(digit_2=digit_id)).delete()
 
 
-def get_regions_q_imgs(regions_id: int, witness_id=None, cached=False):
-    """
-    Retrieve all images associated with a given regions_id from RegionPair records.
-
-    :param regions_id: int, the regions_id to look for
-    :param witness_id: int, the id of the witness linked to the regions
-    :param cached: bool, whether to cache the result
-    :return: list of image names associated with the regions_id
-    """
-    cache_key = f"regions_q_imgs_{regions_id}"
-    if cached:
-        cached_result = cache.get(cache_key)
-        if cached_result is not None:
-            return cached_result
-
-    if witness_id is None:
-        img_1_list = list(
-            RegionPair.objects.filter(regions_id_1=regions_id).values_list(
-                "img_1", flat=True
-            )
-        )
-
-        img_2_list = list(
-            RegionPair.objects.filter(regions_id_2=regions_id).values_list(
-                "img_2", flat=True
-            )
-        )
-        result = list(set(img_1_list + img_2_list))
-    else:
-        # NOTE workaround for incorrectly inserted RegionPairs (where regions_id_1 and img_1 do not match)
-        from itertools import chain
-
-        img_1_list = chain(
-            *RegionPair.objects.filter(regions_id_1=regions_id).values_list(
-                "img_1", "img_2"
-            )
-        )
-        img_2_list = chain(
-            *RegionPair.objects.filter(regions_id_2=regions_id).values_list(
-                "img_1", "img_2"
-            )
-        )
-
-        result = [
-            img
-            for img in set(img_1_list) | set(img_2_list)
-            if img.startswith(f"wit{witness_id}_")
-        ]
-
-    if cached:
-        cache.set(cache_key, result, timeout=3600)  # Cache for 1 hour
-
-    return result
+def get_digit_imgs(digit_id: int) -> list[str]:
+    imgs_1 = RegionPair.objects.filter(digit_1=digit_id).values_list("img_1", flat=True)
+    imgs_2 = RegionPair.objects.filter(digit_2=digit_id).values_list("img_2", flat=True)
+    return list(set(imgs_1) | set(imgs_2))
 
 
 def get_best_pairs(
@@ -571,7 +485,7 @@ def get_best_pairs(
     export_pairs_no_score = []  # pairs for export without a score
 
     for pair in region_pairs:
-        # [score, img1, img2, regions_id1, regions_id2, category, category_x, similarity_type, similarity_hash]
+        # (score, q_img, s_img, q_digit, s_digit, category, category_x, similarity_type, similarity_hash)
         pair_data = pair.get_info(q_img)
         if pair_data[2] in added_images:
             # NOTE: first duplicate wins. Higher-priority pairs (e.g., manual) appearing later
@@ -688,18 +602,11 @@ def reset_similarity(regions: Regions):
     delete_api_similarity.delay(regions.get_ref(), algorithm=None, feat_net=None)
 
     try:
-        delete_pairs_with_regions(regions_id)
+        delete_pairs_with_digit(regions.digitization_id)
     except Exception as e:
         log(f"[reset_similarity] Error deleting pairs with region id {regions_id}", e)
 
     return True
-
-
-def regions_from_img(q_img: str, candidate_rids: list[int] = None) -> int:
-    if not q_img.endswith(".jpg"):
-        q_img = f"{q_img}.jpg"
-
-    return RegionPair.rid_from_img(q_img, candidate_rids)
 
 
 def update_category_x(region_pair: RegionPair, user_id: int):
@@ -718,14 +625,12 @@ def update_category_x(region_pair: RegionPair, user_id: int):
 
 
 def filter_pairs(
-    regions_ids, exclusive, min_score, max_score, topk, exclude_self, categories
+    digit_ids, exclusive, min_score, max_score, topk, exclude_self, categories
 ):
     if exclusive:
-        # get all pairs where regions_id_1 AND regions_id_2 are in q_regions ids
-        query = Q(regions_id_1__in=regions_ids) & Q(regions_id_2__in=regions_ids)
+        query = Q(digit_1__in=digit_ids) & Q(digit_2__in=digit_ids)
     else:
-        # get all pairs where regions_id_1 OR regions_id_2 are in regions_ids ids
-        query = Q(regions_id_1__in=regions_ids) | Q(regions_id_2__in=regions_ids)
+        query = Q(digit_1__in=digit_ids) | Q(digit_2__in=digit_ids)
 
     if min_score is not None:
         query &= Q(score__gte=float(min_score))
@@ -734,15 +639,7 @@ def filter_pairs(
         query &= Q(score__lte=float(max_score))
 
     if exclude_self:
-        query &= ~Q(regions_id_1=F("regions_id_2"))
-        # if exclude_self, we need to exclude regions from the same witness
-        # same_witness_regions = set()
-        # for r in Regions.objects.filter(id__in=regions_ids).select_related('witness'):
-        #     witness_regions = r.witness.get_regions()
-        #     if len(witness_regions) > 1:
-        #         same_witness_regions.update([wr.id for wr in witness_regions])
-        # if same_witness_regions:
-        #     query &= ~(Q(regions_id_1__in=same_witness_regions) & Q(regions_id_2__in=same_witness_regions))
+        query &= ~Q(digit_1=F("digit_2"))
 
     if categories:
         has_no_category = 0 in categories
@@ -767,95 +664,54 @@ def filter_pairs(
     return [p.to_dict() for p in pairs]
 
 
-def retrieve_pair(img1, img2, regions_id_1, regions_id_2, create=False):
-    def check_region_ids(pair):
-        if not pair:
-            return False
-        return (
-            pair.regions_id_1 == regions_id_1 and pair.regions_id_2 == regions_id_2
-        ) or (pair.regions_id_1 == regions_id_2 and pair.regions_id_2 == regions_id_1)
+def retrieve_pair(img1, img2, create=False):
+    img1, img2 = add_jpg(img1), add_jpg(img2)
+    if img2 < img1:
+        img1, img2 = img2, img1
 
     try:
-        region_pair = RegionPair.objects.get(img_1=img1, img_2=img2)
-        if check_region_ids(region_pair):
-            return region_pair, "OK"
-    except RegionPair.DoesNotExist:
-        pass
-
-    try:
-        region_pair = RegionPair.objects.get(img_1=img2, img_2=img1)
-        if check_region_ids(region_pair):
-            return region_pair, "OK"
+        return RegionPair.objects.get(img_1=img1, img_2=img2), "OK"
     except RegionPair.DoesNotExist:
         if not create:
             return None, "No region pair found in database"
 
+        ref1, ref2 = parse_img(img1), parse_img(img2)
         region_pair = RegionPair.objects.create(
             img_1=img1,
             img_2=img2,
-            regions_id_1=regions_id_1,
-            regions_id_2=regions_id_2,
+            digit_1=ref1.digit,
+            digit_2=ref2.digit,
             score=None,
             similarity_type=SimilarityType.AUTO,
             category_x=[],
         )
         return region_pair, "New region pair created"
 
-    return None, "Region pair found but regions IDs do not match"
 
-
-def fix_img(img_ref: str) -> str:
-    # TODO fix: the img1 and img2 should be sent with region id ref as prefix
-    img_ref = img_ref if img_ref.endswith(".jpg") else f"{img_ref}.jpg"
-    if img_ref.startswith("wit"):
-        return img_ref
-    if "_wit" in img_ref:
-        return "wit" + img_ref.split("_wit", 1)[1]
-    log(f"[fix_img] probably wrong image ref: {img_ref}")
-    return img_ref
-
-
-def normalize_pair(img_1: str, img_2: str, rid_1: int = None, rid_2: int = None):
-    img_1, img_2 = fix_img(img_1), fix_img(img_2)
-    if sort_key(img_2) < sort_key(img_1):
+def normalize_pair(img_1: str, img_2: str):
+    img_1, img_2 = add_jpg(img_1), add_jpg(img_2)
+    if img_2 < img_1:
         img_1, img_2 = img_2, img_1
-        rid_1, rid_2 = rid_2, rid_1
-    return img_1, img_2, rid_1, rid_2
+    return img_1, img_2
 
 
-def get_or_create_pair(img_1, img_2, rid_1=None, rid_2=None, create=True):
-    img_1, img_2, rid_1, rid_2 = normalize_pair(img_1, img_2, rid_1, rid_2)
+def get_or_create_pair(img_1, img_2, create=True):
+    img_1, img_2 = normalize_pair(img_1, img_2)
 
-    pair = RegionPair.objects.filter(
-        # Q(img_1=img_1, img_2=img_2) | Q(img_1=img_2, img_2=img_1)
-        img_1=img_1,
-        img_2=img_2,
-    ).first()
-
-    is_rids = rid_1 is not None and rid_2 is not None
-
+    pair = RegionPair.objects.filter(img_1=img_1, img_2=img_2).first()
     if pair:
-        if is_rids:
-            rids = [rid_1, rid_2]
-            if pair.regions_id_1 not in rids or pair.regions_id_2 not in rids:
-                log(
-                    f"[get_or_create_pair] Pair regions ids ({pair.regions_id_1}-{pair.regions_id_2})"
-                    f" do not match provided ids ({rid_1}-{rid_2})"
-                )
         return pair, False
 
     if not create:
         return None, False
 
-    rid_1 = regions_from_img(img_1, candidate_rids=[rid_1, rid_2] if is_rids else None)
-    rid_2 = regions_from_img(img_2, candidate_rids=[rid_2, rid_1] if is_rids else None)
-
+    ref1, ref2 = parse_img(img_1), parse_img(img_2)
     return (
         RegionPair(
             img_1=img_1,
             img_2=img_2,
-            regions_id_1=rid_1,
-            regions_id_2=rid_2,
+            digit_1=ref1.digit,
+            digit_2=ref2.digit,
             category=1,
             similarity_type=SimilarityType.PROPAGATED,
             score=None,
@@ -865,18 +721,21 @@ def get_or_create_pair(img_1, img_2, rid_1=None, rid_2=None, create=True):
     )
 
 
-F_IMG1, F_IMG2, F_RID1, F_RID2, F_SCORE, F_CAT, F_CATX, F_SIMTYPE = range(8)
+F_IMG1, F_IMG2, F_D1, F_D2, F_ANNO1, F_ANNO2, F_SCORE, F_CAT, F_CATX, F_SIMTYPE = range(
+    10
+)
 
 GZIP_BATCH_SIZE = 1000
 
 
 def row_to_dict(row):
-    """Convert SQL row tuple to dict."""
     return {
         "img_1": row[F_IMG1],
         "img_2": row[F_IMG2],
-        "regions_id_1": row[F_RID1],
-        "regions_id_2": row[F_RID2],
+        "digit_1": row[F_D1],
+        "digit_2": row[F_D2],
+        "anno_1": row[F_ANNO1],
+        "anno_2": row[F_ANNO2],
         "score": row[F_SCORE],
         "category": row[F_CAT],
         "category_x": row[F_CATX] or [],
@@ -892,12 +751,9 @@ def stream_pairs_ndjson(sql, params):
             yield json.dumps(row_to_dict(row), separators=(",", ":")) + "\n"
 
 
-def build_pairs_query(
-    regions_ids, categories, min_score, max_score, topk, exclude_self
-):
-    """Build raw SQL with proper filtering."""
-    conditions = ["regions_id_1 = ANY(%s)", "regions_id_2 = ANY(%s)"]
-    params = [list(regions_ids), list(regions_ids)]
+def build_pairs_query(digit_ids, categories, min_score, max_score, topk, exclude_self):
+    conditions = ["digit_1 = ANY(%s)", "digit_2 = ANY(%s)"]
+    params = [list(digit_ids), list(digit_ids)]
 
     if min_score is not None:
         conditions.append("score >= %s")
@@ -908,7 +764,7 @@ def build_pairs_query(
         params.append(max_score)
 
     if exclude_self:
-        conditions.append("regions_id_1 != regions_id_2")
+        conditions.append("digit_1 != digit_2")
 
     if categories:
         has_null = 0 in categories
@@ -924,7 +780,7 @@ def build_pairs_query(
             params.append(real_cats)
 
     sql = f"""
-        SELECT img_1, img_2, regions_id_1, regions_id_2,
+        SELECT img_1, img_2, digit_1, digit_2, anno_1, anno_2,
                score, category, category_x, similarity_type
         FROM webapp_regionpair
         WHERE {" AND ".join(conditions)}
