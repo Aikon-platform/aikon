@@ -50,6 +50,11 @@ class SimilarityCategory(IntEnum):
     USER_MATCH = 5
 
 
+class SourceType:
+    REGIONS = "regions"
+    PAGES = "pages"
+
+
 ################################################################
 # ⚠️   prepare_request() & process_results() are mandatory  ⚠️ #
 # ⚠️ function used by Treatment to generate request payload ⚠️ #
@@ -58,19 +63,17 @@ class SimilarityCategory(IntEnum):
 
 
 def prepare_request(witnesses, treatment_id, parameters=None):
-    """
-    Prepare similarity request, excluding already computed pairs.
-    """
-    doc_refs = get_doc_refs_from_records(witnesses)
+    """Prepare similarity request, excluding already computed pairs."""
+    source_type = (parameters or {}).get("source_type", SourceType.REGIONS)
+    doc_refs = get_doc_refs_from_records(witnesses, source_type)
 
     if not doc_refs:
         raise ValueError(
             "No documents with extracted regions for similarity computation"
-            if APP_LANG == "en"
-            else "Aucun document avec des régions extraites pour le calcul de similarité"
+            if source_type == SourceType.REGIONS
+            else "No digitizations for similarity computation"
         )
 
-    # Check existing pairs if parameters provided
     skip_pairs = []
     if parameters:
         all_pairs = {
@@ -82,7 +85,6 @@ def prepare_request(witnesses, treatment_id, parameters=None):
             return {
                 "message": "All similarity pairs already computed for these parameters"
             }
-
         skip_pairs = list(existing)
 
     return tasking.prepare_request(
@@ -200,19 +202,33 @@ def process_results(data, completed=True):
 
 
 def prepare_document(document: Witness | Digitization | Regions, **kwargs):
-    regions = document.get_regions() if hasattr(document, "get_regions") else [document]
+    source_type = kwargs.get("source_type", SourceType.REGIONS)
 
-    if not regions:
-        # TODO should task be canceled because one of the document has no extraction??
-        raise ValueError(
-            f"“{document}” has no extracted regions for which to calculate similarity scores"
-            if APP_LANG == "en"
-            else f"« {document} » n'a pas de régions extraites pour lesquelles calculer les scores de similarité"
+    if source_type == SourceType.PAGES:
+        digits = (
+            document.get_digits() if hasattr(document, "get_digits") else [document]
         )
+        if not digits:
+            raise ValueError(
+                f"'{document}' has no digitizations"
+                if APP_LANG == "en"
+                else f"« {document} » n'a pas de numérisations"
+            )
+        return [
+            {"type": "iiif", "src": d.get_manifest_url(), "uid": d.get_ref()}
+            for d in digits
+        ]
 
+    regions = document.get_regions() if hasattr(document, "get_regions") else [document]
+    if not regions:
+        raise ValueError(
+            f"'{document}' has no extracted regions for similarity computation"
+            if APP_LANG == "en"
+            else f"« {document} » n'a pas de régions extraites pour le calcul de similarité"
+        )
     return [
         {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
-        for ref in [region.get_ref() for region in regions]
+        for ref in [r.get_ref() for r in regions]
     ]
 
 
@@ -279,7 +295,22 @@ def json_to_scores_tuples(json_scores):
     if not json_scores or "index" not in json_scores or "pairs" not in json_scores:
         return []
 
-    images = [f'{img.get("id")}.jpg' for img in json_scores["index"].get("images")]
+    images = []
+    for img in json_scores["index"].get("images", []):
+        img_id = img.get("id", "")
+        doc_uid = img.get("doc_uid", "")
+
+        # Remove .jpg if present to normalize
+        img_id = img_id.removesuffix(".jpg")
+
+        if img_id.startswith("wit"):
+            # Region format: id already contains full ref
+            ref = f"{img_id}.jpg"
+        else:
+            # Page format: construct from doc_uid + page number
+            ref = f"{doc_uid}_{img_id}.jpg"
+
+        images.append(ref)
 
     return [
         (float(pair[2]), images[pair[0]], images[pair[1]])
@@ -287,12 +318,18 @@ def json_to_scores_tuples(json_scores):
     ]
 
 
-def get_doc_refs_from_records(records) -> list[str]:
-    """Extract all document refs from records (Witness/Digitization/Regions)."""
+def get_doc_refs_from_records(records, source_type=SourceType.REGIONS) -> list[str]:
+    """Extract document refs from records based on source type."""
     refs = []
     for record in records:
-        regions = record.get_regions() if hasattr(record, "get_regions") else [record]
-        refs.extend(region.get_ref() for region in regions if regions)
+        if source_type == SourceType.PAGES:
+            digits = record.get_digits() if hasattr(record, "get_digits") else [record]
+            refs.extend(d.get_ref() for d in digits if digits)
+        else:
+            regions = (
+                record.get_regions() if hasattr(record, "get_regions") else [record]
+            )
+            refs.extend(r.get_ref() for r in regions if regions)
     return refs
 
 
@@ -320,21 +357,6 @@ def get_existing_pairs(doc_refs: list[str], parameters: dict) -> set[str]:
             if (Path(SCORES_PATH) / pair_ref / f"{param_hash}.json").exists():
                 existing.add(pair_ref)
 
-            # if (Path(SCORES_PATH) / pair_ref).exists():
-            #     for file in os.listdir(Path(SCORES_PATH) / pair_ref):
-            #         if file.startswith(param_hash):
-            #             continue
-            #         with open(Path(SCORES_PATH) / pair_ref / file, "rb") as f:
-            #             content = orjson.loads(f.read())
-            #             log(
-            #                 {
-            #                     "hash/file": f"{param_hash}/{file}",
-            #                     "parameters": params,
-            #                     "file_params": content.get("parameters", {}),
-            #                 },
-            #                 msg_type="yellow",
-            #             )
-
     return existing
 
 
@@ -350,8 +372,15 @@ def score_file_to_db(file_path):
         return False
 
     ref_1, ref_2 = RegionPair.order_pair(pair_ref)
-    rid1 = int(ref_1.split("_anno")[1])
-    rid2 = int(ref_2.split("_anno")[1])
+
+    # Determine if this is region-based or page-based
+    is_regions = "_anno" in ref_1
+
+    if is_regions:
+        rid1 = int(ref_1.split("_anno")[1])
+        rid2 = int(ref_2.split("_anno")[1])
+    else:
+        rid1 = rid2 = None
 
     pairs_to_update = []
     try:
@@ -371,7 +400,7 @@ def score_file_to_db(file_path):
                     score=score,
                     regions_id_1=rid1,
                     regions_id_2=rid2,
-                    similarity_type=1,
+                    similarity_type=SimilarityType.AUTO,
                     similarity_hash=param_hash,
                 )
             )
@@ -398,9 +427,7 @@ def score_file_to_db(file_path):
         log(f"[score_file_to_db] error while adding pairs to db {pair_ref}", e)
         return False
 
-    log(
-        f"Processed {len(pair_scores)} images pairs from {pair_ref}", msg_type="success"
-    )
+    log(f"Processed {len(pair_scores)} image pairs from {pair_ref}", msg_type="success")
     return True
 
 

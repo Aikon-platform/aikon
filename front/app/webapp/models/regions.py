@@ -5,14 +5,9 @@ from uuid import uuid4
 
 from django.utils.safestring import mark_safe
 from django.db import models
-from iiif_prezi.factory import StructuralError
 from app.config.settings import (
-    APP_URL,
-    APP_NAME,
-    APP_LANG,
     MIRADOR_BASE_URL,
 )
-from app.similarity.const import SCORES_PATH
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.models.utils.constants import REG
