@@ -298,9 +298,7 @@ def delete_regions(request, rid):
         return JsonResponse({"error": "Invalid request method"}, status=400)
     regions = get_object_or_404(Regions, id=rid)
     try:
-        delete_annotations.delay(
-            regions.get_ref(), regions.get_manifest_url()
-        )  # MARKER MARKER
+        delete_annotations.delay(regions.get_ref(), regions.get_manifest_url())
 
         Path(f"{REGIONS_PATH}/{regions.get_ref()}.json").unlink()
         delete_api_regions.delay(regions.get_digit().get_ref(), regions.model)

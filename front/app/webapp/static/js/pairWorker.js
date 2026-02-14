@@ -5,7 +5,6 @@
 
 const IMG_REGEX = /^(.+)_(\d+)_([\d,]+)\.jpg$/;
 
-// Persistent state across batches
 let state = null;
 
 self.onmessage = (e) => {
@@ -26,7 +25,6 @@ self.onmessage = (e) => {
             if (state) {
                 finalize();
             } else {
-                // if received 'done' without any data, send empty result
                 self.postMessage({
                     type: 'complete',
                     allPairs: [],
@@ -43,7 +41,6 @@ self.onmessage = (e) => {
             }
             break;
 
-        // Legacy: full array mode (for backward compat)
         default:
             if (e.data.rawPairs) {
                 state = createState();
@@ -86,14 +83,14 @@ function processBatch(batch) {
         const baseScore = p.score ?? w;
         const weightedScore = Math.max(0.01, baseScore + baseScore * w);
 
-        const img1 = getOrAddImage(p.img_1, p.regions_id_1, imageMap, imgStats, docStats, weightedScore);
-        const img2 = getOrAddImage(p.img_2, p.regions_id_2, imageMap, imgStats, docStats, weightedScore);
+        const img1 = getOrAddImage(p.img_1, p.digit_1, imageMap, imgStats, docStats, weightedScore);
+        const img2 = getOrAddImage(p.img_2, p.digit_2, imageMap, imgStats, docStats, weightedScore);
 
         const processedPair = {
             id_1: img1.id,
             id_2: img2.id,
-            regions_id_1: p.regions_id_1,
-            regions_id_2: p.regions_id_2,
+            digit_1: p.digit_1,
+            digit_2: p.digit_2,
             page_1: img1.canvas,
             page_2: img2.canvas,
             score: p.score,
@@ -107,30 +104,27 @@ function processBatch(batch) {
         pairs.push(processedPair);
         updateStats(pStats, null, weightedScore);
 
-        const pairKey = p.regions_id_1 < p.regions_id_2
-            ? `${p.regions_id_1}-${p.regions_id_2}`
-            : `${p.regions_id_2}-${p.regions_id_1}`;
+        const pairKey = p.digit_1 < p.digit_2
+            ? `${p.digit_1}-${p.digit_2}`
+            : `${p.digit_2}-${p.digit_1}`;
 
         pushToMap(index.byDocPair, pairKey, processedPair);
         updateStats(docPStats, pairKey, weightedScore);
 
         pushToMap(index.byImage, img1.id, processedPair);
         pushToMap(index.byImage, img2.id, processedPair);
-        pushToMap(index.byDoc, p.regions_id_1, processedPair);
-        pushToMap(index.byDoc, p.regions_id_2, processedPair);
+        pushToMap(index.byDoc, p.digit_1, processedPair);
+        pushToMap(index.byDoc, p.digit_2, processedPair);
     }
 
-    // Progress update (optional - can throttle if needed)
     self.postMessage({ type: 'progress', count: pairs.length });
 }
 
 function finalize() {
     const { pairs, imageMap, index, categories, pStats, docStats, imgStats, docPStats } = state;
 
-    // Sort all pairs by score
     pairs.sort((a, b) => b.weightedScore - a.weightedScore);
 
-    // TOP-K
     for (const [imgId, imgPairs] of index.byImage) {
         imgPairs.sort((a, b) => b.weightedScore - a.weightedScore);
         for (let k = 0; k < imgPairs.length; k++) {
@@ -149,7 +143,6 @@ function finalize() {
     computeDensity(imgStats);
     computeDensity(docPStats);
 
-    // Send final result
     self.postMessage({
         type: 'complete',
         allPairs: pairs,
@@ -164,13 +157,11 @@ function finalize() {
         }
     });
 
-    // Clear state for next use
     state = null;
 }
 
-function getOrAddImage(imgKey, rid, map, imgStats, docStats, score) {
-    const imgId = `${rid}_${imgKey}`;
-    let imgData = map.get(imgId);
+function getOrAddImage(imgKey, digit, map, imgStats, docStats, score) {
+    let imgData = map.get(imgKey);
 
     if (!imgData) {
         let page = 0, ref = imgKey, coords = null;
@@ -188,20 +179,19 @@ function getOrAddImage(imgKey, rid, map, imgStats, docStats, score) {
         }
 
         imgData = {
-            id: imgId,
-            regionId: rid,
+            id: imgKey,
+            digit,
             ref,
             canvas: page,
             xywh: coords ? coords.split(',') : null,
             type: "regions",
-            // to be initialized in the main thread
             color: null
         };
-        map.set(imgId, imgData);
+        map.set(imgKey, imgData);
     }
 
-    updateStats(imgStats, imgId, score);
-    updateStats(docStats, rid, score);
+    updateStats(imgStats, imgKey, score);
+    updateStats(docStats, digit, score);
 
     return imgData;
 }

@@ -1059,7 +1059,7 @@ def unindex_annotations_by_tag(manifest_url: str, tag: str) -> int:
 
 
 # MARKER MARKER rename
-def unindex_annotations_for_manifest(manifest_url: str) -> bool:
+def delete_manifest_annotations(manifest_url: str) -> bool:
     """delete all annotations of a manifest"""
     try:
         # manifest_url = http://slug/manifest_short_id/manifest.json
@@ -1068,14 +1068,14 @@ def unindex_annotations_for_manifest(manifest_url: str) -> bool:
         r = requests.delete(url_delete)
         if r.status_code not in [200, 204]:
             log(
-                f"[unindex_annotations_for_manifest]: Failed. Status: {r.status_code}. Error: {r.text}"
+                f"[delete_manifest_annotations]: Failed. Status: {r.status_code}. Error: {r.text}"
             )
             return False
         log(
-            f"[unindex_annotations_for_manifest]: Removed {r.json().get('deletedCount', '?')} annotations"
+            f"[delete_manifest_annotations]: Removed {r.json().get('deletedCount', '?')} annotations"
         )
     except Exception as e:
-        log(f"[unindex_annotations_for_manifest]: Failed for {manifest_url}", e)
+        log(f"[delete_manifest_annotations]: Failed for {manifest_url}", e)
         return False
     return True
 

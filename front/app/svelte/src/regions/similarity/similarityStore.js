@@ -238,6 +238,7 @@ function createSimilarityStore() {
         const items = writable([]);
         const propagated = writable([]);
         const loading = writable(false);
+        const propagatedLoading = writable(false);
         const error = writable(null);
         let cGen = 0, pGen = 0, visible = isInModal;
 
@@ -265,6 +266,7 @@ function createSimilarityStore() {
         };
 
         const fetchPropagated = async (rids) => {
+            propagatedLoading.set(true);
             const gen = ++pGen;
             const params = get(propagateParams);
             try {
@@ -282,6 +284,7 @@ function createSimilarityStore() {
             } catch (e) {
                 if (gen === pGen) propagated.set([]);
             }
+            propagatedLoading.set(false);
         };
 
         const fetchAll = () => {
@@ -295,13 +298,13 @@ function createSimilarityStore() {
         };
 
         const unsubs = [
-            // Only refresh if this specific row is visible
             refreshSignal.subscribe(() => visible && fetchAll()),
-            propagateParams.subscribe(() => visible && fetchPropagated(getRids()))
+            propagateParams.subscribe(() => visible && fetchPropagated(getRids())),
+            selectedRegions.subscribe(() => visible && fetchAll())  // ADD THIS
         ];
 
         return {
-            items, propagated, loading, error, fetchAll,
+            items, propagated, loading, propagatedLoading, error, fetchAll,
             setVisible: (v) => { visible = v; if (v) fetchAll(); },
             filtered: derived([items, excludedCategories, similarityScoreCutoff], ([$i, $e, $s]) =>
                 $i.filter(([score, , , , , cat]) =>

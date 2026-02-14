@@ -13,7 +13,7 @@
     export let isInModal = false;
 
     const row = similarityStore.createRowStore(qImg, isInModal);
-    const { loading, error, propagated, filtered, fetchAll } = row;
+    const { loading, propagatedLoading, error, propagated, filtered, fetchAll } = row;
     const { selectedRegions, baseUrl, currentPageId } = similarityStore;
 
     const [wit, digit, canvas, xywh] = qImg.split(".")[0].split("_");
@@ -171,7 +171,7 @@
             <div class="{isInModal ? '' : gridClass}">
                 <div class="block matches-suggestion-wrapper">
                     <div class="matches-suggestion">
-                        <MatchedRegions items={$propagated} loading={false} error={null} isPropagated={true} {qImg} {isInModal} />
+                        <MatchedRegions items={$propagated} loading={$propagatedLoading} error={null} isPropagated={true} {qImg} {isInModal} />
                     </div>
                 </div>
             </div>
