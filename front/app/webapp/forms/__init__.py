@@ -12,6 +12,7 @@ class InputSourceForm(forms.Form):
 
     # TODO uncomment to allow executing task on full page images (notably similarity)
     # TODO for now the issue is that the svelte witness/similarity page is designed to work with regions
+    # see https://trello.com/c/kxk6MpUb/302
     # source_type = forms.ChoiceField(
     #     choices=INPUT_SOURCES,
     #     initial="regions",
