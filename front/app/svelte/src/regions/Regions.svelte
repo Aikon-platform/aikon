@@ -8,7 +8,6 @@
 
     import {regionsSelection} from "../selection/selectionStore.js";
     export let selectionStore = regionsSelection;
-    // const { isSelected } = selectionStore;
 
     /** @type {RegionItemType[]} */
     export let items = [];

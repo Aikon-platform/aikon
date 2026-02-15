@@ -600,7 +600,7 @@ def get_regions_annotations(
             xywh = on_value["xywh"]
             if not xywh or not len(xywh):
                 raise ValueError("Could not extract XYWH coordinates for annotation")
-            xywh_str = "".join(str(c) for c in xywh)
+            xywh_str = ",".join(str(c) for c in xywh)
 
             if as_json:
                 img = f"{img_name}_{canvas.zfill(nb_len)}"
