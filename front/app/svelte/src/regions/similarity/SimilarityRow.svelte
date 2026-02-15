@@ -101,7 +101,6 @@
             // TODO get rid of this behavior when we get rid of relying on regions to filter similarities
             // TODO in order to filter by digitization (and remove corresponding code in add_region_pair())
             similarityStore.addComparedRegions(data.s_regions);
-            similarityStore.select(data.s_regions);
 
             fetchRow();
         } catch (error) {

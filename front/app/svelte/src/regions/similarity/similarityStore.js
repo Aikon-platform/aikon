@@ -222,9 +222,13 @@ function createSimilarityStore() {
     }
 
     function addComparedRegions(region) {
-        comparedRegions.update(regions => {
-            return {...regions, [region.ref]: region};
-        });
+        if (!region) return false;
+        const current = get(comparedRegions);
+        if (current[region.ref]) return false; // Already exists
+
+        comparedRegions.update(regions => ({...regions, [region.ref]: region}));
+        select(region);
+        return true;
     }
 
     // Global signal to force all visible rows to refresh (e.g. from a toolbar)
