@@ -398,9 +398,24 @@ def add_region_pair(request, wid, rid=None):
             )
             created = True
 
+        # TODO get rid of this s_regions when we get rid of relying on regions to filter similarities in svelte
+        # TODO in order to filter by digitization (and remove corresponding code in addMatch())
+        if region_pair.regions_id_1 and region_pair.regions_id_2:
+            s_regions = get_object_or_404(
+                Regions,
+                id=region_pair.regions_id_2
+                if q_img == img_1
+                else region_pair.regions_id_1,
+            )
+        else:
+            s_regions = Regions.objects.filter(
+                digitization__id=ref2.digit if q_img == img_1 else ref1.digit
+            ).first()
+
         return JsonResponse(
             {
                 "success": f"Region pair {'created' if created else 'updated'} successfully",
+                "s_regions": s_regions.get_json(),
                 "pair_info": region_pair.get_info(as_json=True),
             }
         )
@@ -484,7 +499,11 @@ def add_user_to_pair(request):
                 else:
                     category_x.append(user_id)
                 rp.category_x = category_x
-                rp.save()
+                # if no score and empty category x, delete the pair
+                if not rp.category_x and (rp.score is None):
+                    rp.delete()
+                else:
+                    rp.save()
             message = f"Updated {len(rp_list)} region pair(s)"
         else:
             ref1, ref2 = parse_img(img_1), parse_img(img_2)

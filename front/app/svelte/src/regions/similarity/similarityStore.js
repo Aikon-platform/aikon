@@ -287,7 +287,7 @@ function createSimilarityStore() {
             propagatedLoading.set(false);
         };
 
-        const fetchAll = () => {
+        const fetchRow = () => {
             const rids = getRids();
             if (!isInModal && rids.length === 0) {
                 items.set([]);
@@ -298,14 +298,14 @@ function createSimilarityStore() {
         };
 
         const unsubs = [
-            refreshSignal.subscribe(() => visible && fetchAll()),
+            refreshSignal.subscribe(() => visible && fetchRow()),
             propagateParams.subscribe(() => visible && fetchPropagated(getRids())),
-            selectedRegions.subscribe(() => visible && fetchAll())  // ADD THIS
+            selectedRegions.subscribe(() => visible && fetchRow())
         ];
 
         return {
-            items, propagated, loading, propagatedLoading, error, fetchAll,
-            setVisible: (v) => { visible = v; if (v) fetchAll(); },
+            items, propagated, loading, propagatedLoading, error, fetchRow,
+            setVisible: (v) => { visible = v; if (v) fetchRow(); },
             filtered: derived([items, excludedCategories, similarityScoreCutoff], ([$i, $e, $s]) =>
                 $i.filter(([score, , , , , cat]) =>
                     !$e.includes(cat) && (score == null || $s == null || Number(score) >= $s)

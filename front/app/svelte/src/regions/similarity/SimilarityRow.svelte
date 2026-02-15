@@ -13,7 +13,7 @@
     export let isInModal = false;
 
     const row = similarityStore.createRowStore(qImg, isInModal);
-    const { loading, propagatedLoading, error, propagated, filtered, fetchAll } = row;
+    const { loading, propagatedLoading, error, propagated, filtered, fetchRow } = row;
     const { selectedRegions, baseUrl, currentPageId } = similarityStore;
 
     const [wit, digit, canvas, xywh] = qImg.split(".")[0].split("_");
@@ -98,11 +98,12 @@
                 return;
             }
 
-            // Update global state
+            // TODO get rid of this behavior when we get rid of relying on regions to filter similarities
+            // TODO in order to filter by digitization (and remove corresponding code in add_region_pair())
             similarityStore.addComparedRegions(data.s_regions);
             similarityStore.select(data.s_regions);
 
-            fetchAll();
+            fetchRow();
         } catch (error) {
             await showMessage(`${i18n("errored")}<br>${error}`, i18n("error"));
         }
@@ -125,7 +126,7 @@
                 await showMessage(`${i18n("networkPb")}`, i18n("error"));
                 return;
             }
-            fetchAll(); // update only this row
+            fetchRow();
         } catch (error) {
             await showMessage(`${i18n("errored")}<br>${error}`, i18n("error"));
         }
