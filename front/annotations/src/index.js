@@ -39,7 +39,7 @@ const config = {
     dark: {
       typography: {
         formSectionTitle: {
-          color: '#5A8264',
+          color: '#4258ff',
           fontSize: '1rem',
           fontWeight: 600,
           letterSpacing: '0.1em',
@@ -57,12 +57,12 @@ const config = {
     light: {
       palette: {
         primary: {
-          main: '#5A8264',
+          main: '#4258ff',
         },
       },
       typography: {
         formSectionTitle: {
-          color: '#5A8264',
+          color: '#4258ff',
           fontSize: '1.215rem',
         },
         subFormSectionTitle: {
