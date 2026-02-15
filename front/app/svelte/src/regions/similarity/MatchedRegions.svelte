@@ -56,13 +56,13 @@
 </script>
 
 {#if loading}
-    <div class="faded is-center">
+    <div class="faded is-center py-3">
         {isPropagated
             ? (appLang === "en" ? "Retrieving propagated regions..." : "Récupération de similarités propagées...")
             : (appLang === "en" ? "Retrieving similar regions..." : "Récupération des régions similaires...")}
     </div>
 {:else if error}
-    <div class="faded is-center">
+    <div class="faded is-center py-3">
         {appLang === "en" ? `Error: ${error}` : `Erreur : ${error}`}
     </div>
 {:else}
@@ -74,7 +74,7 @@
                                {similarityType} {similarityHash} index={i} {isInModal}
                                on:openModal={handleOpenModal} />
             {:else}
-                <div class="faded is-center">
+                <div class="faded is-center py-3">
                     {#if !isPropagated && noRegionsSelected}
                         {appLang === "en" ? "No document selected. Select one to display results." : "Aucun document sélectionné. Sélectionnez-en un pour afficher les résultats."}
                     {:else}

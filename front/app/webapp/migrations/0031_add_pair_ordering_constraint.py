@@ -1,4 +1,3 @@
-# 0031_add_pair_ordering_constraint.py
 from django.db import migrations, models
 
 
