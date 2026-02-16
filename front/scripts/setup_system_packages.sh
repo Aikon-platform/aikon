@@ -62,10 +62,10 @@ install_packages() {
         sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
         sudo apt update
         sudo apt-get install wget ca-certificates
-        sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql poppler-utils redis-server ghostscript libmagic1 gnupg
+        sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql poppler-utils redis-server ghostscript libmagic1 gnupg libcairo2-dev
         curl -LsSf https://astral.sh/uv/install.sh | sh
     elif [ "$OS" = "Mac" ]; then
-        brew install wget ca-certificates postgresql maven nginx libpq poppler redis ghostscript libmagic
+        brew install wget ca-certificates postgresql maven nginx libpq poppler redis ghostscript libmagic cairo
         brew services start postgresql
         brew services start redis
         curl -LsSf https://astral.sh/uv/install.sh | sh
