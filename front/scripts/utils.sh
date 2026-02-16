@@ -317,7 +317,7 @@ update_env() {
             elif [ -n "${!param}" ]; then
                 # If variable is already set in the current shell, use it as default
                 new_value="${!param}"
-            elif [[ "$desc" =~ ^\s*IGNORE\s*$ ]]; then
+            elif [[ "$desc" =~ ^\s*IGNORE ]]; then
                 # don't edit variables whose desc is "# IGNORE". these are derived env variables for Aiiinotate whose value depends on other env vars and that should not be edited.
                 new_value="$default_val"
             elif is_in_default_params "$param"; then

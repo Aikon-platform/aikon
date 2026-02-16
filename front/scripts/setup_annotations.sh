@@ -7,7 +7,7 @@ source "$SCRIPT_DIR"/utils.sh;
 
 check_file_exists "$ENV_FILE"
 cd "$ANNOTATIONS_DIR";
-npm i --include=dev;
+npm i --include=dev;  # in dev mode, devDependencies includes aiiinotate. in prod, aiiinotate is in its own Docker container.
 services_start;
 
 aiiinotate --env "$ENV_FILE" -- migrate apply;
