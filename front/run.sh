@@ -3,8 +3,8 @@
 SUDO_PSW="$1"
 
 FRONT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+APP_DIR="$FRONT_DIR/app"
 ENV_FILE="$FRONT_DIR/app/config/.env"
-BIN="$FRONT_DIR"/venv/bin
 SCHEDULE_FILE="$FRONT_DIR/celery/celerybeat-schedule"
 ANNOTATIONS_DIR="$FRONT_DIR/annotations"
 ANNOTATIONS_BIN="$FRONT_DIR/annotations/node_modules/.bin"
@@ -30,11 +30,16 @@ fi
 # start all services just to be sure
 services_start
 
-"$BIN"/celery -A app.config.celery worker -B -c 1 --loglevel=INFO -P threads &
+# BIN="$APP_DIR"/.venv/bin
+# "$BIN"/celery -A app.config.celery worker -B -c 1 --loglevel=INFO -P threads &\
+# TODO the problem is with the path in -A (to front/app/config/celery)
+# TODO and the problem is also with the command syntax maybe ?
+uv run --directory="$APP_DIR" celery -A config.celery worker -B -c 1 --loglevel=INFO -P threads &
 CELERY_WORKER_PID=$!
 PIDS+=($CELERY_WORKER_PID)
 
-"$BIN"/celery -A app.config.celery beat --schedule="$SCHEDULE_FILE" --loglevel=INFO &
+# "$BIN"/celery -A app.config.celery beat --schedule="$SCHEDULE_FILE" --loglevel=INFO &
+uv run --directory="$APP_DIR" celery -A config.celery beat --schedule="$SCHEDULE_FILE" --loglevel=INFO &
 CELERY_BEAT_PID=$!
 PIDS+=($CELERY_BEAT_PID)
 
@@ -54,7 +59,7 @@ rm -rf "$ANNOTATIONS_DIR"/dist "$ANNOTATIONS_DIR"/.parcel-cache
 MIRADOR_PID=$!
 PIDS+=($MIRADOR_PID)
 
-"$BIN"/python app/manage.py runserver localhost:"$FRONT_PORT" &
+uv run --directory="$APP_DIR" python "$APP_DIR"/manage.py runserver localhost:"$FRONT_PORT" &
 DJANGO_PID=$!
 PIDS+=($DJANGO_PID)
 
