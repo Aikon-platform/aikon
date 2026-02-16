@@ -44,6 +44,7 @@ export class RegionItem {
         this.canvas = data.canvas;
         this.ref = data.ref;
         this.type = data.type ?? regionsType;
+        this.class = data.type ?? regionsType;
 
         this._parsed = null;
     }
