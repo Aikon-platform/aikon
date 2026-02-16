@@ -258,9 +258,10 @@ def get_id_from_annotation(aiiinotation):
         return ""
 
 
-def iter_canvas_annotations(regions: Regions):
+def iter_canvas_anno_file(regions: Regions):
     """
-    Generator yielding (canvas_nb, img_name, coords) for each canvas.
+    Generator yielding (canvas_nb, img_name, coords) for each canvas
+    found in the annotation file of the given Regions object.
     coords is a list of (x, y, w, h) tuples.
     """
     data, anno_format = get_file_regions(regions)
@@ -342,7 +343,7 @@ def get_annotations_per_canvas(region: Regions, last_canvas=0, specific_canvas="
 
     annotated_canvases = {}
 
-    for canvas_nb, _, coords in iter_canvas_annotations(region):
+    for canvas_nb, _, coords in iter_canvas_anno_file(region):
         canvas_str = str(canvas_nb)
         if to_include(canvas_str):
             annotated_canvases[canvas_str] = coords
@@ -530,15 +531,21 @@ def get_canvas_list(regions: Regions, all_img=False):
     ]
     """
     digit = regions.get_digit()
-    imgs = digit.get_imgs()
+    imgs: List[str] = digit.get_imgs()  # list of file names
 
     if all_img:
+        # Display all images associated to the digitization, even if no regions were extracted
         return [(int(img.split("_")[-1].split(".")[0]), img) for img in imgs]
 
     canvases = []
 
+    # Get annotations filtered by this regions extraction
     indexed_annos = get_manifest_annotations(regions.get_ref(), only_ids=False)
+
+    # canvas_imgs =  { canvas_nb: img_name, canvas_nb: img_name, ... }
     canvas_imgs = {int(i.split("_")[-1].split(".")[0]): i for i in imgs}
+    # list of canvas numbers containing annotations
+    # `canvasIdx` is 0 indexed, is `canvas_imgs` is 1-indexed => convert `canvasIdx` values to be 1-indexed
     annotated_canvas_nb = {a["on"][0]["canvasIdx"] + 1 for a in indexed_annos}
 
     for canvas_nb in annotated_canvas_nb:
@@ -548,7 +555,8 @@ def get_canvas_list(regions: Regions, all_img=False):
     if canvases:
         return canvases
 
-    for canvas_nb, img_name, _ in iter_canvas_annotations(regions):
+    # Fallback to annotation file if no annotations were found in aiiinotate
+    for canvas_nb, img_name, _ in iter_canvas_anno_file(regions):
         if img_name and img_name in imgs:
             canvases.append((canvas_nb, img_name))
 
@@ -786,7 +794,7 @@ def check_indexation(regions: Regions, reindex=False):
     aiiinotations_ids = []
 
     try:
-        for canvas_nb, _, coords in iter_canvas_annotations(regions):
+        for canvas_nb, _, coords in iter_canvas_anno_file(regions):
             aiiinotations = get_indexed_canvas_annotations(regions, str(canvas_nb))
             if aiiinotations:
                 aiiinotations_ids.extend(
