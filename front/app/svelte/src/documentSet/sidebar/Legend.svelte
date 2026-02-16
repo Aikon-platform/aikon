@@ -1,6 +1,7 @@
 <script>
     import LegendItem from "./LegendItem.svelte";
-    import {appLang, model2title} from "../../constants.js";
+    import {appLang} from "../../constants.js";
+    import {i18n} from "../../utils.js";
 
     export let documentNodes;
     export let selectedRegions;
@@ -32,8 +33,8 @@
                         <span class="select is-small">
                             <select bind:value={sortBy}>
                                 <option value="id">ID</option>
-                                <option value="witnessId">{model2title.Witness}</option>
-                                <option value="title">{appLang === "en" ? "Title" : "Titre"}</option>
+                                <option value="witnessId">{i18n('Witness')}</option>
+                                <option value="title">{i18n('title')}</option>
                             </select>
                         </span>
                     </p>

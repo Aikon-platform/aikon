@@ -51,7 +51,6 @@
         if (response.ok) {
             try {
                 res = await response.json();
-                console.log(res);
             } catch (error) {
                 await showMessage(`Failed to parse JSON response: '${error}'`, "Error");
                 throw new Error(`Failed to parse JSON response: '${error}'`);

@@ -109,7 +109,9 @@
         {/if}
     {:else}
         {#each witness.regions as regionId}
-            <a href="{baseUrl}{regionId}/?{searchParamsString}" class="tag is-dark mr-3 mb-3 is-rounded">Regions extraction #{regionId}</a>
+            <a href="{baseUrl}{regionId}/?{searchParamsString}" class="tag is-dark mr-3 mb-3 is-rounded">
+                Regions extraction #{regionId}
+            </a>
         {/each}
         <!--TODO add NEW REGIONS BUTTON (to create empty region in order to launch new automatic extraction)-->
     {/if}

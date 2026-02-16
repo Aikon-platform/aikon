@@ -120,7 +120,6 @@
             <i class="fa-solid fa-rotate-right"/>
             {appLang === "en" ? "Reload" : "Recharger"}
         </button>
-            <!--MARKER MARKER-->
         <!-- when no regions extraction have been made, we hide the button: "Go to editor" redirects
           to a Mirador editor for a specific region extraction, which hasn't been created yet -->
         {#if $selectedManifest.length && currentRegionId}

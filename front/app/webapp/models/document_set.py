@@ -159,6 +159,20 @@ class DocumentSet(AbstractSearchableModel):
             )
         return list(Regions.objects.filter(digitization__witness_id__in=witness_ids))
 
+    def get_digit_ids(self):
+        """Get all digitization IDs from witnesses, series, works, and direct digit_ids."""
+        digit_ids = set(self.digit_ids or [])
+
+        witness_ids = self.all_witness_ids()
+        if witness_ids:
+            digit_ids.update(
+                Digitization.objects.filter(witness_id__in=witness_ids).values_list(
+                    "id", flat=True
+                )
+            )
+
+        return list(digit_ids)
+
     def get_document_metadata(self):
         def obj_meta(obj):
             return {

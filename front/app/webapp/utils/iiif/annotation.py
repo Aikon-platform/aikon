@@ -227,13 +227,6 @@ def set_canvas(seq, canvas_nb, img_name, img):
         img = annotation.image(ident=img_name, iiif=True)
 
     img.set_hw(h, w)
-    # In case we do not really index "automatic" annotations but keep them as "otherContents"
-    # if version == MANIFEST_V1: # MARKER MARKER
-    #     # is calling f"{APP_NAME}/iiif/{version}/{anno.get_ref()}/list/anno-{canvas_nb}.json"
-    #     # (canvas_annotations() view) that returns formatted annotations format_canvas_annotations()
-    #     annotation_list = canvas.annotationList(ident=f"anno-{canvas_nb}")
-    #     annotation = annotation_list.annotation(ident=f"a-list-{canvas_nb}")
-    #     annotation.text("Annotation")
 
 
 def get_coord_from_annotation(aiiinotation, as_str=False):
@@ -265,6 +258,70 @@ def get_id_from_annotation(aiiinotation):
         return ""
 
 
+def iter_canvas_anno_file(regions: Regions):
+    """
+    Generator yielding (canvas_nb, img_name, coords) for each canvas
+    found in the annotation file of the given Regions object.
+    coords is a list of (x, y, w, h) tuples.
+    """
+    data, anno_format = get_file_regions(regions)
+    if not data:
+        return
+
+    digit = regions.get_digit()
+    imgs = digit.get_imgs()
+
+    if anno_format == "txt":
+        current_img = None
+        coords = []
+
+        for line in data:
+            parts = line.split()
+            if len(parts) == 2:
+                if current_img is not None:
+                    canvas_nb = int(current_img.split("_")[-1].split(".")[0])
+                    yield (canvas_nb, current_img, coords)
+                _, current_img = parts
+                coords = []
+            elif len(parts) == 4:
+                coords.append(tuple(map(int, parts)))
+
+        if current_img is not None:
+            canvas_nb = int(current_img.split("_")[-1].split(".")[0])
+            yield (canvas_nb, current_img, coords)
+
+    elif anno_format == "json":
+        digit_ref = data[0]["doc_uid"] if data else ""
+
+        for idx, annotation in enumerate(data):
+            canvas_nb = idx + 1
+            src = annotation["source"]
+
+            img_name = None
+            for variant in [
+                src,
+                src.replace("0", ""),
+                src.replace("00", ""),
+                src.replace("000", ""),
+            ]:
+                candidate = f"{digit_ref}_{variant}"
+                if candidate in imgs:
+                    img_name = candidate
+                    break
+
+            coords = [
+                (
+                    int(c["absolute"]["x1"]),
+                    int(c["absolute"]["y1"]),
+                    int(c["absolute"]["width"]),
+                    int(c["absolute"]["height"]),
+                )
+                for c in annotation.get("crops", [])
+            ]
+
+            yield (canvas_nb, img_name, coords)
+
+
 def get_annotations_per_canvas(region: Regions, last_canvas=0, specific_canvas=""):
     """
     Read task result files and build a dict with the text annotation file info:
@@ -274,7 +331,9 @@ def get_annotations_per_canvas(region: Regions, last_canvas=0, specific_canvas="
 
     coord = (x, y, width, height)
     """
-    to_include = lambda canvas: int(canvas) > last_canvas or canvas == specific_canvas
+    to_include = (
+        lambda canvas: int(canvas) > last_canvas or str(canvas) == specific_canvas
+    )
 
     data, anno_format = get_file_regions(region)
 
@@ -283,42 +342,11 @@ def get_annotations_per_canvas(region: Regions, last_canvas=0, specific_canvas="
         return {}
 
     annotated_canvases = {}
-    if anno_format == "txt":
-        current_canvas = "0"
-        for line in data:
-            parts = line.split()
-            if len(parts) == 2:
-                # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
-                current_canvas = parts[0]
-                if to_include(current_canvas):
-                    annotated_canvases[current_canvas] = []
-            elif current_canvas in annotated_canvases:
-                # if the current line contains coordinates (ie "x y width height")
-                annotated_canvases[current_canvas].append(tuple(map(int, parts)))
 
-    elif anno_format == "json":
-        for idx, annotation in enumerate(data):
-            current_canvas = str(idx + 1)
-            if to_include(current_canvas):
-                coords = []
-                for crop in annotation.get("crops", []):
-                    coord = crop.get("absolute", {})
-                    coords.append(
-                        (
-                            int(coord["x1"]),
-                            int(coord["y1"]),
-                            int(coord["width"]),
-                            int(coord["height"]),
-                        )
-                    )
-                annotated_canvases[current_canvas] = coords
-
-    if specific_canvas != "":
-        return (
-            annotated_canvases[specific_canvas]
-            if specific_canvas in annotated_canvases
-            else []
-        )
+    for canvas_nb, _, coords in iter_canvas_anno_file(region):
+        canvas_str = str(canvas_nb)
+        if to_include(canvas_str):
+            annotated_canvases[canvas_str] = coords
 
     return (
         annotated_canvases.get(specific_canvas, [])
@@ -445,7 +473,6 @@ def get_paginated_annotations(q_url: str) -> List[Dict]:
     return annotations
 
 
-# MARKER MARKER check were this function is called to use correct ref
 def get_manifest_annotations(
     ref, only_ids=True, min_c: int | None = None, max_c: int | None = None
 ):
@@ -519,7 +546,7 @@ def get_canvas_list(regions: Regions, all_img=False):
     canvas_imgs = {int(i.split("_")[-1].split(".")[0]): i for i in imgs}
     # list of canvas numbers containing annotations
     # `canvasIdx` is 0 indexed, is `canvas_imgs` is 1-indexed => convert `canvasIdx` values to be 1-indexed
-    annotated_canvas_nb = set([a["on"][0]["canvasIdx"] + 1 for a in indexed_annos])
+    annotated_canvas_nb = {a["on"][0]["canvasIdx"] + 1 for a in indexed_annos}
 
     for canvas_nb in annotated_canvas_nb:
         if canvas_nb in canvas_imgs:
@@ -529,40 +556,14 @@ def get_canvas_list(regions: Regions, all_img=False):
         return canvases
 
     # Fallback to annotation file if no annotations were found in aiiinotate
-    data, anno_format = get_file_regions(regions)
-    if not data:
-        log(f"[get_canvas_list] No regions file for regions #{regions.id}")
-        return canvases
-
-    # MARKER MARKER refactor with `get_annotations_per_canvas` ?
-    if anno_format == "txt":
-        for line in data:
-            # if the current line concerns an img (ie: line = "img_nb img_file.jpg")
-            if len(line.split()) == 2:
-                _, img_file = line.split()
-                # use the image number as canvas number because it is more reliable than the one provided in the anno file
-                canvas_nb = int(img_file.split("_")[-1].split(".")[0])
-                if img_file in imgs:
-                    canvases.append((canvas_nb, img_file))
-
-    elif anno_format == "json":
-        for idx, annotation in enumerate(data):
-            digit_ref = annotation["doc_uid"]
-            # source always has 4 digits TODO improve to have iiif download use correct filename
-            src = annotation["source"]
-            for img_name in [
-                src,
-                src.replace("0", ""),
-                src.replace("00", ""),
-                src.replace("000", ""),
-            ]:
-                if f"{digit_ref}_{img_name}" in imgs:
-                    canvases.append((int(idx + 1), f"{digit_ref}_{img_name}"))
+    for canvas_nb, img_name, _ in iter_canvas_anno_file(regions):
+        if img_name and img_name in imgs:
+            canvases.append((canvas_nb, img_name))
 
     return canvases
 
 
-# MARKER MARKER TODO create a get_digit_annotations + get_regions_annotations and check where to use one or the other
+# TODO create a get_digit_annotations / get_regions_annotations and check where to use one or the other
 def get_regions_annotations(
     regions: Regions,
     as_json=False,
@@ -607,7 +608,7 @@ def get_regions_annotations(
             xywh = on_value["xywh"]
             if not xywh or not len(xywh):
                 raise ValueError("Could not extract XYWH coordinates for annotation")
-            xywh_str = "".join(str(c) for c in xywh)
+            xywh_str = ",".join(str(c) for c in xywh)
 
             if as_json:
                 img = f"{img_name}_{canvas.zfill(nb_len)}"
@@ -709,13 +710,13 @@ def get_training_regions(regions: Regions):
     # Returns a list of tuples [(file_name, file_content), (...)]
     filenames_contents = []
     for canvas_nb, img_file in get_canvas_list(regions):
-        sas_annotations = get_indexed_canvas_annotations(regions, canvas_nb)
+        aiiinotations = get_indexed_canvas_annotations(regions, canvas_nb)
         img = Image.open(f"{IMG_PATH}/{img_file}")
         width, height = img.size
-        if bool(sas_annotations):
+        if bool(aiiinotations):
             train_regions = []
-            for sas_annotation in sas_annotations:
-                x, y, w, h = get_coord_from_annotation(sas_annotation)
+            for aiiinotation in aiiinotations:
+                x, y, w, h = get_coord_from_annotation(aiiinotation)
                 train_regions.append(
                     f"0 {((x + x + w) / 2) / width} {((y + y + h) / 2) / height} {w / width} {h / height}"
                 )
@@ -765,8 +766,8 @@ def get_images_annotations(regions: Regions):
 
             if bool(c_annotations):
                 canvas_imgs = [
-                    f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/{get_coord_from_annotation(sas_annotation, as_str=True)}/full/0/default.jpg"
-                    for sas_annotation in c_annotations
+                    f"{CANTALOUPE_APP_URL}/iiif/2/{img_file}/{get_coord_from_annotation(aiiinotation, as_str=True)}/full/0/default.jpg"
+                    for aiiinotation in c_annotations
                 ]
                 imgs.extend(canvas_imgs)
     except ValueError as e:
@@ -790,38 +791,18 @@ def check_indexation(regions: Regions, reindex=False):
 
     generated_annotations = 0
     indexed_annotations = 0
-    sas_annotations_ids = []
-
-    def get_nb_anno(c_nb):
-        sas_annotations = get_indexed_canvas_annotations(regions, c_nb)
-        nb_annotations = len(sas_annotations)
-
-        if nb_annotations != 0:
-            sas_annotations_ids.extend(
-                [
-                    get_id_from_annotation(sas_annotation)
-                    for sas_annotation in sas_annotations
-                ]
-            )
-            return nb_annotations
-        return 0
+    aiiinotations_ids = []
 
     try:
-        # NOTE refactor with `get_annotations_per_canvas` ?
-        if anno_format == "txt":
-            for line in data:
-                parts = line.split()
-                if len(parts) == 2:
-                    # if line = "canvas_nb img_name"
-                    indexed_annotations += get_nb_anno(parts[0])
-                elif len(parts) == 4:
-                    # if line = "x y w h"
-                    generated_annotations += 1
-
-        elif anno_format == "json":
-            for idx, annotation in enumerate(data):
-                indexed_annotations += get_nb_anno(str(idx + 1))
-                generated_annotations += len(annotation["crops"])
+        for canvas_nb, _, coords in iter_canvas_anno_file(regions):
+            aiiinotations = get_indexed_canvas_annotations(regions, str(canvas_nb))
+            if aiiinotations:
+                aiiinotations_ids.extend(
+                    get_id_from_annotation(aiiinotation)
+                    for aiiinotation in aiiinotations
+                )
+                indexed_annotations += len(aiiinotations)
+            generated_annotations += len(coords)
 
     except Exception as e:
         log(
@@ -831,8 +812,8 @@ def check_indexation(regions: Regions, reindex=False):
         return False
 
     if generated_annotations != indexed_annotations:
-        for sas_annotation_id in sas_annotations_ids:
-            unindex_annotation(sas_annotation_id)
+        for aiiinotation_id in aiiinotations_ids:
+            unindex_annotation(aiiinotation_id)
         if reindex:
             if index_regions(regions):
                 log(f"[check_indexation] Regions #{regions.id} were reindexed")
@@ -873,7 +854,6 @@ def index_regions(regions: Regions):
 def index_annotations_on_canvas(regions: Regions, canvas_nb):
     # this url (view canvas_annotations()) is calling format_canvas_annotations(),
     # thus returning formatted annotations for each canvas
-    # MARKER MARKER
 
     formatted_annos = (
         f"{APP_URL}/{APP_NAME}/iiif/{regions.get_ref()}/list/anno-{canvas_nb}.json"
@@ -1077,8 +1057,7 @@ def unindex_annotations_by_tag(manifest_url: str, tag: str) -> int:
     return deleted
 
 
-# MARKER MARKER rename
-def unindex_annotations_for_manifest(manifest_url: str) -> bool:
+def delete_manifest_annotations(manifest_url: str) -> bool:
     """delete all annotations of a manifest"""
     try:
         # manifest_url = http://slug/manifest_short_id/manifest.json
@@ -1087,14 +1066,14 @@ def unindex_annotations_for_manifest(manifest_url: str) -> bool:
         r = requests.delete(url_delete)
         if r.status_code not in [200, 204]:
             log(
-                f"[unindex_annotations_for_manifest]: Failed. Status: {r.status_code}. Error: {r.text}"
+                f"[delete_manifest_annotations]: Failed. Status: {r.status_code}. Error: {r.text}"
             )
             return False
         log(
-            f"[unindex_annotations_for_manifest]: Removed {r.json().get('deletedCount', '?')} annotations"
+            f"[delete_manifest_annotations]: Removed {r.json().get('deletedCount', '?')} annotations"
         )
     except Exception as e:
-        log(f"[unindex_annotations_for_manifest]: Failed for {manifest_url}", e)
+        log(f"[delete_manifest_annotations]: Failed for {manifest_url}", e)
         return False
     return True
 

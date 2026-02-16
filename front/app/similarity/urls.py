@@ -116,11 +116,6 @@ urlpatterns = [
         name="index-similarity",
     ),
     path(
-        f"{APP_NAME}/delete-incorrect-pairs",
-        remove_incorrect_pairs,
-        name="remove-incorrect-pairs",
-    ),
-    path(
         f"{APP_NAME}/similarity/reset/<int:rid>",
         reset_regions_similarity,
         name="reset-regions-similarity",

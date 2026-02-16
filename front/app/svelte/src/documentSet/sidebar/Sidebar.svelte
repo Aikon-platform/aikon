@@ -1,10 +1,11 @@
 <script>
-    import {appLang, model2title} from "../../constants.js";
+    import {appLang} from "../../constants.js";
     import CategoryButton from "../../regions/similarity/CategoryButton.svelte";
     import { activeLayout } from "../../ui/tabStore.js";
     import {getContext} from "svelte";
     import Legend from "./Legend.svelte";
     import InputSlider from "../../ui/InputSlider.svelte";
+    import {i18n} from "../../utils.js";
 
     export let docSet = null;
     export let documentSetStore;
@@ -63,7 +64,7 @@
                         {#if modelIds.length > 0}
                             <div class="level-item has-text-centered">
                                 <div>
-                                    <p class="heading">{model2title[model]}</p>
+                                    <p class="heading">{i18n(model)}</p>
                                     <p class="title is-5">{modelIds.length || 0}</p>
                                 </div>
                             </div>

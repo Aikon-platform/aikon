@@ -1,6 +1,6 @@
-import { derived, get, writable } from "svelte/store";
-import { errorMsg, initPagination, loading, pageUpdate } from "../../utils.js";
-import { csrfToken } from "../../constants.js";
+import {derived, get, writable} from "svelte/store";
+import {errorMsg, initPagination, loading, pageUpdate} from "../../utils.js";
+import {csrfToken} from "../../constants.js";
 
 /**
  * @typedef { Object.<number, Object.<string, RegionsType>> } SelectedRegionsType
@@ -76,7 +76,7 @@ function createSimilarityStore() {
     /** @type {writable<number?>} RegionPairs below this score will be hidden from the user */
     const similarityScoreCutoff = writable(JSON.parse(localStorage.getItem("similarityScoreCutoff")) || undefined);
     similarityScoreCutoff.subscribe((value) => {
-    // since the 1st value is undefined, we need to ensure we're not writing this to localStorage
+        // since the 1st value is undefined, we need to ensure we're not writing this to localStorage
         if (value!=null) localStorage.setItem("similarityScoreCutoff", JSON.stringify(value))
     });
 
@@ -125,15 +125,13 @@ function createSimilarityStore() {
             selectedRegions.update((_selectedRegions) => {
                 let currentSelectedRegions = _selectedRegions[currentPageId] || {};
                 if ( Object.keys(currentSelectedRegions).length ) {
-                    let filtered =
                     // `.filter().reduce()` creates a copy of `currentSelectedRegions` without the keys that are not in `regionsData`
-                        Object.keys(currentSelectedRegions)
-                            .filter(key => Object.keys(regionsData).includes(key))
-                            .reduce((obj, key) => {
-                                obj[key] = currentSelectedRegions[key];
-                                return obj
-                            }, {});
-                    _selectedRegions[currentPageId] = filtered;
+                    _selectedRegions[currentPageId] = Object.keys(currentSelectedRegions)
+                        .filter(key => Object.keys(regionsData).includes(key))
+                        .reduce((obj, key) => {
+                            obj[key] = currentSelectedRegions[key];
+                            return obj
+                        }, {});
                 }
                 return _selectedRegions;
             });
@@ -222,9 +220,101 @@ function createSimilarityStore() {
     }
 
     function addComparedRegions(region) {
-        comparedRegions.update(regions => {
-            return {...regions, [region.ref]: region};
-        });
+        if (!region) return false;
+        const current = get(comparedRegions);
+        if (current[region.ref]) return false; // Already exists
+
+        comparedRegions.update(regions => ({...regions, [region.ref]: region}));
+        select(region);
+        return true;
+    }
+
+    // Global signal to force all visible rows to refresh (e.g. from a toolbar)
+    const refreshSignal = writable(0);
+    const triggerRefresh = () => refreshSignal.update(n => n + 1);
+
+    /** * Factory to create a dedicated store for a single SimilarityRow.
+     * Encapsulates fetch logic, state management, and race-condition handling.
+     */
+    function createRowStore(qImg, isInModal) {
+        const items = writable([]);
+        const propagated = writable([]);
+        const loading = writable(false);
+        const propagatedLoading = writable(false);
+        const error = writable(null);
+        let cGen = 0, pGen = 0, visible = isInModal;
+
+        const getRids = () => {
+            const sel = get(selectedRegions);
+            return Object.values(sel[currentPageId] || {}).map(r => r.id);
+        };
+
+        const fetchComputed = async (rids) => {
+            const gen = ++cGen;
+            loading.set(true);
+            try {
+                const res = await fetch(`${baseUrl}similar-images`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
+                    body: JSON.stringify({regionsIds: rids, filterByRegions: !isInModal, qImg, topk: 10}),
+                });
+                const data = await res.json();
+                if (gen === cGen) items.set(data);
+            } catch (e) {
+                if (gen === cGen) error.set(e.message);
+            } finally {
+                if (gen === cGen) loading.set(false);
+            }
+        };
+
+        const fetchPropagated = async (rids) => {
+            propagatedLoading.set(true);
+            const gen = ++pGen;
+            const params = get(propagateParams);
+            try {
+                const res = await fetch(`${baseUrl}propagated-matches/${qImg}`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
+                    body: JSON.stringify({
+                        regionsIds: isInModal ? [] : rids,
+                        filterByRegions: isInModal ? false : params.propagateFilterByRegions,
+                        recursionDepth: params.propagateRecursionDepth,
+                    })
+                });
+                const data = await res.json();
+                if (gen === pGen) propagated.set(data);
+            } catch (e) {
+                if (gen === pGen) propagated.set([]);
+            }
+            propagatedLoading.set(false);
+        };
+
+        const fetchRow = () => {
+            const rids = getRids();
+            if (!isInModal && rids.length === 0) {
+                items.set([]);
+            } else {
+                fetchComputed(rids);
+            }
+            fetchPropagated(rids);
+        };
+
+        const unsubs = [
+            refreshSignal.subscribe(() => visible && fetchRow()),
+            propagateParams.subscribe(() => visible && fetchPropagated(getRids())),
+            selectedRegions.subscribe(() => visible && fetchRow())
+        ];
+
+        return {
+            items, propagated, loading, propagatedLoading, error, fetchRow,
+            setVisible: (v) => { visible = v; if (v) fetchRow(); },
+            filtered: derived([items, excludedCategories, similarityScoreCutoff], ([$i, $e, $s]) =>
+                $i.filter(([score, , , , , cat]) =>
+                    !$e.includes(cat) && (score == null || $s == null || Number(score) >= $s)
+                )
+            ),
+            destroy: () => unsubs.forEach(fn => fn())
+        };
     }
 
     return {
@@ -251,6 +341,8 @@ function createSimilarityStore() {
         addComparedRegions,
         isSelected,
         pageLength,
+        createRowStore,
+        triggerRefresh,
     };
 }
 

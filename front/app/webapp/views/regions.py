@@ -218,10 +218,10 @@ def validate_regions(request, regions_ref):
         return HttpResponse(f"An error occurred: {e}", status=500)
 
 
-def witness_sas_annotations(request, regions_id):
-    regions = get_object_or_404(Regions, pk=regions_id)
-    _, c_annos = formatted_annotations(regions)
-    return JsonResponse(c_annos, safe=False)
+# def witness_sas_annotations(request, regions_id):
+#     regions = get_object_or_404(Regions, pk=regions_id)
+#     _, c_annos = formatted_annotations(regions)
+#     return JsonResponse(c_annos, safe=False)
 
 
 @login_required(login_url=LOGIN_URL)
@@ -298,9 +298,7 @@ def delete_regions(request, rid):
         return JsonResponse({"error": "Invalid request method"}, status=400)
     regions = get_object_or_404(Regions, id=rid)
     try:
-        delete_annotations.delay(
-            regions.get_ref(), regions.get_manifest_url()
-        )  # MARKER MARKER
+        delete_annotations.delay(regions.get_ref(), regions.get_manifest_url())
 
         Path(f"{REGIONS_PATH}/{regions.get_ref()}.json").unlink()
         delete_api_regions.delay(regions.get_digit().get_ref(), regions.model)

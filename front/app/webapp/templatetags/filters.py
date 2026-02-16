@@ -63,17 +63,6 @@ def ref_to_iiif(img_ref):
 
 
 @register.filter
-def ref_to_mirador(regions_refs, img_ref):  # MARKER MARKER
-    # img_ref = {img_name}_{coord} / e.g. "wit205_pdf216_021_667,1853,783,412"
-    img_ref = img_ref.split("_")
-    digit_ref = "_".join(img_ref[0:1])
-
-    manifest = f"{APP_URL}/{APP_NAME}/iiif/{digit_ref}/manifest.json"
-
-    return f"{MIRADOR_BASE_URL}/index.html?iiif-content={manifest}&canvas={int(img_ref[-2])}"
-
-
-@register.filter
 def exclude_and_join(lst, item):
     """
     Exclude a specific item from a list and join the remaining items with underscores

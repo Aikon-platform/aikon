@@ -212,8 +212,6 @@ class WitnessRegionsView(AbstractRecordView):
                     "img_zeros": djson["zeros"] or 0,
                 }
 
-                # MARKER MARKER fix witness view accordingly
-
         for rid in context["witness"]["regions"]:
             regions = Regions.objects.filter(pk=rid).first()
             if not regions:

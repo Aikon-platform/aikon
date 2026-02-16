@@ -12,6 +12,10 @@ from app.similarity.models.region_pair import RegionPair, add_jpg
 from app.webapp.models.regions import Regions
 
 
+# NOTE this command is a legacy command based on the old RegionPair schema
+# TO DELETE
+
+
 # TODO remove when all pairs are migrated
 LEGACY_HASH = "e2596a98"
 REPLACEMENT_HASH = "20099ddb"

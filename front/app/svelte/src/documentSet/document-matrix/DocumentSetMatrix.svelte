@@ -1,7 +1,7 @@
 <script>
     import * as d3 from "d3";
     import {createEventDispatcher} from "svelte";
-    import {appLang, model2title} from "../../constants.js";
+    import {i18n} from "../../utils.js";
 
     export let documents = [];
     export let scoreData = new Map();
@@ -17,7 +17,6 @@
         score: {en: "Score", fr: "Score"},
         noPairs: {en: "No pairs", fr: "Aucune paire"},
     };
-    const i18n = (key) => t[key]?.[appLang] || t[key]?.en || key;
 
     let container;
     let selectedCell = null;
@@ -133,8 +132,8 @@
                 .on("mousemove", function (event, d) {
                     const docs = `<span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>↔<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}`;
                     const content = d.z === 0
-                        ? `${docs}<br/><br/><em>${i18n("noPairs")}</em>`
-                        : `${docs}<br/><br/>${i18n("score")}: ${d.z.toFixed(2)}`;
+                        ? `${docs}<br/><br/><em>${i18n("noPairs", t)}</em>`
+                        : `${docs}<br/><br/>${i18n("score", t)}: ${d.z.toFixed(2)}`;
                     tooltip.html(content)
                         .style("left", (event.clientX + 15) + "px")
                         .style("top", (event.clientY + 15) + "px");
@@ -181,7 +180,7 @@
         <div class="{side}-headers">
             {#each matrixData.docs as doc (doc.id)}
                 <div class="header-cell">
-                    <span class="color-dot" style="background-color: {doc.color}" title="{doc.title} {model2title.Witness} #{doc.witnessId}"></span>
+                    <span class="color-dot" style="background-color: {doc.color}" title="{doc.title} {i18n('Witness')} #{doc.witnessId}"></span>
                 </div>
             {/each}
         </div>

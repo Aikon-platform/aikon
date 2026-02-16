@@ -16,10 +16,11 @@ export const mediaPrefix = MEDIA_PATH;  // eslint-disable-line
 export const pageSize = PAGE_LEN;  // eslint-disable-line
 
 export const model2title = {
-    "Witness": appLang === "en"  ? "Witness" : "Témoin",
-    "Digitization": appLang === "en" ? "Digitization" : "Numérisation",
-    "Work": appLang === "en"  ? "Work" : "Œuvre",
-    "Series": appLang === "en"  ? "Series" : "Série d'imprimés",
-    "Regions": appLang === "en"  ? "Region Extraction" : "Extraction d'illustrations",
-    "User": appLang === "en" ? "User" : "Utilisateur"
+    "Witness": {en: "Witness", fr: "Témoin"},
+    "Digitization": {en: "Digitization", fr: "Numérisation"},
+    "Work": {en: "Work", fr: "Œuvre"},
+    "Series": {en: "Series", fr: "Série d'imprimés"},
+    "Regions": {en: "Region Extraction", fr: "Extraction d'illustrations"},
+    "User": {en: "User", fr: "Utilisateur"},
+    "Manifest": {en: "Manifest", fr: "Manifeste"},
 }

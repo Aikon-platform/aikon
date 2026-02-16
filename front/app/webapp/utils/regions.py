@@ -64,7 +64,7 @@ def get_regions_img(regions: Regions):
 
 
 def create_empty_regions(digit: Digitization):
-    from app.webapp.utils.iiif.annotation import index_manifest  # MARKER MARKER
+    from app.webapp.utils.iiif.annotation import index_manifest
 
     imgs = digit.get_imgs()
     if len(imgs) == 0:
