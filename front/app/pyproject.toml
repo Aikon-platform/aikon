@@ -87,6 +87,7 @@ dev = [
     "django-livereload-server>=0.4",
     "pandas>=2.3.0",
     "pre-commit>=2.19.0",
+    "dramatiq[redis,watch]>=2.0.1",
 ]
 prod = [
     "gunicorn>=25.1.0",
