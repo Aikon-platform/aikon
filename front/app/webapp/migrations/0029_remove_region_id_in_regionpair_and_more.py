@@ -6,8 +6,12 @@ class Migration(migrations.Migration):
         ("webapp", "0026_alter_series_shared_with"),
     ]
 
+    # NOTE the three consecutive migrations should be applied at once
+    # The first one (0029) adds the new fields, updates indexes, and removes the ordering constraint
+    # The second one (0030) fills the new fields and reorders the img pairs alphabetically
+    # The third one (0031) apply new ordering constraint
+
     operations = [
-        # Remove old indexes
         migrations.RemoveIndex(
             model_name="regionpair", name="webapp_regi_regions_23ea83_idx"
         ),
@@ -27,7 +31,6 @@ class Migration(migrations.Migration):
         migrations.RemoveIndex(
             model_name="regionpair", name="webapp_regi_img_2_c47c92_idx"
         ),
-        # Add new fields
         migrations.AddField(
             model_name="regionpair",
             name="anno_1",
@@ -48,7 +51,6 @@ class Migration(migrations.Migration):
             name="digit_2",
             field=models.IntegerField(null=True),
         ),
-        # Make regions_id nullable
         migrations.AlterField(
             model_name="regionpair",
             name="regions_id_1",
@@ -59,7 +61,6 @@ class Migration(migrations.Migration):
             name="regions_id_2",
             field=models.IntegerField(blank=True, null=True),
         ),
-        # Add new indexes (but NOT the constraint yet)
         migrations.AddIndex(
             model_name="regionpair",
             index=models.Index(
