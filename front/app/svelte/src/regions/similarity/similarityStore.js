@@ -1,6 +1,6 @@
-import { derived, get, writable } from "svelte/store";
-import { errorMsg, initPagination, loading, pageUpdate } from "../../utils.js";
-import { csrfToken } from "../../constants.js";
+import {derived, get, writable} from "svelte/store";
+import {errorMsg, initPagination, loading, pageUpdate} from "../../utils.js";
+import {csrfToken} from "../../constants.js";
 
 /**
  * @typedef { Object.<number, Object.<string, RegionsType>> } SelectedRegionsType
@@ -125,15 +125,13 @@ function createSimilarityStore() {
             selectedRegions.update((_selectedRegions) => {
                 let currentSelectedRegions = _selectedRegions[currentPageId] || {};
                 if ( Object.keys(currentSelectedRegions).length ) {
-                    let filtered =
                     // `.filter().reduce()` creates a copy of `currentSelectedRegions` without the keys that are not in `regionsData`
-                        Object.keys(currentSelectedRegions)
-                            .filter(key => Object.keys(regionsData).includes(key))
-                            .reduce((obj, key) => {
-                                obj[key] = currentSelectedRegions[key];
-                                return obj
-                            }, {});
-                    _selectedRegions[currentPageId] = filtered;
+                    _selectedRegions[currentPageId] = Object.keys(currentSelectedRegions)
+                        .filter(key => Object.keys(regionsData).includes(key))
+                        .reduce((obj, key) => {
+                            obj[key] = currentSelectedRegions[key];
+                            return obj
+                        }, {});
                 }
                 return _selectedRegions;
             });

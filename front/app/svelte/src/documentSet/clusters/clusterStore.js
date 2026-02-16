@@ -78,6 +78,9 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             .sort((a, b) => b.size - a.size);
     }
 
+     /**
+     * Clusters { id, members: [imgId1, imgId2, ...], size, fullyConnected }
+     */
     const imageClusters = derived(visiblePairs, ($pairs) => {
         if (!$pairs.length) return [];
         return findClusters($pairs);

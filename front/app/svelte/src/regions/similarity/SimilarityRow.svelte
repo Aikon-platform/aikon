@@ -44,7 +44,7 @@
 
     setContext("qImgMetadata", toRegionItem(qImg, wit, xywh, canvas));
 
-    // Lazy loading state
+    // Lazy loading
     let hasBeenVisible = isInModal;
     let rowEl;
 
