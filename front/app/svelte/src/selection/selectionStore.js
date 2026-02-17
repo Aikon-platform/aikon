@@ -109,6 +109,7 @@ function createTypedSelectionStore(config) {
         }),
 
         remove: (itemId, itemType) => selection.update(set => {
+            if (!set.selected[itemType]?.[itemId]) return set;
             const {[itemId]: _, ...rest} = set.selected[itemType];
             set.selected[itemType] = rest;
             store(set);
