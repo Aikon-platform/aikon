@@ -7,32 +7,15 @@ repos:
         # path to the subproject where UV is used
         files: front/app/pyproject.toml
         args: [--project, front/app]
-      # export to requirements.txt
-      - id: uv-export
-        files: front/app/pyproject.toml
-        args: [--project, front/app]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-yaml
-#  - repo: https://gitlab.com/pycqa/flake8
-#    rev: 3.8.3
-#    hooks:
-#      - id: flake8
   -   repo: https://github.com/psf/black
       rev: 22.3.0
       hooks:
           - id: black
             exclude: ^dist/
-exclude: front/app/webapp/static/*
-#  - repo: https://github.com/aufdenpunkt/pre-commit-js-beautify
-#    rev: 1.13.0 # represents the used version of JS Beautify as well
-#    hooks:
-#      - id: js-beautify
-#        args: [ ] # list of arguments like '--editorconfig', '--end-with-newline', '--wrap-attributes=auto', '--wrap-line-length=120'
-#  - repo: https://github.com/PyCQA/isort
-#    rev: 5.5.2
-#    hooks:
-#      - id: isort
+exclude: front/app/webapp/static/.*
