@@ -7,7 +7,7 @@
 
     import { regionsStore } from './regionsStore.js';
     const { allRegions } = regionsStore;
-    import { appName, appLang, regionsType, csrfToken } from '../constants';
+    import { appName, appLang, regionsType, csrfToken } from '../constants.js';
 
     const manifest = getContext('manifest');
     const isValidated = getContext('isValidated');
@@ -38,7 +38,6 @@
         }
 
         for (const [regionId, regionData] of Object.entries(selectedRegions)) {
-            console.log(regionId, regionData);
             try {
                 if (!$allRegions.hasOwnProperty(regionId)) {
                     // only delete regions that are displayed
@@ -55,7 +54,8 @@
     }
     async function deleteRegion(regionId) {
         // const regionIdFull = regionData.id_full;  // full @id of the region.
-        const regionIdFull = `c${regionId.split("_c")[1]}`;
+        // const regionIdFull = `c${regionId.split("_c")[1]}`;
+        const regionIdFull = regionId;
         const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${regionIdFull}`;
 
         const response = await fetch(urlDelete, { method: "DELETE"});
