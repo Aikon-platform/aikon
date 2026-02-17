@@ -1,4 +1,16 @@
 repos:
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.10.3
+    hooks:
+      # update the uv lockfile
+      - id: uv-lock
+        # path to the subproject where UV is used
+        files: front/app/pyproject.toml
+        args: [--project, front/app]
+      # export to requirements.txt
+      - id: uv-export
+        files: front/app/pyproject.toml
+        args: [--project, front/app]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0
     hooks:

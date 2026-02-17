@@ -16,6 +16,6 @@ fi
 echo_title "SVELTE SETUP"
 cd "$FRONT_DIR"/app/svelte || echo "Webpack directory not found: $FRONT_DIR/app/svelte"
 npm install -D vite
-npm init
+npm run build
 color_echo blue "\nCompile svelte components using: "
 color_echo cyan "              npm run build"
