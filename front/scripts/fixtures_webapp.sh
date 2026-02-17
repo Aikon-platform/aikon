@@ -6,9 +6,7 @@ APP_DIR="$FRONT_DIR/app"
 WEBAPP_DIR="$APP_DIR/webapp"
 FIXTURES_DIR="$WEBAPP_DIR/fixtures"
 
-MANAGE="$APP_DIR/manage.py"
-
-source "$FRONT_DIR/venv/bin/activate" || exit 1
+CMD_MANAGE="uv run --directory=$APP_DIR $APP_DIR/manage.py"
 
 exists() {
     [ -d "$1" ] || [ -f "$1" ] && echo "y" || echo "n"
@@ -16,10 +14,10 @@ exists() {
 
 dump_fixture() {
     model="$1"
-    python "$MANAGE" dumpdata "webapp.$model" --indent=2 > "$FIXTURES_DIR/$model.json"
+    "$CMD_MANAGE" dumpdata "webapp.$model" --indent=2 > "$FIXTURES_DIR/$model.json"
 }
 
-python "$MANAGE" dumpdata "auth.user" --indent=2 > "$FIXTURES_DIR/Users.json"
+"$CMD_MANAGE" dumpdata "auth.user" --indent=2 > "$FIXTURES_DIR/Users.json"
 
 dump_fixture "Regions"
 dump_fixture "Digitization"

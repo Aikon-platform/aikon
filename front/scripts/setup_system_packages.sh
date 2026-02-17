@@ -62,7 +62,7 @@ install_packages() {
         sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
         sudo apt update
         sudo apt-get install wget ca-certificates
-        sudo apt install python3-venv python3-dev libpq-dev nginx curl maven postgresql poppler-utils redis-server ghostscript libmagic1 gnupg libcairo2-dev
+        sudo apt install libpq-dev nginx curl maven postgresql poppler-utils redis-server ghostscript libmagic1 gnupg libcairo2-dev
     elif [ "$OS" = "Mac" ]; then
         brew install wget ca-certificates postgresql maven nginx libpq poppler redis ghostscript libmagic cairo
         brew services start postgresql
@@ -71,7 +71,9 @@ install_packages() {
         color_echo red "Unsupported OS: $OS"
         exit 1
     fi
+    # uv/python installs are not OS-dependent
     curl -LsSf https://astral.sh/uv/install.sh | sh
+    uv python install  # NOTE : we can specify a python version here
     uv tool install pre-commit --with pre-commit-uv
 }
 
