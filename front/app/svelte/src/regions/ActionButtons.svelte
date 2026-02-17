@@ -38,12 +38,13 @@
         }
 
         for (const [regionId, regionData] of Object.entries(selectedRegions)) {
+            console.log(regionId, regionData);
             try {
                 if (!$allRegions.hasOwnProperty(regionId)) {
                     // only delete regions that are displayed
                     continue;
                 }
-                await deleteRegion(regionData);
+                await deleteRegion(regionId);
                 regionsStore.remove(regionId);
                 regionsSelection.remove(regionId, regionsType)
 
@@ -52,8 +53,9 @@
             }
         }
     }
-    async function deleteRegion(regionData) {
-        const regionIdFull = regionData.id_full;  // full @id of the region.
+    async function deleteRegion(regionId) {
+        // const regionIdFull = regionData.id_full;  // full @id of the region.
+        const regionIdFull = `c${regionId.split("_c")[1]}`;
         const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${regionIdFull}`;
 
         const response = await fetch(urlDelete, { method: "DELETE"});
