@@ -76,7 +76,7 @@ $command -c "ALTER DATABASE $db_name OWNER TO $db_user;"
 # Set new database name in .env file
 sed_repl_inplace "s/POSTGRES_DB=.*/POSTGRES_DB=$db_name/" "$APP_ROOT"/app/config/.env
 
-manage="$APP_ROOT/venv/bin/python $APP_ROOT/app/manage.py"
+manage="uv run --directory=$APP_ROOT/app python $APP_ROOT/app/manage.py"
 
 if [ -z "$db_sql_file" ]; then
     # Empty migration directory
