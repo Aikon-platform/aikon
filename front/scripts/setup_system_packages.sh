@@ -72,7 +72,7 @@ install_packages() {
         exit 1
     fi
     curl -LsSf https://astral.sh/uv/install.sh | sh
-    uv tool install pre-commit
+    uv tool install pre-commit --with pre-commit-uv
 }
 
 echo_title "SYSTEM PACKAGES INSTALL"
