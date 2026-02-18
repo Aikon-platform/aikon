@@ -13,16 +13,23 @@ bash "$DOCKER_DIR"/init.sh
 
 container=${2:-""}
 
+# NOTE: the [ -n $container ] check is to avoid an error "no such service: " when "$container" is not set.
 build_containers() {
-    docker compose build "$container"
+    [ -n "$container" ] \
+    && docker compose build "$container" \
+    || docker compose build;
 }
 
 stop_containers() {
-    docker compose down "$container"
+    [ -n "$container" ] \
+    && docker compose down "$container" \
+    || docker compose down;
 }
 
 start_containers() {
-    docker compose up -d "$container"
+    [ -n "$container" ] \
+    && docker compose up -d "$container" \
+    || docker compose up -d
 }
 
 update_containers() {
@@ -31,7 +38,9 @@ update_containers() {
 }
 
 log_containers() {
-    docker compose logs -f "$container"
+    [ -n "$container" ] \
+    && docker compose logs -f "$container" \
+    || docker compose logs -f;
 }
 
 case "$1" in
@@ -59,7 +68,7 @@ case "$1" in
         log_containers
         ;;
     *)
-        echo "Usage: $0 {start|stop|restart|update|build|log} [container_name]"
+        echo "Usage: $0 {start|stop|restart|update|build|log} [container_name]?"
         exit 1
 esac
 
