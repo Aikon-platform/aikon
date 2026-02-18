@@ -59,7 +59,7 @@ create_service() {
 
               [Service]
               WorkingDirectory=$APP_ROOT
-              ExecStart=$APP_ROOT/venv/bin/gunicorn \
+              ExecStart=uv run --directory="$APP_ROOT/app/" gunicorn \
                         --access-logfile $SERVICE_DIR/stdout.log  \
                         --error-logfile $SERVICE_DIR/error.log  \
                         --workers 3 \

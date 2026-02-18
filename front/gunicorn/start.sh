@@ -10,9 +10,10 @@ source "$VENV_PATH/bin/activate"
 . "$APP_ROOT"/app/config/.env
 
 cd "$APP_ROOT" || exit 1
-"$VENV_PATH"/bin/gunicorn --access-logfile "$SCRIPT_DIR"/stdout.log \
-                          --error-logfile "$SCRIPT_DIR"/error.log  \
-                          --workers 3 \
-                          --bind unix:/run/"$APP_NAME-gunicorn".sock \
-                          --timeout 150 \
-                          app.config.wsgi:application
+uv run --directory="$APP_ROOT/app/" gunicorn \
+    --access-logfile "$SCRIPT_DIR"/stdout.log \
+    --error-logfile "$SCRIPT_DIR"/error.log  \
+    --workers 3 \
+    --bind unix:/run/"$APP_NAME-gunicorn".sock \
+    --timeout 150 \
+    app.config.wsgi:application
