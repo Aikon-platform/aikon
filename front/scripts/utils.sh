@@ -358,7 +358,7 @@ setup_env() {
         #     setup_env $env_file
         #     return 0
         # fi
-        color_echo cyan "\nSkipping..."
+        color_echo cyan "\nSkipping setup_env: .env is aldeady up to date..."
         export_env "$env_file"
         return 0
     fi
