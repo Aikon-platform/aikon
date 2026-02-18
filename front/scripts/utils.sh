@@ -311,15 +311,15 @@ update_env() {
             default_val=$(get_default_val $param)
             current_val=$(get_env_value "$param" "$env_file")
 
-            if [ "$INSTALL_MODE" = "full_install" ]; then
+            if [[ "${desc}" =~ ^[[:space:]]*IGNORE* ]]; then
+                # NEVER PROMPT for env vars whose desc starts with "IGNORE", even for full_install
+                new_value="$default_val"
+            elif [ "$INSTALL_MODE" = "full_install" ]; then
                 # For full install, all variables are prompted
                 prompt_user "$param" "$default_val" "$current_val" "$desc"
             elif [ -n "${!param}" ]; then
                 # If variable is already set in the current shell, use it as default
                 new_value="${!param}"
-            elif [[ "$desc" =~ ^\s*IGNORE ]]; then
-                # don't edit variables whose desc starts with "# IGNORE". these are derived env variables for Aiiinotate whose value depends on other env vars and that should not be edited.
-                new_value="$default_val"
             elif is_in_default_params "$param"; then
                 # If param is in default params, use default value if it exists
                 new_value="$default_val"
@@ -399,7 +399,6 @@ setup_cantaloupe() {
     cantaloupe_dir=${2:-$FRONT_ROOT/cantaloupe}
     local default_params=("CANTALOUPE_BASE_URI" "CANTALOUPE_IMG" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "CANTALOUPE_DIR")
     setup_env "$cantaloupe_dir"/.env "${default_params[@]}" || return 1
-
     config_cantaloupe="$cantaloupe_dir"/cantaloupe.properties
 
     chmod +x "$cantaloupe_dir"/start.sh

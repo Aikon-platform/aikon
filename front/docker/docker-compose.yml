@@ -39,6 +39,7 @@ services:
         ENV_PATH: ../app/config/.env
     env_file:
       - ../app/config/.env
+      - ./.env
     ports:
       - "${AIIINOTATE_PORT}:${AIIINOTATE_PORT}"
     depends_on:
@@ -58,6 +59,7 @@ services:
         ENV_PATH: ../app/config/.env
     env_file:
       - ../app/config/.env
+      - ./.env
     depends_on:
       - aiiinotate
     ports:
