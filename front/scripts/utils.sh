@@ -318,7 +318,7 @@ update_env() {
                 # If variable is already set in the current shell, use it as default
                 new_value="${!param}"
             elif [[ "$desc" =~ ^\s*IGNORE ]]; then
-                # don't edit variables whose desc is "# IGNORE". these are derived env variables for Aiiinotate whose value depends on other env vars and that should not be edited.
+                # don't edit variables whose desc starts with "# IGNORE". these are derived env variables for Aiiinotate whose value depends on other env vars and that should not be edited.
                 new_value="$default_val"
             elif is_in_default_params "$param"; then
                 # If param is in default params, use default value if it exists
