@@ -52,7 +52,7 @@ services:
   mirador:
     build:
       context: ..
-      dockerfile: annotations/Dockerfile-mirador  # front/docker/Dockerfile-mirador
+      dockerfile: annotations/Dockerfile-mirador
       args:
         PORT: ${MIRADOR_PORT}
         ENV_PATH: ../app/config/.env  # TODO is the path relative to the build context ?

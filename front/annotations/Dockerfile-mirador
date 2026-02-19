@@ -3,28 +3,33 @@ FROM node:23.11
 
 # mirador port
 ARG PORT
-ENV PORT=PORT
+ENV PORT=${PORT}
 
 # path to the .env file
 ARG ENV_PATH
 ENV ENV_PATH="$ENV_PATH"
 
 # set up environment
-ENV DIR=/mirador
 ENV TERM=linux
+ENV TZ=Europe/Paris
 SHELL ["/bin/bash", "-c"]
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # root of the app
-WORKDIR $DIR
+WORKDIR /mirador
 # for debug: install `iproute2` which provides CLI `ss` to monitor active ports
 RUN apt update && apt install iproute2 -y
 # copy the .env
-COPY "$ENV_PATH" $DIR/.env
-# copy the package.json
-COPY ./package.json $DIR/package.json
+COPY "$ENV_PATH" /mirador/.env
+# copy the package.json.
+# the cwd on the host server is defined by services.<service-name>.build.context
+COPY ./annotations /mirador
+COPY ./annotations/package.json /mirador/package.json
 # install dependencies
 RUN npm i;
-# copy the entire root directory
-COPY .. $DIR
 
-CMD npm run start-prod "$DIR/.env"
+RUN chmod +x /mirador/scripts/run_mirador_prod.sh
+
+EXPOSE ${PORT}
+
+CMD [ "bash", "/mirador/scripts/run_mirador_prod.sh", "/mirador/.env" ]
