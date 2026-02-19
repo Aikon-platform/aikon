@@ -2,7 +2,7 @@
 
 set -e
 
-manage="/home/aikon/venv/bin/python /home/aikon/app/manage.py"
+manage="uv --directory=/home/aikon/app run /home/aikon/app/manage.py"
 
 # wait 2sec for postgres to start
 sleep 2

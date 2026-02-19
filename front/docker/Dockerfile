@@ -7,8 +7,13 @@ ARG USERID
 ARG PORT
 
 ENV USER=aikon
+# PYTHONUNBUFFERED still works with UV
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/home/${USER}
+
+# ENV PYTHONPATH=/home/${USER}
+# disable UV dev dependencies
+ENV UV_NO_DEV=1
+ENV UV_COMPILE_BYTECODE=1
 
 RUN useradd -u ${USERID} -m -d /home/${USER} ${USER}
 
@@ -33,25 +38,33 @@ RUN apt-get update && apt-get install -y \
     poppler-utils \
     supervisor \
     ghostscript \
-    python3.10 \
-    python3.10-venv \
-    python3-pip \
-    postgresql-client
+    # python3.10 \
+    # python3.10-venv \
+    # python3-pip \
+    postgresql-client \
+    libcairo2-dev
+
+# install UV. https://docs.astral.sh/uv/guides/integration/docker/#installing-uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /home/${USER}
 
 COPY --chown=${USER} ./app/requirements-base.txt ./app/requirements-prod.txt ./
 
 # Install python dependencies
-RUN python3.10 -m venv venv && \
-    /home/${USER}/venv/bin/pip install --upgrade pip && \
-    /home/${USER}/venv/bin/pip install -r requirements-prod.txt
+# RUN python3.10 -m venv venv && \
+#     /home/${USER}/venv/bin/pip install --upgrade pip && \
+#     /home/${USER}/venv/bin/pip install -r requirements-prod.txt
 
 # Copy app files
 COPY --chown=${USER} app /home/${USER}/app
 COPY --chown=${USER} gunicorn /home/${USER}/gunicorn
 COPY --chown=${USER} celery /home/${USER}/celery
 COPY --chown=${USER} docker/supervisord.conf /home/${USER}/supervisord.conf
+
+# Install UV/python dependencies
+RUN uv python install 3.11
+RUN uv --directory=/home/aikon/app sync
 
 RUN touch /home/${USER}/app/logs/app_log.log && chown ${USER}:${USER} /home/${USER}/app/logs/app_log.log
 RUN touch /home/${USER}/app/logs/iiif.log && chown ${USER}:${USER} /home/${USER}/app/logs/iiif.log
