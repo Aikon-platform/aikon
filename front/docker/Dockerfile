@@ -64,7 +64,7 @@ COPY --chown=${USER} docker/supervisord.conf /home/${USER}/supervisord.conf
 
 # Install UV/python dependencies
 RUN uv python install 3.11
-RUN uv --directory=/home/aikon/app sync
+RUN uv --directory=/home/${USER}/app sync
 
 RUN touch /home/${USER}/app/logs/app_log.log && chown ${USER}:${USER} /home/${USER}/app/logs/app_log.log
 RUN touch /home/${USER}/app/logs/iiif.log && chown ${USER}:${USER} /home/${USER}/app/logs/iiif.log
@@ -76,11 +76,17 @@ EXPOSE 8000
 RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER}/app/staticfiles
 
 COPY --chown=${USER} docker/manage.sh /home/aikon/manage.sh
-RUN chmod +x /home/aikon/manage.sh
-# RUN /home/${USER}/manage.sh
+RUN chmod +x /home/${USER}/manage.sh
+
+# ultra bourrin: chown the .venv used by UV.
+# NOTE : this *might* be useful: https://stackoverflow.com/questions/79787507/changing-the-owner-of-venv-created-by-uv-inside-docker/79788084#comment140788993_79787507
+# TODO : plein d'erreurs de permission avec UV
+RUN chown -R ${USER} /home/${USER}/app/
+# UV writes cache in /root
+RUN chmod +x ${USER} /root/.cache
 
 # Launch gunicorn
 CMD /home/${USER}/manage.sh && \
     export LC_ALL=C.UTF-8 && export LANG=C.UTF-8 && \
-    source venv/bin/activate && \
+    # source venv/bin/activate && \
     supervisord -c /home/${USER}/supervisord.conf
