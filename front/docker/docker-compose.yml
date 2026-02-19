@@ -1,7 +1,7 @@
 x-proxy-settings: &proxy-settings
   HTTP_PROXY: ${HTTP_PROXY:-}
   HTTPS_PROXY: ${HTTPS_PROXY:-}
-  NO_PROXY: "localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.aikon_network"
+  NO_PROXY: "localhost,127.0.0.1,cantaloupe,web,nginx,redis,db,.aikon_network"
 
 services:
   web:
@@ -17,8 +17,6 @@ services:
     env_file:
       - ../app/config/.env
       - ./.env
-    environment:
-      <<: *proxy-settings
     ports:
       - "${DJANGO_PORT}:8000"
     depends_on:
@@ -28,6 +26,8 @@ services:
       - mirador
     networks:
       - aikon_network
+    environment:
+      <<: *proxy-settings
     restart: unless-stopped
 
   aiiinotate:
@@ -36,7 +36,7 @@ services:
       dockerfile: annotations/Dockerfile-aiiinotate
       args:
         PORT: ${AIIINOTATE_PORT}
-        ENV_PATH: ../app/config/.env
+        ENV_PATH: ../app/config/.env  # TODO is the path relative to the build context ?
     env_file:
       - ../app/config/.env
     ports:
@@ -55,7 +55,7 @@ services:
       dockerfile: annotations/Dockerfile-mirador  # front/docker/Dockerfile-mirador
       args:
         PORT: ${MIRADOR_PORT}
-        ENV_PATH: ../app/config/.env
+        ENV_PATH: ../app/config/.env  # TODO is the path relative to the build context ?
     env_file:
       - ../app/config/.env
     depends_on:

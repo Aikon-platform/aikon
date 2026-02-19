@@ -117,18 +117,10 @@ if [ ! -d "$DATA_FOLDER/mediafiles" ]; then
     sudo chown -R "$USERID:$USERID" "$DATA_FOLDER"/mediafiles
 fi
 
-# if [ ! -d "$DATA_FOLDER/sas" ]; then
-#     color_echo yellow "Creation of $DATA_FOLDER/sas folder (your password is required to set permissions)"
-#     get_password && echo || exit
-#     sudo mkdir -p "$DATA_FOLDER/sas"
-#     sudo chown -R "$USERID":"$USERID" "$DATA_FOLDER/sas"
-# fi
-
 if [ -n "$DATA_BACKUP" ] && [ ! -d "$DATA_BACKUP" ]; then
     color_echo yellow "Creation of $DATA_BACKUP folder (your password is required to set permissions)"
     get_password && echo || exit
     sudo mkdir -p "$DATA_BACKUP"
-    # sudo chown -R "$USERID":"$USERID" "$DATA_FOLDER/sas"
 fi
 
 generate_conf() {
