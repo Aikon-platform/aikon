@@ -340,21 +340,20 @@ class Witness(AbstractSearchableModel):
 
     def get_dates(self):
         cont_dates = [cont.get_dates() for cont in self.get_contents()]
-        wit_dates = list(
-            filter(
-                None,
-                [
-                    d
-                    for dates in cont_dates
-                    if any(d is not None for d in dates)
-                    for d in dates
-                ],
-            )
-        )
-        if len(wit_dates) == 1:
-            return None, wit_dates[0]
 
-        return (min(wit_dates), max(wit_dates)) if wit_dates else (None, None)
+        min_dates = []
+        max_dates = []
+
+        for min_d, max_d in cont_dates:
+            if min_d is not None:
+                min_dates.append(min_d)
+            if max_d is not None:
+                max_dates.append(max_d)
+
+        min_date = min(min_dates) if min_dates else None
+        max_date = max(max_dates) if max_dates else None
+
+        return min_date, max_date
 
     def get_contents(self):
         # Django automatically creates a reverse relationship from Witness to Content
