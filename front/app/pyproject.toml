@@ -3,7 +3,7 @@ name = "app"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11, <=3.13"
 dependencies = [
     "ansicon>=1.89.0",
     "arrow>=1.2.3",
