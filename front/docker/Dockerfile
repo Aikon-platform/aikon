@@ -10,11 +10,11 @@ ENV USER=aikon
 # PYTHONUNBUFFERED still works with UV
 ENV PYTHONUNBUFFERED=1
 
-# ENV PYTHONPATH=/home/${USER}
-# disable UV dev dependencies
 ENV UV_NO_DEV=1
 ENV UV_COMPILE_BYTECODE=1
-# ENV UV_CACHE_DIR=/home/${USER}/.uv_cache
+ENV UV_CACHE_DIR=/home/${USER}/.uv_cache
+ENV UV_PROJECT_ENVIRONMENT=/home/${USER}/.venv
+ENV UV_PYTHON_INSTALL_DIR=/opt/uv-python
 
 # Set up environment
 ENV TERM=linux
@@ -37,9 +37,6 @@ RUN apt-get update && apt-get install -y \
     poppler-utils \
     supervisor \
     ghostscript \
-    # python3.10 \
-    # python3.10-venv \
-    # python3-pip \
     postgresql-client \
     libcairo2-dev
 
@@ -48,18 +45,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 RUN useradd -u ${USERID} -m -d /home/${USER} ${USER}
 
-# RUN usermod -a -G root ${USER}
-
 WORKDIR /home/${USER}
-
-# COPY --chown=${USER} ./app/requirements-base.txt ./app/requirements-prod.txt ./
-
-# Install python dependencies
-# RUN python3.10 -m venv venv && \
-#     /home/${USER}/venv/bin/pip install --upgrade pip && \
-#     /home/${USER}/venv/bin/pip install -r requirements-prod.txt
-
-# USER ${USER}
 
 # Copy app files
 COPY --chown=${USER} app /home/${USER}/app
@@ -76,32 +62,49 @@ RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER
 COPY --chown=${USER}:${USER} docker/manage.sh /home/aikon/manage.sh
 RUN chmod +x /home/${USER}/manage.sh
 
-# ultra bourrin: chown the .venv used by UV.
-# NOTE : this *might* be useful: https://stackoverflow.com/questions/79787507/changing-the-owner-of-venv-created-by-uv-inside-docker/79788084#comment140788993_79787507
-# TODO : plein d'erreurs de permission avec UV
-# RUN chown -R ${USER}:${USER} /home/${USER}/app/.venv
-#RUN chmod +x /home/${USER}/app/.venv/bin/python
-# RUN chmod a+xX /home/${USER}/app/.venv/bin/python
-
-# Install UV/python dependencies
+# Install UV/python dependencies and set permissions
+WORKDIR /home/${USER}/app
 RUN uv python install 3.11
-RUN uv --directory=/home/${USER}/app sync --locked --group=prod
-RUN chown -R ${USER}:${USER} /home/${USER}/app/.venv
+RUN uv sync --locked --group=prod
+RUN chown -R ${USER}:${USER} ${UV_CACHE_DIR}
+# TODO less aggrssive permissions ?
+# all on cache
+RUN chmod a+rwxXst -R ${UV_CACHE_DIR}
+# read + execute on the environment
+RUN chmod -R a+rX ${UV_PROJECT_ENVIRONMENT}
+# read + execute on the python install dir to which the .venv will symlink
+RUN chmod -R a+rX ${UV_PYTHON_INSTALL_DIR}
 
-RUN chmod +x /home/${USER}/app/.venv/bin/python
-RUN chmod +x /home/${USER}/app/.venv/bin/python3
-RUN chmod +x /home/${USER}/app/.venv/bin/celery
-RUN chmod +x /home/${USER}/app/.venv/bin/gunicorn
+# NOTE: the problem was a permissions issue on the venv:
+# without UV_PYTHON_INSTALL_DIR, uv installs python in the repo
+# of the user installing python => in our case, /root/.local
+# so, the python in .venv is a symlink to /root/.local, for
+# which we don't have an execution permissions.
+# OUR FIX: the solution is
+# - set UV_PYTHON_INSTALL_DIR
+# - set UV_PROJECT_ENVIRONMENT and UV_CACHE in /home/aikon
+# - set rX on UV_PROJECT_ENVIRONMENT so that python can execute the python
 
-# UV writes cache in /root
-# RUN chmod -R +Xrw /root/.cache
+# NOTE a cleaner solution would be to install and run the app as $USER,
+# instead of the app being owned by $USER but run by $ROOT:
+# them python will be installed to /home/aikon/.local
+# => no need to handle UV_PYTHON_INSTALL_DIR.
+# >>> USER ${USER}
+# >>> WORKDIR /home/${USER}/app
+# >>> RUN uv python install 3.11
+# >>> RUN uv sync --locked --group=prod
 
-# USER ${USER}
+# NOTE: to debug, use these and see which parent directory doesn't have `x` (isn't executable).
+# >>> ls -la /home/aikon/.venv/bin/python
+# >>> namei -l /home/aikon/.venv/bin/python
 
-#EXPOSE ${PORT} # PORT is only used as outside port in docker-compose
+
+WORKDIR /home/${USER}
+
 EXPOSE 8000
 
 # Launch gunicorn
+# TODO set LC_ALL and LANG as Docker ENV vars ?
 CMD /home/${USER}/manage.sh && \
     export LC_ALL=C.UTF-8 && export LANG=C.UTF-8 && \
     # source venv/bin/activate && \

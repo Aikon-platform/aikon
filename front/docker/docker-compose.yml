@@ -13,7 +13,7 @@ services:
         PORT: ${DJANGO_PORT}
     volumes:
       - ${DATA_FOLDER}:/data
-      - ../app:/home/aikon/app
+      # - ../app:/home/aikon/app
     env_file:
       - ../app/config/.env
       - ./.env
