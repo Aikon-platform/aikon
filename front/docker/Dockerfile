@@ -103,7 +103,6 @@ WORKDIR /home/${USER}
 
 EXPOSE 8000
 
-# Launch gunicorn
 # TODO set LC_ALL and LANG as Docker ENV vars ?
 CMD /home/${USER}/manage.sh && \
     export LC_ALL=C.UTF-8 && export LANG=C.UTF-8 && \
