@@ -7,7 +7,6 @@ ARG USERID
 ARG PORT
 
 ENV USER=aikon
-# PYTHONUNBUFFERED still works with UV
 ENV PYTHONUNBUFFERED=1
 
 ENV UV_NO_DEV=1
@@ -68,6 +67,7 @@ RUN uv python install 3.11
 RUN uv sync --locked --group=prod
 RUN chown -R ${USER}:${USER} ${UV_CACHE_DIR}
 # TODO less aggrssive permissions ?
+# TODO try to speed up chown / chmods ? https://serverfault.com/a/378283
 # all on cache
 RUN chmod a+rwxXst -R ${UV_CACHE_DIR}
 # read + execute on the environment
