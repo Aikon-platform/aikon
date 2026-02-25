@@ -14,6 +14,7 @@ ENV UV_COMPILE_BYTECODE=1
 ENV UV_CACHE_DIR=/home/${USER}/.uv_cache
 ENV UV_PROJECT_ENVIRONMENT=/home/${USER}/.venv
 ENV UV_PYTHON_INSTALL_DIR=/opt/uv-python
+ENV N_PROCESS=50
 
 # Set up environment
 ENV TERM=linux
@@ -62,28 +63,18 @@ COPY --chown=${USER}:${USER} docker/manage.sh /home/aikon/manage.sh
 RUN chmod +x /home/${USER}/manage.sh
 
 # Install UV/python dependencies and set permissions
+# TODO less aggrssive permissions ?
 WORKDIR /home/${USER}/app
 RUN uv python install 3.11
 RUN uv sync --locked --group=prod
-RUN chown -R ${USER}:${USER} ${UV_CACHE_DIR}
-# TODO less aggrssive permissions ?
-# TODO try to speed up chown / chmods ? https://serverfault.com/a/378283
-# all on cache
-RUN chmod a+rwxXst -R ${UV_CACHE_DIR}
-# read + execute on the environment
-RUN chmod -R a+rX ${UV_PROJECT_ENVIRONMENT}
-# read + execute on the python install dir to which the .venv will symlink
-RUN chmod -R a+rX ${UV_PYTHON_INSTALL_DIR}
-
-# NOTE: the problem was a permissions issue on the venv:
-# without UV_PYTHON_INSTALL_DIR, uv installs python in the repo
-# of the user installing python => in our case, /root/.local
-# so, the python in .venv is a symlink to /root/.local, for
-# which we don't have an execution permissions.
-# OUR FIX: the solution is
-# - set UV_PYTHON_INSTALL_DIR
-# - set UV_PROJECT_ENVIRONMENT and UV_CACHE in /home/aikon
-# - set rX on UV_PROJECT_ENVIRONMENT so that python can execute the python
+# xargs is used to parrallel chmod in up to ${N_PROCESS} processes
+RUN find ${UV_CACHE_DIR} -print0 | xargs -0 -P ${N_PROCESS} chown ${USER}:${USER}
+# to speed up even more, we run the 3 chowns in parrallel and parrallelize each command using xargs
+RUN \
+    find ${UV_CACHE_DIR} -print0 | xargs -0 -P ${N_PROCESS} chmod a+rwxXst & \
+    find ${UV_PROJECT_ENVIRONMENT} -print0 | xargs -0 -P ${N_PROCESS} chmod a+rX & \
+    find ${UV_PYTHON_INSTALL_DIR} -print0 | xargs -0 -P ${N_PROCESS} chmod a+rX & \
+    wait
 
 # NOTE a cleaner solution would be to install and run the app as $USER,
 # instead of the app being owned by $USER but run by $ROOT:
