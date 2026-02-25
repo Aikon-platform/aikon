@@ -5,9 +5,6 @@ from django.core.management.base import BaseCommand
 from django.core.management import CommandError
 from django.contrib.auth import get_user_model
 
-# TODO tested on an existing superuser
-# TODO delete the USER and see if this still works
-
 class Command(BaseCommand):
     help = "Create the superuser if they don't aldready exist"
 
