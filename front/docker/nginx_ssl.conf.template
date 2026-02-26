@@ -83,21 +83,21 @@ http {
             proxy_set_header        X-Forwarded-Proto    $scheme;
         }
 
-        location /sas/ {
-            proxy_pass              http://sas:SAS_PORT/;
-            proxy_set_header        Host                 $host/sas;
-            proxy_set_header        X-Real_IP            $remote_addr;
-            proxy_set_header        X-Forwarded-For      $proxy_add_x_forwarded_for;
-            proxy_set_header        X-Forwarded-Proto    $scheme;
-            proxy_set_header        X-NginX-Proxy        true;
-            proxy_set_header        Upgrade              $http_upgrade;
-            proxy_pass_header       Set-Cookie;
-            proxy_ssl_server_name   on;
-        }
+        # location /sas/ {
+        #     proxy_pass              http://sas:SAS_PORT/;
+        #     proxy_set_header        Host                 $host/sas;
+        #     proxy_set_header        X-Real_IP            $remote_addr;
+        #     proxy_set_header        X-Forwarded-For      $proxy_add_x_forwarded_for;
+        #     proxy_set_header        X-Forwarded-Proto    $scheme;
+        #     proxy_set_header        X-NginX-Proxy        true;
+        #     proxy_set_header        Upgrade              $http_upgrade;
+        #     proxy_pass_header       Set-Cookie;
+        #     proxy_ssl_server_name   on;
+        # }
 
-        location /javax.faces.resource/ {
-            proxy_pass http://sas:SAS_PORT/javax.faces.resource/;
-        }
+        # location /javax.faces.resource/ {
+        #     proxy_pass http://sas:SAS_PORT/javax.faces.resource/;
+        # }
 
         location /static/ {
             autoindex off;

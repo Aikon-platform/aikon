@@ -67,7 +67,7 @@ RUN chmod +x /home/${USER}/manage.sh
 WORKDIR /home/${USER}/app
 RUN uv python install 3.11
 RUN uv sync --locked --group=prod
-# xargs is used to parrallel chmod in up to ${N_PROCESS} processes
+# xargs is used to run chmod in parrallel in up to ${N_PROCESS} processes
 RUN find ${UV_CACHE_DIR} -print0 | xargs -0 -P ${N_PROCESS} chown ${USER}:${USER}
 # to speed up even more, we run the 3 chowns in parrallel and parrallelize each command using xargs
 RUN \

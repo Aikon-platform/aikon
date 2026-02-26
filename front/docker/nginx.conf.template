@@ -70,25 +70,25 @@ http {
             proxy_set_header        X-Forwarded-Proto    $scheme;
         }
 
-        location /sas/ {
-            proxy_pass              http://sas:SAS_PORT/;
-            proxy_set_header        Host                 $host;
-            proxy_set_header        X-Real-IP            $remote_addr;
-            proxy_set_header        X-Forwarded-For      $proxy_add_x_forwarded_for;
-            proxy_set_header        X-Forwarded-Path     /sas;
-            proxy_set_header        X-Forwarded-Proto    $scheme;
-            proxy_set_header        X-NginX-Proxy        true;
-            proxy_set_header        Upgrade              $http_upgrade;
-            proxy_pass_header       Set-Cookie;
-        }
+        # location /sas/ {
+        #     proxy_pass              http://sas:SAS_PORT/;
+        #     proxy_set_header        Host                 $host;
+        #     proxy_set_header        X-Real-IP            $remote_addr;
+        #     proxy_set_header        X-Forwarded-For      $proxy_add_x_forwarded_for;
+        #     proxy_set_header        X-Forwarded-Path     /sas;
+        #     proxy_set_header        X-Forwarded-Proto    $scheme;
+        #     proxy_set_header        X-NginX-Proxy        true;
+        #     proxy_set_header        Upgrade              $http_upgrade;
+        #     proxy_pass_header       Set-Cookie;
+        # }
 
-        location /javax.faces.resource/ {
-            proxy_pass http://sas:SAS_PORT/javax.faces.resource/;
-            proxy_set_header        Host                 $host;
-            proxy_set_header        X-Real-IP            $remote_addr;
-            proxy_set_header        X-Forwarded-For      $proxy_add_x_forwarded_for;
-            proxy_set_header        X-Forwarded-Proto    $scheme;
-        }
+        # location /javax.faces.resource/ {
+        #     proxy_pass http://sas:SAS_PORT/javax.faces.resource/;
+        #     proxy_set_header        Host                 $host;
+        #     proxy_set_header        X-Real-IP            $remote_addr;
+        #     proxy_set_header        X-Forwarded-For      $proxy_add_x_forwarded_for;
+        #     proxy_set_header        X-Forwarded-Proto    $scheme;
+        # }
 
         location /static/ {
             autoindex off;

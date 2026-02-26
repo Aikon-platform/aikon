@@ -36,7 +36,7 @@ services:
       dockerfile: annotations/Dockerfile-aiiinotate
       args:
         PORT: ${AIIINOTATE_PORT}
-        ENV_PATH: ../app/config/.env  # TODO is the path relative to the build context ?
+        ENV_PATH: ../app/config/.env
     env_file:
       - ../app/config/.env
     ports:
@@ -55,7 +55,7 @@ services:
       dockerfile: annotations/Dockerfile-mirador
       args:
         PORT: ${MIRADOR_PORT}
-        ENV_PATH: ../app/config/.env  # TODO is the path relative to the build context ?
+        ENV_PATH: ../app/config/.env
     env_file:
       - ../app/config/.env
     depends_on:

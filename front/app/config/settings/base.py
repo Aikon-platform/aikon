@@ -50,10 +50,29 @@ hosts += ["web"]  # for docker nginx service
 https_hosts = [f"https://{host}" for host in hosts]
 wildcard_hosts = [f"https://*.{host}" for host in hosts if "." in host]
 
-ALLOWED_HOSTS = hosts + https_hosts + wildcard_hosts
-CSRF_TRUSTED_ORIGINS = https_hosts + wildcard_hosts
+# https remote access config:
+# ALLOWED_HOSTS = hosts + https_hosts + wildcard_hosts
+# CSRF_TRUSTED_ORIGINS = https_hosts + wildcard_hosts
+# SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# for HTTP nginx access in localhost:
+# http_hosts = [f"http://{host}" for host in hosts]
+# ALLOWED_HOSTS += http_hosts
+# CSRF_TRUSTED_ORIGINS += http_hosts
+# USE_X_FORWARDED_HOST = True
+# DEBUG = True
+USE_X_FORWARDED_HOST = True
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "web"]
+CSRF_TRUSTED_ORIGINS = [ "http://localhost:8080" ]
+
+print("**************************************")
+print("ALLOWED_HOSTS=", ALLOWED_HOSTS)
+print("CSRF_TRUSTED_ORIGINS=", CSRF_TRUSTED_ORIGINS)
+print("USE_X_FORWARDED_HOST=", USE_X_FORWARDED_HOST)
+# print("SECURE_PROXY_SSL_HEADER=", SECURE_PROXY_SSL_HEADER)
+print("**************************************")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
