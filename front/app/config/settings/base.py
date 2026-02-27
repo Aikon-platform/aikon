@@ -56,11 +56,6 @@ wildcard_hosts = [f"https://*.{host}" for host in hosts if "." in host]
 # SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # for HTTP nginx access in localhost:
-# http_hosts = [f"http://{host}" for host in hosts]
-# ALLOWED_HOSTS += http_hosts
-# CSRF_TRUSTED_ORIGINS += http_hosts
-# USE_X_FORWARDED_HOST = True
-# DEBUG = True
 USE_X_FORWARDED_HOST = True
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False

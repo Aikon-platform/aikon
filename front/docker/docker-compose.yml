@@ -14,6 +14,7 @@ services:
     volumes:
       - ${DATA_FOLDER}:/data
       # - ../app:/home/aikon/app
+      - ../app/staticfiles:/home/aikon/app/staticfiles
     env_file:
       - ../app/config/.env
       - ./.env

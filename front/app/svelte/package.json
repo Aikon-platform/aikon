@@ -9,7 +9,7 @@
   "main": "eslint.config.js",
   "scripts": {
     "dev": "vite",
-    "build": "npm run lint && npm run build:clean && npm run build:witness && npm run build:recordList && npm run build:documentSet",
+    "build": "npm run build:clean && npm run build:witness && npm run build:recordList && npm run build:documentSet",
     "build:clean": "rm -rf ../webapp/static/svelte/*",
     "build:witness": "BUILD_TARGET=witness vite build",
     "build:recordList": "BUILD_TARGET=recordList vite build",
@@ -18,6 +18,10 @@
     "lint": "npx eslint --fix"
   },
   "dependencies": {
+    "svelte": "^3.59.2",
+    "@sveltejs/vite-plugin-svelte": "^2.4.2",
+    "vite": "^4.5.14",
+    "globals": "^17.3.0",
     "choices.js": "^11.1.0",
     "d3": "^7.9.0",
     "html2canvas": "^1.4.1",
@@ -28,12 +32,8 @@
     "@eslint/js": "^9.39.2",
     "@eslint/json": "^0.13.2",
     "@stylistic/eslint-plugin": "^5.8.0",
-    "@sveltejs/vite-plugin-svelte": "^2.4.2",
     "eslint": "^9.39.2",
-    "eslint-plugin-svelte": "^3.15.0",
-    "globals": "^17.3.0",
-    "svelte": "^3.59.2",
-    "vite": "^4.5.14"
+    "eslint-plugin-svelte": "^3.15.0"
   },
   "keywords": []
 }

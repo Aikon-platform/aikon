@@ -1,4 +1,14 @@
-# Final image
+# 1st build: compile svelte files
+FROM node:23 AS svelte_build
+
+WORKDIR /app
+COPY app .
+WORKDIR /app/svelte/
+RUN npm install --omit=dev
+RUN npm run build
+
+# ---------------------------------------
+# 2nd build: Final image
 FROM ubuntu:22.04
 
 # Use args passed in the build command and retrieved from docker/.env
@@ -8,7 +18,6 @@ ARG PORT
 
 ENV USER=aikon
 ENV PYTHONUNBUFFERED=1
-
 ENV UV_NO_DEV=1
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_CACHE_DIR=/home/${USER}/.uv_cache
@@ -58,15 +67,18 @@ RUN touch /home/${USER}/app/logs/iiif.log && chown ${USER}:${USER} /home/${USER}
 RUN touch /home/${USER}/app/logs/download.log && chown ${USER}:${USER} /home/${USER}/app/logs/download.log
 
 RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER}/app/staticfiles
+RUN chmod -R a+rwxXst /home/${USER}/app/staticfiles/
 
 COPY --chown=${USER}:${USER} docker/manage.sh /home/aikon/manage.sh
 RUN chmod +x /home/${USER}/manage.sh
 
-# Install UV/python dependencies and set permissions
-# TODO less aggrssive permissions ?
 WORKDIR /home/${USER}/app
+# Install UV/python dependencies
 RUN uv python install 3.11
 RUN uv sync --locked --group=prod
+
+# TODO less aggrssive permissions ?
+# Set permissions on UV and NPM directories
 # xargs is used to run chmod in parrallel in up to ${N_PROCESS} processes
 RUN find ${UV_CACHE_DIR} -print0 | xargs -0 -P ${N_PROCESS} chown ${USER}:${USER}
 # to speed up even more, we run the 3 chowns in parrallel and parrallelize each command using xargs
@@ -76,19 +88,7 @@ RUN \
     find ${UV_PYTHON_INSTALL_DIR} -print0 | xargs -0 -P ${N_PROCESS} chmod a+rX & \
     wait
 
-# NOTE a cleaner solution would be to install and run the app as $USER,
-# instead of the app being owned by $USER but run by $ROOT:
-# them python will be installed to /home/aikon/.local
-# => no need to handle UV_PYTHON_INSTALL_DIR.
-# >>> USER ${USER}
-# >>> WORKDIR /home/${USER}/app
-# >>> RUN uv python install 3.11
-# >>> RUN uv sync --locked --group=prod
-
-# NOTE: to debug, use these and see which parent directory doesn't have `x` (isn't executable).
-# >>> ls -la /home/aikon/.venv/bin/python
-# >>> namei -l /home/aikon/.venv/bin/python
-
+COPY --from=svelte_build --chown=${USER}:${USER} /app/webapp/static/svelte/* /home/${USER}/app/webapp/static/svelte/
 
 WORKDIR /home/${USER}
 
@@ -99,3 +99,25 @@ CMD /home/${USER}/manage.sh && \
     export LC_ALL=C.UTF-8 && export LANG=C.UTF-8 && \
     # source venv/bin/activate && \
     supervisord -c /home/${USER}/supervisord.conf
+
+# NOTE currently, the app is owned by $USER but run by $ROOT. W
+# When installing, we
+#   - creatin an aikon user account with a HOME directory
+#   - put all necessary directories (incl. NPM and UV stuff) in the user's HOME,
+#   - install everything in the HOME
+#   - chmod everything so that the root user and the "aikon" user can access them
+#   - run as a the app as Root
+# NOTE a cleaner solution would be:
+#   1. to install and run the app as $USER,
+#   2. to install everything as ROOT and dipense of working ina user's home dir (less safe)
+# with solution 1, python will be installed to /home/aikon/.local
+# => no need to handle UV_PYTHON_INSTALL_DIR.
+# >>> USER ${USER}
+# >>> WORKDIR /home/${USER}/app
+# >>> RUN uv python install 3.11
+# >>> RUN uv sync --locked --group=prod
+
+# NOTE: to debug, use these and see which parent directory doesn't have `x` (isn't executable).
+# >>> ls -la /home/aikon/.venv/bin/python
+# >>> namei -l /home/aikon/.venv/bin/python
+

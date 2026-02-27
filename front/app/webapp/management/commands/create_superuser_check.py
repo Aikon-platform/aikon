@@ -6,7 +6,7 @@ from django.core.management import CommandError
 from django.contrib.auth import get_user_model
 
 class Command(BaseCommand):
-    help = "Create the superuser if they don't aldready exist"
+    help = "Create the superuser if they don't aldready exist, and update their password"
 
     def add_arguments(self, parser):
         pass
@@ -26,10 +26,10 @@ class Command(BaseCommand):
         User = get_user_model()
         try:
             user = User.objects.filter(username=env_dict["POSTGRES_USER"]).first()
+            # if the user exists, set it to superuser if necessary and update its password
             if user:
                 if not user.is_superuser:
                     user.is_superuser = True
-                    user.save()
                     self.stdout.write(
                         self.style.SUCCESS(
                             f"✔️ User {env_dict['POSTGRES_USER']} updated to superuser."
@@ -38,9 +38,17 @@ class Command(BaseCommand):
                 else:
                     self.stdout.write(
                         self.style.SUCCESS(
-                            f"✔️ User {env_dict['POSTGRES_USER']} is aldready a superuser. No update needed."
+                            f"✔️ User {env_dict['POSTGRES_USER']} is aldready a superuser. Password updated."
                         )
                     )
+                user.set_password(env_dict["POSTGRES_PASSWORD"])
+                user.save()
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"✔️ User {env_dict['POSTGRES_USER']} password updated to follow .env config."
+                    )
+                )
+            # otherwise, create the superuser
             else:
                 User.objects.create_superuser(
                     username=env_dict["POSTGRES_USER"],
