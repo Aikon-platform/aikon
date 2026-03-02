@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("webapp", "0024_documentset_users_id"),
+        ("webapp", "0026_documentset_users_id"),
     ]
 
     operations = [
