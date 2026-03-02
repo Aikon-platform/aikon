@@ -35,7 +35,7 @@
             method: "POST",
             body: JSON.stringify({
                 regionsIds: regionsIds,
-                filterByRegions: !_isInModal,
+                filterByRegionExtraction: !_isInModal,
                 qImg: qImg,
                 topk: 10, // TODO retrieve this value from the user
             }),

@@ -61,7 +61,7 @@
             method: "POST",
             body: JSON.stringify({
                 regionsIds: _isInModal ? [] : regionsForWitness,
-                filterByRegions: _isInModal ? false : _propagateParams.propagateFilterByRegions,
+                filterByRegionExtraction: _isInModal ? false : _propagateParams.propagateFilterByRegions,
                 recursionDepth: _propagateParams.propagateRecursionDepth
             }),
             headers: {

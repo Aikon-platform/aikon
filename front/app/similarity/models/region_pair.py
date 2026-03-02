@@ -11,7 +11,7 @@ from django.db.models import Q, F
 from app.webapp.utils.functions import cast, sort_key
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.region_extraction import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.similarity.models.similarity_parameters import SimilarityParameters
 
 
@@ -24,15 +24,17 @@ def extract_digit_id(img: str) -> int | None:
 def get_region_digit_id(regions_id: int) -> int | None:
     """Get digitization ID associated with a regions_id"""
     try:
-        region = Regions.objects.select_related("digitization").get(id=regions_id)
+        region = RegionExtraction.objects.select_related("digitization").get(
+            id=regions_id
+        )
         return region.digitization.id if region.digitization else None
-    except Regions.DoesNotExist:
+    except RegionExtraction.DoesNotExist:
         return None
 
 
 def get_digit_regions_id(digit_id: int, create_if_missing: bool = False) -> int:
     """Get or create regions_id for a digitization ID"""
-    regions = Regions.objects.filter(digitization_id=digit_id).first()
+    regions = RegionExtraction.objects.filter(digitization_id=digit_id).first()
 
     if not regions:
         if create_if_missing:
@@ -41,7 +43,9 @@ def get_digit_regions_id(digit_id: int, create_if_missing: bool = False) -> int:
             except Digitization.DoesNotExist:
                 raise ValidationError(f"Digitization {digit_id} does not exist")
 
-            regions = Regions.objects.create(digitization=digit, model="manual")
+            regions = RegionExtraction.objects.create(
+                digitization=digit, model="manual"
+            )
         else:
             raise ValidationError(f"No regions found for digitization {digit_id}")
 

@@ -16,7 +16,7 @@ from app.config.settings import (
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.region_extraction import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.models.utils.constants import PDF_ABBR, MAN_ABBR
 from app.webapp.utils.functions import (
@@ -60,7 +60,7 @@ def export_docset(request, dsid):
     |   |-- metadata.json
     |   |-- [digitizations]
     |   |   |   |-- [each digit file (images + original format)]
-    |   |-- [Regions: one folder each]
+    |   |-- [RegionExtraction: one folder each]
     |   |   |-- [annotations]
     |   |   |   |-- manifest.json
     |   |   |   |-- annotations.json
@@ -172,7 +172,7 @@ def export_docset(request, dsid):
 
 def gen_coco_data(witness_data, regions_data):
     """
-    Given resulting dicts from Regions and Witness data, shapes the Regions metadata as a COCO-formatted  object.
+    Given resulting dicts from RegionExtraction and Witness data, shapes the RegionExtraction metadata as a COCO-formatted  object.
     """
     coco = {"images": [], "annotations": [], "categories": []}
 
@@ -221,10 +221,10 @@ def get_region_data(wid, rid):
     witness = get_object_or_404(Witness, id=wid)
     if witness.is_public:
         annos = get_regions_annotations(
-            regions=get_object_or_404(Regions, id=rid), as_json=True
+            regions=get_object_or_404(RegionExtraction, id=rid), as_json=True
         )
         result = {
-            "manifest": get_object_or_404(Regions, pk=rid).gen_manifest_url(),
+            "manifest": get_object_or_404(RegionExtraction, pk=rid).gen_manifest_url(),
             "extracted_crops": annos,
         }
     return result
@@ -318,7 +318,7 @@ def get_witness_data(witness, json_cascade=True):
         w_reg_processes[r.id]["treatments"] = {}
 
         if json_cascade:
-            # 3 : Regions/annotations data (endpoint URL)
+            # 3 : RegionExtraction/annotations data (endpoint URL)
             if "regions" in ADDITIONAL_MODULES:
                 w_reg_processes[r.id]["treatments"][
                     "extracted_regions"
@@ -361,7 +361,7 @@ def get_vecto_data(rid, include_svg=True):
     # Inspired from 'get_vectorized_images' in 'vectorization/views.py'
     from app.vectorization.const import SVG_PATH
 
-    q_r = get_object_or_404(Regions, pk=rid)
+    q_r = get_object_or_404(RegionExtraction, pk=rid)
     v_imgs = []
     # Mirroring what happens with vectorization view:
     # First look in folder named after regions_ref, then try with digit_ref

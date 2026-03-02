@@ -36,7 +36,7 @@ def send_regions_extraction(request, digit_ref):
 
     if status:
         return JsonResponse(
-            {"response": f"Regions extraction was relaunched for digit #{digit.id}"},
+            {"response": f"Region extraction was relaunched for digit #{digit.id}"},
             safe=False,
         )
     return JsonResponse(error, safe=False)

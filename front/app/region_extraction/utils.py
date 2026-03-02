@@ -4,7 +4,7 @@ import requests
 from app.region_extraction.const import EXTRACTOR_MODEL
 from app.region_extraction.tasks import process_regions_file
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.region_extraction import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
 from app.webapp.utils.iiif import parse_ref
@@ -104,7 +104,7 @@ def process_results(data, completed=True):
     return
 
 
-def prepare_document(document: Witness | Digitization | Regions, **kwargs):
+def prepare_document(document: Witness | Digitization | RegionExtraction, **kwargs):
     if not type(document).__name__ == "Witness" and not document.has_images():
         log(f"[prepare_document] Skipping {document}: no images to process")
         return []

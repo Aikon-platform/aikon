@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required, user_passes_test
 
-from app.webapp.models.region_extraction import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.config.settings import (
     SAS_APP_URL,
     DEBUG,
@@ -49,15 +49,15 @@ def is_superuser(user):
 def reindex_regions(request, obj_ref):
     """
     To reindex regions from a text file named after <obj_ref>
-    either to create a Regions obj from a regions txt file if obj_ref is a digit_ref
+    either to create a RegionExtraction obj from a regions txt file if obj_ref is a digit_ref
     or to delete then create a new regions file if obj_ref is a regions_ref
     TODO differenciate clearly from index_regions
     """
-    passed, obj = check_ref(obj_ref, "Regions")
+    passed, obj = check_ref(obj_ref, "RegionExtraction")
     if not passed:
         return JsonResponse(obj)
 
-    regions = obj if cls(obj) == Regions else None
+    regions = obj if cls(obj) == RegionExtraction else None
     if regions:
         try:
             destroy_regions(regions)
@@ -131,13 +131,13 @@ def index_regions(request, regions_ref=None):
 @user_passes_test(is_superuser)
 def delete_annotations_regions(request, obj_ref):
     """
-    Unindex SAS annotations + delete Regions record from the database
+    Unindex SAS annotations + delete RegionExtraction record from the database
     """
-    passed, obj = check_ref(obj_ref, "Regions")
+    passed, obj = check_ref(obj_ref, "RegionExtraction")
     if not passed:
         return JsonResponse(obj)
 
-    regions = obj if cls(obj) == Regions else None
+    regions = obj if cls(obj) == RegionExtraction else None
     if regions:
         try:
             destroy_regions(regions)
@@ -161,7 +161,7 @@ def get_regions_img_list(request, regions_ref):
         "img_name": "..."
     }
     """
-    passed, regions = check_ref(regions_ref, "Regions")
+    passed, regions = check_ref(regions_ref, "RegionExtraction")
     if not passed:
         return JsonResponse(regions)
 
@@ -176,14 +176,14 @@ def get_regions_img_list(request, regions_ref):
 
 
 def export_regions_img(request, regions_id):
-    regions = get_object_or_404(Regions, pk=regions_id)
+    regions = get_object_or_404(RegionExtraction, pk=regions_id)
     images = get_regions_img(regions)
     return list_to_txt(images, regions.get_ref())
 
 
 def canvas_annotations(request, version, regions_ref, canvas_nb):
     regions_id = regions_ref.split("_")[-1].replace("anno", "")
-    regions = get_object_or_404(Regions, pk=regions_id)
+    regions = get_object_or_404(RegionExtraction, pk=regions_id)
     return JsonResponse(format_canvas_annotations(regions, canvas_nb))
 
 
@@ -191,7 +191,7 @@ def populate_annotation(request, regions_id):
     """
     Populate annotation store from IIIF Annotation List
     """
-    regions = get_object_or_404(Regions, pk=regions_id)
+    regions = get_object_or_404(RegionExtraction, pk=regions_id)
     return HttpResponse(status=200 if index_regions(regions) else 500)
 
 
@@ -200,7 +200,7 @@ def validate_regions(request, regions_ref):
     Validate the manually corrected regions
     """
     try:
-        passed, regions = check_ref(regions_ref, "Regions")
+        passed, regions = check_ref(regions_ref, "RegionExtraction")
         if not passed:
             return HttpResponse(regions, status=500)
         regions.is_validated = True
@@ -211,7 +211,7 @@ def validate_regions(request, regions_ref):
 
 
 def witness_sas_annotations(request, regions_id):
-    regions = get_object_or_404(Regions, pk=regions_id)
+    regions = get_object_or_404(RegionExtraction, pk=regions_id)
     _, c_annos = formatted_annotations(regions)
     return JsonResponse(c_annos, safe=False)
 

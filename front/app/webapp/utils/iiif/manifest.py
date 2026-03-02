@@ -46,7 +46,7 @@ def get_meta_value(metadatum, label: str):
 
 def process_images(obj, seq, version=None):
     """
-    obj: Digitization | Regions
+    obj: Digitization | RegionExtraction
     Process the images of a witness and add them to a sequence
     """
     class_name = obj.__class__.__name__
@@ -78,7 +78,7 @@ def process_images(obj, seq, version=None):
 
 def gen_manifest_json(obj, version=None):
     """
-    obj: Digitization | Regions
+    obj: Digitization | RegionExtraction
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """

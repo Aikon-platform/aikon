@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from app.similarity.models.region_pair import RegionPair, add_jpg
-from app.webapp.models.region_extraction import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 
 
 # TODO remove when all pairs are migrated
@@ -103,7 +103,7 @@ class Command(BaseCommand):
         self.stdout.write("Building regions-to-digitization mapping...")
         regions_to_digit = {
             r.id: r.digitization_id
-            for r in Regions.objects.select_related("digitization").only(
+            for r in RegionExtraction.objects.select_related("digitization").only(
                 "id", "digitization_id"
             )
         }
@@ -501,7 +501,7 @@ class Command(BaseCommand):
         # Build regions_to_digit for updates that need re-validation
         regions_to_digit = {
             r.id: r.digitization_id
-            for r in Regions.objects.select_related("digitization").only(
+            for r in RegionExtraction.objects.select_related("digitization").only(
                 "id", "digitization_id"
             )
         }

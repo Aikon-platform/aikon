@@ -30,21 +30,21 @@ def extract_images_from_iiif_manifest(manifest_url, digit_ref, digit):
 
 @celery_app.task
 def reindex_from_file(regions_id):
-    from app.webapp.models.region_extraction import Regions
+    from app.webapp.models.region_extraction import RegionExtraction
     from app.webapp.utils.iiif.annotation import check_indexation
 
-    # regions = Regions.objects.filter(pk=regions_id).first()
-    regions = Regions.objects.get(pk=regions_id)
+    # regions = RegionExtraction.objects.filter(pk=regions_id).first()
+    regions = RegionExtraction.objects.get(pk=regions_id)
     return check_indexation(regions, True)
 
 
 @celery_app.task
 def delete_regions_and_annotations(regions_id):
-    from app.webapp.models.region_extraction import Regions
+    from app.webapp.models.region_extraction import RegionExtraction
     from app.webapp.utils.iiif.annotation import destroy_regions
 
-    # regions = Regions.objects.filter(pk=regions_id).first()
-    regions = Regions.objects.get(pk=regions_id)
+    # regions = RegionExtraction.objects.filter(pk=regions_id).first()
+    regions = RegionExtraction.objects.get(pk=regions_id)
     return destroy_regions(regions)
 
 
@@ -207,15 +207,15 @@ def delete_digitization(digit_ref, other_media):
 
 @celery_app.task
 def delete_regions(regions_ids):
-    from app.webapp.models.region_extraction import Regions
+    from app.webapp.models.region_extraction import RegionExtraction
     from app.webapp.utils.iiif.annotation import destroy_regions
 
     for regions_id in regions_ids:
         try:
-            regions = Regions.objects.get(id=regions_id)
+            regions = RegionExtraction.objects.get(id=regions_id)
             destroy_regions(regions)
-        except Regions.DoesNotExist:
-            return f"Error: Regions #{regions_ids} does not exist"
+        except RegionExtraction.DoesNotExist:
+            return f"Error: RegionExtraction #{regions_ids} does not exist"
         except Exception as e:
-            return f"Error deleting Regions {regions_ids}: {e}"
-    return f"Successfully deleted regions {regions_ids}"
+            return f"Error deleting RegionExtraction {regions_ids}: {e}"
+    return f"Successfully deleted region extraction {regions_ids}"

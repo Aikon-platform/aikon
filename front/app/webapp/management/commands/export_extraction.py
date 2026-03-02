@@ -67,7 +67,7 @@ class Command(BaseCommand):
                     print(dirnames_contents)
 
                     self.stdout.write(
-                        self.style.SUCCESS(f"📜 Regions #{region.id} exported")
+                        self.style.SUCCESS(f"📜 RegionExtraction #{region.id} exported")
                     )
 
                 img_urls.extend(digit.get_imgs(is_abs=False))

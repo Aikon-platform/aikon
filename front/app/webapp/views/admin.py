@@ -21,7 +21,7 @@ from app.webapp.search_filters import (
 )
 from app.webapp.forms import *
 from app.webapp.forms.treatment import TreatmentForm
-from app.webapp.models.region_extraction import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
@@ -169,9 +169,9 @@ class WitnessList(AbstractRecordList):
         return context
 
 
-class WitnessRegionsView(AbstractRecordView):
+class WitnessRegionExtractionView(AbstractRecordView):
     # f"witness/<int:wid>/regions/"
-    # display only all Regions objects for a given Witness
+    # display only all RegionExtraction objects for a given Witness
     model = Witness
     template_name = "webapp/witness.html"
     pk_url_kwarg = "id"
@@ -207,7 +207,7 @@ class WitnessRegionsView(AbstractRecordView):
                 context["manifests"].append(digit.gen_manifest_url(version=MANIFEST_V2))
 
         for rid in context["witness"]["regions"]:
-            regions = Regions.objects.filter(pk=rid).first()
+            regions = RegionExtraction.objects.filter(pk=rid).first()
             if not regions:
                 continue
 
@@ -232,10 +232,10 @@ class WitnessRegionsView(AbstractRecordView):
         return context
 
 
-class RegionsView(AbstractRecordView):
+class RegionExtractionView(AbstractRecordView):
     # f"witness/<int:wid>/regions/<int:rid>/"
-    # display only one Regions object
-    model = Regions
+    # display only one RegionExtraction object
+    model = RegionExtraction
     template_name = "webapp/witness.html"
     fields = []
     pk_url_kwarg = "rid"
@@ -443,4 +443,4 @@ class DocumentSetView(AbstractRecordView):
     #     return context
 
 
-# TODO RegionsSetList
+# TODO RegionExtractionSetList

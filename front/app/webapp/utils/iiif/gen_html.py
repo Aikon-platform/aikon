@@ -15,18 +15,18 @@ from app.webapp.utils.iiif import IIIF_ICON
 
 def regions_btn(obj, action="view"):
     """
-    obj: Regions | Digitization
+    obj: RegionExtraction | Digitization
     """
     disabled = ""
     btn = f"{get_action(action, 'upper')}"
 
     if action == "view":
         icon = get_icon("eye")
-        # The link redirects to Mirador with no regions (Digitization) or automatic regions (Regions)
+        # The link redirects to Mirador with no regions (Digitization) or automatic regions (RegionExtraction)
         link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V1)}"
     elif action == "auto-view":
         icon = get_icon("eye")
-        # The link redirects to Mirador with no regions (Digitization) or automatic regions (Regions)
+        # The link redirects to Mirador with no regions (Digitization) or automatic regions (RegionExtraction)
         link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V1)}"
     # elif action == "edit":
     #     icon = get_icon("pen-to-square")
@@ -34,7 +34,7 @@ def regions_btn(obj, action="view"):
     #     link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show/"
     elif action == "final":
         icon = get_icon("check")
-        # The link redirects to Mirador with corrected regions (Regions)
+        # The link redirects to Mirador with corrected regions (RegionExtraction)
         link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V2)}"
     # elif action == "similarity":
     #     icon = get_icon("code-compare")
@@ -63,7 +63,7 @@ def regions_btn(obj, action="view"):
 
 def get_link_manifest(obj, version=None):
     """
-    obj: Regions | Digitization
+    obj: RegionExtraction | Digitization
     """
     manifest_url = obj.gen_manifest_url(version=version)
     return f"<a id='{obj.get_ref()}' href='{manifest_url}' target='_blank'>{manifest_url} {IIIF_ICON}</a>"
@@ -71,7 +71,7 @@ def get_link_manifest(obj, version=None):
 
 def gen_btn(obj, action="view"):
     """
-    obj: Regions | Digitization
+    obj: RegionExtraction | Digitization
     """
     if action == "no_manifest" or action == "no_regions" or action == "no_digit":
         return mark_safe(regions_btn(obj, action))
@@ -113,7 +113,7 @@ def gen_btn(obj, action="view"):
     )
 
     return mark_safe(
-        # todo: do a method of Regions and Digitization instead?
+        # todo: do a method of RegionExtraction and Digitization instead?
         f"{get_link_manifest(obj, version)}<br>{regions_btn(obj, action)}<br>{download}"
     )
 

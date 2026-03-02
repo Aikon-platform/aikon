@@ -24,7 +24,7 @@ from app.similarity.models.similarity_parameters import (
 )
 from app.similarity.tasks import delete_api_similarity
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.region_extraction import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
 from app.webapp.utils.functions import delete_path, sort_key
@@ -194,7 +194,7 @@ def process_results(data, completed=True):
     return
 
 
-def prepare_document(document: Witness | Digitization | Regions, **kwargs):
+def prepare_document(document: Witness | Digitization | RegionExtraction, **kwargs):
     regions = document.get_regions() if hasattr(document, "get_regions") else [document]
 
     if not regions:
@@ -283,7 +283,7 @@ def json_to_scores_tuples(json_scores):
 
 
 def get_doc_refs_from_records(records) -> list[str]:
-    """Extract all document refs from records (Witness/Digitization/Regions)."""
+    """Extract all document refs from records (Witness/Digitization/RegionExtraction)."""
     refs = []
     for record in records:
         regions = record.get_regions() if hasattr(record, "get_regions") else [record]
@@ -669,7 +669,7 @@ def get_all_pairs():
     return [pair_file.replace(".npy", "") for pair_file in os.listdir(SCORES_PATH)]
 
 
-def reset_similarity(regions: Regions):
+def reset_similarity(regions: RegionExtraction):
     regions_id = regions.id
     try:
         regions_ref = regions.get_ref()
@@ -730,7 +730,7 @@ def filter_pairs(
         query &= ~Q(regions_id_1=F("regions_id_2"))
         # if exclude_self, we need to exclude regions from the same witness
         # same_witness_regions = set()
-        # for r in Regions.objects.filter(id__in=regions_ids).select_related('witness'):
+        # for r in RegionExtraction.objects.filter(id__in=regions_ids).select_related('witness'):
         #     witness_regions = r.witness.get_regions()
         #     if len(witness_regions) > 1:
         #         same_witness_regions.update([wr.id for wr in witness_regions])

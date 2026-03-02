@@ -7,7 +7,7 @@ from app.webapp.forms import get_available_models
 DEFAULT_MODEL = "illustration_extraction"
 
 
-class RegionsForm(forms.Form):
+class RegionExtractionForm(forms.Form):
     class Meta:
         fields = ("model",)
 

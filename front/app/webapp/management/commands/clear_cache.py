@@ -9,10 +9,10 @@ class Command(BaseCommand):
         # Create a mutually exclusive group
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument(
-            "--regions",
+            "--regext",
             "-r",
             type=int,
-            help="ID of the Regions to clear the cache",
+            help="ID of the RegionExtraction to clear the cache",
         )
         group.add_argument(
             "--all",

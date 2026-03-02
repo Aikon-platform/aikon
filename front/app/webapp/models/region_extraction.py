@@ -26,26 +26,26 @@ def check_version(version):
     return version
 
 
-class Regions(AbstractSearchableModel):
+class RegionExtraction(AbstractSearchableModel):
     class Meta:
-        verbose_name = get_name("Regions")
-        verbose_name_plural = get_name("Regions")
+        verbose_name = get_name("RegionExtraction")
+        verbose_name_plural = get_name("RegionExtraction", True)
         app_label = "webapp"
 
     def __str__(self, light=False):
         if light:
             if self.json and "title" in self.json:
                 return self.json["title"]
-            return f'{get_name("Regions")} #{self.id}'
+            return f'{get_name("RegionExtraction")} #{self.id}'
 
         witness = self.get_witness()
         if not witness:
-            return f'{get_name("Regions")} #{self.id}'
+            return f'{get_name("RegionExtraction")} #{self.id}'
         return f"{REG.capitalize()} #{self.id} | {witness.__str__()}"
 
     digitization = models.ForeignKey(
         Digitization,
-        related_name="regions",  # to access the all regions from Digitization
+        related_name="region_extractions",  # to access the all regions from Digitization
         verbose_name=get_name("Digitization"),
         on_delete=models.SET_NULL,
         blank=True,
@@ -121,7 +121,7 @@ class Regions(AbstractSearchableModel):
         return annotation_id
 
     def has_regions(self):
-        # if there is a regions file named after the current Regions
+        # if there is a regions file named after the current RegionExtraction
         if len(glob(f"{REGIONS_PATH}/{self.get_ref()}*")):
             return True
         return False
@@ -172,7 +172,7 @@ class Regions(AbstractSearchableModel):
             "title": self.__str__(),
             "ref": self.get_ref(),
             "class": self.__class__.__name__,
-            "type": get_name("Regions"),
+            "type": get_name("RegionExtraction"),
             "url": self.gen_mirador_url(),
             "img_nb": rjson.get("img_nb", digit.img_nb() if digit else 0),
             "zeros": rjson.get("zeros", digit.img_zeros() if digit else 0),

@@ -7,7 +7,7 @@ from django.views.decorators.cache import cache_page
 
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.region_extraction import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, PAGE_LEN
 
@@ -100,7 +100,7 @@ def save_document_set(request, dsid=None):
 
 def get_canvas_regions(request, wid, rid):
     # TODO mutualize with get_canvas_witness_regions
-    regions = get_object_or_404(Regions, id=rid)
+    regions = get_object_or_404(RegionExtraction, id=rid)
     p_nb = int(request.GET.get("p", 0))
     max_canvas = regions.get_json()["img_nb"]
     if p_nb > 0:
@@ -155,7 +155,7 @@ def get_canvas_witness_regions(request, wid):
 def create_manual_regions(request, wid, did=None, rid=None):
     if request.method == "POST":
         if rid:
-            regions = get_object_or_404(Regions, id=rid)
+            regions = get_object_or_404(RegionExtraction, id=rid)
             return JsonResponse(
                 {
                     "regions_id": regions.id,
@@ -196,7 +196,7 @@ def delete_regions(request, rid):
 
     if request.method != "DELETE":
         return JsonResponse({"error": "Invalid request method"}, status=400)
-    regions = get_object_or_404(Regions, id=rid)
+    regions = get_object_or_404(RegionExtraction, id=rid)
     try:
         delete_annotations.delay(
             regions.get_ref(), regions.gen_manifest_url(version=MANIFEST_V2)
@@ -215,7 +215,9 @@ def delete_regions(request, rid):
                 status=400,
             )
 
-        return JsonResponse({"message": "Regions deletion requested"}, status=204)
+        return JsonResponse(
+            {"message": "RegionExtraction deletion requested"}, status=204
+        )
     except Exception as e:
         log(f"[delete_regions] Error sending deletion task for regions #{rid}", e)
         return JsonResponse(
