@@ -8,7 +8,7 @@ import requests
 from app.config.settings import APP_URL, APP_NAME
 from app.vectorization.const import VECTO_MODEL_EPOCH, SVG_PATH
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
 

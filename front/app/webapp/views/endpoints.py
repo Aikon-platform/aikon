@@ -7,7 +7,7 @@ from django.views.decorators.cache import cache_page
 
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils.constants import MANIFEST_V2, PAGE_LEN
 
@@ -16,7 +16,7 @@ from app.webapp.utils.iiif.annotation import (
 )
 from app.webapp.utils.logger import log
 from app.webapp.utils.paths import MEDIA_PATH
-from app.webapp.utils.regions import create_empty_regions
+from app.webapp.utils.region_extraction import create_empty_regions
 from app.webapp.tasks import generate_all_json
 from webapp.utils.paths import REGIONS_PATH
 from webapp.utils.tasking import create_doc_set
@@ -192,7 +192,7 @@ def create_manual_regions(request, wid, did=None, rid=None):
 
 def delete_regions(request, rid):
     from app.webapp.tasks import delete_annotations
-    from app.regions.tasks import delete_api_regions
+    from app.region_extraction.tasks import delete_api_regions
 
     if request.method != "DELETE":
         return JsonResponse({"error": "Invalid request method"}, status=400)

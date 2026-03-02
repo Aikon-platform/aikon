@@ -186,7 +186,7 @@ SIMILARITY = (
 VECTORIZATION = "Vectorization" if APP_LANG == "en" else "Vectorisation"
 
 TASK_TYPE = {
-    "regions": REGIONS,
+    "region_extraction": REGIONS,
     "similarity": SIMILARITY,
     "vectorization": VECTORIZATION,
 }

@@ -13,7 +13,7 @@ from django.db import transaction
 from django.contrib.auth.decorators import user_passes_test
 
 from app.similarity.models.region_pair import RegionPair, RegionPairTuple
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import (
     sort_key,

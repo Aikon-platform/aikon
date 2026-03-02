@@ -8,7 +8,7 @@ from urllib.request import urlopen
 import requests
 from PIL import Image
 
-from app.webapp.models.regions import Regions, get_name
+from app.webapp.models.region_extraction import Regions, get_name
 from app.webapp.models.digitization import Digitization
 
 from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
@@ -24,7 +24,7 @@ from app.config.settings import (
 from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, flatten_dict
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
 from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
-from app.webapp.utils.regions import get_file_regions
+from app.webapp.utils.region_extraction import get_file_regions
 
 IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
 # SAS_APP_URL = f"http://sas:{SAS_PORT}" if DOCKER else SAS_APP_URL

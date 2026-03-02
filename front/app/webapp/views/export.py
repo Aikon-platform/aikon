@@ -16,7 +16,7 @@ from app.config.settings import (
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.models.utils.constants import PDF_ABBR, MAN_ABBR
 from app.webapp.utils.functions import (

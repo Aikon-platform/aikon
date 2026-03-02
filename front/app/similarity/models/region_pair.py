@@ -11,7 +11,7 @@ from django.db.models import Q, F
 from app.webapp.utils.functions import cast, sort_key
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import Regions
 from app.similarity.models.similarity_parameters import SimilarityParameters
 
 

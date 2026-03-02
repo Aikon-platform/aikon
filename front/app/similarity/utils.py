@@ -24,7 +24,7 @@ from app.similarity.models.similarity_parameters import (
 )
 from app.similarity.tasks import delete_api_similarity
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
 from app.webapp.utils.functions import delete_path, sort_key

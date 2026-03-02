@@ -369,7 +369,7 @@ class Witness(AbstractSearchableModel):
         # for digit in self.get_digits():
         #     regions.extend(digit.get_regions())
         # return regions
-        from app.webapp.models.regions import Regions
+        from app.webapp.models.region_extraction import Regions
 
         return Regions.objects.filter(digitization__witness=self).distinct()
 

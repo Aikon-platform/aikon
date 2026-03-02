@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required, user_passes_test
 
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import Regions
 from app.config.settings import (
     SAS_APP_URL,
     DEBUG,
@@ -32,7 +32,7 @@ from app.webapp.utils.iiif.annotation import (
     reindex_file,
     get_regions_urls,
 )
-from app.webapp.utils.regions import (
+from app.webapp.utils.region_extraction import (
     get_regions_img,
     create_empty_regions,
 )

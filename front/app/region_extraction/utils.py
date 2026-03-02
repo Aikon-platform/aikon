@@ -1,10 +1,10 @@
 import re
 import requests
 
-from app.regions.const import EXTRACTOR_MODEL
-from app.regions.tasks import process_regions_file
+from app.region_extraction.const import EXTRACTOR_MODEL
+from app.region_extraction.tasks import process_regions_file
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
 from app.webapp.utils.iiif import parse_ref

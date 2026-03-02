@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.regions import Regions, check_version
+from app.webapp.models.region_extraction import Regions, check_version
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.witness import Witness
 from app.config.settings import API_URL

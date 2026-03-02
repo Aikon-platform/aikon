@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from app.similarity.models.region_pair import RegionPair, add_jpg
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import Regions
 
 
 # TODO remove when all pairs are migrated

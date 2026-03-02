@@ -5,7 +5,7 @@ from app.config.settings import (
     CANTALOUPE_APP_URL,
 )
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import Regions
 from app.webapp.utils.constants import MANIFEST_V2
 
 from app.webapp.utils.logger import log

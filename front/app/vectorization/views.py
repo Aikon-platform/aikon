@@ -11,7 +11,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from app.config.settings import SAS_APP_URL, DEBUG, SAS_USERNAME
 from app.webapp.templatetags.filters import jpg_to_none
 
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import Regions
 from app.webapp.models.witness import Witness
 
 from app.webapp.utils.functions import (
