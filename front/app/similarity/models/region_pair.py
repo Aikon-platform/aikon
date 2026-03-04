@@ -21,35 +21,45 @@ def extract_digit_id(img: str) -> int | None:
     return int(matches[1]) if len(matches) > 1 else None
 
 
-def get_region_digit_id(regions_id: int) -> int | None:
+def get_region_digit_id(region_extraction_id: int) -> int | None:
     """Get digitization ID associated with a regions_id"""
     try:
-        region = RegionExtraction.objects.select_related("digitization").get(
-            id=regions_id
+        region_extraction = RegionExtraction.objects.select_related("digitization").get(
+            id=region_extraction_id
         )
-        return region.digitization.id if region.digitization else None
+        return (
+            region_extraction.digitization.id
+            if region_extraction.digitization
+            else None
+        )
     except RegionExtraction.DoesNotExist:
         return None
 
 
-def get_digit_regions_id(digit_id: int, create_if_missing: bool = False) -> int:
-    """Get or create regions_id for a digitization ID"""
-    regions = RegionExtraction.objects.filter(digitization_id=digit_id).first()
+def get_digit_region_extraction_id(
+    digit_id: int, create_if_missing: bool = False
+) -> int:
+    """Get or create region_extraction_id for a digitization ID"""
+    region_extraction = RegionExtraction.objects.filter(
+        digitization_id=digit_id
+    ).first()
 
-    if not regions:
+    if not region_extraction:
         if create_if_missing:
             try:
                 digit = Digitization.objects.get(id=digit_id)
             except Digitization.DoesNotExist:
                 raise ValidationError(f"Digitization {digit_id} does not exist")
 
-            regions = RegionExtraction.objects.create(
+            region_extraction = RegionExtraction.objects.create(
                 digitization=digit, model="manual"
             )
         else:
-            raise ValidationError(f"No regions found for digitization {digit_id}")
+            raise ValidationError(
+                f"No region extraction found for digitization {digit_id}"
+            )
 
-    return regions.id
+    return region_extraction.id
 
 
 class RegionPairTuple(NamedTuple):

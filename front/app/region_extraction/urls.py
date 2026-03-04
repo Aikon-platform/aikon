@@ -9,17 +9,17 @@ app_name = "regions"
 urlpatterns = [
     path(
         f"{APP_NAME}/extract-regions/<str:digit_ref>",
-        send_regions_extraction,
-        name="send-regions-extraction",
+        send_region_extraction,
+        name="send-region-extraction",
     ),
     path(
         f"{APP_NAME}/regions/notify",
-        receive_regions_notification,
+        receive_region_extraction_notification,
         name="notify-regions",
     ),
     path(
         f"{APP_NAME}/witness/<int:wit_id>/regions/extract",
-        witness_regions_extraction,
-        name="witness-regions-extraction",
+        witness_region_extraction,
+        name="witness-region-extraction",
     ),
 ]

@@ -31,12 +31,12 @@ from app.webapp.utils.iiif.annotation import (
 from app.webapp.utils.paths import TMP_PATH
 
 
-def no_regions_message(request):
+def no_region_extraction_message(request):
     messages.warning(
         request,
-        f"Please select at least one {WIT} with regions."
+        f"Please select at least one {WIT} with region extractions."
         if APP_LANG == "en"
-        else f"Merci de sélectionner au moins un {WIT} avec des régions.",
+        else f"Merci de sélectionner au moins un {WIT} avec des régions extraites.",
     )
 
 
@@ -79,7 +79,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             "export_selected_images",
             "export_imgs_regions",
             "export_training_imgs",
-            "export_training_regions_files",
+            "export_training_region_extraction_files",
         ]
 
         for module in ADDITIONAL_MODULES:
@@ -183,7 +183,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
 
     # MARKER LIST COLUMNS
     @admin.display(description=f"{DIG} & {REG}")
-    def digit_regions_btn(self, obj: Witness):
+    def digit_region_extraction_btn(self, obj: Witness):
         # TODO check if used else delete
         digits = obj.get_digits()
         if len(digits) == 0:
@@ -225,7 +225,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         "get_dates",
         "get_works",
         "get_roles",
-        "digit_regions_btn",
+        "digit_region_extraction_btn",
         "user",
     )
     list_display_links = ("id_nb",)
@@ -267,16 +267,16 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
             return
 
         img_urls = []
-        has_regions = False
+        has_region_extractions = False
         for witness in queryset.exclude():
             regions_wit = []
-            for regions in witness.get_regions():
-                has_regions = True
+            for regions in witness.get_region_extractions():
+                has_region_extractions = True
                 regions_wit.extend(get_images_annotations(regions))
             img_urls.extend(regions_wit)
 
-        if not has_regions:
-            no_regions_message(request)
+        if not has_region_extractions:
+            no_region_extraction_message(request)
             return
 
         return zip_img(img_urls)
@@ -286,20 +286,22 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         if APP_LANG == "en"
         else f"Exporter les régions pour l'entraînement du modèle d'extraction d'objets"
     )
-    def export_training_regions_files(self, request, queryset):
+    def export_training_region_extraction_files(self, request, queryset):
         if not check_selection(queryset, request):
             return
 
         dirnames_contents = {}
-        has_regions = False
+        has_region_extractions = False
         for wit in queryset.exclude():
             dirnames_contents[wit.get_ref()] = []
-            for regions in wit.get_regions():
-                dirnames_contents[wit.get_ref()].extend(get_training_regions(regions))
-                has_regions = True
+            for region_extractions in wit.get_region_extractions():
+                dirnames_contents[wit.get_ref()].extend(
+                    get_training_regions(region_extractions)
+                )
+                has_region_extractions = True
 
-        if not has_regions:
-            no_regions_message(request)
+        if not has_region_extractions:
+            no_region_extraction_message(request)
             return
 
         return zip_dirs(dirnames_contents)

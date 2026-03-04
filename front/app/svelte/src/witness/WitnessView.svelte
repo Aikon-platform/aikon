@@ -47,7 +47,7 @@
     $: areSelectedRegions = selectionLength > 0;
 
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
-    const currentRegionId = parseInt(baseUrl.split("regions/")[1].replace("/", ""));
+    const currentRegionId = parseInt(baseUrl.split("region-extraction/")[1].replace("/", ""));
 
     const tabList = {
         viewer: appLang === "en" ? "Viewer" : "Visionneuse",

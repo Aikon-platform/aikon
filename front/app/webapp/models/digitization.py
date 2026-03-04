@@ -159,7 +159,7 @@ class Digitization(AbstractSearchableModel):
         # Returns "img" / "pdf" / "man"
         return str(self.digit_type)
 
-    def get_regions(self):
+    def get_region_extractions(self):
         return self.region_extractions.all()
 
     # def get_treatments(self):
@@ -190,16 +190,16 @@ class Digitization(AbstractSearchableModel):
         nb = f"_{i:04d}" if i else ""
         return f"{path}/{self.get_ref()}{nb}.{ext or self.get_ext()}"
 
-    def get_regions_filenames(self):
+    def get_region_extraction_filenames(self):
         regions_files = []
-        for regions in self.get_regions():
+        for regions in self.get_region_extractions():
             regions_files.append(regions.get_ref())
         return regions_files
 
-    def has_regions(self):
+    def has_region_extractions(self):
         # if there is at least one regions file named after the current digitization
         if len(glob(f"{REGIONS_PATH}/{self.get_ref()}_*")):
-            # TODO check self.get_regions()
+            # TODO check self.get_region_extractions()
             return True
         return False
 
@@ -246,7 +246,7 @@ class Digitization(AbstractSearchableModel):
         from app.webapp.utils.iiif.annotation import total_annotations
 
         count = 0
-        for regions in self.get_regions():
+        for regions in self.get_region_extractions():
             count += total_annotations(regions)
 
         return count
@@ -267,7 +267,7 @@ class Digitization(AbstractSearchableModel):
         """
         :return: True if all regions have vectorizations, False otherwise
         """
-        return all(region.is_vectorized() for region in self.get_regions())
+        return all(region.is_vectorized() for region in self.get_region_extractions())
 
     ####### WORK IN PROGRESS
 
@@ -380,14 +380,18 @@ class Digitization(AbstractSearchableModel):
 
         # NOTE methods to be used inside list columns of witnesses
 
-    def regions_btn(self):
+    def region_extraction_btn(self):
         # To display a button in the list of witnesses to know if regions were extracted or not
-        return "<br>".join(regions.view_btn() for regions in self.get_regions())
+        return "<br>".join(
+            regions.view_btn() for regions in self.get_region_extractions()
+        )
 
     def digit_btn(self):
-        from app.webapp.utils.iiif.gen_html import regions_btn
+        from app.webapp.utils.iiif.gen_html import region_extraction_btn
 
-        return mark_safe(regions_btn(self, "view")) if self.has_images() else ""
+        return (
+            mark_safe(region_extraction_btn(self, "view")) if self.has_images() else ""
+        )
 
     # def add_source(self, source):
     #     # from app.webapp.models.digitization_source import DigitizationSource
@@ -400,10 +404,10 @@ class Digitization(AbstractSearchableModel):
 
     def view_btn(self):
         iiif_link = f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"
-        regions = self.get_regions()
+        regions = self.get_region_extractions()
         if len(regions) == 0:
             return f"{iiif_link}<br>{self.digit_btn()}"
-        return f"{iiif_link}<br>{self.regions_btn()}"
+        return f"{iiif_link}<br>{self.region_extraction_btn()}"
         # return f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"
 
     def manifest_link(self, inline=False):
@@ -467,9 +471,9 @@ def pre_delete_digit(sender, instance: Digitization, **kwargs):
     delete_digitization.delay(instance.get_ref(), other_media)
 
     # NOTE do not work because manifest_url uses the digitization id
-    # from app.webapp.tasks import delete_regions
-    # delete_regions.delay([r.id for r in instance.get_regions()])
+    # from app.webapp.tasks import delete_region_extraction
+    # delete_region_extraction.delay([r.id for r in instance.get_region_extractions()])
 
-    from app.webapp.utils.iiif.annotation import destroy_regions
+    from app.webapp.utils.iiif.annotation import destroy_region_extraction
 
-    [destroy_regions(r) for r in instance.get_regions()]
+    [destroy_region_extraction(r) for r in instance.get_region_extractions()]

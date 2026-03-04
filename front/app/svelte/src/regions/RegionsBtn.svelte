@@ -5,7 +5,7 @@
 
     const witness = getContext('witness');
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
-    const currentRegionId = parseInt(baseUrl.split('regions/')[1].replace("/", ""));
+    const currentRegionId = parseInt(baseUrl.split('region-extraction/')[1].replace("/", ""));
     import { activeLayout } from '../ui/tabStore.js';
 
     const allRegionsUrl = baseUrl.replace(/\/\d+\/?$/, "");
@@ -35,7 +35,7 @@
             if (response.status !== 204) {
                 throw new Error(`Failed to delete regions: '${response.statusText}'`);
             }
-            window.location.href = `${baseUrl.split('regions/')[0]}regions/`;
+            window.location.href = `${baseUrl.split('region-extraction/')[0]}region-extraction/`;
         } catch (error) {
             console.error(error);
         }
@@ -62,7 +62,7 @@
                 headers: { "X-CSRFToken": csrfToken },
             }));
             if (response.status === 204 || response.status === 200) {
-                window.location.href = `${baseUrl.split('regions/')[0]}regions/`;
+                window.location.href = `${baseUrl.split('region-extraction/')[0]}region-extraction/`;
             } else {
                 throw new Error(`Failed to delete similarity: '${response.statusText}'`);
             }
@@ -96,7 +96,7 @@
             </button>
         {/if}
     {:else}
-        {#each witness.regions as regionId}
+        {#each witness.region_extractions as regionId}
             <a href="{baseUrl}{regionId}" class="tag is-dark mr-3 mb-3 is-rounded">Regions extraction #{regionId}</a>
         {/each}
         <!--TODO add NEW REGIONS BUTTON (to create empty region in order to launch new automatic extraction)-->

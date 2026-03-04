@@ -195,7 +195,11 @@ def process_results(data, completed=True):
 
 
 def prepare_document(document: Witness | Digitization | RegionExtraction, **kwargs):
-    regions = document.get_regions() if hasattr(document, "get_regions") else [document]
+    regions = (
+        document.get_region_extractions()
+        if hasattr(document, "get_region_extractions")
+        else [document]
+    )
 
     if not regions:
         # TODO should task be canceled because one of the document has no extraction??
@@ -286,7 +290,11 @@ def get_doc_refs_from_records(records) -> list[str]:
     """Extract all document refs from records (Witness/Digitization/RegionExtraction)."""
     refs = []
     for record in records:
-        regions = record.get_regions() if hasattr(record, "get_regions") else [record]
+        regions = (
+            record.get_region_extractions()
+            if hasattr(record, "get_regions")
+            else [record]
+        )
         refs.extend(region.get_ref() for region in regions if regions)
     return refs
 
@@ -476,13 +484,13 @@ def get_region_pairs_with(q_img, query_regions_ids, target_regions_ids=None):
     return list(RegionPair.objects.filter(query))
 
 
-def delete_pairs_with_regions(regions_id: int):
+def delete_pairs_with_region_extraction(region_extraction_id: int):
     RegionPair.objects.filter(
-        Q(regions_id_1=regions_id) | Q(regions_id_2=regions_id)
+        Q(regions_id_1=region_extraction_id) | Q(regions_id_2=region_extraction_id)
     ).delete()
 
-    if cache.get(f"regions_q_imgs_{regions_id}") is not None:
-        cache.delete(f"regions_q_imgs_{regions_id}")
+    if cache.get(f"regions_q_imgs_{region_extraction_id}") is not None:
+        cache.delete(f"regions_q_imgs_{region_extraction_id}")
 
 
 def get_regions_q_imgs(regions_id: int, witness_id=None, cached=False):
@@ -687,7 +695,7 @@ def reset_similarity(regions: RegionExtraction):
     delete_api_similarity.delay(regions.get_ref(), algorithm=None, feat_net=None)
 
     try:
-        delete_pairs_with_regions(regions_id)
+        delete_pairs_with_region_extraction(regions_id)
     except Exception as e:
         log(f"[reset_similarity] Error deleting pairs with region id {regions_id}", e)
 
@@ -731,7 +739,7 @@ def filter_pairs(
         # if exclude_self, we need to exclude regions from the same witness
         # same_witness_regions = set()
         # for r in RegionExtraction.objects.filter(id__in=regions_ids).select_related('witness'):
-        #     witness_regions = r.witness.get_regions()
+        #     witness_regions = r.witness.get_region_extractions()
         #     if len(witness_regions) > 1:
         #         same_witness_regions.update([wr.id for wr in witness_regions])
         # if same_witness_regions:

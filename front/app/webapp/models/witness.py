@@ -177,7 +177,7 @@ class Witness(AbstractSearchableModel):
         return reverse("admin:webapp_witness_change", args=[self.id])
 
     def get_absolute_view_url(self):
-        return reverse("webapp:witness_regions_view", args=[self.id])
+        return reverse("webapp:witness_region_extraction_view", args=[self.id])
 
     def can_edit(self, user):
         if not user or not user.is_authenticated:
@@ -191,7 +191,9 @@ class Witness(AbstractSearchableModel):
         )
 
     def to_json(self, reindex=True, no_img=False, request_user=None):
-        buttons = {"regions": reverse("webapp:witness_regions_view", args=[self.id])}
+        buttons = {
+            "regions": reverse("webapp:witness_region_extraction_view", args=[self.id])
+        }
 
         digits = self.get_digits()
         user = self.user
@@ -210,7 +212,9 @@ class Witness(AbstractSearchableModel):
                 "class": self.__class__.__name__,
                 "type": get_name("Witness"),
                 "digits": [digit.id for digit in digits],
-                "regions": [region.id for region in self.get_regions()],
+                "region_extractions": [
+                    region.id for region in self.get_region_extractions()
+                ],
                 "iiif": [digit.manifest_link(inline=True) for digit in digits],
                 "title": self.__str__(),
                 "img": img,
@@ -302,8 +306,8 @@ class Witness(AbstractSearchableModel):
         return f"{self.volume_title}" if self.volume_title else "-"
 
     def is_validated(self):
-        for regions in self.get_regions():
-            if not regions.is_validated:
+        for region_extractions in self.get_region_extractions():
+            if not region_extractions.is_validated:
                 return False
         return True
 
@@ -364,10 +368,10 @@ class Witness(AbstractSearchableModel):
             return []
         return self.digitizations.all()
 
-    def get_regions(self):
+    def get_region_extractions(self):
         # regions = []
         # for digit in self.get_digits():
-        #     regions.extend(digit.get_regions())
+        #     regions.extend(digit.get_region_extractions())
         # return regions
         from app.webapp.models.region_extraction import RegionExtraction
 
@@ -403,8 +407,8 @@ class Witness(AbstractSearchableModel):
             )
         return imgs
 
-    def has_regions(self):
-        return any(digit.has_regions() for digit in self.get_digits())
+    def has_region_extractions(self):
+        return any(digit.has_region_extractions() for digit in self.get_digits())
 
     def get_works(self):
         return list(

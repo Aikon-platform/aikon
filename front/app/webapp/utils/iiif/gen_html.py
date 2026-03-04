@@ -13,7 +13,7 @@ from app.config.settings import (
 from app.webapp.utils.iiif import IIIF_ICON
 
 
-def regions_btn(obj, action="view"):
+def region_extraction_btn(obj, action="view"):
     """
     obj: RegionExtraction | Digitization
     """
@@ -22,24 +22,24 @@ def regions_btn(obj, action="view"):
 
     if action == "view":
         icon = get_icon("eye")
-        # The link redirects to Mirador with no regions (Digitization) or automatic regions (RegionExtraction)
+        # The link redirects to Mirador with no regions (Digitization) or automatic region extraction (RegionExtraction)
         link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V1)}"
     elif action == "auto-view":
         icon = get_icon("eye")
-        # The link redirects to Mirador with no regions (Digitization) or automatic regions (RegionExtraction)
+        # The link redirects to Mirador with no regions (Digitization) or automatic region extraction (RegionExtraction)
         link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V1)}"
     # elif action == "edit":
     #     icon = get_icon("pen-to-square")
-    #     # The link redirects to the edit regions page (show_regions() view DELETED)
+    #     # The link redirects to the edit region extraction page (show_regions() view DELETED)
     #     link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show/"
     elif action == "final":
         icon = get_icon("check")
-        # The link redirects to Mirador with corrected regions (RegionExtraction)
+        # The link redirects to Mirador with corrected region extraction (RegionExtraction)
         link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V2)}"
     # elif action == "similarity":
     #     icon = get_icon("code-compare")
     #     link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-similarity"
-    elif action == "regions":
+    elif action == "region_extraction":
         icon = get_icon("eye")
         link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-all-regions"
     elif action == "vectors":
@@ -73,48 +73,57 @@ def gen_btn(obj, action="view"):
     """
     obj: RegionExtraction | Digitization
     """
-    if action == "no_manifest" or action == "no_regions" or action == "no_digit":
-        return mark_safe(regions_btn(obj, action))
+    if (
+        action == "no_manifest"
+        or action == "no_region_extraction"
+        or action == "no_digit"
+    ):
+        return mark_safe(region_extraction_btn(obj, action))
 
-    is_regions = True
-    if action == "regions":
+    is_region_extraction = True
+    if action == "region_extraction":
         region_url = reverse(
-            "webapp:regions_view", kwargs={"wid": obj.get_witness().id, "rid": obj.id}
+            "webapp:region_extraction_view",
+            kwargs={"wid": obj.get_witness().id, "rid": obj.id},
         )
-        title = "Show regions" if APP_LANG == "en" else "Afficher les régions"
+        title = (
+            "Show region extraction"
+            if APP_LANG == "en"
+            else "Afficher les régions extraites"
+        )
         return mark_safe(
             f"<a href='{region_url}' class='button is-small is-link px-2' title='{title}'>"
             f"<span class='iconify' data-icon='entypo:documents'/>"
             f"<span class='ml-2'>{title.upper()}</span></a>"
         )
-    # if action == "regions" or action == "vectors":
-    #     return mark_safe(f"<br>{regions_btn(obj, action)}")
+    # if action == "region_extraction" or action == "vectors":
+    #     return mark_safe(f"<br>{region_extraction(obj, action)}")
 
     # if action == "auto-view":
     #     digit_id = obj.id if cls(obj) == Digitization else obj.get_digit().id
     #     download_url = f"{APP_URL}/{APP_NAME}/iiif/digit-regions/{digit_id}"
-    #     regions_type = "TXT"
+    #     region_extraction_type = "TXT"
     #     version = None if cls(obj) == Digitization else MANIFEST_V1
-    #     is_regions = obj.has_regions() if cls(obj) == Digitization else True
+    #     is_region_extraction = obj.has_region_extractions() if cls(obj) == Digitization else True
     # else:
     #     download_url = f"{SAS_APP_URL}/search-api/{obj.get_ref()}/search/"
-    #     regions_type = "JSON"
+    #     region_extraction_type = "JSON"
     #     version = MANIFEST_V2
     # else:
     #     return mark_safe("NOT SUPPOSED TO OCCUR")
     download_url = f"{SAS_APP_URL}/search-api/{obj.get_ref()}/search/"
-    regions_type = "JSON"
+    region_extraction_type = "JSON"
     version = MANIFEST_V2
 
     download = (
-        f'<a href="{download_url}" target="_blank">{get_icon("download")} {get_action("download")} ({regions_type})</a>'
-        if is_regions
+        f'<a href="{download_url}" target="_blank">{get_icon("download")} {get_action("download")} ({region_extraction_type})</a>'
+        if is_region_extraction
         else ""
     )
 
     return mark_safe(
         # todo: do a method of RegionExtraction and Digitization instead?
-        f"{get_link_manifest(obj, version)}<br>{regions_btn(obj, action)}<br>{download}"
+        f"{get_link_manifest(obj, version)}<br>{region_extraction_btn(obj, action)}<br>{download}"
     )
 
 

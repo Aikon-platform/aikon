@@ -33,19 +33,19 @@ def reindex_from_file(regions_id):
     from app.webapp.models.region_extraction import RegionExtraction
     from app.webapp.utils.iiif.annotation import check_indexation
 
-    # regions = RegionExtraction.objects.filter(pk=regions_id).first()
-    regions = RegionExtraction.objects.get(pk=regions_id)
-    return check_indexation(regions, True)
+    # region_extraction = RegionExtraction.objects.filter(pk=regions_id).first()
+    region_extraction = RegionExtraction.objects.get(pk=regions_id)
+    return check_indexation(region_extraction, True)
 
 
 @celery_app.task
-def delete_regions_and_annotations(regions_id):
+def delete_region_extraction_and_annotations(regions_id):
     from app.webapp.models.region_extraction import RegionExtraction
-    from app.webapp.utils.iiif.annotation import destroy_regions
+    from app.webapp.utils.iiif.annotation import destroy_region_extraction
 
-    # regions = RegionExtraction.objects.filter(pk=regions_id).first()
-    regions = RegionExtraction.objects.get(pk=regions_id)
-    return destroy_regions(regions)
+    # region_extraction = RegionExtraction.objects.filter(pk=regions_id).first()
+    region_extraction = RegionExtraction.objects.get(pk=regions_id)
+    return destroy_region_extraction(region_extraction)
 
 
 @celery_app.task
@@ -206,14 +206,14 @@ def delete_digitization(digit_ref, other_media):
 
 
 @celery_app.task
-def delete_regions(regions_ids):
+def delete_region_extraction(regions_ids):
     from app.webapp.models.region_extraction import RegionExtraction
-    from app.webapp.utils.iiif.annotation import destroy_regions
+    from app.webapp.utils.iiif.annotation import destroy_region_extraction
 
     for regions_id in regions_ids:
         try:
             regions = RegionExtraction.objects.get(id=regions_id)
-            destroy_regions(regions)
+            destroy_region_extraction(regions)
         except RegionExtraction.DoesNotExist:
             return f"Error: RegionExtraction #{regions_ids} does not exist"
         except Exception as e:

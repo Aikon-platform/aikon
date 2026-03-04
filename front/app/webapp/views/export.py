@@ -32,21 +32,21 @@ from app.webapp.utils.iiif.annotation import (
 from app.webapp.utils.paths import IMG_PATH
 
 
-def export_regions(request):
+def export_region_extraction(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
     data = json.loads(request.body.decode("utf-8"))
-    regions_ref = data.get("regionsRef")
+    region_extraction_ref = data.get("regionExtractionRef")
 
     urls_list = []
-    for ref in regions_ref:
+    for ref in region_extraction_ref:
         try:
             wit, digit, canvas, coord = ref.split("_")
             urls_list.append(
                 gen_iiif_url(f"{wit}_{digit}_{canvas}.jpg", 2, f"{coord}/full/0")
             )
         except Exception as e:
-            log(f"[export_regions] Couldn't parse {ref} for export", e)
+            log(f"[export_region_extraction] Couldn't parse {ref} for export", e)
 
     return zip_img(urls_list)
 
@@ -108,7 +108,7 @@ def export_docset(request, dsid):
                     )
                 )
 
-        r_list = w.get_regions()
+        r_list = w.get_region_extractions()
         for regions in r_list:
             # 2: Annotation (JSON manifest+metadata)
             if "regions" in ADDITIONAL_MODULES:
@@ -307,7 +307,7 @@ def get_witness_data(witness, json_cascade=True):
         )
     }
 
-    w_regions = witness.get_regions()
+    w_regions = witness.get_region_extractions()
     w_reg_processes = {}
     for r in w_regions:
         # TODO change to use get_json()
@@ -336,7 +336,7 @@ def get_witness_data(witness, json_cascade=True):
                     "vectorizations"
                 ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/vectorized-images"
 
-    return w_json | w_digits_manifs | {"regions": w_reg_processes}
+    return w_json | w_digits_manifs | {"regions_extraction": w_reg_processes}
 
 
 def create_json_vecto_element(svg_filename, include_svg, subfolder_name=None):

@@ -16,7 +16,7 @@ from app.webapp.utils.iiif.annotation import (
 )
 from app.webapp.utils.logger import log
 from app.webapp.utils.paths import MEDIA_PATH
-from app.webapp.utils.region_extraction import create_empty_regions
+from app.webapp.utils.region_extraction import create_empty_region_extraction
 from app.webapp.tasks import generate_all_json
 from webapp.utils.paths import REGIONS_PATH
 from webapp.utils.tasking import create_doc_set
@@ -100,16 +100,16 @@ def save_document_set(request, dsid=None):
 
 def get_canvas_regions(request, wid, rid):
     # TODO mutualize with get_canvas_witness_regions
-    regions = get_object_or_404(RegionExtraction, id=rid)
+    region_extraction = get_object_or_404(RegionExtraction, id=rid)
     p_nb = int(request.GET.get("p", 0))
-    max_canvas = regions.get_json()["img_nb"]
+    max_canvas = region_extraction.get_json()["img_nb"]
     if p_nb > 0:
         p_len = PAGE_LEN
         max_c = p_nb * p_len
         min_c = max_c - p_len
         return JsonResponse(
             get_regions_annotations(
-                regions,
+                region_extraction,
                 as_json=True,
                 r_annos={},
                 min_c=min_c,
@@ -119,7 +119,9 @@ def get_canvas_regions(request, wid, rid):
         )
     # to retrieve all regions
     return JsonResponse(
-        get_regions_annotations(regions, as_json=True, min_c=1, max_c=max_canvas),
+        get_regions_annotations(
+            region_extraction, as_json=True, min_c=1, max_c=max_canvas
+        ),
         safe=False,
     )
 
@@ -132,10 +134,10 @@ def get_canvas_witness_regions(request, wid):
         p_len = PAGE_LEN
         max_c = p_nb * p_len
         min_c = max_c - p_len
-        for regions in witness.get_regions():
-            max_canvas = regions.get_json()["img_nb"]
+        for region_extraction in witness.get_region_extractions():
+            max_canvas = region_extraction.get_json()["img_nb"]
             anno_regions = get_regions_annotations(
-                regions,
+                region_extraction,
                 as_json=True,
                 r_annos=anno_regions,
                 min_c=min_c,
@@ -143,23 +145,27 @@ def get_canvas_witness_regions(request, wid):
             )
     else:
         # to retrieve all regions
-        for regions in witness.get_regions():
-            max_c = regions.get_json()["img_nb"]
+        for region_extraction in witness.get_region_extractions():
+            max_c = region_extraction.get_json()["img_nb"]
             anno_regions = get_regions_annotations(
-                regions, as_json=True, r_annos=anno_regions, min_c=1, max_c=max_c
+                region_extraction,
+                as_json=True,
+                r_annos=anno_regions,
+                min_c=1,
+                max_c=max_c,
             )
 
     return JsonResponse(anno_regions, safe=False)
 
 
-def create_manual_regions(request, wid, did=None, rid=None):
+def create_manual_region_extraction(request, wid, did=None, rid=None):
     if request.method == "POST":
         if rid:
-            regions = get_object_or_404(RegionExtraction, id=rid)
+            region_extraction = get_object_or_404(RegionExtraction, id=rid)
             return JsonResponse(
                 {
-                    "regions_id": regions.id,
-                    "mirador_url": regions.gen_mirador_url(),
+                    "region_extraction_id": region_extraction.id,
+                    "mirador_url": region_extraction.gen_mirador_url(),
                 },
             )
 
@@ -178,40 +184,47 @@ def create_manual_regions(request, wid, did=None, rid=None):
                 {"error": "No digitization available for this witness"}, status=500
             )
 
-        regions = create_empty_regions(digit)
-        if not regions:
-            return JsonResponse({"error": "Unable to create regions"}, status=500)
+        region_extraction = create_empty_region_extraction(digit)
+        if not region_extraction:
+            return JsonResponse(
+                {"error": "Unable to create region extraction"}, status=500
+            )
         return JsonResponse(
             {
-                "regions_id": regions.id,
-                "mirador_url": regions.gen_mirador_url(),
+                "region_extraction_id": region_extraction.id,
+                "mirador_url": region_extraction.gen_mirador_url(),
             },
         )
     return JsonResponse({"error": "Invalid request method"}, status=400)
 
 
-def delete_regions(request, rid):
+def delete_region_extraction(request, rid):
     from app.webapp.tasks import delete_annotations
-    from app.region_extraction.tasks import delete_api_regions
+    from app.region_extraction.tasks import delete_api_region_extraction
 
     if request.method != "DELETE":
         return JsonResponse({"error": "Invalid request method"}, status=400)
-    regions = get_object_or_404(RegionExtraction, id=rid)
+    region_extraction = get_object_or_404(RegionExtraction, id=rid)
     try:
         delete_annotations.delay(
-            regions.get_ref(), regions.gen_manifest_url(version=MANIFEST_V2)
+            region_extraction.get_ref(),
+            region_extraction.gen_manifest_url(version=MANIFEST_V2),
         )
 
-        Path(f"{REGIONS_PATH}/{regions.get_ref()}.json").unlink(missing_ok=True)
+        Path(f"{REGIONS_PATH}/{region_extraction.get_ref()}.json").unlink(
+            missing_ok=True
+        )
 
-        delete_api_regions.delay(regions.get_digit().get_ref(), regions.model)
+        delete_api_region_extraction.delay(
+            region_extraction.get_digit().get_ref(), region_extraction.model
+        )
 
         try:
-            # Delete the regions record in the database
-            regions.delete()
+            # Delete the region extraction record in the database
+            region_extraction.delete()
         except Exception as e:
             return JsonResponse(
-                {"message": f"Failed to delete regions record #{rid}: {e}"},
+                {"message": f"Failed to delete region extraction record #{rid}: {e}"},
                 status=400,
             )
 
@@ -219,9 +232,14 @@ def delete_regions(request, rid):
             {"message": "RegionExtraction deletion requested"}, status=204
         )
     except Exception as e:
-        log(f"[delete_regions] Error sending deletion task for regions #{rid}", e)
+        log(
+            f"[delete_region_extraction] Error sending deletion task for region extraction #{rid}",
+            e,
+        )
         return JsonResponse(
-            {"error": f" Error sending deletion task for regions #{rid}: {e}"},
+            {
+                "error": f" Error sending deletion task for region extraction #{rid}: {e}"
+            },
             status=500,
         )
 

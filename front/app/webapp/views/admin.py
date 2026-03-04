@@ -206,13 +206,13 @@ class WitnessRegionExtractionView(AbstractRecordView):
             if digit := Digitization.objects.filter(pk=did).first():
                 context["manifests"].append(digit.gen_manifest_url(version=MANIFEST_V2))
 
-        for rid in context["witness"]["regions"]:
+        for rid in context["witness"]["region_extractions"]:
             regions = RegionExtraction.objects.filter(pk=rid).first()
             if not regions:
                 continue
 
             context["regions_ids"].append(rid)
-            # for regions in witness.get_regions():
+            # for regions in witness.get_region_extractions():
             #     context["regions_ids"].append(regions.id)
             # TODO handle multiple manifest for multiple regions
 

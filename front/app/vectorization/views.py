@@ -184,7 +184,7 @@ def show_vectorization(request, regions_ref):
 @login_required
 def export_all_images_and_svgs(request, witness_id):
     witness = get_object_or_404(Witness, id=witness_id)
-    regions_list = witness.get_regions()
+    regions_list = witness.get_region_extractions()
     return export_common_logic(regions_list)
 
 
@@ -236,7 +236,7 @@ def get_vectorized_images(request, wid, rid=None):
         q_regions = [get_object_or_404(RegionExtraction, id=rid)]
     else:
         witness = get_object_or_404(Witness, id=wid)
-        q_regions = witness.get_regions()
+        q_regions = witness.get_region_extractions()
 
     try:
         v_imgs = set()

@@ -79,11 +79,11 @@ def search_digitizations(request):
 
 
 @require_GET
-def search_regions(request):
-    regions_filter = RegionExtractionFilter(
+def search_region_extractions(request):
+    region_extraction_filter = RegionExtractionFilter(
         request.GET, queryset=RegionExtraction.objects.order_by("id")
     )
-    return JsonResponse(paginated_records(request, regions_filter.qs))
+    return JsonResponse(paginated_records(request, region_extraction_filter.qs))
 
 
 class ArrayLength(models.Func):

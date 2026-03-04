@@ -46,7 +46,7 @@ class Command(BaseCommand):
 
             for digit in digits:
                 dirnames_contents[digit.get_ref()] = []
-                regions = digit.get_regions()
+                regions = digit.get_region_extractions()
 
                 if not regions:
                     self.stdout.write(

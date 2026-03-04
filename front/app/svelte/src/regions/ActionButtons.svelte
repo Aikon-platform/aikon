@@ -73,11 +73,11 @@
 
     async function downloadRegions(){
         // download only displayed regions?
-        const regionsRef = Object.values(selectedRegions).map(r => r.ref);
+        const regionExtractionRef = Object.values(selectedRegions).map(r => r.ref);
         const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/regions/export`, {
             method: "POST",
             headers: { "X-CSRFToken": csrfToken },
-            body: JSON.stringify({regionsRef})
+            body: JSON.stringify({regionExtractionRef})
         }));
         const blob = await response.blob();
         // TODO find better filename

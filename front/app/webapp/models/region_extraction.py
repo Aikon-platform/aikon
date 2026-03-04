@@ -120,7 +120,7 @@ class RegionExtraction(AbstractSearchableModel):
         annotation_id = f"{self.get_ref()}_c{canvas_nb}_{uuid4().hex}"
         return annotation_id
 
-    def has_regions(self):
+    def has_region_extractions(self):
         # if there is a regions file named after the current RegionExtraction
         if len(glob(f"{REGIONS_PATH}/{self.get_ref()}*")):
             return True
@@ -191,9 +191,11 @@ class RegionExtraction(AbstractSearchableModel):
         return []
 
     def view_btn(self):
-        from app.webapp.utils.iiif.gen_html import regions_btn
+        from app.webapp.utils.iiif.gen_html import region_extraction_btn
 
         action = "final" if self.is_validated else "edit"
-        btn = regions_btn(self, action if self.has_regions() else "no_regions")
+        btn = region_extraction_btn(
+            self, action if self.has_region_extractions() else "no_region_extraction"
+        )
 
         return mark_safe(btn)

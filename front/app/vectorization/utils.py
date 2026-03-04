@@ -110,11 +110,17 @@ def prepare_document(document: Witness | Digitization | RegionExtraction, **kwar
             else f"« {document} » est déjà vectorisé"
         )
 
-    regions = document.get_regions() if hasattr(document, "get_regions") else [document]
+    region_extractions = (
+        document.get_region_extractions()
+        if hasattr(document, "get_region_extractions")
+        else [document]
+    )
 
     return [
         {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
-        for ref in [region.get_ref() for region in regions]
+        for ref in [
+            region_extraction.get_ref() for region_extraction in region_extractions
+        ]
     ]
 
 

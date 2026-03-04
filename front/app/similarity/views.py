@@ -51,7 +51,7 @@ from app.webapp.models.document_set import DocumentSet
 
 
 @user_passes_test(is_superuser)
-def send_similarity(request, regions_refs):
+def send_similarity(request, region_extraction_refs):
     """
     To relaunch similarity request in case the automatic process has failed
     """
@@ -59,7 +59,7 @@ def send_similarity(request, regions_refs):
     regions = [
         region
         for (passed, region) in [
-            check_ref(ref, "RegionExtraction") for ref in regions_refs
+            check_ref(ref, "RegionExtraction") for ref in region_extraction_refs
         ]
         if passed
     ]
@@ -67,30 +67,36 @@ def send_similarity(request, regions_refs):
     if not len(regions):
         return JsonResponse(
             {
-                "response": f"No corresponding regions in the database for {regions_refs}"
+                "response": f"No corresponding region extraction in the database for {region_extraction_refs}"
             },
             safe=False,
         )
 
-    if len(check_computed_pairs(regions_refs)) == 0:
+    if len(check_computed_pairs(region_extraction_refs)) == 0:
         return JsonResponse(
-            {"response": f"All similarity pairs were computed for {regions_refs}"},
+            {
+                "response": f"All similarity pairs were computed for {region_extraction_refs}"
+            },
             safe=False,
         )
 
     try:
         if send_request(regions):
             return JsonResponse(
-                {"response": f"Successful similarity request for {regions_refs}"},
+                {
+                    "response": f"Successful similarity request for {region_extraction_refs}"
+                },
                 safe=False,
             )
         return JsonResponse(
-            {"response": f"Failed to send similarity request for {regions_refs}"},
+            {
+                "response": f"Failed to send similarity request for {region_extraction_refs}"
+            },
             safe=False,
         )
 
     except Exception as e:
-        error = f"[send_similarity] Couldn't send request for {regions_refs}"
+        error = f"[send_similarity] Couldn't send request for {region_extraction_refs}"
         log(error, e)
 
         return JsonResponse({"response": error, "reason": e}, safe=False)
@@ -117,7 +123,7 @@ def get_similar_images(request, wid, rid=None):
         q_regions = [get_object_or_404(RegionExtraction, id=rid)]
     else:
         witness = get_object_or_404(Witness, id=wid)
-        q_regions = witness.get_regions()
+        q_regions = witness.get_region_extractions()
 
     if not len(q_regions):
         return JsonResponse(
@@ -171,7 +177,7 @@ def get_compared_regions(request, wid, rid=None):
         q_regions = [get_object_or_404(RegionExtraction, id=rid)]
     else:
         witness = get_object_or_404(Witness, id=wid)
-        q_regions = witness.get_regions()
+        q_regions = witness.get_region_extractions()
 
     try:
         current_regions = {q_r.get_ref(): q_r.get_json() for q_r in q_regions}
@@ -369,13 +375,13 @@ def get_propagated_matches(
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
-def get_regions(img_1, img_2, wid, rid):
+def get_region_extractions(img_1, img_2, wid, rid):
     def get_digit_id(img):
         return int(re.findall(r"\d+", img)[1])
 
     def get_regions_from_digit(digit_id):
         digit = get_object_or_404(Digitization, id=digit_id)
-        regions = list(digit.get_regions())
+        regions = list(digit.get_region_extractions())
         if not regions:
             regions = RegionExtraction.objects.create(
                 digitization=digit,
@@ -387,14 +393,14 @@ def get_regions(img_1, img_2, wid, rid):
 
     if img_1.startswith(f"wit{wid}"):
         witness = get_object_or_404(Witness, id=wid)
-        regions_1 = rid or witness.get_regions()[0].id
+        regions_1 = rid or witness.get_region_extractions()[0].id
         digit_2 = get_digit_id(img_2)
         regions_2 = get_regions_from_digit(digit_2)
     else:
         digit_1 = get_digit_id(img_1)
         regions_1 = get_regions_from_digit(digit_1)
         witness = get_object_or_404(Witness, id=wid)
-        regions_2 = rid or witness.get_regions()[0].id
+        regions_2 = rid or witness.get_region_extractions()[0].id
     return regions_1, regions_2
 
 
@@ -516,7 +522,7 @@ def get_query_images(request, wid, rid=None):
         q_regions = [get_object_or_404(RegionExtraction, id=rid)]
     else:
         witness = get_object_or_404(Witness, id=wid)
-        q_regions = witness.get_regions()
+        q_regions = witness.get_region_extractions()
 
     try:
         q_imgs = set()
@@ -917,7 +923,7 @@ def get_regions_pairs(request, wid, rid=None):
         regions = [get_object_or_404(RegionExtraction, id=rid)]
     else:
         witness = get_object_or_404(Witness, id=wid)
-        regions = witness.get_regions()
+        regions = witness.get_region_extractions()
 
     if not len(regions):
         return JsonResponse(
@@ -940,7 +946,7 @@ def get_regions_pairs(request, wid, rid=None):
         try:
             for wid in witness_ids:
                 witness = get_object_or_404(Witness, id=int(wid))
-                q_regions.update(r.id for r in witness.get_regions())
+                q_regions.update(r.id for r in witness.get_region_extractions())
         except ValueError:
             return JsonResponse({"error": "Invalid witnessIds parameter"}, status=400)
 
@@ -971,7 +977,7 @@ def get_document_set_pairs(request, dsid=None):
             {"error": f"Document set #{dsid} does not exist"}, status=400
         )
 
-    regions_ids = document_set.get_regions(only_ids=True)
+    regions_ids = document_set.get_region_extractions(only_ids=True)
     if not len(regions_ids):
         return JsonResponse(
             {"error": f"No regions found for this document set #{dsid}"}, status=400
@@ -1013,10 +1019,11 @@ def stream_document_set_pairs(request, dsid=None):
             {"error": f"Document set #{dsid} does not exist"}, status=400
         )
 
-    regions_ids = document_set.get_regions(only_ids=True)
-    if not regions_ids:
+    region_extraction_ids = document_set.get_region_extractions(only_ids=True)
+    if not region_extraction_ids:
         return JsonResponse(
-            {"error": f"No regions found for document set #{dsid}"}, status=400
+            {"error": f"No region extraction found for document set #{dsid}"},
+            status=400,
         )
 
     params = {
@@ -1027,7 +1034,7 @@ def stream_document_set_pairs(request, dsid=None):
         "exclude_self": safe_bool(request.GET.get("excludeSelf")) or False,
     }
 
-    sql, sql_params = build_pairs_query(regions_ids, **params)
+    sql, sql_params = build_pairs_query(region_extraction_ids, **params)
 
     response = StreamingHttpResponse(
         stream_pairs_ndjson(sql, sql_params), content_type="application/x-ndjson"

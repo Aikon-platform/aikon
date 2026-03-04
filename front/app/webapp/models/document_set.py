@@ -149,7 +149,7 @@ class DocumentSet(AbstractSearchableModel):
 
         return list(witness_ids)
 
-    def get_regions(self, only_ids):
+    def get_region_extractions(self, only_ids):
         witness_ids = self.all_witness_ids()
         if only_ids:
             return list(

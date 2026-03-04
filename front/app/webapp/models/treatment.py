@@ -51,7 +51,7 @@ class Treatment(AbstractSearchableModel):
         app_label = "webapp"
 
     def __str__(self, light=False):
-        task = f"{self.task_type.__str__().capitalize()}"
+        task = f"{self.task_type.__str__().replace('_', ' ').capitalize()}"
         if light:
             if self.json and "title" in self.json:
                 return self.json["title"]
@@ -143,7 +143,10 @@ class Treatment(AbstractSearchableModel):
             return urls
         witnesses = self.document_set.all_witness_ids()
         urls.append(
-            [reverse("webapp:witness_regions_view", args=[wid]) for wid in witnesses]
+            [
+                reverse("webapp:witness_region_extraction_view", args=[wid])
+                for wid in witnesses
+            ]
         )
         #  TODO make variable used in svelte component and in overall app
         tabs = {

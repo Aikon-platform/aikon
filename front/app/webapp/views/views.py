@@ -93,7 +93,7 @@ def check_ref(obj_ref, obj="Digitization"):
     if not digit:
         return False, {"response": f"No digitization matching the id #{digit_id}"}
 
-    if obj == "Digitization" or ref["regions"] is None:
+    if obj == "Digitization" or ref["region_extractions"] is None:
         if obj_ref != digit.get_ref():
             return False, {
                 "response": f"Wrong info given in reference for digitization #{digit_id}: {obj_ref} instead of {digit.get_ref()}",
@@ -101,19 +101,21 @@ def check_ref(obj_ref, obj="Digitization"):
             }
         return True, digit
 
-    regions_id = ref["regions"][1]
+    region_extraction_id = ref["region_extractions"][1]
     # regions = RegionExtraction.objects.filter(pk=regions_id).first()
-    regions = RegionExtraction.objects.get(pk=regions_id)
-    if not regions:
-        return False, {"response": f"No regions matching the id #{regions_id}"}
+    region_extraction = RegionExtraction.objects.get(pk=region_extraction_id)
+    if not region_extraction:
+        return False, {
+            "response": f"No region extraction matching the id #{region_extraction_id}"
+        }
 
     if obj == "RegionExtraction":
-        if obj_ref != regions.get_ref():
+        if obj_ref != region_extraction.get_ref():
             return False, {
-                "response": f"Wrong info given in reference for regions #{regions_id}",
+                "response": f"Wrong info given in reference for region extraction #{region_extraction_id}",
                 "reason": f"Reference must follow this format: {ref_format}",
             }
-        return True, regions
+        return True, region_extraction
 
     return False, {"response": f"Nothing to retrieve for {obj} #{obj_ref}"}
 
@@ -127,28 +129,30 @@ def manifest_digitization(request, digit_ref):
     return JsonResponse(digit.gen_manifest_json())
 
 
-def manifest_regions(request, version, regions_ref):
+def manifest_region_extraction(request, version, region_extraction_ref):
     # TODO make difference if witness is not public
-    passed, regions = check_ref(regions_ref, "RegionExtraction")
+    passed, region_extraction = check_ref(region_extraction_ref, "RegionExtraction")
     if not passed:
-        return JsonResponse(regions, safe=False)
+        return JsonResponse(region_extraction, safe=False)
 
-    return JsonResponse(regions.gen_manifest_json(version=check_version(version)))
+    return JsonResponse(
+        region_extraction.gen_manifest_json(version=check_version(version))
+    )
 
 
 # def export_digit_img(request, digit_id):
 #     digit = get_object_or_404(Digitization, pk=digit_id)
 #     regions = []
-#     for region in digit.get_regions():
-#         regions.extend(get_regions_img(region))
+#     for region in digit.get_region_extractions():
+#         regions.extend(get_region_extraction_img(region))
 #     return list_to_txt(regions, digit.get_ref())
 
 
 # def export_wit_img(request, wit_id):
 #     wit = get_object_or_404(Witness, pk=wit_id)
 #     regions = []
-#     for region in wit.get_regions():
-#         regions.extend(get_regions_img(region))
+#     for region in wit.get_region_extractions():
+#         regions.extend(get_region_extraction_img(region))
 #     return list_to_txt(regions, wit.get_ref())
 
 
