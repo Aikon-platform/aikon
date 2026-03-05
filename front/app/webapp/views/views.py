@@ -79,7 +79,7 @@ def check_ref(obj_ref, obj="Digitization"):
     ref_format = (
         "wit{witness_id}_{digit_abbr}{digit_id}"
         if obj == "Digitization"
-        else "wit{witness_id}_{digit_abbr}{digit_id}_anno{regions_id}"
+        else "wit{witness_id}_{digit_abbr}{digit_id}_anno{region_extraction_id}"
     )
     if not ref:
         return False, {
@@ -93,7 +93,7 @@ def check_ref(obj_ref, obj="Digitization"):
     if not digit:
         return False, {"response": f"No digitization matching the id #{digit_id}"}
 
-    if obj == "Digitization" or ref["region_extractions"] is None:
+    if obj == "Digitization" or ref["region_extraction"] is None:
         if obj_ref != digit.get_ref():
             return False, {
                 "response": f"Wrong info given in reference for digitization #{digit_id}: {obj_ref} instead of {digit.get_ref()}",
@@ -101,7 +101,7 @@ def check_ref(obj_ref, obj="Digitization"):
             }
         return True, digit
 
-    region_extraction_id = ref["region_extractions"][1]
+    region_extraction_id = ref["region_extraction"][1]
     # regions = RegionExtraction.objects.filter(pk=regions_id).first()
     region_extraction = RegionExtraction.objects.get(pk=region_extraction_id)
     if not region_extraction:

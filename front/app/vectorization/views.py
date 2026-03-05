@@ -48,10 +48,12 @@ def receive_vectorization_notification(request):
 
 
 @login_required
-def show_crop_vectorization(request, img_file, coords, regions, canvas_nb):
+def show_crop_vectorization(
+    request, img_file, coords, region_extraction_ref, canvas_nb
+):
     # TODO check if it is used
     svg_filename = f"{jpg_to_none(img_file)}_{coords}.svg"
-    svg_path = os.path.join(SVG_PATH, regions, svg_filename)
+    svg_path = os.path.join(SVG_PATH, region_extraction_ref, svg_filename)
 
     if not os.path.exists(svg_path):
         print(f"File {svg_path} not found")
@@ -66,92 +68,104 @@ def show_crop_vectorization(request, img_file, coords, regions, canvas_nb):
             "img_file": img_file,
             "coords": coords,
             "svg_content": svg_content,
-            "regions": regions,
+            "region_extraction": region_extraction_ref,
             "canvas_nb": canvas_nb,
         },
     )
 
 
 @user_passes_test(is_superuser)
-def smash_and_relaunch_vectorization(request, regions_ref):
+def smash_and_relaunch_vectorization(request, region_extraction_ref):
     """
     Delete the imgs in the API from the repo corresponding to doc_id + relaunch vectorization
     TODO rename and simplify
     """
-    passed, regions = check_ref(regions_ref, "RegionExtraction")
+    passed, region_extraction = check_ref(region_extraction_ref, "RegionExtraction")
     if not passed:
-        return JsonResponse(regions)
+        return JsonResponse(region_extraction)
 
-    if not regions:
+    if not region_extraction:
         return JsonResponse(
-            {"response": f"No corresponding regions in the database for {regions_ref}"},
+            {
+                "response": f"No corresponding region extraction in the database for {region_extraction_ref}"
+            },
             safe=False,
         )
 
     try:
-        if delete_and_relaunch_request(regions):
+        if delete_and_relaunch_request(region_extraction):
             return JsonResponse(
                 {
-                    "response": f"Successful smash + vectorization request for {regions_ref}"
+                    "response": f"Successful smash + vectorization request for {region_extraction_ref}"
                 },
                 safe=False,
             )
         return JsonResponse(
             {
-                "response": f"Failed to send smash + vectorization request for {regions_ref}"
+                "response": f"Failed to send smash + vectorization request for {region_extraction_ref}"
             },
             safe=False,
         )
 
     except Exception as e:
-        error = f"[send_vectorization] Couldn't send request for {regions_ref}"
+        error = (
+            f"[send_vectorization] Couldn't send request for {region_extraction_ref}"
+        )
         log(error, e)
 
         return JsonResponse({"response": error, "reason": e}, safe=False)
 
 
 @login_required
-def send_vectorization(request, regions_ref):
+def send_vectorization(request, region_extraction_ref):
     """
     To relaunch vectorization request in case the automatic process has failed
     """
 
-    passed, regions = check_ref(regions_ref, "RegionExtraction")
+    passed, regions = check_ref(region_extraction_ref, "RegionExtraction")
     if not passed:
         return JsonResponse(regions)
 
     if not regions:
         return JsonResponse(
-            {"response": f"No corresponding regions in the database for {regions_ref}"},
+            {
+                "response": f"No corresponding region extraction in the database for {region_extraction_ref}"
+            },
             safe=False,
         )
 
     try:
         if vectorization_request_for_one(regions):
             return JsonResponse(
-                {"response": f"Successful vectorization request for {regions_ref}"},
+                {
+                    "response": f"Successful vectorization request for {region_extraction_ref}"
+                },
                 safe=False,
             )
         return JsonResponse(
-            {"response": f"Failed to send vectorization request for {regions_ref}"},
+            {
+                "response": f"Failed to send vectorization request for {region_extraction_ref}"
+            },
             safe=False,
         )
 
     except Exception as e:
-        error = f"[send_vectorization] Couldn't send request for {regions_ref}"
+        error = (
+            f"[send_vectorization] Couldn't send request for {region_extraction_ref}"
+        )
         log(error, e)
 
         return JsonResponse({"response": error, "reason": e}, safe=False)
 
 
 @login_required
-def show_vectorization(request, regions_ref):
+def show_vectorization(request, region_extraction_ref):
     # TODO check if it is used
-    passed, regions = check_ref(regions_ref, "RegionExtraction")
+    passed, region_extraction = check_ref(region_extraction_ref, "RegionExtraction")
     if not passed:
-        return JsonResponse(regions)
+        return JsonResponse(region_extraction)
 
-    _, all_regions = formatted_annotations(regions)
+    _, all_regions = formatted_annotations(region_extraction)
     all_crops = [
         (canvas_nb, coord, img_file)
         for canvas_nb, coord, img_file in all_regions
@@ -170,10 +184,10 @@ def show_vectorization(request, regions_ref):
         request,
         "show_vectorization.html",
         context={
-            "regions": regions,
+            "region_extraction": region_extraction,
             "page_regions": page_regions,
             "all_crops": all_crops,
-            "regions_ref": regions_ref,
+            "regions_ref": region_extraction_ref,
         },
     )
 

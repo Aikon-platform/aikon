@@ -195,13 +195,13 @@ def process_results(data, completed=True):
 
 
 def prepare_document(document: Witness | Digitization | RegionExtraction, **kwargs):
-    regions = (
+    region_extraction = (
         document.get_region_extractions()
         if hasattr(document, "get_region_extractions")
         else [document]
     )
 
-    if not regions:
+    if not region_extraction:
         # TODO should task be canceled because one of the document has no extraction??
         raise ValueError(
             f"“{document}” has no extracted regions for which to calculate similarity scores"
@@ -211,7 +211,7 @@ def prepare_document(document: Witness | Digitization | RegionExtraction, **kwar
 
     return [
         {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
-        for ref in [region.get_ref() for region in regions]
+        for ref in [region.get_ref() for region in region_extraction]
     ]
 
 
@@ -677,12 +677,15 @@ def get_all_pairs():
     return [pair_file.replace(".npy", "") for pair_file in os.listdir(SCORES_PATH)]
 
 
-def reset_similarity(regions: RegionExtraction):
-    regions_id = regions.id
+def reset_similarity(region_extraction: RegionExtraction):
+    region_extraction_id = region_extraction.id
     try:
-        regions_ref = regions.get_ref()
+        regions_ref = region_extraction.get_ref()
     except Exception as e:
-        log(f"[reset_similarity] Failed to retrieve region ref for id {regions_id}", e)
+        log(
+            f"[reset_similarity] Failed to retrieve region extraction ref for id {region_extraction_id}",
+            e,
+        )
         return False
     for file in os.listdir(SCORES_PATH):
         if regions_ref in file:
@@ -692,12 +695,17 @@ def reset_similarity(regions: RegionExtraction):
                 log(f"[reset_similarity] Failed to delete file {file_path}")
 
     # TODO retrieve info on the algorithm and feature network used (in json score files)
-    delete_api_similarity.delay(regions.get_ref(), algorithm=None, feat_net=None)
+    delete_api_similarity.delay(
+        region_extraction.get_ref(), algorithm=None, feat_net=None
+    )
 
     try:
-        delete_pairs_with_region_extraction(regions_id)
+        delete_pairs_with_region_extraction(region_extraction_id)
     except Exception as e:
-        log(f"[reset_similarity] Error deleting pairs with region id {regions_id}", e)
+        log(
+            f"[reset_similarity] Error deleting pairs with region extraction id {region_extraction_id}",
+            e,
+        )
 
     return True
 

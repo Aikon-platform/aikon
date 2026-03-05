@@ -5,7 +5,7 @@
 
     const witness = getContext('witness');
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
-    const currentRegionId = parseInt(baseUrl.split('region-extraction/')[1].replace("/", ""));
+    const currentRegionId = parseInt(baseUrl.split('regions/')[1].replace("/", ""));
     import { activeLayout } from '../ui/tabStore.js';
 
     const allRegionsUrl = baseUrl.replace(/\/\d+\/?$/, "");
@@ -35,7 +35,7 @@
             if (response.status !== 204) {
                 throw new Error(`Failed to delete regions: '${response.statusText}'`);
             }
-            window.location.href = `${baseUrl.split('region-extraction/')[0]}region-extraction/`;
+            window.location.href = `${baseUrl.split('regions/')[0]}regions/`;
         } catch (error) {
             console.error(error);
         }
@@ -62,7 +62,7 @@
                 headers: { "X-CSRFToken": csrfToken },
             }));
             if (response.status === 204 || response.status === 200) {
-                window.location.href = `${baseUrl.split('region-extraction/')[0]}region-extraction/`;
+                window.location.href = `${baseUrl.split('regions/')[0]}regions/`;
             } else {
                 throw new Error(`Failed to delete similarity: '${response.statusText}'`);
             }
@@ -81,7 +81,7 @@
     }
 
     $: resultName = ["all", "page"].includes($activeLayout)
-        ? (appLang === "en" ? "regions" : "régions")
+        ? (appLang === "en" ? "region extraction" : "extraction des régions")
         : (appLang === "en" ? "similarities" : "similarités");
 </script>
 

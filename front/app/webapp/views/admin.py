@@ -186,7 +186,7 @@ class WitnessRegionExtractionView(AbstractRecordView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["regions_ids"] = []
+        context["region_extraction_ids"] = []
         context["is_validated"] = True
         context["img_nb"] = None
 
@@ -207,26 +207,26 @@ class WitnessRegionExtractionView(AbstractRecordView):
                 context["manifests"].append(digit.gen_manifest_url(version=MANIFEST_V2))
 
         for rid in context["witness"]["region_extractions"]:
-            regions = RegionExtraction.objects.filter(pk=rid).first()
-            if not regions:
+            region_extraction = RegionExtraction.objects.filter(pk=rid).first()
+            if not region_extraction:
                 continue
 
-            context["regions_ids"].append(rid)
+            context["region_extraction_ids"].append(rid)
             # for regions in witness.get_region_extractions():
-            #     context["regions_ids"].append(regions.id)
+            #     context["region_extraction_ids"].append(regions.id)
             # TODO handle multiple manifest for multiple regions
 
-            man = regions.gen_manifest_url(version=MANIFEST_V2)
+            man = region_extraction.gen_manifest_url(version=MANIFEST_V2)
             context["manifest"] = man  # overwritten at each iteration
             context["manifests"].append(man)
 
-            context["img_prefix"] = regions.get_ref().split("_anno")[0]
+            context["img_prefix"] = region_extraction.get_ref().split("_anno")[0]
             if context["img_nb"] is None:
-                rjson = regions.get_json()
+                rjson = region_extraction.get_json()
                 context["img_nb"] = rjson["img_nb"] or None
                 context["img_zeros"] = rjson["zeros"] or None
 
-            if not regions.is_validated:
+            if not region_extraction.is_validated:
                 context["is_validated"] = False
 
         return context
@@ -250,7 +250,7 @@ class RegionExtractionView(AbstractRecordView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["witness_id"] = self.kwargs["wid"]
-        context["regions_id"] = self.kwargs["rid"]
+        context["region_extraction_id"] = self.kwargs["rid"]
 
         regions = self.get_record()
         wit = regions.get_witness()

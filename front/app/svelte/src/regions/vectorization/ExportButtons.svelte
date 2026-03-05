@@ -5,7 +5,7 @@
 
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentWitnessId = parseInt(baseUrl.split('witness/')[1].replace("/", ""));
-    const currentRegionId = parseInt(baseUrl.split('region-extraction/')[1].replace("/", ""));
+    const currentRegionId = parseInt(baseUrl.split('regions/')[1].replace("/", ""));
 
     async function downloadVectorizations() {
         if (!currentRegionId && !currentWitnessId) {

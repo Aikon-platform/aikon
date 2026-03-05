@@ -192,7 +192,9 @@ class Witness(AbstractSearchableModel):
 
     def to_json(self, reindex=True, no_img=False, request_user=None):
         buttons = {
-            "regions": reverse("webapp:witness_region_extraction_view", args=[self.id])
+            "region_extraction": reverse(
+                "webapp:witness_region_extraction_view", args=[self.id]
+            )
         }
 
         digits = self.get_digits()

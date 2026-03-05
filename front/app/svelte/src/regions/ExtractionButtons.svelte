@@ -37,7 +37,7 @@
             window.open(res.mirador_url);
         }
         if (res.hasOwnProperty('regions_id')) {
-            window.location.href = `${baseUrl.split('region-extraction/')[0]}region-extraction/${res.regions_id}`;
+            window.location.href = `${baseUrl.split('regions/')[0]}regions/${res.regions_id}`;
         }
     }
     async function automaticRegions() {
@@ -80,7 +80,7 @@
     <!--    <button class="button is-link is-light" on:click={importRegionsFile}>-->
     <!--        {appLang === 'en' ? 'Import regions file' : 'Importer un fichier de région'}-->
     <!--    </button>-->
-    {#if modules.includes("regions")}
+    {#if modules.includes("region_extraction")}
         <!--TODO make this button disappear if a task is already triggered for this witness ?-->
         <button class="button is-link is-light" on:click={automaticRegions}>
             {appLang === 'en' ? 'Automatic region extraction' : 'Extraction automatique des régions'}

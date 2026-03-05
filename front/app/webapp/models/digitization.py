@@ -54,7 +54,10 @@ ALLOWED_EXT = ["jpg", "jpeg", "png", "tif"]
 def get_name(fieldname, plural=False):
     fields = {
         "view_digit": {"en": "visualize", "fr": "visualiser"},
-        "view_regions": {"en": "regions", "fr": "régions"},
+        "view_region_extraction": {
+            "en": "extracted regions",
+            "fr": "régions extraites",
+        },
         "is_validated": {"en": "validate regions", "fr": "valider les régions"},
         "is_validated_info": {
             "en": "regions will no longer be editable",

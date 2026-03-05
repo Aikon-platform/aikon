@@ -81,7 +81,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
     template = "admin/includes/inline_fieldset.html"
     extra = 1  # Display only one empty form in the parent form
     max_num = 5
-    readonly_fields = ("digit_preview", "view_digit", "view_regions")
+    readonly_fields = ("digit_preview", "view_digit", "view_region_extraction")
 
     fields = ["digit_type", "pdf", "manifest", "images", ("is_open", "source")]
     autocomplete_fields = ("source",)
@@ -114,12 +114,14 @@ class DigitizationInline(nested_admin.NestedStackedInline):
 
         return "-"
 
-    @admin.display(description=get_name("view_regions"))
-    def view_regions(self, obj: Digitization):
+    @admin.display(description=get_name("view_region_extraction"))
+    def view_region_extraction(self, obj: Digitization):
         if obj.id and obj.has_images() and obj.has_region_extractions():
             region_extraction_btn = []
-            for regions in obj.get_region_extractions():
-                region_extraction_btn.append(gen_btn(regions, "regions"))
+            for region_extractions in obj.get_region_extractions():
+                region_extraction_btn.append(
+                    gen_btn(region_extractions, "region_extraction")
+                )
             return mark_safe("<br>".join(region_extraction_btn))
         return "-"
 
@@ -129,7 +131,7 @@ class DigitizationInline(nested_admin.NestedStackedInline):
         if obj and obj.has_images():
             fields.append("view_digit")
             if obj.has_region_extractions():
-                fields.append("view_regions")
+                fields.append("view_region_extraction")
 
         return fields
 

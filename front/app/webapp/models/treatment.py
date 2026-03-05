@@ -150,7 +150,7 @@ class Treatment(AbstractSearchableModel):
         )
         #  TODO make variable used in svelte component and in overall app
         tabs = {
-            "regions": "page",
+            "region_extraction": "page",
             "similarity": "similarity",
             "vectorization": "vectorization",
         }

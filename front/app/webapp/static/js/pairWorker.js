@@ -193,7 +193,7 @@ function getOrAddImage(imgKey, rid, map, imgStats, docStats, score) {
             ref,
             canvas: page,
             xywh: coords ? coords.split(',') : null,
-            type: "regions",
+            type: "region_extraction",
             // to be initialized in the main thread
             color: null
         };

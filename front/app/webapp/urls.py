@@ -53,9 +53,9 @@ urlpatterns = [
         get_regions_img_list,
         name="regions-list",
     ),
-    # TODO add f"{APP_NAME}/witness/<int:wit_id>/regions/<int:regions_id>/list/",
+    # TODO add f"{APP_NAME}/witness/<int:wit_id>/regions/<int:region_extraction_id>/list/",
     path(
-        f"{APP_NAME}/annotations/<int:regions_id>",
+        f"{APP_NAME}/annotations/<int:region_extraction_id>",
         witness_sas_annotations,
         name="witness-annotations",
     ),

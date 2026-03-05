@@ -41,7 +41,7 @@ function setDigitBlock(digitNb = 0, digitBlockId= "") {
     treatedDigits[`#${prefix}digitizations-${digitNb}`] = true;
 
     const viewDigit = $(`#${prefix}digitizations-${digitNb} .field-view_digit`).first();
-    const viewAnno = $(`#${prefix}digitizations-${digitNb} .field-view_regions`).first();
+    const viewAnno = $(`#${prefix}digitizations-${digitNb} .field-view_region_extraction`).first();
     const hasDigit = viewDigit.length !== 0
 
     const manifestDiv = $(`#${prefix}digitizations-${digitNb} .field-manifest`).first();

@@ -379,45 +379,51 @@ def get_region_extractions(img_1, img_2, wid, rid):
     def get_digit_id(img):
         return int(re.findall(r"\d+", img)[1])
 
-    def get_regions_from_digit(digit_id):
+    def get_region_extraction_from_digit(digit_id):
         digit = get_object_or_404(Digitization, id=digit_id)
-        regions = list(digit.get_region_extractions())
-        if not regions:
-            regions = RegionExtraction.objects.create(
+        region_extractions = list(digit.get_region_extractions())
+        if not region_extractions:
+            region_extraction = RegionExtraction.objects.create(
                 digitization=digit,
                 model="manual",
             )
         else:
-            regions = regions[0]
-        return regions.id
+            region_extraction = region_extractions[0]
+        return region_extraction.id
 
     if img_1.startswith(f"wit{wid}"):
         witness = get_object_or_404(Witness, id=wid)
         regions_1 = rid or witness.get_region_extractions()[0].id
         digit_2 = get_digit_id(img_2)
-        regions_2 = get_regions_from_digit(digit_2)
+        regions_2 = get_region_extraction_from_digit(digit_2)
     else:
         digit_1 = get_digit_id(img_1)
-        regions_1 = get_regions_from_digit(digit_1)
+        regions_1 = get_region_extraction_from_digit(digit_1)
         witness = get_object_or_404(Witness, id=wid)
         regions_2 = rid or witness.get_region_extractions()[0].id
     return regions_1, regions_2
 
 
-def get_regions_title_by_ref(request, wid, rid=None, regions_ref: str | None = None):
+def get_region_extraction_title_by_ref(
+    request, wid, rid=None, region_extraction_ref: str | None = None
+):
     try:
-        regions = RegionExtraction.objects.filter(
-            json__ref__startswith=regions_ref
+        region_extraction = RegionExtraction.objects.filter(
+            json__ref__startswith=region_extraction_ref
         ).first()
-        if regions is None:
+        if region_extraction is None:
             return JsonResponse(
-                {"error": f"RegionExtraction not found for regions_ref {regions_ref}"},
+                {
+                    "error": f"RegionExtraction not found for region_extraction_ref {region_extraction_ref}"
+                },
                 status=400,
             )
-        return JsonResponse({"title": truncate_char(regions.json["title"], 75)})
+        return JsonResponse(
+            {"title": truncate_char(region_extraction.json["title"], 75)}
+        )
     except Exception as e:
         return JsonResponse(
-            {"error": f"Error retrieving regions title: {e}"}, status=500
+            {"error": f"Error retrieving region extraction title: {e}"}, status=500
         )
 
 
@@ -785,18 +791,18 @@ def uncategorize_pair_batch(request):
 
 
 @user_passes_test(is_superuser)
-def index_regions_similarity(request, regions_ref=None):
+def index_regions_similarity(request, region_extraction_ref=None):
     """
-    Index the content of score files containing regions_ref in their name
+    Index the content of score files containing region_extraction_ref in their name
     OR all the similarity score files into the RegionPair database table
     if the score files have already been added to the database, it will only override the score
     """
     from app.similarity.tasks import process_similarity_file
 
-    if regions_ref is None:
+    if region_extraction_ref is None:
         pairs = get_all_pairs()
     else:
-        pairs = get_computed_pairs(regions_ref)
+        pairs = get_computed_pairs(region_extraction_ref)
 
     for pair in pairs:
         process_similarity_file.delay(pair)

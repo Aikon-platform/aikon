@@ -22,7 +22,7 @@ def extract_digit_id(img: str) -> int | None:
 
 
 def get_region_digit_id(region_extraction_id: int) -> int | None:
-    """Get digitization ID associated with a regions_id"""
+    """Get digitization ID associated with a region_extraction_id"""
     try:
         region_extraction = RegionExtraction.objects.select_related("digitization").get(
             id=region_extraction_id

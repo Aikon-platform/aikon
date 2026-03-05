@@ -4,7 +4,7 @@ from app.config.settings import APP_NAME
 
 from app.region_extraction.views import *
 
-app_name = "regions"
+app_name = "region_extraction"
 
 urlpatterns = [
     path(
@@ -13,7 +13,7 @@ urlpatterns = [
         name="send-region-extraction",
     ),
     path(
-        f"{APP_NAME}/regions/notify",
+        f"{APP_NAME}/region_extraction/notify",
         receive_region_extraction_notification,
         name="notify-regions",
     ),

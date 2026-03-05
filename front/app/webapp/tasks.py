@@ -29,12 +29,12 @@ def extract_images_from_iiif_manifest(manifest_url, digit_ref, digit):
 
 
 @celery_app.task
-def reindex_from_file(regions_id):
+def reindex_from_file(region_extraction_id):
     from app.webapp.models.region_extraction import RegionExtraction
     from app.webapp.utils.iiif.annotation import check_indexation
 
-    # region_extraction = RegionExtraction.objects.filter(pk=regions_id).first()
-    region_extraction = RegionExtraction.objects.get(pk=regions_id)
+    # region_extraction = RegionExtraction.objects.filter(pk=region_extraction_id).first()
+    region_extraction = RegionExtraction.objects.get(pk=region_extraction_id)
     return check_indexation(region_extraction, True)
 
 

@@ -111,7 +111,7 @@ def export_docset(request, dsid):
         r_list = w.get_region_extractions()
         for regions in r_list:
             # 2: Annotation (JSON manifest+metadata)
-            if "regions" in ADDITIONAL_MODULES:
+            if "region_extraction" in ADDITIONAL_MODULES:
                 file_contents.append(
                     (
                         f"witness{w.id}/regions{regions.id}/manifest.json",
@@ -319,7 +319,7 @@ def get_witness_data(witness, json_cascade=True):
 
         if json_cascade:
             # 3 : RegionExtraction/annotations data (endpoint URL)
-            if "regions" in ADDITIONAL_MODULES:
+            if "region_extraction" in ADDITIONAL_MODULES:
                 w_reg_processes[r.id]["treatments"][
                     "extracted_regions"
                 ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/extracted-regions"

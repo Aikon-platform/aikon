@@ -67,14 +67,14 @@ urlpatterns = [
         name="witness-similar-region",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/get_regions_title/<str:regions_ref>",
-        get_regions_title_by_ref,
-        name="get-regions-title-by-ref",
+        f"{APP_NAME}/witness/<int:wid>/regions/get_regions_title/<str:region_extraction_ref>",
+        get_region_extraction_title_by_ref,
+        name="get-region-extraction-title-by-ref",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/get_regions_title/<str:regions_ref>",
-        get_regions_title_by_ref,
-        name="get-regions-title-regions-by-ref",
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/get_regions_title/<str:region_extraction_ref>",
+        get_region_extraction_title_by_ref,
+        name="get-region-extraction-title-regions-by-ref",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/add-region-pair",
@@ -105,7 +105,7 @@ urlpatterns = [
     ),
     path(f"{APP_NAME}/save-category", save_category, name="save-category"),
     path(
-        f"{APP_NAME}/index-similarity/<str:regions_ref>",
+        f"{APP_NAME}/index-similarity/<str:region_extraction_ref>",
         index_regions_similarity,
         name="index-similarity",
     ),

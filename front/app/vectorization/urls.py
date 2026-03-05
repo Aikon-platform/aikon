@@ -7,7 +7,7 @@ app_name = "vectorization"
 
 urlpatterns = [
     path(
-        f"{APP_NAME}/<str:regions_ref>/show-vectorization",
+        f"{APP_NAME}/<str:region_extraction_ref>/show-vectorization",
         show_vectorization,
         name="show-vectorization",
     ),
@@ -17,7 +17,7 @@ urlpatterns = [
         name="notify-vectorization",
     ),
     path(
-        f"{APP_NAME}/img-and-svg/<str:img_file>/<str:coords>/<str:regions>/<int:canvas_nb>",
+        f"{APP_NAME}/img-and-svg/<str:img_file>/<str:coords>/<str:region_extraction_ref>/<int:canvas_nb>",
         show_crop_vectorization,
         name="img-and-svg",
     ),
@@ -37,12 +37,12 @@ urlpatterns = [
         name="export-regions-imgs-and-svgs",
     ),
     path(
-        f"{APP_NAME}/run-vectorization/<str:regions_ref>",
+        f"{APP_NAME}/run-vectorization/<str:region_extraction_ref>",
         send_vectorization,
         name="run-vectorization",
     ),
     path(
-        f"{APP_NAME}/smash-and-relaunch-vectorization/<str:regions_ref>",
+        f"{APP_NAME}/smash-and-relaunch-vectorization/<str:region_extraction_ref>",
         smash_and_relaunch_vectorization,
         name="smash-and-relaunch-vectorization",
     ),
