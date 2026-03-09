@@ -67,7 +67,6 @@ RUN touch /home/${USER}/app/logs/iiif.log && chown ${USER}:${USER} /home/${USER}
 RUN touch /home/${USER}/app/logs/download.log && chown ${USER}:${USER} /home/${USER}/app/logs/download.log
 
 RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER}/app/staticfiles
-RUN chmod -R a+rwxXst /home/${USER}/app/staticfiles/
 
 COPY --chown=${USER}:${USER} docker/manage.sh /home/aikon/manage.sh
 RUN chmod +x /home/${USER}/manage.sh

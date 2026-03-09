@@ -62,13 +62,6 @@ SESSION_COOKIE_SECURE = False
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "web"]
 CSRF_TRUSTED_ORIGINS = [ "http://localhost:8080" ]
 
-print("**************************************")
-print("ALLOWED_HOSTS=", ALLOWED_HOSTS)
-print("CSRF_TRUSTED_ORIGINS=", CSRF_TRUSTED_ORIGINS)
-print("USE_X_FORWARDED_HOST=", USE_X_FORWARDED_HOST)
-# print("SECURE_PROXY_SSL_HEADER=", SECURE_PROXY_SSL_HEADER)
-print("**************************************")
-
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
