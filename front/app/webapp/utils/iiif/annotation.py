@@ -61,7 +61,7 @@ def get_manifest_annotations(
 
                 next_page = annotations.get("next")
                 if next_page:
-                    next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search?{next_page.split('?')[1]}"
+                    next_page = f"{sas_url}/search-api/{regions_ref}/search?{next_page.split('?')[1]}"
 
             except requests.exceptions.JSONDecodeError as e:
                 log(f"[get_manifest_annotations] JSON decode error for {next_page}")
