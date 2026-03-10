@@ -33,70 +33,59 @@ IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
 def get_manifest_annotations(
     regions_ref, only_ids=True, min_c: int = None, max_c: int = None
 ):
-    manifest_annotations, response = [], ""
-    next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search"
-    while next_page:
-        try:
-            response = requests.get(next_page)
-            annotations = response.json()
+    def _get_manifest_annotations(regions_ref, only_ids=True, sas_url=SAS_APP_URL):
+        manifest_annotations, response = [], ""
+        next_page = f"{sas_url}/search-api/{regions_ref}/search"
 
-            if response.status_code != 200:
+        while next_page:
+            try:
+                response = requests.get(next_page)
+                annotations = response.json()
+
+                if response.status_code != 200:
+                    log(
+                        f"[get_manifest_annotations] Failed to get annotations from SAS for {next_page}: {response.status_code}"
+                    )
+                    return []
+
+                resources = annotations.get("resources", [])
+                if not resources:
+                    break
+
+                if only_ids:
+                    manifest_annotations.extend(
+                        annotation["@id"] for annotation in annotations["resources"]
+                    )
+                else:
+                    manifest_annotations.extend(annotations["resources"])
+
+                next_page = annotations.get("next")
+                if next_page:
+                    next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search?{next_page.split('?')[1]}"
+
+            except requests.exceptions.JSONDecodeError as e:
+                log(f"[get_manifest_annotations] JSON decode error for {next_page}")
+                log(response.text, exception=e)
+                return manifest_annotations
+            except requests.exceptions.RequestException as e:
                 log(
-                    f"[get_manifest_annotations] Failed to get annotations from SAS for {next_page}: {response.status_code}"
+                    f"[get_manifest_annotations] Failed to retrieve annotations for {next_page}",
+                    e,
                 )
-                return []
-
-            resources = annotations.get("resources", [])
-            if not resources:
-                break
-
-            # if only a certain range is needed (do not work because the annotations are sorted alphabetically by canvas number)
-            # TODO change the SAS code to add canvas number in the annotation metadata
-            #  AND/OR sort the annotations by canvas number
-            # if min_c is not None:
-            #     first_canvas = int(
-            #         resources[0]["on"].split("/canvas/c")[1].split(".json")[0]
-            #     )
-            #     last_canvas = int(
-            #         resources[-1]["on"].split("/canvas/c")[1].split(".json")[0]
-            #     )
-            #
-            #     if max_c is not None and first_canvas > max_c:
-            #         break
-            #
-            #     # Skip this page if the entire range is outside min_c and max_c
-            #     if last_canvas < min_c:
-            #         next_page = annotations.get("next")
-            #         continue
-
-            if only_ids:
-                manifest_annotations.extend(
-                    annotation["@id"] for annotation in annotations["resources"]
+                return manifest_annotations
+            except Exception as e:
+                log(
+                    f"[get_manifest_annotations] Failed to parse annotations for {next_page}",
+                    e,
                 )
-            else:
-                manifest_annotations.extend(annotations["resources"])
+                return manifest_annotations
+        return manifest_annotations
 
-            next_page = annotations.get("next")
-            if next_page:
-                next_page = f"{SAS_APP_URL}/search-api/{regions_ref}/search?{next_page.split('?')[1]}"
-
-        except requests.exceptions.JSONDecodeError as e:
-            log(f"[get_manifest_annotations] JSON decode error for {next_page}")
-            log(response.text, exception=e)
-            return manifest_annotations
-        except requests.exceptions.RequestException as e:
-            log(
-                f"[get_manifest_annotations] Failed to retrieve annotations for {next_page}",
-                e,
-            )
-            return manifest_annotations
-        except Exception as e:
-            log(
-                f"[get_manifest_annotations] Failed to parse annotations for {next_page}",
-                e,
-            )
-            return manifest_annotations
-    return manifest_annotations
+    vhs_annos = _get_manifest_annotations(regions_ref, only_ids)
+    iscd_annos = _get_manifest_annotations(
+        regions_ref, only_ids, sas_url="https://iscd.huma-num.fr/sas"
+    )
+    return vhs_annos + iscd_annos
 
 
 def has_annotation(regions_ref):
