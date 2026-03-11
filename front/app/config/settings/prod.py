@@ -7,7 +7,10 @@ API_URL = (
     f"http://{prod_api_url}" if not prod_api_url.startswith("http") else prod_api_url
 )
 PROD_URL = ENV.str("PROD_URL", default="")
-BASE_URL = f"https://{PROD_URL}"
+
+# BASE_URL = f"https://{PROD_URL}"
+BASE_URL = f"http://{PROD_URL}:8080"
+
 APP_URL = BASE_URL
 CANTALOUPE_APP_URL = BASE_URL
 AIIINOTATE_BASE_URL = f"{BASE_URL}/aiiinotate"

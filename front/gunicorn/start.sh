@@ -3,9 +3,9 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"
 
-VENV_PATH="$APP_ROOT/venv"
+# VENV_PATH="$APP_ROOT/venv"
 export PYTHONPATH=$APP_ROOT
-source "$VENV_PATH/bin/activate"
+# source "$VENV_PATH/bin/activate"
 
 . "$APP_ROOT"/app/config/.env
 
