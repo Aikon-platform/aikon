@@ -51,16 +51,9 @@ https_hosts = [f"https://{host}" for host in hosts]
 wildcard_hosts = [f"https://*.{host}" for host in hosts if "." in host]
 
 # https remote access config:
-# ALLOWED_HOSTS = hosts + https_hosts + wildcard_hosts
-# CSRF_TRUSTED_ORIGINS = https_hosts + wildcard_hosts
-# SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-# for HTTP nginx access in localhost:
-USE_X_FORWARDED_HOST = True
-CSRF_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = False
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "web"]
-CSRF_TRUSTED_ORIGINS = [ "http://localhost:8080" ]
+ALLOWED_HOSTS = hosts + https_hosts + wildcard_hosts
+CSRF_TRUSTED_ORIGINS = https_hosts + wildcard_hosts
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

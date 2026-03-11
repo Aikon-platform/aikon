@@ -21,8 +21,18 @@ if [ -z "$MIRADOR_PORT" ]; then
     exit 1;
 fi;
 
+# PUBLIC_URL is the path at which parcel serves the files.
+# in locahost, they are served at http://localhost:$MIRADOR_PORT
+# in docker, they are sered at http://localhost/mirador, corresponding to our NGINX config.
+if [ "$DOCKER" = "True" ]; then
+    PUBLIC_URL="/mirador/"
+else
+    PUBLIC_URL="/"
+fi;
+
 rm -rf "$MIRADOR_DIR"/dist "$MIRADOR_DIR"/.parcel-cache
 "$NPM_BIN"/dotenvx run -f "$ENV_FILE" -- \
 "$NPM_BIN"/parcel "$MIRADOR_DIR"/src/index.html \
     --port "$MIRADOR_PORT" \
+    --public-url  "$PUBLIC_URL" \
     --dist-dir "$MIRADOR_DIR/dist";
