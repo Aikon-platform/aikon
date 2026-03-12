@@ -27,11 +27,9 @@ APP_URL = f"{BASE_URL}"
 # cantaloupe urls are targeted by `BASE_URL/iiif/`, which is done at route level and not here.
 CANTALOUPE_APP_URL = f"{BASE_URL}"
 
-# override AIIINOTATE and MIRADOR variables by their nginx counterparts
-AIIINOTATE_HOST = f"{BASE_URL}/{ENV('AIIINOTATE_HOST', default='aiiinotate')}"
-AIIINOTATE_BASE_URL = AIIINOTATE_HOST
-MIRADOR_HOST = f"{BASE_URL}/{ENV('MIRADOR_HOST', default='mirador')}"
-MIRADOR_BASE_URL = MIRADOR_HOST
+# override AIIINOTATE_BASE_URL and MIRADOR_BASE_URL variables by their nginx counterparts
+AIIINOTATE_BASE_URL = f"{BASE_URL}/{ENV('AIIINOTATE_HOST', default='aiiinotate')}"
+MIRADOR_BASE_URL = f"{BASE_URL}/{ENV('MIRADOR_HOST', default='mirador')}"
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
