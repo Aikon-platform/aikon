@@ -77,22 +77,23 @@ class Witness(AbstractSearchableModel):
         app_label = "webapp"
 
     def __str__(self, light=False):
-        wit_ref = f"Vol. {self.volume_nb}" if self.volume_nb else self.id_nb
+        wit_ref = (
+            f"Vol. {self.volume_nb}" if self.volume_nb else (self.id_nb or "No id")
+        )
         title = f"{self.volume_title}, {wit_ref}" if self.volume_title else wit_ref
 
         if light:
             if self.json and "title" in self.json:
                 return self.json["title"]
-            return format_html(title)
+            return title
 
         if self.type == MS_ABBR:
             place = self.place.name if self.place else CONS_PLA_MSG
-            return format_html(f"{wit_ref} | {place}")
+            return f"{wit_ref} | {place}"
 
-        return format_html(
-            (f"{self.edition.name}, {wit_ref}" if self.edition else title)
-            or f"{get_name('Witness')} #{self.id}"
-        )
+        return (
+            f"{self.edition.name}, {wit_ref}" if self.edition else title
+        ) or f"{get_name('Witness')} #{self.id}"
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(

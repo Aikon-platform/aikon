@@ -64,7 +64,7 @@ install_packages() {
         sudo apt-get install wget ca-certificates
         sudo apt install libpq-dev nginx curl maven postgresql poppler-utils redis-server ghostscript libmagic1 gnupg libcairo2-dev
     elif [ "$OS" = "Mac" ]; then
-        brew install wget ca-certificates postgresql maven nginx libpq poppler redis ghostscript libmagic cairo
+        brew install wget ca-certificates postgresql maven nginx libpq poppler redis ghostscript libmagic cairo pkg-config
         brew services start postgresql
         brew services start redis
     else
