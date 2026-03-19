@@ -27,8 +27,8 @@ export function createDocumentSetStore(documentSetId) {
     const topK = writable(3);
     const mutualTopK = writable(true);
     const scoreMode = writable("topk");
-    const onlyExactMatches = derived(selectedCategories, $cats =>
-        $cats.length === 1 && $cats[0] === 1
+    const onlyOneSelectedCategory = derived(selectedCategories, $cats =>
+        $cats.length === 1
     );
 
     const allPairs = writable([]);
@@ -445,7 +445,6 @@ export function createDocumentSetStore(documentSetId) {
 
         const $documentNodes = get(documentNodes);
         const $pairIndex = get(pairIndex);
-        const $onlyExactMatches = get(onlyExactMatches);
 
         const firstDigitId = orderedSelection[0];
 
@@ -489,7 +488,9 @@ export function createDocumentSetStore(documentSetId) {
             return null;
         };
 
-        if (!$onlyExactMatches) {
+        const $cats = get(selectedCategories);
+        const onlyExactMatch = $cats.length === 1 && $cats[0] === 1;
+        if (!onlyExactMatch) {
             const rows = [];
             for (const firstImg of firstImages) {
                 const row = {[firstDigitId]: {id: firstImg.id, page: firstImg.canvas}};
@@ -635,7 +636,7 @@ export function createDocumentSetStore(documentSetId) {
         imageNetwork,
         documentNetwork,
         selectedCategories,
-        onlyExactMatches,
+        onlyOneSelectedCategory,
         pairStats,
         documentStats,
         imageStats,

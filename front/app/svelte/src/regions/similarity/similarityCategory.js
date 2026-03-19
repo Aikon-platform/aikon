@@ -66,31 +66,43 @@ export const partialLabel = appLang === "en" ?  "visual matches on part of the i
 export const semanticLabel = appLang === "en" ?  "semantic and non-visual matches" : "correspondances sémantiques et non-visuelle";
 export const noLabel = appLang === "en" ?  "regions without match" : "régions sans correspondance";
 export const userLabel = appLang === "en" ?  "user specific category" : "correspondances spécifiques à l'utilisateur";
-export const validateLabel = appLang==="en" ? "validate the match" : "valider la correspondance";
+
+export const noCatAction = appLang === "en" ?  "Uncategorize" : "Retirer la catégorie";
+export const exactAction = appLang === "en" ?  "Categorize as exact match" : "Catégoriser comme correspondance exacte";
+export const partialAction = appLang === "en" ?  "Categorize as partial match": "Catégoriser comme correspondance partielle";
+export const semanticAction = appLang === "en" ?  "Categorize as semantic match" : "Catégoriser comme correspondance sémantique";
+export const noAction = appLang === "en" ?  "Confirm that the selection do not contain any match" : "Confirmer que la sélection ne contient aucune correspondance";
+export const userAction = appLang === "en" ?  "Categorize as personal match" : "Catégoriser comme correspondance personnelle";
 
 export const categoryInfo = {
     0: {
         title: noCatLabel,
         svg: noCatSvg,
+        action: noCatAction
     },
     1: {
         title: exactLabel,
         svg: exactSvg,
+        action: exactAction
     },
     2: {
         title: partialLabel,
         svg: partialSvg,
+        action: partialAction
     },
     3: {
         title: semanticLabel,
         svg: semanticSvg,
+        action: semanticAction
     },
     4: {
         title: noLabel,
         svg: noSvg,
+        action: noAction
     },
     5: {
         title: userLabel,
         svg: userSvg,
+        action: userAction
     }
 };

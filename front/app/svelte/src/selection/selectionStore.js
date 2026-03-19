@@ -18,7 +18,20 @@ function createTypedSelectionStore(config) {
         selected: {}
     };
 
-    const initialData = JSON.parse(localStorage.getItem(type)) || template;
+    function parseStoredSelection(rawData) {
+        if (!rawData) return template;
+        return {
+            ...template,
+            ...rawData,
+            selected: Object.fromEntries(
+                Object.entries(rawData.selected || {})
+                    .filter(([k]) => k !== "undefined")
+                    .map(([k, v]) => [k, typeof v === "object" && v !== null ? v : {}])
+            )
+        };
+    }
+
+    const initialData = parseStoredSelection(JSON.parse(localStorage.getItem(type)))
     const selection = writable(initialData);
     const isSaved = writable(false);
 

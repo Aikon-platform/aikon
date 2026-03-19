@@ -40,11 +40,13 @@ from app.similarity.utils import (
     build_pairs_query,
     stream_pairs_ndjson,
     normalize_pair,
+    SimilarityCategory,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
+from webapp.models.utils.constants import CATEGORY_INFO
 
 
 @user_passes_test(is_superuser)
@@ -639,12 +641,13 @@ def exact_match(request):
 
 
 @transaction.atomic
-def exact_match_batch(request):
+def categorize_batch(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
     try:
         data = json.loads(request.body)
+        category = data.get("category", SimilarityCategory.EXACT_MATCH)
         results = {"created": 0, "updated": 0}
 
         pairs = [normalize_pair(p["img_1"], p["img_2"]) for p in data.get("pairs", [])]
@@ -676,7 +679,7 @@ def exact_match_batch(request):
                         img_2=img_2,
                         digit_1=ref1.digit,
                         digit_2=ref2.digit,
-                        category=1,
+                        category=category,
                         similarity_type=SimilarityType.PROPAGATED,
                         score=None,
                         category_x=[],
@@ -689,7 +692,9 @@ def exact_match_batch(request):
 
         if existing:
             results["updated"] = (
-                RegionPair.objects.filter(q).exclude(category=1).update(category=1)
+                RegionPair.objects.filter(q)
+                .exclude(category=category)
+                .update(category=category)
             )
 
         return JsonResponse({"status": "success", "results": results})
@@ -697,12 +702,12 @@ def exact_match_batch(request):
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
-        log("[exact_match_batch] Exception encountered", e)
+        log("[categorize_batch] Exception encountered", e)
         return JsonResponse({"error": str(e)}, status=500)
 
 
 @transaction.atomic
-def uncategorize_pair_batch(request):
+def uncategorize_batch(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
