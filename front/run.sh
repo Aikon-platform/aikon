@@ -16,7 +16,9 @@ declare -a PIDS=()
 source "$ENV_FILE"
 source "$FRONT_DIR/scripts/utils.sh"
 
-get_password && echo || exit
+if [ "$START_MODE" != "CHILD" ]; then
+    get_password && echo || exit
+fi
 
 # Cleanup function if running standalone
 if [ "$START_MODE" != "CHILD" ]; then
@@ -41,7 +43,7 @@ PIDS+=($CELERY_WORKER_PID)
 CELERY_BEAT_PID=$!
 PIDS+=($CELERY_BEAT_PID)
 
-echo "$SUDO_PSW" | sudo -S java -Dcantaloupe.config="$FRONT_DIR"/cantaloupe/cantaloupe.properties -Xmx2g -jar "$FRONT_DIR"/cantaloupe/cantaloupe-4.1.11.war > /dev/null 2>&1 &
+echo "$SUDO_PSW" | sudo -S java -Dcantaloupe.config="$FRONT_DIR"/cantaloupe/cantaloupe.properties -Xmx2g -jar "$FRONT_DIR"/cantaloupe/cantaloupe-4.1.11.war &
 CANTALOUPE_PID=$!
 PIDS+=($CANTALOUPE_PID)
 
