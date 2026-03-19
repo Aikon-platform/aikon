@@ -10,7 +10,7 @@
     import Regions from "../../regions/Regions.svelte";
 
     export let documentSetStore;
-    const { imageNodes, onlyOneSelectedCategory } = documentSetStore;
+    const { imageNodes, selectedCategories } = documentSetStore;
     export let clusterStore;
     const {
         clusterNb,
@@ -68,6 +68,9 @@
             cl.members.map(imgId => ({...$imageNodes.get(imgId), clusterId: cl.id}))
         ])
     );
+
+    $: onlyOneSelectedCategory = $selectedCategories.length === 1;
+    $: onlyExactMatches = $selectedCategories.length === 1 && $selectedCategories[0] === 1;
 </script>
 
 {#if isSuperuser}
@@ -81,8 +84,8 @@
                      </button>
                 </p>
                 <p class="control">
-                    <button class="button py-3" on:click|preventDefault={actionLabels.create.fct}
-                            title={categoryInfo[0].action}>
+                    <button class="button py-3" on:click|preventDefault={onlyExactMatches ? newCluster : categorizeSelection(1)}
+                            title={onlyExactMatches ? actionLabels.create.title : categoryInfo[1].action}>
                         {@html categoryInfo[1].svg}
                     </button>
                 </p>
@@ -94,7 +97,7 @@
                         </button>
                     </p>
                 {/each}
-                {#if $onlyOneSelectedCategory}
+                {#if onlyOneSelectedCategory}
                     <!-- Skip "remove" action if more than one category is selected -->
                     <!-- Because it makes no sense to uncategorize pairs that have different or no category -->
                     <p class="control">
