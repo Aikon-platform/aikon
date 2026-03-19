@@ -485,64 +485,17 @@ def add_user_to_pair(request):
 
     try:
         data = json.loads(request.body)
-        img_1, img_2 = RegionPair.order_pair((data.get("img_1"), data.get("img_2")))
+        img_1, img_2 = add_jpg(data.get("img_1", "")), add_jpg(data.get("img_2", ""))
+        img_1, img_2 = RegionPair.order_pair((img_1, img_2))
         user_id = request.user.id
 
+        if not user_id:
+            return JsonResponse({"error": "User not authenticated"}, status=401)
+
         query = {"img_1": img_1, "img_2": img_2}
-        rp_list = list(RegionPair.objects.filter(**query))
+        rp_list = list(RegionPair.objects.select_for_update().filter(**query))
 
-        # propagation without category => delete
-        to_delete = similarity_type == SimilarityType.PROPAGATED and category is None
-        if to_delete:
-            try:
-                region_pair = RegionPair.objects.get(
-                    **query_filter,
-                )
-                region_pair.delete()
-                message = f"Deleted 1 propagated region pair"
-                pair_info = region_pair.get_info(as_json=True)
-            except RegionPair.DoesNotExist:
-                message = "Region pair does not exist thus was not deleted"
-                pair_info = {}
-
-            return JsonResponse(
-                {
-                    "status": "success",
-                    "message": message,
-                    "pair_info": pair_info,
-                },
-                status=200,
-            )
-
-        regions_id_1 = regions_from_img(img_1)
-        regions_id_2 = regions_from_img(img_2)
-
-        # NOTE : we do a manual bulk_update_or_create to not just update the current RegionPair
-        # NOTE : the goal is to update ALL RegionPairs with the same img_1 and img_2.
-        defaults = {
-            "regions_id_1": regions_id_1,
-            "regions_id_2": regions_id_2,
-            "category": category,
-            "similarity_type": similarity_type,
-            "similarity_hash": similarity_hash,
-            "category_x": [],
-        }
-        rp_list = RegionPair.objects.filter(**query_filter)
-        if rp_list:
-            for rp in rp_list:
-                category_x = rp.category_x or []
-                if user_id in category_x:
-                    category_x.remove(user_id)
-                else:
-                    category_x.append(user_id)
-                rp.category_x = category_x
-                # if no score and empty category x, delete the pair
-                if not rp.category_x and (rp.score is None):
-                    rp.delete()
-                else:
-                    rp.save()
-            message = f"Updated {len(rp_list)} region pair(s)"
-        else:
+        if not rp_list:
             ref1, ref2 = parse_img(img_1), parse_img(img_2)
             rp = RegionPair.objects.create(
                 **query,
@@ -550,9 +503,35 @@ def add_user_to_pair(request):
                 digit_1=ref1.digit,
                 digit_2=ref2.digit,
             )
-            message = f"New region pair #{rp.id} created"
+            return JsonResponse(
+                {"status": "success", "message": f"New region pair #{rp.id} created"},
+                status=200,
+            )
 
-        return JsonResponse({"status": "success", "message": message}, status=200)
+        for rp in rp_list:
+            category_x = rp.category_x or []
+            if user_id in category_x:
+                category_x.remove(user_id)
+            else:
+                category_x.append(user_id)
+            rp.category_x = category_x
+            # if propagated, empty category x and no category, delete the pair
+            if (
+                not rp.category_x
+                and rp.similarity_type == SimilarityType.PROPAGATED
+                and rp.category is None
+            ):
+                rp.delete()
+            else:
+                rp.save()
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "message": f"Updated/deleted {len(rp_list)} region pair(s)",
+            },
+            status=200,
+        )
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
