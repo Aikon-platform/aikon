@@ -259,7 +259,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         return success;
     };
 
-    const selectedRegions = () => Object.values(get(clusterSelection).selected)[0] || {};
+    const selectedRegions = () => get(clusterSelection).selected.regions || {};
 
     const newCluster = async () => {
         const confirmed = await showMessage(
