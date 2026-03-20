@@ -6,7 +6,7 @@
     import RegionModal from "../modal/RegionModal.svelte";
     import RegionCard from "../RegionCard.svelte";
     import PageView from "../modal/PageView.svelte";
-    import SimilarityView from "../modal/SimilarityView.svelte";
+    import ComparisonView from "../modal/ComparisonView.svelte";
     import QueryExpansionView from "../modal/QueryExpansionView.svelte";
     import Tabs from "../../ui/Tabs.svelte";
 
@@ -95,7 +95,7 @@
                 {:else if activeTab === "page"}
                     <PageView item={currentItem}/>
                 {:else if activeTab === "similarity" && qImgMetadata}
-                    <SimilarityView queryItem={qImgMetadata} similarItem={currentItem} score={currentScore}/>
+                    <ComparisonView queryItem={qImgMetadata} similarItem={currentItem} score={currentScore}/>
                 {:else if activeTab === "expansion"}
                     <QueryExpansionView mainImgItem={currentItem}/>
                 {/if}
