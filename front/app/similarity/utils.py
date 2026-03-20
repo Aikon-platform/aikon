@@ -452,6 +452,10 @@ def get_matched_regions(q_img: str, s_digit_id: int):
     )
 
 
+def get_pairs_with_img(q_img: str):
+    return list(RegionPair.objects.filter(Q(img_1=q_img) | Q(img_2=q_img)))
+
+
 def get_region_pairs_with(q_img, query_digit_ids, target_digit_ids=None):
     if target_digit_ids is None:
         return list(RegionPair.objects.filter(Q(img_1=q_img) | Q(img_2=q_img)))

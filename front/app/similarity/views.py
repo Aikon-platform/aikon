@@ -41,6 +41,7 @@ from app.similarity.utils import (
     stream_pairs_ndjson,
     normalize_pair,
     SimilarityCategory,
+    get_pairs_with_img,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
@@ -431,7 +432,7 @@ def add_region_pair(request, wid, rid=None):
 
 
 def no_match(request, wid, rid=None):
-    """remove all regionpairs contain q_img image id and the regions id specified in `s_regions`."""
+    """categorize all region pairs containing q_img and the specified regions id in `s_regions` as no match (category=4)"""
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
@@ -451,6 +452,23 @@ def no_match(request, wid, rid=None):
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
+def delete_matches(request, wid, rid=None):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        q_img = add_jpg(data.get("q_img", ""))
+        parse_img(q_img)
+    except (json.JSONDecodeError, ValueError) as e:
+        return JsonResponse({"error": f"Could not parse q_img: {e}"}, status=400)
+
+    deleted, _ = RegionPair.objects.filter(Q(img_1=q_img) | Q(img_2=q_img)).delete()
+    return JsonResponse(
+        {"success": f"Successfully deleted {deleted} pairs"}, status=200
+    )
 
 
 def get_query_images(request, wid, rid=None):

@@ -96,6 +96,16 @@ urlpatterns = [
         no_match,
         name="witness-no-match",
     ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/delete-matches",
+        delete_matches,
+        name="delete-matches",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/delete-matches",
+        delete_matches,
+        name="witness-delete-matches",
+    ),
     path(f"{APP_NAME}/exact-match", exact_match, name="exact-match"),
     path(f"{APP_NAME}/categorize-batch", categorize_batch, name="categorize-batch"),
     path(
