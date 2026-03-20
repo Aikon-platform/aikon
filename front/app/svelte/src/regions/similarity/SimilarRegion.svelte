@@ -1,6 +1,6 @@
 <script>
     import { userId, csrfToken, appName } from "../../constants";
-    import { toRegionItem } from "../utils.js";
+    import { RegionItem } from "../types.js";
 
     import CategoryButton from "./CategoryButton.svelte";
     import {extractInt, shorten} from "../../utils.js";
@@ -40,25 +40,21 @@
     /** @type {boolean} */
     export let isInModal = false;
 
-    const [wit, digit, canvas, xywh] = sImg.split(".")[0].split("_");
-
-    /** @type {RegionItemType} */
-    const item = toTitledRegion();
-
     let selectedCategory = category;
     let isSelectedByUser = usersIncludesCurrentUser(users);
 
     ////////////////////////////////////////////
 
+    const sImgItem = RegionItem.fromImg(sImg);
     function toTitledRegion() {
-        let item = toRegionItem(sImg, wit, xywh, canvas);
-        const regionData = $comparedRegions[`${wit}_${digit}_anno${sRegions}`] || {title: item.title};
-        item.title = `${shorten(regionData.title.replace(/^[^|]+/, ""))}<br/>Page ${extractInt(canvas)}`;
-        if (score){
-            item.title += `<br/><b>Score: ${score}</b>`;
+        const regionData = $comparedRegions[`wit${sImgItem.witnessId}_${sImgItem.digitType}${sImgItem.digitId}_anno${sRegions}`] || {title: sImgItem.title};
+        sImgItem.title = `${shorten(regionData.title.replace(/^[^|]+/, ""))}<br/>Page ${sImgItem.canvasNb}`;
+        if (score) {
+            sImgItem.title += `<br/><b>Score: ${score}</b>`;
         }
-        return item;
+        return sImgItem;
     }
+    const item = toTitledRegion();
 
     // // format the current SimilarRegion to send to the backend
     // const toRegionPair = (currentUsers) => ({

@@ -161,15 +161,6 @@ function createSimilarityStore() {
         localStorage.setItem("selectedRegions", JSON.stringify(selection));
     }
 
-    // TODO delete select/unselect ? unselect is only used in `_SimilarityBtn` (to be deleted), `select` is still used in `SimilarRegion`.
-    function unselect(regionRef) {
-        selectedRegions.update(selection => {
-            const updatedSelection = { ...selection };
-            delete updatedSelection[currentPageId][regionRef];
-            store(updatedSelection)
-            return updatedSelection;
-        });
-    }
     function select(region) {
         selectedRegions.update(selection => {
             const updatedSelection = {
@@ -317,6 +308,10 @@ function createSimilarityStore() {
         };
     }
 
+    function removeQImg(img) {
+        qImgs.update(imgs => imgs.filter(q => q !== img));
+    }
+
     return {
         baseUrl,
         currentPageId,
@@ -325,6 +320,7 @@ function createSimilarityStore() {
         excludedCategories,
         qImgs,
         pageQImgs,
+        removeQImg,
         selectedRegions,
         propagateRecursionDepth,
         propagateFilterByRegions,
@@ -336,7 +332,6 @@ function createSimilarityStore() {
         setPageQImgs,
         getRegionsInfo,
         handlePageUpdate,
-        unselect,
         select,
         addComparedRegions,
         isSelected,

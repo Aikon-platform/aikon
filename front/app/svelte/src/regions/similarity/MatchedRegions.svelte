@@ -1,7 +1,6 @@
 <script>
     import { getContext } from "svelte";
     import { appLang } from "../../constants";
-    import { toRegionItem } from "../utils.js";
     import SimilarRegion from "./SimilarRegion.svelte";
     import RegionModal from "../modal/RegionModal.svelte";
     import RegionCard from "../RegionCard.svelte";
@@ -9,6 +8,7 @@
     import ComparisonView from "../modal/ComparisonView.svelte";
     import QueryExpansionView from "../modal/QueryExpansionView.svelte";
     import Tabs from "../../ui/Tabs.svelte";
+    import { RegionItem } from "../types.js";
 
     export let items = [];
     export let loading = false;
@@ -32,11 +32,7 @@
             : (plural ? "similar images" : "similar image");
     })();
 
-    $: modalItems = items.map(([, , sImg]) => {
-        const [wit, , canvas, xywh] = sImg.split(".")[0].split("_");
-        return toRegionItem(sImg, wit, xywh, canvas);
-    });
-
+    $: modalItems = items.map(([, , sImg]) => RegionItem.fromImg(sImg));
     $: currentScore = items[modalIndex]?.[0] ?? null;
 
     let modalOpen = false;
@@ -51,7 +47,7 @@
         { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
         { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
         { id: "similarity", label: appLang === "en" ? "Comparison" : "Comparaison" },
-        { id: "expansion", label: appLang === "en" ? "Query Expansion" : "Expansion de requête" }
+        { id: "expansion", label: appLang === "en" ? "Query Expansion" : "Expansion de requête" },
     ];
 </script>
 
@@ -85,23 +81,27 @@
         </div>
     </div>
 
+    {#if !isInModal}
     <RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
         <svelte:fragment let:item={currentItem}>
             <Tabs {tabs} let:activeTab>
                 {#if activeTab === "region"}
                     <div class="modal-region">
-                        <RegionCard item={currentItem} height="full" isInModal={true}/>
+                        <RegionCard item={currentItem} height="full" isInModal={true} copyable={true}/>
                     </div>
                 {:else if activeTab === "page"}
                     <PageView item={currentItem}/>
                 {:else if activeTab === "similarity" && qImgMetadata}
                     <ComparisonView queryItem={qImgMetadata} similarItem={currentItem} score={currentScore}/>
                 {:else if activeTab === "expansion"}
-                    <QueryExpansionView mainImgItem={currentItem}/>
+                    {#key currentItem.img}
+                        <QueryExpansionView item={currentItem}/>
+                    {/key}
                 {/if}
             </Tabs>
         </svelte:fragment>
     </RegionModal>
+    {/if}
 {/if}
 
 <style>
