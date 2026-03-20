@@ -38,6 +38,14 @@
     let modalOpen = false;
     let modalIndex = 0;
 
+    const PAGE_SIZE = 10;
+    let visibleCount = PAGE_SIZE;
+    $: visibleItems = items.slice(0, visibleCount);
+    $: hasMore = visibleCount < items.length;
+
+    // Reset when items change
+    $: items, visibleCount = PAGE_SIZE
+
     const handleOpenModal = (e) => {
         modalIndex = e.detail.index ?? 0;
         modalOpen = true;
@@ -65,7 +73,7 @@
     <div class="p-2">
         <span class="m-2">{items.length} {label}</span>
         <div class="m-4 is-gap-3 has-{cols}-cols" class:grid={items.length > 0}>
-            {#each items as [score, _, sImg, qRegions, sRegions, category, users, similarityType, similarityHash], i (sImg)}
+            {#each visibleItems as [score, _, sImg, qRegions, sRegions, category, users, similarityType, similarityHash], i (sImg)}
                 <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users}
                                {similarityType} {similarityHash} index={i} {isInModal}
                                on:openModal={handleOpenModal} />
@@ -79,6 +87,13 @@
                 </div>
             {/each}
         </div>
+        {#if hasMore}
+            <div class="is-center py-3">
+                <button class="button is-small is-link is-outlined" on:click={() => visibleCount += PAGE_SIZE}>
+                    {appLang === "en" ? `Load more` : `Charger plus`}
+                </button>
+            </div>
+        {/if}
     </div>
 
     {#if !isInModal}

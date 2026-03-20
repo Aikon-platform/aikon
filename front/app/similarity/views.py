@@ -47,7 +47,6 @@ from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
-from webapp.models.utils.constants import CATEGORY_INFO
 
 
 @user_passes_test(is_superuser)
@@ -444,6 +443,7 @@ def no_match(request, wid, rid=None):
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
+@user_passes_test(is_superuser)
 def delete_matches(request, wid, rid=None):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=405)
@@ -459,6 +459,29 @@ def delete_matches(request, wid, rid=None):
     return JsonResponse(
         {"success": f"Successfully deleted {deleted} pairs"}, status=200
     )
+
+
+def delete_pair(request, wid, rid=None):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        q_img, s_img = add_jpg(data.get("q_img", "")), add_jpg(data.get("s_img", ""))
+        img_1, img_2 = RegionPair.order_pair((q_img, s_img))
+        deleted, _ = RegionPair.objects.filter(img_1=img_1, img_2=img_2).delete()
+        if deleted == 0:
+            return JsonResponse(
+                {"error": "No matching pair found to delete"}, status=404
+            )
+        return JsonResponse(
+            {"success": f"Successfully deleted {deleted} pair(s)"}, status=200
+        )
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
 def get_query_images(request, wid, rid=None):

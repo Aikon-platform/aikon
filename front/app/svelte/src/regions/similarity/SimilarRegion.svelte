@@ -133,13 +133,11 @@
 
 <div class="cell">
     <RegionCard {item} height={140} selectable={false} copyable={true} isSquare={false} {isInModal} {index} on:openModal/>
-    {#if !isInModal}
-        <div class="tags has-addons is-dark is-center">
-            <CategoryButton category={1} isSelected={selectedCategory === 1} toggle={categorize} padding="pl-3 pr-2"/>
-            <CategoryButton category={2} isSelected={selectedCategory === 2} toggle={categorize}/>
-            <CategoryButton category={3} isSelected={selectedCategory === 3} toggle={categorize}/>
-            <CategoryButton category={4} isSelected={selectedCategory === 4} toggle={categorize}/>
-            <CategoryButton category={5} isSelected={isSelectedByUser} toggle={addUserToPair} padding="pl-2 pr-3"/>
-        </div>
-    {/if}
+    <div class="tags has-addons is-dark is-center">
+        <CategoryButton category={1} isSelected={selectedCategory === 1} toggle={categorize} padding="pl-3 pr-2"/>
+        <CategoryButton category={2} isSelected={selectedCategory === 2} toggle={categorize}/>
+        <CategoryButton category={3} isSelected={selectedCategory === 3} toggle={categorize}/>
+        <CategoryButton category={4} isSelected={selectedCategory === 4} toggle={categorize}/>
+        <CategoryButton category={5} isSelected={isSelectedByUser} toggle={addUserToPair} padding="pl-2 pr-3"/>
+    </div>
 </div>

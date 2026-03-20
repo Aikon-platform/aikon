@@ -31,3 +31,9 @@
         </footer>
     </div>
 </div>
+
+<style>
+    #msg-modal {
+        z-index: 50;
+    }
+</style>
