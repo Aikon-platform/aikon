@@ -461,7 +461,7 @@ def delete_matches(request, wid, rid=None):
     )
 
 
-def delete_pair(request, wid, rid=None):
+def delete_pair(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=405)
 

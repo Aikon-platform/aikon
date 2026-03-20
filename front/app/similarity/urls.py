@@ -106,6 +106,11 @@ urlpatterns = [
         delete_matches,
         name="witness-delete-matches",
     ),
+    path(
+        f"{APP_NAME}/delete-pair",
+        delete_pair,
+        name="witness-delete-pair",
+    ),
     path(f"{APP_NAME}/exact-match", exact_match, name="exact-match"),
     path(f"{APP_NAME}/categorize-batch", categorize_batch, name="categorize-batch"),
     path(
