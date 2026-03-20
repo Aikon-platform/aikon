@@ -247,7 +247,12 @@ function createSimilarityStore() {
                 const res = await fetch(`${baseUrl}similar-images`, {
                     method: "POST",
                     headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
-                    body: JSON.stringify({regionsIds: rids, filterByRegions: !isInModal, qImg, topk: 10}),
+                    body: JSON.stringify({
+                        regionsIds: rids,
+                        filterByRegions: !isInModal,
+                        qImg,
+                        ...(!isInModal && { topk: 10 }) // all matches in modal
+                    }),
                 });
                 const data = await res.json();
                 if (gen === cGen) items.set(data);

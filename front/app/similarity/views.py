@@ -137,7 +137,8 @@ def get_similar_images(request, wid, rid=None):
             )
 
         q_img = str(data.get("qImg", ""))
-        topk = min(max(int(data.get("topk") or 10), 1), 20)
+        raw_topk = data.get("topk")
+        topk = min(max(int(raw_topk), 1), 20) if raw_topk else None
 
         if not q_img:
             return JsonResponse({})
@@ -158,17 +159,6 @@ def get_similar_images(request, wid, rid=None):
             topk=topk,
             user_id=request.user.id,
         )
-
-        # Set to false to display pairs containing the same image multiple times with different scores
-        no_duplicates = True
-        if no_duplicates:
-            seen = set()
-            s_img_idx = 2
-            result = [
-                p
-                for p in result
-                if not (p[s_img_idx] in seen or seen.add(p[s_img_idx]))
-            ]
 
         return JsonResponse(result, safe=False)
 
