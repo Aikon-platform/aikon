@@ -33,7 +33,7 @@ from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import check_ref, is_superuser
 
 from app.webapp.utils.iiif.annotation import (
-    get_regions_annotations,
+    get_record_annotations,
 )
 
 
@@ -198,7 +198,7 @@ def export_common_logic(regions_list):
     path_list = set()
 
     for regions in regions_list:
-        anno_regions = get_regions_annotations(regions, as_json=True)
+        anno_regions = get_record_annotations(regions, as_json=True)
 
         try:
             r_ref = regions.get_ref()

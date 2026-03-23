@@ -563,9 +563,8 @@ def get_canvas_list(regions: Regions, all_img=False):
     return canvases
 
 
-# TODO create a get_digit_annotations / get_regions_annotations and check where to use one or the other
-def get_regions_annotations(
-    regions: Regions,
+def get_record_annotations(
+    record: Digitization | Regions,
     as_json=False,
     r_annos=None,
     min_c: int | None = None,
@@ -574,9 +573,16 @@ def get_regions_annotations(
     if r_annos is None:
         r_annos = {} if as_json else []
 
-    digit = regions.get_digit()
+    if isinstance(record, Digitization):
+        digit = record
+        regions_tag = None
+    elif isinstance(record, Regions):
+        digit = record.get_digit()
+        regions_tag = record.get_ref()
+    else:
+        return r_annos
+
     digit_meta = digit.get_json()
-    regions_tag = regions.get_ref()
 
     img_name = digit.get_ref()
     nb_len = digit_meta.get("img_nb_len", get_img_nb_len(img_name))
@@ -588,7 +594,8 @@ def get_regions_annotations(
         r_annos = {str(c): {} for c in range(min_c, max_c + 1)}
 
     annos = get_manifest_annotations(digit.get_ref(), False, min_c, max_c)
-    annos = filter_annotations_by_tag(annos, regions_tag)  # TODO filter or not
+    if regions_tag:
+        annos = filter_annotations_by_tag(annos, regions_tag)
 
     if len(annos) == 0:
         return r_annos
@@ -601,7 +608,7 @@ def get_regions_annotations(
 
             if canvas not in r_annos:
                 log(
-                    f"[get_regions_annotations] Key '{canvas}' should be included between {min_c}-{max_c} => pass"
+                    f"[get_record_annotations] Key '{canvas}' should be included between {min_c}-{max_c} => pass"
                 )
                 continue
 
@@ -628,24 +635,24 @@ def get_regions_annotations(
             else:
                 r_annos.append((canvas, xywh, f"{img_name}_{canvas.zfill(nb_len)}"))
         except Exception as e:
-            log(f"[get_regions_annotations]: Failed to parse annotation {anno}", e)
+            log(f"[get_record_annotations]: Failed to parse annotation {anno}", e)
             continue
 
     return r_annos
 
 
-def get_annotations_on_canvases(regions: list[Regions], min_c, max_c):
-    anno_regions = {}
-    for reg in regions:
-        max_canvas = reg.get_json()["img_nb"]
-        anno_regions = get_regions_annotations(
-            reg,
+def get_annotations_on_canvases(records: list[Regions | Digitization], min_c, max_c):
+    anno_records = {}
+    for rec in records:
+        max_canvas = rec.get_json()["img_nb"]
+        anno_records = get_record_annotations(
+            rec,
             as_json=True,
-            r_annos=anno_regions,
+            r_annos=anno_records,
             min_c=min_c or 1,
             max_c=min(max_c, max_canvas) if max_c else max_canvas,
         )
-    return anno_regions
+    return anno_records
 
 
 def get_indexed_manifests():

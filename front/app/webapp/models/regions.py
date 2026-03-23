@@ -161,9 +161,9 @@ class Regions(AbstractSearchableModel):
         }
 
     def get_annotations(self):
-        from app.webapp.utils.iiif.annotation import get_regions_annotations
+        from app.webapp.utils.iiif.annotation import get_record_annotations
 
-        return get_regions_annotations(self)
+        return get_record_annotations(self)
 
     def get_imgs(self, is_abs=False, only_one=False, check_in_dir=False):
         if digit := self.get_digit():

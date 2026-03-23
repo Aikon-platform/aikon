@@ -27,6 +27,7 @@ from app.webapp.utils.iiif.annotation import (
     formatted_annotations,
     reindex_file,
     get_regions_urls,
+    get_record_annotations,
 )
 from app.webapp.utils.regions import (
     get_regions_img,
@@ -243,8 +244,9 @@ def get_canvas_witness_regions(request, wid):
     witness = get_object_or_404(Witness, id=wid)
     p_nb = int(request.GET.get("p", 0))
     min_c, max_c = page_bounds(p_nb)
+
     return JsonResponse(
-        get_annotations_on_canvases(witness.get_regions(), min_c, max_c), safe=False
+        get_annotations_on_canvases(witness.get_digits(), min_c, max_c), safe=False
     )
 
 
