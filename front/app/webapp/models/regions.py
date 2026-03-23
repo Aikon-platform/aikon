@@ -155,6 +155,7 @@ class Regions(AbstractSearchableModel):
             "class": self.__class__.__name__,
             "type": get_name("Regions"),
             "url": self.gen_mirador_url(),
+            "digitization_id": digit.id if digit else None,
             "img_nb": rjson.get("img_nb", digit.img_nb() if digit else 0),
             "zeros": rjson.get("zeros", digit.img_zeros() if digit else 0),
         }

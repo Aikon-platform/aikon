@@ -102,52 +102,37 @@ def receive_similarity_notification(request):
     return JsonResponse(response, status=status_code, safe=False)
 
 
-def get_similar_images(request, wid, rid=None):
-    """
-    Return the best region images that are similar to the query region image
-    whose id is passed in the POST parameters
-    """
+def get_similar_images(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
-    if rid is not None:
-        q_regions = [get_object_or_404(Regions, id=rid)]
-    else:
-        witness = get_object_or_404(Witness, id=wid)
-        q_regions = witness.get_regions()
-
-    q_digit_ids = {q_r.digitization_id for q_r in q_regions}
-
-    if not len(q_regions):
-        return JsonResponse(
-            {"error": f"No regions found for this witness #{wid}"}, status=400
-        )
-
     try:
         data = json.loads(request.body.decode("utf-8"))
-        filter_by_regions = data.get("filterByRegions", True)
+    except (json.JSONDecodeError, ValueError) as e:
+        return JsonResponse({"error": f"Invalid data: {e}"}, status=400)
 
-        t_digit_ids = data.get("digitIds", [])
-        if not t_digit_ids and data.get("regionsIds", []):
-            t_digit_ids = list(
-                Regions.objects.filter(id__in=data.get("regionsIds", []))
-                .values_list("digitization_id", flat=True)
-                .distinct()
-            )
+    q_img = str(data.get("qImg", ""))
+    if not q_img:
+        return JsonResponse({})
 
-        q_img = str(data.get("qImg", ""))
-        raw_topk = data.get("topk")
-        topk = min(max(int(raw_topk), 1), 20) if raw_topk else None
+    try:
+        q_ref = parse_img(add_jpg(q_img))
+    except ValueError as e:
+        return JsonResponse({"error": f"Invalid qImg ({q_img}): {e}"}, status=400)
 
-        if not q_img:
-            return JsonResponse({})
+    filter_by_regions = data.get("filterByRegions", True)
+    t_digit_ids = data.get("digitIds", [])
 
-        if filter_by_regions and not t_digit_ids:
-            return JsonResponse({})
+    if filter_by_regions and not t_digit_ids:
+        return JsonResponse({})
 
+    raw_topk = data.get("topk")
+    topk = min(max(int(raw_topk), 1), 20) if raw_topk else None
+
+    try:
         pairs = get_region_pairs_with(
             q_img,
-            query_digit_ids=q_digit_ids,
+            query_digit_ids={q_ref.digit},
             target_digit_ids=t_digit_ids if filter_by_regions else None,
         )
 
@@ -161,87 +146,11 @@ def get_similar_images(request, wid, rid=None):
 
         return JsonResponse(result, safe=False)
 
-    except (json.JSONDecodeError, ValueError) as e:
-        return JsonResponse({"error": f"Invalid data: {e}"}, status=400)
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
-def get_compared_regions(request, wid, rid=None):
-    """
-    Return the id and metadata of the Regions that have a RegionPair record
-    in common with the Regions whose id is passed in the URL
-    """
-    if rid is not None:
-        q_regions = [get_object_or_404(Regions, id=rid)]
-    else:
-        witness = get_object_or_404(Witness, id=wid)
-        q_regions = witness.get_regions()
-
-    try:
-        current_regions = {q_r.get_ref(): q_r.get_json() for q_r in q_regions}
-        q_digit_ids = {q_r.digitization_id for q_r in q_regions}
-
-        pairs = RegionPair.objects.filter(
-            Q(digit_1__in=q_digit_ids) | Q(digit_2__in=q_digit_ids)
-        ).values_list("digit_1", "digit_2")
-
-        partner_ids = set()
-        for d1, d2 in pairs:
-            if d1 in q_digit_ids:
-                partner_ids.add(d2)
-            if d2 in q_digit_ids:
-                partner_ids.add(d1)
-        partner_ids -= q_digit_ids
-
-        partner_regions = Regions.objects.filter(digitization_id__in=partner_ids)
-
-        compared_regions = dict(
-            sorted(
-                {r.get_ref(): r.get_json() for r in partner_regions}.items(),
-            )
-        )
-
-        # if there is no similarity retrieved at all, avoid returning the region itself
-        if len(list(compared_regions.keys())) == 0:
-            return JsonResponse({})
-        return JsonResponse(OrderedDict({**current_regions, **compared_regions}))
-    except Exception as e:
-        log("[get_compared_regions] Couldn't retrieve compared regions", e)
-        return JsonResponse(
-            {"error": f"Couldn't retrieve compared regions: {e}"}, status=400
-        )
-
-
-def get_similarity_score_range(
-    request, wid: int, rid: int | None = None
-) -> JsonResponse:
-    """
-    return a [minScore, maxScore] for all similarities of `wid`
-    """
-    from django.db.models import Max, Min
-
-    try:
-        digit_ids = list(
-            Digitization.objects.filter(witness_id=wid).values_list("id", flat=True)
-        )
-        q = RegionPair.objects.filter(
-            (Q(digit_1__in=digit_ids) & ~Q(score=None))
-            | (Q(digit_2__in=digit_ids) & ~Q(score=None))
-        )
-        _min = q.aggregate(Min("score"))["score__min"]
-        _max = q.aggregate(Max("score"))["score__max"]
-        return JsonResponse({"min": _min, "max": _max})
-
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON data"}, status=400)
-    except Exception as e:
-        return JsonResponse({"error": f"Exception encountered: {e}"}, status=500)
-
-
-def get_propagated_matches(
-    request, wid: int | None = None, rid: int | None = None, img_id: str = ""
-) -> JsonResponse:
+def get_propagated_matches(request, img_id: str = "") -> JsonResponse:
     """
     Given an image `img_id`, find all images reachable through a chain of exact matches
     (category=1), excluding direct exact matches and already-saved propagations.
@@ -283,6 +192,84 @@ def get_propagated_matches(
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
+def get_compared_regions(request, wid, rid=None):
+    """
+    Return the id and metadata of the Regions that have a RegionPair record
+    in common with the Regions whose id is passed in the URL
+    """
+    if rid is not None:
+        q_regions = [get_object_or_404(Regions, id=rid)]
+    else:
+        witness = get_object_or_404(Witness, id=wid)
+        q_regions = witness.get_regions()
+
+    try:
+        current_regions = {
+            q_r.get_ref(): {**q_r.get_json(), "digitization_id": q_r.digitization_id}
+            for q_r in q_regions
+        }
+        q_digit_ids = {q_r.digitization_id for q_r in q_regions}
+
+        pairs = RegionPair.objects.filter(
+            Q(digit_1__in=q_digit_ids) | Q(digit_2__in=q_digit_ids)
+        ).values_list("digit_1", "digit_2")
+
+        partner_ids = set()
+        for d1, d2 in pairs:
+            if d1 in q_digit_ids:
+                partner_ids.add(d2)
+            if d2 in q_digit_ids:
+                partner_ids.add(d1)
+        partner_ids -= q_digit_ids
+
+        partner_regions = Regions.objects.filter(digitization_id__in=partner_ids)
+
+        compared_regions = dict(
+            sorted(
+                {
+                    r.get_ref(): {**r.get_json(), "digitization_id": r.digitization_id}
+                    for r in partner_regions
+                }.items(),
+            )
+        )
+
+        # if there is no similarity retrieved at all, avoid returning the region itself
+        if len(list(compared_regions.keys())) == 0:
+            return JsonResponse({})
+        return JsonResponse(OrderedDict({**current_regions, **compared_regions}))
+    except Exception as e:
+        log("[get_compared_regions] Couldn't retrieve compared regions", e)
+        return JsonResponse(
+            {"error": f"Couldn't retrieve compared regions: {e}"}, status=400
+        )
+
+
+def get_similarity_score_range(
+    request, wid: int, rid: int | None = None
+) -> JsonResponse:
+    """
+    return a [minScore, maxScore] for all similarities of `wid`
+    """
+    from django.db.models import Max, Min
+
+    try:
+        digit_ids = list(
+            Digitization.objects.filter(witness_id=wid).values_list("id", flat=True)
+        )
+        q = RegionPair.objects.filter(
+            (Q(digit_1__in=digit_ids) & ~Q(score=None))
+            | (Q(digit_2__in=digit_ids) & ~Q(score=None))
+        )
+        _min = q.aggregate(Min("score"))["score__min"]
+        _max = q.aggregate(Max("score"))["score__max"]
+        return JsonResponse({"min": _min, "max": _max})
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": f"Exception encountered: {e}"}, status=500)
 
 
 def _propagate_cte(

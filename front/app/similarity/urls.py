@@ -37,16 +37,6 @@ urlpatterns = [
         name="witness-similarity-score-range",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/propagated-matches/<str:img_id>",
-        get_propagated_matches,
-        name="propagated-regions",
-    ),
-    path(
-        f"{APP_NAME}/witness/<int:wid>/regions/propagated-matches/<str:img_id>",
-        get_propagated_matches,
-        name="propagated-regions",
-    ),
-    path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/query-images",
         get_query_images,
         name="query-images",
@@ -57,14 +47,14 @@ urlpatterns = [
         name="witness-query-images",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/similar-images",
+        f"{APP_NAME}/regions/similar-images",
         get_similar_images,
         name="similar-images",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/similar-images",
-        get_similar_images,
-        name="witness-similar-region",
+        f"{APP_NAME}/regions/propagated-matches/<str:img_id>",
+        get_propagated_matches,
+        name="propagated-regions",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/get_regions_title/<str:regions_ref>",
