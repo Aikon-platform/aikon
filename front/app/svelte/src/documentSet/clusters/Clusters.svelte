@@ -3,13 +3,14 @@
     import Row from "../../Row.svelte";
     import Toolbar from "../../Toolbar.svelte";
     import {appLang, isSuperuser} from "../../constants.js";
+    import { categoryInfo } from "../../regions/similarity/similarityCategory.js";
     import Pagination from "../../Pagination.svelte";
     import RegionsSelectionModal from "../../regions/RegionsSelectionModal.svelte";
     import { clusterSelection } from "../../selection/selectionStore.js";
     import Regions from "../../regions/Regions.svelte";
 
     export let documentSetStore;
-    const { imageNodes, onlyExactMatches } = documentSetStore;
+    const { imageNodes, selectedCategories } = documentSetStore;
     export let clusterStore;
     const {
         clusterNb,
@@ -17,6 +18,7 @@
         pageLength,
         validateCluster,
         newCluster,
+        categorizeSelection,
         removeFromClusters
     } = clusterStore;
 
@@ -66,36 +68,45 @@
             cl.members.map(imgId => ({...$imageNodes.get(imgId), clusterId: cl.id}))
         ])
     );
+
+    $: onlyOneSelectedCategory = $selectedCategories.length === 1;
+    $: onlyExactMatches = $selectedCategories.length === 1 && $selectedCategories[0] === 1;
 </script>
 
 {#if isSuperuser}
 <Toolbar expandable={false}>
     <div slot="toolbar-visible">
         <div class="columns is-vcentered is-mobile py-4">
-            <div class="column is-narrow mr-5">
-                <span class="tag is-medium is-link mr-5">
-                    {appLang === "en" ? "Process selection" : "Agir sur la sélection"}
-                </span>
-            </div>
-            <div class="column">
-                <div class="field has-addons">
-                    {#each Object.values(globalActions) as action}
-                        {#if !$onlyExactMatches && action.title === actionLabels.remove.title}
-                            <!-- Skip "remove" action if other category are selected -->
-                            <!-- Because it makes no sense to remove the category "exact match" from pairs that do not have it -->
-                        {:else}
-                            <p class="control">
-                                <button class="button pl-5" on:click|preventDefault={action.fct} title={action.desc}>
-                                    <span class="icon is-small">
-                                        <i class="fas {action.icon}"/>
-                                    </span>
-                                    {action.title}
-                                    <span class="shortcut">{action.shortcut}</span>
-                                </button>
-                            </p>
-                        {/if}
-                    {/each}
-                </div>
+            <div class="field has-addons">
+                <p class="control">
+                     <button class="button is-link is-selected has-text-light is-unclickable">
+                         {appLang === "en" ? "Categorize selection as" : "Catégoriser la sélection comme"}
+                     </button>
+                </p>
+                <p class="control">
+                    <button class="button py-3" on:click|preventDefault={onlyExactMatches ? newCluster : categorizeSelection(1)}
+                            title={onlyExactMatches ? actionLabels.create.title : categoryInfo[1].action}>
+                        {@html categoryInfo[1].svg}
+                    </button>
+                </p>
+                {#each [2, 3] as cat}
+                    <p class="control">
+                        <button class="button py-3" on:click|preventDefault={() => categorizeSelection(cat)}
+                                title={categoryInfo[cat].action}>
+                            {@html categoryInfo[cat].svg}
+                        </button>
+                    </p>
+                {/each}
+                {#if onlyOneSelectedCategory}
+                    <!-- Skip "remove" action if more than one category is selected -->
+                    <!-- Because it makes no sense to uncategorize pairs that have different or no category -->
+                    <p class="control">
+                        <button class="button py-3" on:click|preventDefault={removeFromClusters}
+                                title={actionLabels.remove.title}>
+                            {@html categoryInfo[0].svg}
+                        </button>
+                    </p>
+                {/if}
             </div>
         </div>
     </div>

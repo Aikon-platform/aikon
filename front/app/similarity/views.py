@@ -40,6 +40,8 @@ from app.similarity.utils import (
     build_pairs_query,
     stream_pairs_ndjson,
     normalize_pair,
+    SimilarityCategory,
+    get_pairs_with_img,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
@@ -100,51 +102,37 @@ def receive_similarity_notification(request):
     return JsonResponse(response, status=status_code, safe=False)
 
 
-def get_similar_images(request, wid, rid=None):
-    """
-    Return the best region images that are similar to the query region image
-    whose id is passed in the POST parameters
-    """
+def get_similar_images(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
-    if rid is not None:
-        q_regions = [get_object_or_404(Regions, id=rid)]
-    else:
-        witness = get_object_or_404(Witness, id=wid)
-        q_regions = witness.get_regions()
-
-    q_digit_ids = {q_r.digitization_id for q_r in q_regions}
-
-    if not len(q_regions):
-        return JsonResponse(
-            {"error": f"No regions found for this witness #{wid}"}, status=400
-        )
-
     try:
         data = json.loads(request.body.decode("utf-8"))
-        filter_by_regions = data.get("filterByRegions", True)
+    except (json.JSONDecodeError, ValueError) as e:
+        return JsonResponse({"error": f"Invalid data: {e}"}, status=400)
 
-        t_digit_ids = data.get("digitIds", [])
-        if not t_digit_ids and data.get("regionsIds", []):
-            t_digit_ids = list(
-                Regions.objects.filter(id__in=data.get("regionsIds", []))
-                .values_list("digitization_id", flat=True)
-                .distinct()
-            )
+    q_img = str(data.get("qImg", ""))
+    if not q_img:
+        return JsonResponse({})
 
-        q_img = str(data.get("qImg", ""))
-        topk = min(max(int(data.get("topk") or 10), 1), 20)
+    try:
+        q_ref = parse_img(add_jpg(q_img))
+    except ValueError as e:
+        return JsonResponse({"error": f"Invalid qImg ({q_img}): {e}"}, status=400)
 
-        if not q_img:
-            return JsonResponse({})
+    filter_by_regions = data.get("filterByRegions", True)
+    t_digit_ids = data.get("digitIds", [])
 
-        if filter_by_regions and not t_digit_ids:
-            return JsonResponse({})
+    if filter_by_regions and not t_digit_ids:
+        return JsonResponse({})
 
+    raw_topk = data.get("topk")
+    topk = min(max(int(raw_topk), 1), 20) if raw_topk else None
+
+    try:
         pairs = get_region_pairs_with(
             q_img,
-            query_digit_ids=q_digit_ids,
+            query_digit_ids={q_ref.digit},
             target_digit_ids=t_digit_ids if filter_by_regions else None,
         )
 
@@ -156,100 +144,13 @@ def get_similar_images(request, wid, rid=None):
             user_id=request.user.id,
         )
 
-        # Set to false to display pairs containing the same image multiple times with different scores
-        no_duplicates = True
-        if no_duplicates:
-            seen = set()
-            s_img_idx = 2
-            result = [
-                p
-                for p in result
-                if not (p[s_img_idx] in seen or seen.add(p[s_img_idx]))
-            ]
-
         return JsonResponse(result, safe=False)
 
-    except (json.JSONDecodeError, ValueError) as e:
-        return JsonResponse({"error": f"Invalid data: {e}"}, status=400)
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
-def get_compared_regions(request, wid, rid=None):
-    """
-    Return the id and metadata of the Regions that have a RegionPair record
-    in common with the Regions whose id is passed in the URL
-    """
-    if rid is not None:
-        q_regions = [get_object_or_404(Regions, id=rid)]
-    else:
-        witness = get_object_or_404(Witness, id=wid)
-        q_regions = witness.get_regions()
-
-    try:
-        current_regions = {q_r.get_ref(): q_r.get_json() for q_r in q_regions}
-        q_digit_ids = {q_r.digitization_id for q_r in q_regions}
-
-        pairs = RegionPair.objects.filter(
-            Q(digit_1__in=q_digit_ids) | Q(digit_2__in=q_digit_ids)
-        ).values_list("digit_1", "digit_2")
-
-        partner_ids = set()
-        for d1, d2 in pairs:
-            if d1 in q_digit_ids:
-                partner_ids.add(d2)
-            if d2 in q_digit_ids:
-                partner_ids.add(d1)
-        partner_ids -= q_digit_ids
-
-        partner_regions = Regions.objects.filter(digitization_id__in=partner_ids)
-
-        compared_regions = dict(
-            sorted(
-                {r.get_ref(): r.get_json() for r in partner_regions}.items(),
-            )
-        )
-
-        # if there is no similarity retrieved at all, avoid returning the region itself
-        if len(list(compared_regions.keys())) == 0:
-            return JsonResponse({})
-        return JsonResponse(OrderedDict({**current_regions, **compared_regions}))
-    except Exception as e:
-        log("[get_compared_regions] Couldn't retrieve compared regions", e)
-        return JsonResponse(
-            {"error": f"Couldn't retrieve compared regions: {e}"}, status=400
-        )
-
-
-def get_similarity_score_range(
-    request, wid: int, rid: int | None = None
-) -> JsonResponse:
-    """
-    return a [minScore, maxScore] for all similarities of `wid`
-    """
-    from django.db.models import Max, Min
-
-    try:
-        digit_ids = list(
-            Digitization.objects.filter(witness_id=wid).values_list("id", flat=True)
-        )
-        q = RegionPair.objects.filter(
-            (Q(digit_1__in=digit_ids) & ~Q(score=None))
-            | (Q(digit_2__in=digit_ids) & ~Q(score=None))
-        )
-        _min = q.aggregate(Min("score"))["score__min"]
-        _max = q.aggregate(Max("score"))["score__max"]
-        return JsonResponse({"min": _min, "max": _max})
-
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON data"}, status=400)
-    except Exception as e:
-        return JsonResponse({"error": f"Exception encountered: {e}"}, status=500)
-
-
-def get_propagated_matches(
-    request, wid: int | None = None, rid: int | None = None, img_id: str = ""
-) -> JsonResponse:
+def get_propagated_matches(request, img_id: str = "") -> JsonResponse:
     """
     Given an image `img_id`, find all images reachable through a chain of exact matches
     (category=1), excluding direct exact matches and already-saved propagations.
@@ -291,6 +192,84 @@ def get_propagated_matches(
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
+def get_compared_regions(request, wid, rid=None):
+    """
+    Return the id and metadata of the Regions that have a RegionPair record
+    in common with the Regions whose id is passed in the URL
+    """
+    if rid is not None:
+        q_regions = [get_object_or_404(Regions, id=rid)]
+    else:
+        witness = get_object_or_404(Witness, id=wid)
+        q_regions = witness.get_regions()
+
+    try:
+        current_regions = {
+            q_r.get_ref(): {**q_r.get_json(), "digitization_id": q_r.digitization_id}
+            for q_r in q_regions
+        }
+        q_digit_ids = {q_r.digitization_id for q_r in q_regions}
+
+        pairs = RegionPair.objects.filter(
+            Q(digit_1__in=q_digit_ids) | Q(digit_2__in=q_digit_ids)
+        ).values_list("digit_1", "digit_2")
+
+        partner_ids = set()
+        for d1, d2 in pairs:
+            if d1 in q_digit_ids:
+                partner_ids.add(d2)
+            if d2 in q_digit_ids:
+                partner_ids.add(d1)
+        partner_ids -= q_digit_ids
+
+        partner_regions = Regions.objects.filter(digitization_id__in=partner_ids)
+
+        compared_regions = dict(
+            sorted(
+                {
+                    r.get_ref(): {**r.get_json(), "digitization_id": r.digitization_id}
+                    for r in partner_regions
+                }.items(),
+            )
+        )
+
+        # if there is no similarity retrieved at all, avoid returning the region itself
+        if len(list(compared_regions.keys())) == 0:
+            return JsonResponse({})
+        return JsonResponse(OrderedDict({**current_regions, **compared_regions}))
+    except Exception as e:
+        log("[get_compared_regions] Couldn't retrieve compared regions", e)
+        return JsonResponse(
+            {"error": f"Couldn't retrieve compared regions: {e}"}, status=400
+        )
+
+
+def get_similarity_score_range(
+    request, wid: int, rid: int | None = None
+) -> JsonResponse:
+    """
+    return a [minScore, maxScore] for all similarities of `wid`
+    """
+    from django.db.models import Max, Min
+
+    try:
+        digit_ids = list(
+            Digitization.objects.filter(witness_id=wid).values_list("id", flat=True)
+        )
+        q = RegionPair.objects.filter(
+            (Q(digit_1__in=digit_ids) & ~Q(score=None))
+            | (Q(digit_2__in=digit_ids) & ~Q(score=None))
+        )
+        _min = q.aggregate(Min("score"))["score__min"]
+        _max = q.aggregate(Max("score"))["score__max"]
+        return JsonResponse({"min": _min, "max": _max})
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": f"Exception encountered: {e}"}, status=500)
 
 
 def _propagate_cte(
@@ -429,7 +408,7 @@ def add_region_pair(request, wid, rid=None):
 
 
 def no_match(request, wid, rid=None):
-    """remove all regionpairs contain q_img image id and the regions id specified in `s_regions`."""
+    """categorize all region pairs containing q_img and the specified regions id in `s_regions` as no match (category=4)"""
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
@@ -444,6 +423,47 @@ def no_match(request, wid, rid=None):
             pair.save()
 
         return JsonResponse({"success": "Updated matches"})
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
+@user_passes_test(is_superuser)
+def delete_matches(request, wid, rid=None):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        q_img = add_jpg(data.get("q_img", ""))
+        parse_img(q_img)
+    except (json.JSONDecodeError, ValueError) as e:
+        return JsonResponse({"error": f"Could not parse q_img: {e}"}, status=400)
+
+    deleted, _ = RegionPair.objects.filter(Q(img_1=q_img) | Q(img_2=q_img)).delete()
+    return JsonResponse(
+        {"success": f"Successfully deleted {deleted} pairs"}, status=200
+    )
+
+
+def delete_pair(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        q_img, s_img = add_jpg(data.get("q_img", "")), add_jpg(data.get("s_img", ""))
+        img_1, img_2 = RegionPair.order_pair((q_img, s_img))
+        deleted, _ = RegionPair.objects.filter(img_1=img_1, img_2=img_2).delete()
+        if deleted == 0:
+            return JsonResponse(
+                {"error": "No matching pair found to delete"}, status=404
+            )
+        return JsonResponse(
+            {"success": f"Successfully deleted {deleted} pair(s)"}, status=200
+        )
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
@@ -485,64 +505,17 @@ def add_user_to_pair(request):
 
     try:
         data = json.loads(request.body)
-        img_1, img_2 = RegionPair.order_pair((data.get("img_1"), data.get("img_2")))
+        img_1, img_2 = add_jpg(data.get("img_1", "")), add_jpg(data.get("img_2", ""))
+        img_1, img_2 = RegionPair.order_pair((img_1, img_2))
         user_id = request.user.id
 
+        if not user_id:
+            return JsonResponse({"error": "User not authenticated"}, status=401)
+
         query = {"img_1": img_1, "img_2": img_2}
-        rp_list = list(RegionPair.objects.filter(**query))
+        rp_list = list(RegionPair.objects.select_for_update().filter(**query))
 
-        # propagation without category => delete
-        to_delete = similarity_type == SimilarityType.PROPAGATED and category is None
-        if to_delete:
-            try:
-                region_pair = RegionPair.objects.get(
-                    **query_filter,
-                )
-                region_pair.delete()
-                message = f"Deleted 1 propagated region pair"
-                pair_info = region_pair.get_info(as_json=True)
-            except RegionPair.DoesNotExist:
-                message = "Region pair does not exist thus was not deleted"
-                pair_info = {}
-
-            return JsonResponse(
-                {
-                    "status": "success",
-                    "message": message,
-                    "pair_info": pair_info,
-                },
-                status=200,
-            )
-
-        regions_id_1 = regions_from_img(img_1)
-        regions_id_2 = regions_from_img(img_2)
-
-        # NOTE : we do a manual bulk_update_or_create to not just update the current RegionPair
-        # NOTE : the goal is to update ALL RegionPairs with the same img_1 and img_2.
-        defaults = {
-            "regions_id_1": regions_id_1,
-            "regions_id_2": regions_id_2,
-            "category": category,
-            "similarity_type": similarity_type,
-            "similarity_hash": similarity_hash,
-            "category_x": [],
-        }
-        rp_list = RegionPair.objects.filter(**query_filter)
-        if rp_list:
-            for rp in rp_list:
-                category_x = rp.category_x or []
-                if user_id in category_x:
-                    category_x.remove(user_id)
-                else:
-                    category_x.append(user_id)
-                rp.category_x = category_x
-                # if no score and empty category x, delete the pair
-                if not rp.category_x and (rp.score is None):
-                    rp.delete()
-                else:
-                    rp.save()
-            message = f"Updated {len(rp_list)} region pair(s)"
-        else:
+        if not rp_list:
             ref1, ref2 = parse_img(img_1), parse_img(img_2)
             rp = RegionPair.objects.create(
                 **query,
@@ -550,9 +523,35 @@ def add_user_to_pair(request):
                 digit_1=ref1.digit,
                 digit_2=ref2.digit,
             )
-            message = f"New region pair #{rp.id} created"
+            return JsonResponse(
+                {"status": "success", "message": f"New region pair #{rp.id} created"},
+                status=200,
+            )
 
-        return JsonResponse({"status": "success", "message": message}, status=200)
+        for rp in rp_list:
+            category_x = rp.category_x or []
+            if user_id in category_x:
+                category_x.remove(user_id)
+            else:
+                category_x.append(user_id)
+            rp.category_x = category_x
+            # if propagated, empty category x and no category, delete the pair
+            if (
+                not rp.category_x
+                and rp.similarity_type == SimilarityType.PROPAGATED
+                and rp.category is None
+            ):
+                rp.delete()
+            else:
+                rp.save()
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "message": f"Updated/deleted {len(rp_list)} region pair(s)",
+            },
+            status=200,
+        )
 
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
@@ -660,12 +659,13 @@ def exact_match(request):
 
 
 @transaction.atomic
-def exact_match_batch(request):
+def categorize_batch(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
     try:
         data = json.loads(request.body)
+        category = data.get("category", SimilarityCategory.EXACT_MATCH)
         results = {"created": 0, "updated": 0}
 
         pairs = [normalize_pair(p["img_1"], p["img_2"]) for p in data.get("pairs", [])]
@@ -697,7 +697,7 @@ def exact_match_batch(request):
                         img_2=img_2,
                         digit_1=ref1.digit,
                         digit_2=ref2.digit,
-                        category=1,
+                        category=category,
                         similarity_type=SimilarityType.PROPAGATED,
                         score=None,
                         category_x=[],
@@ -710,7 +710,9 @@ def exact_match_batch(request):
 
         if existing:
             results["updated"] = (
-                RegionPair.objects.filter(q).exclude(category=1).update(category=1)
+                RegionPair.objects.filter(q)
+                .exclude(category=category)
+                .update(category=category)
             )
 
         return JsonResponse({"status": "success", "results": results})
@@ -718,12 +720,12 @@ def exact_match_batch(request):
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
-        log("[exact_match_batch] Exception encountered", e)
+        log("[categorize_batch] Exception encountered", e)
         return JsonResponse({"error": str(e)}, status=500)
 
 
 @transaction.atomic
-def uncategorize_pair_batch(request):
+def uncategorize_batch(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 

@@ -452,10 +452,27 @@ def get_matched_regions(q_img: str, s_digit_id: int):
     )
 
 
+def get_pairs_with_img(q_img: str):
+    return list(RegionPair.objects.filter(Q(img_1=q_img) | Q(img_2=q_img)))
+
+
+PAIR_FIELDS = (
+    "img_1",
+    "img_2",
+    "digit_1",
+    "digit_2",
+    "score",
+    "category",
+    "category_x",
+    "similarity_type",
+    "similarity_hash",
+)
+
+
 def get_region_pairs_with(q_img, query_digit_ids, target_digit_ids=None):
     if target_digit_ids is None:
-        return list(RegionPair.objects.filter(Q(img_1=q_img) | Q(img_2=q_img)))
-
+        qs = RegionPair.objects.filter(Q(img_1=q_img) | Q(img_2=q_img))
+        return list(qs.values_list(*PAIR_FIELDS, named=True))
     query = (
         Q(img_1=q_img)
         & Q(digit_1__in=query_digit_ids)
@@ -465,11 +482,93 @@ def get_region_pairs_with(q_img, query_digit_ids, target_digit_ids=None):
         & Q(digit_2__in=query_digit_ids)
         & Q(digit_1__in=target_digit_ids)
     )
-
     if not bool(set(query_digit_ids) & set(target_digit_ids)):
         query &= ~Q(digit_1=F("digit_2"))
+    qs = RegionPair.objects.filter(query)
 
-    return list(RegionPair.objects.filter(query))
+    return list(qs.values_list(*PAIR_FIELDS, named=True))
+
+
+def pair_tuple(row, q_img):
+    is_q1 = row.img_1 == q_img
+    return RegionPairTuple(
+        score=row.score,
+        q_img=q_img,
+        s_img=row.img_2 if is_q1 else row.img_1,
+        q_digit=row.digit_1 if is_q1 else row.digit_2,
+        s_digit=row.digit_2 if is_q1 else row.digit_1,
+        category=row.category,
+        category_x=row.category_x or [],
+        similarity_type=row.similarity_type,
+        similarity_hash=row.similarity_hash,
+    )
+
+
+def pair_priority(pair, user_id):
+    is_manual = pair.similarity_type == SimilarityType.MANUAL or (
+        pair.category_x and user_id in pair.category_x
+    )
+    is_propagated = pair.similarity_type == SimilarityType.PROPAGATED
+    is_nomatch = pair.category == SimilarityCategory.NO_MATCH
+    is_categorized = pair.category is not None and not is_nomatch
+
+    # high priority => low priority
+    if is_manual:
+        group = 0
+    elif is_propagated:
+        group = 1
+    elif is_categorized:
+        group = 2
+    elif pair.score is not None:
+        group = 3
+    elif is_nomatch:
+        group = 4
+    else:
+        group = 5
+
+    sub = pair.category if is_categorized else 0
+    return group, sub, -(pair.score or 0)
+
+
+def get_best_pairs(
+    q_img, region_pairs, excluded_categories, topk=None, user_id=None, export=False
+):
+    pairs = [pair_tuple(row, q_img) for row in region_pairs]
+    pairs.sort(key=lambda p: pair_priority(p, user_id))
+
+    if export:
+        return pairs
+
+    seen = set()
+    result = []
+    auto_count = 0
+
+    for p in pairs:
+        if p.s_img in seen:
+            continue
+        seen.add(p.s_img)
+
+        if p.category in excluded_categories:
+            continue
+
+        is_manual = p.similarity_type == SimilarityType.MANUAL or (
+            p.category_x and user_id in p.category_x
+        )
+        is_auto = (
+            not is_manual
+            and p.similarity_type != SimilarityType.PROPAGATED
+            and p.category is None
+            and p.score is not None
+        )
+
+        if is_auto and topk:
+            auto_count += 1
+            if auto_count > topk:
+                continue
+
+        result.append(p)
+
+    return result
 
 
 def delete_pairs_with_digit(digit_id: int):
@@ -480,95 +579,6 @@ def get_digit_imgs(digit_id: int) -> list[str]:
     imgs_1 = RegionPair.objects.filter(digit_1=digit_id).values_list("img_1", flat=True)
     imgs_2 = RegionPair.objects.filter(digit_2=digit_id).values_list("img_2", flat=True)
     return list(set(imgs_1) | set(imgs_2))
-
-
-def get_best_pairs(
-    q_img: str,
-    region_pairs: List[RegionPair],
-    excluded_categories: Set[int],
-    topk: int | None = None,
-    user_id: int | None = None,
-    export: bool = False,
-) -> List[Set[RegionPairTuple]]:
-    """
-    Process RegionPair objects and return a list.
-
-    :param q_img: Query image name
-    :param region_pairs: List of RegionPair objects
-    :param excluded_categories: List of category numbers to exclude
-    :param topk: Number of top scoring pairs to include (None = all)
-    :param user_id: int ID of the user asking for similarities
-    :param export: boolean value - when building pair for export, no sorting & no threshold
-    :return: List with structured data
-    """
-    manual_pairs = []
-    propagated_pairs = []  # propagated pairs that have been saved to database
-    categorized_pairs = []  # where category is not null
-    auto_pairs = []
-    auto_pairs_no_score = []
-    nomatch_pairs = []  # category == 4
-    added_images = set()
-    export_pairs = []  # pairs for export: all in big a single big list
-    export_pairs_no_score = []  # pairs for export without a score
-
-    for pair in region_pairs:
-        # (score, q_img, s_img, q_digit, s_digit, category, category_x, similarity_type, similarity_hash)
-        pair_data = pair.get_info(q_img)
-        if pair_data[2] in added_images:
-            # NOTE: first duplicate wins. Higher-priority pairs (e.g., manual) appearing later
-            #    will be discarded if lower-priority pairs (e.g., auto) were seen first.
-            continue
-        added_images.add(pair_data[2])
-
-        if export:
-            if pair.score is not None:
-                export_pairs.append(pair_data)
-            else:
-                export_pairs_no_score.append(pair_data)
-            continue
-
-        if pair.category in excluded_categories:
-            continue
-
-        if pair.similarity_type == SimilarityType.MANUAL or (
-            pair.category_x and user_id in pair.category_x
-        ):
-            manual_pairs.append(pair_data)
-        elif pair.similarity_type == SimilarityType.PROPAGATED:
-            propagated_pairs.append(pair_data)
-        elif pair.category == SimilarityCategory.NO_MATCH:
-            nomatch_pairs.append(pair_data)
-        elif pair.category is not None:
-            categorized_pairs.append(pair_data)
-        elif pair.score is not None:
-            auto_pairs.append(pair_data)
-        else:
-            auto_pairs_no_score.append(pair_data)
-
-    if export:
-        # sort by score, descending, finish with pairs with no score.
-        return (
-            sorted(export_pairs, key=lambda x: x[0], reverse=True)
-            + export_pairs_no_score
-        )
-
-    categorized_pairs.sort(key=lambda x: x[5])  # sort by category number, ascending
-
-    # sort by score, descending, finish with pairs with no score.
-    auto_pairs = (
-        sorted(auto_pairs, key=lambda x: x[0], reverse=True) + auto_pairs_no_score
-    )
-
-    if topk:
-        auto_pairs = auto_pairs[:topk]
-
-    return (
-        manual_pairs
-        + propagated_pairs
-        + categorized_pairs
-        + auto_pairs
-        + nomatch_pairs  # limit number of nomatch pairs?
-    )
 
 
 def validate_img_ref(img_string):

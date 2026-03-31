@@ -18,7 +18,20 @@ function createTypedSelectionStore(config) {
         selected: {}
     };
 
-    const initialData = JSON.parse(localStorage.getItem(type)) || template;
+    function parseStoredSelection(rawData) {
+        if (!rawData) return template;
+        return {
+            ...template,
+            ...rawData,
+            selected: Object.fromEntries(
+                Object.entries(rawData.selected || {})
+                    .filter(([k]) => k !== "undefined")
+                    .map(([k, v]) => [k, typeof v === "object" && v !== null ? v : {}])
+            )
+        };
+    }
+
+    const initialData = parseStoredSelection(JSON.parse(localStorage.getItem(type)))
     const selection = writable(initialData);
     const isSaved = writable(false);
 
@@ -207,9 +220,8 @@ export const regionsSelection = createTypedSelectionStore({
 });
 
 function ref(imgRef) {
-    if (!imgRef.startsWith("wit")) return imgRef;
-    const [_, ...ref] = imgRef.split("_wit");
-    return `wit${ref}`;
+    const idx = imgRef.indexOf("_wit");
+    return idx !== -1 ? imgRef.slice(idx + 1) : imgRef;
 }
 
 export const clusterSelection = createTypedSelectionStore({

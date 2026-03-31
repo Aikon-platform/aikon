@@ -30,7 +30,7 @@ const config = {
     debug: true,
     exportLocalStorageAnnotations: true,
     readonly: false,
-    tagsSuggestions: ['Mirador', 'Awesome', 'Viewer', 'IIIF', 'Template'],
+    tagsSuggestions: ['Illustration', 'Diagram'],
   },
   annotations: {
     htmlSanitizationRuleSet: 'liberal',

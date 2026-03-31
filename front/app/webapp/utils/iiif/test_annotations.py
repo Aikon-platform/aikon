@@ -10,7 +10,7 @@ from app.config.settings.base import APP_PORT
 # from app.webapp.utils.iiif.annotation import (
 #     get_manifest_annotations,
 #     has_annotation,
-#     get_regions_annotations,
+#     get_record_annotations,
 #     index_regions,
 #     reindex_file,
 #     unindex_annotation,
@@ -60,7 +60,7 @@ from app.config.settings.base import APP_PORT
 
 # def get_manifest_annotations(
 # def has_annotation(regions_ref):
-# def get_regions_annotations(
+# def get_record_annotations(
 # def index_regions(regions: Regions):
 # def reindex_file(filename):
 # def unindex_annotation(annotation_id):

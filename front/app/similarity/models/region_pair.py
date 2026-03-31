@@ -104,7 +104,7 @@ class RegionPair(models.Model):
                 name="unique_img_pair",
             ),
             models.CheckConstraint(
-                check=models.Q(img_1__lte=models.F("img_2")),
+                condition=models.Q(img_1__lte=models.F("img_2")),
                 name="pair_ordering",
             ),
         ]

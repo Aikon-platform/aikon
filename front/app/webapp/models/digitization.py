@@ -323,7 +323,7 @@ class Digitization(AbstractSearchableModel):
             "url": self.get_manifest_url(),
             "imgs": imgs,
             "img_nb": len(imgs),
-            "zeros": self.img_zeros(imgs[0] if imgs else 0),
+            "zeros": self.img_zeros(imgs[0] if len(imgs) > 0 else 0),
         }
         type(self).objects.filter(pk=self.pk.__str__()).update(json=json_data)
         return self.json

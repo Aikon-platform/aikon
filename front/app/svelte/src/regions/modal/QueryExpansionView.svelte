@@ -1,5 +1,6 @@
 <script>
     import { appLang } from "../../constants.js";
+    import { RegionItem } from "../types.js";
 
     import SimilarityRow from "../similarity/SimilarityRow.svelte";
 
@@ -8,13 +9,14 @@
     ////////////////////////////////////////
 
     /** @type {RegionItemType} */
-    export let mainImgItem;
+    export let item;
+
+    $: regionItem = item instanceof RegionItem ? item : new RegionItem(item);
 
     /** @returns {string} */
     function buildRedirectionUrl() {
-        const mainImgWitnessId = mainImgItem.img.match(/wit(\d+)/)[1];
         const u = new URL(window.location.origin);
-        u.pathname = `${new URL(window.location).pathname.split("/")[1]}/witness/${mainImgWitnessId}/regions/`
+        u.pathname = `${new URL(window.location).pathname.split("/")[1]}/witness/${regionItem.witnessId}/regions/`
         u.searchParams.set("tab", "similarity");
         return u.href;
     }
@@ -29,4 +31,5 @@
         </button>
     </a>
 </div>
-<SimilarityRow qImg={mainImgItem.img} isInModal={true}/>
+
+<SimilarityRow qImg={regionItem.fullImg} isInModal={true}/>

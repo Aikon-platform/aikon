@@ -155,14 +155,15 @@ class Regions(AbstractSearchableModel):
             "class": self.__class__.__name__,
             "type": get_name("Regions"),
             "url": self.gen_mirador_url(),
+            "digitization_id": digit.id if digit else None,
             "img_nb": rjson.get("img_nb", digit.img_nb() if digit else 0),
             "zeros": rjson.get("zeros", digit.img_zeros() if digit else 0),
         }
 
     def get_annotations(self):
-        from app.webapp.utils.iiif.annotation import get_regions_annotations
+        from app.webapp.utils.iiif.annotation import get_record_annotations
 
-        return get_regions_annotations(self)
+        return get_record_annotations(self)
 
     def get_imgs(self, is_abs=False, only_one=False, check_in_dir=False):
         if digit := self.get_digit():
