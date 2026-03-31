@@ -16,10 +16,10 @@
     "@dotenvx/dotenvx": ">=1.51.2",
     "http-server": ">=14.1.1",
     "mirador": ">=4.0.0",
-    "mirador-annotation-editor": ">=1.2.1",
+    "mirador-annotation-editor": ">=1.2.3",
     "parcel": ">=2.16.1"
   },
   "devDependencies": {
-    "aiiinotate": ">=0.7.0"
+    "aiiinotate": "^0.8.3"
   }
 }

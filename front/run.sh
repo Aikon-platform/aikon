@@ -45,7 +45,7 @@ echo "$SUDO_PSW" | sudo -S java -Dcantaloupe.config="$FRONT_DIR"/cantaloupe/cant
 CANTALOUPE_PID=$!
 PIDS+=($CANTALOUPE_PID)
 
-"$ANNOTATIONS_BIN"/aiiinotate --env "$ENV_FILE" -- serve prod &
+"$ANNOTATIONS_BIN"/dotenvx run -f "$ENV_FILE" -- "$ANNOTATIONS_BIN"/aiiinotate serve prod &
 AIIINOTATE_PID=$!
 PIDS+=($AIIINOTATE_PID)
 
