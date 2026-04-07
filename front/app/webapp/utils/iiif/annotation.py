@@ -103,33 +103,7 @@ def format_annotation(regions: Regions, canvas_nb, xywh, tags=None):
 
     resources = [{"@type": "oa:Tag", "chars": tag} for tag in tags]
 
-    # # SVG path data
-    # width = w // 2
-    # height = h // 2
-    # d = f"M{x} {y} h {width} v 0 h {width} v {height} v {height} h -{width} h -{width} v -{height}Z"
-    # r_id = f"rectangle_{annotation_id}"
-    # Paper.js data
-    # d_paper = json.dumps({
-    #     "strokeWidth": 1,
-    #     "rotation": 0,
-    #     "annotation": None,
-    #     "nonHoverStrokeColor": ["Color", 0, 1, 0],
-    #     "editable": True,
-    #     "deleteIcon": None,
-    #     "rotationIcon": None,
-    #     "group": None
-    # }).replace('"', '&quot;')
-    #
-    # path = (
-    #     f"<path xmlns='http://www.w3.org/2000/svg' "
-    #     f"d='{d}' id='{r_id}' data-paper-data='{d_paper}' "
-    #     f"fill-opacity='0' fill='{string_to_color(tags[0])}' fill-rule='nonzero' "
-    #     f"stroke='{string_to_color(tags[0])}' stroke-width='1' stroke-linecap='butt' "
-    #     f"stroke-linejoin='miter' stroke-miterlimit='10' "
-    #     f"stroke-dashoffset='0' style='mix-blend-mode: normal'/>"
-    # )
-    # path = re.sub(r"\s+", " ", path).strip()
-
+    # NOTE: manually setting an @id here is useless (aiiinotate regenerates the @ids).
     return {
         "@id": f"{AIIINOTATE_BASE_URL.replace('https', 'http')}/annotations/{IIIF_PRESENTATION_VERSION}/{annotation_id}",
         "@type": "oa:Annotation",
@@ -175,6 +149,7 @@ def split_ref(ref: str) -> Tuple[str, str | None]:
     return ref, None
 
 
+# TODO : use aiiinotate search-api.
 def filter_annotations_by_tag(annotations: List[Dict], tag: str) -> List[Dict]:
     """Filter annotations that contain the specified tag in their resources."""
     if not tag:
@@ -495,6 +470,11 @@ def get_manifest_annotations(
     # https://json-schema.org/understanding-json-schema/reference/boolean
     q_params: Dict[str, Any] = {"onlyIds": "true" if only_ids else "false"}
 
+    # filter by region (in aiiinotate, we store regions ID as tags).
+    if regions_tag:
+        q_params["q"] = regions_tag
+
+    # filter by canvas range.
     # `canvasMin` and `canvasMax` are 0-indexed while `min_c` `max_c` are 1-indexed => convert to 0-indexed
     c_range = [min_c, max_c]
     for (i, c) in enumerate(c_range):
@@ -514,9 +494,9 @@ def get_manifest_annotations(
     if not isinstance(r, list):
         return []
 
-    if regions_tag and not only_ids:
-        # TODO filter by regions tag also for only ids
-        r = filter_annotations_by_tag(r, regions_tag)
+    # aldready done on aiiinotate side with `q` parameter.
+    # if regions_tag and not only_ids:
+    #     r = filter_annotations_by_tag(r, regions_tag)
 
     return r
 
@@ -593,9 +573,13 @@ def get_record_annotations(
         # { canvas_nb: {} }, canvas_nb is 1-indexed.
         r_annos = {str(c): {} for c in range(min_c, max_c + 1)}
 
-    annos = get_manifest_annotations(digit.get_ref(), False, min_c, max_c)
-    if regions_tag:
-        annos = filter_annotations_by_tag(annos, regions_tag)
+    # annos = get_manifest_annotations(digit.get_ref(), False, min_c, max_c)
+    # if regions_tag:
+    #    annos = filter_annotations_by_tag(annos, regions_tag)
+
+    # if record is a Regions, all annotations for the Regions.
+    # otherwise, all nnotations for the Digitization
+    annos = get_manifest_annotations(record.get_ref(), False, min_c, max_c)
 
     if len(annos) == 0:
         return r_annos
@@ -613,6 +597,7 @@ def get_record_annotations(
                 continue
 
             xywh = on_value["xywh"]
+            # should never happen since `AIIINOTATE_STRICT_MODE=true`
             if not xywh or not len(xywh):
                 raise ValueError("Could not extract XYWH coordinates for annotation")
             xywh_str = ",".join(str(c) for c in xywh)
@@ -1040,6 +1025,7 @@ def unindex_manifest(manifest_url: str) -> bool:
     return True
 
 
+# TODO aiiinotate: directly delete all annotations for a tag
 def unindex_annotations_by_tag(manifest_url: str, tag: str) -> int:
     """
     Delete annotations associated with a specific tag
