@@ -484,8 +484,8 @@ def get_manifest_annotations(
             q_params["canvasMax"] = c_range[1]
 
     q_url = update_params(q_url, q_params)
-
     r = get_and_parse(q_url) if only_ids else get_paginated_annotations(q_url)
+
     # sanity check to preserve type consistency if there's been an error in `get_and_parse`
     if not isinstance(r, list):
         return []
