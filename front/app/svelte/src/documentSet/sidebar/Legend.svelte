@@ -20,8 +20,6 @@
 
     $: sortedDocs = Array.from(documentNodes || new Map()).sort(sortWith[sortBy]);
     $: selectedDocs = sortedDocs.filter(([id, _]) => selectedDocuments.has(parseInt(id)));
-
-    $: console.log("sortedDocs", Array.from(documentNodes))
 </script>
 
 <div>
