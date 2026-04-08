@@ -1,11 +1,8 @@
-from typing import Literal
-
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
 from django.utils.html import format_html
 from django.urls import reverse
-from django.contrib.postgres.fields import ArrayField
 
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.edition import Edition
@@ -32,7 +29,6 @@ from app.webapp.models.utils.constants import (
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
 from app.webapp.utils.functions import get_icon, flatten, format_dates
-from app.webapp.utils.logger import log
 from webapp.models.utils.constants import MAP_PAGE_TYPE
 
 
