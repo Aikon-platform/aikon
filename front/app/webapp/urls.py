@@ -263,6 +263,11 @@ urlpatterns += [
         name="change-document-set",
     ),
     path(
+        f"document-set/<int:dsid>/info",
+        get_document_set_info,
+        name="document-set-info",
+    ),
+    path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/canvas",
         get_canvas_regions,
         name="canvas_regions",
