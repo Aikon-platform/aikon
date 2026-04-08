@@ -1073,9 +1073,8 @@ def unindex_regions(regions_ref, manifest_url: str) -> bool:
     digit_ref = manifest_url.split("/")[-2]
     url_delete = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/delete?manifestShortId={digit_ref}&tag={regions_ref}"
 
-    deleted = (
-        -1
-    )  # if it is still `-1` at the end of the process, then there was an error.
+    # if it is still `-1` at the end of the process, then there was an error.
+    deleted = -1
     try:
         r = requests.delete(url_delete)
         r.raise_for_status()
