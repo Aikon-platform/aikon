@@ -4,6 +4,8 @@ from app.webapp.views import *
 from app.webapp.views.users import *
 from django.contrib.auth import views as auth_views
 
+from webapp.views.region import save_region
+
 app_name = "webapp"
 
 # TODO delete the unused endpoints
@@ -334,6 +336,16 @@ urlpatterns += [
         f"{APP_NAME}/witness/<int:wid>/update",
         witness_update,
         name="witness_update",
+    ),
+    path(
+        f"{APP_NAME}/region_extraction/<int:reid>/region/add",
+        save_region,
+        name="new-region",
+    ),
+    path(
+        f"{APP_NAME}/region_extraction/<int:reid>/region/<int:rid>/edit",
+        save_region,
+        name="change-region",
     ),
 ]
 

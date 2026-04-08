@@ -45,7 +45,7 @@ class RegionExtraction(AbstractSearchableModel):
 
     digitization = models.ForeignKey(
         Digitization,
-        related_name="region_extractions",  # to access the all regions from Digitization
+        related_name="region_extractions",  # to access the region extractions from Digitization
         verbose_name=get_name("Digitization"),
         on_delete=models.SET_NULL,
         blank=True,
