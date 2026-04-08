@@ -21,18 +21,18 @@
     export let docSet;
 
     const documentSetStore = createDocumentSetStore(docSet.id);
-    const {error, fetchPairs, selectedRegions, selectedCategories, threshold, topK, mutualTopK, scoreMode} = documentSetStore;
+    const {error, fetchPairs, selectedDocuments, selectedCategories, threshold, topK, mutualTopK, scoreMode} = documentSetStore;
 
-    let syncRegions, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode;
+    let syncDocs, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode;
     onMount(() => {
-        syncRegions = syncStoreWithURL(selectedRegions, "regions", "set");
+        syncDocs = syncStoreWithURL(selectedDocuments, "doc", "set");
         syncCategories = syncStoreWithURL(selectedCategories, "categories", "array", [1]);
         syncThreshold = syncStoreWithURL(threshold, "threshold", "number");
         syncTopK = syncStoreWithURL(topK, "topk", "number");
         syncMutualTopK = syncStoreWithURL(mutualTopK, "mutual", "boolean");
         syncScoreMode = syncStoreWithURL(scoreMode, "mode", "string");
 
-        const unsubRegions = selectedRegions.subscribe(syncRegions);
+        const unsubDocs = selectedDocuments.subscribe(syncDocs);
         const unsubCategories = selectedCategories.subscribe(syncCategories);
         const unsubThreshold = threshold.subscribe(syncThreshold);
         const unsubTopK = topK.subscribe(syncTopK);
@@ -40,7 +40,7 @@
         const unsubScoreMode = scoreMode.subscribe(syncScoreMode);
 
         return () => {
-            unsubRegions();
+            unsubDocs();
             unsubCategories();
             unsubThreshold();
             unsubTopK();
@@ -65,16 +65,13 @@
         "doc": appLang === "en" ? "Document Network" : "Réseau de documents",
     };
 
-    const selectedDocuments = docSet?.selection?.selected || {
+    const selectedDocs = docSet?.selection?.selected || {
         Witness: {},
         Series: {},
         Work: {}
     };
 
-    setContext("selectedDocuments", selectedDocuments);
-    // setContext("witnessIds", Object.keys(selectedDocuments.Witness));
-    // setContext("workIds", Object.keys(selectedDocuments.Work));
-    // setContext("seriesIds", Object.keys(selectedDocuments.Series));
+    setContext("selectedDocs", selectedDocs);
 </script>
 
 <Layout {tabList}>

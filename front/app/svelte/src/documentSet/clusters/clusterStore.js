@@ -213,7 +213,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     };
 
     const categorizeSelection = async (category) => {
-        const selected = selectedRegions();
+        const selected = selectedDocs();
         const imgRefs = Object.keys(selected);
 
         if (imgRefs.length < 2) {
@@ -288,7 +288,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         return true;
     };
 
-    const selectedRegions = () => get(clusterSelection).selected.regions || {};
+    const selectedDocs = () => get(clusterSelection).selected.regions || {};
 
     const newCluster = async () => {
         const confirmed = await showMessage(
@@ -300,7 +300,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             return;
         }
 
-        const selected = selectedRegions();
+        const selected = selectedDocs();
         const imgRefs = Object.keys(selected);
 
         if (imgRefs.length < 2) {
@@ -331,7 +331,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             return;
         }
 
-        const selected = selectedRegions();
+        const selected = selectedDocs();
         const removed = await removeImgRefs(Object.keys(selected));
         if (!removed) return false;
 

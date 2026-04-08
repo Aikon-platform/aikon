@@ -4,21 +4,24 @@
     import {i18n} from "../../utils.js";
 
     export let documentNodes;
-    export let selectedRegions;
-    export let toggleRegion;
-    export let selectAllRegions;
+    export let selectedDocuments;
+    export let toggleDoc;
+    export let selectAllDocuments;
 
     let isExpanded = true;
 
-    let sortBy = "id"; // 'id' | 'witnessId' | 'title'
+    let sortBy = "id"; // 'id' | 'witnessId' | 'title' | 'date'
     const sortWith = {
         id: (a, b) => a[0] - b[0],
         witnessId: (a, b) => (a[1].witnessId || 0) - (b[1].witnessId || 0),
-        title: (a, b) => (a[1].title || "").localeCompare(b[1].title || "")
-        // todo add date
+        title: (a, b) => (a[1].title || "").localeCompare(b[1].title || ""),
+        date: (a, b) => (a[1].min_date || 0) - (b[1].min_date || 0),
     };
+
     $: sortedDocs = Array.from(documentNodes || new Map()).sort(sortWith[sortBy]);
-    $: selectedDocs = sortedDocs.filter(([id, _]) => selectedRegions.has(parseInt(id)));
+    $: selectedDocs = sortedDocs.filter(([id, _]) => selectedDocuments.has(parseInt(id)));
+
+    $: console.log("sortedDocs", Array.from(documentNodes))
 </script>
 
 <div>
@@ -35,11 +38,12 @@
                                 <option value="id">ID</option>
                                 <option value="witnessId">{i18n('Witness')}</option>
                                 <option value="title">{i18n('title')}</option>
+                                <option value="date">{i18n('date')}</option>
                             </select>
                         </span>
                     </p>
                     <p class="control" title={appLang === "en" ? "Select all documents" : "Sélectionner tous les documents"}>
-                        <button class="button is-small is-shadowless" on:click={() => selectAllRegions()}>
+                        <button class="button is-small is-shadowless" on:click={() => selectAllDocuments()}>
                             {appLang === "en" ? "Select all" : "Tout sélectionner"}
                             <span class="icon is-small has-text-link pl-5 pr-1">
                                 <i class="fas fa-check"/>
@@ -70,8 +74,8 @@
     <div class:is-condensed={!isExpanded} class:is-expanded={isExpanded}>
         {#each sortedDocs as [id, meta]}
             <LegendItem {id} {meta}
-                isActive={selectedRegions.has(parseInt(id))}
-                toggle={() => toggleRegion(parseInt(id))}
+                isActive={selectedDocuments.has(parseInt(id))}
+                toggle={() => toggleDoc(parseInt(id))}
                 onlyColor={!isExpanded}/>
         {/each}
     </div>

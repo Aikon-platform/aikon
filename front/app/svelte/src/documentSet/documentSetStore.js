@@ -19,7 +19,7 @@ export function createDocumentSetStore(documentSetId) {
     const loadingProgress = writable({ loaded: 0, done: false });
 
     const selectedCategories = writable([]);
-    const selectedRegions = writable(new Set());
+    const selectedDocuments = writable(new Set());
     const selectedNodes = writable([]);
 
     const scoreFilter = writable(true);
@@ -32,7 +32,6 @@ export function createDocumentSetStore(documentSetId) {
     );
 
     const allPairs = writable([]);
-    const regionsMetadata = writable(new Map());
 
     // web worker for processing pairs
     let worker;
@@ -49,9 +48,23 @@ export function createDocumentSetStore(documentSetId) {
      */
     const imageNodes = writable(new Map());
     /**
-     * Document nodes: Map<regionId, regionData>
+     * Document nodes: Map<digitizationId, digitizationData>
      */
     const documentNodes = writable(new Map());
+    const witnessNodes = writable(new Map());
+    const seriesNodes = writable(new Map());
+
+    /**
+     * {
+     *     "Digitization": { "id", "color", "title", "min_date", "max_date", "Witness": [serId], "Series": [serId] }
+     *     "Witness":      { "id", "color", "title", "min_date", "max_date", "Digitization": [digitIds], "Series": [serId] }
+     *     "Series":       { "id", "color", "title", "min_date", "max_date", "Digitization": [digitIds], "Witness": [witIds] }
+     * }
+     * @type {Promise<any>}
+     */
+    const dsInfoPromise = fetch(`${appUrl}/document-set/${documentSetId}/info`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+        .catch(e => { error.set(`Error fetching document set info: ${e}`); return null; });
 
     const pairStats = writable({});
     const documentStats = writable({});
@@ -83,7 +96,7 @@ export function createDocumentSetStore(documentSetId) {
         // const documentSetId = 418; // encyclopédie mathématique
         // const documentSetId = 436; // Jombert complet
         // const documentSetId = 432; // Jombert incomplet
-        // const documentSetId = 408;
+        // const documentSetId = 455; // Set benchmark
         // TO DELETE
 
         const loadPromise = new Promise((resolve, reject) => {
@@ -120,31 +133,28 @@ export function createDocumentSetStore(documentSetId) {
                         imageStats.set(stats.imageStats);
                         docPairStats.set(stats.docPairStats);
 
-                        const digitIds = Array.from(stats.documentStats.scoreCount.keys());
+                        const dsInfo = await dsInfoPromise;
+                        const digits = dsInfo?.Digitization || {};
 
-                        if (get(selectedRegions).size === 0) {
-                            selectedRegions.set(new Set(digitIds));
+                        const digitIds = Object.keys(digits).map(Number);
+                        if (get(selectedDocuments).size === 0) {
+                            selectedDocuments.set(new Set(digitIds));
                         }
 
-                        const results = await Promise.all(
-                            digitIds.map(id => getDigitInfo(id).then(info => ({ id, info })))
-                        );
-
-                        const metaMap = new Map();
-                        results.forEach(({ id, info }) => metaMap.set(id, info));
-                        regionsMetadata.set(metaMap);
-
                         const docMap = new Map();
-                        digitIds.forEach((id, index) => {
-                            const info = metaMap.get(id) || {};
+                        digitIds.forEach(id => {
                             docMap.set(id, {
-                                id,
-                                title: info.title || `Digitization ${id}`,
-                                color: info.color || generateColor(index),
                                 images: [],
-                                ...info
+                                title: `Digitization ${id}`,
+                                color: "hsl(0, 0%, 50%)",
+                                ...digits[id] || {},
                             });
                         });
+
+                        if (dsInfo) {
+                            witnessNodes.set(new Map(Object.values(dsInfo.Witness).map(w => [w.id, w])));
+                            seriesNodes.set(new Map(Object.values(dsInfo.Series).map(s => [s.id, s])));
+                        }
 
                         imgMap.forEach(img => {
                             const doc = docMap.get(img.digit);
@@ -162,7 +172,6 @@ export function createDocumentSetStore(documentSetId) {
                                 if (a.canvas !== b.canvas) return a.canvas - b.canvas;
                                 return (parseInt(a.xywh?.[1]) || 0) - (parseInt(b.xywh?.[1]) || 0);
                             })
-                            return doc;
                         });
 
                         imageNodes.set(imgMap);
@@ -221,33 +230,8 @@ export function createDocumentSetStore(documentSetId) {
         set(loadPromise);
     });
 
-    async function getDigitInfo(digitId) {
-        try {
-            const response = await fetch(`${appUrl}/search/digitization/?id=${digitId}`);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-            const { results } = await response.json();
-            if (!results?.length) return { title: `Digitization ${digitId}` };
-
-            const digit = results[0];
-            const [, ...titleParts] = (digit.title || "").split(" | ");
-
-            return {
-                title: titleParts.join(" | ") || digit.title,
-                ref: digit.ref,
-                witnessId: digit.witness_id,
-                zeros: digit.zeros,
-                img_nb: digit.img_nb,
-                url: digit.url
-            };
-        } catch (e) {
-            error.set(`Error fetching digitization #${digitId}: ${e.message}`);
-            return { title: `Digitization ${digitId}` };
-        }
-    }
-
     const filteredPairs = derived(
-        [allPairs, threshold, topK, mutualTopK, selectedRegions, scoreFilter],
+        [allPairs, threshold, topK, mutualTopK, selectedDocuments, scoreFilter],
         ([$pairs, $threshold, $topK, $mutual, $regions, $scoreFilter]) => {
             if (!$pairs) return [];
             const result = [];
@@ -572,17 +556,17 @@ export function createDocumentSetStore(documentSetId) {
         });
     }
 
-    function toggleRegion(regionId) {
-        selectedRegions.update(regions => {
-            const newRegions = new Set(regions);
-            newRegions.has(regionId) ? newRegions.delete(regionId) : newRegions.add(regionId);
-            return newRegions;
+    function toggleDoc(docId) {
+        selectedDocuments.update(docs => {
+            const newDocs = new Set(docs);
+            newDocs.has(docId) ? newDocs.delete(docId) : newDocs.add(docId);
+            return newDocs;
         });
     }
 
-    function selectAllRegions() {
+    function selectAllDocuments() {
         const allIds = Array.from(get(documentNodes).keys());
-        selectedRegions.set(new Set(allIds));
+        selectedDocuments.set(new Set(allIds));
     }
 
     function applyDefaultThreshold() {
@@ -643,11 +627,11 @@ export function createDocumentSetStore(documentSetId) {
         docPairStats,
         docSetNumber,
         selectedNodes,
-        selectedRegions,
+        selectedDocuments,
         updateSelectedNodes: (nodes) => selectedNodes.set(nodes),
         toggleCategory,
-        toggleRegion,
-        selectAllRegions,
+        toggleDoc,
+        selectAllDocuments,
         buildAlignedImageMatrix,
 
         threshold,
