@@ -4,6 +4,9 @@
  */
 
 const IMG_REGEX = /^(.+)_(\d+)_([\d,]+)\.jpg$/;
+// const weights = { 1: 1.0, 2: 0.5, 3: 0.125, 4: -1.0, 5: 0.125 };
+const weights = { 1: 0, 2: 0.25, 3: 0.125, 4: -1.0, 5: 0.125 };
+const getDigitId = img => parseInt(img.match(/_(?:man|img|pdf)(\d+)/)?.[1]);
 
 let state = null;
 
@@ -64,12 +67,13 @@ function createState() {
         docStats: createStatsObject(),
         imgStats: createStatsObject(),
         docPStats: createStatsObject(),
-        weights: { 1: 1.0, 2: 0.5, 3: 0.125, 4: -1.0, 5: 0.125 }
+        exactPairs: [],
+        maxWeightedScore: -Infinity,
     };
 }
 
 function processBatch(batch) {
-    const { pairs, imageMap, index, categories, weights, pStats, docStats, imgStats, docPStats } = state;
+    const { pairs, imageMap, index, categories, pStats, docStats, imgStats, docPStats } = state;
 
     for (let i = 0; i < batch.length; i++) {
         const p = batch[i];
@@ -83,14 +87,17 @@ function processBatch(batch) {
         const baseScore = p.score ?? w;
         const weightedScore = Math.max(0.01, baseScore + baseScore * w);
 
-        const img1 = getOrAddImage(p.img_1, p.digit_1, imageMap, imgStats, docStats, weightedScore);
-        const img2 = getOrAddImage(p.img_2, p.digit_2, imageMap, imgStats, docStats, weightedScore);
+        const digit1 = p.digit_1 ?? getDigitId(p.img_1) ?? p.regions_id_1;
+        const digit2 = p.digit_2 ?? getDigitId(p.img_2) ?? p.regions_id_2;
+
+        const img1 = getOrAddImage(p.img_1, digit1, imageMap, imgStats, docStats, weightedScore);
+        const img2 = getOrAddImage(p.img_2, digit2, imageMap, imgStats, docStats, weightedScore);
 
         const processedPair = {
             id_1: img1.id,
             id_2: img2.id,
-            digit_1: p.digit_1,
-            digit_2: p.digit_2,
+            digit_1: digit1,
+            digit_2: digit2,
             page_1: img1.canvas,
             page_2: img2.canvas,
             score: p.score,
@@ -102,6 +109,8 @@ function processBatch(batch) {
         };
 
         pairs.push(processedPair);
+        if (weightedScore > state.maxWeightedScore) state.maxWeightedScore = weightedScore;
+        if (cat === 1) state.exactPairs.push(processedPair);
         updateStats(pStats, null, weightedScore);
 
         const pairKey = p.digit_1 < p.digit_2
@@ -123,14 +132,22 @@ function processBatch(batch) {
 function finalize() {
     const { pairs, imageMap, index, categories, pStats, docStats, imgStats, docPStats } = state;
 
+    const exactScore = state.maxWeightedScore * 1.25;
+    for (const p of state.exactPairs) p.weightedScore = exactScore;
     pairs.sort((a, b) => b.weightedScore - a.weightedScore);
 
     for (const [imgId, imgPairs] of index.byImage) {
         imgPairs.sort((a, b) => b.weightedScore - a.weightedScore);
         for (let k = 0; k < imgPairs.length; k++) {
             const pair = imgPairs[k];
-            if (pair.id_1 === imgId) pair.rank_1 = k + 1;
-            else pair.rank_2 = k + 1;
+            const isSelf = pair.digit_1 === pair.digit_2;
+            const isExact = pair.category === 1
+            const rank = isSelf ? Infinity : (isExact ? 1 : k + 1);
+            if (pair.id_1 === imgId) {
+                pair.rank_1 = rank;
+            } else {
+                pair.rank_2 = rank;
+            }
         }
     }
 
@@ -180,7 +197,7 @@ function getOrAddImage(imgKey, digit, map, imgStats, docStats, score) {
 
         imgData = {
             id: imgKey,
-            digit,
+            digit: digit,
             ref,
             canvas: page,
             xywh: coords ? coords.split(',') : null,

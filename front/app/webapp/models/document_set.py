@@ -117,37 +117,27 @@ class DocumentSet(AbstractSearchableModel):
         return [obj.__str__() for obj in self.documents]
 
     def all_witnesses(self):
+        q = Q(id__in=self.wit_ids or [])
+        if self.ser_ids:
+            q |= Q(series__id__in=self.ser_ids)
+        if self.work_ids:
+            q |= Q(contents__work__id__in=self.work_ids)
+
         return list(
-            Witness.objects.filter(id__in=self.all_witness_ids())
+            Witness.objects.filter(q)
+            .distinct()
             .select_related("series")
             .prefetch_related("digitizations", "contents__work")
         )
 
     def all_witness_ids(self):
-        witness_ids = set(self.wit_ids or [])
-
-        queries = []
-
+        q = Q(id__in=self.wit_ids or [])
         if self.ser_ids:
-            queries.append(Q(series__id__in=self.ser_ids))
-
+            q |= Q(series__id__in=self.ser_ids)
         if self.work_ids:
-            queries.append(Q(contents__work__id__in=self.work_ids))
+            q |= Q(contents__work__id__in=self.work_ids)
 
-        if queries:
-            combined_query = queries.pop()
-            for query in queries:
-                combined_query |= query
-
-            additional_ids = (
-                Witness.objects.filter(combined_query)
-                .values_list("id", flat=True)
-                .distinct()
-            )
-
-            witness_ids.update(additional_ids)
-
-        return list(witness_ids)
+        return list(Witness.objects.filter(q).distinct().values_list("id", flat=True))
 
     def get_regions(self, only_ids):
         witness_ids = self.all_witness_ids()

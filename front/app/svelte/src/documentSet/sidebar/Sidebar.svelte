@@ -15,9 +15,9 @@
         documentNodes,
         selectedCategories,
         toggleCategory,
-        selectedRegions,
-        selectAllRegions,
-        toggleRegion,
+        selectedDocuments,
+        selectAllDocuments,
+        toggleDoc,
         threshold,
         setThreshold,
         topK,
@@ -32,7 +32,7 @@
     } = documentSetStore;
     const { clusterNb, handlePageUpdate } = clusterStore;
 
-    const selectedDocuments = getContext("selectedDocuments");
+    const selectedDocs = getContext("selectedDocs");
 
     const allCategories = [0, 1, 2, 3, 5];
     let filterMode = "filtered";
@@ -60,7 +60,7 @@
                 </h1>
                 <div class="level">
                     {#each ["Series", "Witness", "Work"] as model}
-                        {@const modelIds = Object.keys(selectedDocuments[model] || {})}
+                        {@const modelIds = Object.keys(selectedDocs[model] || {})}
                         {#if modelIds.length > 0}
                             <div class="level-item has-text-centered">
                                 <div>
@@ -94,7 +94,7 @@
 
             <hr>
 
-            <Legend documentNodes={$documentNodes} selectedRegions={$selectedRegions} {toggleRegion} {selectAllRegions}/>
+            <Legend documentNodes={$documentNodes} selectedDocuments={$selectedDocuments} {toggleDoc} {selectAllDocuments}/>
 
             <hr>
 

@@ -466,11 +466,11 @@ def get_manifest_annotations(
     # https://json-schema.org/understanding-json-schema/reference/boolean
     q_params: Dict[str, Any] = {"onlyIds": "true" if only_ids else "false"}
 
-    # filter by region (in aiiinotate, we store regions ID as tags).
+    # filter by region (in aiiinotate, we store regions ID as tags)
     if regions_tag:
         q_params["q"] = regions_tag
 
-    # filter by canvas range.
+    # filter by canvas range
     # `canvasMin` and `canvasMax` are 0-indexed while `min_c` `max_c` are 1-indexed => convert to 0-indexed
     c_range = [min_c, max_c]
     for (i, c) in enumerate(c_range):
@@ -489,11 +489,6 @@ def get_manifest_annotations(
     # sanity check to preserve type consistency if there's been an error in `get_and_parse`
     if not isinstance(r, list):
         return []
-
-    # aldready done on aiiinotate side with `q` parameter.
-    # if regions_tag and not only_ids:
-    #     r = filter_annotations_by_tag(r, regions_tag)
-
     return r
 
 

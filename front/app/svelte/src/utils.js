@@ -356,7 +356,7 @@ export function syncStoreWithURL(store, paramName, type = "string", defaultValue
     const parsers = {
         string: (params) => {
             const value = params.get(paramName);
-            return value !== null ? value : null; // Retourner null si absent
+            return value !== null ? value : null;
         },
         array: (params) => {
             const value = params.get(paramName);
@@ -368,11 +368,11 @@ export function syncStoreWithURL(store, paramName, type = "string", defaultValue
         },
         number: (params) => {
             const value = params.get(paramName);
-            return value !== null ? Number(value) : null; // Retourner null si absent
+            return value !== null ? Number(value) : null;
         },
         boolean: (params) => {
             const value = params.get(paramName);
-            return value !== null ? value === "true" : null; // Retourner null si absent
+            return value !== null ? value === "true" : null;
         }
     };
 

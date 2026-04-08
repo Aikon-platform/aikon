@@ -3,7 +3,7 @@ import { writable, derived, get } from "svelte/store";
 const emptyGraph = { edges: [], nodePositions: {}, nodeTitles: {} };
 
 export function createStemmaStore(documentSetStore) {
-    const { docSetId, documentNodes, selectedRegions, filteredDocPairStats, filteredDocStats, imageCountMap, pairIndex, visiblePairIds } = documentSetStore;
+    const { docSetId, documentNodes, selectedDocuments, filteredDocPairStats, filteredDocStats, imageCountMap, pairIndex, visiblePairIds } = documentSetStore;
 
     const stemmaGraph = writable(JSON.parse(localStorage.getItem(`stemmaGraph-${docSetId}`)) || emptyGraph);
     stemmaGraph.subscribe(graph => localStorage.setItem(`stemmaGraph-${docSetId}`, JSON.stringify(graph)));
@@ -29,10 +29,10 @@ export function createStemmaStore(documentSetStore) {
     }
 
     const filteredDocuments = derived(
-        [documentNodes, selectedRegions],
-        ([$documentNodes, $selectedRegions]) =>
+        [documentNodes, selectedDocuments],
+        ([$documentNodes, $selectedDocuments]) =>
             Array.from($documentNodes?.values() || [])
-                .filter(doc => $selectedRegions.has(doc.id))
+                .filter(doc => $selectedDocuments.has(doc.id))
     );
 
     const selectedNodes = derived(

@@ -6,7 +6,7 @@
     export let id;
     export let toggle = () => {};
     export let meta = {
-        title: "Region",
+        title: i18n("Digitization"),
         color: "#999",
         witnessId: 1
     };
@@ -29,7 +29,7 @@
              style="background-color: {isActive ? meta.color : '#999'};"
              on:click={toggle} on:keydown={null} role="button" tabindex="0"/>
         <span class="legend-label" class:is-hidden={onlyColor}>
-            <a href={`${appUrl}/${appName}/witness/${meta.witnessId}/regions/${id}`} target="_blank">
+            <a href={`${appUrl}/${appName}/witness/${meta.Witness}`} target="_blank">
                 {meta.title}
             </a>
         </span>

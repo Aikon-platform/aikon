@@ -136,7 +136,7 @@
                 </div>
             </svelte:fragment>
             <svelte:fragment slot="row-body">
-                <Regions items={clusterItems.get(cl.id)} copyable={false} selectionStore={clusterSelection}/>
+                <Regions items={clusterItems.get(cl.id)} copyable={true} selectionStore={clusterSelection}/>
             </svelte:fragment>
         </Row>
     {/each}
