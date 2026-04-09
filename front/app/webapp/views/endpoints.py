@@ -73,26 +73,31 @@ def get_document_set_info(request, dsid=None):
         series_id = series.id if series is not None else None
 
         result["Witness"][witness.id] = {
-            **(witness.json or {}),
+            # **(witness.json or {}),
             "id": witness.id,
             "color": string_to_color(f"wit{witness.id}"),
             "title": wit_title,
             "min_date": min_date,
             "max_date": max_date,
-            "Digitization": digit_ids,
-            "Series": series_id,
+            "digitization_id": digit_ids,
+            "series_id": series_id,
         }
 
         for digit in digits:
+            metadata = digit.json or {}
             result["Digitization"][digit.id] = {
-                **(digit.json or {}),
                 "id": digit.id,
                 "color": string_to_color(f"digit{digit.id}"),
                 "title": f"{wit_title} ({digit.get_digit_type()} #{digit.id})",
-                "Witness": witness.id,
-                "Series": series_id,
+                "witness_id": witness.id,
+                "series_id": series_id,
                 "min_date": min_date,
                 "max_date": max_date,
+                # additional data needed
+                "zeros": metadata.get("zeros", 4),
+                "img_nb": metadata.get("img_nb", 0),
+                "url": metadata.get("url", digit.get_manifest_url()),
+                "ref": metadata.get("ref", digit.get_ref()),
             }
 
         if not series:
@@ -100,20 +105,20 @@ def get_document_set_info(request, dsid=None):
 
         if series.id not in result["Series"]:
             result["Series"][series_id] = {
-                **(series.json or {}),
+                # **(series.json or {}),
                 "id": series_id,
                 "color": string_to_color(f"ser{series_id}"),
                 "title": series.__str__(),
                 "min_date": min_date,
                 "max_date": max_date,
-                "Witness": [witness.id],
-                "Digitization": digit_ids,
+                "witness_ids": [witness.id],
+                "digitization_ids": digit_ids,
             }
         else:
             entry = result["Series"][series_id]
             update_date_range(entry, min_date, max_date)
-            entry["Witness"].append(witness.id)
-            entry["Digitization"].extend(
+            entry["witness_ids"].append(witness.id)
+            entry["digitization_ids"].extend(
                 d for d in digit_ids if d not in entry["Digitization"]
             )
 

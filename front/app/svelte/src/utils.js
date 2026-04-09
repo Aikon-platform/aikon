@@ -11,6 +11,7 @@ const u = {
     "error": {en: "Error", fr: "Erreur"},
     "cancel": {en: "Cancel", fr: "Annuler"},
     "title": {en: "Title", fr: "Titre"},
+    "date": {en: "Date", fr: "Date"},
     "confirm": {en: "Confirm", fr: "Confirmer"},
     "errored": {en: "An error has occurred", fr: "Une erreur est survenue"},
 }

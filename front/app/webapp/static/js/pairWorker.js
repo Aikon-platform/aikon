@@ -68,7 +68,7 @@ function createState() {
         imgStats: createStatsObject(),
         docPStats: createStatsObject(),
         exactPairs: [],
-        maxWeightedScore: -Infinity,
+        maxWeightedScore: -Infinity, // TODO check if you can do better
     };
 }
 
@@ -134,6 +134,7 @@ function finalize() {
 
     const exactScore = state.maxWeightedScore * 1.25;
     for (const p of state.exactPairs) p.weightedScore = exactScore;
+    // for (const p of state.exactPairs) p.weightedScore = pStats.score.max * 1.25;
     pairs.sort((a, b) => b.weightedScore - a.weightedScore);
 
     for (const [imgId, imgPairs] of index.byImage) {

@@ -3,6 +3,7 @@
     import {closeModal, refToIIIF} from "../../utils.js";
     import {appLang} from "../../constants.js";
     import NavigationArrow from "../../ui/NavigationArrow.svelte";
+    import {RegionItem} from "../../regions/types.js";
 
     export let active = false;
     export let scatterData = null;
@@ -29,7 +30,8 @@
 
     function getPageImageUrl(doc, pageNum) {
         // TODO use RegionItem.urlForCanvas()
-        return refToIIIF(`wit${doc.witnessId}_${doc.digitizationRef}_${String(pageNum).padStart(doc.zeros, "0")}`, "full", "600,");
+        return new RegionItem(doc.images[0]).urlForCanvas(pageNum, "full", "600,");
+        // return refToIIIF(`wit${doc.witness_id}_${doc.digitizationRef}_${String(pageNum).padStart(doc.zeros, "0")}`, "full", "600,");
     }
 
     function getRegionImageUrl(img) {
@@ -61,7 +63,7 @@
         return {
             items: [
                 {doc: doc1, label: `Page ${page1}`, imgUrl: getPageImageUrl(doc1, page1)},
-                {doc: doc2, label: `Page ${page2}`, imgUrl: getPageImageUrl(doc2, page2)}
+                {doc: doc2, label: `Page ${page2}`, imgUrl: getPageImageUrl(doc2, page2)},
             ],
             score: point?.score
         };

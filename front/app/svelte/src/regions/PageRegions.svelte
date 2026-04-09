@@ -30,7 +30,7 @@
                     <svelte:fragment slot="row-header">
                         <img src="{refToIIIF(toImgName(canvasNb), 'full', '250,')}" alt="Canvas {canvasNb}" class="mb-3 card">
                         <div class="is-center mb-1">
-                            <a class="tag px-2 py-1 is-rounded is-hoverable" href="{manifestToMirador($selectedManifest, canvasNb)}" target="_blank">
+                            <a class="tag px-2 py-1 is-rounded is-hoverable" href="{manifestToMirador($selectedManifest, canvasNb-1)}" target="_blank">
                                 <i class="fa-solid fa-pen-to-square"></i>
                                 Page {canvasNb}
                             </a>

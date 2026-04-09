@@ -180,7 +180,7 @@
         <div class="{side}-headers">
             {#each matrixData.docs as doc (doc.id)}
                 <div class="header-cell">
-                    <span class="color-dot" style="background-color: {doc.color}" title="{doc.title} {i18n('Witness')} #{doc.witnessId}"></span>
+                    <span class="color-dot" style="background-color: {doc.color}" title="{doc.title} {i18n('Witness')} #{doc.witness_id}"></span>
                 </div>
             {/each}
         </div>

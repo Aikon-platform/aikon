@@ -13,7 +13,7 @@
     let sortBy = "id"; // 'id' | 'witnessId' | 'title' | 'date'
     const sortWith = {
         id: (a, b) => a[0] - b[0],
-        witnessId: (a, b) => (a[1].witnessId || 0) - (b[1].witnessId || 0),
+        witnessId: (a, b) => (a[1].witness_id || 0) - (b[1].witness_id || 0),
         title: (a, b) => (a[1].title || "").localeCompare(b[1].title || ""),
         date: (a, b) => (a[1].min_date || 0) - (b[1].min_date || 0),
     };

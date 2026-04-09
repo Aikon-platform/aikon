@@ -492,6 +492,20 @@ def get_manifest_annotations(
     return r
 
 
+def get_canvas_idx(aiiino):
+    canvas_idx = aiiino.get("canvasIdx")
+    if canvas_idx:
+        return int(canvas_idx)
+
+    # print(aiiino)
+    full = aiiino.get("full", "")
+    try:
+        return int(full.split("canvas/c")[1].replace(".json", ""))
+    except Exception as e:
+        log(f"Could not retrieve canvas idx for {aiiino} ", e)
+        return None
+
+
 def get_canvas_list(regions: Regions, all_img=False):
     """
     Get the list of canvases that have been annotated associated with their images names
@@ -515,9 +529,10 @@ def get_canvas_list(regions: Regions, all_img=False):
 
     # canvas_imgs =  { canvas_nb: img_name, canvas_nb: img_name, ... }
     canvas_imgs = {int(i.split("_")[-1].split(".")[0]): i for i in imgs}
+
     # list of canvas numbers containing annotations
     # `canvasIdx` is 0 indexed, is `canvas_imgs` is 1-indexed => convert `canvasIdx` values to be 1-indexed
-    annotated_canvas_nb = {a["on"][0]["canvasIdx"] + 1 for a in indexed_annos}
+    annotated_canvas_nb = {get_canvas_idx(a["on"][0]) + 1 for a in indexed_annos}
 
     for canvas_nb in annotated_canvas_nb:
         if canvas_nb in canvas_imgs:
