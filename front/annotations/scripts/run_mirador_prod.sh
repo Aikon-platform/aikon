@@ -1,9 +1,9 @@
 #!/bin/env bash
 
-ENV_FILE=$1
+ENV_FILE="$1"
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-MIRADOR_DIR=$(dirname "$SCRIPT_DIR")
+MIRADOR_DIR=$(dirname "$SCRIPT_DIR")  # parent of SCRIPT_DIR = Mirador docker workdir
 NPM_BIN="$MIRADOR_DIR"/node_modules/.bin
 
 if [ ! -f "$ENV_FILE" ]; then
