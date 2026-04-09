@@ -448,18 +448,22 @@ def digitization_post_save(sender, instance, created, **kwargs):
         transaction.on_commit(lambda: convert_digitization.delay(instance.id))
 
 
-# Receive the pre_delete signal and delete the file associated with the model instance
 @receiver(pre_delete, sender=Digitization)
 def pre_delete_digit(sender, instance: Digitization, **kwargs):
+    """
+    - delete associated files (downloaded PDF)
+    - delete IIIF manifest from aiiinotate
+    - delete all related Regions from db
+    - delete all related annotations
+    """
     from app.webapp.tasks import delete_digitization
+    from app.webapp.utils.iiif.annotation import destroy_regions, unindex_manifest
 
     other_media = instance.pdf.name if instance.digit_type == PDF_ABBR else None
     delete_digitization.delay(instance.get_ref(), other_media)
 
-    # NOTE do not work because manifest_url uses the digitization id
-    # from app.webapp.tasks import delete_regions
-    # delete_regions.delay([r.id for r in instance.get_regions()])
-
-    from app.webapp.utils.iiif.annotation import destroy_regions
-
-    [destroy_regions(r) for r in instance.get_regions()]
+    manifest_url = instance.get_manifest_url()
+    # NOTE: order is important here !
+    r_destroy_regions = [destroy_regions(r) for r in instance.get_regions()]
+    r_unindex_manifest = unindex_manifest(manifest_url)
+    return all([r_unindex_manifest, *r_destroy_regions])
