@@ -14,6 +14,19 @@ const createWorker = () => new Worker(
 );
 
 export function createDocumentSetStore(documentSetId) {
+
+    // TO DELETE
+    // const documentSetId = 413; // histoire naturelle
+    // const documentSetId = 414; // nicolas
+    // const documentSetId = 437; // physiologus
+    // const documentSetId = 416; // de materia medica
+    // const documentSetId = 417; // traité de géométrie
+    // const documentSetId = 418; // encyclopédie mathématique
+    // const documentSetId = 436; // Jombert complet
+    // const documentSetId = 432; // Jombert incomplet
+    // documentSetId = 455; // Set benchmark
+    // TO DELETE
+
     const error = writable(null);
     const loading = writable(false);
     const loadingProgress = writable({ loaded: 0, done: false });
@@ -86,18 +99,6 @@ export function createDocumentSetStore(documentSetId) {
         if (worker) worker.terminate() && (worker = null);
         if (abortController) abortController.abort();
         abortController = new AbortController();
-
-        // TO DELETE
-        // const documentSetId = 413; // histoire naturelle
-        // const documentSetId = 414; // nicolas
-        // const documentSetId = 437; // physiologus
-        // const documentSetId = 416; // de materia medica
-        // const documentSetId = 417; // traité de géométrie
-        // const documentSetId = 418; // encyclopédie mathématique
-        // const documentSetId = 436; // Jombert complet
-        // const documentSetId = 432; // Jombert incomplet
-        // const documentSetId = 455; // Set benchmark
-        // TO DELETE
 
         const loadPromise = new Promise((resolve, reject) => {
             loading.set(true);

@@ -8,7 +8,7 @@
     export let meta = {
         title: i18n("Digitization"),
         color: "#999",
-        witnessId: 1
+        witness_id: 1
     };
     export let clickable = true;
     export let onlyColor = false;
@@ -29,7 +29,7 @@
              style="background-color: {isActive ? meta.color : '#999'};"
              on:click={toggle} on:keydown={null} role="button" tabindex="0"/>
         <span class="legend-label" class:is-hidden={onlyColor}>
-            <a href={`${appUrl}/${appName}/witness/${meta.Witness}`} target="_blank">
+            <a href={`${appUrl}/${appName}/witness/${meta.witness_id}/regions`} target="_blank">
                 {meta.title}
             </a>
         </span>
