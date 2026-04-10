@@ -32,7 +32,7 @@
         let minScore = Infinity, maxScore = -Infinity;
 
         for (const p of pairList) {
-            const [page1, page2, score] = p.regions_id_1 === d1.id
+            const [page1, page2, score] = p.digit_1 === d1.id
                 ? [p.page_1, p.page_2, p.weightedScore || 0]
                 : [p.page_2, p.page_1, p.weightedScore || 0];
 
@@ -64,7 +64,7 @@
         let minScore = Infinity, maxScore = -Infinity;
 
         pairList.forEach(p => {
-            const [imgId1, imgId2, score] = p.regions_id_1 === d1.id
+            const [imgId1, imgId2, score] = p.digit_1 === d1.id
                 ? [p.id_1, p.id_2, p.weightedScore || 0]
                 : [p.id_2, p.id_1, p.weightedScore || 0];
 

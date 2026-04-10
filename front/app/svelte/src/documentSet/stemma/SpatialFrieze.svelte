@@ -49,12 +49,12 @@
 
             if (otherDocIds.size) {
                 for (const p of $pairs) {
-                    const id1InBase = p.regions_id_1 === baseDoc.id;
-                    const id2InBase = p.regions_id_2 === baseDoc.id;
+                    const id1InBase = p.digit_1 === baseDoc.id;
+                    const id2InBase = p.digit_2 === baseDoc.id;
                     if (!id1InBase && !id2InBase) continue;
 
                     const baseImgId = id1InBase ? p.id_1 : p.id_2;
-                    const otherRegionId = id1InBase ? p.regions_id_2 : p.regions_id_1;
+                    const otherRegionId = id1InBase ? p.digit_2 : p.digit_1;
                     if (!otherDocIds.has(otherRegionId)) continue;
 
                     imageMatches.get(baseImgId)?.add(otherRegionId);
