@@ -21,10 +21,15 @@ services:
     ports:
       - "${DJANGO_PORT}:8000"
     depends_on:
-      - db
-      - redis
-      - aiiinotate
-      - mirador
+      # TODO add healthchecks to aiiinotate and mirador ?
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      aiiinotate:
+        condition: service_started
+      mirador:
+        condition: service_started
     networks:
       - aikon_network
     environment:
@@ -43,7 +48,8 @@ services:
     ports:
       - "${AIIINOTATE_PORT}:${AIIINOTATE_PORT}"
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     networks:
       - aikon_network
     environment:
@@ -92,8 +98,15 @@ services:
     restart: always
     networks:
       - aikon_network
+    volumes:
+      - mongodata:/data/db
     environment:
       <<: *proxy-settings
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:6
@@ -179,6 +192,7 @@ services:
 volumes:
   pgdata:
   redisdata:
+  mongodata:
 
 networks:
   aikon_network:

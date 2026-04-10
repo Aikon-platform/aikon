@@ -18,7 +18,9 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # root of the app
 WORKDIR /mirador
 # for debug: install `iproute2` which provides CLI `ss` to monitor active ports
-RUN apt update && apt install iproute2 -y
+# NOTE: all the arguments are a temporary fix to avoid `Release file for http://deb.debian.org/debian-security/dists/bookworm-security/InRelease is not valid yet`
+RUN apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false update
+RUN apt install iproute2 -y
 # copy the .env
 COPY "$ENV_PATH" /mirador/.env
 # copy the package.json.
