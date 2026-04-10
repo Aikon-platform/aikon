@@ -7,9 +7,11 @@
     export let scoreData = new Map();
     export let docStats = new Map();
     export let imageCountMap = new Map();
-    export let normalize = false;
+    export let normalize = true;
     export let sortOrder = "name";
     export let cellSize = 30;
+    export let percentageMode = false;
+    export let coverageData = new Map();
 
     const dispatch = createEventDispatcher();
 
@@ -21,9 +23,9 @@
     let container;
     let selectedCell = null;
 
-    $: matrixData = buildMatrix(documents, scoreData, docStats, sortOrder, normalize, imageCountMap);
+    $: matrixData = buildMatrix(documents, scoreData, docStats, sortOrder, normalize, imageCountMap, percentageMode, coverageData);
 
-    function buildMatrix(docs, scoreCount, docStatsMap, order, doNormalize, imgCount) {
+    function buildMatrix(docs, scoreCount, docStatsMap, order, doNormalize, imgCount, pctMode, coverage) {
         if (!docs.length) return {docs: [], matrix: [], maxScore: 0};
 
         docs.forEach((doc, i) => {
@@ -48,16 +50,27 @@
                     const key = sorted[i].id < sorted[j].id
                         ? `${sorted[i].id}-${sorted[j].id}`
                         : `${sorted[j].id}-${sorted[i].id}`;
-                    let score = scoreCount?.get(key)?.score || 0;
 
-                    if (doNormalize && score > 0) {
-                        const n1 = imgCount.get(sorted[i].id) || 1;
-                        const n2 = imgCount.get(sorted[j].id) || 1;
-                        score /= Math.sqrt(n1 * n2);
+                    let z, pct;
+
+                    if (pctMode) {
+                        const covKey = `${sorted[i].id}-${sorted[j].id}`;
+                        const covCount = coverage.get(covKey)?.size || 0;
+                        const total = imgCount.get(sorted[i].id) || 1;
+                        pct = covCount / total;
+                        z = pct;
+                    } else {
+                        let score = scoreCount?.get(key)?.score || 0;
+                        if (doNormalize && score > 0) {
+                            const n1 = imgCount.get(sorted[i].id) || 1;
+                            const n2 = imgCount.get(sorted[j].id) || 1;
+                            score /= Math.sqrt(n1 * n2);
+                        }
+                        z = score;
                     }
 
-                    if (score > maxScore) maxScore = score;
-                    row.push({x: j, y: i, z: score, doc1: sorted[i], doc2: sorted[j]});
+                    if (z > maxScore) maxScore = z;
+                    row.push({x: j, y: i, z, pct, doc1: sorted[i], doc2: sorted[j]});
                 } else {
                     row.push({x: j, y: i, z: 0, diagonal: true});
                 }
@@ -65,7 +78,7 @@
             matrix.push(row);
         }
 
-        return {docs: sorted, matrix, maxScore};
+        return {docs: sorted, matrix, maxScore, pctMode};
     }
 
     function isSelected(d) {
@@ -109,7 +122,7 @@
             .attr("transform", (d, i) => `translate(0,${x(i)})`);
 
         row.each(function (rowData) {
-            d3.select(this).selectAll(".cell")
+            const cells = d3.select(this).selectAll(".cell")
                 .data(rowData.filter(d => !d.diagonal))
                 .join("rect")
                 .attr("class", "cell")
@@ -130,10 +143,16 @@
                     tooltip.style("opacity", 1);
                 })
                 .on("mousemove", function (event, d) {
-                    const docs = `<span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>↔<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}`;
-                    const content = d.z === 0
-                        ? `${docs}<br/><br/><em>${i18n("noPairs", t)}</em>`
-                        : `${docs}<br/><br/>${i18n("score", t)}: ${d.z.toFixed(2)}`;
+                    let content;
+                    if (matrixData.pctMode) {
+                        const pctStr = d.pct != null ? `${(d.pct * 100).toFixed(1)}%` : "0%";
+                        content = `Percentage of images from<br/><span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>present also in<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}<br/><br/><strong>${pctStr}</strong>`;
+                    } else {
+                        const docs = `<span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>↔<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}`;
+                        content = d.z === 0
+                            ? `${docs}<br/><br/><em>${i18n("noPairs", t)}</em>`
+                            : `${docs}<br/><br/>${i18n("score", t)}: ${d.z.toFixed(2)}`;
+                    }
                     tooltip.html(content)
                         .style("left", (event.clientX + 15) + "px")
                         .style("top", (event.clientY + 15) + "px");
@@ -147,6 +166,21 @@
                     updateSelection();
                     dispatch("cellselect", selectedCell);
                 });
+
+            if (matrixData.pctMode) {
+                d3.select(this).selectAll(".cell-label")
+                    .data(rowData.filter(d => !d.diagonal && d.pct > 0))
+                    .join("text")
+                    .attr("class", "cell-label")
+                    .attr("x", d => x(d.x) + x.bandwidth() / 2)
+                    .attr("y", x.bandwidth() / 2)
+                    .attr("text-anchor", "middle")
+                    .attr("dominant-baseline", "central")
+                    .attr("font-size", Math.min(x.bandwidth() * 0.35, 10) + "px")
+                    .attr("fill", "white")
+                    .attr("pointer-events", "none")
+                    .text(d => `${Math.round(d.pct * 100)}%`);
+            }
         });
 
         svg.selectAll(".row").selectAll(".cell-diagonal")

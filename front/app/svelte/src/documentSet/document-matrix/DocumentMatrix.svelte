@@ -10,7 +10,7 @@
 
     const {
         documentNodes, pairIndex, filteredDocPairStats, filteredDocStats,
-        imageCountMap, visiblePairIds, normalizeByImages
+        imageCountMap, visiblePairIds, normalizeByImages, visiblePairs
     } = documentSetStore;
 
     const t = {
@@ -23,6 +23,8 @@
         byImage: {en: "By image", fr: "Par image"},
         normalize: {en: "Normalize", fr: "Normaliser"},
         normalization: {en: "Normalization by document image counts", fr: "Normalisation par le nombre d'images des documents"},
+        percentage: {en: "By percentage", fr: "Par pourcentage"},
+        percentageView: {en: "View matrix with image similarity percentage", fr: "Visualiser la matrice avec des pourcentage d'images similaires"},
         allPairs: {en: "All pairs in the document set", fr: "Toutes les paires du corpus"},
         filteredPairs: {en: "Filtered pairs", fr: "Paires après filtrage"},
         filtering: {en: "Source of image pairs for the visualizations", fr: "Source des paires d'images pour les visualisations"},
@@ -34,6 +36,7 @@
     let navState = null;
     let modalActive = false;
     let scatterData = null;
+    let percentageMode = false;
 
     $: documents = Array.from($documentNodes?.values() || []);
     $: pairsForSelection = selectedCell ? getPairsForCell(selectedCell, $visiblePairIds) : [];
@@ -44,6 +47,20 @@
         let pairs = $pairIndex.byDocPair.get(pairKey) || [];
         if (visibleIds.size > 0) pairs = pairs.filter(p => visibleIds.has(`${p.id_1}-${p.id_2}`));
         return pairs;
+    }
+
+    $: coverageData = buildCoverage($visiblePairs);
+    function buildCoverage(pairs) {
+        const map = new Map();
+        for (const p of pairs) {
+            const k1 = `${p.digit_1}-${p.digit_2}`;
+            const k2 = `${p.digit_2}-${p.digit_1}`;
+            if (!map.has(k1)) map.set(k1, new Set());
+            if (!map.has(k2)) map.set(k2, new Set());
+            map.get(k1).add(p.id_1);
+            map.get(k2).add(p.id_2);
+        }
+        return map;
     }
 
     function handleCellSelect(e) {
@@ -78,9 +95,13 @@
                     </select>
                 </div>
             </div>
-            <label title={i18n("normalization", t)} class="checkbox is-size-7 is-flex is-align-items-center">
-                <input type="checkbox" checked={$normalizeByImages} on:change={e => normalizeByImages.set(e.target.checked)}>
-                <span class="pl-1">{i18n("normalize", t)}</span>
+<!--            <label title={i18n("normalization", t)} class="checkbox is-size-7 is-flex is-align-items-center">-->
+<!--                <input type="checkbox" checked={$normalizeByImages} on:change={e => normalizeByImages.set(e.target.checked)}>-->
+<!--                <span class="pl-1">{i18n("normalize", t)}</span>-->
+<!--            </label>-->
+            <label title={i18n("percentageView", t)} class="checkbox is-size-7 is-flex is-align-items-center">
+                <input type="checkbox" checked={percentageMode} on:change={e => percentageMode = e.target.checked}>
+                <span class="pl-1">{i18n("percentage", t)}</span>
             </label>
         </div>
     </div>
@@ -90,9 +111,12 @@
             scoreData={$filteredDocPairStats.scoreCount}
             docStats={$filteredDocStats.scoreCount}
             imageCountMap={$imageCountMap}
-            normalize={$normalizeByImages}
+            normalize={!percentageMode}
+            {percentageMode}
+            {coverageData}
             on:cellselect={handleCellSelect}
         />
+        <!--normalize={$normalizeByImages}-->
     </div>
     <div slot="right-title" class="is-flex is-justify-content-space-between">
         <h4 class="title is-6 mb-0">{i18n("pageByPage", t)}</h4>

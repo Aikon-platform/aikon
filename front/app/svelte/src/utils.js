@@ -154,7 +154,7 @@ export function refToIIIFInfo(imgRef=null) {
 }
 
 export function manifestToMirador(manifest = null, canvasNb = 0) {
-    return `${getMiradorUrl()}/index.html?iiif-content=${manifest}&canvas=${canvasNb}`;
+    return `${getMiradorUrl()}/index.html?iiif-content=${manifest}&canvas=${canvasNb}&editMode=true&defaultForm=note`;
 }
 
 export function toAiiinotationUrl(manifestShortId, annotationShortId) {
