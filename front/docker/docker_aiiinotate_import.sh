@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# this script imports AnnotationLists from a directory
+# in an aiiinotate instance. the directory must only contain
+# AnnotationLists, with all files at the root of the directory.
+#
+# USAGE: bash docker_aiiinotate_import.sh <path/to/directory>
+
 # directory containing all files we want to import into aiiinotate
 HOST_DIR=$(echo "$1" | sed -e "s~/$~~g")  # sed removes trailing "/"
 
