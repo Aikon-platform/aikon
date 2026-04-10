@@ -484,8 +484,8 @@ def get_manifest_annotations(
             q_params["canvasMax"] = c_range[1]
 
     q_url = update_params(q_url, q_params)
-
     r = get_and_parse(q_url) if only_ids else get_paginated_annotations(q_url)
+
     # sanity check to preserve type consistency if there's been an error in `get_and_parse`
     if not isinstance(r, list):
         return []
@@ -681,8 +681,7 @@ def get_total_annotations(ref: str) -> int:
     digit_ref, regions_tag = split_ref(ref)
 
     if regions_tag:
-        # IF filter by regions, we have to get all annotations and filter them by tag
-        # TODO make aiiinotate support tag filtering by tag
+        # the `count` route in aiiinotate doesn´t support filtering by tag => use search-api.
         annos = get_manifest_annotations(ref, only_ids=False)
         return len(annos)
 
@@ -1001,6 +1000,9 @@ def process_regions(
 
 
 def unindex_annotation(annotation_id: str) -> bool:
+    """
+    delete a single annotation from aiiinotate
+    """
     # annotation_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}
     annotation_url = to_annotation_url("", annotation_id).replace("https", "http")
     delete_url = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/delete?uri={annotation_url}"
@@ -1018,6 +1020,9 @@ def unindex_annotation(annotation_id: str) -> bool:
 
 
 def unindex_manifest(manifest_url: str) -> bool:
+    """
+    delete a manifest from aiiinotate
+    """
     response = requests.delete(
         f"{AIIINOTATE_BASE_URL}/manifests/2/delete?uri={manifest_url}"
     )
@@ -1032,7 +1037,9 @@ def unindex_manifest(manifest_url: str) -> bool:
 
 
 def delete_manifest_annotations(manifest_url: str) -> bool:
-    """delete all annotations of a manifest"""
+    """
+    delete all annotations of a manifest
+    """
     try:
         # manifest_url = http://slug/manifest_short_id/manifest.json
         manifest_short_id = manifest_url.split("/")[-2]
@@ -1054,7 +1061,9 @@ def delete_manifest_annotations(manifest_url: str) -> bool:
 
 # NOTE NOT USED
 def unindex_annotations_for_canvas(canvas_uri: str) -> bool:
-    """delete all annotations that have for target `canvas_uri`"""
+    """
+    delete all annotations that have for target `canvas_uri`
+    """
     try:
         url_delete = f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/delete?canvasUri={canvas_uri}"
         r = requests.delete(url_delete)
@@ -1077,10 +1086,10 @@ def unindex_annotations_for_canvas(canvas_uri: str) -> bool:
 
 def unindex_regions(regions_ref, manifest_url: str) -> bool:
     """
-    Delete all aiiinotations for a specific Regions extraction.
-    in our annotations, the regions_ref is stored as a Tag in the annotation's body => use aiiinotate's delete-by-tag functionnality.
+    - delete all annotations from aiiinotate for a specific Regions extraction.
+    - DOES NOT DELETE THE related manifest
 
-    Does NOT unindex the manifest
+    in our annotations, the regions_ref is stored as a Tag in the annotation's body => use aiiinotate's delete-by-tag functionnality.
     """
     index_manifest(manifest_url)  # no effect if manifest is already indexed
 
@@ -1107,7 +1116,12 @@ def unindex_regions(regions_ref, manifest_url: str) -> bool:
     return deleted >= 0  # Success even if 0 annotations found
 
 
-def destroy_regions(regions: Regions):
+def destroy_regions(regions: Regions) -> bool:
+    """
+    - delete a Regions (database object)
+    - remove its annos from aiiinotate
+    - update Witness to remove reference to the Regions
+    """
     manifest_url = regions.get_manifest_url()
     regions_ref = regions.get_ref()
 

@@ -12,6 +12,7 @@ ENV ENV_PATH="$ENV_PATH"
 # set up environment
 ENV DIR=/aiiinotate
 ENV TERM=linux
+ENV NPM_BIN=/aiiinotate/node_modules/.bin
 SHELL ["/bin/bash", "-c"]
 
 # root of the app in the docker container
@@ -31,5 +32,5 @@ EXPOSE ${PORT}
 # run the migrations and start the app.
 # ./node_modules/.bin/aiiinotate is to be able to use the `aiiinotate` cli without doing a global install of `aiiinotate`
 # NOTE migrations must be done in CMD: they need the mongo service to be running.
-CMD ./node_modules/.bin/aiiinotate --env=${DIR}/.env -- migrate apply && \
-    ./node_modules/.bin/aiiinotate --env=${DIR}/.env -- serve prod;
+CMD ${NPM_BIN}/dotenvx run -f ${DIR}/.env -- ${NPM_BIN}/aiiinotate migrate apply && \
+    ${NPM_BIN}/dotenvx run -f ${DIR}/.env -- ${NPM_BIN}/aiiinotate serve prod;
