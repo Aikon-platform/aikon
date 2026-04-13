@@ -10,7 +10,7 @@
 
     const {
         documentNodes, pairIndex, filteredDocPairStats, filteredDocStats,
-        imageCountMap, visiblePairIds, normalizeByImages, visiblePairs
+        imageCountMap, visiblePairIds, normalizeByImages, visiblePairs, allPairs
     } = documentSetStore;
 
     const t = {
@@ -151,6 +151,7 @@
 
 <PairDetailModal
     active={modalActive} {scatterData} {navState}
+    pairs={pairsForSelection}
     on:navigate={handleModalNavigate}
     on:close={handleModalClose}
-/>
+/> <!--on:categorize={() => allPairs.update(p => p)}-->
