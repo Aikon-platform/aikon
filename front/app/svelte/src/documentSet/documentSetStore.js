@@ -591,6 +591,19 @@ export function createDocumentSetStore(documentSetId) {
         return set;
     });
 
+    const coverageData = derived(filteredPairs, ($pairs) => {
+        const map = new Map();
+        for (const p of $pairs) {
+            const k1 = `${p.digit_1}-${p.digit_2}`;
+            const k2 = `${p.digit_2}-${p.digit_1}`;
+            if (!map.has(k1)) map.set(k1, new Set());
+            if (!map.has(k2)) map.set(k2, new Set());
+            map.get(k1).add(p.id_1);
+            map.get(k2).add(p.id_2);
+        }
+        return map;
+    });
+
     const imageCountMap = derived(documentNodes, ($docs) => {
         const map = new Map();
         for (const [id, doc] of $docs) {
@@ -652,5 +665,6 @@ export function createDocumentSetStore(documentSetId) {
         normalizeByImages,
         imageCountMap,
         visiblePairIds,
+        coverageData
     };
 }

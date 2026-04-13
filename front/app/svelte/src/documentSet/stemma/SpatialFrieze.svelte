@@ -7,7 +7,7 @@
     export let documents;
     export let visiblePairs;
     export let documentNodes;
-    export let mode = "page";
+    export let mode = "image";
 
     const { nodeTitles } = stemmaStore;
 
@@ -29,6 +29,7 @@
     const t = {
         base: { en: "Pick a base document", fr: "Sélectionner un document de base" },
         similarity: { en: "similarities", fr: "similarités" },
+        noDoc: { en: "No base document selected", fr: "Aucun document de base sélectionné" }
     };
 
     const documentsStore = writable([]);
@@ -227,11 +228,12 @@
             <span>Max {maxVal} matches</span>
         </div>
     {:else}
-        <p class="has-text-grey is-size-7">No base document selected</p>
+        <p class="has-text-grey is-size-7">{i18n("noDoc")}</p>
     {/if}
 
     {#if documents.length}
         <h4 class="title is-6 my-2">{i18n("base", t)}</h4>
+        <!-- TODO add checkbox for clusterMode-->
         <div class="doc-selector">
             {#each documents as node (node.id)}
                 {@const title = $nodeTitles[node.id] || node.title}

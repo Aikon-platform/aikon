@@ -10,7 +10,7 @@
 
     const {
         documentNodes, pairIndex, filteredDocPairStats, filteredDocStats,
-        imageCountMap, visiblePairIds, normalizeByImages, visiblePairs, allPairs
+        imageCountMap, visiblePairIds, coverageData, visiblePairs, allPairs
     } = documentSetStore;
 
     const t = {
@@ -47,20 +47,6 @@
         let pairs = $pairIndex.byDocPair.get(pairKey) || [];
         if (visibleIds.size > 0) pairs = pairs.filter(p => visibleIds.has(`${p.id_1}-${p.id_2}`));
         return pairs;
-    }
-
-    $: coverageData = buildCoverage($visiblePairs);
-    function buildCoverage(pairs) {
-        const map = new Map();
-        for (const p of pairs) {
-            const k1 = `${p.digit_1}-${p.digit_2}`;
-            const k2 = `${p.digit_2}-${p.digit_1}`;
-            if (!map.has(k1)) map.set(k1, new Set());
-            if (!map.has(k2)) map.set(k2, new Set());
-            map.get(k1).add(p.id_1);
-            map.get(k2).add(p.id_2);
-        }
-        return map;
     }
 
     function handleCellSelect(e) {
@@ -113,8 +99,8 @@
             imageCountMap={$imageCountMap}
             normalize={!percentageMode}
             {percentageMode}
-            {coverageData}
             on:cellselect={handleCellSelect}
+            {coverageData}
         />
         <!--normalize={$normalizeByImages}-->
     </div>
