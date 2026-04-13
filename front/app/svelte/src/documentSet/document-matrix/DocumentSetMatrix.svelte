@@ -23,7 +23,7 @@
     let container;
     let selectedCell = null;
 
-    $: matrixData = buildMatrix(documents, scoreData, docStats, sortOrder, normalize, imageCountMap, percentageMode, coverageData);
+    $: matrixData = buildMatrix(documents, scoreData, docStats, sortOrder, normalize, imageCountMap, percentageMode, $coverageData);
 
     function buildMatrix(docs, scoreCount, docStatsMap, order, doNormalize, imgCount, pctMode, coverage) {
         if (!docs.length) return {docs: [], matrix: [], maxScore: 0};

@@ -7,7 +7,7 @@
     export let documents;
     export let visiblePairs;
     export let documentNodes;
-    export let mode = "page";
+    export let mode = "image";
 
     const { nodeTitles } = stemmaStore;
 
@@ -15,12 +15,62 @@
 
     const LINE_WIDTH = 5;
     const AXIS_HEIGHT = 20;
+    const CLUSTER_COLORS = ["#e63f19", "#ff9100", "#fdd21e", "#8fcd12", "#12cdb1"];
+    let clusterMode = false;
 
     const baseDocId = writable(null);
     const selectedIndex = writable(null);
 
+    function clusterSignature(matchedDocs) {
+        return matchedDocs.size ? [...matchedDocs].sort((a, b) => a - b).join("-") : "∅";
+    }
+
+    function buildClusters(items, baseId, docNodes, titles) {
+        const clusterMap = new Map();
+
+        for (const item of items) {
+            const sig = clusterSignature(item.matchedDocs);
+            if (!clusterMap.has(sig)) {
+                clusterMap.set(sig, { docIds: new Set(item.matchedDocs), count: 0 });
+            }
+            clusterMap.get(sig).count++;
+        }
+
+        const baseColor = docNodes.get(baseId)?.color || "#999";
+        const sorted = [...clusterMap.values()].sort((a, b) => b.count - a.count);
+        let colorIdx = 0;
+        sorted.forEach(cl => {
+            if (!cl.docIds.size) {
+                cl.color = baseColor;
+                cl.opacity = 0.5;
+            } else {
+                cl.color = colorIdx < CLUSTER_COLORS.length ? CLUSTER_COLORS[colorIdx++] : "#999";
+                cl.opacity = 1;
+            }
+        });
+
+        const sigToCluster = new Map();
+        for (const [sig, cl] of clusterMap) sigToCluster.set(sig, cl);
+
+        const itemColors = items.map(item => {
+            const cl = sigToCluster.get(clusterSignature(item.matchedDocs));
+            return { color: cl.color, opacity: cl.opacity };
+        });
+
+        const baseName = titles[baseId] || docNodes.get(baseId)?.title || `Doc ${baseId}`;
+        const legend = sorted.map(cl => {
+            const names = [baseName, ...[...cl.docIds].map(id => titles[id] || docNodes.get(id)?.title || `Doc ${id}`)];
+            return { color: cl.color, opacity: cl.opacity, names, count: cl.count };
+        });
+
+        return { itemColors, legend };
+    }
+
+    $: clusterData = clusterMode && items.length ? buildClusters(items, $baseDocId, $documentNodes, $nodeTitles) : null;
+
     $: if (documents.length && !documents.find(n => n.id === $baseDocId)) {
-        baseDocId.set(documents[0].id);
+        const validDoc = documents.find(n => $documentNodes.get(n.id)?.images?.length);
+        baseDocId.set(validDoc?.id || null);
         selectedIndex.set(null);
     }
 
@@ -29,6 +79,8 @@
     const t = {
         base: { en: "Pick a base document", fr: "Sélectionner un document de base" },
         similarity: { en: "similarities", fr: "similarités" },
+        noDoc: { en: "No base document selected", fr: "Aucun document de base sélectionné" },
+        clusters: { en: "Document clusters", fr: "Groupes de documents"}
     };
 
     const documentsStore = writable([]);
@@ -148,7 +200,9 @@
     }
 
     function handleMouseEnter(item) {
-        hoveredDocs = item.matchedDocs;
+        hoveredDocs = !item.matchedDocs.size
+            ? new Set([$baseDocId])
+            : item.matchedDocs;
     }
 
     function handleMouseLeave() {
@@ -175,10 +229,11 @@
         <div class="frieze-wrapper">
             <div class="frieze" style="--line-width: {LINE_WIDTH}px;">
                 {#each items as item, idx}
-                    <button
-                        class="frieze-line"
+                    <button class="frieze-line"
                         class:is-selected={idx === $selectedIndex}
-                        style="--opacity: {item.matchCount / maxVal}"
+                        style="{clusterData
+                            ? `background:${clusterData.itemColors[idx].color};opacity:${clusterData.itemColors[idx].opacity}`
+                            : `--opacity: ${item.matchCount / maxVal}`}"
                         title="{mode === 'image' ? `Page ${item.page}, ` : `Page ${item.page}, `}{item.matchCount} match(es)"
                         on:click={() => handleClick(idx)}
                         on:mouseenter={() => handleMouseEnter(item)}
@@ -227,11 +282,17 @@
             <span>Max {maxVal} matches</span>
         </div>
     {:else}
-        <p class="has-text-grey is-size-7">No base document selected</p>
+        <p class="has-text-grey is-size-7">{i18n("noDoc")}</p>
     {/if}
 
     {#if documents.length}
-        <h4 class="title is-6 my-2">{i18n("base", t)}</h4>
+        <div class="is-flex is-align-items-center" style="gap: 0.75rem;">
+            <h4 class="title is-6 my-2">{i18n("base", t)}</h4>
+            <label class="checkbox is-size-7 is-flex is-align-items-center">
+                <input type="checkbox" bind:checked={clusterMode} class="mr-1"/>
+                {i18n("clusters", t)}
+            </label>
+        </div>
         <div class="doc-selector">
             {#each documents as node (node.id)}
                 {@const title = $nodeTitles[node.id] || node.title}
@@ -244,6 +305,21 @@
                 </button>
             {/each}
         </div>
+        {#if clusterData}
+            <div class="mt-3" style="display: flex; flex-direction: column; gap: 0.35rem;">
+                {#each clusterData.legend as cl}
+                    {@const docLen = cl.names.length}
+                    <div class="is-size-7">
+                        <span style="color:{cl.color};opacity:{cl.opacity}">●</span>
+                        <b>{docLen} document{docLen > 1 ? 's' : ''}</b>
+                        <span class="tag is-light is-small is-rounded">{cl.count}</span>
+                        {#each cl.names as name, i}
+                            <br/><span class="pl-3">{name}</span>
+                        {/each}
+                    </div>
+                {/each}
+            </div>
+        {/if}
     {/if}
 </div>
 

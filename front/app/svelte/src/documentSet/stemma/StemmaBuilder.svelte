@@ -14,7 +14,7 @@
 
     const {
         normalizeByImages, visiblePairs, documentNodes, imageNodes,
-        filteredDocPairStats, filteredDocStats, imageCountMap
+        filteredDocPairStats, filteredDocStats, imageCountMap, coverageData
     } = documentSetStore;
 
     const stemmaStore = createStemmaStore(documentSetStore);
@@ -36,6 +36,8 @@
         byImage: { en: "By image", fr: "Par image" },
         selectedDocs: { en: "Selected documents", fr: "Documents sélectionnés" },
         fullDocSet: { en: "Full document set", fr: "Jeu de documents complet" },
+        percentage: {en: "By percentage", fr: "Par pourcentage"},
+        percentageView: {en: "View matrix with image similarity percentage", fr: "Visualiser la matrice avec des pourcentage d'images similaires"},
 
         selectViz: { en: "Select a visualization", fr: "Choisir une visualisation" },
         docMatrix: { en: "Document Matrix", fr: "Matrice de documents" },
@@ -52,6 +54,7 @@
     let selectedFriezeImage = null;
     let scatterMode = "page";
     let friezeMode = "image";
+    let percentageMode = false;
     let modalActive = false;
     let navState = null;
     let scatterData = null;
@@ -143,9 +146,13 @@
             </div>
         {/if}
         {#if selectedViz === "docMatrix"}
-            <label title={i18n("normalization", t)} class="checkbox is-size-7 is-flex is-align-items-center">
-                <input type="checkbox" bind:checked={$normalizeByImages}>
-                <span class="pl-1">{i18n("normalize", t)}</span>
+<!--            <label title={i18n("normalization", t)} class="checkbox is-size-7 is-flex is-align-items-center">-->
+<!--                <input type="checkbox" bind:checked={$normalizeByImages}>-->
+<!--                <span class="pl-1">{i18n("normalize", t)}</span>-->
+<!--            </label>-->
+            <label title={i18n("percentageView", t)} class="checkbox is-size-7 is-flex is-align-items-center">
+                <input type="checkbox" bind:checked={percentageMode}>
+                <span class="pl-1">{i18n("percentage", t)}</span>
             </label>
         {:else if selectedViz === "spatialFrieze"}
             <div class="select is-small">
@@ -168,7 +175,9 @@
                 scoreData={matrixScope === "full" ? fullScoreData : $matrixScoreData}
                 docStats={matrixScope === "full" ? fullDocStats : $matrixDocStats}
                 imageCountMap={matrixScope === "full" ? $imageCountMap : $matrixImageCount}
-                normalize={$normalizeByImages}
+                normalize={!percentageMode}
+                {percentageMode}
+                {coverageData}
                 on:cellselect={handleCellSelect}
             />
         {:else if selectedViz === "spatialFrieze"}
@@ -204,7 +213,7 @@
                 <span>Image stemma from</span>
                 <span class="color-dot" style="background: {baseDoc?.color}"></span>
                 {title ?? "Unknown"}
-                (canvas {imgData.canvasNb})
+                (canvas {imgData?.canvasNb || 0})
             </h4>
         {/if}
     </div>
