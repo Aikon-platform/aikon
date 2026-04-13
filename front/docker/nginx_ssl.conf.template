@@ -22,6 +22,7 @@ http {
 
     upstream django {
         server web:DJANGO_PORT;
+        keepalive 32;
     }
 
     server {
@@ -85,14 +86,14 @@ http {
 
         location /mirador/ {
             proxy_pass              http://mirador:MIRADOR_PORT/mirador/;
-            proxy_set_header        Host                 $host;
-            proxy_set_header        X-Real-IP            $remote_addr;
-            proxy_set_header        X-Forwarded-For      $proxy_add_x_forwarded_for;
-            proxy_set_header        X-Forwarded-Path     /mirador;
-            proxy_set_header        X-Forwarded-Proto    $scheme;
-            proxy_set_header        X-NginX-Proxy        true;
-            proxy_set_header        Upgrade              $http_upgrade;
+            proxy_http_version      1.1;
             proxy_pass_header       Set-Cookie;
+            proxy_set_header        Upgrade           $http_upgrade;
+            proxy_set_header        Connection        'upgrade';
+            proxy_set_header        Host              $host;
+            proxy_set_header        X-Real-IP         $remote_addr;
+            proxy_set_header        X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header        X-Forwarded-Proto $scheme;
         }
 
         location /aiiinotate/ {
