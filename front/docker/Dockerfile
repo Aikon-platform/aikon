@@ -99,7 +99,7 @@ CMD /home/${USER}/manage.sh && \
     # source venv/bin/activate && \
     supervisord -c /home/${USER}/supervisord.conf
 
-# NOTE currently, the app is owned by $USER but run by $ROOT. W
+# NOTE currently, the app is owned by $USER but run by $ROOT.
 # When installing, we
 #   - creatin an aikon user account with a HOME directory
 #   - put all necessary directories (incl. NPM and UV stuff) in the user's HOME,
