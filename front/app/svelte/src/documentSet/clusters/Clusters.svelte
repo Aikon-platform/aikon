@@ -22,9 +22,6 @@
         removeFromClusters
     } = clusterStore;
 
-    // $: onlyPartial = true;
-    // $: onlyNotValidated = true;
-
     const actionLabels = {
         create: {
             title: appLang === "en" ? "New cluster" : "Nouveau cluster",
@@ -143,16 +140,3 @@
 </Table>
 
 <Pagination store={clusterStore} nbOfItems={$clusterNb} {pageLength}/>
-
-<style>
-    .shortcut {
-        display: none;
-        font-family: monospace;
-        font-size: 0.85em;
-        font-weight: bold;
-        color: var(--bulma-text-light-color);
-        margin-left: 0.5em;
-        padding: 0.2em 0.4em;
-        background-color: var(--contrasted);
-    }
-</style>

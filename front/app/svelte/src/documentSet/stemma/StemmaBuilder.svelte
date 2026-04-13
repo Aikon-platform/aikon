@@ -213,7 +213,7 @@
                 <span>Image stemma from</span>
                 <span class="color-dot" style="background: {baseDoc?.color}"></span>
                 {title ?? "Unknown"}
-                (canvas {imgData.canvasNb})
+                (canvas {imgData?.canvasNb || 0})
             </h4>
         {/if}
     </div>
