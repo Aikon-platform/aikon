@@ -27,7 +27,7 @@ services:
       redis:
         condition: service_healthy
       aiiinotate:
-        condition: service_started
+        condition: service_healthy
       mirador:
         condition: service_started
     networks:
@@ -55,6 +55,14 @@ services:
     environment:
       <<: *proxy-settings
     restart: always
+    healthcheck:
+      # `hostname -i` returns the IP address to the container on the host.
+      # i can't CURL to localhost, because the app actually doesn't run in localhost
+      # in the Docker container (since AIIINOTATE_HOST is the docker container name).
+      test: ["CMD-SHELL", "curl -f http://$(hostname -i):$${AIIINOTATE_PORT}/manifests/2 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   mirador:
     build:
