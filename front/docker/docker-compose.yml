@@ -1,7 +1,7 @@
 x-proxy-settings: &proxy-settings
   HTTP_PROXY: ${HTTP_PROXY:-}
   HTTPS_PROXY: ${HTTPS_PROXY:-}
-  NO_PROXY: "localhost,127.0.0.1,cantaloupe,web,nginx,redis,db,.aikon_network"
+  NO_PROXY: "localhost,127.0.0.1,aiiinotate,mirador,cantaloupe,web,mongo,nginx,redis,db,.aikon_network"
 
 services:
   web:
