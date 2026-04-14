@@ -35,7 +35,7 @@
         </div>
     {:else}
         <div>
-            {appLang === 'en' ? 'No regions in selection' : 'Aucune région sélectionnée'}
+            {appLang === "en" ? "No regions in selection" : "Aucune région sélectionnée"}
         </div>
     {/if}
 </SelectionModal>

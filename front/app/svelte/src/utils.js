@@ -1,12 +1,25 @@
-import { writable } from 'svelte/store';
-import {sasUrl, cantaloupeUrl, appName, appLang} from './constants';
+import { writable } from "svelte/store";
+import {miradorUrl, cantaloupeUrl, appName, appLang, aiiinotateUrl, model2title} from "./constants";
 
 export const loading = writable(false);
 export const errorMsg = writable("");
 
-const isString = (x) => typeof x === 'string' || x instanceof String;
+const isString = (x) => typeof x === "string" || x instanceof String;
 
-export const i18n = (key, t) => t[key]?.[appLang] || t[key]?.en || key;
+const u = {
+    "delete": { en: "Delete", fr: "Supprimer"},
+    "error": {en: "Error", fr: "Erreur"},
+    "cancel": {en: "Cancel", fr: "Annuler"},
+    "title": {en: "Title", fr: "Titre"},
+    "date": {en: "Date", fr: "Date"},
+    "confirm": {en: "Confirm", fr: "Confirmer"},
+    "errored": {en: "An error has occurred", fr: "Une erreur est survenue"},
+}
+export const i18n = (key, t = null) => {
+    let dic = {...u, ...model2title}
+    if (t) dic = {...dic, ...t}
+    return dic[key]?.[appLang] || dic[key]?.en || key}
+;
 
 /**
  * Display loading UI while waiting for Promise
@@ -35,7 +48,7 @@ export function extractInt(str) {
 export function shorten(str, maxLen=100) {
     // put '...' in between the 75% and last 25% characters if the string it too long
     const nthChar = Math.floor(maxLen * 0.75);
-    return str.length > maxLen ? str.slice(0, nthChar) + '...' + str.slice(- maxLen + nthChar) : str;
+    return str.length > maxLen ? str.slice(0, nthChar) + "..." + str.slice(- maxLen + nthChar) : str;
 }
 
 export function getCantaloupeUrl() {
@@ -44,12 +57,12 @@ export function getCantaloupeUrl() {
     // return "https://vhs.huma-num.fr"
 }
 
-export function getSasUrl() {
-    return sasUrl ?? "http://localhost:8888";
+export function getMiradorUrl() {
+    return miradorUrl ?? "http://localhost:5555";
 }
 
 export function initPagination(pageWritable, urlParam) {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
         const urlPage = parseInt(new URLSearchParams(window.location.search).get(urlParam));
         if (!isNaN(urlPage)) {
             pageWritable.set(urlPage);
@@ -62,10 +75,10 @@ export function initPagination(pageWritable, urlParam) {
 
 export function pageUpdate(pageNb, pageWritable, urlParam) {
     pageWritable.set(pageNb);
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
         const url = new URL(window.location.href);
         url.searchParams.set(urlParam, pageNb);
-        window.history.pushState({}, '', url);
+        window.history.pushState({}, "", url);
     }
 }
 
@@ -95,11 +108,13 @@ export function refToIIIF(imgRef=null, coord=null, size="full") {
 
     // imgRef can be like "wit<id>_<digit><id>_<page_nb>.jpg" or "wit<id>_<digit><id>_<page_nb>_<x,y,h,w>.jpg"
     if (!imgRef) {
+        console.log("IMG REF IS UNDEFINED", imgRef, coord, size);
         return "https://placehold.co/96x96/png?text=No+image";
     }
     if (!imgRef.startsWith("wit")) {
+        console.log("IMG REF DOES NOT START WITH 'wit'", imgRef, coord, size);
         // TODO try to understand why this happens and remove workaround
-        const [_, ...ref] = imgRef.split('_wit');
+        const [_, ...ref] = imgRef.split("_wit");
         imgRef = `wit${ref}`;
     }
 
@@ -138,10 +153,13 @@ export function refToIIIFInfo(imgRef=null) {
     return `${refToIIIFRoot(imgRef)}/info.json`;
 }
 
-export function manifestToMirador(manifest = null, canvasNb = 1) {
-    return `${getSasUrl()}/index.html?iiif-content=${manifest}&canvas=${canvasNb}`;
+export function manifestToMirador(manifest = null, canvasNb = 0) {
+    return `${getMiradorUrl()}/index.html?iiif-content=${manifest}&canvas=${canvasNb}&editMode=true&defaultForm=note`;
 }
 
+export function toAiiinotationUrl(manifestShortId, annotationShortId) {
+    return `${aiiinotateUrl}/data/2/${manifestShortId}/annotation/${annotationShortId}`
+}
 
 export function parseData(elementId) {
     if (!document.getElementById(elementId)) {
@@ -201,7 +219,7 @@ export function showMessage(msg, title = null, confirm = false) {
 
 export function downloadBlob(blob, filename) {
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `${filename}`;
     document.body.appendChild(a);
@@ -216,7 +234,7 @@ export async function getSuccess(url) {
         const response = await fetch(url);
         return response.ok;
     } catch (error) {
-        console.error('Error:', error);
+        console.error("Error:", error);
         return false;
     }
 }
@@ -225,7 +243,6 @@ export async function getSuccess(url) {
 export async function deleteRecord(recordId, recordType){
     return getSuccess(`/${appName}/${recordType.toLowerCase()}/${recordId}/delete`);
 }
-
 
 /**
  * @typedef NewAndOldType
@@ -300,24 +317,24 @@ export function getColNb(innerWidth=null) {
 
 export function closeModal(el) {
     const closeElements = el.querySelectorAll(
-        '.modal-background, .modal-close, .modal-card-head .delete, .modal-card-foot .button-close'
+        ".modal-background, .modal-close, .modal-card-head .delete, .modal-card-foot .button-close"
     );
 
-    const close = () => el.classList.remove('is-active');
+    const close = () => el.classList.remove("is-active");
 
-    closeElements.forEach(el => el.addEventListener('click', close));
+    closeElements.forEach(el => el.addEventListener("click", close));
 
     const handleEscape = (e) => {
-        if (e.key === 'Escape' && el.classList.contains('is-active')) {
+        if (e.key === "Escape" && el.classList.contains("is-active")) {
             close();
         }
     };
-    document.addEventListener('keydown', handleEscape);
+    document.addEventListener("keydown", handleEscape);
 
     return {
         destroy() {
-            closeElements.forEach(el => el.removeEventListener('click', close));
-            document.removeEventListener('keydown', handleEscape);
+            closeElements.forEach(el => el.removeEventListener("click", close));
+            document.removeEventListener("keydown", handleEscape);
         }
     };
 }
@@ -325,38 +342,38 @@ export function closeModal(el) {
 export function openModal(node) {
     const open = () => {
         const target = document.getElementById(node.dataset.target);
-        target?.classList.add('is-active');
+        target?.classList.add("is-active");
     };
-    node.addEventListener('click', open);
+    node.addEventListener("click", open);
 
     return {
         destroy() {
-            node.removeEventListener('click', open);
+            node.removeEventListener("click", open);
         }
     };
 }
 
-export function syncStoreWithURL(store, paramName, type = 'string', defaultValue = null) {
+export function syncStoreWithURL(store, paramName, type = "string", defaultValue = null) {
     const parsers = {
         string: (params) => {
             const value = params.get(paramName);
-            return value !== null ? value : null; // Retourner null si absent
+            return value !== null ? value : null;
         },
         array: (params) => {
             const value = params.get(paramName);
-            return value ? value.split(',').map(Number).filter(v => !isNaN(v)) : null;
+            return value ? value.split(",").map(Number).filter(v => !isNaN(v)) : null;
         },
         set: (params) => {
             const value = params.get(paramName);
-            return value ? new Set(value.split(',').map(Number).filter(v => !isNaN(v))) : null;
+            return value ? new Set(value.split(",").map(Number).filter(v => !isNaN(v))) : null;
         },
         number: (params) => {
             const value = params.get(paramName);
-            return value !== null ? Number(value) : null; // Retourner null si absent
+            return value !== null ? Number(value) : null;
         },
         boolean: (params) => {
             const value = params.get(paramName);
-            return value !== null ? value === 'true' : null; // Retourner null si absent
+            return value !== null ? value === "true" : null;
         }
     };
 
@@ -364,14 +381,14 @@ export function syncStoreWithURL(store, paramName, type = 'string', defaultValue
         string: (url, value) => value ? url.searchParams.set(paramName, value) : url.searchParams.delete(paramName),
         array: (url, values) => {
             if (values?.length) {
-                url.searchParams.set(paramName, values.join(','));
+                url.searchParams.set(paramName, values.join(","));
             } else {
                 url.searchParams.delete(paramName);
             }
         },
         set: (url, values) => {
             if (values?.size) {
-                url.searchParams.set(paramName, Array.from(values).join(','));
+                url.searchParams.set(paramName, Array.from(values).join(","));
             } else {
                 url.searchParams.delete(paramName);
             }
@@ -383,17 +400,17 @@ export function syncStoreWithURL(store, paramName, type = 'string', defaultValue
                 url.searchParams.delete(paramName);
             }
         },
-        boolean: (url, value) => value ? url.searchParams.set(paramName, 'true') : url.searchParams.delete(paramName)
+        boolean: (url, value) => value ? url.searchParams.set(paramName, "true") : url.searchParams.delete(paramName)
     };
 
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
         const parsed = parsers[type](params);
 
         if (parsed !== null) {
             store.set(parsed);
         } else if (defaultValue !== null) {
-            const value = typeof defaultValue === 'function' ? defaultValue() : defaultValue;
+            const value = typeof defaultValue === "function" ? defaultValue() : defaultValue;
             store.set(value);
         }
 

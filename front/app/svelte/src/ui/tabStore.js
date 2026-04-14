@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { writable } from "svelte/store";
 
 function createTabStore(defaultTab = "all") {
     const initialTab = new URLSearchParams(window.location.search).get("tab") ?? defaultTab;

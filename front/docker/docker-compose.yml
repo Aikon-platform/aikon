@@ -1,7 +1,7 @@
 x-proxy-settings: &proxy-settings
   HTTP_PROXY: ${HTTP_PROXY:-}
   HTTPS_PROXY: ${HTTPS_PROXY:-}
-  NO_PROXY: "localhost,127.0.0.1,sas,cantaloupe,web,nginx,redis,db,.aikon_network"
+  NO_PROXY: "localhost,127.0.0.1,cantaloupe,web,nginx,redis,db,.aikon_network"
 
 services:
   web:
@@ -13,22 +13,77 @@ services:
         PORT: ${DJANGO_PORT}
     volumes:
       - ${DATA_FOLDER}:/data
-      - ../app:/home/aikon/app
+      # - ../app:/home/aikon/app
+      - ../app/staticfiles:/home/aikon/app/staticfiles
     env_file:
       - ../app/config/.env
       - ./.env
-    environment:
-      <<: *proxy-settings
     extra_hosts:
       - "smtp.gmail.com:74.125.206.109"
     ports:
       - "${DJANGO_PORT}:8000"
     depends_on:
-      - db
-      - redis
+      # TODO add healthchecks to aiiinotate and mirador ?
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      aiiinotate:
+        condition: service_healthy
+      mirador:
+        condition: service_started
     networks:
       - aikon_network
+    environment:
+      <<: *proxy-settings
     restart: unless-stopped
+
+  aiiinotate:
+    build:
+      context: ..
+      dockerfile: annotations/Dockerfile-aiiinotate
+      args:
+        PORT: ${AIIINOTATE_PORT}
+        ENV_PATH: ../app/config/.env
+    env_file:
+      - ../app/config/.env
+    ports:
+      - "${AIIINOTATE_PORT}:${AIIINOTATE_PORT}"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - aikon_network
+    environment:
+      <<: *proxy-settings
+    restart: always
+    healthcheck:
+      # `hostname -i` returns the IP address to the container on the host.
+      # i can't CURL to localhost, because the app actually doesn't run in localhost
+      # in the Docker container (since AIIINOTATE_HOST is the docker container name).
+      test: ["CMD-SHELL", "curl -f http://$(hostname -i):$${AIIINOTATE_PORT}/manifests/2 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mirador:
+    build:
+      context: ..
+      dockerfile: annotations/Dockerfile-mirador
+      args:
+        PORT: ${MIRADOR_PORT}
+        ENV_PATH: ../app/config/.env
+    env_file:
+      - ../app/config/.env
+    depends_on:
+      - aiiinotate
+    ports:
+      - "${MIRADOR_PORT}:${MIRADOR_PORT}"
+    networks:
+      - aikon_network
+    environment:
+      <<: *proxy-settings
+    restart: always
 
   db:
     image: postgres:14
@@ -44,6 +99,21 @@ services:
     restart: unless-stopped
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER} -p $${DB_PORT:-5432}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:8
+    restart: always
+    networks:
+      - aikon_network
+    volumes:
+      - mongodata:/data/db
+    environment:
+      <<: *proxy-settings
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -85,25 +155,6 @@ services:
     user: root
     restart: unless-stopped
 
-  sas:
-    build:
-      context: ..
-      dockerfile: sas/Dockerfile
-      args:
-        SAS_PORT: ${SAS_PORT}
-    env_file:
-      - ./.env
-    volumes:
-        - ../sas:/sas
-        #- ${DATA_FOLDER}/sas:/sas/data
-    ports:
-      - "${SAS_PORT:-8888}:${SAS_PORT:-8888}"
-    networks:
-      - aikon_network
-    environment:
-      <<: *proxy-settings
-    restart: unless-stopped
-
   nginx:
     image: nginx:latest
     env_file:
@@ -123,7 +174,8 @@ services:
     depends_on:
       - web
       - cantaloupe
-      - sas
+      - mirador
+      - aiiinotate
     networks:
       - aikon_network
     restart: unless-stopped
@@ -131,6 +183,7 @@ services:
 volumes:
   pgdata:
   redisdata:
+  mongodata:
 
 networks:
   aikon_network:

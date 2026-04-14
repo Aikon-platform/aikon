@@ -9,7 +9,7 @@
 import { derived } from "svelte/store";
 
 import { similarityStore } from "./similarityStore.js";
-import * as cat from './similarityCategory';
+import * as cat from "./similarityCategory";
 import { appLang } from "../../constants.js";
 import { shorten } from "../../utils.js";
 
@@ -36,7 +36,7 @@ const  {
 function updateNavActionsHeight() {
     const navActions = document.getElementById("nav-actions");
     if (navActions) {
-        document.documentElement.style.setProperty('--top-offset', `${navActions.offsetHeight}px`);
+        document.documentElement.style.setProperty("--top-offset", `${navActions.offsetHeight}px`);
     }
 }
 let resizeObserver;
@@ -60,13 +60,13 @@ onMount(() => {
     };
 });
 
-const currentPageId = window.location.pathname.match(/\d+/g).join('-');
+const currentPageId = window.location.pathname.match(/\d+/g).join("-");
 const baseUrl = `${window.location.origin}${window.location.pathname}`;
 
 const tooltipText =
     appLang==="en"
-    ? "Propagated matches are exact matches to images that have an exact match with the current image. There may be up to 6 exact matches connecting the current image and propagated images."
-    : "Les correspondances propagées correspondent à des correspondances exactes à des images ayant une correspondance exacte avec l'image actuelle. Il peut y avoir jusqu'à 6 images reliant l'image actuelle à une correspondance propagée.";
+        ? "Propagated matches are exact matches to images that have an exact match with the current image. There may be up to 6 exact matches connecting the current image and propagated images."
+        : "Les correspondances propagées correspondent à des correspondances exactes à des images ayant une correspondance exacte avec l'image actuelle. Il peut y avoir jusqu'à 6 images reliant l'image actuelle à une correspondance propagée.";
 
 const categoriesChoices = [
     { value: 1, label: cat.exactLabel, prefix: cat.exactSvg, prefixType: "svg" },
@@ -88,31 +88,30 @@ const comparedRegionsChoices = derived(comparedRegions, (($comparedRegions) =>
 const similarityScoreRangePromise = fetchSimilarityScoreRange();
 
 /** @type {number?} ensures that $similarityScoreCutoff matches a value in similarityScoreRangePromise. updated by fetchSimilarityScoreRange */
-$: defaultSimilarityScoreCutoff = $similarityScoreCutoff || undefined
+let defaultSimilarityScoreCutoff = $similarityScoreCutoff || undefined
 
 /** @returns {Promise<Array<number?>>} */
 async function fetchSimilarityScoreRange() {
     let range = [];
     return await fetch(`${baseUrl}similarity-score-range`)
-    .then(response => response.json())
-    .then(data => {
-        range = [data.min, data.max];
-        if ( !range.every(x => typeof x === "number") ) {
-            console.error(`fetchSimilarityScoreRange: expected '[number, number]', got '${range}'. Defaulting to '[]'`);
-            range = [];
-        } else {
-            defaultSimilarityScoreCutoff =
-                $similarityScoreCutoff && range[0] <= $similarityScoreCutoff && range[1] >= $similarityScoreCutoff
-                ? $similarityScoreCutoff
-                : range[0]
-        }
-        return range;
-    })
-    .catch(err => {
-        console.error("Error on fetchSimilarityScoreRange:", err);
-        errorMsg.set(err.message);
-        return range
-    })
+        .then(response => response.json())
+        .then(data => {
+            range = [data.min, data.max];
+            if ( !range.every(x => typeof x === "number") ) {
+                console.error(`fetchSimilarityScoreRange: expected '[number, number]', got '${range}'. Defaulting to '[]'`);
+                range = [];
+            } else {
+                defaultSimilarityScoreCutoff =
+                    $similarityScoreCutoff && range[0] <= $similarityScoreCutoff && range[1] >= $similarityScoreCutoff
+                        ? $similarityScoreCutoff
+                        : range[0]
+            }
+            return range;
+        })
+        .catch(err => {
+            console.error("Error on fetchSimilarityScoreRange:", err);
+            return range
+        })
 }
 
 const setSimilarityScoreCutoff = (e) => similarityScoreCutoff.set(e.detail);

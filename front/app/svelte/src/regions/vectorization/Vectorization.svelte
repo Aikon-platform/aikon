@@ -1,6 +1,6 @@
 <script>
-    import {appLang, modules} from '../../constants';
-    import { vectorizationStore } from './vectorizationStore.js';
+    import {appLang, modules} from "../../constants";
+    import { vectorizationStore } from "./vectorizationStore.js";
     const { fetchVectorization } = vectorizationStore;
     import VectorizationPage from "./VectorizationPage.svelte";
 </script>
@@ -11,13 +11,13 @@
 {#if modules.includes("vectorization")}
     {#await fetchVectorization}
         <div class="container faded is-center">
-            {appLang === 'en' ? 'Retrieving vectorized regions...' : 'Récupération des régions vectorisées...'}
+            {appLang === "en" ? "Retrieving vectorized regions..." : "Récupération des régions vectorisées..."}
         </div>
     {:then _}
         <VectorizationPage/>
     {:catch error}
         <div class="container faded is-center">
-            {#if appLang === 'en'}
+            {#if appLang === "en"}
                 Error when retrieving vectorized regions: {error}
             {:else}
                 Erreur lors de la récupération des régions vectorisées : {error}

@@ -7,25 +7,21 @@
         optional text describing the tooltip for accessibility
     - tooltipText (string)
         text displayed on tooltip hover.
-
 -->
 
 <script>
     import TooltipGeneric from "./TooltipGeneric.svelte";
 
     export let iconifyIcon,
-               altText,
-               tooltipText;
+        altText,
+        tooltipText;
 </script>
 
 
 <div class="is-inline-block icon-tooltip">
     <button>
-        <span class="iconify"
-              data-icon={iconifyIcon}
-              title={altText}
-        ></span>
-        <TooltipGeneric {tooltipText}></TooltipGeneric>
+        <span class="iconify" data-icon={iconifyIcon} title={altText}/>
+        <TooltipGeneric {tooltipText}/>
     </button>
 </div>
 

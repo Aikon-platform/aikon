@@ -1,19 +1,26 @@
 <script>
-    import { getContext } from 'svelte';
-    import { manifestToMirador, showMessage, downloadBlob, withLoading } from "../utils.js";
+    import { getContext } from "svelte";
 
+    import { aiiinotateUrl } from "../constants.js";
+    import { manifestToMirador, showMessage, downloadBlob, withLoading, toAiiinotationUrl } from "../utils.js";
     import { regionsSelection } from "../selection/selectionStore.js";
     const { selected, nbSelected } = regionsSelection;
 
-    import { regionsStore } from './regionsStore.js';
+    import { regionsStore } from "./regionsStore.js";
     const { allRegions } = regionsStore;
-    import { appName, appLang, regionsType, csrfToken } from '../constants.js';
+    import { appName, appLang, regionsType, csrfToken } from "../constants";
 
-    const manifest = getContext('manifest');
-    const isValidated = getContext('isValidated');
+    /** @type {number?} ID of the currently selected region (if there is a currently selected region) */
+    export let currentRegionId;
+
+    export let witnessStore;
+    const { selectedManifest } = witnessStore;
+    const manifestShortId = $selectedManifest.split("/").at(-2);
+    const isValidated = getContext("isValidated");
+
+    let isEditMode = !isValidated;
 
     $: selectionLength = $nbSelected;
-    $: isEditMode = !isValidated;
     // $selected = {"Regions" : [{S}, {E}, {L}, {E}, {C}, {T}, {I}, {O}, {N}]}
     $: selectedRegions = Object.values($selected)[0] || {};
 
@@ -23,6 +30,14 @@
     function toggleEditMode() {
         isEditMode = !isEditMode;
         // TODO send validation status to backend
+    }
+
+    async function deleteRegion(regionId) {
+        const urlDelete = `${aiiinotateUrl}/annotations/2/delete?uri=${toAiiinotationUrl(manifestShortId, regionId)}`;
+        const response = await fetch(urlDelete, { method: "DELETE"});
+        if (response.status > 299) {
+            throw new Error(`Failed to delete ${urlDelete} due to ${response.status}: '${response.statusText}'`);
+        }
     }
 
     // TODO add toggle button to switch in between select mode and view mode
@@ -52,18 +67,6 @@
             }
         }
     }
-    async function deleteRegion(regionId) {
-        // const regionIdFull = regionData.id_full;  // full @id of the region.
-        // const regionIdFull = `c${regionId.split("_c")[1]}`;
-        const regionIdFull = regionId;
-        const urlDelete = `${SAS_APP_URL}/annotation/destroy?uri=${regionIdFull}`;
-
-        const response = await fetch(urlDelete, { method: "DELETE"});
-
-        if (response.status !== 204) {
-            throw new Error(`Failed to delete ${urlDelete} due to ${response.status}: '${response.statusText}'`);
-        }
-    }
 
     function toggleAllSelection() {
         if (areAllSelected) {
@@ -83,8 +86,12 @@
         }));
         const blob = await response.blob();
         // TODO find better filename
-        downloadBlob(blob, 'regions.zip');
+        downloadBlob(blob, "regions.zip");
     }
+
+    console.log("$selectedManifest", $selectedManifest)
+    console.log("currentRegionId", currentRegionId)
+    console.log($selectedManifest.length && currentRegionId)
 </script>
 
 <div class="is-right mb-3">
@@ -98,43 +105,40 @@
                 <path d="M471.6 21.7c-21.9-21.9-57.3-21.9-79.2 0L362.3 51.7l97.9 97.9 30.1-30.1c21.9-21.9 21.9-57.3 0-79.2L471.6 21.7zm-299.2 220c-6.1 6.1-10.8 13.6-13.5 21.9l-29.6 88.8c-2.9 8.6-.6 18.1 5.8 24.6s15.9 8.7 24.6 5.8l88.8-29.6c8.2-2.7 15.7-7.4 21.9-13.5L437.7 172.3 339.7 74.3 172.4 241.7zM96 64C43 64 0 107 0 160V416c0 53 43 96 96 96H352c53 0 96-43 96-96V320c0-17.7-14.3-32-32-32s-32 14.3-32 32v96c0 17.7-14.3 32-32 32H96c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h96c17.7 0 32-14.3 32-32s-14.3-32-32-32H96z"/>
             {/if}
         </svg>
-        {#if isEditMode}{appLang === 'en' ? 'Validate' : 'Valider'}{:else}{appLang === 'en' ? 'Edit' : 'Modifier'}{/if}
+        {#if isEditMode}
+            {appLang === "en" ? "Validate" : "Valider"}
+        {:else}
+            {appLang === "en" ? "Edit" : "Modifier"}
+        {/if}
     </button>
     <button class="button is-link is-light mr-3" on:click={toggleAllSelection}>
-        <!--<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-        {#if areAllSelected}
-            <! --Unchecked icon-- >
-            <! --<path d="M64 80c-8.8 0-16 7.2-16 16V416c0 8.8 7.2 16 16 16H384c8.8 0 16-7.2 16-16V96c0-8.8-7.2-16-16-16H64zM0 96C0 60.7 28.7 32 64 32H384c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L303 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>-- >
-            <path d="m10.6 16.2l7.05-7.05l-1.4-1.4l-5.65 5.65l-2.85-2.85l-1.4 1.4zM5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v14q0 .825-.587 1.413T19 21zm0-2h14V5H5zM5 5v14z" />
-        {:else}
-            <! --Checked icon-- >
-            <! --<path d="M64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zM337 209L209 337c-9.4 9.4-24.6 9.4-33.9 0l-64-64c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l47 47L303 175c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9z"/>-- >
-            <path d="m10.6 16.2l7.05-7.05l-1.4-1.4l-5.65 5.65l-2.85-2.85l-1.4 1.4zM5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v14q0 .825-.587 1.413T19 21z" />
-        {/if}
-        </svg>-->
-        <i class="fa-solid fa-square-check"></i>
-        <span id="all-selection">{appLang === 'en' ? 'Select all' : 'Tout sélectionner'}</span>
+        <i class="fa-solid fa-square-check"/>
+        <span id="all-selection">{appLang === "en" ? "Select all" : "Tout sélectionner"}</span>
     </button>
     <button class="button is-link is-light" on:click={downloadRegions}>
-        <i class="fa-solid fa-download"></i>
-        {appLang === 'en' ? 'Download' : 'Télécharger'}
+        <i class="fa-solid fa-download"/>
+        {appLang === "en" ? "Download" : "Télécharger"}
     </button>
 </div>
 
 <div class="edit-action is-right">
     {#if isEditMode}
         <!--TODO make reload fetch regions with api request-->
+        <!--
         <button class="tag is-link is-light is-rounded mr-3" on:click={() => location.reload()}>
-            <i class="fa-solid fa-rotate-right"></i>
-            {appLang === 'en' ? 'Reload' : "Recharger"}
+            <i class="fa-solid fa-rotate-right"/>
+            {appLang === "en" ? "Reload" : "Recharger"}
         </button>
-        <a class="tag is-link is-rounded mr-3" href="{manifestToMirador(manifest)}" target="_blank">
-            <i class="fa-solid fa-edit"></i>
-            {appLang === 'en' ? 'Go to editor' : "Aller à l'éditeur"}
-        </a>
+        -->
+        {#if $selectedManifest.length}
+            <a class="tag is-link is-rounded mr-3" href="{manifestToMirador($selectedManifest)}" target="_blank">
+                <i class="fa-solid fa-edit"/>
+                {appLang === "en" ? "Go to editor" : "Aller à l'éditeur"}
+            </a>
+        {/if}
         <button class="tag is-danger is-rounded" on:click={deleteSelectedRegions}>
-            <i class="fa-solid fa-trash"></i>
-            {appLang === 'en' ? 'Delete selected regions' : 'Supprimer les régions sélectionnées'}
+            <i class="fa-solid fa-trash"/>
+            {appLang === "en" ? "Delete selected regions" : "Supprimer les régions sélectionnées"}
         </button>
     {/if}
 </div>

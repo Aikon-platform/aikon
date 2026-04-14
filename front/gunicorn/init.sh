@@ -16,7 +16,7 @@ configure_nginx() {
     sudo sed -i "s|PROD_URL|$PROD_URL|g" "$SSL_FILE"
     sudo sed -i "s|APP_NAME|$APP_NAME|g" "$SSL_FILE"
     sudo sed -i "s|POSTGRES_DB|$DB_NAME|g" "$SSL_FILE"
-    sudo sed -i "s/SAS_PORT/$SAS_PORT/g" "$SSL_FILE"
+    # sudo sed -i "s/SAS_PORT/$SAS_PORT/g" "$SSL_FILE"
     sudo sed -i "s/CANTALOUPE_PORT/$CANTALOUPE_PORT/g" "$SSL_FILE"
     sudo sed -i "s|APP_ROOT|$APP_ROOT|g" "$SSL_FILE"
     sudo sed -i "s|MEDIA_DIR|$MEDIA_DIR|g" "$SSL_FILE"
@@ -59,7 +59,7 @@ create_service() {
 
               [Service]
               WorkingDirectory=$APP_ROOT
-              ExecStart=$APP_ROOT/venv/bin/gunicorn \
+              ExecStart=uv run gunicorn \
                         --access-logfile $SERVICE_DIR/stdout.log  \
                         --error-logfile $SERVICE_DIR/error.log  \
                         --workers 3 \

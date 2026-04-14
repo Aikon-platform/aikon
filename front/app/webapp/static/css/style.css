@@ -26,6 +26,10 @@ html,
     filter: grayscale(0.6);
 }
 
+.is-unclickable {
+    cursor: default !important;
+}
+
 .deletelink-box {
     background-color: var(--bulma-danger-l);
     padding: 0.5em 1em;
