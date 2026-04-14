@@ -1,6 +1,18 @@
 # 1st build: compile svelte files
 FROM node:23 AS svelte_build
 
+ENV http_proxy=http://195.221.193.15:3128
+ENV https_proxy=http://195.221.193.15:3128
+ENV no_proxy=localhost,127.0.0.1,.aikon_network
+ENV HTTP_PROXY=http://195.221.193.15:3128
+ENV HTTPS_PROXY=http://195.221.193.15:3128
+ENV NO_PROXY=localhost,127.0.0.1,.aikon_network
+
+RUN echo 'Acquire::http::Proxy "http://195.221.193.15:3128";' > /etc/apt/apt.conf.d/proxy.conf && \
+    echo 'Acquire::https::Proxy "http://195.221.193.15:3128";' >> /etc/apt/apt.conf.d/proxy.conf && \
+    echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99disable-compressors && \
+    echo 'APT::Get::AllowUnauthenticated "true";' >> /etc/apt/apt.conf.d/99disable-compressors
+
 WORKDIR /app
 COPY app .
 WORKDIR /app/svelte/
