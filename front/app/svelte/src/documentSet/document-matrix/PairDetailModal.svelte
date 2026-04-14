@@ -32,6 +32,7 @@
     async function categorize(isExact) {
         if (!modalData?.canCategorize) return;
         try {
+            const newCat = isExact ? null : 1;
             const response = await fetch(`${appUrl}/${appName}/save-category`, {
                 method: "POST",
                 headers: {
@@ -41,14 +42,22 @@
                 body: JSON.stringify({
                     img_1: modalData.img1,
                     img_2: modalData.img2,
-                    category: isExact ? null : 1,
+                    category: newCat,
                 })
             });
             if (response.ok) {
                 const match = findPair(modalData.img1, modalData.img2);
-                const newCat = isExact ? null : 1;
-                if (match) match.category = newCat;
+                if (match) {
+                    match.category = newCat;
+                } else {
+                    pairs.push({
+                        id_1: modalData.img1,
+                        id_2: modalData.img2,
+                        category: newCat,
+                    });
+                }
                 updateTick++;
+
                 // dispatch("categorize");
                 return true;
             }
@@ -67,7 +76,6 @@
 
     $: navLimits = scatterData ? getNavLimits(scatterData) : {max1: 0, max2: 0};
     $: modalData = navState && scatterData && navLimits ? buildModalData(navState, scatterData, navLimits, updateTick) : null;
-
 
     function getNavLimits(data) {
         if (data.mode === "image") return {max1: data.images1.length, max2: data.images2.length};
@@ -194,7 +202,7 @@
                                         {/if}
                                         {#if modalData.canCategorize}
                                             {@const isExact = modalData.isExact}
-                                            <p class="control" title={i18n(isExact ? "uncategorize" : "categorize", t)}}>
+                                            <p class="control" title={i18n(isExact ? "uncategorize" : "categorize", t)}>
                                                 <button class="button is-small is-link" class:is-inverted={!isExact} on:click={() => categorize(isExact)}>
                                                     {@html categoryInfo[1].svg}
                                                     <span class="pl-2">{i18n("exact", t)}</span>

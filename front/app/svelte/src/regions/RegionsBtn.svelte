@@ -113,6 +113,5 @@
                 Regions extraction #{regionId}
             </a>
         {/each}
-        <!--TODO add NEW REGIONS BUTTON (to create empty region in order to launch new automatic extraction)-->
     {/if}
 </div>
