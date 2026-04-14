@@ -16,8 +16,13 @@ def reorder_pairs(apps, schema_editor):
 
     batch_size = 5000
     updated = []
+    total = 0
 
-    for pair in RegionPair.objects.all().iterator(chunk_size=batch_size):
+    qs = RegionPair.objects.all()
+    count = qs.count()
+    print(f"\nReordering {count} pairs...")
+
+    for pair in qs.iterator(chunk_size=batch_size):
         needs_swap = pair.img_2 < pair.img_1
 
         if needs_swap:
@@ -25,7 +30,6 @@ def reorder_pairs(apps, schema_editor):
             pair.regions_id_1, pair.regions_id_2 = pair.regions_id_2, pair.regions_id_1
             pair.anno_1, pair.anno_2 = pair.anno_2, pair.anno_1
 
-        # Extract digit_1 and digit_2
         pair.digit_1 = parse_img(pair.img_1)
         pair.digit_2 = parse_img(pair.img_2)
 
@@ -46,6 +50,8 @@ def reorder_pairs(apps, schema_editor):
                 ],
                 batch_size=batch_size,
             )
+            total += len(updated)
+            print(f"{total}/{count} ({100 * total // count}%)")
             updated = []
 
     if updated:
@@ -63,6 +69,8 @@ def reorder_pairs(apps, schema_editor):
             ],
             batch_size=batch_size,
         )
+        total += len(updated)
+        print(f"🍾 Migration completed: {total} pairs!")
 
 
 class Migration(migrations.Migration):
