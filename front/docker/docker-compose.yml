@@ -14,7 +14,8 @@ services:
     volumes:
       - ${DATA_FOLDER}:/data
       # - ../app:/home/aikon/app
-      - ../app/staticfiles:/home/aikon/app/staticfiles
+      - staticfiles:/home/aikon/app/staticfiles
+      #- ../app/staticfiles:/home/aikon/app/staticfiles
     env_file:
       - ../app/config/.env
       - ./.env
@@ -169,7 +170,8 @@ services:
       NGINX_PORT: ${NGINX_PORT:-8080}
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ../app/staticfiles:/home/aikon/app/staticfiles:ro
+      # - ../app/staticfiles:/home/aikon/app/staticfiles:ro
+      - staticfiles:/home/aikon/app/staticfiles:ro
       - ${DATA_FOLDER}:/data:ro
       - /etc/ssl:/etc/ssl:ro
     depends_on:
@@ -182,6 +184,12 @@ services:
     restart: unless-stopped
 
 volumes:
+  staticfiles:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ../app/staticfiles
   pgdata:
   redisdata:
   mongodata:
