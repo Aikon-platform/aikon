@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("webapp", "0030_reorder_pairs_alphabetically"),
+        ("webapp", "0031_reorder_pairs_alphabetically"),
     ]
 
     operations = [

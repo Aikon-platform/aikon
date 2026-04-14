@@ -67,7 +67,7 @@ def reorder_pairs(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("webapp", "0029_remove_region_id_in_regionpair_and_more"),
+        ("webapp", "0030_remove_region_id_in_regionpair_and_more"),
     ]
 
     operations = [

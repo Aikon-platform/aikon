@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("webapp", "0031_add_pair_ordering_constraint"),
+        ("webapp", "0032_add_pair_ordering_constraint"),
     ]
 
     operations = [
