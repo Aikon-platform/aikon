@@ -1,5 +1,5 @@
 <script>
-    import { appLang } from '../../constants';
+    import { appLang } from "../../constants";
     import { vectorizationStore } from "./vectorizationStore.js";
     const { vectImgs, pageVectImgs, setPageVectImgs, pageLength } = vectorizationStore;
     import Pagination from "../../Pagination.svelte";
@@ -17,7 +17,7 @@
 <div class="grid is-gap-2 mx-5">
     {#await $setPageVectImgs}
         <div class="faded is-center">
-            {appLang === 'en' ? 'Retrieving vectorization page...' : 'Récupération la page de vectorisation...'}
+            {appLang === "en" ? "Retrieving vectorization page..." : "Récupération la page de vectorisation..."}
         </div>
     {:then _}
         {#each $pageVectImgs as vectImg, i (vectImg.id)}
@@ -26,7 +26,7 @@
             </VectorizedRegions>
         {:else}
             <div class="faded is-center">
-                {appLang === 'en' ? 'No vectorization' : 'Pas de vectorisation'}
+                {appLang === "en" ? "No vectorization" : "Pas de vectorisation"}
             </div>
             <!--TODO add button for launching vectorization-->
         {/each}
@@ -37,7 +37,7 @@
         </RegionModal>
     {:catch error}
         <div class="faded is-center">
-            {#if appLang === 'en'}
+            {#if appLang === "en"}
                 Error when retrieving vectorized regions: {error}
             {:else}
                 Erreur lors de la récupération des régions vectorisées : {error}

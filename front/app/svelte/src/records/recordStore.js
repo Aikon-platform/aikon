@@ -1,4 +1,4 @@
-import { writable, get } from 'svelte/store';
+import { writable, get } from "svelte/store";
 import {initPagination, pageUpdate} from "../utils.js";
 
 export function createRecordsStore(modelName) {
@@ -13,7 +13,7 @@ export function createRecordsStore(modelName) {
 
     async function fetchPage() {
         const params = get(searchParams);
-        params.set('p', `${get(currentPage)}`);
+        params.set("p", `${get(currentPage)}`);
 
         try {
             const response = await fetch(`${window.location.origin}/search/${model}/?${params.toString()}`);
@@ -22,9 +22,9 @@ export function createRecordsStore(modelName) {
             resultNumber.set(data.count);
             currentPage.set(data.current_page);
 
-            params.set('p', String(get(currentPage)));
+            params.set("p", String(get(currentPage)));
             const newUrl = `${window.location.pathname}?${params.toString()}`;
-            history.pushState(null, '', newUrl);
+            history.pushState(null, "", newUrl);
 
             return data;
         } catch (error) {

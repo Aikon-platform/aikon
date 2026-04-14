@@ -5,6 +5,8 @@
     import Pagination from "../../Pagination.svelte";
     import Table from "../../Table.svelte";
     import SimilarityRow from "./SimilarityRow.svelte";
+
+    export let witnessStore;
 </script>
 
 
@@ -20,7 +22,7 @@
             </tr>
         {:then _}
             {#each $pageQImgs as qImg (qImg.id)}
-                <SimilarityRow {qImg}/>
+                <SimilarityRow {qImg} {witnessStore}/>
             {:else}
                 <tr class="faded is-center">
                     {appLang === "en" ? "No similarity" : "Pas de similarités"}

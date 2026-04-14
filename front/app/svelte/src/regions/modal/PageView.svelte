@@ -21,21 +21,16 @@
     }
 
     $: currentPage = new RegionItem(item);
+    $: xywh = currentPage.coord;
     $: currentCanvas = currentPage.canvasNb + canvasOffset;
     $: fullPageUrl = currentPage.urlForCanvas(currentCanvas, "full");
     $: iiifInfoUrl = currentPage.infoUrlForCanvas(currentCanvas);
-    $: xywh = currentPage.coord;
-
-    const t = {
-        next: { en: "Next page", fr: "Page suivante" },
-        prev: { en: "Previous page", fr: "Page précédente" },
-    };
 
     $: xywhRelPromise = fetch(iiifInfoUrl)
         .then(r => {
             if (!r.ok) {
-                if (maxPage === null) maxPage = currentCanvas - 1;
-                throw new Error('Page not found');
+                maybeResetMaxPage();
+                throw new Error("Page not found");
             }
             return r.json();
         })
@@ -45,7 +40,18 @@
             (xywh[2] / width) * 100,
             (xywh[3] / height) * 100
         ])
-        .catch(() => null);
+        .catch((e) => {
+            console.error(`PageView: error fetching ${iiifInfoUrl}`, e);
+        });
+
+    const maybeResetMaxPage = () => {
+        if (maxPage === null) maxPage = currentCanvas - 1;
+    }
+
+    const t = {
+        next: { en: "Next page", fr: "Page suivante" },
+        prev: { en: "Previous page", fr: "Page précédente" },
+    };
 
     const changePage = async (delta) => {
         const nextCanvas = currentCanvas + delta;
@@ -72,7 +78,7 @@
     </div>
     <div class="modal-context-wrapper mb-3">
         {#if currentCanvas !== 1}
-            <NavigationArrow direction="left" delta={-1} navigationFct={changePage} css={"margin-left: -6em;"} icon={"circle"} text={i18n("prev", t)}/>
+            <NavigationArrow direction="left" delta={-1} navigationFct={changePage} css="margin-left: -6em;" icon="circle" text={i18n("prev", t)}/>
         {/if}
         <img class="card modal-context-full-page" src={fullPageUrl} alt={appLang === "fr" ? "Vue de la page d'où la région est extraite" : "View of the page the region is extracted from"}/>
         {#if canvasOffset === 0}
@@ -81,7 +87,7 @@
             {/await}
         {/if}
         {#if currentCanvas !== maxPage}
-            <NavigationArrow direction="right" delta={1} navigationFct={changePage} css={"margin-right: -6em;"} icon={"circle"} text={i18n("next", t)}/>
+            <NavigationArrow direction="right" delta={1} navigationFct={changePage} css="margin-right: -6em;" icon="circle" text={i18n("next", t)}/>
         {/if}
     </div>
 </div>

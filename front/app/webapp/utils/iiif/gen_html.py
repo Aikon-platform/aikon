@@ -2,10 +2,9 @@ from django.utils.safestring import mark_safe
 
 from django.urls import reverse
 from app.webapp.models.digitization import Digitization
-from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2
 from app.webapp.utils.functions import get_icon, get_action, cls
 from app.config.settings import (
-    SAS_APP_URL,
+    AIIINOTATE_BASE_URL,
     APP_URL,
     APP_NAME,
     APP_LANG,
@@ -15,6 +14,7 @@ from app.webapp.utils.iiif import IIIF_ICON
 
 def regions_btn(obj, action="view"):
     """
+    TODO check if still used
     obj: Regions | Digitization
     """
     disabled = ""
@@ -23,11 +23,11 @@ def regions_btn(obj, action="view"):
     if action == "view":
         icon = get_icon("eye")
         # The link redirects to Mirador with no regions (Digitization) or automatic regions (Regions)
-        link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V1)}"
+        link = f"{AIIINOTATE_BASE_URL}/indexView.html?iiif-content={obj.get_manifest_url()}"
     elif action == "auto-view":
         icon = get_icon("eye")
         # The link redirects to Mirador with no regions (Digitization) or automatic regions (Regions)
-        link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V1)}"
+        link = f"{AIIINOTATE_BASE_URL}/indexView.html?iiif-content={obj.get_manifest_url()}"
     # elif action == "edit":
     #     icon = get_icon("pen-to-square")
     #     # The link redirects to the edit regions page (show_regions() view DELETED)
@@ -35,7 +35,7 @@ def regions_btn(obj, action="view"):
     elif action == "final":
         icon = get_icon("check")
         # The link redirects to Mirador with corrected regions (Regions)
-        link = f"{SAS_APP_URL}/indexView.html?iiif-content={obj.gen_manifest_url(version=MANIFEST_V2)}"
+        link = f"{AIIINOTATE_BASE_URL}/indexView.html?iiif-content={obj.get_manifest_url()}"
     # elif action == "similarity":
     #     icon = get_icon("code-compare")
     #     link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-similarity"
@@ -49,7 +49,7 @@ def regions_btn(obj, action="view"):
         icon = get_icon("pen-to-square")
         link = f"{APP_URL}/{APP_NAME}/run-vectorization/{obj.get_ref()}"
     else:
-        # When the button is not supposed to redirects to anything
+        # When the button is not supposed to redirect to anything
         link = "#"
         btn = get_action(action, "upper")
         icon = get_icon("eye-slash")
@@ -61,11 +61,11 @@ def regions_btn(obj, action="view"):
     )
 
 
-def get_link_manifest(obj, version=None):
+def get_link_manifest(obj):
     """
     obj: Regions | Digitization
     """
-    manifest_url = obj.gen_manifest_url(version=version)
+    manifest_url = obj.get_manifest_url()
     return f"<a id='{obj.get_ref()}' href='{manifest_url}' target='_blank'>{manifest_url} {IIIF_ICON}</a>"
 
 
@@ -87,24 +87,8 @@ def gen_btn(obj, action="view"):
             f"<span class='iconify' data-icon='entypo:documents'/>"
             f"<span class='ml-2'>{title.upper()}</span></a>"
         )
-    # if action == "regions" or action == "vectors":
-    #     return mark_safe(f"<br>{regions_btn(obj, action)}")
-
-    # if action == "auto-view":
-    #     digit_id = obj.id if cls(obj) == Digitization else obj.get_digit().id
-    #     download_url = f"{APP_URL}/{APP_NAME}/iiif/digit-regions/{digit_id}"
-    #     regions_type = "TXT"
-    #     version = None if cls(obj) == Digitization else MANIFEST_V1
-    #     is_regions = obj.has_regions() if cls(obj) == Digitization else True
-    # else:
-    #     download_url = f"{SAS_APP_URL}/search-api/{obj.get_ref()}/search/"
-    #     regions_type = "JSON"
-    #     version = MANIFEST_V2
-    # else:
-    #     return mark_safe("NOT SUPPOSED TO OCCUR")
-    download_url = f"{SAS_APP_URL}/search-api/{obj.get_ref()}/search/"
+    download_url = f"{AIIINOTATE_BASE_URL}/search-api/2/{obj.get_ref()}/search/"
     regions_type = "JSON"
-    version = MANIFEST_V2
 
     download = (
         f'<a href="{download_url}" target="_blank">{get_icon("download")} {get_action("download")} ({regions_type})</a>'
@@ -114,12 +98,12 @@ def gen_btn(obj, action="view"):
 
     return mark_safe(
         # todo: do a method of Regions and Digitization instead?
-        f"{get_link_manifest(obj, version)}<br>{regions_btn(obj, action)}<br>{download}"
+        f"{get_link_manifest(obj)}<br>{regions_btn(obj, action)}<br>{download}"
     )
 
 
 def gen_manifest_btn(digit: Digitization, has_manifest=True, inline=False):
-    manifest = digit.gen_manifest_url()
+    manifest = digit.get_manifest_url()
     mf = (
         f"<a href='{manifest}' target='_blank'>{IIIF_ICON}</a>"
         if has_manifest

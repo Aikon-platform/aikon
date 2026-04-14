@@ -3,7 +3,6 @@ from django.contrib.auth.models import User
 from django.utils.text import slugify
 from django.utils.html import format_html
 from django.urls import reverse
-from django.contrib.postgres.fields import ArrayField
 
 from app.webapp.models.conservation_place import ConservationPlace
 from app.webapp.models.edition import Edition
@@ -30,7 +29,6 @@ from app.webapp.models.utils.constants import (
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.work import Work
 from app.webapp.utils.functions import get_icon, flatten, format_dates
-from app.webapp.utils.logger import log
 from webapp.models.utils.constants import MAP_PAGE_TYPE
 
 
@@ -75,22 +73,23 @@ class Witness(AbstractSearchableModel):
         app_label = "webapp"
 
     def __str__(self, light=False):
-        wit_ref = f"Vol. {self.volume_nb}" if self.volume_nb else self.id_nb
+        wit_ref = (
+            f"Vol. {self.volume_nb}" if self.volume_nb else (self.id_nb or "No id")
+        )
         title = f"{self.volume_title}, {wit_ref}" if self.volume_title else wit_ref
 
         if light:
             if self.json and "title" in self.json:
                 return self.json["title"]
-            return format_html(title)
+            return title
 
         if self.type == MS_ABBR:
             place = self.place.name if self.place else CONS_PLA_MSG
-            return format_html(f"{wit_ref} | {place}")
+            return f"{wit_ref} | {place}"
 
-        return format_html(
-            (f"{self.edition.name}, {wit_ref}" if self.edition else title)
-            or f"{get_name('Witness')} #{self.id}"
-        )
+        return (
+            f"{self.edition.name}, {wit_ref}" if self.edition else title
+        ) or f"{get_name('Witness')} #{self.id}"
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     type = models.CharField(
@@ -406,6 +405,16 @@ class Witness(AbstractSearchableModel):
 
     def has_regions(self):
         return any(digit.has_regions() for digit in self.get_digits())
+
+    def set_json_regions(self):
+        """
+        after creating or deleting a Regions, update the witness.json field.
+        necessary to avoid de-synchronization of witness.json with what's actually in the database.
+        """
+        witness_json: dict = self.json
+        witness_json["regions"] = [region.id for region in self.get_regions()]
+        self.update_json(witness_json)
+        return
 
     def get_works(self):
         return list(

@@ -27,7 +27,7 @@ from app.webapp.utils.functions import (
     parse_img_ref,
 )
 from app.webapp.utils.iiif.annotation import (
-    get_regions_annotations,
+    get_record_annotations,
 )
 from app.webapp.utils.paths import IMG_PATH
 
@@ -104,7 +104,7 @@ def export_docset(request, dsid):
                 file_contents.append(
                     (
                         f"witness{w.id}/digitizations/manifest.json",
-                        d.gen_manifest_json(),
+                        d.get_manifest_json(),
                     )
                 )
 
@@ -116,7 +116,7 @@ def export_docset(request, dsid):
                     (
                         f"witness{w.id}/regions{regions.id}/manifest.json",
                         json.dumps(
-                            regions.gen_manifest_json(),
+                            regions.get_manifest_json(),
                             ensure_ascii=False,
                             indent=2,
                         ),
@@ -220,11 +220,11 @@ def get_region_data(wid, rid):
     result = {}
     witness = get_object_or_404(Witness, id=wid)
     if witness.is_public:
-        annos = get_regions_annotations(
-            regions=get_object_or_404(Regions, id=rid), as_json=True
+        annos = get_record_annotations(
+            record=get_object_or_404(Regions, id=rid), as_json=True
         )
         result = {
-            "manifest": get_object_or_404(Regions, pk=rid).gen_manifest_url(),
+            "manifest": get_object_or_404(Regions, pk=rid).get_manifest_url(),
             "extracted_crops": annos,
         }
     return result
