@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "django.contrib.postgres",
     "django.contrib.staticfiles",
     "nested_admin",
     "fontawesomefree",
@@ -51,9 +52,9 @@ hosts += ["web"]  # for docker nginx service
 https_hosts = [f"https://{host}" for host in hosts]
 wildcard_hosts = [f"https://*.{host}" for host in hosts if "." in host]
 
+# https remote access config:
 ALLOWED_HOSTS = hosts + https_hosts + wildcard_hosts
 CSRF_TRUSTED_ORIGINS = https_hosts + wildcard_hosts
-
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 MIDDLEWARE = [
@@ -122,11 +123,8 @@ if DEBUG:
 # APP, CANTALOUPE, SAS
 APP_PORT = ENV.int("FRONT_PORT", 8000)
 CANTALOUPE_PORT = ENV.int("CANTALOUPE_PORT", 8182)
-SAS_PORT = ENV.int("SAS_PORT", 8888)
 
 GEONAMES_USER = ENV.str("GEONAMES_USER", default="")
-
-SAS_USERNAME = ENV.str("SAS_USERNAME", default="")
 
 ROOT_URLCONF = "config.urls"
 

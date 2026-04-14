@@ -53,12 +53,6 @@ urlpatterns = [
         get_regions_img_list,
         name="regions-list",
     ),
-    # TODO add f"{APP_NAME}/witness/<int:wit_id>/regions/<int:regions_id>/list/",
-    path(
-        f"{APP_NAME}/annotations/<int:regions_id>",
-        witness_sas_annotations,
-        name="witness-annotations",
-    ),
     path(
         f"test",
         test,
@@ -76,12 +70,6 @@ urlpatterns = [
         name="manifest-digitization",
     ),
     path(
-        # regions_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}
-        f"{APP_NAME}/iiif/<str:version>/<str:regions_ref>/manifest.json",
-        manifest_regions,
-        name="manifest-regions",
-    ),
-    path(
         f"{APP_NAME}/iiif/populate/<int:regions_id>",
         populate_annotation,
         name="populate-annotation",
@@ -92,7 +80,7 @@ urlpatterns = [
         name="validate-regions",
     ),
     path(
-        f"{APP_NAME}/iiif/<str:version>/<str:regions_ref>/list/anno-<int:canvas_nb>.json",
+        f"{APP_NAME}/iiif/<str:regions_ref>/list/anno-<int:canvas_nb>.json",
         canvas_annotations,
         name="canvas-annotations",
     ),
@@ -360,11 +348,6 @@ urlpatterns += [
 urlpatterns += [
     path("superadmin/empty-works/", list_empty_works, name="empty-works"),
     path("superadmin/works/", list_works, name="list-works"),
-]
-
-# DIRTY FIX FOR SAS 😡
-urlpatterns += [
-    path("context.json", iiif_context, name="iiif-context"),
 ]
 
 # TEST VIEWS

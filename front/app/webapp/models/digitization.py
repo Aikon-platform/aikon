@@ -243,11 +243,11 @@ class Digitization(AbstractSearchableModel):
     ####### WORK IN PROGRESS
 
     def count_annotations(self):
-        from app.webapp.utils.iiif.annotation import total_annotations
+        from app.webapp.utils.iiif.annotation import get_total_annotations
 
         count = 0
         for regions in self.get_regions():
-            count += total_annotations(regions)
+            count += get_total_annotations(regions.get_ref())
 
         return count
 
@@ -320,10 +320,10 @@ class Digitization(AbstractSearchableModel):
             "ref": self.get_ref(),
             "class": self.__class__.__name__,
             "type": get_name("Digitization"),
-            "url": self.gen_manifest_url(),
+            "url": self.get_manifest_url(),
             "imgs": imgs,
             "img_nb": len(imgs),
-            "zeros": self.img_zeros(imgs[0] if imgs else 0),
+            "zeros": self.img_zeros(imgs[0] if len(imgs) > 0 else 0),
         }
         type(self).objects.filter(pk=self.pk.__str__()).update(json=json_data)
         return self.json
@@ -337,7 +337,7 @@ class Digitization(AbstractSearchableModel):
             "ref": self.get_ref(),
             "class": self.__class__.__name__,
             "type": get_name("Digitization"),
-            "url": self.gen_manifest_url(),
+            "url": self.get_manifest_url(),
             "imgs": imgs,
             "img_nb": djson.get("img_nb", len(imgs)),
             "zeros": djson.get(
@@ -357,12 +357,11 @@ class Digitization(AbstractSearchableModel):
 
         return metadata
 
-    def gen_manifest_url(self, only_base=False, version=None):
-        # usage of version parameter to copy parameters of Regions.gen_manifest_url()
+    def get_manifest_url(self, only_base=False):
         base_url = f"{APP_URL}/{APP_NAME}/iiif/{self.get_ref()}"
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 
-    def gen_manifest_json(self, version=None):
+    def get_manifest_json(self):
         from app.webapp.utils.iiif.manifest import gen_manifest_json
 
         error = {"error": "Unable to create a valid manifest"}
@@ -388,15 +387,6 @@ class Digitization(AbstractSearchableModel):
         from app.webapp.utils.iiif.gen_html import regions_btn
 
         return mark_safe(regions_btn(self, "view")) if self.has_images() else ""
-
-    # def add_source(self, source):
-    #     # from app.webapp.models.digitization_source import DigitizationSource
-    #     #
-    #     # digit_source = DigitizationSource()
-    #     # digit_source.source = source
-    #     # digit_source.save()
-    #     # self.source = digit_source
-    #     self.source = source
 
     def view_btn(self):
         iiif_link = f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"
@@ -458,18 +448,22 @@ def digitization_post_save(sender, instance, created, **kwargs):
         transaction.on_commit(lambda: convert_digitization.delay(instance.id))
 
 
-# Receive the pre_delete signal and delete the file associated with the model instance
 @receiver(pre_delete, sender=Digitization)
 def pre_delete_digit(sender, instance: Digitization, **kwargs):
+    """
+    - delete associated files (downloaded PDF)
+    - delete IIIF manifest from aiiinotate
+    - delete all related Regions from db
+    - delete all related annotations
+    """
     from app.webapp.tasks import delete_digitization
+    from app.webapp.utils.iiif.annotation import destroy_regions, unindex_manifest
 
     other_media = instance.pdf.name if instance.digit_type == PDF_ABBR else None
     delete_digitization.delay(instance.get_ref(), other_media)
 
-    # NOTE do not work because manifest_url uses the digitization id
-    # from app.webapp.tasks import delete_regions
-    # delete_regions.delay([r.id for r in instance.get_regions()])
-
-    from app.webapp.utils.iiif.annotation import destroy_regions
-
-    [destroy_regions(r) for r in instance.get_regions()]
+    manifest_url = instance.get_manifest_url()
+    # NOTE: order is important here !
+    r_destroy_regions = [destroy_regions(r) for r in instance.get_regions()]
+    r_unindex_manifest = unindex_manifest(manifest_url)
+    return all([r_unindex_manifest, *r_destroy_regions])

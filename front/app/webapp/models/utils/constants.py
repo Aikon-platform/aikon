@@ -1,5 +1,4 @@
 from app.config.settings import APP_LANG, ADDITIONAL_MODULES
-from app.webapp.utils.constants import MANIFEST_V1, MANIFEST_V2
 
 #############################
 #        MODEL NAMES        #
@@ -204,11 +203,6 @@ TRMT_STATUS = (
     ("PENDING", "PENDING"),
     ("STARTED", "STARTED"),
     ("SUCCESS", "SUCCESS"),
-)
-
-REGIONS_VERSION = (
-    (MANIFEST_V1, "automatic"),
-    (MANIFEST_V2, "corrected"),
 )
 
 DIGIT_TYPE = (

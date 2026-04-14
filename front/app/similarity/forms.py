@@ -5,6 +5,7 @@ from django import forms
 from app.config.settings import APP_LANG
 from app.similarity.const import MODULE_NAME
 from app.webapp.forms import FormConfig, get_available_models, SubForm
+from webapp.forms import InputSourceForm
 
 AVAILABLE_SIMILARITY_ALGORITHMS = {
     "cosine": (
@@ -20,9 +21,12 @@ AVAILABLE_SIMILARITY_ALGORITHMS = {
 }
 
 
-class SimilarityForm(forms.Form):
+class SimilarityForm(InputSourceForm):
     class Meta:
-        fields = ("algorithm",)
+        fields = (
+            "source_type",
+            "algorithm",
+        )
 
     algorithm = forms.ChoiceField(
         choices=[("", "-")],  # Will be dynamically set in __init__
@@ -106,6 +110,8 @@ class SimilarityForm(forms.Form):
         # NOTE for watermarks only
         # if parameters.get("use_transpositions"):
         #     parameters["transpositions"] = ["none", "rot90", "rot270", "hflip", "vflip"]
+
+        parameters["source_type"] = self.cleaned_data.get("source_type", "regions")
 
         return parameters
 

@@ -1,11 +1,10 @@
 <script>
-    import { getContext } from 'svelte';
     import { downloadBlob, withLoading } from "../../utils.js";
-    import { appName, appLang, csrfToken } from '../../constants';
+    import { appName, appLang, csrfToken } from "../../constants";
 
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
-    const currentWitnessId = parseInt(baseUrl.split('witness/')[1].replace("/", ""));
-    const currentRegionId = parseInt(baseUrl.split('regions/')[1].replace("/", ""));
+    const currentWitnessId = parseInt(baseUrl.split("witness/")[1].replace("/", ""));
+    const currentRegionId = parseInt(baseUrl.split("regions/")[1].replace("/", ""));
 
     async function downloadVectorizations() {
         if (!currentRegionId && !currentWitnessId) {
@@ -33,17 +32,17 @@
             }
 
             const blob = await response.blob();
-            downloadBlob(blob, 'vectorizations.zip');
+            downloadBlob(blob, "vectorizations.zip");
         } catch (error) {
             console.error("Erreur lors du téléchargement des vectorisations:", error);
         }
-}
+    }
 
 </script>
 
 <div class="is-right mb-3">
     <button class="button is-link is-light" on:click={downloadVectorizations}>
-        <i class="fa-solid fa-download"></i>
-        {appLang === 'en' ? 'Download All' : 'Tout Télécharger'}
+        <i class="fa-solid fa-download"/>
+        {appLang === "en" ? "Download All" : "Tout Télécharger"}
     </button>
 </div>

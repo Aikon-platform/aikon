@@ -1,5 +1,6 @@
 import json
 from uuid import UUID
+from typing import Dict
 
 from django.db import models
 from django.dispatch import receiver
@@ -65,6 +66,10 @@ class AbstractSearchableModel(models.Model):
     def update(self, **kwargs):
         type(self).objects.filter(pk=self.pk.__str__()).update(**kwargs)
 
+    def update_json(self, new_json: Dict) -> Dict:
+        self.update(json=new_json)
+        return new_json
+
     def get_json(self, reindex=False, request_user=None, full_metadata=False):
         """
         Get the JSON representation of the object.
@@ -75,7 +80,7 @@ class AbstractSearchableModel(models.Model):
         if not self.json or reindex:
             # NOTE to_json should probably not use request_user to not index in db can_edit value which is user-dependant
             json_data = self.to_json(reindex=True, request_user=request_user)
-            type(self).objects.filter(pk=self.pk.__str__()).update(json=json_data)
+            self.update_json(json_data)
             return json_data
 
         json_data = self.json.copy()
