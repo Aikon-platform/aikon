@@ -17,7 +17,7 @@ WORKDIR /app
 COPY app .
 WORKDIR /app/svelte/
 RUN npm install --omit=dev
-RUN npm run build && ls -l ../webapp/static/svelte > /list.txt
+RUN npm run build
 
 # ---------------------------------------
 # 2nd build: Final image
@@ -112,7 +112,6 @@ RUN \
     wait
 
 COPY --from=svelte_build --chown=${USER}:${USER} /app/webapp/static/svelte/ /home/${USER}/app/webapp/static/svelte/
-COPY --from=svelte_build --chown=${USER}:${USER} /list.txt ./list.txt
 
 WORKDIR /home/${USER}
 
