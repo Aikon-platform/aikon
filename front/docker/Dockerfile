@@ -115,6 +115,8 @@ COPY --from=svelte_build --chown=${USER}:${USER} /app/webapp/static/svelte/* /ho
 
 WORKDIR /home/${USER}
 
+RUN uv --directory=/home/${USER}/app run /home/${USER}/app/manage.py collectstatic --noinput
+
 EXPOSE 8000
 
 # TODO set LC_ALL and LANG as Docker ENV vars ?
