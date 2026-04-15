@@ -55,6 +55,7 @@ wildcard_hosts = [f"https://*.{host}" for host in hosts if "." in host]
 ALLOWED_HOSTS = hosts + https_hosts + wildcard_hosts
 CSRF_TRUSTED_ORIGINS = https_hosts + wildcard_hosts
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

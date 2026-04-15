@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+       <Console name="Console" target="SYSTEM_OUT">
+          <PatternLayout pattern="[%d{dd/MMM/yyyy:HH:mm:ss,SSS}] %-5level %logger{36}(%t):%L '%msg'%n"/>
+       </Console>
+    </Appenders>
+
+    <Loggers>
+       <!-- Add specific debug logging for manifest handling -->
+       <Logger name="uk.org.llgc.annotation.store.servlets.ManifestUpload" level="DEBUG" additivity="false">
+          <AppenderRef ref="Console"/>
+       </Logger>
+       <Logger name="uk.org.llgc.annotation.store.data.Manifest" level="DEBUG" additivity="false">
+          <AppenderRef ref="Console"/>
+       </Logger>
+
+       <!-- Keep existing loggers -->
+       <Logger name="uk.org.llgc.annotation.store" level="DEBUG" additivity="false">
+          <AppenderRef ref="Console"/>
+       </Logger>
+       <Logger name="uk.org.llgc.annotation.store.Create" level="DEBUG" additivity="false">
+          <AppenderRef ref="Console"/>
+       </Logger>
+        <Logger name="org.apache.jena.info" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+       <!-- Change root to DEBUG to see all logs -->
+       <Root level="DEBUG">
+          <AppenderRef ref="Console"/>
+       </Root>
+    </Loggers>
+</Configuration>
