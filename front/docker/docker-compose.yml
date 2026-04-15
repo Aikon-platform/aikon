@@ -50,6 +50,12 @@ services:
       - ../app/config/.env
     ports:
       - "${AIIINOTATE_PORT}:${AIIINOTATE_PORT}"
+    extra_hosts:
+      # Fixes aiiinotate-to-aikon DNS resolution failures: adds an /etc/hosts entry
+      # that maps "aikon.enpc.fr" to the host machine's Docker bridge IP (host-gateway),
+      # bypassing Docker's internal DNS entirely. Requests then reach NGINX directly
+      # without a DNS lookup.
+      - "aikon.enpc.fr:host-gateway"
     depends_on:
       mongo:
         condition: service_healthy
