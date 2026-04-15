@@ -17,7 +17,7 @@ WORKDIR /app
 COPY app .
 WORKDIR /app/svelte/
 RUN npm install --omit=dev
-RUN npm run build && ls -l ../webapp/static/svelte
+RUN npm run build && ls -l ../webapp/static/svelte > /list.txt
 
 # ---------------------------------------
 # 2nd build: Final image
@@ -111,11 +111,10 @@ RUN \
     find ${UV_PYTHON_INSTALL_DIR} -print0 | xargs -0 -P ${N_PROCESS} chmod a+rX & \
     wait
 
-COPY --from=svelte_build --chown=${USER}:${USER} /app/webapp/static/svelte/* /home/${USER}/app/webapp/static/svelte/
+COPY --from=svelte_build --chown=${USER}:${USER} /app/webapp/static/svelte/ /home/${USER}/app/webapp/static/svelte/
+COPY --from=svelte_build --chown=${USER}:${USER} /list.txt ./list.txt
 
 WORKDIR /home/${USER}
-
-RUN uv --directory=/home/${USER}/app run /home/${USER}/app/manage.py collectstatic --noinput
 
 EXPOSE 8000
 
