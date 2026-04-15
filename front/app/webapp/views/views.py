@@ -121,9 +121,10 @@ def check_ref(obj_ref, obj="Digitization"):
 def manifest_digitization(request, digit_ref):
     # TODO make difference if witness is not public
     passed, digit = check_ref(digit_ref)
+    print("RECEIVED !!!!!!!!!!!!!!!!!", request, digit_ref)
     if not passed:
         return JsonResponse(digit, safe=False)
-
+    print("MANIFEST !!!!!!!!!!!!!!!!!", digit.get_manifest_json())
     return JsonResponse(digit.get_manifest_json())
 
 

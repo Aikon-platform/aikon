@@ -18,7 +18,6 @@ if ( process.env.TARGET === "prod" && (process.env.DOCKER || "").toLocaleLowerCa
 } else {
   aiiinotateBaseUrl = process.env.AIIINOTATE_BASE_URL
 }
-console.log(">>>>>>>> aiiinotateBaseUrl", aiiinotateBaseUrl);
 
 const config = {
   id: 'miradorRoot',
