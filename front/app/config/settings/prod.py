@@ -8,11 +8,11 @@ API_URL = (
 )
 PROD_URL = ENV.str("PROD_URL", default="")
 
-# BASE_URL = f"https://{PROD_URL}"
-BASE_URL = f"http://{PROD_URL}:8080"
+BASE_URL = f"https://{PROD_URL}"
+# BASE_URL = f"http://{PROD_URL}:8080"
 
 APP_URL = BASE_URL
-CANTALOUPE_APP_URL = BASE_URL
+CANTALOUPE_APP_URL = BASE_URL#.replace("http", "https").replace(":8080", "")
 AIIINOTATE_BASE_URL = f"{BASE_URL}/{ENV('AIIINOTATE_HOST', default='aiiinotate')}"
 MIRADOR_BASE_URL = f"{BASE_URL}/{ENV('MIRADOR_HOST', default='mirador')}"
 
