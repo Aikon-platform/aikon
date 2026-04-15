@@ -17,7 +17,7 @@ WORKDIR /app
 COPY app .
 WORKDIR /app/svelte/
 RUN npm install --omit=dev
-RUN npm run build
+RUN npm run build && ls -l ../webapp/static/svelte
 
 # ---------------------------------------
 # 2nd build: Final image
@@ -122,7 +122,6 @@ EXPOSE 8000
 # TODO set LC_ALL and LANG as Docker ENV vars ?
 CMD /home/${USER}/manage.sh && \
     export LC_ALL=C.UTF-8 && export LANG=C.UTF-8 && \
-    # source venv/bin/activate && \
     supervisord -c /home/${USER}/supervisord.conf
 
 # NOTE currently, the app is owned by $USER but run by $ROOT.

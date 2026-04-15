@@ -4,7 +4,7 @@ set -e
 
 manage="uv --directory=/home/aikon/app run /home/aikon/app/manage.py"
 
-$manage collectstatic --noinput
+# $manage collectstatic --noinput
 
 $manage makemigrations
 $manage migrate
