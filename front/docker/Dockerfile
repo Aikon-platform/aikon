@@ -87,7 +87,7 @@ RUN \
     find ${UV_PYTHON_INSTALL_DIR} -print0 | xargs -0 -P ${N_PROCESS} chmod a+rX & \
     wait
 
-COPY --from=svelte_build --chown=${USER}:${USER} /app/webapp/static/svelte/* /home/${USER}/app/webapp/static/svelte/
+COPY --from=svelte_build --chown=${USER}:${USER} /app/webapp/static/svelte/ /home/${USER}/app/webapp/static/svelte/
 
 WORKDIR /home/${USER}
 
@@ -96,7 +96,6 @@ EXPOSE 8000
 # TODO set LC_ALL and LANG as Docker ENV vars ?
 CMD /home/${USER}/manage.sh && \
     export LC_ALL=C.UTF-8 && export LANG=C.UTF-8 && \
-    # source venv/bin/activate && \
     supervisord -c /home/${USER}/supervisord.conf
 
 # NOTE currently, the app is owned by $USER but run by $ROOT.
@@ -119,4 +118,3 @@ CMD /home/${USER}/manage.sh && \
 # NOTE: to debug, use these and see which parent directory doesn't have `x` (isn't executable).
 # >>> ls -la /home/aikon/.venv/bin/python
 # >>> namei -l /home/aikon/.venv/bin/python
-
