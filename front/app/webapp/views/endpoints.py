@@ -103,7 +103,7 @@ def get_document_set_info(request, dsid=None):
         if not series:
             continue
 
-        if series.id not in result["Series"]:
+        if series_id not in result["Series"]:
             result["Series"][series_id] = {
                 # **(series.json or {}),
                 "id": series_id,
@@ -119,7 +119,7 @@ def get_document_set_info(request, dsid=None):
             update_date_range(entry, min_date, max_date)
             entry["witness_ids"].append(witness.id)
             entry["digitization_ids"].extend(
-                d for d in digit_ids if d not in entry["Digitization"]
+                d for d in digit_ids if d not in entry["digitization_ids"]
             )
 
     # Sort each entity group by min_date (None last)
