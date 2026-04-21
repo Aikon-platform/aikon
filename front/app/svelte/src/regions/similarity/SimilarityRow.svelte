@@ -1,7 +1,7 @@
 <script>
     import { onMount, onDestroy, setContext, getContext } from "svelte";
     import { similarityStore } from "./similarityStore.js";
-    import { csrfToken } from "../../constants";
+    import {appName, appUrl, csrfToken} from "../../constants";
     import { i18n, getColNb, manifestToMirador, refToIIIF, showMessage } from "../../utils.js";
     import { RegionItem } from "../types.js";
 
@@ -144,7 +144,7 @@
         );
         if (!confirmed) return;
         try {
-            const response = await fetch(`${baseUrl}delete-matches`, {
+            const response = await fetch(`${appUrl}/${appName}/similarity/delete-matches`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
                 body: JSON.stringify({q_img: qImg})
