@@ -1,25 +1,26 @@
 import json
 from pathlib import Path
 
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
-from django.views.decorators.cache import cache_page
 
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
-from app.webapp.utils.constants import MANIFEST_V2, PAGE_LEN
 
-from app.webapp.utils.iiif.annotation import (
-    get_regions_annotations,
-)
 from app.webapp.utils.logger import log
 from app.webapp.utils.paths import MEDIA_PATH
 from app.webapp.utils.region_extraction import create_empty_region_extraction
+from app.webapp.utils.paths import MEDIA_PATH, REGIONS_PATH
+from app.webapp.utils.region_extraction import create_empty_region_extraction
+from app.webapp.utils.functions import page_bounds
+from app.webapp.utils.tasking import create_doc_set
+from app.webapp.utils.constants import PAGE_LEN
+from app.webapp.utils.iiif.annotation import get_record_annotations
+
 from app.webapp.tasks import generate_all_json
-from webapp.utils.paths import REGIONS_PATH
-from webapp.utils.tasking import create_doc_set
 
 # TODO ORGANISE THESE VIEWS BETTER
 
@@ -29,6 +30,109 @@ def json_regeneration(request):
     return JsonResponse(
         {"message": "JSON regeneration task started", "task_id": str(task.id)}
     )
+
+
+def get_document_set_info(request, dsid=None):
+    if dsid is None:
+        return JsonResponse({"error": "No document set id provided"}, status=400)
+
+    try:
+        ds = DocumentSet.objects.get(id=dsid)
+    except DocumentSet.DoesNotExist:
+        return JsonResponse(
+            {"error": f"Document set #{dsid} does not exist"}, status=404
+        )
+
+    witnesses = ds.all_witnesses()
+    result = {"Witness": {}, "Series": {}, "Digitization": {}}
+
+    def update_date_range(target, min_date, max_date):
+        if min_date is not None:
+            if target["min_date"] is None or min_date < target["min_date"]:
+                target["min_date"] = min_date
+        if max_date is not None:
+            if target["max_date"] is None or max_date > target["max_date"]:
+                target["max_date"] = max_date
+
+    def string_to_color(s: str) -> str:
+        import hashlib
+
+        index = int(hashlib.md5(str(s).encode()).hexdigest(), 16) % 1000
+        golden_angle = 137.5
+        saturations = [85, 70, 60]
+        lightnesses = [50, 65, 40]
+        hue = int((index * golden_angle) % 360)
+        saturation = saturations[index % len(saturations)]
+        lightness = lightnesses[(index // len(saturations)) % len(lightnesses)]
+        return f"hsl({hue}, {saturation}%, {lightness}%)"
+
+    for witness in witnesses:
+        digits = witness.get_digits()
+        series = witness.series
+        wit_title = witness.__str__()
+        min_date, max_date = witness.get_dates()
+        digit_ids = [d.id for d in digits]
+        series_id = series.id if series is not None else None
+
+        result["Witness"][witness.id] = {
+            # **(witness.json or {}),
+            "id": witness.id,
+            "color": string_to_color(f"wit{witness.id}"),
+            "title": wit_title,
+            "min_date": min_date,
+            "max_date": max_date,
+            "digitization_id": digit_ids,
+            "series_id": series_id,
+        }
+
+        for digit in digits:
+            metadata = digit.json or {}
+            result["Digitization"][digit.id] = {
+                "id": digit.id,
+                "color": string_to_color(f"digit{digit.id}"),
+                "title": f"{wit_title} ({digit.get_digit_type()} #{digit.id})",
+                "witness_id": witness.id,
+                "series_id": series_id,
+                "min_date": min_date,
+                "max_date": max_date,
+                # additional data needed
+                "zeros": metadata.get("zeros", 4),
+                "img_nb": metadata.get("img_nb", 0),
+                "url": metadata.get("url", digit.get_manifest_url()),
+                "ref": metadata.get("ref", digit.get_ref()),
+            }
+
+        if not series:
+            continue
+
+        if series.id not in result["Series"]:
+            result["Series"][series_id] = {
+                # **(series.json or {}),
+                "id": series_id,
+                "color": string_to_color(f"ser{series_id}"),
+                "title": series.__str__(),
+                "min_date": min_date,
+                "max_date": max_date,
+                "witness_ids": [witness.id],
+                "digitization_ids": digit_ids,
+            }
+        else:
+            entry = result["Series"][series_id]
+            update_date_range(entry, min_date, max_date)
+            entry["witness_ids"].append(witness.id)
+            entry["digitization_ids"].extend(
+                d for d in digit_ids if d not in entry["Digitization"]
+            )
+
+    # Sort each entity group by min_date (None last)
+    def sort_key(item):
+        d = item[1]["min_date"]
+        return (d is None, d or 0)
+
+    for key in result:
+        result[key] = dict(sorted(result[key].items(), key=sort_key))
+
+    return JsonResponse(result)
 
 
 def save_document_set(request, dsid=None):
@@ -96,179 +200,3 @@ def save_document_set(request, dsid=None):
                 {"message": f"Error saving score files: {e}"}, status=500
             )
     return JsonResponse({"message": "Invalid request"}, status=400)
-
-
-def get_canvas_regions(request, wid, rid):
-    # TODO mutualize with get_canvas_witness_regions
-    region_extraction = get_object_or_404(RegionExtraction, id=rid)
-    p_nb = int(request.GET.get("p", 0))
-    max_canvas = region_extraction.get_json()["img_nb"]
-    if p_nb > 0:
-        p_len = PAGE_LEN
-        max_c = p_nb * p_len
-        min_c = max_c - p_len
-        return JsonResponse(
-            get_regions_annotations(
-                region_extraction,
-                as_json=True,
-                r_annos={},
-                min_c=min_c,
-                max_c=min(max_c, max_canvas),
-            ),
-            safe=False,
-        )
-    # to retrieve all regions
-    return JsonResponse(
-        get_regions_annotations(
-            region_extraction, as_json=True, min_c=1, max_c=max_canvas
-        ),
-        safe=False,
-    )
-
-
-def get_canvas_witness_regions(request, wid):
-    witness = get_object_or_404(Witness, id=wid)
-    p_nb = int(request.GET.get("p", 0))
-    anno_regions = {}
-    if p_nb > 0:
-        p_len = PAGE_LEN
-        max_c = p_nb * p_len
-        min_c = max_c - p_len
-        for region_extraction in witness.get_region_extractions():
-            max_canvas = region_extraction.get_json()["img_nb"]
-            anno_regions = get_regions_annotations(
-                region_extraction,
-                as_json=True,
-                r_annos=anno_regions,
-                min_c=min_c,
-                max_c=min(max_c, max_canvas),
-            )
-    else:
-        # to retrieve all regions
-        for region_extraction in witness.get_region_extractions():
-            max_c = region_extraction.get_json()["img_nb"]
-            anno_regions = get_regions_annotations(
-                region_extraction,
-                as_json=True,
-                r_annos=anno_regions,
-                min_c=1,
-                max_c=max_c,
-            )
-
-    return JsonResponse(anno_regions, safe=False)
-
-
-def create_manual_region_extraction(request, wid, did=None, rid=None):
-    if request.method == "POST":
-        if rid:
-            region_extraction = get_object_or_404(RegionExtraction, id=rid)
-            return JsonResponse(
-                {
-                    "region_extraction_id": region_extraction.id,
-                    "mirador_url": region_extraction.gen_mirador_url(),
-                },
-            )
-
-        witness = get_object_or_404(Witness, id=wid)
-        digit = None
-        if did:
-            digit = get_object_or_404(Digitization, id=did)
-        else:
-            for d in witness.get_digits():
-                if d.has_images():
-                    digit = d
-                    break
-
-        if not digit:
-            return JsonResponse(
-                {"error": "No digitization available for this witness"}, status=500
-            )
-
-        region_extraction = create_empty_region_extraction(digit)
-        if not region_extraction:
-            return JsonResponse(
-                {"error": "Unable to create region extraction"}, status=500
-            )
-        return JsonResponse(
-            {
-                "region_extraction_id": region_extraction.id,
-                "mirador_url": region_extraction.gen_mirador_url(),
-            },
-        )
-    return JsonResponse({"error": "Invalid request method"}, status=400)
-
-
-def delete_region_extraction(request, rid):
-    from app.webapp.tasks import delete_annotations
-    from app.region_extraction.tasks import delete_api_region_extraction
-
-    if request.method != "DELETE":
-        return JsonResponse({"error": "Invalid request method"}, status=400)
-    region_extraction = get_object_or_404(RegionExtraction, id=rid)
-    try:
-        delete_annotations.delay(
-            region_extraction.get_ref(),
-            region_extraction.gen_manifest_url(version=MANIFEST_V2),
-        )
-
-        Path(f"{REGIONS_PATH}/{region_extraction.get_ref()}.json").unlink(
-            missing_ok=True
-        )
-
-        delete_api_region_extraction.delay(
-            region_extraction.get_digit().get_ref(), region_extraction.model
-        )
-
-        try:
-            # Delete the region extraction record in the database
-            region_extraction.delete()
-        except Exception as e:
-            return JsonResponse(
-                {"message": f"Failed to delete region extraction record #{rid}: {e}"},
-                status=400,
-            )
-
-        return JsonResponse(
-            {"message": "RegionExtraction deletion requested"}, status=204
-        )
-    except Exception as e:
-        log(
-            f"[delete_region_extraction] Error sending deletion task for region extraction #{rid}",
-            e,
-        )
-        return JsonResponse(
-            {
-                "error": f" Error sending deletion task for region extraction #{rid}: {e}"
-            },
-            status=500,
-        )
-
-
-# DIRTY FIX FOR SAS 😡
-@cache_page(60 * 60 * 24)  # Cache for 24h
-def iiif_context(request):
-    try:
-        context_path = MEDIA_PATH / "context.json"
-        if not context_path.exists():
-            import requests
-
-            response = requests.get("http://iiif.io/api/presentation/2/context.json")
-            context_data = response.json()
-            with open(context_path, "w") as f:
-                json.dump(context_data, f)
-        else:
-            with open(context_path, "r") as f:
-                context_data = json.load(f)
-
-        return JsonResponse(
-            context_data,
-            content_type="application/json",
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type",
-            },
-        )
-
-    except Exception as e:
-        return JsonResponse({"error": f"Unable to load IIIF context: {e}"}, status=500)
