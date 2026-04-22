@@ -65,6 +65,7 @@ coverage.xml
 cover/
 
 front/sas/
+front/app/webapp/static/svelte/
 
 # Translations
 *.mo
