@@ -129,7 +129,7 @@
                 body: JSON.stringify({q_img: qImg, s_regions: regions.id})
             });
             if (!response.ok) {
-                await showMessage(`${i18n("networkPb")}`, i18n("error"));
+                await showMessage(`${i18n("networkPb", t)}`, i18n("error"));
                 return;
             }
             fetchRow();
@@ -150,7 +150,7 @@
                 body: JSON.stringify({q_img: qImg})
             });
             if (!response.ok) {
-                await showMessage(`${i18n("networkPb")}`, i18n("error"));
+                await showMessage(`${i18n("networkPb", t)}`, i18n("error"));
                 return;
             }
             const data = await response.json();
