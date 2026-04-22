@@ -1,6 +1,6 @@
 <script>
     import Item from "./Item.svelte";
-	import Modal from '../Modal.svelte';
+	import Modal from "../Modal.svelte";
     import {appLang, appName} from "../constants.js";
     import { showMessage } from "../utils";
 
@@ -12,26 +12,26 @@
     $: setSelected = $isSetSelected(item);
 
     function getColor(status) {
-        if (!status) return 'is-dark';
-        if (status === 'CANCELLED') return 'is-info';
-        if (status === 'ERROR') return 'is-danger';
-        if (status === 'IN PROGRESS') return 'is-warning';
-        if (status === 'PENDING') return 'is-info';
-        if (status === 'STARTED') return 'is-info';
-        if (status === 'SUCCESS') return 'is-success';
-        return 'is-dark';
+        if (!status) return "is-dark";
+        if (status === "CANCELLED") return "is-info";
+        if (status === "ERROR") return "is-danger";
+        if (status === "IN PROGRESS") return "is-warning";
+        if (status === "PENDING") return "is-info";
+        if (status === "STARTED") return "is-info";
+        if (status === "SUCCESS") return "is-success";
+        return "is-dark";
     }
 
     async function showExport(item) {
-        let msg = appLang === 'en' ?
-            'You can export the contents of this set as a ZIP archive or reach our JSON API.' :
-            'Vous pouvez exporter le contenu de cet ensemble en archive ZIP ou interroger notre API JSON.'
+        let msg = appLang === "en" ?
+            "You can export the contents of this set as a ZIP archive or reach our JSON API." :
+            "Vous pouvez exporter le contenu de cet ensemble en archive ZIP ou interroger notre API JSON."
 
         let exportDiv = document.createElement("div");
         exportDiv.style = "display: flex; gap: 1rem; align-items: center; justify-content: center; margin-top: 1em;"
         let jsonBtn = document.createElement("a");
         jsonBtn.classList.add("button", "is-link");
-        jsonBtn.innerHTML = "<span>"+(appLang === 'en' ? 'JSON API' : 'API JSON')+"</span>";
+        jsonBtn.innerHTML = "<span>"+(appLang === "en" ? "JSON API" : "API JSON")+"</span>";
         jsonBtn.href = `/${appName}/document-set/${item.id}/json`
         jsonBtn.target = "_blank"
 
@@ -53,10 +53,10 @@
 <Item {item} {recordsStore}>
     <div slot="buttons">
         <button class="button" class:is-inverted={setSelected} on:click={() => recordsSelection.toggleSet(item)}>
-            {#if appLang === 'en'}
-                {setSelected ? 'Unload from' : 'Load to'} selection
+            {#if appLang === "en"}
+                {setSelected ? "Unload from" : "Load to"} selection
             {:else}
-                {setSelected ? 'Retirer de la' : 'Charger dans la'} sélection
+                {setSelected ? "Retirer de la" : "Charger dans la"} sélection
             {/if}
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
                 {#if setSelected}
@@ -69,7 +69,7 @@
         <button class="button is-link" class:is-inverted={setSelected} on:click={() => showExport(item)}>
             <span>
                 <i class="fa-solid fa-file-export"></i>
-                {appLang === 'en' ? 'Export' : 'Exporter'}
+                {appLang === "en" ? "Export" : "Exporter"}
             </span>
         </button>
 
@@ -86,7 +86,7 @@
 
         <div class="grid">
             {#each Object.entries(item.selection.selected) as [modelName, selectedRecords]}
-                {#if modelName !== 'User'}
+                {#if modelName !== "User"}
                     {#each Object.entries(selectedRecords) as [id, meta]}
                         <div>
                             <span class="tag is-rounded is-accent">{modelName} #{id}</span>

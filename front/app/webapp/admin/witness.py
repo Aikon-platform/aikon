@@ -104,22 +104,23 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         if APP_LANG == "en"
         else f"Identification du {get_name('Witness')}"
     )
-    fields = [
-        "type",
-        ("id_nb", "place"),  # place and id_nb appear on the same line
-        ("page_type", "nb_pages"),  # same
-        "notes",
-        "edition",
-        ("volume_nb", "volume_title"),
-        "link",
-        "shared_with",
-        "is_public",
-    ]
-    autocomplete_fields = ("place", "volume", "edition", "shared_with")
+    autocomplete_fields = ("place", "edition", "shared_with")
     fieldsets = (
         (
             banner.capitalize(),
-            {"fields": fields},
+            {
+                "fields": [
+                    "type",
+                    ("id_nb", "place"),  # place and id_nb appear on the same line
+                    ("page_type", "nb_pages"),  # same
+                    "notes",
+                    "edition",
+                    ("volume_nb", "volume_title"),
+                    "link",
+                    "shared_with",
+                    "is_public",
+                ]
+            },
         ),
     )
 
@@ -253,7 +254,7 @@ class WitnessAdmin(ExtraButtonsMixin, nested_admin.NestedModelAdmin):
         manifests = []
         for witness in queryset.exclude():
             manifests.extend(
-                [digit.gen_manifest_url() for digit in witness.get_digits()]
+                [digit.get_manifest_url() for digit in witness.get_digits()]
             )
         return list_to_txt(manifests, "IIIF_manifests")
 

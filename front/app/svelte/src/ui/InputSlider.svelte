@@ -29,7 +29,7 @@
 <script>
     import { onMount, onDestroy, createEventDispatcher, getContext } from "svelte";
     import noUiSlider from "nouislider";
-    import 'nouislider/dist/nouislider.css';
+    import "nouislider/dist/nouislider.css";
     import TooltipGeneric from "./TooltipGeneric.svelte";
 
     /** @type {number} */

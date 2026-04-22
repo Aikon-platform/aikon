@@ -5,14 +5,13 @@ from uuid import uuid4
 
 from django.utils.safestring import mark_safe
 from django.db import models
-from iiif_prezi.factory import StructuralError
-from app.config.settings import APP_URL, APP_NAME, APP_LANG, SAS_APP_URL
-from app.similarity.const import SCORES_PATH
+from app.config.settings import (
+    MIRADOR_BASE_URL,
+)
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.searchable_models import AbstractSearchableModel
-from app.webapp.models.utils.constants import WIT, REG
+from app.webapp.models.utils.constants import REG
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.utils.constants import MANIFEST_V2, MANIFEST_V1
 from app.webapp.utils.paths import REGIONS_PATH
 
 
@@ -72,35 +71,23 @@ class RegionExtraction(AbstractSearchableModel):
     def img_zeros(self):
         return self.get_digit().img_zeros() or 0
 
-    def gen_manifest_url(self, only_base=False, version=MANIFEST_V1):
+    def get_manifest_url(self, only_base=False):
         witness = self.get_witness()
         digit = self.get_digit()
         if not witness or not digit:
             return None
 
-        base_url = (
-            f"{APP_URL}/{APP_NAME}/iiif/{check_version(version)}/{self.get_ref()}"
-        )
-        return f"{base_url}{'' if only_base else '/manifest.json'}"
+        return digit.get_manifest_url(only_base=only_base)
 
-    def gen_manifest_json(self, version=MANIFEST_V1):
-        from app.webapp.utils.iiif.manifest import gen_manifest_json
+    def get_manifest_json(self):
+        digit = self.get_digit()
+        if not digit:
+            return None
 
-        error = {"error": "Unable to create a valid manifest"}
-        if manifest := gen_manifest_json(self, check_version(version)):
-            try:
-                return (
-                    manifest.toJSON(top=True)
-                    if hasattr(manifest, "toJSON")
-                    else manifest
-                )
-            except StructuralError as e:
-                error["reason"] = f"{e}"
-                return error
-        return error
+        return digit.get_manifest_json()
 
     def gen_mirador_url(self):
-        return f"{SAS_APP_URL}/index.html?iiif-content={self.gen_manifest_url(version=MANIFEST_V2)}"
+        return f"{MIRADOR_BASE_URL}/index.html?iiif-content={self.get_manifest_url()}"
 
     def get_ref(self):
         if digit := self.get_digit():
@@ -174,14 +161,15 @@ class RegionExtraction(AbstractSearchableModel):
             "class": self.__class__.__name__,
             "type": get_name("RegionExtraction"),
             "url": self.gen_mirador_url(),
+            "digitization_id": digit.id if digit else None,
             "img_nb": rjson.get("img_nb", digit.img_nb() if digit else 0),
             "zeros": rjson.get("zeros", digit.img_zeros() if digit else 0),
         }
 
     def get_annotations(self):
-        from app.webapp.utils.iiif.annotation import get_regions_annotations
+        from app.webapp.utils.iiif.annotation import get_record_annotations
 
-        return get_regions_annotations(self)
+        return get_record_annotations(self)
 
     def get_imgs(self, is_abs=False, only_one=False, check_in_dir=False):
         if digit := self.get_digit():

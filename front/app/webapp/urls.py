@@ -1,10 +1,11 @@
 from django.urls import path, reverse_lazy
+from django.contrib.auth import views as auth_views
+
 from app.config.settings import APP_NAME
 from app.webapp.views import *
 from app.webapp.views.users import *
-from django.contrib.auth import views as auth_views
-
 from webapp.views.region import save_region
+
 
 app_name = "webapp"
 
@@ -115,12 +116,12 @@ urlpatterns = [
     ),
     path(
         f"{APP_NAME}/index-regions/<str:region_extraction_ref>",
-        index_regions,
+        index_region_extraction,
         name="index-regions",
     ),
     path(
         f"{APP_NAME}/index-regions",
-        index_regions,
+        index_region_extraction,
         name="index-regions",
     ),
     path(
@@ -265,6 +266,11 @@ urlpatterns += [
         name="change-document-set",
     ),
     path(
+        f"document-set/<int:dsid>/info",
+        get_document_set_info,
+        name="document-set-info",
+    ),
+    path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/canvas",
         get_canvas_regions,
         name="canvas_regions",
@@ -369,11 +375,6 @@ urlpatterns += [
 urlpatterns += [
     path("superadmin/empty-works/", list_empty_works, name="empty-works"),
     path("superadmin/works/", list_works, name="list-works"),
-]
-
-# DIRTY FIX FOR SAS 😡
-urlpatterns += [
-    path("context.json", iiif_context, name="iiif-context"),
 ]
 
 # TEST VIEWS

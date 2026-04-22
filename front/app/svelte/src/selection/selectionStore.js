@@ -1,5 +1,5 @@
-import {derived, writable, get} from 'svelte/store';
-import {csrfToken, appLang} from '../constants';
+import {derived, writable, get} from "svelte/store";
+import {csrfToken, appLang} from "../constants";
 
 function createTypedSelectionStore(config) {
     const {
@@ -18,7 +18,20 @@ function createTypedSelectionStore(config) {
         selected: {}
     };
 
-    const initialData = JSON.parse(localStorage.getItem(type)) || template;
+    function parseStoredSelection(rawData) {
+        if (!rawData) return template;
+        return {
+            ...template,
+            ...rawData,
+            selected: Object.fromEntries(
+                Object.entries(rawData.selected || {})
+                    .filter(([k]) => k !== "undefined")
+                    .map(([k, v]) => [k, typeof v === "object" && v !== null ? v : {}])
+            )
+        };
+    }
+
+    const initialData = parseStoredSelection(JSON.parse(localStorage.getItem(type)))
     const selection = writable(initialData);
     const isSaved = writable(false);
 
@@ -29,7 +42,7 @@ function createTypedSelectionStore(config) {
 
     function save() {
         selection.update(set => {
-            if (type !== 'documentSet') {
+            if (type !== "documentSet") {
                 console.error("Document set management is the only type currently supported for saving.");
                 return set;
             }
@@ -43,10 +56,10 @@ function createTypedSelectionStore(config) {
             const endpoint = set.id ? `${set.id}/edit` : "new";
 
             fetch(`${window.location.origin}/${modelName}/${endpoint}`, {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
                 },
                 body: JSON.stringify({
                     title: set.title,
@@ -55,18 +68,18 @@ function createTypedSelectionStore(config) {
                     ...selectedIds
                 })
             })
-            .then(res => res.json())
-            .then(data => {
-                if (!data?.document_set_id) throw new Error('Failed to save');
-                selection.update(current => {
-                    current.id = data.document_set_id;
-                    current.title = data.document_set_title;
-                    current.is_public = data.is_public;
-                    store(current, true);
-                    return current;
-                });
-            })
-            .catch(err => console.error('Error:', err));
+                .then(res => res.json())
+                .then(data => {
+                    if (!data?.document_set_id) throw new Error("Failed to save");
+                    selection.update(current => {
+                        current.id = data.document_set_id;
+                        current.title = data.document_set_title;
+                        current.is_public = data.is_public;
+                        store(current, true);
+                        return current;
+                    });
+                })
+                .catch(err => console.error("Error:", err));
 
             return set;
         });
@@ -109,6 +122,7 @@ function createTypedSelectionStore(config) {
         }),
 
         remove: (itemId, itemType) => selection.update(set => {
+            if (!set.selected[itemType]?.[itemId]) return set;
             const {[itemId]: _, ...rest} = set.selected[itemType];
             set.selected[itemType] = rest;
             store(set);
@@ -192,28 +206,27 @@ function createTypedSelectionStore(config) {
 }
 
 export const recordsSelection = createTypedSelectionStore({
-    type: 'documentSet',
-    modelName: 'document-set',
-    title: appLang === 'en' ? 'Document set' : 'Set de documents',
+    type: "documentSet",
+    modelName: "document-set",
+    title: appLang === "en" ? "Document set" : "Set de documents",
     extractMeta: (item) => ({title: item.title, url: item.url})
 });
 
 export const regionsSelection = createTypedSelectionStore({
-    type: 'regionsSet',
-    modelName: 'regions-set',
-    title: appLang === 'en' ? 'Regions set' : 'Set de régions',
+    type: "regionsSet",
+    modelName: "regions-set",
+    title: appLang === "en" ? "Regions set" : "Set de régions",
     extractMeta: (item) => item
 });
 
 function ref(imgRef) {
-    if (!imgRef.startsWith('wit')) return imgRef;
-    const [_, ...ref] = imgRef.split('_wit');
-    return `wit${ref}`;
+    const idx = imgRef.indexOf("_wit");
+    return idx !== -1 ? imgRef.slice(idx + 1) : imgRef;
 }
 
 export const clusterSelection = createTypedSelectionStore({
-    type: 'clusterSet',
-    modelName: 'cluster-set',
-    title: appLang === 'en' ? 'Selected regions' : 'Régions sélectionnées',
+    type: "clusterSet",
+    modelName: "cluster-set",
+    title: appLang === "en" ? "Selected regions" : "Régions sélectionnées",
     extractMeta: (item) => ({imgRef: item.id, clusterId: item.clusterId, title: item.title, xywh: item.xywh, img: ref(item.id)})
 });

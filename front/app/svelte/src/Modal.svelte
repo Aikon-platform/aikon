@@ -1,6 +1,6 @@
 <script>
-    import { appLang } from './constants';
-    import { closeModal, openModal } from './utils.js';
+    import { appLang } from "./constants";
+    import { closeModal, openModal } from "./utils.js";
 </script>
 
 <button id="hidden-msg-btn" use:openModal data-target="msg-modal" hidden/>
@@ -10,9 +10,9 @@
     <div class="modal-content">
         <div class="modal-card-head media mb-0">
             <div class="title is-4 mb-0 media-content">
-                <span id="modal-title" class="mb-0"></span>
+                <span id="modal-title" class="mb-0"/>
             </div>
-            <button class="delete media-left" aria-label="close"></button>
+            <button class="delete media-left" aria-label="close"/>
         </div>
         <section id="modal-body" class="modal-card-body">
             <div id="modal-msg"></div>
@@ -24,10 +24,16 @@
         <footer id="modal-footer" class="modal-card-foot is-center pt-3" hidden>
             <div class="buttons">
                 <button id="cancel-btn" class="button is-link is-light button-close">
-                    {appLang === 'en' ? 'Abort' : 'Retour'}
+                    {appLang === "en" ? "Abort" : "Retour"}
                 </button>
                 <button id="ok-btn" class="button is-link button-close">OK</button>
             </div>
         </footer>
     </div>
 </div>
+
+<style>
+    #msg-modal {
+        z-index: 50;
+    }
+</style>

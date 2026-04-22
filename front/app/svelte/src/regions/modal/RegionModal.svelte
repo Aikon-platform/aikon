@@ -39,7 +39,7 @@
         <div class="modal-background" on:click={close} on:keyup/>
         <div class="modal-content">
             {#if canNavigate}
-                <NavigationArrow direction="left" delta={-1} navigationFct={navigate} css={"position: initial;"}/>
+                <NavigationArrow direction="left" delta={-1} navigationFct={navigate} css="position: initial;"/>
             {/if}
 
             <div class="modal-inner">
@@ -47,7 +47,7 @@
             </div>
 
             {#if canNavigate}
-                <NavigationArrow direction="right" delta={1} navigationFct={navigate} css={"position: initial;"}/>
+                <NavigationArrow direction="right" delta={1} navigationFct={navigate} css="position: initial;"/>
             {/if}
         </div>
         <button class="modal-close is-large" on:click={close} aria-label="close"/>

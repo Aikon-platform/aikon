@@ -1,4 +1,4 @@
-import {derived, writable, get} from 'svelte/store';
+import {derived, writable, get} from "svelte/store";
 import {extractNb, generateColor} from "../utils.js";
 import { streamPairsToWorker } from "./pairStreamReader.js";
 
@@ -9,43 +9,51 @@ import {appUrl} from "../constants.js";
 // TO DELETE
 
 const createWorker = () => new Worker(
-   '/static/js/pairWorker.js',
-   //  './pairWorker.js',
-    { type: 'module' }
+    "/static/js/pairWorker.js",
+    { type: "module" }
 );
 
 export function createDocumentSetStore(documentSetId) {
+
+    // TO DELETE
+    // const documentSetId = 413; // histoire naturelle
+    // const documentSetId = 414; // nicolas
+    // const documentSetId = 437; // physiologus
+    // const documentSetId = 416; // de materia medica
+    // const documentSetId = 417; // traité de géométrie
+    // const documentSetId = 418; // encyclopédie mathématique
+    // const documentSetId = 436; // Jombert complet
+    // const documentSetId = 432; // Jombert incomplet
+    // documentSetId = 455; // Set benchmark
+    // TO DELETE
+
     const error = writable(null);
     const loading = writable(false);
     const loadingProgress = writable({ loaded: 0, done: false });
 
     const selectedCategories = writable([]);
-    const selectedRegions = writable(new Set());
+    const selectedDocuments = writable(new Set());
     const selectedNodes = writable([]);
 
     const scoreFilter = writable(true);
     const threshold = writable(0.5);
     const topK = writable(3);
     const mutualTopK = writable(true);
-    const scoreMode = writable('topk');
-    const onlyExactMatches = derived(selectedCategories, $cats =>
-        $cats.length === 1 && $cats[0] === 1
+    const scoreMode = writable("topk");
+    const onlyOneSelectedCategory = derived(selectedCategories, $cats =>
+        $cats.length === 1
     );
 
-    /**
-     * All RegionsPair objects loaded in the current context
-     */
     const allPairs = writable([]);
-    const regionsMetadata = writable(new Map());
 
     // web worker for processing pairs
     let worker;
     let abortController = null;
 
     const pairIndex = writable({
-        byImage: new Map(),        // imgId -> [pairs]
-        byDocPair: new Map(),      // "r1-r2" -> [pairs]
-        byDoc: new Map(),          // regionId -> [pairs]
+        byImage: new Map(),
+        byDocPair: new Map(),
+        byDoc: new Map(),
     });
 
     /**
@@ -53,9 +61,23 @@ export function createDocumentSetStore(documentSetId) {
      */
     const imageNodes = writable(new Map());
     /**
-     * Document nodes: Map<regionId, regionData>
+     * Document nodes: Map<digitizationId, digitizationData>
      */
     const documentNodes = writable(new Map());
+    const witnessNodes = writable(new Map());
+    const seriesNodes = writable(new Map());
+
+    /**
+     * {
+     *     "Digitization": { "id", "color", "title", "min_date", "max_date", "Witness": [serId], "Series": [serId] }
+     *     "Witness":      { "id", "color", "title", "min_date", "max_date", "Digitization": [digitIds], "Series": [serId] }
+     *     "Series":       { "id", "color", "title", "min_date", "max_date", "Digitization": [digitIds], "Witness": [witIds] }
+     * }
+     * @type {Promise<any>}
+     */
+    const dsInfoPromise = fetch(`${appUrl}/document-set/${documentSetId}/info`)
+        .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+        .catch(e => { error.set(`Error fetching document set info: ${e}`); return null; });
 
     const pairStats = writable({});
     const documentStats = writable({});
@@ -74,22 +96,9 @@ export function createDocumentSetStore(documentSetId) {
             return;
         }
 
-        // Cleanup previous
         if (worker) worker.terminate() && (worker = null);
         if (abortController) abortController.abort();
         abortController = new AbortController();
-
-        // TO DELETE
-        // const documentSetId = 413; // histoire naturelle
-        // const documentSetId = 414; // nicolas
-        // const documentSetId = 437; // physiologus
-        // const documentSetId = 416; // de materia medica
-        // const documentSetId = 417; // traité de géométrie
-        // const documentSetId = 418; // encyclopédie mathématique
-        // const documentSetId = 436; // Jombert complet
-        // const documentSetId = 432; // Jombert incomplet
-        // const documentSetId = 408;
-        // TO DELETE
 
         const loadPromise = new Promise((resolve, reject) => {
             loading.set(true);
@@ -103,12 +112,12 @@ export function createDocumentSetStore(documentSetId) {
                     worker.onmessage = async (e) => {
                         const { type } = e.data;
 
-                        if (type === 'progress') {
+                        if (type === "progress") {
                             loadingProgress.set({ loaded: e.data.count, done: false });
                             return;
                         }
 
-                        if (type !== 'complete') return;
+                        if (type !== "complete") return;
 
                         const {
                             allPairs: sorted,
@@ -125,34 +134,31 @@ export function createDocumentSetStore(documentSetId) {
                         imageStats.set(stats.imageStats);
                         docPairStats.set(stats.docPairStats);
 
-                        const regionIds = Array.from(stats.documentStats.scoreCount.keys());
+                        const dsInfo = await dsInfoPromise;
+                        const digits = dsInfo?.Digitization || {};
 
-                        if (get(selectedRegions).size === 0) {
-                            selectedRegions.set(new Set(regionIds));
+                        const digitIds = Object.keys(digits).map(Number);
+                        if (get(selectedDocuments).size === 0) {
+                            selectedDocuments.set(new Set(digitIds));
                         }
 
-                        const results = await Promise.all(
-                            regionIds.map(id => getRegionsInfo(id).then(info => ({ id, info })))
-                        );
-
-                        const metaMap = new Map();
-                        results.forEach(({ id, info }) => metaMap.set(id, info));
-                        regionsMetadata.set(metaMap);
-
                         const docMap = new Map();
-                        regionIds.forEach((id, index) => {
-                            const info = metaMap.get(id) || {};
+                        digitIds.forEach(id => {
                             docMap.set(id, {
-                                id,
-                                title: info.title || `Region Extraction ${id}`,
-                                color: info.color || generateColor(index),
                                 images: [],
-                                ...info
+                                title: `Digitization ${id}`,
+                                color: "hsl(0, 0%, 50%)",
+                                ...digits[id] || {},
                             });
                         });
 
+                        if (dsInfo) {
+                            witnessNodes.set(new Map(Object.values(dsInfo.Witness).map(w => [w.id, w])));
+                            seriesNodes.set(new Map(Object.values(dsInfo.Series).map(s => [s.id, s])));
+                        }
+
                         imgMap.forEach(img => {
-                            const doc = docMap.get(img.regionId);
+                            const doc = docMap.get(img.digit);
                             if (doc) {
                                 img.color = doc.color;
                                 img.title = `${doc.title} | Page ${img.canvas}`;
@@ -163,19 +169,17 @@ export function createDocumentSetStore(documentSetId) {
                         // TODO add normalizedScore = totalScore / images.length
 
                         docMap.forEach(doc => {
-                            // doc.normalizedScore = doc.images.length
                             doc.images.sort((a, b) => {
                                 if (a.canvas !== b.canvas) return a.canvas - b.canvas;
                                 return (parseInt(a.xywh?.[1]) || 0) - (parseInt(b.xywh?.[1]) || 0);
                             })
-                            return doc;
                         });
 
                         imageNodes.set(imgMap);
                         documentNodes.set(docMap);
 
                         docSetNumber.set({
-                            documents: regionIds.length,
+                            documents: digitIds.length,
                             pairs: sorted.length,
                             images: imgMap.size,
                             categories: cats
@@ -198,7 +202,7 @@ export function createDocumentSetStore(documentSetId) {
                         reject(err);
                     };
 
-                    const url = `${appUrl}/document-set/${documentSetId}/pairs/stream?category=${$cats.join(',')}`;
+                    const url = `${appUrl}/document-set/${documentSetId}/pairs/stream?category=${$cats.join(",")}`;
 
                     await streamPairsToWorker(url, worker, {
                         signal: abortController.signal,
@@ -211,8 +215,8 @@ export function createDocumentSetStore(documentSetId) {
                     });
 
                 } catch (e) {
-                    if (e.name === 'AbortError') {
-                        console.log('Request aborted');
+                    if (e.name === "AbortError") {
+                        console.log("Request aborted");
                         return;
                     }
                     error.set(`Fetch error: ${e.message}`);
@@ -227,35 +231,8 @@ export function createDocumentSetStore(documentSetId) {
         set(loadPromise);
     });
 
-    async function getRegionsInfo(regionId) {
-        try {
-            const response = await fetch(`${appUrl}/search/regions/?id=${regionId}`);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-            const { results } = await response.json();
-            if (!results?.length) return { title: `Region Extraction ${regionId}` };
-
-            const region = results[0];
-            const [, ...titleParts] = region.title.split(" | ");
-            const [wit, digit] = (region.ref || "_").split("_");
-
-            return {
-                title: titleParts.join(" | "),
-                ref: region.ref,
-                witnessId: extractNb(wit),
-                digitizationRef: digit,
-                zeros: region.zeros,
-                img_nb: region.img_nb,
-                url: region.url
-            };
-        } catch (e) {
-            error.set(`Error fetching region #${regionId}: ${e.message}`);
-            return { title: `Region Extraction ${regionId}` };
-        }
-    }
-
     const filteredPairs = derived(
-        [allPairs, threshold, topK, mutualTopK, selectedRegions, scoreFilter],
+        [allPairs, threshold, topK, mutualTopK, selectedDocuments, scoreFilter],
         ([$pairs, $threshold, $topK, $mutual, $regions, $scoreFilter]) => {
             if (!$pairs) return [];
             const result = [];
@@ -263,32 +240,29 @@ export function createDocumentSetStore(documentSetId) {
             const $mode = get(scoreMode);
 
             for (let i = 0; i < $pairs.length; i++) {
-                    const p = $pairs[i];
+                const p = $pairs[i];
 
-                    // 1. Score filtering
-                    if ($mode === 'threshold' && $scoreFilter) {
-                        if (p.weightedScore < $threshold) break;
-                    }
-
-                    // 2. Region filter
-                    if (!$regions.has(p.regions_id_1) || !$regions.has(p.regions_id_2)) continue;
-
-                    // 3. TopK filtering
-                    if ($mode === 'topk' && $topK !== null && $scoreFilter) {
-                        const r1Rank = p.rank_1 ?? Infinity;
-                        const r2Rank = p.rank_2 ?? Infinity;
-
-                        if ($mutual) {
-                            if (r1Rank > $topK || r2Rank > $topK) continue;
-                        } else {
-                            if (r1Rank > $topK && r2Rank > $topK) continue;
-                        }
-                    }
-
-                    result.push(p);
+                if ($mode === "threshold" && $scoreFilter) {
+                    if (p.weightedScore < $threshold) break;
                 }
 
-                return result;
+                if (!$regions.has(p.digit_1) || !$regions.has(p.digit_2)) continue;
+
+                if ($mode === "topk" && $topK !== null && $scoreFilter) {
+                    const r1Rank = p.rank_1 ?? Infinity;
+                    const r2Rank = p.rank_2 ?? Infinity;
+
+                    if ($mutual) {
+                        if (r1Rank > $topK || r2Rank > $topK) continue;
+                    } else {
+                        if (r1Rank > $topK && r2Rank > $topK) continue;
+                    }
+                }
+
+                result.push(p);
+            }
+
+            return result;
         }
     );
 
@@ -299,8 +273,8 @@ export function createDocumentSetStore(documentSetId) {
 
             const activeDocIds = new Set();
             for (const p of $pairs) {
-                activeDocIds.add(p.regions_id_1);
-                activeDocIds.add(p.regions_id_2);
+                activeDocIds.add(p.digit_1);
+                activeDocIds.add(p.digit_2);
             }
 
             const docs = [];
@@ -319,9 +293,9 @@ export function createDocumentSetStore(documentSetId) {
 
         let min = Infinity, max = -Infinity;
         for (const p of $pairs) {
-            const key = p.regions_id_1 < p.regions_id_2
-                ? `${p.regions_id_1}-${p.regions_id_2}`
-                : `${p.regions_id_2}-${p.regions_id_1}`;
+            const key = p.digit_1 < p.digit_2
+                ? `${p.digit_1}-${p.digit_2}`
+                : `${p.digit_2}-${p.digit_1}`;
             const entry = scoreCount.get(key) || {score: 0, count: 0};
             entry.score += p.weightedScore || 0;
             entry.count++;
@@ -342,11 +316,11 @@ export function createDocumentSetStore(documentSetId) {
         if (!$pairs?.length) return {scoreCount, countRange: {min: 0, max: 0, range: 0}};
 
         for (const p of $pairs) {
-            for (const rid of [p.regions_id_1, p.regions_id_2]) {
-                const entry = scoreCount.get(rid) || {score: 0, count: 0};
+            for (const did of [p.digit_1, p.digit_2]) {
+                const entry = scoreCount.get(did) || {score: 0, count: 0};
                 entry.score += p.weightedScore || 0;
                 entry.count++;
-                scoreCount.set(rid, entry);
+                scoreCount.set(did, entry);
             }
         }
 
@@ -414,7 +388,7 @@ export function createDocumentSetStore(documentSetId) {
                 nodes.push({
                     ...nodeData,
                     radius: normalizeRadius(score, $imgStats.scoreRange),
-                    label: `Region: ${nodeData.regionId}\nPage: ${nodeData.canvas}\nConnections: ${count}\nTotal score: ${score.toFixed(2)}`
+                    label: `Digitization: ${nodeData.digit}\nPage: ${nodeData.canvas}\nConnections: ${count}\nTotal score: ${score.toFixed(2)}`
                 });
             }
         }
@@ -422,7 +396,6 @@ export function createDocumentSetStore(documentSetId) {
         return { nodes, links };
     });
 
-    // TODO should it derive from filteredDocStats since filteredDocs is derived from filteredPairs?
     const documentNetwork = derived([filteredDocs], ([$docNodes]) => {
         if (!$docNodes.length) return { nodes: [], links: [] };
 
@@ -441,7 +414,7 @@ export function createDocumentSetStore(documentSetId) {
         });
 
         const links = Array.from($docPairStats.scoreCount.entries()).map(([key, pairStat]) => {
-            const [source, target] = key.split('-').map(Number);
+            const [source, target] = key.split("-").map(Number);
             const {strength, distance, width} = calculateLinkProps(pairStat.score, $docPairStats.scoreRange);
             return {
                 source, target, strength, distance, width
@@ -452,39 +425,28 @@ export function createDocumentSetStore(documentSetId) {
         return { nodes, links };
     });
 
-    /**
-     * Matrix Visualization Logic
-     * returns {
-     *    regions: [regionId1, regionId2 ...],           // ordered list of selected regions ids
-     *    rows: [                                        // images contained in the same pairs across regions
-     *       { regionId1: {id: img_id, page: page_nb}, regionId2: {id: img_id, page: page_nb} },
-     *       { regionId1: {id: img_id, page: page_nb} },
-     *       { regionId1: {id: img_id, page: page_nb}, regionsId3: {id: img_id, page: page_nb} },
-     *    ]
-     * }
-     */
     function buildAlignedImageMatrix(orderedSelection) {
         if (!orderedSelection.length) return {regions: [], rows: []};
 
         const $documentNodes = get(documentNodes);
         const $pairIndex = get(pairIndex);
-        const $onlyExactMatches = get(onlyExactMatches);
 
-        const firstRegionId = orderedSelection[0];
+        const firstDigitId = orderedSelection[0];
 
-        const firstDoc = $documentNodes.get(firstRegionId);
+        const firstDoc = $documentNodes.get(firstDigitId);
         if (!firstDoc?.images) return {regions: orderedSelection, rows: []};
         const firstImages = firstDoc.images;
 
-        const findPairs = (imgId, sourceRegionId, targetRegionId) => {
-            const {r1, r2} = {r1: sourceRegionId, r2: targetRegionId};
-            const pairKey = r1 < r2 ? `${r1}-${r2}` : `${r2}-${r1}`;
+        const findPairs = (imgId, sourceDigitId, targetDigitId) => {
+            const pairKey = sourceDigitId < targetDigitId
+                ? `${sourceDigitId}-${targetDigitId}`
+                : `${targetDigitId}-${sourceDigitId}`;
             const pairs = $pairIndex.byDocPair.get(pairKey) || [];
 
             return pairs
                 .filter(p =>
-                    (p.id_1 === imgId && p.regions_id_1 === sourceRegionId) ||
-                    (p.id_2 === imgId && p.regions_id_2 === sourceRegionId)
+                    (p.id_1 === imgId && p.digit_1 === sourceDigitId) ||
+                    (p.id_2 === imgId && p.digit_2 === sourceDigitId)
                 )
                 .map(p => {
                     const isFirst = p.id_1 === imgId;
@@ -498,8 +460,8 @@ export function createDocumentSetStore(documentSetId) {
                 });
         };
 
-        const findBestMatch = (imgId, sourceRegionId, targetRegionId) => {
-            const pairs = findPairs(imgId, sourceRegionId, targetRegionId);
+        const findBestMatch = (imgId, sourceDigitId, targetDigitId) => {
+            const pairs = findPairs(imgId, sourceDigitId, targetDigitId);
             if (!pairs.length) return null;
 
             const mutualTop1 = pairs.find(p => p.rank <= 1 && p.otherRank <= 1);
@@ -511,15 +473,17 @@ export function createDocumentSetStore(documentSetId) {
             return null;
         };
 
-        if (!$onlyExactMatches) {
+        const $cats = get(selectedCategories);
+        const onlyExactMatch = $cats.length === 1 && $cats[0] === 1;
+        if (!onlyExactMatch) {
             const rows = [];
             for (const firstImg of firstImages) {
-                const row = {[firstRegionId]: {id: firstImg.id, page: firstImg.canvas}};
+                const row = {[firstDigitId]: {id: firstImg.id, page: firstImg.canvas}};
 
                 for (let colIdx = 1; colIdx < orderedSelection.length; colIdx++) {
-                    const targetRegionId = orderedSelection[colIdx];
-                    const best = findBestMatch(firstImg.id, firstRegionId, targetRegionId);
-                    if (best) row[targetRegionId] = best;
+                    const targetDigitId = orderedSelection[colIdx];
+                    const best = findBestMatch(firstImg.id, firstDigitId, targetDigitId);
+                    if (best) row[targetDigitId] = best;
                 }
 
                 rows.push(row);
@@ -530,19 +494,19 @@ export function createDocumentSetStore(documentSetId) {
         const allRows = [];
 
         for (const firstImg of firstImages) {
-            let currentRows = [{[firstRegionId]: {id: firstImg.id, page: firstImg.canvas}}];
+            let currentRows = [{[firstDigitId]: {id: firstImg.id, page: firstImg.canvas}}];
 
             for (let colIdx = 1; colIdx < orderedSelection.length; colIdx++) {
-                const targetRegionId = orderedSelection[colIdx];
+                const targetDigitId = orderedSelection[colIdx];
                 const nextRows = [];
 
                 for (const row of currentRows) {
                     const allPairsFound = [];
 
                     for (let srcIdx = 0; srcIdx < colIdx; srcIdx++) {
-                        const sourceRegionId = orderedSelection[srcIdx];
-                        if (row[sourceRegionId]) {
-                            const pairs = findPairs(row[sourceRegionId].id, sourceRegionId, targetRegionId);
+                        const sourceDigitId = orderedSelection[srcIdx];
+                        if (row[sourceDigitId]) {
+                            const pairs = findPairs(row[sourceDigitId].id, sourceDigitId, targetDigitId);
                             allPairsFound.push(...pairs);
                         }
                     }
@@ -558,7 +522,7 @@ export function createDocumentSetStore(documentSetId) {
                         });
 
                         for (const pair of uniquePairs.values()) {
-                            const newRow = {...row, [targetRegionId]: pair};
+                            const newRow = {...row, [targetDigitId]: pair};
                             nextRows.push(newRow);
                         }
                     }
@@ -574,7 +538,7 @@ export function createDocumentSetStore(documentSetId) {
         const seen = new Set();
 
         for (const row of allRows) {
-            const key = orderedSelection.map(rid => row[rid]?.id || '').join('|');
+            const key = orderedSelection.map(did => row[did]?.id || "").join("|");
             if (!seen.has(key)) {
                 seen.add(key);
                 rows.push(row);
@@ -593,17 +557,17 @@ export function createDocumentSetStore(documentSetId) {
         });
     }
 
-    function toggleRegion(regionId) {
-        selectedRegions.update(regions => {
-            const newRegions = new Set(regions);
-            newRegions.has(regionId) ? newRegions.delete(regionId) : newRegions.add(regionId);
-            return newRegions;
+    function toggleDoc(docId) {
+        selectedDocuments.update(docs => {
+            const newDocs = new Set(docs);
+            newDocs.has(docId) ? newDocs.delete(docId) : newDocs.add(docId);
+            return newDocs;
         });
     }
 
-    function selectAllRegions() {
+    function selectAllDocuments() {
         const allIds = Array.from(get(documentNodes).keys());
-        selectedRegions.set(new Set(allIds));
+        selectedDocuments.set(new Set(allIds));
     }
 
     function applyDefaultThreshold() {
@@ -614,9 +578,6 @@ export function createDocumentSetStore(documentSetId) {
 
         if (get(threshold) === min) {
             threshold.set((min + max) / 2);
-            // scoreMode.set('topk');
-            // topK.set(2);
-            // mutualTopK.set(true);
         }
     }
 
@@ -630,6 +591,19 @@ export function createDocumentSetStore(documentSetId) {
         return set;
     });
 
+    const coverageData = derived(filteredPairs, ($pairs) => {
+        const map = new Map();
+        for (const p of $pairs) {
+            const k1 = `${p.digit_1}-${p.digit_2}`;
+            const k2 = `${p.digit_2}-${p.digit_1}`;
+            if (!map.has(k1)) map.set(k1, new Set());
+            if (!map.has(k2)) map.set(k2, new Set());
+            map.get(k1).add(p.id_1);
+            map.get(k2).add(p.id_2);
+        }
+        return map;
+    });
+
     const imageCountMap = derived(documentNodes, ($docs) => {
         const map = new Map();
         for (const [id, doc] of $docs) {
@@ -640,6 +614,7 @@ export function createDocumentSetStore(documentSetId) {
 
     return {
         documentSetId,
+        docSetId: documentSetId,
 
         error,
         loadingProgress,
@@ -650,8 +625,8 @@ export function createDocumentSetStore(documentSetId) {
             }
         },
 
-        allPairs, // Contains all pairs sorted by score
-        visiblePairs: filteredPairs, // Optimized for visualization
+        allPairs,
+        visiblePairs: filteredPairs,
         pairIndex,
         documentNodes,
         imageNodes,
@@ -659,18 +634,18 @@ export function createDocumentSetStore(documentSetId) {
         imageNetwork,
         documentNetwork,
         selectedCategories,
-        onlyExactMatches,
+        onlyOneSelectedCategory,
         pairStats,
         documentStats,
         imageStats,
         docPairStats,
         docSetNumber,
         selectedNodes,
-        selectedRegions,
+        selectedDocuments,
         updateSelectedNodes: (nodes) => selectedNodes.set(nodes),
         toggleCategory,
-        toggleRegion,
-        selectAllRegions,
+        toggleDoc,
+        selectAllDocuments,
         buildAlignedImageMatrix,
 
         threshold,
@@ -690,5 +665,6 @@ export function createDocumentSetStore(documentSetId) {
         normalizeByImages,
         imageCountMap,
         visiblePairIds,
+        coverageData
     };
 }

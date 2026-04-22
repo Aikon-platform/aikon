@@ -239,6 +239,27 @@ get_default_val() {
             default_val="localhost"
         fi
 
+    elif [ "$param" = "AIIINOTATE_HOST" ]; then
+        if [[ "$(get_env_value "DOCKER" "$FRONT_ENV")" = "True" ]]; then
+            default_val="aiiinotate"
+        else
+            default_val=127.0.0.1
+        fi
+
+    elif [ "$param" = "MIRADOR_HOST" ]; then
+        if [[ "$(get_env_value "DOCKER" "$FRONT_ENV")" = "True" ]]; then
+            default_val="mirador"
+        else
+            default_val=127.0.0.1
+        fi
+
+    elif [ "$param" = "MONGODB_HOST" ]; then
+        if [[ "$(get_env_value "DOCKER" "$FRONT_ENV")" = "True" ]]; then
+            default_val="mongo"
+        else
+            default_val=127.0.0.1
+        fi
+
     elif [ "$param" = "EMAIL_HOST_USER" ]; then
         app_name=$(get_env_value "APP_NAME" "$FRONT_ENV")
         app_name=${app_name:-"app"}
@@ -249,11 +270,6 @@ get_default_val() {
 
     elif [ "$param" = "CANTALOUPE_IMG" ]; then
         default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img/"
-        # if [ "$OS" = "Linux" ]; then
-        #     default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img/"
-        # else
-        #     default_val=$(get_env_value "MEDIA_DIR" "$FRONT_ENV")"/img"
-        # fi
 
     elif [ "$param" = "CANTALOUPE_PORT" ]; then
         default_val=$(get_env_value "CANTALOUPE_PORT" "$FRONT_ENV")
@@ -295,7 +311,10 @@ update_env() {
             default_val=$(get_default_val $param)
             current_val=$(get_env_value "$param" "$env_file")
 
-            if [ "$INSTALL_MODE" = "full_install" ]; then
+            if [[ "${desc}" =~ ^[[:space:]]*IGNORE* ]]; then
+                # NEVER PROMPT for env vars whose desc starts with "IGNORE", even for full_install
+                new_value="$default_val"
+            elif [ "$INSTALL_MODE" = "full_install" ]; then
                 # For full install, all variables are prompted
                 prompt_user "$param" "$default_val" "$current_val" "$desc"
             elif [ -n "${!param}" ]; then
@@ -339,7 +358,7 @@ setup_env() {
         #     setup_env $env_file
         #     return 0
         # fi
-        color_echo cyan "\nSkipping..."
+        color_echo cyan "\nSkipping setup_env: .env is aldeady up to date..."
         export_env "$env_file"
         return 0
     fi
@@ -354,10 +373,14 @@ setup_env() {
 
 update_app_env() {
     env_file=${1:-$FRONT_ENV}
-    default_params=("TARGET" "DOCKER" "DEBUG" "C_FORCE_ROOT" "MEDIA_DIR" "POSTGRES_DB" "POSTGRES_USER"
+    default_params=(
+        "TARGET" "DOCKER" "DEBUG" "C_FORCE_ROOT" "MEDIA_DIR" "POSTGRES_DB" "POSTGRES_USER"
         "DB_PORT" "API_PORT" "ALLOWED_HOSTS" "SAS_USERNAME" "SAS_PORT" "SECRET_KEY" "FRONT_PORT"
         "PROD_API_URL" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "REDIS_HOST" "REDIS_PORT"
-        "EMAIL_HOST" "EMAIL_HOST_USER" "EMAIL_HOST_PASSWORD" "APP_LOGO" "HTTP_PROXY" "HTTPS_PROXY")
+        "EMAIL_HOST" "EMAIL_HOST_USER" "EMAIL_HOST_PASSWORD" "APP_LOGO" "HTTP_PROXY" "HTTPS_PROXY"
+        "MONGODB_HOST" "MONGODB_PORT" "AIIINOTATE_PORT" "AIIINOTATE_HOST" "MIRADOR_PORT" "MIRADOR_HOST"
+        "MIRADOR_SCHEME" "AIIINOTATE_SCHEME"
+    )
 
     setup_env "$env_file" "${default_params[@]}"
 
@@ -376,7 +399,6 @@ setup_cantaloupe() {
     cantaloupe_dir=${2:-$FRONT_ROOT/cantaloupe}
     local default_params=("CANTALOUPE_BASE_URI" "CANTALOUPE_IMG" "CANTALOUPE_PORT" "CANTALOUPE_PORT_HTTPS" "CANTALOUPE_DIR")
     setup_env "$cantaloupe_dir"/.env "${default_params[@]}" || return 1
-
     config_cantaloupe="$cantaloupe_dir"/cantaloupe.properties
 
     chmod +x "$cantaloupe_dir"/start.sh
@@ -474,6 +496,40 @@ cleanup_pids() {
     fi
 
     return 0
+}
+
+check_file_exists() {
+    file="$1"
+    if [ ! -f "$file" ];
+    then echo "file does not exist. exiting... (at '$file')"; exit 1;
+    fi;
+}
+
+services_manage() {
+    action="$1"  # start|stop|restart
+
+    if [ "$OS" = "Linux" ]; then
+        sudo systemctl "$action" redis-server
+        sudo systemctl "$action" mongod
+        sudo systemctl "$action" postgresql
+    else
+        brew services "$action" postgresql
+        brew services "$action" redis
+        brew services "$action" mongodb-community@8.0
+    fi
+}
+
+# this has no effect if the services are already running.
+services_start() {
+    services_manage start
+}
+
+services_restart() {
+    services_manage restart
+}
+
+services_stop() {
+    services_manage stop
 }
 
 ask() {

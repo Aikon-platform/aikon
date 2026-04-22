@@ -35,25 +35,25 @@ server {
         proxy_pass http://unix:/run/gunicorn.sock;
     }
 
-    ########### /sas ###############
-    location /sas/ {
-        proxy_ssl_server_name on;
-        proxy_set_header        X-Real_IP           $remote_addr;
-        proxy_set_header        X-Forwarded-For     $proxy_add_x_forwarded_for;
-        proxy_set_header        X-Forwarded-Proto   $scheme;
-        proxy_set_header        X-NginX-Proxy       true;
-        proxy_set_header        Host                $host/sas;
-        proxy_set_header        Upgrade             $http_upgrade;
-        proxy_pass_header       Set-Cookie;
-        proxy_pass              http://0.0.0.0:SAS_PORT/;
-        #auth_basic              "Restricted Content";
-        #auth_basic_user_file    /etc/nginx/.htpasswd;
-    }
+    # ########### /sas ###############
+    # location /sas/ {
+    #     proxy_ssl_server_name on;
+    #     proxy_set_header        X-Real_IP           $remote_addr;
+    #     proxy_set_header        X-Forwarded-For     $proxy_add_x_forwarded_for;
+    #     proxy_set_header        X-Forwarded-Proto   $scheme;
+    #     proxy_set_header        X-NginX-Proxy       true;
+    #     proxy_set_header        Host                $host/sas;
+    #     proxy_set_header        Upgrade             $http_upgrade;
+    #     proxy_pass_header       Set-Cookie;
+    #     proxy_pass              http://0.0.0.0:SAS_PORT/;
+    #     #auth_basic              "Restricted Content";
+    #     #auth_basic_user_file    /etc/nginx/.htpasswd;
+    # }
 
-    ########### /javax ###############
-    location /javax.faces.resource/ {
-        proxy_pass http://0.0.0.0:SAS_PORT/javax.faces.resource/;
-    }
+    # ########### /javax ###############
+    # location /javax.faces.resource/ {
+    #     proxy_pass http://0.0.0.0:SAS_PORT/javax.faces.resource/;
+    # }
 
     ########### /static ###############
     location /static/ {

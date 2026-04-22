@@ -37,16 +37,6 @@ urlpatterns = [
         name="witness-similarity-score-range",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/propagated-matches/<str:img_id>",
-        get_propagated_matches,
-        name="propagated-regions",
-    ),
-    path(
-        f"{APP_NAME}/witness/<int:wid>/regions/propagated-matches/<str:img_id>",
-        get_propagated_matches,
-        name="propagated-regions",
-    ),
-    path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/query-images",
         get_query_images,
         name="query-images",
@@ -57,14 +47,14 @@ urlpatterns = [
         name="witness-query-images",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/similar-images",
+        f"{APP_NAME}/regions/similar-images",
         get_similar_images,
         name="similar-images",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/similar-images",
-        get_similar_images,
-        name="witness-similar-region",
+        f"{APP_NAME}/regions/propagated-matches/<str:img_id>",
+        get_propagated_matches,
+        name="propagated-regions",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/get_regions_title/<str:region_extraction_ref>",
@@ -96,14 +86,30 @@ urlpatterns = [
         no_match,
         name="witness-no-match",
     ),
-    path(f"{APP_NAME}/exact-match", exact_match, name="exact-match"),
-    path(f"{APP_NAME}/exact-match-batch", exact_match_batch, name="exact-match-batch"),
     path(
-        f"{APP_NAME}/uncategorize-pair-batch",
-        uncategorize_pair_batch,
-        name="uncategorize-pair-batch",
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/delete-matches",
+        delete_matches,
+        name="delete-matches",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/regions/delete-matches",
+        delete_matches,
+        name="witness-delete-matches",
+    ),
+    path(
+        f"{APP_NAME}/delete-pair",
+        delete_pair,
+        name="witness-delete-pair",
+    ),
+    path(f"{APP_NAME}/exact-match", exact_match, name="exact-match"),
+    path(f"{APP_NAME}/categorize-batch", categorize_batch, name="categorize-batch"),
+    path(
+        f"{APP_NAME}/uncategorize-batch",
+        uncategorize_batch,
+        name="uncategorize-batch",
     ),
     path(f"{APP_NAME}/save-category", save_category, name="save-category"),
+    path(f"{APP_NAME}/add-user-to-pair", add_user_to_pair, name="add-user-to-pair"),
     path(
         f"{APP_NAME}/index-similarity/<str:region_extraction_ref>",
         index_regions_similarity,
@@ -113,11 +119,6 @@ urlpatterns = [
         f"{APP_NAME}/index-similarity",
         index_regions_similarity,
         name="index-similarity",
-    ),
-    path(
-        f"{APP_NAME}/delete-incorrect-pairs",
-        remove_incorrect_pairs,
-        name="remove-incorrect-pairs",
     ),
     path(
         f"{APP_NAME}/similarity/reset/<int:rid>",

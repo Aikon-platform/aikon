@@ -4,8 +4,10 @@
  */
 
 const IMG_REGEX = /^(.+)_(\d+)_([\d,]+)\.jpg$/;
+// const weights = { 1: 1.0, 2: 0.5, 3: 0.125, 4: -1.0, 5: 0.125 };
+const weights = { 1: 0, 2: 0.25, 3: 0.125, 4: -1.0, 5: 0.125 };
+const getDigitId = img => parseInt(img.match(/_(?:man|img|pdf)(\d+)/)?.[1]);
 
-// Persistent state across batches
 let state = null;
 
 self.onmessage = (e) => {
@@ -26,7 +28,6 @@ self.onmessage = (e) => {
             if (state) {
                 finalize();
             } else {
-                // if received 'done' without any data, send empty result
                 self.postMessage({
                     type: 'complete',
                     allPairs: [],
@@ -43,7 +44,6 @@ self.onmessage = (e) => {
             }
             break;
 
-        // Legacy: full array mode (for backward compat)
         default:
             if (e.data.rawPairs) {
                 state = createState();
@@ -67,12 +67,13 @@ function createState() {
         docStats: createStatsObject(),
         imgStats: createStatsObject(),
         docPStats: createStatsObject(),
-        weights: { 1: 1.0, 2: 0.5, 3: 0.125, 4: -1.0, 5: 0.125 }
+        exactPairs: [],
+        maxWeightedScore: -Infinity, // TODO check if you can do better
     };
 }
 
 function processBatch(batch) {
-    const { pairs, imageMap, index, categories, weights, pStats, docStats, imgStats, docPStats } = state;
+    const { pairs, imageMap, index, categories, pStats, docStats, imgStats, docPStats } = state;
 
     for (let i = 0; i < batch.length; i++) {
         const p = batch[i];
@@ -86,14 +87,17 @@ function processBatch(batch) {
         const baseScore = p.score ?? w;
         const weightedScore = Math.max(0.01, baseScore + baseScore * w);
 
-        const img1 = getOrAddImage(p.img_1, p.regions_id_1, imageMap, imgStats, docStats, weightedScore);
-        const img2 = getOrAddImage(p.img_2, p.regions_id_2, imageMap, imgStats, docStats, weightedScore);
+        const digit1 = p.digit_1 ?? getDigitId(p.img_1) ?? p.regions_id_1;
+        const digit2 = p.digit_2 ?? getDigitId(p.img_2) ?? p.regions_id_2;
+
+        const img1 = getOrAddImage(p.img_1, digit1, imageMap, imgStats, docStats, weightedScore);
+        const img2 = getOrAddImage(p.img_2, digit2, imageMap, imgStats, docStats, weightedScore);
 
         const processedPair = {
             id_1: img1.id,
             id_2: img2.id,
-            regions_id_1: p.regions_id_1,
-            regions_id_2: p.regions_id_2,
+            digit_1: digit1,
+            digit_2: digit2,
             page_1: img1.canvas,
             page_2: img2.canvas,
             score: p.score,
@@ -105,38 +109,46 @@ function processBatch(batch) {
         };
 
         pairs.push(processedPair);
+        if (weightedScore > state.maxWeightedScore) state.maxWeightedScore = weightedScore;
+        if (cat === 1) state.exactPairs.push(processedPair);
         updateStats(pStats, null, weightedScore);
 
-        const pairKey = p.regions_id_1 < p.regions_id_2
-            ? `${p.regions_id_1}-${p.regions_id_2}`
-            : `${p.regions_id_2}-${p.regions_id_1}`;
+        const pairKey = p.digit_1 < p.digit_2
+            ? `${p.digit_1}-${p.digit_2}`
+            : `${p.digit_2}-${p.digit_1}`;
 
         pushToMap(index.byDocPair, pairKey, processedPair);
         updateStats(docPStats, pairKey, weightedScore);
 
         pushToMap(index.byImage, img1.id, processedPair);
         pushToMap(index.byImage, img2.id, processedPair);
-        pushToMap(index.byDoc, p.regions_id_1, processedPair);
-        pushToMap(index.byDoc, p.regions_id_2, processedPair);
+        pushToMap(index.byDoc, p.digit_1, processedPair);
+        pushToMap(index.byDoc, p.digit_2, processedPair);
     }
 
-    // Progress update (optional - can throttle if needed)
     self.postMessage({ type: 'progress', count: pairs.length });
 }
 
 function finalize() {
     const { pairs, imageMap, index, categories, pStats, docStats, imgStats, docPStats } = state;
 
-    // Sort all pairs by score
+    const exactScore = state.maxWeightedScore * 1.25;
+    for (const p of state.exactPairs) p.weightedScore = exactScore;
+    // for (const p of state.exactPairs) p.weightedScore = pStats.score.max * 1.25;
     pairs.sort((a, b) => b.weightedScore - a.weightedScore);
 
-    // TOP-K
     for (const [imgId, imgPairs] of index.byImage) {
         imgPairs.sort((a, b) => b.weightedScore - a.weightedScore);
         for (let k = 0; k < imgPairs.length; k++) {
             const pair = imgPairs[k];
-            if (pair.id_1 === imgId) pair.rank_1 = k + 1;
-            else pair.rank_2 = k + 1;
+            const isSelf = pair.digit_1 === pair.digit_2;
+            const isExact = pair.category === 1
+            const rank = isSelf ? Infinity : (isExact ? 1 : k + 1);
+            if (pair.id_1 === imgId) {
+                pair.rank_1 = rank;
+            } else {
+                pair.rank_2 = rank;
+            }
         }
     }
 
@@ -149,7 +161,6 @@ function finalize() {
     computeDensity(imgStats);
     computeDensity(docPStats);
 
-    // Send final result
     self.postMessage({
         type: 'complete',
         allPairs: pairs,
@@ -164,13 +175,11 @@ function finalize() {
         }
     });
 
-    // Clear state for next use
     state = null;
 }
 
-function getOrAddImage(imgKey, rid, map, imgStats, docStats, score) {
-    const imgId = `${rid}_${imgKey}`;
-    let imgData = map.get(imgId);
+function getOrAddImage(imgKey, digit, map, imgStats, docStats, score) {
+    let imgData = map.get(imgKey);
 
     if (!imgData) {
         let page = 0, ref = imgKey, coords = null;
@@ -188,8 +197,8 @@ function getOrAddImage(imgKey, rid, map, imgStats, docStats, score) {
         }
 
         imgData = {
-            id: imgId,
-            regionId: rid,
+            id: imgKey,
+            digit: digit,
             ref,
             canvas: page,
             xywh: coords ? coords.split(',') : null,
@@ -197,11 +206,11 @@ function getOrAddImage(imgKey, rid, map, imgStats, docStats, score) {
             // to be initialized in the main thread
             color: null
         };
-        map.set(imgId, imgData);
+        map.set(imgKey, imgData);
     }
 
-    updateStats(imgStats, imgId, score);
-    updateStats(docStats, rid, score);
+    updateStats(imgStats, imgKey, score);
+    updateStats(docStats, digit, score);
 
     return imgData;
 }

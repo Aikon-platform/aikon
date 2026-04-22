@@ -18,6 +18,8 @@
 - **Geonames**:
     - Create an account on [Geonames](https://www.geonames.org/login) and activate it
 
+**NOTE**: AIKON requires  **MongoDB** and **Redis** and will install them if needed. User accounts and passwords are **NOT SUPPORTED** on Redis and MongoDB and should not be used with AIKON.
+
 ```bash
 git clone git@github.com:Aikon-platform/aikon.git
 cd aikon
@@ -153,6 +155,12 @@ bash run.sh
 You can now visit the app at [http://localhost:8000](http://localhost:8000) and connect with the credentials you created
 
 ### *For more documentation, see [docs folder](docs/)*
+
+## Testing 🧪
+
+```python
+bash ru.sh -t
+```
 
 ## Project 📜
 

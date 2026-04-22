@@ -1,3 +1,7 @@
+#!/bin/env bash
+
+set -e
+
 DOCKER_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 FRONT_ROOT="$(dirname "$DOCKER_DIR")"
 
@@ -44,18 +48,10 @@ if [ ! -d "$DATA_FOLDER/mediafiles" ]; then
     sudo chown -R "$USERID:$USERID" "$DATA_FOLDER"/mediafiles
 fi
 
-if [ ! -d "$DATA_FOLDER/sas" ]; then
-    color_echo yellow "Creation of $DATA_FOLDER/sas folder (your password is required to set permissions)"
-    get_password && echo || exit
-    sudo mkdir -p "$DATA_FOLDER/sas"
-    sudo chown -R "$USERID":"$USERID" "$DATA_FOLDER/sas"
-fi
-
 if [ -n "$DATA_BACKUP" ] && [ ! -d "$DATA_BACKUP" ]; then
     color_echo yellow "Creation of $DATA_BACKUP folder (your password is required to set permissions)"
     get_password && echo || exit
     sudo mkdir -p "$DATA_BACKUP"
-    sudo chown -R "$USERID":"$USERID" "$DATA_FOLDER/sas"
 fi
 
 generate_conf() {
@@ -74,7 +70,9 @@ generate_conf() {
         sed_repl_inplace "s~DJANGO_PORT~$DJANGO_PORT~" "$conf_file"
         sed_repl_inplace "s~NGINX_PORT~$NGINX_PORT~" "$conf_file"
         sed_repl_inplace "s~CANTALOUPE_PORT~$CANTALOUPE_PORT~" "$conf_file"
-        sed_repl_inplace "s~SAS_PORT~$SAS_PORT~" "$conf_file"
+        # sed_repl_inplace "s~SAS_PORT~$SAS_PORT~" "$conf_file"
+        sed_repl_inplace "s~MIRADOR_PORT~$MIRADOR_PORT~" "$conf_file"
+        sed_repl_inplace "s~AIIINOTATE_PORT~$AIIINOTATE_PORT~" "$conf_file"
         sed_repl_inplace "s~DB_PORT~$DB_PORT~" "$conf_file"
         sed_repl_inplace "s~REDIS_PORT~$REDIS_PORT~" "$conf_file"
         sed_repl_inplace "s~PROD_URL~$PROD_URL~" "$conf_file"

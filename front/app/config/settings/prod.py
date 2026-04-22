@@ -7,12 +7,13 @@ API_URL = (
     f"http://{prod_api_url}" if not prod_api_url.startswith("http") else prod_api_url
 )
 PROD_URL = ENV.str("PROD_URL", default="")
+
 BASE_URL = f"https://{PROD_URL}"
+
 APP_URL = BASE_URL
-# CANTALOUPE_APP_URL = f"http://cantaloupe:{CANTALOUPE_PORT}" if DOCKER else BASE_URL
-# SAS_APP_URL = f"http://sas:{SAS_PORT}" if DOCKER else f"{BASE_URL}/sas"
 CANTALOUPE_APP_URL = BASE_URL
-SAS_APP_URL = f"{BASE_URL}/sas"
+AIIINOTATE_BASE_URL = f"{BASE_URL}/{ENV('AIIINOTATE_HOST', default='aiiinotate')}"
+MIRADOR_BASE_URL = f"{BASE_URL}/{ENV('MIRADOR_HOST', default='mirador')}"
 
 if ENV.str("HTTPS_PROXY", default=""):
     PROXIES = {

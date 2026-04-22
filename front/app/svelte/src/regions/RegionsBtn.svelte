@@ -1,14 +1,26 @@
 <script>
-    import { getContext } from 'svelte';
-    import {showMessage, withLoading} from "../utils.js";
-    import { appLang, appName, csrfToken } from '../constants';
+    import { getContext, onMount } from "svelte";
 
-    const witness = getContext('witness');
+    import {showMessage, withLoading} from "../utils.js";
+    import { appLang, appName, csrfToken } from "../constants";
+    import { activeLayout } from "../ui/tabStore.js";
+
+    const witness = getContext("witness");
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
-    const currentRegionId = parseInt(baseUrl.split('regions/')[1].replace("/", ""));
-    import { activeLayout } from '../ui/tabStore.js';
+    const currentRegionId = parseInt(baseUrl.split("regions/")[1].replace("/", ""));
 
     const allRegionsUrl = baseUrl.replace(/\/\d+\/?$/, "");
+
+    // to persist the current tab when selecting/unselecting a Regions,
+    // we can't listen to changes on window.location.search.
+    // instead, we need to listen to `activeLayout`
+    // that emits an update with the new tab value every time it is updated.
+    let searchParamsString = window.location.search;
+    activeLayout.subscribe((newTab) => {
+        const searchParams = new URLSearchParams(window.location.search);
+        searchParams.set("tab", newTab);
+        searchParamsString = searchParams.toString();
+    });
 
     async function deleteRegions() {
         const confirmed = await showMessage(
@@ -23,8 +35,8 @@
             return;
         }
 
-        if (typeof currentRegionId !== 'number') {
-            throw new Error('Invalid region ID');
+        if (typeof currentRegionId !== "number") {
+            throw new Error("Invalid region ID");
         }
         const url = `${window.location.origin}/${appName}/regions/${currentRegionId}/delete`;
         try {
@@ -35,7 +47,7 @@
             if (response.status !== 204) {
                 throw new Error(`Failed to delete regions: '${response.statusText}'`);
             }
-            window.location.href = `${baseUrl.split('regions/')[0]}regions/`;
+            window.location.href = `${baseUrl.split("regions/")[0]}regions/`;
         } catch (error) {
             console.error(error);
         }
@@ -52,8 +64,8 @@
             return;
         }
 
-        if (typeof currentRegionId !== 'number') {
-            throw new Error('Invalid region ID');
+        if (typeof currentRegionId !== "number") {
+            throw new Error("Invalid region ID");
         }
         const url = `${window.location.origin}/${appName}/similarity/reset/${currentRegionId}`;
         try {
@@ -62,7 +74,7 @@
                 headers: { "X-CSRFToken": csrfToken },
             }));
             if (response.status === 204 || response.status === 200) {
-                window.location.href = `${baseUrl.split('regions/')[0]}regions/`;
+                window.location.href = `${baseUrl.split("regions/")[0]}regions/`;
             } else {
                 throw new Error(`Failed to delete similarity: '${response.statusText}'`);
             }
@@ -87,7 +99,7 @@
 
 <div>
     {#if currentRegionId}
-        <a href="{allRegionsUrl}" class="tag is-dark mr-3 mb-3 is-rounded">
+        <a href="{allRegionsUrl}/?{searchParamsString}" class="tag is-dark mr-3 mb-3 is-rounded">
             {appLang === "en" ? "Back to all witness view" : "Retour à la vue complète du témoin"}
         </a>
         {#if ["all", "page", "similarity"].includes($activeLayout)}
@@ -97,8 +109,9 @@
         {/if}
     {:else}
         {#each witness.region_extractions as regionId}
-            <a href="{baseUrl}{regionId}" class="tag is-dark mr-3 mb-3 is-rounded">Regions extraction #{regionId}</a>
+            <a href="{baseUrl}{regionId}/?{searchParamsString}" class="tag is-dark mr-3 mb-3 is-rounded">
+                Regions extraction #{regionId}
+            </a>
         {/each}
-        <!--TODO add NEW REGIONS BUTTON (to create empty region in order to launch new automatic extraction)-->
     {/if}
 </div>

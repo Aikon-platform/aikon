@@ -31,6 +31,10 @@
                     <h2 class="title is-spaced">
                         {% if APP_LANG == 'en' %}Similarity settings{% else %}Paramètres de la similarité{% endif %}
                     </h2>
+                    <div class="source-selection mb-5">
+                        <h3 class="subtitle">{% if APP_LANG == 'en' %}Compare{% else %}Comparer{% endif %}</h3>
+                        {% include "includes/form/field_group.html" with included_fields="similarity_source_type" %}
+                    </div>
                     {% include "includes/form/field_group.html" with included_fields="similarity_algorithm" %}
                     {% for algo, desc in available_algorithms.items %}
                         <div id="algo-{{ algo }}" class="algorithms mt-5 message box" style="display: none;">

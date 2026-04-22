@@ -1,24 +1,24 @@
 <script>
-    import { createEventDispatcher } from 'svelte';
+    import { createEventDispatcher } from "svelte";
 
     const dispatcher = createEventDispatcher();
 
-    let color = '';
-    let strokeWidth = '';
+    let color = "";
+    let strokeWidth = "";
 
-    const colors = ['red', 'green', 'blue', 'yellow', 'black'];
-    const strokeWidths = ['1', '2', '3', '4', '5'];
+    const colors = ["red", "green", "blue", "yellow", "black"];
+    const strokeWidths = ["1", "2", "3", "4", "5"];
 
     function updateColor(event) {
-        dispatcher('updateElement', { property: 'stroke', value: event.target.value });
+        dispatcher("updateElement", { property: "stroke", value: event.target.value });
     }
 
     function updateStrokeWidth(event) {
-        dispatcher('updateElement', { property: 'stroke-width', value: event.target.value });
+        dispatcher("updateElement", { property: "stroke-width", value: event.target.value });
     }
 
     function deleteElement() {
-        dispatcher('updateElement', { property: 'remove' });
+        dispatcher("updateElement", { property: "remove" });
     }
 </script>
 

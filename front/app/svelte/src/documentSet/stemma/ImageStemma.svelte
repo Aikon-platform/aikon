@@ -13,7 +13,7 @@ Special cases:
 -->
 
 <script>
-    import { derived } from 'svelte/store';
+    import { derived } from "svelte/store";
     import {RegionItem} from "../../regions/types.js";
     import RegionModal from "../../regions/modal/RegionModal.svelte";
     import PageView from "../../regions/modal/PageView.svelte";
@@ -57,8 +57,8 @@ Special cases:
     const pairIndex = derived(visiblePairs, $pairs => {
         const idx = new Map();
         for (const p of $pairs) {
-            const key1 = `${p.regions_id_1}-${p.regions_id_2}`;
-            const key2 = `${p.regions_id_2}-${p.regions_id_1}`;
+            const key1 = `${p.digit_1}-${p.digit_2}`;
+            const key2 = `${p.digit_2}-${p.digit_1}`;
             if (!idx.has(key1)) idx.set(key1, []);
             if (!idx.has(key2)) idx.set(key2, []);
             idx.get(key1).push(p);
@@ -178,8 +178,8 @@ Special cases:
 
         let best = null;
         for (const p of pairs) {
-            const isFrom1 = p.regions_id_1 === fromDocId && p.id_1 === imgId;
-            const isFrom2 = p.regions_id_2 === fromDocId && p.id_2 === imgId;
+            const isFrom1 = p.digit_1 === fromDocId && p.id_1 === imgId;
+            const isFrom2 = p.digit_2 === fromDocId && p.id_2 === imgId;
             if (!isFrom1 && !isFrom2) continue;
 
             const matchedImgId = isFrom1 ? p.id_2 : p.id_1;
@@ -220,7 +220,7 @@ Special cases:
 
             {#each stemmaImages.nodes as node (node.docId)}
                 <g transform="translate({node.x}, {node.y})"
-                    style="cursor: {node.img ? 'pointer' : 'default'}"
+                    style="cursor: {node.img ? "pointer" : "default"}"
                     on:click={() => clickOnImg(node)}
                     on:keyup>
                     <rect

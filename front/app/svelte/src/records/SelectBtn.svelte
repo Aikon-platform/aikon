@@ -1,5 +1,5 @@
 <script>
-    import { appLang } from '../constants';
+    import { appLang } from "../constants";
     import { recordsSelection } from "../selection/selectionStore.js";
     const { isSelected } = recordsSelection;
 
@@ -8,10 +8,10 @@
 </script>
 
 <button class="button" class:is-inverted={itemSelected} on:click={() => recordsSelection.toggle(item)}>
-    {#if appLang === 'en'}
-        {itemSelected ? 'Remove from' : 'Add to'} selection
+    {#if appLang === "en"}
+        {itemSelected ? "Remove from" : "Add to"} selection
     {:else}
-        {itemSelected ? 'Retirer de la' : 'Ajouter à la'} sélection
+        {itemSelected ? "Retirer de la" : "Ajouter à la"} sélection
     {/if}
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
         {#if itemSelected}

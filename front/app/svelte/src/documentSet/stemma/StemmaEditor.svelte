@@ -1,6 +1,6 @@
 <script>
-    import { onMount, onDestroy, afterUpdate, createEventDispatcher } from 'svelte';
-    import * as d3 from 'd3';
+    import { onMount, onDestroy, afterUpdate, createEventDispatcher } from "svelte";
+    import * as d3 from "d3";
     import {i18n} from "../../utils.js";
 
     export let documents = [];
@@ -29,18 +29,18 @@
     let drawingEdge = null;
     let hoveredNode = null;
     let editingNode = null;
-    let editTitle = '';
+    let editTitle = "";
     let editingEdge = null;
-    let editLabel = '';
+    let editLabel = "";
 
     const t = {
-        rename: {en: 'Rename node in stemma', fr: "Renommer un nœud au sein du stemma"},
-        editEdge: {en: 'Edit connection', fr: "Modifier la connexion"},
-        label: {en: 'Label (optional)', fr: "Libellé (optionnel)"},
-        delete: {en: 'Delete', fr: "Supprimer"},
-        save: {en: 'Save', fr: "Enregistrer"},
-        cancel: {en: 'Cancel', fr: "Annuler"},
-        reset: { en: 'Reset stemma', fr: 'Réinitialiser le stemma' }
+        rename: {en: "Rename node in stemma", fr: "Renommer un nœud au sein du stemma"},
+        editEdge: {en: "Edit connection", fr: "Modifier la connexion"},
+        label: {en: "Label (optional)", fr: "Libellé (optionnel)"},
+        delete: {en: "Delete", fr: "Supprimer"},
+        save: {en: "Save", fr: "Enregistrer"},
+        cancel: {en: "Cancel", fr: "Annuler"},
+        reset: { en: "Reset stemma", fr: "Réinitialiser le stemma" }
     }
 
     afterUpdate(render);
@@ -51,7 +51,7 @@
     }
 
     function extractCssColor(varName, fallback) {
-        const temp = document.createElement('div');
+        const temp = document.createElement("div");
         temp.style.color = `var(${varName}, ${fallback})`;
         document.body.appendChild(temp);
         const computed = getComputedStyle(temp).color;
@@ -69,7 +69,7 @@
             return {
                 id: doc.id,
                 title: customTitle || doc.title || `Document ${doc.id}`,
-                color: doc.color || '#999',
+                color: doc.color || "#999",
                 x: saved?.x ?? (i % cols) * spacing.x + 100,
                 y: saved?.y ?? Math.floor(i / cols) * spacing.y + 100,
                 width: NODE_WIDTH,
@@ -132,7 +132,7 @@
                     const my = (src.y + src.height + tgt.y) / 2;
                     ctx.fillStyle = linkColor;
                     ctx.font = `${10 / transform.k}px sans-serif`;
-                    ctx.textAlign = 'center';
+                    ctx.textAlign = "center";
                     ctx.fillText(e.label, mx, my - 4 / transform.k);
                 }
             }
@@ -165,11 +165,11 @@
             ctx.fill();
             ctx.stroke();
 
-            ctx.fillStyle = '#222';
+            ctx.fillStyle = "#222";
             ctx.font = `${12 / transform.k}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            const label = n.title.length > 14 ? n.title.slice(0, 12) + '…' : n.title;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            const label = n.title.length > 14 ? n.title.slice(0, 12) + "…" : n.title;
             ctx.fillText(label, n.x + n.width / 2, n.y + n.height / 2);
         });
 
@@ -204,11 +204,11 @@
         const node = getNodeAt(mx, my);
 
         if (node) {
-             if (e.shiftKey || e.metaKey) {
-                 drawingEdge = { source: node.id, x: (mx - transform.x) / transform.k, y: (my - transform.y) / transform.k };
-             } else {
-                 draggedNode = node;
-             }
+            if (e.shiftKey || e.metaKey) {
+                drawingEdge = { source: node.id, x: (mx - transform.x) / transform.k, y: (my - transform.y) / transform.k };
+            } else {
+                draggedNode = node;
+            }
         }
         render();
     }
@@ -224,7 +224,7 @@
         const edge = getEdgeAt(mx, my);
         if (edge) {
             editingEdge = edge;
-            editLabel = edge.label || '';
+            editLabel = edge.label || "";
         }
     }
 
@@ -253,13 +253,13 @@
     }
 
     function handleEdgeKeydown(e) {
-        if (e.key === 'Enter') saveEdge();
-        if (e.key === 'Escape') editingEdge = null;
+        if (e.key === "Enter") saveEdge();
+        if (e.key === "Escape") editingEdge = null;
     }
 
     function handleEditKeydown(e) {
-        if (e.key === 'Enter') saveTitle();
-        if (e.key === 'Escape') editingNode = null;
+        if (e.key === "Enter") saveTitle();
+        if (e.key === "Escape") editingNode = null;
     }
 
     function handleMouseMove(e) {
@@ -284,7 +284,7 @@
         const node = getNodeAt(mx, my);
         if (node !== hoveredNode) {
             hoveredNode = node;
-            canvas.style.cursor = node ? 'pointer' : 'default';
+            canvas.style.cursor = node ? "pointer" : "default";
             render();
         }
     }
@@ -328,11 +328,11 @@
     }
 
     onMount(() => {
-        bgColor = extractCssColor('--bulma-scheme-main-bis', '#f9fafb');
-        selectedColor = extractCssColor('--bulma-link', '#4258ff');
-        linkColor = extractCssColor('--bulma-body-color', '#5a5f6b');
+        bgColor = extractCssColor("--bulma-scheme-main-bis", "#f9fafb");
+        selectedColor = extractCssColor("--bulma-link", "#4258ff");
+        linkColor = extractCssColor("--bulma-body-color", "#5a5f6b");
 
-        ctx = canvas.getContext('2d');
+        ctx = canvas.getContext("2d");
 
         const rect = container.getBoundingClientRect();
         width = rect.width || 800;
@@ -347,8 +347,8 @@
 
         const zoom = d3.zoom()
             .scaleExtent([0.2, 5])
-            .filter(e => !(e.shiftKey || e.metaKey) && (e.type === 'wheel' || (!draggedNode && !drawingEdge)))
-            .on('zoom', ({ transform: t }) => {
+            .filter(e => !(e.shiftKey || e.metaKey) && (e.type === "wheel" || (!draggedNode && !drawingEdge)))
+            .on("zoom", ({ transform: t }) => {
                 transform = t;
                 render();
             });
@@ -374,7 +374,7 @@
         on:mouseleave={() => { draggedNode = null; drawingEdge = null; }}
     />
 
-    <button class="tag reset-btn" on:click={resetStemma} title={i18n('reset', t)}>
+    <button class="tag reset-btn" on:click={resetStemma} title={i18n("reset", t)}>
         <span class="icon is-small p-0">
             <i class="fas fa-undo"></i>
         </span>
@@ -386,7 +386,7 @@
         <div class="modal-background" on:click={() => editingNode = null} on:keydown={null}/>
         <div class="modal-content" style="max-width: 300px;">
             <div class="box">
-                <h4 class="title is-6 mb-4">{i18n('rename', t)}</h4>
+                <h4 class="title is-6 mb-4">{i18n("rename", t)}</h4>
                 <div class="field is-flex is-align-items-center" style="gap: 0.5rem;">
                     <span class="icon is-small is-left">
                         <span class="color-dot" style="background: {editingNode.color}"></span>
@@ -400,8 +400,8 @@
                     </div>
                 </div>
                 <div class="buttons is-right">
-                    <button class="button is-small" on:click={() => editingNode = null}>{i18n('cancel', t)}</button>
-                    <button class="button is-small is-link" on:click={saveTitle}>{i18n('save', t)}</button>
+                    <button class="button is-small" on:click={() => editingNode = null}>{i18n("cancel", t)}</button>
+                    <button class="button is-small is-link" on:click={saveTitle}>{i18n("save", t)}</button>
                 </div>
             </div>
         </div>
@@ -413,7 +413,7 @@
         <div class="modal-background" on:click={() => editingEdge = null} on:keydown={null}/>
         <div class="modal-content" style="max-width: 300px;">
             <div class="box">
-                <h4 class="title is-6 mb-4">{i18n('editEdge', t)}</h4>
+                <h4 class="title is-6 mb-4">{i18n("editEdge", t)}</h4>
                 <div class="field is-flex is-align-items-center" style="gap: 0.5rem;">
                     <span class="color-dot" style="background: {editingEdge.sourceColor}"></span>
                     <span>→</span>
@@ -427,9 +427,9 @@
                     />
                 </div>
                 <div class="buttons is-right mt-3">
-                    <button class="button is-small is-danger is-outlined" on:click={deleteEdge}>{i18n('delete', t)}</button>
-                    <button class="button is-small" on:click={() => editingEdge = null}>{i18n('cancel', t)}</button>
-                    <button class="button is-small is-link" on:click={saveEdge}>{i18n('save', t)}</button>
+                    <button class="button is-small is-danger is-outlined" on:click={deleteEdge}>{i18n("delete", t)}</button>
+                    <button class="button is-small" on:click={() => editingEdge = null}>{i18n("cancel", t)}</button>
+                    <button class="button is-small is-link" on:click={saveEdge}>{i18n("save", t)}</button>
                 </div>
             </div>
         </div>

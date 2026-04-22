@@ -10,7 +10,6 @@ from app.webapp.utils import tasking
 from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.iiif.annotation import has_annotation
 from app.webapp.utils.logger import log
-from config.settings import APP_LANG
 
 
 ################################################################
@@ -20,6 +19,7 @@ from config.settings import APP_LANG
 ################################################################
 
 
+# usage: see webapp.utils.tasking.process_task_results()
 def prepare_request(witnesses, treatment_id, parameters=None):
     return tasking.prepare_request(
         witnesses,
@@ -30,14 +30,17 @@ def prepare_request(witnesses, treatment_id, parameters=None):
     )
 
 
+# usage: see webapp.utils.tasking.process_task_results()
 def process_results(data, completed=True):
     """
+    retrieve the JSON results from the API and store them to the annotation server
+
     :param data: {
         "output": {
             ?"dataset_url": dataset_url,
             ?"results_url":  [{
                 "doc_id": doc_id,
-                "result_url": result_url  => result_url returns a downloadable JSON
+                "result_url": result_url  => result_url is an URL to AIKON-API that returns a downloadable JSON
             }, {...}],
             "error": [list of error message],
         }
@@ -81,13 +84,16 @@ def process_results(data, completed=True):
     # doc_results is supposed to be { "doc_id": doc_id, "result_url": result_url }
     for doc_results in results_url:
         doc_id = doc_results.get("doc_id")
-        result_url = doc_results.get("result_url")
+        result_url = doc_results.get("result_url")  # API URL with results.
 
         digit_id = parse_ref(doc_id)["digit"][1]
         try:
             response = requests.get(result_url, stream=True)
             response.raise_for_status()
             json_content = response.json()
+            import json
+
+            log(json.dumps(json_content, indent=2))
         except Exception as e:
             log(f"Could not retrieve annotation from {result_url}", e)
             continue
@@ -126,7 +132,7 @@ def prepare_document(document: Witness | Digitization | RegionExtraction, **kwar
     digits = document.get_digits() if hasattr(document, "get_digits") else [document]
 
     return [
-        {"type": "iiif", "src": digit.gen_manifest_url(), "uid": digit.get_ref()}
+        {"type": "iiif", "src": digit.get_manifest_url(), "uid": digit.get_ref()}
         for digit in digits
     ]
 
