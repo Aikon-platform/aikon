@@ -25,7 +25,6 @@ from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
 from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.region_extraction import get_file_region_extraction
-from front.app import region_extraction
 
 
 # ********************************************

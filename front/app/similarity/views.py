@@ -923,73 +923,74 @@ def reset_regions_similarity(request, rid=None):
 #         )
 
 # NOTE unused => delete ?
-# def get_regions_pairs(request, wid, rid=None):
-#     """
-#     Return all the region pairs for a given region id or witness id
-#     1. if rid is provided, return all pairs for this region
-#     2. if rid is not provided, return all pairs for all regions of the witness
-#
-#     if witnessIds or regionsIds are provided, return only pairs where regions_id_1 AND regions_id_2 are in the list of q_regions
-#     otherwise, return pairs where regions_id_1 OR regions_id_2 are in the list of q_regions
-#
-#     additional URL arguments can be passed in the URL
-#     - minScore: float, minimum score to filter pairs
-#     - maxScore: float, maximum score to filter pairs
-#     - topk: int, maximum number of pairs to return
-#     - category: list[int], filter pairs by category
-#     - regionsIds: list of int, filter pairs by regions ids
-#     - witnessIds: list of int, filter pairs by witness ids
-#     - excludeSelf: bool, if true, filter out pairs where both regions_1 and regions_2 are the same
-#     """
-#     if rid is not None:
-#         region_extractions = [get_object_or_404(RegionExtraction, id=rid)]
-#     else:
-#         witness = get_object_or_404(Witness, id=wid)
-#         region_extractions = witness.get_region_extractions()
-#
-#     if not len(region_extractions):
-#         return JsonResponse(
-#             {"error": f"No region extractions found for this witness #{wid}"}, status=400
-#         )
-#
-#     # TODO update route param from regionsIds to regionExtractionIds or digitizationIds ?
-#     digit_ids_param = request.GET.get("regionsIds", "")
-#     witness_ids_param = request.GET.get("witnessIds", "")
-#
-#     digit_ids = set()
-#     if digit_ids_param:
-#         try:
-#             digit_ids.update(int(d) for d in digit_ids_param.split(","))
-#         except ValueError:
-#             return JsonResponse({"error": "Invalid regionsIds parameter"}, status=400)
-#
-#     if witness_ids_param:
-#         try:
-#             for w in witness_ids_param.split(","):
-#                 digit_ids.update(
-#                     Digitization.objects.filter(witness_id=int(w)).values_list(
-#                         "id", flat=True
-#                     )
-#                 )
-#         except ValueError:
-#             return JsonResponse({"error": "Invalid witnessIds parameter"}, status=400)
-#
-#     # Always include the current witness's digit_ids
-#     digit_ids.update(r.digitization_id for r in region_extractions)
-#
-#     try:
-#         pairs = filter_pairs(
-#             digit_ids,
-#             exclusive=bool(witness_ids_param or digit_ids_param),
-#             min_score=safe_float(request.GET.get("minScore")),
-#             max_score=safe_float(request.GET.get("maxScore")),
-#             topk=safe_int(request.GET.get("topk")),
-#             exclude_self=safe_bool(request.GET.get("excludeSelf")) or False,
-#             categories=parse_list(request.GET.get("category")) or [],
-#         )
-#         return JsonResponse(pairs, status=200, safe=False)
-#     except Exception as e:
-#         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+def get_regions_pairs(request, wid, rid=None):
+    """
+    Return all the region pairs for a given region id or witness id
+    1. if rid is provided, return all pairs for this region
+    2. if rid is not provided, return all pairs for all regions of the witness
+
+    if witnessIds or regionsIds are provided, return only pairs where regions_id_1 AND regions_id_2 are in the list of q_regions
+    otherwise, return pairs where regions_id_1 OR regions_id_2 are in the list of q_regions
+
+    additional URL arguments can be passed in the URL
+    - minScore: float, minimum score to filter pairs
+    - maxScore: float, maximum score to filter pairs
+    - topk: int, maximum number of pairs to return
+    - category: list[int], filter pairs by category
+    - regionsIds: list of int, filter pairs by regions ids
+    - witnessIds: list of int, filter pairs by witness ids
+    - excludeSelf: bool, if true, filter out pairs where both regions_1 and regions_2 are the same
+    """
+    if rid is not None:
+        region_extractions = [get_object_or_404(RegionExtraction, id=rid)]
+    else:
+        witness = get_object_or_404(Witness, id=wid)
+        region_extractions = witness.get_region_extractions()
+
+    if not len(region_extractions):
+        return JsonResponse(
+            {"error": f"No region extractions found for this witness #{wid}"},
+            status=400,
+        )
+
+    # TODO update route param from regionsIds to regionExtractionIds or digitizationIds ?
+    digit_ids_param = request.GET.get("regionsIds", "")
+    witness_ids_param = request.GET.get("witnessIds", "")
+
+    digit_ids = set()
+    if digit_ids_param:
+        try:
+            digit_ids.update(int(d) for d in digit_ids_param.split(","))
+        except ValueError:
+            return JsonResponse({"error": "Invalid regionsIds parameter"}, status=400)
+
+    if witness_ids_param:
+        try:
+            for w in witness_ids_param.split(","):
+                digit_ids.update(
+                    Digitization.objects.filter(witness_id=int(w)).values_list(
+                        "id", flat=True
+                    )
+                )
+        except ValueError:
+            return JsonResponse({"error": "Invalid witnessIds parameter"}, status=400)
+
+    # Always include the current witness's digit_ids
+    digit_ids.update(r.digitization_id for r in region_extractions)
+
+    try:
+        pairs = filter_pairs(
+            digit_ids,
+            exclusive=bool(witness_ids_param or digit_ids_param),
+            min_score=safe_float(request.GET.get("minScore")),
+            max_score=safe_float(request.GET.get("maxScore")),
+            topk=safe_int(request.GET.get("topk")),
+            exclude_self=safe_bool(request.GET.get("excludeSelf")) or False,
+            categories=parse_list(request.GET.get("category")) or [],
+        )
+        return JsonResponse(pairs, status=200, safe=False)
+    except Exception as e:
+        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
 def get_document_set_pairs(request, dsid=None):

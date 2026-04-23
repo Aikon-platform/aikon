@@ -7,5 +7,6 @@ from app.webapp.views.superadmin import *
 from app.webapp.views.delete import *
 from app.webapp.views.autocomplete import *
 from app.webapp.views.region_extraction import *
-from app.webapp.views.test import *
+
+# from app.webapp.views.test import *
 from app.webapp.views.export import *
