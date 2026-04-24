@@ -1,10 +1,10 @@
 import re
 import requests
 
-from app.regions.const import EXTRACTOR_MODEL
-from app.regions.tasks import process_regions_file
+from app.region_extraction.const import EXTRACTOR_MODEL
+from app.region_extraction.tasks import process_region_extraction_file
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
 from app.webapp.utils.iiif import parse_ref
@@ -25,7 +25,7 @@ def prepare_request(witnesses, treatment_id, parameters=None):
         witnesses,
         treatment_id,
         prepare_document,
-        "regions",
+        "region_extraction",
         dict({"model": f"{EXTRACTOR_MODEL}"}, **(parameters or {})),
     )
 
@@ -98,28 +98,33 @@ def process_results(data, completed=True):
             log(f"Could not retrieve annotation from {result_url}", e)
             continue
 
-        if not check_regions_json_file(json_content):
+        if not check_region_extraction_json_file(json_content):
             continue
 
         try:
             model_name = result_url.split("/")[-1].split("+")[0] or EXTRACTOR_MODEL
-            process_regions_file.delay(json_content, digit_id, model_name)
+            process_region_extraction_file.delay(json_content, digit_id, model_name)
         except Exception as e:
             log(f"Could not process annotation from {result_url}", e)
             raise e
     return
 
 
-def prepare_document(document: Witness | Digitization | Regions, **kwargs):
+def prepare_document(document: Witness | Digitization | RegionExtraction, **kwargs):
     if not type(document).__name__ == "Witness" and not document.has_images():
         log(f"[prepare_document] Skipping {document}: no images to process")
         return []
 
-    regions = document.get_regions() if hasattr(document, "get_regions") else [document]
+    region_extractions = (
+        document.get_region_extractions()
+        if hasattr(document, "get_region_extractions")
+        else [document]
+    )
 
     if any(
-        region.model == kwargs["model"] and has_annotation(region.get_ref())
-        for region in regions
+        region_extraction.model == kwargs["model"]
+        and has_annotation(region_extraction.get_ref())
+        for region_extraction in region_extractions
     ):
         log(f"[prepare_document] Skipping {document}: regions already extracted")
         return []
@@ -132,18 +137,18 @@ def prepare_document(document: Witness | Digitization | Regions, **kwargs):
     ]
 
 
-def regions_request(witnesses, treatment_id):
+def region_extraction_request(witnesses, treatment_id):
     """
     To relaunch extraction request in case the automatic process has failed
     """
     tasking.task_request(
-        "regions",
+        "region_extraction",
         witnesses,
         treatment_id,
     )
 
 
-def check_regions_txt_file(file_content):
+def check_region_extraction_txt_file(file_content):
     """
     Check that the TXT of the file content really contains annotations
     Should look something like this:
@@ -162,12 +167,12 @@ def check_regions_txt_file(file_content):
         if line == "":
             continue
         if not pattern.match(line):
-            log(f"[check_regions_txt_file] incorrect line {line}")
+            log(f"[check_region_extraction_txt_file] incorrect line {line}")
             return False
     return True
 
 
-def check_regions_json_file(file_content):
+def check_region_extraction_json_file(file_content):
     """
     Check that the JSON of the file content really contains annotations
     Should contain something like this:
@@ -215,5 +220,5 @@ def check_regions_json_file(file_content):
                 #         return False
         return True
     except Exception as e:
-        log(f"[check_regions_json_file] incorrect data", e)
+        log(f"[check_region_extraction_json_file] incorrect data", e)
         return False

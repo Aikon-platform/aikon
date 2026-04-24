@@ -10,13 +10,13 @@ from app.webapp.utils.tasking import (
 )
 from app.webapp.views import is_superuser, check_ref
 
-from app.regions.utils import regions_request
+from app.region_extraction.utils import region_extraction_request
 
 
 @user_passes_test(is_superuser)
-def send_regions_extraction(request, digit_ref):
+def send_region_extraction(request, digit_ref):
     """
-    To relaunch regions extraction in case the automatic extraction failed
+    To relaunch region extraction in case the automatic extraction failed
     """
     passed, digit = check_ref(digit_ref)
     if not passed:
@@ -25,25 +25,25 @@ def send_regions_extraction(request, digit_ref):
     # TODO delete regions files if existing
 
     error = {
-        "response": f"Failed to send regions extraction request for digit #{digit.id}"
+        "response": f"Failed to send region extraction request for digit #{digit.id}"
     }
 
     try:
-        status = regions_request([digit.get_witness()], "manual")
+        status = region_extraction_request([digit.get_witness()], "manual")
     except Exception as e:
         error["cause"] = e
         return JsonResponse(error, safe=False)
 
     if status:
         return JsonResponse(
-            {"response": f"Regions extraction was relaunched for digit #{digit.id}"},
+            {"response": f"Region extraction was relaunched for digit #{digit.id}"},
             safe=False,
         )
     return JsonResponse(error, safe=False)
 
 
 @require_POST
-def witness_regions_extraction(request, wit_id):
+def witness_region_extraction(request, wit_id):
     """
     To launch regions extraction for a specific witness
     """
@@ -78,7 +78,7 @@ def witness_regions_extraction(request, wit_id):
 
 
 @csrf_exempt
-def receive_regions_notification(request):
+def receive_region_extraction_notification(request):
     """
     Receive results and notification from the API
     """

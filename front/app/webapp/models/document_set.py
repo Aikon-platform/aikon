@@ -5,7 +5,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import Q
 
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
 from app.webapp.models.series import Series
@@ -139,15 +139,17 @@ class DocumentSet(AbstractSearchableModel):
 
         return list(Witness.objects.filter(q).distinct().values_list("id", flat=True))
 
-    def get_regions(self, only_ids):
+    def get_region_extractions(self, only_ids):
         witness_ids = self.all_witness_ids()
         if only_ids:
             return list(
-                Regions.objects.filter(
+                RegionExtraction.objects.filter(
                     digitization__witness_id__in=witness_ids
                 ).values_list("id", flat=True)
             )
-        return list(Regions.objects.filter(digitization__witness_id__in=witness_ids))
+        return list(
+            RegionExtraction.objects.filter(digitization__witness_id__in=witness_ids)
+        )
 
     def get_digit_ids(self):
         """Get all digitization IDs from witnesses, series, works, and direct digit_ids."""

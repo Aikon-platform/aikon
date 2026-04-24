@@ -176,7 +176,7 @@ class Witness(AbstractSearchableModel):
         return reverse("admin:webapp_witness_change", args=[self.id])
 
     def get_absolute_view_url(self):
-        return reverse("webapp:witness_regions_view", args=[self.id])
+        return reverse("webapp:witness_region_extraction_view", args=[self.id])
 
     def can_edit(self, user):
         if not user or not user.is_authenticated:
@@ -189,8 +189,12 @@ class Witness(AbstractSearchableModel):
             or user.groups.filter(user=self.user).exists()
         )
 
-    def to_json(self, reindex=True, no_img=False):
-        buttons = {"regions": reverse("webapp:witness_regions_view", args=[self.id])}
+    def to_json(self, reindex=True, no_img=False, request_user=None):
+        buttons = {
+            "region_extraction": reverse(
+                "webapp:witness_region_extraction_view", args=[self.id]
+            )
+        }
 
         digits = self.get_digits()
         user = self.user
@@ -209,7 +213,9 @@ class Witness(AbstractSearchableModel):
                 "class": self.__class__.__name__,
                 "type": get_name("Witness"),
                 "digits": [digit.id for digit in digits],
-                "regions": [region.id for region in self.get_regions()],
+                "region_extractions": [
+                    region.id for region in self.get_region_extractions()
+                ],
                 "iiif": [digit.manifest_link(inline=True) for digit in digits],
                 "title": self.__str__(),
                 "img": img,
@@ -299,8 +305,8 @@ class Witness(AbstractSearchableModel):
         return f"{self.volume_title}" if self.volume_title else "-"
 
     def is_validated(self):
-        for regions in self.get_regions():
-            if not regions.is_validated:
+        for region_extractions in self.get_region_extractions():
+            if not region_extractions.is_validated:
                 return False
         return True
 
@@ -337,21 +343,20 @@ class Witness(AbstractSearchableModel):
 
     def get_dates(self):
         cont_dates = [cont.get_dates() for cont in self.get_contents()]
-        wit_dates = list(
-            filter(
-                None,
-                [
-                    d
-                    for dates in cont_dates
-                    if any(d is not None for d in dates)
-                    for d in dates
-                ],
-            )
-        )
-        if len(wit_dates) == 1:
-            return None, wit_dates[0]
 
-        return (min(wit_dates), max(wit_dates)) if wit_dates else (None, None)
+        min_dates = []
+        max_dates = []
+
+        for min_d, max_d in cont_dates:
+            if min_d is not None:
+                min_dates.append(min_d)
+            if max_d is not None:
+                max_dates.append(max_d)
+
+        min_date = min(min_dates) if min_dates else None
+        max_date = max(max_dates) if max_dates else None
+
+        return min_date, max_date
 
     def get_contents(self):
         # Django automatically creates a reverse relationship from Witness to Content
@@ -362,14 +367,14 @@ class Witness(AbstractSearchableModel):
             return []
         return self.digitizations.all()
 
-    def get_regions(self):
+    def get_region_extractions(self):
         # regions = []
         # for digit in self.get_digits():
-        #     regions.extend(digit.get_regions())
+        #     regions.extend(digit.get_region_extractions())
         # return regions
-        from app.webapp.models.regions import Regions
+        from app.webapp.models.region_extraction import RegionExtraction
 
-        return Regions.objects.filter(digitization__witness=self).distinct()
+        return RegionExtraction.objects.filter(digitization__witness=self).distinct()
 
     def has_images(self):
         if self.pk is None:
@@ -400,16 +405,19 @@ class Witness(AbstractSearchableModel):
             )
         return imgs
 
-    def has_regions(self):
-        return any(digit.has_regions() for digit in self.get_digits())
+    def has_region_extractions(self):
+        return any(digit.has_region_extractions() for digit in self.get_digits())
 
-    def set_json_regions(self):
+    def set_json_region_extractions(self):
         """
-        after creating or deleting a Regions, update the witness.json field.
+        after creating or deleting a RegionExtraction, update the witness.json field.
         necessary to avoid de-synchronization of witness.json with what's actually in the database.
         """
         witness_json: dict = self.json
-        witness_json["regions"] = [region.id for region in self.get_regions()]
+        # NOTE : we don´t change from "regions" to "region_extractions" because that would demand a database migration.
+        witness_json["regions"] = [
+            region.id for region in self.get_region_extractions()
+        ]
         self.update_json(witness_json)
         return
 

@@ -2,6 +2,7 @@ from django.utils.safestring import mark_safe
 
 from django.urls import reverse
 from app.webapp.models.digitization import Digitization
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.utils.functions import get_icon, get_action, cls
 from app.config.settings import (
     AIIINOTATE_BASE_URL,
@@ -12,10 +13,10 @@ from app.config.settings import (
 from app.webapp.utils.iiif import IIIF_ICON
 
 
-def regions_btn(obj, action="view"):
+def region_extraction_btn(obj: RegionExtraction | Digitization, action="view"):
     """
-    TODO check if still used
-    obj: Regions | Digitization
+    # TODO check if still used
+    obj: RegionExtraction | Digitization
     """
     disabled = ""
     btn = f"{get_action(action, 'upper')}"
@@ -30,16 +31,16 @@ def regions_btn(obj, action="view"):
         link = f"{AIIINOTATE_BASE_URL}/indexView.html?iiif-content={obj.get_manifest_url()}"
     # elif action == "edit":
     #     icon = get_icon("pen-to-square")
-    #     # The link redirects to the edit regions page (show_regions() view DELETED)
+    #     # The link redirects to the edit region extraction page (show_regions() view DELETED)
     #     link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show/"
     elif action == "final":
         icon = get_icon("check")
         # The link redirects to Mirador with corrected regions (Regions)
-        link = f"{AIIINOTATE_BASE_URL}/indexView.html?iiif-content={obj.get_manifest_url()}"
+        link = f"{AIIINOTATE_BASE_URL}/index.html?iiif-content={obj.get_manifest_url()}"
     # elif action == "similarity":
     #     icon = get_icon("code-compare")
     #     link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-similarity"
-    elif action == "regions":
+    elif action == "region_extraction":
         icon = get_icon("eye")
         link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-all-regions"
     elif action == "vectors":
@@ -63,7 +64,7 @@ def regions_btn(obj, action="view"):
 
 def get_link_manifest(obj):
     """
-    obj: Regions | Digitization
+    obj: RegionExtraction | Digitization
     """
     manifest_url = obj.get_manifest_url()
     return f"<a id='{obj.get_ref()}' href='{manifest_url}' target='_blank'>{manifest_url} {IIIF_ICON}</a>"
@@ -71,34 +72,45 @@ def get_link_manifest(obj):
 
 def gen_btn(obj, action="view"):
     """
-    obj: Regions | Digitization
+    obj: RegionExtraction | Digitization
     """
-    if action == "no_manifest" or action == "no_regions" or action == "no_digit":
-        return mark_safe(regions_btn(obj, action))
+    if (
+        action == "no_manifest"
+        or action == "no_region_extraction"
+        or action == "no_digit"
+    ):
+        return mark_safe(region_extraction_btn(obj, action))
 
-    is_regions = True
-    if action == "regions":
+    is_region_extraction = True
+    if action == "region_extraction":
         region_url = reverse(
-            "webapp:regions_view", kwargs={"wid": obj.get_witness().id, "rid": obj.id}
+            "webapp:region_extraction_view",
+            kwargs={"wid": obj.get_witness().id, "rid": obj.id},
         )
-        title = "Show regions" if APP_LANG == "en" else "Afficher les régions"
+        title = (
+            "Show region extraction"
+            if APP_LANG == "en"
+            else "Afficher les régions extraites"
+        )
         return mark_safe(
             f"<a href='{region_url}' class='button is-small is-link px-2' title='{title}'>"
             f"<span class='iconify' data-icon='entypo:documents'/>"
             f"<span class='ml-2'>{title.upper()}</span></a>"
         )
-    download_url = f"{AIIINOTATE_BASE_URL}/search-api/2/{obj.get_ref()}/search/"
-    regions_type = "JSON"
+    download_url = (
+        f"{AIIINOTATE_BASE_URL}/search-api/1/manifests/{obj.get_ref()}/search/"
+    )
+    region_extraction_type = "JSON"
 
     download = (
-        f'<a href="{download_url}" target="_blank">{get_icon("download")} {get_action("download")} ({regions_type})</a>'
-        if is_regions
+        f'<a href="{download_url}" target="_blank">{get_icon("download")} {get_action("download")} ({region_extraction_type})</a>'
+        if is_region_extraction
         else ""
     )
 
     return mark_safe(
         # todo: do a method of Regions and Digitization instead?
-        f"{get_link_manifest(obj)}<br>{regions_btn(obj, action)}<br>{download}"
+        f"{get_link_manifest(obj)}<br>{region_extraction_btn(obj, action)}<br>{download}"
     )
 
 

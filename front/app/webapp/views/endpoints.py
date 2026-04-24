@@ -7,18 +7,20 @@ from django.shortcuts import get_object_or_404
 
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 
-from app.webapp.utils.iiif.annotation import (
-    get_annotations_on_canvases,
-)
 from app.webapp.utils.logger import log
+from app.webapp.utils.paths import MEDIA_PATH
+from app.webapp.utils.region_extraction import create_empty_region_extraction
 from app.webapp.utils.paths import MEDIA_PATH, REGIONS_PATH
-from app.webapp.utils.regions import create_empty_regions
-from app.webapp.tasks import generate_all_json
+from app.webapp.utils.region_extraction import create_empty_region_extraction
 from app.webapp.utils.functions import page_bounds
 from app.webapp.utils.tasking import create_doc_set
+from app.webapp.utils.constants import PAGE_LEN
+from app.webapp.utils.iiif.annotation import get_record_annotations
+
+from app.webapp.tasks import generate_all_json
 
 # TODO ORGANISE THESE VIEWS BETTER
 

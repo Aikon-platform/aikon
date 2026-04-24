@@ -6,7 +6,14 @@ environ.Env.read_env(env_file=f"{BASE_DIR}/config/.env")
 
 APP_NAME = ENV.str("APP_NAME", default="")
 WEBAPP_NAME = "webapp"
+
+allowed_modules = ["region_extraction", "similarity", "vectorization"]
 ADDITIONAL_MODULES = ENV.list("INSTALLED_APPS", default=[])
+invalid = [a for a in ADDITIONAL_MODULES if a not in allowed_modules]
+if len(invalid):
+    print(
+        f"Invalid value for .env variable INSTALLED_APPS: allowed values are {allowed_modules}. Invalid values: {invalid}"
+    )
 
 # Logos to be displayed in the footer
 APP_LOGO = ENV.list("APP_LOGO", default=[])

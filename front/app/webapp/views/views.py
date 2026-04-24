@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import RegionExtraction, check_version
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.witness import Witness
 from app.config.settings import API_URL
@@ -79,7 +79,7 @@ def check_ref(obj_ref, obj="Digitization"):
     ref_format = (
         "wit{witness_id}_{digit_abbr}{digit_id}"
         if obj == "Digitization"
-        else "wit{witness_id}_{digit_abbr}{digit_id}_anno{regions_id}"
+        else "wit{witness_id}_{digit_abbr}{digit_id}_anno{region_extraction_id}"
     )
     if not ref:
         return False, {
@@ -93,7 +93,7 @@ def check_ref(obj_ref, obj="Digitization"):
     if not digit:
         return False, {"response": f"No digitization matching the id #{digit_id}"}
 
-    if obj == "Digitization" or ref["regions"] is None:
+    if obj == "Digitization" or ref["region_extraction"] is None:
         if obj_ref != digit.get_ref():
             return False, {
                 "response": f"Wrong info given in reference for digitization #{digit_id}: {obj_ref} instead of {digit.get_ref()}",
@@ -101,19 +101,21 @@ def check_ref(obj_ref, obj="Digitization"):
             }
         return True, digit
 
-    regions_id = ref["regions"][1]
-    # regions = Regions.objects.filter(pk=regions_id).first()
-    regions = Regions.objects.get(pk=regions_id)
-    if not regions:
-        return False, {"response": f"No regions matching the id #{regions_id}"}
+    region_extraction_id = ref["region_extraction"][1]
+    # regions = RegionExtraction.objects.filter(pk=regions_id).first()
+    region_extraction = RegionExtraction.objects.get(pk=region_extraction_id)
+    if not region_extraction:
+        return False, {
+            "response": f"No region extraction matching the id #{region_extraction_id}"
+        }
 
-    if obj == "Regions":
-        if obj_ref != regions.get_ref():
+    if obj == "RegionExtraction":
+        if obj_ref != region_extraction.get_ref():
             return False, {
-                "response": f"Wrong info given in reference for regions #{regions_id}",
+                "response": f"Wrong info given in reference for region extraction #{region_extraction_id}",
                 "reason": f"Reference must follow this format: {ref_format}",
             }
-        return True, regions
+        return True, region_extraction
 
     return False, {"response": f"Nothing to retrieve for {obj} #{obj_ref}"}
 
@@ -140,16 +142,16 @@ def manifest_digitization(request, digit_ref):
 # def export_digit_img(request, digit_id):
 #     digit = get_object_or_404(Digitization, pk=digit_id)
 #     regions = []
-#     for region in digit.get_regions():
-#         regions.extend(get_regions_img(region))
+#     for region in digit.get_region_extractions():
+#         regions.extend(get_region_extraction_img(region))
 #     return list_to_txt(regions, digit.get_ref())
 
 
 # def export_wit_img(request, wit_id):
 #     wit = get_object_or_404(Witness, pk=wit_id)
 #     regions = []
-#     for region in wit.get_regions():
-#         regions.extend(get_regions_img(region))
+#     for region in wit.get_region_extractions():
+#         regions.extend(get_region_extraction_img(region))
 #     return list_to_txt(regions, wit.get_ref())
 
 

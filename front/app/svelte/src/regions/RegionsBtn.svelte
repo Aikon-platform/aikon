@@ -93,7 +93,7 @@
     }
 
     $: resultName = ["all", "page"].includes($activeLayout)
-        ? (appLang === "en" ? "regions" : "régions")
+        ? (appLang === "en" ? "region extraction" : "extraction des régions")
         : (appLang === "en" ? "similarities" : "similarités");
 </script>
 
@@ -108,7 +108,7 @@
             </button>
         {/if}
     {:else}
-        {#each witness.regions as regionId}
+        {#each witness.region_extractions as regionId}
             <a href="{baseUrl}{regionId}/?{searchParamsString}" class="tag is-dark mr-3 mb-3 is-rounded">
                 Regions extraction #{regionId}
             </a>

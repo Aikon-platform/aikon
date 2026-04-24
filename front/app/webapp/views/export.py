@@ -16,7 +16,7 @@ from app.config.settings import (
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.models.utils.constants import PDF_ABBR, MAN_ABBR
 from app.webapp.utils.functions import (
@@ -32,21 +32,21 @@ from app.webapp.utils.iiif.annotation import (
 from app.webapp.utils.paths import IMG_PATH
 
 
-def export_regions(request):
+def export_region_extraction(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
     data = json.loads(request.body.decode("utf-8"))
-    regions_ref = data.get("regionsRef")
+    region_extraction_ref = data.get("regionExtractionRef")
 
     urls_list = []
-    for ref in regions_ref:
+    for ref in region_extraction_ref:
         try:
             wit, digit, canvas, coord = ref.split("_")
             urls_list.append(
                 gen_iiif_url(f"{wit}_{digit}_{canvas}.jpg", 2, f"{coord}/full/0")
             )
         except Exception as e:
-            log(f"[export_regions] Couldn't parse {ref} for export", e)
+            log(f"[export_region_extraction] Couldn't parse {ref} for export", e)
 
     return zip_img(urls_list)
 
@@ -60,7 +60,7 @@ def export_docset(request, dsid):
     |   |-- metadata.json
     |   |-- [digitizations]
     |   |   |   |-- [each digit file (images + original format)]
-    |   |-- [Regions: one folder each]
+    |   |-- [RegionExtraction: one folder each]
     |   |   |-- [annotations]
     |   |   |   |-- manifest.json
     |   |   |   |-- annotations.json
@@ -108,10 +108,10 @@ def export_docset(request, dsid):
                     )
                 )
 
-        r_list = w.get_regions()
+        r_list = w.get_region_extractions()
         for regions in r_list:
             # 2: Annotation (JSON manifest+metadata)
-            if "regions" in ADDITIONAL_MODULES:
+            if "region_extraction" in ADDITIONAL_MODULES:
                 file_contents.append(
                     (
                         f"witness{w.id}/regions{regions.id}/manifest.json",
@@ -172,7 +172,7 @@ def export_docset(request, dsid):
 
 def gen_coco_data(witness_data, regions_data):
     """
-    Given resulting dicts from Regions and Witness data, shapes the Regions metadata as a COCO-formatted  object.
+    Given resulting dicts from RegionExtraction and Witness data, shapes the RegionExtraction metadata as a COCO-formatted  object.
     """
     coco = {"images": [], "annotations": [], "categories": []}
 
@@ -221,10 +221,10 @@ def get_region_data(wid, rid):
     witness = get_object_or_404(Witness, id=wid)
     if witness.is_public:
         annos = get_record_annotations(
-            record=get_object_or_404(Regions, id=rid), as_json=True
+            record=get_object_or_404(RegionExtraction, id=rid), as_json=True
         )
         result = {
-            "manifest": get_object_or_404(Regions, pk=rid).get_manifest_url(),
+            "manifest": get_object_or_404(RegionExtraction, pk=rid).get_manifest_url(),
             "extracted_crops": annos,
         }
     return result
@@ -307,7 +307,7 @@ def get_witness_data(witness, json_cascade=True):
         )
     }
 
-    w_regions = witness.get_regions()
+    w_regions = witness.get_region_extractions()
     w_reg_processes = {}
     for r in w_regions:
         # TODO change to use get_json()
@@ -318,8 +318,8 @@ def get_witness_data(witness, json_cascade=True):
         w_reg_processes[r.id]["treatments"] = {}
 
         if json_cascade:
-            # 3 : Regions/annotations data (endpoint URL)
-            if "regions" in ADDITIONAL_MODULES:
+            # 3 : RegionExtraction/annotations data (endpoint URL)
+            if "region_extraction" in ADDITIONAL_MODULES:
                 w_reg_processes[r.id]["treatments"][
                     "extracted_regions"
                 ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/extracted-regions"
@@ -336,7 +336,7 @@ def get_witness_data(witness, json_cascade=True):
                     "vectorizations"
                 ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/vectorized-images"
 
-    return w_json | w_digits_manifs | {"regions": w_reg_processes}
+    return w_json | w_digits_manifs | {"regions_extraction": w_reg_processes}
 
 
 def create_json_vecto_element(svg_filename, include_svg, subfolder_name=None):
@@ -361,7 +361,7 @@ def get_vecto_data(rid, include_svg=True):
     # Inspired from 'get_vectorized_images' in 'vectorization/views.py'
     from app.vectorization.const import SVG_PATH
 
-    q_r = get_object_or_404(Regions, pk=rid)
+    q_r = get_object_or_404(RegionExtraction, pk=rid)
     v_imgs = []
     # Mirroring what happens with vectorization view:
     # First look in folder named after regions_ref, then try with digit_ref

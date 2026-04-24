@@ -32,7 +32,7 @@ function capitalize(s) {
     return s[0].toUpperCase() + s.slice(1);
 }
 
-function getRegionsRef() {
+function getRegionExtractionRef() {
     const currentUrl = getUrl();
     if (currentUrl.includes("show")){
         const parts = currentUrl.split("/show")[0].split("/");
@@ -129,17 +129,17 @@ function deleteAllRegions(allRegions) {
     }
 }
 
-function validateRegions(regions_ref = null) {
-    if (!regions_ref) {
-        regions_ref = getRegionsRef();
-        if (!regions_ref) {
-            console.log("No region reference")
+function validateRegionExtraction(region_extraction_ref = null) {
+    if (!region_extraction_ref) {
+        region_extraction_ref = getRegionExtractionRef();
+        if (!region_extraction_ref) {
+            console.log("No region extraction reference")
             return
         }
     }
 
-    if (confirm(APP_LANG === "en" ? `Once validated, the regions cannot be modified. Continue?` :
-        `Une fois validées, les régions ne pourront plus être modifiées. Continuer ?`)) {
+    if (confirm(APP_LANG === "en" ? `Once validated, the region extraction cannot be modified. Continue?` :
+        `Une fois validée, l'extraction des régions ne pourra plus être modifiée. Continuer ?`)) {
         fetch(`${APP_URL}/${APP_NAME}/iiif/validate/${regions_ref}`)
             .then(response => {
                 if (response.status === 200) {
@@ -147,7 +147,7 @@ function validateRegions(regions_ref = null) {
                     try { window.replace(`${APP_URL}/${APP_NAME}-admin/${WEBAPP_NAME}/witness`); }
                     catch(e) { window.location = `${APP_URL}/${APP_NAME}-admin/${WEBAPP_NAME}/witness`; }
                 } else {
-                    throw new Error(`Could not validate regions #${regions_ref}.`);
+                    throw new Error(`Could not validate region extraction #${regions_ref}.`);
                 }
             }).catch(error => {
             showMessage(`Error: ${error.message}`);

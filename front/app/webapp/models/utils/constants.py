@@ -23,7 +23,7 @@ MODEL_NAMES = {
     "Role": {"en": "role", "fr": "rôle"},
     "Image": {"en": "image", "fr": "image"},
     "Pdf": {"en": "PDF", "fr": "PDF"},
-    "Regions": {"en": "regions", "fr": "régions"},
+    "RegionExtraction": {"en": "region extraction", "fr": "extraction des régions"},
     "User": {"en": "user", "fr": "utilisateur"},
     "UserProfile": {"en": "user profile", "fr": "profil utilisateur"},
     "Group": {"en": "group", "fr": "groupe"},
@@ -49,7 +49,7 @@ PERS = MODEL_NAMES["Person"][APP_LANG]
 ROLE = MODEL_NAMES["Role"][APP_LANG]
 IMG = MODEL_NAMES["Image"][APP_LANG]
 PDF = MODEL_NAMES["Pdf"][APP_LANG]
-REG = MODEL_NAMES["Regions"][APP_LANG]
+REG = MODEL_NAMES["RegionExtraction"][APP_LANG]
 USR = MODEL_NAMES["User"][APP_LANG]
 GRP = MODEL_NAMES["Group"][APP_LANG]
 TRMT = MODEL_NAMES["Treatment"][APP_LANG]
@@ -185,7 +185,7 @@ SIMILARITY = (
 VECTORIZATION = "Vectorization" if APP_LANG == "en" else "Vectorisation"
 
 TASK_TYPE = {
-    "regions": REGIONS,
+    "region_extraction": REGIONS,
     "similarity": SIMILARITY,
     "vectorization": VECTORIZATION,
 }
