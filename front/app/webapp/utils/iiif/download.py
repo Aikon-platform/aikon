@@ -12,4 +12,8 @@ def iiif_to_img(manifest_url, digit_ref, digit):
     manifest = IIIFManifest(manifest_url, prefix=f"{digit_ref}_")
     manifest.download(save_dir=IMG_PATH)
     digit.add_info(manifest.license)
-    return [img.img_path for img in manifest.images]
+    return [
+        {"name": img.img_path, "h": img.height, "w": img.width}
+        for img in manifest.images
+    ]
+    # return [img.img_path for img in manifest.images]

@@ -17,12 +17,8 @@ from app.webapp.utils.logger import console, log
 
 
 def set_canvas(seq, canvas_nb, img_name, img):
-    """
-    Build the canvas and annotation for each image
-    Called for each manifest (v2: corrected annotations) image when a witness is being indexed
-    """
     try:
-        h, w = int(img["height"]), int(img["width"])
+        h, w = int(img["h"]), int(img["w"])
     except TypeError:
         h, w = img.height, img.width
     except ValueError:
@@ -31,6 +27,7 @@ def set_canvas(seq, canvas_nb, img_name, img):
     canvas = seq.canvas(ident=f"c{canvas_nb}", label=f"Page {canvas_nb}")
     canvas.set_hw(h, w)
 
+    # TODO needed???
     # Build the image annotation
     annotation = canvas.annotation(ident=f"a{canvas_nb}")
     if re.match(r"https?://(.*?)/", img_name):
@@ -77,7 +74,7 @@ def process_images(digit, seq):
     Process the images of a witness and add them to a sequence
     """
     try:
-        imgs = digit.get_imgs(is_abs=False)
+        imgs = digit.get_imgs(is_abs=False, with_meta=True)
         if len(imgs) == 0:
             log(f"[process_images] No images for Digitization n°{digit.id}")
             return False
