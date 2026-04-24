@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("webapp", "0029_alter_series_shared_with"),
+        ("webapp", "0032_remove_regionpair_webapp_regi_img_1_new_idx_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

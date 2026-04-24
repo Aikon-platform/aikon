@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("webapp", "0031_alter_series_shared_with_alter_witness_shared_with"),
+        ("webapp", "0033_alter_treatment_task_type_and_more"),
     ]
 
     operations = [
