@@ -132,6 +132,7 @@ def update_image_json(img_list, digit_id):
         digit.update_imgs_json(img_list)
 
         witness = digit.witness
+        # reindex to add first image to witness metadata
         witness.get_json(reindex=True)
 
         return True

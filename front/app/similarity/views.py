@@ -480,7 +480,7 @@ def no_match(request, wid, rid=None):
 
 
 @user_passes_test(is_superuser)
-def delete_matches(request, wid, rid=None):
+def delete_matches(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=405)
 

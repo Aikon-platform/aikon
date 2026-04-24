@@ -28,7 +28,6 @@ from app.webapp.utils.iiif.annotation import (
     formatted_annotations,
     reindex_file,
     get_regions_urls,
-    get_record_annotations,
 )
 from app.webapp.utils.region_extraction import (
     get_region_extraction_img,
@@ -313,8 +312,15 @@ def delete_region_extraction(request, rid):
     regions = get_object_or_404(RegionExtraction, id=rid)
     try:
         delete_annotations.delay(regions.get_ref(), regions.get_manifest_url())
+        region_extraction_file = Path(f"{REGIONS_PATH}/{regions.get_ref()}.json")
 
-        Path(f"{REGIONS_PATH}/{regions.get_ref()}.json").unlink()
+        try:
+            region_extraction_file.unlink()
+        except FileNotFoundError:
+            log(
+                f"[delete_regions] Region extraction file for {regions.get_ref()} not found, not deleting it (searched at: {str(region_extraction_file)})"
+            )
+
         delete_api_regions.delay(regions.get_digit().get_ref(), regions.model)
 
         try:

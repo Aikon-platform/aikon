@@ -223,8 +223,6 @@ class Witness(AbstractSearchableModel):
                 "user": user.__str__() if user else NO_USER,
                 "edit_url": self.get_absolute_edit_url(),
                 "view_url": self.get_absolute_view_url(),
-                # NOTE handled dynamically by the get_json method in SearchableModel
-                "can_edit": self.can_edit(request_user),
                 "updated_at": updated,
                 "is_public": self.is_public,
                 "metadata": {
@@ -392,12 +390,11 @@ class Witness(AbstractSearchableModel):
     def is_vectorized(self):
         return any(digit.is_vectorized() for digit in self.get_digits())
 
-    def get_img(self, is_abs=False, only_first=False):
+    def get_img(self, is_abs=False):
         # to get only one image of the witness
         for digit in self.get_digits():
-            if img := digit.get_img(is_abs, only_first):
+            if img := digit.get_imgs(is_abs, only_one=True):
                 return img
-
         return None
 
     def get_imgs(self, is_abs=False, temp=False, check_in_dir=False):
