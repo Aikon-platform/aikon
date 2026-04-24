@@ -24,10 +24,8 @@ from app.webapp.utils.iiif.annotation import (
     index_regions,
     destroy_regions,
     process_regions,
-    formatted_annotations,
     reindex_file,
     get_regions_urls,
-    get_record_annotations,
 )
 from app.webapp.utils.regions import (
     get_regions_img,

@@ -38,12 +38,11 @@ class AbstractSearchableModel(models.Model):
     def get_absolute_view_url(self):
         raise NotImplementedError("Subclasses must implement this method")
 
-    def to_json(self, reindex=True, no_img=False, request_user=None):
+    def to_json(self, reindex=True, no_img=False):
         """
         reindex and no_img are used in subclasses to_json methods
         reindex: force recomputing all properties, even the one that require intensive computation
         no_img: if True, do not index image related property
-        TODO delete request_user (should only be handled by get_json and not persisted in db)
         """
         try:
             return json_encode(
@@ -78,8 +77,7 @@ class AbstractSearchableModel(models.Model):
         If request_user is provided, enrich with can_edit without reindexing.
         """
         if not self.json or reindex:
-            # NOTE to_json should probably not use request_user to not index in db can_edit value which is user-dependant
-            json_data = self.to_json(reindex=True, request_user=request_user)
+            json_data = self.to_json(reindex=True)
             self.update_json(json_data)
             return json_data
 

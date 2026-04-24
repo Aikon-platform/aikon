@@ -1,7 +1,6 @@
 import colorsys
 import hashlib
 import json
-import re
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
@@ -171,33 +170,6 @@ def get_annotation_tags(anno: Dict) -> List[str]:
     if isinstance(resources, dict):
         resources = [resources]
     return [r.get("chars") for r in resources if r.get("@type") == "oa:Tag"]
-
-
-def set_canvas(seq, canvas_nb, img_name, img):
-    """
-    Build the canvas and annotation for each image
-    Called for each manifest (v2: corrected annotations) image when a witness is being indexed
-    """
-    try:
-        h, w = int(img["height"]), int(img["width"])
-    except TypeError:
-        h, w = img.height, img.width
-    except ValueError:
-        h, w = 900, 600
-    # Build the canvas
-    canvas = seq.canvas(ident=f"c{canvas_nb}", label=f"Page {canvas_nb}")
-    canvas.set_hw(h, w)
-
-    # Build the image annotation
-    annotation = canvas.annotation(ident=f"a{canvas_nb}")
-    if re.match(r"https?://(.*?)/", img_name):
-        # to build hybrid manifest referencing images from other IIIF repositories
-        img = annotation.image(img_name, iiif=False)
-        setattr(img, "format", "image/jpeg")
-    else:
-        img = annotation.image(ident=img_name, iiif=True)
-
-    img.set_hw(h, w)
 
 
 def get_coord_from_annotation(aiiinotation, as_str=False):
