@@ -5,6 +5,7 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.utils.functions import get_icon, get_action, cls
 from app.config.settings import (
+    MIRADOR_BASE_URL,
     AIIINOTATE_BASE_URL,
     APP_URL,
     APP_NAME,
@@ -24,11 +25,11 @@ def region_extraction_btn(obj: RegionExtraction | Digitization, action="view"):
     if action == "view":
         icon = get_icon("eye")
         # The link redirects to Mirador with no regions (Digitization) or automatic regions (Regions)
-        link = f"{AIIINOTATE_BASE_URL}/indexView.html?iiif-content={obj.get_manifest_url()}"
+        link = f"{MIRADOR_BASE_URL}/index.html?iiif-content={obj.get_manifest_url()}"
     elif action == "auto-view":
         icon = get_icon("eye")
         # The link redirects to Mirador with no regions (Digitization) or automatic regions (Regions)
-        link = f"{AIIINOTATE_BASE_URL}/indexView.html?iiif-content={obj.get_manifest_url()}"
+        link = f"{MIRADOR_BASE_URL}/index.html?iiif-content={obj.get_manifest_url()}"
     # elif action == "edit":
     #     icon = get_icon("pen-to-square")
     #     # The link redirects to the edit region extraction page (show_regions() view DELETED)
@@ -36,7 +37,7 @@ def region_extraction_btn(obj: RegionExtraction | Digitization, action="view"):
     elif action == "final":
         icon = get_icon("check")
         # The link redirects to Mirador with corrected regions (Regions)
-        link = f"{AIIINOTATE_BASE_URL}/index.html?iiif-content={obj.get_manifest_url()}"
+        link = f"{MIRADOR_BASE_URL}/index.html?iiif-content={obj.get_manifest_url()}"
     # elif action == "similarity":
     #     icon = get_icon("code-compare")
     #     link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-similarity"

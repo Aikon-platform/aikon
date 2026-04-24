@@ -143,7 +143,7 @@ function validateRegionExtraction(region_extraction_ref = null) {
         fetch(`${APP_URL}/${APP_NAME}/iiif/validate/${regions_ref}`)
             .then(response => {
                 if (response.status === 200) {
-                    // window.replace(`${AIIINOTATE_BASE_URL}/indexView.html?iiif-content=${toManifest(witId, witType, "v2")}`);
+                    // window.replace(`${MIRADOR_BASE_URL}/index.html?iiif-content=${toManifest(witId, witType, "v2")}`);
                     try { window.replace(`${APP_URL}/${APP_NAME}-admin/${WEBAPP_NAME}/witness`); }
                     catch(e) { window.location = `${APP_URL}/${APP_NAME}-admin/${WEBAPP_NAME}/witness`; }
                 } else {
