@@ -111,7 +111,7 @@ class Series(AbstractSearchableModel):
             or user.groups.filter(user=self.user).exists()
         )
 
-    def to_json(self, reindex=True, no_img=False, request_user=None):
+    def to_json(self, reindex=True, no_img=False):
         library = self.place
         pub_place = self.get_edition_place()
         publisher = self.get_publisher()
@@ -124,7 +124,6 @@ class Series(AbstractSearchableModel):
                 "type": get_name("Series"),
                 "edit_url": self.get_absolute_edit_url(),
                 "view_url": self.get_absolute_view_url(),
-                "can_edit": self.can_edit(request_user),
                 "title": self.__str__(),
                 "user": user.__str__() if user else NO_USER,
                 "user_id": user.id if user else 0,

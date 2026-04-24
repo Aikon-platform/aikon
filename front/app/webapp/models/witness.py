@@ -189,7 +189,7 @@ class Witness(AbstractSearchableModel):
             or user.groups.filter(user=self.user).exists()
         )
 
-    def to_json(self, reindex=True, no_img=False, request_user=None):
+    def to_json(self, reindex=True, no_img=False):
         buttons = {"regions": reverse("webapp:witness_regions_view", args=[self.id])}
 
         digits = self.get_digits()
@@ -217,8 +217,6 @@ class Witness(AbstractSearchableModel):
                 "user": user.__str__() if user else NO_USER,
                 "edit_url": self.get_absolute_edit_url(),
                 "view_url": self.get_absolute_view_url(),
-                # NOTE handled dynamically by the get_json method in SearchableModel
-                "can_edit": self.can_edit(request_user),
                 "updated_at": updated,
                 "is_public": self.is_public,
                 "metadata": {
