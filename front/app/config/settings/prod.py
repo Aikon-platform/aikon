@@ -8,8 +8,7 @@ API_URL = (
 )
 PROD_URL = ENV.str("PROD_URL", default="")
 
-# BASE_URL = f"https://{PROD_URL}"
-BASE_URL = f"http://{PROD_URL}:8080"
+BASE_URL = f"https://{PROD_URL}"
 
 APP_URL = BASE_URL
 CANTALOUPE_APP_URL = BASE_URL

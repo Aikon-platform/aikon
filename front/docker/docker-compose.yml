@@ -14,7 +14,7 @@ services:
     volumes:
       - ${DATA_FOLDER}:/data
       # - ../app:/home/aikon/app
-      - ../app/staticfiles:/home/aikon/app/staticfiles
+      - staticfiles:/home/aikon/app/staticfiles
     env_file:
       - ../app/config/.env
       - ./.env
@@ -27,7 +27,7 @@ services:
       redis:
         condition: service_healthy
       aiiinotate:
-        condition: service_healthy
+        condition: service_started
       mirador:
         condition: service_started
     networks:
@@ -47,6 +47,12 @@ services:
       - ../app/config/.env
     ports:
       - "${AIIINOTATE_PORT}:${AIIINOTATE_PORT}"
+    extra_hosts:
+      # Fixes aiiinotate-to-web DNS resolution failures: adds an /etc/hosts entry
+      # that maps "${PROD_URL}" to the host machine's Docker bridge IP (host-gateway),
+      # bypassing Docker's internal DNS entirely. Requests then reach NGINX directly
+      # without a DNS lookup.
+      - "${PROD_URL}:host-gateway"
     depends_on:
       mongo:
         condition: service_healthy
@@ -55,14 +61,6 @@ services:
     environment:
       <<: *proxy-settings
     restart: always
-    healthcheck:
-      # `hostname -i` returns the IP address to the container on the host.
-      # i can't CURL to localhost, because the app actually doesn't run in localhost
-      # in the Docker container (since AIIINOTATE_HOST is the docker container name).
-      test: ["CMD-SHELL", "curl -f http://$(hostname -i):$${AIIINOTATE_PORT}/manifests/2 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   mirador:
     build:
@@ -166,7 +164,7 @@ services:
       NGINX_PORT: ${NGINX_PORT:-8080}
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ../app/staticfiles:/home/aikon/app/staticfiles:ro
+      - staticfiles:/home/aikon/app/staticfiles:ro
       - ${DATA_FOLDER}:/data:ro
       - /etc/ssl:/etc/ssl:ro
     depends_on:
@@ -182,6 +180,12 @@ volumes:
   pgdata:
   redisdata:
   mongodata:
+  staticfiles:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ../app/staticfiles
 
 networks:
   aikon_network:
