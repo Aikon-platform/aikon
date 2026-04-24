@@ -1,5 +1,5 @@
 from app.config.settings import (
-    SAS_APP_URL,
+    AIIINOTATE_BASE_URL,
     APP_LANG,
     APP_URL,
     CANTALOUPE_APP_URL,
@@ -8,13 +8,11 @@ from app.config.settings import (
     CONTACT_MAIL,
     ADDITIONAL_MODULES,
     APP_LOGO,
-    DOCKER,
+    MIRADOR_BASE_URL,
 )
 from app.webapp.utils.constants import (
     APP_NAME_UPPER,
     COPYRIGHT,
-    MANIFEST_V1,
-    MANIFEST_V2,
     PAGE_LEN,
 )
 from app.webapp.models.utils.constants import (
@@ -48,7 +46,8 @@ def global_variables(request):
         "CONTACT_MAIL": CONTACT_MAIL,
         "WEBAPP_NAME": WEBAPP_NAME,
         "COPYRIGHT": COPYRIGHT,
-        "SAS_APP_URL": SAS_APP_URL,
+        "AIIINOTATE_BASE_URL": AIIINOTATE_BASE_URL,
+        "MIRADOR_BASE_URL": MIRADOR_BASE_URL,
         "APP_URL": APP_URL,
         "CANTALOUPE_APP_URL": CANTALOUPE_APP_URL,
         "MS_ABBR": MS_ABBR,
@@ -62,8 +61,6 @@ def global_variables(request):
         "TPR": TPR,
         "WPR": WPR,
         "WIT_CHANGE": WIT_CHANGE,
-        "MANIFEST_V1": MANIFEST_V1,
-        "MANIFEST_V2": MANIFEST_V2,
         "CATEGORY_INFO": CATEGORY_INFO,
         "PAGE_LEN": PAGE_LEN,
     }

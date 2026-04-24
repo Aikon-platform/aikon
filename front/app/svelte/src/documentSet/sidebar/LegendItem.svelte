@@ -1,14 +1,14 @@
 <script>
     import {appName, appUrl} from "../../constants.js";
-    import {i18n} from '../../utils.js';
+    import {i18n} from "../../utils.js";
 
     export let isActive = true;
     export let id;
     export let toggle = () => {};
     export let meta = {
-        title: `Region`,
-        color: '#999',
-        witnessId: 1
+        title: i18n("Digitization"),
+        color: "#999",
+        witness_id: 1
     };
     export let clickable = true;
     export let onlyColor = false;
@@ -17,8 +17,8 @@
     const docTitle = `${meta.title} #${id} (${imageCount} images)`;
 
     const t = {
-        nbImg: {en: 'Number of images for this region extraction', fr: "Nombre d'images extraites pour ce document"},
-        toggle: {en: 'Toggle document pairs visibility', fr: "Activer/désactiver la visibilité des paires du document"},
+        nbImg: {en: "Number of images for this region extraction", fr: "Nombre d'images extraites pour ce document"},
+        toggle: {en: "Toggle document pairs visibility", fr: "Activer/désactiver la visibilité des paires du document"},
     };
 </script>
 
@@ -29,13 +29,13 @@
              style="background-color: {isActive ? meta.color : '#999'};"
              on:click={toggle} on:keydown={null} role="button" tabindex="0"/>
         <span class="legend-label" class:is-hidden={onlyColor}>
-            <a href={`${appUrl}/${appName}/witness/${meta.witnessId}/regions/${id}`} target="_blank">
+            <a href={`${appUrl}/${appName}/witness/${meta.witness_id}/regions`} target="_blank">
                 {meta.title}
             </a>
         </span>
     </span>
     <span class="tag is-small has-text-grey is-rounded px-2"
-          title={i18n('nbImg', t)} class:is-hidden={onlyColor}>
+          title={i18n("nbImg", t)} class:is-hidden={onlyColor}>
         {imageCount}
     </span>
 </div>

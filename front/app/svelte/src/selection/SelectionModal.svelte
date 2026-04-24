@@ -1,5 +1,5 @@
 <script>
-    import {closeModal, i18n} from '../utils.js';
+    import {closeModal, i18n} from "../utils.js";
     import SelectionFooter from "./SelectionFooter.svelte";
 
     import { recordsSelection } from "./selectionStore.js";
@@ -26,7 +26,7 @@
     }
 
     function handleKeydown(event) {
-        if (event.key === 'Enter') finishEditing();
+        if (event.key === "Enter") finishEditing();
     }
 
     function finishEditing() {
@@ -76,13 +76,8 @@
 
 <!--TODO if isSaved, and documentSet add link to view-->
 
-<div id="selection-modal" class="modal fade"
-    use:closeModal
-    tabindex="-1"
-    aria-labelledby="selection-modal-label"
-    aria-hidden="true"
->
-    <div class="modal-background" />
+<div id="selection-modal" class="modal fade" use:closeModal tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
+    <div class="modal-background"/>
 
     <div class="modal-content">
         <div class="modal-card-head media mb-0 is-middle">
@@ -117,7 +112,7 @@
 
             <hr>
 
-            <h4 class="title is-6 mb-4">{appLang === 'en' ? 'Shared with' : 'Partagé avec'}</h4>
+            <h4 class="title is-6 mb-4">{appLang === "en" ? "Shared with" : "Partagé avec"}</h4>
 
             <div class="field is-grouped is-grouped-multiline">
                 <!--TODO: when selecting/unselecting doc set, selected users disappear -->
@@ -167,7 +162,9 @@
                             checked={$selected?.is_public}
                             on:change={(e) => updatePublic(e.target.checked) && save()}
                         />
-                        <span class="pl-1">{appLang === 'en' ? 'Make public' : 'Rendre public'}</span>
+                        <span class="pl-1">
+                            {appLang === "en" ? "Make public" : "Rendre public"}
+                        </span>
                     </label>
                 </div>
             </div>

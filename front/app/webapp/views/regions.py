@@ -1,28 +1,24 @@
-import json
 import os
+import json
+from pathlib import Path
 
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Q
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 
-from app.webapp.models.regions import Regions
 from app.config.settings import (
-    SAS_APP_URL,
-    DEBUG,
-    SAS_USERNAME,
     LOGIN_URL,
 )
-from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import (
-    credentials,
     list_to_txt,
     cls,
     delete_files,
     zip_img,
     get_files_with_prefix,
 )
-from app.webapp.utils.logger import log
 from app.webapp.utils.iiif.annotation import (
     format_canvas_annotations,
     index_regions,
@@ -31,13 +27,23 @@ from app.webapp.utils.iiif.annotation import (
     formatted_annotations,
     reindex_file,
     get_regions_urls,
+    get_record_annotations,
 )
 from app.webapp.utils.regions import (
     get_regions_img,
-    create_empty_regions,
 )
-from app.webapp.utils.paths import REGIONS_PATH
 from app.webapp.views import check_ref
+from app.webapp.models.digitization import Digitization
+from app.webapp.models.regions import Regions
+from app.webapp.models.witness import Witness
+
+from app.webapp.utils.iiif.annotation import (
+    get_annotations_on_canvases,
+)
+from app.webapp.utils.logger import log
+from app.webapp.utils.paths import REGIONS_PATH
+from app.webapp.utils.regions import create_empty_regions
+from app.webapp.utils.functions import page_bounds
 
 
 def is_superuser(user):
@@ -92,6 +98,9 @@ def reindex_regions(request, obj_ref):
 
 @user_passes_test(is_superuser)
 def index_witness_regions(request, wit_id):
+    """
+    index all regions files for a single witness.
+    """
     wit = get_object_or_404(Witness, pk=wit_id)
     regions_files = sorted(get_files_with_prefix(REGIONS_PATH, f"{wit.get_ref()}_"))
     res = {
@@ -181,7 +190,7 @@ def export_regions_img(request, regions_id):
     return list_to_txt(images, regions.get_ref())
 
 
-def canvas_annotations(request, version, regions_ref, canvas_nb):
+def canvas_annotations(request, regions_ref, canvas_nb):
     regions_id = regions_ref.split("_")[-1].replace("anno", "")
     regions = get_object_or_404(Regions, pk=regions_id)
     return JsonResponse(format_canvas_annotations(regions, canvas_nb))
@@ -210,13 +219,110 @@ def validate_regions(request, regions_ref):
         return HttpResponse(f"An error occurred: {e}", status=500)
 
 
-def witness_sas_annotations(request, regions_id):
-    regions = get_object_or_404(Regions, pk=regions_id)
-    _, c_annos = formatted_annotations(regions)
-    return JsonResponse(c_annos, safe=False)
+# def witness_sas_annotations(request, regions_id):
+#     regions = get_object_or_404(Regions, pk=regions_id)
+#     _, c_annos = formatted_annotations(regions)
+#     return JsonResponse(c_annos, safe=False)
 
 
 @login_required(login_url=LOGIN_URL)
 def export_selected_regions(request):
     urls_list = json.loads(request.POST.get("listeURL"))
     return zip_img(urls_list)
+
+
+def get_canvas_regions(request, wid, rid):
+    regions = get_object_or_404(Regions, id=rid)
+    p_nb = int(request.GET.get("p", 0))
+    min_c, max_c = page_bounds(p_nb)
+    return JsonResponse(
+        get_annotations_on_canvases([regions], min_c, max_c), safe=False
+    )
+
+
+def get_canvas_witness_regions(request, wid):
+    witness = get_object_or_404(Witness, id=wid)
+    p_nb = int(request.GET.get("p", 0))
+    min_c, max_c = page_bounds(p_nb)
+
+    return JsonResponse(
+        get_annotations_on_canvases(witness.get_digits(), min_c, max_c), safe=False
+    )
+
+
+def create_manual_regions(request, wid, did=None, rid=None):
+    if request.method == "POST":
+        if rid:
+            regions = get_object_or_404(Regions, id=rid)
+            return JsonResponse(
+                {
+                    "regions_id": regions.id,
+                    "mirador_url": regions.gen_mirador_url(),
+                },
+            )
+
+        witness = get_object_or_404(Witness, id=wid)
+        digit = None
+        if did:
+            digit = get_object_or_404(Digitization, id=did)
+        else:
+            for d in witness.get_digits():
+                if d.has_images():
+                    digit = d
+                    break
+
+        if not digit:
+            return JsonResponse(
+                {"error": "No digitization available for this witness"}, status=500
+            )
+
+        regions = create_empty_regions(digit)
+        if not regions:
+            return JsonResponse({"error": "Unable to create regions"}, status=500)
+        return JsonResponse(
+            {
+                "regions_id": regions.id,
+                "mirador_url": regions.gen_mirador_url(),
+            },
+        )
+    return JsonResponse({"error": "Invalid request method"}, status=400)
+
+
+def delete_regions(request, rid):
+    """
+    aikon hook to delete a regions and its associated annotations.
+    used in the UI to delete a regions
+    """
+    from app.webapp.tasks import delete_annotations
+    from app.regions.tasks import delete_api_regions
+
+    if request.method != "DELETE":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+    regions = get_object_or_404(Regions, id=rid)
+    try:
+        delete_annotations.delay(regions.get_ref(), regions.get_manifest_url())
+
+        Path(f"{REGIONS_PATH}/{regions.get_ref()}.json").unlink()
+        delete_api_regions.delay(regions.get_digit().get_ref(), regions.model)
+
+        try:
+            # Delete the regions record in the database
+            regions.delete()
+            # remove the regions id from the Witness.json field
+            witness = Witness.objects.get(
+                Q(digitizations__witness_id=regions.digitization.witness_id)
+            )
+            witness.set_json_regions()
+        except Exception as e:
+            return JsonResponse(
+                {"message": f"Failed to delete regions record #{rid}: {e}"},
+                status=400,
+            )
+
+        return JsonResponse({"message": "Regions deletion requested"}, status=204)
+    except Exception as e:
+        log(f"[delete_regions] Error sending deletion task for regions #{rid}", e)
+        return JsonResponse(
+            {"error": f" Error sending deletion task for regions #{rid}: {e}"},
+            status=500,
+        )

@@ -1,4 +1,4 @@
-import { appLang } from '../../constants';
+import { appLang } from "../../constants";
 
 export const noCatSvg = `<svg class="svg-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 59 59">
         <rect x="1" y="0.62" width="55.71" height="55.71" rx="5.01" ry="5.01" fill="none" stroke="currentColor" stroke-width="3"/>
@@ -60,37 +60,49 @@ export const validateSvg = `<svg class="svg-icon" width="60" height="67" viewBox
         <line x1="24.1516" y1="57.8016" x2="57.2284" y2="24.7248" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
     </svg>`;
 
-export const noCatLabel = appLang === 'en' ?  "no categorization" : "aucune catégorisation";
-export const exactLabel = appLang === 'en' ?  "overall visual matches" : "correspondances visuelles globales";
-export const partialLabel = appLang === 'en' ?  "visual matches on part of the image": "correspondances visuelles sur une partie de l'image";
-export const semanticLabel = appLang === 'en' ?  "semantic and non-visual matches" : "correspondances sémantiques et non-visuelle";
-export const noLabel = appLang === 'en' ?  "regions without match" : "régions sans correspondance";
-export const userLabel = appLang === 'en' ?  "user specific category" : "correspondances spécifiques à l'utilisateur";
-export const validateLabel = appLang==="en" ? "validate the match" : "valider la correspondance";
+export const noCatLabel = appLang === "en" ?  "no categorization" : "aucune catégorisation";
+export const exactLabel = appLang === "en" ?  "overall visual matches" : "correspondances visuelles globales";
+export const partialLabel = appLang === "en" ?  "visual matches on part of the image": "correspondances visuelles sur une partie de l'image";
+export const semanticLabel = appLang === "en" ?  "semantic and non-visual matches" : "correspondances sémantiques et non-visuelle";
+export const noLabel = appLang === "en" ?  "regions without match" : "régions sans correspondance";
+export const userLabel = appLang === "en" ?  "user specific category" : "correspondances spécifiques à l'utilisateur";
+
+export const noCatAction = appLang === "en" ?  "Uncategorize" : "Retirer la catégorie";
+export const exactAction = appLang === "en" ?  "Categorize as exact match" : "Catégoriser comme correspondance exacte";
+export const partialAction = appLang === "en" ?  "Categorize as partial match": "Catégoriser comme correspondance partielle";
+export const semanticAction = appLang === "en" ?  "Categorize as semantic match" : "Catégoriser comme correspondance sémantique";
+export const noAction = appLang === "en" ?  "Confirm that the selection do not contain any match" : "Confirmer que la sélection ne contient aucune correspondance";
+export const userAction = appLang === "en" ?  "Categorize as personal match" : "Catégoriser comme correspondance personnelle";
 
 export const categoryInfo = {
     0: {
         title: noCatLabel,
         svg: noCatSvg,
+        action: noCatAction
     },
     1: {
         title: exactLabel,
         svg: exactSvg,
+        action: exactAction
     },
     2: {
         title: partialLabel,
         svg: partialSvg,
+        action: partialAction
     },
     3: {
         title: semanticLabel,
         svg: semanticSvg,
+        action: semanticAction
     },
     4: {
         title: noLabel,
         svg: noSvg,
+        action: noAction
     },
     5: {
         title: userLabel,
         svg: userSvg,
+        action: userAction
     }
 };

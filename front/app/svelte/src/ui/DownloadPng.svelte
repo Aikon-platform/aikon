@@ -1,10 +1,10 @@
 <script>
-    import html2canvas from 'html2canvas';
+    import html2canvas from "html2canvas";
     import {showMessage, withLoading} from "../utils.js";
     import {appLang} from "../constants.js";
 
     export let targetId;
-    export let filename = 'export.png';
+    export let filename = "export.png";
 
     function getScrollParent(el) {
         while (el && el !== document.body) {
@@ -31,9 +31,9 @@
 
             try {
                 if (scrollParent) {
-                    scrollParent.style.overflow = 'visible';
-                    scrollParent.style.maxHeight = 'none';
-                    scrollParent.style.height = 'auto';
+                    scrollParent.style.overflow = "visible";
+                    scrollParent.style.maxHeight = "none";
+                    scrollParent.style.height = "auto";
                 }
 
                 const canvas = await html2canvas(el, {
@@ -45,9 +45,9 @@
                     scrollY: 0
                 });
 
-                const link = document.createElement('a');
+                const link = document.createElement("a");
                 link.download = filename;
-                link.href = canvas.toDataURL('image/png');
+                link.href = canvas.toDataURL("image/png");
                 link.click();
             } catch (error) {
                 await showMessage(
@@ -64,7 +64,7 @@
     }
 </script>
 
-<button class="tag is-link" on:click={download} title="{appLang === 'en' ? 'Download as PNG' : 'Télécharger en PNG'}">
+<button class="tag is-link" on:click={download} title="{appLang === "en" ? "Download as PNG" : "Télécharger en PNG"}">
     <span class="icon is-small p-0">
         <i class="fas fa-download"></i>
     </span>

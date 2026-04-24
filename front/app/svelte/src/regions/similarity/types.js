@@ -9,8 +9,8 @@
  * @property {number} score: score of the similarity. defaults to 0
  * @property {number?} category: category is used by users to classify the similarities. it is an Interger identifying a type of similarity
  * @property {number[]|[]} users: "user selected category". a possibly empty array of the IDs of the users who selected this similarity.
- * @property {boolean} isManual: true if it's a manual similarity
  * @property {number} similarityType: 1 if it's a computed similarity, 2 if it's a manual similarity, 3 if it's a propagation,
+ * @property {string} similarityHash: hash-value that depends on the similarity type.
  */
 
 export {}

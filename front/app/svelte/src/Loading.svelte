@@ -1,5 +1,5 @@
 <script>
-    import { fade } from 'svelte/transition';
+    import { fade } from "svelte/transition";
     import {loading} from "./utils.js";
 </script>
 

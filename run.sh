@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/env bash
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 FRONT_DIR="$SCRIPT_DIR/front"
@@ -18,7 +18,7 @@ trap cleanup INT TERM HUP
 get_password && echo || exit
 
 color_echo blue "STARTING FRONT..."
-(cd "$FRONT_DIR" && START_MODE="CHILD" bash run.sh "$PASSWORD") &
+(cd "$FRONT_DIR" && START_MODE="CHILD" bash run.sh "$SUDO_PSW") &
 ALL_PIDS+=($!)
 
 sleep 2

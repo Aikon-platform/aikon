@@ -1,7 +1,7 @@
 <script>
-    import { fade } from 'svelte/transition';
+    import { fade } from "svelte/transition";
     import {deleteRecord, refToIIIF, showMessage} from "../utils.js";
-    import { appLang, userId, isSuperuser } from '../constants';
+    import { appLang, userId, isSuperuser } from "../constants";
 
     export let recordsStore;
 
@@ -36,7 +36,7 @@
     <div class="card mb-5">
         <div class="card-content">
             <div class="media">
-                {#if item.hasOwnProperty('img')}
+                {#if item.hasOwnProperty("img")}
                     <div class="media-left">
                         <figure class="card image is-96x96">
                             <img src="{refToIIIF(item.img, 'full', '250,')}" alt="Record illustration"/>
@@ -70,12 +70,12 @@
                                title='{appLang === "en" ? "Edit" : "Éditer"}'>
                                 <span class="iconify" data-icon="entypo:edit"/>
                                 <span class="ml-2">
-                                    {appLang === 'en' ? 'Edit' : 'Éditer'}
+                                    {appLang === "en" ? "Edit" : "Éditer"}
                                 </span>
                             </a>
                         {/if}
                         {#if item.hasOwnProperty("buttons") && Object.keys(item.buttons).length !== 0}
-                            {#if item.hasOwnProperty('iiif')}
+                            {#if item.hasOwnProperty("iiif")}
                                 {#each item.iiif as iiif}
                                     <span class="tag logo mt-1">{@html iiif}</span>
                                 {/each}
@@ -86,7 +86,7 @@
                 <div class="media-right">
                     <slot name="buttons"/>
                 </div>
-                {#if item.class === 'Treatment' || item.class === 'DocumentSet'}
+                {#if item.class === "Treatment" || item.class === "DocumentSet"}
                     {#if item.user_id === parseInt(userId) || isSuperuser}
                         <button class="delete is-medium" title="{appLang === 'en' ? 'Delete' : 'Supprimer'}" on:click={deleteItem}/>
                     {/if}

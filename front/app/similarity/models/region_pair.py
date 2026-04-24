@@ -3,57 +3,43 @@ from __future__ import annotations  # for a reference to RegionPair from RegionP
 import re
 from typing import List, NamedTuple
 
-from django.core.exceptions import ValidationError
 from django.contrib.postgres.fields import ArrayField
 from django.db import models, connection
-from django.db.models import Q, F
 
-from app.webapp.utils.functions import cast, sort_key
+from app.webapp.utils.functions import cast
 from app.webapp.models.utils.functions import get_fieldname
-from app.webapp.models.digitization import Digitization
-from app.webapp.models.regions import Regions
 from app.similarity.models.similarity_parameters import SimilarityParameters
 
-
-def extract_digit_id(img: str) -> int | None:
-    """Extract digitization ID from image name (e.g., 'wit7_man9_0023_...' → 9)"""
-    matches = re.findall(r"\d+", img)
-    return int(matches[1]) if len(matches) > 1 else None
+IMG_RE = re.compile(r"^wit(\d+)_(\w{3})(\d+)_(\d+)(?:_([\d,]+))?\.jpg$")
 
 
-def get_region_digit_id(regions_id: int) -> int | None:
-    """Get digitization ID associated with a regions_id"""
-    try:
-        region = Regions.objects.select_related("digitization").get(id=regions_id)
-        return region.digitization.id if region.digitization else None
-    except Regions.DoesNotExist:
-        return None
+class ImgRef(NamedTuple):
+    wit: int
+    digit_type: str
+    digit: int
+    page: int
+    bbox: str | None  # None = page-level
 
 
-def get_digit_regions_id(digit_id: int, create_if_missing: bool = False) -> int:
-    """Get or create regions_id for a digitization ID"""
-    regions = Regions.objects.filter(digitization_id=digit_id).first()
-
-    if not regions:
-        if create_if_missing:
-            try:
-                digit = Digitization.objects.get(id=digit_id)
-            except Digitization.DoesNotExist:
-                raise ValidationError(f"Digitization {digit_id} does not exist")
-
-            regions = Regions.objects.create(digitization=digit, model="manual")
-        else:
-            raise ValidationError(f"No regions found for digitization {digit_id}")
-
-    return regions.id
+def parse_img(img: str) -> ImgRef:
+    m = IMG_RE.match(img)
+    if not m:
+        raise ValueError(f"Invalid image name: {img}")
+    return ImgRef(
+        wit=int(m.group(1)),
+        digit_type=m.group(2),
+        digit=int(m.group(3)),
+        page=int(m.group(4)),
+        bbox=m.group(5),
+    )
 
 
 class RegionPairTuple(NamedTuple):
     score: float
     q_img: str
     s_img: str
-    q_regions: int
-    s_regions: int
+    q_digit: int
+    s_digit: int
     category: int
     category_x: List[int]
     similarity_type: int
@@ -114,35 +100,44 @@ class RegionPair(models.Model):
         app_label = "webapp"
         constraints = [
             models.UniqueConstraint(
-                fields=["img_1", "img_2", "similarity_hash"], name="unique_img_pair"
-            )
+                fields=["img_1", "img_2", "similarity_hash"],
+                name="unique_img_pair",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(img_1__lte=models.F("img_2")),
+                name="pair_ordering",
+            ),
         ]
-        # make database queries on those fields more efficient
+
         indexes = [
+            models.Index(fields=["digit_1", "digit_2"]),
+            models.Index(fields=["digit_1", "digit_2", "score"]),
+            models.Index(fields=["img_1", "img_2"]),
             models.Index(fields=["img_1"]),
             models.Index(fields=["img_2"]),
-            models.Index(fields=["regions_id_1"]),
-            models.Index(fields=["regions_id_2"]),
-            models.Index(fields=["regions_id_1", "img_1"]),
-            models.Index(fields=["regions_id_2", "img_2"]),
-            models.Index(fields=["img_1", "regions_id_1", "regions_id_2"]),
-            models.Index(fields=["img_2", "regions_id_1", "regions_id_2"]),
+            models.Index(fields=["category"]),
             models.Index(
-                fields=["regions_id_1", "regions_id_2"],
-                condition=Q(regions_id_1=F("regions_id_2")),
-                name="idx_same_regions",
+                fields=["digit_1", "digit_2"],
+                condition=models.Q(digit_1=models.F("digit_2")),
+                name="idx_same_digit",
             ),
         ]
 
     def __str__(self):
-        return (
-            f"{self.img_1} (#{self.regions_id_1}) | {self.img_2} (#{self.regions_id_2})"
-        )
+        return f"{self.img_1} (d#{self.digit_1}) | {self.img_2} (d#{self.digit_2})"
 
     img_1 = models.CharField(max_length=150)  # ⚠️ must end with .jpg
     img_2 = models.CharField(max_length=150)  # ⚠️ must end with .jpg
-    regions_id_1 = models.IntegerField()
-    regions_id_2 = models.IntegerField()
+
+    # TO BE DELETED
+    regions_id_1 = models.IntegerField(null=True, blank=True)
+    regions_id_2 = models.IntegerField(null=True, blank=True)
+
+    digit_1 = models.IntegerField(null=True)  # nullable for backfill
+    digit_2 = models.IntegerField(null=True)  # nullable for backfill
+
+    anno_1 = models.CharField(max_length=64, null=True, blank=True)
+    anno_2 = models.CharField(max_length=64, null=True, blank=True)
 
     """
     Score of similarity between the two regions (only from automatic pairs)
@@ -182,143 +177,23 @@ class RegionPair(models.Model):
     ) -> tuple[str, str] | str:
         """Return image names ordered consistently"""
         ref1, ref2 = pair.split("-") if isinstance(pair, str) else pair
-        if sort_key(str(ref2)) < sort_key(str(ref1)):
+        if str(ref2) < str(ref1):
             ref1, ref2 = ref2, ref1
         return f"{ref1}-{ref2}" if as_string else (ref1, ref2)
 
-    @classmethod
-    def rid_from_pair_containing_img(
-        cls, img: str, similarity_hash: str = None, create_if_missing: bool = True
-    ) -> int:
-        """
-        Retrieve regions_id for an image, with fallback to extraction from image name.
-        Priority:
-        1. Existing pair with img_1
-        2. Existing pair with img_2
-        3. Extract from image name and lookup/create regions
-        """
-        if not img.endswith(".jpg"):
-            img = f"{img}.jpg"
-
-        # Try to find in existing pairs (priority to specific hash if provided)
-        filter_kwargs = {"img_1": img}
-        if similarity_hash:
-            filter_kwargs["similarity_hash"] = similarity_hash
-
-        q1 = (
-            cls.objects.filter(**filter_kwargs)
-            .values_list("regions_id_1", flat=True)
-            .first()
-        )
-        if q1:
-            return q1
-
-        filter_kwargs = {"img_2": img}
-        if similarity_hash:
-            filter_kwargs["similarity_hash"] = similarity_hash
-
-        q2 = (
-            cls.objects.filter(**filter_kwargs)
-            .values_list("regions_id_2", flat=True)
-            .first()
-        )
-        if q2:
-            return q2
-
-        digit_id = extract_digit_id(img)
-        if digit_id is None:
-            raise ValidationError(f"Cannot extract digitization ID from {img}")
-
-        return get_digit_regions_id(digit_id, create_if_missing)
-
-    @classmethod
-    def rid_from_img(
-        cls,
-        img: str,
-        candidate_rids: list[int] = None,
-        similarity_hash: str = None,
-        create_if_missing=True,
-    ) -> int:
-        """
-        Get regions_id for an image.
-        Priority:
-        1. candidate_rid matching image's digitization (order of candidate_rids matters)
-        2. Any valid candidate_rid (if digit validation fails)
-        3. Existing pair containing the image
-        4. Create new regions (if create_if_missing=True)
-        """
-        img = add_jpg(img)
-        img_digit_id = extract_digit_id(img)
-
-        valid_candidates = [rid for rid in (candidate_rids or []) if rid is not None]
-        if valid_candidates:
-            db_error = False
-            for rid in valid_candidates:
-                try:
-                    if get_region_digit_id(rid) == img_digit_id:
-                        return rid
-                except Exception:
-                    db_error = True
-                    continue
-
-            if img_digit_id is None or db_error:
-                # No match found: return first existing candidate (skip DB validation if Digitization missing)
-                return valid_candidates[0]
-
-        return cls.rid_from_pair_containing_img(img, similarity_hash, create_if_missing)
-
-    @classmethod
-    def check_order(
-        cls, img1, img2, rid1, rid2, regions_to_digit=None, create_missing_regions=False
-    ):
-        """Return regions IDs ordered according to image names"""
-        if sort_key(img2) < sort_key(img1):
-            img1, img2 = img2, img1
-            rid1, rid2 = rid2, rid1
-        else:
-            img1, img2 = img1, img2
-
-        # Extract digitization IDs from images
-        img_digit_id_1 = extract_digit_id(img1)
-        img_digit_id_2 = extract_digit_id(img2)
-
-        if img_digit_id_1 is None or img_digit_id_2 is None:
-            raise ValidationError(
-                f"Cannot extract digitization ID from image names " f"({img1}, {img2})"
-            )
-
-        # Get digitization IDs from regions (with optional cache)
-        if regions_to_digit:
-            reg_digit_id_1 = regions_to_digit.get(rid1) or None
-            reg_digit_id_2 = regions_to_digit.get(rid2) or None
-        else:
-            reg_digit_id_1 = get_region_digit_id(rid1)
-            reg_digit_id_2 = get_region_digit_id(rid2)
-
-        # Fix mismatches
-        if img_digit_id_1 != reg_digit_id_1:
-            if img_digit_id_2 == reg_digit_id_1 and img_digit_id_1 == reg_digit_id_2:
-                rid1, rid2 = rid2, rid1
-                reg_digit_id_1, reg_digit_id_2 = reg_digit_id_2, reg_digit_id_1
-            else:
-                rid1 = get_digit_regions_id(img_digit_id_1, create_missing_regions)
-
-        if img_digit_id_2 != reg_digit_id_2:
-            rid2 = get_digit_regions_id(img_digit_id_2, create_missing_regions)
-
-        return img1, img2, rid1, rid2
-
-    def clean(self, regions_to_digit=None, create_missing_regions=False):
+    def clean(self):
         super().clean()
+        self.img_1 = add_jpg(self.img_1)
+        self.img_2 = add_jpg(self.img_2)
 
-        self.img_1, self.img_2, self.regions_id_1, self.regions_id_2 = self.check_order(
-            add_jpg(self.img_1),
-            add_jpg(self.img_2),
-            self.regions_id_1,
-            self.regions_id_2,
-            regions_to_digit,
-            create_missing_regions,
-        )
+        if self.img_2 < self.img_1:
+            self.img_1, self.img_2 = self.img_2, self.img_1
+            self.regions_id_1, self.regions_id_2 = self.regions_id_2, self.regions_id_1
+            self.anno_1, self.anno_2 = self.anno_2, self.anno_1
+
+        for side in ("1", "2"):
+            ref = parse_img(getattr(self, f"img_{side}"))
+            setattr(self, f"digit_{side}", ref.digit)
 
     def save(self, validate=False, *args, **kwargs):
         if validate:
@@ -334,16 +209,17 @@ class RegionPair(models.Model):
     def get_info(self, q_img=None, as_json=False) -> RegionPairTuple | dict:
         if q_img is None:
             q_img = self.img_1
-        s_img = self.img_2 if self.img_1 == q_img else self.img_1
-        q_regions = self.regions_id_1 if self.img_1 == q_img else self.regions_id_2
-        s_regions = self.regions_id_2 if self.img_1 == q_img else self.regions_id_1
+        is_q1 = self.img_1 == q_img
+        s_img = self.img_2 if is_q1 else self.img_1
+        q_digit = self.digit_1 if is_q1 else self.digit_2
+        s_digit = self.digit_2 if is_q1 else self.digit_1
 
         info = (
             self.score,
             q_img,
             s_img,
-            q_regions,
-            s_regions,
+            q_digit,
+            s_digit,
             self.category,
             self.category_x or [],
             self.similarity_type,
@@ -354,8 +230,8 @@ class RegionPair(models.Model):
                 "score": info[0],
                 "q_img": info[1],
                 "s_img": info[2],
-                "q_regions": info[3],
-                "s_regions": info[4],
+                "q_digit": info[3],
+                "s_digit": info[4],
                 "category": info[5],
                 "category_x": info[6],
                 "similarity_type": info[7],
@@ -367,13 +243,15 @@ class RegionPair(models.Model):
         return {
             "img_1": self.img_1,
             "img_2": self.img_2,
-            "regions_id_1": self.regions_id_1,
-            "regions_id_2": self.regions_id_2,
+            "digit_1": self.digit_1,
+            "digit_2": self.digit_2,
+            "anno_1": self.anno_1,
+            "anno_2": self.anno_2,
             "score": cast(self.score, float),
             "category": cast(self.category, int),
             "category_x": [cast(c, int) for c in self.category_x or []],
             "similarity_type": cast(self.similarity_type, int),
-            # "similarity_params": self.get_parameters()
+            "similarity_hash": self.similarity_hash,
         }
 
     def get_ref(self):
