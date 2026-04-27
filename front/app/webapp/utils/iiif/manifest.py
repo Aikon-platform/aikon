@@ -1,3 +1,5 @@
+import re
+
 from PIL import Image, UnidentifiedImageError
 from iiif_prezi.factory import ManifestFactory
 
@@ -10,9 +12,32 @@ from app.webapp.utils.paths import IMG_PATH
 from app.config.settings import CANTALOUPE_APP_URL, APP_URL
 
 from app.webapp.utils.logger import console, log
-from app.webapp.utils.iiif.annotation import set_canvas
 
 # NOTE img name = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_{canvas_nb}.jpg"
+
+
+def set_canvas(seq, canvas_nb, img_name, img):
+    try:
+        h, w = int(img["h"]), int(img["w"])
+    except TypeError:
+        h, w = img.height, img.width
+    except ValueError:
+        h, w = 900, 600
+    # Build the canvas
+    canvas = seq.canvas(ident=f"c{canvas_nb}", label=f"Page {canvas_nb}")
+    canvas.set_hw(h, w)
+
+    # TODO needed???
+    # Build the image annotation
+    annotation = canvas.annotation(ident=f"a{canvas_nb}")
+    if re.match(r"https?://(.*?)/", img_name):
+        # to build hybrid manifest referencing images from other IIIF repositories
+        img = annotation.image(img_name, iiif=False)
+        setattr(img, "format", "image/jpeg")
+    else:
+        img = annotation.image(ident=img_name, iiif=True)
+
+    img.set_hw(h, w)
 
 
 def get_meta(metadatum, meta_type="label"):
@@ -44,33 +69,29 @@ def get_meta_value(metadatum, label: str):
     return get_meta(metadatum, "value")
 
 
-def process_images(obj, seq):
+def process_images(digit, seq):
     """
-    obj: Digitization | Regions
     Process the images of a witness and add them to a sequence
     """
-    class_name = obj.__class__.__name__
-
     try:
-        imgs = obj.get_imgs(is_abs=False)
+        imgs = digit.get_imgs(is_abs=False, with_meta=True)
         if len(imgs) == 0:
-            log(f"[process_images] No images for {class_name} n°{obj.id}")
+            log(f"[process_images] No images for Digitization n°{digit.id}")
             return False
 
         for counter, img in enumerate(imgs, start=1):
-            try:
-                set_canvas(
-                    seq,
-                    counter,
-                    img,
-                    Image.open(f"{IMG_PATH}/{img}"),
-                )
-            except UnidentifiedImageError as e:
-                log(f"[process_images] Unable to retrieve {img}", e)
-            except FileNotFoundError as e:
-                log(f"[process_images] Non existing {img}", e)
+            if isinstance(img, dict):
+                set_canvas(seq, counter, img["name"], img)
+            else:
+                try:
+                    set_canvas(seq, counter, img, Image.open(f"{IMG_PATH}/{img}"))
+                except (UnidentifiedImageError, FileNotFoundError) as e:
+                    log(f"[process_images] Error processing {img}", e)
     except Exception as e:
-        log(f"[process_images] Couldn't retrieve images for {class_name} n°{obj.id}", e)
+        log(
+            f"[process_images] Couldn't retrieve images for Digitization n°{digit.id}",
+            e,
+        )
         return False
     return True
 

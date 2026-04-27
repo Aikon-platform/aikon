@@ -215,7 +215,7 @@ class DocumentSet(AbstractSearchableModel):
             type(self).objects.filter(pk=self.pk).update(selection=json_data)
         return self.selection
 
-    def to_json(self, reindex=True, no_img=False, request_user=None):
+    def to_json(self, reindex=True, no_img=False):
         user = self.user
         try:
             return json_encode(

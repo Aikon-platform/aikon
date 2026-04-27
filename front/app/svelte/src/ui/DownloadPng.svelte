@@ -1,71 +1,40 @@
 <script>
-    import html2canvas from "html2canvas";
+    import {toPng} from "html-to-image";
     import {showMessage, withLoading} from "../utils.js";
     import {appLang} from "../constants.js";
 
     export let targetId;
     export let filename = "export.png";
-
-    function getScrollParent(el) {
-        while (el && el !== document.body) {
-            const style = getComputedStyle(el);
-            if (/(auto|scroll|hidden)/.test(style.overflow + style.overflowX + style.overflowY)) {
-                return el;
-            }
-            el = el.parentElement;
-        }
-        return null;
-    }
+    export let pixelRatio = 2;
 
     async function download() {
         await withLoading(async () => {
             const el = document.getElementById(targetId);
             if (!el) return;
-
-            const scrollParent = getScrollParent(el);
-            const saved = scrollParent ? {
-                overflow: scrollParent.style.overflow,
-                maxHeight: scrollParent.style.maxHeight,
-                height: scrollParent.style.height
-            } : null;
-
             try {
-                if (scrollParent) {
-                    scrollParent.style.overflow = "visible";
-                    scrollParent.style.maxHeight = "none";
-                    scrollParent.style.height = "auto";
-                }
-
-                const canvas = await html2canvas(el, {
-                    backgroundColor: null,
-                    scale: 2,
-                    logging: false,
-                    useCORS: true,
-                    scrollX: 0,
-                    scrollY: 0
+                const dataUrl = await toPng(el, {
+                    pixelRatio,
+                    width: el.scrollWidth,
+                    height: el.scrollHeight,
+                    backgroundColor: getComputedStyle(document.body).backgroundColor,
+                    skipFonts: true,
+                    style: {overflow: "visible", maxHeight: "none", maxWidth: "none"},
+                    filter: node => !node.classList?.contains?.("matrix-tooltip") && !node.classList?.contains?.("scatter-tooltip"),
                 });
 
                 const link = document.createElement("a");
                 link.download = filename;
-                link.href = canvas.toDataURL("image/png");
+                link.href = dataUrl;
                 link.click();
             } catch (error) {
-                await showMessage(
-                    `Error generating PNG: ${error}`,
-                    appLang === "en" ? "Error" : "Erreur");
-            } finally {
-                if (scrollParent && saved) {
-                    scrollParent.style.overflow = saved.overflow;
-                    scrollParent.style.maxHeight = saved.maxHeight;
-                    scrollParent.style.height = saved.height;
-                }
+                await showMessage(`Error generating PNG: ${error.message || error}`, appLang === "en" ? "Error" : "Erreur");
             }
         });
     }
 </script>
 
-<button class="tag is-link" on:click={download} title="{appLang === "en" ? "Download as PNG" : "Télécharger en PNG"}">
+<button class="tag is-link" on:click={download} title="{appLang === 'en' ? 'Download as PNG' : 'Télécharger en PNG'}">
     <span class="icon is-small p-0">
-        <i class="fas fa-download"></i>
+        <i class="fas fa-download"/>
     </span>
 </button>
