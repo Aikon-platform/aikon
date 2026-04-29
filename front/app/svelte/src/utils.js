@@ -14,7 +14,13 @@ const u = {
     "date": {en: "Date", fr: "Date"},
     "confirm": {en: "Confirm", fr: "Confirmer"},
     "errored": {en: "An error has occurred", fr: "Une erreur est survenue"},
+    "mainView": {en: "Main view", fr: "Vue principale"},
+    "pageView": {en: "Page view", fr: "Vue de la page"},
+    "matchesView": {en: "Matches", fr: "Correspondances"},
+    "similarityView": {en: "Comparison", fr: "Comparaison"},
+    "expansionView": {en: "Query Expansion", fr: "Expansion de requête"}
 }
+
 export const i18n = (key, t = null) => {
     let dic = {...u, ...model2title}
     if (t) dic = {...dic, ...t}

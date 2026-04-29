@@ -2,13 +2,14 @@
     import { i18n } from "../../utils.js";
     import { parseImgRef } from "../../regions/types.js";
     import SplitLayout from "../../ui/SplitLayout.svelte";
-    import StemmaEditor from "./StemmaEditor.svelte";
     import DocumentSetMatrix from "../document-matrix/DocumentSetMatrix.svelte";
     import DocumentPairMatrix from "../document-matrix/DocumentPairMatrix.svelte";
     import PairDetailModal from "../document-matrix/PairDetailModal.svelte";
     import { createStemmaStore } from "./stemmaStore.js";
     import SpatialFrieze from "./SpatialFrieze.svelte";
     import ImageStemma from "./ImageStemma.svelte";
+    import DocumentStemmaPanel from "./DocumentStemmaPanel.svelte";
+    import Matches from "../Matches.svelte";
 
     export let documentSetStore;
 
@@ -24,7 +25,7 @@
     } = stemmaStore;
 
     const t = {
-        title: { en: "Stemma Builder", fr: "Éditeur de stemma" },
+        title: { en: "Document Stemma", fr: "Stemma document" },
         hint: { en: "Drag to move • Scroll to zoom • Shift+drag to connect", fr: "Glisser pour déplacer • Défiler pour zoomer • Maj+glisser pour connecter" },
         order: { en: "Order", fr: "Ordre" },
         edges: { en: "Connections", fr: "Connexions" },
@@ -38,6 +39,7 @@
         fullDocSet: { en: "Full document set", fr: "Jeu de documents complet" },
         percentage: {en: "By percentage", fr: "Par pourcentage"},
         percentageView: {en: "View matrix with image similarity percentage", fr: "Visualiser la matrice avec des pourcentage d'images similaires"},
+        matches: {en: "Matches", fr: "Correspondances"},
 
         selectViz: { en: "Select a visualization", fr: "Choisir une visualisation" },
         docMatrix: { en: "Document Matrix", fr: "Matrice de documents" },
@@ -48,6 +50,13 @@
         { id: "spatialFrieze", label: t.spatialFrieze },
         { id: "docMatrix", label: t.docMatrix },
     ];
+
+    const layouts = {
+        "":              { left: "documentStemma", right: null,     bottomRight: "pair",           bottomLeft: null },
+        "docMatrix":     { left: "documentStemma", right: "matrix", bottomRight: "pair",           bottomLeft: "matches" },
+        "spatialFrieze": { left: "imageStemma",    right: "frieze", bottomRight: "documentStemma", bottomLeft: "matches" },
+    };
+    $: layout = layouts[selectedViz] ?? layouts[""];
 
     let selectedViz = "";
     let selectedCell = null;
@@ -99,33 +108,94 @@
         selectedFriezeImage = null;
     }
 
+    $: matchesData = buildMatches(selectedViz, selectedCell, selectedFriezeImage, $imageNodes, $documentNodes, $visiblePairs);
+
+    function buildMatches(viz, cell, friezeImg, imgNodes, docNodes, pairs) {
+        if (viz === "docMatrix" && cell) {
+            const { doc1, doc2 } = cell;
+            const cellPairs = getFilteredPairsForDocPair(doc1.id, doc2.id);
+            const rows = cellPairs.map(p => {
+                const aIsDoc1 = p.digit_1 === doc1.id;
+                return [
+                    { image: imgNodes.get(aIsDoc1 ? p.id_1 : p.id_2), doc: doc1 },
+                    { image: imgNodes.get(aIsDoc1 ? p.id_2 : p.id_1), doc: doc2 },
+                ];
+            }).filter(r => r[0].image && r[1].image);
+            return { matches: rows, columns: [{ doc: doc1 }, { doc: doc2 }] };
+        }
+
+        if (viz === "spatialFrieze" && friezeImg) {
+            const baseDoc = docNodes.get(friezeImg.baseDocId);
+            const sourceImage = imgNodes.get(friezeImg.imageId);
+            if (!baseDoc || !sourceImage) return { matches: [], columns: [] };
+
+            const targets = [];
+            for (const p of pairs) {
+                const isFrom1 = p.id_1 === friezeImg.imageId;
+                const isFrom2 = p.id_2 === friezeImg.imageId;
+                if (!isFrom1 && !isFrom2) continue;
+                const targetId = isFrom1 ? p.id_2 : p.id_1;
+                const targetDocId = isFrom1 ? p.digit_2 : p.digit_1;
+                const targetDoc = docNodes.get(targetDocId);
+                const targetImage = imgNodes.get(targetId);
+                if (targetDoc && targetImage) targets.push({ image: targetImage, doc: targetDoc });
+            }
+
+            const row = [{ image: sourceImage, doc: baseDoc }, ...targets];
+            const columns = [{ doc: baseDoc }, ...targets.map(t => ({ doc: t.doc }))];
+            return { matches: [row], columns };
+        }
+
+        return { matches: [], columns: [] };
+    }
+
     $: needsSelection = selectedViz && !$selectedNodes.length && matrixScope !== "full";
 </script>
 
 <SplitLayout>
     <div id="stemma-header" slot="left-title" class="is-flex is-justify-content-space-between is-align-items-center">
-        <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
-        <span class="tag is-small">{i18n("hint", t)}</span>
-    </div>
-    <div slot="left-scroll" class="stemma-panel">
-        {#if $selectedNodes.length}
-            <div class="selection-bar mb-2">
-                <span class="is-size-7 has-text-grey mr-2">{i18n("order", t)}:</span>
-                <div class="is-flex is-flex-wrap-wrap" style="gap: 0.25rem;">
-                    {#each $selectedNodes as node, idx (node.id)}
-                        {@const title = $nodeTitles[node.id] || node.title}
-                        <span class="tag is-small" style="background-color: {node.color}; color: #222;">
-                            <span class="mr-1">{idx + 1}.</span>
-                            {title.length > 12 ? title.slice(0, 10) + "…" : title}
-                        </span>
-                    {/each}
-                </div>
-            </div>
+        {#if layout.left === "documentStemma"}
+            <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
+            <span class="tag is-small">{i18n("hint", t)}</span>
+        {:else if layout.left === "imageStemma" && selectedFriezeImage}
+            {@const baseDoc = $selectedNodes.find(d => d.id === selectedFriezeImage.baseDocId)}
+            {@const title = $nodeTitles[selectedFriezeImage.baseDocId] || baseDoc?.title}
+            {@const imgData = parseImgRef(selectedFriezeImage.imageId)}
+            <h4 class="title is-6 mb-0">
+                <span>Image stemma from</span>
+                <span class="color-dot" style="background: {baseDoc?.color}"></span>
+                {title ?? "Unknown"} (canvas {imgData?.canvasNb || 0})
+            </h4>
         {/if}
+    </div>
 
-        <div class="canvas-wrapper">
-            <StemmaEditor documents={$filteredDocuments} {stemmaStore}/>
-        </div>
+    <div slot="left-scroll">
+        {#if layout.left === "documentStemma"}
+            <DocumentStemmaPanel
+                {stemmaStore}
+                documents={$filteredDocuments}
+                selectedNodes={$selectedNodes}
+                nodeTitles={$nodeTitles}/>
+        {:else if layout.left === "imageStemma"}
+            <ImageStemma
+                {stemmaStore} {visiblePairs} {imageNodes}
+                documents={friezeDocuments}
+                startImageId={selectedFriezeImage?.imageId ?? null}
+                baseDocId={selectedFriezeImage?.baseDocId ?? null}/>
+        {/if}
+    </div>
+
+    <div slot="bottom-left-title" class="is-flex is-justify-content-space-between">
+        {#if layout.bottomLeft === "matches" && matchesData.matches.length}
+            <h4 class="title is-6 mb-0">
+                {i18n("matches", t)} ({matchesData.matches.length})
+            </h4>
+        {/if}
+    </div>
+    <div slot="bottom-left-scroll">
+        {#if layout.bottomLeft === "matches"}
+            <Matches matches={matchesData.matches} columns={matchesData.columns}/>
+        {/if}
     </div>
 
     <div slot="right-title" class="is-flex is-align-items-center" style="gap: 0.5rem;">
@@ -169,7 +239,7 @@
             <p class="has-text-grey is-size-7">{i18n("noViz", t)}</p>
         {:else if needsSelection}
             <p class="has-text-grey is-size-7">{i18n("noSelection", t)}</p>
-        {:else if selectedViz === "docMatrix"}
+        {:else if layout.right === "matrix"}
             <DocumentSetMatrix
                 documents={matrixScope === "full" ? fullDocuments : $selectedNodes}
                 scoreData={matrixScope === "full" ? fullScoreData : $matrixScoreData}
@@ -180,7 +250,7 @@
                 {coverageData}
                 on:cellselect={handleCellSelect}
             />
-        {:else if selectedViz === "spatialFrieze"}
+        {:else if layout.right === "frieze"}
             <SpatialFrieze
                 documents={friezeDocuments}
                 {visiblePairs}
@@ -193,7 +263,7 @@
     </div>
 
     <div slot="bottom-right-title" class="is-flex is-justify-content-space-between">
-        {#if pairMatrixData}
+        {#if layout.bottomRight === "pair" && pairMatrixData}
             <h4 class="title is-6 mb-0">
                 <span class="color-dot" style="background: {pairMatrixData.doc1.color}"/>
                 <span class="has-text-grey">↔</span>
@@ -205,20 +275,14 @@
                     <option value="image">{i18n("byImage", t)}</option>
                 </select>
             </div>
-        {:else if selectedFriezeImage}
-            {@const baseDoc = $selectedNodes.find(d => d.id === selectedFriezeImage.baseDocId)}
-            {@const title = $nodeTitles[selectedFriezeImage.baseDocId] || baseDoc?.title}
-            {@const imgData = parseImgRef(selectedFriezeImage.imageId)}
-            <h4 class="title is-6 mb-0">
-                <span>Image stemma from</span>
-                <span class="color-dot" style="background: {baseDoc?.color}"></span>
-                {title ?? "Unknown"}
-                (canvas {imgData?.canvasNb || 0})
-            </h4>
+        {:else if layout.bottomRight === "documentStemma"}
+            <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
+            <span class="tag is-small">{i18n("hint", t)}</span>
         {/if}
     </div>
+
     <div slot="bottom-right-scroll">
-        {#if pairMatrixData}
+        {#if layout.bottomRight === "pair" && pairMatrixData}
             <DocumentPairMatrix
                 doc1={pairMatrixData.doc1}
                 doc2={pairMatrixData.doc2}
@@ -226,15 +290,12 @@
                 mode={scatterMode}
                 on:cellclick={handleScatterClick}
             />
-        {:else if selectedFriezeImage}
-            <ImageStemma
+        {:else if layout.bottomRight === "documentStemma"}
+            <DocumentStemmaPanel
                 {stemmaStore}
-                {visiblePairs}
-                {imageNodes}
-                documents={friezeDocuments}
-                startImageId={selectedFriezeImage.imageId}
-                baseDocId={selectedFriezeImage.baseDocId}
-            />
+                documents={$filteredDocuments}
+                selectedNodes={$selectedNodes}
+                nodeTitles={$nodeTitles}/>
         {/if}
     </div>
 </SplitLayout>
@@ -249,24 +310,6 @@
     #stemma-header {
         overflow: hidden;
         white-space: nowrap;
-    }
-    .stemma-panel {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-    .canvas-wrapper {
-        flex: 1;
-        min-height: 400px;
-        position: relative;
-    }
-    .selection-bar {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        padding: 0.5rem;
-        background: var(--bulma-scheme-main-bis);
-        border-radius: 4px;
     }
     .color-dot {
         width: 10px;
