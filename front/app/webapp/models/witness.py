@@ -201,7 +201,7 @@ class Witness(AbstractSearchableModel):
 
         img = self.get_key_value("img")
         if not no_img and (reindex or not img):
-            img = self.get_img(only_first=True)
+            img = self.get_img()
 
         updated = (
             self.updated_at.strftime("%Y-%m-%d %H:%M") if self.updated_at else None
