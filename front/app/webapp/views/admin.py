@@ -212,9 +212,9 @@ class WitnessRegionExtractionView(AbstractRecordView):
                     "img_nb": djson["img_nb"] or 0,
                     "img_zeros": djson["zeros"] or 0,
                 }
-        print(f"{'>'*30} region_extraction |", context["witness"]["region_extractions"])
+        print(f"{'>'*30} region_extraction |", context["witness"]["region_extraction"])
 
-        for rid in context["witness"]["region_extractions"]:
+        for rid in context["witness"]["region_extraction"]:
             region_extraction = RegionExtraction.objects.filter(pk=rid).first()
             if not region_extraction:
                 continue
