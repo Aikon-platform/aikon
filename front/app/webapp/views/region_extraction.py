@@ -305,7 +305,7 @@ def delete_region_extraction(request, rid):
     used in the UI to delete a regions
     """
     from app.webapp.tasks import delete_annotations
-    from app.regions.tasks import delete_api_regions
+    from app.region_extraction.tasks import delete_api_region_extraction
 
     if request.method != "DELETE":
         return JsonResponse({"error": "Invalid request method"}, status=400)
@@ -321,7 +321,7 @@ def delete_region_extraction(request, rid):
                 f"[delete_regions] Region extraction file for {regions.get_ref()} not found, not deleting it (searched at: {str(region_extraction_file)})"
             )
 
-        delete_api_regions.delay(regions.get_digit().get_ref(), regions.model)
+        delete_api_region_extraction.delay(regions.get_digit().get_ref(), regions.model)
 
         try:
             # Delete the regions record in the database

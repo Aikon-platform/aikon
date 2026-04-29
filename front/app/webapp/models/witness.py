@@ -414,8 +414,7 @@ class Witness(AbstractSearchableModel):
         necessary to avoid de-synchronization of witness.json with what's actually in the database.
         """
         witness_json: dict = self.json
-        # NOTE : we don´t change from "regions" to "region_extractions" because that would demand a database migration.
-        witness_json["regions"] = [
+        witness_json["region_extractions"] = [
             region.id for region in self.get_region_extractions()
         ]
         self.update_json(witness_json)
