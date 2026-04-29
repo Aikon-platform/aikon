@@ -471,7 +471,6 @@ def get_canvas_idx(aiiino):
     if canvas_idx:
         return int(canvas_idx)
 
-    # print(aiiino)
     full = aiiino.get("full", "")
     try:
         return int(full.split("canvas/c")[1].replace(".json", ""))
@@ -556,7 +555,6 @@ def get_record_annotations(
     # if record is a Regions, all annotations for the Regions.
     # otherwise, all nnotations for the Digitization
     annos = get_manifest_annotations(record.get_ref(), False, min_c, max_c)
-
     if len(annos) == 0:
         return r_annos
 
