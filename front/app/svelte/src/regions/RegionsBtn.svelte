@@ -32,75 +32,119 @@
         searchParamsString = searchParams.toString();
     });
 
-    async function deleteRegions() {
+    /**
+     * @type {(target:"similarity"|"regions") => Promise}
+     */
+    async function deleteAction (target) {
+        const allowedTargets = ["similarity", "regions"];
+        if (!allowedTargets.includes(target)) {
+            throw new Error(`deleteAction: 'target' must be one of ${allowedTargets}, got ${target}`);
+        }
+
+        const targetName = target==="regions"
+            ? regionExtractionName(true)
+            : similarityName;
         const confirmed = await showMessage(
             appLang === "en"
-                ? `Are you sure you want to delete all ${regionExtractionName(true)} of this witness?`
-                : `Voulez-vous vraiment supprimer les ${regionExtractionName(true)} effectuées sur ce document ?`,
+                ? `Are you sure you want to delete all ${targetName} of this witness?`
+                : `Voulez-vous vraiment supprimer les ${targetName} effectuées sur ce document ?`,
             appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
             true
-        );
-
+        )
         if (!confirmed) {
             return;
         }
-
         if (typeof currentRegionId !== "number") {
             throw new Error("Invalid region ID");
         }
-        const url = `${window.location.origin}/${appName}/regions/${currentRegionId}/delete`;
+
+        const url = target==="regions"
+            ? `${window.location.origin}/${appName}/regions/${currentRegionId}/delete`
+            : `${window.location.origin}/${appName}/similarity/reset/${currentRegionId}`;
         try {
             const response = await withLoading(() => fetch(url, {
                 method: "DELETE",
                 headers: { "X-CSRFToken": csrfToken },
             }));
-            if (response.status !== 204) {
-                throw new Error(`Failed to delete regions: '${response.statusText}'`);
+            if ( ![200,204].includes(response.status) ) {
+                throw new Error(`Failed to delete ${target}: '${response.statusText}'`);
             }
             window.location.href = `${baseUrl.split("regions/")[0]}regions/`;
-        } catch (error) {
-            console.error(error);
-        }
-    }
-
-    async function deleteSimilarity() {
-        const confirmed = await showMessage(
-            appLang === "en"
-                ? "Are you sure you want to delete all similarity scores for this document?"
-                : "Voulez-vous vraiment supprimer l'intégralité des scores de similarité pour ce document ?",
-            appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
-            true
-        );
-
-        if (!confirmed) {
-            return;
-        }
-
-        if (typeof currentRegionId !== "number") {
-            throw new Error("Invalid region ID");
-        }
-        const url = `${window.location.origin}/${appName}/similarity/reset/${currentRegionId}`;
-        try {
-            const response = await withLoading(() => fetch(url, {
-                method: "DELETE",
-                headers: { "X-CSRFToken": csrfToken },
-            }));
-            if (response.status === 204 || response.status === 200) {
-                window.location.href = `${baseUrl.split("regions/")[0]}regions/`;
-            } else {
-                throw new Error(`Failed to delete similarity: '${response.statusText}'`);
-            }
         } catch (error) {
             console.error(error);
             await showMessage(error.message, "Error");
         }
     }
 
+    // async function deleteRegions() {
+    //     const confirmed = await showMessage(
+    //         appLang === "en"
+    //             ? `Are you sure you want to delete all ${regionExtractionName(true)} of this witness?`
+    //             : `Voulez-vous vraiment supprimer les ${regionExtractionName(true)} effectuées sur ce document ?`,
+    //         appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
+    //         true
+    //     );
+//
+    //     if (!confirmed) {
+    //         return;
+    //     }
+//
+    //     if (typeof currentRegionId !== "number") {
+    //         throw new Error("Invalid region ID");
+    //     }
+    //     const url = `${window.location.origin}/${appName}/regions/${currentRegionId}/delete`;
+    //     try {
+    //         const response = await withLoading(() => fetch(url, {
+    //             method: "DELETE",
+    //             headers: { "X-CSRFToken": csrfToken },
+    //         }));
+    //         if (response.status !== 204) {
+    //             throw new Error(`Failed to delete regions: '${response.statusText}'`);
+    //         }
+    //         window.location.href = `${baseUrl.split("regions/")[0]}regions/`;
+    //     } catch (error) {
+    //         console.error(error);
+    //     }
+    // }
+
+    // async function deleteSimilarity() {
+    //     const confirmed = await showMessage(
+    //         appLang === "en"
+    //             ? "Are you sure you want to delete all similarity scores for this document?"
+    //             : "Voulez-vous vraiment supprimer l'intégralité des scores de similarité pour ce document ?",
+    //         appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
+    //         true
+    //     );
+//
+    //     if (!confirmed) {
+    //         return;
+    //     }
+//
+    //     if (typeof currentRegionId !== "number") {
+    //         throw new Error("Invalid region ID");
+    //     }
+    //     const url = `${window.location.origin}/${appName}/similarity/reset/${currentRegionId}`;
+    //     try {
+    //         const response = await withLoading(() => fetch(url, {
+    //             method: "DELETE",
+    //             headers: { "X-CSRFToken": csrfToken },
+    //         }));
+    //         if (response.status === 204 || response.status === 200) {
+    //             window.location.href = `${baseUrl.split("regions/")[0]}regions/`;
+    //         } else {
+    //             throw new Error(`Failed to delete similarity: '${response.statusText}'`);
+    //         }
+    //     } catch (error) {
+    //         console.error(error);
+    //         await showMessage(error.message, "Error");
+    //     }
+    // }
+
     function deleteResults() {
         if (regionExtractionTabs.includes($activeLayout)) {
-            deleteRegions();
+            deleteAction("regions");
         } else if (similarityTabs.includes($activeLayout)) {
-            deleteSimilarity();
+            deleteAction("similarity");
         }
     }
 
