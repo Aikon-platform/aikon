@@ -108,9 +108,15 @@
                 {#if pairCount === 0}
                     <article class="message is-warning">
                         <div class="message-body">
-                            No document pairs found for this configuration.
-                            Please adjust your selection criteria in the sidebar to include more documents or
-                            categories.
+                            {#if appLang === "en"}
+                                No regions pairs found for this configuration.
+                                Please adjust your selection criteria in the sidebar
+                                to include more documents or categories.
+                            {:else}
+                                Aucune paires d'images trouvées pour la configuration actuelle.
+                                Merci d'ajuster vos critères de sélection dans la barre latérale
+                                pour inclure davantage de documents ou catégories.
+                            {/if}
                         </div>
                     </article>
                 {:else}

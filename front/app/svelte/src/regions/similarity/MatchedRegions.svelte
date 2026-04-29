@@ -9,6 +9,7 @@
     import QueryExpansionView from "../modal/QueryExpansionView.svelte";
     import Tabs from "../../ui/Tabs.svelte";
     import { RegionItem } from "../types.js";
+    import {i18n} from "../../utils.js";
 
     export let items = [];
     export let loading = false;
@@ -52,10 +53,10 @@
     };
 
     const tabs = [
-        { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
-        { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
-        { id: "similarity", label: appLang === "en" ? "Comparison" : "Comparaison" },
-        { id: "expansion", label: appLang === "en" ? "Query Expansion" : "Expansion de requête" },
+        { id: "region", label: i18n("mainView") },
+        { id: "page", label: i18n("pageView") },
+        { id: "similarity", label: i18n("similarityView") },
+        { id: "expansion", label: i18n("expansionView") },
     ];
 </script>
 

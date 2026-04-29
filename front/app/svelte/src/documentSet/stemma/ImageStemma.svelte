@@ -20,13 +20,14 @@ Special cases:
     import RegionCard from "../../regions/RegionCard.svelte";
     import Tabs from "../../ui/Tabs.svelte";
     import {appLang} from "../../constants.js";
+    import {i18n} from "../../utils.js";
 
     export let stemmaStore;
     export let visiblePairs;
     export let imageNodes;
     export let documents;
-    export let startImageId;
-    export let baseDocId;
+    export let startImageId = null;
+    export let baseDocId = null;
 
     const { edges, nodePositions } = stemmaStore;
 
@@ -50,9 +51,15 @@ Special cases:
     };
 
     const tabs = [
-        { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
-        { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
+        { id: "region", label: i18n("mainView") },
+        { id: "page", label: i18n("pageView") },
     ];
+
+    const t = {
+        select: { en: "Select an image in the frieze", fr: "Sélectionner une image dans la frise" },
+        pageView: { en: "Page View", fr: "Vue de la page" },
+        regionView: { en: "Main view", fr: "Vue principale" },
+    };
 
     const pairIndex = derived(visiblePairs, $pairs => {
         const idx = new Map();
@@ -220,14 +227,11 @@ Special cases:
 
             {#each stemmaImages.nodes as node (node.docId)}
                 <g transform="translate({node.x}, {node.y})"
-                    style="cursor: {node.img ? "pointer" : "default"}"
-                    on:click={() => clickOnImg(node)}
-                    on:keyup>
+                    style="cursor: {node.img ? 'pointer' : 'default'}"
+                    on:click={() => clickOnImg(node)} on:keyup>
                     <rect
-                        width={IMG_SIZE}
-                        height={IMG_SIZE}
-                        rx="4"
-                        fill={node.color}
+                        width={IMG_SIZE} height={IMG_SIZE}
+                        rx="4" fill={node.color}
                         stroke="{node.color}"
                         stroke-width={node.docId === baseDocId ? 20 : 10}
                     />
@@ -242,7 +246,9 @@ Special cases:
             {/each}
         </svg>
     {:else}
-        <p class="has-text-grey is-size-7 p-3">Select an image in the frieze above</p>
+        <p class="has-text-grey is-size-6 p-3 mb-3">
+            {i18n("select", t)}
+        </p>
     {/if}
 </div>
 
