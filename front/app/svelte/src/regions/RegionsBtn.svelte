@@ -9,7 +9,17 @@
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentRegionId = parseInt(baseUrl.split("regions/")[1].replace("/", ""));
 
+    const regionExtractionTabs = ["viewer", "all", "page"];
+    const similarityTabs = ["similarity"];
+
     const allRegionsUrl = baseUrl.replace(/\/\d+\/?$/, "");
+    const similarityName = appLang === "fr" ? "similarités" : "similarity";
+    const regionExtractionName = (plural=false) => {
+        const extra = plural ? "s" : "";
+        return appLang === "fr"
+            ? `extraction${extra} de région${extra}`
+            : `region extraction${extra}`
+    }
 
     // to persist the current tab when selecting/unselecting a Regions,
     // we can't listen to changes on window.location.search.
@@ -24,9 +34,9 @@
 
     async function deleteRegions() {
         const confirmed = await showMessage(
-            appLang === "en" ?
-                "Are you sure you want to delete all the region extraction of this witness?" :
-                "Voulez-vous vraiment supprimer les extractions de régions effectuées sur ce document ?",
+            appLang === "en"
+                ? `Are you sure you want to delete all ${regionExtractionName(true)} of this witness?`
+                : `Voulez-vous vraiment supprimer les ${regionExtractionName(true)} effectuées sur ce document ?`,
             appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
             true
         );
@@ -55,7 +65,9 @@
 
     async function deleteSimilarity() {
         const confirmed = await showMessage(
-            appLang === "en" ? "Are you sure you want to delete all similarity scores for this document?" : "Voulez-vous vraiment supprimer l'intégralité des scores de similarité pour ce document ?",
+            appLang === "en"
+                ? "Are you sure you want to delete all similarity scores for this document?"
+                : "Voulez-vous vraiment supprimer l'intégralité des scores de similarité pour ce document ?",
             appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
             true
         );
@@ -85,16 +97,16 @@
     }
 
     function deleteResults() {
-        if (["all", "page"].includes($activeLayout)) {
+        if (regionExtractionTabs.includes($activeLayout)) {
             deleteRegions();
-        } else if ($activeLayout === "similarity") {
+        } else if (similarityTabs.includes($activeLayout)) {
             deleteSimilarity();
         }
     }
 
-    $: resultName = ["all", "page"].includes($activeLayout)
-        ? (appLang === "en" ? "region extraction" : "extraction des régions")
-        : (appLang === "en" ? "similarities" : "similarités");
+    $: resultName = regionExtractionTabs.includes($activeLayout)
+        ? regionExtractionName(true)
+        : similarityName;
 </script>
 
 <div>
@@ -102,9 +114,9 @@
         <a href="{allRegionsUrl}/?{searchParamsString}" class="tag is-dark mr-3 mb-3 is-rounded">
             {appLang === "en" ? "Back to all witness view" : "Retour à la vue complète du témoin"}
         </a>
-        {#if ["all", "page", "similarity"].includes($activeLayout)}
+        {#if regionExtractionTabs.concat(similarityTabs).includes($activeLayout)}
             <button on:click={deleteResults} class="tag mr-3 mb-3 is-danger">
-                {appLang === "en" ? `Delete displayed ${resultName}` : `Supprimer les ${resultName} affichés`}
+                {appLang === "en" ? `Delete displayed ${resultName}` : `Supprimer les ${resultName} affichées`}
             </button>
         {/if}
     {:else}
