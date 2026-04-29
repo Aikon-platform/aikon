@@ -97,7 +97,7 @@ urlpatterns = [
         name="validate-region-extraction",
     ),
     path(
-        f"{APP_NAME}/iiif/<str:version>/<str:region_extraction_ref>/list/anno-<int:canvas_nb>.json",
+        f"{APP_NAME}/iiif/<str:region_extraction_ref>/list/anno-<int:canvas_nb>.json",
         canvas_annotations,
         name="canvas-annotations",
     ),
