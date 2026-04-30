@@ -297,7 +297,6 @@ def create_manual_region_extraction(request, wid, did=None, rid=None):
     return JsonResponse({"error": "Invalid request method"}, status=400)
 
 
-# NOTE unused ?
 # + pretty much same role as webapp.models.digitization.pre_delete_digit
 def delete_region_extraction(request, rid):
     """
