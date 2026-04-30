@@ -18,9 +18,12 @@ Special cases:
     import RegionModal from "../../regions/modal/RegionModal.svelte";
     import PageView from "../../regions/modal/PageView.svelte";
     import RegionCard from "../../regions/RegionCard.svelte";
+    import RightClick from "../../ui/RightClick.svelte";
     import Tabs from "../../ui/Tabs.svelte";
-    import {appLang} from "../../constants.js";
     import {i18n} from "../../utils.js";
+
+    import { createEventDispatcher } from "svelte";
+    const dispatch = createEventDispatcher();
 
     export let stemmaStore;
     export let visiblePairs;
@@ -28,6 +31,21 @@ Special cases:
     export let documents;
     export let startImageId = null;
     export let baseDocId = null;
+
+    let menu = { open: false, x: 0, y: 0, items: [] };
+
+    function onContextMenu(e, node) {
+        e.preventDefault();
+        const noImg = !node.img;
+        const isAnchor = node.docId === baseDocId && node.imageId === startImageId;
+        menu = {
+            open: true, x: e.clientX, y: e.clientY,
+            items: [
+                { label: i18n("openModal", t), icon: "expand", disabled: noImg, action: () => openImg(node) },
+                { label: i18n("setAnchor", t), icon: "anchor", disabled: noImg || isAnchor, action: () => dispatch("anchorselect", { imageId: node.imageId, baseDocId: node.docId }) },
+            ]
+        };
+    }
 
     const { edges, nodePositions } = stemmaStore;
 
@@ -38,7 +56,7 @@ Special cases:
         .filter(n => n.img)
         .map(n => new RegionItem(n.img));
 
-    const clickOnImg = (node) => {
+    const openImg = (node) => {
         if (!node.img){
             return
         }
@@ -56,9 +74,9 @@ Special cases:
     ];
 
     const t = {
-        select: { en: "Select an image in the frieze", fr: "Sélectionner une image dans la frise" },
-        pageView: { en: "Page View", fr: "Vue de la page" },
-        regionView: { en: "Main view", fr: "Vue principale" },
+        select:    { en: "Select an image in the frieze", fr: "Sélectionner une image dans la frise" },
+        openModal: { en: "Open detailed view", fr: "Ouvrir la vue détaillé" },
+        setAnchor: { en: "Set as anchor", fr: "Définir comme ancre" },
     };
 
     const pairIndex = derived(visiblePairs, $pairs => {
@@ -228,7 +246,7 @@ Special cases:
             {#each stemmaImages.nodes as node (node.docId)}
                 <g transform="translate({node.x}, {node.y})"
                     style="cursor: {node.img ? 'pointer' : 'default'}"
-                    on:click={() => clickOnImg(node)} on:keyup>
+                    on:contextmenu={e => onContextMenu(e, node)} on:keyup>
                     <rect
                         width={IMG_SIZE} height={IMG_SIZE}
                         rx="4" fill={node.color}
@@ -265,6 +283,8 @@ Special cases:
         </Tabs>
     </svelte:fragment>
 </RegionModal>
+
+<RightClick bind:open={menu.open} x={menu.x} y={menu.y} items={menu.items}/>
 
 <style>
     .image-stemma {

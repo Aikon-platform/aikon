@@ -119,7 +119,9 @@
                 {stemmaStore} {visiblePairs} {imageNodes}
                 documents={friezeDocuments}
                 startImageId={$selectedFriezeImage?.imageId ?? null}
-                baseDocId={$selectedFriezeImage?.baseDocId ?? null}/>
+                baseDocId={$selectedFriezeImage?.baseDocId ?? null}
+                on:anchorselect={e => selectedFriezeImage.set(e.detail)}
+            />
         {/if}
     </div>
 
