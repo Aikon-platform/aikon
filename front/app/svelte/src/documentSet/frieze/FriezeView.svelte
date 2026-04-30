@@ -8,7 +8,7 @@
     export let documentSetStore;
 
     const {
-        documentNodes, visiblePairs, buildFriezeMatches, buildMatchesForAnchor
+        documentNodes, visiblePairs, buildFriezeMatches, buildClusterMatches
     } = documentSetStore;
 
     const friezeStub = { nodeTitles: writable({}) };
@@ -16,21 +16,6 @@
     let friezeMode = "image";
     let selectedFriezeImage = null;
     let selectedCluster = null;
-
-    function buildClusterMatches({ baseDocId, docIds, imageIds }) {
-        const baseDoc = $documentNodes.get(baseDocId);
-        if (!baseDoc) return { matches: [], columns: [] };
-        const targetDocs = [...docIds].map(id => $documentNodes.get(id)).filter(Boolean);
-        const data = buildMatchesForAnchor(baseDoc, targetDocs, imageIds, true, targetDocs.length > 0);
-        if (!targetDocs.length && data.matches.length) {
-            const allImages = data.matches.flatMap(row => row[0]?.images ?? []);
-            return {
-                matches: [[{ images: allImages, doc: baseDoc, indices: allImages.map((_, i) => i) }]],
-                columns: [{ doc: baseDoc }],
-            };
-        }
-        return data;
-    }
 
     $: documents = Array.from($documentNodes?.values() || []);
     $: matchesData = selectedCluster
