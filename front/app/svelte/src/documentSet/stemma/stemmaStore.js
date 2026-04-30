@@ -3,7 +3,10 @@ import { writable, derived, get } from "svelte/store";
 const emptyGraph = { edges: [], nodePositions: {}, nodeTitles: {} };
 
 export function createStemmaStore(documentSetStore) {
-    const { docSetId, documentNodes, selectedDocuments, filteredDocPairStats, filteredDocStats, imageCountMap, pairIndex, visiblePairIds } = documentSetStore;
+    const {
+        docSetId, documentNodes, selectedDocuments, filteredDocPairStats, filteredDocStats,
+        imageCountMap, pairIndex, visiblePairIds, visiblePairs, imageNodes
+    } = documentSetStore;
 
     const stemmaGraph = writable(JSON.parse(localStorage.getItem(`stemmaGraph-${docSetId}`)) || emptyGraph);
     stemmaGraph.subscribe(graph => localStorage.setItem(`stemmaGraph-${docSetId}`, JSON.stringify(graph)));
@@ -76,6 +79,108 @@ export function createStemmaStore(documentSetStore) {
     );
 
     const selectedNodeIds = derived(selectedNodes, $nodes => new Set($nodes.map(n => n.id)));
+
+    const selectedViz = writable("");
+    const selectedCell = writable(null);
+    const selectedFriezeImage = writable(null);
+
+    selectedViz.subscribe(() => {
+        selectedCell.set(null);
+        selectedFriezeImage.set(null);
+    });
+
+    const matches = derived(
+        [selectedViz, selectedCell, selectedFriezeImage, imageNodes, documentNodes, visiblePairs],
+        ([$viz, $cell, $frieze, $imgNodes, $docNodes, $pairs]) => {
+            if ($viz === "docMatrix" && $cell) return buildMatrixMatches($cell, $imgNodes, $docNodes);
+            if ($viz === "spatialFrieze" && $frieze) return buildFriezeMatches($frieze, $imgNodes, $docNodes, $pairs);
+            return { matches: [], columns: [] };
+        }
+    );
+
+    function otherSide(pair, anchorDocId, anchorImgId, imgNodes, docNodes) {
+        const isFrom1 = pair.digit_1 === anchorDocId && (anchorImgId == null || pair.id_1 === anchorImgId);
+        const isFrom2 = pair.digit_2 === anchorDocId && (anchorImgId == null || pair.id_2 === anchorImgId);
+        if (!isFrom1 && !isFrom2) return null;
+        const targetId = isFrom1 ? pair.id_2 : pair.id_1;
+        const targetDocId = isFrom1 ? pair.digit_2 : pair.digit_1;
+        const image = imgNodes.get(targetId);
+        const doc = docNodes.get(targetDocId);
+        return image && doc ? { image, doc, score: pair.weightedScore } : null;
+    }
+
+    function buildMatchesForAnchor(anchorDoc, targetDocs, imgNodes, docNodes) {
+        const byAnchor = new Map();
+
+        for (const targetDoc of targetDocs) {
+            if (targetDoc.id === anchorDoc.id) continue;
+            const pairs = getFilteredPairsForDocPair(anchorDoc.id, targetDoc.id);
+            for (const p of pairs) {
+                const anchorOnSide1 = p.digit_1 === anchorDoc.id;
+                const anchorId = anchorOnSide1 ? p.id_1 : p.id_2;
+                const target = otherSide(p, anchorDoc.id, anchorId, imgNodes, docNodes);
+                const anchorImg = imgNodes.get(anchorId);
+                if (!anchorImg || !target) continue;
+
+                if (!byAnchor.has(anchorId)) {
+                    byAnchor.set(anchorId, { anchor: anchorImg, byTargetDoc: new Map() });
+                }
+                const entry = byAnchor.get(anchorId);
+                if (!entry.byTargetDoc.has(targetDoc.id)) entry.byTargetDoc.set(targetDoc.id, []);
+                entry.byTargetDoc.get(targetDoc.id).push(target.image);
+            }
+        }
+
+        const rows = Array.from(byAnchor.values())
+            .sort((a, b) => (a.anchor.canvas ?? Infinity) - (b.anchor.canvas ?? Infinity))
+            .map(({ anchor, byTargetDoc }) => [
+                { images: [anchor], doc: anchorDoc },
+                ...targetDocs.map(td => {
+                    const imgs = byTargetDoc.get(td.id);
+                    return imgs?.length ? { images: imgs, doc: td } : null;
+                }),
+            ]);
+
+        const columns = [{ doc: anchorDoc }, ...targetDocs.map(d => ({ doc: d }))];
+        return assignIndices({ matches: rows, columns });
+    }
+
+    function buildMatrixMatches(cell, imgNodes, docNodes) {
+        return buildMatchesForAnchor(cell.doc1, [cell.doc2], imgNodes, docNodes);
+    }
+
+    function buildFriezeMatches(frieze, imgNodes, docNodes, pairs) {
+        const baseDoc = docNodes.get(frieze.baseDocId);
+        const sourceImage = imgNodes.get(frieze.imageId);
+        if (!baseDoc || !sourceImage) return { matches: [], columns: [] };
+
+        const bestPerDoc = new Map();
+        for (const p of pairs) {
+            const target = otherSide(p, frieze.baseDocId, frieze.imageId, imgNodes, docNodes);
+            if (!target || target.doc.id === frieze.baseDocId) continue;
+            const existing = bestPerDoc.get(target.doc.id);
+            if (!existing || target.score > existing.score) bestPerDoc.set(target.doc.id, target);
+        }
+
+        const targets = Array.from(bestPerDoc.values());
+        const row = [
+            { images: [sourceImage], doc: baseDoc },
+            ...targets.map(t => ({ images: [t.image], doc: t.doc })),
+        ];
+        const columns = [{ doc: baseDoc }, ...targets.map(t => ({ doc: t.doc }))];
+        return assignIndices({ matches: [row], columns });
+    }
+
+    function assignIndices(data) {
+        let idx = 0;
+        for (const row of data.matches) {
+            for (const cell of row) {
+                if (!cell) continue;
+                cell.indices = cell.images.map(() => idx++);
+            }
+        }
+        return data;
+    }
 
     const matrixScoreData = derived(
         [filteredDocPairStats, selectedNodeIds],
@@ -175,6 +280,10 @@ export function createStemmaStore(documentSetStore) {
         edges,
         nodePositions,
         nodeTitles,
+        selectedViz,
+        selectedCell,
+        selectedFriezeImage,
+        matches,
         updateNodeTitle,
         updateEdgeLabel,
         filteredDocuments,

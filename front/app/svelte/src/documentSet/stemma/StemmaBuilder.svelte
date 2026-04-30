@@ -21,7 +21,8 @@
     const stemmaStore = createStemmaStore(documentSetStore);
     const {
         selectedNodes, filteredDocuments, matrixScoreData, matrixDocStats,
-        matrixImageCount, getFilteredPairsForDocPair, nodeTitles
+        matrixImageCount, getFilteredPairsForDocPair, nodeTitles,
+        selectedViz, selectedCell, selectedFriezeImage, matches
     } = stemmaStore;
 
     const t = {
@@ -56,12 +57,9 @@
         "docMatrix":     { left: "documentStemma", right: "matrix", bottomRight: "pair",           bottomLeft: "matches" },
         "spatialFrieze": { left: "imageStemma",    right: "frieze", bottomRight: "documentStemma", bottomLeft: "matches" },
     };
-    $: layout = layouts[selectedViz] ?? layouts[""];
+    $: layout = layouts[$selectedViz] ?? layouts[""];
 
-    let selectedViz = "";
-    let selectedCell = null;
-    let selectedFriezeImage = null;
-    let scatterMode = "page";
+    let scatterMode = "image";
     let friezeMode = "image";
     let percentageMode = false;
     let modalActive = false;
@@ -70,86 +68,25 @@
     let matrixScope = "full";
 
     $: documentSetStore.updateSelectedNodes($selectedNodes.map(n => n.id));
-    $: pairMatrixData = selectedCell ? {
-        doc1: selectedCell.doc1,
-        doc2: selectedCell.doc2,
-        pairs: getFilteredPairsForDocPair(selectedCell.doc1.id, selectedCell.doc2.id)
+    $: pairMatrixData = $selectedCell ? {
+        doc1: $selectedCell.doc1,
+        doc2: $selectedCell.doc2,
+        pairs: getFilteredPairsForDocPair($selectedCell.doc1.id, $selectedCell.doc2.id)
     } : null;
-
-    function handleCellSelect(e) {
-        selectedCell = e.detail;
-    }
 
     function handleScatterClick(e) {
         navState = { idx1: e.detail.idx1, idx2: e.detail.idx2 };
         scatterData = e.detail.data;
         modalActive = true;
     }
-
-    function handleModalNavigate(e) {
-        navState = { ...e.detail };
-    }
-
-    function handleModalClose() {
-        modalActive = false;
-    }
-
-    function handleFriezeImageSelect(e) {
-        selectedFriezeImage = e.detail;
-    }
+    function handleModalNavigate(e) { navState = { ...e.detail }; }
+    function handleModalClose() { modalActive = false; }
 
     $: fullDocuments = Array.from($documentNodes?.values() || []);
     $: fullScoreData = $filteredDocPairStats?.scoreCount || new Map();
     $: fullDocStats = $filteredDocStats?.scoreCount || new Map();
     $: friezeDocuments = matrixScope === "full" ? fullDocuments : $selectedNodes;
-
-    function handleVizChange() {
-        selectedCell = null;
-        selectedFriezeImage = null;
-    }
-
-    $: matchesData = buildMatches(selectedViz, selectedCell, selectedFriezeImage, $imageNodes, $documentNodes, $visiblePairs);
-
-    function buildMatches(viz, cell, friezeImg, imgNodes, docNodes, pairs) {
-        if (viz === "docMatrix" && cell) {
-            const { doc1, doc2 } = cell;
-            const cellPairs = getFilteredPairsForDocPair(doc1.id, doc2.id);
-            const rows = cellPairs.map(p => {
-                const aIsDoc1 = p.digit_1 === doc1.id;
-                return [
-                    { image: imgNodes.get(aIsDoc1 ? p.id_1 : p.id_2), doc: doc1 },
-                    { image: imgNodes.get(aIsDoc1 ? p.id_2 : p.id_1), doc: doc2 },
-                ];
-            }).filter(r => r[0].image && r[1].image);
-            return { matches: rows, columns: [{ doc: doc1 }, { doc: doc2 }] };
-        }
-
-        if (viz === "spatialFrieze" && friezeImg) {
-            const baseDoc = docNodes.get(friezeImg.baseDocId);
-            const sourceImage = imgNodes.get(friezeImg.imageId);
-            if (!baseDoc || !sourceImage) return { matches: [], columns: [] };
-
-            const targets = [];
-            for (const p of pairs) {
-                const isFrom1 = p.id_1 === friezeImg.imageId;
-                const isFrom2 = p.id_2 === friezeImg.imageId;
-                if (!isFrom1 && !isFrom2) continue;
-                const targetId = isFrom1 ? p.id_2 : p.id_1;
-                const targetDocId = isFrom1 ? p.digit_2 : p.digit_1;
-                const targetDoc = docNodes.get(targetDocId);
-                const targetImage = imgNodes.get(targetId);
-                if (targetDoc && targetImage) targets.push({ image: targetImage, doc: targetDoc });
-            }
-
-            const row = [{ image: sourceImage, doc: baseDoc }, ...targets];
-            const columns = [{ doc: baseDoc }, ...targets.map(t => ({ doc: t.doc }))];
-            return { matches: [row], columns };
-        }
-
-        return { matches: [], columns: [] };
-    }
-
-    $: needsSelection = selectedViz && !$selectedNodes.length && matrixScope !== "full";
+    $: needsSelection = $selectedViz && !$selectedNodes.length && matrixScope !== "full";
 </script>
 
 <SplitLayout>
@@ -157,10 +94,10 @@
         {#if layout.left === "documentStemma"}
             <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
             <span class="tag is-small">{i18n("hint", t)}</span>
-        {:else if layout.left === "imageStemma" && selectedFriezeImage}
-            {@const baseDoc = $selectedNodes.find(d => d.id === selectedFriezeImage.baseDocId)}
-            {@const title = $nodeTitles[selectedFriezeImage.baseDocId] || baseDoc?.title}
-            {@const imgData = parseImgRef(selectedFriezeImage.imageId)}
+        {:else if layout.left === "imageStemma" && $selectedFriezeImage}
+            {@const baseDoc = $selectedNodes.find(d => d.id === $selectedFriezeImage.baseDocId)}
+            {@const title = $nodeTitles[$selectedFriezeImage.baseDocId] || baseDoc?.title}
+            {@const imgData = parseImgRef($selectedFriezeImage.imageId)}
             <h4 class="title is-6 mb-0">
                 <span>Image stemma from</span>
                 <span class="color-dot" style="background: {baseDoc?.color}"></span>
@@ -180,34 +117,34 @@
             <ImageStemma
                 {stemmaStore} {visiblePairs} {imageNodes}
                 documents={friezeDocuments}
-                startImageId={selectedFriezeImage?.imageId ?? null}
-                baseDocId={selectedFriezeImage?.baseDocId ?? null}/>
+                startImageId={$selectedFriezeImage?.imageId ?? null}
+                baseDocId={$selectedFriezeImage?.baseDocId ?? null}/>
         {/if}
     </div>
 
     <div slot="bottom-left-title" class="is-flex is-justify-content-space-between">
-        {#if layout.bottomLeft === "matches" && matchesData.matches.length}
+        {#if layout.bottomLeft === "matches" && $matches.matches.length}
             <h4 class="title is-6 mb-0">
-                {i18n("matches", t)} ({matchesData.matches.length})
+                {i18n("matches", t)} ({$matches.matches.length})
             </h4>
         {/if}
     </div>
     <div slot="bottom-left-scroll">
         {#if layout.bottomLeft === "matches"}
-            <Matches matches={matchesData.matches} columns={matchesData.columns}/>
+            <Matches matches={$matches.matches} columns={$matches.columns}/>
         {/if}
     </div>
 
     <div slot="right-title" class="is-flex is-align-items-center" style="gap: 0.5rem;">
         <div class="select is-small">
-            <select bind:value={selectedViz} on:change={handleVizChange}>
+            <select bind:value={$selectedViz}>
                 <option value="">{i18n("selectViz", t)}</option>
                 {#each vizOptions as opt}
                     <option value={opt.id}>{i18n(opt.id, t)}</option>
                 {/each}
             </select>
         </div>
-        {#if selectedViz}
+        {#if $selectedViz}
             <div class="select is-small">
                 <select bind:value={matrixScope}>
                     <option value="selected">{i18n("selectedDocs", t)}</option>
@@ -215,7 +152,7 @@
                 </select>
             </div>
         {/if}
-        {#if selectedViz === "docMatrix"}
+        {#if $selectedViz === "docMatrix"}
 <!--            <label title={i18n("normalization", t)} class="checkbox is-size-7 is-flex is-align-items-center">-->
 <!--                <input type="checkbox" bind:checked={$normalizeByImages}>-->
 <!--                <span class="pl-1">{i18n("normalize", t)}</span>-->
@@ -224,7 +161,7 @@
                 <input type="checkbox" bind:checked={percentageMode}>
                 <span class="pl-1">{i18n("percentage", t)}</span>
             </label>
-        {:else if selectedViz === "spatialFrieze"}
+        {:else if $selectedViz === "spatialFrieze"}
             <div class="select is-small">
                 <select bind:value={friezeMode}>
                     <option value="page">{i18n("byPage", t)}</option>
@@ -235,7 +172,7 @@
     </div>
 
     <div slot="right-scroll">
-        {#if !selectedViz}
+        {#if !$selectedViz}
             <p class="has-text-grey is-size-7">{i18n("noViz", t)}</p>
         {:else if needsSelection}
             <p class="has-text-grey is-size-7">{i18n("noSelection", t)}</p>
@@ -248,7 +185,7 @@
                 normalize={!percentageMode}
                 {percentageMode}
                 {coverageData}
-                on:cellselect={handleCellSelect}
+                on:cellselect={e => selectedCell.set(e.detail)}
             />
         {:else if layout.right === "frieze"}
             <SpatialFrieze
@@ -257,7 +194,7 @@
                 {documentNodes}
                 {stemmaStore}
                 mode={friezeMode}
-                on:imageselect={handleFriezeImageSelect}
+                on:imageselect={e => selectedFriezeImage.set(e.detail)}
             />
         {/if}
     </div>
