@@ -11,7 +11,7 @@
     export let documentSetStore;
     const {
         imageNetwork, documentNetwork, selectedNodes, updateSelectedNodes,
-        buildMatchesForAnchor, documentNodes, imageNodes
+        buildMatchesForAnchor
     } = documentSetStore;
 
     let networkInstance;
@@ -22,7 +22,7 @@
     $: networkData = type === "img" ? imageNetwork : documentNetwork;
 
     $: tableData = type === "doc" && $selectedNodes.length
-        ? buildMatchesForAnchor($selectedNodes[0], $selectedNodes.slice(1), $imageNodes, $documentNodes, true)
+        ? buildMatchesForAnchor($selectedNodes[0], $selectedNodes.slice(1), true)
         : { matches: [], columns: [] };
 
     $: if ($networkData && container) {

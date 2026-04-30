@@ -5,8 +5,8 @@ const emptyGraph = { edges: [], nodePositions: {}, nodeTitles: {} };
 export function createStemmaStore(documentSetStore) {
     const {
         docSetId, documentNodes, selectedDocuments, filteredDocPairStats, filteredDocStats,
-        imageCountMap,visiblePairs, imageNodes, assignIndices,
-        getFilteredPairsForDocPair, buildMatchesForAnchor, otherSide
+        imageCountMap, visiblePairs, buildFriezeMatches,
+        getFilteredPairsForDocPair, buildMatchesForAnchor
     } = documentSetStore;
 
     const stemmaGraph = writable(JSON.parse(localStorage.getItem(`stemmaGraph-${docSetId}`)) || emptyGraph);
@@ -91,41 +91,17 @@ export function createStemmaStore(documentSetStore) {
     });
 
     const matches = derived(
-        [selectedViz, selectedCell, selectedFriezeImage, imageNodes, documentNodes, visiblePairs],
-        ([$viz, $cell, $frieze, $imgNodes, $docNodes, $pairs]) => {
-            if ($viz === "docMatrix" && $cell) return buildMatrixMatches($cell, $imgNodes, $docNodes, false, true);
-            if ($viz === "spatialFrieze" && $frieze) return buildFriezeMatches($frieze, $imgNodes, $docNodes, $pairs);
+        [selectedViz, selectedCell, selectedFriezeImage, visiblePairs],
+        ([$viz, $cell, $frieze, $pairs]) => {
+            if ($viz === "docMatrix" && $cell) return buildMatrixMatches($cell);
+            if ($viz === "spatialFrieze" && $frieze) return buildFriezeMatches($frieze, $pairs);
             return { matches: [], columns: [] };
         }
     );
 
-    function buildMatrixMatches(cell, imgNodes, docNodes) {
-        return buildMatchesForAnchor(cell.doc1, [cell.doc2], imgNodes, docNodes);
+    function buildMatrixMatches(cell) {
+        return buildMatchesForAnchor(cell.doc1, [cell.doc2], false, true);
     }
-
-    function buildFriezeMatches(frieze, imgNodes, docNodes, pairs) {
-        const baseDoc = docNodes.get(frieze.baseDocId);
-        const sourceImage = imgNodes.get(frieze.imageId);
-        if (!baseDoc || !sourceImage) return { matches: [], columns: [] };
-
-        const bestPerDoc = new Map();
-        for (const p of pairs) {
-            const target = otherSide(p, frieze.baseDocId, frieze.imageId, imgNodes, docNodes);
-            if (!target || target.doc.id === frieze.baseDocId) continue;
-            const existing = bestPerDoc.get(target.doc.id);
-            if (!existing || target.score > existing.score) bestPerDoc.set(target.doc.id, target);
-        }
-
-        const targets = Array.from(bestPerDoc.values());
-        const row = [
-            { images: [sourceImage], doc: baseDoc },
-            ...targets.map(t => ({ images: [t.image], doc: t.doc })),
-        ];
-        const columns = [{ doc: baseDoc }, ...targets.map(t => ({ doc: t.doc }))];
-        return assignIndices({ matches: [row], columns });
-    }
-
-
 
     const matrixScoreData = derived(
         [filteredDocPairStats, selectedNodeIds],
