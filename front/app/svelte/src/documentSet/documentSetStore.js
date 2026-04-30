@@ -481,8 +481,6 @@ export function createDocumentSetStore(documentSetId) {
                 if (!entry || !target) continue;
 
                 if (onlyOneMatch) {
-                    const isMutual = (p.rank_1 ?? Infinity) <= 2 && (p.rank_2 ?? Infinity) <= 2;
-                    if (!isMutual) continue;
                     const existing = entry.byTargetDoc.get(targetDoc.id);
                     if (!existing || p.weightedScore > existing.score) {
                         entry.byTargetDoc.set(targetDoc.id, { image: target.image, score: p.weightedScore });
