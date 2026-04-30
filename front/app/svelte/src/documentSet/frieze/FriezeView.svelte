@@ -21,7 +21,7 @@
         const baseDoc = $documentNodes.get(baseDocId);
         if (!baseDoc) return { matches: [], columns: [] };
         const targetDocs = [...docIds].map(id => $documentNodes.get(id)).filter(Boolean);
-        const data = buildMatchesForAnchor(baseDoc, targetDocs, imageIds, true, true);
+        const data = buildMatchesForAnchor(baseDoc, targetDocs, imageIds, true, targetDocs.length > 0);
         if (!targetDocs.length && data.matches.length) {
             const allImages = data.matches.flatMap(row => row[0]?.images ?? []);
             return {
