@@ -425,7 +425,88 @@ export function createDocumentSetStore(documentSetId) {
         return { nodes, links };
     });
 
+    function getFilteredPairsForDocPair(doc1Id, doc2Id) {
+        const $pairIndex = get(pairIndex);
+        const $visibleIds = get(visiblePairIds);
+        const key = doc1Id < doc2Id ? `${doc1Id}-${doc2Id}` : `${doc2Id}-${doc1Id}`;
+        const pairs = $pairIndex.byDocPair.get(key) || [];
+        return $visibleIds.size > 0
+            ? pairs.filter(p => $visibleIds.has(`${p.id_1}-${p.id_2}`))
+            : pairs;
+    }
+
+    function otherSide(pair, anchorDocId, anchorImgId, imgNodes, docNodes) {
+        const isFrom1 = pair.digit_1 === anchorDocId && (anchorImgId == null || pair.id_1 === anchorImgId);
+        const isFrom2 = pair.digit_2 === anchorDocId && (anchorImgId == null || pair.id_2 === anchorImgId);
+        if (!isFrom1 && !isFrom2) return null;
+        const targetId = isFrom1 ? pair.id_2 : pair.id_1;
+        const targetDocId = isFrom1 ? pair.digit_2 : pair.digit_1;
+        const image = imgNodes.get(targetId);
+        const doc = docNodes.get(targetDocId);
+        return image && doc ? { image, doc, score: pair.weightedScore } : null;
+    }
+
+    function assignIndices(data) {
+        let idx = 0;
+        for (const row of data.matches) {
+            for (const cell of row) {
+                if (!cell) continue;
+                cell.indices = cell.images.map(() => idx++);
+            }
+        }
+        return data;
+    }
+
+    function buildMatchesForAnchor(anchorDoc, targetDocs, imgNodes, docNodes, onlyOneMatch = false, onlyAnchorWithMatches = false) {
+        const byAnchor = new Map();
+
+        for (const img of anchorDoc.images || []) {
+            byAnchor.set(img.id, { anchor: img, byTargetDoc: new Map() });
+        }
+
+        for (const targetDoc of targetDocs) {
+            if (targetDoc.id === anchorDoc.id) continue;
+            const pairs = getFilteredPairsForDocPair(anchorDoc.id, targetDoc.id);
+            for (const p of pairs) {
+                const anchorOnSide1 = p.digit_1 === anchorDoc.id;
+                const anchorId = anchorOnSide1 ? p.id_1 : p.id_2;
+                const target = otherSide(p, anchorDoc.id, anchorId, imgNodes, docNodes);
+                const entry = byAnchor.get(anchorId);
+                if (!entry || !target) continue;
+
+                if (onlyOneMatch) {
+                    const isMutual = (p.rank_1 ?? Infinity) <= 2 && (p.rank_2 ?? Infinity) <= 2;
+                    if (!isMutual) continue;
+                    const existing = entry.byTargetDoc.get(targetDoc.id);
+                    if (!existing || p.weightedScore > existing.score) {
+                        entry.byTargetDoc.set(targetDoc.id, { image: target.image, score: p.weightedScore });
+                    }
+                } else {
+                    if (!entry.byTargetDoc.has(targetDoc.id)) entry.byTargetDoc.set(targetDoc.id, []);
+                    entry.byTargetDoc.get(targetDoc.id).push(target.image);
+                }
+            }
+        }
+
+        const rows = Array.from(byAnchor.values())
+            .sort((a, b) => (a.anchor.canvas ?? Infinity) - (b.anchor.canvas ?? Infinity))
+            .map(({ anchor, byTargetDoc }) => [
+                { images: [anchor], doc: anchorDoc },
+                ...targetDocs.map(td => {
+                    const entry = byTargetDoc.get(td.id);
+                    if (!entry) return null;
+                    const images = onlyOneMatch ? [entry.image] : entry;
+                    return { images, doc: td };
+                }),
+            ]).filter(row => onlyAnchorWithMatches ? row.slice(1).some(c => c) : row);
+
+        const columns = [{ doc: anchorDoc }, ...targetDocs.map(d => ({ doc: d }))];
+        return assignIndices({ matches: rows, columns });
+    }
+
     function buildAlignedImageMatrix(orderedSelection) {
+        // TODO to delete as well as DocumentTable.svelte
+
         if (!orderedSelection.length) return {regions: [], rows: []};
 
         const $documentNodes = get(documentNodes);
@@ -647,6 +728,10 @@ export function createDocumentSetStore(documentSetId) {
         toggleDoc,
         selectAllDocuments,
         buildAlignedImageMatrix,
+        getFilteredPairsForDocPair,
+        buildMatchesForAnchor,
+        otherSide,
+        assignIndices,
 
         threshold,
         setThreshold: (t) => threshold.set(t),

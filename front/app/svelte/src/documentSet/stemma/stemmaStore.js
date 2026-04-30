@@ -5,7 +5,8 @@ const emptyGraph = { edges: [], nodePositions: {}, nodeTitles: {} };
 export function createStemmaStore(documentSetStore) {
     const {
         docSetId, documentNodes, selectedDocuments, filteredDocPairStats, filteredDocStats,
-        imageCountMap, pairIndex, visiblePairIds, visiblePairs, imageNodes
+        imageCountMap,visiblePairs, imageNodes, assignIndices,
+        getFilteredPairsForDocPair, buildMatchesForAnchor, otherSide
     } = documentSetStore;
 
     const stemmaGraph = writable(JSON.parse(localStorage.getItem(`stemmaGraph-${docSetId}`)) || emptyGraph);
@@ -92,58 +93,11 @@ export function createStemmaStore(documentSetStore) {
     const matches = derived(
         [selectedViz, selectedCell, selectedFriezeImage, imageNodes, documentNodes, visiblePairs],
         ([$viz, $cell, $frieze, $imgNodes, $docNodes, $pairs]) => {
-            if ($viz === "docMatrix" && $cell) return buildMatrixMatches($cell, $imgNodes, $docNodes);
+            if ($viz === "docMatrix" && $cell) return buildMatrixMatches($cell, $imgNodes, $docNodes, false, true);
             if ($viz === "spatialFrieze" && $frieze) return buildFriezeMatches($frieze, $imgNodes, $docNodes, $pairs);
             return { matches: [], columns: [] };
         }
     );
-
-    function otherSide(pair, anchorDocId, anchorImgId, imgNodes, docNodes) {
-        const isFrom1 = pair.digit_1 === anchorDocId && (anchorImgId == null || pair.id_1 === anchorImgId);
-        const isFrom2 = pair.digit_2 === anchorDocId && (anchorImgId == null || pair.id_2 === anchorImgId);
-        if (!isFrom1 && !isFrom2) return null;
-        const targetId = isFrom1 ? pair.id_2 : pair.id_1;
-        const targetDocId = isFrom1 ? pair.digit_2 : pair.digit_1;
-        const image = imgNodes.get(targetId);
-        const doc = docNodes.get(targetDocId);
-        return image && doc ? { image, doc, score: pair.weightedScore } : null;
-    }
-
-    function buildMatchesForAnchor(anchorDoc, targetDocs, imgNodes, docNodes) {
-        const byAnchor = new Map();
-
-        for (const targetDoc of targetDocs) {
-            if (targetDoc.id === anchorDoc.id) continue;
-            const pairs = getFilteredPairsForDocPair(anchorDoc.id, targetDoc.id);
-            for (const p of pairs) {
-                const anchorOnSide1 = p.digit_1 === anchorDoc.id;
-                const anchorId = anchorOnSide1 ? p.id_1 : p.id_2;
-                const target = otherSide(p, anchorDoc.id, anchorId, imgNodes, docNodes);
-                const anchorImg = imgNodes.get(anchorId);
-                if (!anchorImg || !target) continue;
-
-                if (!byAnchor.has(anchorId)) {
-                    byAnchor.set(anchorId, { anchor: anchorImg, byTargetDoc: new Map() });
-                }
-                const entry = byAnchor.get(anchorId);
-                if (!entry.byTargetDoc.has(targetDoc.id)) entry.byTargetDoc.set(targetDoc.id, []);
-                entry.byTargetDoc.get(targetDoc.id).push(target.image);
-            }
-        }
-
-        const rows = Array.from(byAnchor.values())
-            .sort((a, b) => (a.anchor.canvas ?? Infinity) - (b.anchor.canvas ?? Infinity))
-            .map(({ anchor, byTargetDoc }) => [
-                { images: [anchor], doc: anchorDoc },
-                ...targetDocs.map(td => {
-                    const imgs = byTargetDoc.get(td.id);
-                    return imgs?.length ? { images: imgs, doc: td } : null;
-                }),
-            ]);
-
-        const columns = [{ doc: anchorDoc }, ...targetDocs.map(d => ({ doc: d }))];
-        return assignIndices({ matches: rows, columns });
-    }
 
     function buildMatrixMatches(cell, imgNodes, docNodes) {
         return buildMatchesForAnchor(cell.doc1, [cell.doc2], imgNodes, docNodes);
@@ -171,16 +125,7 @@ export function createStemmaStore(documentSetStore) {
         return assignIndices({ matches: [row], columns });
     }
 
-    function assignIndices(data) {
-        let idx = 0;
-        for (const row of data.matches) {
-            for (const cell of row) {
-                if (!cell) continue;
-                cell.indices = cell.images.map(() => idx++);
-            }
-        }
-        return data;
-    }
+
 
     const matrixScoreData = derived(
         [filteredDocPairStats, selectedNodeIds],
@@ -218,16 +163,6 @@ export function createStemmaStore(documentSetStore) {
             return filtered;
         }
     );
-
-    function getFilteredPairsForDocPair(doc1Id, doc2Id) {
-        const $pairIndex = get(pairIndex);
-        const $visibleIds = get(visiblePairIds);
-        const key = doc1Id < doc2Id ? `${doc1Id}-${doc2Id}` : `${doc2Id}-${doc1Id}`;
-        const pairs = $pairIndex.byDocPair.get(key) || [];
-        return $visibleIds.size > 0
-            ? pairs.filter(p => $visibleIds.has(`${p.id_1}-${p.id_2}`))
-            : pairs;
-    }
 
     function addEdge(source, target, sourceDoc, targetDoc) {
         stemmaGraph.update($g => {
