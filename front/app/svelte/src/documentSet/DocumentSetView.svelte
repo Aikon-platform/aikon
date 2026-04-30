@@ -50,6 +50,7 @@
     });
 
     import {clusterSelection} from "../selection/selectionStore.js";
+    import FriezeView from "./frieze/FriezeView.svelte";
 
     const {selected} = clusterSelection;
 
@@ -59,8 +60,9 @@
 
     const tabList = {
         "sim": appLang === "en" ? "Copy Clusters" : "Groupe de copies",
-        "ste": appLang === "en" ? "Stemma builder" : "Aide au stemma",
+        "ste": appLang === "en" ? "Stemma Builder" : "Aide au stemma",
         "mat": appLang === "en" ? "Document Matrix" : "Matrice de documents",
+        "fri": appLang === "en" ? "Spatial Frieze" : "Frise spatiale",
         "img": appLang === "en" ? "Image Network" : "Réseau d'images",
         "doc": appLang === "en" ? "Document Network" : "Réseau de documents",
     };
@@ -130,6 +132,8 @@
                             <DocumentMatrix {documentSetStore}/>
                         {:else if $activeLayout === "ste"}
                             <StemmaBuilder {documentSetStore}/>
+                        {:else if $activeLayout === "fri"}
+                            <FriezeView {documentSetStore}/>
                         {/if}
                     </div>
                 {/if}

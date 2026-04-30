@@ -457,8 +457,10 @@ export function createDocumentSetStore(documentSetId) {
         return data;
     }
 
-    function buildMatchesForAnchor(anchorDoc, targetDocs, imgNodes, docNodes, onlyOneMatch = false, onlyAnchorWithMatches = false) {
+    function buildMatchesForAnchor(anchorDoc, targetDocs, onlyOneMatch = false, onlyAnchorWithMatches = false) {
         const byAnchor = new Map();
+        const imgNodes = get(imageNodes);
+        const docNodes = get(documentNodes);
 
         for (const img of anchorDoc.images || []) {
             byAnchor.set(img.id, { anchor: img, byTargetDoc: new Map() });
@@ -629,6 +631,30 @@ export function createDocumentSetStore(documentSetId) {
         return {regions: orderedSelection, rows};
     }
 
+    function buildFriezeMatches(frieze, pairs) {
+        const imgNodes = get(imageNodes);
+        const docNodes = get(documentNodes);
+        const baseDoc = docNodes.get(frieze.baseDocId);
+        const sourceImage = imgNodes.get(frieze.imageId);
+        if (!baseDoc || !sourceImage) return { matches: [], columns: [] };
+
+        const bestPerDoc = new Map();
+        for (const p of pairs) {
+            const target = otherSide(p, frieze.baseDocId, frieze.imageId, imgNodes, docNodes);
+            if (!target || target.doc.id === frieze.baseDocId) continue;
+            const existing = bestPerDoc.get(target.doc.id);
+            if (!existing || target.score > existing.score) bestPerDoc.set(target.doc.id, target);
+        }
+
+        const targets = Array.from(bestPerDoc.values());
+        const row = [
+            { images: [sourceImage], doc: baseDoc },
+            ...targets.map(t => ({ images: [t.image], doc: t.doc })),
+        ];
+        const columns = [{ doc: baseDoc }, ...targets.map(t => ({ doc: t.doc }))];
+        return assignIndices({ matches: [row], columns });
+    }
+
     function toggleCategory(categoryId) {
         selectedCategories.update(cats => {
             const index = cats.indexOf(categoryId);
@@ -730,8 +756,7 @@ export function createDocumentSetStore(documentSetId) {
         buildAlignedImageMatrix,
         getFilteredPairsForDocPair,
         buildMatchesForAnchor,
-        otherSide,
-        assignIndices,
+        buildFriezeMatches,
 
         threshold,
         setThreshold: (t) => threshold.set(t),

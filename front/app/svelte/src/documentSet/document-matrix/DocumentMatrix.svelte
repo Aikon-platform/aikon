@@ -5,12 +5,13 @@
     import DocumentSetMatrix from "./DocumentSetMatrix.svelte";
     import DocumentPairMatrix from "./DocumentPairMatrix.svelte";
     import PairDetailModal from "./PairDetailModal.svelte";
+    import Matches from "../Matches.svelte";
 
     export let documentSetStore;
 
     const {
         documentNodes, pairIndex, filteredDocPairStats, filteredDocStats,
-        imageCountMap, visiblePairIds, coverageData, visiblePairs, allPairs
+        imageCountMap, visiblePairIds, coverageData, buildMatchesForAnchor
     } = documentSetStore;
 
     const t = {
@@ -28,11 +29,12 @@
         allPairs: {en: "All pairs in the document set", fr: "Toutes les paires du corpus"},
         filteredPairs: {en: "Filtered pairs", fr: "Paires après filtrage"},
         filtering: {en: "Source of image pairs for the visualizations", fr: "Source des paires d'images pour les visualisations"},
+        matches: {en: "Matches", fr: "Correspondances"},
     };
 
     let selectedCell = null;
     let sortOrder = "name";
-    let scatterMode = "page";
+    let scatterMode = "image";
     let navState = null;
     let modalActive = false;
     let scatterData = null;
@@ -40,6 +42,9 @@
 
     $: documents = Array.from($documentNodes?.values() || []);
     $: pairsForSelection = selectedCell ? getPairsForCell(selectedCell, $visiblePairIds) : [];
+    $: matchesData = selectedCell
+        ? buildMatchesForAnchor(selectedCell.doc1, [selectedCell.doc2], false, true)
+        : { matches: [], columns: [] };
 
     function getPairsForCell(cell, visibleIds) {
         const {doc1, doc2} = cell;
@@ -104,6 +109,18 @@
         />
         <!--normalize={$normalizeByImages}-->
     </div>
+
+    <div slot="bottom-left-title" class="is-flex is-justify-content-space-between">
+        {#if matchesData.matches.length}
+            <h4 class="title is-6 mb-0">
+                {i18n("matches", t)} ({matchesData.matches.length})
+            </h4>
+        {/if}
+    </div>
+    <div slot="bottom-left-scroll">
+        <Matches matches={matchesData.matches} columns={matchesData.columns}/>
+    </div>
+
     <div slot="right-title" class="is-flex is-justify-content-space-between">
         <h4 class="title is-6 mb-0">{i18n("pageByPage", t)}</h4>
         <div class="is-flex is-align-items-center" style="gap: 0.5rem;">

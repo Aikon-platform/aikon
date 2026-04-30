@@ -6,7 +6,7 @@
     import DocumentPairMatrix from "../document-matrix/DocumentPairMatrix.svelte";
     import PairDetailModal from "../document-matrix/PairDetailModal.svelte";
     import { createStemmaStore } from "./stemmaStore.js";
-    import SpatialFrieze from "./SpatialFrieze.svelte";
+    import SpatialFrieze from "../frieze/SpatialFrieze.svelte";
     import ImageStemma from "./ImageStemma.svelte";
     import DocumentStemmaPanel from "./DocumentStemmaPanel.svelte";
     import Matches from "../Matches.svelte";
