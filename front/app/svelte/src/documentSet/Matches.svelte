@@ -1,17 +1,15 @@
 <script>
     import RegionCard from "../regions/RegionCard.svelte";
-    import { i18n } from "../utils.js";
     import RegionModal from "../regions/modal/RegionModal.svelte";
-    import Tabs from "../ui/Tabs.svelte";
     import PageView from "../regions/modal/PageView.svelte";
+    import Tabs from "../ui/Tabs.svelte";
+    import { i18n } from "../utils.js";
 
-    /** @type {Array<Array<{image, doc} | null>>} */
+    /** @type {Array<Array<{images, doc, indices} | null>>} */
     export let matches = [];
     /** @type {Array<{doc, label?: string}>} */
     export let columns = [];
     export let cardHeight = 96;
-
-    $: console.log(matches);
 
     const tabs = [
         { id: "region", label: i18n("mainView") },
@@ -20,9 +18,9 @@
 
     let modalOpen = false;
     let modalIndex = 0;
-    const rowCanvas = (row) => row.find(Boolean)?.image?.canvas ?? Infinity;
-    $: sortedMatches = [...matches].sort((a, b) => rowCanvas(a) - rowCanvas(b));
-    $: modalItems = sortedMatches.flat().filter(Boolean).map(c => c.image);
+
+    $: modalItems = matches.flatMap(row => row.flatMap(c => c?.images ?? []));
+
     const handleOpenModal = (e) => {
         modalIndex = e.detail.index ?? 0;
         modalOpen = true;
@@ -39,18 +37,20 @@
         <p class="has-text-grey is-size-7 p-3">{i18n("none", t)}</p>
     {:else if matches.length === 1}
         <div class="is-flex is-flex-wrap-wrap is-align-items-flex-start" style="gap: 1rem;">
-            {#each matches[0] as cell, index}
+            {#each matches[0] as cell}
                 {#if cell}
-                    <RegionCard item={cell.image} height={cardHeight} borderColor={cell.doc.color} {index}
-                                selectable={false} copyable={false} on:openModal={handleOpenModal}/>
+                    {#each cell.images as img, k}
+                        <RegionCard item={img} height={cardHeight} borderColor={cell.doc.color}
+                                    index={cell.indices[k]} selectable={false} copyable={false}
+                                    on:openModal={handleOpenModal}/>
+                    {/each}
                 {/if}
             {/each}
         </div>
     {:else}
         <p class="is-size-7 has-text-grey mb-2">{matches.length} {i18n("matches", t)}</p>
-        <div class="table-container">
-            <table class="table is-fullwidth is-narrow">
-                <thead>
+        <table class="table is-fullwidth is-narrow">
+            <thead>
                 <tr>
                     {#each columns as col}
                         <th>
@@ -59,30 +59,30 @@
                         </th>
                     {/each}
                 </tr>
-                </thead>
-                <tbody>
-                {#each matches as row, i}
+            </thead>
+            <tbody>
+                {#each matches as row, i (i)}
                     <tr>
-                        {#each row as cell, j}
+                        {#each row as cell, j (j)}
                             <td>
                                 {#if cell}
-                                    <RegionCard item={cell.image} height={cardHeight}
-                                                borderColor={cell.doc.color}
-                                                selectable={false} copyable={false}
-                                                index={i + j}
-                                                on:openModal={handleOpenModal}/>
-
+                                    <div class="is-flex is-flex-wrap-wrap" style="gap: 0.5rem;">
+                                        {#each cell.images as img, k}
+                                            <RegionCard item={img} height={cardHeight}
+                                                        index={cell.indices[k]}
+                                                        selectable={false} copyable={false}
+                                                        on:openModal={handleOpenModal}/>
+                                        {/each}
+                                    </div>
                                 {/if}
                             </td>
                         {/each}
                     </tr>
                 {/each}
-                </tbody>
-            </table>
-        </div>
+            </tbody>
+        </table>
     {/if}
 </div>
-
 
 <RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
     <svelte:fragment let:item={currentItem}>
@@ -108,7 +108,7 @@
         overflow: auto;
     }
     table { table-layout: fixed; }
-    td { vertical-align: top; }
+    td { vertical-align: middle; }
     .modal-region {
         height: 100%;
         display: flex;
@@ -117,5 +117,13 @@
     }
     .modal-region :global(.region) {
         height: 100%;
+    }
+    thead th {
+        position: sticky;
+        top: 0;
+        background: var(--bulma-scheme-main);
+        z-index: 50;
+        border-bottom: var(--bulma-table-cell-border-color) solid 1px !important;
+        box-shadow: 0 5px 5px rgba(0, 0, 0, 0.1);
     }
 </style>
