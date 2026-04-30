@@ -657,6 +657,22 @@ export function createDocumentSetStore(documentSetId) {
         return assignIndices({ matches: [row], columns });
     }
 
+    function buildClusterMatches({ baseDocId, docIds, imageIds }) {
+        const docNodes = get(documentNodes);
+        const baseDoc = docNodes.get(baseDocId);
+        if (!baseDoc) return { matches: [], columns: [] };
+        const targetDocs = [...docIds].map(id => docNodes.get(id)).filter(Boolean);
+        const data = buildMatchesForAnchor(baseDoc, targetDocs, imageIds, true, targetDocs.length > 0);
+        if (!targetDocs.length && data.matches.length) {
+            const allImages = data.matches.flatMap(row => row[0]?.images ?? []);
+            return {
+                matches: [[{ images: allImages, doc: baseDoc, indices: allImages.map((_, i) => i) }]],
+                columns: [{ doc: baseDoc }],
+            };
+        }
+        return data;
+    }
+
     function toggleCategory(categoryId) {
         selectedCategories.update(cats => {
             const index = cats.indexOf(categoryId);
@@ -759,6 +775,7 @@ export function createDocumentSetStore(documentSetId) {
         getFilteredPairsForDocPair,
         buildMatchesForAnchor,
         buildFriezeMatches,
+        buildClusterMatches,
 
         threshold,
         setThreshold: (t) => threshold.set(t),

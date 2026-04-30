@@ -6,7 +6,7 @@ export function createStemmaStore(documentSetStore) {
     const {
         docSetId, documentNodes, selectedDocuments, filteredDocPairStats, filteredDocStats,
         imageCountMap, visiblePairs, buildFriezeMatches,
-        getFilteredPairsForDocPair, buildMatchesForAnchor
+        getFilteredPairsForDocPair, buildMatchesForAnchor, buildClusterMatches
     } = documentSetStore;
 
     const stemmaGraph = writable(JSON.parse(localStorage.getItem(`stemmaGraph-${docSetId}`)) || emptyGraph);
@@ -84,16 +84,19 @@ export function createStemmaStore(documentSetStore) {
     const selectedViz = writable("");
     const selectedCell = writable(null);
     const selectedFriezeImage = writable(null);
+    const selectedCluster = writable(null);
 
     selectedViz.subscribe(() => {
         selectedCell.set(null);
         selectedFriezeImage.set(null);
+        selectedCluster.set(null);
     });
 
     const matches = derived(
-        [selectedViz, selectedCell, selectedFriezeImage, visiblePairs],
-        ([$viz, $cell, $frieze, $pairs]) => {
+        [selectedViz, selectedCell, selectedFriezeImage, selectedCluster, visiblePairs],
+        ([$viz, $cell, $frieze, $cluster, $pairs]) => {
             if ($viz === "docMatrix" && $cell) return buildMatrixMatches($cell);
+            if ($viz === "spatialFrieze" && $cluster) return buildClusterMatches($cluster);
             if ($viz === "spatialFrieze" && $frieze) return buildFriezeMatches($frieze, $pairs);
             return { matches: [], columns: [] };
         }
@@ -193,6 +196,7 @@ export function createStemmaStore(documentSetStore) {
         nodeTitles,
         selectedViz,
         selectedCell,
+        selectedCluster,
         selectedFriezeImage,
         matches,
         updateNodeTitle,

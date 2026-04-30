@@ -22,7 +22,7 @@
     const {
         selectedNodes, filteredDocuments, matrixScoreData, matrixDocStats,
         matrixImageCount, getFilteredPairsForDocPair, nodeTitles,
-        selectedViz, selectedCell, selectedFriezeImage, matches
+        selectedViz, selectedCell, selectedFriezeImage, selectedCluster, matches
     } = stemmaStore;
 
     const t = {
@@ -87,6 +87,7 @@
     $: fullDocStats = $filteredDocStats?.scoreCount || new Map();
     $: friezeDocuments = matrixScope === "full" ? fullDocuments : $selectedNodes;
     $: needsSelection = $selectedViz && !$selectedNodes.length && matrixScope !== "full";
+    $: if (matrixScope) selectedCluster.set(null);
 </script>
 
 <SplitLayout>
@@ -194,7 +195,8 @@
                 {documentNodes}
                 {stemmaStore}
                 mode={friezeMode}
-                on:imageselect={e => selectedFriezeImage.set(e.detail)}
+                on:imageselect={e => { selectedFriezeImage.set(e.detail); selectedCluster.set(null); }}
+                on:clusterselect={e => { selectedCluster.set(e.detail); selectedFriezeImage.set(null); }}
             />
         {/if}
     </div>
