@@ -100,7 +100,7 @@ export function createStemmaStore(documentSetStore) {
     );
 
     function buildMatrixMatches(cell) {
-        return buildMatchesForAnchor(cell.doc1, [cell.doc2], false, true);
+        return buildMatchesForAnchor(cell.doc1, [cell.doc2], null, false, true);
     }
 
     const matrixScoreData = derived(

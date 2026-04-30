@@ -8,18 +8,36 @@
     export let documentSetStore;
 
     const {
-        documentNodes, visiblePairs, buildFriezeMatches
+        documentNodes, visiblePairs, buildFriezeMatches, buildMatchesForAnchor
     } = documentSetStore;
 
     const friezeStub = { nodeTitles: writable({}) };
 
     let friezeMode = "image";
     let selectedFriezeImage = null;
+    let selectedCluster = null;
+
+    function buildClusterMatches({ baseDocId, docIds, imageIds }) {
+        const baseDoc = $documentNodes.get(baseDocId);
+        if (!baseDoc) return { matches: [], columns: [] };
+        const targetDocs = [...docIds].map(id => $documentNodes.get(id)).filter(Boolean);
+        const data = buildMatchesForAnchor(baseDoc, targetDocs, imageIds, true, true);
+        if (!targetDocs.length && data.matches.length) {
+            const allImages = data.matches.flatMap(row => row[0]?.images ?? []);
+            return {
+                matches: [[{ images: allImages, doc: baseDoc, indices: allImages.map((_, i) => i) }]],
+                columns: [{ doc: baseDoc }],
+            };
+        }
+        return data;
+    }
 
     $: documents = Array.from($documentNodes?.values() || []);
-    $: matchesData = selectedFriezeImage
-        ? buildFriezeMatches(selectedFriezeImage, $visiblePairs)
-        : { matches: [], columns: [] };
+    $: matchesData = selectedCluster
+        ? buildClusterMatches(selectedCluster)
+        : selectedFriezeImage
+            ? buildFriezeMatches(selectedFriezeImage, $visiblePairs)
+            : { matches: [], columns: [] };
 
     const t = {
         title: { en: "Spatial Frieze", fr: "Frise spatiale" },
@@ -28,6 +46,16 @@
         byImage: { en: "By image", fr: "Par image" },
         selectImage: { en: "Click an image in the frieze to view its matches", fr: "Cliquez sur une image de la frise pour voir ses correspondances" },
     };
+
+    function handleImageSelect(e) {
+        selectedFriezeImage = e.detail;
+        selectedCluster = null;
+    }
+
+    function handleClusterSelect(e) {
+        selectedCluster = e.detail;
+        selectedFriezeImage = null;
+    }
 </script>
 
 <SplitLayout>
@@ -45,7 +73,9 @@
             {documents} {visiblePairs} {documentNodes}
             stemmaStore={friezeStub}
             mode={friezeMode}
-            on:imageselect={e => selectedFriezeImage = e.detail}/>
+            on:imageselect={handleImageSelect}
+            on:clusterselect={handleClusterSelect}
+        />
     </div>
 
     <div slot="right-title">
@@ -56,7 +86,7 @@
         {/if}
     </div>
     <div slot="right-scroll">
-        {#if selectedFriezeImage}
+        {#if matchesData.matches.length}
             <Matches matches={matchesData.matches} columns={matchesData.columns}/>
         {:else}
             <p class="has-text-grey is-size-7">{i18n("selectImage", t)}</p>

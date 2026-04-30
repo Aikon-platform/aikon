@@ -22,7 +22,7 @@
     $: networkData = type === "img" ? imageNetwork : documentNetwork;
 
     $: tableData = type === "doc" && $selectedNodes.length
-        ? buildMatchesForAnchor($selectedNodes[0], $selectedNodes.slice(1), true)
+        ? buildMatchesForAnchor($selectedNodes[0], $selectedNodes.slice(1), null, true)
         : { matches: [], columns: [] };
 
     $: if ($networkData && container) {

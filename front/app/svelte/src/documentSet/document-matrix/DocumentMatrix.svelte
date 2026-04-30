@@ -43,7 +43,7 @@
     $: documents = Array.from($documentNodes?.values() || []);
     $: pairsForSelection = selectedCell ? getPairsForCell(selectedCell, $visiblePairIds) : [];
     $: matchesData = selectedCell
-        ? buildMatchesForAnchor(selectedCell.doc1, [selectedCell.doc2], false, true)
+        ? buildMatchesForAnchor(selectedCell.doc1, [selectedCell.doc2], null, false, true)
         : { matches: [], columns: [] };
 
     function getPairsForCell(cell, visibleIds) {

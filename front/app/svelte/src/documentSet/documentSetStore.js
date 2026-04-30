@@ -457,12 +457,16 @@ export function createDocumentSetStore(documentSetId) {
         return data;
     }
 
-    function buildMatchesForAnchor(anchorDoc, targetDocs, onlyOneMatch = false, onlyAnchorWithMatches = false) {
+    function buildMatchesForAnchor(anchorDoc, targetDocs, anchorImageIds = null, onlyOneMatch = false, onlyAnchorWithMatches = false) {
         const byAnchor = new Map();
         const imgNodes = get(imageNodes);
         const docNodes = get(documentNodes);
 
-        for (const img of anchorDoc.images || []) {
+        const anchorImages = anchorImageIds
+            ? (anchorDoc.images || []).filter(img => anchorImageIds.has(img.id))
+            : (anchorDoc.images || []);
+
+        for (const img of anchorImages) {
             byAnchor.set(img.id, { anchor: img, byTargetDoc: new Map() });
         }
 
