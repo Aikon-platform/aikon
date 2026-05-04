@@ -188,6 +188,7 @@
                 normalize={!percentageMode}
                 {percentageMode}
                 {coverageData}
+                isInStemma={true} {stemmaStore}
                 on:cellselect={e => selectedCell.set(e.detail)}
             />
         {:else if layout.right === "frieze"}
