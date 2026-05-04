@@ -13,6 +13,7 @@ Special cases:
 -->
 
 <script>
+    import { onMount } from "svelte";
     import { derived } from "svelte/store";
     import {RegionItem} from "../../regions/types.js";
     import RegionModal from "../../regions/modal/RegionModal.svelte";
@@ -21,6 +22,7 @@ Special cases:
     import RightClick from "../../ui/RightClick.svelte";
     import Tabs from "../../ui/Tabs.svelte";
     import {i18n} from "../../utils.js";
+    import * as d3 from "d3";
 
     import { createEventDispatcher } from "svelte";
     const dispatch = createEventDispatcher();
@@ -48,8 +50,52 @@ Special cases:
     }
 
     const { edges, nodePositions } = stemmaStore;
+    const { updateNodePosition } = stemmaStore;
 
     const IMG_SIZE = 150;
+    const DRAG_THRESHOLD = 3;
+
+    let svgEl;
+    let drag = null; // { node, startX, startY, originX, originY, moved }
+    let dragOverride = null; // { docId, x, y } during drag for instant feedback
+
+    let width = 800, height = 600;
+    let transform = d3.zoomIdentity;
+    let zoomBehavior;
+
+    onMount(() => {
+        zoomBehavior = d3.zoom()
+            .scaleExtent([0.2, 5])
+            .filter(e => !drag && e.type !== "contextmenu" && e.button === 0)
+            .on("zoom", e => transform = e.transform);
+        d3.select(svgEl).call(zoomBehavior);
+    });
+
+    // Fit content once when nodes first appear
+    let fitted = false;
+    $: if (!fitted && stemmaImages.nodes.length && svgEl && zoomBehavior) {
+        fitContent();
+        fitted = true;
+    }
+    $: if (!stemmaImages.nodes.length) fitted = false;
+
+    function fitContent() {
+        const xs = stemmaImages.nodes.map(n => n.x);
+        const ys = stemmaImages.nodes.map(n => n.y);
+        const minX = Math.min(...xs), minY = Math.min(...ys);
+        const maxX = Math.max(...xs) + IMG_SIZE, maxY = Math.max(...ys) + IMG_SIZE;
+        const w = maxX - minX, h = maxY - minY;
+        const k = Math.min(width / (w + 80), height / (h + 80), 1);
+        const tx = (width - w * k) / 2 - minX * k;
+        const ty = (height - h * k) / 2 - minY * k;
+        d3.select(svgEl).call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
+    }
+
+    // $: if (!fitted && stemmaImages.nodes.length && svgEl && zoomBehavior && width && height) {
+    //     fitContent();
+    //     fitted = true;
+    // }
+
     let modalOpen = false;
     let clickedRegionIdx = 0;
     $: visibleRegions = stemmaImages.nodes
@@ -98,22 +144,18 @@ Special cases:
 
     function computeStemma(edges, positions, docs, pairIdx, imgNodes, startImgId, baseId) {
         if (!startImgId || !baseId) return { nodes: [], edges: [] };
-
         const docMap = new Map(docs.map(n => [n.id, n]));
         const baseDoc = docMap.get(baseId);
-
         if (!edges.length) {
             if (!baseDoc) return { nodes: [], edges: [] };
-            const img = imgNodes.get(startImgId);
             return {
                 nodes: [{
                     docId: baseId,
                     imageId: startImgId,
                     color: baseDoc.color,
                     title: baseDoc.title,
-                    x: 20,
-                    y: 20,
-                    img
+                    x: 0, y: 0,
+                    img: imgNodes.get(startImgId)
                 }],
                 edges: []
             };
@@ -161,16 +203,10 @@ Special cases:
         }
 
         const nodes = [];
-        let minX = Infinity, minY = Infinity;
-
         for (const [docId, { imageId }] of resolved) {
             const doc = docMap.get(docId);
             const pos = positions[docId] || { x: 0, y: 0 };
             if (!doc) continue;
-
-            if (pos.x < minX) minX = pos.x;
-            if (pos.y < minY) minY = pos.y;
-
             nodes.push({
                 docId, imageId, color: doc.color, title: doc.title,
                 x: pos.x, y: pos.y,
@@ -178,13 +214,6 @@ Special cases:
             });
         }
 
-        const padding = 20;
-        for (const n of nodes) {
-            n.x = n.x - minX + padding;
-            n.y = n.y - minY + padding;
-        }
-
-        // All edges from stemma graph
         const nodeMap = new Map(nodes.map(n => [n.docId, n]));
         const renderedEdges = edges
             .map(e => {
@@ -220,48 +249,84 @@ Special cases:
         const regionItem = new RegionItem(img);
         return regionItem.url(null, `,${IMG_SIZE}`);
     }
+
+    function svgPoint(e) {
+        const rect = svgEl.getBoundingClientRect();
+        const x = (e.clientX - rect.left - transform.x) / transform.k;
+        const y = (e.clientY - rect.top  - transform.y) / transform.k;
+        return { x, y };
+    }
+
+    function onPointerDown(e, node) {
+        if (e.button !== 0) return;
+        e.stopPropagation();   // prevent d3-zoom from starting a pan
+        const p = svgPoint(e);
+        drag = { node, startX: p.x, startY: p.y, originX: node.x, originY: node.y, moved: false };
+        svgEl.setPointerCapture(e.pointerId);
+    }
+
+    function onPointerMove(e) {
+        if (!drag) return;
+        const p = svgPoint(e);
+        const dx = p.x - drag.startX, dy = p.y - drag.startY;
+        if (!drag.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+        drag.moved = true;
+        dragOverride = { docId: drag.node.docId, x: drag.originX + dx, y: drag.originY + dy };
+    }
+
+    function onPointerUp(e) {
+        if (!drag) return;
+        if (drag.moved && dragOverride) {
+            updateNodePosition(drag.node.docId, dragOverride.x, dragOverride.y);
+        }
+        svgEl.releasePointerCapture?.(e.pointerId);
+        drag = null;
+        dragOverride = null;
+    }
+
+    function posOf(node, _override) {
+        return _override?.docId === node.docId ? _override : node;
+    }
 </script>
 
-<div class="image-stemma">
+<div class="image-stemma" bind:clientWidth={width} bind:clientHeight={height}>
     {#if stemmaImages.nodes.length}
-        <svg class="stemma-svg" viewBox="0 0 {Math.max(...stemmaImages.nodes.map(n => n.x)) + IMG_SIZE + 40} {Math.max(...stemmaImages.nodes.map(n => n.y)) + IMG_SIZE + 40}">
+        <svg bind:this={svgEl} class="stemma-svg"
+             viewBox="0 0 {width} {height}"
+             on:pointermove={onPointerMove} on:pointerup={onPointerUp}>
             <defs>
                 <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                     <polygon points="0 0, 10 3.5, 0 7" fill="var(--bulma-grey)" />
                 </marker>
             </defs>
 
-            {#each stemmaImages.edges as edge}
-                <line
-                    x1={edge.source.x + IMG_SIZE / 2}
-                    y1={edge.source.y + IMG_SIZE}
-                    x2={edge.target.x + IMG_SIZE / 2}
-                    y2={edge.target.y}
-                    stroke="var(--bulma-grey)"
-                    stroke-width="5"
-                    marker-end="url(#arrowhead)"
-                />
-            {/each}
+            <g transform="translate({transform.x},{transform.y}) scale({transform.k})">
+                {#each stemmaImages.edges as edge}
+                    {@const s = posOf(edge.source, dragOverride)}
+                    {@const t2 = posOf(edge.target, dragOverride)}
+                    <line x1={s.x + IMG_SIZE/2} y1={s.y + IMG_SIZE}
+                          x2={t2.x + IMG_SIZE/2} y2={t2.y}
+                          stroke="var(--bulma-grey)" stroke-width="5"
+                          marker-end="url(#arrowhead)"/>
+                {/each}
 
-            {#each stemmaImages.nodes as node (node.docId)}
-                <g transform="translate({node.x}, {node.y})"
-                    style="cursor: {node.img ? 'pointer' : 'default'}"
-                    on:contextmenu={e => onContextMenu(e, node)} on:keyup>
-                    <rect
-                        width={IMG_SIZE} height={IMG_SIZE}
-                        rx="4" fill={node.color}
-                        stroke="{node.color}"
-                        stroke-width={node.docId === baseDocId ? 20 : 10}
-                    />
-                    <image href={getImageUrl(node.img)}
-                        width={IMG_SIZE}
-                        height={IMG_SIZE}
-                        clip-path="inset(0 round 4px)"
-                        preserveAspectRatio="xMidYMid slice"
-                    />
-                    <title>{node.title}</title>
-                </g>
-            {/each}
+                {#each stemmaImages.nodes as node (node.docId)}
+                    {@const p = posOf(node, dragOverride)}
+                    <g transform="translate({p.x},{p.y})"
+                       style="cursor: {drag?.node.docId === node.docId ? 'grabbing' : 'grab'}"
+                       on:pointerdown={e => onPointerDown(e, node)}
+                       on:contextmenu={e => onContextMenu(e, node)}>
+                        <rect width={IMG_SIZE} height={IMG_SIZE} rx="4"
+                              fill={node.color} stroke={node.color}
+                              stroke-width={node.docId === baseDocId ? 20 : 10}/>
+                        <image href={getImageUrl(node.img)}
+                               width={IMG_SIZE} height={IMG_SIZE}
+                               clip-path="inset(0 round 4px)"
+                               preserveAspectRatio="xMidYMid slice"/>
+                        <title>{node.title}</title>
+                    </g>
+                {/each}
+            </g>
         </svg>
     {:else}
         <p class="has-text-grey is-size-6 p-3 mb-3">
@@ -289,13 +354,15 @@ Special cases:
 <style>
     .image-stemma {
         width: 100%;
+        /*min-height: 60vh;*/
         height: 100%;
-        overflow: auto;
     }
     .stemma-svg {
         display: block;
-        min-width: 100%;
-        min-height: 200px;
+        width: 100%;
+        height: 100%;
+        background-color: var(--bulma-scheme-main-bis);
+        border-radius: .5em;
     }
     .modal-region {
         height: 100%;
