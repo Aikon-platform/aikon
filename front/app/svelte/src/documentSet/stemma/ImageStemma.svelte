@@ -13,19 +13,17 @@ Special cases:
 -->
 
 <script>
-    import { onMount } from "svelte";
+    import { onMount, createEventDispatcher } from "svelte";
     import { derived } from "svelte/store";
     import {RegionItem} from "../../regions/types.js";
     import RegionModal from "../../regions/modal/RegionModal.svelte";
     import PageView from "../../regions/modal/PageView.svelte";
     import RegionCard from "../../regions/RegionCard.svelte";
     import RightClick from "../../ui/RightClick.svelte";
+    import StemmaNodeEditor from "./StemmaNodeEditor.svelte";
     import Tabs from "../../ui/Tabs.svelte";
-    import {i18n} from "../../utils.js";
-    import * as d3 from "d3";
-
-    import { createEventDispatcher } from "svelte";
-    const dispatch = createEventDispatcher();
+    import { i18n } from "../../utils.js";
+    import { createStemmaInteraction } from "./stemmaInteraction.js";
 
     export let stemmaStore;
     export let visiblePairs;
@@ -34,7 +32,18 @@ Special cases:
     export let startImageId = null;
     export let baseDocId = null;
 
+    const dispatch = createEventDispatcher();
+    const { edges, nodePositions, nodeTitles, updateNodeTitle } = stemmaStore;
+
+    const interaction = createStemmaInteraction(stemmaStore);
+    const { transform, dragOverride } = interaction;
+
+    const IMG_SIZE = 150;
+    let svgEl, containerEl;
+    let width = 800, height = 600;
+
     let menu = { open: false, x: 0, y: 0, items: [] };
+    let editingNode = null;
 
     function onContextMenu(e, node) {
         e.preventDefault();
@@ -45,74 +54,50 @@ Special cases:
             items: [
                 { label: i18n("openModal", t), icon: "expand", disabled: noImg, action: () => openImg(node) },
                 { label: i18n("setAnchor", t), icon: "anchor", disabled: noImg || isAnchor, action: () => dispatch("anchorselect", { imageId: node.imageId, baseDocId: node.docId }) },
+                { label: i18n("rename", t), icon: "pen", action: () => editingNode = { id: node.docId, title: $nodeTitles[node.docId] || node.title, color: node.color } },
             ]
         };
     }
 
-    const { edges, nodePositions } = stemmaStore;
-    const { updateNodePosition } = stemmaStore;
-
-    const IMG_SIZE = 150;
-    const DRAG_THRESHOLD = 3;
-
-    let svgEl;
-    let drag = null; // { node, startX, startY, originX, originY, moved }
-    let dragOverride = null; // { docId, x, y } during drag for instant feedback
-
-    let width = 800, height = 600;
-    let transform = d3.zoomIdentity;
-    let zoomBehavior;
-
-    onMount(() => {
-        zoomBehavior = d3.zoom()
-            .scaleExtent([0.2, 5])
-            .filter(e => !drag && e.type !== "contextmenu" && e.button === 0)
-            .on("zoom", e => transform = e.transform);
-        d3.select(svgEl).call(zoomBehavior);
-    });
-
-    // Fit content once when nodes first appear
-    let fitted = false;
-    $: if (!fitted && stemmaImages.nodes.length && svgEl && zoomBehavior) {
-        fitContent();
-        fitted = true;
+    let attached = false;
+    $: if (svgEl && !attached) {
+        interaction.attach(svgEl);
+        attached = true;
     }
-    $: if (!stemmaImages.nodes.length) fitted = false;
+    $: if (!stemmaImages.nodes.length) attached = false;
 
-    function fitContent() {
-        const xs = stemmaImages.nodes.map(n => n.x);
-        const ys = stemmaImages.nodes.map(n => n.y);
-        const minX = Math.min(...xs), minY = Math.min(...ys);
-        const maxX = Math.max(...xs) + IMG_SIZE, maxY = Math.max(...ys) + IMG_SIZE;
-        const w = maxX - minX, h = maxY - minY;
-        const k = Math.min(width / (w + 80), height / (h + 80), 1);
-        const tx = (width - w * k) / 2 - minX * k;
-        const ty = (height - h * k) / 2 - minY * k;
-        d3.select(svgEl).call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
+    // onMount(() => interaction.attach(svgEl));
+
+    let lastAnchorKey = null;
+    $: {
+        const key = `${startImageId}-${baseDocId}`;
+        if (key !== lastAnchorKey && stemmaImages.nodes.length && svgEl) {
+            const base = stemmaImages.nodes.find(n => n.docId === baseDocId) || stemmaImages.nodes[0];
+            interaction.anchorTopLeft(base);
+            lastAnchorKey = key;
+        }
     }
 
-    // $: if (!fitted && stemmaImages.nodes.length && svgEl && zoomBehavior && width && height) {
-    //     fitContent();
-    //     fitted = true;
-    // }
+    function onPointerDown(e, node) {
+        if (interaction.startDrag(e, node)) {
+            e.stopPropagation();
+            svgEl.setPointerCapture(e.pointerId);
+        }
+    }
+    function onPointerMove(e) { interaction.moveDrag(e); }
+    function onPointerUp(e)   { interaction.endDrag(); svgEl.releasePointerCapture?.(e.pointerId); }
 
     let modalOpen = false;
     let clickedRegionIdx = 0;
-    $: visibleRegions = stemmaImages.nodes
-        .filter(n => n.img)
-        .map(n => new RegionItem(n.img));
+    $: visibleRegions = stemmaImages.nodes.filter(n => n.img).map(n => new RegionItem(n.img));
 
     const openImg = (node) => {
-        if (!node.img){
-            return
-        }
+        if (!node.img) return;
         clickedRegionIdx = visibleRegions.findIndex(r => r.id === node.imageId);
         modalOpen = true;
     };
 
-    const handleNavigate = (e) => {
-        clickedRegionIdx = e.detail.index ?? 0;
-    };
+    const handleNavigate = (e) => clickedRegionIdx = e.detail.index ?? 0;
 
     const tabs = [
         { id: "region", label: i18n("mainView") },
@@ -123,6 +108,7 @@ Special cases:
         select:    { en: "Select an image in the frieze", fr: "Sélectionner une image dans la frise" },
         openModal: { en: "Open detailed view", fr: "Ouvrir la vue détaillé" },
         setAnchor: { en: "Set as anchor", fr: "Définir comme ancre" },
+        rename:    { en: "Rename", fr: "Renommer" },
     };
 
     const pairIndex = derived(visiblePairs, $pairs => {
@@ -139,23 +125,21 @@ Special cases:
     });
 
     let stemmaImages = { nodes: [], edges: [] };
+    $: stemmaImages = computeStemma($edges, $nodePositions, documents, $pairIndex, $imageNodes, startImageId, baseDocId, $nodeTitles);
 
-    $: stemmaImages = computeStemma($edges, $nodePositions, documents, $pairIndex, $imageNodes, startImageId, baseDocId);
-
-    function computeStemma(edges, positions, docs, pairIdx, imgNodes, startImgId, baseId) {
+    function computeStemma(edges, positions, docs, pairIdx, imgNodes, startImgId, baseId, titles) {
         if (!startImgId || !baseId) return { nodes: [], edges: [] };
         const docMap = new Map(docs.map(n => [n.id, n]));
         const baseDoc = docMap.get(baseId);
+        const titleFor = id => titles[id] || docMap.get(id)?.title;
+
         if (!edges.length) {
             if (!baseDoc) return { nodes: [], edges: [] };
             return {
                 nodes: [{
-                    docId: baseId,
-                    imageId: startImgId,
-                    color: baseDoc.color,
-                    title: baseDoc.title,
-                    x: 0, y: 0,
-                    img: imgNodes.get(startImgId)
+                    docId: baseId, imageId: startImgId,
+                    color: baseDoc.color, title: titleFor(baseId),
+                    x: 0, y: 0, img: imgNodes.get(startImgId)
                 }],
                 edges: []
             };
@@ -168,7 +152,6 @@ Special cases:
             adjacency.get(e.target)?.push(e.source);
         }
 
-        // Propagate images via BFS until dead ends
         const resolved = new Map([[baseId, { imageId: startImgId, score: Infinity }]]);
         const queue = [baseId];
         const visited = new Set([baseId]);
@@ -195,11 +178,8 @@ Special cases:
             }
         }
 
-        // Add missing nodes from stemma graph
         for (const docId of docMap.keys()) {
-            if (!resolved.has(docId)) {
-                resolved.set(docId, { imageId: null, score: -Infinity });
-            }
+            if (!resolved.has(docId)) resolved.set(docId, { imageId: null, score: -Infinity });
         }
 
         const nodes = [];
@@ -208,7 +188,7 @@ Special cases:
             const pos = positions[docId] || { x: 0, y: 0 };
             if (!doc) continue;
             nodes.push({
-                docId, imageId, color: doc.color, title: doc.title,
+                docId, imageId, color: doc.color, title: titleFor(docId),
                 x: pos.x, y: pos.y,
                 img: imageId ? imgNodes.get(imageId) : null
             });
@@ -229,13 +209,11 @@ Special cases:
     function findBestMatch(imgId, fromDocId, toDocId, pairIdx) {
         const key = `${fromDocId}-${toDocId}`;
         const pairs = pairIdx.get(key) || [];
-
         let best = null;
         for (const p of pairs) {
             const isFrom1 = p.digit_1 === fromDocId && p.id_1 === imgId;
             const isFrom2 = p.digit_2 === fromDocId && p.id_2 === imgId;
             if (!isFrom1 && !isFrom2) continue;
-
             const matchedImgId = isFrom1 ? p.id_2 : p.id_1;
             if (!best || p.weightedScore > best.score) {
                 best = { imageId: matchedImgId, score: p.weightedScore };
@@ -246,50 +224,20 @@ Special cases:
 
     function getImageUrl(img) {
         if (!img) return `https://placehold.co/${IMG_SIZE}x${IMG_SIZE}/png?text=No+image`;
-        const regionItem = new RegionItem(img);
-        return regionItem.url(null, `,${IMG_SIZE}`);
+        return new RegionItem(img).url(null, `,${IMG_SIZE}`);
     }
 
-    function svgPoint(e) {
-        const rect = svgEl.getBoundingClientRect();
-        const x = (e.clientX - rect.left - transform.x) / transform.k;
-        const y = (e.clientY - rect.top  - transform.y) / transform.k;
-        return { x, y };
+    function posOf(node, override) {
+        return override?.docId === node.docId ? override : node;
     }
 
-    function onPointerDown(e, node) {
-        if (e.button !== 0) return;
-        e.stopPropagation();   // prevent d3-zoom from starting a pan
-        const p = svgPoint(e);
-        drag = { node, startX: p.x, startY: p.y, originX: node.x, originY: node.y, moved: false };
-        svgEl.setPointerCapture(e.pointerId);
-    }
-
-    function onPointerMove(e) {
-        if (!drag) return;
-        const p = svgPoint(e);
-        const dx = p.x - drag.startX, dy = p.y - drag.startY;
-        if (!drag.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
-        drag.moved = true;
-        dragOverride = { docId: drag.node.docId, x: drag.originX + dx, y: drag.originY + dy };
-    }
-
-    function onPointerUp(e) {
-        if (!drag) return;
-        if (drag.moved && dragOverride) {
-            updateNodePosition(drag.node.docId, dragOverride.x, dragOverride.y);
-        }
-        svgEl.releasePointerCapture?.(e.pointerId);
-        drag = null;
-        dragOverride = null;
-    }
-
-    function posOf(node, _override) {
-        return _override?.docId === node.docId ? _override : node;
+    function saveTitle(detail) {
+        if (detail.title.trim()) updateNodeTitle(detail.id, detail.title.trim());
+        editingNode = null;
     }
 </script>
 
-<div class="image-stemma" bind:clientWidth={width} bind:clientHeight={height}>
+<div class="image-stemma" bind:this={containerEl} bind:clientWidth={width} bind:clientHeight={height}>
     {#if stemmaImages.nodes.length}
         <svg bind:this={svgEl} class="stemma-svg"
              viewBox="0 0 {width} {height}"
@@ -300,10 +248,10 @@ Special cases:
                 </marker>
             </defs>
 
-            <g transform="translate({transform.x},{transform.y}) scale({transform.k})">
+            <g transform="translate({$transform.x},{$transform.y}) scale({$transform.k})">
                 {#each stemmaImages.edges as edge}
-                    {@const s = posOf(edge.source, dragOverride)}
-                    {@const t2 = posOf(edge.target, dragOverride)}
+                    {@const s = posOf(edge.source, $dragOverride)}
+                    {@const t2 = posOf(edge.target, $dragOverride)}
                     <line x1={s.x + IMG_SIZE/2} y1={s.y + IMG_SIZE}
                           x2={t2.x + IMG_SIZE/2} y2={t2.y}
                           stroke="var(--bulma-grey)" stroke-width="5"
@@ -311,9 +259,9 @@ Special cases:
                 {/each}
 
                 {#each stemmaImages.nodes as node (node.docId)}
-                    {@const p = posOf(node, dragOverride)}
+                    {@const p = posOf(node, $dragOverride)}
                     <g transform="translate({p.x},{p.y})"
-                       style="cursor: {drag?.node.docId === node.docId ? 'grabbing' : 'grab'}"
+                       style="cursor: grab"
                        on:pointerdown={e => onPointerDown(e, node)}
                        on:contextmenu={e => onContextMenu(e, node)}>
                         <rect width={IMG_SIZE} height={IMG_SIZE} rx="4"
@@ -329,9 +277,7 @@ Special cases:
             </g>
         </svg>
     {:else}
-        <p class="has-text-grey is-size-6 p-3 mb-3">
-            {i18n("select", t)}
-        </p>
+        <p class="has-text-grey is-size-6 p-3 mb-3">{i18n("select", t)}</p>
     {/if}
 </div>
 
@@ -351,11 +297,13 @@ Special cases:
 
 <RightClick bind:open={menu.open} x={menu.x} y={menu.y} items={menu.items}/>
 
+<StemmaNodeEditor node={editingNode} on:save={e => saveTitle(e.detail)} on:close={() => editingNode = null}/>
+
 <style>
     .image-stemma {
+        position: relative;
         width: 100%;
-        /*min-height: 60vh;*/
-        height: 100%;
+        min-height: 60vh;
     }
     .stemma-svg {
         display: block;
