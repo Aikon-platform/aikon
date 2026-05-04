@@ -69,16 +69,14 @@
         return { itemColors, legend };
     }
 
-    $: clusterData = clusterMode && items.length ? buildClusters(items, $baseDocId, $documentNodes, $nodeTitles) : null;
+    $: clusterData = clusterMode && $items.length ? buildClusters($items, $baseDocId, $documentNodes, $nodeTitles) : null;
     $: if (!clusterMode) selectedClusterSig = null;
     $: clusterSelectedIndices = (clusterMode && selectedClusterSig)
-        ? new Set(items.map((it, i) => clusterSignature(it.matchedDocs) === selectedClusterSig ? i : -1).filter(i => i >= 0))
+        ? new Set($items.map((it, i) => clusterSignature(it.matchedDocs) === selectedClusterSig ? i : -1).filter(i => i >= 0))
         : null;
 
-    $: if (documents.length && !documents.find(
-        n => n.id === $baseDocId && $documentNodes.get(n.id)?.images?.length
-    )) {
-        const validDoc = documents.find(n => $documentNodes.get(n.id)?.images?.length);
+    $: if (documents.length && !documents.find(n => n.id === $baseDocId && n.images?.length)) {
+        const validDoc = documents.find(n => n.images?.length);
         baseDocId.set(validDoc?.id || null);
         selectedIndex.set(null);
     }
@@ -190,8 +188,15 @@
         }
     );
 
-    $: items = $friezeData ? (mode === "image" ? $friezeData.imageItems : $friezeData.pageItems) : [];
-    $: maxVal = $friezeData ? (mode === "image" ? $friezeData.maxImageMatches : $friezeData.maxPageMatches) : 1;
+    const modeStore = writable(mode);
+    $: modeStore.set(mode);
+
+    const items = derived([friezeData, modeStore], ([$fd, $m]) =>
+        $fd ? ($m === "image" ? $fd.imageItems : $fd.pageItems) : []
+    );
+    const maxVal = derived([friezeData, modeStore], ([$fd, $m]) =>
+        $fd ? ($m === "image" ? $fd.maxImageMatches : $fd.maxPageMatches) : 1
+    );
 
     let hoveredDocs = new Set();
 
@@ -219,7 +224,7 @@
         selectedIndex.set(null);
         if (selectedClusterSig) {
             const imageIds = new Set(
-                items
+                $items
                     .filter(it => clusterSignature(it.matchedDocs) === sig)
                     .map(it => it.id ?? it.images?.[0]?.id)
                     .filter(Boolean)
@@ -260,16 +265,16 @@
         <h4 class="title is-6 mb-3">
             {baseDoc.title} {i18n("similarity", t)}
         </h4>
-        {@const friezeWidth = items.length * LINE_WIDTH}
+        {@const friezeWidth = $items.length * LINE_WIDTH}
         <div class="frieze-wrapper">
             <div class="frieze" style="--line-width: {LINE_WIDTH}px;">
-                {#each items as item, idx}
+                {#each $items as item, idx}
                     <button class="frieze-line"
                         class:is-selected={idx === $selectedIndex}
                         class:is-cluster-selected={clusterSelectedIndices?.has(idx)}
                         style="{clusterData
                             ? `background:${clusterData.itemColors[idx].color};opacity:${clusterData.itemColors[idx].opacity}`
-                            : `--opacity: ${item.matchCount / maxVal}`}"
+                            : `--opacity: ${item.matchCount / $maxVal}`}"
                         title="{mode === 'image' ? `Page ${item.page}, ` : `Page ${item.page}, `}{item.matchCount} match(es)"
                         on:click={() => handleClick(idx)}
                         on:mouseenter={() => handleMouseEnter(item)}
@@ -315,7 +320,7 @@
             <span class="mx-2">·</span>
             <span>{$friezeData.totalPages} pages</span>
             <span class="mx-2">·</span>
-            <span>Max {maxVal} matches</span>
+            <span>Max {$maxVal} matches</span>
         </div>
     {:else}
         <p class="has-text-grey is-size-7">{i18n("noDoc")}</p>
