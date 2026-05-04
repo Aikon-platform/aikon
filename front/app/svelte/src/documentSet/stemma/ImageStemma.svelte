@@ -66,14 +66,11 @@ Special cases:
     }
     $: if (!stemmaImages.nodes.length) attached = false;
 
-    // onMount(() => interaction.attach(svgEl));
-
     let lastAnchorKey = null;
     $: {
         const key = `${startImageId}-${baseDocId}`;
         if (key !== lastAnchorKey && stemmaImages.nodes.length && svgEl) {
-            const base = stemmaImages.nodes.find(n => n.docId === baseDocId) || stemmaImages.nodes[0];
-            interaction.anchorTopLeft(base);
+            interaction.positionCenter(stemmaImages.nodes, { nodeWidth: IMG_SIZE, nodeHeight: IMG_SIZE });
             lastAnchorKey = key;
         }
     }
@@ -223,6 +220,8 @@ Special cases:
     }
 
     function getImageUrl(img) {
+        console.log(img);
+
         if (!img) return `https://placehold.co/${IMG_SIZE}x${IMG_SIZE}/png?text=No+image`;
         return new RegionItem(img).url(null, `,${IMG_SIZE}`);
     }
@@ -237,7 +236,7 @@ Special cases:
     }
 </script>
 
-<div class="image-stemma" bind:this={containerEl} bind:clientWidth={width} bind:clientHeight={height}>
+<div class="stemma-container" bind:this={containerEl} bind:clientWidth={width} bind:clientHeight={height}>
     {#if stemmaImages.nodes.length}
         <svg bind:this={svgEl} class="stemma-svg"
              viewBox="0 0 {width} {height}"
@@ -300,17 +299,19 @@ Special cases:
 <StemmaNodeEditor node={editingNode} on:save={e => saveTitle(e.detail)} on:close={() => editingNode = null}/>
 
 <style>
-    .image-stemma {
+    .stemma-container {
         position: relative;
         width: 100%;
-        min-height: 60vh;
+        height: 60vh;
     }
     .stemma-svg {
-        display: block;
         width: 100%;
         height: 100%;
+        position: absolute;
+        inset: 0;
         background-color: var(--bulma-scheme-main-bis);
         border-radius: .5em;
+        overflow: hidden;
     }
     .modal-region {
         height: 100%;

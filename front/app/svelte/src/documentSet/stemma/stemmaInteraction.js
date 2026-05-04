@@ -52,12 +52,20 @@ export function createStemmaInteraction(stemmaStore) {
         return { x: (e.clientX - rect.left - t.x) / t.k, y: (e.clientY - rect.top - t.y) / t.k };
     }
 
-    function anchorTopLeft(node, padding = 40) {
-        if (!node || !zoomBehavior) return;
-        d3.select(element).call(
-            zoomBehavior.transform,
-            d3.zoomIdentity.translate(padding - node.x, padding - node.y)
-        );
+    function positionCenter(nodes, { nodeWidth = 0, nodeHeight = 0, padding = 10 } = {}) {
+        if (!nodes?.length || !zoomBehavior || !element) return;
+        const xs = nodes.map(n => n.x);
+        const ys = nodes.map(n => n.y);
+        const minX = Math.min(...xs);
+        const minY = Math.min(...ys);
+        const maxX = Math.max(...xs) + nodeWidth;
+        const maxY = Math.max(...ys) + nodeHeight;
+        const w = maxX - minX, h = maxY - minY;
+        const rect = element.getBoundingClientRect();
+        const k = Math.min((rect.width  - 2 * padding) / w, (rect.height - 2 * padding) / h, 1);
+        const tx = (rect.width  - w * k) / 2 - minX * k;
+        const ty = (rect.height - h * k) / 2 - minY * k;
+        d3.select(element).call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
     }
 
     return {
@@ -67,7 +75,7 @@ export function createStemmaInteraction(stemmaStore) {
         startDrag,
         moveDrag,
         endDrag,
-        anchorTopLeft,
+        positionCenter,
         isDragging: () => !!drag
     };
 }
