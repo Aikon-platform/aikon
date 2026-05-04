@@ -27,7 +27,7 @@
 
     const t = {
         title: { en: "Document Stemma", fr: "Stemma document" },
-        hint: { en: "Drag to move • Scroll to zoom • Shift+drag to connect", fr: "Glisser pour déplacer • Défiler pour zoomer • Maj+glisser pour connecter" },
+        hint: { en: "Right click to edit • Scroll to zoom • Shift+drag to connect", fr: "Clic droit pour modifier • Défiler pour zoomer • Maj+glisser pour connecter" },
         order: { en: "Order", fr: "Ordre" },
         edges: { en: "Connections", fr: "Connexions" },
         normalize: {en: "Normalize", fr: "Normaliser"},
@@ -94,7 +94,6 @@
     <div id="stemma-header" slot="left-title" class="is-flex is-justify-content-space-between is-align-items-center">
         {#if layout.left === "documentStemma"}
             <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
-            <span class="tag is-small">{i18n("hint", t)}</span>
         {:else if layout.left === "imageStemma" && $selectedFriezeImage}
             {@const baseDoc = $selectedNodes.find(d => d.id === $selectedFriezeImage.baseDocId)}
             {@const title = $nodeTitles[$selectedFriezeImage.baseDocId] || baseDoc?.title}
@@ -105,6 +104,7 @@
                 {title ?? "Unknown"} (canvas {imgData?.canvasNb || 0})
             </h4>
         {/if}
+        <span class="tag is-small">{i18n("hint", t)}</span>
     </div>
 
     <div slot="left-scroll">

@@ -9,7 +9,7 @@
     export let stemmaStore;
 
     const {
-        selectedNodes, edges, nodePositions, nodeTitles,
+        selectedNodes, edges, nodePositions, nodeTitles, reverseEdge,
         updateNodeTitle, updateEdgeLabel, addEdge, removeEdge, clearGraph
     } = stemmaStore;
 
@@ -28,14 +28,14 @@
     let menu = { open: false, x: 0, y: 0, items: [] };
 
     const t = {
-        rename:     { en: "Rename", fr: "Renommer" },
-        editEdge:   { en: "Edit connection", fr: "Modifier la connexion" },
-        deleteEdge: { en: "Delete connection", fr: "Supprimer la connexion" },
-        label:      { en: "Label (optional)", fr: "Libellé (optionnel)" },
-        save:       { en: "Save", fr: "Enregistrer" },
-        cancel:     { en: "Cancel", fr: "Annuler" },
-        reset:      { en: "Reset stemma", fr: "Réinitialiser le stemma" },
-        hint:       { en: "Drag to move • Scroll to zoom • Shift+drag to connect", fr: "Glisser pour déplacer • Défiler pour zoomer • Maj+glisser pour connecter" },
+        rename:      { en: "Rename", fr: "Renommer" },
+        editEdge:    { en: "Qualify connection", fr: "Qualifier le lien" },
+        deleteEdge:  { en: "Delete connection", fr: "Supprimer le lien" },
+        reverseEdge: { en: "Reverse direction", fr: "Inverser la direction"},
+        label:       { en: "Label (optional)", fr: "Libellé (optionnel)" },
+        save:        { en: "Save", fr: "Enregistrer" },
+        cancel:      { en: "Cancel", fr: "Annuler" },
+        reset:       { en: "Reset stemma", fr: "Réinitialiser le stemma" },
     };
 
     $: nodes = documents.map((doc, i) => {
@@ -59,7 +59,7 @@
         interaction.attach(svgEl, {
             onZoomFilter: e => !(e.shiftKey || e.metaKey) && (e.type === "wheel" || (!interaction.isDragging() && !drawingEdge))
         });
-        if (nodes.length) interaction.anchorTopLeft(nodes[0]);
+        if (nodes.length) interaction.positionCenter(nodes, { nodeWidth: NODE_W, nodeHeight: NODE_H });
     });
 
     function posOf(node, override) {
@@ -132,6 +132,7 @@
             open: true, x: e.clientX, y: e.clientY,
             items: [
                 { label: i18n("editEdge", t), icon: "pen", action: () => { editingEdge = edge; editLabel = edge.label || ""; } },
+                { label: i18n("reverseEdge", t), icon: "arrows-h", action: () => reverseEdge(edge.source.id, edge.target.id) },
                 { label: i18n("deleteEdge", t), icon: "trash", danger: true, action: () => removeEdge(edge.source.id, edge.target.id) },
             ]
         };
@@ -169,12 +170,17 @@
             {#each visibleEdges as edge}
                 {@const s = posOf(edge.source, $dragOverride)}
                 {@const tg = posOf(edge.target, $dragOverride)}
-                <line class="edge"
-                      x1={s.x + NODE_W/2} y1={s.y + NODE_H}
-                      x2={tg.x + NODE_W/2} y2={tg.y}
-                      stroke="var(--bulma-body-color)" stroke-width={2 / $transform.k}
-                      marker-end="url(#doc-arrow)"
-                      on:contextmenu={e => onEdgeContextMenu(e, edge)}/>
+                <g class="edge-group" on:contextmenu={e => onEdgeContextMenu(e, edge)}>
+                    <line class="edge-hit"
+                          x1={s.x + NODE_W/2} y1={s.y + NODE_H}
+                          x2={tg.x + NODE_W/2} y2={tg.y}
+                          stroke-width={10 / $transform.k}/>
+                    <line class="edge"
+                          x1={s.x + NODE_W/2} y1={s.y + NODE_H}
+                          x2={tg.x + NODE_W/2} y2={tg.y}
+                          stroke="var(--bulma-body-color)" stroke-width={2 / $transform.k}
+                          marker-end="url(#doc-arrow)"/>
+                </g>
                 {#if edge.label}
                     <text x={(s.x + NODE_W/2 + tg.x + NODE_W/2) / 2}
                           y={(s.y + NODE_H + tg.y) / 2 - 4 / $transform.k}
@@ -254,12 +260,13 @@
     .stemma-container {
         position: relative;
         width: 100%;
-        min-height: 60vh;
+        height: 60vh;
     }
     .stemma-svg {
-        display: block;
         width: 100%;
         height: 100%;
+        position: absolute;
+        inset: 0;
         background-color: var(--bulma-scheme-main-bis);
         border-radius: .5rem;
         overflow: hidden;
@@ -267,8 +274,14 @@
     .edge {
         cursor: pointer;
     }
-    .edge:hover {
+    .edge-group:hover .edge {
         stroke-width: 3;
+    }
+    .edge-hit {
+        stroke: transparent;
+        fill: none;
+        cursor: pointer;
+        pointer-events: stroke;
     }
     .color-dot {
         width: 12px;
