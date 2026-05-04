@@ -132,11 +132,12 @@ Special cases:
 
         if (!edges.length) {
             if (!baseDoc) return { nodes: [], edges: [] };
+            const img = imgNodes.get(startImgId);
             return {
                 nodes: [{
                     docId: baseId, imageId: startImgId,
                     color: baseDoc.color, title: titleFor(baseId),
-                    x: 0, y: 0, img: imgNodes.get(startImgId)
+                    x: 0, y: 0, img: img, ...nodeDims(img)
                 }],
                 edges: []
             };
@@ -184,10 +185,12 @@ Special cases:
             const doc = docMap.get(docId);
             const pos = positions[docId] || { x: 0, y: 0 };
             if (!doc) continue;
+            const img = imageId ? imgNodes.get(imageId) : null
             nodes.push({
                 docId, imageId, color: doc.color, title: titleFor(docId),
                 x: pos.x, y: pos.y,
-                img: imageId ? imgNodes.get(imageId) : null
+                img: img,
+                ...nodeDims(img)
             });
         }
 
@@ -220,8 +223,6 @@ Special cases:
     }
 
     function getImageUrl(img) {
-        console.log(img);
-
         if (!img) return `https://placehold.co/${IMG_SIZE}x${IMG_SIZE}/png?text=No+image`;
         return new RegionItem(img).url(null, `,${IMG_SIZE}`);
     }
@@ -233,6 +234,15 @@ Special cases:
     function saveTitle(detail) {
         if (detail.title.trim()) updateNodeTitle(detail.id, detail.title.trim());
         editingNode = null;
+    }
+
+    function nodeDims(img) {
+        if (!img?.xywh) return { w: IMG_SIZE, h: IMG_SIZE };
+        const [, , w, h] = img.xywh.map(Number);
+        if (!w || !h) return { w: IMG_SIZE, h: IMG_SIZE };
+        return w >= h
+            ? { w: IMG_SIZE, h: IMG_SIZE * h / w }
+            : { w: IMG_SIZE * w / h, h: IMG_SIZE };
     }
 </script>
 
@@ -251,8 +261,8 @@ Special cases:
                 {#each stemmaImages.edges as edge}
                     {@const s = posOf(edge.source, $dragOverride)}
                     {@const t2 = posOf(edge.target, $dragOverride)}
-                    <line x1={s.x + IMG_SIZE/2} y1={s.y + IMG_SIZE}
-                          x2={t2.x + IMG_SIZE/2} y2={t2.y}
+                    <line x1={s.x + edge.source.w/2} y1={s.y + edge.source.h}
+                          x2={t2.x + edge.target.w/2} y2={t2.y}
                           stroke="var(--bulma-grey)" stroke-width="5"
                           marker-end="url(#arrowhead)"/>
                 {/each}
@@ -263,13 +273,13 @@ Special cases:
                        style="cursor: grab"
                        on:pointerdown={e => onPointerDown(e, node)}
                        on:contextmenu={e => onContextMenu(e, node)}>
-                        <rect width={IMG_SIZE} height={IMG_SIZE} rx="4"
+                        <rect width={node.w} height={node.h} rx="4"
                               fill={node.color} stroke={node.color}
                               stroke-width={node.docId === baseDocId ? 20 : 10}/>
                         <image href={getImageUrl(node.img)}
-                               width={IMG_SIZE} height={IMG_SIZE}
+                               width={node.w} height={node.h}
                                clip-path="inset(0 round 4px)"
-                               preserveAspectRatio="xMidYMid slice"/>
+                               preserveAspectRatio="xMidYMid meet"/>
                         <title>{node.title}</title>
                     </g>
                 {/each}

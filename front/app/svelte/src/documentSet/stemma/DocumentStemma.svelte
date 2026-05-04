@@ -1,5 +1,5 @@
 <script>
-    import { onMount } from "svelte";
+    import { onMount, tick } from "svelte";
     import RightClick from "../../ui/RightClick.svelte";
     import StemmaNodeEditor from "./StemmaNodeEditor.svelte";
     import { i18n } from "../../utils.js";
@@ -55,12 +55,17 @@
         .map(e => ({ ...e, source: nodeMap.get(e.source), target: nodeMap.get(e.target) }))
         .filter(e => e.source && e.target);
 
+    let mounted = false;
     onMount(() => {
         interaction.attach(svgEl, {
             onZoomFilter: e => !(e.shiftKey || e.metaKey) && (e.type === "wheel" || (!interaction.isDragging() && !drawingEdge))
         });
-        if (nodes.length) interaction.positionCenter(nodes, { nodeWidth: NODE_W, nodeHeight: NODE_H });
+        mounted = true;
     });
+
+    $: if (mounted && width && height && nodes.length) {
+        interaction.positionCenter(nodes, { nodeWidth: NODE_W, nodeHeight: NODE_H });
+    }
 
     function posOf(node, override) {
         return override?.docId === node.id ? { x: override.x, y: override.y } : { x: node.x, y: node.y };
