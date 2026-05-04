@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("webapp", "0026_alter_series_shared_with"),
+        ("webapp", "0029_alter_series_shared_with"),
     ]
 
     # NOTE the three consecutive migrations should be applied at once

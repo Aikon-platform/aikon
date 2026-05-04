@@ -19,26 +19,32 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, {}, plural)
 
 
-class Regions(AbstractSearchableModel):
+def check_version(version):
+    if version != MANIFEST_V1 and version != MANIFEST_V2:
+        return MANIFEST_V1
+    return version
+
+
+class RegionExtraction(AbstractSearchableModel):
     class Meta:
-        verbose_name = get_name("Regions")
-        verbose_name_plural = get_name("Regions")
+        verbose_name = get_name("RegionExtraction")
+        verbose_name_plural = get_name("RegionExtraction", True)
         app_label = "webapp"
 
     def __str__(self, light=False):
         if light:
             if self.json and "title" in self.json:
                 return self.json["title"]
-            return f'{get_name("Regions")} #{self.id}'
+            return f'{get_name("RegionExtraction")} #{self.id}'
 
         witness = self.get_witness()
         if not witness:
-            return f'{get_name("Regions")} #{self.id}'
+            return f'{get_name("RegionExtraction")} #{self.id}'
         return f"{REG.capitalize()} #{self.id} | {witness.__str__()}"
 
     digitization = models.ForeignKey(
         Digitization,
-        related_name="regions",  # to access the all regions from Digitization
+        related_name="region_extractions",  # to access the region extractions from Digitization
         verbose_name=get_name("Digitization"),
         on_delete=models.SET_NULL,
         blank=True,
@@ -101,8 +107,8 @@ class Regions(AbstractSearchableModel):
         annotation_id = f"{self.get_ref()}_c{canvas_nb}_{uuid4().hex}"
         return annotation_id
 
-    def has_regions(self):
-        # if there is a regions file named after the current Regions
+    def has_region_extractions(self):
+        # if there is a regions file named after the current RegionExtraction
         if len(glob(f"{REGIONS_PATH}/{self.get_ref()}*")):
             return True
         return False
@@ -153,7 +159,7 @@ class Regions(AbstractSearchableModel):
             "title": self.__str__(),
             "ref": self.get_ref(),
             "class": self.__class__.__name__,
-            "type": get_name("Regions"),
+            "type": get_name("RegionExtraction"),
             "url": self.gen_mirador_url(),
             "digitization_id": digit.id if digit else None,
             "img_nb": rjson.get("img_nb", digit.img_nb() if digit else 0),
@@ -173,9 +179,11 @@ class Regions(AbstractSearchableModel):
         return []
 
     def view_btn(self):
-        from app.webapp.utils.iiif.gen_html import regions_btn
+        from app.webapp.utils.iiif.gen_html import region_extraction_btn
 
         action = "final" if self.is_validated else "edit"
-        btn = regions_btn(self, action if self.has_regions() else "no_regions")
+        btn = region_extraction_btn(
+            self, action if self.has_region_extractions() else "no_region_extraction"
+        )
 
         return mark_safe(btn)

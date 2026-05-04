@@ -423,13 +423,19 @@ def get_action(action, formatting=None):
         "no_manifest": {"en": "no manifest", "fr": "pas de manifest"},
         "no_digit": {"en": "no digitization", "fr": "pas de numérisation"},
         "no_img": {"en": "no image", "fr": "pas d'image"},
-        "no_regions": {"en": "no regions yet", "fr": "pas de régions"},
-        "download": {"en": "download regions", "fr": "télécharger les régions"},
+        "no_region_extraction": {
+            "en": "no region extraction yet",
+            "fr": "pas de régions extraites",
+        },
+        "download": {
+            "en": "download extracted regions",
+            "fr": "télécharger les régions extraites",
+        },
         "edit": {"en": "edit regions", "fr": "modifier les régions"},
         "final": {"en": "visualize final regions", "fr": "voir les régions finales"},
-        "regions": {
-            "en": "all regions",
-            "fr": "toutes les régions",
+        "region_extraction": {
+            "en": "all extracted regions",
+            "fr": "toutes les régions extraites",
         },
         "vectors": {
             "en": "visualize automatic vectorizations",

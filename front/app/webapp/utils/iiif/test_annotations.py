@@ -11,7 +11,7 @@ from app.config.settings.base import APP_PORT
 #     get_manifest_annotations,
 #     has_annotation,
 #     get_record_annotations,
-#     index_regions,
+#     index_region_extraction,
 #     reindex_file,
 #     unindex_annotation,
 #     index_annotations_on_canvas,
@@ -30,10 +30,10 @@ from app.config.settings.base import APP_PORT
 #     create_list_annotations,
 #     check_indexation,
 #     get_images_annotations,
-#     unindex_regions,
-#     destroy_regions,
+#     unindex_region_extraction,
+#     destroy_region_extraction,
 #     get_training_regions,
-#     process_regions,
+#     process_region_extraction,
 #     get_regions_urls,
 # )
 
@@ -52,7 +52,7 @@ from app.config.settings.base import APP_PORT
 #
 #     def test_index_regions(self):
 #         test_regions = Regions.objects.first()
-#         index_regions(test_regions)
+#         index_region_extraction(test_regions)
 #
 #     def tearDown(self):
 #         pass
@@ -61,7 +61,7 @@ from app.config.settings.base import APP_PORT
 # def get_manifest_annotations(
 # def has_annotation(regions_ref):
 # def get_record_annotations(
-# def index_regions(regions: Regions):
+# def index_region_extraction(regions: Regions):
 # def reindex_file(filename):
 # def unindex_annotation(annotation_id):
 # def index_annotations_on_canvas(regions: Regions, canvas_nb):
@@ -81,8 +81,8 @@ from app.config.settings.base import APP_PORT
 # def create_list_annotations(regions: Regions):
 # def check_indexation(regions: Regions, reindex=False):
 # def get_images_annotations(regions: Regions):
-# def unindex_regions(regions_ref, manifest_url):
-# def destroy_regions(regions: Regions):
+# def unindex_region_extraction(regions_ref, manifest_url):
+# def destroy_region_extraction(regions: Regions):
 # def get_training_regions(regions: Regions):
-# def process_regions(
+# def process_region_extraction(
 # def get_regions_urls(regions: Regions):

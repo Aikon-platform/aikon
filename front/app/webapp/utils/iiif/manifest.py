@@ -3,14 +3,15 @@ import re
 from PIL import Image, UnidentifiedImageError
 from iiif_prezi.factory import ManifestFactory
 
+from app.config.settings import CANTALOUPE_APP_URL, APP_URL
 from app.webapp.utils.constants import (
     APP_NAME_UPPER,
     APP_DESCRIPTION,
 )
 from app.webapp.utils.iiif import NO_LICENSE, get_license_url
 from app.webapp.utils.paths import IMG_PATH
-from app.config.settings import CANTALOUPE_APP_URL, APP_URL
-
+from app.webapp.models.digitization import Digitization
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.utils.logger import console, log
 
 # NOTE img name = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_{canvas_nb}.jpg"
@@ -96,11 +97,9 @@ def process_images(digit, seq):
     return True
 
 
-def gen_manifest_json(digit):
+def gen_manifest_json(digit: Digitization):
     """
-    digit: Digitization
     NOTE : regions do not have their own manifest, but are included in the digitization manifest as annotations on the canvases.
-    Both return the same digitization manifest
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """

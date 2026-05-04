@@ -62,6 +62,16 @@ def ref_to_iiif(img_ref):
     return f"{CANTALOUPE_APP_URL}/iiif/2/{img_name}.jpg/{img_coord}/default.jpg"
 
 
+# NOTE unused ?
+@register.filter
+def ref_to_mirador(region_extraction_refs, img_ref):
+    # img_ref = {img_name}_{coord} / e.g. "wit205_pdf216_021_667,1853,783,412"
+    img_ref = img_ref.split("_")
+    digit_ref = "_".join(img_ref[0:1])
+    manifest = f"{APP_URL}/{APP_NAME}/iiif/{digit_ref}/manifest.json"
+    return f"{MIRADOR_BASE_URL}/index.html?iiif-content={manifest}&canvas={int(img_ref[-2])}"
+
+
 @register.filter
 def exclude_and_join(lst, item):
     """

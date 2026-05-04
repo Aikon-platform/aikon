@@ -20,7 +20,7 @@ from app.webapp.search_filters import (
 )
 from app.webapp.forms import *
 from app.webapp.forms.treatment import TreatmentForm
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
@@ -168,9 +168,9 @@ class WitnessList(AbstractRecordList):
         return context
 
 
-class WitnessRegionsView(AbstractRecordView):
+class WitnessRegionExtractionView(AbstractRecordView):
     # f"witness/<int:wid>/regions/"
-    # display only all Regions objects for a given Witness
+    # display only all RegionExtraction objects for a given Witness
     model = Witness
     template_name = "webapp/witness.html"
     pk_url_kwarg = "id"
@@ -185,7 +185,7 @@ class WitnessRegionsView(AbstractRecordView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["regions_ids"] = []
+        context["region_extraction_ids"] = []
         context["is_validated"] = True
         context["img_nb"] = None
 
@@ -212,22 +212,22 @@ class WitnessRegionsView(AbstractRecordView):
                     "img_zeros": djson["zeros"] or 0,
                 }
 
-        for rid in context["witness"]["regions"]:
-            regions = Regions.objects.filter(pk=rid).first()
-            if not regions:
+        for rid in context["witness"]["region_extractions"]:
+            region_extraction = RegionExtraction.objects.filter(pk=rid).first()
+            if not region_extraction:
                 continue
 
-            context["regions_ids"].append(rid)
-            if not regions.is_validated:
+            context["region_extraction_ids"].append(rid)
+            if not region_extraction.is_validated:
                 context["is_validated"] = False
 
         return context
 
 
-class RegionsView(AbstractRecordView):
+class RegionExtractionView(AbstractRecordView):
     # f"witness/<int:wid>/regions/<int:rid>/"
-    # display only one Regions object
-    model = Regions
+    # display only one RegionExtraction object
+    model = RegionExtraction
     template_name = "webapp/witness.html"
     fields = []
     pk_url_kwarg = "rid"
@@ -242,7 +242,7 @@ class RegionsView(AbstractRecordView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["witness_id"] = self.kwargs["wid"]
-        context["regions_id"] = self.kwargs["rid"]
+        context["region_extraction_id"] = self.kwargs["rid"]
 
         regions = self.get_record()
         wit = regions.get_witness()
@@ -437,4 +437,4 @@ class DocumentSetView(AbstractRecordView):
     #     return context
 
 
-# TODO RegionsSetList
+# TODO RegionExtractionSetList

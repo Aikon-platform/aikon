@@ -29,31 +29,31 @@ def extract_images_from_iiif_manifest(manifest_url, digit_ref, digit):
 
 
 @celery_app.task
-def reindex_from_file(regions_id):
-    from app.webapp.models.regions import Regions
+def reindex_from_file(region_extraction_id):
+    from app.webapp.models.region_extraction import RegionExtraction
     from app.webapp.utils.iiif.annotation import check_indexation
 
-    # regions = Regions.objects.filter(pk=regions_id).first()
-    regions = Regions.objects.get(pk=regions_id)
-    return check_indexation(regions, True)
+    # region_extraction = RegionExtraction.objects.filter(pk=region_extraction_id).first()
+    region_extraction = RegionExtraction.objects.get(pk=region_extraction_id)
+    return check_indexation(region_extraction, True)
 
 
 # NOTE unused
 @celery_app.task
-def delete_regions_and_annotations(regions_id):
-    from app.webapp.models.regions import Regions
-    from app.webapp.utils.iiif.annotation import destroy_regions
+def delete_region_extraction_and_annotations(regions_id):
+    from app.webapp.models.region_extraction import RegionExtraction
+    from app.webapp.utils.iiif.annotation import destroy_region_extraction
 
-    # regions = Regions.objects.filter(pk=regions_id).first()
-    regions = Regions.objects.get(pk=regions_id)
-    return destroy_regions(regions)
+    # region_extraction = RegionExtraction.objects.filter(pk=regions_id).first()
+    region_extraction = RegionExtraction.objects.get(pk=regions_id)
+    return destroy_region_extraction(region_extraction)
 
 
 @celery_app.task
 def delete_annotations(regions_ref, manifest_url):
-    from app.webapp.utils.iiif.annotation import unindex_regions
+    from app.webapp.utils.iiif.annotation import unindex_region_extraction
 
-    return unindex_regions(regions_ref, manifest_url)
+    return unindex_region_extraction(regions_ref, manifest_url)
 
 
 @celery_app.task
@@ -208,16 +208,16 @@ def delete_digitization(digit_ref, other_media):
 
 
 @celery_app.task
-def delete_regions(regions_ids):
-    from app.webapp.models.regions import Regions
-    from app.webapp.utils.iiif.annotation import destroy_regions
+def delete_region_extraction(regions_ids):
+    from app.webapp.models.region_extraction import RegionExtraction
+    from app.webapp.utils.iiif.annotation import destroy_region_extraction
 
     for regions_id in regions_ids:
         try:
-            regions = Regions.objects.get(id=regions_id)
-            destroy_regions(regions)
-        except Regions.DoesNotExist:
-            return f"Error: Regions #{regions_ids} does not exist"
+            regions = RegionExtraction.objects.get(id=regions_id)
+            destroy_region_extraction(regions)
+        except RegionExtraction.DoesNotExist:
+            return f"Error: RegionExtraction #{regions_ids} does not exist"
         except Exception as e:
-            return f"Error deleting Regions {regions_ids}: {e}"
-    return f"Successfully deleted regions {regions_ids}"
+            return f"Error deleting RegionExtraction {regions_ids}: {e}"
+    return f"Successfully deleted region extraction {regions_ids}"

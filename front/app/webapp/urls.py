@@ -1,8 +1,11 @@
 from django.urls import path, reverse_lazy
+from django.contrib.auth import views as auth_views
+
 from app.config.settings import APP_NAME
 from app.webapp.views import *
 from app.webapp.views.users import *
-from django.contrib.auth import views as auth_views
+from webapp.views.region import save_region
+
 
 app_name = "webapp"
 
@@ -49,45 +52,59 @@ urlpatterns = [
         name="export-selected-regions",
     ),
     path(
-        f"{APP_NAME}/<str:regions_ref>/list/",
+        f"{APP_NAME}/<str:region_extraction_ref>/list/",
         get_regions_img_list,
         name="regions-list",
     ),
-    path(
-        f"test",
-        test,
-        name="test",
-    ),
-    path(
-        f"{APP_NAME}/test/<str:wit_ref>",
-        test,
-        name="test",
-    ),
+    # TODO add f"{APP_NAME}/witness/<int:wit_id>/regions/<int:region_extraction_id>/list/",
+    # NOTE: unused
+    # path(
+    #     f"{APP_NAME}/annotations/<int:region_extraction_id>",
+    #     witness_sas_annotations,
+    #     name="witness-annotations",
+    # ),
+    # path(
+    #     f"test",
+    #     test,
+    #     name="test",
+    # ),
+    # path(
+    #     f"{APP_NAME}/test/<str:wit_ref>",
+    #     test,
+    #     name="test",
+    # ),
     path(
         # digit_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}
         f"{APP_NAME}/iiif/<str:digit_ref>/manifest.json",
         manifest_digitization,
         name="manifest-digitization",
     ),
+    # NOTE: unused since switching to manifest-from-regions to manifest-from-annotations
+    # path(
+    #     # region_extraction_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}
+    #     f"{APP_NAME}/iiif/<str:version>/<str:region_extraction_ref>/manifest.json",
+    #     manifest_region_extraction,
+    #     name="manifest-region-extraction",
+    # ),
     path(
         f"{APP_NAME}/iiif/populate/<int:regions_id>",
         populate_annotation,
         name="populate-annotation",
     ),
     path(
-        f"{APP_NAME}/iiif/validate/<str:regions_ref>",
-        validate_regions,
-        name="validate-regions",
+        f"{APP_NAME}/iiif/validate/<str:region_extraction_ref>",
+        validate_region_extraction,
+        name="validate-region-extraction",
     ),
     path(
-        f"{APP_NAME}/iiif/<str:regions_ref>/list/anno-<int:canvas_nb>.json",
+        f"{APP_NAME}/iiif/<str:version>/<str:region_extraction_ref>/list/anno-<int:canvas_nb>.json",
         canvas_annotations,
         name="canvas-annotations",
     ),
     path(
         f"{APP_NAME}/iiif/regions/<int:regions_id>",
-        export_regions_img,
-        name="regions-imgs",
+        export_region_extraction_img,
+        name="region-extraction-imgs",
     ),
     path(
         f"{APP_NAME}/index-witness/<int:wit_id>",
@@ -100,13 +117,13 @@ urlpatterns = [
         name="reindex-regions",
     ),
     path(
-        f"{APP_NAME}/index-regions/<str:regions_ref>",
-        index_regions,
+        f"{APP_NAME}/index-regions/<str:region_extraction_ref>",
+        index_region_extraction,
         name="index-regions",
     ),
     path(
         f"{APP_NAME}/index-regions",
-        index_regions,
+        index_region_extraction,
         name="index-regions",
     ),
     path(
@@ -209,13 +226,13 @@ urlpatterns += [
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/",
-        RegionsView.as_view(),
-        name="regions_view",
+        RegionExtractionView.as_view(),
+        name="region_extraction_view",
     ),
     path(
         f"{APP_NAME}/witness/<int:id>/regions/",
-        WitnessRegionsView.as_view(),
-        name="witness_regions_view",
+        WitnessRegionExtractionView.as_view(),
+        name="witness_region_extraction_view",
     ),
     path(f"{APP_NAME}/treatment/", TreatmentList.as_view(), name="treatment_list"),
     path(
@@ -267,28 +284,28 @@ urlpatterns += [
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/add",
-        create_manual_regions,
-        name="witness_manual_regions",
+        create_manual_region_extraction,
+        name="witness_manual_region_extraction",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/digitization/<int:did>/regions/add",
-        create_manual_regions,
-        name="digit_manual_regions",
+        create_manual_region_extraction,
+        name="digit_manual_region_extraction",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/add",
-        create_manual_regions,
-        name="regions_manual_regions",
+        create_manual_region_extraction,
+        name="region_extraction_manual_region_extraction",
     ),
     path(
-        f"{APP_NAME}/regions/<int:rid>/delete",
-        delete_regions,
-        name="delete_regions",
+        f"{APP_NAME}/region_extraction/<int:rid>/delete",
+        delete_region_extraction,
+        name="delete_region_extraction",
     ),
     path(
-        f"{APP_NAME}/regions/export",
-        export_regions,
-        name="export_regions",
+        f"{APP_NAME}/region_extraction/export",
+        export_region_extraction,
+        name="export_region_extraction",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/json", get_json_witness, name="get_json_witness"
@@ -328,6 +345,16 @@ urlpatterns += [
         witness_update,
         name="witness_update",
     ),
+    path(
+        f"{APP_NAME}/region_extraction/<int:reid>/region/add",
+        save_region,
+        name="new-region",
+    ),
+    path(
+        f"{APP_NAME}/region_extraction/<int:reid>/region/<int:rid>/edit",
+        save_region,
+        name="change-region",
+    ),
 ]
 
 # SEARCH
@@ -339,7 +366,9 @@ urlpatterns += [
     path("search/series/", search_series, name="search-series"),
     path("search/documentset/", search_document_set, name="search-document-sets"),
     path("search/digitization/", search_digitizations, name="search-digitizations"),
-    path("search/regions/", search_regions, name="search-regions"),
+    path(
+        "search/regions/", search_region_extractions, name="search-region-extractions"
+    ),
     path("search/user/", search_user, name="search-user"),
     path("search/json-generation/", json_regeneration, name="regenerate_json"),
 ]
@@ -351,15 +380,15 @@ urlpatterns += [
 ]
 
 # TEST VIEWS
-urlpatterns += [
-    path(
-        f"{APP_NAME}/test",
-        test,
-        name="test",
-    ),
-    path(
-        f"{APP_NAME}/test/error",
-        test_error,
-        name="test-error",
-    ),
-]
+# urlpatterns += [
+#     path(
+#         f"{APP_NAME}/test",
+#         test,
+#         name="test",
+#     ),
+#     path(
+#         f"{APP_NAME}/test/error",
+#         test_error,
+#         name="test-error",
+#     ),
+# ]
