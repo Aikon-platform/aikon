@@ -789,3 +789,14 @@ def cast(val, to_type):
         elif to_type == float:
             return 0.0
         return None
+
+
+def ensure_legacy_regions(task_name: str) -> str:
+    """
+    RegionExtraction was previously called Regions and this task name is
+    used in the front's URLs. to avoid breaking changes and updating all URLs,
+    ensure that "regions" is used instead of "region_extraction".
+    """
+    if task_name == "region_extraction":
+        return "regions"
+    return task_name
