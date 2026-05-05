@@ -423,13 +423,19 @@ def get_action(action, formatting=None):
         "no_manifest": {"en": "no manifest", "fr": "pas de manifest"},
         "no_digit": {"en": "no digitization", "fr": "pas de numérisation"},
         "no_img": {"en": "no image", "fr": "pas d'image"},
-        "no_regions": {"en": "no regions yet", "fr": "pas de régions"},
-        "download": {"en": "download regions", "fr": "télécharger les régions"},
+        "no_region_extraction": {
+            "en": "no region extraction yet",
+            "fr": "pas de régions extraites",
+        },
+        "download": {
+            "en": "download extracted regions",
+            "fr": "télécharger les régions extraites",
+        },
         "edit": {"en": "edit regions", "fr": "modifier les régions"},
         "final": {"en": "visualize final regions", "fr": "voir les régions finales"},
-        "regions": {
-            "en": "all regions",
-            "fr": "toutes les régions",
+        "region_extraction": {
+            "en": "all extracted regions",
+            "fr": "toutes les régions extraites",
         },
         "vectors": {
             "en": "visualize automatic vectorizations",
@@ -783,3 +789,14 @@ def cast(val, to_type):
         elif to_type == float:
             return 0.0
         return None
+
+
+def ensure_legacy_regions(task_name: str) -> str:
+    """
+    RegionExtraction was previously called Regions and this task name is
+    used in the front's URLs. to avoid breaking changes and updating all URLs,
+    ensure that "regions" is used instead of "region_extraction".
+    """
+    if task_name == "region_extraction":
+        return "regions"
+    return task_name

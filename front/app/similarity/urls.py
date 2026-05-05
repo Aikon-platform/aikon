@@ -57,14 +57,14 @@ urlpatterns = [
         name="propagated-regions",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/get_regions_title/<str:regions_ref>",
-        get_regions_title_by_ref,
-        name="get-regions-title-by-ref",
+        f"{APP_NAME}/witness/<int:wid>/regions/get_regions_title/<str:region_extraction_ref>",
+        get_region_extraction_title_by_ref,
+        name="get-region-extraction-title-by-ref",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/get_regions_title/<str:regions_ref>",
-        get_regions_title_by_ref,
-        name="get-regions-title-regions-by-ref",
+        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/get_regions_title/<str:region_extraction_ref>",
+        get_region_extraction_title_by_ref,
+        name="get-region-extraction-title-regions-by-ref",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/add-region-pair",
@@ -87,19 +87,14 @@ urlpatterns = [
         name="witness-no-match",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/delete-matches",
+        f"{APP_NAME}/similarity/delete-matches",
         delete_matches,
         name="delete-matches",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/delete-matches",
-        delete_matches,
-        name="witness-delete-matches",
-    ),
-    path(
-        f"{APP_NAME}/delete-pair",
+        f"{APP_NAME}/similarity/delete-pair",
         delete_pair,
-        name="witness-delete-pair",
+        name="delete-pair",
     ),
     path(f"{APP_NAME}/exact-match", exact_match, name="exact-match"),
     path(f"{APP_NAME}/categorize-batch", categorize_batch, name="categorize-batch"),
@@ -111,7 +106,7 @@ urlpatterns = [
     path(f"{APP_NAME}/save-category", save_category, name="save-category"),
     path(f"{APP_NAME}/add-user-to-pair", add_user_to_pair, name="add-user-to-pair"),
     path(
-        f"{APP_NAME}/index-similarity/<str:regions_ref>",
+        f"{APP_NAME}/index-similarity/<str:region_extraction_ref>",
         index_regions_similarity,
         name="index-similarity",
     ),

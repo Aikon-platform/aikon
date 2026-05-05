@@ -4,15 +4,17 @@
 # in an aiiinotate instance. the directory must only contain
 # AnnotationLists, with all files at the root of the directory.
 #
-# USAGE: bash docker_aiiinotate_import.sh <path/to/directory>
+# USAGE: bash docker_aiiinotate_import.sh <"annotations"|"manifests"> <path/to/directory>
+
+# "annotation" or "manifest": the type of data to import.
+DATATYPE="$1"
 
 # directory containing all files we want to import into aiiinotate
-HOST_DIR=$(echo "$1" | sed -e "s~/$~~g")  # sed removes trailing "/"
+HOST_DIR=$(echo "$2" | sed -e "s~/$~~g")  # sed removes trailing "/"
 
 CONTAINER="docker-aiiinotate-1"
 
 EXEC="docker exec $CONTAINER"
-EXEC_IT="docker exec -it $CONTAINER"
 NODE_BIN=$($EXEC realpath node_modules/.bin)
 NPM_BIN=$($EXEC realpath /usr/local/bin/npm)
 DOTENVX_BIN=$($EXEC realpath $NODE_BIN/dotenvx)
@@ -25,8 +27,13 @@ CONTAINER_DIR="import_files"
 # file listing absolute paht to contents of $CONTAINER_DIR
 CONTAINER_INDEX_FILE=import_files.txt
 
+[[ "$DATATYPE" != "annotation" && "$DATATYPE" != "manifest" ]] && {
+  echo "error: DATATYPE must be 'annotation' or 'manifest' (got: '$DATATYPE')"
+  exit 1
+}
+
 [ ! -d "$HOST_DIR" ] && {
-    echo "import directory '$HOST_DIR' not found ! exiting";
+    echo "error: import directory '$HOST_DIR' not found ! exiting";
     exit 1
 }
 
@@ -53,5 +60,4 @@ $EXEC cat "$CONTAINER_INDEX_FILE"
 
 $EXEC bash -c \
     "$DOTENVX_BIN run -f \"$CONTAINER_ENV_FILE\" -- \
-    \"$AIIINOTATE_BIN\" import -i 2 -f \"$CONTAINER_INDEX_FILE\""
-
+    \"$AIIINOTATE_BIN\" import \"$DATATYPE\" -i 2 -f \"$CONTAINER_INDEX_FILE\""

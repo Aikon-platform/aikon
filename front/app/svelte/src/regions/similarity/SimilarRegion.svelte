@@ -147,7 +147,7 @@
         );
         if (!confirmed) return;
         try {
-            const response = await fetch(`${baseUrl}/${appName}/delete-pair`, {
+            const response = await fetch(`${baseUrl}/${appName}/similarity/delete-pair`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

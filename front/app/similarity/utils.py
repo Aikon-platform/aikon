@@ -13,6 +13,7 @@ from itertools import combinations_with_replacement
 from pathlib import Path
 from django.db import transaction, connection
 from django.db.models import Q, F
+from django.core.cache import cache
 
 from app.similarity.const import SCORES_PATH
 from app.config.settings import APP_URL, APP_NAME
@@ -28,7 +29,7 @@ from app.similarity.models.similarity_parameters import (
 )
 from app.similarity.tasks import delete_api_similarity
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
 from app.webapp.utils.functions import delete_path
@@ -201,9 +202,10 @@ def process_results(data, completed=True):
     return
 
 
-def prepare_document(document: Witness | Digitization | Regions, **kwargs):
+def prepare_document(document: Witness | Digitization | RegionExtraction, **kwargs):
     source_type = kwargs.get("source_type", SourceType.REGIONS)
 
+    # run similarity on document pages
     if source_type == SourceType.PAGES:
         digits = (
             document.get_digits() if hasattr(document, "get_digits") else [document]
@@ -219,16 +221,22 @@ def prepare_document(document: Witness | Digitization | Regions, **kwargs):
             for d in digits
         ]
 
-    regions = document.get_regions() if hasattr(document, "get_regions") else [document]
-    if not regions:
+    # run similarity on extracted regions
+    region_extraction = (
+        document.get_region_extractions()
+        if hasattr(document, "get_region_extractions")
+        else [document]
+    )
+    if not region_extraction:
+        # TODO should task be canceled because one of the document has no extraction??
         raise ValueError(
-            f"'{document}' has no extracted regions for similarity computation"
+            f"“{document}” has no extracted regions for which to calculate similarity scores"
             if APP_LANG == "en"
-            else f"« {document} » n'a pas de régions extraites pour le calcul de similarité"
+            else f"« {document} » n'a pas de régions extraites pour lesquelles calculer les scores de similarité"
         )
     return [
         {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
-        for ref in [r.get_ref() for r in regions]
+        for ref in [region.get_ref() for region in region_extraction]
     ]
 
 
@@ -319,17 +327,21 @@ def json_to_scores_tuples(json_scores):
 
 
 def get_doc_refs_from_records(records, source_type=SourceType.REGIONS) -> list[str]:
-    """Extract document refs from records based on source type."""
+    """Extract all document refs from records (Witness/Digitization/RegionExtraction)."""
     refs = []
     for record in records:
         if source_type == SourceType.PAGES:
             digits = record.get_digits() if hasattr(record, "get_digits") else [record]
             refs.extend(d.get_ref() for d in digits if digits)
         else:
-            regions = (
-                record.get_regions() if hasattr(record, "get_regions") else [record]
+            region_extractions = (
+                record.get_region_extractions()
+                if hasattr(record, "get_region_extractions")
+                else [record]
             )
-            refs.extend(r.get_ref() for r in regions if regions)
+            refs.extend(
+                region.get_ref() for region in region_extractions if region_extractions
+            )
     return refs
 
 
@@ -486,6 +498,10 @@ def get_region_pairs_with(q_img, query_digit_ids, target_digit_ids=None):
         query &= ~Q(digit_1=F("digit_2"))
     qs = RegionPair.objects.filter(query)
 
+    # if there is no intersection between query and target regions, remove self-comparisons
+    if not bool(set(query_digit_ids) & set(target_digit_ids)):
+        query &= ~Q(regions_id_1=F("regions_id_2"))
+
     return list(qs.values_list(*PAIR_FIELDS, named=True))
 
 
@@ -511,7 +527,6 @@ def pair_priority(pair, user_id):
     is_propagated = pair.similarity_type == SimilarityType.PROPAGATED
     is_nomatch = pair.category == SimilarityCategory.NO_MATCH
     is_categorized = pair.category is not None and not is_nomatch
-
     # high priority => low priority
     if is_manual:
         group = 0
@@ -528,6 +543,46 @@ def pair_priority(pair, user_id):
 
     sub = pair.category if is_categorized else 0
     return group, sub, -(pair.score or 0)
+
+
+# def delete_pairs_with_region_extraction(region_extraction_id: int):
+#    RegionPair.objects.filter(
+#        Q(regions_id_1=region_extraction_id) | Q(regions_id_2=region_extraction_id)
+#    ).delete()
+#
+#    if cache.get(f"regions_q_imgs_{region_extraction_id}") is not None:
+#        cache.delete(f"regions_q_imgs_{region_extraction_id}")
+#
+
+
+def get_regions_q_imgs(regions_id: int, witness_id=None, cached=False):
+    """
+    Retrieve all images associated with a given regions_id from RegionPair records.
+
+    :param regions_id: int, the regions_id to look for
+    :param witness_id: int, the id of the witness linked to the regions
+    :param cached: bool, whether to cache the result
+    :return: list of image names associated with the regions_id
+    """
+    cache_key = f"regions_q_imgs_{regions_id}"
+    if cached:
+        cached_result = cache.get(cache_key)
+        if cached_result is not None:
+            return cached_result
+
+    if witness_id is None:
+        img_1_list = list(
+            RegionPair.objects.filter(regions_id_1=regions_id).values_list(
+                "img_1", flat=True
+            )
+        )
+
+        img_2_list = list(
+            RegionPair.objects.filter(regions_id_2=regions_id).values_list(
+                "img_2", flat=True
+            )
+        )
+        result = list(set(img_1_list + img_2_list))
 
 
 def get_best_pairs(
@@ -621,12 +676,15 @@ def get_all_pairs():
     return [pair_file.replace(".npy", "") for pair_file in os.listdir(SCORES_PATH)]
 
 
-def reset_similarity(regions: Regions):
-    regions_id = regions.id
+def reset_similarity(region_extraction: RegionExtraction):
+    region_extraction_id = region_extraction.id
     try:
-        regions_ref = regions.get_ref()
+        regions_ref = region_extraction.get_ref()
     except Exception as e:
-        log(f"[reset_similarity] Failed to retrieve region ref for id {regions_id}", e)
+        log(
+            f"[reset_similarity] Failed to retrieve region extraction ref for id {region_extraction_id}",
+            e,
+        )
         return False
     for file in os.listdir(SCORES_PATH):
         if regions_ref in file:
@@ -636,12 +694,21 @@ def reset_similarity(regions: Regions):
                 log(f"[reset_similarity] Failed to delete file {file_path}")
 
     # TODO retrieve info on the algorithm and feature network used (in json score files)
-    delete_api_similarity.delay(regions.get_ref(), algorithm=None, feat_net=None)
+    delete_api_similarity.delay(
+        region_extraction.get_ref(), algorithm=None, feat_net=None
+    )
 
     try:
-        delete_pairs_with_digit(regions.digitization_id)
+        digit = region_extraction.get_digit()
+        if digit is not None:
+            delete_pairs_with_digit(digit.id)
+        else:
+            raise TypeError(f"Expected digit to be a Digitization, got {type(digit)} !")
     except Exception as e:
-        log(f"[reset_similarity] Error deleting pairs with region id {regions_id}", e)
+        log(
+            f"[reset_similarity] Error deleting pairs with region extraction id {region_extraction_id}",
+            e,
+        )
 
     return True
 

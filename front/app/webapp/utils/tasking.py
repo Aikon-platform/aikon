@@ -8,9 +8,10 @@ from django.contrib.auth.models import User
 from app.config.settings import APP_URL, APP_NAME, API_URL, APP_LANG
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.utils.logger import log
+from app.webapp.utils.functions import ensure_legacy_regions
 
 
 def get_user(user: User = None) -> User:
@@ -45,7 +46,7 @@ def create_doc_set(
 
 
 def create_doc_set_from_records(
-    records: List[Witness | Digitization | Regions],
+    records: List[Witness | Digitization | RegionExtraction],
     user: User = None,
     shared_with: list = None,
     is_public: bool = False,
@@ -135,7 +136,9 @@ def create_doc_set_from_ids(
 
 
 def create_treatment(
-    records: List[Witness | Digitization | Regions], task_name, user: User = None
+    records: List[Witness | Digitization | RegionExtraction],
+    task_name,
+    user: User = None,
 ) -> int:
     user = get_user(user)
     doc_set, is_new = create_doc_set(records, user)
@@ -222,7 +225,7 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
     Generalized function to prepare requests by processing records and generating documents.
 
     Args:
-        records (list): List of records to process (Witnesses, Digitization, Regions)
+        records (list): List of records to process (Witnesses, Digitization, RegionExtraction)
         treatment_id (str): ID of the treatment.
         prepare_document (callable): Function to process a witness and return relevant data.
         task_name (str): app name of the corresponding task module
@@ -250,7 +253,7 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
                 "experiment_id": str(treatment_id),
                 "documents": documents,
                 # URL to which results and task notifications are sent back
-                "notify_url": f"{APP_URL}/{APP_NAME}/{task_name}/notify",
+                "notify_url": f"{APP_URL}/{APP_NAME}/{ensure_legacy_regions(task_name)}/notify",
                 **parameters,
             }
 

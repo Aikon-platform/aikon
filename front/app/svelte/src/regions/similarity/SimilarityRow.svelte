@@ -1,7 +1,7 @@
 <script>
     import { onMount, onDestroy, setContext, getContext } from "svelte";
     import { similarityStore } from "./similarityStore.js";
-    import { csrfToken } from "../../constants";
+    import {appName, appUrl, csrfToken} from "../../constants";
     import { i18n, getColNb, manifestToMirador, refToIIIF, showMessage } from "../../utils.js";
     import { RegionItem } from "../types.js";
 
@@ -129,7 +129,7 @@
                 body: JSON.stringify({q_img: qImg, s_regions: regions.id})
             });
             if (!response.ok) {
-                await showMessage(`${i18n("networkPb")}`, i18n("error"));
+                await showMessage(`${i18n("networkPb", t)}`, i18n("error"));
                 return;
             }
             fetchRow();
@@ -144,13 +144,13 @@
         );
         if (!confirmed) return;
         try {
-            const response = await fetch(`${baseUrl}delete-matches`, {
+            const response = await fetch(`${appUrl}/${appName}/similarity/delete-matches`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
                 body: JSON.stringify({q_img: qImg})
             });
             if (!response.ok) {
-                await showMessage(`${i18n("networkPb")}`, i18n("error"));
+                await showMessage(`${i18n("networkPb", t)}`, i18n("error"));
                 return;
             }
             const data = await response.json();
