@@ -13,46 +13,100 @@ Special cases:
 -->
 
 <script>
+    import { onMount, createEventDispatcher } from "svelte";
     import { derived } from "svelte/store";
     import {RegionItem} from "../../regions/types.js";
     import RegionModal from "../../regions/modal/RegionModal.svelte";
     import PageView from "../../regions/modal/PageView.svelte";
     import RegionCard from "../../regions/RegionCard.svelte";
+    import RightClick from "../../ui/RightClick.svelte";
+    import StemmaNodeEditor from "./StemmaNodeEditor.svelte";
     import Tabs from "../../ui/Tabs.svelte";
-    import {appLang} from "../../constants.js";
+    import { i18n } from "../../utils.js";
+    import { createStemmaInteraction } from "./stemmaInteraction.js";
 
     export let stemmaStore;
     export let visiblePairs;
     export let imageNodes;
     export let documents;
-    export let startImageId;
-    export let baseDocId;
+    export let startImageId = null;
+    export let baseDocId = null;
 
-    const { edges, nodePositions } = stemmaStore;
+    const dispatch = createEventDispatcher();
+    const { edges, nodePositions, nodeTitles, updateNodeTitle } = stemmaStore;
+
+    const interaction = createStemmaInteraction(stemmaStore);
+    const { transform, dragOverride } = interaction;
 
     const IMG_SIZE = 150;
+    let svgEl, containerEl;
+    let width = 800, height = 600;
+
+    let menu = { open: false, x: 0, y: 0, items: [] };
+    let editingNode = null;
+
+    function onContextMenu(e, node) {
+        e.preventDefault();
+        const noImg = !node.img;
+        const isAnchor = node.docId === baseDocId && node.imageId === startImageId;
+        menu = {
+            open: true, x: e.clientX, y: e.clientY,
+            items: [
+                { label: i18n("openModal", t), icon: "expand", disabled: noImg, action: () => openImg(node) },
+                { label: i18n("setAnchor", t), icon: "anchor", disabled: noImg || isAnchor, action: () => dispatch("anchorselect", { imageId: node.imageId, baseDocId: node.docId }) },
+                { label: i18n("rename", t), icon: "pen", action: () => editingNode = { id: node.docId, title: $nodeTitles[node.docId] || node.title, color: node.color } },
+            ]
+        };
+    }
+
+    let attached = false;
+    $: if (svgEl && !attached) {
+        interaction.attach(svgEl);
+        attached = true;
+    }
+    $: if (!stemmaImages.nodes.length) attached = false;
+
+    let lastAnchorKey = null;
+    $: {
+        const key = `${startImageId}-${baseDocId}`;
+        if (key !== lastAnchorKey && stemmaImages.nodes.length && svgEl) {
+            interaction.positionCenter(stemmaImages.nodes, { nodeWidth: IMG_SIZE, nodeHeight: IMG_SIZE });
+            lastAnchorKey = key;
+        }
+    }
+
+    function onPointerDown(e, node) {
+        if (interaction.startDrag(e, node)) {
+            e.stopPropagation();
+            svgEl.setPointerCapture(e.pointerId);
+        }
+    }
+    function onPointerMove(e) { interaction.moveDrag(e); }
+    function onPointerUp(e)   { interaction.endDrag(); svgEl.releasePointerCapture?.(e.pointerId); }
+
     let modalOpen = false;
     let clickedRegionIdx = 0;
-    $: visibleRegions = stemmaImages.nodes
-        .filter(n => n.img)
-        .map(n => new RegionItem(n.img));
+    $: visibleRegions = stemmaImages.nodes.filter(n => n.img).map(n => new RegionItem(n.img));
 
-    const clickOnImg = (node) => {
-        if (!node.img){
-            return
-        }
+    const openImg = (node) => {
+        if (!node.img) return;
         clickedRegionIdx = visibleRegions.findIndex(r => r.id === node.imageId);
         modalOpen = true;
     };
 
-    const handleNavigate = (e) => {
-        clickedRegionIdx = e.detail.index ?? 0;
-    };
+    const handleNavigate = (e) => clickedRegionIdx = e.detail.index ?? 0;
 
     const tabs = [
-        { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
-        { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
+        { id: "region", label: i18n("mainView") },
+        { id: "page", label: i18n("pageView") },
     ];
+
+    const t = {
+        select:    { en: "Select an image in the frieze", fr: "Sélectionner une image dans la frise" },
+        openModal: { en: "Open detailed view", fr: "Ouvrir la vue détaillé" },
+        setAnchor: { en: "Set as anchor", fr: "Définir comme ancre" },
+        rename:    { en: "Rename", fr: "Renommer" },
+    };
 
     const pairIndex = derived(visiblePairs, $pairs => {
         const idx = new Map();
@@ -68,27 +122,22 @@ Special cases:
     });
 
     let stemmaImages = { nodes: [], edges: [] };
+    $: stemmaImages = computeStemma($edges, $nodePositions, documents, $pairIndex, $imageNodes, startImageId, baseDocId, $nodeTitles);
 
-    $: stemmaImages = computeStemma($edges, $nodePositions, documents, $pairIndex, $imageNodes, startImageId, baseDocId);
-
-    function computeStemma(edges, positions, docs, pairIdx, imgNodes, startImgId, baseId) {
+    function computeStemma(edges, positions, docs, pairIdx, imgNodes, startImgId, baseId, titles) {
         if (!startImgId || !baseId) return { nodes: [], edges: [] };
-
         const docMap = new Map(docs.map(n => [n.id, n]));
         const baseDoc = docMap.get(baseId);
+        const titleFor = id => titles[id] || docMap.get(id)?.title;
 
         if (!edges.length) {
             if (!baseDoc) return { nodes: [], edges: [] };
             const img = imgNodes.get(startImgId);
             return {
                 nodes: [{
-                    docId: baseId,
-                    imageId: startImgId,
-                    color: baseDoc.color,
-                    title: baseDoc.title,
-                    x: 20,
-                    y: 20,
-                    img
+                    docId: baseId, imageId: startImgId,
+                    color: baseDoc.color, title: titleFor(baseId),
+                    x: 0, y: 0, img: img, ...nodeDims(img)
                 }],
                 edges: []
             };
@@ -101,7 +150,6 @@ Special cases:
             adjacency.get(e.target)?.push(e.source);
         }
 
-        // Propagate images via BFS until dead ends
         const resolved = new Map([[baseId, { imageId: startImgId, score: Infinity }]]);
         const queue = [baseId];
         const visited = new Set([baseId]);
@@ -128,38 +176,24 @@ Special cases:
             }
         }
 
-        // Add missing nodes from stemma graph
         for (const docId of docMap.keys()) {
-            if (!resolved.has(docId)) {
-                resolved.set(docId, { imageId: null, score: -Infinity });
-            }
+            if (!resolved.has(docId)) resolved.set(docId, { imageId: null, score: -Infinity });
         }
 
         const nodes = [];
-        let minX = Infinity, minY = Infinity;
-
         for (const [docId, { imageId }] of resolved) {
             const doc = docMap.get(docId);
             const pos = positions[docId] || { x: 0, y: 0 };
             if (!doc) continue;
-
-            if (pos.x < minX) minX = pos.x;
-            if (pos.y < minY) minY = pos.y;
-
+            const img = imageId ? imgNodes.get(imageId) : null
             nodes.push({
-                docId, imageId, color: doc.color, title: doc.title,
+                docId, imageId, color: doc.color, title: titleFor(docId),
                 x: pos.x, y: pos.y,
-                img: imageId ? imgNodes.get(imageId) : null
+                img: img,
+                ...nodeDims(img)
             });
         }
 
-        const padding = 20;
-        for (const n of nodes) {
-            n.x = n.x - minX + padding;
-            n.y = n.y - minY + padding;
-        }
-
-        // All edges from stemma graph
         const nodeMap = new Map(nodes.map(n => [n.docId, n]));
         const renderedEdges = edges
             .map(e => {
@@ -175,13 +209,11 @@ Special cases:
     function findBestMatch(imgId, fromDocId, toDocId, pairIdx) {
         const key = `${fromDocId}-${toDocId}`;
         const pairs = pairIdx.get(key) || [];
-
         let best = null;
         for (const p of pairs) {
             const isFrom1 = p.digit_1 === fromDocId && p.id_1 === imgId;
             const isFrom2 = p.digit_2 === fromDocId && p.id_2 === imgId;
             if (!isFrom1 && !isFrom2) continue;
-
             const matchedImgId = isFrom1 ? p.id_2 : p.id_1;
             if (!best || p.weightedScore > best.score) {
                 best = { imageId: matchedImgId, score: p.weightedScore };
@@ -192,57 +224,69 @@ Special cases:
 
     function getImageUrl(img) {
         if (!img) return `https://placehold.co/${IMG_SIZE}x${IMG_SIZE}/png?text=No+image`;
-        const regionItem = new RegionItem(img);
-        return regionItem.url(null, `,${IMG_SIZE}`);
+        return new RegionItem(img).url(null, `,${IMG_SIZE}`);
+    }
+
+    function posOf(node, override) {
+        return override?.docId === node.docId ? override : node;
+    }
+
+    function saveTitle(detail) {
+        if (detail.title.trim()) updateNodeTitle(detail.id, detail.title.trim());
+        editingNode = null;
+    }
+
+    function nodeDims(img) {
+        if (!img?.xywh) return { w: IMG_SIZE, h: IMG_SIZE };
+        const [, , w, h] = img.xywh.map(Number);
+        if (!w || !h) return { w: IMG_SIZE, h: IMG_SIZE };
+        return w >= h
+            ? { w: IMG_SIZE, h: IMG_SIZE * h / w }
+            : { w: IMG_SIZE * w / h, h: IMG_SIZE };
     }
 </script>
 
-<div class="image-stemma">
+<div class="stemma-container" bind:this={containerEl} bind:clientWidth={width} bind:clientHeight={height} style={`height: ${stemmaImages.nodes.length ? "60vh" : "50px"}`}>
     {#if stemmaImages.nodes.length}
-        <svg class="stemma-svg" viewBox="0 0 {Math.max(...stemmaImages.nodes.map(n => n.x)) + IMG_SIZE + 40} {Math.max(...stemmaImages.nodes.map(n => n.y)) + IMG_SIZE + 40}">
+        <svg bind:this={svgEl} class="stemma-svg"
+             viewBox="0 0 {width} {height}"
+             on:pointermove={onPointerMove} on:pointerup={onPointerUp}>
             <defs>
                 <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                     <polygon points="0 0, 10 3.5, 0 7" fill="var(--bulma-grey)" />
                 </marker>
             </defs>
 
-            {#each stemmaImages.edges as edge}
-                <line
-                    x1={edge.source.x + IMG_SIZE / 2}
-                    y1={edge.source.y + IMG_SIZE}
-                    x2={edge.target.x + IMG_SIZE / 2}
-                    y2={edge.target.y}
-                    stroke="var(--bulma-grey)"
-                    stroke-width="5"
-                    marker-end="url(#arrowhead)"
-                />
-            {/each}
+            <g transform="translate({$transform.x},{$transform.y}) scale({$transform.k})">
+                {#each stemmaImages.edges as edge}
+                    {@const s = posOf(edge.source, $dragOverride)}
+                    {@const t2 = posOf(edge.target, $dragOverride)}
+                    <line x1={s.x + edge.source.w/2} y1={s.y + edge.source.h}
+                          x2={t2.x + edge.target.w/2} y2={t2.y}
+                          stroke="var(--bulma-grey)" stroke-width="5"
+                          marker-end="url(#arrowhead)"/>
+                {/each}
 
-            {#each stemmaImages.nodes as node (node.docId)}
-                <g transform="translate({node.x}, {node.y})"
-                    style="cursor: {node.img ? "pointer" : "default"}"
-                    on:click={() => clickOnImg(node)}
-                    on:keyup>
-                    <rect
-                        width={IMG_SIZE}
-                        height={IMG_SIZE}
-                        rx="4"
-                        fill={node.color}
-                        stroke="{node.color}"
-                        stroke-width={node.docId === baseDocId ? 20 : 10}
-                    />
-                    <image href={getImageUrl(node.img)}
-                        width={IMG_SIZE}
-                        height={IMG_SIZE}
-                        clip-path="inset(0 round 4px)"
-                        preserveAspectRatio="xMidYMid slice"
-                    />
-                    <title>{node.title}</title>
-                </g>
-            {/each}
+                {#each stemmaImages.nodes as node (node.docId)}
+                    {@const p = posOf(node, $dragOverride)}
+                    <g transform="translate({p.x},{p.y})"
+                       style="cursor: grab"
+                       on:pointerdown={e => onPointerDown(e, node)}
+                       on:contextmenu={e => onContextMenu(e, node)}>
+                        <rect width={node.w} height={node.h} rx="4"
+                              fill={node.color} stroke={node.color}
+                              stroke-width={node.docId === baseDocId ? 20 : 10}/>
+                        <image href={getImageUrl(node.img)}
+                               width={node.w} height={node.h}
+                               clip-path="inset(0 round 4px)"
+                               preserveAspectRatio="xMidYMid meet"/>
+                        <title>{node.title}</title>
+                    </g>
+                {/each}
+            </g>
         </svg>
     {:else}
-        <p class="has-text-grey is-size-7 p-3">Select an image in the frieze above</p>
+        <p class="has-text-grey is-size-6 p-3 mb-3">{i18n("select", t)}</p>
     {/if}
 </div>
 
@@ -260,16 +304,23 @@ Special cases:
     </svelte:fragment>
 </RegionModal>
 
+<RightClick bind:open={menu.open} x={menu.x} y={menu.y} items={menu.items}/>
+
+<StemmaNodeEditor node={editingNode} on:save={e => saveTitle(e.detail)} on:close={() => editingNode = null}/>
+
 <style>
-    .image-stemma {
+    .stemma-container {
+        position: relative;
         width: 100%;
-        height: 100%;
-        overflow: auto;
     }
     .stemma-svg {
-        display: block;
-        min-width: 100%;
-        min-height: 200px;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        inset: 0;
+        background-color: var(--bulma-scheme-main-bis);
+        border-radius: .5em;
+        overflow: hidden;
     }
     .modal-region {
         height: 100%;

@@ -2,6 +2,7 @@
     import * as d3 from "d3";
     import {createEventDispatcher} from "svelte";
     import {i18n} from "../../utils.js";
+    import RightClick from "../../ui/RightClick.svelte";
 
     export let documents = [];
     export let scoreData = new Map();
@@ -13,11 +14,15 @@
     export let percentageMode = false;
     export let coverageData = new Map();
 
+    export let isInStemma = false;
+    export let stemmaStore = null;
+
     const dispatch = createEventDispatcher();
 
     const t = {
         score: {en: "Score", fr: "Score"},
         noPairs: {en: "No pairs", fr: "Aucune paire"},
+        addEdge: {en: "Add stemma edge", fr: "Ajouter un lien au stemma"},
     };
 
     let container;
@@ -165,6 +170,9 @@
                     selectedCell = {row: d.y, col: d.x, doc1: d.doc1, doc2: d.doc2};
                     updateSelection();
                     dispatch("cellselect", selectedCell);
+                })
+                .on("contextmenu", (event, d) => {
+                    if (isInStemma && stemmaStore) openContextMenu(event, d);
                 });
 
             if (matrixData.pctMode) {
@@ -206,6 +214,33 @@
     }
 
     $: if (container && matrixData.docs.length) render();
+
+    let menuOpen = false, menuX = 0, menuY = 0, menuItems = [];
+
+    function docDate(d) {
+        return d.min_date ?? d.max_date ?? null;
+    }
+
+    function orientEdge(doc1, doc2) {
+        const d1 = docDate(doc1), d2 = docDate(doc2);
+        if (d1 != null && d2 != null) return d1 <= d2 ? [doc1, doc2] : [doc2, doc1];
+        if (d1 != null) return [doc1, doc2];
+        if (d2 != null) return [doc2, doc1];
+        return [doc1, doc2];
+    }
+
+    function openContextMenu(event, d) {
+        event.preventDefault();
+        const [src, tgt] = orientEdge(d.doc1, d.doc2);
+        menuItems = [{
+            label: i18n("addEdge", t),
+            icon: "arrow-right",
+            action: () => stemmaStore.addEdge(src.id, tgt.id, src, tgt)
+        }];
+        menuX = event.clientX;
+        menuY = event.clientY;
+        menuOpen = true;
+    }
 </script>
 
 <div class="matrix-grid" style="--cell-size: {cellSize}px;">
@@ -221,6 +256,8 @@
     {/each}
     <div class="matrix-canvas" bind:this={container}></div>
 </div>
+
+<RightClick bind:open={menuOpen} x={menuX} y={menuY} items={menuItems}/>
 
 <style>
     .matrix-grid {

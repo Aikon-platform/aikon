@@ -5,6 +5,7 @@
     import PageView from "../../regions/modal/PageView.svelte";
     import Tabs from "../../ui/Tabs.svelte";
     import {appLang} from "../../constants.js";
+    import {i18n} from "../../utils.js";
 
     export let selectedDocuments = [];
     export let documentSetStore;
@@ -74,8 +75,8 @@
     };
 
     const tabs = [
-        { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
-        { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
+        { id: "region", label: i18n("mainView") },
+        { id: "page", label: i18n("pageView") },
     ];
 </script>
 

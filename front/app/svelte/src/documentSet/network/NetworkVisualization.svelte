@@ -2,17 +2,16 @@
     import { onDestroy } from "svelte";
     import { createCanvas } from "./network-canvas.js";
     import { createSvg } from "./network-svg.js";
-    import DocumentTable from "./DocumentTable.svelte";
+    // import DocumentTable from "./DocumentTable.svelte";
     import { appLang } from "../../constants.js";
     import Regions from "../../regions/Regions.svelte";
+    import Matches from "../Matches.svelte";
 
     export let type = "img";
     export let documentSetStore;
     const {
-        imageNetwork,
-        documentNetwork,
-        selectedNodes,
-        updateSelectedNodes,
+        imageNetwork, documentNetwork, selectedNodes, updateSelectedNodes,
+        buildMatchesForAnchor
     } = documentSetStore;
 
     let networkInstance;
@@ -21,6 +20,10 @@
     const render_threshold = 500;
 
     $: networkData = type === "img" ? imageNetwork : documentNetwork;
+
+    $: tableData = type === "doc" && $selectedNodes.length
+        ? buildMatchesForAnchor($selectedNodes[0], $selectedNodes.slice(1), null, true)
+        : { matches: [], columns: [] };
 
     $: if ($networkData && container) {
         renderVisualization();
@@ -89,7 +92,11 @@
             </div>
         </div>
         {:else if type === "doc"}
-            <DocumentTable selectedDocuments={$selectedNodes} {documentSetStore}/>
+<!--            <DocumentTable selectedDocuments={$selectedNodes} {documentSetStore}/>-->
+            <div class="box mt-4">
+                <h3 class="title is-5">{appLang === "en" ? "Aligned documents" : "Documents alignés"} ({$selectedNodes.length})</h3>
+                <Matches matches={tableData.matches} columns={tableData.columns}/>
+            </div>
         {/if}
     {/if}
 </div>
