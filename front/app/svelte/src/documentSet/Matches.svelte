@@ -40,9 +40,16 @@
             {#each matches[0] as cell}
                 {#if cell}
                     {#each cell.images as img, k}
-                        <RegionCard item={img} height={cardHeight} borderColor={cell.doc.color}
+                        <div class="is-flex is-flex-wrap-wrap is-flex-direction-column is-align-content-center">
+                            <RegionCard item={img} height={cardHeight} borderColor={cell.doc.color}
                                     index={cell.indices[k]} selectable={false} copyable={false}
                                     on:openModal={handleOpenModal}/>
+                            {#if img.canvas}
+                                <div class="is-size-7 has-text-grey has-text-centered">
+                                    Page {img.canvas}
+                                </div>
+                            {/if}
+                        </div>
                     {/each}
                 {/if}
             {/each}
@@ -66,12 +73,17 @@
                         {#each row as cell, j (j)}
                             <td>
                                 {#if cell}
-                                    <div class="is-flex is-flex-wrap-wrap" style="gap: 0.5rem;">
+                                    <div class="is-flex is-flex-wrap-wrap is-flex-direction-column is-align-content-center pt-2">
                                         {#each cell.images as img, k}
                                             <RegionCard item={img} height={cardHeight}
                                                         index={cell.indices[k]}
                                                         selectable={false} copyable={false}
                                                         on:openModal={handleOpenModal}/>
+                                            {#if img.canvas}
+                                                <div class="is-size-7 has-text-grey has-text-centered mb-1">
+                                                    Page {img.canvas}
+                                                </div>
+                                            {/if}
                                         {/each}
                                     </div>
                                 {/if}
