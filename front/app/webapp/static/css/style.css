@@ -405,6 +405,10 @@ td.is-fullwidth {
     height: 256px;
 }
 
+.has-text-main {
+    color: var(--bulma-text) !important;
+}
+
 .hoverable {
     position: relative;
     overflow: hidden;

@@ -103,7 +103,7 @@ Special cases:
 
     const t = {
         select:    { en: "Select an image in the frieze", fr: "Sélectionner une image dans la frise" },
-        openModal: { en: "Open detailed view", fr: "Ouvrir la vue détaillé" },
+        openModal: { en: "Open detailed view", fr: "Ouvrir la vue détaillée" },
         setAnchor: { en: "Set as anchor", fr: "Définir comme ancre" },
         rename:    { en: "Rename", fr: "Renommer" },
     };
