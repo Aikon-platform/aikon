@@ -2,6 +2,7 @@
     import { createEventDispatcher } from "svelte";
     import { derived, writable } from "svelte/store";
     import { i18n } from "../../utils.js";
+    import RightClick from "../../ui/RightClick.svelte";
 
     export let stemmaStore;
     export let documents;
@@ -106,6 +107,7 @@
         noDoc: { en: "No base document selected", fr: "Aucun document de base sélectionné" },
         clusters: { en: "Document clusters", fr: "Groupes de documents"},
         clickToShow: { en: "Click to show all cluster matches", fr: "Cliquer pour afficher les correspondances du cluster" },
+        addEdges: { en: "Add stemma edges", fr: "Ajouter des liens au stemma" },
     };
 
     const documentsStore = writable([]);
@@ -271,6 +273,40 @@
     }
 
     $: axisTicks = $friezeData ? getAxisTicks($friezeData.totalPages) : [];
+
+    $: isInStemma = !!stemmaStore?.addEdge;
+
+    let menuOpen = false, menuX = 0, menuY = 0, menuItems = [];
+
+    function docDate(d) {
+        return d.min_date ?? d.max_date ?? null;
+    }
+
+    function orderDocs(docIds) {
+        const docs = docIds.map(id => $documentNodes.get(id)).filter(Boolean);
+        if (docs.every(d => docDate(d) != null)) return [...docs].sort((a, b) => docDate(a) - docDate(b));
+        const order = new Map(documents.map((d, i) => [d.id, i]));
+        return [...docs].sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+    }
+
+    function openEdgesMenu(event, docIds) {
+        if (!isInStemma || docIds.length < 2) return;
+        event.preventDefault();
+        const ordered = orderDocs(docIds);
+        menuItems = [{
+            label: i18n("addEdges", t),
+            icon: "arrow-right",
+            action: () => {
+                for (let i = 0; i < ordered.length - 1; i++) {
+                    const src = ordered[i], tgt = ordered[i + 1];
+                    stemmaStore.addEdge(src.id, tgt.id, src, tgt);
+                }
+            }
+        }];
+        menuX = event.clientX;
+        menuY = event.clientY;
+        menuOpen = true;
+    }
 </script>
 
 <div class="frieze-container">
@@ -291,6 +327,7 @@
                             : `--opacity: ${item.matchCount / $maxVal}`}"
                         title="{mode === 'image' ? `Page ${item.page}, ` : `Page ${item.page}, `}{item.matchCount} match(es)"
                         on:click={() => handleClick(idx)}
+                        on:contextmenu={(e) => openEdgesMenu(e, [$baseDocId, ...item.matchedDocs])}
                         on:mouseenter={() => handleMouseEnter(item)}
                         on:mouseleave={handleMouseLeave}
                     />
@@ -371,6 +408,7 @@
                             class:is-active={selectedClusterSig === clusterSignature(cl.docIds)}
                             title={i18n("clickToShow", t)}
                             on:click={() => handleClusterClick(cl)}
+                            on:contextmenu={(e) => openEdgesMenu(e, [$baseDocId, ...cl.docIds])}
                             on:mouseenter={() => handleClusterHover(cl)}
                             on:mouseleave={handleMouseLeave} on:keydown={null}>
                             {cl.count}
@@ -384,6 +422,8 @@
         {/if}
     {/if}
 </div>
+
+<RightClick bind:open={menuOpen} x={menuX} y={menuY} items={menuItems}/>
 
 <style>
     .frieze-container {

@@ -135,7 +135,7 @@
         position: sticky;
         top: 0;
         background: var(--bulma-scheme-main);
-        z-index: 30;
+        z-index: 29;
         border-bottom: var(--bulma-table-cell-border-color) solid 1px !important;
         box-shadow: 0 5px 5px rgba(0, 0, 0, 0.1);
     }
