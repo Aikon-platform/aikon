@@ -116,7 +116,8 @@
         display: inline-block; margin-right: 0.4em;
     }
     .matches-scroll {
-        max-height: 50vh;
+        min-height: 50vh;
+        max-height: 125vh;
         overflow: auto;
     }
     table { table-layout: fixed; }
