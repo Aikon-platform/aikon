@@ -21,9 +21,9 @@
     export let docSet;
 
     const documentSetStore = createDocumentSetStore(docSet.id);
-    const {error, fetchPairs, selectedDocuments, selectedCategories, threshold, topK, mutualTopK, scoreMode} = documentSetStore;
+    const {error, fetchPairs, selectedDocuments, selectedCategories, threshold, topK, mutualTopK, scoreMode, docSort} = documentSetStore;
 
-    let syncDocs, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode;
+    let syncDocs, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode, syncDocSort;
     onMount(() => {
         syncDocs = syncStoreWithURL(selectedDocuments, "doc", "set");
         syncCategories = syncStoreWithURL(selectedCategories, "categories", "array", [1]);
@@ -31,6 +31,7 @@
         syncTopK = syncStoreWithURL(topK, "topk", "number");
         syncMutualTopK = syncStoreWithURL(mutualTopK, "mutual", "boolean");
         syncScoreMode = syncStoreWithURL(scoreMode, "mode", "string");
+        syncDocSort = syncStoreWithURL(docSort, "sort", "string");
 
         const unsubDocs = selectedDocuments.subscribe(syncDocs);
         const unsubCategories = selectedCategories.subscribe(syncCategories);
@@ -38,6 +39,7 @@
         const unsubTopK = topK.subscribe(syncTopK);
         const unsubMutualTopK = mutualTopK.subscribe(syncMutualTopK);
         const unsubScoreMode = scoreMode.subscribe(syncScoreMode);
+        const unsubDocSort = docSort.subscribe(syncDocSort);
 
         return () => {
             unsubDocs();

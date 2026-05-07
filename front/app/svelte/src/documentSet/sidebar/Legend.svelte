@@ -3,23 +3,15 @@
     import {appLang} from "../../constants.js";
     import {i18n} from "../../utils.js";
 
-    export let documentNodes;
+    export let sortedDocs;
+    export let docSort;
     export let selectedDocuments;
     export let toggleDoc;
     export let selectAllDocuments;
 
     let isExpanded = true;
 
-    let sortBy = "id"; // 'id' | 'witnessId' | 'title' | 'date'
-    const sortWith = {
-        id: (a, b) => a[0] - b[0],
-        witnessId: (a, b) => (a[1].witness_id || 0) - (b[1].witness_id || 0),
-        title: (a, b) => (a[1].title || "").localeCompare(b[1].title || ""),
-        date: (a, b) => (a[1].min_date || 0) - (b[1].min_date || 0),
-    };
-
-    $: sortedDocs = Array.from(documentNodes || new Map()).sort(sortWith[sortBy]);
-    $: selectedDocs = sortedDocs.filter(([id, _]) => selectedDocuments.has(parseInt(id)));
+    $: selectedDocs = sortedDocs.filter(([id]) => selectedDocuments.has(parseInt(id)));
 </script>
 
 <div>
@@ -32,7 +24,7 @@
                 <div class="level-item mb-0 field has-addons is-small">
                     <p class="control mb-0" title={appLang === "en" ? "Sort documents by" : "Trier les documents par"}>
                         <span class="select is-small">
-                            <select bind:value={sortBy}>
+                            <select bind:value={$docSort}>
                                 <option value="id">ID</option>
                                 <option value="witnessId">{i18n('Witness')}</option>
                                 <option value="title">{i18n('title')}</option>

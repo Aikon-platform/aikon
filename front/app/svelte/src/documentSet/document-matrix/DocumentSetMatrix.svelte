@@ -9,7 +9,6 @@
     export let docStats = new Map();
     export let imageCountMap = new Map();
     export let normalize = true;
-    export let sortOrder = "name";
     export let cellSize = 30;
     export let percentageMode = false;
     export let coverageData = new Map();
@@ -29,9 +28,9 @@
     let container;
     let selectedCell = null;
 
-    $: matrixData = buildMatrix(documents, scoreData, docStats, sortOrder, normalize, imageCountMap, percentageMode, $coverageData);
+    $: matrixData = buildMatrix(documents, scoreData, docStats, normalize, imageCountMap, percentageMode, $coverageData);
 
-    function buildMatrix(docs, scoreCount, docStatsMap, order, doNormalize, imgCount, pctMode, coverage) {
+    function buildMatrix(docs, scoreCount, docStatsMap, doNormalize, imgCount, pctMode, coverage) {
         if (!docs.length) return {docs: [], matrix: [], maxScore: 0};
 
         docs.forEach((doc, i) => {
@@ -39,13 +38,7 @@
             doc.count = docStatsMap?.get(doc.id)?.count || 0;
         });
 
-        const orders = {
-            name: d3.range(docs.length).sort((a, b) => docs[a].title.localeCompare(docs[b].title)),
-            score: d3.range(docs.length).sort((a, b) => docs[b].count - docs[a].count),
-        };
-
-        const sorted = orders[order].map(i => docs[i]);
-        const n = sorted.length;
+        const n = docs.length;
         const matrix = [];
         let maxScore = 0;
 
@@ -53,24 +46,24 @@
             const row = [];
             for (let j = 0; j < n; j++) {
                 if (i !== j) {
-                    const key = sorted[i].id < sorted[j].id
-                        ? `${sorted[i].id}-${sorted[j].id}`
-                        : `${sorted[j].id}-${sorted[i].id}`;
+                    const key = docs[i].id < docs[j].id
+                        ? `${docs[i].id}-${docs[j].id}`
+                        : `${docs[j].id}-${docs[i].id}`;
 
                     let z, pct, count;
 
                     if (pctMode) {
-                        const covKey = `${sorted[i].id}-${sorted[j].id}`;
+                        const covKey = `${docs[i].id}-${docs[j].id}`;
                         const covCount = coverage.get(covKey)?.size || 0;
-                        count = imgCount.get(sorted[i].id) || 1;
+                        count = imgCount.get(docs[i].id) || 1;
                         pct = covCount / count;
                         z = pct;
                     } else {
                         const entry = scoreCount?.get(key);
                         let score = entry?.score || 0;
                         if (doNormalize && score > 0) {
-                            const n1 = imgCount.get(sorted[i].id) || 1;
-                            const n2 = imgCount.get(sorted[j].id) || 1;
+                            const n1 = imgCount.get(docs[i].id) || 1;
+                            const n2 = imgCount.get(docs[j].id) || 1;
                             score /= Math.sqrt(n1 * n2);
                         }
                         count = entry?.count || 0;
@@ -78,7 +71,7 @@
                     }
 
                     if (z > maxScore) maxScore = z;
-                    row.push({x: j, y: i, z, pct, count, doc1: sorted[i], doc2: sorted[j]});
+                    row.push({x: j, y: i, z, pct, count, doc1: docs[i], doc2: docs[j]});
                 } else {
                     row.push({x: j, y: i, z: 0, diagonal: true});
                 }
@@ -86,7 +79,7 @@
             matrix.push(row);
         }
 
-        return {docs: sorted, matrix, maxScore, pctMode};
+        return {docs, matrix, maxScore, pctMode};
     }
 
     function isSelected(d) {

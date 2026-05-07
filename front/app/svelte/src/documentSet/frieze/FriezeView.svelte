@@ -8,7 +8,7 @@
     export let documentSetStore;
 
     const {
-        documentNodes, visiblePairs, buildFriezeMatches, buildClusterMatches
+        documentNodes, sortedDocumentNodes, visiblePairs, buildFriezeMatches, buildClusterMatches
     } = documentSetStore;
 
     const friezeStub = { nodeTitles: writable({}) };
@@ -17,7 +17,7 @@
     let selectedFriezeImage = null;
     let selectedCluster = null;
 
-    $: documents = Array.from($documentNodes?.values() || []);
+    $: documents = $sortedDocumentNodes.map(([, meta]) => meta);
     $: matchesData = selectedCluster
         ? buildClusterMatches(selectedCluster)
         : selectedFriezeImage

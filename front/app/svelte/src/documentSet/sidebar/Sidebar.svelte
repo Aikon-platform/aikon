@@ -12,7 +12,8 @@
     export let clusterStore;
     const {
         docSetNumber,
-        documentNodes,
+        sortedDocumentNodes,
+        docSort,
         selectedCategories,
         toggleCategory,
         selectedDocuments,
@@ -94,7 +95,7 @@
 
             <hr>
 
-            <Legend documentNodes={$documentNodes} selectedDocuments={$selectedDocuments} {toggleDoc} {selectAllDocuments}/>
+            <Legend sortedDocs={$sortedDocumentNodes} {docSort} selectedDocuments={$selectedDocuments} {toggleDoc} {selectAllDocuments}/>
 
             <hr>
 

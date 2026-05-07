@@ -15,7 +15,21 @@
 
     const LINE_WIDTH = 5;
     const AXIS_HEIGHT = 20;
-    const CLUSTER_COLORS = ["#e63f19", "#ff9100", "#fdd21e", "#8fcd12", "#12cdb1"];
+    const CLUSTER_COLORS = [
+        "#9f0048",
+        "#d10a0a",
+        "#ff6a00",
+        "#ff9100",
+        "#fdd21e",
+        "#bacd12",
+        "#8fcd12",
+        "#12cd6f",
+        "#12cdb1",
+        "#1285cd",
+        "#1253cd",
+        "#2512cd",
+        "#5d12cd"
+    ];
     let clusterMode = false;
 
     const baseDocId = writable(null);
