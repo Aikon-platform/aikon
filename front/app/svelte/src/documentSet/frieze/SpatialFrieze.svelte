@@ -32,6 +32,7 @@
         "#5d12cd"
     ];
     let clusterMode = false;
+    let clusterOrder = "documents";
 
     const baseDocId = writable(null);
     const selectedIndex = writable(null);
@@ -41,7 +42,7 @@
         return matchedDocs.size ? [...matchedDocs].sort((a, b) => a - b).join("-") : "∅";
     }
 
-    function buildClusters(items, baseId, docNodes, titles) {
+    function buildClusters(items, baseId, docNodes, titles, order) {
         const clusterMap = new Map();
 
         for (const item of items) {
@@ -52,9 +53,11 @@
             clusterMap.get(sig).count++;
         }
 
-        const baseColor = docNodes.get(baseId)?.color || "#999";
+        const baseColor = "#c3c3c3";
         const sorted = [...clusterMap.values()].sort((a, b) =>
-            b.docIds.size - a.docIds.size || b.count - a.count
+            order === "matches"
+                ? b.count - a.count || b.docIds.size - a.docIds.size
+                : b.docIds.size - a.docIds.size || b.count - a.count
         );
         let colorIdx = 0;
         sorted.forEach(cl => {
@@ -62,7 +65,7 @@
                 cl.color = baseColor;
                 cl.opacity = 0.5;
             } else {
-                cl.color = colorIdx < CLUSTER_COLORS.length ? CLUSTER_COLORS[colorIdx++] : "#999";
+                cl.color = colorIdx < CLUSTER_COLORS.length ? CLUSTER_COLORS[colorIdx++] : "#6c6c6c";
                 cl.opacity = 1;
             }
         });
@@ -84,7 +87,7 @@
         return { itemColors, legend };
     }
 
-    $: clusterData = clusterMode && $items.length ? buildClusters($items, $baseDocId, $documentNodes, $nodeTitles) : null;
+    $: clusterData = clusterMode && $items.length ? buildClusters($items, $baseDocId, $documentNodes, $nodeTitles, clusterOrder) : null;
     $: if (!clusterMode) selectedClusterSig = null;
     $: clusterSelectedIndices = (clusterMode && selectedClusterSig)
         ? new Set($items.map((it, i) => clusterSignature(it.matchedDocs) === selectedClusterSig ? i : -1).filter(i => i >= 0))
@@ -108,6 +111,9 @@
         clusters: { en: "Document clusters", fr: "Groupes de documents"},
         clickToShow: { en: "Click to show all cluster matches", fr: "Cliquer pour afficher les correspondances du cluster" },
         addEdges: { en: "Add stemma edges", fr: "Ajouter des liens au stemma" },
+        orderBy: { en: "Order by", fr: "Trier par" },
+        orderByDocs: { en: "number of documents", fr: "nombre de documents" },
+        orderByMatches: { en: "number of matches", fr: "nombre de correspondances" },
     };
 
     const documentsStore = writable([]);
@@ -398,7 +404,16 @@
             {/each}
         </div>
         {#if clusterData}
-            <div class="mt-3" style="display: flex; flex-direction: column; gap: 0.35rem;">
+            <div class="field is-flex is-align-items-center mt-3" style="gap: 0.5rem;">
+                <label class="is-size-7" for="cluster-order">{i18n("orderBy", t)}</label>
+                <div class="select is-small">
+                    <select id="cluster-order" bind:value={clusterOrder}>
+                        <option value="documents">{i18n("orderByDocs", t)}</option>
+                        <option value="matches">{i18n("orderByMatches", t)}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="cluster-container mt-3">
                 {#each clusterData.legend as cl}
                     {@const docLen = cl.names.length}
                     <div class="is-size-7">
@@ -428,6 +443,13 @@
 <style>
     .frieze-container {
         padding: 0.5rem;
+    }
+    .cluster-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        max-height: 75vh;
+        overflow-y: auto;
     }
     .frieze-wrapper {
         overflow-x: auto;
