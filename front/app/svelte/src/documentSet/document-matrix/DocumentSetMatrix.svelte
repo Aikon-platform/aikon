@@ -21,6 +21,7 @@
 
     const t = {
         score: {en: "Score", fr: "Score"},
+        match: {en: "matches", fr: "correspondances"},
         noPairs: {en: "No pairs", fr: "Aucune paire"},
         addEdge: {en: "Add stemma edge", fr: "Ajouter un lien au stemma"},
     };
@@ -56,26 +57,28 @@
                         ? `${sorted[i].id}-${sorted[j].id}`
                         : `${sorted[j].id}-${sorted[i].id}`;
 
-                    let z, pct;
+                    let z, pct, count;
 
                     if (pctMode) {
                         const covKey = `${sorted[i].id}-${sorted[j].id}`;
                         const covCount = coverage.get(covKey)?.size || 0;
-                        const total = imgCount.get(sorted[i].id) || 1;
-                        pct = covCount / total;
+                        count = imgCount.get(sorted[i].id) || 1;
+                        pct = covCount / count;
                         z = pct;
                     } else {
-                        let score = scoreCount?.get(key)?.score || 0;
+                        const entry = scoreCount?.get(key);
+                        let score = entry?.score || 0;
                         if (doNormalize && score > 0) {
                             const n1 = imgCount.get(sorted[i].id) || 1;
                             const n2 = imgCount.get(sorted[j].id) || 1;
                             score /= Math.sqrt(n1 * n2);
                         }
+                        count = entry?.count || 0;
                         z = score;
                     }
 
                     if (z > maxScore) maxScore = z;
-                    row.push({x: j, y: i, z, pct, doc1: sorted[i], doc2: sorted[j]});
+                    row.push({x: j, y: i, z, pct, count, doc1: sorted[i], doc2: sorted[j]});
                 } else {
                     row.push({x: j, y: i, z: 0, diagonal: true});
                 }
@@ -156,7 +159,7 @@
                         const docs = `<span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>↔<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}`;
                         content = d.z === 0
                             ? `${docs}<br/><br/><em>${i18n("noPairs", t)}</em>`
-                            : `${docs}<br/><br/>${i18n("score", t)}: ${d.z.toFixed(2)}`;
+                            : `${docs}<br/><br/>${i18n("score", t)}: ${d.z.toFixed(2)} | <b>${d.count}</b> ${i18n("match", t)}`;
                     }
                     tooltip.html(content)
                         .style("left", (event.clientX + 15) + "px")

@@ -236,7 +236,9 @@
 
 <RightClick bind:open={menu.open} x={menu.x} y={menu.y} items={menu.items}/>
 
-<StemmaNodeEditor node={editingNode} on:save={saveTitle} on:close={() => editingNode = null}/>
+{#key editingNode}
+    <StemmaNodeEditor node={editingNode} on:save={saveTitle} on:close={() => editingNode = null}/>
+{/key}
 
 {#if editingEdge}
     <div class="modal is-active">

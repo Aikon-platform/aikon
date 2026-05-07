@@ -3,8 +3,7 @@
     import { i18n } from "../../utils.js";
 
     export let node = null;   // { id, title, color }
-    let title = "";
-    $: if (node) title = node.title;
+    let title = node?.title ?? "";
 
     const dispatch = createEventDispatcher();
     const close = () => dispatch("close");

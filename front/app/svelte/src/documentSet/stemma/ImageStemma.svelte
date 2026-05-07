@@ -306,7 +306,9 @@ Special cases:
 
 <RightClick bind:open={menu.open} x={menu.x} y={menu.y} items={menu.items}/>
 
-<StemmaNodeEditor node={editingNode} on:save={e => saveTitle(e.detail)} on:close={() => editingNode = null}/>
+{#key editingNode}
+    <StemmaNodeEditor node={editingNode} on:save={saveTitle} on:close={() => editingNode = null}/>
+{/key}
 
 <style>
     .stemma-container {
