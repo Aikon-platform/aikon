@@ -167,6 +167,19 @@ export function createStemmaStore(documentSetStore) {
         }));
     }
 
+    function removeNode(id) {
+        stemmaGraph.update($g => {
+            const { [id]: _p, ...nodePositions } = $g.nodePositions;
+            const { [id]: _t, ...nodeTitles } = $g.nodeTitles || {};
+            return {
+                ...$g,
+                edges: $g.edges.filter(e => e.source !== id && e.target !== id),
+                nodePositions,
+                nodeTitles,
+            };
+        });
+    }
+
     function reverseEdge(source, target) {
         stemmaGraph.update($g => {
             const idx = $g.edges.findIndex(e => e.source === source && e.target === target);
@@ -225,6 +238,7 @@ export function createStemmaStore(documentSetStore) {
         filteredDocuments,
         addEdge,
         removeEdge,
+        removeNode,
         reverseEdge,
         clearEdges,
         clearGraph,

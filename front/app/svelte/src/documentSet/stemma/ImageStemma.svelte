@@ -20,10 +20,10 @@ Special cases:
     import PageView from "../../regions/modal/PageView.svelte";
     import RegionCard from "../../regions/RegionCard.svelte";
     import RightClick from "../../ui/RightClick.svelte";
-    import StemmaNodeEditor from "./StemmaNodeEditor.svelte";
+    import StemmaModalEditor from "./StemmaModalEditor.svelte";
     import Tabs from "../../ui/Tabs.svelte";
     import { i18n } from "../../utils.js";
-    import { createStemmaInteraction } from "./stemmaInteraction.js";
+    import { createStemmaInteraction, createStemmaMenu } from "./stemmaInteraction.js";
 
     export let stemmaStore;
     export let visiblePairs;
@@ -33,30 +33,43 @@ Special cases:
     export let baseDocId = null;
 
     const dispatch = createEventDispatcher();
-    const { edges, nodePositions, nodeTitles, updateNodeTitle } = stemmaStore;
+    const { edges, nodePositions, nodeTitles, updateNodeTitle, updateEdgeLabel } = stemmaStore;
 
     const interaction = createStemmaInteraction(stemmaStore);
     const { transform, dragOverride } = interaction;
+
+    const tabs = [
+        { id: "region", label: i18n("mainView") },
+        { id: "page", label: i18n("pageView") },
+    ];
+
+    const t = {
+        select:    { en: "Select an image in the frieze", fr: "Sélectionner une image dans la frise" },
+        openModal: { en: "Open detailed view", fr: "Ouvrir la vue détaillée" },
+        setAnchor: { en: "Set as anchor", fr: "Définir comme ancre" },
+    };
 
     const IMG_SIZE = 150;
     let svgEl, containerEl;
     let width = 800, height = 600;
 
-    let menu = { open: false, x: 0, y: 0, items: [] };
     let editingNode = null;
+    let editingEdge = null;
+    let editLabel = "";
 
-    function onContextMenu(e, node) {
-        e.preventDefault();
+    const stemmaMenu = createStemmaMenu(stemmaStore, {
+        onRename: node => editingNode = { id: node.docId, title: $nodeTitles[node.docId] || node.title, color: node.color },
+        onEditEdge: edge => editingEdge = edge,
+    });
+    const { menu } = stemmaMenu;
+
+    function openNodeMenu(e, node) {
         const noImg = !node.img;
         const isAnchor = node.docId === baseDocId && node.imageId === startImageId;
-        menu = {
-            open: true, x: e.clientX, y: e.clientY,
-            items: [
-                { label: i18n("openModal", t), icon: "expand", disabled: noImg, action: () => openImg(node) },
-                { label: i18n("setAnchor", t), icon: "anchor", disabled: noImg || isAnchor, action: () => dispatch("anchorselect", { imageId: node.imageId, baseDocId: node.docId }) },
-                { label: i18n("rename", t), icon: "pen", action: () => editingNode = { id: node.docId, title: $nodeTitles[node.docId] || node.title, color: node.color } },
-            ]
-        };
+        stemmaMenu.openNodeMenu(e, node, [
+            { label: i18n("openModal", t), icon: "expand", disabled: noImg, action: () => openImg(node) },
+            { label: i18n("setAnchor", t), icon: "anchor", disabled: noImg || isAnchor, action: () => dispatch("anchorselect", { imageId: node.imageId, baseDocId: node.docId }) },
+        ]);
     }
 
     let attached = false;
@@ -95,18 +108,6 @@ Special cases:
     };
 
     const handleNavigate = (e) => clickedRegionIdx = e.detail.index ?? 0;
-
-    const tabs = [
-        { id: "region", label: i18n("mainView") },
-        { id: "page", label: i18n("pageView") },
-    ];
-
-    const t = {
-        select:    { en: "Select an image in the frieze", fr: "Sélectionner une image dans la frise" },
-        openModal: { en: "Open detailed view", fr: "Ouvrir la vue détaillée" },
-        setAnchor: { en: "Set as anchor", fr: "Définir comme ancre" },
-        rename:    { en: "Rename", fr: "Renommer" },
-    };
 
     const pairIndex = derived(visiblePairs, $pairs => {
         const idx = new Map();
@@ -199,7 +200,7 @@ Special cases:
             .map(e => {
                 const src = nodeMap.get(e.source);
                 const tgt = nodeMap.get(e.target);
-                return src && tgt ? { source: src, target: tgt } : null;
+                return src && tgt ? { source: src, target: tgt, label: e.label } : null;
             })
             .filter(Boolean);
 
@@ -231,9 +232,14 @@ Special cases:
         return override?.docId === node.docId ? override : node;
     }
 
-    function saveTitle(detail) {
-        if (detail.title.trim()) updateNodeTitle(detail.id, detail.title.trim());
+    function saveTitle({ detail }) {
+        if (detail.value) updateNodeTitle(editingNode.id, detail.value);
         editingNode = null;
+    }
+
+    function saveEdge({ detail }) {
+        updateEdgeLabel(editingEdge.source.docId, editingEdge.target.docId, detail.value);
+        editingEdge = null;
     }
 
     function nodeDims(img) {
@@ -248,12 +254,11 @@ Special cases:
 
 <div class="stemma-container" bind:this={containerEl} bind:clientWidth={width} bind:clientHeight={height} style={`height: ${stemmaImages.nodes.length ? "60vh" : "50px"}`}>
     {#if stemmaImages.nodes.length}
-        <svg bind:this={svgEl} class="stemma-svg"
-             viewBox="0 0 {width} {height}"
+        <svg bind:this={svgEl} class="stemma-svg" viewBox="0 0 {width} {height}"
              on:pointermove={onPointerMove} on:pointerup={onPointerUp}>
             <defs>
-                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill="var(--bulma-grey)" />
+                <marker id="img-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="var(--bulma-body-color)"/>
                 </marker>
             </defs>
 
@@ -261,10 +266,21 @@ Special cases:
                 {#each stemmaImages.edges as edge}
                     {@const s = posOf(edge.source, $dragOverride)}
                     {@const t2 = posOf(edge.target, $dragOverride)}
-                    <line x1={s.x + edge.source.w/2} y1={s.y + edge.source.h}
-                          x2={t2.x + edge.target.w/2} y2={t2.y}
-                          stroke="var(--bulma-grey)" stroke-width="5"
-                          marker-end="url(#arrowhead)"/>
+                    {@const x1 = s.x + edge.source.w/2}
+                    {@const y1 = s.y + edge.source.h}
+                    {@const x2 = t2.x + edge.target.w/2}
+                    {@const y2 = t2.y}
+                    <g class="edge-group" on:contextmenu={e => stemmaMenu.openEdgeMenu(e, edge)}>
+                        <line class="edge-hit" {x1} {y1} {x2} {y2} stroke-width={10 / $transform.k}/>
+                        <line class="edge" {x1} {y1} {x2} {y2}
+                              stroke="var(--bulma-body-color)" stroke-width={2 / $transform.k}
+                              marker-end="url(#img-arrow)"/>
+                    </g>
+                    {#if edge.label}
+                        <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 4 / $transform.k}
+                              font-size={10 / $transform.k} text-anchor="middle"
+                              fill="var(--bulma-body-color)">{edge.label}</text>
+                    {/if}
                 {/each}
 
                 {#each stemmaImages.nodes as node (node.docId)}
@@ -272,7 +288,7 @@ Special cases:
                     <g transform="translate({p.x},{p.y})"
                        style="cursor: grab"
                        on:pointerdown={e => onPointerDown(e, node)}
-                       on:contextmenu={e => onContextMenu(e, node)}>
+                       on:contextmenu={e => openNodeMenu(e, node)}>
                         <rect width={node.w} height={node.h} rx="4"
                               fill={node.color} stroke={node.color}
                               stroke-width={node.docId === baseDocId ? 20 : 10}/>
@@ -304,10 +320,14 @@ Special cases:
     </svelte:fragment>
 </RegionModal>
 
-<RightClick bind:open={menu.open} x={menu.x} y={menu.y} items={menu.items}/>
+<RightClick bind:open={$menu.open} x={$menu.x} y={$menu.y} items={$menu.items}/>
 
 {#key editingNode}
-    <StemmaNodeEditor node={editingNode} on:save={saveTitle} on:close={() => editingNode = null}/>
+    <StemmaModalEditor type="node" target={editingNode} on:save={saveTitle} on:close={() => editingNode = null}/>
+{/key}
+
+{#key editingEdge}
+    <StemmaModalEditor type="edge" target={editingEdge} on:save={saveEdge} on:close={() => editingEdge = null}/>
 {/key}
 
 <style>
@@ -323,6 +343,15 @@ Special cases:
         background-color: var(--bulma-scheme-main-bis);
         border-radius: .5em;
         overflow: hidden;
+    }
+    .edge-group:hover .edge {
+        stroke-width: 3;
+    }
+    .edge-hit {
+        stroke: transparent;
+        fill: none;
+        cursor: pointer;
+        pointer-events: stroke;
     }
     .modal-region {
         height: 100%;
