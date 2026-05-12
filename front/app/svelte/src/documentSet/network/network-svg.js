@@ -1,4 +1,4 @@
-import * as d3 from 'd3';
+import * as d3 from "d3";
 
 const NODE_RADIUS = 8;
 const LINK_WIDTH = 1.5;
@@ -37,7 +37,7 @@ export function createSvg(div, nodes, links = null, onSelectionChange = null, on
     const simulation = d3.forceSimulation(nodes)
         .force("link", d3.forceLink(links)
             .id(d => d.id)
-            //.strength(d => d.strength || LINK_STRENGTH)
+        //.strength(d => d.strength || LINK_STRENGTH)
             .distance(d => d.distance || LINK_DISTANCE)
         )
         .force("charge", d3.forceManyBody().strength(-250))
@@ -60,7 +60,7 @@ export function createSvg(div, nodes, links = null, onSelectionChange = null, on
         });
         svg.call(d3.zoom()
             .scaleExtent([0.1, 10])
-            .filter(event => !selectionManager.isSelectionMode() || event.type === 'wheel')
+            .filter(event => !selectionManager.isSelectionMode() || event.type === "wheel")
             .on("zoom", ({transform}) => g.attr("transform", transform)));
 
         const {dragstarted, dragged, dragended} = createSimulationHandlers(simulation, link, node, null);

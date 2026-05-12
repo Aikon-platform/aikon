@@ -64,6 +64,8 @@ coverage.xml
 .pytest_cache/
 cover/
 
+front/sas/
+
 # Translations
 *.mo
 *.pot

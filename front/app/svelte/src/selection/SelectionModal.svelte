@@ -1,5 +1,5 @@
 <script>
-    import {closeModal, i18n} from '../utils.js';
+    import {closeModal, i18n} from "../utils.js";
     import SelectionFooter from "./SelectionFooter.svelte";
 
     import { recordsSelection } from "./selectionStore.js";
@@ -26,7 +26,7 @@
     }
 
     function handleKeydown(event) {
-        if (event.key === 'Enter') finishEditing();
+        if (event.key === "Enter") finishEditing();
     }
 
     function finishEditing() {
@@ -74,21 +74,15 @@
     }
 </script>
 
+<!--TODO if isSaved, and documentSet add link to view-->
 
-<div
-    id="selection-modal"
-    class="modal fade"
-    use:closeModal
-    tabindex="-1"
-    aria-labelledby="selection-modal-label"
-    aria-hidden="true"
->
-    <div class="modal-background" />
+<div id="selection-modal" class="modal fade" use:closeModal tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
+    <div class="modal-background"/>
 
     <div class="modal-content">
         <div class="modal-card-head media mb-0 is-middle">
             <div class="title is-4 mb-0 media-content">
-                <i class="fa-solid fa-book-bookmark"></i>
+                <i class="fa-solid fa-book-bookmark"/>
 
                 {#if isEditing}
                     <input
@@ -102,7 +96,7 @@
                     <span on:click={startEditing} on:keyup={null}>
                         {$selectionTitle}
                         <span class="pl-3 smaller has-text-link">
-                            <i class="fas fa-edit" />
+                            <i class="fas fa-edit"/>
                         </span>
                     </span>
                 {/if}
@@ -114,11 +108,11 @@
         </div>
 
         <section class="modal-card-body">
-            <slot />
+            <slot/>
 
             <hr>
 
-            <h4 class="title is-6 mb-4">{appLang === 'en' ? 'Shared with' : 'Partagé avec'}</h4>
+            <h4 class="title is-6 mb-4">{appLang === "en" ? "Shared with" : "Partagé avec"}</h4>
 
             <div class="field is-grouped is-grouped-multiline">
                 <!--TODO: when selecting/unselecting doc set, selected users disappear -->
@@ -166,9 +160,11 @@
                     <label class="checkbox is-size-7 is-flex is-align-items-center">
                         <input type="checkbox"
                             checked={$selected?.is_public}
-                            on:change={(e) => updatePublic(e.target.checked)}
+                            on:change={(e) => updatePublic(e.target.checked) && save()}
                         />
-                        <span class="pl-1">{appLang === 'en' ? 'Make public' : 'Rendre public'}</span>
+                        <span class="pl-1">
+                            {appLang === "en" ? "Make public" : "Rendre public"}
+                        </span>
                     </label>
                 </div>
             </div>
@@ -198,5 +194,9 @@
 
     .tags:last-of-type {
         margin-bottom: 0.75em;
+    }
+
+    .modal-card-body {
+        overflow: initial;
     }
 </style>

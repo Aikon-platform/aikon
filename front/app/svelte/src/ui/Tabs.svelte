@@ -5,7 +5,7 @@
 </script>
 
 {#if tabs.length > 1}
-    <nav class="tabs-bar">
+    <nav class="tabs-bar pb-2">
         <div class="tabs">
             <ul>
                 {#each tabs as {id, label}}

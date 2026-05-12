@@ -17,7 +17,7 @@
     </div>
     <div class="level-item">
         <div>
-            <p class="heading">{appLang === 'en' ? 'Edges' : 'Liens'}</p>
+            <p class="heading">{appLang === "en" ? "Edges" : "Liens"}</p>
             <p class="title is-5">{currentStats.links || 0}</p>
         </div>
     </div>
@@ -31,7 +31,7 @@
     {/if}
     <div class="level-item">
         <div>
-            <p class="heading">{appLang === 'en' ? 'Density' : 'Densité'}</p>
+            <p class="heading">{appLang === "en" ? "Density" : "Densité"}</p>
             <p class="title is-5">{currentStats?.density?.toFixed(3) || 0}</p>
         </div>
     </div>

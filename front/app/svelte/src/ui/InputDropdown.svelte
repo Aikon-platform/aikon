@@ -81,7 +81,7 @@
     /** @type {String?} */
     export let title = undefined;
     /** @type {Boolean} if True, extra "Select All" and "Unselect All" options will be preprended to `choicesItems`. clicking on them will (un)select all choicesItems. by default, true for multi-choice, false for single-choice */
-    export let selectAll = multiple ? true : false;
+    export let selectAll = multiple;
 
     const htmlId = `input-dropdown-select-${window.crypto.randomUUID()}`;
     const counterHtmlId = `input-dropdown-counter-${window.crypto.randomUUID()}`;
@@ -102,12 +102,11 @@
     const resetTriggerContext = getContext("resetTrigger") || undefined;
     resetTriggerContext?.subscribe(() => resetInputDropdown(choicesObj, choicesItems, start, selectAll));
 
-
     /** @type {Array} array of DropdownChoiceItem.value */
-    $: selectedValues = [];
+    let selectedValues = [];
 
     /** @type {Array} temprarily toggled in `useDispatchLock`. when true, will block all requests */
-    $: dispatchLock = false;
+    let dispatchLock = false;
 
     /** dispatching of selected elements to the parent component happens when `selectedValues` is updated and `dispatchLock` is set to false. this avoids intermediate calls to `dispatch` when selecting all elements. */
     $: bufferedDispatch(selectedValues, dispatchLock);
@@ -133,34 +132,34 @@
 
     const prefixToHtml = (prefix, prefixType) =>
         prefix != null && prefixType != null && prefix.length && prefixType.length
-        ? `<span class="dropdown-prefix-wrapper">${
-            prefixType==="iconify" ? toIconify(prefix) : prefix
-        }</span>`
-        : "";
+            ? `<span class="dropdown-prefix-wrapper">${
+                prefixType==="iconify" ? toIconify(prefix) : prefix
+            }</span>`
+            : "";
 
     const maybeAddSelectAll = (_choicesItems, _selectAll) =>
         _selectAll
-        ? [
-            {
-                value: selectAllValue,
-                label: `<b>${appLang==="fr" ? "Tout sélectionner" : "Select all"}</b>`
-            }, {
-                value: unSelectAllValue,
-                label: `<b>${appLang==="fr" ? "Tout retirer" : "Remove all"}</b>`
-            }, ..._choicesItems
-        ]
-        : _choicesItems;
+            ? [
+                {
+                    value: selectAllValue,
+                    label: `<b>${appLang==="fr" ? "Tout sélectionner" : "Select all"}</b>`
+                }, {
+                    value: unSelectAllValue,
+                    label: `<b>${appLang==="fr" ? "Tout retirer" : "Remove all"}</b>`
+                }, ..._choicesItems
+            ]
+            : _choicesItems;
 
     const formatChoices = (_choicesItems, _selectAll) =>
         maybeAddSelectAll(_choicesItems, _selectAll)
-        .map(el => {
-            el.id = `dropdown-choice-${window.crypto.randomUUID()}`;;
-            el.label = `<span>
+            .map(el => {
+                el.id = `dropdown-choice-${window.crypto.randomUUID()}`;;
+                el.label = `<span>
                 ${prefixToHtml(el.prefix || "",  el.prefixType || "")}
                 <span class="dropdown-prefix-text">${el.label}</span>
             </span>`;
-            return el;
-        });
+                return el;
+            });
 
     /**
      * define the original `selectedValues` and pre-process `_choicesItems` (there is no global `choicesItems` to avoid confusion with the `choicesItems` props, which MUST NOT be changed to avoid side effects)
@@ -174,8 +173,8 @@
         // all items in _choicesItems with `selected: true` will be automatically pre-selected.
         _choicesItems = formatChoices(_choicesItems, _selectAll).map(c =>
             _start.includes(c.value)
-            ? ({ ...c, selected: true })
-            : ({ ...c, selected: false })
+                ? ({ ...c, selected: true })
+                : ({ ...c, selected: false })
         )
         selectedValues = _start
         return _choicesItems;
@@ -225,8 +224,8 @@
             // set `selectedValues` + unselect all previous choices and reselect all choices except the Select/Unselect ones.
             _choicesItems = _choicesItems.map(c =>
                 [_selectAllValue, _unSelectAllValue].includes(c.value)
-                ? ({ ...c, selected: false })
-                : ({ ...c, selected: true })
+                    ? ({ ...c, selected: false })
+                    : ({ ...c, selected: true })
             );
             _choicesObj
                 .removeActiveItems()
@@ -235,8 +234,8 @@
                 .hideDropdown();
             _selectedValues = [...new Set(
                 _choicesItems
-                .filter(c => c.selected===true)
-                .map(c => c.value)
+                    .filter(c => c.selected===true)
+                    .map(c => c.value)
             )];
         } else if (e.detail.value === _unSelectAllValue) {
             _choicesObj
@@ -246,8 +245,8 @@
         } else {
             _selectedValues =
                 multiple===true
-                ? [..._selectedValues, e.detail.value]
-                : [e.detail.value];
+                    ? [..._selectedValues, e.detail.value]
+                    : [e.detail.value];
         }
         return [...new Set(_selectedValues)];
     };
@@ -282,25 +281,25 @@
             classNames: {
                 item: ["choices__item", "dropdown-item"]
             },
-            loadingText: appLang === "fr" ? 'Chargement...' : 'Loading...',
-            noResultsText: appLang === "fr" ? "Pas de résultats" : 'No results found',
-            noChoicesText: appLang === "fr" ? "Pas de choix pour faire la sélection" : 'No choices to choose from',
-            itemSelectText: appLang === "fr" ? "Cliquer pour sélectionner" : 'Press to select',
-            uniqueItemText: appLang === "fr" ? "Seules des valeurs uniques peuvent être ajoutées" : 'Only unique values can be added',
-            customAddItemText: appLang === "fr" ? "Les valeurs ne répondent pas aux conditions attendues" : 'Only values matching specific conditions can be added',
-            removeItemIconText: appLang === "fr" ? "Retirer l'item" : `Remove item`,
+            loadingText: appLang === "fr" ? "Chargement..." : "Loading...",
+            noResultsText: appLang === "fr" ? "Pas de résultats" : "No results found",
+            noChoicesText: appLang === "fr" ? "Pas de choix pour faire la sélection" : "No choices to choose from",
+            itemSelectText: appLang === "fr" ? "Cliquer pour sélectionner" : "Press to select",
+            uniqueItemText: appLang === "fr" ? "Seules des valeurs uniques peuvent être ajoutées" : "Only unique values can be added",
+            customAddItemText: appLang === "fr" ? "Les valeurs ne répondent pas aux conditions attendues" : "Only values matching specific conditions can be added",
+            removeItemIconText: appLang === "fr" ? "Retirer l'item" : "Remove item",
             addItemText: (value) =>
                 appLang === "fr"
-                ? `Cliquer sur Entrer pour ajouter <b>${value}</b>`
-                : `Press Enter to add <b>"${value}"</b>`,
+                    ? `Cliquer sur Entrer pour ajouter <b>${value}</b>`
+                    : `Press Enter to add <b>"${value}"</b>`,
             removeItemLabelText: (value) =>
                 appLang === "fr"
-                ? `Retirer l'item: ${value}`
-                : `Remove item: ${value}`,
+                    ? `Retirer l'item: ${value}`
+                    : `Remove item: ${value}`,
             maxItemText: (maxItemCount) =>
                 appLang === "fr"
-                ? `Seulement ${maxItemCount} items peuvent être ajoutées`
-                : `Only ${maxItemCount} items can be added`
+                    ? `Seulement ${maxItemCount} items peuvent être ajoutées`
+                    : `Only ${maxItemCount} items can be added`
         })
 
         // reassigning `selectedValues` will trigger a dispatch of `updateValues` (see `bufferedDispatch`)
@@ -323,6 +322,11 @@
         choicesObj.destroy();
         choicesObj = undefined;
     })
+
+    const selected = {
+        plural: appLang === "en" ? "selected values" : "valeurs sélectionnées",
+        singular: appLang === "en" ? "selected value" : "valeur sélectionnée",
+    }
 </script>
 
 
@@ -330,43 +334,21 @@
     {#if title!==undefined }
         <label for={htmlId}>{title}</label>
     {/if}
-    <div class="input-dropdown-select
-                { multiple ? 'is-multiple' : 'is-single' }
-                { multiple && selectedValues.length ? 'is-flex is-justify-content-flex-start is-align-items-center' : ''}
-                { lightDisplay ? 'light-display' : ''}"
-    >
-        {#if multiple }
+    <div class="input-dropdown-select {multiple ? 'is-multiple' : 'is-single'}
+            {multiple && selectedValues.length ? 'is-flex is-justify-content-flex-start is-align-items-center' : ''}"
+            class:light-display={lightDisplay}>
+        {#if multiple}
             {#if selectedValues.length }
                 <span class="is-relative">
-                    <span id={counterHtmlId}
-                        class="input-dropdown-count tag m-1"
-                    >{ selectedValues.length }</span>
-                    <TooltipGeneric
-                        targetHtmlId={counterHtmlId}
-                        tooltipText={`${selectedValues.length}
-                                    ${ appLang==="fr" && selectedValues.length > 1
-                                    ? "valeurs sélectionnées"
-                                    : appLang==="fr" && selectedValues.length === 1
-                                    ? "valeur sélectionnée"
-                                    : appLang==="en" && selectedValues.length > 1
-                                    ? "selected values"
-                                    : "selected value"
-                                    }`}
-                    ></TooltipGeneric>
+                    <span id={counterHtmlId} class="input-dropdown-count tag m-1">
+                        { selectedValues.length }
+                    </span>
+                    <TooltipGeneric targetHtmlId={counterHtmlId} tooltipText={selected[selectedValues.length > 1 ? 'plural' : 'singular']}/>
                 </span>
-            {/if }
-            <select id={htmlId}
-                    name={htmlId}
-                    aria-label={title}
-                    class="m-1"
-                    multiple
-            ></select>
-        {:else }
-            <select id={htmlId}
-                    name={htmlId}
-                    aria-label={title}
-                    class="m-1"
-            ></select>
+            {/if}
+            <select id={htmlId} name={htmlId} aria-label={title} class="m-1" multiple/>
+        {:else}
+            <select id={htmlId} name={htmlId} aria-label={title} class="m-1"/>
         {/if}
     </div>
 

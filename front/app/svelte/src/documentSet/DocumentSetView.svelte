@@ -1,16 +1,16 @@
 <script>
-    import {onMount} from 'svelte';
+    import {onMount} from "svelte";
     import {setContext} from "svelte";
-    import { activeLayout } from '../ui/tabStore.js';
+    import { activeLayout } from "../ui/tabStore.js";
 
-    import {appLang} from '../constants';
-    import {syncStoreWithURL} from '../utils';
+    import {appLang} from "../constants";
+    import {syncStoreWithURL} from "../utils";
 
-    import Layout from '../Layout.svelte';
-    import Sidebar from './sidebar/Sidebar.svelte';
-    import NetworkVisualization from './network/NetworkVisualization.svelte';
-    import DocumentMatrix from './document-matrix/DocumentMatrix.svelte';
-    import {createDocumentSetStore} from './documentSetStore.js';
+    import Layout from "../Layout.svelte";
+    import Sidebar from "./sidebar/Sidebar.svelte";
+    import NetworkVisualization from "./network/NetworkVisualization.svelte";
+    import DocumentMatrix from "./document-matrix/DocumentMatrix.svelte";
+    import {createDocumentSetStore} from "./documentSetStore.js";
     import Clusters from "./clusters/Clusters.svelte";
     import {createClusterStore} from "./clusters/clusterStore.js";
 
@@ -21,18 +21,18 @@
     export let docSet;
 
     const documentSetStore = createDocumentSetStore(docSet.id);
-    const {error, fetchPairs, selectedRegions, selectedCategories, threshold, topK, mutualTopK, scoreMode} = documentSetStore;
+    const {error, fetchPairs, selectedDocuments, selectedCategories, threshold, topK, mutualTopK, scoreMode} = documentSetStore;
 
-    let syncRegions, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode;
+    let syncDocs, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode;
     onMount(() => {
-        syncRegions = syncStoreWithURL(selectedRegions, 'regions', 'set');
-        syncCategories = syncStoreWithURL(selectedCategories, 'categories', 'array', [1]);
-        syncThreshold = syncStoreWithURL(threshold, 'threshold', 'number');
-        syncTopK = syncStoreWithURL(topK, 'topk', 'number');
-        syncMutualTopK = syncStoreWithURL(mutualTopK, 'mutual', 'boolean');
-        syncScoreMode = syncStoreWithURL(scoreMode, 'mode', 'string');
+        syncDocs = syncStoreWithURL(selectedDocuments, "doc", "set");
+        syncCategories = syncStoreWithURL(selectedCategories, "categories", "array", [1]);
+        syncThreshold = syncStoreWithURL(threshold, "threshold", "number");
+        syncTopK = syncStoreWithURL(topK, "topk", "number");
+        syncMutualTopK = syncStoreWithURL(mutualTopK, "mutual", "boolean");
+        syncScoreMode = syncStoreWithURL(scoreMode, "mode", "string");
 
-        const unsubRegions = selectedRegions.subscribe(syncRegions);
+        const unsubDocs = selectedDocuments.subscribe(syncDocs);
         const unsubCategories = selectedCategories.subscribe(syncCategories);
         const unsubThreshold = threshold.subscribe(syncThreshold);
         const unsubTopK = topK.subscribe(syncTopK);
@@ -40,7 +40,7 @@
         const unsubScoreMode = scoreMode.subscribe(syncScoreMode);
 
         return () => {
-            unsubRegions();
+            unsubDocs();
             unsubCategories();
             unsubThreshold();
             unsubTopK();
@@ -49,32 +49,31 @@
         };
     });
 
-    import {clusterSelection} from '../selection/selectionStore.js';
+    import {clusterSelection} from "../selection/selectionStore.js";
+    import FriezeView from "./frieze/FriezeView.svelte";
 
     const {selected} = clusterSelection;
 
     const clusterStore = createClusterStore(documentSetStore, clusterSelection);
 
-    $: if ($activeLayout === 'sim') documentSetStore.setScoreFilter(true);
+    $: if ($activeLayout === "sim") documentSetStore.setScoreFilter(true);
 
     const tabList = {
         "sim": appLang === "en" ? "Copy Clusters" : "Groupe de copies",
-        "ste": appLang === "en" ? "Stemma builder" : "Aide au stemma",
+        "ste": appLang === "en" ? "Stemma Builder" : "Aide au stemma",
         "mat": appLang === "en" ? "Document Matrix" : "Matrice de documents",
+        "fri": appLang === "en" ? "Spatial Frieze" : "Frise spatiale",
         "img": appLang === "en" ? "Image Network" : "Réseau d'images",
         "doc": appLang === "en" ? "Document Network" : "Réseau de documents",
     };
 
-    const selectedDocuments = docSet?.selection?.selected || {
+    const selectedDocs = docSet?.selection?.selected || {
         Witness: {},
         Series: {},
         Work: {}
     };
 
-    setContext("selectedDocuments", selectedDocuments);
-    // setContext("witnessIds", Object.keys(selectedDocuments.Witness));
-    // setContext("workIds", Object.keys(selectedDocuments.Work));
-    // setContext("seriesIds", Object.keys(selectedDocuments.Series));
+    setContext("selectedDocs", selectedDocs);
 </script>
 
 <Layout {tabList}>
@@ -111,9 +110,15 @@
                 {#if pairCount === 0}
                     <article class="message is-warning">
                         <div class="message-body">
-                            No document pairs found for this configuration.
-                            Please adjust your selection criteria in the sidebar to include more documents or
-                            categories.
+                            {#if appLang === "en"}
+                                No regions pairs found for this configuration.
+                                Please adjust your selection criteria in the sidebar
+                                to include more documents or categories.
+                            {:else}
+                                Aucune paires d'images trouvées pour la configuration actuelle.
+                                Merci d'ajuster vos critères de sélection dans la barre latérale
+                                pour inclure davantage de documents ou catégories.
+                            {/if}
                         </div>
                     </article>
                 {:else}
@@ -127,6 +132,8 @@
                             <DocumentMatrix {documentSetStore}/>
                         {:else if $activeLayout === "ste"}
                             <StemmaBuilder {documentSetStore}/>
+                        {:else if $activeLayout === "fri"}
+                            <FriezeView {documentSetStore}/>
                         {/if}
                     </div>
                 {/if}

@@ -1,0 +1,20 @@
+[
+{
+  "model": "auth.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$OM0MjbdptG99o1VEATgDwG$x+5ZVaHIC0a4RaAYUE02ePJQwfGVPQOeQcZW4MqyHMk=",
+    "last_login": "2025-11-25T15:29:09.313Z",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "aikon@mail.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-11-25T14:50:04.912Z",
+    "groups": [],
+    "user_permissions": []
+  }
+}
+]

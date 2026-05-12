@@ -1,5 +1,5 @@
 <script>
-    import { appName } from '../constants';
+    import { appName } from "../constants";
     import {onMount} from "svelte";
     import RegionsBtn from "../regions/RegionsBtn.svelte";
 
@@ -16,7 +16,7 @@
             const response = await fetch(url);
             choices = await response.json();
         } catch (error) {
-            console.error('Error:', error);
+            console.error("Error:", error);
             return false;
         }
     });

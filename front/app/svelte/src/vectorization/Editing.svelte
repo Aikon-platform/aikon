@@ -1,6 +1,6 @@
 <script>
-    import SVGDisplay from './SVGDisplay.svelte';
-    import SideBar from './SideBar.svelte';
+    import SVGDisplay from "./SVGDisplay.svelte";
+    import SideBar from "./SideBar.svelte";
 
     let selectedElement = null;
 
@@ -11,7 +11,7 @@
     function updateElement(event) {
         const { property, value } = event.detail;
         if (selectedElement) {
-            if (property === 'remove') {
+            if (property === "remove") {
                 selectedElement.remove();
                 selectedElement = null;
             } else {

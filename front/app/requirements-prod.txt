@@ -1,2 +1,1 @@
--r ./requirements-base.txt
 gunicorn>=22.0.0

@@ -1,7 +1,7 @@
 <script>
     import { createEventDispatcher } from "svelte";
-    import { fade } from 'svelte/transition';
-    import { appLang } from '../constants';
+    import { fade } from "svelte/transition";
+    import { appLang } from "../constants";
     import { RegionItem } from "./types.js";
     import { regionsStore } from "./regionsStore.js";
     import { regionsSelection } from "../selection/selectionStore.js";
@@ -44,7 +44,7 @@
 </script>
 
 <div class="region is-center {selectable && $isSelected(item) ? 'checked' : ''}" style="{height === 'full' ? 'height: 100%' : ''}"> <!-- transition:fade={{ duration: 10 }} -->
-    <figure class="image card region-image {isSquare ? 'is-96x96' : ''}" tabindex="-1"
+    <figure class="image card region-image" class:is-96x96={isSquare} tabindex="-1"
             style="{height === 'full' ? 'height: 100%' : `height: ${height}px; min-width: ${height}px`}; {borderColor ? `border: 5px solid ${borderColor};` : ''}"
             on:click={() => selectable ? toggleSelection(currentRegion) : openModal()} on:keyup={null}>
         <img class="region-img" src={imgSrc} alt="Extracted region"/>
@@ -65,9 +65,9 @@
             </svg>
             <span class="tooltip">
                 {#if isCopied}
-                    {appLang === 'en' ? "Copied!" : 'Copié !'}
+                    {appLang === "en" ? "Copied!" : "Copié !"}
                 {:else}
-                    {appLang === 'en' ? "Copy ID" : "Copier l'ID"}
+                    {appLang === "en" ? "Copy ID" : "Copier l'ID"}
                 {/if}
             </span>
         </button>

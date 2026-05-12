@@ -27,7 +27,7 @@ export async function streamPairsToWorker(url, worker, options = {}) {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
 
-    let buffer = '';
+    let buffer = "";
     let batch = [];
     let total = 0;
     let initialized = false;
@@ -44,9 +44,9 @@ export async function streamPairsToWorker(url, worker, options = {}) {
 
                 if (batch.length > 0) {
                     total += batch.length;
-                    worker.postMessage({ type: 'batch', pairs: batch, isLast: true });
+                    worker.postMessage({ type: "batch", pairs: batch, isLast: true });
                 } else {
-                    worker.postMessage({ type: 'done' });
+                    worker.postMessage({ type: "done" });
                 }
 
                 onProgress?.(total, true);
@@ -54,8 +54,8 @@ export async function streamPairsToWorker(url, worker, options = {}) {
             }
 
             buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
 
             for (const line of lines) {
                 if (!line) continue;
@@ -67,20 +67,20 @@ export async function streamPairsToWorker(url, worker, options = {}) {
 
                 if (batch.length >= BATCH_SIZE) {
                     if (!initialized) {
-                        worker.postMessage({ type: 'init' });
+                        worker.postMessage({ type: "init" });
                         initialized = true;
                     }
 
                     total += batch.length;
-                    worker.postMessage({ type: 'batch', pairs: batch, isLast: false });
+                    worker.postMessage({ type: "batch", pairs: batch, isLast: false });
                     batch = [];
                     onProgress?.(total, false);
                 }
             }
         }
     } catch (err) {
-        if (err.name === 'AbortError') {
-            worker.postMessage({ type: 'abort' });
+        if (err.name === "AbortError") {
+            worker.postMessage({ type: "abort" });
             throw err;
         }
         onError?.(err);
@@ -92,7 +92,7 @@ function safeParse(line) {
     try {
         return JSON.parse(line);
     } catch {
-        console.warn('Parse error:', line.slice(0, 50));
+        console.warn("Parse error:", line.slice(0, 50));
         return null;
     }
 }

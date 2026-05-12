@@ -1,8 +1,8 @@
-import * as d3 from 'd3';
+import * as d3 from "d3";
 
 export function createCanvas(div, nodes, links = null, onSelectionChange, onModeChange = null) {
     const container = d3.select(div);
-    container.selectAll('*').remove();
+    container.selectAll("*").remove();
     const containerNode = container.node();
     const rect = containerNode.getBoundingClientRect();
 
@@ -50,7 +50,7 @@ export function createCanvas(div, nodes, links = null, onSelectionChange, onMode
     const simulation = d3.forceSimulation(nodes)
         .force("link", d3.forceLink(links)
             .id(d => d.id)
-            //.strength(d => d.strength)
+        //.strength(d => d.strength)
             .distance(d => d.distance)
         )
         .force("charge", d3.forceManyBody().strength(-250))
@@ -93,7 +93,7 @@ export function createCanvas(div, nodes, links = null, onSelectionChange, onMode
 
     const zoom = d3.zoom()
         .scaleExtent([0.1, 10])
-        .filter(event => !selectionManager.isSelectionMode() || event.type === 'wheel')
+        .filter(event => !selectionManager.isSelectionMode() || event.type === "wheel")
         .on("zoom", ({transform: t}) => {
             transform = t;
             render();

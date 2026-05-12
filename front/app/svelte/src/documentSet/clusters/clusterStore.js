@@ -1,6 +1,7 @@
-import {derived, writable, get} from 'svelte/store';
-import {initPagination, pageUpdate, showMessage, withLoading} from "../../utils.js";
+import {derived, writable, get} from "svelte/store";
+import {i18n, initPagination, pageUpdate, showMessage, withLoading} from "../../utils.js";
 import {appLang, appName, csrfToken, isSuperuser} from "../../constants.js";
+import {categoryInfo} from "../../regions/similarity/similarityCategory.js";
 
 export function createClusterStore(documentSetStore, clusterSelection) {
     const pageLength = 10;
@@ -67,15 +68,6 @@ export function createClusterStore(documentSetStore, clusterSelection) {
                     }
                 }
 
-                // if (actualLinks > maxEdges) {
-                //     console.warn(`Cluster has more actual links (${actualLinks}) than max possible edges (${maxEdges}).`);
-                //     for (const p of pairs) {
-                //         if (imageSet.has(p.id_1) && imageSet.has(p.id_2)) {
-                //             console.log(p);
-                //         }
-                //     }
-                // }
-
                 return {
                     id: crypto.randomUUID(),
                     members,
@@ -107,26 +99,13 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         return $clusters.slice(start, end);
     });
 
-    const imgRef2pairData = (imgRef) => {
-        const [regionId, ...rest] = imgRef.split('_');
-        return {img: rest.join('_'), regionId};
-    };
-
     const pairData = (ref1, ref2) => {
-        // const {img: img1, regionId: reg1} = imgRef2pairData(ref1);
-        // const {img: img2, regionId: reg2} = imgRef2pairData(ref2);
-        // return {
-        //     img_1: ref1, img_2: ref2,
-        // };
-
         const img1 = get(imageNodes).get(ref1);
         const img2 = get(imageNodes).get(ref2);
 
         return {
-            img_1: ref1,
-            img_2: ref2,
-            regions_id_1: img1?.regionId,
-            regions_id_2: img2?.regionId
+            img_1: img1?.id || ref1,
+            img_2: img2?.id || ref2,
         };
     };
 
@@ -171,11 +150,11 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         }
 
         try {
-            const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/uncategorize-pair-batch`, {
-                method: 'POST',
+            const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/uncategorize-batch`, {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
                 },
                 body: JSON.stringify({pairs: pairsToRemove})
             }));
@@ -184,7 +163,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
                 console.log(response)
                 await showMessage(
                     appLang === "en" ? "Batch un-categorization failed" : "La dé-catégorisation par lot a échoué",
-                    appLang === "en" ? "Error" : "Erreur",
+                    i18n("error"),
                 );
                 return false;
             }
@@ -195,45 +174,68 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         } catch (error) {
             await showMessage(
                 error,
-                appLang === "en" ? "Error" : "Erreur",
+                i18n("error"),
             );
             return false;
         }
     };
 
-    const makePairsExactMatch = async (imgRefs) => {
+    const categorizePairs = async (imgRefs, category) => {
         const pairs = imgRefs.flatMap((ref1, i) =>
             imgRefs.slice(i + 1).map(ref2 => pairData(ref1, ref2))
         );
 
         try {
-            const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/exact-match-batch`, {
-                method: 'POST',
+            const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/categorize-batch`, {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
                 },
-                body: JSON.stringify({pairs})
+                body: JSON.stringify({ pairs, category })
             }));
 
             if (!response.ok) {
                 console.log(response)
                 await showMessage(
-                    appLang === "en" ? "Batch validation failed" : "La validation par lot a échoué",
-                    appLang === "en" ? "Error" : "Erreur",
+                    appLang === "en" ? "Batch categorization failed" : "La catégorisation par lot a échoué",
+                    i18n("error"),
                 );
                 return false;
             }
 
             return true;
         } catch (error) {
-            await showMessage(
-                error,
-                appLang === "en" ? "Error" : "Erreur",
-            );
-            console.error('Error:', error);
+            await showMessage(error, i18n("error"));
+            console.error("Error:", error);
             return false;
         }
+    };
+
+    const categorizeSelection = async (category) => {
+        const selected = selectedDocs();
+        const imgRefs = Object.keys(selected);
+
+        if (imgRefs.length < 2) {
+            await showMessage(
+                appLang === "en" ? "Select at least 2 images" : "Sélectionnez au moins 2 images",
+                i18n("error"),
+            );
+            return false;
+        }
+
+        const confirmed = await showMessage(
+            appLang === "en"
+                ? `Categorize ${imgRefs.length} images as "${categoryInfo[category].title}"?`
+                : `Catégoriser ${imgRefs.length} images en tant que « ${categoryInfo[category].title} » ?`,
+            appLang === "en" ? "Confirm categorization" : "Confirmer la catégorisation",
+            true
+        );
+        if (!confirmed) return false;
+
+        const success = await createCluster(imgRefs, category);
+        if (success) clusterSelection.empty();
+        return success;
     };
 
     const validateCluster = async (cluster) => {
@@ -245,7 +247,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             return false;
         }
 
-        const success = await makePairsExactMatch(cluster.members);
+        const success = await categorizePairs(cluster.members, 1);
 
         if (success) {
             interfaceClusters.update($clusters =>
@@ -258,30 +260,35 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         return success;
     };
 
-    const createCluster = async (imgRefs) => {
-        if (imgRefs.length < 2) {
-            return false;
-        }
+    const createCluster = async (imgRefs, category = 1) => {
+        if (imgRefs.length < 2) return false;
 
-        const success = await makePairsExactMatch(imgRefs);
+        const success = await categorizePairs(imgRefs, category);
+        if (!success) return false;
 
-        if (success) {
-            interfaceClusters.update($clusters => {
-                const newCluster = {
-                    id: crypto.randomUUID(),
-                    members: imgRefs,
-                    size: imgRefs.length,
-                    fullyConnected: true
-                };
+        const imgRefSet = new Set(imgRefs);
+        const byOriginCluster = {};
+        get(interfaceClusters).forEach(cluster => {
+            if (cluster.members.some(m => imgRefSet.has(m))) {
+                byOriginCluster[cluster.id] = true;
+            }
+        });
+        removeImgsFromInterface(imgRefSet, byOriginCluster);
 
-                return [newCluster, ...$clusters].sort((a, b) => b.size - a.size);
-            });
-        }
+        interfaceClusters.update($clusters => [
+            {
+                id: crypto.randomUUID(),
+                members: imgRefs,
+                size: imgRefs.length,
+                fullyConnected: category === 1
+            },
+            ...$clusters
+        ].sort((a, b) => b.size - a.size));
 
-        return success;
+        return true;
     };
 
-    const selectedRegions = () => Object.values(get(clusterSelection).selected)[0] || {};
+    const selectedDocs = () => get(clusterSelection).selected.regions || {};
 
     const newCluster = async () => {
         const confirmed = await showMessage(
@@ -290,10 +297,10 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             true
         );
         if (!confirmed) {
-            return; // User cancelled the creation
+            return;
         }
 
-        const selected = selectedRegions();
+        const selected = selectedDocs();
         const imgRefs = Object.keys(selected);
 
         if (imgRefs.length < 2) {
@@ -321,10 +328,10 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             true
         );
         if (!confirmed) {
-            return; // User cancelled the deletion
+            return;
         }
 
-        const selected = selectedRegions();
+        const selected = selectedDocs();
         const removed = await removeImgRefs(Object.keys(selected));
         if (!removed) return false;
 
@@ -339,6 +346,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
 
         validateCluster,
         removeFromClusters,
+        categorizeSelection,
         newCluster,
 
         paginatedClusters,

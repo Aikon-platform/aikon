@@ -1,6 +1,6 @@
 <script>
-    import { fade } from 'svelte/transition';
-    import { onMount, onDestroy } from 'svelte';
+    import { fade } from "svelte/transition";
+    import { onMount, onDestroy } from "svelte";
     import { appLang, mediaPrefix } from "../../constants.js";
     import { refToIIIF } from "../../utils.js";
 
@@ -13,9 +13,9 @@
     const img = refToIIIF(`${wit}_${digit}_${canvas}`, xywh, `${width},`);
 
     let isHovered = false;
-    let svgContent = '';
-    let svgViewBox = '';
-    let downloadUrl = '';
+    let svgContent = "";
+    let svgViewBox = "";
+    let downloadUrl = "";
 
     $: if (svgContent) {
         const blob = new Blob([svgContent], { type: "image/svg+xml" });
@@ -31,16 +31,16 @@
         const svgText = await response.text();
 
         const parser = new DOMParser();
-        const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
+        const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
 
-        const svgElement = svgDoc.querySelector('svg');
-        svgViewBox = svgElement.getAttribute('viewBox') || `0 0 ${svgElement.getAttribute('width')} ${svgElement.getAttribute('height')}`;
+        const svgElement = svgDoc.querySelector("svg");
+        svgViewBox = svgElement.getAttribute("viewBox") || `0 0 ${svgElement.getAttribute("width")} ${svgElement.getAttribute("height")}`;
 
-        svgDoc.querySelectorAll('image').forEach(img => img.remove());
+        svgDoc.querySelectorAll("image").forEach(img => img.remove());
 
-        svgElement.setAttribute('viewBox', svgViewBox);
-        svgElement.removeAttribute('width');
-        svgElement.removeAttribute('height');
+        svgElement.setAttribute("viewBox", svgViewBox);
+        svgElement.removeAttribute("width");
+        svgElement.removeAttribute("height");
 
         svgContent = new XMLSerializer().serializeToString(svgDoc.documentElement);
     });
@@ -60,7 +60,7 @@
     <div class="region-btn ml-1">
         <a class="button tag" href={downloadUrl} download={svgPath}>
             <i class="fa-solid fa-download"/>
-            <span class="tooltip">{appLang === 'en' ? "Download SVG" : "Télécharger le SVG"}</span>
+            <span class="tooltip">{appLang === "en" ? "Download SVG" : "Télécharger le SVG"}</span>
         </a>
         <slot name="actions"/>
     </div>

@@ -1,0 +1,99 @@
+[
+{
+  "model": "webapp.digitization",
+  "pk": 1,
+  "fields": {
+    "json": {
+      "id": 1,
+      "ref": "wit1_pdf1",
+      "url": "http://localhost:8000/aikon/iiif/wit1_pdf1/manifest.json",
+      "imgs": [
+        "wit1_pdf1_0001.jpg",
+        "wit1_pdf1_0002.jpg",
+        "wit1_pdf1_0003.jpg",
+        "wit1_pdf1_0004.jpg",
+        "wit1_pdf1_0005.jpg",
+        "wit1_pdf1_0006.jpg",
+        "wit1_pdf1_0007.jpg",
+        "wit1_pdf1_0008.jpg",
+        "wit1_pdf1_0009.jpg",
+        "wit1_pdf1_0010.jpg",
+        "wit1_pdf1_0011.jpg",
+        "wit1_pdf1_0012.jpg",
+        "wit1_pdf1_0013.jpg",
+        "wit1_pdf1_0014.jpg",
+        "wit1_pdf1_0015.jpg",
+        "wit1_pdf1_0016.jpg",
+        "wit1_pdf1_0017.jpg",
+        "wit1_pdf1_0018.jpg",
+        "wit1_pdf1_0019.jpg",
+        "wit1_pdf1_0020.jpg",
+        "wit1_pdf1_0021.jpg",
+        "wit1_pdf1_0022.jpg",
+        "wit1_pdf1_0023.jpg",
+        "wit1_pdf1_0024.jpg",
+        "wit1_pdf1_0025.jpg"
+      ],
+      "type": "Digitization",
+      "class": "Digitization",
+      "title": "PDF #1: iconologia1613sienne25p",
+      "zeros": 4,
+      "img_nb": 25
+    },
+    "witness": 1,
+    "digit_type": "pdf",
+    "license": null,
+    "pdf": "pdf/wit1_pdf1.pdf",
+    "manifest": "",
+    "images": "",
+    "is_open": false,
+    "source": null
+  }
+},
+{
+  "model": "webapp.digitization",
+  "pk": 2,
+  "fields": {
+    "json": {
+      "id": 2,
+      "ref": "wit2_pdf2",
+      "url": "http://localhost:8000/aikon/iiif/wit2_pdf2/manifest.json",
+      "imgs": [
+        "wit2_pdf2_0001.jpg",
+        "wit2_pdf2_0002.jpg",
+        "wit2_pdf2_0003.jpg",
+        "wit2_pdf2_0004.jpg",
+        "wit2_pdf2_0005.jpg",
+        "wit2_pdf2_0006.jpg",
+        "wit2_pdf2_0007.jpg",
+        "wit2_pdf2_0008.jpg",
+        "wit2_pdf2_0009.jpg",
+        "wit2_pdf2_0010.jpg",
+        "wit2_pdf2_0011.jpg",
+        "wit2_pdf2_0012.jpg",
+        "wit2_pdf2_0013.jpg",
+        "wit2_pdf2_0014.jpg",
+        "wit2_pdf2_0015.jpg",
+        "wit2_pdf2_0016.jpg",
+        "wit2_pdf2_0017.jpg",
+        "wit2_pdf2_0018.jpg",
+        "wit2_pdf2_0019.jpg",
+        "wit2_pdf2_0020.jpg"
+      ],
+      "type": "Digitization",
+      "class": "Digitization",
+      "title": "PDF #2: iconologia1645venise20p",
+      "zeros": 4,
+      "img_nb": 20
+    },
+    "witness": 2,
+    "digit_type": "pdf",
+    "license": null,
+    "pdf": "pdf/wit2_pdf2.pdf",
+    "manifest": "",
+    "images": "",
+    "is_open": false,
+    "source": null
+  }
+}
+]

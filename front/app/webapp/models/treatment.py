@@ -51,7 +51,7 @@ class Treatment(AbstractSearchableModel):
         app_label = "webapp"
 
     def __str__(self, light=False):
-        task = f"{self.task_type.__str__().capitalize()}"
+        task = f"{self.task_type.__str__().replace('_', ' ').capitalize()}"
         if light:
             if self.json and "title" in self.json:
                 return self.json["title"]
@@ -143,11 +143,14 @@ class Treatment(AbstractSearchableModel):
             return urls
         witnesses = self.document_set.all_witness_ids()
         urls.append(
-            [reverse("webapp:witness_regions_view", args=[wid]) for wid in witnesses]
+            [
+                reverse("webapp:witness_region_extraction_view", args=[wid])
+                for wid in witnesses
+            ]
         )
         #  TODO make variable used in svelte component and in overall app
         tabs = {
-            "regions": "page",
+            "region_extraction": "page",
             "similarity": "similarity",
             "vectorization": "vectorization",
         }
@@ -156,7 +159,7 @@ class Treatment(AbstractSearchableModel):
             urls = [f"{url}?tab={tabs[self.task_type]}" for url in urls]
         return urls
 
-    def to_json(self, reindex=True, no_img=False, request_user=None):
+    def to_json(self, reindex=True, no_img=False):
         try:
             user = self.requested_by
             doc_set = self.document_set
@@ -302,6 +305,7 @@ class Treatment(AbstractSearchableModel):
         self.save()
 
     def process_results(self, data, completed=True):
+        # NOTE: each notification sends a batch of results, so we need to all `process_task_results` even when completed=False
         try:
             process_task_results(self.task_type, data, completed)
             # TODO add status "PROCESSING" and change status after results are processed
@@ -419,7 +423,7 @@ class Treatment(AbstractSearchableModel):
             self.process_results(data, completed=False)
         elif event == "SUCCESS":
             # process_results@completed=True triggers task_success/task_error when achieved
-            self.process_results(data)
+            self.process_results(data, completed=True)
         elif event == "ERROR":
             is_finished = data.get("completed", True)
             self.on_task_error(
@@ -434,5 +438,12 @@ class Treatment(AbstractSearchableModel):
 
 @receiver(post_save, sender=Treatment)
 def treatment_post_save(sender, instance, created, **kwargs):
+    """
+    start a celery task using `Treatment.start_task`.
+
+    :param sender: the Treatment class
+    :param instance: the treatment object (an instance of Treatment)
+    :param created: wether the treatment was created (saved to the database), not updated
+    """
     if created:
         launch_task.delay(instance)

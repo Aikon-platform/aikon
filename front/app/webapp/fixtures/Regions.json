@@ -1,0 +1,40 @@
+[
+{
+  "model": "webapp.regions",
+  "pk": 12,
+  "fields": {
+    "json": {
+      "id": 12,
+      "ref": "wit1_pdf1_anno12",
+      "url": "http://127.0.0.1:5555/index.html?iiif-content=http://localhost:8000/aikon/iiif/v2/wit1_pdf1_anno12/manifest.json",
+      "type": "Regions",
+      "class": "Regions",
+      "title": "Regions #12 | iconologia1613sienne25p",
+      "zeros": 4,
+      "img_nb": 25
+    },
+    "digitization": 1,
+    "model": "illustration_extraction",
+    "is_validated": false
+  }
+},
+{
+  "model": "webapp.regions",
+  "pk": 19,
+  "fields": {
+    "json": {
+      "id": 19,
+      "ref": "wit2_pdf2_anno19",
+      "url": "http://127.0.0.1:5555/index.html?iiif-content=http://localhost:8000/aikon/iiif/v2/wit2_pdf2_anno19/manifest.json",
+      "type": "Regions",
+      "class": "Regions",
+      "title": "Regions #19 | iconologia1645venise20p",
+      "zeros": 4,
+      "img_nb": 20
+    },
+    "digitization": 2,
+    "model": "illustration_extraction",
+    "is_validated": false
+  }
+}
+]

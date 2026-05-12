@@ -1,10 +1,11 @@
 <script>
-    import {slide} from 'svelte/transition';
+    import {slide} from "svelte/transition";
     import TooltipGeneric from "./ui/TooltipGeneric.svelte";
     import {appLang} from "./constants.js";
 
-    $: toolbarExpanded = false;
     export let expandable = true;
+
+    let toolbarExpanded = false;
 
     const toolbarText = {
         true: {

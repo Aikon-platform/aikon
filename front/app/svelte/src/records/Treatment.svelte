@@ -6,8 +6,15 @@
     export let item;
     export let recordsStore;
 
-    $: finished = item.is_finished;
-    $: task_status = item.status;
+    let finished = item.is_finished;
+    let task_status = item.status;
+    /** reactively update `finished` and `task_status` when the props item` changes */
+    $: updateItemStatus(item);
+
+    const updateItemStatus = (_item) => {
+        finished = _item.is_finished;
+        task_status = _item.status;
+    }
 
     async function cancelTreatment() {
         const confirmed = await showMessage(
@@ -36,21 +43,17 @@
 <Item {item} {recordsStore}>
     <div slot="buttons">
         {#if !finished && item.api_tracking_id}
+            {@const cancelTitle = appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}
             <button class="button is-small is-rounded is-danger is-outlined px-2 py-1 mr-2"
-                    title="{appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}"
-                    on:click={cancelTreatment}>
-                <i class="fa-solid fa-ban"></i>
-                <span>
-                    {appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}
-                </span>
+                    title={cancelTitle} on:click={cancelTreatment}>
+                <i class="fa-solid fa-ban"/>
+                <span>{cancelTitle}</span>
             </button>
         {:else if finished && task_status === "ERROR"}
-            <a href="add/{item.query_parameters}" class="button is-small is-rounded is-primary is-outlined px-2 py-1 mr-2"
-               title='{appLang === "en" ? "Relaunch same treatment" : "Relancer le même traitement"}'>
-                <i class="fa-solid fa-arrow-rotate-left"></i>
-                <span>
-                {appLang === 'en' ? 'Relaunch same treatment' : 'Relancer le même traitement'}
-                </span>
+            {@const relaunchTitle = appLang === 'en' ? "Relaunch same treatment" : "Relancer le même traitement"}
+            <a href="add/{item.query_parameters}" class="button is-small is-rounded is-primary is-outlined px-2 py-1 mr-2" title={relaunchTitle}>
+                <i class="fa-solid fa-arrow-rotate-left"/>
+                <span>{relaunchTitle}</span>
             </a>
         {/if}
 
@@ -64,7 +67,7 @@
     </div>
 
     <div slot="body" class="pt-2 grid">
-        {#if item.hasOwnProperty('selection') && item.selection.hasOwnProperty('selected') && item.selection.selected}
+        {#if item.hasOwnProperty("selection") && item.selection.hasOwnProperty("selected") && item.selection.selected}
             {#each Object.entries(item.selection.selected) as [modelName, selectedRecords]}
                 {#each Object.entries(selectedRecords) as [id, meta]}
                     <div>

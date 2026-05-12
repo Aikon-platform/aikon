@@ -1,5 +1,5 @@
 <script>
-    import { createEventDispatcher } from 'svelte';
+    import { createEventDispatcher } from "svelte";
 
     const dispatcher = createEventDispatcher();
 
@@ -7,7 +7,7 @@
 
     function handleElementClick(event) {
         if (event.target !== event.currentTarget) {
-            dispatcher('elementSelect', event.target);
+            dispatcher("elementSelect", event.target);
         }
     }
 </script>

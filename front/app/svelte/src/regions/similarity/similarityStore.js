@@ -1,6 +1,6 @@
-import { derived, get, writable } from 'svelte/store';
-import { errorMsg, initPagination, loading, pageUpdate } from "../../utils.js";
-import { csrfToken } from "../../constants.js";
+import {derived, get, writable} from "svelte/store";
+import {errorMsg, initPagination, loading, pageUpdate} from "../../utils.js";
+import {appName, csrfToken} from "../../constants.js";
 
 /**
  * @typedef { Object.<number, Object.<string, RegionsType>> } SelectedRegionsType
@@ -19,6 +19,7 @@ import { csrfToken } from "../../constants.js";
  * @property {string} url: IIIF URL to the extracted image regions
  * @property {"Regions"} type
  * @property {"Regions"} class: python  class
+ * @property {number} digitization_id
  * @property {string} title
  * @property {number} zeros,
  * @property {number} img_nb: number of extracted images
@@ -53,7 +54,7 @@ function createSimilarityStore() {
     const pageLength = 25;
 
     /** @type {number} the current witness' ID */
-    const currentPageId = window.location.pathname.match(/\d+/g).join('-');
+    const currentPageId = window.location.pathname.match(/\d+/g).join("-");
 
     /** @type {EmptyRegionsType}  */
     const emptySelection = { [currentPageId]: {} };
@@ -125,15 +126,13 @@ function createSimilarityStore() {
             selectedRegions.update((_selectedRegions) => {
                 let currentSelectedRegions = _selectedRegions[currentPageId] || {};
                 if ( Object.keys(currentSelectedRegions).length ) {
-                    let filtered =
-                        // `.filter().reduce()` creates a copy of `currentSelectedRegions` without the keys that are not in `regionsData`
-                        Object.keys(currentSelectedRegions)
+                    // `.filter().reduce()` creates a copy of `currentSelectedRegions` without the keys that are not in `regionsData`
+                    _selectedRegions[currentPageId] = Object.keys(currentSelectedRegions)
                         .filter(key => Object.keys(regionsData).includes(key))
                         .reduce((obj, key) => {
                             obj[key] = currentSelectedRegions[key];
                             return obj
                         }, {});
-                        _selectedRegions[currentPageId] = filtered;
                 }
                 return _selectedRegions;
             });
@@ -152,7 +151,7 @@ function createSimilarityStore() {
             // Promise.all => parallelize async queries
             await Promise.all([ getComparedRegions(), getQueryImages() ]);
         } catch (err) {
-            console.error('Error:', err);
+            console.error("Error:", err);
             errorMsg.set(err.message);
         } finally {
             loading.set(false);
@@ -163,15 +162,6 @@ function createSimilarityStore() {
         localStorage.setItem("selectedRegions", JSON.stringify(selection));
     }
 
-    // TODO delete select/unselect ? unselect is only used in `_SimilarityBtn` (to be deleted), `select` is still used in `SimilarRegion`.
-    function unselect(regionRef) {
-        selectedRegions.update(selection => {
-            const updatedSelection = { ...selection };
-            delete updatedSelection[currentPageId][regionRef];
-            store(updatedSelection)
-            return updatedSelection;
-        });
-    }
     function select(region) {
         selectedRegions.update(selection => {
             const updatedSelection = {
@@ -187,7 +177,11 @@ function createSimilarityStore() {
     }
 
     const isSelected = derived(selectedRegions, ($selectedRegions) =>
-        regionRef => $selectedRegions[currentPageId]?.hasOwnProperty(regionRef)
+    // a complex form that is a workaround for eslint `no-prototype-builtins`. see: https://stackoverflow.com/a/39283005
+        regionRef => !!(
+            $selectedRegions[currentPageId]
+      && Object.prototype.hasOwnProperty.call($selectedRegions[currentPageId], regionRef)
+        )
     );
 
     function getRegionsInfo(ref) {
@@ -218,17 +212,126 @@ function createSimilarityStore() {
     }
 
     function addComparedRegions(region) {
-        comparedRegions.update(regions => {
-            return {...regions, [region.ref]: region};
-        });
+        if (!region) return false;
+        const current = get(comparedRegions);
+        if (current[region.ref]) return false; // Already exists
+
+        comparedRegions.update(regions => ({...regions, [region.ref]: region}));
+        select(region);
+        return true;
+    }
+
+    // Global signal to force all visible rows to refresh (e.g. from a toolbar)
+    const refreshSignal = writable(0);
+    const triggerRefresh = () => refreshSignal.update(n => n + 1);
+
+    /**
+     * Dedicated store for a single SimilarityRow.
+     * Encapsulates fetch logic, state management, and race-condition handling.
+     */
+    function createRowStore(qImg, isInModal) {
+        const items = writable([]);
+        const propagated = writable([]);
+        const loading = writable(false);
+        const propagatedLoading = writable(false);
+        const error = writable(null);
+        let cGen = 0, pGen = 0, visible = isInModal;
+
+        const baseEndpoint = `${window.location.origin}/${appName}/regions`;
+
+        const getDigitIds = () => {
+            const sel = get(selectedRegions);
+            return [...new Set(
+                Object.values(sel[currentPageId] || {}).map(r => r.digitization_id)
+            )];
+        };
+
+        const fetchComputed = async (digitIds) => {
+            const gen = ++cGen;
+            loading.set(true);
+            try {
+                const res = await fetch(`${baseEndpoint}/similar-images`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
+                    body: JSON.stringify({
+                        digitIds,
+                        filterByRegions: !isInModal,
+                        qImg,
+                        ...(!isInModal && { topk: 10 })
+                    }),
+                });
+                const data = await res.json();
+                if (gen === cGen) items.set(data);
+            } catch (e) {
+                if (gen === cGen) error.set(e.message);
+            } finally {
+                if (gen === cGen) loading.set(false);
+            }
+        };
+
+        const fetchPropagated = async (digitIds) => {
+            propagatedLoading.set(true);
+            const gen = ++pGen;
+            const params = get(propagateParams);
+            try {
+                const res = await fetch(`${baseEndpoint}/propagated-matches/${qImg}`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
+                    body: JSON.stringify({
+                        digitIds: isInModal ? [] : digitIds,
+                        filterByRegions: isInModal ? false : params.propagateFilterByRegions,
+                        recursionDepth: params.propagateRecursionDepth,
+                    })
+                });
+                const data = await res.json();
+                if (gen === pGen) propagated.set(data);
+            } catch (e) {
+                if (gen === pGen) propagated.set([]);
+            }
+            propagatedLoading.set(false);
+        };
+
+        const fetchRow = () => {
+            const digitIds = getDigitIds();
+            if (!isInModal && digitIds.length === 0) {
+                items.set([]);
+            } else {
+                fetchComputed(digitIds);
+            }
+            fetchPropagated(digitIds);
+        };
+
+        const unsubs = [
+            refreshSignal.subscribe(() => visible && fetchRow()),
+            propagateParams.subscribe(() => visible && fetchPropagated(getDigitIds())),
+            selectedRegions.subscribe(() => visible && fetchRow())
+        ];
+
+        return {
+            items, propagated, loading, propagatedLoading, error, fetchRow,
+            setVisible: (v) => { visible = v; if (v) fetchRow(); },
+            filtered: derived([items, excludedCategories, similarityScoreCutoff], ([$i, $e, $s]) =>
+                $i.filter(([score, , , , , cat]) =>
+                    !$e.includes(cat) && (score == null || $s == null || Number(score) >= $s)
+                )
+            ),
+            destroy: () => unsubs.forEach(fn => fn())
+        };
+    }
+
+    function removeQImg(img) {
+        qImgs.update(imgs => imgs.filter(q => q !== img));
     }
 
     return {
+        baseUrl,
+        currentPageId,
         currentPage,
         comparedRegions,
         excludedCategories,
         qImgs,
         pageQImgs,
+        removeQImg,
         selectedRegions,
         propagateRecursionDepth,
         propagateFilterByRegions,
@@ -240,11 +343,12 @@ function createSimilarityStore() {
         setPageQImgs,
         getRegionsInfo,
         handlePageUpdate,
-        unselect,
         select,
         addComparedRegions,
         isSelected,
         pageLength,
+        createRowStore,
+        triggerRefresh,
     };
 }
 

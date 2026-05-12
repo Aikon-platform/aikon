@@ -1,4 +1,4 @@
-import { writable, derived, get } from 'svelte/store';
+import { writable, derived, get } from "svelte/store";
 import {initPagination, pageUpdate} from "../utils.js";
 
 function createRegionsStore() {

@@ -1,4 +1,4 @@
-import {derived, get, writable} from 'svelte/store';
+import {derived, get, writable} from "svelte/store";
 import {initPagination, pageUpdate} from "../../utils.js";
 
 function createVectorizationStore() {
@@ -21,7 +21,7 @@ function createVectorizationStore() {
             vectImgs.set(data);
             return data;
         }).catch(
-            error => console.error('Error:', error)
+            error => console.error("Error:", error)
         );
 
         // pageVectImgs is derived from currentPage update

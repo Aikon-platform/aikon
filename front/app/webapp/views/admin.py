@@ -1,8 +1,7 @@
 from uuid import UUID
 
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.core.exceptions import PermissionDenied
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import CreateView, TemplateView, View, UpdateView, DetailView
 from django.shortcuts import get_object_or_404, redirect
 from django.http import Http404
@@ -21,12 +20,12 @@ from app.webapp.search_filters import (
 )
 from app.webapp.forms import *
 from app.webapp.forms.treatment import TreatmentForm
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
-from app.webapp.utils.constants import MANIFEST_V2
 from app.config.settings import APP_LANG
+
 
 ##########################################################
 #                       ADMIN VIEWS                      #
@@ -169,9 +168,9 @@ class WitnessList(AbstractRecordList):
         return context
 
 
-class WitnessRegionsView(AbstractRecordView):
+class WitnessRegionExtractionView(AbstractRecordView):
     # f"witness/<int:wid>/regions/"
-    # display only all Regions objects for a given Witness
+    # display only all RegionExtraction objects for a given Witness
     model = Witness
     template_name = "webapp/witness.html"
     pk_url_kwarg = "id"
@@ -186,13 +185,13 @@ class WitnessRegionsView(AbstractRecordView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["regions_ids"] = []
+        context["region_extraction_ids"] = []
         context["is_validated"] = True
         context["img_nb"] = None
 
-        witness = self.get_record()
-        context["view_title"] = f"{witness}"
-        context["witness"] = witness.get_json(
+        wit = self.get_record()
+        context["view_title"] = f"{wit}"
+        context["witness"] = wit.get_json(
             request_user=self.request.user,
             full_metadata=True,
         )
@@ -200,42 +199,35 @@ class WitnessRegionsView(AbstractRecordView):
             # TODO handle case where no digitization is available
             pass
 
-        context["manifests"] = []
+        dids = context["witness"]["digits"]
+        context["witness"]["digits"] = {}
 
-        for did in context["witness"]["digits"]:
+        for did in dids:
             if digit := Digitization.objects.filter(pk=did).first():
-                context["manifests"].append(digit.gen_manifest_url(version=MANIFEST_V2))
+                djson = digit.get_json()
+                context["witness"]["digits"][did] = {
+                    "manifest": digit.get_manifest_url(),
+                    "img_prefix": digit.get_ref(),
+                    "img_nb": djson["img_nb"] or 0,
+                    "img_zeros": djson["zeros"] or 0,
+                }
 
-        for rid in context["witness"]["regions"]:
-            regions = Regions.objects.filter(pk=rid).first()
-            if not regions:
+        for rid in context["witness"]["region_extractions"]:
+            region_extraction = RegionExtraction.objects.filter(pk=rid).first()
+            if not region_extraction:
                 continue
 
-            context["regions_ids"].append(rid)
-            # for regions in witness.get_regions():
-            #     context["regions_ids"].append(regions.id)
-            # TODO handle multiple manifest for multiple regions
-
-            man = regions.gen_manifest_url(version=MANIFEST_V2)
-            context["manifest"] = man  # overwritten at each iteration
-            context["manifests"].append(man)
-
-            context["img_prefix"] = regions.get_ref().split("_anno")[0]
-            if context["img_nb"] is None:
-                rjson = regions.get_json()
-                context["img_nb"] = rjson["img_nb"] or None
-                context["img_zeros"] = rjson["zeros"] or None
-
-            if not regions.is_validated:
+            context["region_extraction_ids"].append(rid)
+            if not region_extraction.is_validated:
                 context["is_validated"] = False
 
         return context
 
 
-class RegionsView(AbstractRecordView):
+class RegionExtractionView(AbstractRecordView):
     # f"witness/<int:wid>/regions/<int:rid>/"
-    # display only one Regions object
-    model = Regions
+    # display only one RegionExtraction object
+    model = RegionExtraction
     template_name = "webapp/witness.html"
     fields = []
     pk_url_kwarg = "rid"
@@ -250,7 +242,7 @@ class RegionsView(AbstractRecordView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["witness_id"] = self.kwargs["wid"]
-        context["regions_id"] = self.kwargs["rid"]
+        context["region_extraction_id"] = self.kwargs["rid"]
 
         regions = self.get_record()
         wit = regions.get_witness()
@@ -263,13 +255,15 @@ class RegionsView(AbstractRecordView):
         context["witness"] = wit.get_json(reindex=True)
         context["is_validated"] = regions.is_validated
 
-        context["manifest"] = regions.gen_manifest_url(version=MANIFEST_V2)
-        context["manifests"] = [regions.gen_manifest_url(version=MANIFEST_V2)]
-
-        context["img_prefix"] = regions.get_ref().split("_anno")[0]
-        rjson = regions.get_json()
-        context["img_nb"] = rjson["img_nb"] or 0
-        context["img_zeros"] = rjson["zeros"] or 0
+        if digit := regions.get_digit():
+            context["witness"]["digits"] = {}
+            djson = digit.get_json()
+            context["witness"]["digits"][digit.id] = {
+                "manifest": digit.get_manifest_url(),
+                "img_prefix": digit.get_ref(),
+                "img_nb": djson["img_nb"] or 0,
+                "img_zeros": djson["zeros"] or 0,
+            }
         return context
 
 
@@ -443,4 +437,4 @@ class DocumentSetView(AbstractRecordView):
     #     return context
 
 
-# TODO RegionsSetList
+# TODO RegionExtractionSetList

@@ -4,6 +4,7 @@ from functools import partial
 from typing import Optional, List
 
 from iiif_prezi.factory import StructuralError
+from PIL import Image, UnidentifiedImageError
 
 from django.utils.safestring import mark_safe
 from django.core.validators import FileExtensionValidator
@@ -33,7 +34,6 @@ from app.webapp.models.utils.constants import (
     SOURCE_INFO,
 )
 from app.webapp.utils.functions import (
-    delete_files,
     rename_file,
     get_nb_of_files,
     get_first_img,
@@ -46,6 +46,7 @@ from app.webapp.utils.paths import (
     REGIONS_PATH,
     PDF_DIR,
 )
+from webapp.utils.logger import log
 from webapp.utils.paths import TMP_PATH
 
 ALLOWED_EXT = ["jpg", "jpeg", "png", "tif"]
@@ -54,7 +55,10 @@ ALLOWED_EXT = ["jpg", "jpeg", "png", "tif"]
 def get_name(fieldname, plural=False):
     fields = {
         "view_digit": {"en": "visualize", "fr": "visualiser"},
-        "view_regions": {"en": "regions", "fr": "régions"},
+        "view_region_extraction": {
+            "en": "extracted regions",
+            "fr": "régions extraites",
+        },
         "is_validated": {"en": "validate regions", "fr": "valider les régions"},
         "is_validated_info": {
             "en": "regions will no longer be editable",
@@ -74,6 +78,18 @@ def no_save(instance, original_filename):
     # NOTE here, digit_id is not yet set, digit files are renamed afterwards
     #  inside temp_to_img() with digit.get_file_path()
     return f"{instance.get_relative_path()}/to_delete.txt"
+
+
+def img_meta(img):
+    if isinstance(img, dict) and "h" in img and "w" in img:
+        return img
+    name = img["name"] if isinstance(img, dict) else img
+    try:
+        with Image.open(f"{IMG_PATH}/{name}") as im:
+            return {"name": name, "h": im.height, "w": im.width}
+    except (UnidentifiedImageError, FileNotFoundError, OSError) as e:
+        log(f"[img_meta] Unreadable image {name}", e)
+        return None
 
 
 class Digitization(AbstractSearchableModel):
@@ -159,8 +175,8 @@ class Digitization(AbstractSearchableModel):
         # Returns "img" / "pdf" / "man"
         return str(self.digit_type)
 
-    def get_regions(self):
-        return self.regions.all()
+    def get_region_extractions(self):
+        return self.region_extractions.all()
 
     # def get_treatments(self):
     #     return self.treatments.all()
@@ -190,16 +206,16 @@ class Digitization(AbstractSearchableModel):
         nb = f"_{i:04d}" if i else ""
         return f"{path}/{self.get_ref()}{nb}.{ext or self.get_ext()}"
 
-    def get_regions_filenames(self):
+    def get_region_extraction_filenames(self):
         regions_files = []
-        for regions in self.get_regions():
+        for regions in self.get_region_extractions():
             regions_files.append(regions.get_ref())
         return regions_files
 
-    def has_regions(self):
+    def has_region_extractions(self):
         # if there is at least one regions file named after the current digitization
         if len(glob(f"{REGIONS_PATH}/{self.get_ref()}_*")):
-            # TODO check self.get_regions()
+            # TODO check self.get_region_extractions()
             return True
         return False
 
@@ -240,15 +256,13 @@ class Digitization(AbstractSearchableModel):
             return True
         return False
 
-    ####### WORK IN PROGRESS
-
     def count_annotations(self):
-        from app.webapp.utils.iiif.annotation import total_annotations
+        from app.webapp.utils.iiif.annotation import get_total_annotations
 
-        count = 0
-        for regions in self.get_regions():
-            count += total_annotations(regions)
-
+        count = sum(
+            get_total_annotations(region_extraction.get_ref())
+            for region_extraction in self.get_region_extractions()
+        )
         return count
 
     def svg_paths(self):
@@ -267,82 +281,105 @@ class Digitization(AbstractSearchableModel):
         """
         :return: True if all regions have vectorizations, False otherwise
         """
-        return all(region.is_vectorized() for region in self.get_regions())
+        return all(region.is_vectorized() for region in self.get_region_extractions())
 
-    ####### WORK IN PROGRESS
-
-    def get_img(self, is_abs=False, only_first=False):
-        if only_first:
-            return get_first_img(self.get_ref())
-        return self.get_imgs(is_abs, only_one=True)
-
-    def get_imgs(self, is_abs=False, temp=False, only_one=False, check_in_dir=True):
+    def get_imgs(
+        self,
+        is_abs=False,
+        temp=False,
+        only_one=False,
+        check_in_dir=False,
+        with_meta=False,
+    ):
+        """
+        Return image filenames or full {name, h, w} dicts (with_meta=True)
+        Reads from self.json.imgs unless check_in_dir/temp
+        """
         if not check_in_dir and not temp:
-            if imgs := self.get_key_value("imgs"):
-                return imgs[0] if only_one else imgs
+            stored = self.get_key_value("imgs") or []
 
-        prefix = f"{self.get_ref()}_" if not temp else f"temp_{self.get_wit_ref()}"
+            if stored and any(
+                not (isinstance(i, dict) and "h" in i and "w" in i) for i in stored
+            ):
+                stored = self.update_imgs_json(stored)
+
+            if stored:
+                entries = stored[:1] if only_one else stored
+                if with_meta:
+                    return entries[0] if only_one else entries
+                return entries[0]["name"] if only_one else [e["name"] for e in entries]
+
+        prefix = f"temp_{self.get_wit_ref()}" if temp else f"{self.get_ref()}_"
         img_dir = TMP_PATH if temp else IMG_PATH
-        path = f"{img_dir}/" if is_abs else ""
-        imgs = sorted(get_files_with_prefix(img_dir, prefix, path, only_one))
-        if not temp:
-            self.update_json(imgs)
-        return imgs
+        names = sorted(get_files_with_prefix(img_dir, prefix, "", only_one))
 
-    def update_imgs_json(self, imgs):
+        if temp:
+            path_prefix = f"{img_dir}/" if is_abs else ""
+            return [f"{path_prefix}{n}" for n in names]
+
+        if not only_one:
+            self.update_imgs_json(names)
+
+        if with_meta:
+            imgs = [e for e in (img_meta(n) for n in names) if e]
+            return imgs[0] if only_one else imgs
+        return names[0] if only_one else names
+
+    def update_imgs_json(self, imgs=None):
         """
-        Add or update the properties related to images in the JSON representation of the digitization.
-        :param imgs: list of image filenames (⚠ no absolute path!)
+        Merge new image filenames in self.json.imgs in a list of {name, h, w}
         """
-        if type(imgs) is not list:
+        if not isinstance(imgs, list):
             imgs = get_files_with_prefix(IMG_PATH, f"{self.get_ref()}_", "")
 
-        if not self.is_key_defined("imgs"):
-            self.json["imgs"] = []
+        existing = {}
+        for item in (self.json or {}).get("imgs", []):
+            if (
+                isinstance(item, dict)
+                and "name" in item
+                and "h" in item
+                and "w" in item
+            ):
+                existing[item["name"]] = item
 
-        # only unique filenames
-        all_imgs = sorted(
-            list(set([os.path.basename(img) for img in self.json["imgs"] + imgs]))
-        )
+        for i in imgs:
+            if isinstance(i, dict) and "h" in i and "w" in i:
+                existing.setdefault(i["name"], i)
 
-        self.json["imgs"] = all_imgs
-        self.json["img_nb"] = len(self.json["imgs"])
-        self.json["zeros"] = self.img_zeros(self.json["imgs"][0])
+        new = {os.path.basename(i["name"] if isinstance(i, dict) else i) for i in imgs}
+        names = sorted(new | set(existing))
+
+        images = [e for e in (existing.get(n) or img_meta(n) for n in names) if e]
+
+        if self.json is None:
+            self.json = {}
+        self.json["imgs"] = images
+        self.json["img_nb"] = len(images)
+        self.json["zeros"] = self.img_zeros(images[0]["name"]) if images else 0
         self.update(json=self.json)
+        return images
 
-    def update_json(self, imgs=Optional[List[str]]):
-        if not imgs:
-            imgs = sorted(get_files_with_prefix(IMG_PATH, f"{self.get_ref()}_", ""))
-
-        json_data = {
-            "id": self.id,
-            "title": self.__str__(),
-            "ref": self.get_ref(),
-            "class": self.__class__.__name__,
-            "type": get_name("Digitization"),
-            "url": self.gen_manifest_url(),
-            "imgs": imgs,
-            "img_nb": len(imgs),
-            "zeros": self.img_zeros(imgs[0] if imgs else 0),
-        }
-        type(self).objects.filter(pk=self.pk.__str__()).update(json=json_data)
-        return self.json
-
-    def to_json(self, reindex=True, no_img=False, request_user=None):
+    def to_json(self, reindex=True, no_img=False):
         djson = self.json or {}
-        imgs = djson.get("imgs", [] if no_img else self.get_imgs(check_in_dir=True))
+        if no_img:
+            imgs = djson.get("imgs", [])
+            img_nb = djson.get("img_nb", 0)
+            zeros = djson.get("zeros", 0)
+        else:
+            imgs = djson.get("imgs") or self.get_imgs(check_in_dir=True, with_meta=True)
+            img_nb = djson.get("img_nb") or len(imgs)
+            zeros = djson.get("zeros") or self.img_zeros(check_in_dir=reindex)
+
         return {
             "id": self.id,
             "title": self.__str__(),
             "ref": self.get_ref(),
             "class": self.__class__.__name__,
             "type": get_name("Digitization"),
-            "url": self.gen_manifest_url(),
+            "url": self.get_manifest_url(),
             "imgs": imgs,
-            "img_nb": djson.get("img_nb", len(imgs)),
-            "zeros": djson.get(
-                "zeros", 0 if no_img else self.img_zeros(check_in_dir=reindex)
-            ),
+            "img_nb": img_nb,
+            "zeros": zeros,
         }
 
     def get_metadata(self):
@@ -357,12 +394,11 @@ class Digitization(AbstractSearchableModel):
 
         return metadata
 
-    def gen_manifest_url(self, only_base=False, version=None):
-        # usage of version parameter to copy parameters of Regions.gen_manifest_url()
+    def get_manifest_url(self, only_base=False):
         base_url = f"{APP_URL}/{APP_NAME}/iiif/{self.get_ref()}"
         return f"{base_url}{'' if only_base else '/manifest.json'}"
 
-    def gen_manifest_json(self, version=None):
+    def get_manifest_json(self):
         from app.webapp.utils.iiif.manifest import gen_manifest_json
 
         error = {"error": "Unable to create a valid manifest"}
@@ -380,30 +416,25 @@ class Digitization(AbstractSearchableModel):
 
         # NOTE methods to be used inside list columns of witnesses
 
-    def regions_btn(self):
+    def region_extraction_btn(self):
         # To display a button in the list of witnesses to know if regions were extracted or not
-        return "<br>".join(regions.view_btn() for regions in self.get_regions())
+        return "<br>".join(
+            regions.view_btn() for regions in self.get_region_extractions()
+        )
 
     def digit_btn(self):
-        from app.webapp.utils.iiif.gen_html import regions_btn
+        from app.webapp.utils.iiif.gen_html import region_extraction_btn
 
-        return mark_safe(regions_btn(self, "view")) if self.has_images() else ""
-
-    # def add_source(self, source):
-    #     # from app.webapp.models.digitization_source import DigitizationSource
-    #     #
-    #     # digit_source = DigitizationSource()
-    #     # digit_source.source = source
-    #     # digit_source.save()
-    #     # self.source = digit_source
-    #     self.source = source
+        return (
+            mark_safe(region_extraction_btn(self, "view")) if self.has_images() else ""
+        )
 
     def view_btn(self):
         iiif_link = f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"
-        regions = self.get_regions()
+        regions = self.get_region_extractions()
         if len(regions) == 0:
             return f"{iiif_link}<br>{self.digit_btn()}"
-        return f"{iiif_link}<br>{self.regions_btn()}"
+        return f"{iiif_link}<br>{self.region_extraction_btn()}"
         # return f"{DIG.capitalize()} #{self.id}: {self.manifest_link(inline=True)}"
 
     def manifest_link(self, inline=False):
@@ -458,18 +489,27 @@ def digitization_post_save(sender, instance, created, **kwargs):
         transaction.on_commit(lambda: convert_digitization.delay(instance.id))
 
 
-# Receive the pre_delete signal and delete the file associated with the model instance
 @receiver(pre_delete, sender=Digitization)
 def pre_delete_digit(sender, instance: Digitization, **kwargs):
+    """
+    - delete associated files (downloaded PDF)
+    - delete IIIF manifest from aiiinotate
+    - delete all related Regions from db
+    - delete all related annotations
+    """
     from app.webapp.tasks import delete_digitization
+    from app.webapp.utils.iiif.annotation import (
+        destroy_region_extraction,
+        unindex_manifest,
+    )
 
     other_media = instance.pdf.name if instance.digit_type == PDF_ABBR else None
     delete_digitization.delay(instance.get_ref(), other_media)
 
-    # NOTE do not work because manifest_url uses the digitization id
-    # from app.webapp.tasks import delete_regions
-    # delete_regions.delay([r.id for r in instance.get_regions()])
-
-    from app.webapp.utils.iiif.annotation import destroy_regions
-
-    [destroy_regions(r) for r in instance.get_regions()]
+    manifest_url = instance.get_manifest_url()
+    # NOTE: order is important here !
+    r_destroy_regions = [
+        destroy_region_extraction(r) for r in instance.get_region_extractions()
+    ]
+    r_unindex_manifest = unindex_manifest(manifest_url)
+    return all([r_unindex_manifest, *r_destroy_regions])

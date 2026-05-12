@@ -1,13 +1,13 @@
 <script>
-    import { createEventDispatcher } from 'svelte';
+    import { createEventDispatcher } from "svelte";
     import { appLang } from "../constants.js";
 
     export let items = [];
-    export let placeholder = `${appLang === 'en' ? 'Select' : 'Sélectionner'} ...`;
-    export let name = '';
-    export let id = '';
+    export let placeholder = `${appLang === "en" ? "Select" : "Sélectionner"} ...`;
+    export let name = "";
+    export let id = "";
 
-    let inputValue = '';
+    let inputValue = "";
     let filteredItems = [];
     let isOpen = false;
     let selectedIndex = -1;
@@ -29,7 +29,7 @@
             isOpen = false;
             if (selectedItem) {
                 selectedItem = null;
-                dispatch('select', { id: null, label: '' });
+                dispatch("select", { id: null, label: "" });
             }
         }
     }
@@ -39,13 +39,13 @@
     }
 
     function handleKeydown(event) {
-        if (event.key === 'ArrowDown') {
+        if (event.key === "ArrowDown") {
             event.preventDefault();
             selectedIndex = (selectedIndex + 1) % filteredItems.length;
-        } else if (event.key === 'ArrowUp') {
+        } else if (event.key === "ArrowUp") {
             event.preventDefault();
             selectedIndex = selectedIndex <= 0 ? filteredItems.length - 1 : selectedIndex - 1;
-        } else if (event.key === 'Enter' && selectedIndex !== -1) {
+        } else if (event.key === "Enter" && selectedIndex !== -1) {
             event.preventDefault();
             selectItem(filteredItems[selectedIndex]);
         }
@@ -55,15 +55,14 @@
         inputValue = item.label;
         selectedItem = item;
         isOpen = false;
-        dispatch('select', item);
+        dispatch("select", item);
     }
 </script>
 
 <div class="autocomplete">
     <input class="input is-small is-wide" {name} {id}
            bind:value={inputValue} on:input={handleInput} on:keydown={handleKeydown}
-           {placeholder} autocomplete="off"
-    />
+           {placeholder} autocomplete="off"/>
     {#if isOpen}
         <ul class="autocomplete-list is-wide">
             {#each filteredItems as item, index}

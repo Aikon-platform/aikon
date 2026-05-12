@@ -1,5 +1,4 @@
 <script>
-    import {appLang} from "../constants.js";
     import { RegionItem } from "./types.js";
     import RegionCard from "./RegionCard.svelte";
     import PageView from "./modal/PageView.svelte";
@@ -7,8 +6,9 @@
     import Tabs from "../ui/Tabs.svelte";
 
     import {regionsSelection} from "../selection/selectionStore.js";
+    import QueryExpansionView from "./modal/QueryExpansionView.svelte";
+    import {i18n} from "../utils.js";
     export let selectionStore = regionsSelection;
-    // const { isSelected } = selectionStore;
 
     /** @type {RegionItemType[]} */
     export let items = [];
@@ -30,8 +30,9 @@
     };
 
     const tabs = [
-        { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
-        { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
+        { id: "region", label: i18n("mainView") },
+        { id: "page", label: i18n("pageView") },
+        { id: "matches", label: i18n("matchesView") },
     ];
 </script>
 
@@ -41,16 +42,19 @@
             on:openModal={handleOpenModal}/>
 {/each}
 
-<RegionModal {items} bind:currentIndex={modalIndex}
-             bind:open={modalOpen} on:navigate={handleNavigate}>
+<RegionModal {items} bind:currentIndex={modalIndex} bind:open={modalOpen} on:navigate={handleNavigate}>
     <svelte:fragment let:item={currentItem}>
         <Tabs {tabs} let:activeTab>
             {#if activeTab === "region"}
                 <div class="modal-region">
-                    <RegionCard item={currentItem} height="full" isInModal={true} selectable={false}/>
+                    <RegionCard item={currentItem} height="full" isInModal={true} {copyable} selectable={false}/>
                 </div>
             {:else if activeTab === "page"}
                 <PageView item={currentItem}/>
+            {:else if activeTab === "matches"}
+                {#key currentItem.img}
+                    <QueryExpansionView item={currentItem}/>
+                {/key}
             {/if}
         </Tabs>
     </svelte:fragment>

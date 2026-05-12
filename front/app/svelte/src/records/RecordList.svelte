@@ -5,7 +5,7 @@
     const { selected, nbSelected } = recordsSelection;
 
     import SelectionBtn from "../selection/SelectionBtn.svelte";
-    import { appLang, appName, webappName, model2title } from '../constants';
+    import { appLang, appName, webappName, model2title } from "../constants";
     import SelectionModal from "../selection/SelectionModal.svelte";
     import RecordSearch from "./RecordSearch.svelte";
     import Pagination from "../Pagination.svelte";
@@ -13,15 +13,16 @@
 
     import { setContext } from "svelte";
 
-    export let modelName = '';
-    setContext('modelName', modelName);
+    export let modelName = "";
+    setContext("modelName", modelName);
 
-    export let modelTitle = '';
-    setContext('modelTitle', modelTitle);
+    export let modelTitle = "";
+    setContext("modelTitle", modelTitle);
 
     import { createRecordsStore } from "./recordStore.js";
     import Set from "./Set.svelte";
     import Treatment from "./Treatment.svelte";
+    import {i18n} from "../utils.js";
     const recordsStore = createRecordsStore(modelName);
     const { pageRecords, resultPage, resultNumber } = recordsStore;
 
@@ -31,7 +32,7 @@
     export let searchFields = [];
     // TODO make result count appear + filter name
 
-    const addUrl = modelName.includes('treatment') ? `/${appName}/${modelName}/add/` : `/${appName}-admin/${webappName}/${modelName}/add/`
+    const addUrl = modelName.includes("treatment") ? `/${appName}/${modelName}/add/` : `/${appName}-admin/${webappName}/${modelName}/add/`
 </script>
 
 <Modal/>
@@ -40,7 +41,7 @@
 
 <RecordSearch {recordsStore} {searchFields}/>
 
-{#if !modelTitle.includes('set')}
+{#if !modelTitle.includes("set")}
     <!-- <span class="is-right">
         <a href="{addUrl}" class="button is-rounded is-primary mb-4"
         title='{appLang === "en" ? "Import" : "Importer"}'>
@@ -53,36 +54,36 @@
         <a href="{addUrl}" class="button is-rounded is-primary mb-4"
            title='{appLang === "en" ? "Add" : "Ajouter"}'>
             <i class="fa-solid fa-plus"></i>
-            <span>{appLang === 'en' ? "Add" : "Ajouter"}</span>
+            <span>{appLang === "en" ? "Add" : "Ajouter"}</span>
         </a>
     </span>
 {/if}
 
 {#await resultPage}
     <div class="faded is-center">
-        {appLang === 'en' ? 'Retrieving records...' : 'Récupération des enregistrements...'}
+        {appLang === "en" ? "Retrieving records..." : "Récupération des enregistrements..."}
     </div>
 {:then _}
     {#if $pageRecords.length !== 0}
         <Pagination store={recordsStore} nbOfItems={$resultNumber}/>
         <div>
             {#each $pageRecords as item (item.id)}
-                {#if item.class.includes('Treatment')}
+                {#if item.class.includes("Treatment")}
                     <Treatment {item} {recordsStore}/>
-                {:else if item.class.includes('Set')}
+                {:else if item.class.includes("Set")}
                     <Set {item} {recordsStore}/>
                 {:else}
                     <Record {item} {recordsStore}/>
                 {/if}
             {:else}
-                <p>{appLang === 'en' ? 'No records found' : 'Aucun enregistrement trouvé'}</p>
+                <p>{appLang === "en" ? "No records found" : "Aucun enregistrement trouvé"}</p>
             {/each}
         </div>
         <Pagination store={recordsStore} nbOfItems={$resultNumber}/>
     {/if}
 {:catch error}
     <div class="faded is-center">
-        {appLang === 'en' ? 'Error when retrieving records: ' : 'Erreur lors de la récupération des enregistrements : '}
+        {appLang === "en" ? "Error when retrieving records: " : "Erreur lors de la récupération des enregistrements : "}
         {error}
     </div>
 {/await}
@@ -91,7 +92,7 @@
     {#each Object.entries(selectedRecords) as [type, selectedItems]}
         {#if Object.values(selectedItems).length > 0 && type in model2title && type !== "User"}
 
-            <h3>{model2title[type]}</h3>
+            <h3>{i18n(type)}</h3>
             <table class="table pl-2 is-fullwidth">
                 <tbody>
                 {#each Object.entries(selectedItems) as [id, meta]}
@@ -119,7 +120,7 @@
     {:else}
         <tr>
             <td>
-                {appLang === 'en' ? 'No documents in selection' : 'Aucun document sélectionné'}
+                {appLang === "en" ? "No documents in selection" : "Aucun document sélectionné"}
             </td>
         </tr>
     {/each}

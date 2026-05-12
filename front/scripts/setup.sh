@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/env bash
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 FRONT_DIR="$(dirname "$SCRIPT_DIR")"
@@ -23,9 +23,8 @@ run_script setup_venv.sh "Virtual environment initialization"
 run_script setup_var_env.sh "Environment variables configuration"
 run_script setup_cantaloupe.sh "Cantaloupe configuration"
 run_script setup_db.sh "Database generation"
-run_script setup_webpack.sh "Webpack initialization"
-run_script setup_redis.sh "Redis configuration"
-# run_script setup_sas.sh "SAS initialization"
+run_script setup_vite.sh "Vite initialization"
+run_script setup_annotations.sh "Annotations module initialization"
 
 echo_title "🎉 DJANGO APP IS SET UP! 🎉"
 color_echo blue "\nYou can now run the server with: "
