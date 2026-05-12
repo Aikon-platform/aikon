@@ -1,17 +1,19 @@
 <script>
+    import { createEventDispatcher } from "svelte";
     import RegionCard from "../regions/RegionCard.svelte";
     import RegionModal from "../regions/modal/RegionModal.svelte";
     import PageView from "../regions/modal/PageView.svelte";
+    import RightClick from "../ui/RightClick.svelte";
     import Tabs from "../ui/Tabs.svelte";
     import { i18n } from "../utils.js";
     import QueryExpansionView from "../regions/modal/QueryExpansionView.svelte";
 
-    /** @type {Array<Array<{images, doc, indices} | null>>} */
     export let matches = [];
-    /** @type {Array<{doc, label?: string}>} */
     export let columns = [];
     export let cardHeight = 96;
+    export let isInStemma = false;
 
+    const dispatch = createEventDispatcher();
     const tabs = [
         { id: "region", label: i18n("mainView") },
         { id: "page", label: i18n("pageView") },
@@ -20,6 +22,7 @@
 
     let modalOpen = false;
     let modalIndex = 0;
+    let menu = { open: false, x: 0, y: 0, items: [] };
 
     $: modalItems = matches.flatMap(row => row.flatMap(c => c?.images ?? []));
 
@@ -28,9 +31,19 @@
         modalOpen = true;
     };
 
+    function onCardContextMenu(e, img, doc) {
+        if (!isInStemma) return;
+        e.preventDefault();
+        menu = {
+            open: true, x: e.clientX, y: e.clientY,
+            items: [{ label: i18n("setAnchor", t), icon: "anchor", action: () => dispatch("anchorselect", { imageId: img.id, baseDocId: doc.id }) }]
+        };
+    }
+
     const t = {
-        none: { en: "No matches", fr: "Aucune correspondance" },
-        matches: { en: "matches", fr: "correspondances" },
+        none:      { en: "No matches", fr: "Aucune correspondance" },
+        matches:   { en: "matches", fr: "correspondances" },
+        setAnchor: { en: "Set as anchor", fr: "Définir comme ancre" },
     };
 </script>
 
@@ -42,10 +55,11 @@
             {#each matches[0] as cell}
                 {#if cell}
                     {#each cell.images as img, k}
-                        <div class="is-flex is-flex-wrap-wrap is-flex-direction-column is-align-content-center">
+                        <div class="is-flex is-flex-wrap-wrap is-flex-direction-column is-align-content-center"
+                             on:contextmenu={e => onCardContextMenu(e, img, cell.doc)}>
                             <RegionCard item={img} height={cardHeight} borderColor={cell.doc.color}
-                                    index={cell.indices[k]} selectable={false} copyable={false}
-                                    on:openModal={handleOpenModal}/>
+                                        index={cell.indices[k]} selectable={false} copyable={false}
+                                        on:openModal={handleOpenModal}/>
                             {#if img.canvas}
                                 <div class="is-size-7 has-text-grey has-text-centered">
                                     Page {img.canvas}
@@ -77,15 +91,16 @@
                                 {#if cell}
                                     <div class="is-flex is-flex-wrap-wrap is-flex-direction-column is-align-content-center pt-2">
                                         {#each cell.images as img, k}
-                                            <RegionCard item={img} height={cardHeight}
-                                                        index={cell.indices[k]}
-                                                        selectable={false} copyable={false}
-                                                        on:openModal={handleOpenModal}/>
-                                            {#if img.canvas}
-                                                <div class="is-size-7 has-text-grey has-text-centered mb-1">
-                                                    Page {img.canvas}
-                                                </div>
-                                            {/if}
+                                            <div on:contextmenu={e => onCardContextMenu(e, img, cell.doc)}>
+                                                <RegionCard item={img} height={cardHeight} index={cell.indices[k]}
+                                                            selectable={false} copyable={false}
+                                                            on:openModal={handleOpenModal}/>
+                                                {#if img.canvas}
+                                                    <div class="is-size-7 has-text-grey has-text-centered mb-1">
+                                                        Page {img.canvas}
+                                                    </div>
+                                                {/if}
+                                            </div>
                                         {/each}
                                     </div>
                                 {/if}
@@ -97,6 +112,8 @@
         </table>
     {/if}
 </div>
+
+<RightClick bind:open={menu.open} x={menu.x} y={menu.y} items={menu.items}/>
 
 <RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
     <svelte:fragment let:item={currentItem}>

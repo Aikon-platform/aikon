@@ -86,7 +86,12 @@
     $: fullDocuments = Array.from($documentNodes?.values() || []);
     $: fullScoreData = $filteredDocPairStats?.scoreCount || new Map();
     $: fullDocStats = $filteredDocStats?.scoreCount || new Map();
-    $: friezeDocuments = matrixScope === "full" ? fullDocuments : $selectedNodes;
+    // $: friezeDocuments = matrixScope === "full" ? fullDocuments : $selectedNodes;
+    $: friezeDocuments = (() => {
+        if (matrixScope === "full") return fullDocuments;
+        const anchorDoc = $documentNodes?.get($selectedFriezeImage?.baseDocId);
+        return anchorDoc ? [...$selectedNodes, anchorDoc] : $selectedNodes;
+    })();
     $: needsSelection = $selectedViz && !$selectedNodes.length && matrixScope !== "full";
     $: if (matrixScope) selectedCluster.set(null);
 </script>
@@ -135,7 +140,8 @@
     </div>
     <div slot="bottom-left-scroll">
         {#if layout.bottomLeft === "matches"}
-            <Matches matches={$matches.matches} columns={$matches.columns}/>
+            <Matches matches={$matches.matches} columns={$matches.columns} isInStemma={$selectedViz === "spatialFrieze"}
+                     on:anchorselect={e => selectedFriezeImage.set(e.detail)}/>
         {/if}
     </div>
 
