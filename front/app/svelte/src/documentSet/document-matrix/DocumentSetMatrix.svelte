@@ -23,6 +23,8 @@
         match: {en: "matches", fr: "correspondances"},
         noPairs: {en: "No pairs", fr: "Aucune paire"},
         addEdge: {en: "Add stemma edge", fr: "Ajouter un lien au stemma"},
+        percent: {en: "Percentage of images from", fr: "Pourcentage des images issues de"},
+        present: {en: "also present in", fr: "aussi présentes dans"},
     };
 
     let container;
@@ -147,7 +149,7 @@
                     let content;
                     if (matrixData.pctMode) {
                         const pctStr = d.pct != null ? `${(d.pct * 100).toFixed(1)}%` : "0%";
-                        content = `Percentage of images from<br/><span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>present also in<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}<br/><br/><strong>${pctStr}</strong>`;
+                        content = `${i18n("percent", t)}<br/><span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>${i18n("present", t)}<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}<br/><br/><strong>${pctStr}</strong>`;
                     } else {
                         const docs = `<span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>↔<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}`;
                         content = d.z === 0

@@ -146,6 +146,7 @@ export function createStemmaStore(documentSetStore) {
     function addEdge(source, target, sourceDoc, targetDoc) {
         stemmaGraph.update($g => {
             if ($g.edges.some(e => e.source === source && e.target === target)) return $g;
+            if ($g.edges.some(e => e.target === source && e.source === target)) return $g;
             return {
                 ...$g,
                 edges: [...$g.edges, {

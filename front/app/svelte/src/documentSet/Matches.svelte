@@ -4,6 +4,7 @@
     import PageView from "../regions/modal/PageView.svelte";
     import Tabs from "../ui/Tabs.svelte";
     import { i18n } from "../utils.js";
+    import QueryExpansionView from "../regions/modal/QueryExpansionView.svelte";
 
     /** @type {Array<Array<{images, doc, indices} | null>>} */
     export let matches = [];
@@ -14,6 +15,7 @@
     const tabs = [
         { id: "region", label: i18n("mainView") },
         { id: "page", label: i18n("pageView") },
+        { id: "matches", label: i18n("matchesView") },
     ];
 
     let modalOpen = false;
@@ -105,6 +107,10 @@
                 </div>
             {:else if activeTab === "page"}
                 <PageView item={currentItem}/>
+            {:else if activeTab === "matches"}
+                {#key currentItem.img}
+                    <QueryExpansionView item={currentItem}/>
+                {/key}
             {/if}
         </Tabs>
     </svelte:fragment>
