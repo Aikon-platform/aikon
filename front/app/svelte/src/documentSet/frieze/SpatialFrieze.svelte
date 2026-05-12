@@ -53,7 +53,7 @@
             clusterMap.get(sig).count++;
         }
 
-        const baseColor = "#c3c3c3";
+        const baseColor = "#dfdfdf";
         const sorted = [...clusterMap.values()].sort((a, b) =>
             order === "matches"
                 ? b.count - a.count || b.docIds.size - a.docIds.size
@@ -75,13 +75,13 @@
 
         const itemColors = items.map(item => {
             const cl = sigToCluster.get(clusterSignature(item.matchedDocs));
-            return { color: cl.color, opacity: cl.opacity };
+            return { color: cl.color };
         });
 
         const baseName = titles[baseId] || docNodes.get(baseId)?.title || `Doc ${baseId}`;
         const legend = sorted.map(cl => {
             const names = [baseName, ...[...cl.docIds].map(id => titles[id] || docNodes.get(id)?.title || `Doc ${id}`)];
-            return { color: cl.color, opacity: cl.opacity, names, count: cl.count, docIds: cl.docIds };
+            return { color: cl.color, names, count: cl.count, docIds: cl.docIds };
         });
 
         return { itemColors, legend };
@@ -329,7 +329,7 @@
                         class:is-selected={idx === $selectedIndex}
                         class:is-cluster-selected={clusterSelectedIndices?.has(idx)}
                         style="{clusterData
-                            ? `background:${clusterData.itemColors[idx].color};opacity:${clusterData.itemColors[idx].opacity}`
+                            ? `background:${clusterData.itemColors[idx]?.color || '#4a4a4a'};`
                             : `--opacity: ${item.matchCount / $maxVal}`}"
                         title="{mode === 'image' ? `Page ${item.page}, ` : `Page ${item.page}, `}{item.matchCount} match(es)"
                         on:click={() => handleClick(idx)}
@@ -417,11 +417,10 @@
                 {#each clusterData.legend as cl}
                     {@const docLen = cl.names.length}
                     <div class="is-size-7">
-                        <span style="color:{cl.color};opacity:{cl.opacity}">●</span>
+                        <span style="color:{cl.color};">●</span>
                         <b>{docLen} document{docLen > 1 ? 's' : ''}</b>
-                        <span class="tag is-light is-small is-rounded is-clickable"
+                        <span class="tag is-light is-small is-rounded is-clickable" title={i18n("clickToShow", t)}
                             class:is-active={selectedClusterSig === clusterSignature(cl.docIds)}
-                            title={i18n("clickToShow", t)}
                             on:click={() => handleClusterClick(cl)}
                             on:contextmenu={(e) => openEdgesMenu(e, [$baseDocId, ...cl.docIds])}
                             on:mouseenter={() => handleClusterHover(cl)}

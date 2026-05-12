@@ -144,6 +144,6 @@ export class RegionItem {
     }
 
     urlForMirador(canvasNb = this.canvasNb){
-        return `${getMiradorUrl()}/index.html?iiif-content=${this.manifest()}&canvas=${canvasNb}`;
+        return `${getMiradorUrl()}/index.html?iiif-content=${this.manifest()}&canvas=${canvasNb}&editMode=true&defaultForm=note`;
     }
 }

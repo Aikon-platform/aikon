@@ -154,6 +154,7 @@
         height: 100%;
         display: flex;
         flex-direction: column;
+        overflow-x: hidden;
     }
     .split-divider {
         position: relative;

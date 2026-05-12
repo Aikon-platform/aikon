@@ -160,6 +160,7 @@ export function refToIIIFInfo(imgRef=null) {
 }
 
 export function manifestToMirador(manifest = null, canvasNb = 0) {
+    // todo user regions/types.js
     return `${getMiradorUrl()}/index.html?iiif-content=${manifest}&canvas=${canvasNb}&editMode=true&defaultForm=note`;
 }
 

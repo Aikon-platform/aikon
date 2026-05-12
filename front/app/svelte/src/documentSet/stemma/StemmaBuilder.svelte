@@ -32,6 +32,7 @@
         edges: { en: "Connections", fr: "Connexions" },
         normalize: {en: "Normalize", fr: "Normaliser"},
         normalization: {en: "Normalization by document image counts", fr: "Normalisation par le nombre d'images des documents"},
+        imageStemma: {en: "Image stemma from", fr: "Stemma d'images issu de"},
         noSelection: { en: "Connect documents in the stemma to see visualizations", fr: "Connectez des documents dans le stemma pour voir les visualisations" },
         noViz: { en: "Select a visualization above", fr: "Sélectionnez une visualisation ci-dessus" },
         byPage: { en: "By page", fr: "Par page" },
@@ -99,8 +100,8 @@
             {@const title = $nodeTitles[$selectedFriezeImage.baseDocId] || baseDoc?.title}
             {@const imgData = parseImgRef($selectedFriezeImage.imageId)}
             <h4 class="title is-6 mb-0">
-                <span>Image stemma from</span>
-                <span class="color-dot" style="background: {baseDoc?.color}"></span>
+                <span>{i18n("imageStemma", t)}</span>
+                <span class="color-dot" style="background: {baseDoc?.color}"/>
                 {title ?? "Unknown"} (canvas {imgData?.canvasNb || 0})
             </h4>
         {/if}
