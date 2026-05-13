@@ -10,6 +10,7 @@
     import ImageStemma from "./ImageStemma.svelte";
     import DocumentStemmaPanel from "./DocumentStemmaPanel.svelte";
     import Matches from "../Matches.svelte";
+    import DownloadPng from "../../ui/DownloadPng.svelte";
 
     export let documentSetStore;
 
@@ -99,18 +100,23 @@
 <SplitLayout>
     <div id="stemma-header" slot="left-title" class="is-flex is-justify-content-space-between is-align-items-center">
         {#if layout.left === "documentStemma"}
-            <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
+            <div class="is-flex is-align-items-center">
+                <h4 class="title is-6 mb-0 mr-3">{i18n("title", t)}</h4>
+                <DownloadPng targetId="doc-stemma" filename="document-stemma.png" />
+            </div>
         {:else if layout.left === "imageStemma" && $selectedFriezeImage}
             {@const baseDoc = $selectedNodes.find(d => d.id === $selectedFriezeImage.baseDocId)}
             {@const title = $nodeTitles[$selectedFriezeImage.baseDocId] || baseDoc?.title}
             {@const imgData = parseImgRef($selectedFriezeImage.imageId)}
-            <h4 class="title is-6 mb-0">
-                <span>{i18n("imageStemma", t)}</span>
+            <h4 class="title is-6 mb-0 px-2" style="max-width: 80%; text-overflow: ellipsis; overflow: hidden">
+                <!--<span>{i18n("imageStemma", t)}</span>-->
+                Page {imgData?.canvasNb || 0}
                 <span class="color-dot" style="background: {baseDoc?.color}"/>
-                {title ?? "Unknown"} (canvas {imgData?.canvasNb || 0})
+                {title ?? "Unknown"}
             </h4>
+            <DownloadPng targetId="img-stemma" filename="image-stemma.png" />
         {/if}
-        <span class="tag is-small">{i18n("hint", t)}</span>
+        <span class="tag is-small ml-3">{i18n("hint", t)}</span>
     </div>
 
     <div slot="left-scroll">
@@ -155,6 +161,7 @@
             </select>
         </div>
         {#if $selectedViz}
+            <DownloadPng targetId={$selectedViz === "spatialFrieze" ? "spatial-frieze" : "doc-set-matrix"} filename={`${$selectedViz}.png`} />
             <div class="select is-small">
                 <select bind:value={matrixScope}>
                     <option value="selected">{i18n("selectedDocs", t)}</option>
@@ -213,21 +220,29 @@
 
     <div slot="bottom-right-title" class="is-flex is-justify-content-space-between">
         {#if layout.bottomRight === "pair" && pairMatrixData}
-            <h4 class="title is-6 mb-0">
-                <span class="color-dot" style="background: {pairMatrixData.doc1.color}"/>
-                <span class="has-text-grey">↔</span>
-                <span class="color-dot" style="background: {pairMatrixData.doc2.color}"/>
-            </h4>
-            <div class="select is-small">
+            <div class="is-flex is-align-items-center">
+                <h4 class="title is-6 mb-0 mr-3">
+                    <span class="color-dot" style="background: {pairMatrixData.doc1.color}"/>
+                    <span class="has-text-grey">↔</span>
+                    <span class="color-dot" style="background: {pairMatrixData.doc2.color}"/>
+                </h4>
+                <DownloadPng targetId="doc-pair-matrix" filename="doc-pair-matrix.png" />
+            </div>
+
+            <div class="select is-small ml-3">
                 <select bind:value={scatterMode}>
                     <option value="page">{i18n("byPage", t)}</option>
                     <option value="image">{i18n("byImage", t)}</option>
                 </select>
             </div>
         {:else if layout.bottomRight === "documentStemma"}
-            <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
-            <span class="tag is-small">{i18n("hint", t)}</span>
+            <div class="is-flex is-align-items-center">
+                <h4 class="title is-6 mb-0 mr-3">{i18n("title", t)}</h4>
+                <DownloadPng targetId="doc-stemma" filename="document-stemma.png" />
+            </div>
+            <span class="tag is-small ml-3">{i18n("hint", t)}</span>
         {/if}
+
     </div>
 
     <div slot="bottom-right-scroll">

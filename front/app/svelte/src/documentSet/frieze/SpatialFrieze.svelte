@@ -324,7 +324,7 @@
             {baseDoc.title} {i18n("similarity", t)}
         </h4>
         {@const friezeWidth = $items.length * LINE_WIDTH}
-        <div class="frieze-wrapper">
+        <div id="spatial-frieze" class="frieze-wrapper">
             <div class="frieze" style="--line-width: {LINE_WIDTH}px;">
                 {#each $items as item, idx}
                     <button class="frieze-line"
@@ -473,7 +473,7 @@
         padding: 0;
         cursor: pointer;
         background: color-mix(in srgb, var(--bulma-link) calc(var(--opacity) * 100%), transparent);
-        transition: margin-top 0.1s, height 0.1s;
+        transition: margin-top 0.1s, margin-bottom 0.1s, height 0.1s;
     }
     .frieze-line.is-selected {
         margin-top: -5px;

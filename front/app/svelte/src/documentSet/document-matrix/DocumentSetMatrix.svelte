@@ -248,7 +248,7 @@
     }
 </script>
 
-<div class="matrix-grid" style="--cell-size: {cellSize}px;">
+<div id="doc-set-matrix" class="matrix-grid" style="--cell-size: {cellSize}px;">
     <div class="matrix-corner"></div>
     {#each ["col", "row"] as side}
         <div class="{side}-headers">

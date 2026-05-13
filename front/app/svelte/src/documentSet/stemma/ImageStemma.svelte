@@ -252,7 +252,7 @@ Special cases:
     }
 </script>
 
-<div class="stemma-container" bind:this={containerEl} bind:clientWidth={width} bind:clientHeight={height} style={`height: ${stemmaImages.nodes.length ? "60vh" : "50px"}`}>
+<div id="img-stemma" class="stemma-container" bind:this={containerEl} bind:clientWidth={width} bind:clientHeight={height} style={`height: ${stemmaImages.nodes.length ? "60vh" : "50px"}`}>
     {#if stemmaImages.nodes.length}
         <svg bind:this={svgEl} class="stemma-svg" viewBox="0 0 {width} {height}"
              on:pointermove={onPointerMove} on:pointerup={onPointerUp}>
