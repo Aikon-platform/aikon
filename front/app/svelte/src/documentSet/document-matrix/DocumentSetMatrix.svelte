@@ -16,6 +16,12 @@
     export let isInStemma = false;
     export let stemmaStore = null;
 
+    $: edges = stemmaStore?.edges;
+    $: edgeKeys = isInStemma && $edges
+        ? new Set($edges.map(e => e.source < e.target ? `${e.source}-${e.target}` : `${e.target}-${e.source}`))
+        : new Set();
+    $: if (container && matrixData.docs.length) { edgeKeys; render(); }
+
     const dispatch = createEventDispatcher();
 
     const t = {
@@ -134,7 +140,8 @@
                 .attr("height", x.bandwidth())
                 .attr("fill", d => {
                     if (d.z === 0) return "var(--bulma-text)";
-                    const color = d3.hsl(233, 0.951, 0.52);
+                    const key = d.doc1.id < d.doc2.id ? `${d.doc1.id}-${d.doc2.id}` : `${d.doc2.id}-${d.doc1.id}`;
+                    const color = d3.hsl(edgeKeys.has(key) ? 13 : 233, 0.951, 0.52);
                     color.opacity = maxScore > 0 ? 0.2 + 0.8 * (d.z / maxScore) : 0.2;
                     return color;
                 })
