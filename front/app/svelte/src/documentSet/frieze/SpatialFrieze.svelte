@@ -447,6 +447,7 @@
 <style>
     .frieze-container {
         --stemma-link-color: hsl(19 95.1% 52%);
+        --stemma-cluster-color: var(--bulma-link);
         padding: 0.5rem;
     }
     .cluster-container {
@@ -483,8 +484,8 @@
         background: color-mix(in srgb, var(--stemma-link-color) calc(var(--opacity) * 100%), transparent);
     }
     .tag.is-clickable.is-in-stemma {
-        outline: 2px solid var(--stemma-link-color);
-        outline-offset: -2px;
+        outline: 1px solid var(--stemma-cluster-color);
+        outline-offset: -1px;
     }
     .tag.doc-item {
         cursor: pointer;
@@ -492,14 +493,14 @@
         border-color: var(--bulma-link);
     }
     .tag.doc-item.is-in-stemma {
-        border-left: 4px solid var(--stemma-link-color);
+        border-left: 4px solid var(--stemma-cluster-color);
     }
     .tag.doc-item.is-base {
         border: 2px solid var(--bulma-link);
     }
     .tag.doc-item.is-base.is-in-stemma {
-        border-color: var(--stemma-link-color);
-        border-left: 4px solid var(--stemma-link-color);
+        border-color: var(--stemma-cluster-color);
+        border-left: 4px solid var(--stemma-cluster-color);
     }
     .tag.doc-item.is-inactive {
         opacity: 0.3;
