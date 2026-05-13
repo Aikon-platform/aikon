@@ -8,6 +8,7 @@
     export let pairs = [];
     export let mode = "image"; // 'page' | 'image'
     export let cellSize = 5;
+    export let hideEmpty = false;
 
     const dispatch = createEventDispatcher();
 
@@ -19,11 +20,27 @@
 
     let container;
 
-    $: scatterData = doc1 && doc2 && pairs.length ? buildScatter(doc1, doc2, pairs, mode) : null;
+    $: scatterData = doc1 && doc2 && pairs.length ? buildScatter(doc1, doc2, pairs, mode, hideEmpty) : null;
     $: if (container && scatterData) render();
 
-    function buildScatter(d1, d2, pairList, m) {
-        return m === "image" ? buildImageScatter(d1, d2, pairList) : buildPageScatter(d1, d2, pairList);
+    function buildScatter(d1, d2, pairList, m, hide) {
+        return m === "image" ? buildImageScatter(d1, d2, pairList, hide) : buildPageScatter(d1, d2, pairList, hide);
+    }
+
+    function compact(keys) {
+        // keys: Iterable<`${i}-${j}`>  → returns {keepA: Set<int>, keepB: Set<int>}
+        const keepA = new Set(), keepB = new Set();
+        for (const k of keys) {
+            const [a, b] = k.split("-").map(Number);
+            keepA.add(a); keepB.add(b);
+        }
+        return { keepA, keepB };
+    }
+
+    function remap(items, keep) {
+        const kept = items.map((v, i) => [v, i]).filter(([, i]) => keep.has(i));
+        const idxMap = new Map(kept.map(([, oldIdx], newIdx) => [oldIdx, newIdx]));
+        return { items: kept.map(([v]) => v), idxMap };
     }
 
     function buildPageScatter(d1, d2, pairList) {
@@ -47,6 +64,13 @@
             score: scores.reduce((a, b) => a + b, 0) / scores.length,
             count: scores.length
         }));
+
+        if (hideEmpty) {
+            const pages1 = [...new Set(points.map(p => p.page1))].sort((a, b) => a - b);
+            const pages2 = [...new Set(points.map(p => p.page2))].sort((a, b) => a - b);
+            const m1 = new Map(pages1.map((p, i) => [p, i])), m2 = new Map(pages2.map((p, i) => [p, i]));
+            points.forEach(p => { p.page1 = m1.get(p.page1); p.page2 = m2.get(p.page2); });
+        }
 
         return {mode: "page", points, minScore, maxScore, doc1: d1, doc2: d2};
     }
@@ -77,6 +101,17 @@
             }
         });
 
+        if (hideEmpty) {
+            const { keepA, keepB } = compact(pairScores.keys());
+            const a = remap(images1, keepA), b = remap(images2, keepB);
+            const remapped = new Map();
+            for (const [k, v] of pairScores) {
+                const [i, j] = k.split("-").map(Number);
+                const ni = a.idxMap.get(i), nj = b.idxMap.get(j);
+                remapped.set(`${ni}-${nj}`, { ...v, idx1: ni, idx2: nj });
+            }
+            return {mode: "image", images1: a.items, images2: b.items, pairScores: remapped, minScore, maxScore, doc1: d1, doc2: d2};
+        }
         return {mode: "image", images1, images2, pairScores, minScore, maxScore, doc1: d1, doc2: d2};
     }
 

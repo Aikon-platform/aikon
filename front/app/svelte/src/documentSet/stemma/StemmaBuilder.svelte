@@ -15,8 +15,8 @@
     export let documentSetStore;
 
     const {
-        normalizeByImages, visiblePairs, documentNodes, imageNodes,
-        filteredDocPairStats, filteredDocStats, imageCountMap, coverageData
+        normalizeByImages, visiblePairs, sortedDocumentNodes, documentNodes, imageNodes, hideEmpty,
+        filteredDocPairStats, filteredDocStats, imageCountMap, coverageData, selectedDocuments
     } = documentSetStore;
 
     const stemmaStore = createStemmaStore(documentSetStore);
@@ -84,14 +84,16 @@
     function handleModalNavigate(e) { navState = { ...e.detail }; }
     function handleModalClose() { modalActive = false; }
 
-    $: fullDocuments = Array.from($documentNodes?.values() || []);
+    $: fullDocuments = $sortedDocumentNodes
+        .map(([, meta]) => meta)
+        .filter(d => !$hideEmpty || ($filteredDocStats.scoreCount?.get(d.id)?.count || 0) > 0);
     $: fullScoreData = $filteredDocPairStats?.scoreCount || new Map();
     $: fullDocStats = $filteredDocStats?.scoreCount || new Map();
-    // $: friezeDocuments = matrixScope === "full" ? fullDocuments : $selectedNodes;
     $: friezeDocuments = (() => {
         if (matrixScope === "full") return fullDocuments;
-        const anchorDoc = $documentNodes?.get($selectedFriezeImage?.baseDocId);
-        return anchorDoc ? [...$selectedNodes, anchorDoc] : $selectedNodes;
+        const anchorDoc = $documentNodes.get($selectedFriezeImage?.baseDocId);
+        const base = anchorDoc ? [...$selectedNodes, anchorDoc] : $selectedNodes;
+        return base.filter(d => $selectedDocuments.has(d.id));
     })();
     $: needsSelection = $selectedViz && !$selectedNodes.length && matrixScope !== "full";
     $: if (matrixScope) selectedCluster.set(null);
@@ -252,6 +254,7 @@
                 doc2={pairMatrixData.doc2}
                 pairs={pairMatrixData.pairs}
                 mode={scatterMode}
+                hideEmpty={$hideEmpty}
                 on:cellclick={handleScatterClick}
             />
         {:else if layout.bottomRight === "documentStemma"}
