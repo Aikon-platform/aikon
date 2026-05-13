@@ -154,7 +154,6 @@
         height: 100%;
         display: flex;
         flex-direction: column;
-        overflow-x: hidden;
     }
     .split-divider {
         position: relative;
@@ -185,6 +184,7 @@
         flex-direction: column;
         flex: 1;
         min-height: 0;
+        overflow-x: hidden;
     }
     .scroll-area {
         flex: 1;
