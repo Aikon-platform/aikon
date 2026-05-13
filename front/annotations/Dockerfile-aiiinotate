@@ -28,7 +28,7 @@ RUN apt install curl iproute2 -y
 # create a npm package in $DIR to run aiiinotate from
 RUN npm init -y
 # install the app as an NPM library. we do a global install as it saves us from issues with `$PATH`.
-RUN npm i aiiinotate@">=0.9.1"
+RUN npm i aiiinotate@">=0.10.3"
 #RUN npm i aiiinotate
 
 # expose the used port
