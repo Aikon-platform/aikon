@@ -203,7 +203,7 @@
                 documents={friezeDocuments}
                 {visiblePairs}
                 {documentNodes}
-                {stemmaStore}
+                isInStemma={true} {stemmaStore}
                 mode={friezeMode}
                 on:imageselect={e => { selectedFriezeImage.set(e.detail); selectedCluster.set(null); }}
                 on:clusterselect={e => { selectedCluster.set(e.detail); selectedFriezeImage.set(null); }}
