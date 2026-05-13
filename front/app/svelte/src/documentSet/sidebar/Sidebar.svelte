@@ -30,6 +30,7 @@
         pairStats,
         scoreFilter,
         setScoreFilter,
+        hideEmpty,
     } = documentSetStore;
     const { clusterNb, handlePageUpdate } = clusterStore;
 
@@ -50,6 +51,16 @@
     }
 
     // todo use i18n
+    const t = {
+        pairs: {en: "Pairs", fr: "Paires"},
+        hideEmpty: {en: "Hide documents without pairs", fr: "Masquer les documents sans paires"},
+        showEmpty: {en: "Show documents without pairs", fr: "Afficher les documents sans paires"},
+        simCat: {en:"Similarity categories", fr: "Catégories de similarité"},
+        allPairs: {en: "All pairs", fr: "Toutes les paires"},
+        filterByCategory: {en: "Filter by category", fr: "Filtrer par catégorie"},
+        scoreFilter: {en: "Similarity score", fr: "Score de similarité"},
+        disable: {en: "Disable filtering", fr: "Désactiver le filtrage"},
+    }
 </script>
 
 <div class="m-4 py-5 px-4">
@@ -74,7 +85,7 @@
 
                     <div class="level-item has-text-centered">
                         <div>
-                            <p class="heading">{appLang === "en" ? "Pairs" : "Paires"}</p>
+                            <p class="heading">{i18n("pairs", t)}</p>
                             <p class="title is-5">{$docSetNumber.pairs || 0}</p>
                         </div>
                     </div>
@@ -101,7 +112,7 @@
 
             <div class="pt-2">
                 <h3 class="title">
-                    {appLang === "en" ? "Similarity categories" : "Catégories de similarité"}
+                    {i18n("simCat", t)}
                 </h3>
                 <div class="buttons mb-3">
                     {#each ["all", "filtered"] as mode}
@@ -109,11 +120,7 @@
                             class:is-link={filterMode === mode}
                             class:is-contrasted={filterMode !== mode}
                             on:click={() => setFilterMode(mode)}>
-                            {
-                                mode === "all" ?
-                                    appLang === "en" ? "All pairs" : "Toutes les paires" :
-                                    appLang === "en" ? "Filter by category" : "Filtrer par catégorie"
-                            }
+                            {mode === "all" ? i18n("allPairs", t) : i18n("filterByCategory", t)}
                         </button>
                     {/each}
                 </div>
@@ -141,7 +148,7 @@
                     <div class="level-left">
                         <div class="level-item">
                             <h3 class="title">
-                                {appLang === "en" ? "Similarity score" : "Score de similarité"}
+                                {i18n("scoreFilter", t)}
                             </h3>
                         </div>
                     </div>
@@ -150,7 +157,7 @@
                             <label class="checkbox mt-1 is-flex is-align-items-center">
                                 <input on:change={() => setScoreFilter(!$scoreFilter)} checked={!$scoreFilter} type="checkbox" class="mr-2"/>
                                 <span class="is-size-7">
-                                    {appLang === "en" ? "Disable filtering" : "Désactiver le filtrage"}
+                                    {i18n("disable", t)}
                                 </span>
                             </label>
                         </div>
@@ -197,6 +204,15 @@
                     {/if}
                 </div>
             </div>
+
+            <hr>
+
+            <button class="is-small is-fullwidth button is-shadowless"
+                    class:is-selected={$hideEmpty}
+                    class:is-contrasted={!$hideEmpty}
+                    on:click={() => $hideEmpty = !$hideEmpty}>
+                <span>{i18n($hideEmpty ? "hideEmpty" : "showEmpty", t)}</span>
+            </button>
 
             <hr>
 

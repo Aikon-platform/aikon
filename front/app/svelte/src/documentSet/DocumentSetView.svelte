@@ -21,9 +21,9 @@
     export let docSet;
 
     const documentSetStore = createDocumentSetStore(docSet.id);
-    const {error, fetchPairs, selectedDocuments, selectedCategories, threshold, topK, mutualTopK, scoreMode, docSort} = documentSetStore;
+    const {error, fetchPairs, selectedDocuments, selectedCategories, threshold, topK, mutualTopK, scoreMode, docSort, hideEmpty} = documentSetStore;
 
-    let syncDocs, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode, syncDocSort;
+    let syncDocs, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode, syncDocSort, syncHideEmpty;
     onMount(() => {
         syncDocs = syncStoreWithURL(selectedDocuments, "doc", "set");
         syncCategories = syncStoreWithURL(selectedCategories, "categories", "array", [1]);
@@ -32,6 +32,7 @@
         syncMutualTopK = syncStoreWithURL(mutualTopK, "mutual", "boolean");
         syncScoreMode = syncStoreWithURL(scoreMode, "mode", "string");
         syncDocSort = syncStoreWithURL(docSort, "sort", "string");
+        syncHideEmpty = syncStoreWithURL(hideEmpty, "hideEmpty", "boolean");
 
         const unsubDocs = selectedDocuments.subscribe(syncDocs);
         const unsubCategories = selectedCategories.subscribe(syncCategories);
@@ -40,6 +41,7 @@
         const unsubMutualTopK = mutualTopK.subscribe(syncMutualTopK);
         const unsubScoreMode = scoreMode.subscribe(syncScoreMode);
         const unsubDocSort = docSort.subscribe(syncDocSort);
+        const unsubHideEmpty = hideEmpty.subscribe(syncHideEmpty);
 
         return () => {
             unsubDocs();
@@ -48,6 +50,8 @@
             unsubTopK();
             unsubMutualTopK();
             unsubScoreMode();
+            unsubDocSort();
+            unsubHideEmpty();
         };
     });
 

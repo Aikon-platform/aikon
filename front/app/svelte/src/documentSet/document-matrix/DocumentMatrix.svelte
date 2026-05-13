@@ -10,8 +10,8 @@
     export let documentSetStore;
 
     const {
-        documentNodes, sortedDocumentNodes, pairIndex, filteredDocPairStats, filteredDocStats,
-        imageCountMap, visiblePairIds, coverageData, buildMatchesForAnchor
+        sortedDocumentNodes, pairIndex, filteredDocPairStats, filteredDocStats,
+        imageCountMap, visiblePairIds, coverageData, buildMatchesForAnchor, hideEmpty
     } = documentSetStore;
 
     const t = {
@@ -40,7 +40,8 @@
     let scatterData = null;
     let percentageMode = false;
 
-    $: documents = $sortedDocumentNodes.map(([, meta]) => meta);
+    $: documents = $sortedDocumentNodes.map(([, meta]) => meta)
+        .filter(d => !$hideEmpty || ($filteredDocStats.scoreCount?.get(d.id)?.count || 0) > 0);
     $: pairsForSelection = selectedCell ? getPairsForCell(selectedCell, $visiblePairIds) : [];
     $: matchesData = selectedCell
         ? buildMatchesForAnchor(selectedCell.doc1, [selectedCell.doc2], null, false, true)
@@ -110,7 +111,7 @@
         {/if}
     </div>
     <div slot="bottom-left-scroll">
-        <Matches matches={matchesData.matches} columns={matchesData.columns}/>
+        <Matches matches={matchesData.matches} columns={matchesData.columns} hideEmpty={$hideEmpty}/>
     </div>
 
     <div slot="right-title" class="is-flex is-justify-content-space-between">
@@ -136,6 +137,7 @@
                 doc2={selectedCell.doc2}
                 pairs={pairsForSelection}
                 mode={scatterMode}
+                hideEmpty={$hideEmpty}
                 on:cellclick={handleScatterClick}
             />
         {:else}

@@ -749,6 +749,8 @@ export function createDocumentSetStore(documentSetId) {
         return map;
     });
 
+    const hideEmpty = writable(false);
+
     return {
         documentSetId,
         docSetId: documentSetId,
@@ -807,6 +809,8 @@ export function createDocumentSetStore(documentSetId) {
         normalizeByImages,
         imageCountMap,
         visiblePairIds,
-        coverageData
+        coverageData,
+        hideEmpty,
+        setHideEmpty: (b) => hideEmpty.set(b),
     };
 }

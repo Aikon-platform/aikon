@@ -11,7 +11,7 @@
     export let documentSetStore;
     const {
         imageNetwork, documentNetwork, selectedNodes, updateSelectedNodes,
-        buildMatchesForAnchor
+        buildMatchesForAnchor, hideEmpty
     } = documentSetStore;
 
     let networkInstance;
@@ -95,7 +95,7 @@
 <!--            <DocumentTable selectedDocuments={$selectedNodes} {documentSetStore}/>-->
             <div class="box mt-4">
                 <h3 class="title is-5">{appLang === "en" ? "Aligned documents" : "Documents alignés"} ({$selectedNodes.length})</h3>
-                <Matches matches={tableData.matches} columns={tableData.columns}/>
+                <Matches matches={tableData.matches} columns={tableData.columns} hideEmpty={$hideEmpty}/>
             </div>
         {/if}
     {/if}

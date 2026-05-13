@@ -12,6 +12,7 @@
     export let columns = [];
     export let cardHeight = 96;
     export let isInStemma = false;
+    export let hideEmpty = false;
 
     const dispatch = createEventDispatcher();
     const tabs = [
@@ -24,7 +25,11 @@
     let modalIndex = 0;
     let menu = { open: false, x: 0, y: 0, items: [] };
 
-    $: modalItems = matches.flatMap(row => row.flatMap(c => c?.images ?? []));
+    $: displayMatches = hideEmpty && matches.length > 1
+        ? matches.filter(row => row.slice(1).some(c => c))
+        : matches;
+
+    $: modalItems = displayMatches.flatMap(row => row.flatMap(c => c?.images ?? []));
 
     const handleOpenModal = (e) => {
         modalIndex = e.detail.index ?? 0;
@@ -48,11 +53,11 @@
 </script>
 
 <div class="matches-scroll">
-    {#if !matches.length}
+    {#if !displayMatches.length}
         <p class="has-text-grey is-size-7 p-3">{i18n("none", t)}</p>
-    {:else if matches.length === 1}
+    {:else if displayMatches.length === 1}
         <div class="is-flex is-flex-wrap-wrap is-align-items-flex-start" style="gap: 1rem;">
-            {#each matches[0] as cell}
+            {#each displayMatches[0] as cell}
                 {#if cell}
                     {#each cell.images as img, k}
                         <div class="is-flex is-flex-wrap-wrap is-flex-direction-column is-align-content-center"
@@ -71,7 +76,7 @@
             {/each}
         </div>
     {:else}
-        <p class="is-size-7 has-text-grey mb-2">{matches.length} {i18n("matches", t)}</p>
+        <p class="is-size-7 has-text-grey mb-2">{displayMatches.length} {i18n("matches", t)}</p>
         <table class="table is-fullwidth is-narrow">
             <thead>
                 <tr>
@@ -84,7 +89,7 @@
                 </tr>
             </thead>
             <tbody>
-                {#each matches as row, i (i)}
+                {#each displayMatches as row, i (i)}
                     <tr>
                         {#each row as cell, j (j)}
                             <td>
