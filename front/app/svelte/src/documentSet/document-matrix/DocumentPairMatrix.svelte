@@ -288,7 +288,7 @@
     }
 </script>
 
-<div class="scatter-container" bind:this={container}></div>
+<div id="doc-pair-matrix" class="scatter-container" bind:this={container}></div>
 
 <style>
     .scatter-container {

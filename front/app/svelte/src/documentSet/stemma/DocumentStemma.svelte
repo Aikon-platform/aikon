@@ -138,7 +138,7 @@
     $: selectedIds = new Set($selectedNodes.map(n => n.id));
 </script>
 
-<div class="stemma-container" bind:clientWidth={width} bind:clientHeight={height}>
+<div id="doc-stemma" class="stemma-container" bind:clientWidth={width} bind:clientHeight={height}>
     <svg bind:this={svgEl} class="stemma-svg"
          viewBox="0 0 {width} {height}"
          on:pointermove={onPointerMove} on:pointerup={onPointerUp}>
