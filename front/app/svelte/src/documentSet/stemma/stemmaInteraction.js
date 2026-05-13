@@ -24,7 +24,8 @@ export function createStemmaInteraction(stemmaStore) {
         element = el;
         zoomBehavior = d3.zoom()
             .scaleExtent([0.2, 5])
-            .filter(e => !drag && (onZoomFilter ? onZoomFilter(e) : e.button === 0))
+            .filter(e => !drag && !get(drawingEdge) &&
+                (onZoomFilter ? onZoomFilter(e) : (e.type === "wheel" || !(e.shiftKey || e.metaKey))))
             .on("zoom", e => transform.set(e.transform));
         d3.select(el).call(zoomBehavior);
     }
@@ -78,14 +79,71 @@ export function createStemmaInteraction(stemmaStore) {
         d3.select(element).call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
     }
 
+    const drawingEdge = writable(null);
+
+    function enableEdgeDraw({ getNodeId, documents }) {
+        edgeDraw = { getNodeId, documents };
+    }
+    let edgeDraw = null;
+
+    function onPointerDown(e, node) {
+        if (e.button !== 0) return;
+        if (edgeDraw && (e.shiftKey || e.metaKey)) {
+            const { x, y } = toLocal(e);
+            drawingEdge.set({ sourceId: edgeDraw.getNodeId(node), x, y });
+            element.setPointerCapture(e.pointerId);
+            e.stopPropagation();
+        } else if (startDrag(e, node)) {
+            e.stopPropagation();
+            element.setPointerCapture(e.pointerId);
+        }
+    }
+
+    function onPointerMove(e) {
+        const cur = get(drawingEdge);
+        if (cur) {
+            const { x, y } = toLocal(e);
+            drawingEdge.set({ ...cur, x, y });
+            return;
+        }
+        moveDrag(e);
+    }
+
+    function onPointerUp(e) {
+        const cur = get(drawingEdge);
+        if (cur) {
+            const targetId = nodeIdAtClient(e.clientX, e.clientY);
+            if (targetId != null && targetId !== cur.sourceId) {
+                const src = edgeDraw.documents.find(d => d.id === cur.sourceId);
+                const tgt = edgeDraw.documents.find(d => d.id === targetId);
+                if (src && tgt) stemmaStore.addEdge(cur.sourceId, targetId, src, tgt);
+            }
+            drawingEdge.set(null);
+        }
+        endDrag();
+        element.releasePointerCapture?.(e.pointerId);
+    }
+
+    function nodeIdAtClient(cx, cy) {
+        const el = document.elementFromPoint(cx, cy);
+        const g = el?.closest("[data-node-id]");
+        return g ? Number(g.dataset.nodeId) : null;
+    }
+
     return {
         transform,
         dragOverride,
+        drawingEdge,
         attach,
+        enableEdgeDraw,
+        onPointerDown,
+        onPointerMove,
+        onPointerUp,
         startDrag,
         moveDrag,
         endDrag,
         positionCenter,
+        toLocal,
         isDragging: () => !!drag
     };
 }

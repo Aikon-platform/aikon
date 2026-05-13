@@ -9,17 +9,16 @@
     export let stemmaStore;
 
     const {
-        selectedNodes, edges, nodePositions, nodeTitles, reverseEdge,
-        updateNodeTitle, updateEdgeLabel, addEdge, removeEdge, clearGraph
+        selectedNodes, edges, nodePositions, nodeTitles,
+        updateNodeTitle, updateEdgeLabel, clearGraph
     } = stemmaStore;
 
     const interaction = createStemmaInteraction(stemmaStore);
-    const { transform, dragOverride } = interaction;
+    const { transform, dragOverride, drawingEdge } = interaction;
+    interaction.enableEdgeDraw({ getNodeId: n => n.id, documents });
 
-    let drawingEdge = null;
     let editingNode = null;
     let editingEdge = null;
-    let editLabel = "";
 
     const stemmaMenu = createStemmaMenu(stemmaStore, {
         onRename: node => editingNode = { id: node.id, title: node.title, color: node.color },
@@ -56,9 +55,7 @@
 
     let mounted = false;
     onMount(() => {
-        interaction.attach(svgEl, {
-            onZoomFilter: e => !(e.shiftKey || e.metaKey) && (e.type === "wheel" || (!interaction.isDragging() && !drawingEdge))
-        });
+        interaction.attach(svgEl);
         mounted = true;
     });
 
@@ -70,55 +67,6 @@
         return override?.docId === node.id ? { x: override.x, y: override.y } : { x: node.x, y: node.y };
     }
 
-    function onNodePointerDown(e, node) {
-        if (e.button !== 0) return;
-        if (e.shiftKey || e.metaKey) {
-            const { x, y } = interaction.toLocal?.(e) ?? localFromEvent(e);
-            drawingEdge = { sourceId: node.id, x, y };
-            svgEl.setPointerCapture(e.pointerId);
-        } else if (interaction.startDrag(e, node)) {
-            e.stopPropagation();
-            svgEl.setPointerCapture(e.pointerId);
-        }
-    }
-
-    function onPointerMove(e) {
-        if (drawingEdge) {
-            const { x, y } = localFromEvent(e);
-            drawingEdge = { ...drawingEdge, x, y };
-            return;
-        }
-        interaction.moveDrag(e);
-    }
-
-    function onPointerUp(e) {
-        if (drawingEdge) {
-            const target = nodeAtClient(e.clientX, e.clientY);
-            if (target && target.id !== drawingEdge.sourceId) {
-                const exists = $edges.some(ed => ed.source === drawingEdge.sourceId && ed.target === target.id);
-                if (!exists) {
-                    const src = documents.find(d => d.id === drawingEdge.sourceId);
-                    const tgt = documents.find(d => d.id === target.id);
-                    addEdge(drawingEdge.sourceId, target.id, src, tgt);
-                }
-            }
-            drawingEdge = null;
-        }
-        interaction.endDrag();
-        svgEl.releasePointerCapture?.(e.pointerId);
-    }
-
-    function localFromEvent(e) {
-        const rect = svgEl.getBoundingClientRect();
-        const tr = $transform;
-        return { x: (e.clientX - rect.left - tr.x) / tr.k, y: (e.clientY - rect.top - tr.y) / tr.k };
-    }
-
-    function nodeAtClient(cx, cy) {
-        const el = document.elementFromPoint(cx, cy);
-        const g = el?.closest("[data-node-id]");
-        return g ? nodeMap.get(Number(g.dataset.nodeId)) : null;
-    }
 
     function saveTitle({ detail }) {
         if (detail.value) updateNodeTitle(editingNode.id, detail.value);
@@ -139,9 +87,8 @@
 </script>
 
 <div id="doc-stemma" class="stemma-container" bind:clientWidth={width} bind:clientHeight={height}>
-    <svg bind:this={svgEl} class="stemma-svg"
-         viewBox="0 0 {width} {height}"
-         on:pointermove={onPointerMove} on:pointerup={onPointerUp}>
+    <svg bind:this={svgEl} class="stemma-svg" viewBox="0 0 {width} {height}"
+         on:pointermove={interaction.onPointerMove} on:pointerup={interaction.onPointerUp}>
         <defs>
             <marker id="doc-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                 <polygon points="0 0, 10 3.5, 0 7" fill="var(--bulma-body-color)"/>
@@ -172,11 +119,11 @@
                 {/if}
             {/each}
 
-            {#if drawingEdge}
-                {@const src = nodeMap.get(drawingEdge.sourceId)}
+            {#if $drawingEdge}
+                {@const src = nodeMap.get($drawingEdge.sourceId)}
                 {#if src}
                     <line x1={src.x + NODE_W/2} y1={src.y + NODE_H}
-                          x2={drawingEdge.x} y2={drawingEdge.y}
+                          x2={$drawingEdge.x} y2={$drawingEdge.y}
                           stroke="var(--bulma-body-color)" stroke-width={2 / $transform.k}
                           stroke-dasharray="5,5"/>
                 {/if}
@@ -188,7 +135,7 @@
                 <g data-node-id={node.id}
                    transform="translate({p.x},{p.y})"
                    style="cursor: grab"
-                   on:pointerdown={e => onNodePointerDown(e, node)}
+                   on:pointerdown={e => interaction.onPointerDown(e, node)}
                    on:contextmenu={e => stemmaMenu.openNodeMenu(e, node)}>
                     <rect width={NODE_W} height={NODE_H} rx="4"
                           fill={node.color}
