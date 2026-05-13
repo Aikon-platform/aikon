@@ -586,7 +586,7 @@ def get_record_annotations(
                     "id": aid,
                     "ref": f"{img}_{xywh_str}",
                     "class": "Region",
-                    "type": get_name("Regions"),
+                    "type": get_name("RegionExtraction"),
                     "title": region_title(canvas, xywh_str),
                     "url": gen_iiif_url(img, res=f"{xywh}/full/0"),
                     "canvas": canvas,
