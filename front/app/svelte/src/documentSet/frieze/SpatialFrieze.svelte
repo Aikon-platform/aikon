@@ -9,8 +9,10 @@
     export let visiblePairs;
     export let documentNodes;
     export let mode = "image";
+    export let isInStemma = false;
 
-    const { nodeTitles } = stemmaStore;
+    const { nodeTitles, areAllInStemma, docsInStemma } = stemmaStore;
+    const areInStemma = (matchedDocs) => isInStemma && $docsInStemma && areAllInStemma([$baseDocId, ...matchedDocs]);
 
     const dispatch = createEventDispatcher();
 
@@ -328,6 +330,7 @@
                     <button class="frieze-line"
                         class:is-selected={idx === $selectedIndex}
                         class:is-cluster-selected={clusterSelectedIndices?.has(idx)}
+                        class:is-in-stemma={!clusterMode && areInStemma(item.matchedDocs)}
                         style="{clusterData
                             ? `background:${clusterData.itemColors[idx]?.color || '#4a4a4a'};`
                             : `--opacity: ${item.matchCount / $maxVal}`}"
@@ -394,8 +397,9 @@
         <div class="doc-selector">
             {#each documents as node (node.id)}
                 {@const title = $nodeTitles[node.id] || node.title}
-                <button class="tag is-small" title={title}
+                <button class="tag is-small doc-item" title={title}
                     class:is-base={node.id === $baseDocId}
+                    class:is-in-stemma={areInStemma([node.id])}
                     class:is-inactive={hoveredDocs.size > 0 && !hoveredDocs.has(node.id) && node.id !== $baseDocId}
                     style="background-color: {node.color}; color: #222;"
                     on:click={() => { baseDocId.set(node.id); selectedIndex.set(null); }}>
@@ -421,6 +425,7 @@
                         <b>{docLen} document{docLen > 1 ? 's' : ''}</b>
                         <span class="tag is-light is-small is-rounded is-clickable" title={i18n("clickToShow", t)}
                             class:is-active={selectedClusterSig === clusterSignature(cl.docIds)}
+                            class:is-in-stemma={areInStemma(cl.docIds)}
                             on:click={() => handleClusterClick(cl)}
                             on:contextmenu={(e) => openEdgesMenu(e, [$baseDocId, ...cl.docIds])}
                             on:mouseenter={() => handleClusterHover(cl)}
@@ -441,6 +446,7 @@
 
 <style>
     .frieze-container {
+        --stemma-link-color: hsl(19 95.1% 52%);
         padding: 0.5rem;
     }
     .cluster-container {
@@ -473,6 +479,32 @@
         margin-top: -5px;
         height: calc(100% + 5px);
     }
+    .frieze-line.is-in-stemma {
+        background: color-mix(in srgb, var(--stemma-link-color) calc(var(--opacity) * 100%), transparent);
+    }
+    .tag.is-clickable.is-in-stemma {
+        outline: 2px solid var(--stemma-link-color);
+        outline-offset: -2px;
+    }
+    .tag.doc-item {
+        cursor: pointer;
+        transition: border-color 0.3s, opacity 0.3s, filter 0.3s;
+        border-color: var(--bulma-link);
+    }
+    .tag.doc-item.is-in-stemma {
+        border-left: 4px solid var(--stemma-link-color);
+    }
+    .tag.doc-item.is-base {
+        border: 2px solid var(--bulma-link);
+    }
+    .tag.doc-item.is-base.is-in-stemma {
+        border-color: var(--stemma-link-color);
+        border-left: 4px solid var(--stemma-link-color);
+    }
+    .tag.doc-item.is-inactive {
+        opacity: 0.3;
+        filter: grayscale(0.8);
+    }
     .heatmap {
         display: flex;
         height: 8px;
@@ -497,18 +529,6 @@
         display: flex;
         flex-wrap: wrap;
         gap: 0.5rem;
-    }
-    .doc-selector .tag {
-        cursor: pointer;
-        border: 2px solid transparent;
-        transition: border-color 0.3s, opacity 0.3s, filter 0.3s;
-    }
-    .doc-selector .tag.is-base {
-        border-color: var(--bulma-link);
-    }
-    .doc-selector .tag.is-inactive {
-        opacity: 0.3;
-        filter: grayscale(0.8);
     }
     .frieze-line.is-cluster-selected {
         margin-bottom: -5px;
