@@ -4,6 +4,7 @@ import re
 from typing import List, NamedTuple
 
 from django.contrib.postgres.fields import ArrayField
+from django.core.exceptions import ValidationError
 from django.db import models, connection
 
 from app.webapp.utils.functions import cast
