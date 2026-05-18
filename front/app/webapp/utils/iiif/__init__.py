@@ -60,6 +60,8 @@ def gen_iiif_url(
 ):
     # E.g. "http://localhost/iiif/2/image_name.jpg/full/full/0/default.jpg"
     # return f"{scheme}://{host}{f':{port}' if port else ''}/iiif/{vers}/{img}/{res}/{color}.{ext}"
+    if not img.endswith("jpg"):
+        img = f"{img}.jpg"
     return f"{CANTALOUPE_APP_URL}/iiif/{vers}/{img}/{res}/{color}.{ext}"
 
 
