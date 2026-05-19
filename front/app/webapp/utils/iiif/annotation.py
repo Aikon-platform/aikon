@@ -471,7 +471,6 @@ def get_canvas_idx(aiiino):
     if canvas_idx:
         return int(canvas_idx)
 
-    # print(aiiino)
     full = aiiino.get("full", "")
     try:
         return int(full.split("canvas/c")[1].replace(".json", ""))
@@ -556,7 +555,6 @@ def get_record_annotations(
     # if record is a Regions, all annotations for the Regions.
     # otherwise, all nnotations for the Digitization
     annos = get_manifest_annotations(record.get_ref(), False, min_c, max_c)
-
     if len(annos) == 0:
         return r_annos
 
@@ -1073,7 +1071,8 @@ def unindex_annotations_for_canvas(canvas_uri: str) -> bool:
 def unindex_region_extraction(region_extraction_ref: str, manifest_url: str) -> bool:
     """
     - delete all annotations from aiiinotate for a specific RegionExtraction.
-    - DOES NOT DELETE THE related manifest
+    - if the related manifest does not have any other annotations in aiiinotate,
+        unindex the manifest from aiiinotate.
 
     in our annotations, the region_extraction_ref is stored as a Tag in the annotation's body => use aiiinotate's delete-by-tag functionnality.
     """
@@ -1092,6 +1091,9 @@ def unindex_region_extraction(region_extraction_ref: str, manifest_url: str) -> 
         log(
             f"[unindex_region_extraction]: deleted {deleted} annotations from {digit_ref} with tag {region_extraction_ref}"
         )
+        # if there are no annotations in aiiinotate connected to that manifest, delete it.
+        if get_total_annotations(digit_ref) == 0:
+            unindex_manifest(manifest_url)
 
     except Exception as e:
         log(
@@ -1106,15 +1108,14 @@ def destroy_region_extraction(region_extraction: RegionExtraction) -> bool:
     """
     - delete a RegionExtraction (database object)
     - remove its annos from aiiinotate
+    - delete the manifest from aiiinotate, if no other annotations point to the digitization's manifest
     - update Witness to remove reference to the RegionExtraction
+
+    NOTE: we don't want to delete similarities for a Region Extraction.
+    the logic is that similarities are decoupled from region extractions and should be deleted on their own.
     """
     manifest_url = region_extraction.get_manifest_url()
     region_extraction_ref = region_extraction.get_ref()
-
-    # NOTE we don't want to delete similarities for a Region Extraction.
-    # if "similarity" in ADDITIONAL_MODULES:
-    #     from app.similarity.utils import delete_pairs_with_region_extraction
-    #     delete_pairs_with_region_extraction(region_extraction.id)
 
     try:
         region_extraction.delete()

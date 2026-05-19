@@ -27,9 +27,9 @@
     newAndOldPropagateParams.setCompareFn((x,y) =>
         [x,y].every(_ =>
             _ && _.hasOwnProperty("propagateRecursionDepth") && _.hasOwnProperty("propagateFilterByRegions"))
-        ? x.propagateRecursionDepth === y.propagateRecursionDepth
+            ? x.propagateRecursionDepth === y.propagateRecursionDepth
             && x.propagateFilterByRegions === y.propagateFilterByRegions
-        : false
+            : false
     );
     /** @type {NewAndOldType} */
     const newAndOldSelectedRegions = createNewAndOld();
@@ -47,8 +47,8 @@
      */
     const getRegionsIds = (_selectedRegions) =>
         Object.keys(_selectedRegions).includes(currentPageId)
-        ? Object.values(_selectedRegions[currentPageId]).map(v => v.id)
-        : [];
+            ? Object.values(_selectedRegions[currentPageId]).map(v => v.id)
+            : [];
 
     /**
      * if `isInModal`, no filtering by regions
@@ -69,11 +69,11 @@
                 'X-CSRFToken': csrfToken
             }
         })
-        .then(r => r.json())
-        .catch(e => {
-            console.error("PropagatedMatches.getPropagatedMatches:", e);
-            return []
-        });
+            .then(r => r.json())
+            .catch(e => {
+                console.error("PropagatedMatches.getPropagatedMatches:", e);
+                return []
+            });
 
     ////////////////////////////////////
 

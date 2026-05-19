@@ -1,6 +1,6 @@
 import requests
 from app.config.celery import celery_app
-from config.settings import API_URL
+from app.config.settings import API_URL
 
 
 @celery_app.task
@@ -15,6 +15,6 @@ def process_region_extraction_file(file_content, digit_id, model):
 @celery_app.task
 def delete_api_region_extraction(digit_ref, model_name=None):
     model = f"?model_name={model_name}" if model_name else ""
-    response = requests.post(f"{API_URL}/regions/{digit_ref}/delete{model}")
+    response = requests.post(f"{API_URL}/region_extraction/{digit_ref}/delete{model}")
     response.raise_for_status()
     return response.json()

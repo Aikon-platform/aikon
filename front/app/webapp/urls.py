@@ -97,7 +97,7 @@ urlpatterns = [
         name="validate-region-extraction",
     ),
     path(
-        f"{APP_NAME}/iiif/<str:version>/<str:region_extraction_ref>/list/anno-<int:canvas_nb>.json",
+        f"{APP_NAME}/iiif/<str:region_extraction_ref>/list/anno-<int:canvas_nb>.json",
         canvas_annotations,
         name="canvas-annotations",
     ),
@@ -298,12 +298,12 @@ urlpatterns += [
         name="region_extraction_manual_region_extraction",
     ),
     path(
-        f"{APP_NAME}/region_extraction/<int:rid>/delete",
+        f"{APP_NAME}/regions/<int:rid>/delete",
         delete_region_extraction,
         name="delete_region_extraction",
     ),
     path(
-        f"{APP_NAME}/region_extraction/export",
+        f"{APP_NAME}/regions/export",
         export_region_extraction,
         name="export_region_extraction",
     ),
@@ -346,12 +346,12 @@ urlpatterns += [
         name="witness_update",
     ),
     path(
-        f"{APP_NAME}/region_extraction/<int:reid>/region/add",
+        f"{APP_NAME}/regions/<int:reid>/region/add",
         save_region,
         name="new-region",
     ),
     path(
-        f"{APP_NAME}/region_extraction/<int:reid>/region/<int:rid>/edit",
+        f"{APP_NAME}/regions/<int:reid>/region/<int:rid>/edit",
         save_region,
         name="change-region",
     ),
