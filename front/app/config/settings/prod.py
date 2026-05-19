@@ -27,7 +27,8 @@ ADMINS = [(f"{APP_NAME} admin", ADMIN_EMAIL)]
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-EMAIL_USE_TLS = True
+EMAIL_USE_TLS = ENV("EMAIL_USE_TSL", default=True)
+EMAIL_USE_SSL = ENV("EMAIL_USE_SSL", default=True)
 EMAIL_HOST = ENV("EMAIL_HOST", default="localhost")
 EMAIL_PORT = ENV("EMAIL_PORT", default=587)
 EMAIL_HOST_USER = ENV("EMAIL_HOST_USER")
