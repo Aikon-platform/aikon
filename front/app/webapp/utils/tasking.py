@@ -11,6 +11,7 @@ from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.utils.logger import log
+from app.webapp.utils.functions import ensure_legacy_regions
 
 
 def get_user(user: User = None) -> User:
@@ -252,7 +253,7 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
                 "experiment_id": str(treatment_id),
                 "documents": documents,
                 # URL to which results and task notifications are sent back
-                "notify_url": f"{APP_URL}/{APP_NAME}/{task_name}/notify",
+                "notify_url": f"{APP_URL}/{APP_NAME}/{ensure_legacy_regions(task_name)}/notify",
                 **parameters,
             }
 

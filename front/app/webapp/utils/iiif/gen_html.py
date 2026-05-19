@@ -37,7 +37,7 @@ def region_extraction_btn(obj: RegionExtraction | Digitization, action="view"):
     elif action == "final":
         icon = get_icon("check")
         # The link redirects to Mirador with corrected regions (Regions)
-        link = f"{AIIINOTATE_BASE_URL}/index.html?iiif-content={obj.get_manifest_url()}"
+        link = f"{MIRADOR_BASE_URL}/index.html?iiif-content={obj.get_manifest_url()}"
     # elif action == "similarity":
     #     icon = get_icon("code-compare")
     #     link = f"{APP_URL}/{APP_NAME}/{obj.get_ref()}/show-similarity"

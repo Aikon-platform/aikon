@@ -190,6 +190,7 @@ class WitnessRegionExtractionView(AbstractRecordView):
         context["img_nb"] = None
 
         wit = self.get_record()
+        wit.set_json_region_extractions()
         context["view_title"] = f"{wit}"
         context["witness"] = wit.get_json(
             request_user=self.request.user,
@@ -211,8 +212,9 @@ class WitnessRegionExtractionView(AbstractRecordView):
                     "img_nb": djson["img_nb"] or 0,
                     "img_zeros": djson["zeros"] or 0,
                 }
+        print(f"{'>'*30} region_extraction |", context["witness"]["region_extraction"])
 
-        for rid in context["witness"]["region_extractions"]:
+        for rid in context["witness"]["region_extraction"]:
             region_extraction = RegionExtraction.objects.filter(pk=rid).first()
             if not region_extraction:
                 continue
