@@ -102,23 +102,25 @@
 <SplitLayout>
     <div id="stemma-header" slot="left-title" class="is-flex is-justify-content-space-between is-align-items-center">
         {#if layout.left === "documentStemma"}
+            <h4 class="title is-6 mb-0 mr-3 panel-title">{i18n("title", t)}</h4>
             <div class="is-flex is-align-items-center">
-                <h4 class="title is-6 mb-0 mr-3">{i18n("title", t)}</h4>
                 <DownloadPng targetId="doc-stemma" filename="document-stemma.png" />
+                <span class="tag is-small ml-3">{i18n("hint", t)}</span>
             </div>
         {:else if layout.left === "imageStemma" && $selectedFriezeImage}
             {@const baseDoc = $selectedNodes.find(d => d.id === $selectedFriezeImage.baseDocId)}
             {@const title = $nodeTitles[$selectedFriezeImage.baseDocId] || baseDoc?.title}
             {@const imgData = parseImgRef($selectedFriezeImage.imageId)}
-            <h4 class="title is-6 mb-0 px-2" style="max-width: 80%; text-overflow: ellipsis; overflow: hidden">
-                <!--<span>{i18n("imageStemma", t)}</span>-->
+            <h4 class="title is-6 mb-0 px-2 panel-title">
                 Page {imgData?.canvasNb || 0}
                 <span class="color-dot" style="background: {baseDoc?.color}"/>
                 {title ?? "Unknown"}
             </h4>
-            <DownloadPng targetId="img-stemma" filename="image-stemma.png" />
+            <div class="is-flex is-align-items-center">
+                <DownloadPng targetId="img-stemma" filename="image-stemma.png" />
+                <span class="tag is-small ml-3">{i18n("hint", t)}</span>
+            </div>
         {/if}
-        <span class="tag is-small ml-3">{i18n("hint", t)}</span>
     </div>
 
     <div slot="left-scroll">
@@ -220,7 +222,7 @@
         {/if}
     </div>
 
-    <div slot="bottom-right-title" class="is-flex is-justify-content-space-between">
+    <div slot="bottom-right-title" class="is-flex is-justify-content-space-between is-align-items-center">
         {#if layout.bottomRight === "pair" && pairMatrixData}
             <div class="is-flex is-align-items-center">
                 <h4 class="title is-6 mb-0 mr-3">
@@ -238,11 +240,11 @@
                 </select>
             </div>
         {:else if layout.bottomRight === "documentStemma"}
+            <h4 class="title is-6 mb-0 mr-3 panel-title">{i18n("title", t)}</h4>
             <div class="is-flex is-align-items-center">
-                <h4 class="title is-6 mb-0 mr-3">{i18n("title", t)}</h4>
                 <DownloadPng targetId="doc-stemma" filename="document-stemma.png" />
+                <span class="tag is-small ml-3">{i18n("hint", t)}</span>
             </div>
-            <span class="tag is-small ml-3">{i18n("hint", t)}</span>
         {/if}
 
     </div>
@@ -283,5 +285,11 @@
         height: 10px;
         border-radius: 50%;
         display: inline-block;
+    }
+    .panel-title {
+        max-width: 80%;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-height: 1em;
     }
 </style>

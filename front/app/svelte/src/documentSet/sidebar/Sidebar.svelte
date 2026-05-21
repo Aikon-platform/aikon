@@ -1,11 +1,11 @@
 <script>
-    import {appLang} from "../../constants.js";
     import CategoryButton from "../../regions/similarity/CategoryButton.svelte";
     import { activeLayout } from "../../ui/tabStore.js";
     import {getContext} from "svelte";
     import Legend from "./Legend.svelte";
     import InputSlider from "../../ui/InputSlider.svelte";
     import {i18n} from "../../utils.js";
+    import InputToggle from "../../ui/InputToggle.svelte";
 
     export let docSet = null;
     export let documentSetStore;
@@ -50,16 +50,39 @@
         setScoreMode(mode)
     }
 
-    // todo use i18n
     const t = {
         pairs: {en: "Pairs", fr: "Paires"},
         hideEmpty: {en: "Hide documents without pairs", fr: "Masquer les documents sans paires"},
-        showEmpty: {en: "Show documents without pairs", fr: "Afficher les documents sans paires"},
-        simCat: {en:"Similarity categories", fr: "Catégories de similarité"},
+        simCat: {en: "Similarity categories", fr: "Catégories de similarité"},
         allPairs: {en: "All pairs", fr: "Toutes les paires"},
         filterByCategory: {en: "Filter by category", fr: "Filtrer par catégorie"},
         scoreFilter: {en: "Similarity score", fr: "Score de similarité"},
         disable: {en: "Disable filtering", fr: "Désactiver le filtrage"},
+        threshold: {en: "Score threshold", fr: "Seuil de score"},
+        topk: {en: "Top K pairs", fr: "Top K paires"},
+        minScore: {en: "Minimum score", fr: "Score minimum"},
+        mutualTopK: {en: "Mutual top K", fr: "Top K mutuel"},
+        vizInfo: {en: "Visualisation information", fr: "Informations sur la visualisation"},
+        imgInfo: {
+            en: "Network where each node is an image region. Edges connect regions with similarity scores above the threshold. Node color indicates the source document.",
+            fr: "Réseau où chaque nœud est une région d'image. Les liens connectent les régions dont le score de similarité dépasse le seuil. La couleur indique le document source."
+        },
+        docInfo: {
+            en: "Network where each node is a document. Edge thickness reflects the cumulative similarity score between document pairs. Node size indicates the number of connections.",
+            fr: "Réseau où chaque nœud est un document. L'épaisseur des liens reflète le score de similarité cumulé entre paires de documents. La taille des nœuds indique le nombre de connexions."
+        },
+        matInfo: {
+            en: "Matrix showing aggregated similarity scores between documents. Click a cell to explore page-level similarities in a scatter plot interface.",
+            fr: "Matrice affichant les scores de similarité agrégés entre documents. Cliquez sur une cellule pour explorer les similarités entre paires de documents."
+        },
+        steInfo: {
+            en: "Interactive tool to assist in building a stemma based on document similarities.",
+            fr: "Outil interactif pour aider à construire un stemma basé sur les similarités entre documents."
+        },
+        simInfo: {
+            en: "Groups of images that share a similarity connection above the score threshold.",
+            fr: "Groupes d'images partageant une connexion de similarité au-dessus du seuil de score."
+        },
     }
 </script>
 
@@ -171,19 +194,14 @@
                                     class:is-link={$scoreMode === mode}
                                     class:is-contrasted={$scoreMode !== mode}
                                     on:click={() => handleSetScoreMode(mode)}>
-                                {
-                                    mode === "threshold" ?
-                                        appLang === "en" ? "Score threshold" : "Seuil de score" :
-                                        appLang === "en" ? "Top K pairs" : "Top K paires"
-                                }
+                                {i18n(mode, t)}
                             </button>
                         {/each}
                     </div>
 
                     {#if $scoreMode === "threshold"}
                         <InputSlider minVal={$pairStats.scoreRange?.min || 0} maxVal={$pairStats.scoreRange?.max || 500}
-                                     start={$threshold} step={0.01} roundTo={1}
-                                     title={appLang === "en" ? "Minimum score" : "Score minimum"}
+                                     start={$threshold} step={0.01} roundTo={1} title={i18n("minScore", t)}
                                      on:updateSlider={(e) => setThreshold(e.detail)}/>
                     {:else}
                         <div class="columns mt-2">
@@ -195,9 +213,7 @@
                                 <label class="checkbox mt-3 is-flex is-align-items-center">
                                     <input on:change={() => setMutualTopK(!$mutualTopK)} checked={$mutualTopK}
                                            type="checkbox" class="mr-2"/>
-                                    <span class="is-size-7">
-                                        {appLang === "en" ? "Mutual top K" : "Top K mutuel"}
-                                    </span>
+                                    <span class="is-size-7">{i18n("mutualTopK", t)}</span>
                                 </label>
                             </div>
                         </div>
@@ -207,52 +223,19 @@
 
             <hr>
 
-            <button class="is-small is-fullwidth button is-shadowless"
-                    class:is-selected={$hideEmpty}
-                    class:is-contrasted={!$hideEmpty}
-                    on:click={() => $hideEmpty = !$hideEmpty}>
-                <span>{i18n($hideEmpty ? "hideEmpty" : "showEmpty", t)}</span>
-            </button>
+            <InputToggle toggleLabel={i18n("hideEmpty", t)}
+                 on:updateChecked={() => $hideEmpty = !$hideEmpty}
+                 start={$hideEmpty}
+                 buttonDisplay={true}
+            />
 
             <hr>
 
             <div class="py-2">
-                <h3 class="title">
-                    {appLang === "en" ? "Visualisation information" : "Informations sur la visualisation"}
-                </h3>
-                {#if $activeLayout === "img"}
-                    <p>
-                        {appLang === "en"
-                            ? "Network where each node is an image region. Edges connect regions with similarity scores above the threshold. Node color indicates the source document."
-                            : "Réseau où chaque nœud est une région d'image. Les liens connectent les régions dont le score de similarité dépasse le seuil. La couleur indique le document source."}
-                    </p>
-                {:else if $activeLayout === "doc"}
-                    <p>
-                        {appLang === "en"
-                            ? "Network where each node is a document. Edge thickness reflects the cumulative similarity score between document pairs. Node size indicates the number of connections."
-                            : "Réseau où chaque nœud est un document. L'épaisseur des liens reflète le score de similarité cumulé entre paires de documents. La taille des nœuds indique le nombre de connexions."}
-                    </p>
-                {:else if $activeLayout === "mat"}
-                    <p>
-                        {appLang === "en"
-                            ? "Matrix showing aggregated similarity scores between documents. Click a cell to explore page-level similarities in a scatter plot interface."
-                            : "Matrice affichant les scores de similarité agrégés entre documents. Cliquez sur une cellule pour explorer les similarités entre paires de documents."}
-                    </p>
-                {:else if $activeLayout === "ste"}
-                    <p>
-                        {appLang === "en"
-                            ? "Interactive tool to assist in building a stemma based on document similarities."
-                            : "Outil interactif pour aider à construire un stemma basé sur les similarités entre documents."}
-                    </p>
-                {:else if $activeLayout === "sim"}
-                    <p>
-                        {appLang === "en"
-                            ? "Groups of images that share a similarity connection above the score threshold."
-                            : "Groupes d'images partageant une connexion de similarité au-dessus du seuil de score."}
-                    </p>
-                {/if}
-                <!--<NetworkInfo/>-->
+                <h3 class="title">{i18n("vizInfo", t)}</h3>
+                <p>{i18n(`${$activeLayout}Info`, t)}</p>
             </div>
+            <!--<NetworkInfo/>-->
         </div>
     {/if}
 </div>
