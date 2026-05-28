@@ -1,5 +1,5 @@
 import { writable } from "svelte/store";
-import {miradorUrl, cantaloupeUrl, appName, appLang, aiiinotateUrl, model2title} from "./constants";
+import {miradorUrl, cantaloupeUrl, appName, appLang, aiiinotateUrl, model2title, csrfToken} from "./constants";
 
 export const loading = writable(false);
 export const errorMsg = writable("");
@@ -62,6 +62,30 @@ export function getCantaloupeUrl() {
     // TO DELETE
     // return "https://vhs.huma-num.fr"
 }
+
+export const sendTo = async (endpoint, body, failText, method="POST") => {
+    try {
+        const response = await withLoading(() => fetch(`${window.location.origin}/${endpoint}`, {
+            method,
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
+            },
+            body: JSON.stringify(body)
+        }));
+
+        if (!response.ok) {
+            console.log(response)
+            await showMessage(failText, i18n("error"));
+            return false;
+        }
+        return true;
+    } catch (error) {
+        await showMessage(error, i18n("error"));
+        console.error("Error:", error);
+        return false;
+    }
+};
 
 export function getMiradorUrl() {
     return miradorUrl ?? "http://localhost:5555";

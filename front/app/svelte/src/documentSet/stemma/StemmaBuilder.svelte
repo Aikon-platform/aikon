@@ -13,10 +13,11 @@
     import DownloadPng from "../../ui/DownloadPng.svelte";
 
     export let documentSetStore;
+    export let clusterStore;
 
     const {
         normalizeByImages, visiblePairs, sortedDocumentNodes, documentNodes, imageNodes, hideEmpty,
-        filteredDocPairStats, filteredDocStats, imageCountMap, coverageData, selectedDocuments
+        filteredDocPairStats, filteredDocStats, imageCountMap, coverageData, selectedDocuments, pairCat
     } = documentSetStore;
 
     const stemmaStore = createStemmaStore(documentSetStore);
@@ -151,7 +152,7 @@
     <div slot="bottom-left-scroll">
         {#if layout.bottomLeft === "matches"}
             <Matches matches={$matches.matches} columns={$matches.columns} isInStemma={$selectedViz === "spatialFrieze"}
-                     on:anchorselect={e => selectedFriezeImage.set(e.detail)}/>
+                     pairCat={$pairCat} {clusterStore} on:anchorselect={e => selectedFriezeImage.set(e.detail)}/>
         {/if}
     </div>
 

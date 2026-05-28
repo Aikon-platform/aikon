@@ -1,7 +1,12 @@
 import {derived, writable, get} from "svelte/store";
-import {i18n, initPagination, pageUpdate, showMessage, withLoading} from "../../utils.js";
-import {appLang, appName, csrfToken, isSuperuser} from "../../constants.js";
+import {i18n, initPagination, pageUpdate, showMessage, sendTo} from "../../utils.js";
+import {appLang, appName, isSuperuser} from "../../constants.js";
 import {categoryInfo} from "../../regions/similarity/similarityCategory.js";
+
+const t = {
+    batchCat: {en: "Batch categorization failed", fr: "La catégorisation par lot a échoué"},
+    batchUncat: {en: "Batch un-categorization failed", fr: "La dé-catégorisation par lot a échoué"}
+}
 
 export function createClusterStore(documentSetStore, clusterSelection) {
     const pageLength = 10;
@@ -149,67 +154,32 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             return true;
         }
 
-        try {
-            const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/uncategorize-batch`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": csrfToken
-                },
-                body: JSON.stringify({pairs: pairsToRemove})
-            }));
+        const ok = await uncategorizePairsList(pairsToRemove);
+        if (ok) removeImgsFromInterface(imgRefSet, byOriginCluster);
+        return ok;
+    };
 
-            if (!response.ok) {
-                console.log(response)
-                await showMessage(
-                    appLang === "en" ? "Batch un-categorization failed" : "La dé-catégorisation par lot a échoué",
-                    i18n("error"),
-                );
-                return false;
-            }
+    /** Categorize an explicit list of pairs [{img_1, img_2}] and refresh the store in place. */
+    const categorizePairsList = async (pairs, category) => {
+        if (!pairs.length) return true;
+        const ok = await sendTo(`${appName}/categorize-batch`, {pairs, category}, i18n("batchCat", t));
+        if (ok) documentSetStore.patchPairs(pairs.map(p => ({...p, category})));
+        return ok;
+    };
 
-            removeImgsFromInterface(imgRefSet, byOriginCluster);
-
-            return true;
-        } catch (error) {
-            await showMessage(
-                error,
-                i18n("error"),
-            );
-            return false;
-        }
+    /** Uncategorize an explicit list of pairs [{img_1, img_2}] and refresh the store in place. */
+    const uncategorizePairsList = async (pairs) => {
+        if (!pairs.length) return true;
+        const ok = await sendTo(`${appName}/uncategorize-batch`, {pairs}, i18n("batchUncat", t));
+        if (ok) documentSetStore.patchPairs(pairs.map(p => ({...p, category: null})));
+        return ok;
     };
 
     const categorizePairs = async (imgRefs, category) => {
         const pairs = imgRefs.flatMap((ref1, i) =>
             imgRefs.slice(i + 1).map(ref2 => pairData(ref1, ref2))
         );
-
-        try {
-            const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/categorize-batch`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": csrfToken
-                },
-                body: JSON.stringify({ pairs, category })
-            }));
-
-            if (!response.ok) {
-                console.log(response)
-                await showMessage(
-                    appLang === "en" ? "Batch categorization failed" : "La catégorisation par lot a échoué",
-                    i18n("error"),
-                );
-                return false;
-            }
-
-            return true;
-        } catch (error) {
-            await showMessage(error, i18n("error"));
-            console.error("Error:", error);
-            return false;
-        }
+        return categorizePairsList(pairs, category);
     };
 
     const categorizeSelection = async (category) => {
@@ -347,6 +317,8 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         validateCluster,
         removeFromClusters,
         categorizeSelection,
+        categorizePairsList,
+        uncategorizePairsList,
         newCluster,
 
         paginatedClusters,

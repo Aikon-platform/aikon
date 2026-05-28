@@ -520,131 +520,6 @@ export function createDocumentSetStore(documentSetId) {
         return assignIndices({ matches: rows, columns });
     }
 
-    // function buildAlignedImageMatrix(orderedSelection) {
-    //     // TODO to delete as well as DocumentTable.svelte
-    //
-    //     if (!orderedSelection.length) return {regions: [], rows: []};
-    //
-    //     const $documentNodes = get(documentNodes);
-    //     const $pairIndex = get(pairIndex);
-    //
-    //     const firstDigitId = orderedSelection[0];
-    //
-    //     const firstDoc = $documentNodes.get(firstDigitId);
-    //     if (!firstDoc?.images) return {regions: orderedSelection, rows: []};
-    //     const firstImages = firstDoc.images;
-    //
-    //     const findPairs = (imgId, sourceDigitId, targetDigitId) => {
-    //         const pairKey = sourceDigitId < targetDigitId
-    //             ? `${sourceDigitId}-${targetDigitId}`
-    //             : `${targetDigitId}-${sourceDigitId}`;
-    //         const pairs = $pairIndex.byDocPair.get(pairKey) || [];
-    //
-    //         return pairs
-    //             .filter(p =>
-    //                 (p.id_1 === imgId && p.digit_1 === sourceDigitId) ||
-    //                 (p.id_2 === imgId && p.digit_2 === sourceDigitId)
-    //             )
-    //             .map(p => {
-    //                 const isFirst = p.id_1 === imgId;
-    //                 return {
-    //                     id: isFirst ? p.id_2 : p.id_1,
-    //                     page: isFirst ? p.page_2 : p.page_1,
-    //                     rank: isFirst ? p.rank_1 : p.rank_2,
-    //                     otherRank: isFirst ? p.rank_2 : p.rank_1,
-    //                     score: p.weightedScore
-    //                 };
-    //             });
-    //     };
-    //
-    //     const findBestMatch = (imgId, sourceDigitId, targetDigitId) => {
-    //         const pairs = findPairs(imgId, sourceDigitId, targetDigitId);
-    //         if (!pairs.length) return null;
-    //
-    //         const mutualTop1 = pairs.find(p => p.rank <= 1 && p.otherRank <= 1);
-    //         if (mutualTop1) return {id: mutualTop1.id, page: mutualTop1.page};
-    //
-    //         const mutualTop2 = pairs.find(p => p.rank <= 2 && p.otherRank <= 2);
-    //         if (mutualTop2) return {id: mutualTop2.id, page: mutualTop2.page};
-    //
-    //         return null;
-    //     };
-    //
-    //     const $cats = get(selectedCategories);
-    //     const onlyExactMatch = $cats.length === 1 && $cats[0] === 1;
-    //     if (!onlyExactMatch) {
-    //         const rows = [];
-    //         for (const firstImg of firstImages) {
-    //             const row = {[firstDigitId]: {id: firstImg.id, page: firstImg.canvas}};
-    //
-    //             for (let colIdx = 1; colIdx < orderedSelection.length; colIdx++) {
-    //                 const targetDigitId = orderedSelection[colIdx];
-    //                 const best = findBestMatch(firstImg.id, firstDigitId, targetDigitId);
-    //                 if (best) row[targetDigitId] = best;
-    //             }
-    //
-    //             rows.push(row);
-    //         }
-    //         return {regions: orderedSelection, rows};
-    //     }
-    //
-    //     const allRows = [];
-    //
-    //     for (const firstImg of firstImages) {
-    //         let currentRows = [{[firstDigitId]: {id: firstImg.id, page: firstImg.canvas}}];
-    //
-    //         for (let colIdx = 1; colIdx < orderedSelection.length; colIdx++) {
-    //             const targetDigitId = orderedSelection[colIdx];
-    //             const nextRows = [];
-    //
-    //             for (const row of currentRows) {
-    //                 const allPairsFound = [];
-    //
-    //                 for (let srcIdx = 0; srcIdx < colIdx; srcIdx++) {
-    //                     const sourceDigitId = orderedSelection[srcIdx];
-    //                     if (row[sourceDigitId]) {
-    //                         const pairs = findPairs(row[sourceDigitId].id, sourceDigitId, targetDigitId);
-    //                         allPairsFound.push(...pairs);
-    //                     }
-    //                 }
-    //
-    //                 if (allPairsFound.length === 0) {
-    //                     nextRows.push(row);
-    //                 } else {
-    //                     const uniquePairs = new Map();
-    //                     allPairsFound.forEach(p => {
-    //                         if (!uniquePairs.has(p.id)) {
-    //                             uniquePairs.set(p.id, {id: p.id, page: p.page});
-    //                         }
-    //                     });
-    //
-    //                     for (const pair of uniquePairs.values()) {
-    //                         const newRow = {...row, [targetDigitId]: pair};
-    //                         nextRows.push(newRow);
-    //                     }
-    //                 }
-    //             }
-    //
-    //             currentRows = nextRows;
-    //         }
-    //
-    //         allRows.push(...currentRows);
-    //     }
-    //
-    //     const rows = [];
-    //     const seen = new Set();
-    //
-    //     for (const row of allRows) {
-    //         const key = orderedSelection.map(did => row[did]?.id || "").join("|");
-    //         if (!seen.has(key)) {
-    //             seen.add(key);
-    //             rows.push(row);
-    //         }
-    //     }
-    //
-    //     return {regions: orderedSelection, rows};
-    // }
-
     function buildFriezeMatches(frieze, pairs) {
         const imgNodes = get(imageNodes);
         const docNodes = get(documentNodes);
@@ -751,6 +626,27 @@ export function createDocumentSetStore(documentSetId) {
 
     const hideEmpty = writable(false);
 
+    /**
+     * Light refresh: patch already-loaded pairs in place and re-emit without re-streaming from the worker
+     * `updates`: [{img_1, img_2, category}]
+     * // TODO make more versatile => allow to remove pairs
+     */
+    const patchPairs = (updates) => {
+        const map = new Map(updates.map(u => [`${u.img_1}-${u.img_2}`, u.category]));
+        allPairs.update($pairs => {
+            for (const p of $pairs) {
+                const cat = map.get(`${p.id_1}-${p.id_2}`) ?? map.get(`${p.id_2}-${p.id_1}`);
+                if (cat !== undefined) p.category = cat;
+            }
+            return $pairs;
+        });
+    };
+
+    /** Map<"id1-id2", category> of visible pairs, for category selection state */
+    const pairCat = derived(filteredPairs, $pairs =>
+        new Map($pairs.map(p => [`${p.id_1}-${p.id_2}`, p.category]))
+    );
+
     return {
         documentSetId,
         docSetId: documentSetId,
@@ -766,6 +662,7 @@ export function createDocumentSetStore(documentSetId) {
 
         allPairs,
         visiblePairs: filteredPairs,
+        pairCat,
         pairIndex,
         imageNodes,
         documentNodes,
@@ -791,6 +688,7 @@ export function createDocumentSetStore(documentSetId) {
         buildMatchesForAnchor,
         buildFriezeMatches,
         buildClusterMatches,
+        patchPairs,
 
         threshold,
         setThreshold: (t) => threshold.set(t),

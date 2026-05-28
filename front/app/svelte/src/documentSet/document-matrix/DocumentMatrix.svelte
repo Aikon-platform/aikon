@@ -11,7 +11,7 @@
 
     const {
         sortedDocumentNodes, pairIndex, filteredDocPairStats, filteredDocStats,
-        imageCountMap, visiblePairIds, coverageData, buildMatchesForAnchor, hideEmpty
+        imageCountMap, visiblePairIds, coverageData, buildMatchesForAnchor, hideEmpty, pairCat
     } = documentSetStore;
 
     const t = {
@@ -111,7 +111,7 @@
         {/if}
     </div>
     <div slot="bottom-left-scroll">
-        <Matches matches={matchesData.matches} columns={matchesData.columns} hideEmpty={$hideEmpty}/>
+        <Matches matches={matchesData.matches} columns={matchesData.columns} hideEmpty={$hideEmpty} pairCat={$pairCat}/>
     </div>
 
     <div slot="right-title" class="is-flex is-justify-content-space-between">
