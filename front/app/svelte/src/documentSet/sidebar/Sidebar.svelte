@@ -52,7 +52,7 @@
 
     const t = {
         pairs: {en: "Pairs", fr: "Paires"},
-        hideEmpty: {en: "Hide documents without pairs", fr: "Masquer les documents sans paires"},
+        hideEmpty: {en: "Hide when no match", fr: "Masquer si aucune correspondance"},
         simCat: {en: "Similarity categories", fr: "Catégories de similarité"},
         allPairs: {en: "All pairs", fr: "Toutes les paires"},
         filterByCategory: {en: "Filter by category", fr: "Filtrer par catégorie"},

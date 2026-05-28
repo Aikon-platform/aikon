@@ -3,6 +3,7 @@
     import { derived, writable } from "svelte/store";
     import { i18n } from "../../utils.js";
     import RightClick from "../../ui/RightClick.svelte";
+    import NavigationArrow from "../../ui/NavigationArrow.svelte";
 
     export let stemmaStore;
     export let documents;
@@ -35,6 +36,16 @@
     ];
     let clusterMode = false;
     let clusterOrder = "documents";
+
+    function navigate(delta) {
+        const n = $items.length;
+        if (!n) return;
+        const cur = $selectedIndex;
+        const next = cur == null
+            ? (delta > 0 ? 0 : n - 1)
+            : (cur + delta + n) % n;
+        handleClick(next);
+    }
 
     const baseDocId = writable(null);
     const selectedIndex = writable(null);
@@ -324,55 +335,59 @@
             {baseDoc.title} {i18n("similarity", t)}
         </h4>
         {@const friezeWidth = $items.length * LINE_WIDTH}
-        <div id="spatial-frieze" class="frieze-wrapper">
-            <div class="frieze" style="--line-width: {LINE_WIDTH}px;">
-                {#each $items as item, idx}
-                    <button class="frieze-line"
-                        class:is-selected={idx === $selectedIndex}
-                        class:is-cluster-selected={clusterSelectedIndices?.has(idx)}
-                        class:is-in-stemma={!clusterMode && areInStemma(item.matchedDocs)}
-                        style="{clusterData
-                            ? `background:${clusterData.itemColors[idx]?.color || '#4a4a4a'};`
-                            : `--opacity: ${item.matchCount / $maxVal}`}"
-                        title="{mode === 'image' ? `Page ${item.page}, ` : `Page ${item.page}, `}{item.matchCount} match(es)"
-                        on:click={() => handleClick(idx)}
-                        on:contextmenu={(e) => openEdgesMenu(e, [$baseDocId, ...item.matchedDocs])}
-                        on:mouseenter={() => handleMouseEnter(item)}
-                        on:mouseleave={handleMouseLeave}
-                    />
-                {/each}
-            </div>
-
-            {#if mode === "page"}
-                <div class="heatmap" style="--line-width: {LINE_WIDTH}px;">
-                    {#each $friezeData.pageItems as item}
-                        <div
-                            class="heatmap-cell"
-                            style="--opacity: {item.imageCount / $friezeData.maxImagesPerPage}; background-color: {baseDoc?.color}"
-                            title="Page {item.page}: {item.imageCount} image(s)"
+        <div class="frieze-navigation">
+            <NavigationArrow direction="left" navigationFct={() => navigate(-1)} css="z-index:2;margin-top:-0.4em;"/>
+            <NavigationArrow direction="right" navigationFct={() => navigate(1)} css="z-index:2;margin-top:-0.4em;"/>
+            <div id="spatial-frieze" class="frieze-wrapper">
+                <div class="frieze" style="--line-width: {LINE_WIDTH}px;">
+                    {#each $items as item, idx}
+                        <button class="frieze-line"
+                            class:is-selected={idx === $selectedIndex}
+                            class:is-cluster-selected={clusterSelectedIndices?.has(idx)}
+                            class:is-in-stemma={!clusterMode && areInStemma(item.matchedDocs)}
+                            style="{clusterData
+                                ? `background:${clusterData.itemColors[idx]?.color || '#4a4a4a'};`
+                                : `--opacity: ${item.matchCount / $maxVal}`}"
+                            title="{mode === 'image' ? `Page ${item.page}, ` : `Page ${item.page}, `}{item.matchCount} match(es)"
+                            on:click={() => handleClick(idx)}
+                            on:contextmenu={(e) => openEdgesMenu(e, [$baseDocId, ...item.matchedDocs])}
+                            on:mouseenter={() => handleMouseEnter(item)}
+                            on:mouseleave={handleMouseLeave}
                         />
                     {/each}
                 </div>
-            {/if}
 
-            <svg class="axis" height={AXIS_HEIGHT} style="width: {friezeWidth}px;">
-                <line x1="0" y1="0" x2={friezeWidth} y2="0" stroke="var(--bulma-border)" />
                 {#if mode === "page"}
-                    {#each axisTicks as tick}
-                        {@const x = (tick - 0.5) * LINE_WIDTH}
-                        <line x1={x} y1="0" x2={x} y2="5" stroke="var(--bulma-border)" />
-                        <text x={x} y="16" text-anchor="middle" class="axis-label">{tick}</text>
-                    {/each}
-                {:else}
-                    {#each $friezeData.pageBoundaries as boundary}
-                        {@const x = boundary.startIdx * LINE_WIDTH}
-                        {#if boundary.page % 50 === 0 || boundary.page === $friezeData.totalPages}
-                            <line x1={x} y1="0" x2={x} y2="5" stroke="var(--bulma-border)" />
-                            <text x={x} y="16" text-anchor="middle" class="axis-label">{boundary.page}</text>
-                        {/if}
-                    {/each}
+                    <div class="heatmap" style="--line-width: {LINE_WIDTH}px;">
+                        {#each $friezeData.pageItems as item}
+                            <div
+                                class="heatmap-cell"
+                                style="--opacity: {item.imageCount / $friezeData.maxImagesPerPage}; background-color: {baseDoc?.color}"
+                                title="Page {item.page}: {item.imageCount} image(s)"
+                            />
+                        {/each}
+                    </div>
                 {/if}
-            </svg>
+
+                <svg class="axis" height={AXIS_HEIGHT} style="width: {friezeWidth}px;">
+                    <line x1="0" y1="0" x2={friezeWidth} y2="0" stroke="var(--bulma-border)" />
+                    {#if mode === "page"}
+                        {#each axisTicks as tick}
+                            {@const x = (tick - 0.5) * LINE_WIDTH}
+                            <line x1={x} y1="0" x2={x} y2="5" stroke="var(--bulma-border)" />
+                            <text x={x} y="16" text-anchor="middle" class="axis-label">{tick}</text>
+                        {/each}
+                    {:else}
+                        {#each $friezeData.pageBoundaries as boundary}
+                            {@const x = boundary.startIdx * LINE_WIDTH}
+                            {#if boundary.page % 50 === 0 || boundary.page === $friezeData.totalPages}
+                                <line x1={x} y1="0" x2={x} y2="5" stroke="var(--bulma-border)" />
+                                <text x={x} y="16" text-anchor="middle" class="axis-label">{boundary.page}</text>
+                            {/if}
+                        {/each}
+                    {/if}
+                </svg>
+            </div>
         </div>
 
         <div class="frieze-legend is-size-7 has-text-grey mt-2">
@@ -466,6 +481,13 @@
         height: 60px;
         background: var(--bulma-scheme-main-bis);
         border-radius: 4px 4px 0 0;
+    }
+    .frieze-navigation {
+        position: relative;
+        padding-left: 1.25em;
+        margin-left: -0.5em;
+        padding-right: 1.25em;
+        margin-right: -0.5em;
     }
     .frieze-line {
         width: var(--line-width);
