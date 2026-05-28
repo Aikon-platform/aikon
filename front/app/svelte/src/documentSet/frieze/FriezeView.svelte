@@ -6,9 +6,10 @@
     import Matches from "../Matches.svelte";
 
     export let documentSetStore;
+    export let clusterStore;
 
     const {
-        documentNodes, sortedDocumentNodes, visiblePairs, buildFriezeMatches, buildClusterMatches
+        documentNodes, sortedDocumentNodes, visiblePairs, buildFriezeMatches, buildClusterMatches, pairCat
     } = documentSetStore;
 
     const friezeStub = { nodeTitles: writable({}) };
@@ -72,7 +73,7 @@
     </div>
     <div slot="right-scroll">
         {#if matchesData.matches.length}
-            <Matches matches={matchesData.matches} columns={matchesData.columns}/>
+            <Matches matches={matchesData.matches} columns={matchesData.columns} pairCat={$pairCat} {clusterStore}/>
         {:else}
             <p class="has-text-grey is-size-7">{i18n("selectImage", t)}</p>
         {/if}

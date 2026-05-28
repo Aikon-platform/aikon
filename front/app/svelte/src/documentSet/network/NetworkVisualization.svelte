@@ -2,7 +2,6 @@
     import { onDestroy } from "svelte";
     import { createCanvas } from "./network-canvas.js";
     import { createSvg } from "./network-svg.js";
-    // import DocumentTable from "./DocumentTable.svelte";
     import { appLang } from "../../constants.js";
     import Regions from "../../regions/Regions.svelte";
     import Matches from "../Matches.svelte";
@@ -11,8 +10,9 @@
     export let documentSetStore;
     const {
         imageNetwork, documentNetwork, selectedNodes, updateSelectedNodes,
-        buildMatchesForAnchor, hideEmpty
+        buildMatchesForAnchor, hideEmpty, pairCat
     } = documentSetStore;
+    export let clusterStore;
 
     let networkInstance;
     let container;
@@ -92,10 +92,9 @@
             </div>
         </div>
         {:else if type === "doc"}
-<!--            <DocumentTable selectedDocuments={$selectedNodes} {documentSetStore}/>-->
             <div class="box mt-4">
                 <h3 class="title is-5">{appLang === "en" ? "Aligned documents" : "Documents alignés"} ({$selectedNodes.length})</h3>
-                <Matches matches={tableData.matches} columns={tableData.columns} hideEmpty={$hideEmpty}/>
+                <Matches matches={tableData.matches} columns={tableData.columns} hideEmpty={$hideEmpty} {clusterStore} pairCat={$pairCat}/>
             </div>
         {/if}
     {/if}

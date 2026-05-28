@@ -131,15 +131,15 @@
                     <div>
                         <h2 class="title is-3 has-text-link">{tabList[$activeLayout]}</h2>
                         {#if $activeLayout === "img" || $activeLayout === "doc"}
-                            <NetworkVisualization {documentSetStore} type={$activeLayout}/>
+                            <NetworkVisualization {documentSetStore} {clusterStore} type={$activeLayout}/>
                         {:else if $activeLayout === "sim"}
                             <Clusters {documentSetStore} {clusterStore}/>
                         {:else if $activeLayout === "mat"}
                             <DocumentMatrix {documentSetStore}/>
                         {:else if $activeLayout === "ste"}
-                            <StemmaBuilder {documentSetStore}/>
+                            <StemmaBuilder {documentSetStore} {clusterStore}/>
                         {:else if $activeLayout === "fri"}
-                            <FriezeView {documentSetStore}/>
+                            <FriezeView {documentSetStore} {clusterStore}/>
                         {/if}
                     </div>
                 {/if}
