@@ -24,7 +24,6 @@
 
     const pairCategory = (a, b) => pairCat.get(`${a}-${b}`) ?? pairCat.get(`${b}-${a}`) ?? null;
 
-    /** star pairs: anchor (column 0) against every matched image */
     const rowPairs = row => {
         const anchor = row[0]?.images?.[0];
         if (!anchor) return [];
