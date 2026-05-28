@@ -1,5 +1,5 @@
 <script>
-    import { createEventDispatcher, onMount, onDestroy } from "svelte";
+    import { createEventDispatcher, onMount, onDestroy, setContext } from "svelte";
     import NavigationArrow from "../../ui/NavigationArrow.svelte";
 
     export let open = false;
@@ -9,17 +9,23 @@
 
     const dispatch = createEventDispatcher();
 
-    $: canNavigate = items.length > 1;
-    $: currentItem = items[currentIndex] ?? null;
+    /** @type {any|null} when set, overrides items with a single region */
+    let anchor = null;
+    setContext("setModalAnchor", (item) => { anchor = item; currentIndex = 0; });
+
+    $: activeItems = anchor ? [anchor] : items;
+    $: canNavigate = activeItems.length > 1;
+    $: currentItem = activeItems[currentIndex] ?? null;
 
     const close = () => {
         open = false;
+        anchor = null;
         dispatch("close");
     };
 
     const navigate = (delta) => {
         if (!canNavigate) return;
-        currentIndex = (currentIndex + delta + items.length) % items.length;
+        currentIndex = (currentIndex + delta + activeItems.length) % activeItems.length;
         dispatch("navigate", { index: currentIndex, item: currentItem });
     };
 
