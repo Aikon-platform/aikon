@@ -20,6 +20,7 @@ Special cases:
     import PageView from "../../regions/modal/PageView.svelte";
     import RegionCard from "../../regions/RegionCard.svelte";
     import RightClick from "../../ui/RightClick.svelte";
+    import InputToggle from "../../ui/InputToggle.svelte";
     import StemmaModalEditor from "./StemmaModalEditor.svelte";
     import Tabs from "../../ui/Tabs.svelte";
     import { i18n } from "../../utils.js";
@@ -31,6 +32,7 @@ Special cases:
     export let documents;
     export let startImageId = null;
     export let baseDocId = null;
+    let startFromImage = false;
 
     const dispatch = createEventDispatcher();
     const { edges, nodePositions, nodeTitles, updateNodeTitle, updateEdgeLabel } = stemmaStore;
@@ -48,6 +50,7 @@ Special cases:
         select:    { en: "Select an image in the frieze", fr: "Sélectionner une image dans la frise" },
         openModal: { en: "Open detailed view", fr: "Ouvrir la vue détaillée" },
         setAnchor: { en: "Set as anchor", fr: "Définir comme ancre" },
+        startFromImage: { en: "Start from image", fr: "Partir de l'image" },
     };
 
     const IMG_SIZE = 150;
@@ -88,6 +91,16 @@ Special cases:
         }
     }
 
+    function orderRank(doc) {
+        return [doc?.min_date ?? Infinity, doc?.title ?? "", doc?.id ?? Infinity];
+    }
+    function isEarlier(a, b) {
+        const [da, ta, ia] = orderRank(a), [db, tb, ib] = orderRank(b);
+        if (da !== db) return da < db;
+        const c = ta.localeCompare(tb);
+        return c !== 0 ? c < 0 : ia < ib;
+    }
+
     let modalOpen = false;
     let clickedRegionIdx = 0;
     $: visibleRegions = stemmaImages.nodes.filter(n => n.img).map(n => new RegionItem(n.img));
@@ -114,35 +127,39 @@ Special cases:
     });
 
     let stemmaImages = { nodes: [], edges: [] };
-    $: stemmaImages = computeStemma($edges, $nodePositions, documents, $pairIndex, $imageNodes, startImageId, baseDocId, $nodeTitles);
+    $: stemmaImages = computeStemma($edges, $nodePositions, documents, $pairIndex, $imageNodes, startImageId, baseDocId, $nodeTitles, startFromImage);
 
-    function computeStemma(edges, positions, docs, pairIdx, imgNodes, startImgId, baseId, titles) {
+    function computeStemma(edges, positions, docs, pairIdx, imgNodes, startImgId, baseId, titles, fromImage) {
         if (!startImgId || !baseId) return { nodes: [], edges: [] };
         const docMap = new Map(docs.map(n => [n.id, n]));
         const baseDoc = docMap.get(baseId);
         const titleFor = id => titles[id] || docMap.get(id)?.title;
 
-        if (!edges.length) {
-            if (!baseDoc) return { nodes: [], edges: [] };
-            const img = imgNodes.get(startImgId);
-            return {
-                nodes: [{
-                    docId: baseId, imageId: startImgId,
-                    color: baseDoc.color, title: titleFor(baseId),
-                    x: 0, y: 0, img: img, ...nodeDims(img)
-                }],
-                edges: []
-            };
-        }
-
         const adjacency = new Map();
         for (const docId of docMap.keys()) adjacency.set(docId, []);
-        for (const e of edges) {
-            adjacency.get(e.source)?.push(e.target);
-            adjacency.get(e.target)?.push(e.source);
+        if (fromImage) {
+            const ids = [...docMap.keys()];
+            for (const a of ids) for (const b of ids) if (a !== b) adjacency.get(a).push(b);
+        } else {
+            if (!edges.length) {
+                if (!baseDoc) return { nodes: [], edges: [] };
+                const img = imgNodes.get(startImgId);
+                return {
+                    nodes: [{
+                        docId: baseId, imageId: startImgId,
+                        color: baseDoc.color, title: titleFor(baseId),
+                        x: 0, y: 0, img, ...nodeDims(img)
+                    }],
+                    edges: []
+                };
+            }
+            for (const e of edges) {
+                adjacency.get(e.source)?.push(e.target);
+                adjacency.get(e.target)?.push(e.source);
+            }
         }
 
-        const resolved = new Map([[baseId, { imageId: startImgId, score: Infinity }]]);
+        const resolved = new Map([[baseId, { imageId: startImgId, score: Infinity, parent: null }]]);
         const queue = [baseId];
         const visited = new Set([baseId]);
 
@@ -157,43 +174,54 @@ Special cases:
                 if (visited.has(neighborDocId)) {
                     const existing = resolved.get(neighborDocId);
                     if (match && (!existing.imageId || match.score > existing.score)) {
-                        resolved.set(neighborDocId, match);
+                        resolved.set(neighborDocId, { ...match, parent: currentDocId });
                     }
                     continue;
                 }
 
                 visited.add(neighborDocId);
-                resolved.set(neighborDocId, match || { imageId: null, score: -Infinity });
+                resolved.set(neighborDocId, match ? { ...match, parent: currentDocId } : { imageId: null, score: -Infinity, parent: null });
                 if (match) queue.push(neighborDocId);
             }
         }
 
-        for (const docId of docMap.keys()) {
-            if (!resolved.has(docId)) resolved.set(docId, { imageId: null, score: -Infinity });
+        if (!fromImage) {
+            for (const docId of docMap.keys()) {
+                if (!resolved.has(docId)) resolved.set(docId, { imageId: null, score: -Infinity, parent: null });
+            }
         }
 
         const nodes = [];
         for (const [docId, { imageId }] of resolved) {
+            if (fromImage && !imageId) continue;
             const doc = docMap.get(docId);
-            const pos = positions[docId] || { x: 0, y: 0 };
             if (!doc) continue;
-            const img = imageId ? imgNodes.get(imageId) : null
+            const pos = positions[docId] || { x: 0, y: 0 };
+            const img = imageId ? imgNodes.get(imageId) : null;
             nodes.push({
                 docId, imageId, color: doc.color, title: titleFor(docId),
-                x: pos.x, y: pos.y,
-                img: img,
-                ...nodeDims(img)
+                x: pos.x, y: pos.y, img, ...nodeDims(img)
             });
         }
 
+        const docStemmaPairs = new Set(
+            edges.map(e => e.source < e.target ? `${e.source}-${e.target}` : `${e.target}-${e.source}`)
+        );
+
         const nodeMap = new Map(nodes.map(n => [n.docId, n]));
-        const renderedEdges = edges
-            .map(e => {
-                const src = nodeMap.get(e.source);
-                const tgt = nodeMap.get(e.target);
-                return src && tgt ? { source: src, target: tgt, label: e.label } : null;
+        const renderedEdges = fromImage
+            ? [...resolved].flatMap(([docId, { parent }]) => {
+                if (parent == null) return [];
+                let src = nodeMap.get(parent), tgt = nodeMap.get(docId);
+                if (!src || !tgt) return [];
+                // if (!isEarlier(docMap.get(src.docId), docMap.get(tgt.docId))) [src, tgt] = [tgt, src];
+                const key = src.docId < tgt.docId ? `${src.docId}-${tgt.docId}` : `${tgt.docId}-${src.docId}`;
+                return [{ source: src, target: tgt, faded: !docStemmaPairs.has(key) }];
             })
-            .filter(Boolean);
+            : edges.map(e => {
+                const src = nodeMap.get(e.source), tgt = nodeMap.get(e.target);
+                return src && tgt ? { source: src, target: tgt } : null;
+            }).filter(Boolean);
 
         return { nodes, edges: renderedEdges };
     }
@@ -248,8 +276,11 @@ Special cases:
         <svg bind:this={svgEl} class="stemma-svg" viewBox="0 0 {width} {height}"
              on:pointermove={interaction.onPointerMove} on:pointerup={interaction.onPointerUp}>
             <defs>
-                <marker id="img-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                     <polygon points="0 0, 10 3.5, 0 7" fill="var(--bulma-body-color)"/>
+                </marker>
+                <marker id="arrowhead-faded" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="var(--bulma-grey-lighter)" />
                 </marker>
             </defs>
 
@@ -264,8 +295,9 @@ Special cases:
                     <g class="edge-group" on:contextmenu={e => stemmaMenu.openEdgeMenu(e, edge)}>
                         <line class="edge-hit" {x1} {y1} {x2} {y2} stroke-width={10 / $transform.k}/>
                         <line class="edge" {x1} {y1} {x2} {y2}
-                              stroke="var(--bulma-body-color)" stroke-width={2 / $transform.k}
-                              marker-end="url(#img-arrow)"/>
+                              stroke={edge.faded ? "var(--bulma-grey-lighter)" : "var(--bulma-body-color)"}
+                              stroke-width={2 / $transform.k}
+                              marker-end={edge.faded ? "url(#arrowhead-faded)" : "url(#arrowhead)"}/>
                     </g>
                     {#if edge.label}
                         <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 4 / $transform.k}
@@ -303,6 +335,9 @@ Special cases:
                 {/each}
             </g>
         </svg>
+        <div class="toggle-btn">
+            <InputToggle toggleLabel={i18n("startFromImage", t)} start={startFromImage} on:updateChecked={e => startFromImage = e.detail}/>
+        </div>
     {:else}
         <p class="has-text-grey is-size-6 p-3 mb-3">{i18n("select", t)}</p>
     {/if}
@@ -363,5 +398,11 @@ Special cases:
     }
     .modal-region :global(.region) {
         height: 100%;
+    }
+    .toggle-btn {
+        position: absolute;
+        top: 0.5rem;
+        left: 0.5rem;
+        cursor: pointer;
     }
 </style>
