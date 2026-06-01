@@ -154,21 +154,19 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             return true;
         }
 
-        const ok = await uncategorizePairsList(pairsToRemove);
+        const ok = await uncategorizePairBatch(pairsToRemove);
         if (ok) removeImgsFromInterface(imgRefSet, byOriginCluster);
         return ok;
     };
 
-    /** Categorize an explicit list of pairs [{img_1, img_2}] and refresh the store in place. */
-    const categorizePairsList = async (pairs, category) => {
+    const categorizePairBatch = async (pairs, category) => {
         if (!pairs.length) return true;
         const ok = await sendTo(`${appName}/categorize-batch`, {pairs, category}, i18n("batchCat", t));
         if (ok) documentSetStore.patchPairs(pairs.map(p => ({...p, category})));
         return ok;
     };
 
-    /** Uncategorize an explicit list of pairs [{img_1, img_2}] and refresh the store in place. */
-    const uncategorizePairsList = async (pairs) => {
+    const uncategorizePairBatch = async (pairs) => {
         if (!pairs.length) return true;
         const ok = await sendTo(`${appName}/uncategorize-batch`, {pairs}, i18n("batchUncat", t));
         if (ok) documentSetStore.patchPairs(pairs.map(p => ({...p, category: null})));
@@ -179,7 +177,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         const pairs = imgRefs.flatMap((ref1, i) =>
             imgRefs.slice(i + 1).map(ref2 => pairData(ref1, ref2))
         );
-        return categorizePairsList(pairs, category);
+        return categorizePairBatch(pairs, category);
     };
 
     const categorizeSelection = async (category) => {
@@ -317,8 +315,8 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         validateCluster,
         removeFromClusters,
         categorizeSelection,
-        categorizePairsList,
-        uncategorizePairsList,
+        categorizePairBatch,
+        uncategorizePairBatch,
         newCluster,
 
         paginatedClusters,

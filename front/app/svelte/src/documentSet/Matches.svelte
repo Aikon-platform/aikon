@@ -44,8 +44,8 @@
         const pairs = rowPairs(row);
         if (!pairs.length) return;
         rowCategory(row, pairCat) === category
-            ? clusterStore.uncategorizePairsList(pairs)
-            : clusterStore.categorizePairsList(pairs, category);
+            ? clusterStore.uncategorizePairBatch(pairs)
+            : clusterStore.categorizePairBatch(pairs, category);
     };
 
     async function userToggleRow(row) {

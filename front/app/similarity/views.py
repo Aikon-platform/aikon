@@ -389,7 +389,7 @@ def get_region_extraction_title_by_ref(
         )
 
 
-def add_region_pair(request, wid, rid=None):
+def add_region_pair(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
@@ -456,7 +456,7 @@ def add_region_pair(request, wid, rid=None):
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
-def no_match(request, wid, rid=None):
+def no_match(request):
     """categorize all region pairs containing q_img and the specified regions id in `s_regions` as no match (category=4)"""
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
