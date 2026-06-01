@@ -23,7 +23,7 @@
 </script>
 
 <div class="is-flex is-align-items-center is-justify-content-end">
-    <a href={buildRedirectionUrl()}>
+    <a href={buildRedirectionUrl()} target="_blank">
         <button class="button is-link is-small">
             {appLang === "fr" ?
                 "Voir toutes les similarités pour ce document" :

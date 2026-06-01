@@ -2,7 +2,7 @@
     import { onMount, onDestroy, setContext, getContext } from "svelte";
     import { similarityStore } from "./similarityStore.js";
     import {appName, appUrl, csrfToken} from "../../constants";
-    import { i18n, getColNb, manifestToMirador, refToIIIF, showMessage } from "../../utils.js";
+    import {i18n, getColNb, manifestToMirador, refToIIIF, showMessage, sendTo} from "../../utils.js";
     import { RegionItem } from "../types.js";
 
     import MatchedRegions from "./MatchedRegions.svelte";
@@ -86,33 +86,19 @@
             await showMessage(i18n("invalidRef", t), i18n("error"));
             return;
         }
-        try {
-            const response = await fetch(`${baseUrl}add-region-pair`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
-                body: JSON.stringify({
-                    q_img: qImg.replace(".jpg", ""),
-                    s_img: sImg,
-                })
-            });
-            if (!response.ok) {
-                await showMessage(i18n("networkPb", t), i18n("error"));
-                return;
-            }
-            const data = await response.json();
-            if (data.hasOwnProperty("error") || !data.hasOwnProperty("s_regions")) {
-                await showMessage(`${i18n("errored")}<br>${data.error}`, i18n("error"));
-                return;
-            }
-
-            // TODO get rid of this behavior when we get rid of relying on regions to filter similarities
-            // TODO in order to filter by digitization (and remove corresponding code in add_region_pair())
-            similarityStore.addComparedRegions(data.s_regions);
-
-            fetchRow();
-        } catch (error) {
-            await showMessage(`${i18n("errored")}<br>${error}`, i18n("error"));
+        const data = await sendTo(`${appName}/add-region-pair`, {
+            q_img: qImg.replace(".jpg", ""),
+            s_img: sImg
+        }, i18n("networkPb", t));
+        if (!data) return;
+        if (data.error || !data.s_regions) {
+            await showMessage(`${i18n("errored")}<br>${data.error}`, i18n("error"));
+            return;
         }
+        // TODO get rid of this behavior when we get rid of relying on regions to filter similarities
+        // TODO in order to filter by digitization (and remove corresponding code in add_region_pair())
+        similarityStore.addComparedRegions(data.s_regions);
+        fetchRow();
     }
 
     async function noMatch() {
@@ -122,19 +108,8 @@
             `${i18n("confirmNoMatch", t)} ${regions.title}?`, i18n("confirm"), true
         );
         if (!confirmed) return;
-        try {
-            const response = await fetch(`${baseUrl}no-match`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
-                body: JSON.stringify({q_img: qImg, s_regions: regions.id})
-            });
-            if (!response.ok) {
-                await showMessage(`${i18n("networkPb", t)}`, i18n("error"));
-                return;
-            }
+        if (await sendTo(`${appName}/no-match`, {q_img: qImg, s_regions: regions.id}, i18n("networkPb", t))) {
             fetchRow();
-        } catch (error) {
-            await showMessage(`${i18n("errored")}<br>${error}`, i18n("error"));
         }
     }
 
@@ -143,26 +118,14 @@
             i18n("confirmDelete", t), i18n("confirm"), true
         );
         if (!confirmed) return;
-        try {
-            const response = await fetch(`${appUrl}/${appName}/similarity/delete-matches`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
-                body: JSON.stringify({q_img: qImg})
-            });
-            if (!response.ok) {
-                await showMessage(`${i18n("networkPb", t)}`, i18n("error"));
-                return;
-            }
-            const data = await response.json();
-            if (data.error) {
-                await showMessage(`${i18n("errored")}<br>${data.error}`, i18n("error"));
-                return;
-            }
-            similarityStore.removeQImg(qImg);
-            fetchRow();
-        } catch (error) {
-            await showMessage(`${i18n("errored")}<br>${error}`, i18n("error"));
+        const data = await sendTo(`${appName}/similarity/delete-matches`, {q_img: qImg}, i18n("networkPb", t));
+        if (!data) return;
+        if (data.error) {
+            await showMessage(`${i18n("errored")}<br>${data.error}`, i18n("error"));
+            return;
         }
+        similarityStore.removeQImg(qImg);
+        fetchRow();
     }
 </script>
 

@@ -63,7 +63,7 @@ export function getCantaloupeUrl() {
     // return "https://vhs.huma-num.fr"
 }
 
-export const sendTo = async (endpoint, body, failText, method="POST") => {
+export const sendTo = async (endpoint, body, failText="", method="POST") => {
     try {
         const response = await withLoading(() => fetch(`${window.location.origin}/${endpoint}`, {
             method,
@@ -73,16 +73,13 @@ export const sendTo = async (endpoint, body, failText, method="POST") => {
             },
             body: JSON.stringify(body)
         }));
-
         if (!response.ok) {
-            console.log(response)
-            await showMessage(failText, i18n("error"));
+            await showMessage(failText ?? i18n("errored"), i18n("error"));
             return false;
         }
-        return true;
+        return response.status === 204 ? true : await response.json();
     } catch (error) {
         await showMessage(error, i18n("error"));
-        console.error("Error:", error);
         return false;
     }
 };
