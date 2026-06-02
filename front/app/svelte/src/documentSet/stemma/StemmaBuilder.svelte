@@ -271,7 +271,7 @@
 </SplitLayout>
 
 <PairDetailModal
-    active={modalActive} {scatterData} {navState}
+    active={modalActive} {scatterData} {navState} pairCat={$pairCat}
     on:navigate={handleModalNavigate}
     on:close={handleModalClose}
 />

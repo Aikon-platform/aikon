@@ -147,8 +147,7 @@
 </SplitLayout>
 
 <PairDetailModal
-    active={modalActive} {scatterData} {navState}
-    pairs={pairsForSelection}
+    active={modalActive} {scatterData} {navState} pairCat={$pairCat}
     on:navigate={handleModalNavigate}
     on:close={handleModalClose}
-/> <!--on:categorize={() => allPairs.update(p => p)}-->
+/> <!--on:categorize={() => allPairs.update(p => p)} pairs={pairsForSelection}-->
