@@ -9,7 +9,7 @@
     export let fullWidth = false;
     export let selected = false;
 
-    const [wit, digit, canvas, xywh] = svgPath.replace(".svg", "").split("_");
+    const [wit, digit, canvas, xywh] = svgPath.split("/").pop().replace(".svg", "").split("_");
     const img = refToIIIF(`${wit}_${digit}_${canvas}`, xywh, `${width},`);
 
     let isHovered = false;
