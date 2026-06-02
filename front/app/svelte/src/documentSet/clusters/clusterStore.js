@@ -1,6 +1,6 @@
 import {derived, writable, get} from "svelte/store";
 import {i18n, initPagination, pageUpdate, showMessage, sendTo} from "../../utils.js";
-import {appLang, appName, isSuperuser} from "../../constants.js";
+import {appLang, appName} from "../../constants.js";
 import {categoryInfo} from "../../regions/similarity/similarityCategory.js";
 
 const t = {
@@ -207,13 +207,13 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     };
 
     const validateCluster = async (cluster) => {
-        if (!isSuperuser){
-            await showMessage(
-                appLang === "en" ? "You do not have permission to validate clusters" : "Vous n'avez pas la permission, de valider les clusters.",
-                appLang === "en" ? "Permission Denied" : "Permission refusée"
-            );
-            return false;
-        }
+        // if (!isSuperuser){
+        //     await showMessage(
+        //         appLang === "en" ? "You do not have permission to validate clusters" : "Vous n'avez pas la permission, de valider les clusters.",
+        //         appLang === "en" ? "Permission Denied" : "Permission refusée"
+        //     );
+        //     return false;
+        // }
 
         const success = await categorizePairs(cluster.members, 1);
 
