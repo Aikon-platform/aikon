@@ -1,81 +1,47 @@
 <script>
     import {onMount, onDestroy, createEventDispatcher} from "svelte";
-    import {closeModal, refToIIIF, i18n, showMessage} from "../../utils.js";
-    import {appName, appUrl, csrfToken} from "../../constants.js";
+    import {closeModal, refToIIIF, i18n, sendTo} from "../../utils.js";
+    import {appName} from "../../constants.js";
     import NavigationArrow from "../../ui/NavigationArrow.svelte";
     import {RegionItem} from "../../regions/types.js";
-    import { categoryInfo } from "../../regions/similarity/similarityCategory.js";
+    import CategoryToolbar from "../../regions/similarity/CategoryToolbar.svelte";
 
     export let active = false;
     export let scatterData = null;
     export let navState = null; // {idx1, idx2}
-    export let pairs = [];
+    export let pairCat = new Map();
 
     const dispatch = createEventDispatcher();
 
     const t = {
         score: {en: "Score", fr: "Score"},
-        exact: {en: "Exact match", fr: "Correspondance exacte"},
         failed: {en: "Categorization failed", fr: "La catégorisation a échoué"},
-        categorize: {en: "Categorize as exact match", fr: "Catégoriser comme correspondance exacte"},
-        uncategorize: {en: "Remove exact match category", fr: "Retirer la catégorie « correspondance exacte »"},
     };
 
-    function findPair(img1, img2) {
-        return pairs.find(p =>
-            (p.id_1 === img1 && p.id_2 === img2) ||
-            (p.id_1 === img2 && p.id_2 === img1)
-        );
+    function findCat(img1, img2) {
+        return pairCat.get(`${img1}-${img2}`) ?? pairCat.get(`${img2}-${img1}`) ?? null;
     }
 
     let updateTick = 0;
-    async function categorize(isExact) {
+    async function categorize(category) {
         if (!modalData?.canCategorize) return;
-        try {
-            const newCat = isExact ? null : 1;
-            const response = await fetch(`${appUrl}/${appName}/save-category`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": csrfToken
-                },
-                body: JSON.stringify({
-                    img_1: modalData.img1,
-                    img_2: modalData.img2,
-                    category: newCat,
-                })
-            });
-            if (response.ok) {
-                const match = findPair(modalData.img1, modalData.img2);
-                if (match) {
-                    match.category = newCat;
-                } else {
-                    pairs.push({
-                        id_1: modalData.img1,
-                        id_2: modalData.img2,
-                        category: newCat,
-                    });
-                }
-                updateTick++;
+        const newCat = modalData.category === category ? null : category;
+        const ok = await sendTo(`${appName}/save-category`, {
+            img_1: modalData.img1,
+            img_2: modalData.img2,
+            category: newCat,
+        }, i18n("failed", t));
 
-                // dispatch("categorize");
-                return true;
-            }
-            await showMessage( i18n("failed, t"), i18n("error"));
-            return false;
-        } catch (error) {
-            await showMessage(
-                error,
-                i18n("error"),
-            );
-            console.error("Error:", error);
-        }
+        if (!ok) return;
+
+        pairCat.set(`${modalData.img1}-${modalData.img2}`, newCat);
+        updateTick++;
     }
 
     let modalElement;
 
     $: navLimits = scatterData ? getNavLimits(scatterData) : {max1: 0, max2: 0};
-    $: modalData = navState && scatterData && navLimits ? buildModalData(navState, scatterData, navLimits, updateTick) : null;
+    $: modalData = navState && scatterData && navLimits ? buildModalData(navState, scatterData, navLimits, updateTick, pairCat) : null;
 
     function getNavLimits(data) {
         if (data.mode === "image") return {max1: data.images1.length, max2: data.images2.length};
@@ -93,7 +59,7 @@
         return refToIIIF(img.ref, img.xywh?.join(","), "600,");
     }
 
-    function buildModalData(nav, data, limits, _tick) {
+    function buildModalData(nav, data, limits, _tick, _pairCat) {
         if (!nav || !data || !limits) return null;
         const {doc1, doc2} = data;
 
@@ -134,8 +100,9 @@
             };
         }
 
-        const match = result.img1 && result.img2 ? findPair(result.img1, result.img2) : null;
-        result.isExact = match?.category === 1;
+        result.category = result.img1 && result.img2 ? findCat(result.img1, result.img2) : null;
+
+        console.log(result);
         return result;
     }
 
@@ -192,24 +159,17 @@
                         {#if modalData.score !== undefined || modalData.canCategorize}
                             <tr>
                                 <td colspan="2" class="has-text-centered">
-                                    <div class="field has-addons has-addons-centered">
-                                        {#if modalData.score !== undefined}
-                                            <p class="control">
-                                                <span class="button is-small is-light is-static">
-                                                    {i18n("score", t)} {modalData.score.toFixed(2)}
-                                                </span>
-                                            </p>
-                                        {/if}
-                                        {#if modalData.canCategorize}
-                                            {@const isExact = modalData.isExact}
-                                            <p class="control" title={i18n(isExact ? "uncategorize" : "categorize", t)}>
-                                                <button class="button is-small is-link" class:is-inverted={!isExact} on:click={() => categorize(isExact)}>
-                                                    {@html categoryInfo[1].svg}
-                                                    <span class="pl-2">{i18n("exact", t)}</span>
-                                                </button>
-                                            </p>
-                                        {/if}
-                                    </div>
+                                    {#if modalData.score !== undefined}
+                                        <span class="tag button is-small is-contrasted pb-3">
+                                            {i18n("score", t)} {modalData.score.toFixed(2)}
+                                        </span>
+                                    {/if}
+
+                                    {#if modalData.canCategorize}
+                                        <CategoryToolbar visibleCategories={[1,2,3,4]}
+                                            selectedCategory={modalData.category}
+                                            toggleFct={categorize}/>
+                                    {/if}
                                 </td>
                             </tr>
                         {/if}
