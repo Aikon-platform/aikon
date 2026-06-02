@@ -527,18 +527,22 @@ export function createDocumentSetStore(documentSetId) {
         const sourceImage = imgNodes.get(frieze.imageId);
         if (!baseDoc || !sourceImage) return { matches: [], columns: [] };
 
-        const bestPerDoc = new Map();
+        const byDoc = new Map();
         for (const p of pairs) {
             const target = otherSide(p, frieze.baseDocId, frieze.imageId, imgNodes, docNodes);
             if (!target || target.doc.id === frieze.baseDocId) continue;
-            const existing = bestPerDoc.get(target.doc.id);
-            if (!existing || target.score > existing.score) bestPerDoc.set(target.doc.id, target);
+            if (!byDoc.has(target.doc.id)) byDoc.set(target.doc.id, { doc: target.doc, matches: [] });
+            byDoc.get(target.doc.id).matches.push(target);
         }
 
-        const targets = Array.from(bestPerDoc.values());
+        const targets = [...byDoc.values()].map(({ doc, matches }) => {
+            matches.sort((a, b) => b.score - a.score);
+            return { doc, images: matches.map(m => m.image), bestImageId: matches[0].image.id };
+        });
+
         const row = [
-            { images: [sourceImage], doc: baseDoc },
-            ...targets.map(t => ({ images: [t.image], doc: t.doc })),
+            { images: [sourceImage], doc: baseDoc, bestImageId: sourceImage.id },
+            ...targets,
         ];
         const columns = [{ doc: baseDoc }, ...targets.map(t => ({ doc: t.doc }))];
         return assignIndices({ matches: [row], columns });

@@ -19,6 +19,9 @@
     /** Map<"id1-id2", category> of current pair categories, for selection state */
     export let pairCat = new Map();
 
+    // anchor image is the first of the list
+    $: anchorImageId = isInStemma ? displayMatches[0]?.[0]?.images?.[0]?.id ?? null : null;
+
     const dispatch = createEventDispatcher();
     const baseUrl = window.location.origin;
 
@@ -83,7 +86,7 @@
     };
 
     function onCardContextMenu(e, img, doc) {
-        if (!isInStemma) return;
+        if (!isInStemma || img.id === anchorImageId) return;
         e.preventDefault();
         menu = {
             open: true, x: e.clientX, y: e.clientY,
@@ -95,6 +98,7 @@
         none:      { en: "No matches", fr: "Aucune correspondance" },
         matches:   { en: "matches", fr: "correspondances" },
         setAnchor: { en: "Set as anchor", fr: "Définir comme ancre" },
+        anchor:    { en: "Current anchor", fr: "Ancre courante" },
     };
 </script>
 
@@ -115,8 +119,17 @@
                         <div class="is-flex is-flex-wrap-wrap is-flex-direction-column is-align-content-center"
                              on:contextmenu={e => onCardContextMenu(e, img, cell.doc)}>
                             <RegionCard item={img} height={cardHeight} borderColor={cell.doc.color}
+                                        borderWidth={img.id === cell.bestImageId ? 7 : 4}
                                         index={cell.indices[k]} selectable={false} copyable={false}
-                                        on:openModal={handleOpenModal}/>
+                                        on:openModal={handleOpenModal}>
+                                <svelte:fragment slot="actions">
+                                    {#if img.id === anchorImageId}
+                                        <span class="tag button is-unclickable p-0" title={i18n("anchor", t)}>
+                                            <i class="fa-solid fa-anchor"/>
+                                        </span>
+                                    {/if}
+                                </svelte:fragment>
+                            </RegionCard>
                             {#if img.canvas}
                                 <div class="is-size-7 has-text-grey has-text-centered">
                                     Page {img.canvas}
