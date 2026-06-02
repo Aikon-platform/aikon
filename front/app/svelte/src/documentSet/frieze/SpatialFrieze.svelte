@@ -20,6 +20,7 @@
 
     const baseDocId = writable(null);
     const selectedIndex = writable(null);
+    let selectedClusterSig = null;
 
     function clusterSignature(matchedDocs) {
         return matchedDocs.size ? [...matchedDocs].sort((a, b) => a - b).join("-") : "∅";
@@ -37,7 +38,9 @@
         }
 
         const baseColor = docNodes.get(baseId)?.color || "#999";
-        const sorted = [...clusterMap.values()].sort((a, b) => b.count - a.count);
+        const sorted = [...clusterMap.values()].sort((a, b) =>
+            b.docIds.size - a.docIds.size || b.count - a.count
+        );
         let colorIdx = 0;
         sorted.forEach(cl => {
             if (!cl.docIds.size) {
@@ -60,27 +63,35 @@
         const baseName = titles[baseId] || docNodes.get(baseId)?.title || `Doc ${baseId}`;
         const legend = sorted.map(cl => {
             const names = [baseName, ...[...cl.docIds].map(id => titles[id] || docNodes.get(id)?.title || `Doc ${id}`)];
-            return { color: cl.color, opacity: cl.opacity, names, count: cl.count };
+            return { color: cl.color, opacity: cl.opacity, names, count: cl.count, docIds: cl.docIds };
         });
 
         return { itemColors, legend };
     }
 
-    $: clusterData = clusterMode && items.length ? buildClusters(items, $baseDocId, $documentNodes, $nodeTitles) : null;
+    $: clusterData = clusterMode && $items.length ? buildClusters($items, $baseDocId, $documentNodes, $nodeTitles) : null;
+    $: if (!clusterMode) selectedClusterSig = null;
+    $: clusterSelectedIndices = (clusterMode && selectedClusterSig)
+        ? new Set($items.map((it, i) => clusterSignature(it.matchedDocs) === selectedClusterSig ? i : -1).filter(i => i >= 0))
+        : null;
 
-    $: if (documents.length && !documents.find(n => n.id === $baseDocId)) {
-        const validDoc = documents.find(n => $documentNodes.get(n.id)?.images?.length);
+    $: if (documents.length && !documents.find(n => n.id === $baseDocId && n.images?.length)) {
+        const validDoc = documents.find(n => n.images?.length);
         baseDocId.set(validDoc?.id || null);
         selectedIndex.set(null);
     }
 
-    $: if (mode) selectedIndex.set(null);
+    $: if (mode) {
+        selectedIndex.set(null);
+        selectedClusterSig = null;
+    }
 
     const t = {
         base: { en: "Pick a base document", fr: "Sélectionner un document de base" },
         similarity: { en: "similarities", fr: "similarités" },
         noDoc: { en: "No base document selected", fr: "Aucun document de base sélectionné" },
-        clusters: { en: "Document clusters", fr: "Groupes de documents"}
+        clusters: { en: "Document clusters", fr: "Groupes de documents"},
+        clickToShow: { en: "Click to show all cluster matches", fr: "Cliquer pour afficher les correspondances du cluster" },
     };
 
     const documentsStore = writable([]);
@@ -177,12 +188,20 @@
         }
     );
 
-    $: items = $friezeData ? (mode === "image" ? $friezeData.imageItems : $friezeData.pageItems) : [];
-    $: maxVal = $friezeData ? (mode === "image" ? $friezeData.maxImageMatches : $friezeData.maxPageMatches) : 1;
+    const modeStore = writable(mode);
+    $: modeStore.set(mode);
+
+    const items = derived([friezeData, modeStore], ([$fd, $m]) =>
+        $fd ? ($m === "image" ? $fd.imageItems : $fd.pageItems) : []
+    );
+    const maxVal = derived([friezeData, modeStore], ([$fd, $m]) =>
+        $fd ? ($m === "image" ? $fd.maxImageMatches : $fd.maxPageMatches) : 1
+    );
 
     let hoveredDocs = new Set();
 
     function handleClick(index) {
+        selectedClusterSig = null;
         selectedIndex.set(index);
         if (mode === "image") {
             const img = $friezeData.imageItems[index];
@@ -197,6 +216,27 @@
                 images: pageItem.images
             });
         }
+    }
+
+    function handleClusterClick(cluster) {
+        const sig = clusterSignature(cluster.docIds);
+        selectedClusterSig = selectedClusterSig === sig ? null : sig;
+        selectedIndex.set(null);
+        if (selectedClusterSig) {
+            const imageIds = new Set(
+                $items
+                    .filter(it => clusterSignature(it.matchedDocs) === sig)
+                    .map(it => it.id ?? it.images?.[0]?.id)
+                    .filter(Boolean)
+            );
+            dispatch("clusterselect", { baseDocId: $baseDocId, docIds: cluster.docIds, imageIds });
+        } else {
+            dispatch("clusterselect", null);
+        }
+    }
+
+    function handleClusterHover(cluster) {
+        hoveredDocs = new Set([$baseDocId, ...cluster.docIds]);
     }
 
     function handleMouseEnter(item) {
@@ -225,15 +265,16 @@
         <h4 class="title is-6 mb-3">
             {baseDoc.title} {i18n("similarity", t)}
         </h4>
-        {@const friezeWidth = items.length * LINE_WIDTH}
+        {@const friezeWidth = $items.length * LINE_WIDTH}
         <div class="frieze-wrapper">
             <div class="frieze" style="--line-width: {LINE_WIDTH}px;">
-                {#each items as item, idx}
+                {#each $items as item, idx}
                     <button class="frieze-line"
                         class:is-selected={idx === $selectedIndex}
+                        class:is-cluster-selected={clusterSelectedIndices?.has(idx)}
                         style="{clusterData
                             ? `background:${clusterData.itemColors[idx].color};opacity:${clusterData.itemColors[idx].opacity}`
-                            : `--opacity: ${item.matchCount / maxVal}`}"
+                            : `--opacity: ${item.matchCount / $maxVal}`}"
                         title="{mode === 'image' ? `Page ${item.page}, ` : `Page ${item.page}, `}{item.matchCount} match(es)"
                         on:click={() => handleClick(idx)}
                         on:mouseenter={() => handleMouseEnter(item)}
@@ -279,7 +320,7 @@
             <span class="mx-2">·</span>
             <span>{$friezeData.totalPages} pages</span>
             <span class="mx-2">·</span>
-            <span>Max {maxVal} matches</span>
+            <span>Max {$maxVal} matches</span>
         </div>
     {:else}
         <p class="has-text-grey is-size-7">{i18n("noDoc")}</p>
@@ -312,8 +353,15 @@
                     <div class="is-size-7">
                         <span style="color:{cl.color};opacity:{cl.opacity}">●</span>
                         <b>{docLen} document{docLen > 1 ? 's' : ''}</b>
-                        <span class="tag is-light is-small is-rounded">{cl.count}</span>
-                        {#each cl.names as name, i}
+                        <span class="tag is-light is-small is-rounded is-clickable"
+                            class:is-active={selectedClusterSig === clusterSignature(cl.docIds)}
+                            title={i18n("clickToShow", t)}
+                            on:click={() => handleClusterClick(cl)}
+                            on:mouseenter={() => handleClusterHover(cl)}
+                            on:mouseleave={handleMouseLeave} on:keydown={null}>
+                            {cl.count}
+                        </span>
+                        {#each cl.names as name}
                             <br/><span class="pl-3">{name}</span>
                         {/each}
                     </div>
@@ -349,7 +397,6 @@
     .frieze-line.is-selected {
         margin-top: -5px;
         height: calc(100% + 5px);
-        background: var(--bulma-link);
     }
     .heatmap {
         display: flex;
@@ -387,5 +434,17 @@
     .doc-selector .tag.is-inactive {
         opacity: 0.3;
         filter: grayscale(0.8);
+    }
+    .frieze-line.is-cluster-selected {
+        margin-bottom: -5px;
+        height: calc(100% + 5px);
+    }
+    .frieze-line.is-selected.is-cluster-selected {
+        margin-top: -5px;
+        height: calc(100% + 10px);
+    }
+    .tag.is-clickable.is-active {
+        background-color: var(--selected-text);
+        color: var(--selected)
     }
 </style>

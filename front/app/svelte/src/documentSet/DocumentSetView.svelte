@@ -50,6 +50,7 @@
     });
 
     import {clusterSelection} from "../selection/selectionStore.js";
+    import FriezeView from "./frieze/FriezeView.svelte";
 
     const {selected} = clusterSelection;
 
@@ -59,8 +60,9 @@
 
     const tabList = {
         "sim": appLang === "en" ? "Copy Clusters" : "Groupe de copies",
-        "ste": appLang === "en" ? "Stemma builder" : "Aide au stemma",
+        "ste": appLang === "en" ? "Stemma Builder" : "Aide au stemma",
         "mat": appLang === "en" ? "Document Matrix" : "Matrice de documents",
+        "fri": appLang === "en" ? "Spatial Frieze" : "Frise spatiale",
         "img": appLang === "en" ? "Image Network" : "Réseau d'images",
         "doc": appLang === "en" ? "Document Network" : "Réseau de documents",
     };
@@ -108,9 +110,15 @@
                 {#if pairCount === 0}
                     <article class="message is-warning">
                         <div class="message-body">
-                            No document pairs found for this configuration.
-                            Please adjust your selection criteria in the sidebar to include more documents or
-                            categories.
+                            {#if appLang === "en"}
+                                No regions pairs found for this configuration.
+                                Please adjust your selection criteria in the sidebar
+                                to include more documents or categories.
+                            {:else}
+                                Aucune paires d'images trouvées pour la configuration actuelle.
+                                Merci d'ajuster vos critères de sélection dans la barre latérale
+                                pour inclure davantage de documents ou catégories.
+                            {/if}
                         </div>
                     </article>
                 {:else}
@@ -124,6 +132,8 @@
                             <DocumentMatrix {documentSetStore}/>
                         {:else if $activeLayout === "ste"}
                             <StemmaBuilder {documentSetStore}/>
+                        {:else if $activeLayout === "fri"}
+                            <FriezeView {documentSetStore}/>
                         {/if}
                     </div>
                 {/if}
