@@ -28,44 +28,8 @@ class Migration(migrations.Migration):
                 verbose_name="Task type",
             ),
         ),
-        migrations.CreateModel(
-            name="RegionExtraction",
-            fields=[
-                (
-                    "id",
-                    models.BigAutoField(
-                        auto_created=True,
-                        primary_key=True,
-                        serialize=False,
-                        verbose_name="ID",
-                    ),
-                ),
-                (
-                    "json",
-                    models.JSONField(
-                        blank=True, null=True, verbose_name="JSON representation"
-                    ),
-                ),
-                ("model", models.CharField(max_length=150)),
-                ("is_validated", models.BooleanField(default=False)),
-                (
-                    "digitization",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="region_extractions",
-                        to="webapp.digitization",
-                        verbose_name="Digitization",
-                    ),
-                ),
-            ],
-            options={
-                "verbose_name": "Region extraction",
-                "verbose_name_plural": "Region extractions",
-            },
-        ),
-        migrations.DeleteModel(
-            name="Regions",
+        migrations.RenameModel(
+            old_name="Regions",
+            new_name="RegionExtraction",
         ),
     ]
