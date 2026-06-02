@@ -157,11 +157,13 @@ export function createStemmaMenu(stemmaStore, { onRename, onEditEdge }) {
         menu.set({ open: true, x: e.clientX, y: e.clientY, items });
     };
 
-    function openNodeMenu(e, node, extraActions = []) {
+    function openNodeMenu(e, node, extraActions = [], addDefaultActions = true) {
         open(e, [
             ...extraActions,
-            { label: i18n("rename", menuLabels), icon: "pen", action: () => onRename(node) },
-            { label: i18n("deleteNode", menuLabels), icon: "trash", danger: true, action: () => removeNode(node.id ?? node.docId) },
+            ...(addDefaultActions ? [
+                { label: i18n("rename", menuLabels), icon: "pen", action: () => onRename(node) },
+                { label: i18n("deleteNode", menuLabels), icon: "trash", danger: true, action: () => removeNode(node.id ?? node.docId) },
+            ] : []),
         ]);
     }
 

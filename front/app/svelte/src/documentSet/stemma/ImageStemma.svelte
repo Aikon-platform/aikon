@@ -25,6 +25,7 @@ Special cases:
     import Tabs from "../../ui/Tabs.svelte";
     import { i18n } from "../../utils.js";
     import { createStemmaInteraction, createStemmaMenu } from "./stemmaInteraction.js";
+    import QueryExpansionView from "../../regions/modal/QueryExpansionView.svelte";
 
     export let stemmaStore;
     export let visiblePairs;
@@ -35,7 +36,7 @@ Special cases:
     let startFromImage = false;
 
     const dispatch = createEventDispatcher();
-    const { edges, nodePositions, nodeTitles, updateNodeTitle, updateEdgeLabel } = stemmaStore;
+    const { edges, nodePositions, nodeTitles, updateNodeTitle, updateEdgeLabel, addEdge } = stemmaStore;
 
     const interaction = createStemmaInteraction(stemmaStore);
     const { transform, dragOverride, drawingEdge } = interaction;
@@ -44,14 +45,18 @@ Special cases:
     const tabs = [
         { id: "region", label: i18n("mainView") },
         { id: "page", label: i18n("pageView") },
+        { id: "matches", label: i18n("matchesView") },
     ];
 
     const t = {
         select:    { en: "Select an image in the frieze", fr: "Sélectionner une image dans la frise" },
         openModal: { en: "Open detailed view", fr: "Ouvrir la vue détaillée" },
         setAnchor: { en: "Set as anchor", fr: "Définir comme ancre" },
-        startFromImage: { en: "Start from image", fr: "Partir de l'image" },
+        startFromImage: { en: "Suggest images", fr: "Images apparentées" },
+        addToStemma: { en: "Add to document stemma", fr: "Ajouter au stemma" },
     };
+
+    const ADD_TO_STEMMA_K = 1;
 
     const IMG_SIZE = 150;
     let svgEl, containerEl;
@@ -68,11 +73,26 @@ Special cases:
 
     function openNodeMenu(e, node) {
         const noImg = !node.img;
+        if (node.extra) {
+            stemmaMenu.openNodeMenu(e, node, [
+                { label: i18n("openModal", t), icon: "expand", disabled: noImg, action: () => openImg(node) },
+            ], false);
+            return;
+        }
         const isAnchor = node.docId === baseDocId && node.imageId === startImageId;
         stemmaMenu.openNodeMenu(e, node, [
             { label: i18n("openModal", t), icon: "expand", disabled: noImg, action: () => openImg(node) },
             { label: i18n("setAnchor", t), icon: "anchor", disabled: noImg || isAnchor, action: () => dispatch("anchorselect", { imageId: node.imageId, baseDocId: node.docId }) },
         ]);
+    }
+
+    function openExtraEdgeMenu(e, edge) {
+        e.preventDefault();
+        const ex = edge.target, stem = edge.source;
+        stemmaMenu.openNodeMenu(e, ex, [
+            { label: i18n("addToStemma", t), icon: "code-branch", action: () =>
+                addEdge(ex.docId, stem.docId, documents.find(d => d.id === ex.docId), documents.find(d => d.id === stem.docId)) },
+        ], false);
     }
 
     let attached = false;
@@ -130,36 +150,30 @@ Special cases:
     $: stemmaImages = computeStemma($edges, $nodePositions, documents, $pairIndex, $imageNodes, startImageId, baseDocId, $nodeTitles, startFromImage);
 
     function computeStemma(edges, positions, docs, pairIdx, imgNodes, startImgId, baseId, titles, fromImage) {
-        if (!startImgId || !baseId) return { nodes: [], edges: [] };
+        if (!startImgId || !baseId) return {nodes: [], edges: []};
         const docMap = new Map(docs.map(n => [n.id, n]));
         const baseDoc = docMap.get(baseId);
         const titleFor = id => titles[id] || docMap.get(id)?.title;
 
         const adjacency = new Map();
         for (const docId of docMap.keys()) adjacency.set(docId, []);
-        if (fromImage) {
-            const ids = [...docMap.keys()];
-            for (const a of ids) for (const b of ids) if (a !== b) adjacency.get(a).push(b);
-        } else {
-            if (!edges.length) {
-                if (!baseDoc) return { nodes: [], edges: [] };
-                const img = imgNodes.get(startImgId);
-                return {
-                    nodes: [{
-                        docId: baseId, imageId: startImgId,
-                        color: baseDoc.color, title: titleFor(baseId),
-                        x: 0, y: 0, img, ...nodeDims(img)
-                    }],
-                    edges: []
-                };
-            }
-            for (const e of edges) {
-                adjacency.get(e.source)?.push(e.target);
-                adjacency.get(e.target)?.push(e.source);
-            }
+        if (!edges.length) {
+            if (!baseDoc) return {nodes: [], edges: []};
+            const img = imgNodes.get(startImgId);
+            const base = {
+                docId: baseId, id: baseId, imageId: startImgId,
+                color: baseDoc.color, title: titleFor(baseId),
+                ...(positions[baseId] || {x: 0, y: 0}), img, ...nodeDims(img)
+            };
+            const ex = fromImage ? extraImageNodes([base]) : {nodes: [], edges: []};
+            return {nodes: [base, ...ex.nodes], edges: ex.edges};
+        }
+        for (const e of edges) {
+            adjacency.get(e.source)?.push(e.target);
+            adjacency.get(e.target)?.push(e.source);
         }
 
-        const resolved = new Map([[baseId, { imageId: startImgId, score: Infinity, parent: null }]]);
+        const resolved = new Map([[baseId, {imageId: startImgId, score: Infinity, parent: null}]]);
         const queue = [baseId];
         const visited = new Set([baseId]);
 
@@ -174,56 +188,94 @@ Special cases:
                 if (visited.has(neighborDocId)) {
                     const existing = resolved.get(neighborDocId);
                     if (match && (!existing.imageId || match.score > existing.score)) {
-                        resolved.set(neighborDocId, { ...match, parent: currentDocId });
+                        resolved.set(neighborDocId, {...match, parent: currentDocId});
                     }
                     continue;
                 }
 
                 visited.add(neighborDocId);
-                resolved.set(neighborDocId, match ? { ...match, parent: currentDocId } : { imageId: null, score: -Infinity, parent: null });
+                resolved.set(neighborDocId, match ? {...match, parent: currentDocId} : {
+                    imageId: null,
+                    score: -Infinity,
+                    parent: null
+                });
                 if (match) queue.push(neighborDocId);
             }
         }
 
-        if (!fromImage) {
-            for (const docId of docMap.keys()) {
-                if (!resolved.has(docId)) resolved.set(docId, { imageId: null, score: -Infinity, parent: null });
-            }
-        }
-
         const nodes = [];
-        for (const [docId, { imageId }] of resolved) {
-            if (fromImage && !imageId) continue;
+        for (const [docId, {imageId}] of resolved) {
             const doc = docMap.get(docId);
             if (!doc) continue;
-            const pos = positions[docId] || { x: 0, y: 0 };
+            const pos = positions[docId] || {x: 0, y: 0};
             const img = imageId ? imgNodes.get(imageId) : null;
             nodes.push({
-                docId, imageId, color: doc.color, title: titleFor(docId),
+                docId, id: docId, imageId, color: doc.color, title: titleFor(docId),
                 x: pos.x, y: pos.y, img, ...nodeDims(img)
             });
         }
-
-        const docStemmaPairs = new Set(
-            edges.map(e => e.source < e.target ? `${e.source}-${e.target}` : `${e.target}-${e.source}`)
-        );
+        const extra = fromImage ? extraImageNodes(nodes) : {nodes: [], edges: []};
+        nodes.push(...extra.nodes);
 
         const nodeMap = new Map(nodes.map(n => [n.docId, n]));
-        const renderedEdges = fromImage
-            ? [...resolved].flatMap(([docId, { parent }]) => {
-                if (parent == null) return [];
-                let src = nodeMap.get(parent), tgt = nodeMap.get(docId);
-                if (!src || !tgt) return [];
-                // if (!isEarlier(docMap.get(src.docId), docMap.get(tgt.docId))) [src, tgt] = [tgt, src];
-                const key = src.docId < tgt.docId ? `${src.docId}-${tgt.docId}` : `${tgt.docId}-${src.docId}`;
-                return [{ source: src, target: tgt, faded: !docStemmaPairs.has(key) }];
-            })
-            : edges.map(e => {
-                const src = nodeMap.get(e.source), tgt = nodeMap.get(e.target);
-                return src && tgt ? { source: src, target: tgt } : null;
-            }).filter(Boolean);
+        const renderedEdges = edges.map(e => {
+            const src = nodeMap.get(e.source), tgt = nodeMap.get(e.target);
+            return src && tgt ? {source: src, target: tgt, label: e.label} : null;
+        }).filter(Boolean);
 
-        return { nodes, edges: renderedEdges };
+        return {nodes, edges: [...renderedEdges, ...extra.edges]};
+
+        function extraImageNodes(stemmaNodes) {
+            const byImg = new Map(stemmaNodes.filter(n => n.imageId).map(n => [n.imageId, n]));
+            const inStemma = new Set(stemmaNodes.map(n => n.docId));
+            const found = new Map();
+            for (const [, pairs] of pairIdx) for (const p of pairs) {
+                const a = byImg.get(p.id_1), b = byImg.get(p.id_2);
+                if (!a === !b) continue;
+                const stem = a || b;
+                const imageId = a ? p.id_2 : p.id_1;
+                const docId = a ? p.digit_2 : p.digit_1;
+                if (byImg.has(imageId) || inStemma.has(docId) || !docMap.has(docId)) continue;
+                if (!found.has(imageId)) found.set(imageId, {docId, partners: new Map()});
+                const partners = found.get(imageId).partners;
+                if (!partners.has(stem.imageId) || partners.get(stem.imageId).score < p.weightedScore)
+                    partners.set(stem.imageId, {node: stem, score: p.weightedScore});
+            }
+
+            // NOTE: extra images are located at their source-document position;
+            //  NOTE: we keep only top-k = 1 to avoid a position collision.
+            const bestPerDoc = new Map();
+            for (const [imageId, {docId, partners}] of found) {
+                const top = Math.max(...[...partners.values()].map(v => v.score));
+                if (!bestPerDoc.has(docId) || bestPerDoc.get(docId).top < top)
+                    bestPerDoc.set(docId, {imageId, partners, top});
+            }
+
+            const out = {nodes: [], edges: []};
+            for (const [docId, {imageId, partners: partnerMap}] of bestPerDoc) {
+                const partners = [...partnerMap.values()].sort((x, y) => y.score - x.score);
+                const img = imgNodes.get(imageId);
+                const pos = positions[docId] || {x: 0, y: 0};
+                const node = {
+                    docId,
+                    id: docId,
+                    imageId,
+                    extra: true,
+                    color: docMap.get(docId).color,
+                    title: titleFor(docId),
+                    x: pos.x,
+                    y: pos.y,
+                    img, ...nodeDims(img)
+                };
+                out.nodes.push(node);
+                for (const {node: stem} of partners.slice(0, ADD_TO_STEMMA_K)) out.edges.push({
+                    source: stem,
+                    target: node,
+                    extra: true
+                });
+            }
+            return out;
+        }
     }
 
     function findBestMatch(imgId, fromDocId, toDocId, pairIdx) {
@@ -248,7 +300,7 @@ Special cases:
     }
 
     function posOf(node, override) {
-        return override?.docId === node.docId ? override : node;
+        return override?.docId === node.docId ? { ...node, x: override.x, y: override.y } : node;
     }
 
     function saveTitle({ detail }) {
@@ -279,9 +331,6 @@ Special cases:
                 <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                     <polygon points="0 0, 10 3.5, 0 7" fill="var(--bulma-body-color)"/>
                 </marker>
-                <marker id="arrowhead-faded" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill="var(--bulma-grey-lighter)" />
-                </marker>
             </defs>
 
             <g transform="translate({$transform.x},{$transform.y}) scale({$transform.k})">
@@ -292,12 +341,12 @@ Special cases:
                     {@const y1 = s.y + edge.source.h}
                     {@const x2 = t2.x + edge.target.w/2}
                     {@const y2 = t2.y}
-                    <g class="edge-group" on:contextmenu={e => stemmaMenu.openEdgeMenu(e, edge)}>
+                    <g class="edge-group" on:contextmenu={e => edge.extra ? openExtraEdgeMenu(e, edge) : stemmaMenu.openEdgeMenu(e, edge)}>
                         <line class="edge-hit" {x1} {y1} {x2} {y2} stroke-width={10 / $transform.k}/>
                         <line class="edge" {x1} {y1} {x2} {y2}
-                              stroke={edge.faded ? "var(--bulma-grey-lighter)" : "var(--bulma-body-color)"}
+                              stroke={edge.extra ? "transparent" : "var(--bulma-body-color)"}
                               stroke-width={2 / $transform.k}
-                              marker-end={edge.faded ? "url(#arrowhead-faded)" : "url(#arrowhead)"}/>
+                              marker-end={edge.extra ? null : "url(#arrowhead)"}/>
                     </g>
                     {#if edge.label}
                         <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 4 / $transform.k}
@@ -316,7 +365,7 @@ Special cases:
                     {/if}
                 {/if}
 
-                {#each stemmaImages.nodes as node (node.docId)}
+                {#each stemmaImages.nodes as node (node.id)}
                     {@const p = posOf(node, $dragOverride)}
                     <g data-node-id={node.docId}
                        transform="translate({p.x},{p.y})"
@@ -325,7 +374,7 @@ Special cases:
                        on:contextmenu={e => openNodeMenu(e, node)}>
                         <rect width={node.w} height={node.h} rx="4"
                               fill={node.color} stroke={node.color}
-                              stroke-width={node.docId === baseDocId ? 20 : 10}/>
+                              stroke-width={node.imageId === startImageId && node.docId === baseDocId ? 20 : 10}/>
                         <image href={getImageUrl(node.img)}
                                width={node.w} height={node.h}
                                clip-path="inset(0 round 4px)"
@@ -352,6 +401,10 @@ Special cases:
                 </div>
             {:else if activeTab === "page"}
                 <PageView item={currentItem}/>
+            {:else if activeTab === "matches"}
+                {#key currentItem.img}
+                    <QueryExpansionView item={currentItem}/>
+                {/key}
             {/if}
         </Tabs>
     </svelte:fragment>
