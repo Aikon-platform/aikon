@@ -8,6 +8,9 @@
 
     /** @type {RegionItemType} */
     export let item;
+    export let showNav = true;
+    export let height = null;
+
 
     let canvasOffset = 0;
     let maxPage = null;
@@ -76,8 +79,8 @@
             Page {currentCanvas}
         </a>
     </div>
-    <div class="modal-context-wrapper mb-3">
-        {#if currentCanvas !== 1}
+    <div class="modal-context-wrapper mb-3" style:height={height}>
+        {#if showNav && currentCanvas !== 1}
             <NavigationArrow direction="left" delta={-1} navigationFct={changePage} css="margin-left: -6em;" icon="circle" text={i18n("prev", t)}/>
         {/if}
         <img class="card modal-context-full-page" src={fullPageUrl} alt={appLang === "fr" ? "Vue de la page d'où la région est extraite" : "View of the page the region is extracted from"}/>
@@ -86,7 +89,7 @@
                 <div class="modal-context-bbox" style:left="{left}%" style:top="{top}%" style:width="{width}%" style:height="{height}%"/>
             {/await}
         {/if}
-        {#if currentCanvas !== maxPage}
+        {#if showNav && currentCanvas !== maxPage}
             <NavigationArrow direction="right" delta={1} navigationFct={changePage} css="margin-right: -6em;" icon="circle" text={i18n("next", t)}/>
         {/if}
     </div>
