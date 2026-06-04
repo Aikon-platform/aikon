@@ -152,6 +152,11 @@ export function createDocumentSetStore(documentSetId) {
                             });
                         });
 
+                        docMap.forEach(doc => {
+                            const range = [doc.min_date, doc.max_date].filter(Boolean);
+                            if (range.length) doc.title += ` (${[...new Set(range)].join("–")})`;
+                        });
+
                         if (dsInfo) {
                             witnessNodes.set(new Map(Object.values(dsInfo.Witness).map(w => [w.id, w])));
                             seriesNodes.set(new Map(Object.values(dsInfo.Series).map(s => [s.id, s])));
