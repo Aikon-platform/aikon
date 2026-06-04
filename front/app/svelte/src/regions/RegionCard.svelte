@@ -6,6 +6,7 @@
     import { regionsStore } from "./regionsStore.js";
     import { regionsSelection } from "../selection/selectionStore.js";
     import ModalOpener from "./modal/ModalOpener.svelte";
+    import {i18n} from "../utils.js";
     const { clipBoard } = regionsStore;
 
     export let selectionStore;
@@ -43,6 +44,19 @@
 
     const dispatch = createEventDispatcher();
     const openModal = () => isInModal ? null : dispatch("openModal", { index });
+
+    const download = async () => {
+        const res = await fetch(currentRegion.url(null, "full"));
+        const url = URL.createObjectURL(await res.blob());
+        Object.assign(document.createElement("a"), { href: url, download: `${currentRegion.ref.replace(".jpg", "")}.jpg` }).click();
+        URL.revokeObjectURL(url);
+    };
+
+    const t = {
+        downloadImg: { en: "Download image", fr: "Télécharger l'image" },
+        copy: { en: "Copy ID", fr: "Copier l'ID" },
+        copied: { en: "Copied!", fr: "Copié !" },
+    };
 </script>
 
 <div class="region is-center {selectable && $isSelected(item) ? 'checked' : ''}" style="{height === 'full' ? 'height: 100%' : ''}"> <!-- transition:fade={{ duration: 10 }} -->
@@ -66,16 +80,20 @@
                 {/if}
             </svg>
             <span class="tooltip">
-                {#if isCopied}
-                    {appLang === "en" ? "Copied!" : "Copié !"}
-                {:else}
-                    {appLang === "en" ? "Copy ID" : "Copier l'ID"}
-                {/if}
+                {i18n(isCopied ? "copied" : "copy", t)}
             </span>
         </button>
         {/if}
         {#if !isInModal}
             <ModalOpener on:open={openModal}/>
+        {/if}
+        {#if isInModal}
+<!--            <a class="button tag mb-1 p-0 has-text-link" href={imgSrc} download title={i18n("downloadImg", t)} on:click|stopPropagation>-->
+<!--                <i class="fa-solid fa-download"/>-->
+<!--            </a>-->
+            <button class="button tag mb-1 p-0 has-text-link" on:click|stopPropagation={download} title={i18n("downloadImg", t)}>
+                <i class="fa-solid fa-download"/>
+            </button>
         {/if}
         <slot name="actions"/>
     </div>
