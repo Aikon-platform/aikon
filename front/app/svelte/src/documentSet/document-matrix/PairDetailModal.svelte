@@ -5,17 +5,22 @@
     import NavigationArrow from "../../ui/NavigationArrow.svelte";
     import {RegionItem} from "../../regions/types.js";
     import CategoryToolbar from "../../regions/similarity/CategoryToolbar.svelte";
+    import InputToggle from "../../ui/InputToggle.svelte";
+    import PageView from "../../regions/modal/PageView.svelte";
 
     export let active = false;
     export let scatterData = null;
     export let navState = null; // {idx1, idx2}
     export let pairCat = new Map();
+    let fullPage = false;
+    $: if (scatterData?.mode !== 'image') fullPage = false;
 
     const dispatch = createEventDispatcher();
 
     const t = {
         score: {en: "Score", fr: "Score"},
         failed: {en: "Categorization failed", fr: "La catégorisation a échoué"},
+        toPageView: {en: "Full page view", fr: "Afficher la page entière"},
     };
 
     function findCat(img1, img2) {
@@ -72,8 +77,8 @@
             const pair = data.pairScores.get(`${nav.idx1}-${nav.idx2}`);
             result = {
                 items: [
-                    {doc: doc1, label: `Canvas ${img1.canvas} — Image #${nav.idx1 + 1}`, imgUrl: getRegionImageUrl(img1)},
-                    {doc: doc2, label: `Canvas ${img2.canvas} — Image #${nav.idx2 + 1}`, imgUrl: getRegionImageUrl(img2)}
+                    {doc: doc1, label: `Canvas ${img1.canvas} — Image #${nav.idx1 + 1}`, imgUrl: getRegionImageUrl(img1), region: img1},
+                    {doc: doc2, label: `Canvas ${img2.canvas} — Image #${nav.idx2 + 1}`, imgUrl: getRegionImageUrl(img2), region: img2}
                 ],
                 score: pair?.score,
                 canCategorize: true,
@@ -101,8 +106,6 @@
         }
 
         result.category = result.img1 && result.img2 ? findCat(result.img1, result.img2) : null;
-
-        console.log(result);
         return result;
     }
 
@@ -160,16 +163,24 @@
                             <tr>
                                 <td colspan="2" class="has-text-centered">
                                     {#if modalData.score !== undefined}
-                                        <span class="tag button is-small is-contrasted pb-3">
+                                        <span class="tag button is-small is-contrasted mb-3">
                                             {i18n("score", t)} {modalData.score.toFixed(2)}
                                         </span>
                                     {/if}
 
-                                    {#if modalData.canCategorize}
-                                        <CategoryToolbar visibleCategories={[1,2,3,4]}
-                                            selectedCategory={modalData.category}
-                                            toggleFct={categorize}/>
-                                    {/if}
+                                    <div class="is-flex is-align-items-center" style="width: 350px; margin: auto">
+                                        {#if scatterData.mode === 'image'}
+                                            <span>
+                                                <InputToggle toggleLabel={i18n("toPageView", t)} start={fullPage} on:updateChecked={e => fullPage = e.detail}/>
+                                            </span>
+                                        {/if}
+
+                                        {#if modalData.canCategorize}
+                                            <CategoryToolbar visibleCategories={[1,2,3,4]}
+                                                selectedCategory={modalData.category}
+                                                toggleFct={categorize}/>
+                                        {/if}
+                                    </div>
                                 </td>
                             </tr>
                         {/if}
@@ -178,9 +189,13 @@
                                 <td class="modal-cell">
                                     <div class="image-nav-container">
                                         <NavigationArrow direction={i !== 0 ? "up" : "left"} delta={-1} axis={i !== 0 ? "vertical" : "horizontal"} navigationFct={navigate}/>
-                                        <figure class="image">
-                                            <img src={item.imgUrl} alt="{scatterData?.mode === 'image' ? 'Image' : 'Page'} {item.label}" class="img-preview"/>
-                                        </figure>
+                                        {#if fullPage && item.region}
+                                            <PageView item={item.region} showNav={false} height="60vh"/>
+                                        {:else}
+                                            <figure class="image">
+                                                <img src={item.imgUrl} alt="{item.label}" class="img-preview"/>
+                                            </figure>
+                                        {/if}
                                         <NavigationArrow direction={i !== 0 ? "down" : "right"} delta={1} axis={i !== 0 ? "vertical" : "horizontal"} navigationFct={navigate}/>
                                     </div>
                                 </td>
