@@ -188,7 +188,9 @@ Special cases:
                 if (visited.has(neighborDocId)) {
                     const existing = resolved.get(neighborDocId);
                     if (match && (!existing.imageId || match.score > existing.score)) {
+                        const wasDeadEnd = !existing.imageId;
                         resolved.set(neighborDocId, {...match, parent: currentDocId});
+                        if (wasDeadEnd) queue.push(neighborDocId);
                     }
                     continue;
                 }
@@ -199,7 +201,7 @@ Special cases:
                     score: -Infinity,
                     parent: null
                 });
-                if (match) queue.push(neighborDocId);
+                queue.push(neighborDocId);
             }
         }
 
