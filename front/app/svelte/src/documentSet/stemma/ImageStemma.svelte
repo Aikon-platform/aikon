@@ -1,15 +1,13 @@
 <!--
 Propagation logic:
 1. The startImageId (clicked line in the in the spatial frieze) determines the starting image placed at the base document node
-2. We use Breadth-first search algorithm to browse the stemma, following all edges from the base node to build the complete graph structure
-3. For each edge, look for the best matching pair between the current image and the neighbor document:
-   - If multiple pairs exist, pick the one with the highest weightedScore
-   - If no visible pair exists, it's a dead end for image propagation (node is displayed with a placeholder)
-4. Continue to next generation: each resolved node becomes the new base for its unvisited neighbors
-5. Repeat until all reachable nodes are visited
-
-Special cases:
-- Circular graphs: if multiple paths reach the same node, keep the pair with the highest score
+2. Pass 1 (doc graph): BFS from the base node over all stemma edges to enumerate every reachable document.
+   Every reachable document becomes a node, even if image propagation later fails to reach it.
+3. Pass 2 (image propagation): BFS from the base, following edges and resolving each neighbor's image
+   via the best matching pair (highest weightedScore). Nodes that propagation cannot reach are kept
+   as placeholders (no image), so the document stemma is always shown in full.
+4. Cycle / multi-path handling: when several paths can resolve the same node, keep the pair with
+   the highest score and re-enqueue so the improvement propagates downstream.
 -->
 
 <script>
@@ -152,78 +150,60 @@ Special cases:
     function computeStemma(edges, positions, docs, pairIdx, imgNodes, startImgId, baseId, titles, fromImage) {
         if (!startImgId || !baseId) return {nodes: [], edges: []};
         const docMap = new Map(docs.map(n => [n.id, n]));
-        const baseDoc = docMap.get(baseId);
+        if (!docMap.has(baseId)) return {nodes: [], edges: []};
         const titleFor = id => titles[id] || docMap.get(id)?.title;
 
-        const adjacency = new Map();
-        for (const docId of docMap.keys()) adjacency.set(docId, []);
-        if (!edges.length) {
-            if (!baseDoc) return {nodes: [], edges: []};
-            const img = imgNodes.get(startImgId);
-            const base = {
-                docId: baseId, id: baseId, imageId: startImgId,
-                color: baseDoc.color, title: titleFor(baseId),
-                ...(positions[baseId] || {x: 0, y: 0}), img, ...nodeDims(img)
-            };
-            const ex = fromImage ? extraImageNodes([base]) : {nodes: [], edges: []};
-            return {nodes: [base, ...ex.nodes], edges: ex.edges};
-        }
+        const adjacency = new Map([...docMap.keys()].map(id => [id, []]));
         for (const e of edges) {
-            adjacency.get(e.source)?.push(e.target);
-            adjacency.get(e.target)?.push(e.source);
+            if (adjacency.has(e.source) && adjacency.has(e.target)) {
+                adjacency.get(e.source).push(e.target);
+                adjacency.get(e.target).push(e.source);
+            }
         }
 
-        const resolved = new Map([[baseId, {imageId: startImgId, score: Infinity, parent: null}]]);
-        const queue = [baseId];
-        const visited = new Set([baseId]);
+        // every node reachable from base via the doc graph.
+        const reachable = new Set([baseId]);
+        const docQueue = [baseId];
+        while (docQueue.length) {
+            for (const n of adjacency.get(docQueue.shift())) {
+                if (!reachable.has(n)) { reachable.add(n); docQueue.push(n); }
+            }
+        }
 
+        const resolved = new Map([...reachable].map(id => [id, {imageId: null, score: -Infinity}]));
+        resolved.set(baseId, {imageId: startImgId, score: Infinity});
+        const queue = [baseId];
         while (queue.length) {
             const currentDocId = queue.shift();
             const currentImgId = resolved.get(currentDocId).imageId;
             if (!currentImgId || !imgNodes.get(currentImgId)) continue;
-
-            for (const neighborDocId of adjacency.get(currentDocId) || []) {
+            for (const neighborDocId of adjacency.get(currentDocId)) {
                 const match = findBestMatch(currentImgId, currentDocId, neighborDocId, pairIdx);
-
-                if (visited.has(neighborDocId)) {
-                    const existing = resolved.get(neighborDocId);
-                    if (match && (!existing.imageId || match.score > existing.score)) {
-                        const wasDeadEnd = !existing.imageId;
-                        resolved.set(neighborDocId, {...match, parent: currentDocId});
-                        if (wasDeadEnd) queue.push(neighborDocId);
-                    }
-                    continue;
+                if (!match) continue;
+                const existing = resolved.get(neighborDocId);
+                if (!existing.imageId || match.score > existing.score) {
+                    resolved.set(neighborDocId, match);
+                    queue.push(neighborDocId);
                 }
-
-                visited.add(neighborDocId);
-                resolved.set(neighborDocId, match ? {...match, parent: currentDocId} : {
-                    imageId: null,
-                    score: -Infinity,
-                    parent: null
-                });
-                queue.push(neighborDocId);
             }
         }
 
-        const nodes = [];
-        for (const [docId, {imageId}] of resolved) {
-            const doc = docMap.get(docId);
-            if (!doc) continue;
+        const nodes = [...resolved].map(([docId, {imageId}]) => {
             const pos = positions[docId] || {x: 0, y: 0};
             const img = imageId ? imgNodes.get(imageId) : null;
-            nodes.push({
-                docId, id: docId, imageId, color: doc.color, title: titleFor(docId),
+            return {
+                docId, id: docId, imageId, color: docMap.get(docId).color, title: titleFor(docId),
                 x: pos.x, y: pos.y, img, ...nodeDims(img)
-            });
-        }
+            };
+        });
         const extra = fromImage ? extraImageNodes(nodes) : {nodes: [], edges: []};
         nodes.push(...extra.nodes);
 
         const nodeMap = new Map(nodes.map(n => [n.docId, n]));
-        const renderedEdges = edges.map(e => {
+        const renderedEdges = edges.flatMap(e => {
             const src = nodeMap.get(e.source), tgt = nodeMap.get(e.target);
-            return src && tgt ? {source: src, target: tgt, label: e.label} : null;
-        }).filter(Boolean);
+            return src && tgt ? [{source: src, target: tgt, label: e.label}] : [];
+        });
 
         return {nodes, edges: [...renderedEdges, ...extra.edges]};
 
