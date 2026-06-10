@@ -209,7 +209,8 @@ Propagation logic:
 
         function extraImageNodes(stemmaNodes) {
             const byImg = new Map(stemmaNodes.filter(n => n.imageId).map(n => [n.imageId, n]));
-            const inStemma = new Set(stemmaNodes.map(n => n.docId));
+            const filledDocs = new Set([...byImg.values()].map(n => n.docId));
+            const nodeByDoc = new Map(stemmaNodes.map(n => [n.docId, n]));
             const found = new Map();
             for (const [, pairs] of pairIdx) for (const p of pairs) {
                 const a = byImg.get(p.id_1), b = byImg.get(p.id_2);
@@ -217,15 +218,13 @@ Propagation logic:
                 const stem = a || b;
                 const imageId = a ? p.id_2 : p.id_1;
                 const docId = a ? p.digit_2 : p.digit_1;
-                if (byImg.has(imageId) || inStemma.has(docId) || !docMap.has(docId)) continue;
+                if (byImg.has(imageId) || filledDocs.has(docId) || !docMap.has(docId)) continue;
                 if (!found.has(imageId)) found.set(imageId, {docId, partners: new Map()});
                 const partners = found.get(imageId).partners;
                 if (!partners.has(stem.imageId) || partners.get(stem.imageId).score < p.weightedScore)
                     partners.set(stem.imageId, {node: stem, score: p.weightedScore});
             }
 
-            // NOTE: extra images are located at their source-document position;
-            //  NOTE: we keep only top-k = 1 to avoid a position collision.
             const bestPerDoc = new Map();
             for (const [imageId, {docId, partners}] of found) {
                 const top = Math.max(...[...partners.values()].map(v => v.score));
@@ -237,24 +236,20 @@ Propagation logic:
             for (const [docId, {imageId, partners: partnerMap}] of bestPerDoc) {
                 const partners = [...partnerMap.values()].sort((x, y) => y.score - x.score);
                 const img = imgNodes.get(imageId);
-                const pos = positions[docId] || {x: 0, y: 0};
-                const node = {
-                    docId,
-                    id: docId,
-                    imageId,
-                    extra: true,
-                    color: docMap.get(docId).color,
-                    title: titleFor(docId),
-                    x: pos.x,
-                    y: pos.y,
-                    img, ...nodeDims(img)
-                };
-                out.nodes.push(node);
-                for (const {node: stem} of partners.slice(0, ADD_TO_STEMMA_K)) out.edges.push({
-                    source: stem,
-                    target: node,
-                    extra: true
-                });
+                const placeholder = nodeByDoc.get(docId);
+                if (placeholder) {
+                    Object.assign(placeholder, {imageId, img, ...nodeDims(img)});
+                } else {
+                    const pos = positions[docId] || {x: 0, y: 0};
+                    const node = {
+                        docId, id: docId, imageId, extra: true,
+                        color: docMap.get(docId).color, title: titleFor(docId),
+                        x: pos.x, y: pos.y, img, ...nodeDims(img)
+                    };
+                    out.nodes.push(node);
+                    for (const {node: stem} of partners.slice(0, ADD_TO_STEMMA_K))
+                        out.edges.push({source: stem, target: node, extra: true});
+                }
             }
             return out;
         }
