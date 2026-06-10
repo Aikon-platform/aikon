@@ -8,6 +8,8 @@ const t = {
     batchUncat: {en: "Batch un-categorization failed", fr: "La dé-catégorisation par lot a échoué"}
 }
 
+const clusterIdOf = (members) => JSON.stringify(members.slice().sort());
+
 export function createClusterStore(documentSetStore, clusterSelection) {
     const pageLength = 10;
     const currentPage = writable(1);
@@ -64,20 +66,19 @@ export function createClusterStore(documentSetStore, clusterSelection) {
                 const n = members.length;
                 const maxEdges = (n * (n - 1)) / 2;
                 const imageSet = new Set(members);
-                let actualLinks = 0;
+                const edges = new Set();
                 let allCategory1 = true;
                 for (const p of pairs) {
-                    if (imageSet.has(p.id_1) && imageSet.has(p.id_2)) {
-                        actualLinks++;
-                        if (allCategory1 && p.category !== 1) allCategory1 = false;
-                    }
+                    if (!imageSet.has(p.id_1) || !imageSet.has(p.id_2)) continue;
+                    const [a, b] = p.id_1 < p.id_2 ? [p.id_1, p.id_2] : [p.id_2, p.id_1];
+                    edges.add(`${a}|${b}`);
+                    if (allCategory1 && p.category !== 1) allCategory1 = false;
                 }
-
                 return {
-                    id: crypto.randomUUID(),
+                    id: clusterIdOf(members),
                     members,
                     size: n,
-                    fullyConnected: actualLinks >= maxEdges && allCategory1
+                    fullyConnected: edges.size >= maxEdges && allCategory1
                 };
             })
             .filter(c => c.size > 1)
@@ -87,14 +88,17 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     /**
      * Clusters { id, members: [imgId1, imgId2, ...], size, fullyConnected }
      */
-    const imageClusters = derived(visiblePairs, ($pairs) => {
-        if (!$pairs.length) return [];
-        return findClusters($pairs);
-    });
+    const imageClusters = derived(visiblePairs, ($pairs) =>
+        $pairs.length ? findClusters($pairs) : []
+    );
 
     // UI clusters, manipulable without needing to rerun findClusters
     const interfaceClusters = writable([]);
+    let prevClusters = "";
     imageClusters.subscribe($clusters => {
+        const newClusters = $clusters.map(c => c.id).join("§");
+        if (newClusters === prevClusters) return;
+        prevClusters = newClusters;
         interfaceClusters.set($clusters);
     });
 
@@ -181,7 +185,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     };
 
     const categorizeSelection = async (category) => {
-        const selected = selectedDocs();
+        const selected = selectedImages();
         const imgRefs = Object.keys(selected);
 
         if (imgRefs.length < 2) {
@@ -216,47 +220,46 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         // }
 
         const success = await categorizePairs(cluster.members, 1);
-
         if (success) {
             interfaceClusters.update($clusters =>
-                $clusters.map(c =>
-                    c.id === cluster.id ? {...c, fullyConnected: true} : c
-                )
+                $clusters.map(c => c.id === cluster.id ? {...c, fullyConnected: true} : c)
             );
         }
-
         return success;
     };
 
     const createCluster = async (imgRefs, category = 1) => {
         if (imgRefs.length < 2) return false;
-
         const success = await categorizePairs(imgRefs, category);
         if (!success) return false;
 
         const imgRefSet = new Set(imgRefs);
         const byOriginCluster = {};
-        get(interfaceClusters).forEach(cluster => {
-            if (cluster.members.some(m => imgRefSet.has(m))) {
-                byOriginCluster[cluster.id] = true;
+        get(interfaceClusters).forEach(c => {
+            if (c.members.some(m => imgRefSet.has(m))) {
+                byOriginCluster[c.id] = true;
             }
         });
         removeImgsFromInterface(imgRefSet, byOriginCluster);
 
+        const newId = clusterIdOf(imgRefs);
         interfaceClusters.update($clusters => [
             {
-                id: crypto.randomUUID(),
+                id: newId,
                 members: imgRefs,
                 size: imgRefs.length,
                 fullyConnected: category === 1
             },
-            ...$clusters
+            ...$clusters.filter(c => c.id !== newId)
         ].sort((a, b) => b.size - a.size));
 
         return true;
     };
 
-    const selectedDocs = () => get(clusterSelection).selected.regions || {};
+    const selectedImages = () => {
+        const selection = get(clusterSelection).selected;
+        return selection.regions || selection.region_extraction || {}
+    };
 
     const newCluster = async () => {
         const confirmed = await showMessage(
@@ -268,7 +271,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             return;
         }
 
-        const selected = selectedDocs();
+        const selected = selectedImages();
         const imgRefs = Object.keys(selected);
 
         if (imgRefs.length < 2) {
@@ -299,7 +302,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             return;
         }
 
-        const selected = selectedDocs();
+        const selected = selectedImages();
         const removed = await removeImgRefs(Object.keys(selected));
         if (!removed) return false;
 
