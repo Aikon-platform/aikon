@@ -12,15 +12,21 @@
     export let mode = "image";
     export let isInStemma = false;
 
-    const { nodeTitles, areAllInStemma, docsInStemma } = stemmaStore;
-    const areInStemma = (matchedDocs) => isInStemma && $docsInStemma && areAllInStemma([$baseDocId, ...matchedDocs]);
+    const { nodeTitles, docsInStemma } = stemmaStore;   // drop areAllInStemma
+
+    $: stemmaDocs = isInStemma && $docsInStemma.has($baseDocId) ? $docsInStemma : null;
+    function areInStemma(ids, set) {
+        if (!set) return false;
+        for (const id of ids) if (!set.has(id)) return false;
+        return true;
+    }
 
     const dispatch = createEventDispatcher();
 
     const LINE_WIDTH = 5;
     const AXIS_HEIGHT = 20;
     const CLUSTER_COLORS = [
-        "#9f0048",
+        "#c60057",
         "#d10a0a",
         "#ff6a00",
         "#ff9100",
@@ -32,7 +38,7 @@
         "#1285cd",
         "#1253cd",
         "#2512cd",
-        "#5d12cd"
+        "#6b18e6"
     ];
     let clusterMode = false;
     let clusterOrder = "documents";
@@ -341,14 +347,11 @@
             <div id="spatial-frieze" class="frieze-wrapper">
                 <div class="frieze" style="--line-width: {LINE_WIDTH}px;">
                     {#each $items as item, idx}
-                        <button class="frieze-line"
+                        <button class="frieze-line" style="{clusterData ? `background:${clusterData.itemColors[idx]?.color || '#4a4a4a'};` : `--opacity: ${item.matchCount / $maxVal}`}"
+                            title="{mode === 'image' ? `Page ${item.page}, ` : `Page ${item.page}, `}{item.matchCount} match(es)"
                             class:is-selected={idx === $selectedIndex}
                             class:is-cluster-selected={clusterSelectedIndices?.has(idx)}
-                            class:is-in-stemma={!clusterMode && areInStemma(item.matchedDocs)}
-                            style="{clusterData
-                                ? `background:${clusterData.itemColors[idx]?.color || '#4a4a4a'};`
-                                : `--opacity: ${item.matchCount / $maxVal}`}"
-                            title="{mode === 'image' ? `Page ${item.page}, ` : `Page ${item.page}, `}{item.matchCount} match(es)"
+                            class:is-in-stemma={!clusterMode && areInStemma(item.matchedDocs, stemmaDocs)}
                             on:click={() => handleClick(idx)}
                             on:contextmenu={(e) => openEdgesMenu(e, [$baseDocId, ...item.matchedDocs])}
                             on:mouseenter={() => handleMouseEnter(item)}
@@ -412,12 +415,13 @@
         <div class="doc-selector">
             {#each documents as node (node.id)}
                 {@const title = $nodeTitles[node.id] || node.title}
-                <button class="tag is-small doc-item" title={title}
+                {@const isEmpty = $documentNodes.get(node.id).images.length === 0}
+                <button class="tag is-small doc-item" {title} style="background-color: {node.color}; color: #222;"
                     class:is-base={node.id === $baseDocId}
-                    class:is-in-stemma={areInStemma([node.id])}
+                    class:is-in-stemma={isInStemma && $docsInStemma.has(node.id)}
+                    class:is-empty={isEmpty}
                     class:is-inactive={hoveredDocs.size > 0 && !hoveredDocs.has(node.id) && node.id !== $baseDocId}
-                    style="background-color: {node.color}; color: #222;"
-                    on:click={() => { baseDocId.set(node.id); selectedIndex.set(null); }}>
+                    on:click={() => { if (isEmpty) {return} baseDocId.set(node.id); selectedIndex.set(null); }}>
                     {title.length > 15 ? title.slice(0, 13) + "…" : title}
                 </button>
             {/each}
@@ -440,7 +444,7 @@
                         <b>{docLen} document{docLen > 1 ? 's' : ''}</b>
                         <span class="tag is-light is-small is-rounded is-clickable" title={i18n("clickToShow", t)}
                             class:is-active={selectedClusterSig === clusterSignature(cl.docIds)}
-                            class:is-in-stemma={areInStemma(cl.docIds)}
+                            class:is-in-stemma={areInStemma(cl.docIds, stemmaDocs)}
                             on:click={() => handleClusterClick(cl)}
                             on:contextmenu={(e) => openEdgesMenu(e, [$baseDocId, ...cl.docIds])}
                             on:mouseenter={() => handleClusterHover(cl)}
@@ -527,6 +531,11 @@
     .tag.doc-item.is-inactive {
         opacity: 0.3;
         filter: grayscale(0.8);
+    }
+    .tag.doc-item.is-empty {
+        opacity: 0.6;
+        filter: grayscale(0.5);
+        cursor: not-allowed;
     }
     .heatmap {
         display: flex;
