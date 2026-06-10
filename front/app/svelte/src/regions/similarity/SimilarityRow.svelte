@@ -13,7 +13,7 @@
 
     const row = similarityStore.createRowStore(qImg, isInModal);
     const { loading, propagatedLoading, error, propagated, filtered, fetchRow } = row;
-    const { selectedRegions, baseUrl, currentPageId } = similarityStore;
+    const { selectedRegions, currentPageId } = similarityStore;
 
     const qImgItem = RegionItem.fromImg(qImg);
     setContext("qImgMetadata", qImgItem);
