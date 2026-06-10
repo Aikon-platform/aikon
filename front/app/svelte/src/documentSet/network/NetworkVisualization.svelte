@@ -30,14 +30,7 @@
                 imageIds: new Set($selectedNodes.map(n => n.id)),
             });
 
-    let prevSig = "";
-    $: if ($networkData && container) {
-        const sig = $networkData.nodes.map(n => n.id).join(",") + "|" + $networkData.links.length;
-        if (sig !== prevSig) {
-            prevSig = sig;
-            renderVisualization();
-        }
-    }
+   $: if ($networkData && container) renderVisualization();
 
     function renderVisualization() {
         if (networkInstance) {
