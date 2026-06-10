@@ -45,7 +45,6 @@ export class RegionItem {
         this.ref = data.ref;
         this.type = data.type ?? regionsType;
         this.class = data.type ?? regionsType;
-
         this._parsed = null;
     }
 
@@ -92,6 +91,11 @@ export class RegionItem {
     get canvasDigits() { return this.parsed.canvasDigits; }
     get imgRoot() { return this.parsed.imgRoot; }
     get coord() { return this.parsed.coord ?? this.xywh; }
+
+    get copyId() {
+        const xywh = Array.isArray(this.coord) ? this.coord.join(",") : this.coord;
+        return this.imgRoot.replace(".jpg", xywh ? `_${xywh}` : "");
+    }
 
     canvasStr(canvasNb = this.canvasNb, digits = this.canvasDigits) {
         return String(canvasNb).padStart(digits, "0");
