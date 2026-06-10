@@ -44,6 +44,7 @@
     let selectedCategory = category;
     let isSelectedByUser = usersIncludesCurrentUser(users);
     const setModalAnchor = getContext("setModalAnchor");
+    const qImgMetadata = getContext("qImgMetadata");
 
     ////////////////////////////////////////////
 
@@ -63,9 +64,14 @@
     };
 
     const sImgItem = RegionItem.fromImg(sImg);
+    const sameWitness = qImgMetadata?.witnessId === sImgItem.witnessId;
+
     function toTitledRegion() {
-        const regionData = $comparedRegions[`wit${sImgItem.witnessId}_${sImgItem.digitType}${sImgItem.digitId}_anno${sRegions}`] || {title: sImgItem.title};
-        sImgItem.title = `${shorten(regionData.title.replace(/^[^|]+/, ""))}<br/>Page ${sImgItem.canvasNb}`;
+        const regionData = $comparedRegions[`wit${sImgItem.witnessId}_${sImgItem.digitType}${sImgItem.digitId}_anno${sRegions}`];
+        const baseTitle = regionData
+            ? shorten(regionData.title.replace(/^[^|]+/, ""))
+            : isInModal ? `${i18n("Witness")} #${sImgItem.witnessId}` : "";
+        sImgItem.title = `${baseTitle}<br/>Page ${sImgItem.canvasNb}`;
         if (score) {
             sImgItem.title += `<br/><b>Score: ${score}</b>`;
         }
@@ -173,7 +179,9 @@
 </script>
 
 <div class="cell">
-    <RegionCard {item} height={140} selectable={false} copyable={true} isSquare={false} {isInModal} {index} on:openModal>
+    <RegionCard {item} height={140} selectable={false} copyable={true} isSquare={false} {isInModal} {index}
+            borderColor={sameWitness ? "var(--bulma-grey-light)" : null} borderWidth={4}
+            on:openModal>
         <svelte:fragment slot="actions">
             {#if isInModal}
                 <button class="button tag mb-1" on:click|stopPropagation={deletePair}

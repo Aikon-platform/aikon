@@ -88,9 +88,6 @@
             <ModalOpener on:open={openModal}/>
         {/if}
         {#if isInModal}
-<!--            <a class="button tag mb-1 p-0 has-text-link" href={imgSrc} download title={i18n("downloadImg", t)} on:click|stopPropagation>-->
-<!--                <i class="fa-solid fa-download"/>-->
-<!--            </a>-->
             <button class="button tag mb-1 p-0 p-2 has-text-link" on:click|stopPropagation={download} title={i18n("downloadImg", t)}>
                 <i class="fa-solid fa-download"/>
             </button>
