@@ -14,7 +14,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     const pageLength = 10;
     const currentPage = writable(1);
 
-    const {visiblePairs, imageNodes} = documentSetStore;
+    const {visiblePairs, imageNodes, pairCat} = documentSetStore;
 
     initPagination(currentPage, "p");
 
@@ -88,7 +88,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     /**
      * Clusters { id, members: [imgId1, imgId2, ...], size, fullyConnected }
      */
-    const imageClusters = derived(visiblePairs, ($pairs) =>
+    const imageClusters = derived([visiblePairs, pairCat], ([$pairs]) =>
         $pairs.length ? findClusters($pairs) : []
     );
 

@@ -270,7 +270,7 @@
     </div>
 </SplitLayout>
 
-<PairDetailModal
+<PairDetailModal {documentSetStore}
     active={modalActive} {scatterData} {navState} pairCat={$pairCat}
     on:navigate={handleModalNavigate}
     on:close={handleModalClose}

@@ -8,6 +8,7 @@
     import InputToggle from "../../ui/InputToggle.svelte";
     import PageView from "../../regions/modal/PageView.svelte";
 
+    export let documentSetStore;
     export let active = false;
     export let scatterData = null;
     export let navState = null; // {idx1, idx2}
@@ -27,26 +28,20 @@
         return pairCat.get(`${img1}-${img2}`) ?? pairCat.get(`${img2}-${img1}`) ?? null;
     }
 
-    let updateTick = 0;
     async function categorize(category) {
         if (!modalData?.canCategorize) return;
         const newCat = modalData.category === category ? null : category;
         const ok = await sendTo(`${appName}/save-category`, {
-            img_1: modalData.img1,
-            img_2: modalData.img2,
-            category: newCat,
+            img_1: modalData.img1, img_2: modalData.img2, category: newCat,
         }, i18n("failed", t));
-
         if (!ok) return;
-
-        pairCat.set(`${modalData.img1}-${modalData.img2}`, newCat);
-        updateTick++;
+        documentSetStore.patchPairs([{ img_1: modalData.img1, img_2: modalData.img2, category: newCat }]);
     }
 
     let modalElement;
 
     $: navLimits = scatterData ? getNavLimits(scatterData) : {max1: 0, max2: 0};
-    $: modalData = navState && scatterData && navLimits ? buildModalData(navState, scatterData, navLimits, updateTick, pairCat) : null;
+    $: modalData = navState && scatterData && navLimits ? buildModalData(navState, scatterData, navLimits, pairCat) : null;
 
     function getNavLimits(data) {
         if (data.mode === "image") return {max1: data.images1.length, max2: data.images2.length};
@@ -64,7 +59,7 @@
         return refToIIIF(img.ref, img.xywh?.join(","), "600,");
     }
 
-    function buildModalData(nav, data, limits, _tick, _pairCat) {
+    function buildModalData(nav, data, limits, _pairCat) {
         if (!nav || !data || !limits) return null;
         const {doc1, doc2} = data;
 

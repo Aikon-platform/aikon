@@ -191,6 +191,7 @@ export function createDocumentSetStore(documentSetId) {
                         });
 
                         allPairs.set(sorted);
+                        pairCat.set(new Map(sorted.map(p => [`${p.id_1}-${p.id_2}`, p.category])));
 
                         loading.set(false);
                         loadingProgress.set({ loaded: sorted.length, done: true });
@@ -662,26 +663,28 @@ export function createDocumentSetStore(documentSetId) {
 
     const hideEmpty = writable(false);
 
+    /** Map<"id1-id2", category> for all loaded pairs; updated in-place by patchPairs */
+    const pairCat = writable(new Map());
+
     /**
      * Light refresh: patch already-loaded pairs in place and re-emit without re-streaming from the worker
      * `updates`: [{img_1, img_2, category}]
      * // TODO make more versatile => allow to remove pairs
      */
     const patchPairs = (updates) => {
-        const map = new Map(updates.map(u => [`${u.img_1}-${u.img_2}`, u.category]));
-        allPairs.update($pairs => {
-            for (const p of $pairs) {
-                const cat = map.get(`${p.id_1}-${p.id_2}`) ?? map.get(`${p.id_2}-${p.id_1}`);
-                if (cat !== undefined) p.category = cat;
-            }
-            return $pairs;
+        const m = new Map(updates.map(u => [`${u.img_1}-${u.img_2}`, u.category]));
+        const $pairs = get(allPairs);
+        for (const p of $pairs) {
+            const cat = m.get(`${p.id_1}-${p.id_2}`) ?? m.get(`${p.id_2}-${p.id_1}`);
+            if (cat !== undefined) p.category = cat;
+        }
+        pairCat.update(prev => {
+            const next = new Map(prev);
+            for (const [k, v] of m) next.set(k, v);
+            return next;
         });
     };
 
-    /** Map<"id1-id2", category> of visible pairs, for category selection state */
-    const pairCat = derived(filteredPairs, $pairs =>
-        new Map($pairs.map(p => [`${p.id_1}-${p.id_2}`, p.category]))
-    );
 
     return {
         documentSetId,
