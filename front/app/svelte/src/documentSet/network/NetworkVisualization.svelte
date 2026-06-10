@@ -3,14 +3,13 @@
     import { createCanvas } from "./network-canvas.js";
     import { createSvg } from "./network-svg.js";
     import { appLang } from "../../constants.js";
-    import Regions from "../../regions/Regions.svelte";
     import Matches from "../Matches.svelte";
 
     export let type = "img";
     export let documentSetStore;
     const {
         imageNetwork, documentNetwork, selectedNodes, updateSelectedNodes,
-        buildMatchesForAnchor, hideEmpty, pairCat
+        buildMatchesForAnchor, buildNetworkMatches, hideEmpty, pairCat
     } = documentSetStore;
     export let clusterStore;
 
@@ -21,12 +20,23 @@
 
     $: networkData = type === "img" ? imageNetwork : documentNetwork;
 
-    $: tableData = type === "doc" && $selectedNodes.length
-        ? buildMatchesForAnchor($selectedNodes[0], $selectedNodes.slice(1), null, true)
-        : { matches: [], columns: [] };
+    $: tableData = !$selectedNodes.length
+        ? { matches: [], columns: [] }
+        : type === "doc"
+            ? buildMatchesForAnchor($selectedNodes[0], $selectedNodes.slice(1), null, true)
+            : buildNetworkMatches({
+                baseDocId: $selectedNodes[0].digit,
+                docIds: new Set($selectedNodes.map(n => n.digit)),
+                imageIds: new Set($selectedNodes.map(n => n.id)),
+            });
 
+    let prevSig = "";
     $: if ($networkData && container) {
-        renderVisualization();
+        const sig = $networkData.nodes.map(n => n.id).join(",") + "|" + $networkData.links.length;
+        if (sig !== prevSig) {
+            prevSig = sig;
+            renderVisualization();
+        }
     }
 
     function renderVisualization() {
@@ -84,28 +94,15 @@
     <div bind:this={container} class="visualization-container"></div>
 
     {#if $selectedNodes.length > 0}
-        {#if type === "img"}
-        <div class="selected-panel box mt-4">
-            <h3 class="title is-5">{appLang === "en" ? "Selected regions" : "Régions sélectionnées"} ({$selectedNodes.length})</h3>
-            <div class="selected-nodes grid is-gap-2 mt-5">
-                <Regions items={$selectedNodes} selectable={false} copyable={false}/>
-            </div>
+        <div class="box mt-4">
+            <h3 class="title is-5">
+                {type === "img"
+                    ? (appLang === "en" ? "Selected regions" : "Régions sélectionnées")
+                    : (appLang === "en" ? "Aligned documents" : "Documents alignés")}
+                ({$selectedNodes.length})
+            </h3>
+            <Matches matches={tableData.matches} columns={tableData.columns}
+                     hideEmpty={$hideEmpty} {clusterStore} pairCat={$pairCat}/>
         </div>
-        {:else if type === "doc"}
-            <div class="box mt-4">
-                <h3 class="title is-5">{appLang === "en" ? "Aligned documents" : "Documents alignés"} ({$selectedNodes.length})</h3>
-                <Matches matches={tableData.matches} columns={tableData.columns} hideEmpty={$hideEmpty} {clusterStore} pairCat={$pairCat}/>
-            </div>
-        {/if}
     {/if}
 </div>
-
-<style>
-    .selected-panel {
-        background-color: var(--bulma-scheme-main-bis);
-    }
-
-    .selected-nodes {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    }
-</style>

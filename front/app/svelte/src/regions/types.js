@@ -94,7 +94,8 @@ export class RegionItem {
 
     get copyId() {
         const xywh = Array.isArray(this.coord) ? this.coord.join(",") : this.coord;
-        return this.imgRoot.replace(".jpg", xywh ? `_${xywh}` : "");
+        const baseRef = this.imgRoot || this.ref || "";
+        return baseRef.replace(".jpg", xywh ? `_${xywh}` : "");
     }
 
     canvasStr(canvasNb = this.canvasNb, digits = this.canvasDigits) {
