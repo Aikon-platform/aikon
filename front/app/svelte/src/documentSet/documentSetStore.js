@@ -569,6 +569,33 @@ export function createDocumentSetStore(documentSetId) {
         return data;
     }
 
+    function buildNetworkMatches({ baseDocId, docIds, imageIds }) {
+        const imgNodes = get(imageNodes);
+        const docNodes = get(documentNodes);
+        const baseDoc = docNodes.get(baseDocId);
+        if (!baseDoc) return { matches: [], columns: [] };
+
+        const byDoc = new Map();
+        for (const id of imageIds) {
+            const img = imgNodes.get(id);
+            if (!img) continue;
+            if (!byDoc.has(img.digit)) byDoc.set(img.digit, []);
+            byDoc.get(img.digit).push(img);
+        }
+
+        const targets = [...docIds]
+            .filter(id => id !== baseDocId && byDoc.has(id))
+            .map(id => ({ doc: docNodes.get(id), images: byDoc.get(id) }))
+            .filter(t => t.doc);
+
+        const row = [
+            { images: byDoc.get(baseDocId) || [], doc: baseDoc },
+            ...targets,
+        ];
+        const columns = [{ doc: baseDoc }, ...targets.map(t => ({ doc: t.doc }))];
+        return assignIndices({ matches: [row], columns });
+    }
+
     function toggleCategory(categoryId) {
         selectedCategories.update(cats => {
             const index = cats.indexOf(categoryId);
@@ -697,6 +724,7 @@ export function createDocumentSetStore(documentSetId) {
         buildMatchesForAnchor,
         buildFriezeMatches,
         buildClusterMatches,
+        buildNetworkMatches,
         patchPairs,
 
         threshold,
