@@ -8,6 +8,7 @@
     import Matches from "../Matches.svelte";
 
     export let documentSetStore;
+    export let clusterStore;
 
     const {
         sortedDocumentNodes, pairIndex, filteredDocPairStats, filteredDocStats,
@@ -111,7 +112,7 @@
         {/if}
     </div>
     <div slot="bottom-left-scroll">
-        <Matches matches={matchesData.matches} columns={matchesData.columns} hideEmpty={$hideEmpty} pairCat={$pairCat}/>
+        <Matches matches={matchesData.matches} columns={matchesData.columns} hideEmpty={$hideEmpty} pairCat={$pairCat} {clusterStore}/>
     </div>
 
     <div slot="right-title" class="is-flex is-justify-content-space-between">

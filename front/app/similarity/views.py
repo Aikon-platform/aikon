@@ -1,4 +1,5 @@
 import json
+import re
 from collections import OrderedDict
 from typing import List
 
@@ -154,9 +155,6 @@ def get_propagated_matches(request, img_id: str = "") -> JsonResponse:
     """
     Given an image `img_id`, find all images reachable through a chain of exact matches
     (category=1), excluding direct exact matches and already-saved propagations.
-
-    Uses a recursive SQL CTE instead of Python-level recursion for O(1) queries
-    regardless of graph size and depth.
     """
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
