@@ -550,7 +550,8 @@ def get_record_annotations(
         min_c = min_c or 1
         max_c = max_c or digit_meta.get("img_nb")
         # { canvas_nb: {} }, canvas_nb is 1-indexed.
-        r_annos = {str(c): {} for c in range(min_c, max_c + 1)}
+        for c in range(min_c, max_c + 1):
+            r_annos.setdefault(str(c), {})
 
     # if record is a Regions, all annotations for the Regions.
     # otherwise, all nnotations for the Digitization
