@@ -89,9 +89,6 @@
         downloadBlob(blob, "regions.zip");
     }
 
-    console.log("$selectedManifest", $selectedManifest)
-    console.log("currentRegionId", currentRegionId)
-    console.log($selectedManifest.length && currentRegionId)
 </script>
 
 <div class="is-right mb-3">

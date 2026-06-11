@@ -61,6 +61,10 @@
             en: "Explore this region's matches",
             fr: "Explorer les correspondances de cette région"
         },
+        sameWitness: {
+            en: "Extracted from same witness as query region",
+            fr: "Extrait du même témoin que la région requête"
+        },
     };
 
     const sImgItem = RegionItem.fromImg(sImg);
@@ -70,7 +74,7 @@
         const regionData = $comparedRegions[`wit${sImgItem.witnessId}_${sImgItem.digitType}${sImgItem.digitId}_anno${sRegions}`];
         const baseTitle = regionData
             ? shorten(regionData.title.replace(/^[^|]+/, ""))
-            : isInModal ? `${i18n("Witness")} #${sImgItem.witnessId}` : "";
+            : `${i18n("Witness")} #${sImgItem.witnessId}`;
         sImgItem.title = `${baseTitle}<br/>Page ${sImgItem.canvasNb}`;
         if (score) {
             sImgItem.title += `<br/><b>Score: ${score}</b>`;
@@ -180,8 +184,8 @@
 
 <div class="cell">
     <RegionCard {item} height={140} selectable={false} copyable={true} isSquare={false} {isInModal} {index}
-            borderColor={sameWitness ? "var(--bulma-grey-light)" : null} borderWidth={4}
-            on:openModal>
+            borderColor={sameWitness ? "var(--contrasted)" : null} borderWidth={3}
+            on:openModal title="{sameWitness ? i18n('sameWitness', t) : null}">
         <svelte:fragment slot="actions">
             {#if isInModal}
                 <button class="button tag mb-1" on:click|stopPropagation={deletePair}

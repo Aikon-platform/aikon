@@ -332,23 +332,19 @@ class Digitization(AbstractSearchableModel):
         if not isinstance(imgs, list):
             imgs = get_files_with_prefix(IMG_PATH, f"{self.get_ref()}_", "")
 
-        existing = {}
-        for item in (self.json or {}).get("imgs", []):
-            if (
-                isinstance(item, dict)
-                and "name" in item
-                and "h" in item
-                and "w" in item
-            ):
-                existing[item["name"]] = item
+        str_p = lambda x: os.path.basename(str(x["name"] if isinstance(x, dict) else x))
+
+        existing = {
+            str_p(item): {**item, "name": str_p(item)}
+            for item in (self.json or {}).get("imgs", [])
+            if isinstance(item, dict) and {"name", "h", "w"} <= item.keys()
+        }
 
         for i in imgs:
             if isinstance(i, dict) and "h" in i and "w" in i:
-                existing.setdefault(i["name"], i)
+                existing.setdefault(str_p(i), {**i, "name": str_p(i)})
 
-        new = {os.path.basename(i["name"] if isinstance(i, dict) else i) for i in imgs}
-        names = sorted(new | set(existing))
-
+        names = sorted({str_p(i) for i in imgs} | existing.keys())
         images = [e for e in (existing.get(n) or img_meta(n) for n in names) if e]
 
         if self.json is None:

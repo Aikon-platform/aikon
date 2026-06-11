@@ -65,7 +65,7 @@
     $: if ($activeLayout === "sim") documentSetStore.setScoreFilter(true);
 
     const tabList = {
-        "sim": appLang === "en" ? "Copy Clusters" : "Groupe de copies",
+        "sim": appLang === "en" ? "Similarity Chains" : "Chaînes de similarité",
         "ste": appLang === "en" ? "Stemma Builder" : "Aide au stemma",
         "mat": appLang === "en" ? "Document Matrix" : "Matrice de documents",
         "fri": appLang === "en" ? "Spatial Frieze" : "Frise spatiale",
@@ -135,7 +135,7 @@
                         {:else if $activeLayout === "sim"}
                             <Clusters {documentSetStore} {clusterStore}/>
                         {:else if $activeLayout === "mat"}
-                            <DocumentMatrix {documentSetStore}/>
+                            <DocumentMatrix {documentSetStore} {clusterStore}/>
                         {:else if $activeLayout === "ste"}
                             <StemmaBuilder {documentSetStore} {clusterStore}/>
                         {:else if $activeLayout === "fri"}
