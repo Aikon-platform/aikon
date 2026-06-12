@@ -810,67 +810,7 @@ def reset_regions_similarity(request, rid=None):
     return JsonResponse({"error": f"Invalid request method"}, status=400)
 
 
-# @user_passes_test(is_superuser)
-# def remove_incorrect_pairs(request, mismatched=False, duplicate=False, swapped=True):
-#     """
-#     Removes RegionPair instances that are faulty
-#     """
-#     from django.db import DatabaseError
-#
-#     count = 0
-#
-#     try:
-#         if mismatched:
-#             from django.db.models import F
-#
-#             # if img_1 is alphabetically after img_2,
-#             # indicating that the pair has been incorrectly inserted in the database
-#             mismatched_pairs = RegionPair.objects.filter(img_1__gt=F("img_2"))
-#             count += mismatched_pairs.count()
-#             mismatched_pairs.delete()
-#
-#         if duplicate:
-#             # if there is duplicates of the same img pair with different ids
-#             duplicate_pairs = (
-#                 RegionPair.objects.values("img_1", "img_2")
-#                 .annotate(count=Count("id"))
-#                 .filter(count__gt=1)
-#             )
-#             count += len(duplicate_pairs)
-#             for pair in duplicate_pairs:
-#                 duplicates = RegionPair.objects.filter(
-#                     img_1=pair["img_1"], img_2=pair["img_2"]
-#                 )
-#                 count += duplicates.count() - 1
-#                 duplicates[1:].delete()
-#
-#         if swapped:
-#             # if there is duplicates of the same img pair but with img_1 and img_2 swapped
-#             swapped_pairs = RegionPair.objects.filter(
-#                 Q(img_1__in=RegionPair.objects.values("img_2"))
-#                 & Q(img_2__in=RegionPair.objects.values("img_1"))
-#             )
-#             count += len(swapped_pairs)
-#             for pair in swapped_pairs:
-#                 reverse_pair = RegionPair.objects.filter(
-#                     img_1=pair.img_2, img_2=pair.img_1
-#                 ).first()
-#                 if reverse_pair:
-#                     sorted_imgs = RegionPair.order_pair((pair.img_1, pair.img_2))
-#                     if pair.img_1 != sorted_imgs[0]:
-#                         pair.delete()
-#                     else:
-#                         reverse_pair.delete()
-#
-#         return JsonResponse({"message": f"{count} incorrect pairs removed"})
-#
-#     except DatabaseError as e:
-#         return JsonResponse(
-#             {"message": f"An error occurred while removing incorrect pairs: {e}"},
-#             status=500,
-#         )
-
-
+# NOTE unused => delete ?
 def get_regions_pairs(request, wid, rid=None):
     """
     Return all the region pairs for a given region id or witness id.
