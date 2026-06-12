@@ -201,7 +201,7 @@
         <Tabs {tabs} let:activeTab>
             {#if activeTab === "region"}
                 <div class="modal-region">
-                    <RegionCard item={currentItem} height="full" isInModal={true} selectable={false}/>
+                    <RegionCard item={currentItem} height="full" isInModal={true} copyable={true} selectable={false}/>
                 </div>
             {:else if activeTab === "page"}
                 <PageView item={currentItem}/>
