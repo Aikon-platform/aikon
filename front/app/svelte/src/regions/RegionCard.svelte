@@ -37,10 +37,12 @@
     /** @type {number|"full"} */
     export let height = isSquare ? 96 : 140;
     if ( height === "full" ) { isSquare = false }
+    export let url = null;
+    export let downloadable = isInModal;
 
     $: currentRegion = new RegionItem(item);
     $: isCopied = currentRegion.copyId === $clipBoard;
-    $: imgSrc = currentRegion.url(null, height === "full" ? "full" : isSquare ? `${height},` : `,${height}`);
+    $: imgSrc = url ?? currentRegion.url(null, height === "full" ? "full" : isSquare ? `${height},` : `,${height}`);
 
     const dispatch = createEventDispatcher();
     const openModal = () => isInModal ? null : dispatch("openModal", { index });
@@ -87,7 +89,7 @@
         {#if !isInModal}
             <ModalOpener on:open={openModal}/>
         {/if}
-        {#if isInModal}
+        {#if downloadable}
             <button class="button tag mb-1 p-0 p-2 has-text-link" on:click|stopPropagation={download} title={i18n("downloadImg", t)}>
                 <i class="fa-solid fa-download"/>
             </button>
@@ -110,6 +112,7 @@
     .region-img {
         object-fit: contain;
         height: 100%;
+        max-height: 60vh;
     }
     svg > path {
         transition: fill 0.1s ease-out;

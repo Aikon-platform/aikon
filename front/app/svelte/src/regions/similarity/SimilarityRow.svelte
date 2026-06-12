@@ -7,6 +7,7 @@
 
     import MatchedRegions from "./MatchedRegions.svelte";
     import Row from "../../Row.svelte";
+    import RegionCard from "../RegionCard.svelte";
 
     export let qImg;
     export let isInModal = false;
@@ -143,7 +144,8 @@
                 <span class="tag px-2 py-1 mb-2 is-rounded">Page {qImgItem.canvasNb}</span>
             {/if}
 
-            <img src="{qImgItem.url(null, '250,')}" alt={i18n("qImg", t)} class="mb-3 card query-image">
+            <RegionCard item={qImgItem} {isInModal} copyable={true} height="full" url={qImgItem.url(null, '250,')} downloadable={false}/>
+            <!--<img src="{qImgItem.url(null, '250,')}" alt={i18n("qImg", t)} class="mb-3 card query-image">-->
             <div class="new-similarity control pt-2">
                 <div class="tags has-addons" style="flex-wrap: nowrap">
                     <input bind:value={sImg} class="input is-small tag" type="text" placeholder="{i18n('newMatch', t)}"/>
@@ -175,19 +177,15 @@
 
     <svelte:fragment slot="row-body">
         {#if hasBeenVisible}
-            <MatchedRegions items={$filtered} loading={$loading} error={$error} {qImg} {isInModal} {noRegionsSelected} cols={colNb - 1}/>
+            <MatchedRegions items={$filtered} loading={$loading} error={$error} {qImg} {isInModal} {noRegionsSelected} cols={colNb - 1} downloadable={false}/>
             <div class="block propagated-regions my-4">
-                <MatchedRegions items={$propagated} loading={$propagatedLoading} error={null} isPropagated={true} {qImg} {isInModal} cols={colNb - 1}/>
+                <MatchedRegions items={$propagated} loading={$propagatedLoading} error={null} isPropagated={true} {qImg} {isInModal} cols={colNb - 1} downloadable={false}/>
             </div>
         {/if}
     </svelte:fragment>
 </Row>
 
 <style>
-    .query-image {
-        max-height: 60vh;
-    }
-
     .new-similarity {
         display: flex;
         gap: 0.5em;
