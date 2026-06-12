@@ -56,36 +56,12 @@ urlpatterns = [
         get_regions_img_list,
         name="regions-list",
     ),
-    # TODO add f"{APP_NAME}/witness/<int:wit_id>/regions/<int:region_extraction_id>/list/",
-    # NOTE: unused
-    # path(
-    #     f"{APP_NAME}/annotations/<int:region_extraction_id>",
-    #     witness_sas_annotations,
-    #     name="witness-annotations",
-    # ),
-    # path(
-    #     f"test",
-    #     test,
-    #     name="test",
-    # ),
-    # path(
-    #     f"{APP_NAME}/test/<str:wit_ref>",
-    #     test,
-    #     name="test",
-    # ),
     path(
         # digit_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}
         f"{APP_NAME}/iiif/<str:digit_ref>/manifest.json",
         manifest_digitization,
         name="manifest-digitization",
     ),
-    # NOTE: unused since switching to manifest-from-regions to manifest-from-annotations
-    # path(
-    #     # region_extraction_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}
-    #     f"{APP_NAME}/iiif/<str:version>/<str:region_extraction_ref>/manifest.json",
-    #     manifest_region_extraction,
-    #     name="manifest-region-extraction",
-    # ),
     path(
         f"{APP_NAME}/iiif/populate/<int:regions_id>",
         populate_annotation,
@@ -168,7 +144,6 @@ urlpatterns = [
     ),
     path("retrieve_place_info/", retrieve_place_info, name="retrieve-place-info"),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
-    # path(f"{APP_NAME}/advanced-search/", advanced_search, name="advanced-search"),
     path(
         f"{APP_NAME}/autocomplete/edition/",
         EditionAutocomplete.as_view(),
@@ -378,17 +353,3 @@ urlpatterns += [
     path("superadmin/empty-works/", list_empty_works, name="empty-works"),
     path("superadmin/works/", list_works, name="list-works"),
 ]
-
-# TEST VIEWS
-# urlpatterns += [
-#     path(
-#         f"{APP_NAME}/test",
-#         test,
-#         name="test",
-#     ),
-#     path(
-#         f"{APP_NAME}/test/error",
-#         test_error,
-#         name="test-error",
-#     ),
-# ]

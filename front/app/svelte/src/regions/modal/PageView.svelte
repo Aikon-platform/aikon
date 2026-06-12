@@ -75,7 +75,7 @@
 
 <div class="modal-context-outer is-flex-direction-column pb-4">
     <div class="has-text-centered m-2">
-        <a class="tag button is-small has-text-grey mt-3" href={currentPage.urlForMirador(currentCanvas)} target="_blank">
+        <a class="tag button is-small has-text-grey mt-3" href={currentPage.urlForMirador(currentCanvas-1)} target="_blank">
             Page {currentCanvas}
         </a>
     </div>

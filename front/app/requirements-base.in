@@ -35,7 +35,7 @@ frozendict
 idna
 imagesize
 iiif-prezi
-iiif-download
+iiif-download>=0.1.18
 jinxed
 lxml
 numpy
