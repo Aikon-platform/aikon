@@ -114,6 +114,13 @@
         }
     }
 
+    let modalOpen = false;
+    let modalIndex = 0;
+    const handleOpenModal = (e) => {
+        modalIndex = e.detail.index ?? 0;
+        modalOpen = true;
+    };
+
     async function deletePairWith() {
         const confirmed = await showMessage(
             i18n("confirmDelete", t), i18n("confirm"), true
@@ -144,7 +151,7 @@
                 <span class="tag px-2 py-1 mb-2 is-rounded">Page {qImgItem.canvasNb}</span>
             {/if}
 
-            <RegionCard item={qImgItem} {isInModal} copyable={true} height="full" url={qImgItem.url(null, '250,')} downloadable={false}/>
+            <RegionCard item={qImgItem} {isInModal} copyable={true} height="full" url={qImgItem.url(null, '250,')} downloadable={false} on:openModal={handleOpenModal}/>
             <!--<img src="{qImgItem.url(null, '250,')}" alt={i18n("qImg", t)} class="mb-3 card query-image">-->
             <div class="new-similarity control pt-2">
                 <div class="tags has-addons" style="flex-wrap: nowrap">
