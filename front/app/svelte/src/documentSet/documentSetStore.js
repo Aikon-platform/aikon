@@ -504,8 +504,8 @@ export function createDocumentSetStore(documentSetId) {
                         entry.byTargetDoc.set(targetDoc.id, { image: target.image, score: p.weightedScore });
                     }
                 } else {
-                    if (!entry.byTargetDoc.has(targetDoc.id)) entry.byTargetDoc.set(targetDoc.id, []);
-                    entry.byTargetDoc.get(targetDoc.id).push(target.image);
+                    if (!entry.byTargetDoc.has(targetDoc.id)) entry.byTargetDoc.set(targetDoc.id, new Map());
+                    entry.byTargetDoc.get(targetDoc.id).set(target.image.id, target.image);
                 }
             }
         }
@@ -517,7 +517,7 @@ export function createDocumentSetStore(documentSetId) {
                 ...targetDocs.map(td => {
                     const entry = byTargetDoc.get(td.id);
                     if (!entry) return null;
-                    const images = onlyOneMatch ? [entry.image] : entry;
+                    const images = onlyOneMatch ? [entry.image] : [...entry.values()];
                     return { images, doc: td };
                 }),
             ]).filter(row => onlyAnchorWithMatches ? row.slice(1).some(c => c) : row);
@@ -537,13 +537,15 @@ export function createDocumentSetStore(documentSetId) {
         for (const p of pairs) {
             const target = otherSide(p, frieze.baseDocId, frieze.imageId, imgNodes, docNodes);
             if (!target || target.doc.id === frieze.baseDocId) continue;
-            if (!byDoc.has(target.doc.id)) byDoc.set(target.doc.id, { doc: target.doc, matches: [] });
-            byDoc.get(target.doc.id).matches.push(target);
+            if (!byDoc.has(target.doc.id)) byDoc.set(target.doc.id, { doc: target.doc, matches: new Map() });
+            const matches = byDoc.get(target.doc.id).matches;
+            const existing = matches.get(target.image.id);
+            if (!existing || target.score > existing.score) matches.set(target.image.id, target);
         }
 
         const targets = [...byDoc.values()].map(({ doc, matches }) => {
-            matches.sort((a, b) => b.score - a.score);
-            return { doc, images: matches.map(m => m.image), bestImageId: matches[0].image.id };
+            const sorted = [...matches.values()].sort((a, b) => b.score - a.score);
+            return { doc, images: sorted.map(m => m.image), bestImageId: sorted[0].image.id };
         });
 
         const row = [
