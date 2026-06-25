@@ -331,6 +331,11 @@ urlpatterns += [
     path("search/regions/", search_regions, name="search-regions"),
     path("search/user/", search_user, name="search-user"),
     path("search/json-generation/", json_regeneration, name="regenerate_json"),
+    path(
+        "search/witness-json-generation/<int:wid>",
+        witness_json_regeneration,
+        name="witness-regenerate_json",
+    ),
 ]
 
 # SUPERADMIN VIEWS
