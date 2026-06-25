@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.utils.tasking import create_doc_set
 from app.webapp.tasks import generate_all_json, regenerate_witness_json
+from webapp.utils.logger import log
 
 
 # TODO ORGANISE THESE VIEWS BETTER
@@ -17,7 +18,11 @@ def json_regeneration(request):
 
 
 def witness_json_regeneration(request, wid):
-    task = regenerate_witness_json.delay(wid)
+    try:
+        task = regenerate_witness_json.delay(wid)
+    except Exception as e:
+        log(f"[witness_json_regeneration] failed for #{wid}", e)
+        return JsonResponse({"error": str(e)})
     return JsonResponse(
         {"message": "Witness JSON regeneration task started", "task_id": str(task.id)}
     )
