@@ -140,6 +140,7 @@ def update_image_json(img_list, digit_id):
         return f"[update_image_json] Error updating JSON image property after processing: {e}"
 
 
+@celery_app.task
 def regenerate_witness_json(witness_id):
     from app.webapp.models.witness import Witness
 
