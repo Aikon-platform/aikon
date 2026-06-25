@@ -325,7 +325,7 @@ class Digitization(AbstractSearchableModel):
             return imgs[0] if only_one else imgs
         return names[0] if only_one else names
 
-    def update_imgs_json(self, imgs=None):
+    def update_imgs_json(self, imgs=None, force=False):
         """
         Merge new image filenames in self.json.imgs in a list of {name, h, w}
         """
@@ -334,11 +334,15 @@ class Digitization(AbstractSearchableModel):
 
         str_p = lambda x: os.path.basename(str(x["name"] if isinstance(x, dict) else x))
 
-        existing = {
-            str_p(item): {**item, "name": str_p(item)}
-            for item in (self.json or {}).get("imgs", [])
-            if isinstance(item, dict) and {"name", "h", "w"} <= item.keys()
-        }
+        existing = (
+            {}
+            if force
+            else {
+                str_p(item): {**item, "name": str_p(item)}
+                for item in (self.json or {}).get("imgs", [])
+                if isinstance(item, dict) and {"name", "h", "w"} <= item.keys()
+            }
+        )
 
         for i in imgs:
             if isinstance(i, dict) and "h" in i and "w" in i:
