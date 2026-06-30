@@ -27,9 +27,10 @@ ADMINS = [(f"{APP_NAME} admin", ADMIN_EMAIL)]
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-EMAIL_USE_TLS = True
+EMAIL_USE_TLS = ENV.bool("EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL = ENV.bool("EMAIL_USE_SSL", default=False)
 EMAIL_HOST = ENV("EMAIL_HOST", default="localhost")
-EMAIL_PORT = ENV("EMAIL_PORT", default=587)
+EMAIL_PORT = ENV.int("EMAIL_PORT", default=25)
 EMAIL_HOST_USER = ENV("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = ENV("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = ENV("DEFAULT_FROM_EMAIL", default=f"noreply@{PROD_URL}")
@@ -38,7 +39,7 @@ SERVER_EMAIL = ENV("SERVER_EMAIL", default=EMAIL_HOST_USER)
 # if DOCKER:
 #     EMAIL_USE_TLS = False
 #     EMAIL_HOST = ENV("EMAIL_HOST", default="mailserver")
-#     EMAIL_PORT = ENV("EMAIL_PORT", default=25)
+#     EMAIL_PORT = ENV.int("EMAIL_PORT", default=25)
 #     EMAIL_HOST_PASSWORD = ENV("EMAIL_HOST_PASSWORD", default="")
 #     DEFAULT_FROM_EMAIL = ENV("DEFAULT_FROM_EMAIL", default=f"noreply@{PROD_URL}")
 #     SERVER_EMAIL = ENV("SERVER_EMAIL", default=EMAIL_HOST_USER)

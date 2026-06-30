@@ -7,14 +7,14 @@
     export let witness = {};
     export let editUrl = "";
 
-    let choices = {};
+    // let choices = {};
     let openContents = new Set();
 
     onMount(async () => {
         const url = `${window.location.origin}/${appName}/witness/select`;
         try {
             const response = await fetch(url);
-            choices = await response.json();
+            // choices = await response.json(); // why?
         } catch (error) {
             console.error("Error:", error);
             return false;

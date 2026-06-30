@@ -15,7 +15,7 @@ django-nested-admin>=4.1.0
 django-polymorphic==3.1.0
 fontawesomefree==6.1.1
 imagesize>=1.4.1
-iiif-download>=0.1.15
+iiif-download>=0.1.18
 iiif-prezi==0.3.0
 numpy>=1.18.5
 orjson>=3.10.15

@@ -129,32 +129,6 @@ def manifest_digitization(request, digit_ref):
     return JsonResponse(digit.get_manifest_json())
 
 
-# SHOULD NOT BE USE ANYMORE
-# def manifest_regions(request, version, regions_ref):
-#     # TODO make difference if witness is not public
-#     passed, regions = check_ref(regions_ref, "Regions")
-#     if not passed:
-#         return JsonResponse(regions, safe=False)
-#
-#     return JsonResponse(regions.get_manifest_json())
-
-
-# def export_digit_img(request, digit_id):
-#     digit = get_object_or_404(Digitization, pk=digit_id)
-#     regions = []
-#     for region in digit.get_region_extractions():
-#         regions.extend(get_region_extraction_img(region))
-#     return list_to_txt(regions, digit.get_ref())
-
-
-# def export_wit_img(request, wit_id):
-#     wit = get_object_or_404(Witness, pk=wit_id)
-#     regions = []
-#     for region in wit.get_region_extractions():
-#         regions.extend(get_region_extraction_img(region))
-#     return list_to_txt(regions, wit.get_ref())
-
-
 def rgpd(request):
     return render(request, "rgpd.html")
 

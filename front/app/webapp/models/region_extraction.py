@@ -87,7 +87,7 @@ class RegionExtraction(AbstractSearchableModel):
         return digit.get_manifest_json()
 
     def gen_mirador_url(self):
-        return f"{MIRADOR_BASE_URL}/index.html?iiif-content={self.get_manifest_url()}"
+        return f"{MIRADOR_BASE_URL}/index.html?iiif-content={self.get_manifest_url()}&editMode=true&defaultForm=note"
 
     def get_ref(self):
         if digit := self.get_digit():

@@ -5,7 +5,7 @@
 
     export let targetId;
     export let filename = "export.png";
-    export let pixelRatio = 2;
+    export let pixelRatio = 4;
 
     async function download() {
         await withLoading(async () => {

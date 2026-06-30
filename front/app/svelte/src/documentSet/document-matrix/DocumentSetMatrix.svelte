@@ -9,7 +9,6 @@
     export let docStats = new Map();
     export let imageCountMap = new Map();
     export let normalize = true;
-    export let sortOrder = "name";
     export let cellSize = 30;
     export let percentageMode = false;
     export let coverageData = new Map();
@@ -17,20 +16,29 @@
     export let isInStemma = false;
     export let stemmaStore = null;
 
+    $: edges = stemmaStore?.edges;
+    $: edgeKeys = isInStemma && $edges
+        ? new Set($edges.map(e => e.source < e.target ? `${e.source}-${e.target}` : `${e.target}-${e.source}`))
+        : new Set();
+    $: if (container && matrixData.docs.length) { edgeKeys; render(); }
+
     const dispatch = createEventDispatcher();
 
     const t = {
         score: {en: "Score", fr: "Score"},
+        match: {en: "matches", fr: "correspondances"},
         noPairs: {en: "No pairs", fr: "Aucune paire"},
         addEdge: {en: "Add stemma edge", fr: "Ajouter un lien au stemma"},
+        percent: {en: "Percentage of images from", fr: "Pourcentage des images issues de"},
+        present: {en: "also present in", fr: "aussi présentes dans"},
     };
 
     let container;
     let selectedCell = null;
 
-    $: matrixData = buildMatrix(documents, scoreData, docStats, sortOrder, normalize, imageCountMap, percentageMode, $coverageData);
+    $: matrixData = buildMatrix(documents, scoreData, docStats, normalize, imageCountMap, percentageMode, $coverageData);
 
-    function buildMatrix(docs, scoreCount, docStatsMap, order, doNormalize, imgCount, pctMode, coverage) {
+    function buildMatrix(docs, scoreCount, docStatsMap, doNormalize, imgCount, pctMode, coverage) {
         if (!docs.length) return {docs: [], matrix: [], maxScore: 0};
 
         docs.forEach((doc, i) => {
@@ -38,13 +46,7 @@
             doc.count = docStatsMap?.get(doc.id)?.count || 0;
         });
 
-        const orders = {
-            name: d3.range(docs.length).sort((a, b) => docs[a].title.localeCompare(docs[b].title)),
-            score: d3.range(docs.length).sort((a, b) => docs[b].count - docs[a].count),
-        };
-
-        const sorted = orders[order].map(i => docs[i]);
-        const n = sorted.length;
+        const n = docs.length;
         const matrix = [];
         let maxScore = 0;
 
@@ -52,30 +54,32 @@
             const row = [];
             for (let j = 0; j < n; j++) {
                 if (i !== j) {
-                    const key = sorted[i].id < sorted[j].id
-                        ? `${sorted[i].id}-${sorted[j].id}`
-                        : `${sorted[j].id}-${sorted[i].id}`;
+                    const key = docs[i].id < docs[j].id
+                        ? `${docs[i].id}-${docs[j].id}`
+                        : `${docs[j].id}-${docs[i].id}`;
 
-                    let z, pct;
+                    let z, pct, count;
 
                     if (pctMode) {
-                        const covKey = `${sorted[i].id}-${sorted[j].id}`;
+                        const covKey = `${docs[i].id}-${docs[j].id}`;
                         const covCount = coverage.get(covKey)?.size || 0;
-                        const total = imgCount.get(sorted[i].id) || 1;
-                        pct = covCount / total;
+                        count = imgCount.get(docs[i].id) || 1;
+                        pct = covCount / count;
                         z = pct;
                     } else {
-                        let score = scoreCount?.get(key)?.score || 0;
+                        const entry = scoreCount?.get(key);
+                        let score = entry?.score || 0;
                         if (doNormalize && score > 0) {
-                            const n1 = imgCount.get(sorted[i].id) || 1;
-                            const n2 = imgCount.get(sorted[j].id) || 1;
+                            const n1 = imgCount.get(docs[i].id) || 1;
+                            const n2 = imgCount.get(docs[j].id) || 1;
                             score /= Math.sqrt(n1 * n2);
                         }
+                        count = entry?.count || 0;
                         z = score;
                     }
 
                     if (z > maxScore) maxScore = z;
-                    row.push({x: j, y: i, z, pct, doc1: sorted[i], doc2: sorted[j]});
+                    row.push({x: j, y: i, z, pct, count, doc1: docs[i], doc2: docs[j]});
                 } else {
                     row.push({x: j, y: i, z: 0, diagonal: true});
                 }
@@ -83,7 +87,7 @@
             matrix.push(row);
         }
 
-        return {docs: sorted, matrix, maxScore, pctMode};
+        return {docs, matrix, maxScore, pctMode};
     }
 
     function isSelected(d) {
@@ -136,7 +140,8 @@
                 .attr("height", x.bandwidth())
                 .attr("fill", d => {
                     if (d.z === 0) return "var(--bulma-text)";
-                    const color = d3.hsl(233, 0.951, 0.52);
+                    const key = d.doc1.id < d.doc2.id ? `${d.doc1.id}-${d.doc2.id}` : `${d.doc2.id}-${d.doc1.id}`;
+                    const color = d3.hsl(edgeKeys.has(key) ? 19 : 233, 0.951, 0.52);
                     color.opacity = maxScore > 0 ? 0.2 + 0.8 * (d.z / maxScore) : 0.2;
                     return color;
                 })
@@ -151,12 +156,12 @@
                     let content;
                     if (matrixData.pctMode) {
                         const pctStr = d.pct != null ? `${(d.pct * 100).toFixed(1)}%` : "0%";
-                        content = `Percentage of images from<br/><span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>present also in<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}<br/><br/><strong>${pctStr}</strong>`;
+                        content = `${i18n("percent", t)}<br/><span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>${i18n("present", t)}<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}<br/><br/><strong>${pctStr}</strong>`;
                     } else {
                         const docs = `<span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>↔<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}`;
                         content = d.z === 0
                             ? `${docs}<br/><br/><em>${i18n("noPairs", t)}</em>`
-                            : `${docs}<br/><br/>${i18n("score", t)}: ${d.z.toFixed(2)}`;
+                            : `${docs}<br/><br/>${i18n("score", t)}: ${d.z.toFixed(2)} | <b>${d.count}</b> ${i18n("match", t)}`;
                     }
                     tooltip.html(content)
                         .style("left", (event.clientX + 15) + "px")
@@ -243,7 +248,7 @@
     }
 </script>
 
-<div class="matrix-grid" style="--cell-size: {cellSize}px;">
+<div id="doc-set-matrix" class="matrix-grid" style="--cell-size: {cellSize}px;">
     <div class="matrix-corner"></div>
     {#each ["col", "row"] as side}
         <div class="{side}-headers">

@@ -2,21 +2,56 @@
     import { createEventDispatcher } from "svelte";
     import { derived, writable } from "svelte/store";
     import { i18n } from "../../utils.js";
+    import RightClick from "../../ui/RightClick.svelte";
+    import NavigationArrow from "../../ui/NavigationArrow.svelte";
 
     export let stemmaStore;
     export let documents;
     export let visiblePairs;
     export let documentNodes;
     export let mode = "image";
+    export let isInStemma = false;
 
-    const { nodeTitles } = stemmaStore;
+    const { nodeTitles, docsInStemma } = stemmaStore;   // drop areAllInStemma
+
+    $: stemmaDocs = isInStemma && $docsInStemma.has($baseDocId) ? $docsInStemma : null;
+    function areInStemma(ids, set) {
+        if (!set) return false;
+        for (const id of ids) if (!set.has(id)) return false;
+        return true;
+    }
 
     const dispatch = createEventDispatcher();
 
     const LINE_WIDTH = 5;
     const AXIS_HEIGHT = 20;
-    const CLUSTER_COLORS = ["#e63f19", "#ff9100", "#fdd21e", "#8fcd12", "#12cdb1"];
+    const CLUSTER_COLORS = [
+        "#c60057",
+        "#d10a0a",
+        "#ff6a00",
+        "#ff9100",
+        "#fdd21e",
+        "#bacd12",
+        "#8fcd12",
+        "#12cd6f",
+        "#12cdb1",
+        "#1285cd",
+        "#1253cd",
+        "#2512cd",
+        "#6b18e6"
+    ];
     let clusterMode = false;
+    let clusterOrder = "documents";
+
+    function navigate(delta) {
+        const n = $items.length;
+        if (!n) return;
+        const cur = $selectedIndex;
+        const next = cur == null
+            ? (delta > 0 ? 0 : n - 1)
+            : (cur + delta + n) % n;
+        handleClick(next);
+    }
 
     const baseDocId = writable(null);
     const selectedIndex = writable(null);
@@ -26,7 +61,7 @@
         return matchedDocs.size ? [...matchedDocs].sort((a, b) => a - b).join("-") : "∅";
     }
 
-    function buildClusters(items, baseId, docNodes, titles) {
+    function buildClusters(items, baseId, docNodes, titles, order) {
         const clusterMap = new Map();
 
         for (const item of items) {
@@ -37,9 +72,11 @@
             clusterMap.get(sig).count++;
         }
 
-        const baseColor = docNodes.get(baseId)?.color || "#999";
+        const baseColor = "#dfdfdf";
         const sorted = [...clusterMap.values()].sort((a, b) =>
-            b.docIds.size - a.docIds.size || b.count - a.count
+            order === "matches"
+                ? b.count - a.count || b.docIds.size - a.docIds.size
+                : b.docIds.size - a.docIds.size || b.count - a.count
         );
         let colorIdx = 0;
         sorted.forEach(cl => {
@@ -47,7 +84,7 @@
                 cl.color = baseColor;
                 cl.opacity = 0.5;
             } else {
-                cl.color = colorIdx < CLUSTER_COLORS.length ? CLUSTER_COLORS[colorIdx++] : "#999";
+                cl.color = colorIdx < CLUSTER_COLORS.length ? CLUSTER_COLORS[colorIdx++] : "#6c6c6c";
                 cl.opacity = 1;
             }
         });
@@ -57,19 +94,19 @@
 
         const itemColors = items.map(item => {
             const cl = sigToCluster.get(clusterSignature(item.matchedDocs));
-            return { color: cl.color, opacity: cl.opacity };
+            return { color: cl.color };
         });
 
         const baseName = titles[baseId] || docNodes.get(baseId)?.title || `Doc ${baseId}`;
         const legend = sorted.map(cl => {
             const names = [baseName, ...[...cl.docIds].map(id => titles[id] || docNodes.get(id)?.title || `Doc ${id}`)];
-            return { color: cl.color, opacity: cl.opacity, names, count: cl.count, docIds: cl.docIds };
+            return { color: cl.color, names, count: cl.count, docIds: cl.docIds };
         });
 
         return { itemColors, legend };
     }
 
-    $: clusterData = clusterMode && $items.length ? buildClusters($items, $baseDocId, $documentNodes, $nodeTitles) : null;
+    $: clusterData = clusterMode && $items.length ? buildClusters($items, $baseDocId, $documentNodes, $nodeTitles, clusterOrder) : null;
     $: if (!clusterMode) selectedClusterSig = null;
     $: clusterSelectedIndices = (clusterMode && selectedClusterSig)
         ? new Set($items.map((it, i) => clusterSignature(it.matchedDocs) === selectedClusterSig ? i : -1).filter(i => i >= 0))
@@ -92,6 +129,10 @@
         noDoc: { en: "No base document selected", fr: "Aucun document de base sélectionné" },
         clusters: { en: "Document clusters", fr: "Groupes de documents"},
         clickToShow: { en: "Click to show all cluster matches", fr: "Cliquer pour afficher les correspondances du cluster" },
+        addEdges: { en: "Add stemma edges", fr: "Ajouter des liens au stemma" },
+        orderBy: { en: "Order by", fr: "Trier par" },
+        orderByDocs: { en: "number of documents", fr: "nombre de documents" },
+        orderByMatches: { en: "number of matches", fr: "nombre de correspondances" },
     };
 
     const documentsStore = writable([]);
@@ -257,6 +298,40 @@
     }
 
     $: axisTicks = $friezeData ? getAxisTicks($friezeData.totalPages) : [];
+
+    $: isInStemma = !!stemmaStore?.addEdge;
+
+    let menuOpen = false, menuX = 0, menuY = 0, menuItems = [];
+
+    function docDate(d) {
+        return d.min_date ?? d.max_date ?? null;
+    }
+
+    function orderDocs(docIds) {
+        const docs = docIds.map(id => $documentNodes.get(id)).filter(Boolean);
+        if (docs.every(d => docDate(d) != null)) return [...docs].sort((a, b) => docDate(a) - docDate(b));
+        const order = new Map(documents.map((d, i) => [d.id, i]));
+        return [...docs].sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+    }
+
+    function openEdgesMenu(event, docIds) {
+        if (!isInStemma || docIds.length < 2) return;
+        event.preventDefault();
+        const ordered = orderDocs(docIds);
+        menuItems = [{
+            label: i18n("addEdges", t),
+            icon: "arrow-right",
+            action: () => {
+                for (let i = 0; i < ordered.length - 1; i++) {
+                    const src = ordered[i], tgt = ordered[i + 1];
+                    stemmaStore.addEdge(src.id, tgt.id, src, tgt);
+                }
+            }
+        }];
+        menuX = event.clientX;
+        menuY = event.clientY;
+        menuOpen = true;
+    }
 </script>
 
 <div class="frieze-container">
@@ -266,53 +341,56 @@
             {baseDoc.title} {i18n("similarity", t)}
         </h4>
         {@const friezeWidth = $items.length * LINE_WIDTH}
-        <div class="frieze-wrapper">
-            <div class="frieze" style="--line-width: {LINE_WIDTH}px;">
-                {#each $items as item, idx}
-                    <button class="frieze-line"
-                        class:is-selected={idx === $selectedIndex}
-                        class:is-cluster-selected={clusterSelectedIndices?.has(idx)}
-                        style="{clusterData
-                            ? `background:${clusterData.itemColors[idx].color};opacity:${clusterData.itemColors[idx].opacity}`
-                            : `--opacity: ${item.matchCount / $maxVal}`}"
-                        title="{mode === 'image' ? `Page ${item.page}, ` : `Page ${item.page}, `}{item.matchCount} match(es)"
-                        on:click={() => handleClick(idx)}
-                        on:mouseenter={() => handleMouseEnter(item)}
-                        on:mouseleave={handleMouseLeave}
-                    />
-                {/each}
-            </div>
-
-            {#if mode === "page"}
-                <div class="heatmap" style="--line-width: {LINE_WIDTH}px;">
-                    {#each $friezeData.pageItems as item}
-                        <div
-                            class="heatmap-cell"
-                            style="--opacity: {item.imageCount / $friezeData.maxImagesPerPage}; background-color: {baseDoc?.color}"
-                            title="Page {item.page}: {item.imageCount} image(s)"
+        <div class="frieze-navigation">
+            <NavigationArrow direction="left" navigationFct={() => navigate(-1)} css="z-index:2;margin-top:-0.4em;"/>
+            <NavigationArrow direction="right" navigationFct={() => navigate(1)} css="z-index:2;margin-top:-0.4em;"/>
+            <div id="spatial-frieze" class="frieze-wrapper">
+                <div class="frieze" style="--line-width: {LINE_WIDTH}px;">
+                    {#each $items as item, idx}
+                        <button class="frieze-line" style="{clusterData ? `background:${clusterData.itemColors[idx]?.color || '#4a4a4a'};` : `--opacity: ${item.matchCount / $maxVal}`}"
+                            title="{mode === 'image' ? `Page ${item.page}, ` : `Page ${item.page}, `}{item.matchCount} match(es)"
+                            class:is-selected={idx === $selectedIndex}
+                            class:is-cluster-selected={clusterSelectedIndices?.has(idx)}
+                            class:is-in-stemma={!clusterMode && areInStemma(item.matchedDocs, stemmaDocs)}
+                            on:click={() => handleClick(idx)}
+                            on:contextmenu={(e) => openEdgesMenu(e, [$baseDocId, ...item.matchedDocs])}
+                            on:mouseenter={() => handleMouseEnter(item)}
+                            on:mouseleave={handleMouseLeave}
                         />
                     {/each}
                 </div>
-            {/if}
 
-            <svg class="axis" height={AXIS_HEIGHT} style="width: {friezeWidth}px;">
-                <line x1="0" y1="0" x2={friezeWidth} y2="0" stroke="var(--bulma-border)" />
                 {#if mode === "page"}
-                    {#each axisTicks as tick}
-                        {@const x = (tick - 0.5) * LINE_WIDTH}
-                        <line x1={x} y1="0" x2={x} y2="5" stroke="var(--bulma-border)" />
-                        <text x={x} y="16" text-anchor="middle" class="axis-label">{tick}</text>
-                    {/each}
-                {:else}
-                    {#each $friezeData.pageBoundaries as boundary}
-                        {@const x = boundary.startIdx * LINE_WIDTH}
-                        {#if boundary.page % 50 === 0 || boundary.page === $friezeData.totalPages}
-                            <line x1={x} y1="0" x2={x} y2="5" stroke="var(--bulma-border)" />
-                            <text x={x} y="16" text-anchor="middle" class="axis-label">{boundary.page}</text>
-                        {/if}
-                    {/each}
+                    <div class="heatmap" style="--line-width: {LINE_WIDTH}px;">
+                        {#each $friezeData.pageItems as item}
+                            <div
+                                class="heatmap-cell"
+                                style="--opacity: {item.imageCount / $friezeData.maxImagesPerPage}; background-color: {baseDoc?.color}"
+                                title="Page {item.page}: {item.imageCount} image(s)"
+                            />
+                        {/each}
+                    </div>
                 {/if}
-            </svg>
+
+                <svg class="axis" height={AXIS_HEIGHT} style="width: {friezeWidth}px;">
+                    <line x1="0" y1="0" x2={friezeWidth} y2="0" stroke="var(--bulma-border)" />
+                    {#if mode === "page"}
+                        {#each axisTicks as tick}
+                            {@const x = (tick - 0.5) * LINE_WIDTH}
+                            <line x1={x} y1="0" x2={x} y2="5" stroke="var(--bulma-border)" />
+                            <text x={x} y="16" text-anchor="middle" class="axis-label">{tick}</text>
+                        {/each}
+                    {:else}
+                        {#each $friezeData.pageBoundaries as boundary}
+                            {@const x = boundary.startIdx * LINE_WIDTH}
+                            {#if boundary.page % 50 === 0 || boundary.page === $friezeData.totalPages}
+                                <line x1={x} y1="0" x2={x} y2="5" stroke="var(--bulma-border)" />
+                                <text x={x} y="16" text-anchor="middle" class="axis-label">{boundary.page}</text>
+                            {/if}
+                        {/each}
+                    {/if}
+                </svg>
+            </div>
         </div>
 
         <div class="frieze-legend is-size-7 has-text-grey mt-2">
@@ -337,26 +415,38 @@
         <div class="doc-selector">
             {#each documents as node (node.id)}
                 {@const title = $nodeTitles[node.id] || node.title}
-                <button class="tag is-small" title={title}
+                {@const isEmpty = $documentNodes.get(node.id).images.length === 0}
+                <button class="tag is-small doc-item" {title} style="background-color: {node.color}; color: #222;"
                     class:is-base={node.id === $baseDocId}
+                    class:is-in-stemma={isInStemma && $docsInStemma.has(node.id)}
+                    class:is-empty={isEmpty}
                     class:is-inactive={hoveredDocs.size > 0 && !hoveredDocs.has(node.id) && node.id !== $baseDocId}
-                    style="background-color: {node.color}; color: #222;"
-                    on:click={() => { baseDocId.set(node.id); selectedIndex.set(null); }}>
+                    on:click={() => { if (isEmpty) {return} baseDocId.set(node.id); selectedIndex.set(null); }}>
                     {title.length > 15 ? title.slice(0, 13) + "…" : title}
                 </button>
             {/each}
         </div>
         {#if clusterData}
-            <div class="mt-3" style="display: flex; flex-direction: column; gap: 0.35rem;">
+            <div class="field is-flex is-align-items-center mt-3" style="gap: 0.5rem;">
+                <label class="is-size-7" for="cluster-order">{i18n("orderBy", t)}</label>
+                <div class="select is-small">
+                    <select id="cluster-order" bind:value={clusterOrder}>
+                        <option value="documents">{i18n("orderByDocs", t)}</option>
+                        <option value="matches">{i18n("orderByMatches", t)}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="cluster-container mt-3">
                 {#each clusterData.legend as cl}
                     {@const docLen = cl.names.length}
                     <div class="is-size-7">
-                        <span style="color:{cl.color};opacity:{cl.opacity}">●</span>
+                        <span style="color:{cl.color};">●</span>
                         <b>{docLen} document{docLen > 1 ? 's' : ''}</b>
-                        <span class="tag is-light is-small is-rounded is-clickable"
+                        <span class="tag is-light is-small is-rounded is-clickable" title={i18n("clickToShow", t)}
                             class:is-active={selectedClusterSig === clusterSignature(cl.docIds)}
-                            title={i18n("clickToShow", t)}
+                            class:is-in-stemma={areInStemma(cl.docIds, stemmaDocs)}
                             on:click={() => handleClusterClick(cl)}
+                            on:contextmenu={(e) => openEdgesMenu(e, [$baseDocId, ...cl.docIds])}
                             on:mouseenter={() => handleClusterHover(cl)}
                             on:mouseleave={handleMouseLeave} on:keydown={null}>
                             {cl.count}
@@ -371,9 +461,20 @@
     {/if}
 </div>
 
+<RightClick bind:open={menuOpen} x={menuX} y={menuY} items={menuItems}/>
+
 <style>
     .frieze-container {
+        --stemma-link-color: hsl(19 95.1% 52%);
+        --stemma-cluster-color: var(--bulma-link);
         padding: 0.5rem;
+    }
+    .cluster-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        max-height: 75vh;
+        overflow-y: auto;
     }
     .frieze-wrapper {
         overflow-x: auto;
@@ -385,6 +486,13 @@
         background: var(--bulma-scheme-main-bis);
         border-radius: 4px 4px 0 0;
     }
+    .frieze-navigation {
+        position: relative;
+        padding-left: 1.25em;
+        margin-left: -0.5em;
+        padding-right: 1.25em;
+        margin-right: -0.5em;
+    }
     .frieze-line {
         width: var(--line-width);
         flex-shrink: 0;
@@ -392,11 +500,42 @@
         padding: 0;
         cursor: pointer;
         background: color-mix(in srgb, var(--bulma-link) calc(var(--opacity) * 100%), transparent);
-        transition: margin-top 0.1s, height 0.1s;
+        transition: margin-top 0.1s, margin-bottom 0.1s, height 0.1s;
     }
     .frieze-line.is-selected {
         margin-top: -5px;
         height: calc(100% + 5px);
+    }
+    .frieze-line.is-in-stemma {
+        background: color-mix(in srgb, var(--stemma-link-color) calc(var(--opacity) * 100%), transparent);
+    }
+    .tag.is-clickable.is-in-stemma {
+        outline: 1px solid var(--stemma-cluster-color);
+        outline-offset: -1px;
+    }
+    .tag.doc-item {
+        cursor: pointer;
+        transition: border-color 0.3s, opacity 0.3s, filter 0.3s;
+        border-color: var(--bulma-link);
+    }
+    .tag.doc-item.is-in-stemma {
+        border-left: 4px solid var(--stemma-cluster-color);
+    }
+    .tag.doc-item.is-base {
+        border: 2px solid var(--bulma-link);
+    }
+    .tag.doc-item.is-base.is-in-stemma {
+        border-color: var(--stemma-cluster-color);
+        border-left: 4px solid var(--stemma-cluster-color);
+    }
+    .tag.doc-item.is-inactive {
+        opacity: 0.3;
+        filter: grayscale(0.8);
+    }
+    .tag.doc-item.is-empty {
+        opacity: 0.6;
+        filter: grayscale(0.5);
+        cursor: not-allowed;
     }
     .heatmap {
         display: flex;
@@ -422,18 +561,6 @@
         display: flex;
         flex-wrap: wrap;
         gap: 0.5rem;
-    }
-    .doc-selector .tag {
-        cursor: pointer;
-        border: 2px solid transparent;
-        transition: border-color 0.3s, opacity 0.3s, filter 0.3s;
-    }
-    .doc-selector .tag.is-base {
-        border-color: var(--bulma-link);
-    }
-    .doc-selector .tag.is-inactive {
-        opacity: 0.3;
-        filter: grayscale(0.8);
     }
     .frieze-line.is-cluster-selected {
         margin-bottom: -5px;

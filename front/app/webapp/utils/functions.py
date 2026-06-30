@@ -738,7 +738,7 @@ def sort_key(s: str) -> List[str | int]:
 
     :returns: a list where numbers in string `s` are converted to ints for comparison. non-number characters are kept as strings
     """
-    return [int(part) if part.isdigit() else part for part in re.split("(\d+)", s)]
+    return [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", s)]
 
 
 def gen_img_ref(img, coord):

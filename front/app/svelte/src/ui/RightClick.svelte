@@ -21,7 +21,7 @@
                 <li><hr class="dropdown-divider"/></li>
             {:else}
                 <li>
-                    <button class="button is-small is-ghost has-text-left has-text-dark has-text-weight-normal"
+                    <button class="button is-small is-ghost has-text-left has-text-main has-text-weight-normal"
                             class:has-text-danger={item.danger}
                             disabled={item.disabled}
                             on:click={() => pick(item)}>

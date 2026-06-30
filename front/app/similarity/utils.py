@@ -401,7 +401,7 @@ def score_file_to_db(file_path):
             if score <= 0:
                 continue
 
-            img1, img2 = RegionPair.order_pair((img1, img2))
+            img1, img2 = RegionPair.order_pair((img1, img2), normalize=True)
             ref1, ref2 = parse_img(img1), parse_img(img2)
             pairs_to_update.append(
                 RegionPair(
@@ -769,9 +769,7 @@ def filter_pairs(
 
 
 def retrieve_pair(img1, img2, create=False):
-    img1, img2 = add_jpg(img1), add_jpg(img2)
-    if img2 < img1:
-        img1, img2 = img2, img1
+    img1, img2 = RegionPair.order_pair((img1, img2), normalize=True)
 
     try:
         return RegionPair.objects.get(img_1=img1, img_2=img2), "OK"
@@ -793,13 +791,11 @@ def retrieve_pair(img1, img2, create=False):
 
 
 def normalize_pair(img_1: str, img_2: str):
-    img_1, img_2 = add_jpg(img_1), add_jpg(img_2)
-    if img_2 < img_1:
-        img_1, img_2 = img_2, img_1
-    return img_1, img_2
+    return RegionPair.order_pair((img_1, img_2), normalize=True)
 
 
 def get_or_create_pair(img_1, img_2, create=True):
+    # NOT USED TO DELETE
     img_1, img_2 = normalize_pair(img_1, img_2)
 
     pair = RegionPair.objects.filter(img_1=img_1, img_2=img_2).first()

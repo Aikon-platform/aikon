@@ -2,7 +2,7 @@
     import Table from "../../Table.svelte";
     import Row from "../../Row.svelte";
     import Toolbar from "../../Toolbar.svelte";
-    import {appLang, isSuperuser} from "../../constants.js";
+    import {appLang} from "../../constants.js";
     import { categoryInfo } from "../../regions/similarity/similarityCategory.js";
     import Pagination from "../../Pagination.svelte";
     import RegionsSelectionModal from "../../regions/RegionsSelectionModal.svelte";
@@ -70,7 +70,6 @@
     $: onlyExactMatches = $selectedCategories.length === 1 && $selectedCategories[0] === 1;
 </script>
 
-{#if isSuperuser}
 <Toolbar expandable={false}>
     <div slot="toolbar-visible">
         <div class="columns is-vcentered is-mobile py-4">
@@ -108,7 +107,6 @@
         </div>
     </div>
 </Toolbar>
-{/if}
 
 <Pagination store={clusterStore} nbOfItems={$clusterNb} {pageLength}/>
 

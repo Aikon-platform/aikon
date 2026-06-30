@@ -141,6 +141,20 @@ def update_image_json(img_list, digit_id):
 
 
 @celery_app.task
+def regenerate_witness_json(witness_id):
+    from app.webapp.models.witness import Witness
+
+    witness = Witness.objects.get(id=witness_id)
+    digits = witness.get_digits()
+    for digit in digits:
+        digit.update_imgs_json(force=True)
+        digit.update_json(digit.to_json(no_img=True))
+
+    witness.get_json(reindex=True)
+    return f"[regenerate_witness_json] Regenerated witness #{witness_id} and {len(digits)} digitization(s)"
+
+
+@celery_app.task
 def test(log_msg):
     from app.webapp.utils.logger import log
 

@@ -39,6 +39,12 @@ export function createStemmaStore(documentSetStore) {
                 .filter(doc => $selectedDocuments.has(doc.id))
     );
 
+    const docsInStemma = derived(stemmaGraph, $g => {
+        const s = new Set();
+        for (const e of $g.edges) { s.add(e.source); s.add(e.target); }
+        return s;
+    });
+
     const selectedNodes = derived(
         [edges, filteredDocuments],
         ([$edges, $docs]) => {
@@ -146,6 +152,7 @@ export function createStemmaStore(documentSetStore) {
     function addEdge(source, target, sourceDoc, targetDoc) {
         stemmaGraph.update($g => {
             if ($g.edges.some(e => e.source === source && e.target === target)) return $g;
+            if ($g.edges.some(e => e.target === source && e.source === target)) return $g;
             return {
                 ...$g,
                 edges: [...$g.edges, {
@@ -164,6 +171,19 @@ export function createStemmaStore(documentSetStore) {
             ...$g,
             edges: $g.edges.filter(e => !(e.source === source && e.target === target))
         }));
+    }
+
+    function removeNode(id) {
+        stemmaGraph.update($g => {
+            const { [id]: _p, ...nodePositions } = $g.nodePositions;
+            const { [id]: _t, ...nodeTitles } = $g.nodeTitles || {};
+            return {
+                ...$g,
+                edges: $g.edges.filter(e => e.source !== id && e.target !== id),
+                nodePositions,
+                nodeTitles,
+            };
+        });
     }
 
     function reverseEdge(source, target) {
@@ -209,6 +229,35 @@ export function createStemmaStore(documentSetStore) {
         };
     }
 
+    const adjacency = derived(stemmaGraph, $g => {
+        const adj = new Map();
+        for (const e of $g.edges) {
+            if (!adj.has(e.source)) adj.set(e.source, []);
+            if (!adj.has(e.target)) adj.set(e.target, []);
+            adj.get(e.source).push(e.target);
+            adj.get(e.target).push(e.source);
+        }
+        return adj;
+    });
+
+    function reachableFrom(id) {
+        const adj = get(adjacency);
+        const seen = new Set([id]);
+        const queue = [id];
+        while (queue.length) {
+            for (const n of adj.get(queue.shift()) || []) {
+                if (!seen.has(n)) { seen.add(n); queue.push(n); }
+            }
+        }
+        return seen;
+    }
+
+    function areAllInStemma(ids) {
+        const s = get(docsInStemma);
+        for (const id of ids) if (!s.has(id)) return false;
+        return ids.length > 0;
+    }
+
     return {
         selectedNodes,
         edges,
@@ -224,6 +273,7 @@ export function createStemmaStore(documentSetStore) {
         filteredDocuments,
         addEdge,
         removeEdge,
+        removeNode,
         reverseEdge,
         clearEdges,
         clearGraph,
@@ -232,6 +282,10 @@ export function createStemmaStore(documentSetStore) {
         matrixScoreData,
         matrixDocStats,
         matrixImageCount,
-        getFilteredPairsForDocPair
+        getFilteredPairsForDocPair,
+        docsInStemma,
+        adjacency,
+        reachableFrom,
+        areAllInStemma,
     };
 }

@@ -10,12 +10,14 @@
     import ImageStemma from "./ImageStemma.svelte";
     import DocumentStemmaPanel from "./DocumentStemmaPanel.svelte";
     import Matches from "../Matches.svelte";
+    import DownloadPng from "../../ui/DownloadPng.svelte";
 
     export let documentSetStore;
+    export let clusterStore;
 
     const {
-        normalizeByImages, visiblePairs, documentNodes, imageNodes,
-        filteredDocPairStats, filteredDocStats, imageCountMap, coverageData
+        normalizeByImages, visiblePairs, sortedDocumentNodes, documentNodes, imageNodes, hideEmpty,
+        filteredDocPairStats, filteredDocStats, imageCountMap, coverageData, selectedDocuments, pairCat
     } = documentSetStore;
 
     const stemmaStore = createStemmaStore(documentSetStore);
@@ -32,6 +34,7 @@
         edges: { en: "Connections", fr: "Connexions" },
         normalize: {en: "Normalize", fr: "Normaliser"},
         normalization: {en: "Normalization by document image counts", fr: "Normalisation par le nombre d'images des documents"},
+        imageStemma: {en: "Image stemma from", fr: "Stemma d'images issu de"},
         noSelection: { en: "Connect documents in the stemma to see visualizations", fr: "Connectez des documents dans le stemma pour voir les visualisations" },
         noViz: { en: "Select a visualization above", fr: "Sélectionnez une visualisation ci-dessus" },
         byPage: { en: "By page", fr: "Par page" },
@@ -82,10 +85,17 @@
     function handleModalNavigate(e) { navState = { ...e.detail }; }
     function handleModalClose() { modalActive = false; }
 
-    $: fullDocuments = Array.from($documentNodes?.values() || []);
+    $: fullDocuments = $sortedDocumentNodes
+        .map(([, meta]) => meta)
+        .filter(d => !$hideEmpty || ($filteredDocStats.scoreCount?.get(d.id)?.count || 0) > 0);
     $: fullScoreData = $filteredDocPairStats?.scoreCount || new Map();
     $: fullDocStats = $filteredDocStats?.scoreCount || new Map();
-    $: friezeDocuments = matrixScope === "full" ? fullDocuments : $selectedNodes;
+    $: friezeDocuments = (() => {
+        if (matrixScope === "full") return fullDocuments;
+        const anchorDoc = $documentNodes.get($selectedFriezeImage?.baseDocId);
+        const base = anchorDoc ? [...$selectedNodes, anchorDoc] : $selectedNodes;
+        return base.filter(d => $selectedDocuments.has(d.id));
+    })();
     $: needsSelection = $selectedViz && !$selectedNodes.length && matrixScope !== "full";
     $: if (matrixScope) selectedCluster.set(null);
 </script>
@@ -93,18 +103,25 @@
 <SplitLayout>
     <div id="stemma-header" slot="left-title" class="is-flex is-justify-content-space-between is-align-items-center">
         {#if layout.left === "documentStemma"}
-            <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
+            <h4 class="title is-6 mb-0 mr-3 panel-title">{i18n("title", t)}</h4>
+            <div class="is-flex is-align-items-center">
+                <DownloadPng targetId="doc-stemma" filename="document-stemma.png" />
+                <span class="tag is-small ml-3">{i18n("hint", t)}</span>
+            </div>
         {:else if layout.left === "imageStemma" && $selectedFriezeImage}
             {@const baseDoc = $selectedNodes.find(d => d.id === $selectedFriezeImage.baseDocId)}
             {@const title = $nodeTitles[$selectedFriezeImage.baseDocId] || baseDoc?.title}
             {@const imgData = parseImgRef($selectedFriezeImage.imageId)}
-            <h4 class="title is-6 mb-0">
-                <span>Image stemma from</span>
-                <span class="color-dot" style="background: {baseDoc?.color}"></span>
-                {title ?? "Unknown"} (canvas {imgData?.canvasNb || 0})
+            <h4 class="title is-6 mb-0 px-2 panel-title">
+                Page {imgData?.canvasNb || 0}
+                <span class="color-dot" style="background: {baseDoc?.color}"/>
+                {title ?? "Unknown"}
             </h4>
+            <div class="is-flex is-align-items-center">
+                <DownloadPng targetId="img-stemma" filename="image-stemma.png" />
+                <span class="tag is-small ml-3">{i18n("hint", t)}</span>
+            </div>
         {/if}
-        <span class="tag is-small">{i18n("hint", t)}</span>
     </div>
 
     <div slot="left-scroll">
@@ -134,7 +151,8 @@
     </div>
     <div slot="bottom-left-scroll">
         {#if layout.bottomLeft === "matches"}
-            <Matches matches={$matches.matches} columns={$matches.columns}/>
+            <Matches matches={$matches.matches} columns={$matches.columns} isInStemma={$selectedViz === "spatialFrieze"}
+                     pairCat={$pairCat} {clusterStore} on:anchorselect={e => selectedFriezeImage.set(e.detail)}/>
         {/if}
     </div>
 
@@ -148,6 +166,7 @@
             </select>
         </div>
         {#if $selectedViz}
+            <DownloadPng targetId={$selectedViz === "spatialFrieze" ? "spatial-frieze" : "doc-set-matrix"} filename={`${$selectedViz}.png`} />
             <div class="select is-small">
                 <select bind:value={matrixScope}>
                     <option value="selected">{i18n("selectedDocs", t)}</option>
@@ -196,7 +215,7 @@
                 documents={friezeDocuments}
                 {visiblePairs}
                 {documentNodes}
-                {stemmaStore}
+                isInStemma={true} {stemmaStore}
                 mode={friezeMode}
                 on:imageselect={e => { selectedFriezeImage.set(e.detail); selectedCluster.set(null); }}
                 on:clusterselect={e => { selectedCluster.set(e.detail); selectedFriezeImage.set(null); }}
@@ -204,23 +223,31 @@
         {/if}
     </div>
 
-    <div slot="bottom-right-title" class="is-flex is-justify-content-space-between">
+    <div slot="bottom-right-title" class="is-flex is-justify-content-space-between is-align-items-center">
         {#if layout.bottomRight === "pair" && pairMatrixData}
-            <h4 class="title is-6 mb-0">
-                <span class="color-dot" style="background: {pairMatrixData.doc1.color}"/>
-                <span class="has-text-grey">↔</span>
-                <span class="color-dot" style="background: {pairMatrixData.doc2.color}"/>
-            </h4>
-            <div class="select is-small">
+            <div class="is-flex is-align-items-center">
+                <h4 class="title is-6 mb-0 mr-3">
+                    <span class="color-dot" style="background: {pairMatrixData.doc1.color}"/>
+                    <span class="has-text-grey">↔</span>
+                    <span class="color-dot" style="background: {pairMatrixData.doc2.color}"/>
+                </h4>
+                <DownloadPng targetId="doc-pair-matrix" filename="doc-pair-matrix.png" />
+            </div>
+
+            <div class="select is-small ml-3">
                 <select bind:value={scatterMode}>
                     <option value="page">{i18n("byPage", t)}</option>
                     <option value="image">{i18n("byImage", t)}</option>
                 </select>
             </div>
         {:else if layout.bottomRight === "documentStemma"}
-            <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
-            <span class="tag is-small">{i18n("hint", t)}</span>
+            <h4 class="title is-6 mb-0 mr-3 panel-title">{i18n("title", t)}</h4>
+            <div class="is-flex is-align-items-center">
+                <DownloadPng targetId="doc-stemma" filename="document-stemma.png" />
+                <span class="tag is-small ml-3">{i18n("hint", t)}</span>
+            </div>
         {/if}
+
     </div>
 
     <div slot="bottom-right-scroll">
@@ -230,6 +257,7 @@
                 doc2={pairMatrixData.doc2}
                 pairs={pairMatrixData.pairs}
                 mode={scatterMode}
+                hideEmpty={$hideEmpty}
                 on:cellclick={handleScatterClick}
             />
         {:else if layout.bottomRight === "documentStemma"}
@@ -242,8 +270,8 @@
     </div>
 </SplitLayout>
 
-<PairDetailModal
-    active={modalActive} {scatterData} {navState}
+<PairDetailModal {documentSetStore}
+    active={modalActive} {scatterData} {navState} pairCat={$pairCat}
     on:navigate={handleModalNavigate}
     on:close={handleModalClose}
 />
@@ -258,5 +286,11 @@
         height: 10px;
         border-radius: 50%;
         display: inline-block;
+    }
+    .panel-title {
+        max-width: 80%;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-height: 1em;
     }
 </style>

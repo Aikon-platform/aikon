@@ -10,8 +10,8 @@
     const { allRegions } = regionsStore;
     import { appName, appLang, regionsType, csrfToken } from "../constants";
 
-    /** @type {number?} ID of the currently selected region (if there is a currently selected region) */
-    export let currentRegionId;
+    // /** @type {number?} ID of the currently selected region (if there is a currently selected region) */
+    // export let currentRegionId;
 
     export let witnessStore;
     const { selectedManifest } = witnessStore;
@@ -89,9 +89,6 @@
         downloadBlob(blob, "regions.zip");
     }
 
-    console.log("$selectedManifest", $selectedManifest)
-    console.log("currentRegionId", currentRegionId)
-    console.log($selectedManifest.length && currentRegionId)
 </script>
 
 <div class="is-right mb-3">

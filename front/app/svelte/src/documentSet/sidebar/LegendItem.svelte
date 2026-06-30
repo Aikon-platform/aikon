@@ -13,8 +13,8 @@
     export let clickable = true;
     export let onlyColor = false;
 
-    const imageCount = meta.images?.length || 0;
-    const docTitle = `${meta.title} #${id} (${imageCount} images)`;
+    $: imageCount = meta.images?.length || 0;
+    const docTitle = `${meta.title} #${id}`;
 
     const t = {
         nbImg: {en: "Number of images for this region extraction", fr: "Nombre d'images extraites pour ce document"},

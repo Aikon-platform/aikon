@@ -21,9 +21,9 @@
     export let docSet;
 
     const documentSetStore = createDocumentSetStore(docSet.id);
-    const {error, fetchPairs, selectedDocuments, selectedCategories, threshold, topK, mutualTopK, scoreMode} = documentSetStore;
+    const {error, fetchPairs, selectedDocuments, selectedCategories, threshold, topK, mutualTopK, scoreMode, docSort, hideEmpty} = documentSetStore;
 
-    let syncDocs, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode;
+    let syncDocs, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode, syncDocSort, syncHideEmpty;
     onMount(() => {
         syncDocs = syncStoreWithURL(selectedDocuments, "doc", "set");
         syncCategories = syncStoreWithURL(selectedCategories, "categories", "array", [1]);
@@ -31,6 +31,8 @@
         syncTopK = syncStoreWithURL(topK, "topk", "number");
         syncMutualTopK = syncStoreWithURL(mutualTopK, "mutual", "boolean");
         syncScoreMode = syncStoreWithURL(scoreMode, "mode", "string");
+        syncDocSort = syncStoreWithURL(docSort, "sort", "string");
+        syncHideEmpty = syncStoreWithURL(hideEmpty, "hideEmpty", "boolean");
 
         const unsubDocs = selectedDocuments.subscribe(syncDocs);
         const unsubCategories = selectedCategories.subscribe(syncCategories);
@@ -38,6 +40,8 @@
         const unsubTopK = topK.subscribe(syncTopK);
         const unsubMutualTopK = mutualTopK.subscribe(syncMutualTopK);
         const unsubScoreMode = scoreMode.subscribe(syncScoreMode);
+        const unsubDocSort = docSort.subscribe(syncDocSort);
+        const unsubHideEmpty = hideEmpty.subscribe(syncHideEmpty);
 
         return () => {
             unsubDocs();
@@ -46,6 +50,8 @@
             unsubTopK();
             unsubMutualTopK();
             unsubScoreMode();
+            unsubDocSort();
+            unsubHideEmpty();
         };
     });
 
@@ -59,7 +65,7 @@
     $: if ($activeLayout === "sim") documentSetStore.setScoreFilter(true);
 
     const tabList = {
-        "sim": appLang === "en" ? "Copy Clusters" : "Groupe de copies",
+        "sim": appLang === "en" ? "Similarity Chains" : "Chaînes de similarité",
         "ste": appLang === "en" ? "Stemma Builder" : "Aide au stemma",
         "mat": appLang === "en" ? "Document Matrix" : "Matrice de documents",
         "fri": appLang === "en" ? "Spatial Frieze" : "Frise spatiale",
@@ -125,15 +131,15 @@
                     <div>
                         <h2 class="title is-3 has-text-link">{tabList[$activeLayout]}</h2>
                         {#if $activeLayout === "img" || $activeLayout === "doc"}
-                            <NetworkVisualization {documentSetStore} type={$activeLayout}/>
+                            <NetworkVisualization {documentSetStore} {clusterStore} type={$activeLayout}/>
                         {:else if $activeLayout === "sim"}
                             <Clusters {documentSetStore} {clusterStore}/>
                         {:else if $activeLayout === "mat"}
-                            <DocumentMatrix {documentSetStore}/>
+                            <DocumentMatrix {documentSetStore} {clusterStore}/>
                         {:else if $activeLayout === "ste"}
-                            <StemmaBuilder {documentSetStore}/>
+                            <StemmaBuilder {documentSetStore} {clusterStore}/>
                         {:else if $activeLayout === "fri"}
-                            <FriezeView {documentSetStore}/>
+                            <FriezeView {documentSetStore} {clusterStore}/>
                         {/if}
                     </div>
                 {/if}
