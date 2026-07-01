@@ -822,3 +822,28 @@ def build_pairs_query(digit_ids, categories, min_score, max_score, topk, exclude
     """
 
     return sql, params
+
+
+def export_pairs(digit_ids, after_id: int = 0, limit: int | None = None) -> dict:
+    """
+    Export RegionPair rows where BOTH digitizations are in `digit_ids`
+    (self-contained: every reference resolves on re-import).
+    Cursor-paginated on pk. limit=None returns all rows.
+    """
+    if not digit_ids:
+        return {"pairs": [], "next_cursor": None, "count": 0}
+
+    qs = RegionPair.objects.filter(
+        digit_1__in=digit_ids, digit_2__in=digit_ids, id__gt=after_id
+    ).order_by("id")
+
+    rows = list(qs if limit is None else qs[: limit + 1])
+    has_more = limit is not None and len(rows) > limit
+    if has_more:
+        rows = rows[:limit]
+
+    return {
+        "pairs": [p.to_dict() for p in rows],
+        "next_cursor": rows[-1].id if has_more else None,
+        "count": len(rows),
+    }

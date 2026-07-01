@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime
+
 from PIL import Image
 
 from django.http import JsonResponse
@@ -25,11 +26,14 @@ from app.webapp.utils.functions import (
     get_files_in_dir,
     get_files_with_prefix,
     parse_img_ref,
+    safe_int,
 )
 from app.webapp.utils.iiif.annotation import (
     get_record_annotations,
 )
 from app.webapp.utils.paths import IMG_PATH
+from app.webapp.utils.logger import log
+from app.similarity.utils import export_pairs
 
 
 def export_regions(request):
@@ -90,7 +94,6 @@ def export_docset(request, dsid):
                     file_contents.append(
                         (f"witness{w.id}/digitizations/{img}", i.read())
                     )
-            did = d.id
             digit_type = d.get_digit_abbr()
             if digit_type == PDF_ABBR:
                 with open(f"{d.pdf.path}", "rb") as p:
@@ -155,15 +158,10 @@ def export_docset(request, dsid):
                     )
                 )
 
-            # 4: Similarity (JSON)
-            if "similarity" in ADDITIONAL_MODULES:
-                s_json = get_similarity_data(w, regions.id)
-                file_contents.append(
-                    (
-                        f"witness{w.id}/regions{regions.id}/similarity/metadata.json",
-                        json.dumps(s_json),
-                    )
-                )
+    # 4: Similarity — set-level, both digits inside the set
+    if "similarity" in ADDITIONAL_MODULES:
+        s_json = export_pairs(doc_set.get_digit_ids())["pairs"]
+        file_contents.append(("similarity/pairs.json", json.dumps(s_json)))
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     archive_name = f"export_docset{dsid}_{timestamp}"
@@ -193,7 +191,7 @@ def gen_coco_data(witness_data, regions_data):
             }
             coco["images"].append(image_entry)
 
-    # Not exacttly sure what to do with categories
+    # Not exactly sure what to do with categories
     category_id = 1
     coco["categories"].append({"id": category_id, "name": "Extracted region"})
 
@@ -227,57 +225,6 @@ def get_region_data(wid, rid):
             "manifest": get_object_or_404(Regions, pk=rid).get_manifest_url(),
             "extracted_crops": annos,
         }
-    return result
-
-
-def get_similarity_data(witness: Witness, region_id: str, user_id: int = None) -> dict:
-    from app.similarity.utils import (
-        get_best_pairs,
-        get_region_pairs_with,
-        get_compared_regions_ids,
-        get_regions_q_imgs,
-    )
-
-    q_imgs_set = set()
-    keys = [
-        "score",
-        "img1",
-        "img2",
-        "regions1",
-        "regions2",
-        "category",
-        "category_x",
-        "manual",
-    ]
-
-    q_imgs_set.update(get_regions_q_imgs(region_id, witness.id))
-    q_imgs = sorted(list(q_imgs_set))
-
-    regions_ids = get_compared_regions_ids(region_id)
-
-    if not regions_ids:
-        return {}
-
-    result = {}
-    for q_img in q_imgs:
-        pairs = get_region_pairs_with(
-            q_img,
-            query_regions_ids=[region_id],
-            target_regions_ids=regions_ids,
-        )
-
-        best_pairs = get_best_pairs(
-            q_img,
-            pairs,
-            excluded_categories=set(),
-            user_id=user_id,
-            topk=None,
-            export=True,
-        )
-
-        dict_pairs = [dict(zip(keys, p)) for p in best_pairs]
-        result[q_img] = dict_pairs
-
     return result
 
 
@@ -324,12 +271,6 @@ def get_witness_data(witness, json_cascade=True):
                     "extracted_regions"
                 ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/extracted-regions"
 
-            # 4 : Similarity data (endpoint URL)
-            if "similarity" in ADDITIONAL_MODULES:
-                w_reg_processes[r.id]["treatments"][
-                    "similarities"
-                ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/similarities"
-
             # 5 : Vectorizations (endpoint URL)
             if "vectorization" in ADDITIONAL_MODULES:
                 w_reg_processes[r.id]["treatments"][
@@ -337,6 +278,15 @@ def get_witness_data(witness, json_cascade=True):
                 ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/vectorized-images"
 
     return w_json | w_digits_manifs | {"regions": w_reg_processes}
+
+
+def get_json_docset_simil(request, dsid):
+    if request.method != "GET":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+    doc_set = get_object_or_404(DocumentSet, id=dsid)
+    after_id = safe_int(request.GET.get("after")) or 0
+    limit = min(safe_int(request.GET.get("limit")) or 1000, 5000)
+    return JsonResponse(export_pairs(doc_set.get_digit_ids(), after_id, limit))
 
 
 def create_json_vecto_element(svg_filename, include_svg, subfolder_name=None):
@@ -386,24 +336,6 @@ def get_json_regions(request, wid, rid):
     if request.method == "GET":
         result = get_region_data(wid, rid)
         return JsonResponse(result, safe=False)
-
-
-def get_json_simil(request, wid, rid):
-    if request.method == "GET":
-        witness = get_object_or_404(Witness, id=wid)
-        if witness.is_public:
-            # Partly taken from 'get_similar_images' in 'similarity/views.py'
-            try:
-                result = get_similarity_data(witness, rid, request.user.id)
-                return JsonResponse(result, safe=False)
-            except (json.JSONDecodeError, ValueError) as e:
-                return JsonResponse({"error": f"Invalid data: {str(e)}"}, status=400)
-            except Exception as e:
-                return JsonResponse(
-                    {"error": f"An error occurred: {str(e)}"}, status=500
-                )
-        else:
-            return JsonResponse({})
 
 
 def get_json_witness(request, wid):
