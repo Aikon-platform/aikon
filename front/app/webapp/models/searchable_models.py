@@ -108,6 +108,7 @@ class AbstractSearchableModel(models.Model):
 @receiver(post_save)
 def generate_json(sender, instance, **kwargs):
     if isinstance(instance, AbstractSearchableModel):
+        # TODO verify that it works
         # from app.webapp.tasks import generate_record_json
         # generate_record_json.apply_async(
         #     args=[type(instance).__name__, instance.pk.__str__()],

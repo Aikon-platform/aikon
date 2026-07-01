@@ -291,9 +291,9 @@ urlpatterns += [
         name="get_json_regions",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/json/similarities",
-        get_json_simil,
-        name="get_json_simil",
+        f"{APP_NAME}/document-set/<int:dsid>/json/similarities",
+        get_json_docset_simil,
+        name="get_json_docset_simil",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/json/vectorized-images",
