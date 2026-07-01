@@ -105,7 +105,7 @@
         {#if layout.left === "documentStemma"}
             <h4 class="title is-6 mb-0 mr-3 panel-title">{i18n("title", t)}</h4>
             <div class="is-flex is-align-items-center">
-                <DownloadPng targetId="doc-stemma" filename="document-stemma.png" />
+                <DownloadPng targetId="doc-stemma" filename="document-stemma" svgExport={true}/>
                 <span class="tag is-small ml-3">{i18n("hint", t)}</span>
             </div>
         {:else if layout.left === "imageStemma" && $selectedFriezeImage}
@@ -118,7 +118,7 @@
                 {title ?? "Unknown"}
             </h4>
             <div class="is-flex is-align-items-center">
-                <DownloadPng targetId="img-stemma" filename="image-stemma.png" />
+                <DownloadPng targetId="img-stemma" filename="image-stemma" svgExport={true}/>
                 <span class="tag is-small ml-3">{i18n("hint", t)}</span>
             </div>
         {/if}
@@ -166,7 +166,7 @@
             </select>
         </div>
         {#if $selectedViz}
-            <DownloadPng targetId={$selectedViz === "spatialFrieze" ? "spatial-frieze" : "doc-set-matrix"} filename={`${$selectedViz}.png`} />
+            <DownloadPng targetId={$selectedViz === "spatialFrieze" ? "spatial-frieze" : "doc-set-matrix"} filename={$selectedViz} svgExport={true}/>
             <div class="select is-small">
                 <select bind:value={matrixScope}>
                     <option value="selected">{i18n("selectedDocs", t)}</option>
@@ -231,7 +231,7 @@
                     <span class="has-text-grey">↔</span>
                     <span class="color-dot" style="background: {pairMatrixData.doc2.color}"/>
                 </h4>
-                <DownloadPng targetId="doc-pair-matrix" filename="doc-pair-matrix.png" />
+                <DownloadPng targetId="doc-pair-matrix" filename="doc-pair-matrix" svgExport={true}/>
             </div>
 
             <div class="select is-small ml-3">
@@ -243,7 +243,7 @@
         {:else if layout.bottomRight === "documentStemma"}
             <h4 class="title is-6 mb-0 mr-3 panel-title">{i18n("title", t)}</h4>
             <div class="is-flex is-align-items-center">
-                <DownloadPng targetId="doc-stemma" filename="document-stemma.png" />
+                <DownloadPng targetId="doc-stemma" filename="document-stemma"  svgExport={true}/>
                 <span class="tag is-small ml-3">{i18n("hint", t)}</span>
             </div>
         {/if}

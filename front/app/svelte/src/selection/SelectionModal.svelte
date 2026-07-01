@@ -4,7 +4,6 @@
 
     import { recordsSelection } from "./selectionStore.js";
     import { appLang, userId, isSuperuser } from "../constants.js";
-    import DownloadPng from "../ui/DownloadPng.svelte";
     const { selected } = recordsSelection;
 
     export let selectionStore;
