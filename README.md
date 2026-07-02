@@ -26,7 +26,8 @@ Please refer to [front/README](front/README.md) and [api/README](https://github.
 
 1. To install the API and Front application inside the `front` and `api` folders, run:
     ```bash
-    bash setup.sh
+    python scripts/generate_env.py
+    cd docker && docker compose up -d --build
     ```
 2. Define the `.env` variables to fit your requirements:
     For front application (`front/app/conf/.env`), notably

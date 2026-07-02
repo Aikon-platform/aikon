@@ -1,0 +1,279 @@
+#!/usr/bin/env python3
+"""
+Generates every .env of the project from the root .env (single source of truth).
+
+    python scripts/generate_env.py [--mode local|dev|prod] [--yes]
+
+Generated files (never edit them directly):
+    front/app/config/.env   config as seen by the Django process
+    front/cantaloupe/.env   config as seen by the Cantaloupe container
+    api/.env                config as seen by the API (only if api/ exists)
+    docker/.env             config as seen by docker compose and the containers
+
+local = everything in Docker, DEBUG on, zero prompt
+dev   = services in Docker, front (and api) run on the host with live reload
+prod  = everything in Docker, DEBUG off, full prompts
+"""
+
+import argparse
+import os
+import re
+import secrets
+import socket
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+TEMPLATE = ROOT / ".env.template"
+ROOT_ENV = ROOT / ".env"
+
+MODES = ("local", "dev", "prod")
+FRONT_APPS = ("region_extraction", "similarity", "vectorization")
+AUTOGEN = ("POSTGRES_PASSWORD", "SECRET_KEY")
+
+# containers always use these internal ports; the root .env ports are only
+# the host-side mappings (see docker/compose*.yml)
+INTERNAL_PORTS = {"DB_PORT": "5432", "REDIS_PORT": "6379", "MONGODB_PORT": "27017"}
+
+COMPOSE_FILES = {
+    "dev": "compose.yml:compose.dev.yml",
+    "local": "compose.yml:compose.local.yml",
+    "prod": "compose.yml:compose.prod.yml",
+}
+
+# variables prompted per mode; everything else keeps its default/current value
+PROMPTED = {
+    "local": (),
+    "dev": ("DATA_DIR", "INSTALLED_APPS"),
+    "prod": (
+        "APP_NAME",
+        "APP_LANG",
+        "DATA_DIR",
+        "INSTALLED_APPS",
+        "GEONAMES_USER",
+        "PROD_URL",
+        "PROD_API_URL",
+        "POSTGRES_DB",
+        "POSTGRES_USER",
+        "EMAIL_HOST",
+        "EMAIL_HOST_USER",
+        "EMAIL_HOST_PASSWORD",
+        "APP_LOGO",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "NGINX_PORT",
+    ),
+}
+
+HEADER = (
+    "# GENERATED from {src} — do not edit.\n"
+    "# Edit the root .env then rerun: python scripts/generate_env.py\n\n"
+)
+
+
+def parse_env(path: Path) -> dict:
+    """{key: (value, description)} in declaration order."""
+    entries, desc = {}, ""
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if line.startswith("#"):
+            desc = line.lstrip("# ").strip()
+        elif "=" in line:
+            key, _, val = line.partition("=")
+            entries[key.strip()] = (val.strip().strip('"'), desc)
+            desc = ""
+    return entries
+
+
+def next_free_port(port: str) -> int:
+    port = int(port)
+    while True:
+        with socket.socket() as s:
+            if s.connect_ex(("127.0.0.1", port)) != 0:
+                return port
+        port += 1
+
+
+def prompt(key: str, default: str, desc: str) -> str:
+    hint = f" — {desc}" if desc else ""
+    val = input(f"{key}{hint}\n  [{default or 'empty'}]: ").strip()
+    return default if not val else "" if val == "x" else val
+
+
+def resolve_values(mode: str, assume_yes: bool) -> dict:
+    template = parse_env(TEMPLATE)
+    current = (
+        {k: v for k, (v, _) in parse_env(ROOT_ENV).items()} if ROOT_ENV.exists() else {}
+    )
+    fresh = not current
+    v = {}
+
+    for key, (default, desc) in template.items():
+        val = current.get(key, default)
+        if key in AUTOGEN and not val:
+            val = secrets.token_urlsafe(40)
+        if key in PROMPTED[mode] and not assume_yes:
+            val = prompt(key, val, desc)
+        if key.endswith("_PORT") and mode != "prod" and key not in current:
+            bumped = next_free_port(val)
+            if bumped != int(val):
+                print(f"  port {val} busy, using {bumped} for {key}")
+                val = bumped
+        v[key] = str(val)
+
+    v["DATA_DIR"] = str(Path(v["DATA_DIR"] or ROOT / "data").resolve())
+    v["MODE"] = mode
+
+    invalid = [a for a in v["INSTALLED_APPS"].split(",") if a and a not in FRONT_APPS]
+    if invalid:
+        sys.exit(f"Invalid INSTALLED_APPS {invalid}, allowed: {list(FRONT_APPS)}")
+
+    if mode == "prod" and not (v["PROD_URL"] and v["PROD_API_URL"]):
+        sys.exit("PROD_URL and PROD_API_URL are required in prod mode")
+
+    if fresh:
+        print(f"Creating {ROOT_ENV}")
+    return v
+
+
+def write_root_env(v: dict) -> None:
+    """Rewrites the root .env from the template, keeping comments and layout."""
+    text = TEMPLATE.read_text()
+    for key, val in v.items():
+        text = re.sub(rf"^{key}=.*$", f"{key}={val}", text, flags=re.M)
+    ROOT_ENV.write_text(text)
+
+
+def derive(v: dict, mode: str, in_docker: bool) -> dict:
+    """Values that depend on where the reader runs (host vs container)."""
+    host = lambda svc: svc if in_docker else "localhost"
+    port = lambda key: INTERNAL_PORTS[key] if in_docker else v[key]
+    prod = mode == "prod"
+    nginx = mode != "dev"  # nginx is the entrypoint whenever the front is containerized
+    base = (
+        f"https://{v['PROD_URL']}"
+        if prod
+        else f"http://localhost:{v['NGINX_PORT'] if nginx else v['FRONT_PORT']}"
+    )
+
+    return {
+        "MODE": mode,
+        "DEBUG": str(not prod),
+        "DOCKER": str(in_docker),
+        "C_FORCE_ROOT": "True",
+        "DB_HOST": host("db"),
+        "DB_PORT": port("DB_PORT"),
+        "REDIS_HOST": host("redis"),
+        "REDIS_PORT": port("REDIS_PORT"),
+        "MONGODB_HOST": host("mongo"),
+        "MONGODB_PORT": port("MONGODB_PORT"),
+        "MEDIA_DIR": "/data/mediafiles" if in_docker else f"{v['DATA_DIR']}/mediafiles",
+        "BASE_URL": base,
+        "ALLOWED_HOSTS": "localhost,127.0.0.1,web,nginx",
+        "API_URL": v["PROD_API_URL"]
+        if prod
+        else f"http://{'host.docker.internal' if in_docker else 'localhost'}:{v['API_PORT']}",
+        "CANTALOUPE_BASE_URI": base
+        if nginx
+        else f"http://localhost:{v['CANTALOUPE_PORT']}",
+        "AIIINOTATE_BASE_URL": f"{base}/aiiinotate"
+        if prod
+        else f"http://{host('aiiinotate')}:{v['AIIINOTATE_PORT']}",
+        "MIRADOR_BASE_URL": f"{base}/mirador"
+        if nginx
+        else f"http://localhost:{v['MIRADOR_PORT']}",
+        "MONGODB_CONNSTRING": f"mongodb://{host('mongo')}:{port('MONGODB_PORT')}/{v['MONGODB_DB']}",
+    }
+
+
+def write_env(path: Path, variables: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [f"{k}={v}" for k, v in variables.items()]
+    path.write_text(HEADER.format(src=ROOT_ENV) + "\n".join(lines) + "\n")
+    print(f"  wrote {path.relative_to(ROOT)}")
+
+
+def generate(mode: str, assume_yes: bool) -> None:
+    v = resolve_values(mode, assume_yes)
+    write_root_env(v)
+
+    front_in_docker = mode != "dev"
+
+    # front: perspective of the Django process (container in local/prod, host in dev)
+    write_env(ROOT / "front/app/config/.env", v | derive(v, mode, front_in_docker))
+
+    # cantaloupe: always a container
+    d = derive(v, mode, in_docker=True)
+    write_env(
+        ROOT / "front/cantaloupe/.env",
+        {
+            "CANTALOUPE_BASE_URI": d["CANTALOUPE_BASE_URI"],
+            "CANTALOUPE_IMG": "/data/mediafiles/img/",
+            "CANTALOUPE_PORT": v["CANTALOUPE_PORT"],
+            "CANTALOUPE_PORT_HTTPS": v["CANTALOUPE_PORT_HTTPS"],
+        },
+    )
+
+    # docker: perspective of compose and of every container (aiiinotate, mirador...).
+    # host-side ports are re-applied on top: compose uses them for port mappings.
+    write_env(
+        ROOT / "docker/.env",
+        v
+        | d
+        | {k: v[k] for k in INTERNAL_PORTS}
+        | {
+            "USERID": os.getuid() if hasattr(os, "getuid") else 1000,
+            "DATA_FOLDER": v["DATA_DIR"],
+            "WEB_HOST": "web" if front_in_docker else "host.docker.internal",
+            "COMPOSE_FILE": COMPOSE_FILES[mode],
+            "COMPOSE_PATH_SEPARATOR": ":",
+            "COMPOSE_PROFILES": "front" if front_in_docker else "",
+        },
+    )
+
+    (Path(v["DATA_DIR"]) / "mediafiles/img").mkdir(parents=True, exist_ok=True)
+
+    # api: only when the submodule is initialized; same module list as the front
+    if (ROOT / "api").is_dir():
+        api = derive(v, mode, front_in_docker)
+        write_env(
+            ROOT / "api/.env",
+            {
+                "MODE": mode,
+                "DOCKER": api["DOCKER"],
+                "API_PORT": v["API_PORT"],
+                "INSTALLED_APPS": v["INSTALLED_APPS"],
+                "PROD_URL": v["PROD_API_URL"],
+                "API_DATA_FOLDER": "/data/" if front_in_docker else "data/",
+                "YOLO_CONFIG_DIR": "/data/yolotmp/"
+                if front_in_docker
+                else "data/yolotmp/",
+                "REDIS_HOST": api["REDIS_HOST"],
+                "REDIS_PORT": v["REDIS_PORT"],
+            },
+        )
+
+    print(f"✅ .env files generated (mode: {mode})")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--mode", choices=MODES)
+    parser.add_argument("--yes", action="store_true", help="never prompt, use defaults")
+    args = parser.parse_args()
+
+    mode = args.mode
+    if not mode:
+        current = (
+            parse_env(ROOT_ENV).get("MODE", ("", ""))[0] if ROOT_ENV.exists() else ""
+        )
+        choices = " / ".join(MODES)
+        mode = (
+            input(f"Install mode ({choices}) [{current or 'local'}]: ").strip()
+            or current
+            or "local"
+        )
+        if mode not in MODES:
+            sys.exit(f"Invalid mode '{mode}'")
+
+    generate(mode, args.yes)

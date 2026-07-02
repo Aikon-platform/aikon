@@ -62,9 +62,9 @@ def get_issues(reqfile: str | os.PathLike) -> None:
             count += 1
             print(f"❗ distribution not found: {pkg_resources.Requirement(req)}")
     if count:
-        print(f"💔 {count} errors found !")
+        print(f"💔 {count} errors found!")
     else:
-        print(f"✨ no errors found !")
+        print(f"✨ no errors found!")
     return
 
 

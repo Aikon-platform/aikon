@@ -14,8 +14,8 @@ DEBUG = ENV.bool("DEBUG", default=True)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.config.settings")
 
-REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
-REDIS_PORT = os.environ.get("REDIS_PORT", "6379")
+REDIS_HOST = ENV.str("REDIS_HOST", default="localhost")
+REDIS_PORT = ENV.str("REDIS_PORT", default="6379")
 
 ADDITIONAL_MODULES = ENV.list("INSTALLED_APPS", default=[])
 
