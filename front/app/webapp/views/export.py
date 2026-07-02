@@ -373,4 +373,9 @@ def get_json_document_set(request, dsid):
             for w in doc_set.all_witnesses()
             if w.is_public
         }
+        if "similarity" in ADDITIONAL_MODULES:
+            ds_data[
+                "similarity"
+            ] = f"{APP_URL}/{APP_NAME}/document-set/{dsid}/json/similarity"
         return JsonResponse(ds_data, safe=False)
+    return JsonResponse({})
