@@ -1,8 +1,7 @@
-# AIKON
+# <img alt="Aikon logo" src="https://raw.githubusercontent.com/Aikon-platform/aikon/refs/heads/main/front/app/webapp/static/favicon.ico" height="50" width="auto" style="display: inline; margin-bottom:-10px;"> AIKON platform
 
-<img src="https://aikon-platform.github.io/aikon-platform.png" alt="" height="500" width="auto">
-Modular platform for the visual analysis of historical corpora, composed of a web application ([front/](front/README.md))
-and a computer vision worker API ([api/](https://github.com/Aikon-platform/aikon-api/blob/main/README.md)). Both can be deployed together or separately.
+Modular platform for the visual analysis of historical corpora, composed of a web application ([`front/`](front/README.md))
+and a computer vision worker API ([`api/`](https://github.com/Aikon-platform/aikon-api/blob/main/README.md)). Both can be deployed together or separately.
 
 ## Requirements
 
