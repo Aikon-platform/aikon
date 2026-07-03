@@ -170,29 +170,50 @@ def derive(v: dict, mode: str, in_docker: bool) -> dict:
         "MEDIA_DIR": "/data/mediafiles" if in_docker else f"{v['DATA_DIR']}/mediafiles",
         "BASE_URL": base,
         "ALLOWED_HOSTS": "localhost,127.0.0.1,web,nginx",
-        "API_URL": v["PROD_API_URL"]
-        if prod
-        else f"http://{'api' if in_docker else 'localhost'}:{v['API_PORT']}",
-        "CANTALOUPE_BASE_URI": base
-        if nginx
-        else f"http://localhost:{v['CANTALOUPE_PORT']}",
-        "AIIINOTATE_BASE_URL": f"{base}/aiiinotate"
-        if prod
-        else f"http://{host('aiiinotate')}:{v['AIIINOTATE_PORT']}",
-        "MIRADOR_BASE_URL": f"{base}/mirador"
-        if nginx
-        else f"http://localhost:{v['MIRADOR_PORT']}",
-        "MONGODB_CONNSTRING": f"mongodb://{host('mongo')}:{port('MONGODB_PORT')}/{v['MONGODB_DB']}",
-        "AIIINOTATE_BASE_URL": f"{base}/aiiinotate"
-            if prod
-            else f"http://{host('aiiinotate')}:{v['AIIINOTATE_PORT']}",
+        "API_URL": v["PROD_API_URL"] if prod else f"http://{'api' if in_docker else 'localhost'}:{v['API_PORT']}",
+        "CANTALOUPE_BASE_URI": base if nginx else f"http://localhost:{v['CANTALOUPE_PORT']}",
+        "AIIINOTATE_BASE_URL": f"{base}/aiiinotate" if prod else f"http://{host('aiiinotate')}:{v['AIIINOTATE_PORT']}",
         "AIIINOTATE_HOST": "0.0.0.0",
-        "AIIINOTATE_SCHEME": "https" if prod else "http",
+        "AIIINOTATE_SCHEME": "http",
         "AIIINOTATE_LOG_DIR": "/aiiinotate/logs",
+        "AIIINOTATE_PUBLIC_URL": f"{base}/aiiinotate" if prod else f"http://localhost:{v['AIIINOTATE_PORT']}",
+        "MIRADOR_BASE_URL": f"{base}/mirador" if nginx else f"http://localhost:{v['MIRADOR_PORT']}",
+        "MONGODB_CONNSTRING": f"mongodb://{host('mongo')}:{port('MONGODB_PORT')}/{v['MONGODB_DB']}",
+        "MONGODB_DB_TEST": f"{v['MONGODB_DB']}_test",
+        "MONGODB_CONNSTRING_TEST": f"mongodb://{host('mongo')}:{port('MONGODB_PORT')}/{v['MONGODB_DB']}_test",
     }
 
 
+REQUIRED = {
+    "front/app/config/.env": (
+        "SECRET_KEY", "POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD",
+        "DB_HOST", "DB_PORT", "REDIS_HOST", "REDIS_PORT",
+        "API_URL", "BASE_URL", "MEDIA_DIR", "CANTALOUPE_BASE_URI",
+        "AIIINOTATE_BASE_URL", "MIRADOR_BASE_URL",
+    ),
+    "front/cantaloupe/.env": (
+        "CANTALOUPE_BASE_URI", "CANTALOUPE_IMG",
+        "CANTALOUPE_PORT", "CANTALOUPE_PORT_HTTPS",
+    ),
+    "docker/.env": (
+        "DATA_FOLDER", "USERID", "COMPOSE_FILE",
+        "MONGODB_HOST", "MONGODB_PORT", "MONGODB_DB", "MONGODB_CONNSTRING",
+        "AIIINOTATE_PORT", "AIIINOTATE_HOST", "AIIINOTATE_SCHEME",
+        "AIIINOTATE_LOG_DIR", "AIIINOTATE_LOG_TARGET", "AIIINOTATE_LOG_LEVEL",
+        "AIIINOTATE_PAGE_SIZE", "AIIINOTATE_PUBLIC_URL", "AIIINOTATE_BASE_URL",
+        "MIRADOR_PORT", "CANTALOUPE_PORT", "NGINX_PORT",
+        "NGINX_MAX_BODY_SIZE", "NGINX_TIMEOUT",
+        "MONGODB_HOST", "MONGODB_PORT", "MONGODB_DB", "MONGODB_CONNSTRING",
+        "MONGODB_DB_TEST", "MONGODB_CONNSTRING_TEST",
+    ),
+}
+
+
 def write_env(path: Path, variables: dict) -> None:
+    rel = str(path.relative_to(ROOT))
+    missing = [k for k in REQUIRED.get(rel, ()) if not variables.get(k)]
+    if missing:
+        sys.exit(f"✗ {rel}: missing required keys {missing}")
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [f"{k}={v}" for k, v in variables.items()]
     path.write_text(HEADER.format(src=ROOT_ENV) + "\n".join(lines) + "\n")

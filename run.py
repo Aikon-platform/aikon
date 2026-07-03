@@ -2,13 +2,14 @@
 """
 Start / stop AIKON.
 
-    python run.py [up|down|logs]
+    python run.py [up|down|logs|doctor]
 
 up   (default)  docker services up; in dev mode also runs the front on the
                 host (runserver, celery, vite --watch, livereload) until Ctrl+C.
                 Ctrl+C only stops the host processes; services keep running.
 down            stops everything (docker compose down + api if delegated)
 logs            follows the docker services logs
+doctor          summarize
 """
 
 import os
@@ -200,7 +201,7 @@ if __name__ == "__main__":
     action = sys.argv[1] if len(sys.argv) > 1 else "up"
     ENV = read_env()
     if not docker_ok():
-        sys.exit("docker daemon not reachable — start Docker Desktop and retry")
+        sys.exit("docker daemon not reachable — start Docker and retry")
 
     if action == "doctor":
         doctor()
