@@ -1,62 +1,74 @@
-# <img alt="Aikon logo" src="https://raw.githubusercontent.com/Aikon-platform/aikon/refs/heads/main/front/app/webapp/static/favicon.ico" height="50" width="auto" style="display: inline; margin-bottom:-10px;"> AIKON platform
-
-**[Aikon](https://aikon-platform.github.io/)** is a modular computer vision platform that enables historians to build, process, and analyze
-visual corpora at scale. The platform guides users through a complete workflow from corpus construction
-to algorithmic processing and result validation, without requiring technical expertise. Built on IIIF
-standards and featuring a flexible data model, Aikon supports collaborative research while maintaining
-full user control over automatic processing. Its modular architecture allows easy integration of new
-computer vision algorithms and visualization tools, making it adaptable to diverse research needs across
-historical document analysis.
+# AIKON
 
 <img src="https://aikon-platform.github.io/aikon-platform.png" alt="" height="500" width="auto">
+Modular platform for the visual analysis of historical corpora, composed of a web application ([front/](front/README.md))
+and a computer vision worker API ([api/](https://github.com/Aikon-platform/aikon-api/blob/main/README.md)). Both can be deployed together or separately.
 
-This repository contains the code for the frontend platform, as well as a submodule for the worker API.
+## Requirements
 
-## General requirements
+- [Docker](https://docs.docker.com/engine/install/) with Compose v2
+- [uv](https://docs.astral.sh/uv/) and [Node.js](https://nodejs.org/) (dev mode only)
 
-> - **Sudo** privileges
-> - **Python** == 3.10
-> - **Git**:
->     - `sudo apt install git`
->     - Having configured [SSH access to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
+## Install
 
-## Install 🛠️
+```bash
+git clone --recurse-submodules <repo-url> && cd aikon
+python install.py
+```
 
-Please refer to [front/README](front/README.md) and [api/README](https://github.com/Aikon-platform/aikon-api/blob/main/README.md) for detailed instructions (especially step-by-step install).
+The installer asks for the install mode, generates every configuration file and starts the app:
 
-1. To install the API and Front application inside the `front` and `api` folders, run:
-    ```bash
-    python scripts/generate_env.py
-    cd docker && docker compose up -d --build
-    ```
-2. Define the `.env` variables to fit your requirements:
-    For front application (`front/app/conf/.env`), notably
-    ```bash
-    # Folder where the media files are stored
-    MEDIA_DIR=/home/path/to/aikon/front/app/mediafiles
-    ```
-    For the API (`api/.env`), notably
-    ```bash
-    # Folder where the data is stored
-    API_DATA_FOLDER=data/
-    ```
-3. To start everything in one killable process, run (after installing each part like advised in the subfolders):
-    ```bash
-    bash run.sh
-    ```
+| mode    | purpose       | what runs where                               |
+|---------|---------------|-----------------------------------------------|
+| `local` | use the app   | everything in Docker, no prompt, DEBUG on     |
+| `dev`   | edit the code | services in Docker, front and api on the host |
+| `prod`  | deploy        | everything in Docker, DEBUG off               |
 
-## Acknowledgements
+## Run
+
+```bash
+python run.py         # start; in dev: Django + Celery + vite --watch, Ctrl+C to stop
+python run.py down    # stop everything
+python run.py logs    # follow the docker services logs
+```
+
+- `local`: app at `http://localhost:<NGINX_PORT>` (default 8080)
+- `dev`: app at `http://localhost:<FRONT_PORT>` (default 8000); start the api separately with `python api/run.py`
+- `prod`: served behind the host nginx at `https://<PROD_URL>` (SSL termination on the host, see [docker/nginx_external.conf.template](docker/nginx_external.conf.template))
+
+## Configuration
+
+The root [`.env`](.env.template) is the single source of truth: every other `.env` (front, cantaloupe, api, docker) is generated from it.
+To change a value, edit the root `.env` then run:
+
+```bash
+python scripts/generate_env.py
+```
+
+Passwords and secret keys left blank are auto-generated. In `dev`/`local`, busy ports are automatically replaced by the next free one.
+
+## Project
+
+> [!NOTE]
+> Historical document analysis has progressed to a point where the main bottleneck for many historical applications is
+> not algorithms, but relevant interfaces, that can support historians’ workflow. While specialized tools exist for text
+> processing and image search, we argue the community lacks a versatile collaborative platform enabling historians to
+> analyze their own corpora from a particular perspective. As a step in this direction, we present **[Aikon](https://aikon-platform.github.io/)**, a modular
+> web-platform designed to empower historians with computer vision tools. aikon implements a complete workflow for
+> historical document analysis, from corpus constitution to ai outputs validation and interpretation. It provides a
+> comprehensive research environment combining source management tools with automated processing capabilities as well
+> as multi-user validation and visualization interfaces.
 
 ***Aikon** is funded and supported by the Agence Nationale pour la Recherche and the European Research Council*
 - **VHS** [ANR-21-CE38-0008](https://anr.fr/Projet-ANR-21-CE38-0008): computer Vision and Historical analysis of Scientific illustration circulation
 - **EiDA** [ANR-22-CE38-0014](https://anr.fr/Projet-ANR-22-CE38-0014): EdIter et analyser les Diagrammes astronomiques historiques avec l’intelligence Artificielle
 - **DISCOVER** project [ERC-101076028](https://cordis.europa.eu/project/id/101076028): Discovering and Analyzing Visual Structures
 
-If you find this work useful, please consider citing:
+If you find [this work](https://link.springer.com/article/10.1007/s10032-026-00581-x) useful, please consider citing:
 
 ```bibtex
-@article{albouy2025aikon,
-    title={{AIKON: A Modular Computer Vision Platform for Historical Corpora}},
+@article{albouy2026aikon,
+    title={{AIKON : A Modular Computer Vision Platform for Historical Corpora}},
     author={
         Albouy, Ségolène and
         Norindr, Somkeo and
