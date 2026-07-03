@@ -69,13 +69,12 @@ DEV_PROCS = [
 ]
 
 
-def read_env() -> dict:
-    env_file = ROOT / ".env"
-    if not env_file.exists():
-        sys.exit("no .env found: run `python setup.py` first")
+def read_env(path: Path = ROOT / ".env") -> dict:
+    if not path.exists():
+        sys.exit(f"no {path.name} found: run `python install.py` first")
     return dict(
         line.split("=", 1)
-        for line in env_file.read_text().splitlines()
+        for line in path.read_text().splitlines()
         if "=" in line and not line.startswith("#")
     )
 
@@ -84,10 +83,10 @@ def compose(*args) -> None:
     subprocess.run(["docker", "compose", *args], cwd=DOCKER_DIR, check=True)
 
 
-def spawn(name: str, cmd: list, cwd: Path) -> subprocess.Popen:
+def spawn(name: str, cmd: list, cwd: Path, env: dict = None) -> subprocess.Popen:
     cmd = [c.format(**ENV) for c in cmd]
     cmd[0] = shutil.which(cmd[0]) or sys.exit(
-        f"'{cmd[0]}' not found, run `python setup.py` first"
+        f"'{cmd[0]}' not found, run `python install.py` first"
     )
     kwargs = (
         {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
@@ -95,7 +94,7 @@ def spawn(name: str, cmd: list, cwd: Path) -> subprocess.Popen:
         else {"start_new_session": True}
     )
     print(f"starting {name}: {' '.join(cmd)}")
-    return subprocess.Popen(cmd, cwd=cwd, **kwargs)
+    return subprocess.Popen(cmd, cwd=cwd, env={**os.environ, **(env or {})}, **kwargs)
 
 
 def stop(name: str, proc: subprocess.Popen) -> None:
@@ -113,7 +112,10 @@ def stop(name: str, proc: subprocess.Popen) -> None:
 
 
 def run_dev() -> None:
-    procs = {name: spawn(name, cmd, cwd) for name, cmd, cwd in DEV_PROCS}
+    procs_def = [(n, c, cwd, None) for n, c, cwd in DEV_PROCS]
+    if (ROOT / "api/run.py").exists():
+        procs_def += api_dev_procs()
+    procs = {name: spawn(name, cmd, cwd, env) for name, cmd, cwd, env in procs_def}
     print(
         f"\n→ http://localhost:{ENV['FRONT_PORT']}  (Ctrl+C stops the host "
         "processes; `python run.py down` also stops the docker services)\n"
@@ -133,12 +135,9 @@ def run_dev() -> None:
 
 def run_api(action: str) -> None:
     api_run = ROOT / "api/run.py"
-    if not api_run.exists():
+    if not api_run.exists() or ENV.get("MODE") == "dev":
         return
-    if ENV.get("MODE") == "dev":
-        print("api: start it separately with `python api/run.py` (host mode)")
-    else:
-        subprocess.run([sys.executable, str(api_run), action], cwd=ROOT / "api")
+    subprocess.run([sys.executable, str(api_run), action], cwd=ROOT / "api")
 
 
 def doctor() -> None:
@@ -195,6 +194,20 @@ def docker_ok() -> bool:
 def port_open(port: str) -> bool:
     with socket.socket() as s:
         return s.connect_ex(("127.0.0.1", int(port))) == 0
+
+
+def api_dev_procs() -> list:
+    api_env = read_env(ROOT / "api/.env")
+    port = api_env.get("API_PORT", "5001")
+    device = api_env.get("DEVICE_NB", "") or "0"
+    return [
+        ("api-flask",
+         ["uv", "run", "flask", "--app", "app.main", "run", "--debug", "-p", port],
+         ROOT / "api", {"CUDA_VISIBLE_DEVICES": device}),
+        ("api-dramatiq",
+         ["uv", "run", "dramatiq", "app.main", "-t", "1", "-p", "1"],
+         ROOT / "api", {"CUDA_VISIBLE_DEVICES": device}),
+    ]
 
 
 if __name__ == "__main__":
