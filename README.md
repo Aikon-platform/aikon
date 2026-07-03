@@ -9,7 +9,7 @@ Both can be deployed together or separately.
 ## Requirements
 
 - [Docker](https://docs.docker.com/engine/install/) with Compose v2
-- [uv](https://docs.astral.sh/uv/) and [Node.js](https://nodejs.org/) (dev mode only)
+- `dev` mode only: [uv](https://docs.astral.sh/uv/) and [Node.js](https://nodejs.org/)
 
 ## Install
 
