@@ -1,7 +1,10 @@
 # <img alt="Aikon logo" src="https://raw.githubusercontent.com/Aikon-platform/aikon/refs/heads/main/front/app/webapp/static/favicon.ico" height="50" width="auto" style="display: inline; margin-bottom:-10px;"> AIKON platform
 
+[//]: # (<img src="https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs10032-026-00581-x/MediaObjects/10032_2026_581_Fig1_HTML.png" alt="AIKON presentation" width="100%">)
+
 Modular platform for the visual analysis of historical corpora, composed of a web application ([`front/`](front/README.md))
-and a computer vision worker API ([`api/`](https://github.com/Aikon-platform/aikon-api/blob/main/README.md)). Both can be deployed together or separately.
+and a computer vision API ([`api/`](https://github.com/Aikon-platform/aikon-api/blob/main/README.md)).
+Both can be deployed together or separately.
 
 ## Requirements
 
@@ -11,11 +14,11 @@ and a computer vision worker API ([`api/`](https://github.com/Aikon-platform/aik
 ## Install
 
 ```bash
-git clone --recurse-submodules <repo-url> && cd aikon
+git clone --recurse-submodules git@github.com:Aikon-platform/aikon.git && cd aikon
 python install.py
 ```
 
-The installer asks for the install mode, generates every configuration file and starts the app:
+The script will ask you about the install mode, generate every configuration file and start the app:
 
 | mode    | purpose       | what runs where                               |
 |---------|---------------|-----------------------------------------------|
@@ -63,7 +66,7 @@ Passwords and secret keys left blank are auto-generated. In `dev`/`local`, busy 
 - **EiDA** [ANR-22-CE38-0014](https://anr.fr/Projet-ANR-22-CE38-0014): EdIter et analyser les Diagrammes astronomiques historiques avec l’intelligence Artificielle
 - **DISCOVER** project [ERC-101076028](https://cordis.europa.eu/project/id/101076028): Discovering and Analyzing Visual Structures
 
-If you find [this work](https://link.springer.com/article/10.1007/s10032-026-00581-x) useful, please consider citing:
+If you find this work useful, please consider citing:
 
 ```bibtex
 @article{albouy2026aikon,
@@ -81,11 +84,10 @@ If you find [this work](https://link.springer.com/article/10.1007/s10032-026-005
         Husson, Matthieu and
         Aubry, Mathieu
     },
-    url={https://hal.science/hal-05248250},
-    year={2025},
-    month={Sep},
-    number={hal-05248250},
-    journal={HAL Pre-Print},
+    url={https://doi.org/10.1007/s10032-026-00581-x},
+    year={2026},
+    month={June},
+    journal={International Journal on Document Analysis and Recognition (IJDAR)},
     keyword={Digital Humanities, Computer Vision, Historical Documents, Visual Analysis},
 }
 ```
