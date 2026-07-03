@@ -115,10 +115,10 @@ def resolve_values(mode: str, assume_yes: bool) -> dict:
         if key in PROMPTED[mode] and not assume_yes:
             val = prompt(key, val, desc)
         if key.endswith("_PORT") and mode != "prod" and key not in current:
-            bumped = next_free_port(val)
-            if bumped != int(val):
-                print(f"  port {val} busy, using {bumped} for {key}")
-                val = bumped
+            free = next_free_port(val)
+            if free != int(val):
+                print(f"⚠ port {val} busy → {key}={free} (set {key} in .env to override)", file=sys.stderr)
+                val = free
         v[key] = str(val)
 
     v["DATA_DIR"] = str(Path(v["DATA_DIR"] or ROOT / "data").resolve())
@@ -183,6 +183,12 @@ def derive(v: dict, mode: str, in_docker: bool) -> dict:
         if nginx
         else f"http://localhost:{v['MIRADOR_PORT']}",
         "MONGODB_CONNSTRING": f"mongodb://{host('mongo')}:{port('MONGODB_PORT')}/{v['MONGODB_DB']}",
+        "AIIINOTATE_BASE_URL": f"{base}/aiiinotate"
+            if prod
+            else f"http://{host('aiiinotate')}:{v['AIIINOTATE_PORT']}",
+        "AIIINOTATE_HOST": "0.0.0.0",
+        "AIIINOTATE_SCHEME": "https" if prod else "http",
+        "AIIINOTATE_LOG_DIR": "/aiiinotate/logs",
     }
 
 

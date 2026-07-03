@@ -7,7 +7,7 @@
 SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"
 
-. "$APP_ROOT"/app/config/.env
+. "$APP_ROOT"/front/app/config/.env
 
 if [[ "$DOCKER" = "True" ]]; then
     db_host="db"

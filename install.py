@@ -2,7 +2,7 @@
 """
 AIKON unified installer (cross-platform, stdlib only).
 
-    python setup.py [--mode local|dev|prod] [--yes]
+    python setup.py [--mode local|dev|prod] [--defaults]
 
 local = everything in Docker, zero prompt, app running at the end
 dev   = services in Docker, front deps installed on the host, then `python run.py`
@@ -19,7 +19,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(ROOT / "front" / "scripts"))
+sys.path.insert(0, str(ROOT / "scripts"))
 import generate_env
 
 FRONT_APP = ROOT / "front/app"
@@ -50,9 +50,9 @@ def which(name: str) -> str:
 def check_docker() -> None:
     which("docker")
     if subprocess.run(["docker", "compose", "version"], capture_output=True).returncode:
-        sys.exit(
-            "docker compose v2 is required (https://docs.docker.com/compose/install/)"
-        )
+        sys.exit("docker compose v2 is required (https://docs.docker.com/compose/install/)")
+    if subprocess.run(["docker", "info"], capture_output=True).returncode:
+        sys.exit("docker daemon not reachable — start it (Docker Desktop, `colima start`, `orbstack`, ...) and retry")
 
 
 def wait_port(port: str, service: str, timeout: int = 90) -> None:
@@ -88,7 +88,7 @@ def setup_docker(v: dict) -> None:
     print(f"\n✅ app starting (migrations run inside the container) → {url}")
 
 
-def setup_api(mode: str, yes: bool) -> None:
+def setup_api(mode: str, use_defaults: bool) -> None:
     api_install = ROOT / "api/install.py"
     if not api_install.exists():
         print("api/ not initialized (git submodule update --init), skipping API setup")
@@ -100,19 +100,19 @@ def setup_api(mode: str, yes: bool) -> None:
         mode,
         "--root-env",
         str(ROOT / ".env"),
-    ] + (["--yes"] if yes else [])
+    ] + (["--defaults"] if use_defaults else [])
     sh(cmd, cwd=ROOT / "api")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=generate_env.MODES)
-    parser.add_argument("--yes", action="store_true", help="never prompt, use defaults")
+    parser.add_argument("--defaults", action="store_true", help="never prompt, use defaults")
     args = parser.parse_args()
 
     check_docker()
     mode = args.mode or generate_env.ask_mode()
-    v = generate_env.generate(mode, args.yes or mode == "local")
+    v = generate_env.generate(mode, args.defaults or mode == "local")
 
     (setup_dev if mode == "dev" else setup_docker)(v)
-    setup_api(mode, args.yes)
+    setup_api(mode, args.defaults)

@@ -1,7 +1,7 @@
 #!/bin/env bash
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-FRONT_DIR=$(readlink --canonicalize "$SCRIPT_DIR/..")
+FRONT_DIR=$(readlink --canonicalize "$SCRIPT_DIR/../..")
 APP_DIR="$FRONT_DIR/app"
 WEBAPP_DIR="$APP_DIR/webapp"
 FIXTURES_DIR="$WEBAPP_DIR/fixtures"

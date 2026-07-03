@@ -16,6 +16,8 @@ import shutil
 import signal
 import subprocess
 import sys
+import json
+import socket
 import time
 from pathlib import Path
 
@@ -138,11 +140,71 @@ def run_api(action: str) -> None:
         subprocess.run([sys.executable, str(api_run), action], cwd=ROOT / "api")
 
 
+def doctor() -> None:
+    ok = True
+
+    def check(label: str, passed: bool, hint: str = "") -> None:
+        nonlocal ok
+        ok &= passed
+        print(f"  {'✓' if passed else '✗'} {label}" + (f" — {hint}" if not passed and hint else ""))
+
+    print("docker")
+    check("daemon reachable", docker_ok(), "start Docker Desktop: open -a Docker")
+    if not ok:
+        sys.exit(1)
+
+    print("containers")
+    out = subprocess.run(
+        ["docker", "compose", "ps", "--format", "json"],
+        cwd=DOCKER_DIR, capture_output=True, text=True,
+    ).stdout
+    containers = [json.loads(l) for l in out.splitlines() if l.strip()]
+    if not containers:
+        check("services running", False, "run `python run.py` first")
+    for c in containers:
+        state = c.get("State", "")
+        check(
+            f"{c['Service']}: {state}",
+            state == "running",
+            f"docker compose logs {c['Service']} --tail 30",
+        )
+
+    print("ports")
+    host_ports = {
+        "django (host)": "FRONT_PORT",
+        "aiiinotate": "AIIINOTATE_PORT",
+        "mirador": "MIRADOR_PORT",
+        "cantaloupe": "CANTALOUPE_PORT",
+        "postgres": "DB_PORT",
+        "redis": "REDIS_PORT",
+        "mongo": "MONGODB_PORT",
+    }
+    if ENV["MODE"] != "dev":
+        host_ports = {"nginx": "NGINX_PORT"}
+    for name, key in host_ports.items():
+        check(f"{name} on :{ENV[key]}", port_open(ENV[key]))
+
+    sys.exit(0 if ok else 1)
+
+
+def docker_ok() -> bool:
+    return not subprocess.run(["docker", "info"], capture_output=True).returncode
+
+
+def port_open(port: str) -> bool:
+    with socket.socket() as s:
+        return s.connect_ex(("127.0.0.1", int(port))) == 0
+
+
 if __name__ == "__main__":
     action = sys.argv[1] if len(sys.argv) > 1 else "up"
     ENV = read_env()
+    if not docker_ok():
+        sys.exit("docker daemon not reachable — start Docker Desktop and retry")
 
-    if action == "down":
+    if action == "doctor":
+        doctor()
+    elif action == "down":
         compose("down")
         run_api("down")
     elif action == "logs":

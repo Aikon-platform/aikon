@@ -11,7 +11,7 @@ APP_ROOT="$(dirname "$SCRIPT_DIR")"
 
 source "$SCRIPT_DIR"/utils.sh
 
-APP_ENV="$APP_ROOT"/app/config/.env
+APP_ENV="$APP_ROOT"/front/app/config/.env
 # Load environment variables from .env file
 . "$APP_ENV"
 
