@@ -30,8 +30,8 @@ UV_INSTALL = {
 }
 
 
-def sh(cmd: list, cwd: Path = None) -> None:
-    subprocess.run(cmd, cwd=cwd, check=True)
+def sh(cmd: list|str, cwd: Path = None, shell = False, capture_output = False, text = False) -> subprocess.CompletedProcess:
+    return subprocess.run(cmd, cwd=cwd, check=True, capture_output=capture_output, shell=shell, text=text)
 
 
 def which(name: str) -> str:
@@ -115,6 +115,29 @@ def setup_api(mode: str, use_defaults: bool) -> None:
     ] + (["--defaults"] if use_defaults else [])
     sh(cmd, cwd=ROOT / "api")
 
+def detect_firewall() -> None:
+    """
+    firewalls can silently cause docker-to-host HTTP requests to fail.
+    detect if a firewall is used, and if so print an error message.
+    MacOS is not concerned: firewall is disabled by default and Docker-to-Host
+    queries are not blocked by its firewall (socketfilterfw)
+    """
+    script = f"bash {ROOT / 'scripts' / 'check_firewall.sh'}"
+    msg = lambda firewall: print(
+        "\n"
+        f"⚠️  Detected active firewall `{firewall}`, "
+        "which may cause network errors (Docker-to-Host requests blocked.) "
+        "Run the following script to add Docker's network to firewall:\n"
+        f">>> {script}\n"
+    )
+    _sh = lambda cmd: sh(cmd, cwd=ROOT, shell=True, capture_output=True, text=True)
+    # 1. ubuntu/debian
+    if which("ufw") and "Status: active" in _sh("sudo ufw status").stdout:
+        msg("ufw")
+    # 2. fedora
+    elif which("firewall-cmd") and "running" in _sh("firewall-cmd --state").stdout:
+        msg("firewalld")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
@@ -128,3 +151,5 @@ if __name__ == "__main__":
 
     (setup_dev if mode == "dev" else setup_docker)(v)
     setup_api(mode, args.defaults)
+
+    detect_firewall()
