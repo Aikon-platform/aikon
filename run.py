@@ -32,8 +32,9 @@ WIN = os.name == "nt"
 VENV_BIN = FRONT / "app/.venv" / ("Scripts" if WIN else "bin")
 DEV_PROCS = [
     (
+        # NOTE: runserver on 0.0.0.0: 127.0.0.1 is only for the host's loopback, 0.0.0.0 can be accessed from the docker-compose bridge network
         "django",
-        ["uv", "run", "manage.py", "runserver", "localhost:{FRONT_PORT}"],
+        ["uv", "run", "manage.py", "runserver", "0.0.0.0:{FRONT_PORT}"],
         FRONT / "app",
     ),
     (

@@ -7,6 +7,10 @@ x-proxy: &proxy
   HTTPS_PROXY: ${HTTPS_PROXY:-}
   NO_PROXY: localhost,127.0.0.1,web,nginx,db,redis,mongo,cantaloupe,aiiinotate,mirador
 
+x-extra-hosts: &extra-hosts
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
 services:
   db:
     image: postgres:14
@@ -70,11 +74,10 @@ services:
       args:
         PORT: ${AIIINOTATE_PORT}
         ENV_PATH: app/config/.env
+    <<: *extra-hosts
     # runtime env wins over the .env baked at build time (dotenvx does not
     # override variables already present in the environment)
     env_file: .env
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       mongo:
         condition: service_healthy
@@ -90,9 +93,8 @@ services:
       args:
         PORT: ${MIRADOR_PORT}
         ENV_PATH: app/config/.env
+    <<: *extra-hosts
     env_file: .env
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       - aiiinotate
     networks: [aikon]
@@ -113,8 +115,6 @@ services:
     volumes:
       - ${DATA_FOLDER}:/data
       - staticfiles:/home/aikon/app/staticfiles
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
