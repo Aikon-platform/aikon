@@ -97,7 +97,7 @@ def next_free_port(port: str) -> int:
 
 def prompt(key: str, default: str, desc: str) -> str:
     hint = f" | {desc}" if desc else ""
-    val = input(f"{key}{hint}\n  [{default or 'empty'}]: ").strip()
+    val = input(f"{key}{hint} (press Enter for default value)\n  [{default or 'empty'}]: ").strip()
     return default if not val else "" if val == "x" else val
 
 
