@@ -35,7 +35,6 @@ IIIF_PRESENTATION_VERSION = 2
 
 
 def dockerize(url: str) -> str:
-    """URL fetchable from inside a container. Never store or compare its output."""
     return url.replace(APP_URL, APP_URL_FROM_DOCKER)
 
 
@@ -894,12 +893,13 @@ def index_manifest(manifest_url, reindex=False):
         return False
 
     try:
-        manifest_content["uri"] = dockerize(manifest_url)
+        # manifest_content["uri"] = dockerize(manifest_url)
         # Index the manifest into aiiinotate
         r = requests.post(
             f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}/create",
             json=manifest_content,
         )
+        # r.raise_for_status()
         if r.status_code != 200:
             log(
                 f"[index_manifest]: Failed to index manifest {manifest_url}."
