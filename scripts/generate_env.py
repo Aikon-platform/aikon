@@ -176,27 +176,33 @@ def derive(v: dict, mode: str, in_docker: bool) -> dict:
             else f"http://web:8000" if in_docker
             else f"http://host.docker.internal:{v['FRONT_PORT']}"
         ),
-        "ALLOWED_HOSTS": "localhost,127.0.0.1,0.0.0.0,web,nginx,host.docker.internal",
         "API_URL": v["PROD_API_URL"] if prod else f"http://{'api' if in_docker else 'localhost'}:{v['API_PORT']}",
         "CANTALOUPE_BASE_URI": base if nginx else f"http://localhost:{v['CANTALOUPE_PORT']}",
         "AIIINOTATE_BASE_URL": f"{base}/aiiinotate" if prod else f"http://{host('aiiinotate')}:{v['AIIINOTATE_PORT']}",
-        "AIIINOTATE_HOST": "0.0.0.0",
-        "AIIINOTATE_SCHEME": "http",
-        "AIIINOTATE_LOG_DIR": "/aiiinotate/logs",
         "AIIINOTATE_PUBLIC_URL": f"{base}/aiiinotate" if prod else f"http://localhost:{v['AIIINOTATE_PORT']}",
         "MIRADOR_BASE_URL": f"{base}/mirador" if nginx else f"http://localhost:{v['MIRADOR_PORT']}",
         "MONGODB_CONNSTRING": f"mongodb://{host('mongo')}:{port('MONGODB_PORT')}/{v['MONGODB_DB']}",
         "MONGODB_DB_TEST": f"{v['MONGODB_DB']}_test",
         "MONGODB_CONNSTRING_TEST": f"mongodb://{host('mongo')}:{port('MONGODB_PORT')}/{v['MONGODB_DB']}_test",
-    }
 
+        # TODO : move these to a defaults dict.
+        "ALLOWED_HOSTS": "localhost,127.0.0.1,0.0.0.0,web,nginx,host.docker.internal",
+        "AIIINOTATE_HOST": "0.0.0.0",
+        "AIIINOTATE_SCHEME": "http",
+        "AIIINOTATE_LOG_TARGET": "stdout",
+        "AIIINOTATE_LOG_DIR": "",
+        "AIIINOTATE_LOG_LEVEL": "debug",
+        "AIIINOTATE_PAGE_SIZE": "5000",
+        "AIIINOTATE_STRICT_MODE": "true"  # in lowercase to be properly parsed by aiiinotate's JS
+    }
 
 REQUIRED = {
     "front/app/config/.env": (
         "SECRET_KEY", "POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD",
         "DB_HOST", "DB_PORT", "REDIS_HOST", "REDIS_PORT",
         "API_URL", "BASE_URL", "MEDIA_DIR", "CANTALOUPE_BASE_URI",
-        "AIIINOTATE_BASE_URL", "MIRADOR_BASE_URL",
+        "AIIINOTATE_BASE_URL", "AIIINOTATE_LOG_TARGET", "AIIINOTATE_LOG_LEVEL",
+        "AIIINOTATE_STRICT_MODE", "MIRADOR_BASE_URL",
     ),
     "front/cantaloupe/.env": (
         "CANTALOUPE_BASE_URI", "CANTALOUPE_IMG",
@@ -206,7 +212,7 @@ REQUIRED = {
         "DATA_FOLDER", "USERID", "COMPOSE_FILE",
         "MONGODB_HOST", "MONGODB_PORT", "MONGODB_DB", "MONGODB_CONNSTRING",
         "AIIINOTATE_PORT", "AIIINOTATE_HOST", "AIIINOTATE_SCHEME",
-        "AIIINOTATE_LOG_DIR", "AIIINOTATE_LOG_TARGET", "AIIINOTATE_LOG_LEVEL",
+        "AIIINOTATE_LOG_TARGET", "AIIINOTATE_LOG_LEVEL",
         "AIIINOTATE_PAGE_SIZE", "AIIINOTATE_PUBLIC_URL", "AIIINOTATE_BASE_URL",
         "MIRADOR_PORT", "CANTALOUPE_PORT", "NGINX_PORT",
         "NGINX_MAX_BODY_SIZE", "NGINX_TIMEOUT",

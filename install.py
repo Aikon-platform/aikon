@@ -122,13 +122,13 @@ def detect_firewall() -> None:
     MacOS is not concerned: firewall is disabled by default and Docker-to-Host
     queries are not blocked by its firewall (socketfilterfw)
     """
-    script = f"bash {ROOT / 'scripts' / 'check_firewall.sh'}"
+    script_path = f"bash {ROOT / 'scripts' / 'check_firewall.sh'}"
     msg = lambda firewall: print(
         "\n"
         f"⚠️  Detected active firewall `{firewall}`, "
         "which may cause network errors (Docker-to-Host requests blocked.) "
         "Run the following script to add Docker's network to firewall:\n"
-        f">>> {script}\n"
+        f">>> {script_path}\n"
     )
     _sh = lambda cmd: sh(cmd, cwd=ROOT, shell=True, capture_output=True, text=True)
     # 1. ubuntu/debian
