@@ -128,6 +128,10 @@ def run_dev() -> None:
                     raise KeyboardInterrupt
             time.sleep(2)
     except KeyboardInterrupt:
+        pass
+    finally:
+        # ignore further Ctrl+C so teardown always completes
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
         print()
         for name, p in procs.items():
             stop(name, p)

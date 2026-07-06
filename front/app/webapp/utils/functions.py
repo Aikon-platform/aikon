@@ -28,10 +28,7 @@ from urllib.request import (
 )
 from app.config.settings import APP_NAME, APP_LANG, CANTALOUPE_APP_URL
 from app.webapp.models.utils.constants import DATE_ERROR, IMG
-from app.webapp.utils.paths import (
-    BASE_DIR,
-    IMG_PATH,
-)
+from app.webapp.utils.paths import IMG_PATH
 from app.vectorization.const import SVG_PATH
 from app.webapp.utils.constants import MAX_SIZE, PAGE_LEN
 from app.webapp.utils.logger import log
@@ -620,8 +617,7 @@ def check_dir(path):
 
 
 def create_dir(path):
-    path = Path(path)
-    path.mkdir(parents=True, exist_ok=True)
+    Path(path).mkdir(parents=True, exist_ok=True)
     return path
 
 
