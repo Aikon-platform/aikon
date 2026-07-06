@@ -6,7 +6,6 @@ Start / stop AIKON.
 
 up   (default)  docker services up; in dev mode also runs the front on the
                 host (runserver, celery, vite --watch, livereload) until Ctrl+C.
-                Ctrl+C only stops the host processes; services keep running.
 down            stops everything (docker compose down + api if delegated)
 logs            follows the docker services logs
 doctor          summarize
@@ -117,8 +116,7 @@ def run_dev() -> None:
         procs_def += api_dev_procs()
     procs = {name: spawn(name, cmd, cwd, env) for name, cmd, cwd, env in procs_def}
     print(
-        f"\n→ http://localhost:{ENV['FRONT_PORT']}  (Ctrl+C stops the host "
-        "processes; `python run.py down` also stops the docker services)\n"
+        f"\n→ http://localhost:{ENV['FRONT_PORT']}  (Ctrl+C to stop)\n"
     )
     try:
         while True:
@@ -135,6 +133,7 @@ def run_dev() -> None:
         print()
         for name, p in procs.items():
             stop(name, p)
+        compose("down")
 
 
 def run_api(action: str) -> None:
