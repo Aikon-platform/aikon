@@ -16,13 +16,13 @@ from app.webapp.utils.paths import REGIONS_PATH
 
 
 def get_name(fieldname, plural=False):
-    return get_fieldname(fieldname, {}, plural)
-
-
-def check_version(version):
-    if version != MANIFEST_V1 and version != MANIFEST_V2:
-        return MANIFEST_V1
-    return version
+    fields = {
+        "RegionExtraction": {
+            "en": "region extraction",
+            "fr": "extraction de régions",
+        },
+    }
+    return get_fieldname(fieldname, fields, plural)
 
 
 class RegionExtraction(AbstractSearchableModel):

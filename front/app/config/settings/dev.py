@@ -5,6 +5,7 @@ API_URL = ENV.str(
 )
 BASE_URL = ENV.str("BASE_URL", default=f"http://localhost:{APP_PORT}")
 APP_URL = BASE_URL
+APP_URL_FROM_DOCKER = ENV.str("APP_URL_FROM_DOCKER", default=APP_URL)
 CANTALOUPE_APP_URL = ENV.str(
     "CANTALOUPE_BASE_URI", default=f"http://localhost:{CANTALOUPE_PORT}"
 )

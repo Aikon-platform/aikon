@@ -171,7 +171,12 @@ def derive(v: dict, mode: str, in_docker: bool) -> dict:
         "MONGODB_PORT": port("MONGODB_PORT"),
         "MEDIA_DIR": "/data/mediafiles" if in_docker else f"{v['DATA_DIR']}/mediafiles",
         "BASE_URL": base,
-        "ALLOWED_HOSTS": "localhost,127.0.0.1,web,nginx",
+        "APP_URL_FROM_DOCKER": (
+            base if prod
+            else f"http://web:8000" if in_docker
+            else f"http://host.docker.internal:{v['FRONT_PORT']}"
+        ),
+        "ALLOWED_HOSTS": "localhost,127.0.0.1,web,nginx,host.docker.internal",
         "API_URL": v["PROD_API_URL"] if prod else f"http://{'api' if in_docker else 'localhost'}:{v['API_PORT']}",
         "CANTALOUPE_BASE_URI": base if nginx else f"http://localhost:{v['CANTALOUPE_PORT']}",
         "AIIINOTATE_BASE_URL": f"{base}/aiiinotate" if prod else f"http://{host('aiiinotate')}:{v['AIIINOTATE_PORT']}",

@@ -19,12 +19,12 @@ from app.config.settings import (
     AIIINOTATE_BASE_URL,
     APP_NAME,
     APP_URL,
+    APP_URL_FROM_DOCKER
 )
 from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
 from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.region_extraction import get_file_region_extraction
-
 
 # ********************************************
 # UTILS
@@ -34,9 +34,14 @@ IIIF_SEARCH_VERSION = 1
 IIIF_PRESENTATION_VERSION = 2
 
 
+def dockerize(url: str) -> str:
+    """URL fetchable from inside a container. Never store or compare its output."""
+    return url.replace(APP_URL, APP_URL_FROM_DOCKER)
+
+
 def update_params(urlstr: str, q_params: Dict) -> str:
     """
-    update the url string `urlstr` with the dictionnary of query parameters `q_str` and return the updated url string.
+    update the url string `urlstr` with the dictionary of query parameters `q_str` and return the updated url string.
     https://coderivers.org/blog/python-url-replace/
     """
     url = urlparse(urlstr)
@@ -828,13 +833,10 @@ def index_annotations_on_canvas(regions: RegionExtraction, canvas_nb):
     # this url (view canvas_annotations()) is calling format_canvas_annotations(),
     # thus returning formatted annotations for each canvas
 
-    formatted_annos = (
-        f"{APP_URL}/{APP_NAME}/iiif/{regions.get_ref()}/list/anno-{canvas_nb}.json"
-    )
     # POST request that index the annotations
     response = requests.post(
         f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/createMany",
-        json={"uri": formatted_annos},
+        json={"uri": dockerize(f"{APP_URL}/{APP_NAME}/iiif/{regions.get_ref()}/list/anno-{canvas_nb}.json")},
     )
 
     if not response.ok:
@@ -892,6 +894,7 @@ def index_manifest(manifest_url, reindex=False):
         return False
 
     try:
+        manifest_content["uri"] = dockerize(manifest_url)
         # Index the manifest into aiiinotate
         r = requests.post(
             f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}/create",
